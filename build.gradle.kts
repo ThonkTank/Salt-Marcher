@@ -367,6 +367,12 @@ val recoverEncounterTables = registerJavaExecTask(
     taskMainClass = "importer.EncounterTableRecoveryTool"
 )
 
+val sqliteQuery = registerJavaExecTask(
+    taskName = "sqliteQuery",
+    taskDescription = "Run ad-hoc SQLite queries without requiring a system sqlite3 binary. Usage: ./gradlew sqliteQuery --args='data/game.db .tables \"select * from dungeon_maps\"'",
+    taskMainClass = "importer.SqliteQueryTool"
+)
+
 val backfillCreatureAnalysis = registerJavaExecTask(
     taskName = "backfillCreatureAnalysis",
     taskDescription = "Reimport crawled monsters from stored HTML and refresh encounter-analysis caches.",
@@ -684,7 +690,7 @@ val checkDungeonEditorArchitectureConvention by tasks.registering {
 
     doLast {
         val projectRoot = project.layout.projectDirectory.asFile.toPath()
-        val canvasOffenders = fileTree("src/features/world/dungeonmap/ui/canvas") {
+        val renderOffenders = fileTree("src/features/world/dungeonmap/ui/workspace/render") {
             include("**/*.java")
         }.files
             .map { projectRoot.relativize(it.toPath()).toString().replace('\\', '/') }
@@ -704,11 +710,11 @@ val checkDungeonEditorArchitectureConvention by tasks.registering {
             }
             .sorted()
 
-        if (canvasOffenders.isNotEmpty() || editorControllerOffenders.isNotEmpty()) {
+        if (renderOffenders.isNotEmpty() || editorControllerOffenders.isNotEmpty()) {
             val messages = mutableListOf<String>()
-            if (canvasOffenders.isNotEmpty()) {
-                messages += "Canvas UI must not import dungeon service/repository packages:\n" +
-                    canvasOffenders.joinToString(separator = "\n") { " - $it" }
+            if (renderOffenders.isNotEmpty()) {
+                messages += "Render UI must not import dungeon service/repository packages:\n" +
+                    renderOffenders.joinToString(separator = "\n") { " - $it" }
             }
             if (editorControllerOffenders.isNotEmpty()) {
                 messages += "Editor workflow controllers must not import dungeon repository packages:\n" +

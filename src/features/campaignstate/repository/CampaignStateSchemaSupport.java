@@ -26,7 +26,10 @@ public final class CampaignStateSchemaSupport {
                 + "current_weather     TEXT,"
                 + "notes               TEXT,"
                 + "dungeon_map_id      INTEGER REFERENCES dungeon_maps(dungeon_map_id) ON DELETE SET NULL,"
-                + "dungeon_room_id     INTEGER REFERENCES dungeon_rooms(room_id) ON DELETE SET NULL"
+                + "dungeon_location_type TEXT,"
+                + "dungeon_room_id     INTEGER REFERENCES dungeon_rooms(room_id) ON DELETE SET NULL,"
+                + "dungeon_corridor_id INTEGER REFERENCES dungeon_corridors(corridor_id) ON DELETE SET NULL,"
+                + "dungeon_location_key TEXT"
                 + ")");
     }
 
@@ -36,8 +39,14 @@ public final class CampaignStateSchemaSupport {
         }
         ensureColumn(conn, "campaign_state", "dungeon_map_id",
                 "INTEGER REFERENCES dungeon_maps(dungeon_map_id) ON DELETE SET NULL");
+        ensureColumn(conn, "campaign_state", "dungeon_location_type",
+                "TEXT");
         ensureColumn(conn, "campaign_state", "dungeon_room_id",
                 "INTEGER REFERENCES dungeon_rooms(room_id) ON DELETE SET NULL");
+        ensureColumn(conn, "campaign_state", "dungeon_corridor_id",
+                "INTEGER REFERENCES dungeon_corridors(corridor_id) ON DELETE SET NULL");
+        ensureColumn(conn, "campaign_state", "dungeon_location_key",
+                "TEXT");
     }
 
     private static void ensureColumn(Connection conn, String table, String column, String definition) throws SQLException {

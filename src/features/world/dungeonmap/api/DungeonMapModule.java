@@ -1,26 +1,36 @@
 package features.world.dungeonmap.api;
 
+import database.DatabaseManager;
+import features.world.dungeonmap.service.DungeonConnectionFactory;
+import features.world.dungeonmap.service.catalog.DungeonMapCatalogService;
+import features.world.dungeonmap.service.editor.DungeonEditorService;
+import features.world.dungeonmap.service.runtime.DungeonRuntimeService;
 import features.world.dungeonmap.ui.editor.DungeonEditorView;
+import features.world.dungeonmap.ui.runtime.DungeonRuntimeApplicationService;
 import features.world.dungeonmap.ui.runtime.DungeonView;
 import ui.shell.AppView;
 import ui.shell.DetailsNavigator;
-import ui.shell.SceneRegistry;
 
 import java.util.Objects;
 
 public final class DungeonMapModule {
 
-    private final DungeonView dungeonView;
-    private final DungeonEditorView dungeonEditorView;
+    private final AppView dungeonView;
+    private final AppView dungeonEditorView;
 
     public DungeonMapModule(DetailsNavigator detailsNavigator) {
         Objects.requireNonNull(detailsNavigator, "detailsNavigator");
-        this.dungeonView = new DungeonView(detailsNavigator);
-        this.dungeonEditorView = new DungeonEditorView(detailsNavigator);
-    }
-
-    public void registerScenes(SceneRegistry sceneRegistry) {
-        Objects.requireNonNull(sceneRegistry, "sceneRegistry");
+        DungeonConnectionFactory connectionFactory = DatabaseManager::getConnection;
+        DungeonMapCatalogService mapCatalogService = new DungeonMapCatalogService(connectionFactory);
+        DungeonRuntimeService runtimeService = new DungeonRuntimeService(connectionFactory);
+        DungeonEditorService editorService = new DungeonEditorService(connectionFactory);
+        this.dungeonView = new DungeonView(
+                detailsNavigator,
+                new DungeonRuntimeApplicationService(mapCatalogService, runtimeService));
+        this.dungeonEditorView = new DungeonEditorView(
+                detailsNavigator,
+                mapCatalogService,
+                editorService);
     }
 
     public AppView dungeonView() {

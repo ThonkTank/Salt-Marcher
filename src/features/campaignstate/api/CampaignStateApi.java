@@ -29,8 +29,8 @@ public final class CampaignStateApi {
         CampaignStateRepository.clearPartyTileOutsideRadius(conn, mapId, radius);
     }
 
-    public static void setDungeonPosition(Connection conn, Long mapId, Long roomId) throws SQLException {
-        CampaignStateRepository.setDungeonPosition(conn, mapId, roomId);
+    public static void setDungeonPosition(Connection conn, DungeonPositionRef position) throws SQLException {
+        CampaignStateRepository.setDungeonPosition(conn, position);
     }
 
     public static void clearDungeonPosition(Connection conn) throws SQLException {

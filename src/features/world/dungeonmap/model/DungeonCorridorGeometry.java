@@ -1,0 +1,720 @@
+package features.world.dungeonmap.model;
+
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.PriorityQueue;
+import java.util.Set;
+
+public final class DungeonCorridorGeometry {
+
+    private static final List<Point2i> CARDINAL_NEIGHBORS = List.of(
+            new Point2i(1, 0),
+            new Point2i(-1, 0),
+            new Point2i(0, 1),
+            new Point2i(0, -1));
+
+    private DungeonCorridorGeometry() {
+        throw new AssertionError("No instances");
+    }
+
+    public static Map<Long, List<Point2i>> corridorPaths(DungeonLayout layout) {
+        return corridorTopology(layout).corridorGeometries().entrySet().stream()
+                .collect(LinkedHashMap::new,
+                        (map, entry) -> map.put(entry.getKey(), flattenSegments(entry.getValue().segments())),
+                        Map::putAll);
+    }
+
+    public static CorridorTopology corridorTopology(DungeonLayout layout) {
+        Map<Long, DungeonRoom> roomsById = roomsById(layout.rooms());
+        Map<Point2i, Long> roomOccupancy = new HashMap<>();
+        for (DungeonRoom room : layout.rooms()) {
+            for (Point2i cell : layout.roomCells(room.roomId())) {
+                roomOccupancy.put(cell, room.roomId());
+            }
+        }
+
+        Map<Long, CorridorGeometry> result = new LinkedHashMap<>();
+        for (DungeonCorridor corridor : layout.corridors()) {
+            List<DungeonRoom> corridorRooms = corridor.roomIds().stream()
+                    .map(roomsById::get)
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .toList();
+            result.put(corridor.corridorId(), corridorGeometry(corridor.corridorId(), corridorRooms, roomOccupancy));
+        }
+        return buildCorridorTopology(layout, result);
+    }
+
+    public static CorridorGeometry corridorGeometry(
+            Collection<DungeonRoom> occupancyRooms,
+            DungeonRoom from,
+            DungeonRoom to
+    ) {
+        Objects.requireNonNull(occupancyRooms, "occupancyRooms");
+        Objects.requireNonNull(from, "from");
+        Objects.requireNonNull(to, "to");
+        Map<Point2i, Long> roomOccupancy = new HashMap<>();
+        for (DungeonRoom room : occupancyRooms) {
+            for (Point2i cell : Set.of(room.componentAnchor())) {
+                roomOccupancy.put(cell, room.roomId());
+            }
+        }
+        return corridorGeometry(null, List.of(from, to), roomOccupancy);
+    }
+
+    public static Point2i suggestNewRoomCenter(Collection<DungeonRoom> rooms) {
+        if (rooms.isEmpty()) {
+            return new Point2i(0, 0);
+        }
+        int maxX = rooms.stream().mapToInt(room -> room.componentAnchor().x()).max().orElse(0);
+        int minY = rooms.stream().mapToInt(room -> room.componentAnchor().y()).min().orElse(0);
+        return new Point2i(maxX + 8, minY);
+    }
+
+    private static CorridorTopology buildCorridorTopology(
+            DungeonLayout layout,
+            Map<Long, CorridorGeometry> baseGeometries
+    ) {
+        Map<Point2i, Set<Long>> corridorIdsByCell = new HashMap<>();
+        Map<DoorKey, Set<Long>> corridorIdsByDoor = new HashMap<>();
+        for (CorridorGeometry geometry : baseGeometries.values()) {
+            if (!geometry.routable()) {
+                continue;
+            }
+            for (Point2i cell : geometry.cells()) {
+                corridorIdsByCell.computeIfAbsent(cell, ignored -> new LinkedHashSet<>()).add(geometry.corridorId());
+            }
+            for (DoorSegment door : geometry.doors()) {
+                corridorIdsByDoor.computeIfAbsent(new DoorKey(door.start(), door.end()), ignored -> new LinkedHashSet<>()).add(geometry.corridorId());
+            }
+        }
+
+        Map<Long, Set<Long>> adjacentCorridors = new HashMap<>();
+        for (Long corridorId : baseGeometries.keySet()) {
+            adjacentCorridors.put(corridorId, new LinkedHashSet<>());
+        }
+        for (Set<Long> overlapping : corridorIdsByCell.values()) {
+            linkCorridors(adjacentCorridors, overlapping);
+        }
+        for (Set<Long> overlapping : corridorIdsByDoor.values()) {
+            linkCorridors(adjacentCorridors, overlapping);
+        }
+
+        Map<Long, String> componentIdByCorridorId = new LinkedHashMap<>();
+        Map<String, CorridorComponent> componentsById = new LinkedHashMap<>();
+        Set<Long> unvisited = baseGeometries.values().stream()
+                .filter(CorridorGeometry::routable)
+                .map(CorridorGeometry::corridorId)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        while (!unvisited.isEmpty()) {
+            Long seed = unvisited.iterator().next();
+            Set<Long> componentCorridorIds = new LinkedHashSet<>();
+            ArrayDeque<Long> queue = new ArrayDeque<>();
+            queue.add(seed);
+            unvisited.remove(seed);
+            while (!queue.isEmpty()) {
+                Long corridorId = queue.removeFirst();
+                componentCorridorIds.add(corridorId);
+                for (Long neighbor : adjacentCorridors.getOrDefault(corridorId, Set.of())) {
+                    if (unvisited.remove(neighbor)) {
+                        queue.addLast(neighbor);
+                    }
+                }
+            }
+
+            String componentId = componentIdFor(componentCorridorIds);
+            Set<Long> roomIds = new LinkedHashSet<>();
+            Set<Point2i> cells = new LinkedHashSet<>();
+            Set<DoorSegment> doors = new LinkedHashSet<>();
+            for (Long corridorId : componentCorridorIds) {
+                CorridorGeometry geometry = baseGeometries.get(corridorId);
+                roomIds.addAll(geometry.roomIds());
+                cells.addAll(geometry.cells());
+                doors.addAll(geometry.doors());
+                componentIdByCorridorId.put(corridorId, componentId);
+            }
+
+            RoomShape componentShape = cells.isEmpty() ? null : DungeonRoomGeometry.roomShapeForCells(cells);
+            List<Point2i> outlineVertices = componentShape == null ? List.of() : componentShape.absoluteVertices();
+            componentsById.put(componentId, new CorridorComponent(
+                    componentId,
+                    layout.map().mapId(),
+                    Set.copyOf(componentCorridorIds),
+                    Set.copyOf(roomIds),
+                    Set.copyOf(cells),
+                    List.copyOf(outlineVertices),
+                    List.copyOf(doors)));
+        }
+
+        Map<Long, CorridorGeometry> resolvedGeometries = new LinkedHashMap<>();
+        for (CorridorGeometry geometry : baseGeometries.values()) {
+            resolvedGeometries.put(geometry.corridorId(), geometry.withComponentId(componentIdByCorridorId.get(geometry.corridorId())));
+        }
+        return new CorridorTopology(
+                Map.copyOf(resolvedGeometries),
+                Map.copyOf(componentsById),
+                Map.copyOf(componentIdByCorridorId));
+    }
+
+    private static void linkCorridors(Map<Long, Set<Long>> adjacentCorridors, Set<Long> corridorIds) {
+        if (corridorIds.size() < 2) {
+            return;
+        }
+        for (Long corridorId : corridorIds) {
+            adjacentCorridors.computeIfAbsent(corridorId, ignored -> new LinkedHashSet<>()).addAll(corridorIds);
+            adjacentCorridors.get(corridorId).remove(corridorId);
+        }
+    }
+
+    private static String componentIdFor(Set<Long> corridorIds) {
+        return "corridor-component:" + corridorIds.stream()
+                .sorted()
+                .map(String::valueOf)
+                .reduce((left, right) -> left + "," + right)
+                .orElse("empty");
+    }
+
+    // Multi-room corridors should grow as one shared group shape instead of degrading into separate room-pair links.
+    private static CorridorGeometry corridorGeometry(
+            Long corridorId,
+            List<DungeonRoom> rooms,
+            Map<Point2i, Long> roomOccupancy
+    ) {
+        List<DungeonRoom> groupRooms = rooms.stream()
+                .filter(Objects::nonNull)
+                .filter(room -> room.roomId() != null)
+                .distinct()
+                .toList();
+        List<Long> roomIds = groupRooms.stream().map(DungeonRoom::roomId).toList();
+        if (groupRooms.size() < 2) {
+            return new CorridorGeometry(corridorId, roomIds, List.of(), Set.of(), List.of(), false, false, null);
+        }
+
+        Map<Long, DungeonRoom> roomsById = roomsById(groupRooms);
+        Map<Long, Set<Point2i>> cellsByRoomId = new LinkedHashMap<>();
+        for (DungeonRoom room : groupRooms) {
+            cellsByRoomId.put(room.roomId(), Set.of(room.componentAnchor()));
+        }
+
+        DungeonRoom seedRoom = seedRoom(groupRooms);
+        Set<Long> connectedRoomIds = new LinkedHashSet<>();
+        connectedRoomIds.add(seedRoom.roomId());
+        Set<Point2i> corridorCells = new LinkedHashSet<>();
+        Set<GridSegment> segments = new LinkedHashSet<>();
+        Set<DoorSegment> doors = new LinkedHashSet<>();
+        boolean directlyAdjacentOnly = true;
+
+        while (connectedRoomIds.size() < groupRooms.size()) {
+            ConnectionCandidate bestCandidate = null;
+            for (DungeonRoom room : groupRooms) {
+                if (connectedRoomIds.contains(room.roomId())) {
+                    continue;
+                }
+                ConnectionCandidate candidate = bestConnectionCandidate(room, roomsById, cellsByRoomId, connectedRoomIds, corridorCells, roomOccupancy);
+                if (candidate == null) {
+                    continue;
+                }
+                if (bestCandidate == null || connectionCandidateComparator().compare(candidate, bestCandidate) < 0) {
+                    bestCandidate = candidate;
+                }
+            }
+            if (bestCandidate == null) {
+                break;
+            }
+            connectedRoomIds.add(bestCandidate.roomId());
+            corridorCells.addAll(bestCandidate.path());
+            segments.addAll(segmentsForPath(bestCandidate.path()));
+            doors.addAll(bestCandidate.doors());
+            if (!bestCandidate.path().isEmpty()) {
+                directlyAdjacentOnly = false;
+            }
+        }
+
+        boolean routable = connectedRoomIds.size() == groupRooms.size() && (!segments.isEmpty() || !doors.isEmpty());
+        return new CorridorGeometry(
+                corridorId,
+                roomIds,
+                List.copyOf(segments),
+                Set.copyOf(corridorCells),
+                List.copyOf(doors),
+                directlyAdjacentOnly,
+                routable,
+                null);
+    }
+
+    private static Comparator<ConnectionCandidate> connectionCandidateComparator() {
+        return Comparator
+                .comparing(DungeonCorridorGeometry::pathPreference)
+                .thenComparing((ConnectionCandidate candidate) -> candidate.joinedExistingCorridor() ? 0 : 1)
+                .thenComparingInt(candidate -> candidate.doors().size())
+                .thenComparingLong(ConnectionCandidate::roomId);
+    }
+
+    private static PathPreference pathPreference(ConnectionCandidate candidate) {
+        List<Point2i> path = candidate == null ? List.of() : candidate.path();
+        return new PathPreference(path.size(), cornerCount(path));
+    }
+
+    private static DungeonRoom seedRoom(List<DungeonRoom> rooms) {
+        return rooms.stream()
+                .min(Comparator
+                        .comparingInt((DungeonRoom room) -> rooms.stream()
+                                .mapToInt(other -> manhattan(room.componentAnchor(), other.componentAnchor()))
+                                .sum())
+                        .thenComparingLong(DungeonRoom::roomId))
+                .orElseThrow();
+    }
+
+    private static ConnectionCandidate bestConnectionCandidate(
+            DungeonRoom room,
+            Map<Long, DungeonRoom> roomsById,
+            Map<Long, Set<Point2i>> cellsByRoomId,
+            Set<Long> connectedRoomIds,
+            Set<Point2i> corridorCells,
+            Map<Point2i, Long> roomOccupancy
+    ) {
+        Set<Point2i> roomCells = cellsByRoomId.getOrDefault(room.roomId(), Set.of());
+        List<ExitCandidate> roomExits = exposedExits(roomCells, roomOccupancy, room.roomId());
+        ConnectionCandidate bestSharedDoor = bestSharedDoorCandidate(room, roomsById, cellsByRoomId, connectedRoomIds, roomCells);
+        boolean hasExistingCorridorShape = !corridorCells.isEmpty();
+        ConnectionCandidate bestCorridorJoin = bestCorridorJoinCandidate(room, corridorCells, roomOccupancy, roomExits);
+        if (hasExistingCorridorShape) {
+            if (bestCorridorJoin != null) {
+                return bestCorridorJoin;
+            }
+            return bestSharedDoor;
+        }
+
+        ConnectionCandidate bestFreshPath = bestFreshPathCandidate(room, cellsByRoomId, connectedRoomIds, roomOccupancy, roomExits);
+        return bestCandidate(bestSharedDoor, bestFreshPath);
+    }
+
+    private static ConnectionCandidate bestSharedDoorCandidate(
+            DungeonRoom room,
+            Map<Long, DungeonRoom> roomsById,
+            Map<Long, Set<Point2i>> cellsByRoomId,
+            Set<Long> connectedRoomIds,
+            Set<Point2i> roomCells
+    ) {
+        ConnectionCandidate bestSharedDoor = null;
+        for (Long connectedRoomId : connectedRoomIds) {
+            Set<Point2i> connectedRoomCells = cellsByRoomId.getOrDefault(connectedRoomId, Set.of());
+            List<DoorSegment> sharedDoors = sharedDoors(roomCells, connectedRoomCells, room.roomId(), connectedRoomId);
+            if (sharedDoors.isEmpty()) {
+                continue;
+            }
+            DoorSegment chosenDoor = sharedDoors.stream()
+                    .filter(door -> door.roomId() == room.roomId())
+                    .min(Comparator
+                            .comparingInt((DoorSegment door) -> manhattan(doorMidpointCell(door), midpointBetweenRooms(room, roomsById.get(connectedRoomId))))
+                            .thenComparingInt(door -> door.start().x())
+                            .thenComparingInt(door -> door.start().y()))
+                    .orElseThrow();
+            DoorSegment reverseDoor = sharedDoors.stream()
+                    .filter(door -> door.roomId() == connectedRoomId)
+                    .filter(door -> sameDoorSegment(door, chosenDoor))
+                    .findFirst()
+                    .orElse(chosenDoor);
+            ConnectionCandidate candidate = new ConnectionCandidate(room.roomId(), List.of(), List.of(chosenDoor, reverseDoor), true);
+            bestSharedDoor = bestCandidate(bestSharedDoor, candidate);
+        }
+        return bestSharedDoor;
+    }
+
+    private static ConnectionCandidate bestCorridorJoinCandidate(
+            DungeonRoom room,
+            Set<Point2i> corridorCells,
+            Map<Point2i, Long> roomOccupancy,
+            List<ExitCandidate> roomExits
+    ) {
+        ConnectionCandidate bestCorridorJoin = null;
+        for (ExitCandidate roomExit : roomExits) {
+            for (Point2i corridorCell : corridorCells) {
+                List<Point2i> path = shortestPath(roomExit.outsideCell(), corridorCell, roomOccupancy);
+                if (path.isEmpty()) {
+                    continue;
+                }
+                ConnectionCandidate candidate = new ConnectionCandidate(room.roomId(), path, List.of(roomExit.door()), true);
+                bestCorridorJoin = bestCandidate(bestCorridorJoin, candidate);
+            }
+        }
+        return bestCorridorJoin;
+    }
+
+    private static ConnectionCandidate bestFreshPathCandidate(
+            DungeonRoom room,
+            Map<Long, Set<Point2i>> cellsByRoomId,
+            Set<Long> connectedRoomIds,
+            Map<Point2i, Long> roomOccupancy,
+            List<ExitCandidate> roomExits
+    ) {
+        ConnectionCandidate bestFreshPath = null;
+        List<ExitCandidate> connectedRoomExits = new ArrayList<>();
+        for (Long connectedRoomId : connectedRoomIds) {
+            connectedRoomExits.addAll(exposedExits(cellsByRoomId.getOrDefault(connectedRoomId, Set.of()), roomOccupancy, connectedRoomId));
+        }
+        for (ExitCandidate roomExit : roomExits) {
+            for (ExitCandidate targetExit : connectedRoomExits) {
+                List<Point2i> path = shortestPath(roomExit.outsideCell(), targetExit.outsideCell(), roomOccupancy);
+                if (path.isEmpty()) {
+                    continue;
+                }
+                ConnectionCandidate candidate = new ConnectionCandidate(
+                        room.roomId(),
+                        path,
+                        List.of(roomExit.door(), targetExit.door()),
+                        false);
+                bestFreshPath = bestCandidate(bestFreshPath, candidate);
+            }
+        }
+        return bestFreshPath;
+    }
+
+    private static ConnectionCandidate bestCandidate(ConnectionCandidate currentBest, ConnectionCandidate candidate) {
+        if (candidate == null) {
+            return currentBest;
+        }
+        if (currentBest == null || connectionCandidateComparator().compare(candidate, currentBest) < 0) {
+            return candidate;
+        }
+        return currentBest;
+    }
+
+    private static Point2i midpointBetweenRooms(DungeonRoom from, DungeonRoom to) {
+        return new Point2i(
+                Math.round((from.componentAnchor().x() + to.componentAnchor().x()) / 2.0f),
+                Math.round((from.componentAnchor().y() + to.componentAnchor().y()) / 2.0f));
+    }
+
+    private static Point2i doorMidpointCell(DoorSegment door) {
+        return new Point2i(
+                Math.min(door.start().x(), door.end().x()),
+                Math.min(door.start().y(), door.end().y()));
+    }
+
+    private static boolean sameDoorSegment(DoorSegment left, DoorSegment right) {
+        return (left.start().equals(right.start()) && left.end().equals(right.end()))
+                || (left.start().equals(right.end()) && left.end().equals(right.start()));
+    }
+
+    private static List<DoorSegment> sharedDoors(
+            Set<Point2i> fromCells,
+            Set<Point2i> toCells,
+            long fromRoomId,
+            long toRoomId
+    ) {
+        List<DoorSegment> result = new ArrayList<>();
+        for (Point2i cell : fromCells) {
+            for (Point2i direction : CARDINAL_NEIGHBORS) {
+                Point2i neighbor = cell.add(direction);
+                if (!toCells.contains(neighbor)) {
+                    continue;
+                }
+                result.add(doorFor(cell, direction, fromRoomId));
+                result.add(doorFor(neighbor, new Point2i(-direction.x(), -direction.y()), toRoomId));
+            }
+        }
+        return result;
+    }
+
+    private static List<ExitCandidate> exposedExits(Set<Point2i> roomCells, Map<Point2i, Long> roomOccupancy, long roomId) {
+        List<ExitCandidate> result = new ArrayList<>();
+        for (Point2i cell : roomCells) {
+            for (Point2i direction : CARDINAL_NEIGHBORS) {
+                Point2i outside = cell.add(direction);
+                if (roomCells.contains(outside)) {
+                    continue;
+                }
+                if (roomOccupancy.containsKey(outside)) {
+                    continue;
+                }
+                result.add(new ExitCandidate(cell, outside, direction, doorFor(cell, direction, roomId)));
+            }
+        }
+        result.sort(Comparator
+                .comparingInt((ExitCandidate candidate) -> candidate.outsideCell().x())
+                .thenComparingInt(candidate -> candidate.outsideCell().y())
+                .thenComparingInt(candidate -> candidate.direction().x())
+                .thenComparingInt(candidate -> candidate.direction().y()));
+        return result;
+    }
+
+    private static DoorSegment doorFor(Point2i cell, Point2i direction, long roomId) {
+        if (direction.x() == 1) {
+            return new DoorSegment(new Point2i(cell.x() + 1, cell.y()), new Point2i(cell.x() + 1, cell.y() + 1), roomId, cell);
+        }
+        if (direction.x() == -1) {
+            return new DoorSegment(new Point2i(cell.x(), cell.y()), new Point2i(cell.x(), cell.y() + 1), roomId, cell);
+        }
+        if (direction.y() == 1) {
+            return new DoorSegment(new Point2i(cell.x(), cell.y() + 1), new Point2i(cell.x() + 1, cell.y() + 1), roomId, cell);
+        }
+        return new DoorSegment(new Point2i(cell.x(), cell.y()), new Point2i(cell.x() + 1, cell.y()), roomId, cell);
+    }
+
+    private static List<GridSegment> segmentsForPath(List<Point2i> path) {
+        if (path.size() < 2) {
+            return List.of();
+        }
+        List<GridSegment> result = new ArrayList<>();
+        for (int i = 1; i < path.size(); i++) {
+            result.add(new GridSegment(path.get(i - 1), path.get(i)));
+        }
+        return List.copyOf(result);
+    }
+
+    private static List<Point2i> flattenSegments(List<GridSegment> segments) {
+        if (segments.isEmpty()) {
+            return List.of();
+        }
+        List<Point2i> points = new ArrayList<>();
+        for (GridSegment segment : segments) {
+            if (points.isEmpty() || !points.get(points.size() - 1).equals(segment.from())) {
+                points.add(segment.from());
+            }
+            points.add(segment.to());
+        }
+        return List.copyOf(points);
+    }
+
+    private static List<Point2i> shortestPath(
+            Point2i start,
+            Point2i goal,
+            Map<Point2i, Long> roomOccupancy
+    ) {
+        if (roomOccupancy.containsKey(start) || roomOccupancy.containsKey(goal)) {
+            return List.of();
+        }
+        int padding = 6;
+        int minX = Math.min(start.x(), goal.x()) - padding;
+        int maxX = Math.max(start.x(), goal.x()) + padding;
+        int minY = Math.min(start.y(), goal.y()) - padding;
+        int maxY = Math.max(start.y(), goal.y()) + padding;
+        for (Point2i point : roomOccupancy.keySet()) {
+            minX = Math.min(minX, point.x() - 2);
+            maxX = Math.max(maxX, point.x() + 2);
+            minY = Math.min(minY, point.y() - 2);
+            maxY = Math.max(maxY, point.y() + 2);
+        }
+
+        PathBounds bounds = new PathBounds(minX, maxX, minY, maxY);
+        int shortestDistance = shortestDistance(start, goal, roomOccupancy, bounds);
+        if (shortestDistance < 0) {
+            return List.of();
+        }
+        int maxAllowedDistance = shortestDistance + toleratedExtraDistance(shortestDistance);
+
+        record QueueNode(PathStep step, int corners) {}
+        PriorityQueue<QueueNode> open = new PriorityQueue<>(Comparator
+                .comparingInt(QueueNode::corners)
+                .thenComparingInt(node -> node.step().distance())
+                .thenComparingInt(node -> manhattan(node.step().point(), goal)));
+        Map<PathStep, Integer> bestCornersByStep = new HashMap<>();
+        Map<PathStep, PathStep> previous = new HashMap<>();
+        PathStep startStep = new PathStep(start, -1, 0);
+        open.add(new QueueNode(startStep, 0));
+        bestCornersByStep.put(startStep, 0);
+
+        PathStep bestGoalStep = null;
+        PathScore bestGoalScore = null;
+        while (!open.isEmpty()) {
+            QueueNode node = open.poll();
+            Integer currentCorners = bestCornersByStep.get(node.step());
+            if (currentCorners == null || currentCorners != node.corners()) {
+                continue;
+            }
+            PathScore currentScore = new PathScore(node.step().distance(), node.corners());
+            if (node.step().point().equals(goal)) {
+                if (bestGoalScore == null || currentScore.compareTo(bestGoalScore) < 0) {
+                    bestGoalStep = node.step();
+                    bestGoalScore = currentScore;
+                }
+                continue;
+            }
+            for (int directionIndex = 0; directionIndex < CARDINAL_NEIGHBORS.size(); directionIndex++) {
+                Point2i direction = CARDINAL_NEIGHBORS.get(directionIndex);
+                Point2i next = node.step().point().add(direction);
+                if (!bounds.contains(next) || roomOccupancy.containsKey(next)) {
+                    continue;
+                }
+                int nextDistance = node.step().distance() + 1;
+                if (nextDistance > maxAllowedDistance || nextDistance + manhattan(next, goal) > maxAllowedDistance) {
+                    continue;
+                }
+                int nextCorners = node.step().directionIndex() < 0 || node.step().directionIndex() == directionIndex
+                        ? node.corners()
+                        : node.corners() + 1;
+                PathStep nextStep = new PathStep(next, directionIndex, nextDistance);
+                Integer bestKnownCorners = bestCornersByStep.get(nextStep);
+                if (bestKnownCorners != null && bestKnownCorners <= nextCorners) {
+                    continue;
+                }
+                bestCornersByStep.put(nextStep, nextCorners);
+                previous.put(nextStep, node.step());
+                open.add(new QueueNode(nextStep, nextCorners));
+            }
+        }
+        return bestGoalStep == null ? List.of() : reconstructPath(bestGoalStep, previous);
+    }
+
+    private static int shortestDistance(
+            Point2i start,
+            Point2i goal,
+            Map<Point2i, Long> roomOccupancy,
+            PathBounds bounds
+    ) {
+        record Node(Point2i point, int cost, int priority) {}
+        PriorityQueue<Node> open = new PriorityQueue<>(Comparator.comparingInt(Node::priority));
+        Map<Point2i, Integer> costByPoint = new HashMap<>();
+        open.add(new Node(start, 0, manhattan(start, goal)));
+        costByPoint.put(start, 0);
+
+        while (!open.isEmpty()) {
+            Node node = open.poll();
+            if (node.point().equals(goal)) {
+                return node.cost();
+            }
+            for (Point2i direction : CARDINAL_NEIGHBORS) {
+                Point2i next = node.point().add(direction);
+                if (!bounds.contains(next) || roomOccupancy.containsKey(next)) {
+                    continue;
+                }
+                int nextCost = node.cost() + 1;
+                Integer existing = costByPoint.get(next);
+                if (existing != null && existing <= nextCost) {
+                    continue;
+                }
+                costByPoint.put(next, nextCost);
+                open.add(new Node(next, nextCost, nextCost + manhattan(next, goal)));
+            }
+        }
+
+        return -1;
+    }
+
+    private static int manhattan(Point2i a, Point2i b) {
+        return Math.abs(a.x() - b.x()) + Math.abs(a.y() - b.y());
+    }
+
+    private static int toleratedExtraDistance(int shortestDistance) {
+        if (shortestDistance <= 0) {
+            return 0;
+        }
+        return Math.max(1, (int) Math.ceil(shortestDistance * 0.10d));
+    }
+
+    private static int cornerCount(List<Point2i> path) {
+        if (path == null || path.size() < 3) {
+            return 0;
+        }
+        int corners = 0;
+        Point2i previousDirection = path.get(1).subtract(path.get(0));
+        for (int i = 2; i < path.size(); i++) {
+            Point2i direction = path.get(i).subtract(path.get(i - 1));
+            if (!direction.equals(previousDirection)) {
+                corners++;
+            }
+            previousDirection = direction;
+        }
+        return corners;
+    }
+
+    private static List<Point2i> reconstructPath(PathStep goalStep, Map<PathStep, PathStep> previous) {
+        ArrayDeque<Point2i> path = new ArrayDeque<>();
+        PathStep cursor = goalStep;
+        path.addFirst(cursor.point());
+        while (previous.containsKey(cursor)) {
+            cursor = previous.get(cursor);
+            path.addFirst(cursor.point());
+        }
+        return List.copyOf(path);
+    }
+
+    private static Map<Long, DungeonRoom> roomsById(List<DungeonRoom> rooms) {
+        Map<Long, DungeonRoom> result = new HashMap<>();
+        for (DungeonRoom room : rooms) {
+            if (room.roomId() != null) {
+                result.put(room.roomId(), room);
+            }
+        }
+        return result;
+    }
+
+    private record ExitCandidate(
+            Point2i roomCell,
+            Point2i outsideCell,
+            Point2i direction,
+            DoorSegment door
+    ) {
+    }
+
+    private record ConnectionCandidate(
+            long roomId,
+            List<Point2i> path,
+            List<DoorSegment> doors,
+            boolean joinedExistingCorridor
+    ) {
+    }
+
+    private record PathPreference(
+            int length,
+            int corners
+    ) implements Comparable<PathPreference> {
+        @Override
+        public int compareTo(PathPreference other) {
+            int shorter = Math.min(length, other.length);
+            int toleratedDifference = toleratedExtraDistance(shorter);
+            if (Math.abs(length - other.length) <= toleratedDifference && corners != other.corners) {
+                return Integer.compare(corners, other.corners);
+            }
+            int lengthComparison = Integer.compare(length, other.length);
+            if (lengthComparison != 0) {
+                return lengthComparison;
+            }
+            return Integer.compare(corners, other.corners);
+        }
+    }
+
+    private record PathScore(
+            int distance,
+            int corners
+    ) implements Comparable<PathScore> {
+        @Override
+        public int compareTo(PathScore other) {
+            int cornerComparison = Integer.compare(corners, other.corners);
+            if (cornerComparison != 0) {
+                return cornerComparison;
+            }
+            return Integer.compare(distance, other.distance);
+        }
+    }
+
+    private record PathBounds(
+            int minX,
+            int maxX,
+            int minY,
+            int maxY
+    ) {
+        private boolean contains(Point2i point) {
+            return point.x() >= minX && point.x() <= maxX && point.y() >= minY && point.y() <= maxY;
+        }
+    }
+
+    private record PathStep(
+            Point2i point,
+            int directionIndex,
+            int distance
+    ) {
+    }
+
+    private record DoorKey(Point2i start, Point2i end) {
+    }
+}

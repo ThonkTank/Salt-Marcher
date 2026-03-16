@@ -32,6 +32,7 @@ Cross-feature read DTOs belong in `src/features/<feature>/api/`, not in `model/`
 ## Testing Guidelines
 Do not add or change automated tests unless explicitly requested. The minimum quality gate is `./gradlew build`. If you change importer or parser flows, run the relevant crawler/import task. If you change schema or storage assumptions, rebuild `game.db` from crawled data and protect user-created data with backups or migration logic.
 After each completed implementation pass, rerun `./gradlew build` and then `./gradlew installDesktopApp` before handoff so manual desktop-app verification always uses the freshly reinstalled desktop application. Skip the reinstall only when the user explicitly waives it or when the task is purely non-code planning/review work.
+During the current early dungeon-editor iteration, treat local dungeon data as disposable. Prefer replacing the local dungeon schema/data shape directly and clearing local dungeon rows over adding compatibility migrations, fallback reads, or legacy schema handling. Only introduce backward-compatibility work for dungeon storage once the feature is explicitly declared stable.
 
 ## Commit & Pull Request Guidelines
 Follow Conventional Commits such as `feat: add encounter recovery filter` or `refactor(ui): simplify shell navigation`. Keep each commit focused on one concern. PRs should include a short summary, impacted modules, manual verification steps, and screenshots or GIFs for UI work. Call out schema, crawler, or backup-format impacts explicitly.

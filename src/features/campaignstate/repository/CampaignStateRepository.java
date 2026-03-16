@@ -1,6 +1,8 @@
 package features.campaignstate.repository;
 
+import features.campaignstate.api.CampaignDungeonLocationType;
 import features.campaignstate.api.DungeonPositionSummary;
+import features.campaignstate.api.DungeonPositionRef;
 import features.campaignstate.model.CampaignState;
 
 import java.sql.Connection;
@@ -31,8 +33,8 @@ public final class CampaignStateRepository {
         }
         try (PreparedStatement ps = conn.prepareStatement(
                 "INSERT INTO campaign_state(campaign_id, map_id, party_tile_id, calendar_id,"
-                        + " current_epoch_day, current_phase_id, current_weather, notes, dungeon_map_id, dungeon_room_id)"
-                        + " VALUES(?,?,?,?,?,?,?,?,?,?)"
+                        + " current_epoch_day, current_phase_id, current_weather, notes, dungeon_map_id, dungeon_location_type, dungeon_room_id, dungeon_corridor_id, dungeon_location_key)"
+                        + " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)"
                         + " ON CONFLICT(campaign_id) DO UPDATE SET"
                         + "   map_id=excluded.map_id,"
                         + "   party_tile_id=excluded.party_tile_id,"
@@ -42,7 +44,10 @@ public final class CampaignStateRepository {
                         + "   current_weather=excluded.current_weather,"
                         + "   notes=excluded.notes,"
                         + "   dungeon_map_id=excluded.dungeon_map_id,"
-                        + "   dungeon_room_id=excluded.dungeon_room_id")) {
+                        + "   dungeon_location_type=excluded.dungeon_location_type,"
+                        + "   dungeon_room_id=excluded.dungeon_room_id,"
+                        + "   dungeon_corridor_id=excluded.dungeon_corridor_id,"
+                        + "   dungeon_location_key=excluded.dungeon_location_key")) {
             ps.setLong(1, state.CampaignId);
             setNullableLong(ps, 2, state.MapId);
             setNullableLong(ps, 3, state.PartyTileId);
@@ -52,7 +57,10 @@ public final class CampaignStateRepository {
             ps.setString(7, state.CurrentWeather);
             ps.setString(8, state.Notes);
             setNullableLong(ps, 9, state.DungeonMapId);
-            setNullableLong(ps, 10, state.DungeonRoomId);
+            ps.setString(10, state.DungeonLocationType);
+            setNullableLong(ps, 11, state.DungeonRoomId);
+            setNullableLong(ps, 12, state.DungeonCorridorId);
+            ps.setString(13, state.DungeonLocationKey);
             ps.executeUpdate();
         }
     }
@@ -85,31 +93,38 @@ public final class CampaignStateRepository {
 
     public static Optional<DungeonPositionSummary> getDungeonPosition(Connection conn) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT dungeon_map_id, dungeon_room_id FROM campaign_state WHERE campaign_id=1");
+                "SELECT dungeon_map_id, dungeon_location_type, dungeon_room_id, dungeon_corridor_id, dungeon_location_key FROM campaign_state WHERE campaign_id=1");
              ResultSet rs = ps.executeQuery()) {
             if (!rs.next()) {
                 return Optional.empty();
             }
             Long mapId = getNullableLong(rs, "dungeon_map_id");
+            String locationTypeValue = rs.getString("dungeon_location_type");
             Long roomId = getNullableLong(rs, "dungeon_room_id");
-            if (mapId == null && roomId == null) {
+            Long corridorId = getNullableLong(rs, "dungeon_corridor_id");
+            String locationKey = rs.getString("dungeon_location_key");
+            CampaignDungeonLocationType locationType = parseLocationType(locationTypeValue, roomId, corridorId, locationKey);
+            if (mapId == null && locationType == null && roomId == null && corridorId == null && locationKey == null) {
                 return Optional.empty();
             }
-            return Optional.of(new DungeonPositionSummary(mapId, roomId));
+            return Optional.of(new DungeonPositionSummary(mapId, locationType, roomId, corridorId, locationKey));
         }
     }
 
-    public static void setDungeonPosition(Connection conn, Long mapId, Long roomId) throws SQLException {
+    public static void setDungeonPosition(Connection conn, DungeonPositionRef position) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE campaign_state SET dungeon_map_id=?, dungeon_room_id=? WHERE campaign_id=1")) {
-            setNullableLong(ps, 1, mapId);
-            setNullableLong(ps, 2, roomId);
+                "UPDATE campaign_state SET dungeon_map_id=?, dungeon_location_type=?, dungeon_room_id=?, dungeon_corridor_id=?, dungeon_location_key=? WHERE campaign_id=1")) {
+            setNullableLong(ps, 1, position == null ? null : position.mapId());
+            ps.setString(2, position == null || position.locationType() == null ? null : position.locationType().name());
+            setNullableLong(ps, 3, position != null && position.locationType() == CampaignDungeonLocationType.ROOM ? position.roomId() : null);
+            setNullableLong(ps, 4, position != null && position.locationType() == CampaignDungeonLocationType.CORRIDOR ? position.corridorId() : null);
+            ps.setString(5, position == null ? null : position.locationKey());
             ps.executeUpdate();
         }
     }
 
     public static void clearDungeonPosition(Connection conn) throws SQLException {
-        setDungeonPosition(conn, null, null);
+        setDungeonPosition(conn, null);
     }
 
     /** @throws IllegalArgumentException if days is not positive */
@@ -157,11 +172,17 @@ public final class CampaignStateRepository {
             if (startedTransaction) {
                 conn.commit();
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             if (startedTransaction) {
                 conn.rollback();
             }
-            throw e;
+            if (e instanceof SQLException sqlException) {
+                throw sqlException;
+            }
+            if (e instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            }
+            throw new SQLException("advancePhase() fehlgeschlagen", e);
         } finally {
             if (conn.getAutoCommit() != wasAutoCommit) {
                 conn.setAutoCommit(wasAutoCommit);
@@ -185,9 +206,39 @@ public final class CampaignStateRepository {
         s.Notes = rs.getString("notes");
         long dungeonMapId = rs.getLong("dungeon_map_id");
         s.DungeonMapId = rs.wasNull() ? null : dungeonMapId;
+        s.DungeonLocationType = rs.getString("dungeon_location_type");
         long dungeonRoomId = rs.getLong("dungeon_room_id");
         s.DungeonRoomId = rs.wasNull() ? null : dungeonRoomId;
+        long dungeonCorridorId = rs.getLong("dungeon_corridor_id");
+        s.DungeonCorridorId = rs.wasNull() ? null : dungeonCorridorId;
+        s.DungeonLocationKey = rs.getString("dungeon_location_key");
         return s;
+    }
+
+    private static CampaignDungeonLocationType parseLocationType(String value, Long roomId, Long corridorId, String locationKey) {
+        if (value != null && !value.isBlank()) {
+            try {
+                return CampaignDungeonLocationType.valueOf(value);
+            } catch (IllegalArgumentException ignored) {
+                if (roomId != null) {
+                    return CampaignDungeonLocationType.ROOM;
+                }
+                if (corridorId != null) {
+                    return CampaignDungeonLocationType.CORRIDOR;
+                }
+                return locationKey != null && !locationKey.isBlank() ? CampaignDungeonLocationType.CORRIDOR_COMPONENT : null;
+            }
+        }
+        if (locationKey != null && !locationKey.isBlank()) {
+            return CampaignDungeonLocationType.CORRIDOR_COMPONENT;
+        }
+        if (corridorId != null) {
+            return CampaignDungeonLocationType.CORRIDOR;
+        }
+        if (roomId != null) {
+            return CampaignDungeonLocationType.ROOM;
+        }
+        return null;
     }
 
     private static void setNullableLong(PreparedStatement ps, int idx, Long value) throws SQLException {

@@ -2,6 +2,7 @@ package ui.async;
 
 import javafx.concurrent.Task;
 
+import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 
 /**
@@ -21,6 +22,27 @@ public final class UiAsyncTasks {
         submit(task, onSuccess, onError, null);
     }
 
+    public static <T> void submit(Callable<T> work, Consumer<T> onSuccess, Consumer<Throwable> onError) {
+        Task<T> task = new Task<>() {
+            @Override
+            protected T call() throws Exception {
+                return work.call();
+            }
+        };
+        submit(task, onSuccess, onError);
+    }
+
+    public static void submitVoid(ThrowingRunnable work, Runnable onSuccess, Consumer<Throwable> onError) {
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                work.run();
+                return null;
+            }
+        };
+        submit(task, ignored -> onSuccess.run(), onError);
+    }
+
     public static <T> void submit(
             Task<T> task,
             Consumer<T> onSuccess,
@@ -33,5 +55,10 @@ public final class UiAsyncTasks {
             task.setOnCancelled(event -> onCancelled.run());
         }
         UiAsyncExecutor.submit(task);
+    }
+
+    @FunctionalInterface
+    public interface ThrowingRunnable {
+        void run() throws Exception;
     }
 }

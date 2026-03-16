@@ -7,6 +7,7 @@ import features.items.api.ItemCatalogService;
 import features.items.api.ItemViewerPane;
 import features.loottable.api.LootTableSummary;
 import features.spells.api.SpellSummary;
+import features.world.dungeonmap.api.DungeonRoomClusterSummary;
 import features.world.dungeonmap.api.DungeonRoomSummary;
 import features.spells.api.SpellCatalogService;
 import features.world.hexmap.api.HexTileSummary;
@@ -175,6 +176,12 @@ public class InspectorPane extends VBox implements DetailsNavigator {
     }
 
     @Override
+    public void showDungeonRoomCluster(DungeonRoomClusterSummary summary) {
+        if (summary == null || summary.clusterId() == null) return;
+        openEntry(new DungeonRoomClusterEntry(summary));
+    }
+
+    @Override
     public void showInfo(String title, Object entryKey, String message) {
         if (title == null || title.isBlank() || message == null || message.isBlank()) return;
         openEntry(new InfoEntry(title, entryKey, message));
@@ -307,6 +314,10 @@ public class InspectorPane extends VBox implements DetailsNavigator {
 
     private void renderDungeonRoom(DungeonRoomSummary summary) {
         showContentNode(summary.name(), buildDungeonRoomNode(summary), false);
+    }
+
+    private void renderDungeonRoomCluster(DungeonRoomClusterSummary summary) {
+        showContentNode("Raum-Cluster", buildDungeonRoomClusterNode(summary), false);
     }
 
     private void renderSpell(long spellId, long requestVersion) {
@@ -495,6 +506,25 @@ public class InspectorPane extends VBox implements DetailsNavigator {
         return box;
     }
 
+    private static Node buildDungeonRoomClusterNode(DungeonRoomClusterSummary summary) {
+        VBox box = new VBox(6);
+        box.setPadding(new Insets(12));
+
+        Label kind = new Label("Dungeon-Cluster");
+        kind.getStyleClass().addAll("section-header", "text-muted");
+        box.getChildren().addAll(
+                kind,
+                secondary("Dungeon-ID: " + valueOrDash(summary.mapId() == null ? null : String.valueOf(summary.mapId()))),
+                secondary("Cluster-ID: " + summary.clusterId()),
+                secondary("Zentrum: " + summary.centerX() + "/" + summary.centerY()),
+                secondary("Räume: " + String.join(", ", summary.roomNames())),
+                secondary("Korridore: " + (summary.corridorIds().isEmpty()
+                        ? "-"
+                        : summary.corridorIds().stream().map(String::valueOf).collect(java.util.stream.Collectors.joining(", ")))),
+                secondary(summary.active() ? "Aktiver Cluster" : "Nicht aktiv"));
+        return box;
+    }
+
     private static Node buildSpellNode(SpellCatalogService.SpellDetails spell) {
         VBox box = new VBox(10);
         box.setPadding(new Insets(12));
@@ -569,7 +599,7 @@ public class InspectorPane extends VBox implements DetailsNavigator {
         return school == null || school.isBlank() ? levelText : levelText + " • " + school;
     }
 
-    private sealed interface HistoryEntry permits StatBlockEntry, ItemEntry, SpellEntry, EncounterTableEntry, LootTableEntry, HexTileEntry, DungeonRoomEntry, InfoEntry, HostedContentEntry {
+    private sealed interface HistoryEntry permits StatBlockEntry, ItemEntry, SpellEntry, EncounterTableEntry, LootTableEntry, HexTileEntry, DungeonRoomEntry, DungeonRoomClusterEntry, InfoEntry, HostedContentEntry {
         Object entryKey();
         boolean sameEntry(HistoryEntry other);
         void render(InspectorPane pane, long requestVersion);
@@ -695,6 +725,24 @@ public class InspectorPane extends VBox implements DetailsNavigator {
         @Override
         public void render(InspectorPane pane, long requestVersion) {
             pane.renderDungeonRoom(summary);
+        }
+    }
+
+    private record DungeonRoomClusterEntry(DungeonRoomClusterSummary summary) implements HistoryEntry {
+        @Override
+        public Object entryKey() {
+            return new DetailsNavigator.EntryKey("dungeon-room-cluster", summary.clusterId());
+        }
+
+        @Override
+        public boolean sameEntry(HistoryEntry other) {
+            return other instanceof DungeonRoomClusterEntry entry
+                    && Objects.equals(summary.clusterId(), entry.summary.clusterId());
+        }
+
+        @Override
+        public void render(InspectorPane pane, long requestVersion) {
+            pane.renderDungeonRoomCluster(summary);
         }
     }
 

@@ -22,6 +22,7 @@ Crawler tasks:
 ```
 
 No test framework. No linter. The app database is SQLite at `${XDG_DATA_HOME:-~/.local/share}/salt-marcher/game.db` (auto-created on first run). Schema changes require deleting that DB and re-running `./scripts/crawl.sh` — there are no ALTER TABLE migrations.
+For ad-hoc DB inspection, do not assume a system `sqlite3` install. Prefer the vendored CLI at `./tools/sqlite3` or `./gradlew sqliteQuery --args='data/game.db .tables'`.
 
 **After every code change, recompile immediately** to catch errors early:
 ```bash

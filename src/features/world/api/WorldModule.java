@@ -25,7 +25,6 @@ public final class WorldModule {
     public void registerScenes(SceneRegistry sceneRegistry) {
         Objects.requireNonNull(sceneRegistry, "sceneRegistry");
         hexMapModule.registerScenes(sceneRegistry);
-        dungeonMapModule.registerScenes(sceneRegistry);
     }
 
     public AppView overworldView() {
