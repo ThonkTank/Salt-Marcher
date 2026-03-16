@@ -16,6 +16,7 @@ import features.world.dungeonmap.ui.workspace.render.CorridorEditInteractionCont
 import features.world.dungeonmap.ui.workspace.render.DungeonGraphPane;
 import features.world.dungeonmap.ui.workspace.render.DungeonGridPane;
 import features.world.dungeonmap.ui.workspace.render.DungeonLayoutRenderData;
+import features.world.dungeonmap.ui.workspace.render.WallPathInteractionController;
 import javafx.geometry.Point2D;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
@@ -38,6 +39,9 @@ public final class DungeonSplitWorkspace extends BorderPane {
     private DungeonSelection selectedTarget;
     private DungeonRuntimeLocation activeLocation;
     private DungeonEditorTool editorTool = DungeonEditorTool.SELECT;
+    private CorridorEditInteractionController.DoorHandle selectedCorridorDoorHandle;
+    private Consumer<CorridorEditInteractionController.DoorHandle> onCorridorDoorSelectionChanged = handle -> { };
+    private boolean syncingCorridorDoorSelection;
 
     public DungeonSplitWorkspace(boolean editable) {
         setCenter(workspacePane);
@@ -49,6 +53,8 @@ public final class DungeonSplitWorkspace extends BorderPane {
         graphPane.setOnViewportPanned(this::updatePan);
         gridPane.setOnViewportZoomed(this::zoomAt);
         graphPane.setOnViewportZoomed(this::zoomAt);
+        gridPane.setOnCorridorDoorSelectionChanged(handle -> syncCorridorDoorSelection(handle, gridPane));
+        graphPane.setOnCorridorDoorSelectionChanged(handle -> syncCorridorDoorSelection(handle, graphPane));
         workspacePane.widthProperty().addListener((obs, oldValue, newValue) -> refreshViewport(false));
         workspacePane.heightProperty().addListener((obs, oldValue, newValue) -> refreshViewport(false));
         applyViewMode();
@@ -63,6 +69,7 @@ public final class DungeonSplitWorkspace extends BorderPane {
         this.activeLocation = activeLocation;
         gridPane.showLayout(layout, renderData, selectedTarget, activeLocation, false);
         graphPane.showLayout(layout, renderData, selectedTarget, activeLocation, false);
+        setSelectedCorridorDoorHandle(selectedCorridorDoorHandle);
         refreshViewport(resetView);
     }
 
@@ -71,6 +78,7 @@ public final class DungeonSplitWorkspace extends BorderPane {
         this.activeLocation = activeLocation;
         gridPane.updateSelection(selectedTarget, activeLocation, viewMode == DungeonViewMode.GRID);
         graphPane.updateSelection(selectedTarget, activeLocation, viewMode == DungeonViewMode.GRAPH);
+        setSelectedCorridorDoorHandle(selectedCorridorDoorHandle);
     }
 
     public void setViewMode(DungeonViewMode viewMode) {
@@ -120,12 +128,12 @@ public final class DungeonSplitWorkspace extends BorderPane {
         gridPane.setOnRoomCellsDeleted(onRoomCellsDeleted);
     }
 
-    public void setOnClusterWallPainted(Consumer<Set<DungeonClusterEdgeRef>> onClusterWallPainted) {
-        gridPane.setOnClusterWallPainted(onClusterWallPainted);
-    }
-
     public void setOnClusterDoorPainted(Consumer<Set<DungeonClusterEdgeRef>> onClusterDoorPainted) {
         gridPane.setOnClusterDoorPainted(onClusterDoorPainted);
+    }
+
+    public WallPathInteractionController wallPathController() {
+        return gridPane.wallPathController();
     }
 
     public void setOnGraphRoomRequested(Consumer<Point2i> onGraphRoomRequested) {
@@ -153,6 +161,18 @@ public final class DungeonSplitWorkspace extends BorderPane {
     public void setOnCorridorDoorSelected(Consumer<CorridorEditInteractionController.DoorHandle> onCorridorDoorSelected) {
         gridPane.setOnCorridorDoorSelected(onCorridorDoorSelected);
         graphPane.setOnCorridorDoorSelected(onCorridorDoorSelected);
+    }
+
+    public void setOnCorridorDoorSelectionChanged(Consumer<CorridorEditInteractionController.DoorHandle> onCorridorDoorSelectionChanged) {
+        this.onCorridorDoorSelectionChanged = onCorridorDoorSelectionChanged == null ? handle -> { } : onCorridorDoorSelectionChanged;
+    }
+
+    public CorridorEditInteractionController.DoorHandle selectedCorridorDoorHandle() {
+        return selectedCorridorDoorHandle;
+    }
+
+    public void setSelectedCorridorDoorHandle(CorridorEditInteractionController.DoorHandle handle) {
+        syncCorridorDoorSelection(handle, null);
     }
 
     public void setOnCorridorDoorMoved(
@@ -183,6 +203,7 @@ public final class DungeonSplitWorkspace extends BorderPane {
         this.editorTool = editorTool == null ? DungeonEditorTool.SELECT : editorTool;
         gridPane.setEditorTool(this.editorTool);
         graphPane.setEditorTool(this.editorTool);
+        setSelectedCorridorDoorHandle(selectedCorridorDoorHandle);
     }
 
     private void applyViewMode() {
@@ -227,6 +248,35 @@ public final class DungeonSplitWorkspace extends BorderPane {
             gridPane.refreshViewport();
         } else {
             graphPane.refreshViewport();
+        }
+    }
+
+    private void syncCorridorDoorSelection(
+            CorridorEditInteractionController.DoorHandle handle,
+            Object source
+    ) {
+        if (syncingCorridorDoorSelection) {
+            return;
+        }
+        syncingCorridorDoorSelection = true;
+        try {
+            if (source != gridPane) {
+                gridPane.setSelectedCorridorDoorHandle(handle);
+            }
+            if (source != graphPane) {
+                graphPane.setSelectedCorridorDoorHandle(handle);
+            }
+            CorridorEditInteractionController.DoorHandle normalized = source == gridPane
+                    ? gridPane.selectedCorridorDoorHandle()
+                    : source == graphPane ? graphPane.selectedCorridorDoorHandle() : gridPane.selectedCorridorDoorHandle();
+            if (!Objects.equals(selectedCorridorDoorHandle, normalized)) {
+                selectedCorridorDoorHandle = normalized;
+                onCorridorDoorSelectionChanged.accept(selectedCorridorDoorHandle);
+                return;
+            }
+            selectedCorridorDoorHandle = normalized;
+        } finally {
+            syncingCorridorDoorSelection = false;
         }
     }
 

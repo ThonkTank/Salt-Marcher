@@ -201,13 +201,21 @@ public final class DungeonCorridorTopologySupport {
         if (cell == null || direction == null || !layout.roomCells(roomId).contains(cell)) {
             throw new IllegalArgumentException("Tür-Override muss auf einer gültigen Raumkante liegen");
         }
-        if (layout.roomCells(roomId).contains(cell.add(direction.delta()))) {
+        Point2i outsideCell = cell.add(direction.delta());
+        if (layout.roomCells(roomId).contains(outsideCell)) {
             throw new IllegalArgumentException("Tür-Override muss auf einer exponierten Raumkante liegen");
+        }
+        if (isOccupiedByOtherRoom(layout, roomId, outsideCell)) {
+            throw new IllegalArgumentException("Tür-Override muss auf einer freien exponierten Raumkante liegen");
+        }
+        DungeonRoomCluster cluster = layout.clusterById(room.clusterId());
+        if (cluster == null) {
+            throw new IllegalArgumentException("Referenz-Cluster für Raum fehlt: " + room.clusterId());
         }
         CorridorDoorOverride override = new CorridorDoorOverride(
                 roomId,
                 room.clusterId(),
-                cell.subtract(layout.clusterById(room.clusterId()).center()),
+                cell.subtract(cluster.center()),
                 direction);
         List<CorridorDoorOverride> overrides = new ArrayList<>(corridor.doorOverrides().stream()
                 .filter(existing -> existing.roomId() != roomId)
@@ -215,6 +223,21 @@ public final class DungeonCorridorTopologySupport {
         overrides.add(override);
         DungeonRepository.replaceCorridorDoorOverrides(conn, mapId, corridorId, overrides);
         return loadEditResult(conn, mapId, corridorId);
+    }
+
+    private static boolean isOccupiedByOtherRoom(DungeonLayout layout, long roomId, Point2i cell) {
+        if (layout == null || cell == null) {
+            return false;
+        }
+        for (DungeonRoom candidate : layout.rooms()) {
+            if (candidate == null || candidate.roomId() == null || candidate.roomId() == roomId) {
+                continue;
+            }
+            if (layout.roomCells(candidate.roomId()).contains(cell)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static DungeonLayoutEditResult resetCorridorDoor(Connection conn, long mapId, long corridorId, long roomId) throws Exception {

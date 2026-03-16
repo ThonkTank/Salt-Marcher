@@ -22,6 +22,10 @@ public final class DungeonGridPane extends AbstractDungeonPane {
         super(camera);
     }
 
+    public WallPathInteractionController wallPathController() {
+        return super.wallPathInteractionController();
+    }
+
     @Override
     protected void renderContent(GraphicsContext gc) {
         drawGrid(gc);
@@ -39,6 +43,7 @@ public final class DungeonGridPane extends AbstractDungeonPane {
             gc.fillOval(centerX - 4, centerY - 4, 8, 8);
         }
         drawClusterEdges(gc);
+        drawWallPathPreview(gc);
         drawDoors(gc);
         drawCorridorEditHandles(gc);
 
@@ -62,6 +67,12 @@ public final class DungeonGridPane extends AbstractDungeonPane {
     @Override
     protected DungeonRoomCluster findClusterAt(double screenX, double screenY) {
         Point2i cell = worldPointAt(screenX, screenY);
+        if (previewClusterCenters.isEmpty()) {
+            DungeonRoomCluster cluster = renderData == null ? null : renderData.clusterAtCell(cell);
+            if (cluster != null) {
+                return cluster;
+            }
+        }
         for (DungeonRoomCluster cluster : layout.clusters()) {
             if (clusterCellsFor(cluster).contains(cell)) {
                 return cluster;
@@ -73,6 +84,12 @@ public final class DungeonGridPane extends AbstractDungeonPane {
     @Override
     protected DungeonRoom findRoomAt(double screenX, double screenY) {
         Point2i cell = worldPointAt(screenX, screenY);
+        if (previewClusterCenters.isEmpty()) {
+            DungeonRoom room = renderData == null ? null : renderData.roomAtCell(cell);
+            if (room != null) {
+                return room;
+            }
+        }
         for (DungeonRoom room : layout.rooms()) {
             if (roomCellsFor(room).contains(cell)) {
                 return room;
@@ -87,6 +104,12 @@ public final class DungeonGridPane extends AbstractDungeonPane {
             return null;
         }
         Point2i cell = worldPointAt(screenX, screenY);
+        if (previewClusterCenters.isEmpty()) {
+            List<Long> corridorIds = renderData.corridorIdsAtCell(cell);
+            if (!corridorIds.isEmpty()) {
+                return layout.corridorById(corridorIds.get(0));
+            }
+        }
         DungeonCorridor bestCorridor = null;
         double bestDistance = Double.POSITIVE_INFINITY;
         for (DungeonCorridor corridor : layout.corridors()) {
@@ -137,12 +160,7 @@ public final class DungeonGridPane extends AbstractDungeonPane {
                 double combinedDistance = doorDistance * 10 + roomDistance;
                 if (combinedDistance < bestDistance) {
                     bestDistance = combinedDistance;
-                    java.util.List<Long> corridorIds = layout.corridors().stream()
-                            .filter(candidate -> usesDoorFromRoom(candidate, door))
-                            .map(DungeonCorridor::corridorId)
-                            .filter(java.util.Objects::nonNull)
-                            .sorted()
-                            .toList();
+                    List<Long> corridorIds = renderData.corridorIdsForDoorFromRoom(door);
                     bestHit = new DoorAggregateHit(corridorIds, door.roomId());
                 }
             }
@@ -162,7 +180,7 @@ public final class DungeonGridPane extends AbstractDungeonPane {
             double distance = distanceToDoor(screenX, screenY, door);
             if (distance <= 12 && distance < bestDistance) {
                 bestDistance = distance;
-                best = new CorridorEditInteractionController.DoorHandle(context.corridor().corridorId(), door.roomId());
+                best = corridorDoorHandleForRoom(door.roomId());
             }
         }
         return best;
@@ -174,22 +192,7 @@ public final class DungeonGridPane extends AbstractDungeonPane {
             double screenY,
             CorridorEditInteractionController.DoorHandle handle
     ) {
-        if (handle == null || layout == null) {
-            return null;
-        }
-        DungeonRoom room = layout.roomById(handle.roomId());
-        if (room == null) {
-            return null;
-        }
-        Point2i cell = worldPointAt(screenX, screenY);
-        if (!roomCellsFor(room).contains(cell)) {
-            return null;
-        }
-        features.world.dungeonmap.model.DungeonRoomCluster.EdgeDirection direction = nearestEdgeDirection(screenX, screenY, cell);
-        if (direction == null || roomCellsFor(room).contains(cell.add(direction.delta()))) {
-            return null;
-        }
-        return new CorridorEditInteractionController.DoorMoveTarget(cell, direction);
+        return nearestCorridorDoorMoveTarget(screenX, screenY, handle, 14);
     }
 
     @Override
@@ -367,10 +370,12 @@ public final class DungeonGridPane extends AbstractDungeonPane {
         for (DoorSegment door : context.geometry().doors()) {
             double centerX = (camera.toScreenX(door.start().x()) + camera.toScreenX(door.end().x())) / 2.0;
             double centerY = (camera.toScreenY(door.start().y()) + camera.toScreenY(door.end().y())) / 2.0;
-            gc.setFill(DungeonCanvasTheme.DOOR_SELECTED);
-            gc.fillOval(centerX - 5, centerY - 5, 10, 10);
+            CorridorEditInteractionController.DoorHandle handle = corridorDoorHandleForRoom(door.roomId());
+            double radius = isSelected(handle) ? 6 : 5;
+            gc.setFill(isSelected(handle) ? DungeonCanvasTheme.ROOM_SELECTED_STROKE : DungeonCanvasTheme.DOOR_SELECTED);
+            gc.fillOval(centerX - radius, centerY - radius, radius * 2, radius * 2);
             gc.setStroke(DungeonCanvasTheme.ROOM_STROKE);
-            gc.strokeOval(centerX - 5, centerY - 5, 10, 10);
+            gc.strokeOval(centerX - radius, centerY - radius, radius * 2, radius * 2);
         }
         for (Point2i waypoint : context.geometry().waypointCells()) {
             double centerX = camera.toScreenX(waypoint.x() + 0.5);
@@ -401,6 +406,58 @@ public final class DungeonGridPane extends AbstractDungeonPane {
                         camera.toScreenY(end.y()));
             }
         }
+    }
+
+    private void drawWallPathPreview(GraphicsContext gc) {
+        if (editorTool != DungeonEditorTool.CLUSTER_WALL) {
+            return;
+        }
+        if (wallPathInteractionController().activeAnchor() != null) {
+            drawWallAnchor(gc, wallPathInteractionController().activeAnchor(), DungeonCanvasTheme.ROOM_PREVIEW_STROKE);
+        }
+        if (wallPathInteractionController().previewPath().isEmpty()) {
+            return;
+        }
+        gc.setStroke(DungeonCanvasTheme.ROOM_PREVIEW_STROKE);
+        gc.setLineWidth(4);
+        for (DungeonClusterEdgeRef edgeRef : wallPathInteractionController().previewPath()) {
+            EdgeVertices vertices = edgeVertices(edgeRef);
+            if (vertices == null) {
+                continue;
+            }
+            gc.strokeLine(
+                    camera.toScreenX(vertices.start().x()),
+                    camera.toScreenY(vertices.start().y()),
+                    camera.toScreenX(vertices.end().x()),
+                    camera.toScreenY(vertices.end().y()));
+        }
+    }
+
+    private void drawWallAnchor(GraphicsContext gc, DungeonClusterEdgeRef edgeRef, javafx.scene.paint.Color color) {
+        EdgeVertices vertices = edgeVertices(edgeRef);
+        if (vertices == null) {
+            return;
+        }
+        double centerX = (camera.toScreenX(vertices.start().x()) + camera.toScreenX(vertices.end().x())) / 2.0;
+        double centerY = (camera.toScreenY(vertices.start().y()) + camera.toScreenY(vertices.end().y())) / 2.0;
+        gc.setFill(color);
+        gc.fillOval(centerX - 4.5, centerY - 4.5, 9, 9);
+        gc.setStroke(DungeonCanvasTheme.ROOM_STROKE);
+        gc.setLineWidth(1.5);
+        gc.strokeOval(centerX - 4.5, centerY - 4.5, 9, 9);
+    }
+
+    private EdgeVertices edgeVertices(DungeonClusterEdgeRef edgeRef) {
+        if (edgeRef == null || edgeRef.cell() == null || edgeRef.direction() == null) {
+            return null;
+        }
+        Point2i cell = edgeRef.cell();
+        return switch (edgeRef.direction()) {
+            case NORTH -> new EdgeVertices(new Point2i(cell.x(), cell.y()), new Point2i(cell.x() + 1, cell.y()));
+            case EAST -> new EdgeVertices(new Point2i(cell.x() + 1, cell.y()), new Point2i(cell.x() + 1, cell.y() + 1));
+            case SOUTH -> new EdgeVertices(new Point2i(cell.x() + 1, cell.y() + 1), new Point2i(cell.x(), cell.y() + 1));
+            case WEST -> new EdgeVertices(new Point2i(cell.x(), cell.y() + 1), new Point2i(cell.x(), cell.y()));
+        };
     }
 
     private Point2i edgeStart(DungeonRoomCluster cluster, DungeonRoomCluster.EdgeOverride edge) {
@@ -451,44 +508,6 @@ public final class DungeonGridPane extends AbstractDungeonPane {
             return DungeonCanvasTheme.DOOR_ACTIVE;
         }
         return DungeonCanvasTheme.DOOR;
-    }
-
-    private boolean usesDoorFromRoom(DungeonCorridor corridor, DoorSegment door) {
-        if (corridor == null || corridor.corridorId() == null) {
-            return false;
-        }
-        CorridorGeometry geometry = renderData.corridorGeometry(corridor.corridorId());
-        if (geometry == null || !geometry.routable()) {
-            return false;
-        }
-        return geometry.doors().stream().anyMatch(candidate ->
-                candidate.roomId() == door.roomId()
-                        && sameDoorSegment(candidate, door));
-    }
-
-    private features.world.dungeonmap.model.DungeonRoomCluster.EdgeDirection nearestEdgeDirection(double screenX, double screenY, Point2i cell) {
-        double worldX = camera.toWorldX(screenX);
-        double worldY = camera.toWorldY(screenY);
-        double localX = worldX - cell.x();
-        double localY = worldY - cell.y();
-        double left = localX;
-        double right = 1 - localX;
-        double top = localY;
-        double bottom = 1 - localY;
-        double best = left;
-        features.world.dungeonmap.model.DungeonRoomCluster.EdgeDirection direction = features.world.dungeonmap.model.DungeonRoomCluster.EdgeDirection.WEST;
-        if (right < best) {
-            best = right;
-            direction = features.world.dungeonmap.model.DungeonRoomCluster.EdgeDirection.EAST;
-        }
-        if (top < best) {
-            best = top;
-            direction = features.world.dungeonmap.model.DungeonRoomCluster.EdgeDirection.NORTH;
-        }
-        if (bottom < best) {
-            direction = features.world.dungeonmap.model.DungeonRoomCluster.EdgeDirection.SOUTH;
-        }
-        return direction;
     }
 
     private void drawRoom(GraphicsContext gc, Set<Point2i> cells, boolean active, boolean selected) {
@@ -596,6 +615,9 @@ public final class DungeonGridPane extends AbstractDungeonPane {
             }
             return new SegmentKey(b, a);
         }
+    }
+
+    private record EdgeVertices(Point2i start, Point2i end) {
     }
 
     private record DoorAggregateHit(List<Long> corridorIds, long roomId) {

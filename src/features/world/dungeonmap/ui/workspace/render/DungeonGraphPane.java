@@ -44,6 +44,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
     };
     private DungeonLayout cachedRenderStateLayout;
     private DungeonLayoutRenderData cachedRenderStateData;
+    private Map<Long, Point2i> cachedPreviewCenters = Map.of();
     private CorridorRenderState cachedCorridorRenderState;
 
     public DungeonGraphPane(DungeonCanvasCamera camera) {
@@ -221,10 +222,19 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
             double markerDistance = Math.hypot(screenX - marker.x(), screenY - marker.y());
             if (markerDistance <= 9 && markerDistance < bestDistance) {
                 bestDistance = markerDistance;
-                best = new CorridorEditInteractionController.DoorHandle(context.corridor().corridorId(), door.roomId());
+                best = corridorDoorHandleForRoom(door.roomId());
             }
         }
         return best;
+    }
+
+    @Override
+    protected CorridorEditInteractionController.DoorMoveTarget corridorDoorMoveTargetAt(
+            double screenX,
+            double screenY,
+            CorridorEditInteractionController.DoorHandle handle
+    ) {
+        return nearestCorridorDoorMoveTarget(screenX, screenY, handle, 18);
     }
 
     @Override
@@ -301,12 +311,13 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
     }
 
     private CorridorRenderState corridorRenderState() {
-        if (!previewClusterCenters.isEmpty()) {
-            return buildCorridorRenderState();
-        }
-        if (cachedCorridorRenderState == null || cachedRenderStateLayout != layout || cachedRenderStateData != renderData) {
+        if (cachedCorridorRenderState == null
+                || cachedRenderStateLayout != layout
+                || cachedRenderStateData != renderData
+                || !cachedPreviewCenters.equals(previewClusterCenters)) {
             cachedRenderStateLayout = layout;
             cachedRenderStateData = renderData;
+            cachedPreviewCenters = Map.copyOf(previewClusterCenters);
             cachedCorridorRenderState = buildCorridorRenderState();
         }
         return cachedCorridorRenderState;
@@ -432,11 +443,13 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
         Color markerColor = strokeColor(corridor);
         for (DoorSegment door : geometry.doors()) {
             MarkerPoint marker = markerPoint(door, corridor.corridorId(), corridorIdsByDoorMarker, laneOrderBySegment, displayPath);
-            gc.setFill(markerColor);
-            gc.fillOval(marker.x() - 4.5, marker.y() - 4.5, 9, 9);
+            CorridorEditInteractionController.DoorHandle handle = corridorDoorHandleForRoom(door.roomId());
+            double radius = isSelected(handle) ? 5.5 : 4.5;
+            gc.setFill(isSelected(handle) ? DungeonCanvasTheme.ROOM_SELECTED_STROKE : markerColor);
+            gc.fillOval(marker.x() - radius, marker.y() - radius, radius * 2, radius * 2);
             gc.setStroke(Color.rgb(18, 24, 28, 0.95));
             gc.setLineWidth(1.5);
-            gc.strokeOval(marker.x() - 4.5, marker.y() - 4.5, 9, 9);
+            gc.strokeOval(marker.x() - radius, marker.y() - radius, radius * 2, radius * 2);
         }
     }
 
@@ -836,16 +849,9 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
             return geometry;
         }
         if (deltaState == PreviewDeltaState.MIXED) {
-            return new CorridorGeometry(
-                    geometry.corridorId(),
-                    geometry.roomIds(),
-                    List.of(),
-                    Set.of(),
-                    List.of(),
-                    geometry.waypointCells(),
-                    geometry.directlyAdjacent(),
-                    false,
-                    geometry.componentId());
+            // Mixed drag previews keep the committed corridor visible until the layout catches up.
+            // Dropping the geometry here makes corridors flicker out and breaks handle hit targets mid-drag.
+            return geometry;
         }
         Point2i delta = sharedPreviewDelta(geometry);
         return translateGeometry(geometry, delta);

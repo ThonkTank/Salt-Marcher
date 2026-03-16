@@ -60,9 +60,8 @@ public final class CorridorEditInteractionController {
         DoorHandle doorHandle = host.findCorridorDoorHandleAt(event.getX(), event.getY());
         if (doorHandle != null) {
             onCorridorDoorSelected.accept(doorHandle);
-            if (host.corridorDoorMoveTargetAt(event.getX(), event.getY(), doorHandle) != null) {
-                dragState = new DoorDragState(doorHandle);
-            }
+            // A handle hit starts the drag. The drop target is validated on release.
+            dragState = new DoorDragState(doorHandle);
             return true;
         }
         SegmentInsertHit segmentInsertHit = host.findCorridorSegmentInsertHitAt(event.getX(), event.getY());

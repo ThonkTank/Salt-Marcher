@@ -17,6 +17,8 @@ import features.world.dungeonmap.ui.workspace.DungeonEditorTool;
 import javafx.geometry.Point2D;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
@@ -49,9 +51,11 @@ abstract class AbstractDungeonPane extends StackPane {
     protected Point2i selectionEndCell;
     protected Point2i paintStartCell;
     protected Point2i paintEndCell;
+    protected CorridorEditInteractionController.DoorHandle selectedCorridorDoorHandle;
 
     private final PaneCallbacks callbacks = new PaneCallbacks();
     private final CorridorEditInteractionController corridorEditController;
+    private final WallPathInteractionController wallPathController;
     private PointerInteraction pointerInteraction = IdleInteraction.INSTANCE;
 
     protected AbstractDungeonPane(DungeonCanvasCamera camera) {
@@ -91,10 +95,50 @@ abstract class AbstractDungeonPane extends StackPane {
                 return AbstractDungeonPane.this.findCorridorSegmentInsertHitAt(screenX, screenY);
             }
         });
+        this.wallPathController = new WallPathInteractionController(new WallPathInteractionController.Host() {
+            @Override
+            public boolean editable() {
+                return AbstractDungeonPane.this.editable;
+            }
+
+            @Override
+            public DungeonEditorTool editorTool() {
+                return AbstractDungeonPane.this.editorTool;
+            }
+
+            @Override
+            public EditorSurface surface() {
+                return AbstractDungeonPane.this.surface();
+            }
+
+            @Override
+            public DungeonClusterEdgeRef findClusterEdgeAt(double screenX, double screenY) {
+                return AbstractDungeonPane.this.findClusterEdgeAt(screenX, screenY);
+            }
+
+            @Override
+            public DungeonRoomCluster clusterById(long clusterId) {
+                return AbstractDungeonPane.this.layout == null ? null : AbstractDungeonPane.this.layout.clusterById(clusterId);
+            }
+
+            @Override
+            public Set<Point2i> clusterCellsFor(DungeonRoomCluster cluster) {
+                return AbstractDungeonPane.this.clusterCellsFor(cluster);
+            }
+
+            @Override
+            public void render() {
+                AbstractDungeonPane.this.render();
+            }
+        });
+        setFocusTraversable(true);
         getChildren().add(canvas);
         widthProperty().addListener((obs, oldValue, newValue) -> resizeCanvas());
         heightProperty().addListener((obs, oldValue, newValue) -> resizeCanvas());
+        addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
+        canvas.addEventHandler(MouseEvent.MOUSE_PRESSED, event -> requestFocus());
         canvas.addEventHandler(MouseEvent.MOUSE_PRESSED, this::handleMousePressed);
+        canvas.addEventHandler(MouseEvent.MOUSE_MOVED, this::handleMouseMoved);
         canvas.addEventHandler(MouseEvent.MOUSE_DRAGGED, this::handleMouseDragged);
         canvas.addEventHandler(MouseEvent.MOUSE_RELEASED, this::handleMouseReleased);
         canvas.addEventHandler(ScrollEvent.SCROLL, this::handleScroll);
@@ -133,7 +177,13 @@ abstract class AbstractDungeonPane extends StackPane {
         previewPaintCells.clear();
         clearSelectionPreview();
         clearPaintPreview();
+        wallPathController.reset();
         corridorEditController.cancel();
+        if (this.editorTool != DungeonEditorTool.SELECT) {
+            applySelectedCorridorDoorHandle(null, false, false);
+        } else {
+            applySelectedCorridorDoorHandle(selectedCorridorDoorHandle, false, false);
+        }
         render();
     }
 
@@ -155,10 +205,6 @@ abstract class AbstractDungeonPane extends StackPane {
 
     public final void setOnRoomCellsDeleted(Consumer<Set<Point2i>> onRoomCellsDeleted) {
         callbacks.onRoomCellsDeleted = Objects.requireNonNull(onRoomCellsDeleted, "onRoomCellsDeleted");
-    }
-
-    public final void setOnClusterWallPainted(Consumer<Set<DungeonClusterEdgeRef>> onClusterWallPainted) {
-        callbacks.onClusterWallPainted = Objects.requireNonNull(onClusterWallPainted, "onClusterWallPainted");
     }
 
     public final void setOnClusterDoorPainted(Consumer<Set<DungeonClusterEdgeRef>> onClusterDoorPainted) {
@@ -186,7 +232,15 @@ abstract class AbstractDungeonPane extends StackPane {
     }
 
     public final void setOnCorridorDoorSelected(Consumer<CorridorEditInteractionController.DoorHandle> onCorridorDoorSelected) {
-        corridorEditController.setOnCorridorDoorSelected(onCorridorDoorSelected);
+        Consumer<CorridorEditInteractionController.DoorHandle> consumer = Objects.requireNonNull(onCorridorDoorSelected, "onCorridorDoorSelected");
+        corridorEditController.setOnCorridorDoorSelected(handle -> {
+            applySelectedCorridorDoorHandle(handle, true, true);
+            consumer.accept(selectedCorridorDoorHandle);
+        });
+    }
+
+    public final void setOnCorridorDoorSelectionChanged(Consumer<CorridorEditInteractionController.DoorHandle> onCorridorDoorSelectionChanged) {
+        callbacks.onCorridorDoorSelectionChanged = Objects.requireNonNull(onCorridorDoorSelectionChanged, "onCorridorDoorSelectionChanged");
     }
 
     public final void setOnCorridorDoorMoved(
@@ -224,7 +278,9 @@ abstract class AbstractDungeonPane extends StackPane {
         this.previewPaintCells.clear();
         clearSelectionPreview();
         clearPaintPreview();
+        wallPathController.reset();
         corridorEditController.cancel();
+        applySelectedCorridorDoorHandle(selectedCorridorDoorHandle, false, false);
         if (renderNow) {
             render();
         }
@@ -233,13 +289,26 @@ abstract class AbstractDungeonPane extends StackPane {
     public final void updateSelection(DungeonSelection selectedTarget, DungeonRuntimeLocation activeLocation, boolean renderNow) {
         this.selectedTarget = selectedTarget;
         this.activeLocation = activeLocation;
+        applySelectedCorridorDoorHandle(selectedCorridorDoorHandle, false, false);
         if (renderNow) {
             render();
         }
     }
 
+    public final CorridorEditInteractionController.DoorHandle selectedCorridorDoorHandle() {
+        return selectedCorridorDoorHandle;
+    }
+
+    public final void setSelectedCorridorDoorHandle(CorridorEditInteractionController.DoorHandle handle) {
+        applySelectedCorridorDoorHandle(handle, false, true);
+    }
+
     public final void refreshViewport() {
         render();
+    }
+
+    protected final WallPathInteractionController wallPathInteractionController() {
+        return wallPathController;
     }
 
     protected final Point2i previewCenter(DungeonRoom room) {
@@ -361,6 +430,62 @@ abstract class AbstractDungeonPane extends StackPane {
             return null;
         }
         return new CorridorSelectionContext(corridor, geometry);
+    }
+
+    protected final boolean isSelected(CorridorEditInteractionController.DoorHandle handle) {
+        return handle != null && handle.equals(selectedCorridorDoorHandle);
+    }
+
+    protected final CorridorEditInteractionController.DoorHandle corridorDoorHandleForRoom(long roomId) {
+        CorridorSelectionContext context = selectedCorridorContext();
+        if (context == null) {
+            return null;
+        }
+        return context.geometry().doors().stream()
+                .filter(door -> door.roomId() == roomId)
+                .findFirst()
+                .map(door -> new CorridorEditInteractionController.DoorHandle(context.corridor().corridorId(), roomId))
+                .orElse(null);
+    }
+
+    protected final CorridorEditInteractionController.DoorMoveTarget nearestCorridorDoorMoveTarget(
+            double screenX,
+            double screenY,
+            CorridorEditInteractionController.DoorHandle handle,
+            double maxDistance
+    ) {
+        CorridorEditInteractionController.DoorHandle normalizedHandle = normalizeCorridorDoorHandle(handle);
+        if (normalizedHandle == null || layout == null) {
+            return null;
+        }
+        DungeonRoom room = layout.roomById(normalizedHandle.roomId());
+        if (room == null) {
+            return null;
+        }
+        Set<Point2i> roomCells = roomCellsFor(room);
+        CorridorEditInteractionController.DoorMoveTarget bestTarget = null;
+        double bestDistance = Double.POSITIVE_INFINITY;
+        for (Point2i roomCell : roomCells) {
+            for (DungeonRoomCluster.EdgeDirection direction : DungeonRoomCluster.EdgeDirection.values()) {
+                Point2i outsideCell = roomCell.add(direction.delta());
+                if (roomCells.contains(outsideCell) || isOccupiedByOtherRoom(normalizedHandle.roomId(), outsideCell)) {
+                    continue;
+                }
+                EdgeVertices vertices = edgeVertices(roomCell, direction);
+                double distance = distanceToSegment(
+                        screenX,
+                        screenY,
+                        camera.toScreenX(vertices.start().x()),
+                        camera.toScreenY(vertices.start().y()),
+                        camera.toScreenX(vertices.end().x()),
+                        camera.toScreenY(vertices.end().y()));
+                if (distance < bestDistance) {
+                    bestDistance = distance;
+                    bestTarget = new CorridorEditInteractionController.DoorMoveTarget(roomCell, direction);
+                }
+            }
+        }
+        return bestDistance <= maxDistance ? bestTarget : null;
     }
 
     protected final int insertIndexForSegment(long corridorId, CorridorGeometry geometry, int segmentIndex) {
@@ -551,6 +676,15 @@ abstract class AbstractDungeonPane extends StackPane {
         return new InvalidCorridorLink(from, to);
     }
 
+    protected final EdgeVertices edgeVertices(Point2i cell, DungeonRoomCluster.EdgeDirection direction) {
+        return switch (direction) {
+            case NORTH -> new EdgeVertices(new Point2i(cell.x(), cell.y()), new Point2i(cell.x() + 1, cell.y()));
+            case EAST -> new EdgeVertices(new Point2i(cell.x() + 1, cell.y()), new Point2i(cell.x() + 1, cell.y() + 1));
+            case SOUTH -> new EdgeVertices(new Point2i(cell.x(), cell.y() + 1), new Point2i(cell.x() + 1, cell.y() + 1));
+            case WEST -> new EdgeVertices(new Point2i(cell.x(), cell.y()), new Point2i(cell.x(), cell.y() + 1));
+        };
+    }
+
     private void resizeCanvas() {
         canvas.setWidth(Math.max(160, getWidth()));
         canvas.setHeight(Math.max(160, getHeight()));
@@ -615,12 +749,18 @@ abstract class AbstractDungeonPane extends StackPane {
     }
 
     private void beginSelection(Point2i world) {
+        if (Objects.equals(selectionStartCell, world) && Objects.equals(selectionEndCell, world)) {
+            return;
+        }
         selectionStartCell = world;
         selectionEndCell = world;
         render();
     }
 
     private void updateSelectionPreview(Point2i world) {
+        if (Objects.equals(selectionEndCell, world)) {
+            return;
+        }
         selectionEndCell = world;
         render();
     }
@@ -637,6 +777,9 @@ abstract class AbstractDungeonPane extends StackPane {
     }
 
     private void beginPaint(Point2i world) {
+        if (Objects.equals(paintStartCell, world) && Objects.equals(paintEndCell, world) && !previewPaintCells.isEmpty()) {
+            return;
+        }
         paintStartCell = world;
         paintEndCell = world;
         rebuildPaintPreviewCells();
@@ -644,6 +787,9 @@ abstract class AbstractDungeonPane extends StackPane {
     }
 
     private void updatePaintPreview(Point2i world) {
+        if (Objects.equals(paintEndCell, world)) {
+            return;
+        }
         paintEndCell = world;
         rebuildPaintPreviewCells();
         render();
@@ -666,6 +812,9 @@ abstract class AbstractDungeonPane extends StackPane {
     private void updateDragPreview(DragInteraction dragInteraction, Point2i world) {
         Point2i delta = world.subtract(dragInteraction.anchorWorld());
         Point2i previewCenter = dragInteraction.originalCenter().add(delta);
+        if (Objects.equals(previewClusterCenters.get(dragInteraction.cluster().clusterId()), previewCenter)) {
+            return;
+        }
         previewClusterCenters.put(dragInteraction.cluster().clusterId(), previewCenter);
         render();
     }
@@ -721,11 +870,16 @@ abstract class AbstractDungeonPane extends StackPane {
         pointerInteraction = IdleInteraction.INSTANCE;
     }
 
+    private void handleMouseMoved(MouseEvent event) {
+        wallPathController.handlePointerMove(event.getX(), event.getY());
+    }
+
     private void handleMouseDragged(MouseEvent event) {
         if (pointerInteraction instanceof PanInteraction) {
             callbacks.onViewportPanned.accept(new Point2D(event.getX(), event.getY()));
             return;
         }
+        wallPathController.handlePointerMove(event.getX(), event.getY());
         Point2i world = worldPointAt(event.getX(), event.getY());
         if (!editable || !(pointerInteraction instanceof DragInteraction dragInteraction)) {
             handlePreviewDrag(world);
@@ -747,6 +901,10 @@ abstract class AbstractDungeonPane extends StackPane {
     }
 
     private boolean handlePanPress(MouseEvent event) {
+        if (event.getButton() == MouseButton.SECONDARY && wallPathController.handleSecondaryPress()) {
+            render();
+            return true;
+        }
         if (event.getButton() != MouseButton.SECONDARY) {
             return false;
         }
@@ -775,7 +933,7 @@ abstract class AbstractDungeonPane extends StackPane {
                 return false;
             }
             if (editorTool == DungeonEditorTool.CLUSTER_WALL) {
-                callbacks.onClusterWallPainted.accept(Set.of(edgeRef));
+                wallPathController.handlePrimaryPress(event.getX(), event.getY());
             } else {
                 callbacks.onClusterDoorPainted.accept(Set.of(edgeRef));
             }
@@ -916,12 +1074,66 @@ abstract class AbstractDungeonPane extends StackPane {
         callbacks.onViewportZoomed.handle(event.getX(), event.getY(), factor);
     }
 
+    private void handleKeyPressed(KeyEvent event) {
+        wallPathController.handleKeyPressed(event);
+    }
+
     private static boolean isRoomDragButton(MouseButton button, DungeonEditorTool tool) {
         if (button == MouseButton.MIDDLE) {
             return true;
         }
         // Secondary is reserved for camera panning. Primary only drags in explicit selection mode.
         return button == MouseButton.PRIMARY && tool == DungeonEditorTool.SELECT;
+    }
+
+    private CorridorEditInteractionController.DoorHandle normalizeCorridorDoorHandle(CorridorEditInteractionController.DoorHandle handle) {
+        if (handle == null || editorTool != DungeonEditorTool.SELECT) {
+            return null;
+        }
+        CorridorSelectionContext context = selectedCorridorContext();
+        if (context == null || handle.corridorId() != context.corridor().corridorId()) {
+            return null;
+        }
+        return context.geometry().doors().stream()
+                .anyMatch(door -> door.roomId() == handle.roomId())
+                ? handle
+                : null;
+    }
+
+    private void applySelectedCorridorDoorHandle(
+            CorridorEditInteractionController.DoorHandle handle,
+            boolean notify,
+            boolean renderNow
+    ) {
+        CorridorEditInteractionController.DoorHandle normalizedHandle = normalizeCorridorDoorHandle(handle);
+        if (Objects.equals(selectedCorridorDoorHandle, normalizedHandle)) {
+            if (renderNow) {
+                render();
+            }
+            return;
+        }
+        selectedCorridorDoorHandle = normalizedHandle;
+        if (notify) {
+            callbacks.onCorridorDoorSelectionChanged.accept(selectedCorridorDoorHandle);
+        }
+        if (renderNow) {
+            render();
+        }
+    }
+
+    private boolean isOccupiedByOtherRoom(long roomId, Point2i cell) {
+        if (layout == null || cell == null) {
+            return false;
+        }
+        for (DungeonRoom candidate : layout.rooms()) {
+            if (candidate == null || candidate.roomId() == null || candidate.roomId() == roomId) {
+                continue;
+            }
+            if (roomCellsFor(candidate).contains(cell)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private sealed interface PointerInteraction
@@ -966,16 +1178,19 @@ abstract class AbstractDungeonPane extends StackPane {
     protected record CorridorSelectionContext(DungeonCorridor corridor, CorridorGeometry geometry) {
     }
 
+    protected record EdgeVertices(Point2i start, Point2i end) {
+    }
+
     private static final class PaneCallbacks {
         private Consumer<DungeonRoom> onRoomSelected = room -> { };
         private Consumer<DungeonRoomCluster> onClusterSelected = cluster -> { };
         private Consumer<DungeonCorridor> onCorridorSelected = corridor -> { };
+        private Consumer<CorridorEditInteractionController.DoorHandle> onCorridorDoorSelectionChanged = handle -> { };
         private BiConsumer<DungeonRoom, Point2i> onRoomMoved = (room, center) -> { };
         private BiConsumer<DungeonRoomCluster, Point2i> onClusterMoved = (cluster, center) -> { };
         private Consumer<DungeonCorridorEndpoint> onCorridorEndpointSelected = location -> { };
         private Consumer<Set<Point2i>> onRoomCellsPainted = cells -> { };
         private Consumer<Set<Point2i>> onRoomCellsDeleted = cells -> { };
-        private Consumer<Set<DungeonClusterEdgeRef>> onClusterWallPainted = refs -> { };
         private Consumer<Set<DungeonClusterEdgeRef>> onClusterDoorPainted = refs -> { };
         private Consumer<Point2i> onGraphRoomRequested = point -> { };
         private Consumer<DungeonRoom> onGraphRoomDeleted = room -> { };
