@@ -1,12 +1,12 @@
 package features.world.dungeonmap.api;
 
 import database.DatabaseManager;
-import features.world.dungeonmap.service.DungeonConnectionFactory;
-import features.world.dungeonmap.service.catalog.DungeonMapCatalogService;
-import features.world.dungeonmap.service.editor.DungeonEditorService;
-import features.world.dungeonmap.service.runtime.DungeonRuntimeService;
+import features.world.dungeonmap.application.DungeonConnectionFactory;
+import features.world.dungeonmap.application.catalog.DungeonMapCatalogService;
+import features.world.dungeonmap.application.editor.DungeonEditorService;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeService;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeWorkflow;
 import features.world.dungeonmap.ui.editor.DungeonEditorView;
-import features.world.dungeonmap.ui.runtime.DungeonRuntimeApplicationService;
 import features.world.dungeonmap.ui.runtime.DungeonView;
 import ui.shell.AppView;
 import ui.shell.DetailsNavigator;
@@ -26,7 +26,7 @@ public final class DungeonMapModule {
         DungeonEditorService editorService = new DungeonEditorService(connectionFactory);
         this.dungeonView = new DungeonView(
                 detailsNavigator,
-                new DungeonRuntimeApplicationService(mapCatalogService, runtimeService));
+                new DungeonRuntimeWorkflow(mapCatalogService, runtimeService));
         this.dungeonEditorView = new DungeonEditorView(
                 detailsNavigator,
                 mapCatalogService,

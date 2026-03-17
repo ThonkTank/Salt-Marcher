@@ -1,9 +1,9 @@
 package features.world.dungeonmap.ui.workspace.render;
 
-import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.DungeonRoom;
-import features.world.dungeonmap.model.DungeonRoomCluster;
-import features.world.dungeonmap.model.Point2i;
+import features.world.dungeonmap.domain.model.DungeonLayout;
+import features.world.dungeonmap.domain.model.DungeonRoom;
+import features.world.dungeonmap.domain.model.DungeonRoomCluster;
+import features.world.dungeonmap.domain.model.Point2i;
 
 import java.util.HashMap;
 import java.util.List;

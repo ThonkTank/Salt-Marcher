@@ -1,11 +1,11 @@
 package features.world.dungeonmap.ui.workspace.workflow;
 
-import features.world.dungeonmap.model.DungeonClusterEdgePath;
-import features.world.dungeonmap.model.DungeonClusterEdgeRef;
-import features.world.dungeonmap.model.DungeonClusterEdgeRules;
-import features.world.dungeonmap.model.DungeonRoomCluster;
-import features.world.dungeonmap.model.DungeonClusterVertexRef;
-import features.world.dungeonmap.model.Point2i;
+import features.world.dungeonmap.domain.model.DungeonClusterEdgePath;
+import features.world.dungeonmap.domain.model.DungeonClusterEdgeRef;
+import features.world.dungeonmap.domain.model.DungeonClusterEdgeRules;
+import features.world.dungeonmap.domain.model.DungeonRoomCluster;
+import features.world.dungeonmap.domain.model.DungeonClusterVertexRef;
+import features.world.dungeonmap.domain.model.Point2i;
 import features.world.dungeonmap.ui.workspace.DungeonEditorTool;
 import features.world.dungeonmap.ui.workspace.render.WallPathCommitRequest;
 import javafx.scene.input.KeyCode;

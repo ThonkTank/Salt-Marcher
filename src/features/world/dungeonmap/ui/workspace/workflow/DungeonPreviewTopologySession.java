@@ -1,12 +1,12 @@
 package features.world.dungeonmap.ui.workspace.workflow;
 
-import features.world.dungeonmap.model.CorridorGeometry;
-import features.world.dungeonmap.model.DungeonCorridor;
-import features.world.dungeonmap.model.DungeonCorridorGeometry;
-import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.DungeonRoom;
-import features.world.dungeonmap.model.DungeonRoomCluster;
-import features.world.dungeonmap.model.Point2i;
+import features.world.dungeonmap.domain.model.CorridorGeometry;
+import features.world.dungeonmap.domain.model.DungeonCorridor;
+import features.world.dungeonmap.domain.model.DungeonCorridorGeometry;
+import features.world.dungeonmap.domain.model.DungeonLayout;
+import features.world.dungeonmap.domain.model.DungeonRoom;
+import features.world.dungeonmap.domain.model.DungeonRoomCluster;
+import features.world.dungeonmap.domain.model.Point2i;
 import features.world.dungeonmap.ui.workspace.render.DungeonLayoutRenderData;
 
 import java.util.HashMap;

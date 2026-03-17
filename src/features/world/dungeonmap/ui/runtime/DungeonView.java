@@ -1,15 +1,16 @@
 package features.world.dungeonmap.ui.runtime;
 
 import features.world.dungeonmap.api.DungeonCorridorSummary;
-import features.world.dungeonmap.model.CorridorComponent;
-import features.world.dungeonmap.model.DungeonCorridor;
-import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.DungeonRuntimeLocation;
-import features.world.dungeonmap.model.DungeonRoom;
-import features.world.dungeonmap.model.DungeonRuntimeState;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeLoadState;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeWorkflow;
+import features.world.dungeonmap.domain.model.CorridorComponent;
+import features.world.dungeonmap.domain.model.DungeonCorridor;
+import features.world.dungeonmap.domain.model.DungeonLayout;
+import features.world.dungeonmap.domain.model.DungeonRuntimeLocation;
+import features.world.dungeonmap.domain.model.DungeonRoom;
+import features.world.dungeonmap.domain.model.DungeonRuntimeState;
 import features.world.dungeonmap.ui.inspector.DungeonInspectorPresenter;
 import features.world.dungeonmap.ui.workspace.DungeonSplitWorkspace;
-import features.world.dungeonmap.ui.workspace.DungeonViewMode;
 import javafx.scene.Node;
 import ui.async.UiErrorReporter;
 import ui.shell.AppView;
@@ -21,13 +22,13 @@ public final class DungeonView implements AppView {
 
     private final DungeonControls controls = new DungeonControls();
     private final DungeonSplitWorkspace workspace = new DungeonSplitWorkspace(false);
-    private final DungeonRuntimeApplicationService applicationService;
+    private final DungeonRuntimeWorkflow applicationService;
     private final DetailsNavigator detailsNavigator;
 
     private DungeonRuntimeState currentState;
     private boolean initialLoadDone;
 
-    public DungeonView(DetailsNavigator detailsNavigator, DungeonRuntimeApplicationService applicationService) {
+    public DungeonView(DetailsNavigator detailsNavigator, DungeonRuntimeWorkflow applicationService) {
         this.detailsNavigator = Objects.requireNonNull(detailsNavigator, "detailsNavigator");
         this.applicationService = Objects.requireNonNull(applicationService, "applicationService");
         workspace.setOnRoomSelected(this::selectRoom);

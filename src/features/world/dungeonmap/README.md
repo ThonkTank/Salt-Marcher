@@ -2,13 +2,15 @@
 
 | Public API | Internal | Allowed consumers |
 | --- | --- | --- |
-| `features.world.dungeonmap.api` | `model`, `repository`, `service`, `ui` | `features.world.api`, `ui.shell` |
+| `features.world.dungeonmap.api` | `application`, `domain`, `infrastructure`, `ui` | `features.world.api`, `ui.shell` |
 
 `DungeonMapModule` remains in `api` as the feature composition entry point, while `DungeonRoomSummary` is the cross-feature read DTO used by the shell inspector.
 
-Internal subpackages are organized by subsystem:
-- `service.catalog`, `service.editor`, `service.runtime`, `service.topology`, `service.campaignstate`
-- `ui.async`, `ui.selector`, `ui.inspector`, `ui.workspace`
+Internal subpackages are organized by responsibility:
+- `application.catalog`, `application.editor`, `application.runtime`
+- `domain.model`, `domain.topology`
+- `infrastructure.persistence`, `infrastructure.campaignstate`
+- `ui.selector`, `ui.inspector`, `ui.workspace`
 
 Current schema policy:
 - Dungeon storage is still in an early iteration phase and is treated as disposable local state.

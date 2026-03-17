@@ -1,6 +1,6 @@
 package features.world.dungeonmap.ui.workspace.workflow.state;
 
-import features.world.dungeonmap.model.Point2i;
+import features.world.dungeonmap.domain.model.Point2i;
 import features.world.dungeonmap.ui.workspace.workflow.CorridorEditInteractionController;
 import javafx.geometry.Point2D;
 

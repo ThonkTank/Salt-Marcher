@@ -1,6 +1,6 @@
 package features.world.dungeonmap.ui.editor;
 
-import features.world.dungeonmap.model.DungeonMap;
+import features.world.dungeonmap.domain.model.DungeonMap;
 import features.world.dungeonmap.ui.selector.DungeonMapCell;
 import features.world.dungeonmap.ui.workspace.DungeonEditorTool;
 import features.world.dungeonmap.ui.workspace.DungeonViewMode;

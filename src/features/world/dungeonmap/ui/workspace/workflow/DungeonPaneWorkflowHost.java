@@ -1,16 +1,16 @@
 package features.world.dungeonmap.ui.workspace.workflow;
 
-import features.world.dungeonmap.model.CorridorGeometry;
-import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.DungeonCorridor;
-import features.world.dungeonmap.model.DungeonCorridorEndpoint;
-import features.world.dungeonmap.model.DungeonClusterEdgeRef;
-import features.world.dungeonmap.model.DungeonClusterVertexRef;
-import features.world.dungeonmap.model.DungeonRuntimeLocation;
-import features.world.dungeonmap.model.DungeonSelection;
-import features.world.dungeonmap.model.DungeonRoom;
-import features.world.dungeonmap.model.DungeonRoomCluster;
-import features.world.dungeonmap.model.Point2i;
+import features.world.dungeonmap.domain.model.CorridorGeometry;
+import features.world.dungeonmap.domain.model.DungeonLayout;
+import features.world.dungeonmap.domain.model.DungeonCorridor;
+import features.world.dungeonmap.domain.model.DungeonCorridorEndpoint;
+import features.world.dungeonmap.domain.model.DungeonClusterEdgeRef;
+import features.world.dungeonmap.domain.model.DungeonClusterVertexRef;
+import features.world.dungeonmap.domain.model.DungeonRuntimeLocation;
+import features.world.dungeonmap.domain.model.DungeonSelection;
+import features.world.dungeonmap.domain.model.DungeonRoom;
+import features.world.dungeonmap.domain.model.DungeonRoomCluster;
+import features.world.dungeonmap.domain.model.Point2i;
 import features.world.dungeonmap.ui.workspace.DungeonEditorTool;
 import features.world.dungeonmap.ui.workspace.render.CorridorDoorHit;
 import features.world.dungeonmap.ui.workspace.render.DungeonLayoutRenderData;

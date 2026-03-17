@@ -1,10 +1,10 @@
 package features.world.dungeonmap.ui.workspace.workflow;
 
-import features.world.dungeonmap.model.DungeonCorridor;
-import features.world.dungeonmap.model.DungeonCorridorEndpoint;
-import features.world.dungeonmap.model.DungeonRoom;
-import features.world.dungeonmap.model.DungeonRoomCluster;
-import features.world.dungeonmap.model.Point2i;
+import features.world.dungeonmap.domain.model.DungeonCorridor;
+import features.world.dungeonmap.domain.model.DungeonCorridorEndpoint;
+import features.world.dungeonmap.domain.model.DungeonRoom;
+import features.world.dungeonmap.domain.model.DungeonRoomCluster;
+import features.world.dungeonmap.domain.model.Point2i;
 import features.world.dungeonmap.ui.workspace.DungeonEditorTool;
 import features.world.dungeonmap.ui.workspace.render.CorridorDoorHit;
 import features.world.dungeonmap.ui.workspace.workflow.state.DungeonPaneInteractionState;
@@ -44,10 +44,10 @@ public final class DungeonPaneWorkflowCoordinator {
     }
 
     public void showLayout(
-            features.world.dungeonmap.model.DungeonLayout layout,
+            features.world.dungeonmap.domain.model.DungeonLayout layout,
             features.world.dungeonmap.ui.workspace.render.DungeonLayoutRenderData renderData,
-            features.world.dungeonmap.model.DungeonSelection selectedTarget,
-            features.world.dungeonmap.model.DungeonRuntimeLocation activeLocation,
+            features.world.dungeonmap.domain.model.DungeonSelection selectedTarget,
+            features.world.dungeonmap.domain.model.DungeonRuntimeLocation activeLocation,
             boolean renderNow
     ) {
         host.setLayoutState(layout, renderData, selectedTarget, activeLocation);
@@ -66,8 +66,8 @@ public final class DungeonPaneWorkflowCoordinator {
     }
 
     public void updateSelection(
-            features.world.dungeonmap.model.DungeonSelection selectedTarget,
-            features.world.dungeonmap.model.DungeonRuntimeLocation activeLocation,
+            features.world.dungeonmap.domain.model.DungeonSelection selectedTarget,
+            features.world.dungeonmap.domain.model.DungeonRuntimeLocation activeLocation,
             boolean renderNow
     ) {
         host.setLayoutState(host.dungeonLayout(), host.renderData(), selectedTarget, activeLocation);

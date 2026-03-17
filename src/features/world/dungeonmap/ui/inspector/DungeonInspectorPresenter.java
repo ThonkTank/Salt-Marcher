@@ -3,12 +3,12 @@ package features.world.dungeonmap.ui.inspector;
 import features.world.dungeonmap.api.DungeonCorridorSummary;
 import features.world.dungeonmap.api.DungeonRoomClusterSummary;
 import features.world.dungeonmap.api.DungeonRoomSummary;
-import features.world.dungeonmap.model.DungeonCorridor;
-import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.DungeonGeometry;
-import features.world.dungeonmap.model.DungeonRoom;
-import features.world.dungeonmap.model.DungeonRoomCluster;
-import features.world.dungeonmap.model.RoomShape;
+import features.world.dungeonmap.domain.model.DungeonCorridor;
+import features.world.dungeonmap.domain.model.DungeonLayout;
+import features.world.dungeonmap.domain.model.DungeonGeometry;
+import features.world.dungeonmap.domain.model.DungeonRoom;
+import features.world.dungeonmap.domain.model.DungeonRoomCluster;
+import features.world.dungeonmap.domain.model.RoomShape;
 
 public final class DungeonInspectorPresenter {
 

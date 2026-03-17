@@ -1,15 +1,15 @@
 package features.world.dungeonmap.ui.workspace.render;
 
-import features.world.dungeonmap.model.DungeonCorridor;
-import features.world.dungeonmap.model.DungeonClusterEdgeRef;
-import features.world.dungeonmap.model.DungeonClusterEdgeRules;
-import features.world.dungeonmap.model.DungeonClusterVertexRef;
-import features.world.dungeonmap.model.CorridorGeometry;
-import features.world.dungeonmap.model.DungeonClusterGeometry;
-import features.world.dungeonmap.model.DoorSegment;
-import features.world.dungeonmap.model.DungeonRoom;
-import features.world.dungeonmap.model.DungeonRoomCluster;
-import features.world.dungeonmap.model.Point2i;
+import features.world.dungeonmap.domain.model.DungeonCorridor;
+import features.world.dungeonmap.domain.model.DungeonClusterEdgeRef;
+import features.world.dungeonmap.domain.model.DungeonClusterEdgeRules;
+import features.world.dungeonmap.domain.model.DungeonClusterVertexRef;
+import features.world.dungeonmap.domain.model.CorridorGeometry;
+import features.world.dungeonmap.domain.model.DungeonClusterGeometry;
+import features.world.dungeonmap.domain.model.DoorSegment;
+import features.world.dungeonmap.domain.model.DungeonRoom;
+import features.world.dungeonmap.domain.model.DungeonRoomCluster;
+import features.world.dungeonmap.domain.model.Point2i;
 import features.world.dungeonmap.ui.workspace.DungeonEditorTool;
 import features.world.dungeonmap.ui.workspace.workflow.CorridorEditInteractionController;
 import features.world.dungeonmap.ui.workspace.workflow.DungeonEditorSurface;
@@ -235,7 +235,7 @@ public final class DungeonGridPane extends AbstractDungeonPane {
         int bestSegmentIndex = -1;
         double bestDistance = Double.POSITIVE_INFINITY;
         for (int index = 0; index < context.geometry().segments().size(); index++) {
-            features.world.dungeonmap.model.GridSegment segment = context.geometry().segments().get(index);
+            features.world.dungeonmap.domain.model.GridSegment segment = context.geometry().segments().get(index);
             double distance = distanceToSegment(screenX, screenY, segment.from(), segment.to());
             if (distance <= 10 && distance < bestDistance) {
                 bestDistance = distance;
@@ -276,17 +276,17 @@ public final class DungeonGridPane extends AbstractDungeonPane {
         double top = localY;
         double bottom = 1 - localY;
         double best = left;
-        features.world.dungeonmap.model.DungeonRoomCluster.EdgeDirection direction = features.world.dungeonmap.model.DungeonRoomCluster.EdgeDirection.WEST;
+        features.world.dungeonmap.domain.model.DungeonRoomCluster.EdgeDirection direction = features.world.dungeonmap.domain.model.DungeonRoomCluster.EdgeDirection.WEST;
         if (right < best) {
             best = right;
-            direction = features.world.dungeonmap.model.DungeonRoomCluster.EdgeDirection.EAST;
+            direction = features.world.dungeonmap.domain.model.DungeonRoomCluster.EdgeDirection.EAST;
         }
         if (top < best) {
             best = top;
-            direction = features.world.dungeonmap.model.DungeonRoomCluster.EdgeDirection.NORTH;
+            direction = features.world.dungeonmap.domain.model.DungeonRoomCluster.EdgeDirection.NORTH;
         }
         if (bottom < best) {
-            direction = features.world.dungeonmap.model.DungeonRoomCluster.EdgeDirection.SOUTH;
+            direction = features.world.dungeonmap.domain.model.DungeonRoomCluster.EdgeDirection.SOUTH;
         }
         return new DungeonClusterEdgeRef(cluster.clusterId(), cell, direction);
     }
@@ -475,7 +475,7 @@ public final class DungeonGridPane extends AbstractDungeonPane {
                 : DungeonCanvasTheme.CORRIDOR_SELECTED);
         gc.setLineWidth(4);
         Point2D previewOffset = corridorPreviewOffset(context.corridor());
-        for (features.world.dungeonmap.model.GridSegment segment : context.geometry().segments()) {
+        for (features.world.dungeonmap.domain.model.GridSegment segment : context.geometry().segments()) {
             gc.strokeLine(
                     previewScreenX(segment.from().x() + 0.5, previewOffset),
                     previewScreenY(segment.from().y() + 0.5, previewOffset),

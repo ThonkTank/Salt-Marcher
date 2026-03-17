@@ -1,6 +1,6 @@
 package features.world.dungeonmap.ui.selector;
 
-import features.world.dungeonmap.model.DungeonMap;
+import features.world.dungeonmap.domain.model.DungeonMap;
 import javafx.scene.control.ListCell;
 
 public final class DungeonMapCell extends ListCell<DungeonMap> {

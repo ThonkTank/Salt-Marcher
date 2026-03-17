@@ -1,6 +1,6 @@
 package features.world.dungeonmap.ui.editor.dropdowns;
 
-import features.world.dungeonmap.model.DungeonMap;
+import features.world.dungeonmap.domain.model.DungeonMap;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Button;

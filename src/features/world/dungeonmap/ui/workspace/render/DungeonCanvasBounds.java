@@ -1,9 +1,9 @@
 package features.world.dungeonmap.ui.workspace.render;
 
-import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.CorridorGeometry;
-import features.world.dungeonmap.model.DoorSegment;
-import features.world.dungeonmap.model.Point2i;
+import features.world.dungeonmap.domain.model.DungeonLayout;
+import features.world.dungeonmap.domain.model.CorridorGeometry;
+import features.world.dungeonmap.domain.model.DoorSegment;
+import features.world.dungeonmap.domain.model.Point2i;
 
 public final class DungeonCanvasBounds {
 

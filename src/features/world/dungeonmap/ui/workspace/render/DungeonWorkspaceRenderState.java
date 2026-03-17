@@ -1,6 +1,6 @@
 package features.world.dungeonmap.ui.workspace.render;
 
-import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.domain.model.DungeonLayout;
 
 public record DungeonWorkspaceRenderState(
         DungeonLayout layout,

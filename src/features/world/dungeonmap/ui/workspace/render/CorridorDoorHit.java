@@ -1,6 +1,6 @@
 package features.world.dungeonmap.ui.workspace.render;
 
-import features.world.dungeonmap.model.DungeonCorridor;
+import features.world.dungeonmap.domain.model.DungeonCorridor;
 
 import java.util.List;
 

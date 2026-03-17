@@ -1,7 +1,7 @@
 package features.world.dungeonmap.ui.workspace;
 
-import features.world.dungeonmap.model.DungeonClusterEdgeRef;
-import features.world.dungeonmap.model.DungeonClusterVertexRef;
+import features.world.dungeonmap.domain.model.DungeonClusterEdgeRef;
+import features.world.dungeonmap.domain.model.DungeonClusterVertexRef;
 
 import java.util.List;
 

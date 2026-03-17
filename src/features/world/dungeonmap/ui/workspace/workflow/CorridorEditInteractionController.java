@@ -1,6 +1,6 @@
 package features.world.dungeonmap.ui.workspace.workflow;
 
-import features.world.dungeonmap.model.Point2i;
+import features.world.dungeonmap.domain.model.Point2i;
 import features.world.dungeonmap.ui.workspace.DungeonEditorTool;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
@@ -193,7 +193,7 @@ public final class CorridorEditInteractionController {
     public record DoorMoveTarget(
             long roomId,
             Point2i roomCell,
-            features.world.dungeonmap.model.DungeonRoomCluster.EdgeDirection direction
+            features.world.dungeonmap.domain.model.DungeonRoomCluster.EdgeDirection direction
     ) {
     }
 

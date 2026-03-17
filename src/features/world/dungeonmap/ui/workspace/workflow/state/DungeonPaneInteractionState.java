@@ -1,7 +1,7 @@
 package features.world.dungeonmap.ui.workspace.workflow.state;
 
-import features.world.dungeonmap.model.DungeonRoomCluster;
-import features.world.dungeonmap.model.Point2i;
+import features.world.dungeonmap.domain.model.DungeonRoomCluster;
+import features.world.dungeonmap.domain.model.Point2i;
 
 public final class DungeonPaneInteractionState {
     private Point2i selectionStartCell;

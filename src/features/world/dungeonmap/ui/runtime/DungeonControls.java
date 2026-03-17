@@ -1,6 +1,6 @@
 package features.world.dungeonmap.ui.runtime;
 
-import features.world.dungeonmap.model.DungeonMap;
+import features.world.dungeonmap.domain.model.DungeonMap;
 import javafx.geometry.Insets;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
