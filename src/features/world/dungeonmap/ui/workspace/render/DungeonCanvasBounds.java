@@ -2,9 +2,7 @@ package features.world.dungeonmap.ui.workspace.render;
 
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.CorridorGeometry;
-import features.world.dungeonmap.model.DungeonCorridorGeometry;
 import features.world.dungeonmap.model.DoorSegment;
-import features.world.dungeonmap.model.DungeonRoomGeometry;
 import features.world.dungeonmap.model.Point2i;
 
 public final class DungeonCanvasBounds {
@@ -30,6 +28,10 @@ public final class DungeonCanvasBounds {
     }
 
     public static DungeonCanvasBounds forLayout(DungeonLayout layout) {
+        return forLayout(layout, null);
+    }
+
+    public static DungeonCanvasBounds forLayout(DungeonLayout layout, DungeonLayoutRenderData renderData) {
         if (layout == null || layout.clusters() == null || layout.clusters().isEmpty()) {
             return defaultBounds();
         }
@@ -38,7 +40,7 @@ public final class DungeonCanvasBounds {
         double minY = Double.POSITIVE_INFINITY;
         double maxY = Double.NEGATIVE_INFINITY;
         for (var cluster : layout.clusters()) {
-            for (java.util.List<Point2i> loop : DungeonRoomGeometry.absoluteLoops(cluster)) {
+            for (java.util.List<Point2i> loop : layout.clusterLoops(cluster.clusterId())) {
                 for (Point2i point : loop) {
                     minX = Math.min(minX, point.x() - WORLD_PADDING);
                     maxX = Math.max(maxX, point.x() + WORLD_PADDING);
@@ -47,7 +49,8 @@ public final class DungeonCanvasBounds {
                 }
             }
         }
-        for (CorridorGeometry geometry : DungeonCorridorGeometry.corridorTopology(layout).corridorGeometries().values()) {
+        DungeonLayoutRenderData resolvedRenderData = renderData == null ? DungeonLayoutRenderData.from(layout) : renderData;
+        for (CorridorGeometry geometry : resolvedRenderData.corridorTopology().corridorGeometries().values()) {
             for (Point2i cell : geometry.cells()) {
                 minX = Math.min(minX, cell.x() - WORLD_PADDING);
                 maxX = Math.max(maxX, cell.x() + 1 + WORLD_PADDING);

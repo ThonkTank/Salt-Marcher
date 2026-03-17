@@ -26,12 +26,19 @@ public final class DungeonCorridorGeometry {
     }
 
     public static CorridorTopology corridorTopology(DungeonLayout layout) {
-        LayoutContext context = layoutContext(layout);
+        return corridorTopology(layout, layoutContext(layout));
+    }
+
+    public static CorridorTopology corridorTopology(DungeonLayout layout, LayoutContext context) {
+        if (layout == null) {
+            return new CorridorTopology(Map.of(), Map.of(), Map.of());
+        }
+        LayoutContext resolvedContext = context == null ? layoutContext(layout) : context;
 
         Map<Long, CorridorGeometry> result = new LinkedHashMap<>();
         for (DungeonCorridor corridor : layout.corridors()) {
             List<DungeonRoom> corridorRooms = corridor.roomIds().stream()
-                    .map(context.roomsById()::get)
+                    .map(resolvedContext.roomsById()::get)
                     .filter(Objects::nonNull)
                     .distinct()
                     .toList();
@@ -39,8 +46,8 @@ public final class DungeonCorridorGeometry {
                     layout,
                     corridor,
                     corridorRooms,
-                    context.roomCellsById(),
-                    context.roomOccupancy()));
+                    resolvedContext.roomCellsById(),
+                    resolvedContext.roomOccupancy()));
         }
         return buildCorridorTopology(layout, result);
     }

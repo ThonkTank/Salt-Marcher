@@ -2,10 +2,8 @@ package features.world.dungeonmap.model;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 public final class DungeonLayout {
@@ -104,28 +102,6 @@ public final class DungeonLayout {
     public List<List<Point2i>> clusterLoops(Long clusterId) {
         ClusterState state = clusterId == null ? null : clusterStatesById.get(clusterId);
         return state == null ? List.of() : state.loops();
-    }
-
-    public List<Long> corridorIdsForCluster(Long clusterId) {
-        if (clusterId == null) {
-            return List.of();
-        }
-        LinkedHashSet<Long> roomIds = new LinkedHashSet<>();
-        for (DungeonRoom room : roomsForCluster(clusterId)) {
-            if (room.roomId() != null) {
-                roomIds.add(room.roomId());
-            }
-        }
-        if (roomIds.isEmpty()) {
-            return List.of();
-        }
-        return corridors.stream()
-                .filter(corridor -> corridor.roomIds().stream().anyMatch(roomIds::contains))
-                .map(DungeonCorridor::corridorId)
-                .filter(Objects::nonNull)
-                .distinct()
-                .sorted()
-                .toList();
     }
 
     private static Map<Long, DungeonRoom> indexRooms(List<DungeonRoom> rooms) {

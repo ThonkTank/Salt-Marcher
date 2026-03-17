@@ -55,7 +55,7 @@ public final class DungeonInspectorPresenter {
                 cluster.mapId(),
                 roomIds,
                 roomNames,
-                layout == null ? java.util.List.of() : layout.corridorIdsForCluster(cluster.clusterId()),
+                corridorIdsForCluster(layout, cluster.clusterId()),
                 cluster.center().x(),
                 cluster.center().y(),
                 active);
@@ -121,5 +121,25 @@ public final class DungeonInspectorPresenter {
             return null;
         }
         return findCluster(layout, Long.parseLong(clusterId));
+    }
+
+    private static java.util.List<Long> corridorIdsForCluster(DungeonLayout layout, Long clusterId) {
+        if (layout == null || clusterId == null) {
+            return java.util.List.of();
+        }
+        java.util.LinkedHashSet<Long> corridorIds = new java.util.LinkedHashSet<>();
+        for (DungeonCorridor corridor : layout.corridors()) {
+            if (corridor == null || corridor.corridorId() == null) {
+                continue;
+            }
+            for (Long roomId : corridor.roomIds()) {
+                DungeonRoomCluster cluster = layout.clusterForRoom(roomId);
+                if (cluster != null && clusterId.equals(cluster.clusterId())) {
+                    corridorIds.add(corridor.corridorId());
+                    break;
+                }
+            }
+        }
+        return java.util.List.copyOf(corridorIds);
     }
 }

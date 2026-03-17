@@ -16,6 +16,7 @@ import features.world.dungeonmap.ui.workspace.render.CorridorEditInteractionCont
 import features.world.dungeonmap.ui.workspace.render.DungeonGraphPane;
 import features.world.dungeonmap.ui.workspace.render.DungeonGridPane;
 import features.world.dungeonmap.ui.workspace.render.DungeonLayoutRenderData;
+import features.world.dungeonmap.ui.workspace.render.DungeonWorkspaceRenderState;
 import features.world.dungeonmap.ui.workspace.render.WallPathInteractionController;
 import javafx.geometry.Point2D;
 import javafx.scene.layout.BorderPane;
@@ -34,7 +35,6 @@ public final class DungeonSplitWorkspace extends BorderPane {
     private final StackPane workspacePane = new StackPane(gridPane, graphPane);
     private DungeonViewMode viewMode = DungeonViewMode.GRID;
     private DungeonLayout layout;
-    private DungeonLayoutRenderData renderData;
     private DungeonCanvasBounds bounds = DungeonCanvasBounds.defaultBounds();
     private DungeonSelection selectedTarget;
     private DungeonRuntimeLocation activeLocation;
@@ -60,11 +60,12 @@ public final class DungeonSplitWorkspace extends BorderPane {
         applyViewMode();
     }
 
-    public void showLayout(DungeonLayout layout, DungeonSelection selectedTarget, DungeonRuntimeLocation activeLocation) {
+    public void showLayout(DungeonWorkspaceRenderState renderState, DungeonSelection selectedTarget, DungeonRuntimeLocation activeLocation) {
+        DungeonLayout layout = renderState == null ? null : renderState.layout();
         boolean resetView = shouldResetView(layout);
         this.layout = layout;
-        this.renderData = DungeonLayoutRenderData.from(layout);
-        this.bounds = DungeonCanvasBounds.forLayout(layout);
+        DungeonLayoutRenderData renderData = renderState == null ? null : renderState.renderData();
+        this.bounds = renderState == null ? DungeonCanvasBounds.defaultBounds() : renderState.bounds();
         this.selectedTarget = selectedTarget;
         this.activeLocation = activeLocation;
         gridPane.showLayout(layout, renderData, selectedTarget, activeLocation, false);

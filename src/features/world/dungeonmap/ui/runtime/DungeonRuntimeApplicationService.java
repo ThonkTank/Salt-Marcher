@@ -4,6 +4,7 @@ import features.world.dungeonmap.model.DungeonRuntimeLocation;
 import features.world.dungeonmap.model.DungeonMap;
 import features.world.dungeonmap.service.catalog.DungeonMapCatalogService;
 import features.world.dungeonmap.service.runtime.DungeonRuntimeService;
+import features.world.dungeonmap.ui.workspace.render.DungeonWorkspaceRenderState;
 import ui.async.UiAsyncTasks;
 
 import java.util.List;
@@ -27,15 +28,25 @@ public final class DungeonRuntimeApplicationService {
 
     public void loadPreferredState(Consumer<DungeonRuntimeLoadState> onSuccess, Consumer<Throwable> onError) {
         long request = loadSequence.incrementAndGet();
-        UiAsyncTasks.submit(runtimeService::loadPreferredRuntimeState,
-                state -> loadMapsForState(request, state.layout().map().mapId(), state, onSuccess, onError),
+        UiAsyncTasks.submit(
+                () -> prepareLoad(runtimeService.loadPreferredRuntimeState()),
+                loadState -> {
+                    if (request == loadSequence.get()) {
+                        onSuccess.accept(loadState);
+                    }
+                },
                 throwable -> deliverFailure(request, throwable, onError));
     }
 
     public void loadState(long mapId, Consumer<DungeonRuntimeLoadState> onSuccess, Consumer<Throwable> onError) {
         long request = loadSequence.incrementAndGet();
-        UiAsyncTasks.submit(() -> runtimeService.loadRuntimeState(mapId),
-                state -> loadMapsForState(request, mapId, state, onSuccess, onError),
+        UiAsyncTasks.submit(
+                () -> prepareLoad(runtimeService.loadRuntimeState(mapId)),
+                loadState -> {
+                    if (request == loadSequence.get()) {
+                        onSuccess.accept(loadState);
+                    }
+                },
                 throwable -> deliverFailure(request, throwable, onError));
     }
 
@@ -43,20 +54,14 @@ public final class DungeonRuntimeApplicationService {
         UiAsyncTasks.submitVoid(() -> runtimeService.updateActiveLocation(mapId, location), onSuccess, onError);
     }
 
-    private void loadMapsForState(
-            long request,
-            long selectedMapId,
-            features.world.dungeonmap.model.DungeonRuntimeState state,
-            Consumer<DungeonRuntimeLoadState> onSuccess,
-            Consumer<Throwable> onError
-    ) {
-        UiAsyncTasks.submit(mapCatalogService::getAllMaps,
-                maps -> {
-                    if (request == loadSequence.get()) {
-                        onSuccess.accept(new DungeonRuntimeLoadState(maps, selectedMapId, state));
-                    }
-                },
-                throwable -> deliverFailure(request, throwable, onError));
+    private DungeonRuntimeLoadState prepareLoad(features.world.dungeonmap.model.DungeonRuntimeState state) throws Exception {
+        List<DungeonMap> maps = mapCatalogService.getAllMaps();
+        long selectedMapId = state.layout().map().mapId();
+        return new DungeonRuntimeLoadState(
+                maps,
+                selectedMapId,
+                state,
+                DungeonWorkspaceRenderState.from(state.layout()));
     }
 
     private void deliverFailure(long request, Throwable throwable, Consumer<Throwable> onError) {
