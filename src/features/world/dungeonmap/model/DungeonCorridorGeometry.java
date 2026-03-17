@@ -295,6 +295,7 @@ public final class DungeonCorridorGeometry {
 
         while (connectedRoomIds.size() < groupRooms.size()) {
             ConnectionCandidate bestCandidate = null;
+            CorridorConnectionScorer.GraphSnapshot baseGraph = CorridorConnectionScorer.graphSnapshot(segments, doors);
             for (DungeonRoom room : groupRooms) {
                 if (connectedRoomIds.contains(room.roomId())) {
                     continue;
@@ -310,10 +311,9 @@ public final class DungeonCorridorGeometry {
                         corridorCells,
                         roomOccupancy,
                         waypointCells)) {
-                    CorridorNetworkScore candidateStepScore = scoreExpandedState(
+                    CorridorNetworkScore candidateStepScore = CorridorConnectionScorer.scoreConnection(
+                            baseGraph,
                             connectedRoomIds,
-                            segments,
-                            doors,
                             candidate.roomId(),
                             candidate.path(),
                             candidate.doors());
@@ -371,23 +371,6 @@ public final class DungeonCorridorGeometry {
                 .thenComparingInt(state -> state.corridorCells().size())
                 .thenComparingInt(state -> state.doors().size())
                 .thenComparingInt(state -> state.segments().size());
-    }
-
-    private static CorridorNetworkScore scoreExpandedState(
-            Set<Long> connectedRoomIds,
-            Set<GridSegment> segments,
-            Set<DoorSegment> doors,
-            long candidateRoomId,
-            List<Point2i> candidatePath,
-            List<DoorSegment> candidateDoors
-    ) {
-        Set<Long> expandedRoomIds = new LinkedHashSet<>(connectedRoomIds);
-        expandedRoomIds.add(candidateRoomId);
-        Set<GridSegment> expandedSegments = new LinkedHashSet<>(segments);
-        expandedSegments.addAll(segmentsForPath(candidatePath));
-        Set<DoorSegment> expandedDoors = new LinkedHashSet<>(doors);
-        expandedDoors.addAll(candidateDoors);
-        return CorridorConnectionScorer.scoreNetwork(expandedRoomIds, expandedSegments, expandedDoors);
     }
 
     private static int seedWaypointScore(

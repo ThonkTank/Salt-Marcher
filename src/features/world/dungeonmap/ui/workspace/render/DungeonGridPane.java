@@ -2,7 +2,7 @@ package features.world.dungeonmap.ui.workspace.render;
 
 import features.world.dungeonmap.model.DungeonCorridor;
 import features.world.dungeonmap.model.DungeonClusterEdgeRef;
-import features.world.dungeonmap.model.DungeonClusterEdgeSemantics;
+import features.world.dungeonmap.model.DungeonClusterEdgeRules;
 import features.world.dungeonmap.model.DungeonClusterVertexRef;
 import features.world.dungeonmap.model.CorridorGeometry;
 import features.world.dungeonmap.model.DungeonClusterGeometry;
@@ -297,21 +297,15 @@ public final class DungeonGridPane extends AbstractDungeonPane {
         if (layout == null) {
             return List.of();
         }
-        double worldX = camera.toWorldX(screenX);
-        double worldY = camera.toWorldY(screenY);
-        int minVertexX = (int) Math.floor(worldX) - 1;
-        int maxVertexX = (int) Math.ceil(worldX) + 1;
-        int minVertexY = (int) Math.floor(worldY) - 1;
-        int maxVertexY = (int) Math.ceil(worldY) + 1;
-        double maxDistanceSquared = 0.85 * 0.85;
+        NearbyVertexSearch search = nearbyVertexSearch(screenX, screenY);
         DungeonRoomCluster hoveredCluster = findClusterAt(screenX, screenY);
         List<VertexCandidate> candidates = new ArrayList<>();
         Set<DungeonClusterVertexRef> seen = new LinkedHashSet<>();
-        for (int vertexY = minVertexY; vertexY <= maxVertexY; vertexY++) {
-            for (int vertexX = minVertexX; vertexX <= maxVertexX; vertexX++) {
+        for (int vertexY = search.minVertexY(); vertexY <= search.maxVertexY(); vertexY++) {
+            for (int vertexX = search.minVertexX(); vertexX <= search.maxVertexX(); vertexX++) {
                 Point2i vertex = new Point2i(vertexX, vertexY);
-                double distanceSquared = squaredDistance(worldX, worldY, vertexX, vertexY);
-                if (distanceSquared > maxDistanceSquared) {
+                double distanceSquared = squaredDistance(search.worldX(), search.worldY(), vertexX, vertexY);
+                if (distanceSquared > search.maxDistanceSquared()) {
                     continue;
                 }
                 if (hoveredCluster != null && clusterTouchesVertex(hoveredCluster, vertex)) {
@@ -344,6 +338,37 @@ public final class DungeonGridPane extends AbstractDungeonPane {
         return candidates.stream()
                 .map(VertexCandidate::ref)
                 .toList();
+    }
+
+    @Override
+    protected DungeonClusterVertexRef findClusterVertexNear(long clusterId, double screenX, double screenY) {
+        if (layout == null) {
+            return null;
+        }
+        DungeonRoomCluster cluster = layout.clusterById(clusterId);
+        if (cluster == null) {
+            return null;
+        }
+        NearbyVertexSearch search = nearbyVertexSearch(screenX, screenY);
+        DungeonClusterVertexRef best = null;
+        double bestDistanceSquared = Double.POSITIVE_INFINITY;
+        for (int vertexY = search.minVertexY(); vertexY <= search.maxVertexY(); vertexY++) {
+            for (int vertexX = search.minVertexX(); vertexX <= search.maxVertexX(); vertexX++) {
+                double distanceSquared = squaredDistance(search.worldX(), search.worldY(), vertexX, vertexY);
+                if (distanceSquared > search.maxDistanceSquared()) {
+                    continue;
+                }
+                Point2i vertex = new Point2i(vertexX, vertexY);
+                if (!clusterTouchesVertex(cluster, vertex)) {
+                    continue;
+                }
+                if (distanceSquared < bestDistanceSquared) {
+                    bestDistanceSquared = distanceSquared;
+                    best = new DungeonClusterVertexRef(clusterId, vertex);
+                }
+            }
+        }
+        return best;
     }
 
     @Override
@@ -479,7 +504,7 @@ public final class DungeonGridPane extends AbstractDungeonPane {
             for (DungeonRoomCluster.EdgeOverride edge : cluster.edgeOverrides()) {
                 Point2i start = edgeStart(cluster, edge);
                 Point2i end = edgeEnd(cluster, edge);
-                if (DungeonClusterEdgeSemantics.providesWall(edge.type())) {
+                if (DungeonClusterEdgeRules.providesWall(edge.type())) {
                     gc.setStroke(DungeonCanvasTheme.ROOM_SELECTED_STROKE);
                     gc.setLineWidth(4);
                     gc.strokeLine(
@@ -503,7 +528,7 @@ public final class DungeonGridPane extends AbstractDungeonPane {
 
     private void drawClusterAndRoomAnchors(GraphicsContext gc, DungeonRoomCluster cluster) {
         ClusterAnchorLayout anchorLayout = ClusterAnchorLayout.forCluster(layout, cluster, this::previewCenter, this::previewCenter);
-        AnchorPosition clusterAnchor = clusterAnchorPosition(cluster, anchorLayout);
+        ClusterAnchorLayout.AnchorPosition clusterAnchor = clusterAnchorPosition(cluster, anchorLayout);
         gc.setFill(DungeonCanvasTheme.ROOM_CENTER);
         gc.fillOval(clusterAnchor.x() - 4.5, clusterAnchor.y() - 4.5, 9, 9);
         gc.setStroke(DungeonCanvasTheme.ROOM_STROKE);
@@ -511,7 +536,7 @@ public final class DungeonGridPane extends AbstractDungeonPane {
         gc.strokeOval(clusterAnchor.x() - 4.5, clusterAnchor.y() - 4.5, 9, 9);
 
         for (DungeonRoom room : layout.roomsForCluster(cluster.clusterId())) {
-            AnchorPosition roomAnchor = roomAnchorPosition(anchorLayout, room);
+            ClusterAnchorLayout.AnchorPosition roomAnchor = roomAnchorPosition(anchorLayout, room);
             gc.setFill(DungeonCanvasTheme.GRAPH_NODE_FILL);
             gc.fillOval(roomAnchor.x() - 3.5, roomAnchor.y() - 3.5, 7, 7);
             gc.setStroke(DungeonCanvasTheme.ROOM_SELECTED_STROKE);
@@ -521,14 +546,14 @@ public final class DungeonGridPane extends AbstractDungeonPane {
         }
     }
 
-    private AnchorPosition clusterAnchorPosition(DungeonRoomCluster cluster, ClusterAnchorLayout anchorLayout) {
+    private ClusterAnchorLayout.AnchorPosition clusterAnchorPosition(DungeonRoomCluster cluster, ClusterAnchorLayout anchorLayout) {
         Point2i center = anchorLayout.clusterCenter();
         double x = previewScreenX(center.x() + 0.5, cluster.clusterId());
         double y = previewScreenY(center.y() + 0.5, cluster.clusterId());
-        return new AnchorPosition(x, anchorLayout.clusterOverlapsRoom() ? y - 8 : y);
+        return new ClusterAnchorLayout.AnchorPosition(x, anchorLayout.clusterOverlapsRoom() ? y - 8 : y);
     }
 
-    private AnchorPosition roomAnchorPosition(ClusterAnchorLayout anchorLayout, DungeonRoom room) {
+    private ClusterAnchorLayout.AnchorPosition roomAnchorPosition(ClusterAnchorLayout anchorLayout, DungeonRoom room) {
         ClusterAnchorLayout.RoomAnchorGroup roomGroup = anchorLayout.roomGroup(room);
         Point2i center = roomGroup.center();
         double x = previewScreenX(center.x() + 0.5, room.clusterId());
@@ -537,7 +562,7 @@ public final class DungeonGridPane extends AbstractDungeonPane {
         if (roomGroup.overlapsCluster(anchorLayout.clusterCenter())) {
             stackOffset += 10;
         }
-        return new AnchorPosition(x, y + stackOffset);
+        return new ClusterAnchorLayout.AnchorPosition(x, y + stackOffset);
     }
 
     private void drawWallPathPreview(GraphicsContext gc) {
@@ -850,10 +875,34 @@ public final class DungeonGridPane extends AbstractDungeonPane {
     private record VertexCandidate(DungeonClusterVertexRef ref, boolean hoveredCluster, double distanceSquared) {
     }
 
+    private record NearbyVertexSearch(
+            double worldX,
+            double worldY,
+            int minVertexX,
+            int maxVertexX,
+            int minVertexY,
+            int maxVertexY,
+            double maxDistanceSquared
+    ) {
+    }
+
     private static double squaredDistance(double x1, double y1, double x2, double y2) {
         double dx = x1 - x2;
         double dy = y1 - y2;
         return dx * dx + dy * dy;
+    }
+
+    private NearbyVertexSearch nearbyVertexSearch(double screenX, double screenY) {
+        double worldX = camera.toWorldX(screenX);
+        double worldY = camera.toWorldY(screenY);
+        return new NearbyVertexSearch(
+                worldX,
+                worldY,
+                (int) Math.floor(worldX) - 1,
+                (int) Math.ceil(worldX) + 1,
+                (int) Math.floor(worldY) - 1,
+                (int) Math.ceil(worldY) + 1,
+                0.85 * 0.85);
     }
 
     private void drawPaintPreview(GraphicsContext gc) {

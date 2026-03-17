@@ -5,7 +5,7 @@ import features.world.dungeonmap.model.CorridorDoorOverride;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.DungeonCorridor;
 import features.world.dungeonmap.model.DungeonCorridorGeometry;
-import features.world.dungeonmap.model.DungeonCorridorDoorMoveSupport;
+import features.world.dungeonmap.model.DungeonCorridorDoorReassignment;
 import features.world.dungeonmap.model.DungeonClusterEdgeRef;
 import features.world.dungeonmap.model.DungeonClusterVertexRef;
 import features.world.dungeonmap.model.DungeonCorridorEndpoint;
@@ -149,6 +149,11 @@ abstract class AbstractDungeonPane extends StackPane {
             @Override
             public List<DungeonClusterVertexRef> findClusterVerticesNear(double screenX, double screenY) {
                 return AbstractDungeonPane.this.findClusterVerticesNear(screenX, screenY);
+            }
+
+            @Override
+            public DungeonClusterVertexRef findClusterVertexNear(long clusterId, double screenX, double screenY) {
+                return AbstractDungeonPane.this.findClusterVertexNear(clusterId, screenX, screenY);
             }
 
             @Override
@@ -479,6 +484,15 @@ abstract class AbstractDungeonPane extends StackPane {
     protected List<DungeonClusterVertexRef> findClusterVerticesNear(double screenX, double screenY) {
         DungeonClusterVertexRef vertex = findClusterVertexAt(screenX, screenY);
         return vertex == null ? List.of() : List.of(vertex);
+    }
+
+    protected DungeonClusterVertexRef findClusterVertexNear(long clusterId, double screenX, double screenY) {
+        for (DungeonClusterVertexRef candidate : findClusterVerticesNear(screenX, screenY)) {
+            if (candidate.clusterId() == clusterId) {
+                return candidate;
+            }
+        }
+        return null;
     }
 
     protected DungeonCorridorEndpoint corridorEndpointLocationAt(double screenX, double screenY, DungeonRoom room, DungeonCorridor corridor) {
@@ -814,9 +828,9 @@ abstract class AbstractDungeonPane extends StackPane {
         if (cluster == null) {
             return null;
         }
-        DungeonCorridorDoorMoveSupport.DoorMoveUpdate update;
+        DungeonCorridorDoorReassignment.DoorMoveUpdate update;
         try {
-            update = DungeonCorridorDoorMoveSupport.reassignDoor(
+            update = DungeonCorridorDoorReassignment.reassignDoor(
                     corridor,
                     handle.roomId(),
                     targetRoom,
