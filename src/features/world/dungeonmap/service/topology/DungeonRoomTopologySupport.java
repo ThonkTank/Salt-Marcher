@@ -1,5 +1,6 @@
 package features.world.dungeonmap.service.topology;
 
+import features.world.dungeonmap.model.DungeonClusterEdgeSemantics;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.DungeonLayoutEditResult;
 import features.world.dungeonmap.model.DungeonClusterEdgeRef;
@@ -175,13 +176,9 @@ public final class DungeonRoomTopologySupport {
                         overrides.put(override.key(), override);
                     } else {
                         DungeonRoomCluster.EdgeOverride existing = overrides.get(override.key());
-                        if (existing != null && existing.type() == edgeType) {
+                        if (existing != null && deletesExistingEdge(existing, edgeType)) {
                             if (edgeType == DungeonRoomCluster.EdgeType.DOOR) {
-                                // Doors replace an existing wall for editing purposes; removing the door restores that wall.
-                                overrides.put(override.key(), DungeonRoomCluster.EdgeOverride.of(
-                                        existing.cell(),
-                                        existing.direction(),
-                                        DungeonRoomCluster.EdgeType.WALL));
+                                overrides.put(override.key(), DungeonClusterEdgeSemantics.restoreWall(existing));
                             } else {
                                 overrides.remove(override.key());
                             }
@@ -214,10 +211,20 @@ public final class DungeonRoomTopologySupport {
         if (!present || edgeType != DungeonRoomCluster.EdgeType.DOOR) {
             return true;
         }
-        DungeonRoomCluster.EdgeOverride existing = overrides.get(override.key());
-        // Doors are only valid as a replacement for an existing wall on that internal cluster edge.
-        return existing != null
-                && (existing.type() == DungeonRoomCluster.EdgeType.WALL || existing.type() == DungeonRoomCluster.EdgeType.DOOR);
+        return DungeonClusterEdgeSemantics.hasWallAt(overrides, override);
+    }
+
+    private static boolean deletesExistingEdge(
+            DungeonRoomCluster.EdgeOverride existing,
+            DungeonRoomCluster.EdgeType edgeType
+    ) {
+        if (existing == null || edgeType == null) {
+            return false;
+        }
+        if (edgeType == DungeonRoomCluster.EdgeType.WALL) {
+            return DungeonClusterEdgeSemantics.providesWall(existing.type());
+        }
+        return existing.type() == edgeType;
     }
 
     private static DungeonLayoutEditResult applyPaintClusterCells(Connection conn, DungeonLayout layout, Set<Point2i> paintedCells) throws SQLException {

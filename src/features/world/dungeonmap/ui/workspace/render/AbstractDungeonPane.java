@@ -5,6 +5,7 @@ import features.world.dungeonmap.model.CorridorDoorOverride;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.DungeonCorridor;
 import features.world.dungeonmap.model.DungeonCorridorGeometry;
+import features.world.dungeonmap.model.DungeonCorridorDoorMoveSupport;
 import features.world.dungeonmap.model.DungeonClusterEdgeRef;
 import features.world.dungeonmap.model.DungeonClusterVertexRef;
 import features.world.dungeonmap.model.DungeonCorridorEndpoint;
@@ -146,8 +147,8 @@ abstract class AbstractDungeonPane extends StackPane {
             }
 
             @Override
-            public DungeonClusterVertexRef findClusterVertexAt(double screenX, double screenY) {
-                return AbstractDungeonPane.this.findClusterVertexAt(screenX, screenY);
+            public List<DungeonClusterVertexRef> findClusterVerticesNear(double screenX, double screenY) {
+                return AbstractDungeonPane.this.findClusterVerticesNear(screenX, screenY);
             }
 
             @Override
@@ -475,6 +476,11 @@ abstract class AbstractDungeonPane extends StackPane {
         return null;
     }
 
+    protected List<DungeonClusterVertexRef> findClusterVerticesNear(double screenX, double screenY) {
+        DungeonClusterVertexRef vertex = findClusterVertexAt(screenX, screenY);
+        return vertex == null ? List.of() : List.of(vertex);
+    }
+
     protected DungeonCorridorEndpoint corridorEndpointLocationAt(double screenX, double screenY, DungeonRoom room, DungeonCorridor corridor) {
         if (room != null && room.roomId() != null) {
             return DungeonCorridorEndpoint.room(room.roomId());
@@ -596,17 +602,14 @@ abstract class AbstractDungeonPane extends StackPane {
         if (normalizedHandle == null || layout == null) {
             return null;
         }
-        DungeonRoom room = layout.roomById(normalizedHandle.roomId());
-        if (room == null) {
-            return null;
-        }
-        DoorEdgeProjection projection = nearestCorridorDoorProjection(screenX, screenY, normalizedHandle, room);
+        DoorEdgeProjection projection = nearestCorridorDoorProjection(screenX, screenY, normalizedHandle);
         if (projection == null) {
             return null;
         }
         // Drag previews stay continuous so the door can follow the pointer along the wall;
         // persistence still snaps back to one discrete room edge on release.
         CorridorEditInteractionController.DoorMoveTarget snapTarget = new CorridorEditInteractionController.DoorMoveTarget(
+                projection.roomId(),
                 projection.roomCell(),
                 projection.direction());
         CorridorEditInteractionController.DoorPreviewSegment previewSegment = previewDoorSegment(projection, previewHalfLength);
@@ -727,9 +730,12 @@ abstract class AbstractDungeonPane extends StackPane {
     }
 
     protected final boolean isPreviewDoor(long corridorId, long roomId) {
+        long previewRoomId = previewCorridorDoorDrag != null && previewCorridorDoorDrag.snapTarget() != null
+                ? previewCorridorDoorDrag.snapTarget().roomId()
+                : previewCorridorDoorHandle == null ? Long.MIN_VALUE : previewCorridorDoorHandle.roomId();
         return previewCorridorDoorHandle != null
                 && previewCorridorDoorHandle.corridorId() == corridorId
-                && previewCorridorDoorHandle.roomId() == roomId
+                && previewRoomId == roomId
                 && previewCorridorDoorDrag != null;
     }
 
@@ -767,6 +773,28 @@ abstract class AbstractDungeonPane extends StackPane {
         return true;
     }
 
+    private List<DungeonRoom> doorProjectionRooms(CorridorEditInteractionController.DoorHandle handle) {
+        if (layout == null || handle == null) {
+            return List.of();
+        }
+        DungeonCorridor corridor = layout.corridorById(handle.corridorId());
+        if (corridor == null) {
+            return List.of();
+        }
+        Set<Long> clusterIds = new LinkedHashSet<>();
+        for (Long roomId : corridor.roomIds()) {
+            DungeonRoom room = layout.roomById(roomId);
+            if (room != null) {
+                clusterIds.add(room.clusterId());
+            }
+        }
+        return layout.rooms().stream()
+                .filter(Objects::nonNull)
+                .filter(room -> room.roomId() != null)
+                .filter(room -> clusterIds.contains(room.clusterId()))
+                .toList();
+    }
+
     private CorridorGeometry buildCorridorDoorPreviewGeometry(
             CorridorEditInteractionController.DoorHandle handle,
             CorridorEditInteractionController.DoorDragPreview preview
@@ -778,28 +806,31 @@ abstract class AbstractDungeonPane extends StackPane {
         }
         CorridorEditInteractionController.DoorMoveTarget target = preview.snapTarget();
         DungeonCorridor corridor = displayLayout.corridorById(handle.corridorId());
-        DungeonRoom room = displayLayout.roomById(handle.roomId());
-        if (corridor == null || room == null) {
+        DungeonRoom targetRoom = displayLayout.roomById(target.roomId());
+        if (corridor == null || targetRoom == null) {
             return null;
         }
-        DungeonRoomCluster cluster = displayLayout.clusterById(room.clusterId());
+        DungeonRoomCluster cluster = displayLayout.clusterById(targetRoom.clusterId());
         if (cluster == null) {
             return null;
         }
-        CorridorDoorOverride override = new CorridorDoorOverride(
-                room.roomId(),
-                room.clusterId(),
-                target.roomCell().subtract(cluster.center()),
-                target.direction());
-        List<CorridorDoorOverride> overrides = corridor.doorOverrides().stream()
-                .filter(existing -> existing.roomId() != room.roomId())
-                .collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new));
-        overrides.add(override);
+        DungeonCorridorDoorMoveSupport.DoorMoveUpdate update;
+        try {
+            update = DungeonCorridorDoorMoveSupport.reassignDoor(
+                    corridor,
+                    handle.roomId(),
+                    targetRoom,
+                    cluster,
+                    target.roomCell(),
+                    target.direction());
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
         DungeonCorridor previewCorridor = new DungeonCorridor(
                 corridor.corridorId(),
                 corridor.mapId(),
-                corridor.roomIds(),
-                overrides,
+                update.roomIds(),
+                update.doorOverrides(),
                 corridor.waypoints());
         return DungeonCorridorGeometry.corridorGeometry(displayLayout, previewCorridor, displayContext);
     }
@@ -1012,40 +1043,42 @@ abstract class AbstractDungeonPane extends StackPane {
     private DoorEdgeProjection nearestCorridorDoorProjection(
             double screenX,
             double screenY,
-            CorridorEditInteractionController.DoorHandle handle,
-            DungeonRoom room
+            CorridorEditInteractionController.DoorHandle handle
     ) {
-        Set<Point2i> roomCells = roomCellsFor(room);
         double worldX = camera.toWorldX(screenX);
         double worldY = camera.toWorldY(screenY);
         DoorEdgeProjection bestProjection = null;
         double bestDistanceSquared = Double.POSITIVE_INFINITY;
-        for (Point2i roomCell : roomCells) {
-            for (DungeonRoomCluster.EdgeDirection direction : DungeonRoomCluster.EdgeDirection.values()) {
-                Point2i outsideCell = roomCell.add(direction.delta());
-                if (roomCells.contains(outsideCell) || isOccupiedByOtherRoom(handle.roomId(), outsideCell)) {
-                    continue;
-                }
-                EdgeVertices vertices = edgeVertices(roomCell, direction);
-                double projectionT = projectionT(
-                        worldX,
-                        worldY,
-                        vertices.start().x(),
-                        vertices.start().y(),
-                        vertices.end().x(),
-                        vertices.end().y());
-                double projectedX = lerp(vertices.start().x(), vertices.end().x(), projectionT);
-                double projectedY = lerp(vertices.start().y(), vertices.end().y(), projectionT);
-                double distanceSquared = squaredDistance(worldX, worldY, projectedX, projectedY);
-                if (distanceSquared < bestDistanceSquared) {
-                    bestDistanceSquared = distanceSquared;
-                    bestProjection = new DoorEdgeProjection(
-                            roomCell,
-                            direction,
-                            vertices,
-                            projectionT,
-                            projectedX,
-                            projectedY);
+        for (DungeonRoom room : doorProjectionRooms(handle)) {
+            Set<Point2i> roomCells = roomCellsFor(room);
+            for (Point2i roomCell : roomCells) {
+                for (DungeonRoomCluster.EdgeDirection direction : DungeonRoomCluster.EdgeDirection.values()) {
+                    Point2i outsideCell = roomCell.add(direction.delta());
+                    if (roomCells.contains(outsideCell) || isOccupiedByOtherRoom(room.roomId(), outsideCell)) {
+                        continue;
+                    }
+                    EdgeVertices vertices = edgeVertices(roomCell, direction);
+                    double projectionT = projectionT(
+                            worldX,
+                            worldY,
+                            vertices.start().x(),
+                            vertices.start().y(),
+                            vertices.end().x(),
+                            vertices.end().y());
+                    double projectedX = lerp(vertices.start().x(), vertices.end().x(), projectionT);
+                    double projectedY = lerp(vertices.start().y(), vertices.end().y(), projectionT);
+                    double distanceSquared = squaredDistance(worldX, worldY, projectedX, projectedY);
+                    if (distanceSquared < bestDistanceSquared) {
+                        bestDistanceSquared = distanceSquared;
+                        bestProjection = new DoorEdgeProjection(
+                                room.roomId(),
+                                roomCell,
+                                direction,
+                                vertices,
+                                projectionT,
+                                projectedX,
+                                projectedY);
+                    }
                 }
             }
         }
@@ -1713,6 +1746,7 @@ abstract class AbstractDungeonPane extends StackPane {
     }
 
     private record DoorEdgeProjection(
+            long roomId,
             Point2i roomCell,
             DungeonRoomCluster.EdgeDirection direction,
             EdgeVertices vertices,

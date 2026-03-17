@@ -191,6 +191,7 @@ public final class CorridorEditInteractionController {
     }
 
     public record DoorMoveTarget(
+            long roomId,
             Point2i roomCell,
             features.world.dungeonmap.model.DungeonRoomCluster.EdgeDirection direction
     ) {

@@ -1,5 +1,7 @@
 package features.world.dungeonmap.model;
 
+import features.world.dungeonmap.model.DungeonClusterEdgeSemantics;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -76,7 +78,7 @@ public final class DungeonClusterGeometry {
                     if (!clusterCells.contains(neighbor) || !unvisited.contains(neighbor)) {
                         continue;
                     }
-                    if (edgeTypes.get(ClusterEdgeKey.of(current, direction)) == DungeonRoomCluster.EdgeType.WALL) {
+                    if (DungeonClusterEdgeSemantics.providesWall(edgeTypes.get(ClusterEdgeKey.of(current, direction)))) {
                         continue;
                     }
                     unvisited.remove(neighbor);

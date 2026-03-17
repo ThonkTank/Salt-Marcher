@@ -45,6 +45,7 @@ public final class DungeonEditorControls extends VBox {
     private final Button secondaryToolOption = new Button();
     private final HBox toolDropdownPanel = new HBox(8, primaryToolOption, secondaryToolOption);
     private final AnchoredDropdown toolDropdown;
+    private final DungeonToolModeState toolModeState;
     private Consumer<DungeonEditorTool> onSelectedToolChanged;
     private Consumer<Long> onMapSelected;
     private Consumer<DungeonViewMode> onViewModeChanged;
@@ -53,13 +54,10 @@ public final class DungeonEditorControls extends VBox {
     private boolean updatingToolMode;
     private final PauseTransition dropdownHideDelay = new PauseTransition(Duration.millis(120));
     private DungeonEditorTool activeTool = DungeonEditorTool.SELECT;
-    private DungeonEditorTool rememberedRoomTool = DungeonEditorTool.ROOM_PAINT;
-    private DungeonEditorTool rememberedWallTool = DungeonEditorTool.CLUSTER_WALL;
-    private DungeonEditorTool rememberedDoorTool = DungeonEditorTool.CLUSTER_DOOR;
-    private DungeonEditorTool rememberedCorridorTool = DungeonEditorTool.CORRIDOR_CREATE;
     private Node dropdownAnchor;
 
-    public DungeonEditorControls() {
+    public DungeonEditorControls(DungeonToolModeState toolModeState) {
+        this.toolModeState = toolModeState;
         getStyleClass().add("dungeon-editor-toolbar");
         setSpacing(10);
         setPadding(new Insets(12));
@@ -179,28 +177,28 @@ public final class DungeonEditorControls extends VBox {
                 DungeonEditorTool.ROOM_PAINT,
                 DungeonEditorTool.ROOM_DELETE.label(),
                 DungeonEditorTool.ROOM_DELETE,
-                rememberedRoomTool));
+                toolModeState.preferredToolFor(DungeonEditorTool.ROOM_PAINT)));
         wallButton.setOnAction(event -> activateToolFamily(
                 wallButton,
                 DungeonEditorTool.CLUSTER_WALL.label(),
                 DungeonEditorTool.CLUSTER_WALL,
                 DungeonEditorTool.CLUSTER_WALL_DELETE.label(),
                 DungeonEditorTool.CLUSTER_WALL_DELETE,
-                rememberedWallTool));
+                toolModeState.preferredToolFor(DungeonEditorTool.CLUSTER_WALL)));
         doorButton.setOnAction(event -> activateToolFamily(
                 doorButton,
                 DungeonEditorTool.CLUSTER_DOOR.label(),
                 DungeonEditorTool.CLUSTER_DOOR,
                 DungeonEditorTool.CLUSTER_DOOR_DELETE.label(),
                 DungeonEditorTool.CLUSTER_DOOR_DELETE,
-                rememberedDoorTool));
+                toolModeState.preferredToolFor(DungeonEditorTool.CLUSTER_DOOR)));
         corridorButton.setOnAction(event -> activateToolFamily(
                 corridorButton,
                 DungeonEditorTool.CORRIDOR_CREATE.label(),
                 DungeonEditorTool.CORRIDOR_CREATE,
                 DungeonEditorTool.CORRIDOR_DELETE.label(),
                 DungeonEditorTool.CORRIDOR_DELETE,
-                rememberedCorridorTool));
+                toolModeState.preferredToolFor(DungeonEditorTool.CORRIDOR_CREATE)));
     }
 
     public void setMaps(List<DungeonMap> maps) {
@@ -258,21 +256,6 @@ public final class DungeonEditorControls extends VBox {
         applyDisplayedTool(tool, false);
     }
 
-    private void rememberSelectedTool(DungeonEditorTool tool) {
-        if (tool == null) {
-            return;
-        }
-        if (tool.isRoomTool()) {
-            rememberedRoomTool = tool;
-        } else if (tool.isWallTool()) {
-            rememberedWallTool = tool;
-        } else if (tool.isDoorTool()) {
-            rememberedDoorTool = tool;
-        } else if (tool.isCorridorTool()) {
-            rememberedCorridorTool = tool;
-        }
-    }
-
     public void selectViewMode(DungeonViewMode viewMode) {
         updatingViewMode = true;
         if (viewMode == DungeonViewMode.GRAPH) {
@@ -290,7 +273,7 @@ public final class DungeonEditorControls extends VBox {
     private void applyDisplayedTool(DungeonEditorTool tool, boolean rememberSelection) {
         activeTool = tool == null ? DungeonEditorTool.SELECT : tool;
         if (rememberSelection) {
-            rememberSelectedTool(activeTool);
+            toolModeState.selectPersistentTool(activeTool);
         }
         updatingToolMode = true;
         if (activeTool == DungeonEditorTool.SELECT) {
@@ -322,7 +305,7 @@ public final class DungeonEditorControls extends VBox {
         if (tool == null || tool == DungeonEditorTool.SELECT) {
             return;
         }
-        rememberSelectedTool(tool);
+        toolModeState.selectPersistentTool(tool);
         if (onSelectedToolChanged != null) {
             onSelectedToolChanged.accept(tool);
         }

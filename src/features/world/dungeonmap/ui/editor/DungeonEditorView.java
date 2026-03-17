@@ -50,7 +50,8 @@ import java.util.function.Consumer;
 
 public final class DungeonEditorView implements AppView {
 
-    private final DungeonEditorControls controls = new DungeonEditorControls();
+    private final DungeonToolModeState toolModeState = new DungeonToolModeState();
+    private final DungeonEditorControls controls = new DungeonEditorControls(toolModeState);
     private final DungeonSplitWorkspace workspace = new DungeonSplitWorkspace(true);
     private final WallPathInteractionController wallPathController = workspace.wallPathController();
     private final VBox statePane = new VBox();
@@ -73,10 +74,8 @@ public final class DungeonEditorView implements AppView {
     private DungeonSelection selectedTarget;
     private DungeonCorridorEndpoint pendingCorridorStart;
     private DungeonViewMode viewMode = DungeonViewMode.GRID;
-    private DungeonEditorTool selectedTool = DungeonEditorTool.SELECT;
     private Long activeMapId;
     private boolean initialLoadDone;
-    private boolean deleteOverrideActive;
     private Scene shortcutScene;
     private Window shortcutWindow;
     private CorridorDraft suspendedCorridorDraft;
@@ -317,8 +316,7 @@ public final class DungeonEditorView implements AppView {
     }
 
     private void setSelectedTool(DungeonEditorTool editorTool) {
-        selectedTool = normalizeEditorTool(editorTool);
-        deleteOverrideActive = false;
+        toolModeState.selectPersistentTool(editorTool);
         suspendedCorridorDraft = null;
         applyActiveTool();
     }
@@ -393,10 +391,13 @@ public final class DungeonEditorView implements AppView {
         if (currentMapId == null || handle == null || target == null) {
             return;
         }
+        CorridorEditInteractionController.DoorHandle nextHandle = new CorridorEditInteractionController.DoorHandle(
+                handle.corridorId(),
+                target.roomId());
         workspace.setSelectedCorridorDoorHandle(handle);
         selectedCorridorWaypointHandle = null;
         runEdit("DungeonEditorView.moveCorridorDoor()",
-                result -> applyCorridorEditResult(result, handle, null),
+                result -> applyCorridorEditResult(result, nextHandle, null),
                 (mapId, onSuccess, onError) -> submitEdit(
                         mapId,
                         () -> editorService.moveCorridorDoor(mapId, handle.corridorId(), handle.roomId(), target.roomCell(), target.direction()),
@@ -643,7 +644,7 @@ public final class DungeonEditorView implements AppView {
 
     private void syncEditorTool() {
         DungeonEditorTool activeTool = activeTool();
-        if (deleteOverrideActive) {
+        if (toolModeState.deleteOverrideActive()) {
             controls.showTemporaryTool(activeTool);
         } else {
             controls.selectTool(activeTool);
@@ -750,45 +751,42 @@ public final class DungeonEditorView implements AppView {
     }
 
     private DungeonEditorTool activeTool() {
-        if (!deleteOverrideActive) {
-            return selectedTool;
-        }
-        DungeonEditorTool deleteTool = selectedTool.deleteVariant();
-        return deleteTool == null ? selectedTool : deleteTool;
+        return toolModeState.activeTool();
     }
 
     private boolean switchPersistentToolMode(boolean deleteMode) {
-        DungeonEditorTool nextTool = deleteMode ? selectedTool.deleteVariant() : selectedTool.editVariant();
-        if (nextTool == null || nextTool == selectedTool) {
+        DungeonEditorTool nextTool = toolModeState.switchPersistentMode(deleteMode);
+        if (nextTool == null) {
             return false;
         }
-        setSelectedTool(nextTool);
+        suspendedCorridorDraft = null;
+        applyActiveTool();
         return true;
     }
 
     private boolean setDeleteOverrideActive(boolean active) {
         if (active) {
-            DungeonEditorTool deleteTool = selectedTool.deleteVariant();
-            if (deleteOverrideActive || deleteTool == null || deleteTool == activeTool()) {
+            DungeonEditorTool deleteTool = toolModeState.selectedTool().deleteVariant();
+            if (toolModeState.deleteOverrideActive() || deleteTool == null || deleteTool == activeTool()) {
                 return false;
             }
             // Ctrl must behave like a reversible preview of delete mode, not a mode commit.
             suspendTemporaryToolState();
-            deleteOverrideActive = true;
+            toolModeState.showDeleteOverride();
             applyActiveTool();
             return true;
         }
-        if (!deleteOverrideActive) {
+        if (!toolModeState.deleteOverrideActive()) {
             return false;
         }
-        deleteOverrideActive = false;
+        toolModeState.clearDeleteOverride();
         applyActiveTool();
         restoreSuspendedToolState();
         return true;
     }
 
     private void suspendTemporaryToolState() {
-        if (selectedTool == DungeonEditorTool.CORRIDOR_CREATE) {
+        if (toolModeState.selectedTool() == DungeonEditorTool.CORRIDOR_CREATE) {
             suspendedCorridorDraft = new CorridorDraft(
                     pendingCorridorStart,
                     workspace.selectedCorridorDoorHandle(),
@@ -796,25 +794,21 @@ public final class DungeonEditorView implements AppView {
         } else {
             suspendedCorridorDraft = null;
         }
-        suspendedWallPathState = selectedTool.isWallTool() ? wallPathController.snapshotState() : null;
+        suspendedWallPathState = toolModeState.selectedTool().isWallTool() ? wallPathController.snapshotState() : null;
     }
 
     private void restoreSuspendedToolState() {
-        if (selectedTool == DungeonEditorTool.CORRIDOR_CREATE && suspendedCorridorDraft != null) {
+        if (toolModeState.selectedTool() == DungeonEditorTool.CORRIDOR_CREATE && suspendedCorridorDraft != null) {
             pendingCorridorStart = suspendedCorridorDraft.pendingStart();
             workspace.setSelectedCorridorDoorHandle(suspendedCorridorDraft.selectedDoorHandle());
             selectedCorridorWaypointHandle = suspendedCorridorDraft.selectedWaypointHandle();
             refreshStatePane();
         }
         suspendedCorridorDraft = null;
-        if (selectedTool.isWallTool() && suspendedWallPathState != null) {
+        if (toolModeState.selectedTool().isWallTool() && suspendedWallPathState != null) {
             wallPathController.restoreState(suspendedWallPathState);
         }
         suspendedWallPathState = null;
-    }
-
-    private static DungeonEditorTool normalizeEditorTool(DungeonEditorTool tool) {
-        return tool == null ? DungeonEditorTool.SELECT : tool;
     }
 
     private void handleEditFailure(long mapId, String action, Throwable throwable) {

@@ -58,6 +58,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
     @Override
     protected void renderContent(GraphicsContext gc) {
         CorridorRenderState corridorRenderState = corridorRenderState();
+        Map<Long, ClusterAnchorLayout> anchorLayouts = new HashMap<>();
         drawRoomOutlines(gc);
         drawCorridorComponentOutlines(gc);
         for (DungeonCorridor corridor : layout.corridors()) {
@@ -90,7 +91,8 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
             if (cluster.clusterId() == null) {
                 continue;
             }
-            AnchorPosition clusterAnchor = clusterAnchorPosition(cluster);
+            ClusterAnchorLayout anchorLayout = anchorLayout(anchorLayouts, cluster);
+            AnchorPosition clusterAnchor = clusterAnchorPosition(cluster, anchorLayout);
             double screenX = clusterAnchor.x();
             double screenY = clusterAnchor.y();
             boolean active = isActive(cluster);
@@ -107,7 +109,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
                     NODE_CENTER_RADIUS * 2,
                     NODE_CENTER_RADIUS * 2);
             DungeonCanvasTheme.drawCenteredLabel(gc, "Cluster " + cluster.clusterId(), screenX, screenY);
-            drawRoomSubNodes(gc, cluster);
+            drawRoomSubNodes(gc, cluster, anchorLayout);
         }
     }
 
@@ -122,8 +124,10 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
     protected DungeonRoomCluster findClusterAt(double screenX, double screenY) {
         DungeonRoomCluster closest = null;
         double bestDistance = Double.POSITIVE_INFINITY;
+        Map<Long, ClusterAnchorLayout> anchorLayouts = new HashMap<>();
         for (DungeonRoomCluster cluster : layout.clusters()) {
-            AnchorPosition anchor = clusterAnchorPosition(cluster);
+            ClusterAnchorLayout anchorLayout = anchorLayout(anchorLayouts, cluster);
+            AnchorPosition anchor = clusterAnchorPosition(cluster, anchorLayout);
             double centerX = anchor.x();
             double centerY = anchor.y();
             double distance = Math.hypot(centerX - screenX, centerY - screenY);
@@ -139,6 +143,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
     protected DungeonRoom findRoomAt(double screenX, double screenY) {
         DungeonRoom closest = null;
         double bestDistance = Double.POSITIVE_INFINITY;
+        Map<Long, ClusterAnchorLayout> anchorLayouts = new HashMap<>();
         for (DungeonRoom room : layout.rooms()) {
             if (room == null || room.roomId() == null) {
                 continue;
@@ -147,7 +152,8 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
             if (cluster == null) {
                 continue;
             }
-            AnchorPosition anchor = roomAnchorPosition(cluster, room);
+            ClusterAnchorLayout anchorLayout = anchorLayout(anchorLayouts, cluster);
+            AnchorPosition anchor = roomAnchorPosition(anchorLayout, room);
             double centerX = anchor.x();
             double centerY = anchor.y();
             double distance = Math.hypot(centerX - screenX, centerY - screenY);
@@ -406,13 +412,13 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
         }
     }
 
-    private void drawRoomSubNodes(GraphicsContext gc, DungeonRoomCluster cluster) {
+    private void drawRoomSubNodes(GraphicsContext gc, DungeonRoomCluster cluster, ClusterAnchorLayout anchorLayout) {
         for (DungeonRoom room : layout.rooms()) {
             if (!Objects.equals(room.clusterId(), cluster.clusterId())) {
                 continue;
             }
-            AnchorPosition clusterAnchor = clusterAnchorPosition(cluster);
-            AnchorPosition roomAnchor = roomAnchorPosition(cluster, room);
+            AnchorPosition clusterAnchor = clusterAnchorPosition(cluster, anchorLayout);
+            AnchorPosition roomAnchor = roomAnchorPosition(anchorLayout, room);
             double clusterX = clusterAnchor.x();
             double clusterY = clusterAnchor.y();
             double roomX = roomAnchor.x();
@@ -429,26 +435,26 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
         }
     }
 
-    private AnchorPosition clusterAnchorPosition(DungeonRoomCluster cluster) {
-        Point2i center = previewCenter(cluster);
-        double x = previewScreenX(center.x() + 0.5, cluster.clusterId());
-        double y = previewScreenY(center.y() + 0.5, cluster.clusterId());
-        boolean overlapsRoom = layout.roomsForCluster(cluster.clusterId()).stream()
-                .anyMatch(room -> previewCenter(room).equals(center));
-        return new AnchorPosition(x, overlapsRoom ? y - 12 : y);
+    private ClusterAnchorLayout anchorLayout(Map<Long, ClusterAnchorLayout> cache, DungeonRoomCluster cluster) {
+        return cache.computeIfAbsent(
+                cluster.clusterId(),
+                ignored -> ClusterAnchorLayout.forCluster(layout, cluster, this::previewCenter, this::previewCenter));
     }
 
-    private AnchorPosition roomAnchorPosition(DungeonRoomCluster cluster, DungeonRoom room) {
-        Point2i center = previewCenter(room);
+    private AnchorPosition clusterAnchorPosition(DungeonRoomCluster cluster, ClusterAnchorLayout anchorLayout) {
+        Point2i center = anchorLayout.clusterCenter();
+        double x = previewScreenX(center.x() + 0.5, cluster.clusterId());
+        double y = previewScreenY(center.y() + 0.5, cluster.clusterId());
+        return new AnchorPosition(x, anchorLayout.clusterOverlapsRoom() ? y - 12 : y);
+    }
+
+    private AnchorPosition roomAnchorPosition(ClusterAnchorLayout anchorLayout, DungeonRoom room) {
+        ClusterAnchorLayout.RoomAnchorGroup roomGroup = anchorLayout.roomGroup(room);
+        Point2i center = roomGroup.center();
         double x = previewScreenX(center.x() + 0.5, room.clusterId());
         double y = previewScreenY(center.y() + 0.5, room.clusterId());
-        List<DungeonRoom> centeredRooms = layout.roomsForCluster(cluster.clusterId()).stream()
-                .filter(candidate -> previewCenter(candidate).equals(center))
-                .sorted(java.util.Comparator.comparing(DungeonRoom::roomId))
-                .toList();
-        int index = centeredRooms.indexOf(room);
-        double stackOffset = centeredRooms.size() <= 1 ? 0 : (index - (centeredRooms.size() - 1) / 2.0) * 16.0;
-        if (center.equals(previewCenter(cluster))) {
+        double stackOffset = roomGroup.count() <= 1 ? 0 : (roomGroup.index() - (roomGroup.count() - 1) / 2.0) * 16.0;
+        if (roomGroup.overlapsCluster(anchorLayout.clusterCenter())) {
             stackOffset += 14;
         }
         return new AnchorPosition(x, y + stackOffset);
@@ -1102,7 +1108,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
     private DoorSegment snapDoorSegment(CorridorEditInteractionController.DoorDragPreview preview) {
         CorridorEditInteractionController.DoorMoveTarget target = preview.snapTarget();
         EdgeVertices vertices = edgeVertices(target.roomCell(), target.direction());
-        return new DoorSegment(vertices.start(), vertices.end(), previewCorridorDoorHandle.roomId(), target.roomCell());
+        return new DoorSegment(vertices.start(), vertices.end(), target.roomId(), target.roomCell());
     }
 
     private SegmentKey nearestDisplaySegmentForDoor(DoorSegment door, CorridorDisplayPath displayPath) {
@@ -1224,8 +1230,5 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
             Map<DoorMarkerKey, List<Long>> corridorIdsByDoorMarker,
             Map<Long, CorridorDisplayPath> displayPaths
     ) {
-    }
-
-    private record AnchorPosition(double x, double y) {
     }
 }

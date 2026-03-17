@@ -3,6 +3,7 @@ package features.world.dungeonmap.service.topology;
 import features.world.dungeonmap.model.CorridorDoorOverride;
 import features.world.dungeonmap.model.CorridorWaypoint;
 import features.world.dungeonmap.model.DungeonCorridor;
+import features.world.dungeonmap.model.DungeonCorridorDoorMoveSupport;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.DungeonLayoutEditResult;
 import features.world.dungeonmap.model.DungeonRoom;
@@ -194,34 +195,34 @@ public final class DungeonCorridorTopologySupport {
     ) throws Exception {
         DungeonLayout layout = requireLayout(conn, mapId);
         DungeonCorridor corridor = requireCorridor(layout, corridorId);
-        DungeonRoom room = requireRoom(layout, roomId);
         if (!corridor.roomIds().contains(roomId)) {
             throw new IllegalArgumentException("Raum " + roomId + " gehört nicht zu Korridor " + corridorId);
         }
-        if (cell == null || direction == null || !layout.roomCells(roomId).contains(cell)) {
+        DungeonRoom targetRoom = layout.roomAtCell(cell);
+        if (cell == null || direction == null || targetRoom == null) {
             throw new IllegalArgumentException("Tür-Override muss auf einer gültigen Raumkante liegen");
         }
+        long targetRoomId = targetRoom.roomId();
         Point2i outsideCell = cell.add(direction.delta());
-        if (layout.roomCells(roomId).contains(outsideCell)) {
+        if (layout.roomCells(targetRoomId).contains(outsideCell)) {
             throw new IllegalArgumentException("Tür-Override muss auf einer exponierten Raumkante liegen");
         }
-        if (isOccupiedByOtherRoom(layout, roomId, outsideCell)) {
+        if (isOccupiedByOtherRoom(layout, targetRoomId, outsideCell)) {
             throw new IllegalArgumentException("Tür-Override muss auf einer freien exponierten Raumkante liegen");
         }
-        DungeonRoomCluster cluster = layout.clusterById(room.clusterId());
+        DungeonRoomCluster cluster = layout.clusterById(targetRoom.clusterId());
         if (cluster == null) {
-            throw new IllegalArgumentException("Referenz-Cluster für Raum fehlt: " + room.clusterId());
+            throw new IllegalArgumentException("Referenz-Cluster für Raum fehlt: " + targetRoom.clusterId());
         }
-        CorridorDoorOverride override = new CorridorDoorOverride(
+        DungeonCorridorDoorMoveSupport.DoorMoveUpdate update = DungeonCorridorDoorMoveSupport.reassignDoor(
+                corridor,
                 roomId,
-                room.clusterId(),
-                cell.subtract(cluster.center()),
+                targetRoom,
+                cluster,
+                cell,
                 direction);
-        List<CorridorDoorOverride> overrides = new ArrayList<>(corridor.doorOverrides().stream()
-                .filter(existing -> existing.roomId() != roomId)
-                .toList());
-        overrides.add(override);
-        DungeonRepository.replaceCorridorDoorOverrides(conn, mapId, corridorId, overrides);
+        DungeonRepository.replaceCorridorRooms(conn, mapId, corridorId, update.roomIds());
+        DungeonRepository.replaceCorridorDoorOverrides(conn, mapId, corridorId, update.doorOverrides());
         return loadEditResult(conn, mapId, corridorId);
     }
 

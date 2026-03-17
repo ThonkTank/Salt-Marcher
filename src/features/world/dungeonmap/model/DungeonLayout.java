@@ -84,6 +84,18 @@ public final class DungeonLayout {
         return shape == null ? Set.of() : shape.cells();
     }
 
+    public DungeonRoom roomAtCell(Point2i cell) {
+        if (cell == null) {
+            return null;
+        }
+        for (DungeonRoom room : rooms) {
+            if (room != null && room.roomId() != null && roomCells(room.roomId()).contains(cell)) {
+                return room;
+            }
+        }
+        return null;
+    }
+
     public Set<Point2i> clusterCells(Long clusterId) {
         ClusterState state = clusterId == null ? null : clusterStatesById.get(clusterId);
         return state == null ? Set.of() : state.cells();
