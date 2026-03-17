@@ -690,9 +690,43 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
                 displaySegments.add(current);
                 previous = current;
             }
-            result.put(corridor.corridorId(), new CorridorDisplayPath(List.copyOf(displaySegments)));
+            CorridorDisplayPath displayPath = new CorridorDisplayPath(List.copyOf(displaySegments));
+            result.put(corridor.corridorId(), previewAdjustedDisplayPath(corridor, displayPath));
         }
         return result;
+    }
+
+    private CorridorDisplayPath previewAdjustedDisplayPath(DungeonCorridor corridor, CorridorDisplayPath displayPath) {
+        if (corridor == null
+                || displayPath == null
+                || displayPath.segments().isEmpty()
+                || previewCorridorDoorHandle == null
+                || previewCorridorDoorDrag == null
+                || previewCorridorDoorHandle.corridorId() != corridor.corridorId()) {
+            return displayPath;
+        }
+        DoorSegment snapDoor = snapDoorSegment(previewCorridorDoorDrag);
+        SegmentKey doorSegmentKey = nearestDisplaySegmentForDoor(snapDoor, displayPath);
+        if (doorSegmentKey == null) {
+            return displayPath;
+        }
+        CorridorEditInteractionController.DoorPreviewSegment previewSegment = previewCorridorDoorDrag.previewSegment();
+        double previewX = camera.toScreenX(previewSegment.centerWorldX());
+        double previewY = camera.toScreenY(previewSegment.centerWorldY());
+        List<OffsetLine> adjustedSegments = new ArrayList<>(displayPath.segments());
+        for (int index = 0; index < adjustedSegments.size(); index++) {
+            OffsetLine segment = adjustedSegments.get(index);
+            if (!doorSegmentKey.equals(segment.canonicalSegment())) {
+                continue;
+            }
+            double startDistance = Math.hypot(segment.x1() - previewX, segment.y1() - previewY);
+            double endDistance = Math.hypot(segment.x2() - previewX, segment.y2() - previewY);
+            adjustedSegments.set(index, startDistance <= endDistance
+                    ? new OffsetLine(previewX, previewY, segment.x2(), segment.y2(), segment.canonicalSegment())
+                    : new OffsetLine(segment.x1(), segment.y1(), previewX, previewY, segment.canonicalSegment()));
+            return new CorridorDisplayPath(adjustedSegments);
+        }
+        return displayPath;
     }
 
     private Map<SegmentKey, List<Long>> laneOrderBySegment(Map<SegmentKey, List<Long>> corridorIdsBySegment) {
