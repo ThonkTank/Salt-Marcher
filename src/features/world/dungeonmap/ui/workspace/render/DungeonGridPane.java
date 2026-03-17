@@ -638,7 +638,18 @@ public final class DungeonGridPane extends AbstractDungeonPane {
     }
 
     private Set<Point2i> displayedCorridorCells(DungeonLayoutRenderData corridorRenderData) {
-        return corridorRenderData.corridorCells();
+        if (previewCorridorGeometry == null || layout == null) {
+            return corridorRenderData.corridorCells();
+        }
+        Set<Point2i> cells = new LinkedHashSet<>();
+        for (DungeonCorridor corridor : layout.corridors()) {
+            CorridorGeometry geometry = corridorGeometryForDisplay(corridor);
+            if (geometry == null || !geometry.routable()) {
+                continue;
+            }
+            cells.addAll(geometry.cells());
+        }
+        return cells;
     }
 
     private void drawPreviewDoor(GraphicsContext gc) {

@@ -1,8 +1,10 @@
 package features.world.dungeonmap.ui.workspace.render;
 
 import features.world.dungeonmap.model.CorridorGeometry;
+import features.world.dungeonmap.model.CorridorDoorOverride;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.DungeonCorridor;
+import features.world.dungeonmap.model.DungeonCorridorGeometry;
 import features.world.dungeonmap.model.DungeonClusterEdgeRef;
 import features.world.dungeonmap.model.DungeonCorridorEndpoint;
 import features.world.dungeonmap.model.DungeonSelection;
@@ -56,6 +58,8 @@ abstract class AbstractDungeonPane extends StackPane {
     protected Long hoveredCorridorId;
     protected CorridorEditInteractionController.DoorHandle previewCorridorDoorHandle;
     protected CorridorEditInteractionController.DoorDragPreview previewCorridorDoorDrag;
+    protected CorridorGeometry previewCorridorGeometry;
+    protected DungeonCorridorGeometry.LayoutContext corridorLayoutContext;
     private double lastPointerScreenX;
     private double lastPointerScreenY;
     private boolean pointerInsideCanvas;
@@ -311,6 +315,7 @@ abstract class AbstractDungeonPane extends StackPane {
         this.renderData = renderData;
         this.selectedTarget = selectedTarget;
         this.activeLocation = activeLocation;
+        this.corridorLayoutContext = layout == null ? null : DungeonCorridorGeometry.layoutContext(layout);
         this.previewClusterCenters.clear();
         this.previewPaintCells.clear();
         clearSelectionPreview();
@@ -493,6 +498,11 @@ abstract class AbstractDungeonPane extends StackPane {
     protected final CorridorGeometry corridorGeometryForDisplay(DungeonCorridor corridor) {
         if (corridor == null || corridor.corridorId() == null) {
             return null;
+        }
+        if (previewCorridorGeometry != null
+                && previewCorridorDoorHandle != null
+                && previewCorridorDoorHandle.corridorId() == corridor.corridorId()) {
+            return previewCorridorGeometry;
         }
         return renderData == null ? null : renderData.corridorGeometry(corridor.corridorId());
     }
@@ -690,18 +700,59 @@ abstract class AbstractDungeonPane extends StackPane {
                 && Objects.equals(previewCorridorDoorDrag, preview)) {
             return false;
         }
+        CorridorGeometry nextGeometry = buildCorridorDoorPreviewGeometry(handle, preview);
+        if (nextGeometry == null) {
+            return clearCorridorDoorPreview();
+        }
         previewCorridorDoorHandle = handle;
         previewCorridorDoorDrag = preview;
+        previewCorridorGeometry = nextGeometry;
         return true;
     }
 
     private boolean clearCorridorDoorPreview() {
-        if (previewCorridorDoorHandle == null && previewCorridorDoorDrag == null) {
+        if (previewCorridorDoorHandle == null && previewCorridorDoorDrag == null && previewCorridorGeometry == null) {
             return false;
         }
         previewCorridorDoorHandle = null;
         previewCorridorDoorDrag = null;
+        previewCorridorGeometry = null;
         return true;
+    }
+
+    private CorridorGeometry buildCorridorDoorPreviewGeometry(
+            CorridorEditInteractionController.DoorHandle handle,
+            CorridorEditInteractionController.DoorDragPreview preview
+    ) {
+        if (layout == null || handle == null || preview == null || preview.snapTarget() == null || corridorLayoutContext == null) {
+            return null;
+        }
+        CorridorEditInteractionController.DoorMoveTarget target = preview.snapTarget();
+        DungeonCorridor corridor = layout.corridorById(handle.corridorId());
+        DungeonRoom room = layout.roomById(handle.roomId());
+        if (corridor == null || room == null) {
+            return null;
+        }
+        DungeonRoomCluster cluster = layout.clusterById(room.clusterId());
+        if (cluster == null) {
+            return null;
+        }
+        CorridorDoorOverride override = new CorridorDoorOverride(
+                room.roomId(),
+                room.clusterId(),
+                target.roomCell().subtract(cluster.center()),
+                target.direction());
+        List<CorridorDoorOverride> overrides = corridor.doorOverrides().stream()
+                .filter(existing -> existing.roomId() != room.roomId())
+                .collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new));
+        overrides.add(override);
+        DungeonCorridor previewCorridor = new DungeonCorridor(
+                corridor.corridorId(),
+                corridor.mapId(),
+                corridor.roomIds(),
+                overrides,
+                corridor.waypoints());
+        return DungeonCorridorGeometry.corridorGeometry(layout, previewCorridor, corridorLayoutContext);
     }
 
     protected abstract EditorSurface surface();
