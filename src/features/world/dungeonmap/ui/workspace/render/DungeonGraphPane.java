@@ -726,14 +726,10 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
                 continue;
             }
             List<OffsetLine> displaySegments = new ArrayList<>();
-            OffsetLine previous = null;
+            // Graph paths intentionally mirror only real corridor geometry.
+            // Do not synthesize connector lines between non-touching segments.
             for (GridSegment segment : geometry.segments()) {
-                OffsetLine current = offsetLine(segment, corridor.corridorId(), laneOrderBySegment);
-                if (previous != null && !samePoint(previous.x2(), previous.y2(), current.x1(), current.y1())) {
-                    displaySegments.add(new OffsetLine(previous.x2(), previous.y2(), current.x1(), current.y1(), null));
-                }
-                displaySegments.add(current);
-                previous = current;
+                displaySegments.add(offsetLine(segment, corridor.corridorId(), laneOrderBySegment));
             }
             CorridorDisplayPath displayPath = new CorridorDisplayPath(List.copyOf(displaySegments));
             result.put(corridor.corridorId(), previewAdjustedDisplayPath(corridor, displayPath));
@@ -1141,10 +1137,6 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
         return roomCell.y() < door.start().y()
                 ? new Point2i(roomCell.x(), roomCell.y() + 1)
                 : new Point2i(roomCell.x(), roomCell.y() - 1);
-    }
-
-    private boolean samePoint(double x1, double y1, double x2, double y2) {
-        return Math.abs(x1 - x2) < 0.001 && Math.abs(y1 - y2) < 0.001;
     }
 
     private int manhattan(Point2i a, Point2i b) {
