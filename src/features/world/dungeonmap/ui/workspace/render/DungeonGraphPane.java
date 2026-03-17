@@ -44,6 +44,8 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
     private DungeonLayout cachedRenderStateLayout;
     private DungeonLayoutRenderData cachedRenderStateData;
     private Map<Long, Point2i> cachedPreviewCenters = Map.of();
+    private CorridorEditInteractionController.DoorHandle cachedPreviewDoorHandle;
+    private CorridorEditInteractionController.DoorDragPreview cachedPreviewDoorDrag;
     private long cachedCameraProjectionVersion = -1;
     private CorridorRenderState cachedCorridorRenderState;
 
@@ -316,10 +318,14 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
                 || cachedRenderStateLayout != layout
                 || cachedRenderStateData != corridorRenderData
                 || !cachedPreviewCenters.equals(previewClusterCenters)
+                || !Objects.equals(cachedPreviewDoorHandle, previewCorridorDoorHandle)
+                || !Objects.equals(cachedPreviewDoorDrag, previewCorridorDoorDrag)
                 || cachedCameraProjectionVersion != camera.projectionVersion()) {
             cachedRenderStateLayout = layout;
             cachedRenderStateData = corridorRenderData;
             cachedPreviewCenters = Map.copyOf(previewClusterCenters);
+            cachedPreviewDoorHandle = previewCorridorDoorHandle;
+            cachedPreviewDoorDrag = previewCorridorDoorDrag;
             cachedCameraProjectionVersion = camera.projectionVersion();
             cachedCorridorRenderState = buildCorridorRenderState();
         }
