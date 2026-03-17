@@ -1,10 +1,8 @@
 package features.world.dungeonmap.ui.workspace.render;
 
 import features.world.dungeonmap.model.CorridorGeometry;
-import features.world.dungeonmap.model.CorridorDoorOverride;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.DungeonCorridor;
-import features.world.dungeonmap.model.DungeonCorridorGeometry;
 import features.world.dungeonmap.model.DungeonClusterEdgeRef;
 import features.world.dungeonmap.model.DungeonCorridorEndpoint;
 import features.world.dungeonmap.model.DungeonSelection;
@@ -37,6 +35,7 @@ import java.util.function.Consumer;
 
 abstract class AbstractDungeonPane extends StackPane {
 
+    protected static final double CORRIDOR_DOOR_PREVIEW_HALF_LENGTH = 0.35;
     private static final Point2i ZERO = new Point2i(0, 0);
 
     protected final Canvas canvas = new Canvas();
@@ -56,9 +55,7 @@ abstract class AbstractDungeonPane extends StackPane {
     protected CorridorEditInteractionController.DoorHandle selectedCorridorDoorHandle;
     protected Long hoveredCorridorId;
     protected CorridorEditInteractionController.DoorHandle previewCorridorDoorHandle;
-    protected CorridorEditInteractionController.DoorMoveTarget previewCorridorDoorTarget;
-    protected CorridorGeometry previewCorridorGeometry;
-    protected features.world.dungeonmap.model.DungeonCorridorGeometry.LayoutContext corridorLayoutContext;
+    protected CorridorEditInteractionController.DoorDragPreview previewCorridorDoorDrag;
     private double lastPointerScreenX;
     private double lastPointerScreenY;
     private boolean pointerInsideCanvas;
@@ -87,20 +84,20 @@ abstract class AbstractDungeonPane extends StackPane {
             }
 
             @Override
-            public CorridorEditInteractionController.DoorMoveTarget corridorDoorMoveTargetAt(
+            public CorridorEditInteractionController.DoorDragPreview corridorDoorDragPreviewAt(
                     double screenX,
                     double screenY,
                     CorridorEditInteractionController.DoorHandle handle
             ) {
-                return AbstractDungeonPane.this.corridorDoorMoveTargetAt(screenX, screenY, handle);
+                return AbstractDungeonPane.this.corridorDoorDragPreviewAt(screenX, screenY, handle);
             }
 
             @Override
             public boolean updateCorridorDoorPreview(
                     CorridorEditInteractionController.DoorHandle handle,
-                    CorridorEditInteractionController.DoorMoveTarget target
+                    CorridorEditInteractionController.DoorDragPreview preview
             ) {
-                return AbstractDungeonPane.this.updateCorridorDoorPreview(handle, target);
+                return AbstractDungeonPane.this.updateCorridorDoorPreview(handle, preview);
             }
 
             @Override
@@ -314,7 +311,6 @@ abstract class AbstractDungeonPane extends StackPane {
         this.renderData = renderData;
         this.selectedTarget = selectedTarget;
         this.activeLocation = activeLocation;
-        this.corridorLayoutContext = layout == null ? null : DungeonCorridorGeometry.layoutContext(layout);
         this.previewClusterCenters.clear();
         this.previewPaintCells.clear();
         clearSelectionPreview();
@@ -446,7 +442,7 @@ abstract class AbstractDungeonPane extends StackPane {
         return null;
     }
 
-    protected CorridorEditInteractionController.DoorMoveTarget corridorDoorMoveTargetAt(
+    protected CorridorEditInteractionController.DoorDragPreview corridorDoorDragPreviewAt(
             double screenX,
             double screenY,
             CorridorEditInteractionController.DoorHandle handle
@@ -498,11 +494,6 @@ abstract class AbstractDungeonPane extends StackPane {
         if (corridor == null || corridor.corridorId() == null) {
             return null;
         }
-        if (previewCorridorGeometry != null
-                && previewCorridorDoorHandle != null
-                && previewCorridorDoorHandle.corridorId() == corridor.corridorId()) {
-            return previewCorridorGeometry;
-        }
         return renderData == null ? null : renderData.corridorGeometry(corridor.corridorId());
     }
 
@@ -538,11 +529,11 @@ abstract class AbstractDungeonPane extends StackPane {
                 .orElse(null);
     }
 
-    protected final CorridorEditInteractionController.DoorMoveTarget nearestCorridorDoorMoveTarget(
+    protected final CorridorEditInteractionController.DoorDragPreview projectCorridorDoorDragPreview(
             double screenX,
             double screenY,
             CorridorEditInteractionController.DoorHandle handle,
-            double maxDistance
+            double previewHalfLength
     ) {
         CorridorEditInteractionController.DoorHandle normalizedHandle = normalizeCorridorDoorHandle(handle);
         if (normalizedHandle == null || layout == null) {
@@ -552,30 +543,17 @@ abstract class AbstractDungeonPane extends StackPane {
         if (room == null) {
             return null;
         }
-        Set<Point2i> roomCells = roomCellsFor(room);
-        CorridorEditInteractionController.DoorMoveTarget bestTarget = null;
-        double bestDistance = Double.POSITIVE_INFINITY;
-        for (Point2i roomCell : roomCells) {
-            for (DungeonRoomCluster.EdgeDirection direction : DungeonRoomCluster.EdgeDirection.values()) {
-                Point2i outsideCell = roomCell.add(direction.delta());
-                if (roomCells.contains(outsideCell) || isOccupiedByOtherRoom(normalizedHandle.roomId(), outsideCell)) {
-                    continue;
-                }
-                EdgeVertices vertices = edgeVertices(roomCell, direction);
-                double distance = distanceToSegment(
-                        screenX,
-                        screenY,
-                        camera.toScreenX(vertices.start().x()),
-                        camera.toScreenY(vertices.start().y()),
-                        camera.toScreenX(vertices.end().x()),
-                        camera.toScreenY(vertices.end().y()));
-                if (distance < bestDistance) {
-                    bestDistance = distance;
-                    bestTarget = new CorridorEditInteractionController.DoorMoveTarget(roomCell, direction);
-                }
-            }
+        DoorEdgeProjection projection = nearestCorridorDoorProjection(screenX, screenY, normalizedHandle, room);
+        if (projection == null) {
+            return null;
         }
-        return bestDistance <= maxDistance ? bestTarget : null;
+        // Drag previews stay continuous so the door can follow the pointer along the wall;
+        // persistence still snaps back to one discrete room edge on release.
+        CorridorEditInteractionController.DoorMoveTarget snapTarget = new CorridorEditInteractionController.DoorMoveTarget(
+                projection.roomCell(),
+                projection.direction());
+        CorridorEditInteractionController.DoorPreviewSegment previewSegment = previewDoorSegment(projection, previewHalfLength);
+        return new CorridorEditInteractionController.DoorDragPreview(snapTarget, previewSegment);
     }
 
     protected final int insertIndexForSegment(long corridorId, CorridorGeometry geometry, int segmentIndex) {
@@ -687,72 +665,43 @@ abstract class AbstractDungeonPane extends StackPane {
         return !previewClusterCenters.isEmpty();
     }
 
+    protected final CorridorEditInteractionController.DoorDragPreview corridorDoorPreview() {
+        return previewCorridorDoorDrag;
+    }
+
+    protected final boolean isPreviewDoor(long corridorId, long roomId) {
+        return previewCorridorDoorHandle != null
+                && previewCorridorDoorHandle.corridorId() == corridorId
+                && previewCorridorDoorHandle.roomId() == roomId
+                && previewCorridorDoorDrag != null;
+    }
+
     private boolean updateCorridorDoorPreview(
             CorridorEditInteractionController.DoorHandle handle,
-            CorridorEditInteractionController.DoorMoveTarget target
+            CorridorEditInteractionController.DoorDragPreview preview
     ) {
         if (hasClusterDragPreview()) {
             return clearCorridorDoorPreview();
         }
-        if (handle == null || target == null) {
+        if (handle == null || preview == null || preview.previewSegment() == null || preview.snapTarget() == null) {
             return clearCorridorDoorPreview();
         }
         if (Objects.equals(previewCorridorDoorHandle, handle)
-                && Objects.equals(previewCorridorDoorTarget, target)) {
+                && Objects.equals(previewCorridorDoorDrag, preview)) {
             return false;
         }
-        CorridorGeometry nextGeometry = buildCorridorDoorPreviewGeometry(handle, target);
-        if (nextGeometry == null) {
-            return clearCorridorDoorPreview();
-        }
         previewCorridorDoorHandle = handle;
-        previewCorridorDoorTarget = target;
-        previewCorridorGeometry = nextGeometry;
+        previewCorridorDoorDrag = preview;
         return true;
     }
 
     private boolean clearCorridorDoorPreview() {
-        if (previewCorridorDoorHandle == null && previewCorridorDoorTarget == null && previewCorridorGeometry == null) {
+        if (previewCorridorDoorHandle == null && previewCorridorDoorDrag == null) {
             return false;
         }
         previewCorridorDoorHandle = null;
-        previewCorridorDoorTarget = null;
-        previewCorridorGeometry = null;
+        previewCorridorDoorDrag = null;
         return true;
-    }
-
-    private CorridorGeometry buildCorridorDoorPreviewGeometry(
-            CorridorEditInteractionController.DoorHandle handle,
-            CorridorEditInteractionController.DoorMoveTarget target
-    ) {
-        if (layout == null || handle == null || target == null) {
-            return null;
-        }
-        DungeonCorridor corridor = layout.corridorById(handle.corridorId());
-        DungeonRoom room = layout.roomById(handle.roomId());
-        if (corridor == null || room == null) {
-            return null;
-        }
-        DungeonRoomCluster cluster = layout.clusterById(room.clusterId());
-        if (cluster == null) {
-            return null;
-        }
-        CorridorDoorOverride override = new CorridorDoorOverride(
-                room.roomId(),
-                room.clusterId(),
-                target.roomCell().subtract(cluster.center()),
-                target.direction());
-        java.util.List<CorridorDoorOverride> overrides = corridor.doorOverrides().stream()
-                .filter(existing -> existing.roomId() != room.roomId())
-                .collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new));
-        overrides.add(override);
-        DungeonCorridor previewCorridor = new DungeonCorridor(
-                corridor.corridorId(),
-                corridor.mapId(),
-                corridor.roomIds(),
-                overrides,
-                corridor.waypoints());
-        return DungeonCorridorGeometry.corridorGeometry(layout, previewCorridor, corridorLayoutContext);
     }
 
     protected abstract EditorSurface surface();
@@ -914,6 +863,68 @@ abstract class AbstractDungeonPane extends StackPane {
             return null;
         }
         return new InvalidCorridorLink(from, to);
+    }
+
+    private DoorEdgeProjection nearestCorridorDoorProjection(
+            double screenX,
+            double screenY,
+            CorridorEditInteractionController.DoorHandle handle,
+            DungeonRoom room
+    ) {
+        Set<Point2i> roomCells = roomCellsFor(room);
+        double worldX = camera.toWorldX(screenX);
+        double worldY = camera.toWorldY(screenY);
+        DoorEdgeProjection bestProjection = null;
+        double bestDistanceSquared = Double.POSITIVE_INFINITY;
+        for (Point2i roomCell : roomCells) {
+            for (DungeonRoomCluster.EdgeDirection direction : DungeonRoomCluster.EdgeDirection.values()) {
+                Point2i outsideCell = roomCell.add(direction.delta());
+                if (roomCells.contains(outsideCell) || isOccupiedByOtherRoom(handle.roomId(), outsideCell)) {
+                    continue;
+                }
+                EdgeVertices vertices = edgeVertices(roomCell, direction);
+                double projectionT = projectionT(
+                        worldX,
+                        worldY,
+                        vertices.start().x(),
+                        vertices.start().y(),
+                        vertices.end().x(),
+                        vertices.end().y());
+                double projectedX = lerp(vertices.start().x(), vertices.end().x(), projectionT);
+                double projectedY = lerp(vertices.start().y(), vertices.end().y(), projectionT);
+                double distanceSquared = squaredDistance(worldX, worldY, projectedX, projectedY);
+                if (distanceSquared < bestDistanceSquared) {
+                    bestDistanceSquared = distanceSquared;
+                    bestProjection = new DoorEdgeProjection(
+                            roomCell,
+                            direction,
+                            vertices,
+                            projectionT,
+                            projectedX,
+                            projectedY);
+                }
+            }
+        }
+        return bestProjection;
+    }
+
+    private CorridorEditInteractionController.DoorPreviewSegment previewDoorSegment(
+            DoorEdgeProjection projection,
+            double previewHalfLength
+    ) {
+        double startT = Math.max(0.0, projection.projectionT() - previewHalfLength);
+        double endT = Math.min(1.0, projection.projectionT() + previewHalfLength);
+        double startWorldX = lerp(projection.vertices().start().x(), projection.vertices().end().x(), startT);
+        double startWorldY = lerp(projection.vertices().start().y(), projection.vertices().end().y(), startT);
+        double endWorldX = lerp(projection.vertices().start().x(), projection.vertices().end().x(), endT);
+        double endWorldY = lerp(projection.vertices().start().y(), projection.vertices().end().y(), endT);
+        return new CorridorEditInteractionController.DoorPreviewSegment(
+                startWorldX,
+                startWorldY,
+                endWorldX,
+                endWorldY,
+                projection.projectedWorldX(),
+                projection.projectedWorldY());
     }
 
     protected final EdgeVertices edgeVertices(Point2i cell, DungeonRoomCluster.EdgeDirection direction) {
@@ -1360,6 +1371,26 @@ abstract class AbstractDungeonPane extends StackPane {
         return button == MouseButton.PRIMARY && tool == DungeonEditorTool.SELECT;
     }
 
+    private static double projectionT(double px, double py, double x1, double y1, double x2, double y2) {
+        double dx = x2 - x1;
+        double dy = y2 - y1;
+        double lengthSquared = dx * dx + dy * dy;
+        if (lengthSquared == 0) {
+            return 0.0;
+        }
+        return Math.max(0.0, Math.min(1.0, ((px - x1) * dx + (py - y1) * dy) / lengthSquared));
+    }
+
+    private static double squaredDistance(double x1, double y1, double x2, double y2) {
+        double dx = x1 - x2;
+        double dy = y1 - y2;
+        return dx * dx + dy * dy;
+    }
+
+    private static double lerp(double start, double end, double t) {
+        return start + (end - start) * t;
+    }
+
     private CorridorEditInteractionController.DoorHandle normalizeCorridorDoorHandle(CorridorEditInteractionController.DoorHandle handle) {
         if (handle == null || editorTool != DungeonEditorTool.SELECT) {
             return null;
@@ -1500,6 +1531,16 @@ abstract class AbstractDungeonPane extends StackPane {
     }
 
     protected record EdgeVertices(Point2i start, Point2i end) {
+    }
+
+    private record DoorEdgeProjection(
+            Point2i roomCell,
+            DungeonRoomCluster.EdgeDirection direction,
+            EdgeVertices vertices,
+            double projectionT,
+            double projectedWorldX,
+            double projectedWorldY
+    ) {
     }
 
     private static final class PaneCallbacks {

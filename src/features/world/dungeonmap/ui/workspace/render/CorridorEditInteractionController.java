@@ -151,10 +151,10 @@ public final class CorridorEditInteractionController {
         if (!(dragState instanceof DoorDragState doorDragState)) {
             return false;
         }
-        DoorMoveTarget target = host.corridorDoorMoveTargetAt(event.getX(), event.getY(), doorDragState.handle());
-        return target == null
+        DoorDragPreview preview = host.corridorDoorDragPreviewAt(event.getX(), event.getY(), doorDragState.handle());
+        return preview == null
                 ? host.clearCorridorDoorPreview()
-                : host.updateCorridorDoorPreview(doorDragState.handle(), target);
+                : host.updateCorridorDoorPreview(doorDragState.handle(), preview);
     }
 
     boolean handleDragRelease(MouseEvent event) {
@@ -163,11 +163,11 @@ public final class CorridorEditInteractionController {
             dragState = IdleDragState.INSTANCE;
             return false;
         }
-        DoorMoveTarget target = host.corridorDoorMoveTargetAt(event.getX(), event.getY(), doorDragState.handle());
+        DoorDragPreview preview = host.corridorDoorDragPreviewAt(event.getX(), event.getY(), doorDragState.handle());
         host.clearCorridorDoorPreview();
         dragState = IdleDragState.INSTANCE;
-        if (target != null) {
-            onCorridorDoorMoved.accept(doorDragState.handle(), target);
+        if (preview != null && preview.snapTarget() != null) {
+            onCorridorDoorMoved.accept(doorDragState.handle(), preview.snapTarget());
         }
         return true;
     }
@@ -176,8 +176,8 @@ public final class CorridorEditInteractionController {
         boolean editable();
         DungeonEditorTool editorTool();
         DoorHandle findCorridorDoorHandleAt(double screenX, double screenY);
-        DoorMoveTarget corridorDoorMoveTargetAt(double screenX, double screenY, DoorHandle handle);
-        boolean updateCorridorDoorPreview(DoorHandle handle, DoorMoveTarget target);
+        DoorDragPreview corridorDoorDragPreviewAt(double screenX, double screenY, DoorHandle handle);
+        boolean updateCorridorDoorPreview(DoorHandle handle, DoorDragPreview preview);
         boolean clearCorridorDoorPreview();
         WaypointHandle findCorridorWaypointHandleAt(double screenX, double screenY);
         WaypointHandle findCorridorWaypointRemoveHandleAt(double screenX, double screenY);
@@ -193,6 +193,22 @@ public final class CorridorEditInteractionController {
     public record DoorMoveTarget(
             Point2i roomCell,
             features.world.dungeonmap.model.DungeonRoomCluster.EdgeDirection direction
+    ) {
+    }
+
+    public record DoorDragPreview(
+            DoorMoveTarget snapTarget,
+            DoorPreviewSegment previewSegment
+    ) {
+    }
+
+    public record DoorPreviewSegment(
+            double startWorldX,
+            double startWorldY,
+            double endWorldX,
+            double endWorldY,
+            double centerWorldX,
+            double centerWorldY
     ) {
     }
 

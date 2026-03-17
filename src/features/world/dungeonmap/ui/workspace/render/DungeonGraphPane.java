@@ -26,7 +26,6 @@ import java.util.Objects;
 import java.util.Set;
 
 public final class DungeonGraphPane extends AbstractDungeonPane {
-
     private static final double NODE_RADIUS = 16;
     private static final double NODE_CENTER_RADIUS = 3;
     private static final double SHARED_SEGMENT_OFFSET = 7.0;
@@ -45,8 +44,6 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
     private DungeonLayout cachedRenderStateLayout;
     private DungeonLayoutRenderData cachedRenderStateData;
     private Map<Long, Point2i> cachedPreviewCenters = Map.of();
-    private CorridorEditInteractionController.DoorHandle cachedPreviewDoorHandle;
-    private CorridorEditInteractionController.DoorMoveTarget cachedPreviewDoorTarget;
     private long cachedCameraProjectionVersion = -1;
     private CorridorRenderState cachedCorridorRenderState;
 
@@ -69,7 +66,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
                 gc.setLineWidth(isSelected(corridor) ? 4 : isHovered(corridor) ? 3.5 : 3);
                 gc.setLineDashes(null);
                 drawCorridorPath(gc, corridorRenderState.displayPaths().get(corridor.corridorId()));
-                drawCorridorDoors(gc, geometry);
+                drawCorridorDoors(gc, corridor, geometry);
                 drawCorridorSegmentHandles(gc, corridorRenderState.displayPaths().get(corridor.corridorId()), corridor);
                 drawCorridorDoorMarkers(
                         gc,
@@ -236,7 +233,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
     }
 
     @Override
-    protected CorridorEditInteractionController.DoorMoveTarget corridorDoorMoveTargetAt(
+    protected CorridorEditInteractionController.DoorDragPreview corridorDoorDragPreviewAt(
             double screenX,
             double screenY,
             CorridorEditInteractionController.DoorHandle handle
@@ -244,7 +241,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
         if (hasClusterDragPreview()) {
             return null;
         }
-        return nearestCorridorDoorMoveTarget(screenX, screenY, handle, 18);
+        return projectCorridorDoorDragPreview(screenX, screenY, handle, CORRIDOR_DOOR_PREVIEW_HALF_LENGTH);
     }
 
     @Override
@@ -319,14 +316,10 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
                 || cachedRenderStateLayout != layout
                 || cachedRenderStateData != corridorRenderData
                 || !cachedPreviewCenters.equals(previewClusterCenters)
-                || !Objects.equals(cachedPreviewDoorHandle, previewCorridorDoorHandle)
-                || !Objects.equals(cachedPreviewDoorTarget, previewCorridorDoorTarget)
                 || cachedCameraProjectionVersion != camera.projectionVersion()) {
             cachedRenderStateLayout = layout;
             cachedRenderStateData = corridorRenderData;
             cachedPreviewCenters = Map.copyOf(previewClusterCenters);
-            cachedPreviewDoorHandle = previewCorridorDoorHandle;
-            cachedPreviewDoorTarget = previewCorridorDoorTarget;
             cachedCameraProjectionVersion = camera.projectionVersion();
             cachedCorridorRenderState = buildCorridorRenderState();
         }
@@ -410,7 +403,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
     }
 
     private void drawCorridorComponentOutlines(GraphicsContext gc) {
-        if (renderData == null || !previewClusterCenters.isEmpty() || previewCorridorGeometry != null) {
+        if (renderData == null || !previewClusterCenters.isEmpty()) {
             // Corridor component outlines stay hidden during drag preview until we have
             // a preview-safe topology projection for those aggregate shapes as well.
             return;
@@ -444,18 +437,22 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
         }
     }
 
-    private void drawCorridorDoors(GraphicsContext gc, CorridorGeometry geometry) {
+    private void drawCorridorDoors(GraphicsContext gc, DungeonCorridor corridor, CorridorGeometry geometry) {
         if (!geometry.routable()) {
             return;
         }
         gc.setLineWidth(2);
         for (DoorSegment door : geometry.doors()) {
+            if (isPreviewDoor(corridor.corridorId(), door.roomId())) {
+                continue;
+            }
             gc.strokeLine(
                     camera.toScreenX(door.start().x()),
                     camera.toScreenY(door.start().y()),
                     camera.toScreenX(door.end().x()),
                     camera.toScreenY(door.end().y()));
         }
+        drawPreviewDoor(gc, corridor);
     }
 
     private void drawCorridorDoorMarkers(
@@ -473,6 +470,9 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
         }
         Color markerColor = strokeColor(corridor);
         for (DoorSegment door : geometry.doors()) {
+            if (isPreviewDoor(corridor.corridorId(), door.roomId())) {
+                continue;
+            }
             MarkerPoint marker = markerPoint(door, corridor.corridorId(), corridorIdsByDoorMarker, laneOrderBySegment, displayPath);
             CorridorEditInteractionController.DoorHandle handle = corridorDoorHandleForRoom(door.roomId());
             double radius = isSelected(handle) ? 5.5 : 4.5;
@@ -482,6 +482,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
             gc.setLineWidth(1.5);
             gc.strokeOval(marker.x() - radius, marker.y() - radius, radius * 2, radius * 2);
         }
+        drawPreviewDoorMarker(gc, corridor, markerColor, corridorIdsByDoorMarker, laneOrderBySegment, displayPath);
     }
 
     private void drawCorridorWaypointMarkers(GraphicsContext gc, DungeonCorridor corridor, CorridorGeometry geometry) {
@@ -497,6 +498,53 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
             gc.setStroke(Color.rgb(18, 24, 28, 0.95));
             gc.strokeOval(centerX - 5, centerY - 5, 10, 10);
         }
+    }
+
+    private void drawPreviewDoor(GraphicsContext gc, DungeonCorridor corridor) {
+        CorridorEditInteractionController.DoorDragPreview preview = corridorDoorPreview();
+        if (corridor == null
+                || preview == null
+                || preview.previewSegment() == null
+                || previewCorridorDoorHandle == null
+                || previewCorridorDoorHandle.corridorId() != corridor.corridorId()) {
+            return;
+        }
+        CorridorEditInteractionController.DoorPreviewSegment segment = preview.previewSegment();
+        gc.strokeLine(
+                camera.toScreenX(segment.startWorldX()),
+                camera.toScreenY(segment.startWorldY()),
+                camera.toScreenX(segment.endWorldX()),
+                camera.toScreenY(segment.endWorldY()));
+    }
+
+    private void drawPreviewDoorMarker(
+            GraphicsContext gc,
+            DungeonCorridor corridor,
+            Color markerColor,
+            Map<DoorMarkerKey, List<Long>> corridorIdsByDoorMarker,
+            Map<SegmentKey, List<Long>> laneOrderBySegment,
+            CorridorDisplayPath displayPath
+    ) {
+        CorridorEditInteractionController.DoorDragPreview preview = corridorDoorPreview();
+        if (corridor == null
+                || preview == null
+                || preview.previewSegment() == null
+                || previewCorridorDoorHandle == null
+                || previewCorridorDoorHandle.corridorId() != corridor.corridorId()) {
+            return;
+        }
+        MarkerPoint marker = markerPoint(
+                preview,
+                corridor.corridorId(),
+                corridorIdsByDoorMarker,
+                laneOrderBySegment,
+                displayPath);
+        double radius = isSelected(previewCorridorDoorHandle) ? 5.5 : 4.5;
+        gc.setFill(isSelected(previewCorridorDoorHandle) ? DungeonCanvasTheme.ROOM_SELECTED_STROKE : markerColor);
+        gc.fillOval(marker.x() - radius, marker.y() - radius, radius * 2, radius * 2);
+        gc.setStroke(Color.rgb(18, 24, 28, 0.95));
+        gc.setLineWidth(1.5);
+        gc.strokeOval(marker.x() - radius, marker.y() - radius, radius * 2, radius * 2);
     }
 
     private void strokeOutline(GraphicsContext gc, List<Point2i> outline) {
@@ -827,6 +875,37 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
         return new MarkerPoint(centerX + offsetX, centerY + offsetY);
     }
 
+    private MarkerPoint markerPoint(
+            CorridorEditInteractionController.DoorDragPreview preview,
+            Long corridorId,
+            Map<DoorMarkerKey, List<Long>> corridorIdsByDoorMarker,
+            Map<SegmentKey, List<Long>> laneOrderBySegment,
+            CorridorDisplayPath displayPath
+    ) {
+        CorridorEditInteractionController.DoorPreviewSegment segment = preview.previewSegment();
+        double centerX = camera.toScreenX(segment.centerWorldX());
+        double centerY = camera.toScreenY(segment.centerWorldY());
+        DoorSegment snapDoor = snapDoorSegment(preview);
+        List<Long> corridorIds = laneOrderForDoor(snapDoor, corridorIdsByDoorMarker, laneOrderBySegment, displayPath);
+        if (corridorIds.size() < 2 || corridorId == null) {
+            return new MarkerPoint(centerX, centerY);
+        }
+        int index = corridorIds.indexOf(corridorId);
+        if (index < 0) {
+            return new MarkerPoint(centerX, centerY);
+        }
+        double tangentOffset = (index - (corridorIds.size() - 1) / 2.0) * 10.0;
+        double doorDx = camera.toScreenX(segment.endWorldX()) - camera.toScreenX(segment.startWorldX());
+        double doorDy = camera.toScreenY(segment.endWorldY()) - camera.toScreenY(segment.startWorldY());
+        double doorLength = Math.hypot(doorDx, doorDy);
+        if (doorLength == 0) {
+            return new MarkerPoint(centerX, centerY);
+        }
+        double offsetX = doorDx / doorLength * tangentOffset;
+        double offsetY = doorDy / doorLength * tangentOffset;
+        return new MarkerPoint(centerX + offsetX, centerY + offsetY);
+    }
+
     private List<Long> laneOrderForDoor(
             DoorSegment door,
             Map<DoorMarkerKey, List<Long>> corridorIdsByDoorMarker,
@@ -848,6 +927,12 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
             }
         }
         return fallback;
+    }
+
+    private DoorSegment snapDoorSegment(CorridorEditInteractionController.DoorDragPreview preview) {
+        CorridorEditInteractionController.DoorMoveTarget target = preview.snapTarget();
+        EdgeVertices vertices = edgeVertices(target.roomCell(), target.direction());
+        return new DoorSegment(vertices.start(), vertices.end(), previewCorridorDoorHandle.roomId(), target.roomCell());
     }
 
     private SegmentKey nearestDisplaySegmentForDoor(DoorSegment door, CorridorDisplayPath displayPath) {

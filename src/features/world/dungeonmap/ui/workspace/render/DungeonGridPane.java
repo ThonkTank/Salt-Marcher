@@ -190,7 +190,7 @@ public final class DungeonGridPane extends AbstractDungeonPane {
     }
 
     @Override
-    protected CorridorEditInteractionController.DoorMoveTarget corridorDoorMoveTargetAt(
+    protected CorridorEditInteractionController.DoorDragPreview corridorDoorDragPreviewAt(
             double screenX,
             double screenY,
             CorridorEditInteractionController.DoorHandle handle
@@ -198,7 +198,7 @@ public final class DungeonGridPane extends AbstractDungeonPane {
         if (hasClusterDragPreview()) {
             return null;
         }
-        return nearestCorridorDoorMoveTarget(screenX, screenY, handle, 14);
+        return projectCorridorDoorDragPreview(screenX, screenY, handle, CORRIDOR_DOOR_PREVIEW_HALF_LENGTH);
     }
 
     @Override
@@ -353,6 +353,9 @@ public final class DungeonGridPane extends AbstractDungeonPane {
             gc.setStroke(doorColor(corridor));
             gc.setLineWidth(isSelected(corridor) ? 7 : isHovered(corridor) ? 6.5 : 6);
             for (DoorSegment door : geometry.doors()) {
+                if (isPreviewDoor(corridor.corridorId(), door.roomId())) {
+                    continue;
+                }
                 gc.strokeLine(
                         camera.toScreenX(door.start().x()),
                         camera.toScreenY(door.start().y()),
@@ -360,6 +363,7 @@ public final class DungeonGridPane extends AbstractDungeonPane {
                         camera.toScreenY(door.end().y()));
             }
         }
+        drawPreviewDoor(gc);
     }
 
     private void drawCorridorEditHandles(GraphicsContext gc) {
@@ -634,18 +638,26 @@ public final class DungeonGridPane extends AbstractDungeonPane {
     }
 
     private Set<Point2i> displayedCorridorCells(DungeonLayoutRenderData corridorRenderData) {
-        if (previewCorridorGeometry == null || layout == null) {
-            return corridorRenderData.corridorCells();
+        return corridorRenderData.corridorCells();
+    }
+
+    private void drawPreviewDoor(GraphicsContext gc) {
+        CorridorEditInteractionController.DoorDragPreview preview = corridorDoorPreview();
+        if (preview == null || preview.previewSegment() == null || previewCorridorDoorHandle == null) {
+            return;
         }
-        Set<Point2i> cells = new LinkedHashSet<>();
-        for (DungeonCorridor corridor : layout.corridors()) {
-            CorridorGeometry geometry = corridorGeometryForDisplay(corridor);
-            if (geometry == null || !geometry.routable()) {
-                continue;
-            }
-            cells.addAll(geometry.cells());
+        DungeonCorridor corridor = layout == null ? null : layout.corridorById(previewCorridorDoorHandle.corridorId());
+        if (corridor == null) {
+            return;
         }
-        return cells;
+        gc.setStroke(doorColor(corridor));
+        gc.setLineWidth(isSelected(corridor) ? 7 : isHovered(corridor) ? 6.5 : 6);
+        CorridorEditInteractionController.DoorPreviewSegment segment = preview.previewSegment();
+        gc.strokeLine(
+                camera.toScreenX(segment.startWorldX()),
+                camera.toScreenY(segment.startWorldY()),
+                camera.toScreenX(segment.endWorldX()),
+                camera.toScreenY(segment.endWorldY()));
     }
 
     private record SegmentKey(Point2i start, Point2i end) {
