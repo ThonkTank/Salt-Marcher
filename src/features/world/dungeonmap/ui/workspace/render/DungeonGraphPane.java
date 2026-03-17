@@ -11,6 +11,7 @@ import features.world.dungeonmap.model.DungeonRoomGeometry;
 import features.world.dungeonmap.model.DungeonRoomCluster;
 import features.world.dungeonmap.model.DungeonRuntimeLocation;
 import features.world.dungeonmap.model.Point2i;
+import features.world.dungeonmap.model.RoomShape;
 import features.world.dungeonmap.ui.workspace.DungeonEditorTool;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
@@ -410,11 +411,9 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
 
     private void drawCorridorComponentOutlines(GraphicsContext gc) {
         if (renderData == null || !previewClusterCenters.isEmpty()) {
-            // Corridor component outlines stay hidden during drag preview until we have
-            // a preview-safe topology projection for those aggregate shapes as well.
             return;
         }
-        for (CorridorComponent component : renderData.corridorTopology().componentsById().values()) {
+        for (CorridorComponent component : displayedCorridorComponents()) {
             List<Point2i> outline = component.outlineVertices();
             if (outline.isEmpty()) {
                 continue;
@@ -425,6 +424,46 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
             gc.setLineWidth(isComponentSelected(component.componentId()) ? 3 : 2);
             strokeOutline(gc, outline);
         }
+    }
+
+    private List<CorridorComponent> displayedCorridorComponents() {
+        if (layout == null) {
+            return List.of();
+        }
+        Map<String, Set<Long>> corridorIdsByComponent = new LinkedHashMap<>();
+        Map<String, Set<Long>> roomIdsByComponent = new LinkedHashMap<>();
+        Map<String, Set<Point2i>> cellsByComponent = new LinkedHashMap<>();
+        Map<String, List<DoorSegment>> doorsByComponent = new LinkedHashMap<>();
+        for (DungeonCorridor corridor : layout.corridors()) {
+            CorridorGeometry geometry = corridorGeometry(corridor);
+            if (geometry == null || !geometry.routable()) {
+                continue;
+            }
+            String componentId = geometry.componentId() == null
+                    ? "preview-corridor:" + corridor.corridorId()
+                    : geometry.componentId();
+            corridorIdsByComponent.computeIfAbsent(componentId, ignored -> new LinkedHashSet<>()).add(corridor.corridorId());
+            roomIdsByComponent.computeIfAbsent(componentId, ignored -> new LinkedHashSet<>()).addAll(geometry.roomIds());
+            cellsByComponent.computeIfAbsent(componentId, ignored -> new LinkedHashSet<>()).addAll(geometry.cells());
+            doorsByComponent.computeIfAbsent(componentId, ignored -> new ArrayList<>()).addAll(geometry.doors());
+        }
+
+        List<CorridorComponent> components = new ArrayList<>();
+        for (Map.Entry<String, Set<Point2i>> entry : cellsByComponent.entrySet()) {
+            String componentId = entry.getKey();
+            Set<Point2i> cells = entry.getValue();
+            RoomShape shape = cells.isEmpty() ? null : DungeonRoomGeometry.roomShapeForCells(cells);
+            List<Point2i> outlineVertices = shape == null ? List.of() : shape.absoluteVertices();
+            components.add(new CorridorComponent(
+                    componentId,
+                    layout.map().mapId(),
+                    Set.copyOf(corridorIdsByComponent.getOrDefault(componentId, Set.of())),
+                    Set.copyOf(roomIdsByComponent.getOrDefault(componentId, Set.of())),
+                    Set.copyOf(cells),
+                    List.copyOf(outlineVertices),
+                    List.copyOf(doorsByComponent.getOrDefault(componentId, List.of()))));
+        }
+        return components;
     }
 
     private void drawCorridorPath(
