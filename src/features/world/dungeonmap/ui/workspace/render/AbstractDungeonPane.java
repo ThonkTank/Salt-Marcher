@@ -420,17 +420,41 @@ abstract class AbstractDungeonPane extends StackPane {
         if (!hasSmoothClusterDragPreview()) {
             return Point2D.ZERO;
         }
-        Point2D resolvedOffset = Point2D.ZERO;
+        Point2D resolvedOffset = null;
+        boolean conflictingOffset = false;
         for (Long roomId : corridor.roomIds()) {
             DungeonRoom room = layout.roomById(roomId);
             Point2D roomOffset = room == null ? Point2D.ZERO : previewOffset(room.clusterId());
-            resolvedOffset = mergePreviewOffset(resolvedOffset, roomOffset);
+            if (!isZeroOffset(roomOffset)) {
+                if (resolvedOffset == null || resolvedOffset.equals(roomOffset)) {
+                    resolvedOffset = roomOffset;
+                } else {
+                    conflictingOffset = true;
+                }
+            }
         }
         for (var waypoint : corridor.waypoints()) {
-            resolvedOffset = mergePreviewOffset(resolvedOffset, previewOffset(waypoint.clusterId()));
+            Point2D waypointOffset = previewOffset(waypoint.clusterId());
+            if (!isZeroOffset(waypointOffset)) {
+                if (resolvedOffset == null || resolvedOffset.equals(waypointOffset)) {
+                    resolvedOffset = waypointOffset;
+                } else {
+                    conflictingOffset = true;
+                }
+            }
         }
         for (var override : corridor.doorOverrides()) {
-            resolvedOffset = mergePreviewOffset(resolvedOffset, previewOffset(override.clusterId()));
+            Point2D overrideOffset = previewOffset(override.clusterId());
+            if (!isZeroOffset(overrideOffset)) {
+                if (resolvedOffset == null || resolvedOffset.equals(overrideOffset)) {
+                    resolvedOffset = overrideOffset;
+                } else {
+                    conflictingOffset = true;
+                }
+            }
+        }
+        if (conflictingOffset || resolvedOffset == null) {
+            return Point2D.ZERO;
         }
         return resolvedOffset;
     }
@@ -441,16 +465,6 @@ abstract class AbstractDungeonPane extends StackPane {
         }
         DungeonRoom room = layout.roomById(door.roomId());
         return room == null ? Point2D.ZERO : previewOffset(room.clusterId());
-    }
-
-    protected final Point2D mergePreviewOffset(Point2D current, Point2D candidate) {
-        if (candidate == null || candidate.equals(Point2D.ZERO)) {
-            return current;
-        }
-        if (current == null || current.equals(Point2D.ZERO) || current.equals(candidate)) {
-            return candidate;
-        }
-        return current;
     }
 
     protected final boolean hasSmoothClusterDragPreview() {
@@ -476,6 +490,9 @@ abstract class AbstractDungeonPane extends StackPane {
         if (cluster == null || cluster.clusterId() == null || activeLocation == null) {
             return false;
         }
+        // Runtime state does not currently expose an active-cluster location.
+        // Keep the existing rendering behavior explicit instead of leaving
+        // a misleading partially-implemented path in the shared base class.
         return false;
     }
 
@@ -545,6 +562,18 @@ abstract class AbstractDungeonPane extends StackPane {
 
     protected CorridorDoorHit findCorridorDoorHitAt(double screenX, double screenY) {
         return null;
+    }
+
+    protected final CorridorDoorHit corridorDoorHit(DoorSegment door, Long fallbackCorridorId) {
+        if (door == null) {
+            return null;
+        }
+        DungeonLayoutRenderData corridorRenderData = corridorRenderDataForDisplay();
+        List<Long> corridorIds = corridorRenderData == null
+                ? List.of()
+                : corridorRenderData.corridorIdsForDoorFromRoom(door);
+        CorridorDoorHit hit = DungeonCorridorDoorHitResolver.resolve(corridorIds, fallbackCorridorId, door.roomId());
+        return hit.isEmpty() ? null : hit;
     }
 
     protected CorridorEditInteractionController.DoorHandle findCorridorDoorHandleAt(double screenX, double screenY) {
@@ -977,6 +1006,10 @@ abstract class AbstractDungeonPane extends StackPane {
         double px = x1 + t * dx;
         double py = y1 + t * dy;
         return Math.hypot(screenX - px, screenY - py);
+    }
+
+    private boolean isZeroOffset(Point2D offset) {
+        return offset == null || offset.equals(Point2D.ZERO);
     }
 
     protected final double distanceToInvalidCorridorLink(double screenX, double screenY, CorridorGeometry geometry) {

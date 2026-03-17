@@ -149,11 +149,10 @@ public final class DungeonGridPane extends AbstractDungeonPane {
 
     @Override
     protected CorridorDoorHit findCorridorDoorHitAt(double screenX, double screenY) {
-        DungeonLayoutRenderData corridorRenderData = corridorRenderDataForDisplay();
-        if (layout == null || corridorRenderData == null) {
+        if (layout == null || corridorRenderDataForDisplay() == null) {
             return null;
         }
-        DoorAggregateHit bestHit = null;
+        CorridorDoorHit bestHit = null;
         double bestDistance = Double.POSITIVE_INFINITY;
         for (DungeonCorridor corridor : layout.corridors()) {
             CorridorGeometry geometry = corridorGeometryForDisplay(corridor);
@@ -169,12 +168,11 @@ public final class DungeonGridPane extends AbstractDungeonPane {
                 double combinedDistance = doorDistance * 10 + roomDistance;
                 if (combinedDistance < bestDistance) {
                     bestDistance = combinedDistance;
-                    List<Long> corridorIds = corridorRenderData.corridorIdsForDoorFromRoom(door);
-                    bestHit = new DoorAggregateHit(corridorIds, door.roomId());
+                    bestHit = corridorDoorHit(door, corridor.corridorId());
                 }
             }
         }
-        return bestHit == null ? null : new CorridorDoorHit(bestHit.corridorIds(), bestHit.roomId());
+        return bestHit;
     }
 
     @Override
@@ -894,9 +892,6 @@ public final class DungeonGridPane extends AbstractDungeonPane {
     }
 
     private record EdgeVertices(Point2i start, Point2i end) {
-    }
-
-    private record DoorAggregateHit(List<Long> corridorIds, long roomId) {
     }
 
     private record VertexCandidate(DungeonClusterVertexRef ref, boolean hoveredCluster, double distanceSquared) {

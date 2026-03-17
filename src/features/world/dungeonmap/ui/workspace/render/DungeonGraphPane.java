@@ -213,7 +213,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
                 }
                 if (markerDistance < bestDistance) {
                     bestDistance = markerDistance;
-                    bestHit = new CorridorDoorHit(List.of(corridor.corridorId()), door.roomId());
+                    bestHit = corridorDoorHit(door, corridor.corridorId());
                 }
             }
         }

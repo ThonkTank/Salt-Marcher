@@ -349,8 +349,7 @@ public final class DungeonEditorView implements AppView {
             clearLayout();
             return;
         }
-        currentMapId = loadState.selectedMapId();
-        currentRenderState = loadState.renderState();
+        applyLoadedWorkspaceState(loadState.selectedMapId(), loadState.renderState());
         selectedTarget = null;
         clearTransientState();
         controls.selectMap(loadState.selectedMapId());
@@ -363,8 +362,7 @@ public final class DungeonEditorView implements AppView {
     }
 
     private void clearLayout() {
-        currentMapId = null;
-        currentRenderState = null;
+        applyLoadedWorkspaceState(null, null);
         selectedTarget = null;
         clearTransientState();
         controls.selectMap(null);
@@ -923,10 +921,19 @@ public final class DungeonEditorView implements AppView {
                 mapId,
                 work,
                 (result, renderState) -> {
-                    currentRenderState = renderState;
+                    updateRenderState(renderState);
                     onSuccess.accept(result, renderState == null ? null : renderState.layout());
                 },
                 onError);
+    }
+
+    private void applyLoadedWorkspaceState(Long mapId, DungeonWorkspaceRenderState renderState) {
+        currentMapId = mapId;
+        updateRenderState(renderState);
+    }
+
+    private void updateRenderState(DungeonWorkspaceRenderState renderState) {
+        currentRenderState = renderState;
     }
 
     private void clearTransientState() {

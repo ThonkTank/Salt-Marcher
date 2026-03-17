@@ -8,10 +8,13 @@ public record DungeonWorkspaceRenderState(
         DungeonCanvasBounds bounds
 ) {
     public static DungeonWorkspaceRenderState from(DungeonLayout layout) {
-        if (layout == null) {
-            return new DungeonWorkspaceRenderState(null, null, DungeonCanvasBounds.defaultBounds());
-        }
-        DungeonLayoutRenderData renderData = DungeonLayoutRenderData.from(layout);
-        return new DungeonWorkspaceRenderState(layout, renderData, DungeonCanvasBounds.forLayout(layout, renderData));
+        return DungeonWorkspaceRenderStateFactory.create(layout);
+    }
+
+    public static DungeonWorkspaceRenderState from(
+            DungeonLayout layout,
+            DungeonWorkspaceRenderState previousState
+    ) {
+        return DungeonWorkspaceRenderStateFactory.create(layout, previousState);
     }
 }

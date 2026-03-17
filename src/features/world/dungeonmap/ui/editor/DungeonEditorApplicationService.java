@@ -22,6 +22,7 @@ final class DungeonEditorApplicationService {
     private final AtomicLong editSequence = new AtomicLong();
 
     private Long activeMapId;
+    private DungeonWorkspaceRenderState activeRenderState;
 
     DungeonEditorApplicationService(
             DungeonMapCatalogService mapCatalogService,
@@ -54,10 +55,11 @@ final class DungeonEditorApplicationService {
         long request = editSequence.incrementAndGet();
         UiAsyncTasks.submit(() -> {
                     DungeonLayoutEditResult result = work.call();
-                    return result == null ? null : new PreparedEdit(result, DungeonWorkspaceRenderState.from(result.layout()));
+                    return result == null ? null : new PreparedEdit(result, DungeonWorkspaceRenderState.from(result.layout(), activeRenderState));
                 },
                 prepared -> {
                     if (isCurrentEdit(mapId, request)) {
+                        activeRenderState = prepared == null ? null : prepared.renderState();
                         onSuccess.accept(prepared == null ? null : prepared.result(), prepared == null ? null : prepared.renderState());
                     }
                 },
@@ -84,18 +86,20 @@ final class DungeonEditorApplicationService {
         }
         if (maps.isEmpty()) {
             activeMapId = null;
+            activeRenderState = null;
             onSuccess.accept(DungeonEditorLoadState.empty(maps));
             return;
         }
         Long selectedMapId = resolveMapSelection(maps, preferredMapId);
         activeMapId = selectedMapId;
         UiAsyncTasks.submit(
-                () -> DungeonWorkspaceRenderState.from(editorService.loadLayout(selectedMapId)),
+                () -> DungeonWorkspaceRenderState.from(editorService.loadLayout(selectedMapId), activeRenderState),
                 renderState -> {
                     if (request != loadSequence.get()) {
                         return;
                     }
                     activeMapId = selectedMapId;
+                    activeRenderState = renderState;
                     onSuccess.accept(new DungeonEditorLoadState(List.copyOf(maps), selectedMapId, renderState));
                 },
                 throwable -> deliverLoadFailure(request, throwable, onFailure));

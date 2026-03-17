@@ -77,6 +77,7 @@ application {
 
 tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
+    options.release = 21
 }
 
 tasks.withType<CreateStartScripts>().configureEach {
@@ -248,14 +249,16 @@ tasks.register("installDesktopApp") {
 }
 
 fun resolveDesktopDirectory(): Path {
-    val output = ByteArrayOutputStream()
-    val result = exec {
-        commandLine("xdg-user-dir", "DESKTOP")
-        standardOutput = output
-        isIgnoreExitValue = true
+    val process = try {
+        ProcessBuilder("xdg-user-dir", "DESKTOP")
+            .redirectErrorStream(true)
+            .start()
+    } catch (_: Exception) {
+        null
     }
-    if (result.exitValue == 0) {
-        val path = output.toString().trim()
+    val exitValue = process?.waitFor()
+    if (exitValue == 0) {
+        val path = process.inputStream.bufferedReader().use { it.readText() }.trim()
         if (path.isNotBlank()) {
             return Paths.get(path)
         }
