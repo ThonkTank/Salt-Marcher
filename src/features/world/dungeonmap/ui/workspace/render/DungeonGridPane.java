@@ -351,7 +351,7 @@ public final class DungeonGridPane extends AbstractDungeonPane {
                 continue;
             }
             gc.setStroke(doorColor(corridor));
-            gc.setLineWidth(isSelected(corridor) ? 7 : 6);
+            gc.setLineWidth(isSelected(corridor) ? 7 : isHovered(corridor) ? 6.5 : 6);
             for (DoorSegment door : geometry.doors()) {
                 gc.strokeLine(
                         camera.toScreenX(door.start().x()),
@@ -500,6 +500,9 @@ public final class DungeonGridPane extends AbstractDungeonPane {
         if (isSelected(corridor)) {
             return DungeonCanvasTheme.CORRIDOR_SELECTED;
         }
+        if (isHovered(corridor)) {
+            return DungeonCanvasTheme.CORRIDOR_SELECTED.deriveColor(0, 1, 1, 0.85);
+        }
         if (isActive(corridor)) {
             return DungeonCanvasTheme.CORRIDOR_ACTIVE;
         }
@@ -510,6 +513,9 @@ public final class DungeonGridPane extends AbstractDungeonPane {
         if (isSelected(corridor)) {
             return DungeonCanvasTheme.CORRIDOR_SELECTED.deriveColor(0, 1, 1, 0.30);
         }
+        if (isHovered(corridor)) {
+            return DungeonCanvasTheme.CORRIDOR_SELECTED.deriveColor(0, 1, 1, 0.22);
+        }
         if (isActive(corridor)) {
             return DungeonCanvasTheme.CORRIDOR_ACTIVE.deriveColor(0, 1, 1, 0.25);
         }
@@ -519,6 +525,9 @@ public final class DungeonGridPane extends AbstractDungeonPane {
     private javafx.scene.paint.Color doorColor(DungeonCorridor corridor) {
         if (isSelected(corridor)) {
             return DungeonCanvasTheme.DOOR_SELECTED;
+        }
+        if (isHovered(corridor)) {
+            return DungeonCanvasTheme.DOOR_SELECTED.deriveColor(0, 1, 1, 0.85);
         }
         if (isActive(corridor)) {
             return DungeonCanvasTheme.DOOR_ACTIVE;

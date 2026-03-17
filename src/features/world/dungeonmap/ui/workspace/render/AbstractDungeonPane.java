@@ -54,10 +54,14 @@ abstract class AbstractDungeonPane extends StackPane {
     protected Point2i paintStartCell;
     protected Point2i paintEndCell;
     protected CorridorEditInteractionController.DoorHandle selectedCorridorDoorHandle;
+    protected Long hoveredCorridorId;
     protected CorridorEditInteractionController.DoorHandle previewCorridorDoorHandle;
     protected CorridorEditInteractionController.DoorMoveTarget previewCorridorDoorTarget;
     protected CorridorGeometry previewCorridorGeometry;
     protected features.world.dungeonmap.model.DungeonCorridorGeometry.LayoutContext corridorLayoutContext;
+    private double lastPointerScreenX;
+    private double lastPointerScreenY;
+    private boolean pointerInsideCanvas;
 
     private final PaneCallbacks callbacks = new PaneCallbacks();
     private final CorridorEditInteractionController corridorEditController;
@@ -165,6 +169,12 @@ abstract class AbstractDungeonPane extends StackPane {
         canvas.addEventHandler(MouseEvent.MOUSE_MOVED, this::handleMouseMoved);
         canvas.addEventHandler(MouseEvent.MOUSE_DRAGGED, this::handleMouseDragged);
         canvas.addEventHandler(MouseEvent.MOUSE_RELEASED, this::handleMouseReleased);
+        canvas.addEventHandler(MouseEvent.MOUSE_EXITED, event -> {
+            pointerInsideCanvas = false;
+            if (clearHoveredCorridor()) {
+                render();
+            }
+        });
         canvas.addEventHandler(ScrollEvent.SCROLL, this::handleScroll);
     }
 
@@ -204,6 +214,7 @@ abstract class AbstractDungeonPane extends StackPane {
         wallPathController.reset();
         corridorEditController.cancel();
         clearCorridorDoorPreview();
+        clearHoveredCorridor();
         if (this.editorTool != DungeonEditorTool.SELECT) {
             applySelectedCorridorDoorHandle(null, false, false);
         } else {
@@ -311,6 +322,7 @@ abstract class AbstractDungeonPane extends StackPane {
         wallPathController.reset();
         corridorEditController.cancel();
         clearCorridorDoorPreview();
+        clearHoveredCorridor();
         applySelectedCorridorDoorHandle(selectedCorridorDoorHandle, false, false);
         if (renderNow) {
             render();
@@ -321,6 +333,7 @@ abstract class AbstractDungeonPane extends StackPane {
         this.selectedTarget = selectedTarget;
         this.activeLocation = activeLocation;
         clearCorridorDoorPreview();
+        clearHoveredCorridor();
         applySelectedCorridorDoorHandle(selectedCorridorDoorHandle, false, false);
         if (renderNow) {
             render();
@@ -384,6 +397,10 @@ abstract class AbstractDungeonPane extends StackPane {
             return false;
         }
         return selectedTarget.selectsCorridor(corridor.corridorId());
+    }
+
+    protected final boolean isHovered(DungeonCorridor corridor) {
+        return corridor != null && corridor.corridorId() != null && Objects.equals(hoveredCorridorId, corridor.corridorId());
     }
 
     protected final boolean isActive(DungeonCorridor corridor) {
@@ -1097,18 +1114,23 @@ abstract class AbstractDungeonPane extends StackPane {
     }
 
     private void handleMouseMoved(MouseEvent event) {
-        if (updateCorridorPressMode(event)) {
+        updatePointerPosition(event);
+        boolean corridorPreviewChanged = updateCorridorPressMode(event) | updateHoveredCorridor(event);
+        if (corridorPreviewChanged) {
             render();
         }
         wallPathController.handlePointerMove(event.getX(), event.getY());
     }
 
     private void handleMouseDragged(MouseEvent event) {
-        if (updateCorridorPressMode(event)) {
+        updatePointerPosition(event);
+        boolean corridorPreviewChanged = updateCorridorPressMode(event) | updateHoveredCorridor(event);
+        if (corridorPreviewChanged) {
             render();
         }
         if (pointerInteraction instanceof PanInteraction) {
             callbacks.onViewportPanned.accept(new Point2D(event.getX(), event.getY()));
+            refreshHoverAfterProjectionChange();
             return;
         }
         if (corridorEditController.handleDrag(event)) {
@@ -1249,9 +1271,13 @@ abstract class AbstractDungeonPane extends StackPane {
         if (!(editable
                 && event.getButton() == MouseButton.PRIMARY
                 && editorTool == DungeonEditorTool.SELECT
-                && surface() == EditorSurface.GRID)) {
+                && surface() == EditorSurface.GRID
+                && context.corridor() == null
+                && context.cluster() == null
+                && context.room() == null)) {
             return false;
         }
+        // Occupied hits should select the visible entity directly; marquee selection is for empty space only.
         beginSelection(context.world());
         pointerInteraction = new SelectionInteraction(context.world());
         return true;
@@ -1314,8 +1340,12 @@ abstract class AbstractDungeonPane extends StackPane {
     }
 
     private void handleScroll(ScrollEvent event) {
+        pointerInsideCanvas = true;
+        lastPointerScreenX = event.getX();
+        lastPointerScreenY = event.getY();
         double factor = event.getDeltaY() > 0 ? 1.1 : 0.9;
         callbacks.onViewportZoomed.handle(event.getX(), event.getY(), factor);
+        refreshHoverAfterProjectionChange();
     }
 
     private void handleKeyPressed(KeyEvent event) {
@@ -1361,6 +1391,53 @@ abstract class AbstractDungeonPane extends StackPane {
             callbacks.onCorridorDoorSelectionChanged.accept(selectedCorridorDoorHandle);
         }
         if (renderNow) {
+            render();
+        }
+    }
+
+    private boolean updateHoveredCorridor(MouseEvent event) {
+        return updateHoveredCorridorAt(event.getX(), event.getY());
+    }
+
+    private boolean updateHoveredCorridorAt(double screenX, double screenY) {
+        Long nextHoveredCorridorId = null;
+        if (layout != null && editorTool == DungeonEditorTool.SELECT) {
+            DungeonRoomCluster hoveredCluster = findClusterAt(screenX, screenY);
+            DungeonRoom hoveredRoom = hoveredCluster == null ? findRoomAt(screenX, screenY) : null;
+            if (hoveredCluster == null && hoveredRoom == null) {
+                DungeonCorridor corridor = findCorridorAt(screenX, screenY);
+                nextHoveredCorridorId = corridor == null ? null : corridor.corridorId();
+            }
+        }
+        if (Objects.equals(hoveredCorridorId, nextHoveredCorridorId)) {
+            return false;
+        }
+        hoveredCorridorId = nextHoveredCorridorId;
+        return true;
+    }
+
+    private boolean clearHoveredCorridor() {
+        if (hoveredCorridorId == null) {
+            return false;
+        }
+        hoveredCorridorId = null;
+        return true;
+    }
+
+    private void updatePointerPosition(MouseEvent event) {
+        pointerInsideCanvas = true;
+        lastPointerScreenX = event.getX();
+        lastPointerScreenY = event.getY();
+    }
+
+    private void refreshHoverAfterProjectionChange() {
+        if (!pointerInsideCanvas) {
+            if (clearHoveredCorridor()) {
+                render();
+            }
+            return;
+        }
+        if (updateHoveredCorridorAt(lastPointerScreenX, lastPointerScreenY)) {
             render();
         }
     }

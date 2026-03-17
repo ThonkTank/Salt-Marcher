@@ -21,6 +21,7 @@ public final class DungeonCanvasCamera {
     private double dragStartTranslateX;
     private double dragStartTranslateY;
     private boolean initialized;
+    private long projectionVersion;
 
     public DungeonCanvasCamera(double requestedCellSize) {
         this.requestedCellSize = requestedCellSize;
@@ -54,6 +55,7 @@ public final class DungeonCanvasCamera {
             translateY = viewportHeight / 2.0 - baseOffsetY - preservedWorldCenterY * effectiveCellSize();
         }
         initialized = true;
+        projectionVersion++;
     }
 
     public boolean isInitialized() {
@@ -70,6 +72,7 @@ public final class DungeonCanvasCamera {
     public void updatePan(double screenX, double screenY) {
         translateX = dragStartTranslateX + (screenX - dragStartX);
         translateY = dragStartTranslateY + (screenY - dragStartY);
+        projectionVersion++;
     }
 
     public void zoomAt(double screenX, double screenY, double factor) {
@@ -82,6 +85,11 @@ public final class DungeonCanvasCamera {
         zoomScale = newZoom;
         translateX = screenX - baseOffsetX - worldX * effectiveCellSize();
         translateY = screenY - baseOffsetY - worldY * effectiveCellSize();
+        projectionVersion++;
+    }
+
+    public long projectionVersion() {
+        return projectionVersion;
     }
 
     public double toScreenX(double worldX) {

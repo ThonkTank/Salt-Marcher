@@ -47,6 +47,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
     private Map<Long, Point2i> cachedPreviewCenters = Map.of();
     private CorridorEditInteractionController.DoorHandle cachedPreviewDoorHandle;
     private CorridorEditInteractionController.DoorMoveTarget cachedPreviewDoorTarget;
+    private long cachedCameraProjectionVersion = -1;
     private CorridorRenderState cachedCorridorRenderState;
 
     public DungeonGraphPane(DungeonCanvasCamera camera) {
@@ -65,7 +66,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
             }
             if (geometry.routable()) {
                 gc.setStroke(strokeColor(corridor));
-                gc.setLineWidth(isSelected(corridor) ? 4 : 3);
+                gc.setLineWidth(isSelected(corridor) ? 4 : isHovered(corridor) ? 3.5 : 3);
                 gc.setLineDashes(null);
                 drawCorridorPath(gc, corridorRenderState.displayPaths().get(corridor.corridorId()));
                 drawCorridorDoors(gc, geometry);
@@ -165,7 +166,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
                 continue;
             }
             double distance = distanceToGeometry(screenX, screenY, geometry, corridorRenderState.displayPaths().get(corridor.corridorId()));
-            if (distance < bestDistance && distance <= 10) {
+            if (distance < bestDistance && distance <= 14) {
                 bestDistance = distance;
                 closest = corridor;
             }
@@ -319,12 +320,14 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
                 || cachedRenderStateData != corridorRenderData
                 || !cachedPreviewCenters.equals(previewClusterCenters)
                 || !Objects.equals(cachedPreviewDoorHandle, previewCorridorDoorHandle)
-                || !Objects.equals(cachedPreviewDoorTarget, previewCorridorDoorTarget)) {
+                || !Objects.equals(cachedPreviewDoorTarget, previewCorridorDoorTarget)
+                || cachedCameraProjectionVersion != camera.projectionVersion()) {
             cachedRenderStateLayout = layout;
             cachedRenderStateData = corridorRenderData;
             cachedPreviewCenters = Map.copyOf(previewClusterCenters);
             cachedPreviewDoorHandle = previewCorridorDoorHandle;
             cachedPreviewDoorTarget = previewCorridorDoorTarget;
+            cachedCameraProjectionVersion = camera.projectionVersion();
             cachedCorridorRenderState = buildCorridorRenderState();
         }
         return cachedCorridorRenderState;
@@ -532,8 +535,9 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
         }
         gc.setStroke(isSelected(corridor)
                 ? DungeonCanvasTheme.CORRIDOR_SELECTED
+                : isHovered(corridor) ? DungeonCanvasTheme.CORRIDOR_SELECTED.deriveColor(0, 1, 1, 0.9)
                 : isActive(corridor) ? DungeonCanvasTheme.CORRIDOR_ACTIVE : DungeonCanvasTheme.ROOM_STROKE);
-        gc.setLineWidth(isSelected(corridor) ? 3 : 2);
+        gc.setLineWidth(isSelected(corridor) ? 3 : isHovered(corridor) ? 2.5 : 2);
         gc.setLineDashes(8, 6);
         strokeInvalidCorridorLink(gc, geometry);
         gc.setLineDashes(null);
@@ -567,6 +571,9 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
     private Color strokeColor(DungeonCorridor corridor) {
         if (isSelected(corridor)) {
             return DungeonCanvasTheme.CORRIDOR_SELECTED;
+        }
+        if (isHovered(corridor)) {
+            return DungeonCanvasTheme.CORRIDOR_SELECTED.deriveColor(0, 1, 1, 0.9);
         }
         if (isActive(corridor)) {
             return DungeonCanvasTheme.CORRIDOR_ACTIVE;
