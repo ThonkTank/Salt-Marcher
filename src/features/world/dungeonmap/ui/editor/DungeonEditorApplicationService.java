@@ -1,10 +1,10 @@
 package features.world.dungeonmap.ui.editor;
 
 import features.world.dungeonmap.model.DungeonLayoutEditResult;
+import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.DungeonMap;
 import features.world.dungeonmap.service.catalog.DungeonMapCatalogService;
 import features.world.dungeonmap.service.editor.DungeonEditorService;
-import features.world.dungeonmap.ui.workspace.render.DungeonWorkspaceRenderState;
 import ui.async.UiAsyncTasks;
 
 import java.util.List;
@@ -22,7 +22,6 @@ final class DungeonEditorApplicationService {
     private final AtomicLong editSequence = new AtomicLong();
 
     private Long activeMapId;
-    private DungeonWorkspaceRenderState activeRenderState;
 
     DungeonEditorApplicationService(
             DungeonMapCatalogService mapCatalogService,
@@ -48,19 +47,18 @@ final class DungeonEditorApplicationService {
     void submitEdit(
             long mapId,
             Callable<DungeonLayoutEditResult> work,
-            BiConsumer<DungeonLayoutEditResult, DungeonWorkspaceRenderState> onSuccess,
+            BiConsumer<DungeonLayoutEditResult, DungeonLayout> onSuccess,
             Consumer<Throwable> onFailure
     ) {
         activeMapId = mapId;
         long request = editSequence.incrementAndGet();
         UiAsyncTasks.submit(() -> {
                     DungeonLayoutEditResult result = work.call();
-                    return result == null ? null : new PreparedEdit(result, DungeonWorkspaceRenderState.from(result.layout(), activeRenderState));
+                    return result == null ? null : new PreparedEdit(result, result.layout());
                 },
                 prepared -> {
                     if (isCurrentEdit(mapId, request)) {
-                        activeRenderState = prepared == null ? null : prepared.renderState();
-                        onSuccess.accept(prepared == null ? null : prepared.result(), prepared == null ? null : prepared.renderState());
+                        onSuccess.accept(prepared == null ? null : prepared.result(), prepared == null ? null : prepared.layout());
                     }
                 },
                 throwable -> {
@@ -86,21 +84,19 @@ final class DungeonEditorApplicationService {
         }
         if (maps.isEmpty()) {
             activeMapId = null;
-            activeRenderState = null;
             onSuccess.accept(DungeonEditorLoadState.empty(maps));
             return;
         }
         Long selectedMapId = resolveMapSelection(maps, preferredMapId);
         activeMapId = selectedMapId;
         UiAsyncTasks.submit(
-                () -> DungeonWorkspaceRenderState.from(editorService.loadLayout(selectedMapId), activeRenderState),
-                renderState -> {
+                () -> editorService.loadLayout(selectedMapId),
+                layout -> {
                     if (request != loadSequence.get()) {
                         return;
                     }
                     activeMapId = selectedMapId;
-                    activeRenderState = renderState;
-                    onSuccess.accept(new DungeonEditorLoadState(List.copyOf(maps), selectedMapId, renderState));
+                    onSuccess.accept(new DungeonEditorLoadState(List.copyOf(maps), selectedMapId, layout));
                 },
                 throwable -> deliverLoadFailure(request, throwable, onFailure));
     }
@@ -132,7 +128,7 @@ final class DungeonEditorApplicationService {
 
     private record PreparedEdit(
             DungeonLayoutEditResult result,
-            DungeonWorkspaceRenderState renderState
+            DungeonLayout layout
     ) {
     }
 }

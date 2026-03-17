@@ -4,7 +4,6 @@ import features.world.dungeonmap.model.DungeonRuntimeLocation;
 import features.world.dungeonmap.model.DungeonMap;
 import features.world.dungeonmap.service.catalog.DungeonMapCatalogService;
 import features.world.dungeonmap.service.runtime.DungeonRuntimeService;
-import features.world.dungeonmap.ui.workspace.render.DungeonWorkspaceRenderState;
 import ui.async.UiAsyncTasks;
 
 import java.util.List;
@@ -60,8 +59,7 @@ public final class DungeonRuntimeApplicationService {
         return new DungeonRuntimeLoadState(
                 maps,
                 selectedMapId,
-                state,
-                DungeonWorkspaceRenderState.from(state.layout()));
+                state);
     }
 
     private void deliverFailure(long request, Throwable throwable, Consumer<Throwable> onError) {

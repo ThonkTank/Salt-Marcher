@@ -1,8 +1,10 @@
 package features.world.dungeonmap.ui.workspace;
 
+import features.world.dungeonmap.model.CorridorComponent;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.DungeonCorridor;
 import features.world.dungeonmap.model.DungeonCorridorEndpoint;
+import features.world.dungeonmap.model.DungeonClusterVertexRef;
 import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonRuntimeLocation;
 import features.world.dungeonmap.model.DungeonRoom;
@@ -34,13 +36,14 @@ public final class DungeonSplitWorkspace extends BorderPane {
     private final DungeonGraphPane graphPane = new DungeonGraphPane(camera);
     private final StackPane workspacePane = new StackPane(gridPane, graphPane);
     private DungeonViewMode viewMode = DungeonViewMode.GRID;
+    private DungeonWorkspaceRenderState renderState;
     private DungeonLayout layout;
     private DungeonCanvasBounds bounds = DungeonCanvasBounds.defaultBounds();
     private DungeonSelection selectedTarget;
     private DungeonRuntimeLocation activeLocation;
     private DungeonEditorTool editorTool = DungeonEditorTool.SELECT;
-    private CorridorEditInteractionController.DoorHandle selectedCorridorDoorHandle;
-    private Consumer<CorridorEditInteractionController.DoorHandle> onCorridorDoorSelectionChanged = handle -> { };
+    private DungeonCorridorDoorHandle selectedCorridorDoorHandle;
+    private Consumer<DungeonCorridorDoorHandle> onCorridorDoorSelectionChanged = handle -> { };
     private boolean syncingCorridorDoorSelection;
 
     public DungeonSplitWorkspace(boolean editable) {
@@ -60,12 +63,12 @@ public final class DungeonSplitWorkspace extends BorderPane {
         applyViewMode();
     }
 
-    public void showLayout(DungeonWorkspaceRenderState renderState, DungeonSelection selectedTarget, DungeonRuntimeLocation activeLocation) {
-        DungeonLayout layout = renderState == null ? null : renderState.layout();
+    public void showLayout(DungeonLayout layout, DungeonSelection selectedTarget, DungeonRuntimeLocation activeLocation) {
         boolean resetView = shouldResetView(layout);
+        this.renderState = DungeonWorkspaceRenderState.from(layout, renderState);
         this.layout = layout;
-        DungeonLayoutRenderData renderData = renderState == null ? null : renderState.renderData();
-        this.bounds = renderState == null ? DungeonCanvasBounds.defaultBounds() : renderState.bounds();
+        DungeonLayoutRenderData renderData = renderState == null ? null : this.renderState.renderData();
+        this.bounds = renderState == null ? DungeonCanvasBounds.defaultBounds() : this.renderState.bounds();
         this.selectedTarget = selectedTarget;
         this.activeLocation = activeLocation;
         gridPane.showLayout(layout, renderData, selectedTarget, activeLocation, false);
@@ -137,8 +140,18 @@ public final class DungeonSplitWorkspace extends BorderPane {
         gridPane.setOnClusterDoorDeleted(onClusterDoorDeleted);
     }
 
-    public WallPathInteractionController wallPathController() {
-        return gridPane.wallPathController();
+    public CorridorComponent corridorComponentFor(long corridorId) {
+        if (renderState == null || renderState.renderData() == null) {
+            return null;
+        }
+        return renderState.renderData().corridorTopology().componentForCorridor(corridorId);
+    }
+
+    public CorridorComponent corridorComponentById(String componentId) {
+        if (renderState == null || renderState.renderData() == null) {
+            return null;
+        }
+        return renderState.renderData().corridorTopology().componentById(componentId);
     }
 
     public void setOnGraphRoomRequested(Consumer<Point2i> onGraphRoomRequested) {
@@ -163,50 +176,111 @@ public final class DungeonSplitWorkspace extends BorderPane {
         graphPane.setOnCorridorRoomRemoved(onCorridorRoomRemoved);
     }
 
-    public void setOnCorridorDoorSelected(Consumer<CorridorEditInteractionController.DoorHandle> onCorridorDoorSelected) {
-        gridPane.setOnCorridorDoorSelected(onCorridorDoorSelected);
-        graphPane.setOnCorridorDoorSelected(onCorridorDoorSelected);
+    public void setOnWallPathStateChanged(Runnable onWallPathStateChanged) {
+        gridPane.wallPathController().setOnStateChanged(onWallPathStateChanged);
     }
 
-    public void setOnCorridorDoorSelectionChanged(Consumer<CorridorEditInteractionController.DoorHandle> onCorridorDoorSelectionChanged) {
+    public void setOnWallPathCommitRequested(Consumer<DungeonWallPathCommit> onWallPathCommitRequested) {
+        Consumer<DungeonWallPathCommit> consumer = onWallPathCommitRequested == null ? request -> { } : onWallPathCommitRequested;
+        gridPane.wallPathController().setOnCommitRequested(request ->
+                consumer.accept(new DungeonWallPathCommit(request.edgeRefs(), request.nextAnchor())));
+    }
+
+    public void cancelWallPath() {
+        gridPane.wallPathController().cancel();
+    }
+
+    public void applyWallPathCommitResult(DungeonClusterVertexRef nextAnchor) {
+        gridPane.wallPathController().applyCommitResult(nextAnchor);
+    }
+
+    public void revertPendingWallPathCommit() {
+        gridPane.wallPathController().revertPendingCommit();
+    }
+
+    public DungeonWallPathState snapshotWallPathState() {
+        WallPathInteractionController.StateSnapshot snapshot = gridPane.wallPathController().snapshotState();
+        return snapshot == null
+                ? null
+                : new DungeonWallPathState(
+                        snapshot.activeAnchor(),
+                        snapshot.previewPath(),
+                        snapshot.commitPending(),
+                        snapshot.pendingAnchor());
+    }
+
+    public void restoreWallPathState(DungeonWallPathState state) {
+        if (state == null) {
+            gridPane.wallPathController().restoreState(null);
+            return;
+        }
+        gridPane.wallPathController().restoreState(new WallPathInteractionController.StateSnapshot(
+                state.activeAnchor(),
+                state.previewPath(),
+                state.commitPending(),
+                state.pendingAnchor()));
+    }
+
+    public DungeonClusterVertexRef displayedWallAnchor() {
+        return gridPane.wallPathController().displayedAnchor();
+    }
+
+    public void setOnCorridorDoorSelected(Consumer<DungeonCorridorDoorHandle> onCorridorDoorSelected) {
+        Consumer<DungeonCorridorDoorHandle> consumer = onCorridorDoorSelected == null ? handle -> { } : onCorridorDoorSelected;
+        gridPane.setOnCorridorDoorSelected(handle -> consumer.accept(toWorkspaceHandle(handle)));
+        graphPane.setOnCorridorDoorSelected(handle -> consumer.accept(toWorkspaceHandle(handle)));
+    }
+
+    public void setOnCorridorDoorSelectionChanged(Consumer<DungeonCorridorDoorHandle> onCorridorDoorSelectionChanged) {
         this.onCorridorDoorSelectionChanged = onCorridorDoorSelectionChanged == null ? handle -> { } : onCorridorDoorSelectionChanged;
     }
 
-    public CorridorEditInteractionController.DoorHandle selectedCorridorDoorHandle() {
+    public DungeonCorridorDoorHandle selectedCorridorDoorHandle() {
         return selectedCorridorDoorHandle;
     }
 
-    public void setSelectedCorridorDoorHandle(CorridorEditInteractionController.DoorHandle handle) {
-        syncCorridorDoorSelection(handle, null);
+    public void setSelectedCorridorDoorHandle(DungeonCorridorDoorHandle handle) {
+        syncCorridorDoorSelection(toRenderHandle(handle), null);
     }
 
     public void setOnCorridorDoorMoved(
-            BiConsumer<CorridorEditInteractionController.DoorHandle, CorridorEditInteractionController.DoorMoveTarget> onCorridorDoorMoved
+            BiConsumer<DungeonCorridorDoorHandle, DungeonCorridorDoorMoveTarget> onCorridorDoorMoved
     ) {
-        gridPane.setOnCorridorDoorMoved(onCorridorDoorMoved);
-        graphPane.setOnCorridorDoorMoved(onCorridorDoorMoved);
+        BiConsumer<DungeonCorridorDoorHandle, DungeonCorridorDoorMoveTarget> consumer = onCorridorDoorMoved == null
+                ? (handle, target) -> { }
+                : onCorridorDoorMoved;
+        gridPane.setOnCorridorDoorMoved((handle, target) ->
+                consumer.accept(toWorkspaceHandle(handle), toWorkspaceMoveTarget(target)));
+        graphPane.setOnCorridorDoorMoved((handle, target) ->
+                consumer.accept(toWorkspaceHandle(handle), toWorkspaceMoveTarget(target)));
     }
 
-    public void setOnCorridorWaypointSelected(Consumer<CorridorEditInteractionController.WaypointHandle> onCorridorWaypointSelected) {
-        gridPane.setOnCorridorWaypointSelected(onCorridorWaypointSelected);
-        graphPane.setOnCorridorWaypointSelected(onCorridorWaypointSelected);
+    public void setOnCorridorWaypointSelected(Consumer<DungeonCorridorWaypointHandle> onCorridorWaypointSelected) {
+        Consumer<DungeonCorridorWaypointHandle> consumer = onCorridorWaypointSelected == null ? handle -> { } : onCorridorWaypointSelected;
+        gridPane.setOnCorridorWaypointSelected(handle -> consumer.accept(toWorkspaceHandle(handle)));
+        graphPane.setOnCorridorWaypointSelected(handle -> consumer.accept(toWorkspaceHandle(handle)));
     }
 
-    public void setOnCorridorWaypointAdded(Consumer<CorridorEditInteractionController.SegmentInsertHit> onCorridorWaypointAdded) {
-        gridPane.setOnCorridorWaypointAdded(onCorridorWaypointAdded);
-        graphPane.setOnCorridorWaypointAdded(onCorridorWaypointAdded);
+    public void setOnCorridorWaypointAdded(Consumer<DungeonCorridorWaypointInsert> onCorridorWaypointAdded) {
+        Consumer<DungeonCorridorWaypointInsert> consumer = onCorridorWaypointAdded == null ? hit -> { } : onCorridorWaypointAdded;
+        gridPane.setOnCorridorWaypointAdded(hit -> consumer.accept(toWorkspaceInsert(hit)));
+        graphPane.setOnCorridorWaypointAdded(hit -> consumer.accept(toWorkspaceInsert(hit)));
     }
 
-    public void setOnCorridorWaypointRemoved(Consumer<CorridorEditInteractionController.WaypointHandle> onCorridorWaypointRemoved) {
-        gridPane.setOnCorridorWaypointRemoved(onCorridorWaypointRemoved);
-        graphPane.setOnCorridorWaypointRemoved(onCorridorWaypointRemoved);
+    public void setOnCorridorWaypointRemoved(Consumer<DungeonCorridorWaypointHandle> onCorridorWaypointRemoved) {
+        Consumer<DungeonCorridorWaypointHandle> consumer = onCorridorWaypointRemoved == null ? handle -> { } : onCorridorWaypointRemoved;
+        gridPane.setOnCorridorWaypointRemoved(handle -> consumer.accept(toWorkspaceHandle(handle)));
+        graphPane.setOnCorridorWaypointRemoved(handle -> consumer.accept(toWorkspaceHandle(handle)));
     }
 
     public void setOnCorridorWaypointMoved(
-            BiConsumer<CorridorEditInteractionController.WaypointHandle, Point2i> onCorridorWaypointMoved
+            BiConsumer<DungeonCorridorWaypointHandle, Point2i> onCorridorWaypointMoved
     ) {
-        gridPane.setOnCorridorWaypointMoved(onCorridorWaypointMoved);
-        graphPane.setOnCorridorWaypointMoved(onCorridorWaypointMoved);
+        BiConsumer<DungeonCorridorWaypointHandle, Point2i> consumer = onCorridorWaypointMoved == null
+                ? (handle, cell) -> { }
+                : onCorridorWaypointMoved;
+        gridPane.setOnCorridorWaypointMoved((handle, cell) -> consumer.accept(toWorkspaceHandle(handle), cell));
+        graphPane.setOnCorridorWaypointMoved((handle, cell) -> consumer.accept(toWorkspaceHandle(handle), cell));
     }
 
     public void setEditorTool(DungeonEditorTool editorTool) {
@@ -279,15 +353,36 @@ public final class DungeonSplitWorkspace extends BorderPane {
             CorridorEditInteractionController.DoorHandle normalized = source == gridPane
                     ? gridPane.selectedCorridorDoorHandle()
                     : source == graphPane ? graphPane.selectedCorridorDoorHandle() : gridPane.selectedCorridorDoorHandle();
-            if (!Objects.equals(selectedCorridorDoorHandle, normalized)) {
-                selectedCorridorDoorHandle = normalized;
+            DungeonCorridorDoorHandle normalizedHandle = toWorkspaceHandle(normalized);
+            if (!Objects.equals(selectedCorridorDoorHandle, normalizedHandle)) {
+                selectedCorridorDoorHandle = normalizedHandle;
                 onCorridorDoorSelectionChanged.accept(selectedCorridorDoorHandle);
                 return;
             }
-            selectedCorridorDoorHandle = normalized;
+            selectedCorridorDoorHandle = normalizedHandle;
         } finally {
             syncingCorridorDoorSelection = false;
         }
+    }
+
+    private static DungeonCorridorDoorHandle toWorkspaceHandle(CorridorEditInteractionController.DoorHandle handle) {
+        return handle == null ? null : new DungeonCorridorDoorHandle(handle.corridorId(), handle.roomId());
+    }
+
+    private static CorridorEditInteractionController.DoorHandle toRenderHandle(DungeonCorridorDoorHandle handle) {
+        return handle == null ? null : new CorridorEditInteractionController.DoorHandle(handle.corridorId(), handle.roomId());
+    }
+
+    private static DungeonCorridorDoorMoveTarget toWorkspaceMoveTarget(CorridorEditInteractionController.DoorMoveTarget target) {
+        return target == null ? null : new DungeonCorridorDoorMoveTarget(target.roomId(), target.roomCell(), target.direction());
+    }
+
+    private static DungeonCorridorWaypointHandle toWorkspaceHandle(CorridorEditInteractionController.WaypointHandle handle) {
+        return handle == null ? null : new DungeonCorridorWaypointHandle(handle.corridorId(), handle.waypointIndex());
+    }
+
+    private static DungeonCorridorWaypointInsert toWorkspaceInsert(CorridorEditInteractionController.SegmentInsertHit hit) {
+        return hit == null ? null : new DungeonCorridorWaypointInsert(hit.corridorId(), hit.insertIndex(), hit.cell());
     }
 
     private boolean shouldResetView(DungeonLayout nextLayout) {

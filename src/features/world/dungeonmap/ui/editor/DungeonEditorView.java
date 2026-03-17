@@ -17,14 +17,16 @@ import features.world.dungeonmap.service.catalog.DungeonMapCatalogService;
 import features.world.dungeonmap.service.editor.DungeonEditorService;
 import features.world.dungeonmap.ui.editor.dropdowns.DungeonMapEditorDropdown;
 import features.world.dungeonmap.ui.inspector.DungeonInspectorPresenter;
+import features.world.dungeonmap.ui.workspace.DungeonCorridorDoorHandle;
+import features.world.dungeonmap.ui.workspace.DungeonCorridorDoorMoveTarget;
+import features.world.dungeonmap.ui.workspace.DungeonCorridorWaypointHandle;
+import features.world.dungeonmap.ui.workspace.DungeonCorridorWaypointInsert;
 import features.world.dungeonmap.ui.workspace.DungeonEditorTool;
 import features.world.dungeonmap.ui.workspace.DungeonSplitWorkspace;
 import features.world.dungeonmap.ui.workspace.DungeonViewMode;
+import features.world.dungeonmap.ui.workspace.DungeonWallPathCommit;
+import features.world.dungeonmap.ui.workspace.DungeonWallPathState;
 import features.world.dungeonmap.ui.workspace.render.CorridorDoorHit;
-import features.world.dungeonmap.ui.workspace.render.CorridorEditInteractionController;
-import features.world.dungeonmap.ui.workspace.render.DungeonWorkspaceRenderState;
-import features.world.dungeonmap.ui.workspace.render.WallPathCommitRequest;
-import features.world.dungeonmap.ui.workspace.render.WallPathInteractionController;
 import javafx.beans.value.ChangeListener;
 import javafx.event.EventHandler;
 import javafx.scene.Node;
@@ -54,7 +56,6 @@ public final class DungeonEditorView implements AppView {
     private final DungeonToolModeState toolModeState = new DungeonToolModeState();
     private final DungeonEditorControls controls = new DungeonEditorControls(toolModeState);
     private final DungeonSplitWorkspace workspace = new DungeonSplitWorkspace(true);
-    private final WallPathInteractionController wallPathController = workspace.wallPathController();
     private final VBox statePane = new VBox();
     private final Label activeToolLabel = new Label(DungeonEditorTool.SELECT.label());
     private final Label wallPathLabel = new Label("Kein Startpunkt");
@@ -70,7 +71,7 @@ public final class DungeonEditorView implements AppView {
     private final MessageDropdown messageDropdown = new MessageDropdown();
 
     private Long currentMapId;
-    private DungeonWorkspaceRenderState currentRenderState;
+    private DungeonLayout currentLayout;
     private DungeonSelection selectedTarget;
     private DungeonCorridorEndpoint pendingCorridorStart;
     private DungeonViewMode viewMode = DungeonViewMode.GRID;
@@ -78,8 +79,8 @@ public final class DungeonEditorView implements AppView {
     private Scene shortcutScene;
     private Window shortcutWindow;
     private CorridorDraft suspendedCorridorDraft;
-    private WallPathInteractionController.StateSnapshot suspendedWallPathState;
-    private CorridorEditInteractionController.WaypointHandle selectedCorridorWaypointHandle;
+    private DungeonWallPathState suspendedWallPathState;
+    private DungeonCorridorWaypointHandle selectedCorridorWaypointHandle;
     private final EventHandler<KeyEvent> keyPressedHandler = this::handleKeyPressed;
     private final EventHandler<KeyEvent> keyReleasedHandler = this::handleKeyReleased;
     private final ChangeListener<Node> focusOwnerListener = (obs, previous, focusOwner) -> {
@@ -116,8 +117,8 @@ public final class DungeonEditorView implements AppView {
         workspace.setOnRoomCellsDeleted(this::deleteRoomCells);
         workspace.setOnClusterDoorPainted(this::paintClusterDoors);
         workspace.setOnClusterDoorDeleted(this::deleteClusterDoors);
-        wallPathController.setOnStateChanged(this::refreshStatePane);
-        wallPathController.setOnCommitRequested(this::commitWallPathSegment);
+        workspace.setOnWallPathStateChanged(this::refreshStatePane);
+        workspace.setOnWallPathCommitRequested(this::commitWallPathSegment);
         workspace.setOnGraphRoomRequested(this::createGraphRoom);
         workspace.setOnGraphClusterDeleted(this::deleteGraphCluster);
         workspace.setOnCorridorDeleted(this::deleteCorridor);
@@ -192,7 +193,7 @@ public final class DungeonEditorView implements AppView {
         controls.selectViewMode(viewMode);
         syncEditorTool();
         workspace.setViewMode(viewMode);
-        workspace.showLayout(currentRenderState, selectedTarget, null);
+        workspace.showLayout(currentLayout, selectedTarget, null);
     }
 
     private void renderSelection() {
@@ -311,7 +312,7 @@ public final class DungeonEditorView implements AppView {
     private void setViewMode(DungeonViewMode viewMode) {
         this.viewMode = viewMode == null ? DungeonViewMode.GRID : viewMode;
         if (this.viewMode == DungeonViewMode.GRAPH && activeTool().isWallTool()) {
-            wallPathController.cancel();
+            workspace.cancelWallPath();
         }
         workspace.setViewMode(this.viewMode);
     }
@@ -345,11 +346,11 @@ public final class DungeonEditorView implements AppView {
 
     private void showLoadState(DungeonEditorLoadState loadState) {
         controls.setMaps(loadState.maps());
-        if (loadState.renderState() == null || loadState.selectedMapId() == null) {
+        if (loadState.layout() == null || loadState.selectedMapId() == null) {
             clearLayout();
             return;
         }
-        applyLoadedWorkspaceState(loadState.selectedMapId(), loadState.renderState());
+        applyLoadedWorkspaceState(loadState.selectedMapId(), loadState.layout());
         selectedTarget = null;
         clearTransientState();
         controls.selectMap(loadState.selectedMapId());
@@ -369,7 +370,7 @@ public final class DungeonEditorView implements AppView {
         render();
     }
 
-    private void selectCorridorDoorHandle(CorridorEditInteractionController.DoorHandle handle) {
+    private void selectCorridorDoorHandle(DungeonCorridorDoorHandle handle) {
         if (handle == null) {
             return;
         }
@@ -377,7 +378,7 @@ public final class DungeonEditorView implements AppView {
         showTarget(DungeonSelection.corridor(handle.corridorId()), false);
     }
 
-    private void handleCorridorDoorSelectionChanged(CorridorEditInteractionController.DoorHandle handle) {
+    private void handleCorridorDoorSelectionChanged(DungeonCorridorDoorHandle handle) {
         if (handle != null) {
             selectedCorridorWaypointHandle = null;
         }
@@ -385,13 +386,13 @@ public final class DungeonEditorView implements AppView {
     }
 
     private void moveCorridorDoorHandle(
-            CorridorEditInteractionController.DoorHandle handle,
-            CorridorEditInteractionController.DoorMoveTarget target
+            DungeonCorridorDoorHandle handle,
+            DungeonCorridorDoorMoveTarget target
     ) {
         if (currentMapId == null || handle == null || target == null) {
             return;
         }
-        CorridorEditInteractionController.DoorHandle nextHandle = new CorridorEditInteractionController.DoorHandle(
+        DungeonCorridorDoorHandle nextHandle = new DungeonCorridorDoorHandle(
                 handle.corridorId(),
                 target.roomId());
         workspace.setSelectedCorridorDoorHandle(handle);
@@ -405,7 +406,7 @@ public final class DungeonEditorView implements AppView {
                         onError));
     }
 
-    private void selectCorridorWaypointHandle(CorridorEditInteractionController.WaypointHandle handle) {
+    private void selectCorridorWaypointHandle(DungeonCorridorWaypointHandle handle) {
         if (handle == null) {
             return;
         }
@@ -414,12 +415,12 @@ public final class DungeonEditorView implements AppView {
         showTarget(DungeonSelection.corridor(handle.corridorId()), false);
     }
 
-    private void addCorridorWaypoint(CorridorEditInteractionController.SegmentInsertHit hit) {
+    private void addCorridorWaypoint(DungeonCorridorWaypointInsert hit) {
         if (currentMapId == null || hit == null) {
             return;
         }
-        CorridorEditInteractionController.WaypointHandle selectedHandle =
-                new CorridorEditInteractionController.WaypointHandle(hit.corridorId(), hit.insertIndex());
+        DungeonCorridorWaypointHandle selectedHandle =
+                new DungeonCorridorWaypointHandle(hit.corridorId(), hit.insertIndex());
         runEdit("DungeonEditorView.addCorridorWaypoint()",
                 (result, layout) -> applyCorridorEditResult(result, layout, null, selectedHandle),
                 (mapId, onSuccess, onError) -> submitEdit(
@@ -429,7 +430,7 @@ public final class DungeonEditorView implements AppView {
                         onError));
     }
 
-    private void moveCorridorWaypointHandle(CorridorEditInteractionController.WaypointHandle handle, Point2i cell) {
+    private void moveCorridorWaypointHandle(DungeonCorridorWaypointHandle handle, Point2i cell) {
         if (currentMapId == null || handle == null || cell == null) {
             return;
         }
@@ -444,7 +445,7 @@ public final class DungeonEditorView implements AppView {
                         onError));
     }
 
-    private void removeCorridorWaypointHandle(CorridorEditInteractionController.WaypointHandle handle) {
+    private void removeCorridorWaypointHandle(DungeonCorridorWaypointHandle handle) {
         if (currentMapId == null || handle == null) {
             return;
         }
@@ -463,7 +464,7 @@ public final class DungeonEditorView implements AppView {
                         onError));
     }
 
-    private void commitWallPathSegment(WallPathCommitRequest request) {
+    private void commitWallPathSegment(DungeonWallPathCommit request) {
         if (currentMapId == null || request == null || request.edgeRefs() == null || request.edgeRefs().isEmpty()) {
             return;
         }
@@ -477,7 +478,7 @@ public final class DungeonEditorView implements AppView {
                                 : editorService.paintClusterWalls(mapId, request.edgeRefs()),
                         onSuccess,
                         throwable -> {
-                            wallPathController.revertPendingCommit();
+                            workspace.revertPendingWallPathCommit();
                             onError.accept(throwable);
                         }));
     }
@@ -620,7 +621,7 @@ public final class DungeonEditorView implements AppView {
         workspace.setSelectedCorridorDoorHandle(null);
         selectedCorridorWaypointHandle = null;
         selectedTarget = focusedTarget(layout, result);
-        wallPathController.applyCommitResult(nextAnchor);
+        workspace.applyWallPathCommitResult(nextAnchor);
         render();
         refreshVisibleInspectorForTarget(selectedTarget);
         refreshStatePane();
@@ -629,8 +630,8 @@ public final class DungeonEditorView implements AppView {
     private void applyCorridorEditResult(
             DungeonLayoutEditResult result,
             DungeonLayout layout,
-            CorridorEditInteractionController.DoorHandle doorHandle,
-            CorridorEditInteractionController.WaypointHandle waypointHandle
+            DungeonCorridorDoorHandle doorHandle,
+            DungeonCorridorWaypointHandle waypointHandle
     ) {
         applyRoomEditResult(result, layout);
         workspace.setSelectedCorridorDoorHandle(doorHandle);
@@ -641,14 +642,14 @@ public final class DungeonEditorView implements AppView {
     private void applyDeletedCorridorWaypointResult(
             DungeonLayoutEditResult result,
             DungeonLayout layout,
-            CorridorEditInteractionController.WaypointHandle deletedHandle
+            DungeonCorridorWaypointHandle deletedHandle
     ) {
-        CorridorEditInteractionController.WaypointHandle nextHandle = null;
+        DungeonCorridorWaypointHandle nextHandle = null;
         if (layout != null && deletedHandle != null) {
             DungeonCorridor corridor = layout.corridorById(deletedHandle.corridorId());
             if (corridor != null && !corridor.waypoints().isEmpty()) {
                 int nextIndex = Math.min(deletedHandle.waypointIndex(), corridor.waypoints().size() - 1);
-                nextHandle = new CorridorEditInteractionController.WaypointHandle(deletedHandle.corridorId(), nextIndex);
+                nextHandle = new DungeonCorridorWaypointHandle(deletedHandle.corridorId(), nextIndex);
             }
         }
         applyCorridorEditResult(result, layout, null, nextHandle);
@@ -806,7 +807,7 @@ public final class DungeonEditorView implements AppView {
         } else {
             suspendedCorridorDraft = null;
         }
-        suspendedWallPathState = toolModeState.selectedTool().isWallTool() ? wallPathController.snapshotState() : null;
+        suspendedWallPathState = toolModeState.selectedTool().isWallTool() ? workspace.snapshotWallPathState() : null;
     }
 
     private void restoreSuspendedToolState() {
@@ -818,7 +819,7 @@ public final class DungeonEditorView implements AppView {
         }
         suspendedCorridorDraft = null;
         if (toolModeState.selectedTool().isWallTool() && suspendedWallPathState != null) {
-            wallPathController.restoreState(suspendedWallPathState);
+            workspace.restoreWallPathState(suspendedWallPathState);
         }
         suspendedWallPathState = null;
     }
@@ -893,7 +894,7 @@ public final class DungeonEditorView implements AppView {
     private void configureStatePane() {
         statePane.getStyleClass().add("dungeon-editor-sidebar");
         activeToolLabel.getStyleClass().add("editor-panel-title");
-        cancelWallPathButton.setOnAction(event -> wallPathController.cancel());
+        cancelWallPathButton.setOnAction(event -> workspace.cancelWallPath());
         resetCorridorDoorButton.setOnAction(event -> resetSelectedCorridorDoor());
         deleteCorridorWaypointButton.setOnAction(event -> deleteSelectedCorridorWaypoint());
         statePane.getChildren().addAll(
@@ -920,20 +921,20 @@ public final class DungeonEditorView implements AppView {
         workflow.submitEdit(
                 mapId,
                 work,
-                (result, renderState) -> {
-                    updateRenderState(renderState);
-                    onSuccess.accept(result, renderState == null ? null : renderState.layout());
+                (result, layout) -> {
+                    updateLayout(layout);
+                    onSuccess.accept(result, layout);
                 },
                 onError);
     }
 
-    private void applyLoadedWorkspaceState(Long mapId, DungeonWorkspaceRenderState renderState) {
+    private void applyLoadedWorkspaceState(Long mapId, DungeonLayout layout) {
         currentMapId = mapId;
-        updateRenderState(renderState);
+        updateLayout(layout);
     }
 
-    private void updateRenderState(DungeonWorkspaceRenderState renderState) {
-        currentRenderState = renderState;
+    private void updateLayout(DungeonLayout layout) {
+        currentLayout = layout;
     }
 
     private void clearTransientState() {
@@ -1068,7 +1069,7 @@ public final class DungeonEditorView implements AppView {
     }
 
     private void resetSelectedCorridorDoor() {
-        CorridorEditInteractionController.DoorHandle handle = workspace.selectedCorridorDoorHandle();
+        DungeonCorridorDoorHandle handle = workspace.selectedCorridorDoorHandle();
         if (currentMapId == null || handle == null) {
             return;
         }
@@ -1088,7 +1089,7 @@ public final class DungeonEditorView implements AppView {
         deleteCorridorWaypoint(selectedCorridorWaypointHandle, "DungeonEditorView.deleteCorridorWaypoint()");
     }
 
-    private void deleteCorridorWaypoint(CorridorEditInteractionController.WaypointHandle handle, String action) {
+    private void deleteCorridorWaypoint(DungeonCorridorWaypointHandle handle, String action) {
         if (currentMapId == null || handle == null) {
             return;
         }
@@ -1102,7 +1103,7 @@ public final class DungeonEditorView implements AppView {
     }
 
     private void refreshStatePane() {
-        DungeonClusterVertexRef shownWallAnchor = wallPathController.displayedAnchor();
+        DungeonClusterVertexRef shownWallAnchor = workspace.displayedWallAnchor();
         if (activeTool().isWallTool() && shownWallAnchor != null) {
             wallPathLabel.setText(
                     "Cluster " + shownWallAnchor.clusterId()
@@ -1122,7 +1123,7 @@ public final class DungeonEditorView implements AppView {
         DungeonCorridor selectedCorridor = selectedTarget instanceof DungeonSelection.Corridor corridorSelection && layout != null
                 ? layout.corridorById(corridorSelection.corridorId())
                 : null;
-        CorridorEditInteractionController.DoorHandle selectedCorridorDoorHandle = workspace.selectedCorridorDoorHandle();
+        DungeonCorridorDoorHandle selectedCorridorDoorHandle = workspace.selectedCorridorDoorHandle();
         if (selectedCorridor == null || selectedCorridor.corridorId() == null) {
             corridorEditSelectionLabel.setText("Kein Korridor gewählt");
             resetCorridorDoorButton.setManaged(false);
@@ -1168,8 +1169,8 @@ public final class DungeonEditorView implements AppView {
 
     private record CorridorDraft(
             DungeonCorridorEndpoint pendingStart,
-            CorridorEditInteractionController.DoorHandle selectedDoorHandle,
-            CorridorEditInteractionController.WaypointHandle selectedWaypointHandle
+            DungeonCorridorDoorHandle selectedDoorHandle,
+            DungeonCorridorWaypointHandle selectedWaypointHandle
     ) {
     }
 
@@ -1194,6 +1195,6 @@ public final class DungeonEditorView implements AppView {
     }
 
     private DungeonLayout currentLayout() {
-        return currentRenderState == null ? null : currentRenderState.layout();
+        return currentLayout;
     }
 }

@@ -9,7 +9,6 @@ import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonRuntimeState;
 import features.world.dungeonmap.ui.inspector.DungeonInspectorPresenter;
 import features.world.dungeonmap.ui.workspace.DungeonSplitWorkspace;
-import features.world.dungeonmap.ui.workspace.render.DungeonWorkspaceRenderState;
 import features.world.dungeonmap.ui.workspace.DungeonViewMode;
 import javafx.scene.Node;
 import ui.async.UiErrorReporter;
@@ -26,7 +25,6 @@ public final class DungeonView implements AppView {
     private final DetailsNavigator detailsNavigator;
 
     private DungeonRuntimeState currentState;
-    private DungeonWorkspaceRenderState currentRenderState;
     private boolean initialLoadDone;
 
     public DungeonView(DetailsNavigator detailsNavigator, DungeonRuntimeApplicationService applicationService) {
@@ -78,9 +76,8 @@ public final class DungeonView implements AppView {
 
     private void showLoadState(DungeonRuntimeLoadState loadState) {
         currentState = loadState.state();
-        currentRenderState = loadState.renderState();
         DungeonLayout layout = loadState.state().layout();
-        workspace.showLayout(currentRenderState, null, loadState.state().activeLocation());
+        workspace.showLayout(layout, null, loadState.state().activeLocation());
         controls.setMaps(loadState.maps());
         controls.selectMap(loadState.selectedMapId());
         controls.setActiveRoomName(activeLocationLabel(layout, loadState.state().activeLocation()));
@@ -93,9 +90,7 @@ public final class DungeonView implements AppView {
 
     private void selectCorridor(DungeonCorridor corridor) {
         publishCorridorDetails(corridor);
-        CorridorComponent component = currentRenderState == null
-                ? null
-                : currentRenderState.renderData().corridorTopology().componentForCorridor(corridor.corridorId());
+        CorridorComponent component = workspace.corridorComponentFor(corridor.corridorId());
         if (component == null) {
             return;
         }
@@ -130,9 +125,7 @@ public final class DungeonView implements AppView {
     }
 
     private DungeonCorridorSummary corridorSummary(DungeonCorridor corridor) {
-        CorridorComponent component = currentRenderState == null
-                ? null
-                : currentRenderState.renderData().corridorTopology().componentForCorridor(corridor.corridorId());
+        CorridorComponent component = workspace.corridorComponentFor(corridor.corridorId());
         boolean active = currentState.activeLocation() instanceof DungeonRuntimeLocation.CorridorComponent activeLocation
                 && component != null
                 && component.componentId().equals(activeLocation.componentId());
@@ -157,9 +150,7 @@ public final class DungeonView implements AppView {
             return null;
         }
         if (location instanceof DungeonRuntimeLocation.CorridorComponent corridorComponent) {
-            CorridorComponent component = currentRenderState == null
-                    ? null
-                    : currentRenderState.renderData().corridorTopology().componentById(corridorComponent.componentId());
+            CorridorComponent component = workspace.corridorComponentById(corridorComponent.componentId());
             if (component == null) {
                 return null;
             }
