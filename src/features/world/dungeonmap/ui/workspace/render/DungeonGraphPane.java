@@ -92,7 +92,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
                 continue;
             }
             ClusterAnchorLayout anchorLayout = anchorLayout(anchorLayouts, cluster);
-            AnchorPosition clusterAnchor = clusterAnchorPosition(cluster, anchorLayout);
+            ClusterAnchorLayout.AnchorPosition clusterAnchor = clusterAnchorPosition(cluster, anchorLayout);
             double screenX = clusterAnchor.x();
             double screenY = clusterAnchor.y();
             boolean active = isActive(cluster);
@@ -127,7 +127,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
         Map<Long, ClusterAnchorLayout> anchorLayouts = new HashMap<>();
         for (DungeonRoomCluster cluster : layout.clusters()) {
             ClusterAnchorLayout anchorLayout = anchorLayout(anchorLayouts, cluster);
-            AnchorPosition anchor = clusterAnchorPosition(cluster, anchorLayout);
+            ClusterAnchorLayout.AnchorPosition anchor = clusterAnchorPosition(cluster, anchorLayout);
             double centerX = anchor.x();
             double centerY = anchor.y();
             double distance = Math.hypot(centerX - screenX, centerY - screenY);
@@ -153,7 +153,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
                 continue;
             }
             ClusterAnchorLayout anchorLayout = anchorLayout(anchorLayouts, cluster);
-            AnchorPosition anchor = roomAnchorPosition(anchorLayout, room);
+            ClusterAnchorLayout.AnchorPosition anchor = roomAnchorPosition(anchorLayout, room);
             double centerX = anchor.x();
             double centerY = anchor.y();
             double distance = Math.hypot(centerX - screenX, centerY - screenY);
@@ -417,8 +417,8 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
             if (!Objects.equals(room.clusterId(), cluster.clusterId())) {
                 continue;
             }
-            AnchorPosition clusterAnchor = clusterAnchorPosition(cluster, anchorLayout);
-            AnchorPosition roomAnchor = roomAnchorPosition(anchorLayout, room);
+            ClusterAnchorLayout.AnchorPosition clusterAnchor = clusterAnchorPosition(cluster, anchorLayout);
+            ClusterAnchorLayout.AnchorPosition roomAnchor = roomAnchorPosition(anchorLayout, room);
             double clusterX = clusterAnchor.x();
             double clusterY = clusterAnchor.y();
             double roomX = roomAnchor.x();
@@ -441,14 +441,14 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
                 ignored -> ClusterAnchorLayout.forCluster(layout, cluster, this::previewCenter, this::previewCenter));
     }
 
-    private AnchorPosition clusterAnchorPosition(DungeonRoomCluster cluster, ClusterAnchorLayout anchorLayout) {
+    private ClusterAnchorLayout.AnchorPosition clusterAnchorPosition(DungeonRoomCluster cluster, ClusterAnchorLayout anchorLayout) {
         Point2i center = anchorLayout.clusterCenter();
         double x = previewScreenX(center.x() + 0.5, cluster.clusterId());
         double y = previewScreenY(center.y() + 0.5, cluster.clusterId());
-        return new AnchorPosition(x, anchorLayout.clusterOverlapsRoom() ? y - 12 : y);
+        return new ClusterAnchorLayout.AnchorPosition(x, anchorLayout.clusterOverlapsRoom() ? y - 12 : y);
     }
 
-    private AnchorPosition roomAnchorPosition(ClusterAnchorLayout anchorLayout, DungeonRoom room) {
+    private ClusterAnchorLayout.AnchorPosition roomAnchorPosition(ClusterAnchorLayout anchorLayout, DungeonRoom room) {
         ClusterAnchorLayout.RoomAnchorGroup roomGroup = anchorLayout.roomGroup(room);
         Point2i center = roomGroup.center();
         double x = previewScreenX(center.x() + 0.5, room.clusterId());
@@ -457,7 +457,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
         if (roomGroup.overlapsCluster(anchorLayout.clusterCenter())) {
             stackOffset += 14;
         }
-        return new AnchorPosition(x, y + stackOffset);
+        return new ClusterAnchorLayout.AnchorPosition(x, y + stackOffset);
     }
 
     private void drawCorridorComponentOutlines(GraphicsContext gc) {

@@ -64,6 +64,9 @@ final class ClusterAnchorLayout {
         return room == null || room.roomId() == null ? null : roomGroupsById.get(room.roomId());
     }
 
+    record AnchorPosition(double x, double y) {
+    }
+
     record RoomAnchorGroup(Point2i center, int index, int count) {
         boolean overlapsCluster(Point2i clusterCenter) {
             return center.equals(clusterCenter);

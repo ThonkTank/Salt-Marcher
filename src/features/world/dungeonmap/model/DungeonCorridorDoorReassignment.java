@@ -3,9 +3,9 @@ package features.world.dungeonmap.model;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class DungeonCorridorDoorMoveSupport {
+public final class DungeonCorridorDoorReassignment {
 
-    private DungeonCorridorDoorMoveSupport() {
+    private DungeonCorridorDoorReassignment() {
         throw new AssertionError("No instances");
     }
 

@@ -2,9 +2,9 @@ package features.world.dungeonmap.model;
 
 import java.util.Map;
 
-public final class DungeonClusterEdgeSemantics {
+public final class DungeonClusterEdgeRules {
 
-    private DungeonClusterEdgeSemantics() {
+    private DungeonClusterEdgeRules() {
     }
 
     public static boolean providesWall(DungeonRoomCluster.EdgeType edgeType) {

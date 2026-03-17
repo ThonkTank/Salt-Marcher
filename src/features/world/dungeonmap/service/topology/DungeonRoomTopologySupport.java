@@ -1,6 +1,6 @@
 package features.world.dungeonmap.service.topology;
 
-import features.world.dungeonmap.model.DungeonClusterEdgeSemantics;
+import features.world.dungeonmap.model.DungeonClusterEdgeRules;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.DungeonLayoutEditResult;
 import features.world.dungeonmap.model.DungeonClusterEdgeRef;
@@ -178,7 +178,7 @@ public final class DungeonRoomTopologySupport {
                         DungeonRoomCluster.EdgeOverride existing = overrides.get(override.key());
                         if (existing != null && deletesExistingEdge(existing, edgeType)) {
                             if (edgeType == DungeonRoomCluster.EdgeType.DOOR) {
-                                overrides.put(override.key(), DungeonClusterEdgeSemantics.restoreWall(existing));
+                                overrides.put(override.key(), DungeonClusterEdgeRules.restoreWall(existing));
                             } else {
                                 overrides.remove(override.key());
                             }
@@ -211,7 +211,7 @@ public final class DungeonRoomTopologySupport {
         if (!present || edgeType != DungeonRoomCluster.EdgeType.DOOR) {
             return true;
         }
-        return DungeonClusterEdgeSemantics.hasWallAt(overrides, override);
+        return DungeonClusterEdgeRules.hasWallAt(overrides, override);
     }
 
     private static boolean deletesExistingEdge(
@@ -222,7 +222,7 @@ public final class DungeonRoomTopologySupport {
             return false;
         }
         if (edgeType == DungeonRoomCluster.EdgeType.WALL) {
-            return DungeonClusterEdgeSemantics.providesWall(existing.type());
+            return DungeonClusterEdgeRules.providesWall(existing.type());
         }
         return existing.type() == edgeType;
     }

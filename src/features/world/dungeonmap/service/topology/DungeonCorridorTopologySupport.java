@@ -3,7 +3,7 @@ package features.world.dungeonmap.service.topology;
 import features.world.dungeonmap.model.CorridorDoorOverride;
 import features.world.dungeonmap.model.CorridorWaypoint;
 import features.world.dungeonmap.model.DungeonCorridor;
-import features.world.dungeonmap.model.DungeonCorridorDoorMoveSupport;
+import features.world.dungeonmap.model.DungeonCorridorDoorReassignment;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.DungeonLayoutEditResult;
 import features.world.dungeonmap.model.DungeonRoom;
@@ -214,7 +214,7 @@ public final class DungeonCorridorTopologySupport {
         if (cluster == null) {
             throw new IllegalArgumentException("Referenz-Cluster für Raum fehlt: " + targetRoom.clusterId());
         }
-        DungeonCorridorDoorMoveSupport.DoorMoveUpdate update = DungeonCorridorDoorMoveSupport.reassignDoor(
+        DungeonCorridorDoorReassignment.DoorMoveUpdate update = DungeonCorridorDoorReassignment.reassignDoor(
                 corridor,
                 roomId,
                 targetRoom,
