@@ -195,7 +195,8 @@ public final class DungeonCorridorGeometry {
                 .orElse("empty");
     }
 
-    // Multi-room corridors should grow as one shared group shape instead of degrading into separate room-pair links.
+    // Multi-room corridors stay deterministic and bounded: we build one shared corridor from a stable seed room,
+    // then pick each next room by the added pair-travel it contributes into that shared network.
     private static CorridorGeometry layoutCorridorGeometry(
             DungeonLayout layout,
             DungeonCorridor corridor,
@@ -224,13 +225,58 @@ public final class DungeonCorridorGeometry {
             cellsByRoomId.put(room.roomId(), roomCells);
         }
 
-        DungeonRoom seedRoom = seedRoom(groupRooms);
+        List<Point2i> waypointCells = resolveWaypointCells(layout, corridor);
+        // Multi-room corridors stay deterministic: we try seeds in one stable order and stop at the first fully connected result.
+        // If no seed can connect every room, we still return the best partial layout instead of failing with no geometry.
+        CorridorBuildState bestState = null;
+        for (DungeonRoom seedRoom : orderedSeedRooms(layout, corridor, groupRooms, cellsByRoomId, roomOccupancy, waypointCells)) {
+            CorridorBuildState candidateState = buildGreedySeedState(
+                    layout,
+                    corridor,
+                    seedRoom,
+                    groupRooms,
+                    roomsById,
+                    cellsByRoomId,
+                    roomOccupancy,
+                    waypointCells);
+            if (bestState == null || corridorBuildStateComparator().compare(candidateState, bestState) < 0) {
+                bestState = candidateState;
+            }
+            if (candidateState.connectedRoomCount() == groupRooms.size()) {
+                bestState = candidateState;
+                break;
+            }
+        }
+
+        boolean routable = bestState.connectedRoomCount() == groupRooms.size()
+                && (!bestState.segments().isEmpty() || !bestState.doors().isEmpty());
+        return new CorridorGeometry(
+                corridorId,
+                roomIds,
+                List.copyOf(bestState.segments()),
+                Set.copyOf(bestState.corridorCells()),
+                List.copyOf(bestState.doors()),
+                List.copyOf(waypointCells),
+                bestState.directlyAdjacentOnly(),
+                routable,
+                null);
+    }
+
+    private static CorridorBuildState buildGreedySeedState(
+            DungeonLayout layout,
+            DungeonCorridor corridor,
+            DungeonRoom seedRoom,
+            List<DungeonRoom> groupRooms,
+            Map<Long, DungeonRoom> roomsById,
+            Map<Long, Set<Point2i>> cellsByRoomId,
+            Map<Point2i, Long> roomOccupancy,
+            List<Point2i> waypointCells
+    ) {
         Set<Long> connectedRoomIds = new LinkedHashSet<>();
         connectedRoomIds.add(seedRoom.roomId());
         Set<Point2i> corridorCells = new LinkedHashSet<>();
         Set<GridSegment> segments = new LinkedHashSet<>();
         Set<DoorSegment> doors = new LinkedHashSet<>();
-        List<Point2i> waypointCells = resolveWaypointCells(layout, corridor);
         boolean directlyAdjacentOnly = true;
 
         if (!waypointCells.isEmpty()) {
@@ -241,17 +287,18 @@ public final class DungeonCorridorGeometry {
                     waypointCells,
                     false,
                     resolveDoorOverride(layout, corridor, seedRoom));
-            if (seedCandidate == null) {
-                return new CorridorGeometry(corridorId, roomIds, List.of(), Set.of(), List.of(), waypointCells, false, false, null);
+            if (seedCandidate != null) {
+                corridorCells.addAll(seedCandidate.path());
+                segments.addAll(segmentsForPath(seedCandidate.path()));
+                doors.addAll(seedCandidate.doors());
+                directlyAdjacentOnly = seedCandidate.path().isEmpty();
             }
-            corridorCells.addAll(seedCandidate.path());
-            segments.addAll(segmentsForPath(seedCandidate.path()));
-            doors.addAll(seedCandidate.doors());
-            directlyAdjacentOnly = seedCandidate.path().isEmpty();
         }
 
         while (connectedRoomIds.size() < groupRooms.size()) {
             ConnectionCandidate bestCandidate = null;
+            CorridorStepScore bestStepScore = null;
+            CorridorConnectionScorer.GraphSnapshot baseGraph = CorridorConnectionScorer.graphSnapshot(segments, doors);
             for (DungeonRoom room : groupRooms) {
                 if (connectedRoomIds.contains(room.roomId())) {
                     continue;
@@ -269,8 +316,18 @@ public final class DungeonCorridorGeometry {
                 if (candidate == null) {
                     continue;
                 }
-                if (bestCandidate == null || connectionCandidateComparator().compare(candidate, bestCandidate) < 0) {
+                CorridorStepScore candidateStepScore = CorridorConnectionScorer.scoreConnection(
+                        baseGraph,
+                        connectedRoomIds,
+                        candidate.roomId(),
+                        candidate.path(),
+                        candidate.doors());
+                if (bestCandidate == null
+                        || candidateStepScore.compareTo(bestStepScore) < 0
+                        || (candidateStepScore.compareTo(bestStepScore) == 0
+                        && connectionCandidateComparator().compare(candidate, bestCandidate) < 0)) {
                     bestCandidate = candidate;
+                    bestStepScore = candidateStepScore;
                 }
             }
             if (bestCandidate == null) {
@@ -280,22 +337,71 @@ public final class DungeonCorridorGeometry {
             corridorCells.addAll(bestCandidate.path());
             segments.addAll(segmentsForPath(bestCandidate.path()));
             doors.addAll(bestCandidate.doors());
-            if (!bestCandidate.path().isEmpty()) {
-                directlyAdjacentOnly = false;
-            }
+            directlyAdjacentOnly = directlyAdjacentOnly && bestCandidate.path().isEmpty();
         }
 
-        boolean routable = connectedRoomIds.size() == groupRooms.size() && (!segments.isEmpty() || !doors.isEmpty());
-        return new CorridorGeometry(
-                corridorId,
-                roomIds,
-                List.copyOf(segments),
+        return new CorridorBuildState(
                 Set.copyOf(corridorCells),
-                List.copyOf(doors),
-                List.copyOf(waypointCells),
+                Set.copyOf(segments),
+                Set.copyOf(doors),
                 directlyAdjacentOnly,
-                routable,
-                null);
+                Set.copyOf(connectedRoomIds));
+    }
+
+    private static List<DungeonRoom> orderedSeedRooms(
+            DungeonLayout layout,
+            DungeonCorridor corridor,
+            List<DungeonRoom> groupRooms,
+            Map<Long, Set<Point2i>> cellsByRoomId,
+            Map<Point2i, Long> roomOccupancy,
+            List<Point2i> waypointCells
+    ) {
+        return groupRooms.stream()
+                .sorted(Comparator
+                        .comparingInt((DungeonRoom room) -> seedWaypointScore(layout, corridor, room, cellsByRoomId, roomOccupancy, waypointCells))
+                        .thenComparingInt(room -> centralityScore(room, groupRooms))
+                        .thenComparingLong(room -> room.roomId() == null ? Long.MAX_VALUE : room.roomId()))
+                .toList();
+    }
+
+    private static Comparator<CorridorBuildState> corridorBuildStateComparator() {
+        return Comparator
+                .comparingInt(CorridorBuildState::connectedRoomCount).reversed()
+                .thenComparingInt(state -> state.corridorCells().size())
+                .thenComparingInt(state -> state.doors().size())
+                .thenComparingInt(state -> state.segments().size());
+    }
+
+    private static int seedWaypointScore(
+            DungeonLayout layout,
+            DungeonCorridor corridor,
+            DungeonRoom room,
+            Map<Long, Set<Point2i>> cellsByRoomId,
+            Map<Point2i, Long> roomOccupancy,
+            List<Point2i> waypointCells
+    ) {
+        if (waypointCells.isEmpty()) {
+            return 0;
+        }
+        ConnectionCandidate candidate = bestPathFromRoomToTargets(
+                room,
+                cellsByRoomId.getOrDefault(room.roomId(), Set.of()),
+                roomOccupancy,
+                waypointCells,
+                false,
+                resolveDoorOverride(layout, corridor, room));
+        return candidate == null ? Integer.MAX_VALUE : candidate.routeScore();
+    }
+
+    private static int centralityScore(DungeonRoom room, List<DungeonRoom> rooms) {
+        int total = 0;
+        for (DungeonRoom other : rooms) {
+            if (room == other) {
+                continue;
+            }
+            total += manhattan(room.componentAnchor(), other.componentAnchor());
+        }
+        return total;
     }
 
     private static Comparator<ConnectionCandidate> connectionCandidateComparator() {
@@ -313,16 +419,6 @@ public final class DungeonCorridorGeometry {
         return new PathPreference(path.size(), cornerCount(path));
     }
 
-    private static DungeonRoom seedRoom(List<DungeonRoom> rooms) {
-        return rooms.stream()
-                .min(Comparator
-                        .comparingInt((DungeonRoom room) -> rooms.stream()
-                                .mapToInt(other -> manhattan(room.componentAnchor(), other.componentAnchor()))
-                                .sum())
-                        .thenComparingLong(DungeonRoom::roomId))
-                .orElseThrow();
-    }
-
     private static ConnectionCandidate bestConnectionCandidate(
             DungeonLayout layout,
             DungeonCorridor corridor,
@@ -334,6 +430,8 @@ public final class DungeonCorridorGeometry {
             Map<Point2i, Long> roomOccupancy,
             List<Point2i> waypointCells
     ) {
+        // This remains the single local attachment policy for a room's viable exits and paths.
+        // The outer loop compares rooms by their added pair-distance into the current corridor network.
         Set<Point2i> roomCells = cellsByRoomId.getOrDefault(room.roomId(), Set.of());
         List<ExitCandidate> roomExits = exposedExits(roomCells, roomOccupancy, room.roomId(), resolveDoorOverride(layout, corridor, room));
         ConnectionCandidate bestSharedDoor = waypointCells.isEmpty()
@@ -720,7 +818,7 @@ public final class DungeonCorridorGeometry {
         return List.copyOf(result);
     }
 
-    private static Point2i directionForDoor(DoorSegment door) {
+    static Point2i directionForDoor(DoorSegment door) {
         if (door.start().x() == door.end().x()) {
             return door.roomCell().x() < door.start().x()
                     ? new Point2i(1, 0)
@@ -729,6 +827,10 @@ public final class DungeonCorridorGeometry {
         return door.roomCell().y() < door.start().y()
                 ? new Point2i(0, 1)
                 : new Point2i(0, -1);
+    }
+
+    static Point2i outsideCellForDoor(DoorSegment door) {
+        return door.roomCell().add(directionForDoor(door));
     }
 
     private static DoorSegment doorFor(Point2i cell, Point2i direction, long roomId) {
@@ -744,7 +846,7 @@ public final class DungeonCorridorGeometry {
         return new DoorSegment(new Point2i(cell.x(), cell.y()), new Point2i(cell.x() + 1, cell.y()), roomId, cell);
     }
 
-    private static List<GridSegment> segmentsForPath(List<Point2i> path) {
+    static List<GridSegment> segmentsForPath(List<Point2i> path) {
         if (path.size() < 2) {
             return List.of();
         }
@@ -940,6 +1042,18 @@ public final class DungeonCorridorGeometry {
             Point2i absoluteCell,
             DungeonRoomCluster.EdgeDirection edgeDirection
     ) {
+    }
+
+    private record CorridorBuildState(
+            Set<Point2i> corridorCells,
+            Set<GridSegment> segments,
+            Set<DoorSegment> doors,
+            boolean directlyAdjacentOnly,
+            Set<Long> connectedRoomIds
+    ) {
+        private int connectedRoomCount() {
+            return connectedRoomIds.size();
+        }
     }
 
     private record PathPreference(

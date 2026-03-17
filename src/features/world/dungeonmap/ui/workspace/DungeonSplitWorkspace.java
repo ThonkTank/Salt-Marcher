@@ -132,6 +132,10 @@ public final class DungeonSplitWorkspace extends BorderPane {
         gridPane.setOnClusterDoorPainted(onClusterDoorPainted);
     }
 
+    public void setOnClusterDoorDeleted(Consumer<Set<DungeonClusterEdgeRef>> onClusterDoorDeleted) {
+        gridPane.setOnClusterDoorDeleted(onClusterDoorDeleted);
+    }
+
     public WallPathInteractionController wallPathController() {
         return gridPane.wallPathController();
     }

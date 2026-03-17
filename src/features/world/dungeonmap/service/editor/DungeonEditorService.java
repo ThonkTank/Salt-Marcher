@@ -71,6 +71,22 @@ public final class DungeonEditorService {
                 features.world.dungeonmap.model.DungeonRoomCluster.EdgeType.DOOR));
     }
 
+    public DungeonLayoutEditResult deleteClusterWalls(long mapId, Set<DungeonClusterEdgeRef> edgeRefs) throws Exception {
+        return mutate(conn -> DungeonRoomTopologySupport.deleteClusterEdges(
+                conn,
+                mapId,
+                edgeRefs,
+                features.world.dungeonmap.model.DungeonRoomCluster.EdgeType.WALL));
+    }
+
+    public DungeonLayoutEditResult deleteClusterDoors(long mapId, Set<DungeonClusterEdgeRef> edgeRefs) throws Exception {
+        return mutate(conn -> DungeonRoomTopologySupport.deleteClusterEdges(
+                conn,
+                mapId,
+                edgeRefs,
+                features.world.dungeonmap.model.DungeonRoomCluster.EdgeType.DOOR));
+    }
+
     public DungeonLayoutEditResult createCorridor(long mapId, List<Long> roomIds) throws Exception {
         return mutate(conn -> DungeonCorridorTopologySupport.createCorridor(conn, mapId, roomIds));
     }

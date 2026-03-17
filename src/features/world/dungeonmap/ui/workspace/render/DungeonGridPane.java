@@ -2,6 +2,7 @@ package features.world.dungeonmap.ui.workspace.render;
 
 import features.world.dungeonmap.model.DungeonCorridor;
 import features.world.dungeonmap.model.DungeonClusterEdgeRef;
+import features.world.dungeonmap.model.DungeonClusterVertexRef;
 import features.world.dungeonmap.model.CorridorGeometry;
 import features.world.dungeonmap.model.DungeonClusterGeometry;
 import features.world.dungeonmap.model.DoorSegment;
@@ -9,6 +10,7 @@ import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonRoomCluster;
 import features.world.dungeonmap.model.Point2i;
 import features.world.dungeonmap.ui.workspace.DungeonEditorTool;
+import javafx.geometry.Point2D;
 import javafx.scene.canvas.GraphicsContext;
 
 import java.util.ArrayList;
@@ -35,12 +37,8 @@ public final class DungeonGridPane extends AbstractDungeonPane {
             Set<Point2i> cells = clusterCellsFor(cluster);
             boolean active = isActive(cluster);
             boolean selected = isSelected(cluster);
-            drawRoom(gc, cells, active, selected);
-            Point2i previewCenter = previewCenter(cluster);
-            double centerX = camera.toScreenX(previewCenter.x() + 0.5);
-            double centerY = camera.toScreenY(previewCenter.y() + 0.5);
-            gc.setFill(DungeonCanvasTheme.ROOM_CENTER);
-            gc.fillOval(centerX - 4, centerY - 4, 8, 8);
+            drawRoom(gc, cells, previewOffset(cluster.clusterId()), active, selected);
+            drawClusterAndRoomAnchors(gc, cluster);
         }
         drawClusterEdges(gc);
         drawWallPathPreview(gc);
@@ -100,12 +98,13 @@ public final class DungeonGridPane extends AbstractDungeonPane {
 
     @Override
     protected DungeonCorridor findCorridorAt(double screenX, double screenY) {
-        if (layout == null || renderData == null) {
+        DungeonLayoutRenderData corridorRenderData = corridorRenderDataForDisplay();
+        if (layout == null || corridorRenderData == null) {
             return null;
         }
         Point2i cell = worldPointAt(screenX, screenY);
         if (previewClusterCenters.isEmpty()) {
-            List<Long> corridorIds = renderData.corridorIdsAtCell(cell);
+            List<Long> corridorIds = corridorRenderData.corridorIdsAtCell(cell);
             if (!corridorIds.isEmpty()) {
                 return layout.corridorById(corridorIds.get(0));
             }
@@ -113,7 +112,7 @@ public final class DungeonGridPane extends AbstractDungeonPane {
         DungeonCorridor bestCorridor = null;
         double bestDistance = Double.POSITIVE_INFINITY;
         for (DungeonCorridor corridor : layout.corridors()) {
-            CorridorGeometry geometry = renderData.corridorGeometry(corridor.corridorId());
+            CorridorGeometry geometry = corridorGeometryForDisplay(corridor);
             if (geometry == null) {
                 continue;
             }
@@ -141,13 +140,14 @@ public final class DungeonGridPane extends AbstractDungeonPane {
 
     @Override
     protected CorridorDoorHit findCorridorDoorHitAt(double screenX, double screenY) {
-        if (layout == null || renderData == null) {
+        DungeonLayoutRenderData corridorRenderData = corridorRenderDataForDisplay();
+        if (layout == null || corridorRenderData == null) {
             return null;
         }
         DoorAggregateHit bestHit = null;
         double bestDistance = Double.POSITIVE_INFINITY;
         for (DungeonCorridor corridor : layout.corridors()) {
-            CorridorGeometry geometry = renderData.corridorGeometry(corridor.corridorId());
+            CorridorGeometry geometry = corridorGeometryForDisplay(corridor);
             if (geometry == null || !geometry.routable()) {
                 continue;
             }
@@ -160,7 +160,7 @@ public final class DungeonGridPane extends AbstractDungeonPane {
                 double combinedDistance = doorDistance * 10 + roomDistance;
                 if (combinedDistance < bestDistance) {
                     bestDistance = combinedDistance;
-                    List<Long> corridorIds = renderData.corridorIdsForDoorFromRoom(door);
+                    List<Long> corridorIds = corridorRenderData.corridorIdsForDoorFromRoom(door);
                     bestHit = new DoorAggregateHit(corridorIds, door.roomId());
                 }
             }
@@ -286,6 +286,35 @@ public final class DungeonGridPane extends AbstractDungeonPane {
     }
 
     @Override
+    protected DungeonClusterVertexRef findClusterVertexAt(double screenX, double screenY) {
+        if (layout == null) {
+            return null;
+        }
+        double worldX = camera.toWorldX(screenX);
+        double worldY = camera.toWorldY(screenY);
+        int vertexX = (int) Math.round(worldX);
+        int vertexY = (int) Math.round(worldY);
+        double dx = Math.abs(worldX - vertexX);
+        double dy = Math.abs(worldY - vertexY);
+        if (Math.max(dx, dy) > 0.45) {
+            return null;
+        }
+        Point2i vertex = new Point2i(vertexX, vertexY);
+        DungeonRoomCluster hoveredCluster = findClusterAt(screenX, screenY);
+        if (clusterTouchesVertex(hoveredCluster, vertex)) {
+            return new DungeonClusterVertexRef(hoveredCluster.clusterId(), vertex);
+        }
+        DungeonRoomCluster bestCluster = null;
+        for (DungeonRoomCluster cluster : layout.clusters()) {
+            if (clusterTouchesVertex(cluster, vertex)
+                    && (bestCluster == null || cluster.clusterId() < bestCluster.clusterId())) {
+                bestCluster = cluster;
+            }
+        }
+        return bestCluster == null ? null : new DungeonClusterVertexRef(bestCluster.clusterId(), vertex);
+    }
+
+    @Override
     protected DungeonRoomCluster findClusterInSelection(Point2i startInclusive, Point2i endInclusive) {
         int minX = Math.min(startInclusive.x(), endInclusive.x());
         int maxX = Math.max(startInclusive.x(), endInclusive.x());
@@ -323,7 +352,7 @@ public final class DungeonGridPane extends AbstractDungeonPane {
         if (allCorridorCells.isEmpty()) {
             return;
         }
-        drawRegion(gc, allCorridorCells, DungeonCanvasTheme.CORRIDOR, DungeonCanvasTheme.ROOM_STROKE, 2, allDoorSegments());
+        drawRegion(gc, allCorridorCells, Point2D.ZERO, DungeonCanvasTheme.CORRIDOR, DungeonCanvasTheme.ROOM_STROKE, 2, allDoorSegments());
 
         for (DungeonCorridor corridor : layout.corridors()) {
             CorridorGeometry geometry = corridorGeometryForDisplay(corridor);
@@ -331,11 +360,12 @@ public final class DungeonGridPane extends AbstractDungeonPane {
                 continue;
             }
             gc.setFill(fillColor(corridor));
+            Point2D previewOffset = corridorPreviewOffset(corridor);
             for (Point2i cell : geometry.cells()) {
-                double x = camera.toScreenX(cell.x());
-                double y = camera.toScreenY(cell.y());
-                double width = camera.toScreenX(cell.x() + 1) - x;
-                double height = camera.toScreenY(cell.y() + 1) - y;
+                double x = previewScreenX(cell.x(), previewOffset);
+                double y = previewScreenY(cell.y(), previewOffset);
+                double width = previewScreenX(cell.x() + 1, previewOffset) - x;
+                double height = previewScreenY(cell.y() + 1, previewOffset) - y;
                 gc.fillRect(x, y, width, height);
             }
         }
@@ -352,15 +382,16 @@ public final class DungeonGridPane extends AbstractDungeonPane {
             }
             gc.setStroke(doorColor(corridor));
             gc.setLineWidth(isSelected(corridor) ? 7 : isHovered(corridor) ? 6.5 : 6);
+            Point2D previewOffset = corridorPreviewOffset(corridor);
             for (DoorSegment door : geometry.doors()) {
                 if (isPreviewDoor(corridor.corridorId(), door.roomId())) {
                     continue;
                 }
                 gc.strokeLine(
-                        camera.toScreenX(door.start().x()),
-                        camera.toScreenY(door.start().y()),
-                        camera.toScreenX(door.end().x()),
-                        camera.toScreenY(door.end().y()));
+                        previewScreenX(door.start().x(), previewOffset),
+                        previewScreenY(door.start().y(), previewOffset),
+                        previewScreenX(door.end().x(), previewOffset),
+                        previewScreenY(door.end().y(), previewOffset));
             }
         }
         drawPreviewDoor(gc);
@@ -379,17 +410,18 @@ public final class DungeonGridPane extends AbstractDungeonPane {
                 ? DungeonCanvasTheme.ROOM_SELECTED_STROKE
                 : DungeonCanvasTheme.CORRIDOR_SELECTED);
         gc.setLineWidth(4);
+        Point2D previewOffset = corridorPreviewOffset(context.corridor());
         for (features.world.dungeonmap.model.GridSegment segment : context.geometry().segments()) {
             gc.strokeLine(
-                    camera.toScreenX(segment.from().x() + 0.5),
-                    camera.toScreenY(segment.from().y() + 0.5),
-                    camera.toScreenX(segment.to().x() + 0.5),
-                    camera.toScreenY(segment.to().y() + 0.5));
+                    previewScreenX(segment.from().x() + 0.5, previewOffset),
+                    previewScreenY(segment.from().y() + 0.5, previewOffset),
+                    previewScreenX(segment.to().x() + 0.5, previewOffset),
+                    previewScreenY(segment.to().y() + 0.5, previewOffset));
         }
         gc.setLineWidth(2);
         for (DoorSegment door : context.geometry().doors()) {
-            double centerX = (camera.toScreenX(door.start().x()) + camera.toScreenX(door.end().x())) / 2.0;
-            double centerY = (camera.toScreenY(door.start().y()) + camera.toScreenY(door.end().y())) / 2.0;
+            double centerX = (previewScreenX(door.start().x(), previewOffset) + previewScreenX(door.end().x(), previewOffset)) / 2.0;
+            double centerY = (previewScreenY(door.start().y(), previewOffset) + previewScreenY(door.end().y(), previewOffset)) / 2.0;
             CorridorEditInteractionController.DoorHandle handle = corridorDoorHandleForRoom(door.roomId());
             double radius = isSelected(handle) ? 6 : 5;
             gc.setFill(isSelected(handle) ? DungeonCanvasTheme.ROOM_SELECTED_STROKE : DungeonCanvasTheme.DOOR_SELECTED);
@@ -398,8 +430,8 @@ public final class DungeonGridPane extends AbstractDungeonPane {
             gc.strokeOval(centerX - radius, centerY - radius, radius * 2, radius * 2);
         }
         for (Point2i waypoint : context.geometry().waypointCells()) {
-            double centerX = camera.toScreenX(waypoint.x() + 0.5);
-            double centerY = camera.toScreenY(waypoint.y() + 0.5);
+            double centerX = previewScreenX(waypoint.x() + 0.5, previewOffset);
+            double centerY = previewScreenY(waypoint.y() + 0.5, previewOffset);
             gc.setFill(DungeonCanvasTheme.CORRIDOR_SELECTED);
             gc.fillOval(centerX - 5.5, centerY - 5.5, 11, 11);
             gc.setStroke(DungeonCanvasTheme.ROOM_STROKE);
@@ -415,21 +447,75 @@ public final class DungeonGridPane extends AbstractDungeonPane {
             for (DungeonRoomCluster.EdgeOverride edge : cluster.edgeOverrides()) {
                 Point2i start = edgeStart(cluster, edge);
                 Point2i end = edgeEnd(cluster, edge);
-                gc.setStroke(edge.type() == DungeonRoomCluster.EdgeType.WALL
-                        ? DungeonCanvasTheme.ROOM_SELECTED_STROKE
-                        : DungeonCanvasTheme.DOOR);
-                gc.setLineWidth(edge.type() == DungeonRoomCluster.EdgeType.WALL ? 4 : 6);
+                if (edge.type() == DungeonRoomCluster.EdgeType.DOOR) {
+                    gc.setStroke(DungeonCanvasTheme.ROOM_SELECTED_STROKE);
+                    gc.setLineWidth(4);
+                    gc.strokeLine(
+                            previewScreenX(start.x(), cluster.clusterId()),
+                            previewScreenY(start.y(), cluster.clusterId()),
+                            previewScreenX(end.x(), cluster.clusterId()),
+                            previewScreenY(end.y(), cluster.clusterId()));
+                    gc.setStroke(DungeonCanvasTheme.DOOR);
+                    gc.setLineWidth(6);
+                } else {
+                    gc.setStroke(DungeonCanvasTheme.ROOM_SELECTED_STROKE);
+                    gc.setLineWidth(4);
+                }
                 gc.strokeLine(
-                        camera.toScreenX(start.x()),
-                        camera.toScreenY(start.y()),
-                        camera.toScreenX(end.x()),
-                        camera.toScreenY(end.y()));
+                        previewScreenX(start.x(), cluster.clusterId()),
+                        previewScreenY(start.y(), cluster.clusterId()),
+                        previewScreenX(end.x(), cluster.clusterId()),
+                        previewScreenY(end.y(), cluster.clusterId()));
             }
         }
     }
 
+    private void drawClusterAndRoomAnchors(GraphicsContext gc, DungeonRoomCluster cluster) {
+        AnchorPosition clusterAnchor = clusterAnchorPosition(cluster);
+        gc.setFill(DungeonCanvasTheme.ROOM_CENTER);
+        gc.fillOval(clusterAnchor.x() - 4.5, clusterAnchor.y() - 4.5, 9, 9);
+        gc.setStroke(DungeonCanvasTheme.ROOM_STROKE);
+        gc.setLineWidth(1.5);
+        gc.strokeOval(clusterAnchor.x() - 4.5, clusterAnchor.y() - 4.5, 9, 9);
+
+        for (DungeonRoom room : layout.roomsForCluster(cluster.clusterId())) {
+            AnchorPosition roomAnchor = roomAnchorPosition(cluster, room);
+            gc.setFill(DungeonCanvasTheme.GRAPH_NODE_FILL);
+            gc.fillOval(roomAnchor.x() - 3.5, roomAnchor.y() - 3.5, 7, 7);
+            gc.setStroke(DungeonCanvasTheme.ROOM_SELECTED_STROKE);
+            gc.setLineWidth(1.2);
+            gc.strokeOval(roomAnchor.x() - 3.5, roomAnchor.y() - 3.5, 7, 7);
+            DungeonCanvasTheme.drawCenteredLabel(gc, room.name(), roomAnchor.x(), roomAnchor.y());
+        }
+    }
+
+    private AnchorPosition clusterAnchorPosition(DungeonRoomCluster cluster) {
+        Point2i center = previewCenter(cluster);
+        double x = previewScreenX(center.x() + 0.5, cluster.clusterId());
+        double y = previewScreenY(center.y() + 0.5, cluster.clusterId());
+        boolean overlapsRoom = layout.roomsForCluster(cluster.clusterId()).stream()
+                .anyMatch(room -> previewCenter(room).equals(center));
+        return new AnchorPosition(x, overlapsRoom ? y - 8 : y);
+    }
+
+    private AnchorPosition roomAnchorPosition(DungeonRoomCluster cluster, DungeonRoom room) {
+        Point2i center = previewCenter(room);
+        double x = previewScreenX(center.x() + 0.5, room.clusterId());
+        double y = previewScreenY(center.y() + 0.5, room.clusterId());
+        List<DungeonRoom> centeredRooms = layout.roomsForCluster(cluster.clusterId()).stream()
+                .filter(candidate -> previewCenter(candidate).equals(center))
+                .sorted(java.util.Comparator.comparing(DungeonRoom::roomId))
+                .toList();
+        int index = centeredRooms.indexOf(room);
+        double stackOffset = centeredRooms.size() <= 1 ? 0 : (index - (centeredRooms.size() - 1) / 2.0) * 11.0;
+        if (center.equals(previewCenter(cluster))) {
+            stackOffset += 10;
+        }
+        return new AnchorPosition(x, y + stackOffset);
+    }
+
     private void drawWallPathPreview(GraphicsContext gc) {
-        if (editorTool != DungeonEditorTool.CLUSTER_WALL) {
+        if (!editorTool.isWallTool()) {
             return;
         }
         if (wallPathInteractionController().activeAnchor() != null) {
@@ -453,18 +539,28 @@ public final class DungeonGridPane extends AbstractDungeonPane {
         }
     }
 
-    private void drawWallAnchor(GraphicsContext gc, DungeonClusterEdgeRef edgeRef, javafx.scene.paint.Color color) {
-        EdgeVertices vertices = edgeVertices(edgeRef);
-        if (vertices == null) {
+    private void drawWallAnchor(GraphicsContext gc, DungeonClusterVertexRef vertexRef, javafx.scene.paint.Color color) {
+        if (vertexRef == null || vertexRef.point() == null) {
             return;
         }
-        double centerX = (camera.toScreenX(vertices.start().x()) + camera.toScreenX(vertices.end().x())) / 2.0;
-        double centerY = (camera.toScreenY(vertices.start().y()) + camera.toScreenY(vertices.end().y())) / 2.0;
+        double centerX = camera.toScreenX(vertexRef.point().x());
+        double centerY = camera.toScreenY(vertexRef.point().y());
         gc.setFill(color);
         gc.fillOval(centerX - 4.5, centerY - 4.5, 9, 9);
         gc.setStroke(DungeonCanvasTheme.ROOM_STROKE);
         gc.setLineWidth(1.5);
         gc.strokeOval(centerX - 4.5, centerY - 4.5, 9, 9);
+    }
+
+    private boolean clusterTouchesVertex(DungeonRoomCluster cluster, Point2i vertex) {
+        if (cluster == null || vertex == null) {
+            return false;
+        }
+        Set<Point2i> clusterCells = clusterCellsFor(cluster);
+        return clusterCells.contains(new Point2i(vertex.x(), vertex.y()))
+                || clusterCells.contains(new Point2i(vertex.x() - 1, vertex.y()))
+                || clusterCells.contains(new Point2i(vertex.x(), vertex.y() - 1))
+                || clusterCells.contains(new Point2i(vertex.x() - 1, vertex.y() - 1));
     }
 
     private EdgeVertices edgeVertices(DungeonClusterEdgeRef edgeRef) {
@@ -539,22 +635,23 @@ public final class DungeonGridPane extends AbstractDungeonPane {
         return DungeonCanvasTheme.DOOR;
     }
 
-    private void drawRoom(GraphicsContext gc, Set<Point2i> cells, boolean active, boolean selected) {
+    private void drawRoom(GraphicsContext gc, Set<Point2i> cells, Point2D previewOffset, boolean active, boolean selected) {
         if (cells == null || cells.isEmpty()) {
             return;
         }
         gc.setFill(active ? DungeonCanvasTheme.ROOM_ACTIVE_FILL : DungeonCanvasTheme.ROOM_FILL);
         for (Point2i cell : cells) {
-            double x = camera.toScreenX(cell.x());
-            double y = camera.toScreenY(cell.y());
-            double width = camera.toScreenX(cell.x() + 1) - x;
-            double height = camera.toScreenY(cell.y() + 1) - y;
+            double x = previewScreenX(cell.x(), previewOffset);
+            double y = previewScreenY(cell.y(), previewOffset);
+            double width = previewScreenX(cell.x() + 1, previewOffset) - x;
+            double height = previewScreenY(cell.y() + 1, previewOffset) - y;
             gc.fillRect(x, y, width, height);
         }
 
         drawRegion(
                 gc,
                 cells,
+                previewOffset,
                 null,
                 selected ? DungeonCanvasTheme.ROOM_SELECTED_STROKE : DungeonCanvasTheme.ROOM_STROKE,
                 selected ? 3 : 2,
@@ -564,6 +661,7 @@ public final class DungeonGridPane extends AbstractDungeonPane {
     private void drawRegion(
             GraphicsContext gc,
             Set<Point2i> cells,
+            Point2D previewOffset,
             javafx.scene.paint.Color fill,
             javafx.scene.paint.Color stroke,
             double lineWidth,
@@ -575,10 +673,10 @@ public final class DungeonGridPane extends AbstractDungeonPane {
         if (fill != null) {
             gc.setFill(fill);
             for (Point2i cell : cells) {
-                double x = camera.toScreenX(cell.x());
-                double y = camera.toScreenY(cell.y());
-                double width = camera.toScreenX(cell.x() + 1) - x;
-                double height = camera.toScreenY(cell.y() + 1) - y;
+                double x = previewScreenX(cell.x(), previewOffset);
+                double y = previewScreenY(cell.y(), previewOffset);
+                double width = previewScreenX(cell.x() + 1, previewOffset) - x;
+                double height = previewScreenY(cell.y() + 1, previewOffset) - y;
                 gc.fillRect(x, y, width, height);
             }
         }
@@ -588,34 +686,34 @@ public final class DungeonGridPane extends AbstractDungeonPane {
             if (!cells.contains(new Point2i(cell.x(), cell.y() - 1))
                     && !openSegments.contains(SegmentKey.of(new Point2i(cell.x(), cell.y()), new Point2i(cell.x() + 1, cell.y())))) {
                 gc.strokeLine(
-                        camera.toScreenX(cell.x()),
-                        camera.toScreenY(cell.y()),
-                        camera.toScreenX(cell.x() + 1),
-                        camera.toScreenY(cell.y()));
+                        previewScreenX(cell.x(), previewOffset),
+                        previewScreenY(cell.y(), previewOffset),
+                        previewScreenX(cell.x() + 1, previewOffset),
+                        previewScreenY(cell.y(), previewOffset));
             }
             if (!cells.contains(new Point2i(cell.x() + 1, cell.y()))
                     && !openSegments.contains(SegmentKey.of(new Point2i(cell.x() + 1, cell.y()), new Point2i(cell.x() + 1, cell.y() + 1)))) {
                 gc.strokeLine(
-                        camera.toScreenX(cell.x() + 1),
-                        camera.toScreenY(cell.y()),
-                        camera.toScreenX(cell.x() + 1),
-                        camera.toScreenY(cell.y() + 1));
+                        previewScreenX(cell.x() + 1, previewOffset),
+                        previewScreenY(cell.y(), previewOffset),
+                        previewScreenX(cell.x() + 1, previewOffset),
+                        previewScreenY(cell.y() + 1, previewOffset));
             }
             if (!cells.contains(new Point2i(cell.x(), cell.y() + 1))
                     && !openSegments.contains(SegmentKey.of(new Point2i(cell.x(), cell.y() + 1), new Point2i(cell.x() + 1, cell.y() + 1)))) {
                 gc.strokeLine(
-                        camera.toScreenX(cell.x() + 1),
-                        camera.toScreenY(cell.y() + 1),
-                        camera.toScreenX(cell.x()),
-                        camera.toScreenY(cell.y() + 1));
+                        previewScreenX(cell.x() + 1, previewOffset),
+                        previewScreenY(cell.y() + 1, previewOffset),
+                        previewScreenX(cell.x(), previewOffset),
+                        previewScreenY(cell.y() + 1, previewOffset));
             }
             if (!cells.contains(new Point2i(cell.x() - 1, cell.y()))
                     && !openSegments.contains(SegmentKey.of(new Point2i(cell.x(), cell.y()), new Point2i(cell.x(), cell.y() + 1)))) {
                 gc.strokeLine(
-                        camera.toScreenX(cell.x()),
-                        camera.toScreenY(cell.y() + 1),
-                        camera.toScreenX(cell.x()),
-                        camera.toScreenY(cell.y()));
+                        previewScreenX(cell.x(), previewOffset),
+                        previewScreenY(cell.y() + 1, previewOffset),
+                        previewScreenX(cell.x(), previewOffset),
+                        previewScreenY(cell.y(), previewOffset));
             }
         }
     }
@@ -638,7 +736,7 @@ public final class DungeonGridPane extends AbstractDungeonPane {
     }
 
     private Set<Point2i> displayedCorridorCells(DungeonLayoutRenderData corridorRenderData) {
-        if (previewCorridorGeometry == null || layout == null) {
+        if (layout == null || (!hasClusterDragPreview() && previewCorridorGeometry == null)) {
             return corridorRenderData.corridorCells();
         }
         Set<Point2i> cells = new LinkedHashSet<>();
@@ -650,6 +748,43 @@ public final class DungeonGridPane extends AbstractDungeonPane {
             cells.addAll(geometry.cells());
         }
         return cells;
+    }
+
+    private Point2D corridorPreviewOffset(DungeonCorridor corridor) {
+        if (corridor == null || corridor.corridorId() == null || layout == null) {
+            return Point2D.ZERO;
+        }
+        if (hasClusterDragPreview()) {
+            // During cluster drags the preview layout already contains the moved corridor geometry.
+            // Applying an extra shared offset here would drag unrelated door markers along with it.
+            return Point2D.ZERO;
+        }
+        if (!hasSmoothClusterDragPreview()) {
+            return Point2D.ZERO;
+        }
+        Point2D resolvedOffset = Point2D.ZERO;
+        for (Long roomId : corridor.roomIds()) {
+            DungeonRoom room = layout.roomById(roomId);
+            Point2D roomOffset = room == null ? Point2D.ZERO : previewOffset(room.clusterId());
+            resolvedOffset = mergeCorridorPreviewOffset(resolvedOffset, roomOffset);
+        }
+        for (var waypoint : corridor.waypoints()) {
+            resolvedOffset = mergeCorridorPreviewOffset(resolvedOffset, previewOffset(waypoint.clusterId()));
+        }
+        for (var override : corridor.doorOverrides()) {
+            resolvedOffset = mergeCorridorPreviewOffset(resolvedOffset, previewOffset(override.clusterId()));
+        }
+        return resolvedOffset;
+    }
+
+    private Point2D mergeCorridorPreviewOffset(Point2D current, Point2D candidate) {
+        if (candidate == null || candidate.equals(Point2D.ZERO)) {
+            return current;
+        }
+        if (current == null || current.equals(Point2D.ZERO) || current.equals(candidate)) {
+            return candidate;
+        }
+        return current;
     }
 
     private void drawPreviewDoor(GraphicsContext gc) {
@@ -729,5 +864,8 @@ public final class DungeonGridPane extends AbstractDungeonPane {
             return false;
         }
         return candidate.roomId() < current.roomId();
+    }
+
+    private record AnchorPosition(double x, double y) {
     }
 }

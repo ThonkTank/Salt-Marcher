@@ -6,6 +6,7 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.DungeonCorridor;
 import features.world.dungeonmap.model.DungeonCorridorGeometry;
 import features.world.dungeonmap.model.DungeonClusterEdgeRef;
+import features.world.dungeonmap.model.DungeonClusterVertexRef;
 import features.world.dungeonmap.model.DungeonCorridorEndpoint;
 import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DoorSegment;
@@ -48,6 +49,7 @@ abstract class AbstractDungeonPane extends StackPane {
     protected DungeonRuntimeLocation activeLocation;
     protected boolean editable;
     protected final Map<Long, Point2i> previewClusterCenters = new HashMap<>();
+    protected final Map<Long, Point2D> previewClusterOffsets = new HashMap<>();
     protected final Set<Point2i> previewPaintCells = new LinkedHashSet<>();
     protected DungeonEditorTool editorTool = DungeonEditorTool.SELECT;
     protected Point2i selectionStartCell;
@@ -60,6 +62,9 @@ abstract class AbstractDungeonPane extends StackPane {
     protected CorridorEditInteractionController.DoorDragPreview previewCorridorDoorDrag;
     protected CorridorGeometry previewCorridorGeometry;
     protected DungeonCorridorGeometry.LayoutContext corridorLayoutContext;
+    protected DungeonLayout previewLayout;
+    protected DungeonLayoutRenderData previewRenderData;
+    protected DungeonCorridorGeometry.LayoutContext previewCorridorLayoutContext;
     private double lastPointerScreenX;
     private double lastPointerScreenY;
     private boolean pointerInsideCanvas;
@@ -141,8 +146,8 @@ abstract class AbstractDungeonPane extends StackPane {
             }
 
             @Override
-            public DungeonClusterEdgeRef findClusterEdgeAt(double screenX, double screenY) {
-                return AbstractDungeonPane.this.findClusterEdgeAt(screenX, screenY);
+            public DungeonClusterVertexRef findClusterVertexAt(double screenX, double screenY) {
+                return AbstractDungeonPane.this.findClusterVertexAt(screenX, screenY);
             }
 
             @Override
@@ -248,6 +253,10 @@ abstract class AbstractDungeonPane extends StackPane {
         callbacks.onClusterDoorPainted = Objects.requireNonNull(onClusterDoorPainted, "onClusterDoorPainted");
     }
 
+    public final void setOnClusterDoorDeleted(Consumer<Set<DungeonClusterEdgeRef>> onClusterDoorDeleted) {
+        callbacks.onClusterDoorDeleted = Objects.requireNonNull(onClusterDoorDeleted, "onClusterDoorDeleted");
+    }
+
     public final void setOnGraphRoomRequested(Consumer<Point2i> onGraphRoomRequested) {
         callbacks.onGraphRoomRequested = Objects.requireNonNull(onGraphRoomRequested, "onGraphRoomRequested");
     }
@@ -316,7 +325,11 @@ abstract class AbstractDungeonPane extends StackPane {
         this.selectedTarget = selectedTarget;
         this.activeLocation = activeLocation;
         this.corridorLayoutContext = layout == null ? null : DungeonCorridorGeometry.layoutContext(layout);
+        this.previewLayout = null;
+        this.previewRenderData = null;
+        this.previewCorridorLayoutContext = null;
         this.previewClusterCenters.clear();
+        this.previewClusterOffsets.clear();
         this.previewPaintCells.clear();
         clearSelectionPreview();
         clearPaintPreview();
@@ -370,6 +383,35 @@ abstract class AbstractDungeonPane extends StackPane {
 
     protected final Point2i previewClusterCell(DungeonRoomCluster cluster, Point2i relativeCell) {
         return previewCenter(cluster).add(relativeCell);
+    }
+
+    protected final Point2D previewOffset(Long clusterId) {
+        if (clusterId == null) {
+            return Point2D.ZERO;
+        }
+        Point2D offset = previewClusterOffsets.get(clusterId);
+        return offset == null ? Point2D.ZERO : offset;
+    }
+
+    protected final double previewScreenX(double worldX, Long clusterId) {
+        return previewScreenX(worldX, previewOffset(clusterId));
+    }
+
+    protected final double previewScreenY(double worldY, Long clusterId) {
+        return previewScreenY(worldY, previewOffset(clusterId));
+    }
+
+    protected final double previewScreenX(double worldX, Point2D offset) {
+        return camera.toScreenX(worldX + (offset == null ? 0.0 : offset.getX()));
+    }
+
+    protected final double previewScreenY(double worldY, Point2D offset) {
+        return camera.toScreenY(worldY + (offset == null ? 0.0 : offset.getY()));
+    }
+
+    protected final boolean hasSmoothClusterDragPreview() {
+        return previewClusterOffsets.values().stream()
+                .anyMatch(offset -> offset != null && (!isZero(offset.getX()) || !isZero(offset.getY())));
     }
 
     protected final boolean isActive(DungeonRoom room) {
@@ -426,6 +468,10 @@ abstract class AbstractDungeonPane extends StackPane {
     protected abstract DungeonCorridor findCorridorAt(double screenX, double screenY);
 
     protected DungeonClusterEdgeRef findClusterEdgeAt(double screenX, double screenY) {
+        return null;
+    }
+
+    protected DungeonClusterVertexRef findClusterVertexAt(double screenX, double screenY) {
         return null;
     }
 
@@ -504,11 +550,12 @@ abstract class AbstractDungeonPane extends StackPane {
                 && previewCorridorDoorHandle.corridorId() == corridor.corridorId()) {
             return previewCorridorGeometry;
         }
-        return renderData == null ? null : renderData.corridorGeometry(corridor.corridorId());
+        DungeonLayoutRenderData corridorRenderData = corridorRenderDataForDisplay();
+        return corridorRenderData == null ? null : corridorRenderData.corridorGeometry(corridor.corridorId());
     }
 
     protected final DungeonLayoutRenderData corridorRenderDataForDisplay() {
-        return renderData;
+        return previewRenderData == null ? renderData : previewRenderData;
     }
 
     protected final CorridorSelectionContext selectedCorridorContext() {
@@ -724,16 +771,18 @@ abstract class AbstractDungeonPane extends StackPane {
             CorridorEditInteractionController.DoorHandle handle,
             CorridorEditInteractionController.DoorDragPreview preview
     ) {
-        if (layout == null || handle == null || preview == null || preview.snapTarget() == null || corridorLayoutContext == null) {
+        DungeonLayout displayLayout = layoutForPreviewComputation();
+        DungeonCorridorGeometry.LayoutContext displayContext = corridorLayoutContextForPreviewComputation();
+        if (displayLayout == null || handle == null || preview == null || preview.snapTarget() == null || displayContext == null) {
             return null;
         }
         CorridorEditInteractionController.DoorMoveTarget target = preview.snapTarget();
-        DungeonCorridor corridor = layout.corridorById(handle.corridorId());
-        DungeonRoom room = layout.roomById(handle.roomId());
+        DungeonCorridor corridor = displayLayout.corridorById(handle.corridorId());
+        DungeonRoom room = displayLayout.roomById(handle.roomId());
         if (corridor == null || room == null) {
             return null;
         }
-        DungeonRoomCluster cluster = layout.clusterById(room.clusterId());
+        DungeonRoomCluster cluster = displayLayout.clusterById(room.clusterId());
         if (cluster == null) {
             return null;
         }
@@ -752,7 +801,51 @@ abstract class AbstractDungeonPane extends StackPane {
                 corridor.roomIds(),
                 overrides,
                 corridor.waypoints());
-        return DungeonCorridorGeometry.corridorGeometry(layout, previewCorridor, corridorLayoutContext);
+        return DungeonCorridorGeometry.corridorGeometry(displayLayout, previewCorridor, displayContext);
+    }
+
+    private DungeonLayout layoutForPreviewComputation() {
+        return previewLayout == null ? layout : previewLayout;
+    }
+
+    private DungeonCorridorGeometry.LayoutContext corridorLayoutContextForPreviewComputation() {
+        return previewCorridorLayoutContext == null ? corridorLayoutContext : previewCorridorLayoutContext;
+    }
+
+    private void rebuildClusterDragPreview() {
+        if (layout == null || previewClusterCenters.isEmpty()) {
+            previewLayout = null;
+            previewRenderData = null;
+            previewCorridorLayoutContext = null;
+        } else {
+            // Cluster drags preview the would-be dropped topology, not a translated snapshot.
+            List<DungeonRoomCluster> previewClusters = layout.clusters().stream()
+                    .map(cluster -> new DungeonRoomCluster(
+                            cluster.clusterId(),
+                            cluster.mapId(),
+                            previewCenter(cluster),
+                            cluster.relativeVertices(),
+                            cluster.edgeOverrides()))
+                    .toList();
+            List<DungeonRoom> previewRooms = layout.rooms().stream()
+                    .map(room -> new DungeonRoom(
+                            room.roomId(),
+                            room.mapId(),
+                            room.clusterId(),
+                            room.name(),
+                            room.componentAnchor().add(previewDelta(room.clusterId()))))
+                    .toList();
+            previewLayout = new DungeonLayout(layout.map(), previewRooms, layout.corridors(), previewClusters);
+            previewRenderData = DungeonLayoutRenderData.from(previewLayout);
+            previewCorridorLayoutContext = DungeonCorridorGeometry.layoutContext(previewLayout);
+        }
+        if (previewCorridorDoorHandle != null && previewCorridorDoorDrag != null) {
+            previewCorridorGeometry = buildCorridorDoorPreviewGeometry(previewCorridorDoorHandle, previewCorridorDoorDrag);
+            if (previewCorridorGeometry == null) {
+                previewCorridorDoorHandle = null;
+                previewCorridorDoorDrag = null;
+            }
+        }
     }
 
     protected abstract EditorSurface surface();
@@ -1114,24 +1207,38 @@ abstract class AbstractDungeonPane extends StackPane {
     }
 
     private void updateDragPreview(DragInteraction dragInteraction, Point2i world) {
-        Point2i delta = world.subtract(dragInteraction.anchorWorld());
-        Point2i previewCenter = dragInteraction.originalCenter().add(delta);
-        if (Objects.equals(previewClusterCenters.get(dragInteraction.cluster().clusterId()), previewCenter)) {
+        double worldX = camera.toWorldX(lastPointerScreenX);
+        double worldY = camera.toWorldY(lastPointerScreenY);
+        double previewCenterX = dragInteraction.originalCenter().x() + (worldX - dragInteraction.anchorWorldX());
+        double previewCenterY = dragInteraction.originalCenter().y() + (worldY - dragInteraction.anchorWorldY());
+        Point2i snappedPreviewCenter = snapDraggedCenter(previewCenterX, previewCenterY);
+        Point2D previewOffset = new Point2D(
+                previewCenterX - snappedPreviewCenter.x(),
+                previewCenterY - snappedPreviewCenter.y());
+        if (Objects.equals(previewClusterCenters.get(dragInteraction.cluster().clusterId()), snappedPreviewCenter)
+                && Objects.equals(previewClusterOffsets.get(dragInteraction.cluster().clusterId()), previewOffset)) {
             return;
         }
-        previewClusterCenters.put(dragInteraction.cluster().clusterId(), previewCenter);
+        previewClusterCenters.put(dragInteraction.cluster().clusterId(), snappedPreviewCenter);
+        previewClusterOffsets.put(dragInteraction.cluster().clusterId(), previewOffset);
+        rebuildClusterDragPreview();
         render();
     }
 
     private void commitDrag(DragInteraction dragInteraction, Point2i world) {
-        Point2i delta = world.subtract(dragInteraction.anchorWorld());
-        Point2i newCenter = dragInteraction.originalCenter().add(delta);
+        double worldX = camera.toWorldX(lastPointerScreenX);
+        double worldY = camera.toWorldY(lastPointerScreenY);
+        Point2i newCenter = snapDraggedCenter(
+                dragInteraction.originalCenter().x() + (worldX - dragInteraction.anchorWorldX()),
+                dragInteraction.originalCenter().y() + (worldY - dragInteraction.anchorWorldY()));
         if (!newCenter.equals(dragInteraction.originalCenter())) {
             // Keep the drag preview visible until the async move result replaces the layout.
             // Dropping the preview immediately would repaint the stale layout for one frame.
             callbacks.onClusterMoved.accept(dragInteraction.cluster(), newCenter);
         } else {
             previewClusterCenters.remove(dragInteraction.cluster().clusterId());
+            previewClusterOffsets.remove(dragInteraction.cluster().clusterId());
+            rebuildClusterDragPreview();
             render();
         }
     }
@@ -1252,14 +1359,16 @@ abstract class AbstractDungeonPane extends StackPane {
         if (!editable || event.getButton() != MouseButton.PRIMARY) {
             return false;
         }
-        if ((editorTool == DungeonEditorTool.CLUSTER_WALL || editorTool == DungeonEditorTool.CLUSTER_DOOR)
+        if ((editorTool.isWallTool() || editorTool.isDoorTool())
                 && surface() == EditorSurface.GRID) {
             DungeonClusterEdgeRef edgeRef = findClusterEdgeAt(event.getX(), event.getY());
             if (edgeRef == null) {
                 return false;
             }
-            if (editorTool == DungeonEditorTool.CLUSTER_WALL) {
+            if (editorTool.isWallTool()) {
                 wallPathController.handlePrimaryPress(event.getX(), event.getY());
+            } else if (editorTool == DungeonEditorTool.CLUSTER_DOOR_DELETE) {
+                callbacks.onClusterDoorDeleted.accept(Set.of(edgeRef));
             } else {
                 callbacks.onClusterDoorPainted.accept(Set.of(edgeRef));
             }
@@ -1325,7 +1434,11 @@ abstract class AbstractDungeonPane extends StackPane {
             return false;
         }
         callbacks.onClusterSelected.accept(context.cluster());
-        pointerInteraction = new DragInteraction(context.cluster(), context.cluster().center(), context.world());
+        pointerInteraction = new DragInteraction(
+                context.cluster(),
+                context.cluster().center(),
+                camera.toWorldX(event.getX()),
+                camera.toWorldY(event.getY()));
         return true;
     }
 
@@ -1539,6 +1652,16 @@ abstract class AbstractDungeonPane extends StackPane {
         return false;
     }
 
+    private Point2i snapDraggedCenter(double worldX, double worldY) {
+        return surface() == EditorSurface.GRAPH
+                ? new Point2i((int) Math.round(worldX), (int) Math.round(worldY))
+                : new Point2i((int) Math.floor(worldX), (int) Math.floor(worldY));
+    }
+
+    private static boolean isZero(double value) {
+        return Math.abs(value) < 0.000001;
+    }
+
     private sealed interface PointerInteraction
             permits IdleInteraction, PanInteraction, SelectionInteraction, PaintInteraction, DragInteraction,
             GraphCreateInteraction, GraphDeleteInteraction {
@@ -1557,7 +1680,12 @@ abstract class AbstractDungeonPane extends StackPane {
     private record PaintInteraction() implements PointerInteraction {
     }
 
-    private record DragInteraction(DungeonRoomCluster cluster, Point2i originalCenter, Point2i anchorWorld) implements PointerInteraction {
+    private record DragInteraction(
+            DungeonRoomCluster cluster,
+            Point2i originalCenter,
+            double anchorWorldX,
+            double anchorWorldY
+    ) implements PointerInteraction {
     }
 
     private record GraphCreateInteraction(Point2i world) implements PointerInteraction {
@@ -1605,6 +1733,7 @@ abstract class AbstractDungeonPane extends StackPane {
         private Consumer<Set<Point2i>> onRoomCellsPainted = cells -> { };
         private Consumer<Set<Point2i>> onRoomCellsDeleted = cells -> { };
         private Consumer<Set<DungeonClusterEdgeRef>> onClusterDoorPainted = refs -> { };
+        private Consumer<Set<DungeonClusterEdgeRef>> onClusterDoorDeleted = refs -> { };
         private Consumer<Point2i> onGraphRoomRequested = point -> { };
         private Consumer<DungeonRoom> onGraphRoomDeleted = room -> { };
         private Consumer<DungeonRoomCluster> onGraphClusterDeleted = cluster -> { };

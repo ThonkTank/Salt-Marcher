@@ -130,6 +130,25 @@ public final class DungeonRoomTopologySupport {
             Set<DungeonClusterEdgeRef> edgeRefs,
             DungeonRoomCluster.EdgeType edgeType
     ) throws Exception {
+        return updateClusterEdges(conn, mapId, edgeRefs, edgeType, true);
+    }
+
+    public static DungeonLayoutEditResult deleteClusterEdges(
+            Connection conn,
+            long mapId,
+            Set<DungeonClusterEdgeRef> edgeRefs,
+            DungeonRoomCluster.EdgeType edgeType
+    ) throws Exception {
+        return updateClusterEdges(conn, mapId, edgeRefs, edgeType, false);
+    }
+
+    private static DungeonLayoutEditResult updateClusterEdges(
+            Connection conn,
+            long mapId,
+            Set<DungeonClusterEdgeRef> edgeRefs,
+            DungeonRoomCluster.EdgeType edgeType,
+            boolean present
+    ) throws Exception {
         if (edgeRefs == null || edgeRefs.isEmpty() || edgeType == null) {
             throw new IllegalArgumentException("edgeRefs darf nicht leer sein");
         }
@@ -149,8 +168,25 @@ public final class DungeonRoomTopologySupport {
             for (DungeonClusterEdgeRef ref : entry.getValue()) {
                 DungeonRoomCluster.EdgeOverride override = ref.toEdgeOverride(cluster, edgeType);
                 Point2i absoluteCell = override.absoluteCell(cluster.center());
-                if (clusterCells.contains(absoluteCell) && clusterCells.contains(absoluteCell.add(override.direction().delta()))) {
-                    overrides.put(override.key(), override);
+                if (clusterCells.contains(absoluteCell)
+                        && clusterCells.contains(absoluteCell.add(override.direction().delta()))
+                        && canUpdateClusterEdge(overrides, override, edgeType, present)) {
+                    if (present) {
+                        overrides.put(override.key(), override);
+                    } else {
+                        DungeonRoomCluster.EdgeOverride existing = overrides.get(override.key());
+                        if (existing != null && existing.type() == edgeType) {
+                            if (edgeType == DungeonRoomCluster.EdgeType.DOOR) {
+                                // Doors replace an existing wall for editing purposes; removing the door restores that wall.
+                                overrides.put(override.key(), DungeonRoomCluster.EdgeOverride.of(
+                                        existing.cell(),
+                                        existing.direction(),
+                                        DungeonRoomCluster.EdgeType.WALL));
+                            } else {
+                                overrides.remove(override.key());
+                            }
+                        }
+                    }
                 }
             }
             List<DungeonRoomCluster.EdgeOverride> persistedEdges = List.copyOf(overrides.values());
@@ -167,6 +203,21 @@ public final class DungeonRoomTopologySupport {
             }
         }
         return loadEditResult(conn, mapId, focusClusterId == null ? null : DungeonSelection.roomCluster(focusClusterId));
+    }
+
+    private static boolean canUpdateClusterEdge(
+            Map<DungeonRoomCluster.EdgeKey, DungeonRoomCluster.EdgeOverride> overrides,
+            DungeonRoomCluster.EdgeOverride override,
+            DungeonRoomCluster.EdgeType edgeType,
+            boolean present
+    ) {
+        if (!present || edgeType != DungeonRoomCluster.EdgeType.DOOR) {
+            return true;
+        }
+        DungeonRoomCluster.EdgeOverride existing = overrides.get(override.key());
+        // Doors are only valid as a replacement for an existing wall on that internal cluster edge.
+        return existing != null
+                && (existing.type() == DungeonRoomCluster.EdgeType.WALL || existing.type() == DungeonRoomCluster.EdgeType.DOOR);
     }
 
     private static DungeonLayoutEditResult applyPaintClusterCells(Connection conn, DungeonLayout layout, Set<Point2i> paintedCells) throws SQLException {
@@ -414,15 +465,8 @@ public final class DungeonRoomTopologySupport {
     }
 
     private static Point2i componentAnchor(RoomShape shape, Point2i preferredAnchor) {
-        if (shape.cells().contains(preferredAnchor)) {
-            return preferredAnchor;
-        }
-        return shape.cells().stream()
-                .min(Comparator
-                        .comparingInt((Point2i cell) -> manhattan(cell, preferredAnchor))
-                        .thenComparing(Point2i::x)
-                        .thenComparing(Point2i::y))
-                .orElse(shape.center());
+        // Component anchors track the component's current geometric center so split/merge feedback stays stable in every view.
+        return shape.center();
     }
 
 }

@@ -4,6 +4,8 @@ import features.world.dungeonmap.model.DungeonMap;
 import features.world.dungeonmap.ui.selector.DungeonMapCell;
 import features.world.dungeonmap.ui.workspace.DungeonEditorTool;
 import features.world.dungeonmap.ui.workspace.DungeonViewMode;
+import javafx.animation.PauseTransition;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -17,6 +19,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 import ui.components.AnchoredDropdown;
 
 import java.util.List;
@@ -40,16 +43,21 @@ public final class DungeonEditorControls extends VBox {
     private final Button corridorButton = new Button("Korridor");
     private final Button primaryToolOption = new Button();
     private final Button secondaryToolOption = new Button();
+    private final HBox toolDropdownPanel = new HBox(8, primaryToolOption, secondaryToolOption);
     private final AnchoredDropdown toolDropdown;
-    private Consumer<DungeonEditorTool> onToolChanged;
+    private Consumer<DungeonEditorTool> onSelectedToolChanged;
     private Consumer<Long> onMapSelected;
     private Consumer<DungeonViewMode> onViewModeChanged;
     private boolean updatingSelection;
     private boolean updatingViewMode;
     private boolean updatingToolMode;
+    private final PauseTransition dropdownHideDelay = new PauseTransition(Duration.millis(120));
     private DungeonEditorTool activeTool = DungeonEditorTool.SELECT;
     private DungeonEditorTool rememberedRoomTool = DungeonEditorTool.ROOM_PAINT;
+    private DungeonEditorTool rememberedWallTool = DungeonEditorTool.CLUSTER_WALL;
+    private DungeonEditorTool rememberedDoorTool = DungeonEditorTool.CLUSTER_DOOR;
     private DungeonEditorTool rememberedCorridorTool = DungeonEditorTool.CORRIDOR_CREATE;
+    private Node dropdownAnchor;
 
     public DungeonEditorControls() {
         getStyleClass().add("dungeon-editor-toolbar");
@@ -88,10 +96,13 @@ public final class DungeonEditorControls extends VBox {
         corridorButton.setMinWidth(Region.USE_PREF_SIZE);
         selectButton.setToggleGroup(toolGroup);
         selectButton.setSelected(true);
-        HBox toolDropdownPanel = new HBox(8, primaryToolOption, secondaryToolOption);
         toolDropdownPanel.getStyleClass().addAll("dropdown-window", "dropdown-form");
         toolDropdownPanel.setPadding(new Insets(10));
         toolDropdown = new AnchoredDropdown(toolDropdownPanel);
+        toolDropdown.setOnHidden(() -> dropdownAnchor = null);
+        toolDropdownPanel.setOnMouseEntered(event -> cancelDropdownHideCheck());
+        toolDropdownPanel.setOnMouseExited(event -> scheduleDropdownHideCheck());
+        dropdownHideDelay.setOnFinished(event -> hideDropdownIfPointerLeftToolSurface());
 
         Label mapLabel = sectionLabel("Dungeon");
         HBox mapRow = new HBox(8, mapSelector, newMapButton, editMapButton, gridButton, graphButton);
@@ -153,51 +164,43 @@ public final class DungeonEditorControls extends VBox {
                 updatingToolMode = false;
                 return;
             }
-            if (onToolChanged != null && newToggle == selectButton) {
-                onToolChanged.accept(DungeonEditorTool.SELECT);
+            if (onSelectedToolChanged != null && newToggle == selectButton) {
+                onSelectedToolChanged.accept(DungeonEditorTool.SELECT);
             }
         });
 
-        roomButton.setOnAction(event -> {
-            if (activeTool.isRoomTool()) {
-                showToolDropdown(
-                        roomButton,
-                        "Malen",
-                        DungeonEditorTool.ROOM_PAINT,
-                        "Löschen",
-                        DungeonEditorTool.ROOM_DELETE,
-                        rememberedRoomTool,
-                        this::applyRoomToolSelection);
-                return;
-            }
-            applyRoomToolSelection(rememberedRoomTool);
-        });
-        corridorButton.setOnAction(event -> {
-            if (activeTool.isCorridorTool()) {
-                showToolDropdown(
-                        corridorButton,
-                        "Erstellen",
-                        DungeonEditorTool.CORRIDOR_CREATE,
-                        "Löschen",
-                        DungeonEditorTool.CORRIDOR_DELETE,
-                        rememberedCorridorTool,
-                        this::applyCorridorToolSelection);
-                return;
-            }
-            applyCorridorToolSelection(rememberedCorridorTool);
-        });
-        wallButton.setOnAction(event -> {
-            rememberToolSelection(DungeonEditorTool.CLUSTER_WALL);
-            if (onToolChanged != null) {
-                onToolChanged.accept(DungeonEditorTool.CLUSTER_WALL);
-            }
-        });
-        doorButton.setOnAction(event -> {
-            rememberToolSelection(DungeonEditorTool.CLUSTER_DOOR);
-            if (onToolChanged != null) {
-                onToolChanged.accept(DungeonEditorTool.CLUSTER_DOOR);
-            }
-        });
+        configureToolDropdownButton(roomButton);
+        configureToolDropdownButton(wallButton);
+        configureToolDropdownButton(doorButton);
+        configureToolDropdownButton(corridorButton);
+        roomButton.setOnAction(event -> activateToolFamily(
+                roomButton,
+                DungeonEditorTool.ROOM_PAINT.label(),
+                DungeonEditorTool.ROOM_PAINT,
+                DungeonEditorTool.ROOM_DELETE.label(),
+                DungeonEditorTool.ROOM_DELETE,
+                rememberedRoomTool));
+        wallButton.setOnAction(event -> activateToolFamily(
+                wallButton,
+                DungeonEditorTool.CLUSTER_WALL.label(),
+                DungeonEditorTool.CLUSTER_WALL,
+                DungeonEditorTool.CLUSTER_WALL_DELETE.label(),
+                DungeonEditorTool.CLUSTER_WALL_DELETE,
+                rememberedWallTool));
+        doorButton.setOnAction(event -> activateToolFamily(
+                doorButton,
+                DungeonEditorTool.CLUSTER_DOOR.label(),
+                DungeonEditorTool.CLUSTER_DOOR,
+                DungeonEditorTool.CLUSTER_DOOR_DELETE.label(),
+                DungeonEditorTool.CLUSTER_DOOR_DELETE,
+                rememberedDoorTool));
+        corridorButton.setOnAction(event -> activateToolFamily(
+                corridorButton,
+                DungeonEditorTool.CORRIDOR_CREATE.label(),
+                DungeonEditorTool.CORRIDOR_CREATE,
+                DungeonEditorTool.CORRIDOR_DELETE.label(),
+                DungeonEditorTool.CORRIDOR_DELETE,
+                rememberedCorridorTool));
     }
 
     public void setMaps(List<DungeonMap> maps) {
@@ -247,8 +250,27 @@ public final class DungeonEditorControls extends VBox {
         this.onViewModeChanged = onViewModeChanged;
     }
 
-    public void setOnToolChanged(Consumer<DungeonEditorTool> onToolChanged) {
-        this.onToolChanged = onToolChanged;
+    public void setOnToolChanged(Consumer<DungeonEditorTool> onSelectedToolChanged) {
+        this.onSelectedToolChanged = onSelectedToolChanged;
+    }
+
+    public void showTemporaryTool(DungeonEditorTool tool) {
+        applyDisplayedTool(tool, false);
+    }
+
+    private void rememberSelectedTool(DungeonEditorTool tool) {
+        if (tool == null) {
+            return;
+        }
+        if (tool.isRoomTool()) {
+            rememberedRoomTool = tool;
+        } else if (tool.isWallTool()) {
+            rememberedWallTool = tool;
+        } else if (tool.isDoorTool()) {
+            rememberedDoorTool = tool;
+        } else if (tool.isCorridorTool()) {
+            rememberedCorridorTool = tool;
+        }
     }
 
     public void selectViewMode(DungeonViewMode viewMode) {
@@ -262,8 +284,14 @@ public final class DungeonEditorControls extends VBox {
     }
 
     public void selectTool(DungeonEditorTool tool) {
+        applyDisplayedTool(tool, true);
+    }
+
+    private void applyDisplayedTool(DungeonEditorTool tool, boolean rememberSelection) {
         activeTool = tool == null ? DungeonEditorTool.SELECT : tool;
-        rememberToolSelection(activeTool);
+        if (rememberSelection) {
+            rememberSelectedTool(activeTool);
+        }
         updatingToolMode = true;
         if (activeTool == DungeonEditorTool.SELECT) {
             selectButton.setSelected(true);
@@ -279,9 +307,9 @@ public final class DungeonEditorControls extends VBox {
             corridorButton.getStyleClass().remove("selected");
             if (activeTool.isCorridorTool()) {
                 corridorButton.getStyleClass().add("selected");
-            } else if (activeTool == DungeonEditorTool.CLUSTER_WALL) {
+            } else if (activeTool.isWallTool()) {
                 wallButton.getStyleClass().add("selected");
-            } else if (activeTool == DungeonEditorTool.CLUSTER_DOOR) {
+            } else if (activeTool.isDoorTool()) {
                 doorButton.getStyleClass().add("selected");
             } else {
                 roomButton.getStyleClass().add("selected");
@@ -290,34 +318,13 @@ public final class DungeonEditorControls extends VBox {
         updatingToolMode = false;
     }
 
-    private void applyRoomToolSelection(DungeonEditorTool tool) {
+    private void applyToolSelection(DungeonEditorTool tool) {
         if (tool == null || tool == DungeonEditorTool.SELECT) {
             return;
         }
-        rememberToolSelection(tool);
-        if (onToolChanged != null) {
-            onToolChanged.accept(tool);
-        }
-    }
-
-    private void applyCorridorToolSelection(DungeonEditorTool tool) {
-        if (tool == null || tool == DungeonEditorTool.SELECT) {
-            return;
-        }
-        rememberToolSelection(tool);
-        if (onToolChanged != null) {
-            onToolChanged.accept(tool);
-        }
-    }
-
-    private void rememberToolSelection(DungeonEditorTool tool) {
-        if (tool == null) {
-            return;
-        }
-        if (tool.isRoomTool()) {
-            rememberedRoomTool = tool;
-        } else if (tool.isCorridorTool()) {
-            rememberedCorridorTool = tool;
+        rememberSelectedTool(tool);
+        if (onSelectedToolChanged != null) {
+            onSelectedToolChanged.accept(tool);
         }
     }
 
@@ -330,6 +337,7 @@ public final class DungeonEditorControls extends VBox {
             DungeonEditorTool preferredTool,
             Consumer<DungeonEditorTool> onSelected
     ) {
+        dropdownAnchor = anchor;
         primaryToolOption.setText(primaryLabel);
         secondaryToolOption.setText(secondaryLabel);
         primaryToolOption.setOnAction(event -> submitToolSelection(primaryTool, onSelected));
@@ -338,11 +346,59 @@ public final class DungeonEditorControls extends VBox {
         toolDropdown.requestFocus(preferredTool == secondaryTool ? secondaryToolOption : primaryToolOption);
     }
 
+    private void activateToolFamily(
+            Node anchor,
+            String primaryLabel,
+            DungeonEditorTool primaryTool,
+            String secondaryLabel,
+            DungeonEditorTool secondaryTool,
+            DungeonEditorTool preferredTool
+    ) {
+        DungeonEditorTool defaultTool = preferredTool == null ? primaryTool : preferredTool;
+        applyToolSelection(defaultTool);
+        showToolDropdown(
+                anchor,
+                primaryLabel,
+                primaryTool,
+                secondaryLabel,
+                secondaryTool,
+                defaultTool,
+                this::applyToolSelection);
+    }
+
     private void submitToolSelection(DungeonEditorTool tool, Consumer<DungeonEditorTool> onSelected) {
         if (onSelected != null) {
             onSelected.accept(tool);
         }
         toolDropdown.hide();
+    }
+
+    private void configureToolDropdownButton(Button button) {
+        button.setOnMouseEntered(event -> cancelDropdownHideCheck());
+        button.setOnMouseExited(event -> scheduleDropdownHideCheck());
+    }
+
+    private void scheduleDropdownHideCheck() {
+        dropdownHideDelay.playFromStart();
+    }
+
+    private void cancelDropdownHideCheck() {
+        dropdownHideDelay.stop();
+    }
+
+    private void hideDropdownIfPointerLeftToolSurface() {
+        Platform.runLater(() -> {
+            if (!toolDropdown.isShowing()) {
+                return;
+            }
+            if (dropdownAnchor != null && dropdownAnchor.isHover()) {
+                return;
+            }
+            if (toolDropdownPanel.isHover()) {
+                return;
+            }
+            toolDropdown.hide();
+        });
     }
 
     private static Label sectionLabel(String text) {

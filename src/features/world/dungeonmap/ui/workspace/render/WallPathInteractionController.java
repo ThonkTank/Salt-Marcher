@@ -3,6 +3,7 @@ package features.world.dungeonmap.ui.workspace.render;
 import features.world.dungeonmap.model.DungeonClusterEdgePath;
 import features.world.dungeonmap.model.DungeonClusterEdgeRef;
 import features.world.dungeonmap.model.DungeonRoomCluster;
+import features.world.dungeonmap.model.DungeonClusterVertexRef;
 import features.world.dungeonmap.model.Point2i;
 import features.world.dungeonmap.ui.workspace.DungeonEditorTool;
 import javafx.scene.input.KeyCode;
@@ -15,13 +16,21 @@ import java.util.function.Consumer;
 
 public final class WallPathInteractionController {
 
+    public record StateSnapshot(
+            DungeonClusterVertexRef activeAnchor,
+            List<DungeonClusterEdgeRef> previewPath,
+            boolean commitPending,
+            DungeonClusterVertexRef pendingAnchor
+    ) {
+    }
+
     private final Host host;
     private Consumer<WallPathCommitRequest> onCommitRequested = request -> { };
     private Runnable onStateChanged = () -> { };
-    private DungeonClusterEdgeRef activeAnchor;
+    private DungeonClusterVertexRef activeAnchor;
     private List<DungeonClusterEdgeRef> previewPath = List.of();
     private boolean commitPending;
-    private DungeonClusterEdgeRef pendingAnchor;
+    private DungeonClusterVertexRef pendingAnchor;
 
     WallPathInteractionController(Host host) {
         this.host = Objects.requireNonNull(host, "host");
@@ -50,7 +59,7 @@ public final class WallPathInteractionController {
         reset();
     }
 
-    public void applyCommitResult(DungeonClusterEdgeRef nextAnchor) {
+    public void applyCommitResult(DungeonClusterVertexRef nextAnchor) {
         activeAnchor = nextAnchor;
         previewPath = List.of();
         commitPending = false;
@@ -71,20 +80,28 @@ public final class WallPathInteractionController {
         if (!isActiveTool()) {
             return false;
         }
-        DungeonClusterEdgeRef edgeRef = host.findClusterEdgeAt(screenX, screenY);
-        if (edgeRef == null) {
+        DungeonClusterVertexRef vertexRef = host.findClusterVertexAt(screenX, screenY);
+        if (vertexRef == null) {
             return false;
         }
         if (activeAnchor == null) {
-            activeAnchor = edgeRef;
+            DungeonRoomCluster cluster = host.clusterById(vertexRef.clusterId());
+            if (cluster == null || !DungeonClusterEdgePath.isPathVertex(
+                    cluster.clusterId(),
+                    host.clusterCellsFor(cluster),
+                    vertexRef,
+                    traversableEdgesFor(cluster))) {
+                return false;
+            }
+            activeAnchor = vertexRef;
             previewPath = List.of();
             stateChanged();
             return true;
         }
-        if (commitPending || activeAnchor.clusterId() != edgeRef.clusterId()) {
+        if (commitPending || activeAnchor.clusterId() != vertexRef.clusterId()) {
             return true;
         }
-        DungeonRoomCluster cluster = host.clusterById(edgeRef.clusterId());
+        DungeonRoomCluster cluster = host.clusterById(vertexRef.clusterId());
         if (cluster == null) {
             reset();
             return true;
@@ -93,16 +110,14 @@ public final class WallPathInteractionController {
                 cluster.clusterId(),
                 host.clusterCellsFor(cluster),
                 activeAnchor,
-                edgeRef);
+                vertexRef,
+                traversableEdgesFor(cluster));
         if (path.isEmpty()) {
-            if (isExistingWall(edgeRef)) {
-                reset();
-            }
             return true;
         }
         commitPending = true;
         previewPath = List.of();
-        pendingAnchor = isExistingWall(edgeRef) ? null : edgeRef;
+        pendingAnchor = vertexRef;
         stateChanged();
         onCommitRequested.accept(new WallPathCommitRequest(Set.copyOf(path), pendingAnchor));
         return true;
@@ -130,8 +145,8 @@ public final class WallPathInteractionController {
             clearPreviewIfNeeded();
             return;
         }
-        DungeonClusterEdgeRef hoveredEdge = host.findClusterEdgeAt(screenX, screenY);
-        if (hoveredEdge == null || hoveredEdge.clusterId() != activeAnchor.clusterId()) {
+        DungeonClusterVertexRef hoveredVertex = host.findClusterVertexAt(screenX, screenY);
+        if (hoveredVertex == null || hoveredVertex.clusterId() != activeAnchor.clusterId()) {
             clearPreviewIfNeeded();
             return;
         }
@@ -144,14 +159,15 @@ public final class WallPathInteractionController {
                 cluster.clusterId(),
                 host.clusterCellsFor(cluster),
                 activeAnchor,
-                hoveredEdge);
+                hoveredVertex,
+                traversableEdgesFor(cluster));
         if (!previewPath.equals(nextPreview)) {
             previewPath = nextPreview;
             stateChanged();
         }
     }
 
-    public DungeonClusterEdgeRef activeAnchor() {
+    public DungeonClusterVertexRef activeAnchor() {
         return activeAnchor;
     }
 
@@ -159,36 +175,33 @@ public final class WallPathInteractionController {
         return previewPath;
     }
 
-    public DungeonClusterEdgeRef displayedAnchor() {
+    public DungeonClusterVertexRef displayedAnchor() {
         return pendingAnchor != null ? pendingAnchor : activeAnchor;
+    }
+
+    public StateSnapshot snapshotState() {
+        if (!hasState()) {
+            return null;
+        }
+        return new StateSnapshot(activeAnchor, List.copyOf(previewPath), commitPending, pendingAnchor);
+    }
+
+    public void restoreState(StateSnapshot snapshot) {
+        if (snapshot == null) {
+            reset();
+            return;
+        }
+        activeAnchor = snapshot.activeAnchor();
+        previewPath = List.copyOf(snapshot.previewPath());
+        commitPending = snapshot.commitPending();
+        pendingAnchor = snapshot.pendingAnchor();
+        stateChanged();
     }
 
     private boolean isActiveTool() {
         return host.editable()
-                && host.editorTool() == DungeonEditorTool.CLUSTER_WALL
+                && host.editorTool().isWallTool()
                 && host.surface() == AbstractDungeonPane.EditorSurface.GRID;
-    }
-
-    private boolean isExistingWall(DungeonClusterEdgeRef edgeRef) {
-        DungeonRoomCluster cluster = host.clusterById(edgeRef.clusterId());
-        if (cluster == null) {
-            return false;
-        }
-        Set<Point2i> clusterCells = host.clusterCellsFor(cluster);
-        if (isOuterEdge(clusterCells, edgeRef)) {
-            return true;
-        }
-        if (!isInternalEdge(clusterCells, edgeRef)) {
-            return false;
-        }
-        DungeonRoomCluster.EdgeOverride canonical = DungeonRoomCluster.EdgeOverride.of(
-                edgeRef.cell(),
-                edgeRef.direction(),
-                DungeonRoomCluster.EdgeType.WALL);
-        return cluster.edgeOverrides().stream().anyMatch(edge ->
-                edge.type() == DungeonRoomCluster.EdgeType.WALL
-                        && edge.cell().equals(canonical.cell())
-                        && edge.direction() == canonical.direction());
     }
 
     private void clearPreviewIfNeeded() {
@@ -198,25 +211,26 @@ public final class WallPathInteractionController {
         }
     }
 
+    private Set<DungeonClusterEdgeRef> traversableEdgesFor(DungeonRoomCluster cluster) {
+        if (cluster == null || host.editorTool() != DungeonEditorTool.CLUSTER_WALL_DELETE) {
+            return null;
+        }
+        Set<DungeonClusterEdgeRef> traversable = new java.util.LinkedHashSet<>();
+        for (DungeonRoomCluster.EdgeOverride edge : cluster.edgeOverrides()) {
+            if (edge.type() != DungeonRoomCluster.EdgeType.WALL) {
+                continue;
+            }
+            traversable.add(new DungeonClusterEdgeRef(
+                    cluster.clusterId(),
+                    edge.absoluteCell(cluster.center()),
+                    edge.direction()));
+        }
+        return traversable;
+    }
+
     private void stateChanged() {
         host.render();
         onStateChanged.run();
-    }
-
-    private static boolean isInternalEdge(Set<Point2i> clusterCells, DungeonClusterEdgeRef edgeRef) {
-        if (edgeRef == null || edgeRef.cell() == null || edgeRef.direction() == null || clusterCells == null) {
-            return false;
-        }
-        Point2i neighbor = edgeRef.cell().add(edgeRef.direction().delta());
-        return clusterCells.contains(edgeRef.cell()) && clusterCells.contains(neighbor);
-    }
-
-    private static boolean isOuterEdge(Set<Point2i> clusterCells, DungeonClusterEdgeRef edgeRef) {
-        if (edgeRef == null || edgeRef.cell() == null || edgeRef.direction() == null || clusterCells == null) {
-            return false;
-        }
-        Point2i neighbor = edgeRef.cell().add(edgeRef.direction().delta());
-        return clusterCells.contains(edgeRef.cell()) && !clusterCells.contains(neighbor);
     }
 
     private boolean hasState() {
@@ -227,7 +241,7 @@ public final class WallPathInteractionController {
         boolean editable();
         DungeonEditorTool editorTool();
         AbstractDungeonPane.EditorSurface surface();
-        DungeonClusterEdgeRef findClusterEdgeAt(double screenX, double screenY);
+        DungeonClusterVertexRef findClusterVertexAt(double screenX, double screenY);
         DungeonRoomCluster clusterById(long clusterId);
         Set<Point2i> clusterCellsFor(DungeonRoomCluster cluster);
         void render();

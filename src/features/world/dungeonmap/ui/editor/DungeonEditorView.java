@@ -5,6 +5,7 @@ import features.world.dungeonmap.api.DungeonRoomClusterSummary;
 import features.world.dungeonmap.model.DungeonClusterEdgeRef;
 import features.world.dungeonmap.model.DungeonCorridorEndpoint;
 import features.world.dungeonmap.model.DungeonCorridor;
+import features.world.dungeonmap.model.DungeonClusterVertexRef;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.DungeonLayoutEditResult;
 import features.world.dungeonmap.model.DungeonMap;
@@ -23,10 +24,17 @@ import features.world.dungeonmap.ui.workspace.render.CorridorDoorHit;
 import features.world.dungeonmap.ui.workspace.render.CorridorEditInteractionController;
 import features.world.dungeonmap.ui.workspace.render.WallPathCommitRequest;
 import features.world.dungeonmap.ui.workspace.render.WallPathInteractionController;
+import javafx.beans.value.ChangeListener;
+import javafx.event.EventHandler;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextInputControl;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
+import javafx.stage.Window;
 import ui.async.UiAsyncTasks;
 import ui.async.UiErrorReporter;
 import ui.components.MessageDropdown;
@@ -65,10 +73,31 @@ public final class DungeonEditorView implements AppView {
     private DungeonSelection selectedTarget;
     private DungeonCorridorEndpoint pendingCorridorStart;
     private DungeonViewMode viewMode = DungeonViewMode.GRID;
-    private DungeonEditorTool editorTool = DungeonEditorTool.SELECT;
+    private DungeonEditorTool selectedTool = DungeonEditorTool.SELECT;
     private Long activeMapId;
     private boolean initialLoadDone;
+    private boolean deleteOverrideActive;
+    private Scene shortcutScene;
+    private Window shortcutWindow;
+    private CorridorDraft suspendedCorridorDraft;
+    private WallPathInteractionController.StateSnapshot suspendedWallPathState;
     private CorridorEditInteractionController.WaypointHandle selectedCorridorWaypointHandle;
+    private final EventHandler<KeyEvent> keyPressedHandler = this::handleKeyPressed;
+    private final EventHandler<KeyEvent> keyReleasedHandler = this::handleKeyReleased;
+    private final ChangeListener<Node> focusOwnerListener = (obs, previous, focusOwner) -> {
+        if (!isWithinEditorView(focusOwner)) {
+            setDeleteOverrideActive(false);
+        }
+    };
+    private final ChangeListener<Boolean> shortcutWindowFocusListener = (obs, wasFocused, isFocused) -> {
+        if (!Boolean.TRUE.equals(isFocused)) {
+            setDeleteOverrideActive(false);
+        }
+    };
+    private final ChangeListener<Window> shortcutSceneWindowListener = (obs, previousWindow, nextWindow) -> {
+        uninstallShortcutWindow(previousWindow);
+        installShortcutWindow(nextWindow);
+    };
 
     public DungeonEditorView(
             DetailsNavigator detailsNavigator,
@@ -87,6 +116,7 @@ public final class DungeonEditorView implements AppView {
         workspace.setOnRoomCellsPainted(this::paintRoomCells);
         workspace.setOnRoomCellsDeleted(this::deleteRoomCells);
         workspace.setOnClusterDoorPainted(this::paintClusterDoors);
+        workspace.setOnClusterDoorDeleted(this::deleteClusterDoors);
         wallPathController.setOnStateChanged(this::refreshStatePane);
         wallPathController.setOnCommitRequested(this::commitWallPathSegment);
         workspace.setOnGraphRoomRequested(this::createGraphRoom);
@@ -104,7 +134,11 @@ public final class DungeonEditorView implements AppView {
         controls.setOnNewMapRequested(this::showNewMapDropdown);
         controls.setOnEditMapRequested(this::showEditMapDropdown);
         controls.setOnViewModeChanged(this::setViewMode);
-        controls.setOnToolChanged(this::setEditorTool);
+        controls.setOnToolChanged(this::setSelectedTool);
+        workspace.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            detachShortcutContext(oldScene);
+            attachShortcutContext(newScene);
+        });
         syncEditorTool();
     }
 
@@ -135,10 +169,17 @@ public final class DungeonEditorView implements AppView {
 
     @Override
     public void onShow() {
+        attachShortcutContext(workspace.getScene());
         if (!initialLoadDone) {
             refreshMapsAndLayout(currentMapId);
             initialLoadDone = true;
         }
+    }
+
+    @Override
+    public void onHide() {
+        detachShortcutContext(shortcutScene);
+        setDeleteOverrideActive(false);
     }
 
     private void loadLayoutAsync(Long mapId) {
@@ -269,15 +310,21 @@ public final class DungeonEditorView implements AppView {
 
     private void setViewMode(DungeonViewMode viewMode) {
         this.viewMode = viewMode == null ? DungeonViewMode.GRID : viewMode;
-        if (this.viewMode == DungeonViewMode.GRAPH && editorTool == DungeonEditorTool.CLUSTER_WALL) {
+        if (this.viewMode == DungeonViewMode.GRAPH && activeTool().isWallTool()) {
             wallPathController.cancel();
         }
         workspace.setViewMode(this.viewMode);
     }
 
-    private void setEditorTool(DungeonEditorTool editorTool) {
-        this.editorTool = editorTool == null ? DungeonEditorTool.SELECT : editorTool;
-        if (this.editorTool != DungeonEditorTool.CORRIDOR_CREATE) {
+    private void setSelectedTool(DungeonEditorTool editorTool) {
+        selectedTool = normalizeEditorTool(editorTool);
+        deleteOverrideActive = false;
+        suspendedCorridorDraft = null;
+        applyActiveTool();
+    }
+
+    private void applyActiveTool() {
+        if (activeTool() != DungeonEditorTool.CORRIDOR_CREATE) {
             clearTransientState();
         }
         syncEditorTool();
@@ -419,11 +466,14 @@ public final class DungeonEditorView implements AppView {
         if (currentMapId == null || request == null || request.edgeRefs() == null || request.edgeRefs().isEmpty()) {
             return;
         }
-        runEdit("DungeonEditorView.paintClusterWalls()",
+        boolean deleteMode = activeTool() == DungeonEditorTool.CLUSTER_WALL_DELETE;
+        runEdit(deleteMode ? "DungeonEditorView.deleteClusterWalls()" : "DungeonEditorView.paintClusterWalls()",
                 result -> applyWallEditResult(result, request.nextAnchor()),
                 (mapId, onSuccess, onError) -> submitEdit(
                         mapId,
-                        () -> editorService.paintClusterWalls(mapId, request.edgeRefs()),
+                        () -> deleteMode
+                                ? editorService.deleteClusterWalls(mapId, request.edgeRefs())
+                                : editorService.paintClusterWalls(mapId, request.edgeRefs()),
                         onSuccess,
                         throwable -> {
                             wallPathController.revertPendingCommit();
@@ -439,6 +489,18 @@ public final class DungeonEditorView implements AppView {
                 (mapId, onSuccess, onError) -> submitEdit(
                         mapId,
                         () -> editorService.paintClusterDoors(mapId, edgeRefs),
+                        onSuccess,
+                        onError));
+    }
+
+    private void deleteClusterDoors(Set<DungeonClusterEdgeRef> edgeRefs) {
+        if (currentMapId == null || edgeRefs == null || edgeRefs.isEmpty()) {
+            return;
+        }
+        runEdit("DungeonEditorView.deleteClusterDoors()",
+                (mapId, onSuccess, onError) -> submitEdit(
+                        mapId,
+                        () -> editorService.deleteClusterDoors(mapId, edgeRefs),
                         onSuccess,
                         onError));
     }
@@ -481,7 +543,7 @@ public final class DungeonEditorView implements AppView {
     }
 
     private void selectCorridorTarget(DungeonCorridorEndpoint target) {
-        if (currentMapId == null || currentLayout == null || target == null || editorTool != DungeonEditorTool.CORRIDOR_CREATE) {
+        if (currentMapId == null || currentLayout == null || target == null || activeTool() != DungeonEditorTool.CORRIDOR_CREATE) {
             return;
         }
         if (pendingCorridorStart == null) {
@@ -537,7 +599,7 @@ public final class DungeonEditorView implements AppView {
         refreshStatePane();
     }
 
-    private void applyWallEditResult(DungeonLayoutEditResult result, DungeonClusterEdgeRef nextAnchor) {
+    private void applyWallEditResult(DungeonLayoutEditResult result, DungeonClusterVertexRef nextAnchor) {
         if (result == null) {
             refreshMapsAndLayout(currentMapId);
             return;
@@ -580,9 +642,179 @@ public final class DungeonEditorView implements AppView {
     }
 
     private void syncEditorTool() {
-        controls.selectTool(editorTool);
-        activeToolLabel.setText(editorTool.label());
-        workspace.setEditorTool(editorTool);
+        DungeonEditorTool activeTool = activeTool();
+        if (deleteOverrideActive) {
+            controls.showTemporaryTool(activeTool);
+        } else {
+            controls.selectTool(activeTool);
+        }
+        activeToolLabel.setText(activeTool.label());
+        workspace.setEditorTool(activeTool);
+    }
+
+    private void attachShortcutContext(Scene scene) {
+        if (scene == null || scene == shortcutScene) {
+            return;
+        }
+        shortcutScene = scene;
+        shortcutScene.addEventFilter(KeyEvent.KEY_PRESSED, keyPressedHandler);
+        shortcutScene.addEventFilter(KeyEvent.KEY_RELEASED, keyReleasedHandler);
+        shortcutScene.focusOwnerProperty().addListener(focusOwnerListener);
+        shortcutScene.windowProperty().addListener(shortcutSceneWindowListener);
+        installShortcutWindow(scene.getWindow());
+    }
+
+    private void detachShortcutContext(Scene scene) {
+        if (scene == null) {
+            return;
+        }
+        scene.removeEventFilter(KeyEvent.KEY_PRESSED, keyPressedHandler);
+        scene.removeEventFilter(KeyEvent.KEY_RELEASED, keyReleasedHandler);
+        scene.focusOwnerProperty().removeListener(focusOwnerListener);
+        scene.windowProperty().removeListener(shortcutSceneWindowListener);
+        uninstallShortcutWindow(scene.getWindow());
+        if (scene == shortcutScene) {
+            shortcutScene = null;
+        }
+    }
+
+    private void installShortcutWindow(Window window) {
+        if (window == null || window == shortcutWindow) {
+            return;
+        }
+        shortcutWindow = window;
+        shortcutWindow.focusedProperty().addListener(shortcutWindowFocusListener);
+    }
+
+    private void uninstallShortcutWindow(Window window) {
+        if (window == null) {
+            return;
+        }
+        window.focusedProperty().removeListener(shortcutWindowFocusListener);
+        if (window == shortcutWindow) {
+            shortcutWindow = null;
+        }
+    }
+
+    private void handleKeyPressed(KeyEvent event) {
+        if (shouldIgnoreShortcut(event)) {
+            return;
+        }
+        if (event.getCode() == KeyCode.CONTROL) {
+            if (setDeleteOverrideActive(true)) {
+                event.consume();
+            }
+            return;
+        }
+        if (event.isControlDown()) {
+            return;
+        }
+        if (event.getCode() == KeyCode.E) {
+            if (switchPersistentToolMode(false)) {
+                event.consume();
+            }
+            return;
+        }
+        if (event.getCode() == KeyCode.D && switchPersistentToolMode(true)) {
+            event.consume();
+        }
+    }
+
+    private void handleKeyReleased(KeyEvent event) {
+        if (event.getCode() == KeyCode.CONTROL && setDeleteOverrideActive(false)) {
+            event.consume();
+        }
+    }
+
+    private boolean isWithinEditorView(Node node) {
+        Node current = node;
+        while (current != null) {
+            if (current == controls || current == workspace || current == statePane) {
+                return true;
+            }
+            current = current.getParent();
+        }
+        return false;
+    }
+
+    private boolean shouldIgnoreShortcut(KeyEvent event) {
+        if (event == null || event.getTarget() instanceof TextInputControl) {
+            return true;
+        }
+        if (event.getTarget() instanceof Node node) {
+            // Editor shortcuts are view-scoped: they should work from controls, canvas,
+            // and state pane, but never leak into other shell panels.
+            return !isWithinEditorView(node);
+        }
+        return true;
+    }
+
+    private DungeonEditorTool activeTool() {
+        if (!deleteOverrideActive) {
+            return selectedTool;
+        }
+        DungeonEditorTool deleteTool = selectedTool.deleteVariant();
+        return deleteTool == null ? selectedTool : deleteTool;
+    }
+
+    private boolean switchPersistentToolMode(boolean deleteMode) {
+        DungeonEditorTool nextTool = deleteMode ? selectedTool.deleteVariant() : selectedTool.editVariant();
+        if (nextTool == null || nextTool == selectedTool) {
+            return false;
+        }
+        setSelectedTool(nextTool);
+        return true;
+    }
+
+    private boolean setDeleteOverrideActive(boolean active) {
+        if (active) {
+            DungeonEditorTool deleteTool = selectedTool.deleteVariant();
+            if (deleteOverrideActive || deleteTool == null || deleteTool == activeTool()) {
+                return false;
+            }
+            // Ctrl must behave like a reversible preview of delete mode, not a mode commit.
+            suspendTemporaryToolState();
+            deleteOverrideActive = true;
+            applyActiveTool();
+            return true;
+        }
+        if (!deleteOverrideActive) {
+            return false;
+        }
+        deleteOverrideActive = false;
+        applyActiveTool();
+        restoreSuspendedToolState();
+        return true;
+    }
+
+    private void suspendTemporaryToolState() {
+        if (selectedTool == DungeonEditorTool.CORRIDOR_CREATE) {
+            suspendedCorridorDraft = new CorridorDraft(
+                    pendingCorridorStart,
+                    workspace.selectedCorridorDoorHandle(),
+                    selectedCorridorWaypointHandle);
+        } else {
+            suspendedCorridorDraft = null;
+        }
+        suspendedWallPathState = selectedTool.isWallTool() ? wallPathController.snapshotState() : null;
+    }
+
+    private void restoreSuspendedToolState() {
+        if (selectedTool == DungeonEditorTool.CORRIDOR_CREATE && suspendedCorridorDraft != null) {
+            pendingCorridorStart = suspendedCorridorDraft.pendingStart();
+            workspace.setSelectedCorridorDoorHandle(suspendedCorridorDraft.selectedDoorHandle());
+            selectedCorridorWaypointHandle = suspendedCorridorDraft.selectedWaypointHandle();
+            refreshStatePane();
+        }
+        suspendedCorridorDraft = null;
+        if (selectedTool.isWallTool() && suspendedWallPathState != null) {
+            wallPathController.restoreState(suspendedWallPathState);
+        }
+        suspendedWallPathState = null;
+    }
+
+    private static DungeonEditorTool normalizeEditorTool(DungeonEditorTool tool) {
+        return tool == null ? DungeonEditorTool.SELECT : tool;
     }
 
     private void handleEditFailure(long mapId, String action, Throwable throwable) {
@@ -794,14 +1026,14 @@ public final class DungeonEditorView implements AppView {
     private boolean shouldHandleRoomAsCorridorEndpoint(DungeonRoom room) {
         return room != null
                 && room.roomId() != null
-                && editorTool == DungeonEditorTool.CORRIDOR_CREATE
+                && activeTool() == DungeonEditorTool.CORRIDOR_CREATE
                 && currentMapId != null;
     }
 
     private boolean shouldHandleCorridorAsEndpoint(DungeonCorridor corridor) {
         return corridor != null
                 && corridor.corridorId() != null
-                && editorTool == DungeonEditorTool.CORRIDOR_CREATE
+                && activeTool() == DungeonEditorTool.CORRIDOR_CREATE
                 && currentMapId != null;
     }
 
@@ -906,15 +1138,14 @@ public final class DungeonEditorView implements AppView {
     }
 
     private void refreshStatePane() {
-        DungeonClusterEdgeRef shownWallAnchor = wallPathController.displayedAnchor();
-        if (editorTool == DungeonEditorTool.CLUSTER_WALL && shownWallAnchor != null) {
+        DungeonClusterVertexRef shownWallAnchor = wallPathController.displayedAnchor();
+        if (activeTool().isWallTool() && shownWallAnchor != null) {
             wallPathLabel.setText(
                     "Cluster " + shownWallAnchor.clusterId()
-                            + " @ " + shownWallAnchor.cell().x() + "/" + shownWallAnchor.cell().y()
-                            + " " + directionLabel(shownWallAnchor.direction()));
+                            + " @ Ecke " + shownWallAnchor.point().x() + "/" + shownWallAnchor.point().y());
             cancelWallPathButton.setManaged(true);
             cancelWallPathButton.setVisible(true);
-        } else if (editorTool == DungeonEditorTool.CLUSTER_WALL) {
+        } else if (activeTool().isWallTool()) {
             wallPathLabel.setText("Kein Startpunkt");
             cancelWallPathButton.setManaged(false);
             cancelWallPathButton.setVisible(false);
@@ -968,6 +1199,13 @@ public final class DungeonEditorView implements AppView {
             case SOUTH -> "Sued";
             case WEST -> "West";
         };
+    }
+
+    private record CorridorDraft(
+            DungeonCorridorEndpoint pendingStart,
+            CorridorEditInteractionController.DoorHandle selectedDoorHandle,
+            CorridorEditInteractionController.WaypointHandle selectedWaypointHandle
+    ) {
     }
 
     @FunctionalInterface

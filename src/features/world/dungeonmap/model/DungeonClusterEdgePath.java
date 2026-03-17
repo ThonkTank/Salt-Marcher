@@ -20,25 +20,40 @@ public final class DungeonClusterEdgePath {
     public static List<DungeonClusterEdgeRef> shortestInternalPath(
             long clusterId,
             Collection<Point2i> clusterCells,
-            DungeonClusterEdgeRef start,
-            DungeonClusterEdgeRef goal
+            DungeonClusterVertexRef start,
+            DungeonClusterVertexRef goal
     ) {
-        if (clusterCells == null || start == null || goal == null || start.cell() == null || goal.cell() == null) {
+        return shortestInternalPath(clusterId, clusterCells, start, goal, null);
+    }
+
+    public static List<DungeonClusterEdgeRef> shortestInternalPath(
+            long clusterId,
+            Collection<Point2i> clusterCells,
+            DungeonClusterVertexRef start,
+            DungeonClusterVertexRef goal,
+            Collection<DungeonClusterEdgeRef> allowedEdges
+    ) {
+        if (clusterCells == null || start == null || goal == null || start.point() == null || goal.point() == null) {
+            return List.of();
+        }
+        if (!start.point().equals(goal.point()) && start.clusterId() != goal.clusterId()) {
+            return List.of();
+        }
+        if (start.point().equals(goal.point())) {
             return List.of();
         }
         Set<Point2i> normalizedCells = Set.copyOf(clusterCells);
-        Map<EdgeKey, EdgeNode> nodesByKey = buildInternalEdgeGraph(clusterId, normalizedCells);
+        Map<EdgeKey, EdgeNode> nodesByKey = buildInternalEdgeGraph(clusterId, normalizedCells, allowedEdges);
         if (nodesByKey.isEmpty()) {
             return List.of();
         }
-        Set<EdgeKey> startKeys = frontierFor(clusterId, normalizedCells, nodesByKey, start);
-        Set<EdgeKey> goalKeys = frontierFor(clusterId, normalizedCells, nodesByKey, goal);
+        Set<EdgeKey> startKeys = frontierFor(nodesByKey, start.point());
+        Set<EdgeKey> goalKeys = frontierFor(nodesByKey, goal.point());
         if (startKeys.isEmpty() || goalKeys.isEmpty()) {
             return List.of();
         }
         List<EdgeKey> orderedStarts = startKeys.stream().sorted().toList();
-        List<EdgeKey> orderedGoals = goalKeys.stream().sorted().toList();
-        Set<EdgeKey> goalSet = Set.copyOf(orderedGoals);
+        Set<EdgeKey> goalSet = Set.copyOf(goalKeys);
         ArrayDeque<EdgeKey> queue = new ArrayDeque<>(orderedStarts);
         Map<EdgeKey, EdgeKey> previous = new HashMap<>();
         Set<EdgeKey> visited = new LinkedHashSet<>(orderedStarts);
@@ -67,7 +82,37 @@ public final class DungeonClusterEdgePath {
         return List.copyOf(path);
     }
 
+    public static boolean isPathVertex(
+            long clusterId,
+            Collection<Point2i> clusterCells,
+            DungeonClusterVertexRef vertex
+    ) {
+        return isPathVertex(clusterId, clusterCells, vertex, null);
+    }
+
+    public static boolean isPathVertex(
+            long clusterId,
+            Collection<Point2i> clusterCells,
+            DungeonClusterVertexRef vertex,
+            Collection<DungeonClusterEdgeRef> allowedEdges
+    ) {
+        if (clusterCells == null || vertex == null || vertex.point() == null || vertex.clusterId() != clusterId) {
+            return false;
+        }
+        Map<EdgeKey, EdgeNode> nodesByKey = buildInternalEdgeGraph(clusterId, Set.copyOf(clusterCells), allowedEdges);
+        return !frontierFor(nodesByKey, vertex.point()).isEmpty();
+    }
+
     private static Map<EdgeKey, EdgeNode> buildInternalEdgeGraph(long clusterId, Set<Point2i> clusterCells) {
+        return buildInternalEdgeGraph(clusterId, clusterCells, null);
+    }
+
+    private static Map<EdgeKey, EdgeNode> buildInternalEdgeGraph(
+            long clusterId,
+            Set<Point2i> clusterCells,
+            Collection<DungeonClusterEdgeRef> allowedEdges
+    ) {
+        Set<EdgeKey> allowedKeys = allowedEdgeKeys(clusterId, allowedEdges);
         Map<EdgeKey, EdgeNodeBuilder> builders = new LinkedHashMap<>();
         for (Point2i cell : clusterCells) {
             for (DungeonRoomCluster.EdgeDirection direction : DungeonRoomCluster.EdgeDirection.values()) {
@@ -77,6 +122,9 @@ public final class DungeonClusterEdgePath {
                 }
                 DungeonClusterEdgeRef canonicalRef = canonicalRef(clusterId, rawRef);
                 EdgeKey key = EdgeKey.of(canonicalRef);
+                if (allowedKeys != null && !allowedKeys.contains(key)) {
+                    continue;
+                }
                 builders.computeIfAbsent(key, ignored -> new EdgeNodeBuilder(canonicalRef));
             }
         }
@@ -101,26 +149,31 @@ public final class DungeonClusterEdgePath {
         return result;
     }
 
+    private static Set<EdgeKey> allowedEdgeKeys(long clusterId, Collection<DungeonClusterEdgeRef> allowedEdges) {
+        if (allowedEdges == null) {
+            return null;
+        }
+        Set<EdgeKey> allowedKeys = new LinkedHashSet<>();
+        for (DungeonClusterEdgeRef edgeRef : allowedEdges) {
+            if (edgeRef == null || edgeRef.clusterId() != clusterId) {
+                continue;
+            }
+            allowedKeys.add(EdgeKey.of(canonicalRef(clusterId, edgeRef)));
+        }
+        return Set.copyOf(allowedKeys);
+    }
+
     private static Set<EdgeKey> frontierFor(
-            long clusterId,
-            Set<Point2i> clusterCells,
             Map<EdgeKey, EdgeNode> nodesByKey,
-            DungeonClusterEdgeRef edgeRef
+            Point2i vertex
     ) {
-        if (isInternalEdge(clusterCells, edgeRef)) {
-            return Set.of(EdgeKey.of(canonicalRef(clusterId, edgeRef)));
-        }
-        if (!isOuterEdge(clusterCells, edgeRef)) {
-            return Set.of();
-        }
-        EdgeVertices target = edgeVertices(edgeRef);
-        if (target == null) {
+        if (vertex == null || nodesByKey == null || nodesByKey.isEmpty()) {
             return Set.of();
         }
         Set<EdgeKey> frontier = new LinkedHashSet<>();
         for (EdgeNode node : nodesByKey.values()) {
             EdgeVertices candidate = edgeVertices(node.edgeRef());
-            if (candidate != null && candidate.sharesVertexWith(target)) {
+            if (candidate != null && (candidate.start().equals(vertex) || candidate.end().equals(vertex))) {
                 frontier.add(EdgeKey.of(node.edgeRef()));
             }
         }
@@ -148,14 +201,6 @@ public final class DungeonClusterEdgePath {
         }
         Point2i neighbor = edgeRef.cell().add(edgeRef.direction().delta());
         return clusterCells.contains(edgeRef.cell()) && clusterCells.contains(neighbor);
-    }
-
-    private static boolean isOuterEdge(Collection<Point2i> clusterCells, DungeonClusterEdgeRef edgeRef) {
-        if (edgeRef == null || edgeRef.cell() == null || edgeRef.direction() == null || clusterCells == null) {
-            return false;
-        }
-        Point2i neighbor = edgeRef.cell().add(edgeRef.direction().delta());
-        return clusterCells.contains(edgeRef.cell()) && !clusterCells.contains(neighbor);
     }
 
     private static EdgeVertices edgeVertices(DungeonClusterEdgeRef edgeRef) {
