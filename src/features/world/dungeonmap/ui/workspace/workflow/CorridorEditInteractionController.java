@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.workspace.render;
+package features.world.dungeonmap.ui.workspace.workflow;
 
 import features.world.dungeonmap.model.Point2i;
 import features.world.dungeonmap.ui.workspace.DungeonEditorTool;
@@ -21,40 +21,40 @@ public final class CorridorEditInteractionController {
     private Consumer<WaypointHandle> onCorridorWaypointRemoved = handle -> { };
     private BiConsumer<WaypointHandle, Point2i> onCorridorWaypointMoved = (handle, cell) -> { };
 
-    CorridorEditInteractionController(Host host) {
+    public CorridorEditInteractionController(Host host) {
         this.host = Objects.requireNonNull(host, "host");
     }
 
-    void setOnCorridorDoorSelected(Consumer<DoorHandle> onCorridorDoorSelected) {
+    public void setOnCorridorDoorSelected(Consumer<DoorHandle> onCorridorDoorSelected) {
         this.onCorridorDoorSelected = Objects.requireNonNull(onCorridorDoorSelected, "onCorridorDoorSelected");
     }
 
-    void setOnCorridorDoorMoved(BiConsumer<DoorHandle, DoorMoveTarget> onCorridorDoorMoved) {
+    public void setOnCorridorDoorMoved(BiConsumer<DoorHandle, DoorMoveTarget> onCorridorDoorMoved) {
         this.onCorridorDoorMoved = Objects.requireNonNull(onCorridorDoorMoved, "onCorridorDoorMoved");
     }
 
-    void setOnCorridorWaypointSelected(Consumer<WaypointHandle> onCorridorWaypointSelected) {
+    public void setOnCorridorWaypointSelected(Consumer<WaypointHandle> onCorridorWaypointSelected) {
         this.onCorridorWaypointSelected = Objects.requireNonNull(onCorridorWaypointSelected, "onCorridorWaypointSelected");
     }
 
-    void setOnCorridorWaypointAdded(Consumer<SegmentInsertHit> onCorridorWaypointAdded) {
+    public void setOnCorridorWaypointAdded(Consumer<SegmentInsertHit> onCorridorWaypointAdded) {
         this.onCorridorWaypointAdded = Objects.requireNonNull(onCorridorWaypointAdded, "onCorridorWaypointAdded");
     }
 
-    void setOnCorridorWaypointRemoved(Consumer<WaypointHandle> onCorridorWaypointRemoved) {
+    public void setOnCorridorWaypointRemoved(Consumer<WaypointHandle> onCorridorWaypointRemoved) {
         this.onCorridorWaypointRemoved = Objects.requireNonNull(onCorridorWaypointRemoved, "onCorridorWaypointRemoved");
     }
 
-    void setOnCorridorWaypointMoved(BiConsumer<WaypointHandle, Point2i> onCorridorWaypointMoved) {
+    public void setOnCorridorWaypointMoved(BiConsumer<WaypointHandle, Point2i> onCorridorWaypointMoved) {
         this.onCorridorWaypointMoved = Objects.requireNonNull(onCorridorWaypointMoved, "onCorridorWaypointMoved");
     }
 
-    void cancel() {
+    public void cancel() {
         host.clearCorridorDoorPreview();
         dragState = IdleDragState.INSTANCE;
     }
 
-    boolean updatePreviewPressMode(MouseEvent event) {
+    public boolean updatePreviewPressMode(MouseEvent event) {
         PressMode nextMode = resolvePressMode(event);
         if (previewPressMode == nextMode) {
             return false;
@@ -63,15 +63,15 @@ public final class CorridorEditInteractionController {
         return true;
     }
 
-    void clearPreviewPressMode() {
+    public void clearPreviewPressMode() {
         previewPressMode = PressMode.DEFAULT;
     }
 
-    PressMode previewPressMode() {
+    public PressMode previewPressMode() {
         return previewPressMode;
     }
 
-    PressHit hitTest(MouseEvent event) {
+    public PressHit hitTest(MouseEvent event) {
         if (!host.editable() || host.editorTool() != DungeonEditorTool.SELECT || event.getButton() != MouseButton.PRIMARY) {
             return null;
         }
@@ -110,7 +110,7 @@ public final class CorridorEditInteractionController {
         return PressMode.DEFAULT;
     }
 
-    boolean handlePress(PressHit hit) {
+    public boolean handlePress(PressHit hit) {
         if (hit == null) {
             return false;
         }
@@ -138,7 +138,7 @@ public final class CorridorEditInteractionController {
         return false;
     }
 
-    boolean handleEditableRelease(Point2i world) {
+    public boolean handleEditableRelease(Point2i world) {
         if (!(dragState instanceof WaypointDragState waypointDragState)) {
             return false;
         }
@@ -147,7 +147,7 @@ public final class CorridorEditInteractionController {
         return true;
     }
 
-    boolean handleDrag(MouseEvent event) {
+    public boolean handleDrag(MouseEvent event) {
         if (!(dragState instanceof DoorDragState doorDragState)) {
             return false;
         }
@@ -157,7 +157,7 @@ public final class CorridorEditInteractionController {
                 : host.updateCorridorDoorPreview(doorDragState.handle(), preview);
     }
 
-    boolean handleDragRelease(MouseEvent event) {
+    public boolean handleDragRelease(MouseEvent event) {
         if (!(dragState instanceof DoorDragState doorDragState)) {
             host.clearCorridorDoorPreview();
             dragState = IdleDragState.INSTANCE;
@@ -172,7 +172,7 @@ public final class CorridorEditInteractionController {
         return true;
     }
 
-    interface Host {
+    public interface Host {
         boolean editable();
         DungeonEditorTool editorTool();
         DoorHandle findCorridorDoorHandleAt(double screenX, double screenY);
@@ -226,10 +226,10 @@ public final class CorridorEditInteractionController {
     ) {
     }
 
-    sealed interface PressHit permits DoorPressHit, WaypointPressHit, RemoveWaypointPressHit, SegmentInsertPressHit {
+    public sealed interface PressHit permits DoorPressHit, WaypointPressHit, RemoveWaypointPressHit, SegmentInsertPressHit {
     }
 
-    enum PressMode {
+    public enum PressMode {
         DEFAULT,
         INSERT_WAYPOINT,
         REMOVE_WAYPOINT

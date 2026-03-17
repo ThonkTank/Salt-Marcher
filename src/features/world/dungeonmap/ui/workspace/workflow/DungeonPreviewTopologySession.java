@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.workspace.render;
+package features.world.dungeonmap.ui.workspace.workflow;
 
 import features.world.dungeonmap.model.CorridorGeometry;
 import features.world.dungeonmap.model.DungeonCorridor;
@@ -7,6 +7,7 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonRoomCluster;
 import features.world.dungeonmap.model.Point2i;
+import features.world.dungeonmap.ui.workspace.render.DungeonLayoutRenderData;
 
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -15,7 +16,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-final class DungeonPreviewTopologySession {
+public final class DungeonPreviewTopologySession {
 
     private DungeonLayout previewLayout;
     private DungeonCorridorGeometry.LayoutContext previewCorridorLayoutContext;
@@ -23,7 +24,7 @@ final class DungeonPreviewTopologySession {
     private Map<Point2i, DungeonRoom> previewRoomsByCell = Map.of();
     private Map<Point2i, DungeonRoomCluster> previewClustersByCell = Map.of();
 
-    void reset() {
+    public void reset() {
         previewLayout = null;
         previewCorridorLayoutContext = null;
         previewCorridorGeometries = Map.of();
@@ -31,7 +32,7 @@ final class DungeonPreviewTopologySession {
         previewClustersByCell = Map.of();
     }
 
-    void rebuild(
+    public void rebuild(
             DungeonLayout baseLayout,
             DungeonLayoutRenderData baseRenderData,
             Map<Long, Point2i> previewClusterCenters,
@@ -65,19 +66,19 @@ final class DungeonPreviewTopologySession {
         previewCorridorGeometries = buildPreviewCorridorGeometries(baseLayout, baseRenderData, previewClusterCenters.keySet());
     }
 
-    DungeonLayout previewLayout() {
+    public DungeonLayout previewLayout() {
         return previewLayout;
     }
 
-    CorridorGeometry corridorGeometryOverride(Long corridorId) {
+    public CorridorGeometry corridorGeometryOverride(Long corridorId) {
         return corridorId == null ? null : previewCorridorGeometries.get(corridorId);
     }
 
-    DungeonRoom roomAtCell(Point2i cell) {
+    public DungeonRoom roomAtCell(Point2i cell) {
         return cell == null ? null : previewRoomsByCell.get(cell);
     }
 
-    DungeonRoomCluster clusterAtCell(Point2i cell) {
+    public DungeonRoomCluster clusterAtCell(Point2i cell) {
         return cell == null ? null : previewClustersByCell.get(cell);
     }
 

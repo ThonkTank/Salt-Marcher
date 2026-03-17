@@ -11,6 +11,9 @@ import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonRoomCluster;
 import features.world.dungeonmap.model.Point2i;
 import features.world.dungeonmap.ui.workspace.DungeonEditorTool;
+import features.world.dungeonmap.ui.workspace.workflow.CorridorEditInteractionController;
+import features.world.dungeonmap.ui.workspace.workflow.DungeonEditorSurface;
+import features.world.dungeonmap.ui.workspace.workflow.WallPathInteractionController;
 import javafx.geometry.Point2D;
 import javafx.scene.canvas.GraphicsContext;
 
@@ -23,10 +26,6 @@ public final class DungeonGridPane extends AbstractDungeonPane {
 
     public DungeonGridPane(DungeonCanvasCamera camera) {
         super(camera);
-    }
-
-    public WallPathInteractionController wallPathController() {
-        return super.wallPathInteractionController();
     }
 
     @Override
@@ -66,9 +65,9 @@ public final class DungeonGridPane extends AbstractDungeonPane {
     }
 
     @Override
-    protected DungeonRoomCluster findClusterAt(double screenX, double screenY) {
+    public DungeonRoomCluster findClusterAt(double screenX, double screenY) {
         Point2i cell = worldPointAt(screenX, screenY);
-        if (!previewClusterCenters.isEmpty()) {
+        if (!previewClusterCenters().isEmpty()) {
             return previewClusterAtCell(cell);
         }
         if (renderData != null) {
@@ -86,9 +85,9 @@ public final class DungeonGridPane extends AbstractDungeonPane {
     }
 
     @Override
-    protected DungeonRoom findRoomAt(double screenX, double screenY) {
+    public DungeonRoom findRoomAt(double screenX, double screenY) {
         Point2i cell = worldPointAt(screenX, screenY);
-        if (!previewClusterCenters.isEmpty()) {
+        if (!previewClusterCenters().isEmpty()) {
             return previewRoomAtCell(cell);
         }
         if (renderData != null) {
@@ -106,13 +105,13 @@ public final class DungeonGridPane extends AbstractDungeonPane {
     }
 
     @Override
-    protected DungeonCorridor findCorridorAt(double screenX, double screenY) {
+    public DungeonCorridor findCorridorAt(double screenX, double screenY) {
         DungeonLayoutRenderData corridorRenderData = corridorRenderDataForDisplay();
         if (layout == null || corridorRenderData == null) {
             return null;
         }
         Point2i cell = worldPointAt(screenX, screenY);
-        if (previewClusterCenters.isEmpty()) {
+        if (previewClusterCenters().isEmpty()) {
             List<Long> corridorIds = corridorRenderData.corridorIdsAtCell(cell);
             if (!corridorIds.isEmpty()) {
                 return layout.corridorById(corridorIds.get(0));
@@ -148,7 +147,7 @@ public final class DungeonGridPane extends AbstractDungeonPane {
     }
 
     @Override
-    protected CorridorDoorHit findCorridorDoorHitAt(double screenX, double screenY) {
+    public CorridorDoorHit findCorridorDoorHitAt(double screenX, double screenY) {
         if (layout == null || corridorRenderDataForDisplay() == null) {
             return null;
         }
@@ -176,7 +175,7 @@ public final class DungeonGridPane extends AbstractDungeonPane {
     }
 
     @Override
-    protected CorridorEditInteractionController.DoorHandle findCorridorDoorHandleAt(double screenX, double screenY) {
+    public CorridorEditInteractionController.DoorHandle findCorridorDoorHandleAt(double screenX, double screenY) {
         if (hasClusterDragPreview()) {
             return null;
         }
@@ -197,7 +196,7 @@ public final class DungeonGridPane extends AbstractDungeonPane {
     }
 
     @Override
-    protected CorridorEditInteractionController.DoorDragPreview corridorDoorDragPreviewAt(
+    public CorridorEditInteractionController.DoorDragPreview corridorDoorDragPreviewAt(
             double screenX,
             double screenY,
             CorridorEditInteractionController.DoorHandle handle
@@ -209,7 +208,7 @@ public final class DungeonGridPane extends AbstractDungeonPane {
     }
 
     @Override
-    protected CorridorEditInteractionController.WaypointHandle findCorridorWaypointHandleAt(double screenX, double screenY) {
+    public CorridorEditInteractionController.WaypointHandle findCorridorWaypointHandleAt(double screenX, double screenY) {
         CorridorSelectionContext context = selectedCorridorContext();
         if (context == null) {
             return null;
@@ -247,19 +246,19 @@ public final class DungeonGridPane extends AbstractDungeonPane {
     }
 
     @Override
-    protected Point2i worldPointAt(double screenX, double screenY) {
+    public Point2i worldPointAt(double screenX, double screenY) {
         int x = (int) Math.floor(camera.toWorldX(screenX));
         int y = (int) Math.floor(camera.toWorldY(screenY));
         return new Point2i(x, y);
     }
 
     @Override
-    protected EditorSurface surface() {
-        return EditorSurface.GRID;
+    public DungeonEditorSurface surface() {
+        return DungeonEditorSurface.GRID;
     }
 
     @Override
-    protected DungeonClusterEdgeRef findClusterEdgeAt(double screenX, double screenY) {
+    public DungeonClusterEdgeRef findClusterEdgeAt(double screenX, double screenY) {
         if (layout == null || renderData == null) {
             return null;
         }
@@ -293,13 +292,13 @@ public final class DungeonGridPane extends AbstractDungeonPane {
     }
 
     @Override
-    protected DungeonClusterVertexRef findClusterVertexAt(double screenX, double screenY) {
+    public DungeonClusterVertexRef findClusterVertexAt(double screenX, double screenY) {
         List<DungeonClusterVertexRef> candidates = findClusterVerticesNear(screenX, screenY);
         return candidates.isEmpty() ? null : candidates.getFirst();
     }
 
     @Override
-    protected List<DungeonClusterVertexRef> findClusterVerticesNear(double screenX, double screenY) {
+    public List<DungeonClusterVertexRef> findClusterVerticesNear(double screenX, double screenY) {
         if (layout == null) {
             return List.of();
         }
@@ -344,7 +343,7 @@ public final class DungeonGridPane extends AbstractDungeonPane {
     }
 
     @Override
-    protected DungeonClusterVertexRef findClusterVertexNear(long clusterId, double screenX, double screenY) {
+    public DungeonClusterVertexRef findClusterVertexNear(long clusterId, double screenX, double screenY) {
         if (layout == null) {
             return null;
         }
@@ -375,7 +374,7 @@ public final class DungeonGridPane extends AbstractDungeonPane {
     }
 
     @Override
-    protected DungeonRoomCluster findClusterInSelection(Point2i startInclusive, Point2i endInclusive) {
+    public DungeonRoomCluster findClusterInSelection(Point2i startInclusive, Point2i endInclusive) {
         int minX = Math.min(startInclusive.x(), endInclusive.x());
         int maxX = Math.max(startInclusive.x(), endInclusive.x());
         int minY = Math.min(startInclusive.y(), endInclusive.y());
@@ -874,10 +873,10 @@ public final class DungeonGridPane extends AbstractDungeonPane {
 
     private void drawPreviewDoor(GraphicsContext gc) {
         CorridorEditInteractionController.DoorDragPreview preview = corridorDoorPreview();
-        if (preview == null || preview.previewSegment() == null || previewCorridorDoorHandle == null) {
+        if (preview == null || preview.previewSegment() == null || previewCorridorDoorHandle() == null) {
             return;
         }
-        DungeonCorridor corridor = layout == null ? null : layout.corridorById(previewCorridorDoorHandle.corridorId());
+        DungeonCorridor corridor = layout == null ? null : layout.corridorById(previewCorridorDoorHandle().corridorId());
         if (corridor == null) {
             return;
         }
@@ -928,13 +927,13 @@ public final class DungeonGridPane extends AbstractDungeonPane {
     }
 
     private void drawPaintPreview(GraphicsContext gc) {
-        if (previewPaintCells.isEmpty()) {
+        if (previewPaintCellsState().isEmpty()) {
             return;
         }
         gc.setFill(DungeonCanvasTheme.ROOM_PREVIEW_FILL);
         gc.setStroke(DungeonCanvasTheme.ROOM_PREVIEW_STROKE);
         gc.setLineWidth(1.5);
-        for (Point2i cell : previewPaintCells) {
+        for (Point2i cell : previewPaintCellsState()) {
             double x = camera.toScreenX(cell.x());
             double y = camera.toScreenY(cell.y());
             double size = camera.toScreenX(cell.x() + 1) - x;
@@ -945,7 +944,7 @@ public final class DungeonGridPane extends AbstractDungeonPane {
     }
 
     private void drawSelectionPreview(GraphicsContext gc) {
-        if (selectionStartCell == null || selectionEndCell == null) {
+        if (selectionStartCellState() == null || selectionEndCellState() == null) {
             return;
         }
         double x = camera.toScreenX(selectionMinX());

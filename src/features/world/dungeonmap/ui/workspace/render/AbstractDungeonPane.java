@@ -16,26 +16,31 @@ import features.world.dungeonmap.model.DungeonRuntimeLocation;
 import features.world.dungeonmap.model.Point2i;
 import features.world.dungeonmap.model.RoomShape;
 import features.world.dungeonmap.ui.workspace.DungeonEditorTool;
+import features.world.dungeonmap.ui.workspace.workflow.CorridorEditInteractionController;
+import features.world.dungeonmap.ui.workspace.workflow.DungeonEditorSurface;
+import features.world.dungeonmap.ui.workspace.workflow.DungeonPaneCallbacks;
+import features.world.dungeonmap.ui.workspace.workflow.DungeonPaneWorkflowCoordinator;
+import features.world.dungeonmap.ui.workspace.workflow.DungeonPaneWorkflowHost;
+import features.world.dungeonmap.ui.workspace.workflow.DungeonPreviewTopologySession;
+import features.world.dungeonmap.ui.workspace.workflow.WallPathInteractionController;
+import features.world.dungeonmap.ui.workspace.workflow.state.DungeonPaneInteractionState;
+import features.world.dungeonmap.ui.workspace.workflow.state.DungeonPreviewState;
 import javafx.geometry.Point2D;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.StackPane;
 
 import java.util.LinkedHashSet;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-abstract class AbstractDungeonPane extends StackPane {
+abstract class AbstractDungeonPane extends StackPane implements DungeonPaneWorkflowHost {
 
     protected static final double CORRIDOR_DOOR_PREVIEW_HALF_LENGTH = 0.35;
     private static final Point2i ZERO = new Point2i(0, 0);
@@ -47,28 +52,15 @@ abstract class AbstractDungeonPane extends StackPane {
     protected DungeonSelection selectedTarget;
     protected DungeonRuntimeLocation activeLocation;
     protected boolean editable;
-    protected final Map<Long, Point2i> previewClusterCenters = new HashMap<>();
-    protected final Map<Long, Point2D> previewClusterOffsets = new HashMap<>();
-    protected final Set<Point2i> previewPaintCells = new LinkedHashSet<>();
     protected DungeonEditorTool editorTool = DungeonEditorTool.SELECT;
-    protected Point2i selectionStartCell;
-    protected Point2i selectionEndCell;
-    protected Point2i paintStartCell;
-    protected Point2i paintEndCell;
-    protected CorridorEditInteractionController.DoorHandle selectedCorridorDoorHandle;
-    protected Long hoveredCorridorId;
-    protected CorridorEditInteractionController.DoorHandle previewCorridorDoorHandle;
-    protected CorridorEditInteractionController.DoorDragPreview previewCorridorDoorDrag;
     protected DungeonCorridorGeometry.LayoutContext corridorLayoutContext;
+    private final DungeonPreviewState previewState = new DungeonPreviewState();
+    private final DungeonPaneInteractionState interactionState = new DungeonPaneInteractionState();
+    private final DungeonPaneCallbacks callbacks = new DungeonPaneCallbacks();
     private final DungeonPreviewTopologySession previewTopologySession = new DungeonPreviewTopologySession();
-    private double lastPointerScreenX;
-    private double lastPointerScreenY;
-    private boolean pointerInsideCanvas;
-
-    private final PaneCallbacks callbacks = new PaneCallbacks();
     private final CorridorEditInteractionController corridorEditController;
     private final WallPathInteractionController wallPathController;
-    private PointerInteraction pointerInteraction = IdleInteraction.INSTANCE;
+    private final DungeonPaneWorkflowCoordinator workflowCoordinator;
 
     protected AbstractDungeonPane(DungeonCanvasCamera camera) {
         this.camera = Objects.requireNonNull(camera, "camera");
@@ -137,7 +129,7 @@ abstract class AbstractDungeonPane extends StackPane {
             }
 
             @Override
-            public EditorSurface surface() {
+            public DungeonEditorSurface surface() {
                 return AbstractDungeonPane.this.surface();
             }
 
@@ -166,47 +158,43 @@ abstract class AbstractDungeonPane extends StackPane {
                 AbstractDungeonPane.this.render();
             }
         });
+        this.workflowCoordinator = new DungeonPaneWorkflowCoordinator(this);
         setFocusTraversable(true);
         getChildren().add(canvas);
         widthProperty().addListener((obs, oldValue, newValue) -> resizeCanvas());
         heightProperty().addListener((obs, oldValue, newValue) -> resizeCanvas());
-        addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
+        addEventHandler(KeyEvent.KEY_PRESSED, workflowCoordinator::handleKeyPressed);
         canvas.addEventHandler(MouseEvent.MOUSE_PRESSED, event -> requestFocus());
-        canvas.addEventHandler(MouseEvent.MOUSE_PRESSED, this::handleMousePressed);
-        canvas.addEventHandler(MouseEvent.MOUSE_MOVED, this::handleMouseMoved);
-        canvas.addEventHandler(MouseEvent.MOUSE_DRAGGED, this::handleMouseDragged);
-        canvas.addEventHandler(MouseEvent.MOUSE_RELEASED, this::handleMouseReleased);
-        canvas.addEventHandler(MouseEvent.MOUSE_EXITED, event -> {
-            pointerInsideCanvas = false;
-            if (clearHoveredCorridor()) {
-                render();
-            }
-        });
-        canvas.addEventHandler(ScrollEvent.SCROLL, this::handleScroll);
+        canvas.addEventHandler(MouseEvent.MOUSE_PRESSED, workflowCoordinator::handleMousePressed);
+        canvas.addEventHandler(MouseEvent.MOUSE_MOVED, workflowCoordinator::handleMouseMoved);
+        canvas.addEventHandler(MouseEvent.MOUSE_DRAGGED, workflowCoordinator::handleMouseDragged);
+        canvas.addEventHandler(MouseEvent.MOUSE_RELEASED, workflowCoordinator::handleMouseReleased);
+        canvas.addEventHandler(MouseEvent.MOUSE_EXITED, event -> workflowCoordinator.handlePointerExited());
+        canvas.addEventHandler(ScrollEvent.SCROLL, workflowCoordinator::handleScroll);
     }
 
     public final void setOnRoomSelected(Consumer<DungeonRoom> onRoomSelected) {
-        callbacks.onRoomSelected = Objects.requireNonNull(onRoomSelected, "onRoomSelected");
+        callbacks.setOnRoomSelected(Objects.requireNonNull(onRoomSelected, "onRoomSelected"));
     }
 
     public final void setOnClusterSelected(Consumer<DungeonRoomCluster> onClusterSelected) {
-        callbacks.onClusterSelected = Objects.requireNonNull(onClusterSelected, "onClusterSelected");
+        callbacks.setOnClusterSelected(Objects.requireNonNull(onClusterSelected, "onClusterSelected"));
     }
 
     public final void setOnCorridorSelected(Consumer<DungeonCorridor> onCorridorSelected) {
-        callbacks.onCorridorSelected = Objects.requireNonNull(onCorridorSelected, "onCorridorSelected");
+        callbacks.setOnCorridorSelected(Objects.requireNonNull(onCorridorSelected, "onCorridorSelected"));
     }
 
     public final void setOnRoomMoved(BiConsumer<DungeonRoom, Point2i> onRoomMoved) {
-        callbacks.onRoomMoved = Objects.requireNonNull(onRoomMoved, "onRoomMoved");
+        callbacks.setOnRoomMoved(Objects.requireNonNull(onRoomMoved, "onRoomMoved"));
     }
 
     public final void setOnClusterMoved(BiConsumer<DungeonRoomCluster, Point2i> onClusterMoved) {
-        callbacks.onClusterMoved = Objects.requireNonNull(onClusterMoved, "onClusterMoved");
+        callbacks.setOnClusterMoved(Objects.requireNonNull(onClusterMoved, "onClusterMoved"));
     }
 
     public final void setOnCorridorEndpointSelected(Consumer<DungeonCorridorEndpoint> onCorridorEndpointSelected) {
-        callbacks.onCorridorEndpointSelected = Objects.requireNonNull(onCorridorEndpointSelected, "onCorridorEndpointSelected");
+        callbacks.setOnCorridorEndpointSelected(Objects.requireNonNull(onCorridorEndpointSelected, "onCorridorEndpointSelected"));
     }
 
     public final void setEditable(boolean editable) {
@@ -214,80 +202,63 @@ abstract class AbstractDungeonPane extends StackPane {
     }
 
     public final void setEditorTool(DungeonEditorTool editorTool) {
-        this.editorTool = editorTool == null ? DungeonEditorTool.SELECT : editorTool;
-        previewPaintCells.clear();
-        clearSelectionPreview();
-        clearPaintPreview();
-        wallPathController.reset();
-        corridorEditController.cancel();
-        clearCorridorDoorPreview();
-        clearHoveredCorridor();
-        if (this.editorTool != DungeonEditorTool.SELECT) {
-            applySelectedCorridorDoorHandle(null, false, false);
-        } else {
-            applySelectedCorridorDoorHandle(selectedCorridorDoorHandle, false, false);
-        }
-        render();
+        workflowCoordinator.setEditorTool(editorTool);
     }
 
     public final void setOnViewportPanStarted(Consumer<Point2D> onViewportPanStarted) {
-        callbacks.onViewportPanStarted = Objects.requireNonNull(onViewportPanStarted, "onViewportPanStarted");
+        callbacks.setOnViewportPanStarted(Objects.requireNonNull(onViewportPanStarted, "onViewportPanStarted"));
     }
 
     public final void setOnViewportPanned(Consumer<Point2D> onViewportPanned) {
-        callbacks.onViewportPanned = Objects.requireNonNull(onViewportPanned, "onViewportPanned");
+        callbacks.setOnViewportPanned(Objects.requireNonNull(onViewportPanned, "onViewportPanned"));
     }
 
     public final void setOnViewportZoomed(DungeonViewportZoomHandler onViewportZoomed) {
-        callbacks.onViewportZoomed = Objects.requireNonNull(onViewportZoomed, "onViewportZoomed");
+        callbacks.setOnViewportZoomed(Objects.requireNonNull(onViewportZoomed, "onViewportZoomed"));
     }
 
     public final void setOnRoomCellsPainted(Consumer<Set<Point2i>> onRoomCellsPainted) {
-        callbacks.onRoomCellsPainted = Objects.requireNonNull(onRoomCellsPainted, "onRoomCellsPainted");
+        callbacks.setOnRoomCellsPainted(Objects.requireNonNull(onRoomCellsPainted, "onRoomCellsPainted"));
     }
 
     public final void setOnRoomCellsDeleted(Consumer<Set<Point2i>> onRoomCellsDeleted) {
-        callbacks.onRoomCellsDeleted = Objects.requireNonNull(onRoomCellsDeleted, "onRoomCellsDeleted");
+        callbacks.setOnRoomCellsDeleted(Objects.requireNonNull(onRoomCellsDeleted, "onRoomCellsDeleted"));
     }
 
     public final void setOnClusterDoorPainted(Consumer<Set<DungeonClusterEdgeRef>> onClusterDoorPainted) {
-        callbacks.onClusterDoorPainted = Objects.requireNonNull(onClusterDoorPainted, "onClusterDoorPainted");
+        callbacks.setOnClusterDoorPainted(Objects.requireNonNull(onClusterDoorPainted, "onClusterDoorPainted"));
     }
 
     public final void setOnClusterDoorDeleted(Consumer<Set<DungeonClusterEdgeRef>> onClusterDoorDeleted) {
-        callbacks.onClusterDoorDeleted = Objects.requireNonNull(onClusterDoorDeleted, "onClusterDoorDeleted");
+        callbacks.setOnClusterDoorDeleted(Objects.requireNonNull(onClusterDoorDeleted, "onClusterDoorDeleted"));
     }
 
     public final void setOnGraphRoomRequested(Consumer<Point2i> onGraphRoomRequested) {
-        callbacks.onGraphRoomRequested = Objects.requireNonNull(onGraphRoomRequested, "onGraphRoomRequested");
+        callbacks.setOnGraphRoomRequested(Objects.requireNonNull(onGraphRoomRequested, "onGraphRoomRequested"));
     }
 
     public final void setOnGraphRoomDeleted(Consumer<DungeonRoom> onGraphRoomDeleted) {
-        callbacks.onGraphRoomDeleted = Objects.requireNonNull(onGraphRoomDeleted, "onGraphRoomDeleted");
+        callbacks.setOnGraphRoomDeleted(Objects.requireNonNull(onGraphRoomDeleted, "onGraphRoomDeleted"));
     }
 
     public final void setOnGraphClusterDeleted(Consumer<DungeonRoomCluster> onGraphClusterDeleted) {
-        callbacks.onGraphClusterDeleted = Objects.requireNonNull(onGraphClusterDeleted, "onGraphClusterDeleted");
+        callbacks.setOnGraphClusterDeleted(Objects.requireNonNull(onGraphClusterDeleted, "onGraphClusterDeleted"));
     }
 
     public final void setOnCorridorDeleted(Consumer<DungeonCorridor> onCorridorDeleted) {
-        callbacks.onCorridorDeleted = Objects.requireNonNull(onCorridorDeleted, "onCorridorDeleted");
+        callbacks.setOnCorridorDeleted(Objects.requireNonNull(onCorridorDeleted, "onCorridorDeleted"));
     }
 
     public final void setOnCorridorRoomRemoved(Consumer<CorridorDoorHit> onCorridorRoomRemoved) {
-        callbacks.onCorridorRoomRemoved = Objects.requireNonNull(onCorridorRoomRemoved, "onCorridorRoomRemoved");
+        callbacks.setOnCorridorRoomRemoved(Objects.requireNonNull(onCorridorRoomRemoved, "onCorridorRoomRemoved"));
     }
 
     public final void setOnCorridorDoorSelected(Consumer<CorridorEditInteractionController.DoorHandle> onCorridorDoorSelected) {
-        Consumer<CorridorEditInteractionController.DoorHandle> consumer = Objects.requireNonNull(onCorridorDoorSelected, "onCorridorDoorSelected");
-        corridorEditController.setOnCorridorDoorSelected(handle -> {
-            applySelectedCorridorDoorHandle(handle, true, true);
-            consumer.accept(selectedCorridorDoorHandle);
-        });
+        corridorEditController.setOnCorridorDoorSelected(Objects.requireNonNull(onCorridorDoorSelected, "onCorridorDoorSelected"));
     }
 
     public final void setOnCorridorDoorSelectionChanged(Consumer<CorridorEditInteractionController.DoorHandle> onCorridorDoorSelectionChanged) {
-        callbacks.onCorridorDoorSelectionChanged = Objects.requireNonNull(onCorridorDoorSelectionChanged, "onCorridorDoorSelectionChanged");
+        callbacks.setOnCorridorDoorSelectionChanged(Objects.requireNonNull(onCorridorDoorSelectionChanged, "onCorridorDoorSelectionChanged"));
     }
 
     public final void setOnCorridorDoorMoved(
@@ -321,48 +292,23 @@ abstract class AbstractDungeonPane extends StackPane {
             DungeonRuntimeLocation activeLocation,
             boolean renderNow
     ) {
-        this.layout = layout;
-        this.renderData = renderData;
-        this.selectedTarget = selectedTarget;
-        this.activeLocation = activeLocation;
-        this.corridorLayoutContext = renderData == null ? null : renderData.layoutContext();
-        previewTopologySession.reset();
-        this.previewClusterCenters.clear();
-        this.previewClusterOffsets.clear();
-        this.previewPaintCells.clear();
-        clearSelectionPreview();
-        clearPaintPreview();
-        wallPathController.reset();
-        corridorEditController.cancel();
-        clearCorridorDoorPreview();
-        clearHoveredCorridor();
-        applySelectedCorridorDoorHandle(selectedCorridorDoorHandle, false, false);
-        if (renderNow) {
-            render();
-        }
+        workflowCoordinator.showLayout(layout, renderData, selectedTarget, activeLocation, renderNow);
     }
 
     public final void updateSelection(DungeonSelection selectedTarget, DungeonRuntimeLocation activeLocation, boolean renderNow) {
-        this.selectedTarget = selectedTarget;
-        this.activeLocation = activeLocation;
-        clearCorridorDoorPreview();
-        clearHoveredCorridor();
-        applySelectedCorridorDoorHandle(selectedCorridorDoorHandle, false, false);
-        if (renderNow) {
-            render();
-        }
+        workflowCoordinator.updateSelection(selectedTarget, activeLocation, renderNow);
     }
 
     public final CorridorEditInteractionController.DoorHandle selectedCorridorDoorHandle() {
-        return selectedCorridorDoorHandle;
+        return previewState.selectedCorridorDoorHandle();
     }
 
     public final void setSelectedCorridorDoorHandle(CorridorEditInteractionController.DoorHandle handle) {
-        applySelectedCorridorDoorHandle(handle, false, true);
+        workflowCoordinator.setSelectedCorridorDoorHandle(handle);
     }
 
     public final void refreshViewport() {
-        render();
+        workflowCoordinator.refreshViewport();
     }
 
     protected final WallPathInteractionController wallPathInteractionController() {
@@ -388,8 +334,28 @@ abstract class AbstractDungeonPane extends StackPane {
         if (clusterId == null) {
             return Point2D.ZERO;
         }
-        Point2D offset = previewClusterOffsets.get(clusterId);
+        Point2D offset = previewState.clusterOffsets().get(clusterId);
         return offset == null ? Point2D.ZERO : offset;
+    }
+
+    protected final java.util.Map<Long, Point2i> previewClusterCenters() {
+        return previewState.clusterCenters();
+    }
+
+    protected final Set<Point2i> previewPaintCellsState() {
+        return previewState.paintCells();
+    }
+
+    protected final Point2i selectionStartCellState() {
+        return interactionState.selectionStartCell();
+    }
+
+    protected final Point2i selectionEndCellState() {
+        return interactionState.selectionEndCell();
+    }
+
+    protected final CorridorEditInteractionController.DoorHandle previewCorridorDoorHandle() {
+        return previewState.previewCorridorDoorHandle();
     }
 
     protected final double previewScreenX(double worldX, Long clusterId) {
@@ -468,7 +434,7 @@ abstract class AbstractDungeonPane extends StackPane {
     }
 
     protected final boolean hasSmoothClusterDragPreview() {
-        return previewClusterOffsets.values().stream()
+        return previewState.clusterOffsets().values().stream()
                 .anyMatch(offset -> offset != null && (!isZero(offset.getX()) || !isZero(offset.getY())));
     }
 
@@ -504,7 +470,9 @@ abstract class AbstractDungeonPane extends StackPane {
     }
 
     protected final boolean isHovered(DungeonCorridor corridor) {
-        return corridor != null && corridor.corridorId() != null && Objects.equals(hoveredCorridorId, corridor.corridorId());
+        return corridor != null
+                && corridor.corridorId() != null
+                && Objects.equals(previewState.hoveredCorridorId(), corridor.corridorId());
     }
 
     protected final boolean isActive(DungeonCorridor corridor) {
@@ -520,28 +488,28 @@ abstract class AbstractDungeonPane extends StackPane {
 
     protected abstract void renderContent(GraphicsContext gc);
 
-    protected abstract Point2i worldPointAt(double screenX, double screenY);
+    public abstract Point2i worldPointAt(double screenX, double screenY);
 
-    protected abstract DungeonRoomCluster findClusterAt(double screenX, double screenY);
+    public abstract DungeonRoomCluster findClusterAt(double screenX, double screenY);
 
-    protected abstract DungeonRoom findRoomAt(double screenX, double screenY);
+    public abstract DungeonRoom findRoomAt(double screenX, double screenY);
 
-    protected abstract DungeonCorridor findCorridorAt(double screenX, double screenY);
+    public abstract DungeonCorridor findCorridorAt(double screenX, double screenY);
 
-    protected DungeonClusterEdgeRef findClusterEdgeAt(double screenX, double screenY) {
+    public DungeonClusterEdgeRef findClusterEdgeAt(double screenX, double screenY) {
         return null;
     }
 
-    protected DungeonClusterVertexRef findClusterVertexAt(double screenX, double screenY) {
+    public DungeonClusterVertexRef findClusterVertexAt(double screenX, double screenY) {
         return null;
     }
 
-    protected List<DungeonClusterVertexRef> findClusterVerticesNear(double screenX, double screenY) {
+    public List<DungeonClusterVertexRef> findClusterVerticesNear(double screenX, double screenY) {
         DungeonClusterVertexRef vertex = findClusterVertexAt(screenX, screenY);
         return vertex == null ? List.of() : List.of(vertex);
     }
 
-    protected DungeonClusterVertexRef findClusterVertexNear(long clusterId, double screenX, double screenY) {
+    public DungeonClusterVertexRef findClusterVertexNear(long clusterId, double screenX, double screenY) {
         for (DungeonClusterVertexRef candidate : findClusterVerticesNear(screenX, screenY)) {
             if (candidate.clusterId() == clusterId) {
                 return candidate;
@@ -550,7 +518,7 @@ abstract class AbstractDungeonPane extends StackPane {
         return null;
     }
 
-    protected DungeonCorridorEndpoint corridorEndpointLocationAt(double screenX, double screenY, DungeonRoom room, DungeonCorridor corridor) {
+    public DungeonCorridorEndpoint corridorEndpointLocationAt(double screenX, double screenY, DungeonRoom room, DungeonCorridor corridor) {
         if (room != null && room.roomId() != null) {
             return DungeonCorridorEndpoint.room(room.roomId());
         }
@@ -560,7 +528,7 @@ abstract class AbstractDungeonPane extends StackPane {
         return null;
     }
 
-    protected CorridorDoorHit findCorridorDoorHitAt(double screenX, double screenY) {
+    public CorridorDoorHit findCorridorDoorHitAt(double screenX, double screenY) {
         return null;
     }
 
@@ -576,11 +544,11 @@ abstract class AbstractDungeonPane extends StackPane {
         return hit.isEmpty() ? null : hit;
     }
 
-    protected CorridorEditInteractionController.DoorHandle findCorridorDoorHandleAt(double screenX, double screenY) {
+    public CorridorEditInteractionController.DoorHandle findCorridorDoorHandleAt(double screenX, double screenY) {
         return null;
     }
 
-    protected CorridorEditInteractionController.DoorDragPreview corridorDoorDragPreviewAt(
+    public CorridorEditInteractionController.DoorDragPreview corridorDoorDragPreviewAt(
             double screenX,
             double screenY,
             CorridorEditInteractionController.DoorHandle handle
@@ -588,7 +556,7 @@ abstract class AbstractDungeonPane extends StackPane {
         return null;
     }
 
-    protected CorridorEditInteractionController.WaypointHandle findCorridorWaypointHandleAt(double screenX, double screenY) {
+    public CorridorEditInteractionController.WaypointHandle findCorridorWaypointHandleAt(double screenX, double screenY) {
         return null;
     }
 
@@ -596,7 +564,7 @@ abstract class AbstractDungeonPane extends StackPane {
         return -1;
     }
 
-    protected CorridorEditInteractionController.WaypointHandle findCorridorWaypointRemoveHandleAt(double screenX, double screenY) {
+    public CorridorEditInteractionController.WaypointHandle findCorridorWaypointRemoveHandleAt(double screenX, double screenY) {
         CorridorSelectionContext context = selectedCorridorContext();
         if (context == null || context.geometry().segments().size() <= 1 || context.geometry().waypointCells().isEmpty()) {
             return null;
@@ -609,7 +577,7 @@ abstract class AbstractDungeonPane extends StackPane {
         return waypointHandleForSegmentRemoval(context, screenX, screenY, segmentIndex);
     }
 
-    protected CorridorEditInteractionController.SegmentInsertHit findCorridorSegmentInsertHitAt(double screenX, double screenY) {
+    public CorridorEditInteractionController.SegmentInsertHit findCorridorSegmentInsertHitAt(double screenX, double screenY) {
         CorridorSelectionContext context = selectedCorridorContext();
         if (context == null || context.geometry().segments().isEmpty()) {
             return null;
@@ -628,7 +596,7 @@ abstract class AbstractDungeonPane extends StackPane {
         return corridorGeometryForDisplay(corridor);
     }
 
-    protected final CorridorGeometry corridorGeometryForDisplay(DungeonCorridor corridor) {
+    public final CorridorGeometry corridorGeometryForDisplay(DungeonCorridor corridor) {
         if (corridor == null || corridor.corridorId() == null) {
             return null;
         }
@@ -657,7 +625,7 @@ abstract class AbstractDungeonPane extends StackPane {
     }
 
     protected final boolean isSelected(CorridorEditInteractionController.DoorHandle handle) {
-        return handle != null && handle.equals(selectedCorridorDoorHandle);
+        return handle != null && handle.equals(previewState.selectedCorridorDoorHandle());
     }
 
     protected final CorridorEditInteractionController.DoorHandle corridorDoorHandleForRoom(long roomId) {
@@ -793,33 +761,35 @@ abstract class AbstractDungeonPane extends StackPane {
         return waypointPathIndices;
     }
 
-    protected final CorridorEditInteractionController.PressMode corridorPressMode() {
+    public final CorridorEditInteractionController.PressMode corridorPressMode() {
         return corridorEditController.previewPressMode();
     }
 
-    protected final boolean updateCorridorPressMode(MouseEvent event) {
+    public final boolean updateCorridorPressMode(MouseEvent event) {
         return corridorEditController.updatePreviewPressMode(event);
     }
 
     protected final boolean hasClusterDragPreview() {
-        return !previewClusterCenters.isEmpty();
+        return !previewState.clusterCenters().isEmpty();
     }
 
     protected final CorridorEditInteractionController.DoorDragPreview corridorDoorPreview() {
-        return previewCorridorDoorDrag;
+        return previewState.previewCorridorDoorDrag();
     }
 
     protected final boolean isPreviewDoor(long corridorId, long roomId) {
-        long previewRoomId = previewCorridorDoorDrag != null && previewCorridorDoorDrag.snapTarget() != null
-                ? previewCorridorDoorDrag.snapTarget().roomId()
-                : previewCorridorDoorHandle == null ? Long.MIN_VALUE : previewCorridorDoorHandle.roomId();
-        return previewCorridorDoorHandle != null
-                && previewCorridorDoorHandle.corridorId() == corridorId
+        CorridorEditInteractionController.DoorDragPreview previewDrag = previewState.previewCorridorDoorDrag();
+        CorridorEditInteractionController.DoorHandle previewHandle = previewState.previewCorridorDoorHandle();
+        long previewRoomId = previewDrag != null && previewDrag.snapTarget() != null
+                ? previewDrag.snapTarget().roomId()
+                : previewHandle == null ? Long.MIN_VALUE : previewHandle.roomId();
+        return previewHandle != null
+                && previewHandle.corridorId() == corridorId
                 && previewRoomId == roomId
-                && previewCorridorDoorDrag != null;
+                && previewDrag != null;
     }
 
-    private boolean updateCorridorDoorPreview(
+    public final boolean updateCorridorDoorPreview(
             CorridorEditInteractionController.DoorHandle handle,
             CorridorEditInteractionController.DoorDragPreview preview
     ) {
@@ -829,21 +799,21 @@ abstract class AbstractDungeonPane extends StackPane {
         if (handle == null || preview == null || preview.previewSegment() == null || preview.snapTarget() == null) {
             return clearCorridorDoorPreview();
         }
-        if (Objects.equals(previewCorridorDoorHandle, handle)
-                && Objects.equals(previewCorridorDoorDrag, preview)) {
+        if (Objects.equals(previewState.previewCorridorDoorHandle(), handle)
+                && Objects.equals(previewState.previewCorridorDoorDrag(), preview)) {
             return false;
         }
-        previewCorridorDoorHandle = handle;
-        previewCorridorDoorDrag = preview;
+        previewState.setPreviewCorridorDoorHandle(handle);
+        previewState.setPreviewCorridorDoorDrag(preview);
         return true;
     }
 
-    private boolean clearCorridorDoorPreview() {
-        if (previewCorridorDoorHandle == null && previewCorridorDoorDrag == null) {
+    public final boolean clearCorridorDoorPreview() {
+        if (previewState.previewCorridorDoorHandle() == null && previewState.previewCorridorDoorDrag() == null) {
             return false;
         }
-        previewCorridorDoorHandle = null;
-        previewCorridorDoorDrag = null;
+        previewState.setPreviewCorridorDoorHandle(null);
+        previewState.setPreviewCorridorDoorDrag(null);
         return true;
     }
 
@@ -869,21 +839,21 @@ abstract class AbstractDungeonPane extends StackPane {
                 .toList();
     }
 
-    private void rebuildClusterDragPreview() {
-        if (layout == null || previewClusterCenters.isEmpty()) {
+    private void rebuildClusterDragPreviewInternal() {
+        if (layout == null || previewState.clusterCenters().isEmpty()) {
             previewTopologySession.reset();
         } else {
-            previewTopologySession.rebuild(layout, renderData, previewClusterCenters, this::previewCenter, this::previewDelta);
+            previewTopologySession.rebuild(layout, renderData, previewState.clusterCenters(), this::previewCenter, this::previewDelta);
         }
     }
 
-    protected abstract EditorSurface surface();
+    public abstract DungeonEditorSurface surface();
 
-    protected DungeonRoomCluster findClusterInSelection(Point2i startInclusive, Point2i endInclusive) {
+    public DungeonRoomCluster findClusterInSelection(Point2i startInclusive, Point2i endInclusive) {
         return null;
     }
 
-    protected boolean canCreateGraphRoomAt(Point2i world) {
+    public boolean canCreateGraphRoomAt(Point2i world) {
         return true;
     }
 
@@ -906,7 +876,7 @@ abstract class AbstractDungeonPane extends StackPane {
         return DungeonRoomGeometry.absoluteLoops(DungeonRoomGeometry.roomShapeForCells(roomCellsFor(room), center));
     }
 
-    protected final Set<Point2i> clusterCellsFor(DungeonRoomCluster cluster) {
+    public final Set<Point2i> clusterCellsFor(DungeonRoomCluster cluster) {
         if (cluster == null || cluster.clusterId() == null) {
             return Set.of();
         }
@@ -933,7 +903,7 @@ abstract class AbstractDungeonPane extends StackPane {
             return ZERO;
         }
         DungeonRoomCluster cluster = layout.clusterById(clusterId);
-        Point2i previewCenter = previewClusterCenters.get(clusterId);
+        Point2i previewCenter = previewState.clusterCenters().get(clusterId);
         if (cluster == null || previewCenter == null) {
             return ZERO;
         }
@@ -1139,447 +1109,221 @@ abstract class AbstractDungeonPane extends StackPane {
     }
 
     protected final int selectionMinX() {
-        return Math.min(selectionStartCell.x(), selectionEndCell.x());
+        return Math.min(interactionState.selectionStartCell().x(), interactionState.selectionEndCell().x());
     }
 
     protected final int selectionMaxX() {
-        return Math.max(selectionStartCell.x(), selectionEndCell.x());
+        return Math.max(interactionState.selectionStartCell().x(), interactionState.selectionEndCell().x());
     }
 
     protected final int selectionMinY() {
-        return Math.min(selectionStartCell.y(), selectionEndCell.y());
+        return Math.min(interactionState.selectionStartCell().y(), interactionState.selectionEndCell().y());
     }
 
     protected final int selectionMaxY() {
-        return Math.max(selectionStartCell.y(), selectionEndCell.y());
+        return Math.max(interactionState.selectionStartCell().y(), interactionState.selectionEndCell().y());
     }
 
-    private void clearSelectionPreview() {
-        selectionStartCell = null;
-        selectionEndCell = null;
+    public final void clearSelectionPreview() {
+        interactionState.clearSelection();
         corridorEditController.clearPreviewPressMode();
         clearCorridorDoorPreview();
     }
 
-    private void clearPaintPreview() {
-        previewPaintCells.clear();
-        paintStartCell = null;
-        paintEndCell = null;
+    public final void clearPaintPreview() {
+        previewState.paintCells().clear();
+        interactionState.clearPaint();
     }
 
-    private void rebuildPaintPreviewCells() {
-        previewPaintCells.clear();
-        if (paintStartCell == null || paintEndCell == null) {
+    public final void rebuildPaintPreviewCells() {
+        previewState.paintCells().clear();
+        if (interactionState.paintStartCell() == null || interactionState.paintEndCell() == null) {
             return;
         }
-        int minX = Math.min(paintStartCell.x(), paintEndCell.x());
-        int maxX = Math.max(paintStartCell.x(), paintEndCell.x());
-        int minY = Math.min(paintStartCell.y(), paintEndCell.y());
-        int maxY = Math.max(paintStartCell.y(), paintEndCell.y());
+        int minX = Math.min(interactionState.paintStartCell().x(), interactionState.paintEndCell().x());
+        int maxX = Math.max(interactionState.paintStartCell().x(), interactionState.paintEndCell().x());
+        int minY = Math.min(interactionState.paintStartCell().y(), interactionState.paintEndCell().y());
+        int maxY = Math.max(interactionState.paintStartCell().y(), interactionState.paintEndCell().y());
         for (int x = minX; x <= maxX; x++) {
             for (int y = minY; y <= maxY; y++) {
-                previewPaintCells.add(new Point2i(x, y));
+                previewState.paintCells().add(new Point2i(x, y));
             }
         }
     }
 
-    protected enum EditorSurface {
-        GRID,
-        GRAPH
-    }
-
-    private void beginSelection(Point2i world) {
-        if (Objects.equals(selectionStartCell, world) && Objects.equals(selectionEndCell, world)) {
+    public final void beginSelection(Point2i world) {
+        if (Objects.equals(interactionState.selectionStartCell(), world) && Objects.equals(interactionState.selectionEndCell(), world)) {
             return;
         }
-        selectionStartCell = world;
-        selectionEndCell = world;
+        interactionState.setSelectionStartCell(world);
+        interactionState.setSelectionEndCell(world);
         render();
     }
 
-    private void updateSelectionPreview(Point2i world) {
-        if (Objects.equals(selectionEndCell, world)) {
+    public final void updateSelectionPreview(Point2i world) {
+        if (Objects.equals(interactionState.selectionEndCell(), world)) {
             return;
         }
-        selectionEndCell = world;
+        interactionState.setSelectionEndCell(world);
         render();
     }
 
-    private void commitSelection(Point2i start, Point2i end) {
-        selectionStartCell = start;
-        selectionEndCell = end;
+    public final void commitSelection(Point2i start, Point2i end) {
+        interactionState.setSelectionStartCell(start);
+        interactionState.setSelectionEndCell(end);
         DungeonRoomCluster selectedCluster = findClusterInSelection(start, end);
         if (selectedCluster != null) {
-            callbacks.onClusterSelected.accept(selectedCluster);
+            callbacks.onClusterSelected().accept(selectedCluster);
         }
         clearSelectionPreview();
         render();
     }
 
-    private void beginPaint(Point2i world) {
-        if (Objects.equals(paintStartCell, world) && Objects.equals(paintEndCell, world) && !previewPaintCells.isEmpty()) {
+    public final void beginPaint(Point2i world) {
+        if (Objects.equals(interactionState.paintStartCell(), world)
+                && Objects.equals(interactionState.paintEndCell(), world)
+                && !previewState.paintCells().isEmpty()) {
             return;
         }
-        paintStartCell = world;
-        paintEndCell = world;
+        interactionState.setPaintStartCell(world);
+        interactionState.setPaintEndCell(world);
         rebuildPaintPreviewCells();
         render();
     }
 
-    private void updatePaintPreview(Point2i world) {
-        if (Objects.equals(paintEndCell, world)) {
+    public final void updatePaintPreview(Point2i world) {
+        if (Objects.equals(interactionState.paintEndCell(), world)) {
             return;
         }
-        paintEndCell = world;
+        interactionState.setPaintEndCell(world);
         rebuildPaintPreviewCells();
         render();
     }
 
-    private void commitPaint(Point2i world) {
-        paintEndCell = world;
+    public final void commitPaint(Point2i world) {
+        interactionState.setPaintEndCell(world);
         rebuildPaintPreviewCells();
-        if (!previewPaintCells.isEmpty()) {
+        if (!previewState.paintCells().isEmpty()) {
             if (editorTool == DungeonEditorTool.ROOM_DELETE) {
-                callbacks.onRoomCellsDeleted.accept(Set.copyOf(previewPaintCells));
+                callbacks.onRoomCellsDeleted().accept(Set.copyOf(previewState.paintCells()));
             } else {
-                callbacks.onRoomCellsPainted.accept(Set.copyOf(previewPaintCells));
+                callbacks.onRoomCellsPainted().accept(Set.copyOf(previewState.paintCells()));
             }
         }
         clearPaintPreview();
         render();
     }
 
-    private void updateDragPreview(DragInteraction dragInteraction, Point2i world) {
-        double worldX = camera.toWorldX(lastPointerScreenX);
-        double worldY = camera.toWorldY(lastPointerScreenY);
+    public final void updateDragPreview(DungeonPaneInteractionState.DragInteraction dragInteraction, Point2i world) {
+        double worldX = camera.toWorldX(interactionState.lastPointerScreenX());
+        double worldY = camera.toWorldY(interactionState.lastPointerScreenY());
         double previewCenterX = dragInteraction.originalCenter().x() + (worldX - dragInteraction.anchorWorldX());
         double previewCenterY = dragInteraction.originalCenter().y() + (worldY - dragInteraction.anchorWorldY());
         Point2i snappedPreviewCenter = snapDraggedCenter(previewCenterX, previewCenterY);
         Point2D previewOffset = new Point2D(
                 previewCenterX - snappedPreviewCenter.x(),
                 previewCenterY - snappedPreviewCenter.y());
-        Point2i previousCenter = previewClusterCenters.get(dragInteraction.cluster().clusterId());
-        Point2D previousOffset = previewClusterOffsets.get(dragInteraction.cluster().clusterId());
+        Point2i previousCenter = previewState.clusterCenters().get(dragInteraction.cluster().clusterId());
+        Point2D previousOffset = previewState.clusterOffsets().get(dragInteraction.cluster().clusterId());
         if (Objects.equals(previousCenter, snappedPreviewCenter)
                 && Objects.equals(previousOffset, previewOffset)) {
             return;
         }
-        previewClusterCenters.put(dragInteraction.cluster().clusterId(), snappedPreviewCenter);
-        previewClusterOffsets.put(dragInteraction.cluster().clusterId(), previewOffset);
+        previewState.clusterCenters().put(dragInteraction.cluster().clusterId(), snappedPreviewCenter);
+        previewState.clusterOffsets().put(dragInteraction.cluster().clusterId(), previewOffset);
         if (!Objects.equals(previousCenter, snappedPreviewCenter)) {
-            rebuildClusterDragPreview();
+            rebuildClusterDragPreviewInternal();
         }
         render();
     }
 
-    private void commitDrag(DragInteraction dragInteraction, Point2i world) {
-        double worldX = camera.toWorldX(lastPointerScreenX);
-        double worldY = camera.toWorldY(lastPointerScreenY);
+    public final void commitDrag(DungeonPaneInteractionState.DragInteraction dragInteraction, Point2i world) {
+        double worldX = camera.toWorldX(interactionState.lastPointerScreenX());
+        double worldY = camera.toWorldY(interactionState.lastPointerScreenY());
         Point2i newCenter = snapDraggedCenter(
                 dragInteraction.originalCenter().x() + (worldX - dragInteraction.anchorWorldX()),
                 dragInteraction.originalCenter().y() + (worldY - dragInteraction.anchorWorldY()));
         if (!newCenter.equals(dragInteraction.originalCenter())) {
             // Keep the drag preview visible until the async move result replaces the layout.
             // Dropping the preview immediately would repaint the stale layout for one frame.
-            callbacks.onClusterMoved.accept(dragInteraction.cluster(), newCenter);
+            callbacks.onClusterMoved().accept(dragInteraction.cluster(), newCenter);
         } else {
-            previewClusterCenters.remove(dragInteraction.cluster().clusterId());
-            previewClusterOffsets.remove(dragInteraction.cluster().clusterId());
-            rebuildClusterDragPreview();
+            previewState.clusterCenters().remove(dragInteraction.cluster().clusterId());
+            previewState.clusterOffsets().remove(dragInteraction.cluster().clusterId());
+            rebuildClusterDragPreviewInternal();
             render();
         }
     }
 
-    private void handleMousePressed(MouseEvent event) {
-        if (layout == null) {
+    public final void applySelectedCorridorDoorHandle(
+            CorridorEditInteractionController.DoorHandle handle,
+            boolean notify,
+            boolean renderNow
+    ) {
+        CorridorEditInteractionController.DoorHandle normalizedHandle = normalizeCorridorDoorHandle(handle);
+        if (Objects.equals(previewState.selectedCorridorDoorHandle(), normalizedHandle)) {
+            if (renderNow) {
+                render();
+            }
             return;
         }
-        if (handlePanPress(event)) {
-            return;
+        previewState.setSelectedCorridorDoorHandle(normalizedHandle);
+        if (notify) {
+            callbacks.onCorridorDoorSelectionChanged().accept(previewState.selectedCorridorDoorHandle());
         }
-        CorridorEditInteractionController.PressHit corridorPressHit = corridorEditController.hitTest(event);
-        if (corridorEditController.handlePress(corridorPressHit)) {
-            return;
+        if (renderNow) {
+            render();
         }
-        PointerContext context = pointerContext(event);
-        if (handleRoomToolPress(event, context)) {
-            return;
-        }
-        if (handleCorridorToolPress(event, context)) {
-            return;
-        }
-        if (handleRoomDragPress(event, context)) {
-            return;
-        }
-        if (handleSelectionPress(event, context)) {
-            return;
-        }
-        if (context.corridor() != null) {
-            callbacks.onCorridorSelected.accept(context.corridor());
-            return;
-        }
-        if (context.cluster() != null) {
-            callbacks.onClusterSelected.accept(context.cluster());
-            return;
-        }
-        if (context.room() != null) {
-            callbacks.onRoomSelected.accept(context.room());
-            return;
-        }
-        pointerInteraction = IdleInteraction.INSTANCE;
     }
 
-    private void handleMouseMoved(MouseEvent event) {
-        updatePointerPosition(event);
-        boolean corridorPreviewChanged = updateCorridorPressMode(event) | updateHoveredCorridor(event);
-        if (corridorPreviewChanged) {
-            render();
+    public final boolean updateHoveredCorridorAt(double screenX, double screenY) {
+        Long nextHoveredCorridorId = null;
+        if (layout != null && editorTool == DungeonEditorTool.SELECT) {
+            DungeonRoomCluster hoveredCluster = findClusterAt(screenX, screenY);
+            DungeonRoom hoveredRoom = hoveredCluster == null ? findRoomAt(screenX, screenY) : null;
+            if (hoveredCluster == null && hoveredRoom == null) {
+                DungeonCorridor corridor = findCorridorAt(screenX, screenY);
+                nextHoveredCorridorId = corridor == null ? null : corridor.corridorId();
+            }
         }
-        wallPathController.handlePointerMove(event.getX(), event.getY());
-    }
-
-    private void handleMouseDragged(MouseEvent event) {
-        updatePointerPosition(event);
-        boolean corridorPreviewChanged = updateCorridorPressMode(event) | updateHoveredCorridor(event);
-        if (corridorPreviewChanged) {
-            render();
-        }
-        if (pointerInteraction instanceof PanInteraction) {
-            callbacks.onViewportPanned.accept(new Point2D(event.getX(), event.getY()));
-            refreshHoverAfterProjectionChange();
-            return;
-        }
-        if (corridorEditController.handleDrag(event)) {
-            render();
-            return;
-        }
-        wallPathController.handlePointerMove(event.getX(), event.getY());
-        Point2i world = worldPointAt(event.getX(), event.getY());
-        if (!editable || !(pointerInteraction instanceof DragInteraction dragInteraction)) {
-            handlePreviewDrag(world);
-            return;
-        }
-        updateDragPreview(dragInteraction, world);
-    }
-
-    private void handleMouseReleased(MouseEvent event) {
-        if (updateCorridorPressMode(event)) {
-            render();
-        }
-        if (pointerInteraction instanceof PanInteraction) {
-            pointerInteraction = IdleInteraction.INSTANCE;
-            return;
-        }
-        Point2i world = worldPointAt(event.getX(), event.getY());
-        if (handleEditableRelease(world)) {
-            return;
-        }
-        handleDragRelease(event, world);
-    }
-
-    private boolean handlePanPress(MouseEvent event) {
-        if (updateCorridorPressMode(event)) {
-            render();
-        }
-        if (event.getButton() == MouseButton.SECONDARY && wallPathController.handleSecondaryPress()) {
-            render();
-            return true;
-        }
-        if (event.getButton() != MouseButton.SECONDARY) {
+        if (Objects.equals(previewState.hoveredCorridorId(), nextHoveredCorridorId)) {
             return false;
         }
-        pointerInteraction = new PanInteraction();
-        callbacks.onViewportPanStarted.accept(new Point2D(event.getX(), event.getY()));
+        previewState.setHoveredCorridorId(nextHoveredCorridorId);
         return true;
     }
 
-    private PointerContext pointerContext(MouseEvent event) {
-        return new PointerContext(
-                worldPointAt(event.getX(), event.getY()),
-                findClusterAt(event.getX(), event.getY()),
-                findRoomAt(event.getX(), event.getY()),
-                findCorridorAt(event.getX(), event.getY()),
-                findCorridorDoorHitAt(event.getX(), event.getY()));
-    }
-
-    private boolean handleRoomToolPress(MouseEvent event, PointerContext context) {
-        if (!editable || event.getButton() != MouseButton.PRIMARY) {
+    public final boolean clearHoveredCorridor() {
+        if (previewState.hoveredCorridorId() == null) {
             return false;
         }
-        if ((editorTool.isWallTool() || editorTool.isDoorTool())
-                && surface() == EditorSurface.GRID) {
-            DungeonClusterEdgeRef edgeRef = findClusterEdgeAt(event.getX(), event.getY());
-            if (edgeRef == null) {
-                return false;
-            }
-            if (editorTool.isWallTool()) {
-                wallPathController.handlePrimaryPress(event.getX(), event.getY());
-            } else if (editorTool == DungeonEditorTool.CLUSTER_DOOR_DELETE) {
-                callbacks.onClusterDoorDeleted.accept(Set.of(edgeRef));
-            } else {
-                callbacks.onClusterDoorPainted.accept(Set.of(edgeRef));
-            }
-            return true;
-        }
-        if (editorTool != DungeonEditorTool.ROOM_PAINT && editorTool != DungeonEditorTool.ROOM_DELETE) {
-            return false;
-        }
-        if (surface() == EditorSurface.GRID) {
-            beginPaint(context.world());
-            pointerInteraction = new PaintInteraction();
-            return true;
-        }
-        if (surface() != EditorSurface.GRAPH) {
-            return false;
-        }
-        if (editorTool == DungeonEditorTool.ROOM_PAINT
-                && context.cluster() == null
-                && context.room() == null
-                && canCreateGraphRoomAt(context.world())) {
-            pointerInteraction = new GraphCreateInteraction(context.world());
-            return true;
-        }
-        if (editorTool == DungeonEditorTool.ROOM_DELETE && context.cluster() != null) {
-            pointerInteraction = new GraphDeleteInteraction(context.cluster());
-            return true;
-        }
-        return false;
-    }
-
-    private boolean handleCorridorToolPress(MouseEvent event, PointerContext context) {
-        if (!editable || event.getButton() != MouseButton.PRIMARY) {
-            return false;
-        }
-        if (editorTool != DungeonEditorTool.CORRIDOR_CREATE && editorTool != DungeonEditorTool.CORRIDOR_DELETE) {
-            return false;
-        }
-        if (editorTool == DungeonEditorTool.CORRIDOR_CREATE) {
-            DungeonCorridorEndpoint endpoint = corridorEndpointLocationAt(event.getX(), event.getY(), context.room(), context.corridor());
-            if (endpoint != null) {
-                callbacks.onCorridorEndpointSelected.accept(endpoint);
-                return true;
-            }
-            if (context.corridor() != null) {
-                callbacks.onCorridorEndpointSelected.accept(DungeonCorridorEndpoint.corridor(context.corridor().corridorId()));
-                return true;
-            }
-            return false;
-        }
-        if (context.corridorDoorHit() != null) {
-            callbacks.onCorridorRoomRemoved.accept(context.corridorDoorHit());
-            return true;
-        }
-        if (context.corridor() != null) {
-            callbacks.onCorridorDeleted.accept(context.corridor());
-            return true;
-        }
-        return false;
-    }
-
-    private boolean handleRoomDragPress(MouseEvent event, PointerContext context) {
-        if (!(editable && context.cluster() != null && isRoomDragButton(event.getButton(), editorTool))) {
-            return false;
-        }
-        callbacks.onClusterSelected.accept(context.cluster());
-        pointerInteraction = new DragInteraction(
-                context.cluster(),
-                context.cluster().center(),
-                camera.toWorldX(event.getX()),
-                camera.toWorldY(event.getY()));
+        previewState.setHoveredCorridorId(null);
         return true;
     }
 
-    private boolean handleSelectionPress(MouseEvent event, PointerContext context) {
-        if (!(editable
-                && event.getButton() == MouseButton.PRIMARY
-                && editorTool == DungeonEditorTool.SELECT
-                && surface() == EditorSurface.GRID
-                && context.corridor() == null
-                && context.cluster() == null
-                && context.room() == null)) {
-            return false;
-        }
-        // Occupied hits should select the visible entity directly; marquee selection is for empty space only.
-        beginSelection(context.world());
-        pointerInteraction = new SelectionInteraction(context.world());
-        return true;
+    public final void updatePointerPosition(MouseEvent event) {
+        interactionState.setPointerInsideCanvas(true);
+        interactionState.setLastPointerScreenX(event.getX());
+        interactionState.setLastPointerScreenY(event.getY());
     }
 
-    private void handlePreviewDrag(Point2i world) {
-        if (editable && pointerInteraction instanceof PaintInteraction) {
-            updatePaintPreview(world);
-        }
-        if (editable && pointerInteraction instanceof SelectionInteraction) {
-            updateSelectionPreview(world);
-        }
-    }
-
-    private boolean handleEditableRelease(Point2i world) {
-        if (editable && pointerInteraction instanceof SelectionInteraction selectionInteraction) {
-            pointerInteraction = IdleInteraction.INSTANCE;
-            commitSelection(selectionInteraction.anchorWorld(), world);
-            return true;
-        }
-        if (editable && pointerInteraction instanceof PaintInteraction) {
-            pointerInteraction = IdleInteraction.INSTANCE;
-            commitPaint(world);
-            return true;
-        }
-        if (editable && pointerInteraction instanceof GraphCreateInteraction graphCreateInteraction) {
-            pointerInteraction = IdleInteraction.INSTANCE;
-            callbacks.onGraphRoomRequested.accept(graphCreateInteraction.world());
-            return true;
-        }
-        if (editable && pointerInteraction instanceof GraphDeleteInteraction graphDeleteInteraction) {
-            pointerInteraction = IdleInteraction.INSTANCE;
-            callbacks.onGraphClusterDeleted.accept(graphDeleteInteraction.cluster());
-            return true;
-        }
-        if (corridorEditController.handleEditableRelease(world)) {
-            pointerInteraction = IdleInteraction.INSTANCE;
-            return true;
-        }
-        return false;
-    }
-
-    private void handleDragRelease(MouseEvent event, Point2i world) {
-        if (!editable) {
-            clearCorridorDoorPreview();
-            pointerInteraction = IdleInteraction.INSTANCE;
+    public final void refreshHoverAfterProjectionChange() {
+        if (!interactionState.pointerInsideCanvas()) {
+            if (clearHoveredCorridor()) {
+                render();
+            }
             return;
         }
-        if (pointerInteraction instanceof DragInteraction dragInteraction) {
-            pointerInteraction = IdleInteraction.INSTANCE;
-            commitDrag(dragInteraction, world);
-            return;
-        }
-        if (corridorEditController.handleDragRelease(event)) {
-            pointerInteraction = IdleInteraction.INSTANCE;
+        if (updateHoveredCorridorAt(interactionState.lastPointerScreenX(), interactionState.lastPointerScreenY())) {
             render();
-            return;
         }
-        pointerInteraction = IdleInteraction.INSTANCE;
     }
 
-    private void handleScroll(ScrollEvent event) {
-        pointerInsideCanvas = true;
-        lastPointerScreenX = event.getX();
-        lastPointerScreenY = event.getY();
-        double factor = event.getDeltaY() > 0 ? 1.1 : 0.9;
-        callbacks.onViewportZoomed.handle(event.getX(), event.getY(), factor);
-        refreshHoverAfterProjectionChange();
-    }
-
-    private void handleKeyPressed(KeyEvent event) {
-        wallPathController.handleKeyPressed(event);
-    }
-
-    private static boolean isRoomDragButton(MouseButton button, DungeonEditorTool tool) {
-        if (button == MouseButton.MIDDLE) {
-            return true;
+    public final void onPointerExited() {
+        interactionState.setPointerInsideCanvas(false);
+        if (clearHoveredCorridor()) {
+            render();
         }
-        // Secondary is reserved for camera panning. Primary only drags in explicit selection mode.
-        return button == MouseButton.PRIMARY && tool == DungeonEditorTool.SELECT;
     }
 
     private static double projectionT(double px, double py, double x1, double y1, double x2, double y2) {
@@ -1616,74 +1360,6 @@ abstract class AbstractDungeonPane extends StackPane {
                 : null;
     }
 
-    private void applySelectedCorridorDoorHandle(
-            CorridorEditInteractionController.DoorHandle handle,
-            boolean notify,
-            boolean renderNow
-    ) {
-        CorridorEditInteractionController.DoorHandle normalizedHandle = normalizeCorridorDoorHandle(handle);
-        if (Objects.equals(selectedCorridorDoorHandle, normalizedHandle)) {
-            if (renderNow) {
-                render();
-            }
-            return;
-        }
-        selectedCorridorDoorHandle = normalizedHandle;
-        if (notify) {
-            callbacks.onCorridorDoorSelectionChanged.accept(selectedCorridorDoorHandle);
-        }
-        if (renderNow) {
-            render();
-        }
-    }
-
-    private boolean updateHoveredCorridor(MouseEvent event) {
-        return updateHoveredCorridorAt(event.getX(), event.getY());
-    }
-
-    private boolean updateHoveredCorridorAt(double screenX, double screenY) {
-        Long nextHoveredCorridorId = null;
-        if (layout != null && editorTool == DungeonEditorTool.SELECT) {
-            DungeonRoomCluster hoveredCluster = findClusterAt(screenX, screenY);
-            DungeonRoom hoveredRoom = hoveredCluster == null ? findRoomAt(screenX, screenY) : null;
-            if (hoveredCluster == null && hoveredRoom == null) {
-                DungeonCorridor corridor = findCorridorAt(screenX, screenY);
-                nextHoveredCorridorId = corridor == null ? null : corridor.corridorId();
-            }
-        }
-        if (Objects.equals(hoveredCorridorId, nextHoveredCorridorId)) {
-            return false;
-        }
-        hoveredCorridorId = nextHoveredCorridorId;
-        return true;
-    }
-
-    private boolean clearHoveredCorridor() {
-        if (hoveredCorridorId == null) {
-            return false;
-        }
-        hoveredCorridorId = null;
-        return true;
-    }
-
-    private void updatePointerPosition(MouseEvent event) {
-        pointerInsideCanvas = true;
-        lastPointerScreenX = event.getX();
-        lastPointerScreenY = event.getY();
-    }
-
-    private void refreshHoverAfterProjectionChange() {
-        if (!pointerInsideCanvas) {
-            if (clearHoveredCorridor()) {
-                render();
-            }
-            return;
-        }
-        if (updateHoveredCorridorAt(lastPointerScreenX, lastPointerScreenY)) {
-            render();
-        }
-    }
-
     private boolean isOccupiedByOtherRoom(long roomId, Point2i cell) {
         if (layout == null || cell == null) {
             return false;
@@ -1700,54 +1376,13 @@ abstract class AbstractDungeonPane extends StackPane {
     }
 
     private Point2i snapDraggedCenter(double worldX, double worldY) {
-        return surface() == EditorSurface.GRAPH
+        return surface() == DungeonEditorSurface.GRAPH
                 ? new Point2i((int) Math.round(worldX), (int) Math.round(worldY))
                 : new Point2i((int) Math.floor(worldX), (int) Math.floor(worldY));
     }
 
     private static boolean isZero(double value) {
         return Math.abs(value) < 0.000001;
-    }
-
-    private sealed interface PointerInteraction
-            permits IdleInteraction, PanInteraction, SelectionInteraction, PaintInteraction, DragInteraction,
-            GraphCreateInteraction, GraphDeleteInteraction {
-    }
-
-    private enum IdleInteraction implements PointerInteraction {
-        INSTANCE
-    }
-
-    private static final class PanInteraction implements PointerInteraction {
-    }
-
-    private record SelectionInteraction(Point2i anchorWorld) implements PointerInteraction {
-    }
-
-    private record PaintInteraction() implements PointerInteraction {
-    }
-
-    private record DragInteraction(
-            DungeonRoomCluster cluster,
-            Point2i originalCenter,
-            double anchorWorldX,
-            double anchorWorldY
-    ) implements PointerInteraction {
-    }
-
-    private record GraphCreateInteraction(Point2i world) implements PointerInteraction {
-    }
-
-    private record GraphDeleteInteraction(DungeonRoomCluster cluster) implements PointerInteraction {
-    }
-
-    private record PointerContext(
-            Point2i world,
-            DungeonRoomCluster cluster,
-            DungeonRoom room,
-            DungeonCorridor corridor,
-            CorridorDoorHit corridorDoorHit
-    ) {
     }
 
     protected record InvalidCorridorLink(DungeonRoom from, DungeonRoom to) {
@@ -1770,25 +1405,120 @@ abstract class AbstractDungeonPane extends StackPane {
     ) {
     }
 
-    private static final class PaneCallbacks {
-        private Consumer<DungeonRoom> onRoomSelected = room -> { };
-        private Consumer<DungeonRoomCluster> onClusterSelected = cluster -> { };
-        private Consumer<DungeonCorridor> onCorridorSelected = corridor -> { };
-        private Consumer<CorridorEditInteractionController.DoorHandle> onCorridorDoorSelectionChanged = handle -> { };
-        private BiConsumer<DungeonRoom, Point2i> onRoomMoved = (room, center) -> { };
-        private BiConsumer<DungeonRoomCluster, Point2i> onClusterMoved = (cluster, center) -> { };
-        private Consumer<DungeonCorridorEndpoint> onCorridorEndpointSelected = location -> { };
-        private Consumer<Set<Point2i>> onRoomCellsPainted = cells -> { };
-        private Consumer<Set<Point2i>> onRoomCellsDeleted = cells -> { };
-        private Consumer<Set<DungeonClusterEdgeRef>> onClusterDoorPainted = refs -> { };
-        private Consumer<Set<DungeonClusterEdgeRef>> onClusterDoorDeleted = refs -> { };
-        private Consumer<Point2i> onGraphRoomRequested = point -> { };
-        private Consumer<DungeonRoom> onGraphRoomDeleted = room -> { };
-        private Consumer<DungeonRoomCluster> onGraphClusterDeleted = cluster -> { };
-        private Consumer<DungeonCorridor> onCorridorDeleted = corridor -> { };
-        private Consumer<CorridorDoorHit> onCorridorRoomRemoved = hit -> { };
-        private Consumer<Point2D> onViewportPanStarted = point -> { };
-        private Consumer<Point2D> onViewportPanned = point -> { };
-        private DungeonViewportZoomHandler onViewportZoomed = (screenX, screenY, factor) -> { };
+    @Override
+    public final DungeonLayout dungeonLayout() {
+        return layout;
+    }
+
+    @Override
+    public final DungeonLayoutRenderData renderData() {
+        return renderData;
+    }
+
+    @Override
+    public final DungeonSelection selectedTarget() {
+        return selectedTarget;
+    }
+
+    @Override
+    public final DungeonRuntimeLocation activeLocation() {
+        return activeLocation;
+    }
+
+    @Override
+    public final boolean editable() {
+        return editable;
+    }
+
+    @Override
+    public final void setLayoutState(
+            DungeonLayout layout,
+            DungeonLayoutRenderData renderData,
+            DungeonSelection selectedTarget,
+            DungeonRuntimeLocation activeLocation
+    ) {
+        this.layout = layout;
+        this.renderData = renderData;
+        this.selectedTarget = selectedTarget;
+        this.activeLocation = activeLocation;
+        this.corridorLayoutContext = renderData == null ? null : renderData.layoutContext();
+    }
+
+    @Override
+    public final DungeonEditorTool editorTool() {
+        return editorTool;
+    }
+
+    @Override
+    public final void setEditorToolInternal(DungeonEditorTool editorTool) {
+        this.editorTool = editorTool;
+    }
+
+    @Override
+    public final DungeonPreviewState previewState() {
+        return previewState;
+    }
+
+    @Override
+    public final DungeonPaneInteractionState interactionState() {
+        return interactionState;
+    }
+
+    @Override
+    public final DungeonPaneCallbacks callbacks() {
+        return callbacks;
+    }
+
+    @Override
+    public final DungeonPreviewTopologySession previewTopologySession() {
+        return previewTopologySession;
+    }
+
+    @Override
+    public final void requestRender() {
+        render();
+    }
+
+    @Override
+    public final CorridorEditInteractionController controller() {
+        return corridorEditController;
+    }
+
+    @Override
+    public final WallPathInteractionController wallPathController() {
+        return wallPathController;
+    }
+
+    @Override
+    public final void rebuildClusterDragPreview() {
+        rebuildClusterDragPreviewInternal();
+    }
+
+    @Override
+    public final double worldX(double screenX) {
+        return camera.toWorldX(screenX);
+    }
+
+    @Override
+    public final double worldY(double screenY) {
+        return camera.toWorldY(screenY);
+    }
+
+    public final Long hoveredCorridorId() {
+        return previewState.hoveredCorridorId();
+    }
+
+    public final void setHoveredCorridorId(Long corridorId) {
+        previewState.setHoveredCorridorId(corridorId);
+    }
+
+    @Override
+    public final Set<Point2i> previewPaintCells() {
+        return previewState.paintCells();
+    }
+
+    @Override
+    public final DungeonRoomCluster clusterById(long clusterId) {
+        return layout == null ? null : layout.clusterById(clusterId);
     }
 }

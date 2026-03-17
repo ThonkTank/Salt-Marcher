@@ -13,6 +13,8 @@ import features.world.dungeonmap.model.DungeonRuntimeLocation;
 import features.world.dungeonmap.model.Point2i;
 import features.world.dungeonmap.model.RoomShape;
 import features.world.dungeonmap.ui.workspace.DungeonEditorTool;
+import features.world.dungeonmap.ui.workspace.workflow.CorridorEditInteractionController;
+import features.world.dungeonmap.ui.workspace.workflow.DungeonEditorSurface;
 import javafx.geometry.Point2D;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
@@ -114,14 +116,14 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
     }
 
     @Override
-    protected Point2i worldPointAt(double screenX, double screenY) {
+    public Point2i worldPointAt(double screenX, double screenY) {
         int x = (int) Math.round(camera.toWorldX(screenX));
         int y = (int) Math.round(camera.toWorldY(screenY));
         return new Point2i(x, y);
     }
 
     @Override
-    protected DungeonRoomCluster findClusterAt(double screenX, double screenY) {
+    public DungeonRoomCluster findClusterAt(double screenX, double screenY) {
         DungeonRoomCluster closest = null;
         double bestDistance = Double.POSITIVE_INFINITY;
         Map<Long, ClusterAnchorLayout> anchorLayouts = new HashMap<>();
@@ -140,7 +142,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
     }
 
     @Override
-    protected DungeonRoom findRoomAt(double screenX, double screenY) {
+    public DungeonRoom findRoomAt(double screenX, double screenY) {
         DungeonRoom closest = null;
         double bestDistance = Double.POSITIVE_INFINITY;
         Map<Long, ClusterAnchorLayout> anchorLayouts = new HashMap<>();
@@ -166,7 +168,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
     }
 
     @Override
-    protected DungeonCorridor findCorridorAt(double screenX, double screenY) {
+    public DungeonCorridor findCorridorAt(double screenX, double screenY) {
         if (layout == null || renderData == null) {
             return null;
         }
@@ -188,7 +190,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
     }
 
     @Override
-    protected CorridorDoorHit findCorridorDoorHitAt(double screenX, double screenY) {
+    public CorridorDoorHit findCorridorDoorHitAt(double screenX, double screenY) {
         if (layout == null || renderData == null) {
             return null;
         }
@@ -221,7 +223,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
     }
 
     @Override
-    protected CorridorEditInteractionController.DoorHandle findCorridorDoorHandleAt(double screenX, double screenY) {
+    public CorridorEditInteractionController.DoorHandle findCorridorDoorHandleAt(double screenX, double screenY) {
         if (hasClusterDragPreview()) {
             return null;
         }
@@ -249,7 +251,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
     }
 
     @Override
-    protected CorridorEditInteractionController.DoorDragPreview corridorDoorDragPreviewAt(
+    public CorridorEditInteractionController.DoorDragPreview corridorDoorDragPreviewAt(
             double screenX,
             double screenY,
             CorridorEditInteractionController.DoorHandle handle
@@ -261,7 +263,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
     }
 
     @Override
-    protected CorridorEditInteractionController.WaypointHandle findCorridorWaypointHandleAt(double screenX, double screenY) {
+    public CorridorEditInteractionController.WaypointHandle findCorridorWaypointHandleAt(double screenX, double screenY) {
         CorridorSelectionContext context = selectedCorridorContext();
         if (context == null) {
             return null;
@@ -307,12 +309,12 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
     }
 
     @Override
-    protected EditorSurface surface() {
-        return EditorSurface.GRAPH;
+    public DungeonEditorSurface surface() {
+        return DungeonEditorSurface.GRAPH;
     }
 
     @Override
-    protected boolean canCreateGraphRoomAt(Point2i world) {
+    public boolean canCreateGraphRoomAt(Point2i world) {
         if (world == null || layout == null) {
             return false;
         }
@@ -343,10 +345,10 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
         if (cachedCorridorLayoutState == null
                 || cachedRenderStateLayout != layout
                 || cachedRenderStateData != corridorRenderData
-                || !cachedPreviewCenters.equals(previewClusterCenters)) {
+                || !cachedPreviewCenters.equals(previewClusterCenters())) {
             cachedRenderStateLayout = layout;
             cachedRenderStateData = corridorRenderData;
-            cachedPreviewCenters = Map.copyOf(previewClusterCenters);
+            cachedPreviewCenters = Map.copyOf(previewClusterCenters());
             cachedCorridorLayoutState = buildCorridorLayoutState();
         }
         return cachedCorridorLayoutState;
@@ -625,8 +627,8 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
         if (corridor == null
                 || preview == null
                 || preview.previewSegment() == null
-                || previewCorridorDoorHandle == null
-                || previewCorridorDoorHandle.corridorId() != corridor.corridorId()) {
+                || previewCorridorDoorHandle() == null
+                || previewCorridorDoorHandle().corridorId() != corridor.corridorId()) {
             return;
         }
         CorridorEditInteractionController.DoorPreviewSegment segment = preview.previewSegment();
@@ -651,8 +653,8 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
         if (corridor == null
                 || preview == null
                 || preview.previewSegment() == null
-                || previewCorridorDoorHandle == null
-                || previewCorridorDoorHandle.corridorId() != corridor.corridorId()) {
+                || previewCorridorDoorHandle() == null
+                || previewCorridorDoorHandle().corridorId() != corridor.corridorId()) {
             return;
         }
         MarkerPoint marker = markerPoint(
@@ -661,8 +663,8 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
                 corridorIdsByDoorMarker,
                 laneOrderBySegment,
                 displayPath);
-        double radius = isSelected(previewCorridorDoorHandle) ? 5.5 : 4.5;
-        gc.setFill(isSelected(previewCorridorDoorHandle) ? DungeonCanvasTheme.ROOM_SELECTED_STROKE : markerColor);
+        double radius = isSelected(previewCorridorDoorHandle()) ? 5.5 : 4.5;
+        gc.setFill(isSelected(previewCorridorDoorHandle()) ? DungeonCanvasTheme.ROOM_SELECTED_STROKE : markerColor);
         gc.fillOval(marker.x() + screenDeltaX(previewOffset) - radius, marker.y() + screenDeltaY(previewOffset) - radius, radius * 2, radius * 2);
         gc.setStroke(Color.rgb(18, 24, 28, 0.95));
         gc.setLineWidth(1.5);
@@ -849,17 +851,17 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
         if (corridor == null
                 || displayPath == null
                 || displayPath.segments().isEmpty()
-                || previewCorridorDoorHandle == null
-                || previewCorridorDoorDrag == null
-                || previewCorridorDoorHandle.corridorId() != corridor.corridorId()) {
+                || previewCorridorDoorHandle() == null
+                || corridorDoorPreview() == null
+                || previewCorridorDoorHandle().corridorId() != corridor.corridorId()) {
             return displayPath;
         }
-        DoorSegment snapDoor = snapDoorSegment(previewCorridorDoorDrag);
+        DoorSegment snapDoor = snapDoorSegment(corridorDoorPreview());
         SegmentKey doorSegmentKey = nearestDisplaySegmentForDoor(snapDoor, displayPath);
         if (doorSegmentKey == null) {
             return displayPath;
         }
-        CorridorEditInteractionController.DoorPreviewSegment previewSegment = previewCorridorDoorDrag.previewSegment();
+        CorridorEditInteractionController.DoorPreviewSegment previewSegment = corridorDoorPreview().previewSegment();
         double previewX = camera.toScreenX(previewSegment.centerWorldX());
         double previewY = camera.toScreenY(previewSegment.centerWorldY());
         List<OffsetLine> adjustedSegments = new ArrayList<>(displayPath.segments());

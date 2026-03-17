@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.workspace.render;
+package features.world.dungeonmap.ui.workspace.workflow;
 
 import features.world.dungeonmap.model.DungeonClusterEdgePath;
 import features.world.dungeonmap.model.DungeonClusterEdgeRef;
@@ -7,6 +7,7 @@ import features.world.dungeonmap.model.DungeonRoomCluster;
 import features.world.dungeonmap.model.DungeonClusterVertexRef;
 import features.world.dungeonmap.model.Point2i;
 import features.world.dungeonmap.ui.workspace.DungeonEditorTool;
+import features.world.dungeonmap.ui.workspace.render.WallPathCommitRequest;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 
@@ -33,7 +34,7 @@ public final class WallPathInteractionController {
     private boolean commitPending;
     private DungeonClusterVertexRef pendingAnchor;
 
-    WallPathInteractionController(Host host) {
+    public WallPathInteractionController(Host host) {
         this.host = Objects.requireNonNull(host, "host");
     }
 
@@ -45,7 +46,7 @@ public final class WallPathInteractionController {
         this.onStateChanged = Objects.requireNonNull(onStateChanged, "onStateChanged");
     }
 
-    void reset() {
+    public void reset() {
         activeAnchor = null;
         previewPath = List.of();
         commitPending = false;
@@ -77,7 +78,7 @@ public final class WallPathInteractionController {
         stateChanged();
     }
 
-    boolean handlePrimaryPress(double screenX, double screenY) {
+    public boolean handlePrimaryPress(double screenX, double screenY) {
         if (!isActiveTool()) {
             return false;
         }
@@ -116,7 +117,7 @@ public final class WallPathInteractionController {
         return true;
     }
 
-    boolean handleSecondaryPress() {
+    public boolean handleSecondaryPress() {
         if (!isActiveTool() || activeAnchor == null) {
             return false;
         }
@@ -124,7 +125,7 @@ public final class WallPathInteractionController {
         return true;
     }
 
-    boolean handleKeyPressed(KeyEvent event) {
+    public boolean handleKeyPressed(KeyEvent event) {
         if (event.getCode() != KeyCode.ESCAPE || !isActiveTool() || activeAnchor == null) {
             return false;
         }
@@ -133,7 +134,7 @@ public final class WallPathInteractionController {
         return true;
     }
 
-    void handlePointerMove(double screenX, double screenY) {
+    public void handlePointerMove(double screenX, double screenY) {
         if (!isActiveTool() || activeAnchor == null || commitPending) {
             clearPreviewIfNeeded();
             return;
@@ -194,7 +195,7 @@ public final class WallPathInteractionController {
     private boolean isActiveTool() {
         return host.editable()
                 && host.editorTool().isWallTool()
-                && host.surface() == AbstractDungeonPane.EditorSurface.GRID;
+                && host.surface() == DungeonEditorSurface.GRID;
     }
 
     private void clearPreviewIfNeeded() {
@@ -254,10 +255,10 @@ public final class WallPathInteractionController {
         return host.findClusterVertexNear(activeAnchor.clusterId(), screenX, screenY);
     }
 
-    interface Host {
+    public interface Host {
         boolean editable();
         DungeonEditorTool editorTool();
-        AbstractDungeonPane.EditorSurface surface();
+        DungeonEditorSurface surface();
         List<DungeonClusterVertexRef> findClusterVerticesNear(double screenX, double screenY);
         DungeonClusterVertexRef findClusterVertexNear(long clusterId, double screenX, double screenY);
         DungeonRoomCluster clusterById(long clusterId);
