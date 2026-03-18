@@ -82,7 +82,7 @@ final class PartyTokenController {
         Circle circle = new Circle(TOKEN_RADIUS);
         circle.getStyleClass().add("party-token-circle");
 
-        Label icon = new Label("\u2691");
+        Label icon = new Label("P");
         icon.getStyleClass().add("party-token-icon");
         icon.setMouseTransparent(true);
 

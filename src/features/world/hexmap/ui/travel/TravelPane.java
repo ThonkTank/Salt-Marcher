@@ -33,7 +33,7 @@ public class TravelPane extends VBox {
     }
 
     private HBox buildLocationRow() {
-        Label icon = new Label("\uD83D\uDDFA");
+        Label icon = new Label("W");
         icon.getStyleClass().add("travel-location-icon");
 
         Label location = new Label("\u2014 Kein Ort gew\u00E4hlt \u2014");
@@ -66,10 +66,10 @@ public class TravelPane extends VBox {
         grid.setVgap(4);
 
         grid.add(makeDetailKey("Wetter"), 0, 0);
-        grid.add(makeDetailValue("\u2601 Bew\u00F6lkt"), 1, 0);
+        grid.add(makeDetailValue("Bew\u00F6lkt"), 1, 0);
 
         grid.add(makeDetailKey("Tageszeit"), 0, 1);
-        grid.add(makeDetailValue("\uD83C\uDF05 Morgen"), 1, 1);
+        grid.add(makeDetailValue("Morgen"), 1, 1);
 
         grid.add(makeDetailKey("Tempo"), 0, 2);
         grid.add(makeDetailValue("Normal"), 1, 2);

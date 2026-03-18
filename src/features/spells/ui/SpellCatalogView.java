@@ -7,6 +7,7 @@ import features.spells.api.SpellSummary;
 import javafx.scene.Node;
 import ui.shell.AppView;
 import ui.shell.DetailsNavigator;
+import ui.shell.NavigationIcons;
 
 public final class SpellCatalogView implements AppView {
     private final SpellBrowserPane browserPane = new SpellBrowserPane();
@@ -36,7 +37,12 @@ public final class SpellCatalogView implements AppView {
 
     @Override
     public String getIconText() {
-        return "\u2726";
+        return "";
+    }
+
+    @Override
+    public Node getNavigationGraphic() {
+        return NavigationIcons.spells();
     }
 
     @Override

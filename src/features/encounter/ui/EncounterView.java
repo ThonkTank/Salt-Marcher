@@ -9,6 +9,7 @@ import features.creatures.api.CreatureCatalogService;
 import features.creatures.api.StatBlockRequest;
 import javafx.scene.Node;
 import ui.shell.AppView;
+import ui.shell.NavigationIcons;
 import ui.shell.SceneHandle;
 
 import java.util.List;
@@ -27,7 +28,7 @@ public class EncounterView implements AppView {
         monsterList = new CreatureBrowserPane();
         encounterControls = new EncounterControls(callbacks.builderService());
         EncounterRosterPane rosterPane = new EncounterRosterPane(callbacks.builderService());
-        SceneHandle encounterScene = callbacks.sceneRegistry().registerScene("⚔ Encounter", rosterPane);
+        SceneHandle encounterScene = callbacks.sceneRegistry().registerScene("Encounter", rosterPane);
 
         workflow = new EncounterWorkflowCoordinator(
                 callbacks,
@@ -78,7 +79,12 @@ public class EncounterView implements AppView {
 
     @Override
     public String getIconText() {
-        return "\u2694";
+        return "";
+    }
+
+    @Override
+    public Node getNavigationGraphic() {
+        return NavigationIcons.encounter();
     }
 
     @Override

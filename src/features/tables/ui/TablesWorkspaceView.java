@@ -7,6 +7,7 @@ import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import ui.shell.AppView;
+import ui.shell.NavigationIcons;
 
 import java.util.List;
 import java.util.Objects;
@@ -64,7 +65,12 @@ public final class TablesWorkspaceView implements AppView {
 
     @Override
     public String getIconText() {
-        return "\uD83D\uDCCB";
+        return "";
+    }
+
+    @Override
+    public Node getNavigationGraphic() {
+        return NavigationIcons.tables();
     }
 
     @Override

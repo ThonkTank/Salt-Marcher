@@ -22,7 +22,7 @@ public final class HexMapModule {
 
     public void registerScenes(SceneRegistry sceneRegistry) {
         Objects.requireNonNull(sceneRegistry, "sceneRegistry");
-        sceneRegistry.registerScene("\uD83D\uDDFA Reise", new TravelPane());
+        sceneRegistry.registerScene("Reise", new TravelPane());
     }
 
     public AppView overworldView() {

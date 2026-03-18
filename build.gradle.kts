@@ -9,6 +9,7 @@ import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.attribute.PosixFilePermission
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.util.EnumSet
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.JavaExec
@@ -93,6 +94,8 @@ val jpackageOutputDir = layout.buildDirectory.dir("packaging/jpackage")
 val jpackageTempDir = layout.buildDirectory.dir("packaging/tmp")
 val preparedRuntimeImageDir = layout.buildDirectory.dir("packaging/runtime-image")
 val packagedAppImageDir = jpackageOutputDir.map { it.dir(launcherName) }
+val packagedAppLibDir = packagedAppImageDir.map { it.dir("app") }
+val packagedAppRuntimeDir = packagedAppImageDir.map { it.dir("runtime") }
 val installedAppDir = providers.provider {
     Paths.get(System.getProperty("user.home"), ".local", "opt", launcherName)
 }
@@ -149,13 +152,19 @@ val packageAppImage by tasks.registering(Exec::class) {
     inputs.dir(preparedRuntimeImageDir)
     outputs.dir(packagedAppImageDir)
 
+    onlyIf {
+        resolveJpackageExecutable() != null
+    }
+
     doFirst {
         delete(packagedAppImageDir.get().asFile)
         delete(jpackageTempDir.get().asFile)
         jpackageOutputDir.get().asFile.mkdirs()
         jpackageTempDir.get().asFile.mkdirs()
+        val jpackageExecutable = resolveJpackageExecutable()
+            ?: error("jpackage executable not found")
         commandLine(
-            "jpackage",
+            jpackageExecutable,
             "--type", "app-image",
             "--dest", jpackageOutputDir.get().asFile.absolutePath,
             "--temp", jpackageTempDir.get().asFile.absolutePath,
@@ -173,10 +182,60 @@ val packageAppImage by tasks.registering(Exec::class) {
     }
 }
 
+val packageAppImageFallback by tasks.registering {
+    group = "distribution"
+    description = "Build a self-contained Linux app image without jpackage when the tool is unavailable."
+    dependsOn(stageJpackageInput, prepareRuntimeImage)
+
+    inputs.dir(jpackageInputDir)
+    inputs.dir(preparedRuntimeImageDir)
+    inputs.file(layout.projectDirectory.file("resources/$desktopIconRelativePath"))
+    outputs.dir(packagedAppImageDir)
+
+    onlyIf {
+        resolveJpackageExecutable() == null
+    }
+
+    doLast {
+        val appImageDir = packagedAppImageDir.get().asFile.toPath()
+        val appLibDir = packagedAppLibDir.get().asFile.toPath()
+        val appRuntimeDir = packagedAppRuntimeDir.get().asFile.toPath()
+        val appBinDir = appImageDir.resolve("bin")
+        val launcherFile = appBinDir.resolve(launcherName)
+
+        delete(appImageDir.toFile())
+        Files.createDirectories(appLibDir)
+        Files.createDirectories(appRuntimeDir)
+        Files.createDirectories(appBinDir)
+
+        copy {
+            from(jpackageInputDir)
+            into(appLibDir.toFile())
+        }
+        copyRuntimeImage(preparedRuntimeImageDir.get().asFile.toPath(), appRuntimeDir)
+
+        val launcherScript = """
+            |#!/usr/bin/env sh
+            |set -eu
+            |
+            |APP_DIR="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+            |exec "${'$'}APP_DIR/runtime/bin/java" \
+            |  "$preloaderJvmArg" \
+            |  --module-path "${'$'}APP_DIR/app" \
+            |  --add-modules=javafx.controls \
+            |  -cp "${'$'}APP_DIR/app/*" \
+            |  ${application.mainClass.get()} \
+            |  "${'$'}@"
+            |""".trimMargin()
+        Files.writeString(launcherFile, launcherScript)
+        setExecutableFile(launcherFile)
+    }
+}
+
 val installAppImage by tasks.registering {
     group = "distribution"
     description = "Install the packaged app image into ~/.local/opt/salt-marcher."
-    dependsOn(packageAppImage)
+    dependsOn(packageAppImage, packageAppImageFallback)
 
     inputs.dir(packagedAppImageDir)
     inputs.file(layout.projectDirectory.file("resources/$desktopIconRelativePath"))
@@ -267,6 +326,10 @@ fun resolveDesktopDirectory(): Path {
 }
 
 fun setExecutableDesktopFile(path: Path) {
+    setExecutableFile(path)
+}
+
+fun setExecutableFile(path: Path) {
     try {
         Files.setPosixFilePermissions(
             path,
@@ -282,6 +345,32 @@ fun setExecutableDesktopFile(path: Path) {
         )
     } catch (_: UnsupportedOperationException) {
         // Non-POSIX filesystems still get a valid desktop entry without chmod support.
+    }
+}
+
+fun resolveJpackageExecutable(): String? {
+    val javaHomeJpackage = Paths.get(System.getProperty("java.home"), "bin", executableName("jpackage"))
+    if (Files.isRegularFile(javaHomeJpackage) && Files.isExecutable(javaHomeJpackage)) {
+        return javaHomeJpackage.toString()
+    }
+
+    val pathDirectories = (System.getenv("PATH") ?: "")
+        .split(File.pathSeparatorChar)
+        .filter { it.isNotBlank() }
+    for (directory in pathDirectories) {
+        val candidate = Paths.get(directory, executableName("jpackage"))
+        if (Files.isRegularFile(candidate) && Files.isExecutable(candidate)) {
+            return candidate.toString()
+        }
+    }
+    return null
+}
+
+fun executableName(command: String): String {
+    return if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) {
+        "$command.exe"
+    } else {
+        command
     }
 }
 
@@ -690,38 +779,109 @@ val checkFeatureApiBoundaryConvention by tasks.registering {
 val checkDungeonEditorArchitectureConvention by tasks.registering {
     group = "verification"
     description = "Fail when dungeon editor UI packages reach through forbidden architecture boundaries."
+    val importPattern = Regex("""^\s*import\s+([a-zA-Z0-9_.]+);""", RegexOption.MULTILINE)
 
     doLast {
         val projectRoot = project.layout.projectDirectory.asFile.toPath()
-        val renderOffenders = fileTree("src/features/world/dungeonmap/ui/workspace/render") {
+        fun importedPackages(sourceFile: File): List<String> {
+            return importPattern.findAll(sourceFile.readText())
+                .map { it.groupValues[1] }
+                .toList()
+        }
+
+        fun packageBoundaryOffenders(
+            sourceRoot: String,
+            forbiddenPrefixes: List<String>
+        ): List<String> {
+            return fileTree(sourceRoot) {
+                include("**/*.java")
+            }.files
+                .flatMap { sourceFile ->
+                    val path = projectRoot.relativize(sourceFile.toPath()).toString().replace('\\', '/')
+                    importedPackages(sourceFile)
+                        .filter { imported -> forbiddenPrefixes.any(imported::startsWith) }
+                        .map { imported -> "$path -> $imported" }
+                }
+                .sorted()
+        }
+
+        val sharedBoundaryOffenders = packageBoundaryOffenders(
+            "src/features/world/dungeonmap/shared",
+            listOf(
+                "features.world.dungeonmap.editor.",
+                "features.world.dungeonmap.runtime.")
+        )
+
+        val editorRuntimeOffenders = packageBoundaryOffenders(
+            "src/features/world/dungeonmap/editor",
+            listOf("features.world.dungeonmap.runtime.")
+        )
+
+        val editorApplicationUiOffenders = packageBoundaryOffenders(
+            "src/features/world/dungeonmap/editor/application",
+            listOf("features.world.dungeonmap.editor.ui.")
+        )
+
+        val runtimeEditorOffenders = packageBoundaryOffenders(
+            "src/features/world/dungeonmap/runtime",
+            listOf("features.world.dungeonmap.editor.")
+        )
+
+        val workspaceImplementationRoot = "src/features/world/dungeonmap/editor/ui/workspace/pane/"
+        val allowedWorkspaceImplementationPaths = setOf(
+            "src/features/world/dungeonmap/editor/ui/workspace/surface/DungeonEditorSplitWorkspace.java",
+            "src/features/world/dungeonmap/editor/ui/workspace/surface/DungeonEditorWorkspaceBridge.java",
+            "src/features/world/dungeonmap/editor/ui/workspace/surface/DungeonEditorPaneGroup.java",
+            "src/features/world/dungeonmap/editor/ui/workspace/surface/DungeonEditorPaneInteractionForwarder.java")
+
+        val internalImportOffenders = fileTree("src/features/world/dungeonmap/editor") {
             include("**/*.java")
         }.files
-            .map { projectRoot.relativize(it.toPath()).toString().replace('\\', '/') }
-            .filter { path ->
-                val content = file(path).readText()
-                content.contains("features.world.dungeonmap.service.")
-                    || content.contains("features.world.dungeonmap.repository.")
+            .flatMap { sourceFile ->
+                val path = projectRoot.relativize(sourceFile.toPath()).toString().replace('\\', '/')
+                if (path in allowedWorkspaceImplementationPaths
+                    || path.startsWith(workspaceImplementationRoot)) {
+                    emptyList()
+                } else {
+                    importedPackages(sourceFile)
+                        .asSequence()
+                        .filter { imported ->
+                            imported.startsWith("features.world.dungeonmap.editor.ui.workspace.pane.")
+                        }
+                        .map { imported -> "$path -> $imported" }
+                        .toList()
+                }
             }
             .sorted()
 
-        val editorControllerOffenders = fileTree("src/features/world/dungeonmap/ui/editor") {
-            include("**/*Controller.java")
-        }.files
-            .map { projectRoot.relativize(it.toPath()).toString().replace('\\', '/') }
-            .filter { path ->
-                file(path).readText().contains("features.world.dungeonmap.repository.")
-            }
-            .sorted()
-
-        if (renderOffenders.isNotEmpty() || editorControllerOffenders.isNotEmpty()) {
+        if (sharedBoundaryOffenders.isNotEmpty()
+            || editorRuntimeOffenders.isNotEmpty()
+            || editorApplicationUiOffenders.isNotEmpty()
+            || runtimeEditorOffenders.isNotEmpty()
+            || internalImportOffenders.isNotEmpty()
+        ) {
             val messages = mutableListOf<String>()
-            if (renderOffenders.isNotEmpty()) {
-                messages += "Render UI must not import dungeon service/repository packages:\n" +
-                    renderOffenders.joinToString(separator = "\n") { " - $it" }
+            if (sharedBoundaryOffenders.isNotEmpty()) {
+                messages += "Shared dungeon packages must not depend on editor/runtime packages:\n" +
+                    sharedBoundaryOffenders.joinToString(separator = "\n") { " - $it" }
             }
-            if (editorControllerOffenders.isNotEmpty()) {
-                messages += "Editor workflow controllers must not import dungeon repository packages:\n" +
-                    editorControllerOffenders.joinToString(separator = "\n") { " - $it" }
+            if (editorRuntimeOffenders.isNotEmpty()) {
+                messages += "Editor packages must not import runtime packages directly:\n" +
+                    editorRuntimeOffenders.joinToString(separator = "\n") { " - $it" }
+            }
+            if (editorApplicationUiOffenders.isNotEmpty()) {
+                messages += "Editor application packages must not import editor UI packages directly:\n" +
+                    editorApplicationUiOffenders.joinToString(separator = "\n") { " - $it" }
+            }
+            if (runtimeEditorOffenders.isNotEmpty()) {
+                messages += "Runtime packages must not import editor packages directly:\n" +
+                    runtimeEditorOffenders.joinToString(separator = "\n") { " - $it" }
+            }
+            if (internalImportOffenders.isNotEmpty()) {
+                messages += "Editor packages may not import workspace implementation packages directly.\n" +
+                    "Route editor-facing workspace access through the workspace surface; only SplitWorkspace and the surface implementation files may depend on workspace.pane.* packages.\n" +
+                    "Offending imports:\n" +
+                    internalImportOffenders.joinToString(separator = "\n") { " - $it" }
             }
             throw GradleException(messages.joinToString(separator = "\n\n"))
         }

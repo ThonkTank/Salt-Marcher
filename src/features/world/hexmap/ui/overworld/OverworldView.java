@@ -3,6 +3,7 @@ package features.world.hexmap.ui.overworld;
 import javafx.scene.Node;
 import ui.shell.AppView;
 import ui.async.UiErrorReporter;
+import ui.shell.NavigationIcons;
 
 /**
  * Overworld-Reiseansicht. Zeigt die Hex-Karte im Hauptbereich inklusive Gruppenmarker.
@@ -27,7 +28,8 @@ public class OverworldView implements AppView {
 
     @Override public Node getMainContent()     { return hexMapPane; }
     @Override public String getTitle()        { return "Karte"; }
-    @Override public String getIconText()     { return "\uD83D\uDDFA"; }
+    @Override public String getIconText()     { return ""; }
+    @Override public Node getNavigationGraphic() { return NavigationIcons.overworld(); }
     @Override public Node getControlsContent() { return overworldControls; }
 
     @Override

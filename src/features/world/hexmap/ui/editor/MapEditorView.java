@@ -14,6 +14,7 @@ import javafx.scene.Node;
 import ui.shell.AppView;
 import ui.shell.DetailsNavigator;
 import ui.async.UiErrorReporter;
+import ui.shell.NavigationIcons;
 import ui.components.MessageDropdown;
 
 import java.util.HashMap;
@@ -176,7 +177,8 @@ public class MapEditorView implements AppView {
 
     @Override public Node getMainContent()     { return canvas; }
     @Override public String getTitle()        { return "Karteneditor"; }
-    @Override public String getIconText()     { return "\u270F"; } // ✏
+    @Override public String getIconText()     { return ""; }
+    @Override public Node getNavigationGraphic() { return NavigationIcons.mapEditor(); }
     @Override public Node getControlsContent() { return controls; }
     @Override public Node getStateContent()    { return toolSettingsPane; }
 

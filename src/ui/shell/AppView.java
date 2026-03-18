@@ -37,8 +37,11 @@ public interface AppView {
     /** Title shown in the toolbar when this view is active. */
     String getTitle();
 
-    /** Short label for the sidebar nav button — typically a single emoji or symbol (e.g. "\u2694" ⚔ or "\uD83D\uDDFA" 🗺). */
+    /** Short label for the sidebar nav button. Keep it font-stable in bundled desktop runtimes. */
     default String getIconText() { return ""; }
+
+    /** Optional vector graphic for the sidebar nav button. Prefer this over text glyphs. */
+    default Node getNavigationGraphic() { return null; }
 
     /** Extra nodes placed right-aligned in the toolbar. */
     default List<Node> getToolbarItems() { return List.of(); }

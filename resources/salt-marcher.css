@@ -779,13 +779,37 @@
     -fx-font-size: 18px;
     -fx-text-fill: -sm-text-secondary;
 }
+.nav-icon {
+    -fx-alignment: center;
+}
+.nav-btn .nav-icon-stroke {
+    -fx-stroke: -sm-text-secondary;
+    -fx-stroke-width: 1.8;
+    -fx-stroke-line-cap: round;
+    -fx-stroke-line-join: round;
+}
+.nav-btn .nav-icon-fill {
+    -fx-fill: -sm-text-secondary;
+}
 .nav-btn:hover {
     -fx-background-color: -sm-bg-elevated;
     -fx-text-fill: -sm-text-primary;
 }
+.nav-btn:hover .nav-icon-stroke {
+    -fx-stroke: -sm-text-primary;
+}
+.nav-btn:hover .nav-icon-fill {
+    -fx-fill: -sm-text-primary;
+}
 .nav-btn:selected {
     -fx-background-color: #165fa0;  /* darkened accent — text-primary (#ecedee) clears 7.2:1 (WCAG 1.4.3) */
     -fx-text-fill: -sm-text-primary;
+}
+.nav-btn:selected .nav-icon-stroke {
+    -fx-stroke: -sm-text-primary;
+}
+.nav-btn:selected .nav-icon-fill {
+    -fx-fill: -sm-text-primary;
 }
 .nav-btn:focused {
     -fx-border-color: -sm-accent-hover;

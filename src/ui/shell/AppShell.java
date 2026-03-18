@@ -3,6 +3,7 @@ package ui.shell;
 import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.ToggleButton;
@@ -126,6 +127,12 @@ public class AppShell extends BorderPane {
         btn.setToggleGroup(navGroup);
         btn.setTooltip(new Tooltip(view.getTitle()));
         btn.setAccessibleText(view.getTitle());
+        Node navigationGraphic = view.getNavigationGraphic();
+        if (navigationGraphic != null) {
+            btn.setGraphic(navigationGraphic);
+            btn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+            btn.setGraphicTextGap(0);
+        }
         btn.setOnAction(e -> navigateTo(id));
         navButtons.put(id, btn);
         sidebar.getChildren().add(btn);

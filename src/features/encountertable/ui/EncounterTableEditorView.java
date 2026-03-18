@@ -17,6 +17,7 @@ import ui.components.MessageDropdown;
 import ui.components.TextInputDropdown;
 import ui.shell.AppView;
 import ui.shell.DetailsNavigator;
+import ui.shell.NavigationIcons;
 
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -76,7 +77,8 @@ public class EncounterTableEditorView implements AppView {
 
     @Override public Node getMainContent()     { return monsterList; }
     @Override public String getTitle()          { return "Tabellen-Editor"; }
-    @Override public String getIconText()       { return "\uD83D\uDCCB"; }
+    @Override public String getIconText()       { return ""; }
+    @Override public Node getNavigationGraphic() { return NavigationIcons.tables(); }
     @Override public Node getControlsContent() { return controls; }
     @Override public Node getStateContent()    { return entriesPane; }
 
