@@ -124,11 +124,6 @@ public final class DungeonLayout {
         return cluster == null ? Set.of() : cluster.cells();
     }
 
-    public List<List<Point2i>> clusterLoops(Long clusterId) {
-        RoomCluster cluster = findCluster(clusterId);
-        return cluster == null ? List.of() : cluster.loops();
-    }
-
     private static Map<Long, Room> indexRooms(List<RoomCluster> clusters) {
         Map<Long, Room> result = new LinkedHashMap<>();
         for (RoomCluster cluster : clusters) {

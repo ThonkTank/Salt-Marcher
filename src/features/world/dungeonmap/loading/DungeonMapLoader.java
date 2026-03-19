@@ -15,11 +15,15 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public final class DungeonMapLoader {
+
+    private static final Point2i LOOP_SEPARATOR = new Point2i(Integer.MIN_VALUE, Integer.MIN_VALUE);
 
     public DungeonMapLoadResult loadInitial() throws SQLException {
         try (Connection conn = DatabaseManager.getConnection()) {
@@ -191,7 +195,7 @@ public final class DungeonMapLoader {
                     RoomCluster cluster = new RoomCluster(
                             clusterId,
                             rs.getLong("dungeon_map_id"),
-                            TileShape.fromRelativeVertices(
+                            tileShapeFromRelativeVertices(
                                     new Point2i(rs.getInt("center_x"), rs.getInt("center_y")),
                                     List.copyOf(verticesByClusterId.getOrDefault(clusterId, List.of()))),
                             edgeObjects.stream().filter(EdgeObject::isWall).map(EdgeObject::wall).toList(),
@@ -226,13 +230,78 @@ public final class DungeonMapLoader {
             case "EAST" -> new Point2i(1, 0);
             case "SOUTH" -> new Point2i(0, 1);
             case "WEST" -> new Point2i(-1, 0);
-            default -> new Point2i(0, 0);
+            default -> throw new IllegalArgumentException("Unbekannte Kantenrichtung: " + direction);
         };
-        TileShape shape = TileShape.singleCell(roomCell);
         if ("DOOR".equals(type)) {
-            return new EdgeObject(null, new Door(roomCell, delta, shape));
+            return new EdgeObject(null, new Door(roomCell, delta));
         }
-        return new EdgeObject(new Wall(roomCell, delta, shape), null);
+        return new EdgeObject(new Wall(roomCell, delta), null);
+    }
+
+    private static TileShape tileShapeFromRelativeVertices(Point2i anchor, List<Point2i> relativeVertices) {
+        List<List<Point2i>> loops = splitLoops(relativeVertices);
+        if (loops.isEmpty()) {
+            return TileShape.singleCell(anchor);
+        }
+        int minX = loops.stream().flatMap(List::stream).mapToInt(Point2i::x).min().orElse(0);
+        int maxX = loops.stream().flatMap(List::stream).mapToInt(Point2i::x).max().orElse(0);
+        int minY = loops.stream().flatMap(List::stream).mapToInt(Point2i::y).min().orElse(0);
+        int maxY = loops.stream().flatMap(List::stream).mapToInt(Point2i::y).max().orElse(0);
+
+        Set<Point2i> absoluteCells = new LinkedHashSet<>();
+        for (int x = minX; x <= maxX; x++) {
+            for (int y = minY; y <= maxY; y++) {
+                if (containsCell(loops, x, y)) {
+                    absoluteCells.add(anchor.add(new Point2i(x, y)));
+                }
+            }
+        }
+        return TileShape.fromAbsoluteCells(anchor, absoluteCells);
+    }
+
+    private static List<List<Point2i>> splitLoops(List<Point2i> vertices) {
+        List<List<Point2i>> loops = new ArrayList<>();
+        List<Point2i> currentLoop = new ArrayList<>();
+        for (Point2i vertex : vertices == null ? List.<Point2i>of() : vertices) {
+            if (LOOP_SEPARATOR.equals(vertex)) {
+                if (!currentLoop.isEmpty()) {
+                    loops.add(List.copyOf(currentLoop));
+                    currentLoop = new ArrayList<>();
+                }
+                continue;
+            }
+            currentLoop.add(vertex);
+        }
+        if (!currentLoop.isEmpty()) {
+            loops.add(List.copyOf(currentLoop));
+        }
+        return loops.isEmpty() ? List.of() : List.copyOf(loops);
+    }
+
+    private static boolean containsCell(List<List<Point2i>> loops, int x, int y) {
+        boolean inside = false;
+        for (List<Point2i> loop : loops) {
+            if (polygonContainsCell(loop, x, y)) {
+                inside = !inside;
+            }
+        }
+        return inside;
+    }
+
+    private static boolean polygonContainsCell(List<Point2i> polygon, int x, int y) {
+        double px = x + 0.5;
+        double py = y + 0.5;
+        boolean inside = false;
+        for (int i = 0, j = polygon.size() - 1; i < polygon.size(); j = i++) {
+            Point2i pi = polygon.get(i);
+            Point2i pj = polygon.get(j);
+            boolean intersects = ((pi.y() > py) != (pj.y() > py))
+                    && (px < (double) (pj.x() - pi.x()) * (py - pi.y()) / (double) (pj.y() - pi.y()) + pi.x());
+            if (intersects) {
+                inside = !inside;
+            }
+        }
+        return inside;
     }
 
     private record EdgeObject(Wall wall, Door door) {

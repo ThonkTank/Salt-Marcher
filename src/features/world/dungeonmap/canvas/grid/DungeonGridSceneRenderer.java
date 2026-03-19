@@ -48,10 +48,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         gc.setLineWidth(1.5);
         for (RoomCluster cluster : mapModel.clusters()) {
             for (Room room : cluster.rooms()) {
-                TileShape geometry = cluster.roomGeometry(room.roomId());
-                if (geometry == null) {
-                    continue;
-                }
+                TileShape geometry = room.geometry();
                 fillRoomCells(gc, camera, gridSize, geometry.absoluteCells());
                 strokeRoomCells(gc, camera, gridSize, geometry.absoluteCells());
                 gc.setFill(DungeonCanvasTheme.text(editorMode));

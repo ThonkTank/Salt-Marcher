@@ -10,7 +10,11 @@ public record Room(
         TileShape geometry
 ) {
     public Room {
-        geometry = geometry == null ? TileShape.singleCell(null) : geometry;
+        geometry = (geometry == null ? TileShape.singleCell(null) : geometry).recentered();
+    }
+
+    public Room withGeometry(TileShape geometry) {
+        return new Room(roomId, mapId, clusterId, name, geometry);
     }
 
     public int distanceTo(Room other) {
