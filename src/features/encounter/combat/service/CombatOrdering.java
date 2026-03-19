@@ -7,7 +7,9 @@ import java.util.Comparator;
 
 /** Shared ordering rules for combatant initiative lists. */
 public final class CombatOrdering {
-    private CombatOrdering() {}
+    private CombatOrdering() {
+        throw new AssertionError("No instances");
+    }
 
     public static final Comparator<Combatant> BY_INITIATIVE_PC_FIRST = (a, b) -> {
         if (b.getInitiative() != a.getInitiative()) return b.getInitiative() - a.getInitiative();

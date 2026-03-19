@@ -4,8 +4,6 @@ import features.creatures.api.StatBlockRequest;
 import features.encountertable.api.EncounterTableSummary;
 import features.loottable.api.LootTableSummary;
 import features.spells.api.SpellSummary;
-import features.world.dungeonmap.api.DungeonRoomClusterSummary;
-import features.world.dungeonmap.api.DungeonRoomSummary;
 import features.world.hexmap.api.HexTileSummary;
 import javafx.scene.Node;
 
@@ -34,10 +32,6 @@ public interface DetailsNavigator {
     void showLootTable(LootTableSummary summary);
 
     void showHexTile(HexTileSummary summary);
-
-    void showDungeonRoom(DungeonRoomSummary summary);
-
-    void showDungeonRoomCluster(DungeonRoomClusterSummary summary);
 
     /**
      * For uncommon read-mostly information cards in the shared inspector.

@@ -12,6 +12,7 @@ import javafx.scene.shape.Shape;
 public final class NavigationIcons {
 
     private NavigationIcons() {
+        throw new AssertionError("No instances");
     }
 
     public static Node encounter() {

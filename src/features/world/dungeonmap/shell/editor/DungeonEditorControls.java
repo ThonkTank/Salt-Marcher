@@ -1,0 +1,59 @@
+package features.world.dungeonmap.shell.editor;
+
+import features.world.dungeonmap.canvas.base.DungeonViewMode;
+import features.world.dungeonmap.loading.DungeonMapCatalogEntry;
+import features.world.dungeonmap.shell.editor.controls.MapControls;
+import features.world.dungeonmap.shell.editor.controls.ToolControls;
+import features.world.dungeonmap.shell.editor.controls.ViewModeControls;
+import javafx.geometry.Insets;
+import javafx.scene.control.Label;
+import javafx.scene.layout.VBox;
+
+import java.util.List;
+import java.util.function.Consumer;
+
+public final class DungeonEditorControls extends VBox {
+
+    private final ViewModeControls viewModeControls = new ViewModeControls();
+    private final MapControls mapControls = new MapControls(viewModeControls, DungeonEditorControls::sectionLabel);
+    private final ToolControls toolControls = new ToolControls(DungeonEditorControls::sectionLabel);
+
+    public DungeonEditorControls() {
+        getStyleClass().add("dungeon-editor-toolbar");
+        setSpacing(10);
+        setPadding(new Insets(12));
+        setFillWidth(true);
+        setMaxWidth(Double.MAX_VALUE);
+        getChildren().addAll(mapControls.content(), toolControls.content());
+    }
+
+    public void selectViewMode(DungeonViewMode viewMode) {
+        viewModeControls.selectViewMode(viewMode);
+    }
+
+    public void setOnViewModeChanged(Consumer<DungeonViewMode> onViewModeChanged) {
+        viewModeControls.setOnViewModeChanged(onViewModeChanged);
+    }
+
+    public void showDisplayedTool(DungeonEditorTool tool) {
+        toolControls.showDisplayedTool(tool);
+    }
+
+    public void setOnToolChanged(Consumer<DungeonEditorTool> onToolChanged) {
+        toolControls.setOnToolChanged(onToolChanged);
+    }
+
+    public void setOnMapSelected(Consumer<DungeonMapCatalogEntry> onMapSelected) {
+        mapControls.setOnMapSelected(onMapSelected);
+    }
+
+    public void showMaps(List<DungeonMapCatalogEntry> maps, Long activeMapId, boolean loading) {
+        mapControls.showMaps(maps, activeMapId, loading);
+    }
+
+    private static Label sectionLabel(String text) {
+        Label label = new Label(text);
+        label.getStyleClass().addAll("section-header", "text-muted");
+        return label;
+    }
+}

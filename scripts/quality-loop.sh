@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# quality-loop.sh — Autonomous quality review & fix loop for dungeonmap
+# quality-loop.sh — Autonomous review & fix loop for dungeonmap
 #
-# Runs repeated cycles of:
-#   1. /review-quality on the dungeonmap package
-#   2. Extract concrete fix tasks
-#   3. Execute each task sequentially (with compile check)
-#   4. Repeat until stopped (Ctrl+C)
+# Rotates through three review perspectives:
+#   1. /review-quality    — code smells, elegance, simplicity
+#   2. /review-architecture — module boundaries, dependencies, layering
+#   3. /review-structure  — file/package organization, naming, cohesion
+#
+# Each cycle: review → extract tasks → fix sequentially → next perspective
 
 # No set -e — the loop must never die on transient errors
 set +e
@@ -15,12 +16,15 @@ TARGET="src/features/world/dungeonmap"
 LOG_DIR="$PROJECT/logs/quality-loop"
 CYCLE=0
 
+REVIEW_SKILLS=("review-quality" "review-architecture" "review-quality" "review-structure")
+
 mkdir -p "$LOG_DIR"
 
-echo "=== Quality Loop gestartet ==="
-echo "Ziel:     $TARGET"
-echo "Logs:     $LOG_DIR"
-echo "Stoppen:  Ctrl+C"
+echo "=== Review Loop gestartet ==="
+echo "Ziel:       $TARGET"
+echo "Rotation:   ${REVIEW_SKILLS[*]}"
+echo "Logs:       $LOG_DIR"
+echo "Stoppen:    Ctrl+C"
 echo ""
 
 while true; do
@@ -28,24 +32,28 @@ while true; do
   TIMESTAMP=$(date +%Y%m%d-%H%M%S)
   CYCLE_LOG="$LOG_DIR/cycle-${CYCLE}-${TIMESTAMP}.md"
 
+  # Rotate through review skills
+  SKILL_INDEX=$(( (CYCLE - 1) % ${#REVIEW_SKILLS[@]} ))
+  CURRENT_SKILL="${REVIEW_SKILLS[$SKILL_INDEX]}"
+
   echo "────────────────────────────────────────"
-  echo "Zyklus $CYCLE  ($TIMESTAMP)"
+  echo "Zyklus $CYCLE  ($TIMESTAMP)  [$CURRENT_SKILL]"
   echo "────────────────────────────────────────"
 
   # ── Phase 1: Review & Aufgaben formulieren ──────────────────────
-  echo "[1/3] Review läuft..."
+  echo "[1/3] Review läuft ($CURRENT_SKILL)..."
 
   REVIEW_OUTPUT=$(cd "$PROJECT" && claude -p \
     --output-format text \
     --model claude-opus-4-6 \
     --dangerously-skip-permissions \
     --max-turns 30 \
-    "Du bist ein autonomer Quality-Review-Agent.
+    "Du bist ein autonomer Review-Agent.
 
 Aufgabe:
-1. Führe ein /review-quality auf dem Verzeichnis $TARGET durch.
+1. Führe ein /$CURRENT_SKILL auf dem Verzeichnis $TARGET durch.
    Lies dazu die relevanten Dateien und analysiere den Code nach den
-   Kriterien des review-quality Skills.
+   Kriterien des $CURRENT_SKILL Skills.
 2. Formuliere aus den Befunden eine priorisierte Liste konkreter
    Arbeitsaufträge.
 

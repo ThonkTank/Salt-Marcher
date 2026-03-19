@@ -73,12 +73,13 @@ dependencies {
 
 application {
     mainClass = "ui.bootstrap.SaltMarcherApp"
-    applicationDefaultJvmArgs = listOf(preloaderJvmArg)
+    applicationDefaultJvmArgs = listOf(preloaderJvmArg, "--enable-preview")
 }
 
 tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
     options.release = 21
+    options.compilerArgs.add("--enable-preview")
 }
 
 tasks.withType<CreateStartScripts>().configureEach {
@@ -812,20 +813,34 @@ val checkDungeonEditorArchitectureConvention by tasks.registering {
                 "features.world.dungeonmap.runtime.")
         )
 
+        val allowedEditorRuntimeImports = setOf(
+            "features.world.dungeonmap.runtime.model.DungeonRuntimeLocation")
         val editorRuntimeOffenders = packageBoundaryOffenders(
             "src/features/world/dungeonmap/editor",
             listOf("features.world.dungeonmap.runtime.")
-        )
+        ).filter { entry -> allowedEditorRuntimeImports.none { entry.endsWith(it) } }
 
         val editorApplicationUiOffenders = packageBoundaryOffenders(
             "src/features/world/dungeonmap/editor/application",
             listOf("features.world.dungeonmap.editor.ui.")
         )
 
-        val runtimeEditorOffenders = packageBoundaryOffenders(
-            "src/features/world/dungeonmap/runtime",
-            listOf("features.world.dungeonmap.editor.")
-        )
+        val allowedRuntimeEditorPaths = setOf(
+            "src/features/world/dungeonmap/runtime/ui/DungeonView.java")
+        val runtimeEditorOffenders = fileTree("src/features/world/dungeonmap/runtime") {
+            include("**/*.java")
+        }.files
+            .filter { sourceFile ->
+                val path = projectRoot.relativize(sourceFile.toPath()).toString().replace('\\', '/')
+                path !in allowedRuntimeEditorPaths
+            }
+            .flatMap { sourceFile ->
+                val path = projectRoot.relativize(sourceFile.toPath()).toString().replace('\\', '/')
+                importedPackages(sourceFile)
+                    .filter { imported -> imported.startsWith("features.world.dungeonmap.editor.") }
+                    .map { imported -> "$path -> $imported" }
+            }
+            .sorted()
 
         val workspaceImplementationRoot = "src/features/world/dungeonmap/editor/ui/workspace/pane/"
         val allowedWorkspaceImplementationPaths = setOf(

@@ -1,0 +1,72 @@
+package features.world.dungeonmap.canvas.base;
+
+import javafx.geometry.VPos;
+import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.TextAlignment;
+
+public final class DungeonCanvasTheme {
+
+    public static final Color RUNTIME_BACKGROUND = Color.web("#12181c");
+    public static final Color EDITOR_BACKGROUND = Color.web("#12181c");
+    public static final Color RUNTIME_GRID = Color.web("#2b353c");
+    public static final Color EDITOR_GRID = Color.web("#2b353c");
+    public static final Color RUNTIME_AXIS = Color.web("#8a6a35");
+    public static final Color EDITOR_AXIS = Color.web("#8a6a35");
+    public static final Color RUNTIME_TEXT = Color.web("#ecedee");
+    public static final Color EDITOR_TEXT = Color.web("#ecedee");
+    public static final Color CELL_FILL = Color.web("#2a3238");
+    public static final Color CELL_STROKE = Color.web("#8a6a35");
+    public static final Color GRAPH_LINK = Color.web("#56636c");
+    public static final Color GRAPH_NODE_FILL = Color.web("#2f3a41");
+    public static final Color GRAPH_NODE_STROKE = Color.web("#8a6a35");
+    public static final Color GRAPH_NODE_TEXT = Color.web("#ecedee");
+    public static final Color LABEL_FILL = Color.web("#181f24");
+    public static final Color LABEL_BORDER = Color.web("#8a6a35");
+    public static final Color LABEL_TEXT = Color.web("#ecedee");
+    public static final Font HUD_FONT = Font.font("SansSerif", FontWeight.BOLD, 14);
+    public static final Font ROOM_LABEL_FONT = Font.font("SansSerif", FontWeight.BOLD, 12);
+    public static final Font GRAPH_NODE_FONT = Font.font("SansSerif", FontWeight.BOLD, 13);
+    public static final double BASE_GRID = 32.0;
+    public static final double MIN_ZOOM = 0.4;
+    public static final double MAX_ZOOM = 4.0;
+
+    private DungeonCanvasTheme() {
+        throw new AssertionError("No instances");
+    }
+
+    public static Color background(boolean editorMode) {
+        return editorMode ? EDITOR_BACKGROUND : RUNTIME_BACKGROUND;
+    }
+
+    public static Color grid(boolean editorMode) {
+        return editorMode ? EDITOR_GRID : RUNTIME_GRID;
+    }
+
+    public static Color axis(boolean editorMode) {
+        return editorMode ? EDITOR_AXIS : RUNTIME_AXIS;
+    }
+
+    public static Color text(boolean editorMode) {
+        return editorMode ? EDITOR_TEXT : RUNTIME_TEXT;
+    }
+
+    public static void drawHudLabel(GraphicsContext gc, String text, double x, double y) {
+        if (text == null || text.isBlank()) {
+            return;
+        }
+        gc.setFill(LABEL_FILL);
+        gc.fillRoundRect(x, y, text.length() * 7.2 + 16, 24, 14, 14);
+        gc.setStroke(LABEL_BORDER);
+        gc.setLineWidth(1);
+        gc.strokeRoundRect(x, y, text.length() * 7.2 + 16, 24, 14, 14);
+        gc.setFill(LABEL_TEXT);
+        gc.setFont(HUD_FONT);
+        gc.setTextAlign(TextAlignment.LEFT);
+        gc.setTextBaseline(VPos.TOP);
+        gc.fillText(text, x + 8, y + 4);
+        gc.setTextBaseline(VPos.BASELINE);
+    }
+}
