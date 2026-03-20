@@ -3,24 +3,46 @@ package features.world.dungeonmap.shell.editor.controls;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 
 enum ToolFamily {
-    ROOM("Raum", DungeonEditorTool.ROOM),
-    WALL("Wand", DungeonEditorTool.WALL),
-    DOOR("Tür", DungeonEditorTool.DOOR),
-    CORRIDOR("Korridor", DungeonEditorTool.CORRIDOR);
+    ROOM(DungeonEditorTool.ROOM_PAINT, DungeonEditorTool.ROOM_DELETE),
+    WALL(DungeonEditorTool.CLUSTER_WALL, DungeonEditorTool.CLUSTER_WALL_DELETE),
+    DOOR(DungeonEditorTool.CLUSTER_DOOR, DungeonEditorTool.CLUSTER_DOOR_DELETE),
+    CORRIDOR(DungeonEditorTool.CORRIDOR_CREATE, DungeonEditorTool.CORRIDOR_DELETE);
 
-    private final String label;
-    private final DungeonEditorTool tool;
+    private final DungeonEditorTool primaryTool;
+    private final DungeonEditorTool secondaryTool;
 
-    ToolFamily(String label, DungeonEditorTool tool) {
-        this.label = label;
-        this.tool = tool;
+    ToolFamily(DungeonEditorTool primaryTool, DungeonEditorTool secondaryTool) {
+        this.primaryTool = primaryTool;
+        this.secondaryTool = secondaryTool;
     }
 
     String label() {
-        return label;
+        return switch (this) {
+            case ROOM -> "Raum";
+            case WALL -> "Wand";
+            case DOOR -> "Tür";
+            case CORRIDOR -> "Korridor";
+        };
     }
 
-    DungeonEditorTool tool() {
-        return tool;
+    DungeonEditorTool primaryTool() {
+        return primaryTool;
+    }
+
+    DungeonEditorTool secondaryTool() {
+        return secondaryTool;
+    }
+
+    static ToolFamily forTool(DungeonEditorTool tool) {
+        if (tool == null) {
+            return null;
+        }
+        return switch (tool) {
+            case SELECT -> null;
+            case ROOM_PAINT, ROOM_DELETE -> ROOM;
+            case CLUSTER_WALL, CLUSTER_WALL_DELETE -> WALL;
+            case CLUSTER_DOOR, CLUSTER_DOOR_DELETE -> DOOR;
+            case CORRIDOR_CREATE, CORRIDOR_DELETE -> CORRIDOR;
+        };
     }
 }

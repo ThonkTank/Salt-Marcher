@@ -21,29 +21,47 @@ public final class ToolControls {
     private final ToggleGroup toolGroup = new ToggleGroup();
     private final ToggleButton selectButton = createToggleButton(DungeonEditorTool.SELECT.label());
     private final Map<ToolFamily, Button> familyButtons = new EnumMap<>(ToolFamily.class);
+    private final Button roomButton = createButton("Raum");
+    private final Button wallButton = createButton("Wand");
+    private final Button doorButton = createButton("Tür");
+    private final Button corridorButton = createButton("Korridor");
     private final GuardState sync = new GuardState();
+    private final ToolFamilyDropdownController dropdownController;
     private final VBox content;
     private Consumer<DungeonEditorTool> onToolChanged = tool -> { };
     private DungeonEditorTool displayedTool = DungeonEditorTool.SELECT;
 
-    public ToolControls(Function<String, Label> sectionLabelFactory) {
+    public ToolControls(ToolFamilyDropdownController dropdownController, Function<String, Label> sectionLabelFactory) {
+        this.dropdownController = dropdownController;
         selectButton.setToggleGroup(toolGroup);
         selectButton.setSelected(true);
-        HBox row = new HBox(6, selectButton);
-        row.setAlignment(Pos.CENTER_LEFT);
-        for (ToolFamily family : ToolFamily.values()) {
-            Button button = createButton(family.label());
-            familyButtons.put(family, button);
-            row.getChildren().add(button);
-            button.setOnAction(event -> selectTool(family.tool()));
-        }
+
+        familyButtons.put(ToolFamily.ROOM, roomButton);
+        familyButtons.put(ToolFamily.WALL, wallButton);
+        familyButtons.put(ToolFamily.DOOR, doorButton);
+        familyButtons.put(ToolFamily.CORRIDOR, corridorButton);
+
         toolGroup.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
-            if (sync.isActive() || newToggle != null) {
+            if (sync.isActive()) {
                 return;
             }
-            sync.run(() -> restoreSelection(oldToggle, selectButton));
+            if (newToggle == null) {
+                sync.run(() -> restoreSelection(oldToggle, selectButton));
+                return;
+            }
+            if (newToggle == selectButton) {
+                selectToolFromUser(DungeonEditorTool.SELECT);
+            }
         });
-        selectButton.setOnAction(event -> selectTool(DungeonEditorTool.SELECT));
+
+        for (ToolFamily family : ToolFamily.values()) {
+            Button familyButton = familyButtons.get(family);
+            this.dropdownController.bindAnchor(familyButton);
+            familyButton.setOnAction(event -> activateFamily(family));
+        }
+
+        HBox row = new HBox(6, selectButton, roomButton, wallButton, doorButton, corridorButton);
+        row.setAlignment(Pos.CENTER_LEFT);
         content = new VBox(6, sectionLabelFactory.apply("Werkzeug"), row);
         content.getStyleClass().add("editor-toolbar-group");
         showDisplayedTool(DungeonEditorTool.SELECT);
@@ -58,16 +76,30 @@ public final class ToolControls {
     }
 
     public void showDisplayedTool(DungeonEditorTool tool) {
-        DungeonEditorTool nextTool = tool == null ? DungeonEditorTool.SELECT : tool;
+        DungeonEditorTool nextTool = normalizeTool(tool);
         displayedTool = nextTool;
-        sync.run(() -> selectButton.setSelected(nextTool == DungeonEditorTool.SELECT));
+        sync.run(() -> {
+            selectButton.setSelected(nextTool == DungeonEditorTool.SELECT);
+            if (nextTool != DungeonEditorTool.SELECT) {
+                toolGroup.selectToggle(null);
+            }
+        });
         for (var entry : familyButtons.entrySet()) {
-            setSelected(entry.getValue(), entry.getKey().tool() == nextTool);
+            setSelected(entry.getValue(), entry.getKey() == ToolFamily.forTool(nextTool));
         }
     }
 
-    private void selectTool(DungeonEditorTool tool) {
-        DungeonEditorTool nextTool = tool == null ? DungeonEditorTool.SELECT : tool;
+    private void activateFamily(ToolFamily family) {
+        Button anchor = familyButtons.get(family);
+        DungeonEditorTool primaryTool = family.primaryTool();
+        if (displayedTool != primaryTool) {
+            selectToolFromUser(primaryTool);
+        }
+        dropdownController.showFamilyOptions(anchor, family, primaryTool, this::selectToolFromUser);
+    }
+
+    private void selectToolFromUser(DungeonEditorTool tool) {
+        DungeonEditorTool nextTool = normalizeTool(tool);
         if (displayedTool == nextTool) {
             showDisplayedTool(nextTool);
             return;
@@ -106,5 +138,9 @@ public final class ToolControls {
         } else if (fallbackToggle != null) {
             fallbackToggle.setSelected(true);
         }
+    }
+
+    private static DungeonEditorTool normalizeTool(DungeonEditorTool tool) {
+        return tool == null ? DungeonEditorTool.SELECT : tool;
     }
 }

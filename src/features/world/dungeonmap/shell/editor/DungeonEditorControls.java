@@ -4,6 +4,7 @@ import features.world.dungeonmap.canvas.base.DungeonViewMode;
 import features.world.dungeonmap.loading.DungeonMapCatalogEntry;
 import features.world.dungeonmap.shell.editor.controls.MapControls;
 import features.world.dungeonmap.shell.editor.controls.ToolControls;
+import features.world.dungeonmap.shell.editor.controls.ToolFamilyDropdownController;
 import features.world.dungeonmap.shell.editor.controls.ViewModeControls;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
@@ -19,7 +20,9 @@ public final class DungeonEditorControls extends VBox {
 
     private final ViewModeControls viewModeControls = new ViewModeControls();
     private final MapControls mapControls = new MapControls(viewModeControls, DungeonEditorControls::sectionLabel);
-    private final ToolControls toolControls = new ToolControls(DungeonEditorControls::sectionLabel);
+    private final ToolControls toolControls = new ToolControls(
+            new ToolFamilyDropdownController(),
+            DungeonEditorControls::sectionLabel);
 
     public DungeonEditorControls() {
         getStyleClass().add("dungeon-editor-toolbar");
