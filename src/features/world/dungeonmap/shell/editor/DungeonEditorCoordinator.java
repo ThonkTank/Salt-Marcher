@@ -1,6 +1,7 @@
 package features.world.dungeonmap.shell.editor;
 
 import features.world.dungeonmap.canvas.base.DungeonCanvasWorkspace;
+import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
 import features.world.dungeonmap.loading.DungeonMapCatalogEntry;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
@@ -16,6 +17,7 @@ final class DungeonEditorCoordinator {
     private final DungeonMapLoadingService loadingService;
     private final DungeonMapState mapState;
     private final DungeonEditorSessionState sessionState;
+    private final DungeonMapDropdownController mapDropdownController;
 
     DungeonEditorCoordinator(
             DungeonEditorControls controls,
@@ -23,7 +25,8 @@ final class DungeonEditorCoordinator {
             DungeonCanvasWorkspace workspace,
             DungeonMapLoadingService loadingService,
             DungeonMapState mapState,
-            DungeonEditorSessionState sessionState
+            DungeonEditorSessionState sessionState,
+            DungeonMapCatalogService mapCatalogService
     ) {
         this.controls = Objects.requireNonNull(controls, "controls");
         this.statePane = Objects.requireNonNull(statePane, "statePane");
@@ -31,6 +34,9 @@ final class DungeonEditorCoordinator {
         this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.sessionState = Objects.requireNonNull(sessionState, "sessionState");
+        this.mapDropdownController = new DungeonMapDropdownController(
+                Objects.requireNonNull(mapCatalogService, "mapCatalogService"),
+                new MapReloadHandle());
         installBindings();
         sessionState.addListener(this::refreshFromSessionState);
         refreshFromSessionState();
@@ -43,6 +49,9 @@ final class DungeonEditorCoordinator {
 
     private void installBindings() {
         controls.setOnMapSelected(this::loadSelectedMap);
+        controls.setOnNewMapRequested(mapDropdownController::showCreate);
+        controls.setOnEditMapRequested(request ->
+                mapDropdownController.showEdit(new DungeonMapDropdownController.EditRequest(request.map(), request.anchor())));
         controls.setOnViewModeChanged(sessionState::selectViewMode);
         controls.setOnToolChanged(sessionState::selectTool);
     }
@@ -57,6 +66,18 @@ final class DungeonEditorCoordinator {
     private void loadSelectedMap(DungeonMapCatalogEntry entry) {
         if (entry != null) {
             loadingService.loadMap(entry.mapId());
+        }
+    }
+
+    private final class MapReloadHandle implements DungeonMapDropdownController.ReloadHandle {
+        @Override
+        public void reload(Long preferredMapId) {
+            loadingService.reload(preferredMapId);
+        }
+
+        @Override
+        public Long sessionMapId() {
+            return mapState.activeMapId();
         }
     }
 }
