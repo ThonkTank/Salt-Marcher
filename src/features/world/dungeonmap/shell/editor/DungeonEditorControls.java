@@ -6,6 +6,7 @@ import features.world.dungeonmap.shell.editor.controls.MapControls;
 import features.world.dungeonmap.shell.editor.controls.ToolControls;
 import features.world.dungeonmap.shell.editor.controls.ViewModeControls;
 import javafx.geometry.Insets;
+import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 
@@ -13,6 +14,8 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public final class DungeonEditorControls extends VBox {
+
+    public record MapActionRequest(DungeonMapCatalogEntry map, Node anchor) {}
 
     private final ViewModeControls viewModeControls = new ViewModeControls();
     private final MapControls mapControls = new MapControls(viewModeControls, DungeonEditorControls::sectionLabel);
@@ -45,6 +48,14 @@ public final class DungeonEditorControls extends VBox {
 
     public void setOnMapSelected(Consumer<DungeonMapCatalogEntry> onMapSelected) {
         mapControls.setOnMapSelected(onMapSelected);
+    }
+
+    public void setOnNewMapRequested(Consumer<Node> onNewMapRequested) {
+        mapControls.setOnNewMapRequested(onNewMapRequested);
+    }
+
+    public void setOnEditMapRequested(Consumer<MapActionRequest> onEditMapRequested) {
+        mapControls.setOnEditMapRequested(onEditMapRequested);
     }
 
     public void showMaps(List<DungeonMapCatalogEntry> maps, Long activeMapId, boolean loading) {

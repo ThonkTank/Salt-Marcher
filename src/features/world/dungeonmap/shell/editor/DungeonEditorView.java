@@ -1,6 +1,7 @@
 package features.world.dungeonmap.shell.editor;
 
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
+import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
 import features.world.dungeonmap.shell.AbstractDungeonMapView;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
@@ -14,7 +15,7 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
     private final DungeonEditorSessionState sessionState = new DungeonEditorSessionState();
     private final DungeonEditorCoordinator coordinator;
 
-    public DungeonEditorView(DungeonMapLoadingService loadingService, DungeonMapState state) {
+    public DungeonEditorView(DungeonMapLoadingService loadingService, DungeonMapState state, DungeonMapCatalogService mapCatalogService) {
         super(true, loadingService, state);
         coordinator = new DungeonEditorCoordinator(
                 controls,
@@ -22,7 +23,8 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
                 workspace(),
                 loadingService,
                 state,
-                sessionState);
+                sessionState,
+                mapCatalogService);
     }
 
     @Override

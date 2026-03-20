@@ -1,8 +1,10 @@
 package features.world.dungeonmap.shell.editor.controls;
 
 import features.world.dungeonmap.loading.DungeonMapCatalogEntry;
+import features.world.dungeonmap.shell.editor.DungeonEditorControls.MapActionRequest;
 import javafx.beans.value.ObservableValue;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -24,6 +26,7 @@ public final class MapControls {
     private final Button editMapButton = new Button("Dungeon bearbeiten");
     private final VBox content;
     private boolean syncingSelection;
+    private Consumer<DungeonMapCatalogEntry> onMapSelected;
 
     public MapControls(ViewModeControls viewModeControls, Function<String, Label> sectionLabelFactory) {
         selector.setConverter(new StringConverter<>() {
@@ -46,7 +49,6 @@ public final class MapControls {
         });
         selector.setPrefWidth(220);
         selector.setMaxWidth(Double.MAX_VALUE);
-        newMapButton.setDisable(true);
         editMapButton.setDisable(true);
         newMapButton.setMinWidth(Region.USE_PREF_SIZE);
         editMapButton.setMinWidth(Region.USE_PREF_SIZE);
@@ -66,12 +68,31 @@ public final class MapControls {
     }
 
     public void setOnMapSelected(Consumer<DungeonMapCatalogEntry> onMapSelected) {
+        this.onMapSelected = onMapSelected;
         selector.getSelectionModel().selectedItemProperty().addListener(
                 (ObservableValue<? extends DungeonMapCatalogEntry> ignored, DungeonMapCatalogEntry oldValue, DungeonMapCatalogEntry newValue) -> {
-                    if (!syncingSelection && onMapSelected != null && newValue != null && newValue != oldValue) {
-                        onMapSelected.accept(newValue);
+                    editMapButton.setDisable(newValue == null);
+                    if (!syncingSelection && this.onMapSelected != null && newValue != null && newValue != oldValue) {
+                        this.onMapSelected.accept(newValue);
                     }
                 });
+    }
+
+    public void setOnNewMapRequested(Consumer<Node> onNewMapRequested) {
+        newMapButton.setOnAction(event -> {
+            if (onNewMapRequested != null) {
+                onNewMapRequested.accept(newMapButton);
+            }
+        });
+    }
+
+    public void setOnEditMapRequested(Consumer<MapActionRequest> onEditMapRequested) {
+        editMapButton.setOnAction(event -> {
+            DungeonMapCatalogEntry selected = selector.getSelectionModel().getSelectedItem();
+            if (selected != null && onEditMapRequested != null) {
+                onEditMapRequested.accept(new MapActionRequest(selected, editMapButton));
+            }
+        });
     }
 
     public void showMaps(List<DungeonMapCatalogEntry> maps, Long activeMapId, boolean loading) {
@@ -79,10 +100,13 @@ public final class MapControls {
         List<DungeonMapCatalogEntry> visibleMaps = maps == null ? List.of() : List.copyOf(maps);
         selector.getItems().setAll(visibleMaps);
         selector.setDisable(loading || visibleMaps.isEmpty());
+        newMapButton.setDisable(loading);
+        editMapButton.setDisable(loading || selector.getSelectionModel().getSelectedItem() == null);
         if (activeMapId != null) {
             for (DungeonMapCatalogEntry entry : visibleMaps) {
                 if (entry != null && entry.mapId() == activeMapId) {
                     selector.getSelectionModel().select(entry);
+                    editMapButton.setDisable(loading);
                     syncingSelection = false;
                     return;
                 }
@@ -90,8 +114,10 @@ public final class MapControls {
         }
         if (visibleMaps.isEmpty()) {
             selector.getSelectionModel().clearSelection();
+            editMapButton.setDisable(true);
         } else {
             selector.getSelectionModel().selectFirst();
+            editMapButton.setDisable(loading);
         }
         syncingSelection = false;
     }

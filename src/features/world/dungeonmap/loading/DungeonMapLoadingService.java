@@ -38,6 +38,14 @@ public final class DungeonMapLoadingService {
         startRequest(false, () -> loadSpecificMapResult(mapId));
     }
 
+    public void reload(Long preferredMapId) {
+        if (preferredMapId == null) {
+            startRequest(false, this::loadInitialResult);
+            return;
+        }
+        loadMap(preferredMapId);
+    }
+
     private void startRequest(boolean initialRequest, Supplier<DungeonMapLoadResult> task) {
         long requestId = requestSequence.incrementAndGet();
         state.showLoading();
