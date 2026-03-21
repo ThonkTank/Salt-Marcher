@@ -4,6 +4,7 @@ import features.world.dungeonmap.canvas.base.DungeonCanvasCamera;
 import features.world.dungeonmap.canvas.base.DungeonCanvasTheme;
 import features.world.dungeonmap.canvas.base.DungeonSceneRenderer;
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import javafx.geometry.Point2D;
@@ -16,7 +17,17 @@ import java.util.Map;
 public final class DungeonGraphSceneRenderer implements DungeonSceneRenderer {
 
     @Override
-    public void render(GraphicsContext gc, double width, double height, DungeonLayout mapModel, DungeonCanvasCamera camera, boolean editorMode) {
+    public void render(
+            GraphicsContext gc,
+            double width,
+            double height,
+            DungeonLayout mapModel,
+            DungeonCanvasCamera camera,
+            boolean editorMode,
+            String selectedTargetKey,
+            TileShape previewPaintShape,
+            boolean previewPaintDeleteMode
+    ) {
         gc.setFill(DungeonCanvasTheme.background(editorMode));
         gc.fillRect(0, 0, width, height);
         Map<Long, Point2D> positions = graphPositions(mapModel, width, height, camera);

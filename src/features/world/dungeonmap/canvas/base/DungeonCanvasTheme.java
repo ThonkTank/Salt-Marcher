@@ -19,6 +19,7 @@ public final class DungeonCanvasTheme {
     public static final Color EDITOR_TEXT = Color.web("#ecedee");
     public static final Color CELL_FILL = Color.web("#2a3238");
     public static final Color CELL_STROKE = Color.web("#8a6a35");
+    public static final Color WALL_STROKE = Color.web("#8a6a35");
     public static final Color GRAPH_LINK = Color.web("#56636c");
     public static final Color GRAPH_NODE_FILL = Color.web("#2f3a41");
     public static final Color GRAPH_NODE_STROKE = Color.web("#8a6a35");
@@ -26,6 +27,10 @@ public final class DungeonCanvasTheme {
     public static final Color LABEL_FILL = Color.web("#181f24");
     public static final Color LABEL_BORDER = Color.web("#8a6a35");
     public static final Color LABEL_TEXT = Color.web("#ecedee");
+    public static final Color PAINT_PREVIEW_FILL = Color.web("#41a9f2", 0.28);
+    public static final Color PAINT_PREVIEW_STROKE = Color.web("#7ac9ff");
+    public static final Color DELETE_PREVIEW_FILL = Color.web("#c26464", 0.24);
+    public static final Color DELETE_PREVIEW_STROKE = Color.web("#f09a9a");
     public static final Font HUD_FONT = Font.font("SansSerif", FontWeight.BOLD, 14);
     public static final Font ROOM_LABEL_FONT = Font.font("SansSerif", FontWeight.BOLD, 12);
     public static final Font GRAPH_NODE_FONT = Font.font("SansSerif", FontWeight.BOLD, 13);

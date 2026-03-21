@@ -3,11 +3,19 @@ package features.world.dungeonmap.loading;
 import database.DatabaseManager;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.geometry.TileShape;
+import features.world.dungeonmap.model.geometry.VertexEdge;
+import features.world.dungeonmap.model.geometry.VertexPath;
+import features.world.dungeonmap.model.objects.CorridorPath;
 import features.world.dungeonmap.model.objects.Door;
-import features.world.dungeonmap.model.objects.TileShape;
+import features.world.dungeonmap.model.objects.Floor;
 import features.world.dungeonmap.model.objects.Wall;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
+import features.world.dungeonmap.model.structures.corridor.CorridorBindings;
+import features.world.dungeonmap.model.structures.corridor.CorridorDoorBinding;
+import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInput;
+import features.world.dungeonmap.model.structures.corridor.CorridorWaypointBinding;
 import features.world.dungeonmap.model.structures.room.Room;
 
 import java.sql.Connection;
@@ -15,6 +23,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.ArrayDeque;
 import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -24,7 +33,6 @@ import java.util.Set;
 public final class DungeonMapLoader {
 
     private static final Point2i LOOP_SEPARATOR = new Point2i(Integer.MIN_VALUE, Integer.MIN_VALUE);
-
     public DungeonMapLoadResult loadInitial() throws SQLException {
         try (Connection conn = DatabaseManager.getConnection()) {
             List<DungeonMapCatalogEntry> maps = loadCatalog(conn);
@@ -55,13 +63,14 @@ public final class DungeonMapLoader {
             DungeonMapCatalogEntry map
     ) throws SQLException {
         List<Room> rooms = loadRooms(conn, map.mapId());
+        List<RoomCluster> clusters = loadClusters(conn, map.mapId(), rooms);
         return new DungeonMapLoadResult(
                 maps,
                 new DungeonLayout(
                         map.mapId(),
                         map.name(),
-                        loadCorridors(conn, map.mapId()),
-                        loadClusters(conn, map.mapId(), rooms)),
+                        loadCorridors(conn, map.mapId(), clusters),
+                        clusters),
                 null);
     }
 
@@ -103,14 +112,16 @@ public final class DungeonMapLoader {
                             rs.getLong("dungeon_map_id"),
                             rs.getLong("cluster_id"),
                             normalizedRoomName(roomId, rs.getString("name")),
-                            TileShape.singleCell(anchor)));
+                            new Floor(TileShape.singleCell(anchor)),
+                            List.of(),
+                            List.of()));
                 }
                 return List.copyOf(rooms);
             }
         }
     }
 
-    private static List<Corridor> loadCorridors(Connection conn, long mapId) throws SQLException {
+    private static List<Corridor> loadCorridors(Connection conn, long mapId, List<RoomCluster> clusters) throws SQLException {
         Map<Long, List<Long>> roomIdsByCorridor = new LinkedHashMap<>();
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT c.corridor_id, m.room_id"
@@ -130,11 +141,62 @@ public final class DungeonMapLoader {
                 }
             }
         }
+        Map<Long, List<CorridorWaypointBinding>> waypointBindingsByCorridor = loadGrouped(conn,
+                "SELECT corridor_id, cluster_id, relative_x, relative_y"
+                        + " FROM dungeon_corridor_waypoints"
+                        + " WHERE corridor_id IN (SELECT corridor_id FROM dungeon_corridors WHERE dungeon_map_id=?)"
+                        + " ORDER BY corridor_id, sort_order",
+                mapId,
+                rs -> rs.getLong("corridor_id"),
+                rs -> new CorridorWaypointBinding(
+                        rs.getLong("cluster_id"),
+                        new Point2i(rs.getInt("relative_x"), rs.getInt("relative_y"))));
+        Map<Long, List<CorridorDoorBinding>> doorBindingsByCorridor = loadGrouped(conn,
+                "SELECT corridor_id, room_id, cluster_id, relative_cell_x, relative_cell_y, edge_direction"
+                        + " FROM dungeon_corridor_door_overrides"
+                        + " WHERE corridor_id IN (SELECT corridor_id FROM dungeon_corridors WHERE dungeon_map_id=?)"
+                        + " ORDER BY corridor_id, sort_order, room_id",
+                mapId,
+                rs -> rs.getLong("corridor_id"),
+                rs -> new CorridorDoorBinding(
+                        rs.getLong("room_id"),
+                        rs.getLong("cluster_id"),
+                        new Point2i(rs.getInt("relative_cell_x"), rs.getInt("relative_cell_y")),
+                        edgeDirectionDelta(rs.getString("edge_direction"))));
         List<Corridor> result = new ArrayList<>();
         for (Map.Entry<Long, List<Long>> entry : roomIdsByCorridor.entrySet()) {
-            result.add(new Corridor(entry.getKey(), mapId, entry.getValue()));
+            result.add(new Corridor(
+                    entry.getKey(),
+                    mapId,
+                    entry.getValue(),
+                    new CorridorBindings(
+                            waypointBindingsByCorridor.getOrDefault(entry.getKey(), List.of()),
+                            doorBindingsByCorridor.getOrDefault(entry.getKey(), List.of())),
+                    CorridorPath.empty()));
         }
-        return List.copyOf(result);
+        CorridorPlanningInput planningInput = corridorPlanningInput(clusters);
+        return result.stream()
+                .map(corridor -> corridor.replanned(planningInput))
+                .toList();
+    }
+
+    private static CorridorPlanningInput corridorPlanningInput(List<RoomCluster> clusters) {
+        Map<Long, Room> roomsById = new LinkedHashMap<>();
+        Map<Long, Point2i> clusterCenters = new LinkedHashMap<>();
+        for (RoomCluster cluster : clusters == null ? List.<RoomCluster>of() : clusters) {
+            if (cluster == null) {
+                continue;
+            }
+            if (cluster.clusterId() != null) {
+                clusterCenters.put(cluster.clusterId(), cluster.center());
+            }
+            for (Room room : cluster.rooms()) {
+                if (room != null && room.roomId() != null) {
+                    roomsById.put(room.roomId(), room);
+                }
+            }
+        }
+        return new CorridorPlanningInput(roomsById, clusterCenters);
     }
 
     private static <K, V> Map<K, List<V>> loadGrouped(
@@ -192,15 +254,19 @@ public final class DungeonMapLoader {
                 while (rs.next()) {
                     long clusterId = rs.getLong("cluster_id");
                     List<EdgeObject> edgeObjects = List.copyOf(edgesByClusterId.getOrDefault(clusterId, List.of()));
-                    RoomCluster cluster = new RoomCluster(
+                    Set<Point2i> clusterCells = tileShapeFromRelativeVertices(
+                            new Point2i(rs.getInt("center_x"), rs.getInt("center_y")),
+                            List.copyOf(verticesByClusterId.getOrDefault(clusterId, List.of())))
+                            .absoluteCells();
+                    clusters.add(new RoomCluster(
                             clusterId,
                             rs.getLong("dungeon_map_id"),
-                            tileShapeFromRelativeVertices(
-                                    new Point2i(rs.getInt("center_x"), rs.getInt("center_y")),
-                                    List.copyOf(verticesByClusterId.getOrDefault(clusterId, List.of()))),
-                            edgeObjects.stream().filter(EdgeObject::isWall).map(EdgeObject::wall).toList(),
-                            edgeObjects.stream().filter(EdgeObject::isDoor).map(EdgeObject::door).toList());
-                    clusters.add(cluster.withRooms(roomsByClusterId.getOrDefault(clusterId, List.of())));
+                            new Point2i(rs.getInt("center_x"), rs.getInt("center_y")),
+                            hydrateRooms(
+                                    clusterId,
+                                    clusterCells,
+                                    edgeObjects,
+                                    roomsByClusterId.getOrDefault(clusterId, List.of()))));
                 }
             }
         }
@@ -215,6 +281,148 @@ public final class DungeonMapLoader {
         return Map.copyOf(result);
     }
 
+    private static List<Room> hydrateRooms(
+            long clusterId,
+            Set<Point2i> clusterCells,
+            List<EdgeObject> edgeObjects,
+            List<Room> rooms
+    ) {
+        // Persistence stores cluster topology in aggregate form; after loading, each room owns its runtime shape
+        // and its touching boundary objects so later editor mutations can stay room-local by default.
+        if (rooms == null || rooms.isEmpty()) {
+            return List.of();
+        }
+        List<VertexPath> barriers = barriers(edgeObjects);
+        Set<Point2i> unclaimedCells = new LinkedHashSet<>(clusterCells);
+        List<Room> hydratedRooms = new ArrayList<>();
+        for (Room room : rooms) {
+            if (room == null || room.roomId() == null) {
+                continue;
+            }
+            Point2i anchor = room.floor().shape().anchor();
+            if (!clusterCells.contains(anchor)) {
+                throw new IllegalStateException(
+                        "Raum " + room.roomId() + " hat einen Anker ausserhalb von Cluster " + clusterId);
+            }
+            if (!unclaimedCells.contains(anchor)) {
+                throw new IllegalStateException(
+                        "Raum " + room.roomId() + " teilt sich einen offenen Bereich in Cluster " + clusterId);
+            }
+            Set<Point2i> roomCells = reachableCells(anchor, unclaimedCells, barriers);
+            if (roomCells.isEmpty()) {
+                throw new IllegalStateException(
+                        "Raum " + room.roomId() + " konnte in Cluster " + clusterId + " nicht hydriert werden");
+            }
+            unclaimedCells.removeAll(roomCells);
+            hydratedRooms.add(Room.resolved(
+                    room.roomId(),
+                    room.mapId(),
+                    room.clusterId(),
+                    room.name(),
+                    new Floor(TileShape.fromAbsoluteCells(roomCells)),
+                    wallsForRoom(roomCells, edgeObjects),
+                    doorsForRoom(roomCells, edgeObjects)));
+        }
+        if (!unclaimedCells.isEmpty()) {
+            throw new IllegalStateException(
+                    "Cluster " + clusterId + " enthaelt Zellen ohne Raumankerzuordnung");
+        }
+        return List.copyOf(hydratedRooms);
+    }
+
+    private static List<VertexPath> barriers(List<EdgeObject> edgeObjects) {
+        List<VertexPath> result = new ArrayList<>(edgeObjects.size());
+        for (EdgeObject edgeObject : edgeObjects) {
+            if (edgeObject.wall() != null) {
+                result.add(edgeObject.wall());
+            }
+            if (edgeObject.door() != null) {
+                result.add(edgeObject.door());
+            }
+        }
+        return List.copyOf(result);
+    }
+
+    private static Set<Point2i> reachableCells(
+            Point2i startAnchor,
+            Set<Point2i> traversableCells,
+            List<VertexPath> barriers
+    ) {
+        Set<Point2i> visited = new LinkedHashSet<>();
+        Set<Point2i> frontier = new LinkedHashSet<>(traversableCells);
+        ArrayDeque<Point2i> queue = new ArrayDeque<>();
+        queue.add(startAnchor);
+        frontier.remove(startAnchor);
+        while (!queue.isEmpty()) {
+            Point2i current = queue.removeFirst();
+            visited.add(current);
+            for (Point2i step : Point2i.CARDINAL_STEPS) {
+                Point2i neighbor = current.add(step);
+                if (!frontier.contains(neighbor) || isBlocked(barriers, current, step)) {
+                    continue;
+                }
+                frontier.remove(neighbor);
+                queue.addLast(neighbor);
+            }
+        }
+        return Set.copyOf(visited);
+    }
+
+    private static boolean isBlocked(List<VertexPath> barriers, Point2i cell, Point2i step) {
+        for (VertexPath barrier : barriers) {
+            if (barrier != null && barrier.crosses(cell, step)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static List<Wall> wallsForRoom(Set<Point2i> roomCells, List<EdgeObject> edgeObjects) {
+        Set<VertexEdge> walls = new LinkedHashSet<>();
+        for (EdgeObject edgeObject : edgeObjects) {
+            Wall wall = edgeObject.wall();
+            if (wall != null && touchesRoom(roomCells, wall)) {
+                walls.addAll(wall.edges());
+            }
+        }
+        return walls.isEmpty() ? List.of() : List.of(new Wall(walls));
+    }
+
+    private static List<Door> doorsForRoom(Set<Point2i> roomCells, List<EdgeObject> edgeObjects) {
+        Set<VertexEdge> doors = new LinkedHashSet<>();
+        for (EdgeObject edgeObject : edgeObjects) {
+            Door door = edgeObject.door();
+            if (door != null && touchesRoom(roomCells, door)) {
+                doors.addAll(door.edges());
+            }
+        }
+        return doors.isEmpty() ? List.of() : List.of(new Door(doors));
+    }
+
+    private static boolean touchesRoom(Set<Point2i> roomCells, VertexPath boundary) {
+        for (VertexEdge edge : boundary.edges()) {
+            if (touchesRoom(roomCells, edge)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean touchesRoom(Set<Point2i> roomCells, VertexEdge edge) {
+        for (Point2i cell : roomCells) {
+            for (Point2i step : Point2i.CARDINAL_STEPS) {
+                Point2i neighbor = cell.add(step);
+                if (roomCells.contains(neighbor)) {
+                    continue;
+                }
+                if (VertexEdge.betweenCellAndStep(cell, step).equals(edge)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     @FunctionalInterface
     private interface ResultSetMapper<T> {
         T map(ResultSet rs) throws SQLException;
@@ -224,7 +432,20 @@ public final class DungeonMapLoader {
         return name == null || name.isBlank() ? "Raum " + roomId : name.trim();
     }
 
-    private static EdgeObject edgeObject(Point2i roomCell, String direction, String type) {
+    private static Point2i edgeDirectionDelta(String direction) {
+        if (direction == null) {
+            return new Point2i(0, 0);
+        }
+        return switch (direction.trim().toUpperCase()) {
+            case "NORTH" -> new Point2i(0, -1);
+            case "EAST" -> new Point2i(1, 0);
+            case "SOUTH" -> new Point2i(0, 1);
+            case "WEST" -> new Point2i(-1, 0);
+            default -> throw new IllegalArgumentException("Unbekannte Korridor-Tuerrichtung: " + direction);
+        };
+    }
+
+    private static EdgeObject edgeObject(Point2i cell, String direction, String type) {
         Point2i delta = switch (direction) {
             case "NORTH" -> new Point2i(0, -1);
             case "EAST" -> new Point2i(1, 0);
@@ -232,10 +453,11 @@ public final class DungeonMapLoader {
             case "WEST" -> new Point2i(-1, 0);
             default -> throw new IllegalArgumentException("Unbekannte Kantenrichtung: " + direction);
         };
+        VertexEdge edge = VertexEdge.betweenCellAndStep(cell, delta);
         if ("DOOR".equals(type)) {
-            return new EdgeObject(null, new Door(roomCell, delta));
+            return new EdgeObject(null, new Door(Set.of(edge)));
         }
-        return new EdgeObject(new Wall(roomCell, delta), null);
+        return new EdgeObject(new Wall(Set.of(edge)), null);
     }
 
     private static TileShape tileShapeFromRelativeVertices(Point2i anchor, List<Point2i> relativeVertices) {
