@@ -1,11 +1,11 @@
 package features.world.dungeonmap.application.room;
 
 import database.DatabaseManager;
+import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.loading.DungeonMapLoadResult;
 import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.TileShape;
-import features.world.quarantine.dungeonmap.foundation.db.DungeonTransactionSupport;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -17,18 +17,18 @@ public final class DungeonRoomEditService {
     private final DungeonMapLoader mapLoader;
     private final RoomPaintTopologyPlanner planner;
     private final RoomTopologyEditPlanApplier planApplier;
-    private final LegacyRoomTopologyBridge legacyBridge;
+    private final DungeonRoomTopologyService topologyService;
 
     public DungeonRoomEditService(
             DungeonMapLoader mapLoader,
             RoomPaintTopologyPlanner planner,
             RoomTopologyEditPlanApplier planApplier,
-            LegacyRoomTopologyBridge legacyBridge
+            DungeonRoomTopologyService topologyService
     ) {
         this.mapLoader = Objects.requireNonNull(mapLoader, "mapLoader");
         this.planner = Objects.requireNonNull(planner, "planner");
         this.planApplier = Objects.requireNonNull(planApplier, "planApplier");
-        this.legacyBridge = Objects.requireNonNull(legacyBridge, "legacyBridge");
+        this.topologyService = Objects.requireNonNull(topologyService, "topologyService");
     }
 
     public void paint(long mapId, TileShape shape) throws SQLException {
@@ -46,10 +46,14 @@ public final class DungeonRoomEditService {
         DungeonLayout layout = requireLayout(mapId);
         RoomTopologyEditPlan plan = deleteMode ? planner.planDelete(layout, shape) : planner.planPaint(layout, shape);
         if (plan instanceof LegacyBridgeRoomEditPlan legacyPlan) {
-            if (legacyPlan.deleteMode()) {
-                legacyBridge.delete(mapId, legacyPlan.shape());
-            } else {
-                legacyBridge.paint(mapId, legacyPlan.shape());
+            try (Connection conn = DatabaseManager.getConnection()) {
+                DungeonTransactionRunner.inTransaction(conn, () -> {
+                    if (legacyPlan.deleteMode()) {
+                        topologyService.delete(conn, mapId, legacyPlan.shape());
+                    } else {
+                        topologyService.paint(conn, mapId, legacyPlan.shape());
+                    }
+                });
             }
             return;
         }
@@ -57,8 +61,8 @@ public final class DungeonRoomEditService {
             return;
         }
         try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonTransactionSupport.inTransaction(conn, () -> {
-                planApplier.apply(conn, plan);
+            DungeonTransactionRunner.inTransaction(conn, () -> {
+                planApplier.apply(conn, layout, plan);
                 return null;
             });
         }

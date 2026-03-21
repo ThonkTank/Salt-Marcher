@@ -1,140 +1,73 @@
-# Dungeon Map Architecture
+# AGENTS.md
 
-`dungeonmap/model` is now split into three explicit layers:
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-- `model/geometry`
-  Primitive map geometry such as `Point2i`, `Tile`, `TileShape`, `VertexEdge`, `VertexPath`, `GridAnchor`, and `GridRoute`.
-- `model/objects`
-  Self-managed map objects such as `Floor`, `BoundaryObject`, `Wall`, `Door`, and `CorridorPath`.
-- `model/structures`
-  Self-managed structures such as `Room`, `Corridor`, and `RoomCluster`.
+## Scope
 
-`model/DungeonLayout` remains the thin global lookup layer over already-built structures.
+This file covers the `dungeonmap` feature — a tile-grid dungeon editor and runtime viewer within the SaltMarcher app. See the root `CLAUDE.md` for build commands, project-wide conventions, and the cockpit shell architecture.
 
-## Dependency Direction
+## Feature Architecture
 
-- Geometry knows nothing about objects, structures, loading, or rendering.
-- Geometry owns all reusable mathematical truth. If logic still makes sense after removing words like "door", "wall", "room", or "corridor", it belongs here.
-- Objects depend on geometry and should ideally inherit from one fitting geometry primitive. Objects add only object/runtime semantics such as traversal state or barrier behavior; they must not duplicate geometry helpers that already belong to `geometry/`.
-- `Tile` is the square-cell primitive for tile-local translation, cardinal adjacency, edge/vertex derivation, and stable cell identity, so `TileShape` and renderers do not need to hand-roll that math.
-- Structures depend on objects and own only their own structure-level runtime behavior, composition, and structure-specific bindings.
-- Loaders and renderers should prefer `structures` and only touch `objects`/`geometry` when they need geometric detail.
+The feature ships two `AppView` implementations: `DungeonEditorView` (EDITOR) and `DungeonRuntimeView` (SESSION). Both extend `AbstractDungeonMapView`, which owns a shared `DungeonCanvasWorkspace` and lazy-loads map data on first `onShow()`.
 
-## Layer Rules
+`DungeonMapModule` is the composition root — it wires all dependencies and exposes the two views to the app shell.
 
-- `geometry/` is the only layer allowed to define reusable geometric primitives and general-purpose geometric operations.
-- `objects/` should stay thin. A type in `objects/` should usually read like "primitive geometry + one domain rule".
-- `structures/` may query geometry and objects, but should not re-implement primitive math or object semantics.
-- If a helper is needed by more than one object or structure and is still domain-agnostic, move it down into `geometry/` instead of cloning it upward.
-- If behavior depends on runtime state like open/closed/locked, it belongs in `objects/`, not `geometry/`.
-- Each query should have exactly one canonical owner on the lowest sensible layer. Do not mirror the same query across `geometry/`, `objects/`, and `structures/` as convenience duplicates.
-- If multiple walls/doors must be treated as one geometric thing, introduce or reuse a `geometry/` type such as `BoundaryNetwork` instead of recomputing combined edge topology inside a structure.
-- If multiple wall/door kinds must be treated as one semantic thing, use a shared `objects/` surface such as `BoundaryObject` instead of collapsing back to raw `VertexPath`.
-- Corridor bindings are canonical structure truth. Absolute corridor route/floor/door geometry is runtime state derived from bindings plus the current room/cluster layout.
-- `Room` is the canonical owner of room-local topology truth. If floor shape and boundary objects must be reconciled, normalized, or completed, do that in `structures/room`, not in loaders, renderers, services, or `RoomCluster`.
-- `RoomCluster` owns only multi-room facts such as grouping, adjacency, partition validity, simple room merge/split planning, and cluster-local lookup. Do not make `RoomCluster` a second owner of single-room boundary reconstruction.
-- Application services may choose between structure capabilities and persist the resulting edit plan, but they must not derive room topology truth themselves from raw `TileShape`, walls, or doors.
-- Observable transient feature state belongs in `state/`. Do not scatter reusable `*State` holders for selection, preview, session, loading, or similar editor/runtime state across `shell/`, `canvas/`, or control packages. Keep `state/` as the single discovery location for feature-level transient state containers with listeners or cross-class coordination. Small private controller/widget internals that are not shared state, such as a current drag session, focused field, or temporary button-disable flag, may stay local to the owning class.
+### Package Roles
 
-## Primitive APIs
+- `model/` — immutable domain model in three strict layers (see **Model Layering** below)
+- `application/` — stateful edit services that plan and persist topology changes. Services coordinate between model and persistence, but must not reconstruct structure truth that already belongs on `Room`, `RoomCluster`, or `Corridor`
+- `loading/` — `DungeonMapLoader` (raw JDBC reads) + `DungeonMapLoadingService` (async loading with sequenced request deduplication). Loader hydrates rooms from stored cluster topology via BFS flood-fill
+- `persistence/` — write-side repositories (`DungeonRoomWriteRepository`, `DungeonRoomGeometryWriteMapper`). Read-side lives in `loading/`
+- `catalog/` — map CRUD (create/rename/delete) with its own `application/` + `persistence/` sub-packages
+- `canvas/` — JavaFX Canvas rendering. `DungeonCanvasWorkspace` dispatches to a `DungeonSceneRenderer` based on `DungeonViewMode` (GRID vs GRAPH). Shared render inputs travel through `DungeonRenderState` so renderers depend on one compact render-state object instead of a widening parameter list. Camera handles pan (right-drag) and zoom (scroll). Pointer events are translated to `DungeonCanvasPointerEvent` with cell coordinates
+- `shell/` — view and UI coordinator layer. `DungeonEditorCoordinator` is the central wiring hub: it binds controls, tools, interaction controllers, and state listeners. Editor interactions are in `shell/editor/interaction/`
+- `state/` — observable transient state containers with listener lists (`DungeonMapState`, `DungeonEditorSessionState`, `EditorSelectionState`, `EditorLayoutPreviewState`, `EditorPaintPreviewState`, `DungeonCorridorDraftState`). These are the single source of truth for cross-class coordination
+- `bootstrap/` — `DungeonMapModule` composition root
 
-- `Point2i`
-  Foundation point/vector type for the whole grid model.
-  Core APIs: `add`, `subtract`, `translate`, `distanceTo`, `neighbors4`, `isAdjacent4`, `directionToCardinal`, `encodedKey`.
-  Shared constants: `POINT_ORDER`, `CARDINAL_STEPS`.
+### Quarantine
 
-- `Tile`
-  Primitive square tile with tile-local geometry and adjacency semantics.
-  Core APIs: `translated`, `relativeTo`, `neighbor`, `neighbors4`, `isAdjacentTo`, `directionTo`, `edge`, `sharedEdge`, `vertices`, `distanceTo`, `encodedKey`.
-  Shared helpers: `translateAll`, `positions`, `bestCenterTile`, `encode`.
+`features/world/quarantine/dungeonmap/` is retained only as legacy code outside the clean feature. `features/world/dungeonmap/` must not import from `features.world.quarantine.dungeonmap`; migrate any needed behavior into the clean package structure instead of reintroducing cross-package bridges.
 
-- `TileShape`
-  Primitive tile-area object with one canonical truth: `anchor + relative tiles`.
-  Core APIs: `anchor`, `relativeTiles`, `relativeCells`, `tiles`, `absoluteCells`, `contains`, `size`, `isSingleTile`, `overlaps`, `touches`, `union`, `intersect`, `subtract`, `minX/maxX/minY/maxY`, `centerCell`, `isConnected`, `connectedComponents`, `boundaryEdges`, `outlineLoops`, `outerLoop`, `absoluteVertices`, `recentered`, `translated`.
-  Constructors: `singleCell`, `fromAbsoluteCells`, `fromAbsoluteTiles`.
+### Data Flow
 
-- `VertexEdge`
-  Primitive undirected edge between two grid vertices with local geometry and tile-facing knowledge.
-  Core APIs: `touches(Point2i)`, `touches(VertexEdge)`, `sharedVertex`, `other`, `isHorizontal`, `isVertical`, `isCollinearWith`, `canMergeWith`, `mergedWith`, `touches(Tile)`, `touchesCell`, `touchingTiles`, `touchingCells`, `directionFrom`, `oppositeTile`, `separates`, `translated`, `encodedKey`.
-  Shared helpers: `betweenCellAndStep`, `betweenTiles`, `EDGE_ORDER`.
+1. `DungeonMapLoadingService.ensureLoaded()` → `CompletableFuture` → `DungeonMapLoader` (JDBC) → `DungeonMapLoadResult`
+2. Result delivered to `DungeonMapState.showLoaded()` on FX thread via `Platform.runLater`
+3. State listeners fire → `DungeonCanvasWorkspace.setMapModel()` → `redraw()`
+4. Edit flow: interaction controller → edit service → clean topology/corridor services + write repositories persist in one transaction → reload
 
-- `VertexPath`
-  Primitive path object over canonicalized `VertexEdge` sets. Owns path topology and cell-side boundary geometry, not traversal semantics.
-  Core APIs: `edges`, `vertices`, `endpoints`, `branchVertices`, `degreeOf`, `edgesTouching`, `containsEdge`, `touchesVertex`, `touchesEdge`, `touches(VertexPath)`, `touches(Tile)`, `touchesCell`, `touches(TileShape)`, `touchingTiles`, `touchingCells`, `isConnected`, `isLoop`, `orderedChains`, `crosses`, `separates`, `translated`, `withAddedEdges`, `withRemovedEdges`.
+### Editor Interaction Model
 
-- `BoundaryNetwork`
-  Primitive combined boundary geometry over multiple `VertexPath`s. It is a specialized `VertexPath`, so combined boundary networks inherit the full shared path API instead of mirroring it through a wrapper.
-  Core APIs: inherited `VertexPath` geometry plus `fromPaths`, `mergedWith`.
+`DungeonEditorTool` enum defines tool modes (SELECT, ROOM_PAINT, ROOM_DELETE, CLUSTER_WALL/DOOR, CORRIDOR_CREATE/DELETE). Tools are grouped into `ToolFamily` for the dropdown toolbar. `DungeonEditorSessionState` holds current tool + view mode.
 
-- `GridAnchor`
-  Primitive route anchor that can live on a tile center, vertex, or edge center without floating-point math.
-  Core APIs: `kind`, `doubledGridPoint`, `translated`.
-  Constructors: `atTile`, `atVertex`, `atEdge`.
+`DungeonEditorGridInteractionController` delegates to specialized controllers: `ClusterSelectionDragController` for select/drag, `RoomPaintInteractionController` for paint/erase. Canvas pointer events flow through `DungeonCanvasInteractionHandler` → controller → state update → redraw.
 
-- `GridRoute`
-  Primitive ordered guide route over `GridAnchor`s. Owns route order and lightweight route editing, not committed corridor rasterization.
-  Core APIs: `anchors`, `start`, `end`, `waypoints`, `segments`, `anchorCount`, `isLoop`, `isOrthogonal`, `containsAnchor`, `containsKind`, `translated`, `reversed`, `withInsertedAnchor`, `withMovedAnchor`, `withRemovedAnchor`.
+## Model Layering
 
-## Object APIs
+`model/` is split into three layers with strict dependency direction:
 
-- `Floor`
-  Area object over `TileShape`. It exists so structures own an area object rather than a naked geometry primitive.
-  Core APIs: `shape`, `translated`, `withShape`.
+```
+geometry/  →  objects/  →  structures/
+```
 
-- `BoundaryObject`
-  Minimal shared object surface for room boundaries. It exists so structures can treat `Wall` and `Door` polymorphically without falling back to raw geometry primitives or re-expressing barrier semantics themselves.
-  Core APIs: `path`, `blocksTraversal`.
+- **`geometry/`** — Pure grid math primitives: `Point2i`, `Tile`, `TileShape`, `VertexEdge`, `VertexPath`, `BoundaryNetwork`, `GridAnchor`, `GridRoute`. Domain-agnostic. No knowledge of walls, doors, rooms.
+- **`objects/`** — Thin domain objects over geometry: `Floor`, `Wall`, `Door`, `BoundaryObject`, `CorridorPath`. Each adds exactly one domain rule (e.g., traversal state) to a geometry primitive.
+- **`structures/`** — Self-managed compositions: `Room`, `RoomCluster`, `Corridor`, `CorridorNetwork`. Compose objects and own structure-level behavior.
 
-- `Wall`
-  Path-shaped barrier object over `VertexPath`. Geometry is inherited; the object adds only the rule that traversal is blocked.
-  Core APIs: inherited `VertexPath` geometry plus `path`, `blocksTraversal`.
+`DungeonLayout` is the thin global lookup layer over structures.
 
-- `Door`
-  Path-shaped opening object over `VertexPath`. Geometry is inherited; the object adds traversal state.
-  Core APIs: inherited `VertexPath` geometry plus `path`, `traversalState`, `blocksTraversal`, `isPassable`, `isOpen`, `isClosed`, `isLocked`, `withTraversalState`.
+### Layer Rules
 
-- `CorridorPath`
-  Runtime-owned resolved corridor path object. It holds the current guide route, committed corridor floor, resolved corridor doors, and routing status for one corridor.
-  Core APIs: `route`, `floor`, `doors`, `cells`, `contains`, `directlyAdjacent`, `routable`, `withRoute`, `withFloor`, `withDoors`, `withRuntimeGeometry`, `empty`.
+- Geometry owns all reusable mathematical truth. If logic still makes sense without words like "door", "wall", "room", or "corridor", it belongs in geometry.
+- Objects should stay thin — "geometry + one domain rule".
+- Structures may query geometry and objects but must not re-implement primitive math.
+- Each query has exactly one canonical owner on the lowest sensible layer — no convenience duplicates across layers.
+- Runtime state (open/closed/locked) belongs in objects, not geometry.
+- `Room` is the canonical owner of room-local topology. `RoomCluster` owns only multi-room facts (grouping, adjacency, partition). Application services must not derive room topology from raw geometry.
+- Corridor bindings are canonical structure truth; absolute corridor geometry is runtime state derived from bindings plus current room/cluster layout.
+- `Corridor` is the canonical owner of corridor-local edit truth. Membership changes, waypoint edits, door-binding edits, and binding re-anchoring belong on `Corridor`/`CorridorBindings`, not in application services or interaction controllers.
+- Clean `dungeonmap/` code must not depend on `features.world.quarantine.dungeonmap`. Shared helpers such as transactions, room-topology orchestration, corridor reconciliation, and runtime-state repair belong locally under `application/` when still needed.
+- Observable transient state belongs in `state/`, not scattered across shell/canvas packages.
 
-## Structure APIs
+### Persistence Model
 
-- `Room`
-  Smallest self-managed structure: one `Floor` object plus boundary objects. Structures should compose objects instead of holding raw geometry primitives directly. Combined boundary geometry is exposed as a `BoundaryNetwork`, while traversal remains a room-level rule because it combines geometry with object semantics.
-  Core APIs: `create`, `resolved`, `floor`, `walls`, `doors`, `boundaryObjects`, `boundaryNetwork`, `boundaryEdges`, `hasBoundaryEdge`, `cells`, `contains`, `blocks`, `wallsTouching`, `doorsTouching`, `boundaryObjectsTouching`.
-
-- `RoomCluster`
-  Self-managed grouping and topology structure over rooms. Room truth lives in the rooms; cluster shape and topology are derived runtime views.
-  Core APIs: `center`, `rooms`, `withRooms`, `findRoom`, `singleRoom`, `roomIds`, `containsRoom`, `withAddedRoom`, `withRemovedRoom`, `withReplacedRoom`, `createRoom`, `withCreatedRoom`, `mergedRoom`, `withMergedRooms`, `canMergeRooms`, `cells`, `shape`, `overlaps`, `roomAt`, `contains`, `adjacentRooms`, `adjacentRoomIds`, `components`, `componentContaining`, `isConnected`, `hasOverlappingRooms`, `coversExactlyKnownCells`, `isValidPartition`, `simplePaintExpansion`, `simpleDelete`.
-
-- `Corridor`
-  Self-managed corridor structure with ordered room membership, canonical relative bindings, and resolved runtime path state.
-  Core APIs: `roomIds`, `bindings`, `path`, `roomLinks`, `connectsRoom`, `withRoomIds`, `withBindings`, `withPath`, `replanned`, `resolvedRooms`, `resolvedWaypointCells`, `resolvedDoorBindings`.
-
-- `CorridorPlanningInput`
-  Minimal external planning facts for a self-managed corridor. It provides only raw room and cluster-center lookup, so corridor-specific resolution stays on `Corridor` instead of drifting into a second mirrored planning API.
-  Core APIs: `roomsById`, `clusterCenters`, `room`, `clusterCenter`.
-
-- `CorridorBindings`
-  Canonical editable corridor bindings. Bindings stay relative so they remain stable when clusters or rooms move.
-  Core APIs: `waypoints`, `doorBindings`, `empty`.
-
-- `CorridorWaypointBinding`
-  Relative waypoint binding to one cluster center.
-  Core APIs: `clusterId`, `relativeCell`, `absoluteCell`, `rebind`.
-
-- `CorridorDoorBinding`
-  Relative door binding pinned to one room edge.
-  Core APIs: `roomId`, `clusterId`, `relativeCell`, `direction`, `absoluteCell`, `rebind`.
-
-- `ResolvedCorridorDoorBinding`
-  Runtime-resolved absolute door binding for one corridor endpoint.
-  Core APIs: `absoluteCell`, `direction`.
-
-- `CorridorNetwork`
-  Derived runtime grouping of routable corridors that touch by floor cells or corridor doors.
-  Core APIs: `networkId`, `corridorIds`, `roomIds`, `floor`, `doors`, `containsCorridor`, `containsRoom`, `buildNetworks`.
-
-- `DungeonLayout`
-  Thin global aggregation/query surface over self-managed structures.
-  Core APIs: `rooms`, `corridors`, `clusters`, `corridorNetworks`, `findRoom`, `findCorridor`, `findCluster`, `corridorNetworkForCorridor`, `clusterForRoom`, `overlappingClusters`, `hasDependentCorridors`, `roomAtCell`, `clusterAtCell`, `corridorsAtCell`, `corridorNetworkAtCell`.
+Cluster geometry is stored as relative vertex loops with a center anchor. Rooms store only their anchor cell and cluster membership — runtime floor shapes are hydrated via BFS flood-fill against cluster cells and boundary edges. Edge objects (walls/doors) are stored per-cluster as `(cell, direction, type)` tuples. Corridors store member room IDs, relative waypoint bindings, and relative door bindings.

@@ -204,9 +204,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
                 renderedMapModel(),
                 camera,
                 editorMode,
-                selectedTargetKey,
-                previewPaintShape,
-                previewPaintDeleteMode);
+                new DungeonRenderState(selectedTargetKey, previewPaintShape, previewPaintDeleteMode));
     }
 
     private DungeonLayout renderedMapModel() {

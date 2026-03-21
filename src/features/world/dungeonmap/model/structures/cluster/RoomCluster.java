@@ -10,6 +10,7 @@ import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.objects.Floor;
 import features.world.dungeonmap.model.objects.Wall;
 import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.persistence.ClusterBoundaryWrite;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -20,6 +21,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 public final class RoomCluster {
 
@@ -356,6 +358,231 @@ public final class RoomCluster {
         return withRooms(updated);
     }
 
+    public Map<VertexEdge, ClusterBoundaryWrite.Type> internalBoundaryKinds() {
+        Map<VertexEdge, ClusterBoundaryWrite.Type> result = new LinkedHashMap<>();
+        for (Room room : rooms) {
+            if (room == null) {
+                continue;
+            }
+            for (Wall wall : room.walls()) {
+                for (VertexEdge edge : wall.edges()) {
+                    if (isInternalEdge(cells, edge)) {
+                        result.putIfAbsent(edge, ClusterBoundaryWrite.Type.WALL);
+                    }
+                }
+            }
+            for (Door door : room.doors()) {
+                for (VertexEdge edge : door.edges()) {
+                    if (isInternalEdge(cells, edge)) {
+                        result.put(edge, ClusterBoundaryWrite.Type.DOOR);
+                    }
+                }
+            }
+        }
+        return Map.copyOf(result);
+    }
+
+    public List<ClusterBoundaryWrite> persistedInternalBoundaries() {
+        return persistedInternalBoundaries(shape, rooms);
+    }
+
+    public ClusterRewrite applyPaint(TileShape paintShape, List<RoomCluster> overlappingClusters) {
+        if (paintShape == null || paintShape.size() == 0) {
+            return unchangedRewrite();
+        }
+        List<RoomCluster> resolvedClusters = normalizedClusters(overlappingClusters);
+        List<Room> touchedRooms = resolvedClusters.stream()
+                .flatMap(cluster -> cluster.rooms().stream())
+                .filter(room -> room != null && room.roomId() != null && room.floor().shape().overlaps(paintShape))
+                .sorted(Comparator.comparing(room -> room.roomId() == null ? Long.MAX_VALUE : room.roomId()))
+                .toList();
+        if (touchedRooms.isEmpty()) {
+            return unchangedRewrite();
+        }
+
+        Room retainedRoom = touchedRooms.getFirst();
+        Set<Long> mergedRoomIds = touchedRooms.stream()
+                .map(Room::roomId)
+                .filter(java.util.Objects::nonNull)
+                .collect(LinkedHashSet::new, Set::add, Set::addAll);
+        TileShape mergedRoomShape = paintShape;
+        for (Room room : touchedRooms) {
+            mergedRoomShape = mergedRoomShape.union(room.floor().shape());
+        }
+
+        Set<Point2i> mergedClusterCells = new LinkedHashSet<>(paintShape.absoluteCells());
+        Map<VertexEdge, ClusterBoundaryWrite.Type> previousBoundaryKinds = new LinkedHashMap<>();
+        List<RoomRewriteCandidate> candidates = new ArrayList<>();
+        Set<Long> deletedClusterIds = new LinkedHashSet<>();
+        for (RoomCluster cluster : resolvedClusters) {
+            mergedClusterCells.addAll(cluster.cells());
+            previousBoundaryKinds.putAll(cluster.internalBoundaryKinds());
+            if (cluster.clusterId() != null && !cluster.clusterId().equals(clusterId)) {
+                deletedClusterIds.add(cluster.clusterId());
+            }
+            for (Room room : cluster.rooms()) {
+                if (room == null || room.roomId() == null || mergedRoomIds.contains(room.roomId())) {
+                    continue;
+                }
+                candidates.add(RoomRewriteCandidate.keep(
+                        room.roomId(),
+                        room.name(),
+                        room.floor().shape(),
+                        room.floor().shape().anchor()));
+            }
+        }
+        candidates.add(RoomRewriteCandidate.keep(
+                retainedRoom.roomId(),
+                retainedRoom.name(),
+                mergedRoomShape,
+                retainedRoom.floor().shape().anchor()));
+
+        TileShape rewrittenClusterShape = TileShape.fromAbsoluteCells(mergedClusterCells);
+        List<Room> rewrittenRooms = reconciledRooms(
+                rewrittenClusterShape,
+                candidates,
+                previousBoundaryKinds);
+        Map<Long, Long> replacedRoomIds = new LinkedHashMap<>();
+        for (Long mergedRoomId : mergedRoomIds) {
+            if (!mergedRoomId.equals(retainedRoom.roomId())) {
+                replacedRoomIds.put(mergedRoomId, retainedRoom.roomId());
+            }
+        }
+        Set<Long> deletedRoomIds = new LinkedHashSet<>(mergedRoomIds);
+        deletedRoomIds.remove(retainedRoom.roomId());
+        return new ClusterRewrite(
+                clusterId,
+                rewrittenClusterShape,
+                rewrittenClusterShape.centerCell(),
+                rewrittenRooms,
+                persistedInternalBoundaries(rewrittenClusterShape, rewrittenRooms),
+                deletedRoomIds,
+                replacedRoomIds,
+                mergedRoomIds.size() > 1 ? mergedRoomIds : Set.of(),
+                deletedClusterIds,
+                Map.of());
+    }
+
+    public ClusterRewrite applyDelete(TileShape deletedShape, Supplier<String> roomNameSupplier) {
+        if (deletedShape == null || deletedShape.size() == 0) {
+            return unchangedRewrite();
+        }
+        Set<Point2i> remainingCells = new LinkedHashSet<>(cells);
+        if (!remainingCells.removeAll(deletedShape.absoluteCells())) {
+            return unchangedRewrite();
+        }
+        if (remainingCells.isEmpty()) {
+            return new ClusterRewrite(
+                    clusterId,
+                    TileShape.singleCell(center),
+                    center,
+                    List.of(),
+                    List.of(),
+                    roomIds(),
+                    Map.of(),
+                    Set.of(),
+                    Set.of(clusterId),
+                    Map.of());
+        }
+
+        Map<VertexEdge, ClusterBoundaryWrite.Type> previousBoundaryKinds = internalBoundaryKinds();
+        List<RoomRewriteCandidate> candidates = new ArrayList<>();
+        Set<Long> deletedRoomIds = new LinkedHashSet<>();
+        Map<Long, List<RoomRewriteCandidate>> fragmentsBySourceRoomId = new LinkedHashMap<>();
+        for (Room room : rooms) {
+            if (room == null || room.roomId() == null) {
+                continue;
+            }
+            TileShape remainingShape = room.floor().shape().subtract(deletedShape);
+            List<TileShape> components = remainingShape.connectedComponents().stream()
+                    .sorted(Comparator
+                            .comparing((TileShape component) -> !component.contains(room.floor().shape().anchor()))
+                            .thenComparing(TileShape::centerCell, Point2i.POINT_ORDER))
+                    .toList();
+            if (components.isEmpty()) {
+                deletedRoomIds.add(room.roomId());
+                continue;
+            }
+            List<RoomRewriteCandidate> sourceFragments = new ArrayList<>();
+            for (int index = 0; index < components.size(); index++) {
+                TileShape component = components.get(index);
+                String roomName = index == 0
+                        ? room.name()
+                        : nextGeneratedRoomName(roomNameSupplier, room.name());
+                RoomRewriteCandidate candidate = index == 0
+                        ? RoomRewriteCandidate.keep(room.roomId(), roomName, component, room.floor().shape().anchor())
+                        : RoomRewriteCandidate.create(room.roomId(), roomName, component, room.floor().shape().anchor());
+                candidates.add(candidate);
+                sourceFragments.add(candidate);
+            }
+            fragmentsBySourceRoomId.put(room.roomId(), List.copyOf(sourceFragments));
+        }
+
+        TileShape rewrittenClusterShape = TileShape.fromAbsoluteCells(remainingCells);
+        List<Room> rewrittenRooms = reconciledRooms(
+                rewrittenClusterShape,
+                candidates,
+                previousBoundaryKinds);
+        Map<Long, List<Room>> splitFragmentsBySourceRoomId = resolvedFragmentsBySourceRoomId(
+                fragmentsBySourceRoomId,
+                rewrittenRooms);
+        return new ClusterRewrite(
+                clusterId,
+                rewrittenClusterShape,
+                rewrittenClusterShape.centerCell(),
+                rewrittenRooms,
+                persistedInternalBoundaries(rewrittenClusterShape, rewrittenRooms),
+                deletedRoomIds,
+                Map.of(),
+                Set.of(),
+                Set.of(),
+                splitFragmentsBySourceRoomId);
+    }
+
+    public List<Room> reconciledRooms(
+            TileShape clusterShape,
+            List<RoomRewriteCandidate> candidates,
+            Map<VertexEdge, ClusterBoundaryWrite.Type> previousKinds
+    ) {
+        if (clusterShape == null || clusterShape.size() == 0) {
+            return List.of();
+        }
+        Set<Point2i> clusterCells = clusterShape.absoluteCells();
+        Map<VertexEdge, ClusterBoundaryWrite.Type> boundaryKinds = previousKinds == null ? Map.of() : Map.copyOf(previousKinds);
+        List<Room> result = new ArrayList<>();
+        for (RoomRewriteCandidate candidate : candidates == null ? List.<RoomRewriteCandidate>of() : candidates) {
+            if (candidate == null || candidate.shape() == null || candidate.shape().size() == 0) {
+                continue;
+            }
+            Set<VertexEdge> wallEdges = new LinkedHashSet<>();
+            Set<VertexEdge> doorEdges = new LinkedHashSet<>();
+            for (Point2i cell : candidate.shape().absoluteCells()) {
+                for (Point2i step : Point2i.CARDINAL_STEPS) {
+                    Point2i neighbor = cell.add(step);
+                    if (!clusterCells.contains(neighbor) || candidate.shape().contains(neighbor)) {
+                        continue;
+                    }
+                    VertexEdge edge = VertexEdge.betweenCellAndStep(cell, step);
+                    ClusterBoundaryWrite.Type type = boundaryKinds.getOrDefault(edge, ClusterBoundaryWrite.Type.WALL);
+                    if (type == ClusterBoundaryWrite.Type.DOOR) {
+                        doorEdges.add(edge);
+                    } else {
+                        wallEdges.add(edge);
+                    }
+                }
+            }
+            result.add(Room.resolved(
+                    candidate.roomId(),
+                    mapId,
+                    clusterId == null ? 0L : clusterId,
+                    candidate.name(),
+                    new Floor(candidate.shape()),
+                    wallEdges.isEmpty() ? List.of() : List.of(new Wall(wallEdges)),
+                    doorEdges.isEmpty() ? List.of() : List.of(new Door(doorEdges))));
+        }
+        return List.copyOf(result);
+    }
+
     private static Map<Long, Room> indexRoomsById(List<Room> rooms) {
         Map<Long, Room> result = new LinkedHashMap<>();
         for (Room room : rooms) {
@@ -541,6 +768,133 @@ public final class RoomCluster {
                 : componentShape.centerCell();
     }
 
+    private ClusterRewrite unchangedRewrite() {
+        return new ClusterRewrite(
+                clusterId,
+                shape,
+                center,
+                rooms,
+                persistedInternalBoundaries(),
+                Set.of(),
+                Map.of(),
+                Set.of(),
+                Set.of(),
+                Map.of());
+    }
+
+    private static List<RoomCluster> normalizedClusters(List<RoomCluster> clusters) {
+        if (clusters == null || clusters.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, RoomCluster> result = new LinkedHashMap<>();
+        for (RoomCluster cluster : clusters) {
+            if (cluster != null && cluster.clusterId() != null) {
+                result.put(cluster.clusterId(), cluster);
+            }
+        }
+        return List.copyOf(result.values());
+    }
+
+    private static boolean isInternalEdge(Set<Point2i> clusterCells, VertexEdge edge) {
+        Set<Point2i> touchingCells = edge.touchingCells();
+        return touchingCells.size() == 2 && clusterCells.containsAll(touchingCells);
+    }
+
+    private static List<ClusterBoundaryWrite> persistedInternalBoundaries(TileShape clusterShape, List<Room> rooms) {
+        if (clusterShape == null || clusterShape.size() == 0) {
+            return List.of();
+        }
+        Set<Point2i> clusterCells = clusterShape.absoluteCells();
+        Map<VertexEdge, ClusterBoundaryWrite.Type> result = new LinkedHashMap<>();
+        for (Room room : rooms == null ? List.<Room>of() : rooms) {
+            if (room == null) {
+                continue;
+            }
+            for (Wall wall : room.walls()) {
+                for (VertexEdge edge : wall.edges()) {
+                    if (isInternalEdge(clusterCells, edge)) {
+                        result.putIfAbsent(edge, ClusterBoundaryWrite.Type.WALL);
+                    }
+                }
+            }
+            for (Door door : room.doors()) {
+                for (VertexEdge edge : door.edges()) {
+                    if (isInternalEdge(clusterCells, edge)) {
+                        result.put(edge, ClusterBoundaryWrite.Type.DOOR);
+                    }
+                }
+            }
+        }
+        return result.entrySet().stream()
+                .map(entry -> toBoundaryWrite(entry.getKey(), entry.getValue()))
+                .filter(java.util.Objects::nonNull)
+                .toList();
+    }
+
+    private static ClusterBoundaryWrite toBoundaryWrite(VertexEdge edge, ClusterBoundaryWrite.Type type) {
+        List<Point2i> touchingCells = edge.touchingCells().stream()
+                .sorted(Point2i.POINT_ORDER)
+                .toList();
+        if (touchingCells.size() != 2) {
+            return null;
+        }
+        Point2i baseCell = touchingCells.getFirst();
+        Point2i direction = baseCell.directionToCardinal(touchingCells.get(1));
+        return direction == null ? null : new ClusterBoundaryWrite(baseCell, direction, type);
+    }
+
+    private static String nextGeneratedRoomName(Supplier<String> roomNameSupplier, String fallbackName) {
+        if (roomNameSupplier == null) {
+            return fallbackName;
+        }
+        String generated = roomNameSupplier.get();
+        return generated == null || generated.isBlank() ? fallbackName : generated.trim();
+    }
+
+    private static Map<Long, List<Room>> resolvedFragmentsBySourceRoomId(
+            Map<Long, List<RoomRewriteCandidate>> candidatesBySourceRoomId,
+            List<Room> rooms
+    ) {
+        if (candidatesBySourceRoomId == null || candidatesBySourceRoomId.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, Room> roomBySignature = new LinkedHashMap<>();
+        for (Room room : rooms) {
+            if (room != null) {
+                roomBySignature.put(signature(room.roomId(), room.name(), room.floor().shape()), room);
+            }
+        }
+        Map<Long, List<Room>> result = new LinkedHashMap<>();
+        for (Map.Entry<Long, List<RoomRewriteCandidate>> entry : candidatesBySourceRoomId.entrySet()) {
+            List<Room> resolved = entry.getValue().stream()
+                    .map(candidate -> roomBySignature.get(signature(candidate.roomId(), candidate.name(), candidate.shape())))
+                    .filter(java.util.Objects::nonNull)
+                    .toList();
+            result.put(entry.getKey(), resolved);
+        }
+        return Map.copyOf(result);
+    }
+
+    private static String signature(Long roomId, String name, TileShape shape) {
+        return roomId + "|" + name + "|" + shape;
+    }
+
     private record OverlapIndex(Map<Point2i, Room> roomsByCell, boolean hasOverlaps) {
+    }
+
+    record RoomRewriteCandidate(
+            Long sourceRoomId,
+            Long roomId,
+            String name,
+            TileShape shape,
+            Point2i preferredAnchor
+    ) {
+        static RoomRewriteCandidate keep(Long roomId, String name, TileShape shape, Point2i preferredAnchor) {
+            return new RoomRewriteCandidate(roomId, roomId, name, shape, preferredAnchor);
+        }
+
+        static RoomRewriteCandidate create(Long sourceRoomId, String name, TileShape shape, Point2i preferredAnchor) {
+            return new RoomRewriteCandidate(sourceRoomId, null, name, shape, preferredAnchor);
+        }
     }
 }

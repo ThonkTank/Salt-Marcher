@@ -1,10 +1,10 @@
 package features.world.dungeonmap.canvas.graph;
 
 import features.world.dungeonmap.canvas.base.DungeonCanvasCamera;
+import features.world.dungeonmap.canvas.base.DungeonRenderState;
 import features.world.dungeonmap.canvas.base.DungeonCanvasTheme;
 import features.world.dungeonmap.canvas.base.DungeonSceneRenderer;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import javafx.geometry.Point2D;
@@ -24,9 +24,7 @@ public final class DungeonGraphSceneRenderer implements DungeonSceneRenderer {
             DungeonLayout mapModel,
             DungeonCanvasCamera camera,
             boolean editorMode,
-            String selectedTargetKey,
-            TileShape previewPaintShape,
-            boolean previewPaintDeleteMode
+            DungeonRenderState renderState
     ) {
         gc.setFill(DungeonCanvasTheme.background(editorMode));
         gc.fillRect(0, 0, width, height);

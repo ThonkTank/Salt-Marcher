@@ -1,13 +1,16 @@
 package features.world.dungeonmap.shell.editor;
 
+import features.world.dungeonmap.application.corridor.DungeonCorridorEditService;
 import features.world.dungeonmap.application.room.DungeonRoomEditService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasWorkspace;
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
 import features.world.dungeonmap.loading.DungeonMapCatalogEntry;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
+import features.world.dungeonmap.shell.editor.interaction.CorridorInteractionController;
 import features.world.dungeonmap.shell.editor.interaction.ClusterSelectionDragController;
 import features.world.dungeonmap.shell.editor.interaction.DungeonEditorGridInteractionController;
 import features.world.dungeonmap.shell.editor.interaction.RoomPaintInteractionController;
+import features.world.dungeonmap.state.DungeonCorridorDraftState;
 import features.world.dungeonmap.state.EditorLayoutPreviewState;
 import features.world.dungeonmap.state.EditorPaintPreviewState;
 import features.world.dungeonmap.state.EditorSelectionState;
@@ -28,6 +31,7 @@ final class DungeonEditorCoordinator {
     private final EditorSelectionState selectionState = new EditorSelectionState();
     private final EditorLayoutPreviewState layoutPreviewState = new EditorLayoutPreviewState();
     private final EditorPaintPreviewState paintPreviewState = new EditorPaintPreviewState();
+    private final DungeonCorridorDraftState corridorDraftState = new DungeonCorridorDraftState();
     private final DungeonEditorGridInteractionController interactionController;
 
     DungeonEditorCoordinator(
@@ -38,7 +42,8 @@ final class DungeonEditorCoordinator {
             DungeonMapState mapState,
             DungeonEditorSessionState sessionState,
             DungeonMapCatalogService mapCatalogService,
-            DungeonRoomEditService roomEditService
+            DungeonRoomEditService roomEditService,
+            DungeonCorridorEditService corridorEditService
     ) {
         this.controls = Objects.requireNonNull(controls, "controls");
         this.statePane = Objects.requireNonNull(statePane, "statePane");
@@ -57,11 +62,19 @@ final class DungeonEditorCoordinator {
                 selectionState,
                 paintPreviewState,
                 Objects.requireNonNull(roomEditService, "roomEditService"));
+        CorridorInteractionController corridorInteractionController = new CorridorInteractionController(
+                mapState,
+                loadingService,
+                sessionState,
+                selectionState,
+                corridorDraftState,
+                Objects.requireNonNull(corridorEditService, "corridorEditService"));
         this.interactionController = new DungeonEditorGridInteractionController(
                 mapState,
                 sessionState,
                 clusterSelectionDragController,
-                roomPaintInteractionController);
+                roomPaintInteractionController,
+                corridorInteractionController);
         this.mapDropdownController = new DungeonMapDropdownController(
                 Objects.requireNonNull(mapCatalogService, "mapCatalogService"),
                 new MapReloadHandle());
@@ -70,6 +83,7 @@ final class DungeonEditorCoordinator {
         selectionState.addListener(this::refreshFromInteractionState);
         layoutPreviewState.addListener(this::refreshFromInteractionState);
         paintPreviewState.addListener(this::refreshFromInteractionState);
+        corridorDraftState.addListener(this::refreshFromInteractionState);
         refreshFromSessionState();
         refreshFromInteractionState();
     }
@@ -97,12 +111,27 @@ final class DungeonEditorCoordinator {
             interactionController.clear();
         }
         statePane.refresh(sessionState.selectedTool());
+        refreshCorridorStatePane();
     }
 
     private void refreshFromInteractionState() {
         workspace.setSelectedTargetKey(selectionState.selectedTargetKey());
         workspace.setPreviewMapModel(layoutPreviewState.previewMap());
         workspace.setPreviewPaintShape(paintPreviewState.previewShape(), paintPreviewState.deleteMode());
+        refreshCorridorStatePane();
+    }
+
+    private void refreshCorridorStatePane() {
+        if (corridorDraftState.hasPendingStart()) {
+            statePane.showCorridorStatus("Start gewählt, Zielraum anklicken");
+            return;
+        }
+        String selectedTargetKey = selectionState.selectedTargetKey();
+        if (selectedTargetKey != null && selectedTargetKey.startsWith("corridor:")) {
+            statePane.showCorridorStatus("Gewählt: " + selectedTargetKey.replace("corridor:", "Korridor "));
+            return;
+        }
+        statePane.showCorridorStatus(null);
     }
 
     private void loadSelectedMap(DungeonMapCatalogEntry entry) {

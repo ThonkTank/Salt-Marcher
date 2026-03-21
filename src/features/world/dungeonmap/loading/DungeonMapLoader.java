@@ -57,6 +57,18 @@ public final class DungeonMapLoader {
         }
     }
 
+    public DungeonLayout loadLayout(Connection conn, long mapId) throws SQLException {
+        if (conn == null) {
+            throw new IllegalArgumentException("conn darf nicht null sein");
+        }
+        List<DungeonMapCatalogEntry> maps = loadCatalog(conn);
+        DungeonMapCatalogEntry map = findMap(maps, mapId);
+        if (map == null) {
+            return null;
+        }
+        return loadExistingMap(conn, maps, map).activeMap();
+    }
+
     private static DungeonMapLoadResult loadExistingMap(
             Connection conn,
             List<DungeonMapCatalogEntry> maps,

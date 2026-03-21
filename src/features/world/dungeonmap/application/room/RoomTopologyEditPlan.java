@@ -1,5 +1,6 @@
 package features.world.dungeonmap.application.room;
 
+import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
 
@@ -36,8 +37,10 @@ record DeleteClusterRoomEditPlan(
 }
 
 record SplitClusterRoomEditPlan(
+        DungeonLayout layout,
         long mapId,
         long sourceClusterId,
+        Long sourceRoomId,
         java.util.List<SplitClusterFragmentPlan> fragments
 ) implements RoomTopologyEditPlan {
     SplitClusterRoomEditPlan {

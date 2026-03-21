@@ -20,6 +20,10 @@ public final class DungeonCanvasTheme {
     public static final Color CELL_FILL = Color.web("#2a3238");
     public static final Color CELL_STROKE = Color.web("#8a6a35");
     public static final Color WALL_STROKE = Color.web("#8a6a35");
+    public static final Color CORRIDOR_FILL = Color.web("#3b5053", 0.8);
+    public static final Color CORRIDOR_STROKE = Color.web("#91b6b0");
+    public static final Color CORRIDOR_SELECTED_FILL = Color.web("#58706e", 0.95);
+    public static final Color CORRIDOR_SELECTED_STROKE = Color.web("#d7ece7");
     public static final Color GRAPH_LINK = Color.web("#56636c");
     public static final Color GRAPH_NODE_FILL = Color.web("#2f3a41");
     public static final Color GRAPH_NODE_STROKE = Color.web("#8a6a35");

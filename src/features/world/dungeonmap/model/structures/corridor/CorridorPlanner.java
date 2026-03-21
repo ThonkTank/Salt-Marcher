@@ -14,6 +14,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -40,28 +41,9 @@ final class CorridorPlanner {
             return CorridorPath.empty(route);
         }
 
-        MutableNetwork network = new MutableNetwork();
         Map<Long, ResolvedCorridorDoorBinding> doorBindings = corridor.resolvedDoorBindings(input);
-        Room seedRoom = rooms.getFirst();
-        network.connectedRoomIds.add(seedRoom.roomId());
-
         List<Point2i> waypointCells = corridor.resolvedWaypointCells(input);
-        if (!waypointCells.isEmpty()) {
-            ConnectionPlan seedPlan = bestSeedWaypointPlan(seedRoom, waypointCells, rooms, doorBindings);
-            if (seedPlan != null) {
-                network.apply(seedPlan);
-            }
-        }
-
-        for (Room room : rooms) {
-            if (network.connectedRoomIds.contains(room.roomId())) {
-                continue;
-            }
-            ConnectionPlan bestPlan = bestPlanForRoom(room, rooms, network, doorBindings);
-            if (bestPlan != null) {
-                network.apply(bestPlan);
-            }
-        }
+        MutableNetwork network = bestNetwork(rooms, waypointCells, doorBindings);
 
         boolean routable = network.connectedRoomIds.size() == rooms.size()
                 && (!network.corridorCells.isEmpty() || !network.doors.isEmpty());
@@ -71,6 +53,48 @@ final class CorridorPlanner {
                 List.copyOf(network.doors.values()),
                 network.directlyAdjacentOnly,
                 routable);
+    }
+
+    private static MutableNetwork bestNetwork(
+            List<Room> rooms,
+            List<Point2i> waypointCells,
+            Map<Long, ResolvedCorridorDoorBinding> doorBindings
+    ) {
+        MutableNetwork best = null;
+        for (Room seedRoom : rooms) {
+            if (seedRoom == null || seedRoom.roomId() == null) {
+                continue;
+            }
+            MutableNetwork candidate = buildNetwork(seedRoom, rooms, waypointCells, doorBindings);
+            if (best == null || candidate.score(rooms).compareTo(best.score(rooms)) < 0) {
+                best = candidate;
+            }
+        }
+        return best == null ? new MutableNetwork() : best;
+    }
+
+    private static MutableNetwork buildNetwork(
+            Room seedRoom,
+            List<Room> rooms,
+            List<Point2i> waypointCells,
+            Map<Long, ResolvedCorridorDoorBinding> doorBindings
+    ) {
+        MutableNetwork network = new MutableNetwork();
+        network.connectedRoomIds.add(seedRoom.roomId());
+        if (!waypointCells.isEmpty()) {
+            ConnectionPlan seedPlan = bestSeedWaypointPlan(seedRoom, waypointCells, rooms, doorBindings);
+            if (seedPlan != null) {
+                network.apply(seedPlan);
+            }
+        }
+        while (network.connectedRoomIds.size() < rooms.size()) {
+            ConnectionPlan next = bestNextPlan(rooms, network, doorBindings, waypointCells);
+            if (next == null) {
+                break;
+            }
+            network.apply(next);
+        }
+        return network;
     }
 
     private static GridRoute resolvedRoute(Corridor corridor, CorridorPlanningInput input) {
@@ -132,6 +156,100 @@ final class CorridorPlanner {
                 continue;
             }
             best = better(best, bestPlanToConnectedRoom(room, connectedRoom, occupancy, doorBindings));
+        }
+        return best;
+    }
+
+    private static ConnectionPlan bestNextPlan(
+            List<Room> rooms,
+            MutableNetwork network,
+            Map<Long, ResolvedCorridorDoorBinding> doorBindings,
+            List<Point2i> waypointCells
+    ) {
+        ConnectionPlan best = null;
+        NetworkScore bestScore = null;
+        for (Room room : rooms) {
+            if (room == null || room.roomId() == null || network.connectedRoomIds.contains(room.roomId())) {
+                continue;
+            }
+            for (ConnectionPlan candidate : connectionPlansForRoom(room, rooms, network, doorBindings, waypointCells)) {
+                NetworkScore candidateScore = network.scoreWith(rooms, candidate);
+                if (bestScore == null
+                        || candidateScore.compareTo(bestScore) < 0
+                        || (candidateScore.compareTo(bestScore) == 0 && candidate.score().compareTo(best.score()) < 0)) {
+                    best = candidate;
+                    bestScore = candidateScore;
+                }
+            }
+        }
+        return best;
+    }
+
+    private static List<ConnectionPlan> connectionPlansForRoom(
+            Room room,
+            List<Room> orderedRooms,
+            MutableNetwork network,
+            Map<Long, ResolvedCorridorDoorBinding> doorBindings,
+            List<Point2i> waypointCells
+    ) {
+        List<ConnectionPlan> result = new ArrayList<>();
+        Map<Point2i, Long> occupancy = roomOccupancy(orderedRooms);
+        if (network.corridorCells.isEmpty()) {
+            for (Room connectedRoom : orderedRooms) {
+                if (connectedRoom == null || !network.connectedRoomIds.contains(connectedRoom.roomId())) {
+                    continue;
+                }
+                ConnectionPlan candidate = bestPlanToConnectedRoom(room, connectedRoom, occupancy, doorBindings);
+                if (candidate != null) {
+                    result.add(candidate);
+                }
+            }
+        } else {
+            ConnectionPlan joinNetwork = bestPlanToNetwork(room, network.corridorCells, occupancy, doorBindings);
+            if (joinNetwork != null) {
+                result.add(joinNetwork);
+            }
+            for (Room connectedRoom : orderedRooms) {
+                if (connectedRoom == null || !network.connectedRoomIds.contains(connectedRoom.roomId())) {
+                    continue;
+                }
+                ConnectionPlan candidate = bestFreshPathPlan(room, connectedRoom, occupancy, doorBindings, waypointCells);
+                if (candidate != null) {
+                    result.add(candidate);
+                }
+            }
+        }
+        return List.copyOf(result);
+    }
+
+    private static ConnectionPlan bestFreshPathPlan(
+            Room room,
+            Room connectedRoom,
+            Map<Point2i, Long> occupancy,
+            Map<Long, ResolvedCorridorDoorBinding> doorBindings,
+            List<Point2i> waypointCells
+    ) {
+        if (room == null || connectedRoom == null) {
+            return null;
+        }
+        ConnectionPlan best = null;
+        List<ExitCandidate> roomExits = exitCandidates(room, occupancy, doorBindings);
+        List<ExitCandidate> connectedExits = exitCandidates(connectedRoom, occupancy, doorBindings);
+        for (ExitCandidate exit : roomExits) {
+            for (ExitCandidate target : connectedExits) {
+                List<Point2i> targets = waypointCells.isEmpty()
+                        ? List.of(target.outsideCell)
+                        : append(waypointCells, target.outsideCell);
+                List<Point2i> path = pathThroughPoints(exit.outsideCell, targets, occupancy);
+                if (path.isEmpty() && !exit.outsideCell.equals(target.outsideCell)) {
+                    continue;
+                }
+                best = better(best, new ConnectionPlan(
+                        room.roomId(),
+                        path,
+                        List.of(exit.door, target.door),
+                        path.isEmpty()));
+            }
         }
         return best;
     }
@@ -418,6 +536,12 @@ final class CorridorPlanner {
         return new PathScore(pathLength(path), cornerCount(path));
     }
 
+    private static List<Point2i> append(List<Point2i> points, Point2i last) {
+        List<Point2i> result = new ArrayList<>(points);
+        result.add(last);
+        return List.copyOf(result);
+    }
+
     private static int pathLength(List<Point2i> path) {
         return Math.max(0, path == null ? 0 : path.size() - 1);
     }
@@ -492,5 +616,212 @@ final class CorridorPlanner {
             }
             directlyAdjacentOnly = directlyAdjacentOnly && plan.directlyAdjacent();
         }
+
+        private NetworkScore score(List<Room> rooms) {
+            return NetworkScore.forNetwork(rooms, corridorCells, doors.values());
+        }
+
+        private NetworkScore scoreWith(List<Room> rooms, ConnectionPlan candidate) {
+            Set<Point2i> candidateCells = new LinkedHashSet<>(corridorCells);
+            candidateCells.addAll(candidate.pathCells());
+            Map<VertexEdge, Door> candidateDoors = new LinkedHashMap<>(doors);
+            for (Door door : candidate.doors()) {
+                for (VertexEdge edge : door.edges()) {
+                    candidateDoors.putIfAbsent(edge, new Door(Set.of(edge)));
+                }
+            }
+            return NetworkScore.forNetwork(rooms, candidateCells, candidateDoors.values());
+        }
+    }
+
+    private record NetworkScore(
+            int componentCount,
+            int unreachablePairCount,
+            int distanceSum,
+            int maxDistance,
+            int corridorCellCount,
+            int cornerCount
+    ) implements Comparable<NetworkScore> {
+        private static NetworkScore forNetwork(
+                List<Room> rooms,
+                Set<Point2i> corridorCells,
+                Iterable<Door> doors
+        ) {
+            Map<Long, Room> roomsById = new LinkedHashMap<>();
+            Map<Point2i, Long> occupancy = new LinkedHashMap<>();
+            for (Room room : rooms == null ? List.<Room>of() : rooms) {
+                if (room == null || room.roomId() == null) {
+                    continue;
+                }
+                roomsById.put(room.roomId(), room);
+                for (Point2i cell : room.cells()) {
+                    occupancy.put(cell, room.roomId());
+                }
+            }
+            Map<Object, Set<Object>> adjacency = new LinkedHashMap<>();
+            for (Point2i cell : corridorCells) {
+                link(adjacency, cell, cell);
+                for (Point2i step : Point2i.CARDINAL_STEPS) {
+                    Point2i neighbor = cell.add(step);
+                    if (corridorCells.contains(neighbor)) {
+                        link(adjacency, cell, neighbor);
+                    }
+                }
+            }
+            for (Long roomId : roomsById.keySet()) {
+                link(adjacency, roomNode(roomId), roomNode(roomId));
+            }
+            for (Door door : doors == null ? List.<Door>of() : iterableToList(doors)) {
+                for (VertexEdge edge : door.edges()) {
+                    Set<Point2i> touchingCells = edge.touchingCells();
+                    Long firstRoom = null;
+                    Long secondRoom = null;
+                    Point2i corridorCell = null;
+                    for (Point2i cell : touchingCells) {
+                        Long roomId = occupancy.get(cell);
+                        if (roomId != null) {
+                            if (firstRoom == null) {
+                                firstRoom = roomId;
+                            } else if (!Objects.equals(firstRoom, roomId)) {
+                                secondRoom = roomId;
+                            }
+                        } else if (corridorCells.contains(cell)) {
+                            corridorCell = cell;
+                        }
+                    }
+                    if (firstRoom != null && secondRoom != null) {
+                        link(adjacency, roomNode(firstRoom), roomNode(secondRoom));
+                        continue;
+                    }
+                    if (firstRoom != null && corridorCell != null) {
+                        link(adjacency, roomNode(firstRoom), corridorCell);
+                    }
+                }
+            }
+            int unreachablePairCount = 0;
+            int distanceSum = 0;
+            int maxDistance = 0;
+            List<Long> orderedRoomIds = roomsById.keySet().stream().sorted().toList();
+            for (int index = 0; index < orderedRoomIds.size(); index++) {
+                Long sourceRoomId = orderedRoomIds.get(index);
+                Map<Object, Integer> distances = bfs(adjacency, roomNode(sourceRoomId));
+                for (int otherIndex = index + 1; otherIndex < orderedRoomIds.size(); otherIndex++) {
+                    Integer distance = distances.get(roomNode(orderedRoomIds.get(otherIndex)));
+                    if (distance == null) {
+                        unreachablePairCount++;
+                        continue;
+                    }
+                    distanceSum += distance;
+                    maxDistance = Math.max(maxDistance, distance);
+                }
+            }
+            return new NetworkScore(
+                    CorridorPlanner.componentCount(corridorCells),
+                    unreachablePairCount,
+                    distanceSum,
+                    maxDistance,
+                    corridorCells.size(),
+                    CorridorPlanner.corridorCornerCount(corridorCells));
+        }
+
+        @Override
+        public int compareTo(NetworkScore other) {
+            int compare = Integer.compare(componentCount, other.componentCount);
+            if (compare != 0) {
+                return compare;
+            }
+            compare = Integer.compare(unreachablePairCount, other.unreachablePairCount);
+            if (compare != 0) {
+                return compare;
+            }
+            compare = Integer.compare(distanceSum, other.distanceSum);
+            if (compare != 0) {
+                return compare;
+            }
+            compare = Integer.compare(maxDistance, other.maxDistance);
+            if (compare != 0) {
+                return compare;
+            }
+            compare = Integer.compare(cornerCount, other.cornerCount);
+            if (compare != 0) {
+                return compare;
+            }
+            return Integer.compare(corridorCellCount, other.corridorCellCount);
+        }
+    }
+
+    private static Object roomNode(Long roomId) {
+        return "room:" + roomId;
+    }
+
+    private static void link(Map<Object, Set<Object>> adjacency, Object left, Object right) {
+        adjacency.computeIfAbsent(left, ignored -> new LinkedHashSet<>()).add(right);
+        adjacency.computeIfAbsent(right, ignored -> new LinkedHashSet<>()).add(left);
+    }
+
+    private static Map<Object, Integer> bfs(Map<Object, Set<Object>> adjacency, Object start) {
+        Map<Object, Integer> distanceByNode = new LinkedHashMap<>();
+        ArrayDeque<Object> queue = new ArrayDeque<>();
+        queue.add(start);
+        distanceByNode.put(start, 0);
+        while (!queue.isEmpty()) {
+            Object current = queue.removeFirst();
+            int currentDistance = distanceByNode.get(current);
+            for (Object neighbor : adjacency.getOrDefault(current, Set.of())) {
+                if (distanceByNode.containsKey(neighbor)) {
+                    continue;
+                }
+                distanceByNode.put(neighbor, currentDistance + 1);
+                queue.addLast(neighbor);
+            }
+        }
+        return distanceByNode;
+    }
+
+    private static int componentCount(Set<Point2i> corridorCells) {
+        if (corridorCells == null || corridorCells.isEmpty()) {
+            return 1;
+        }
+        Set<Point2i> unvisited = new HashSet<>(corridorCells);
+        int components = 0;
+        while (!unvisited.isEmpty()) {
+            Point2i seed = unvisited.iterator().next();
+            ArrayDeque<Point2i> queue = new ArrayDeque<>();
+            queue.add(seed);
+            unvisited.remove(seed);
+            components++;
+            while (!queue.isEmpty()) {
+                Point2i current = queue.removeFirst();
+                for (Point2i step : Point2i.CARDINAL_STEPS) {
+                    Point2i neighbor = current.add(step);
+                    if (unvisited.remove(neighbor)) {
+                        queue.addLast(neighbor);
+                    }
+                }
+            }
+        }
+        return components;
+    }
+
+    private static int corridorCornerCount(Set<Point2i> corridorCells) {
+        int corners = 0;
+        for (Point2i cell : corridorCells == null ? Set.<Point2i>of() : corridorCells) {
+            boolean horizontal = corridorCells.contains(cell.add(new Point2i(-1, 0)))
+                    || corridorCells.contains(cell.add(new Point2i(1, 0)));
+            boolean vertical = corridorCells.contains(cell.add(new Point2i(0, -1)))
+                    || corridorCells.contains(cell.add(new Point2i(0, 1)));
+            if (horizontal && vertical) {
+                corners++;
+            }
+        }
+        return corners;
+    }
+
+    private static <T> List<T> iterableToList(Iterable<T> values) {
+        List<T> result = new ArrayList<>();
+        for (T value : values) {
+            result.add(value);
+        }
+        return result;
     }
 }

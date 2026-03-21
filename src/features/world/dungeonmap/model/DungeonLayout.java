@@ -1,6 +1,7 @@
 package features.world.dungeonmap.model;
 
 import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.structures.cluster.ClusterRewrite;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
@@ -72,8 +73,32 @@ public final class DungeonLayout {
         return corridors;
     }
 
+    public Map<Long, Corridor> corridorsById() {
+        return corridorsById;
+    }
+
     public List<RoomCluster> clusters() {
         return clusters;
+    }
+
+    public Map<Long, Long> roomClusterIds() {
+        Map<Long, Long> result = new LinkedHashMap<>();
+        for (Room room : roomsById.values()) {
+            if (room != null && room.roomId() != null) {
+                result.put(room.roomId(), room.clusterId());
+            }
+        }
+        return Map.copyOf(result);
+    }
+
+    public Map<Long, Point2i> clusterCentersById() {
+        Map<Long, Point2i> result = new LinkedHashMap<>();
+        for (RoomCluster cluster : clusters) {
+            if (cluster != null && cluster.clusterId() != null) {
+                result.put(cluster.clusterId(), cluster.center());
+            }
+        }
+        return Map.copyOf(result);
     }
 
     public List<RoomCluster> overlappingClusters(features.world.dungeonmap.model.geometry.TileShape shape) {
@@ -95,6 +120,26 @@ public final class DungeonLayout {
 
     public Corridor findCorridor(Long corridorId) {
         return corridorId == null ? null : corridorsById.get(corridorId);
+    }
+
+    public List<Corridor> corridorsForRoom(Long roomId) {
+        if (roomId == null) {
+            return List.of();
+        }
+        return corridors.stream()
+                .filter(corridor -> corridor != null && corridor.connectsRoom(roomId))
+                .toList();
+    }
+
+    public Corridor findCorridorContainingAllRooms(Set<Long> roomIds) {
+        if (roomIds == null || roomIds.size() < 2) {
+            return null;
+        }
+        return corridors.stream()
+                .filter(corridor -> corridor != null && corridor.corridorId() != null)
+                .filter(corridor -> corridor.roomIds().containsAll(roomIds))
+                .findFirst()
+                .orElse(null);
     }
 
     public RoomCluster findCluster(Long clusterId) {
@@ -146,9 +191,30 @@ public final class DungeonLayout {
         if (cluster == null || cluster.clusterId() == null) {
             return false;
         }
+        return !corridorIdsDependingOnClusters(Set.of(cluster.clusterId())).isEmpty()
+                || !corridorIdsDependingOnRooms(cluster.roomIds()).isEmpty();
+    }
+
+    public Set<Long> corridorIdsDependingOnClusters(Set<Long> clusterIds) {
+        if (clusterIds == null || clusterIds.isEmpty()) {
+            return Set.of();
+        }
         return corridors.stream()
-                .anyMatch(corridor -> corridor.dependsOnCluster(cluster.clusterId())
-                        || corridor.dependsOnAnyRoom(cluster.roomIds()));
+                .filter(corridor -> corridor != null && corridor.corridorId() != null)
+                .filter(corridor -> corridor.isAffectedByClusterRewrite(clusterIds))
+                .map(Corridor::corridorId)
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+    }
+
+    public Set<Long> corridorIdsDependingOnRooms(Set<Long> roomIds) {
+        if (roomIds == null || roomIds.isEmpty()) {
+            return Set.of();
+        }
+        return corridors.stream()
+                .filter(corridor -> corridor != null && corridor.corridorId() != null)
+                .filter(corridor -> corridor.isAffectedByRoomRewrite(roomIds))
+                .map(Corridor::corridorId)
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
     }
 
     public CorridorPlanningInput corridorPlanningInput() {
@@ -182,11 +248,48 @@ public final class DungeonLayout {
         RoomCluster movedCluster = cluster.movedBy(delta);
         DungeonLayout movedLayout = withReplacedCluster(movedCluster);
         List<Corridor> updatedCorridors = corridors.stream()
-                .map(corridor -> corridor.dependsOnCluster(clusterId) || corridor.dependsOnAnyRoom(movedCluster.roomIds())
+                .map(corridor -> corridor.isAffectedByClusterRewrite(Set.of(clusterId))
+                        || corridor.isAffectedByRoomRewrite(movedCluster.roomIds())
                         ? corridor.replanned(movedLayout.corridorPlanningInput())
                         : corridor)
                 .toList();
         return new DungeonLayout(mapId, name, updatedCorridors, movedLayout.clusters());
+    }
+
+    public DungeonLayout applying(ClusterRewrite rewrite) {
+        if (rewrite == null || rewrite.targetClusterId() == null) {
+            return this;
+        }
+        List<RoomCluster> updatedClusters = new java.util.ArrayList<>();
+        boolean replacedTarget = false;
+        for (RoomCluster cluster : clusters) {
+            if (cluster == null || cluster.clusterId() == null) {
+                continue;
+            }
+            if (rewrite.deletedClusterIds().contains(cluster.clusterId())) {
+                continue;
+            }
+            if (rewrite.targetClusterId().equals(cluster.clusterId())) {
+                if (!rewrite.deletesCluster()) {
+                    updatedClusters.add(new RoomCluster(
+                            rewrite.targetClusterId(),
+                            mapId,
+                            rewrite.clusterCenter(),
+                            rewrite.rooms()));
+                    replacedTarget = true;
+                }
+                continue;
+            }
+            updatedClusters.add(cluster);
+        }
+        if (!rewrite.deletesCluster() && !replacedTarget) {
+            updatedClusters.add(new RoomCluster(
+                    rewrite.targetClusterId(),
+                    mapId,
+                    rewrite.clusterCenter(),
+                    rewrite.rooms()));
+        }
+        return new DungeonLayout(mapId, name, corridors, updatedClusters);
     }
 
     private static Map<Long, Room> indexRooms(List<RoomCluster> clusters) {

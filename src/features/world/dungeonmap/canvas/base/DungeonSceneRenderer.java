@@ -1,7 +1,6 @@
 package features.world.dungeonmap.canvas.base;
 
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.TileShape;
 import javafx.scene.canvas.GraphicsContext;
 
 public interface DungeonSceneRenderer {
@@ -13,7 +12,5 @@ public interface DungeonSceneRenderer {
             DungeonLayout mapModel,
             DungeonCanvasCamera camera,
             boolean editorMode,
-            String selectedTargetKey,
-            TileShape previewPaintShape,
-            boolean previewPaintDeleteMode);
+            DungeonRenderState renderState);
 }

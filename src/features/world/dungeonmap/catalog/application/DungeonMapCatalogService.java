@@ -1,10 +1,10 @@
 package features.world.dungeonmap.catalog.application;
 
 import database.DatabaseManager;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeStateRepairService;
+import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
+import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.catalog.persistence.DungeonMapCatalogPersistence;
-import features.world.quarantine.dungeonmap.foundation.db.DungeonTransactionSupport;
-import features.world.quarantine.dungeonmap.foundation.db.DungeonTransactionSupport.SqlConsumer;
-import features.world.quarantine.dungeonmap.rooms.application.DungeonRoomTopologyCoordinator;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -12,22 +12,22 @@ import java.util.Objects;
 
 public final class DungeonMapCatalogService {
 
-    private final DungeonRoomTopologyCoordinator roomTopologySupport;
-    private final SqlConsumer<Connection> afterDeleteHook;
+    private final DungeonRoomTopologyService roomTopologyService;
+    private final DungeonRuntimeStateRepairService runtimeStateRepairService;
 
     public DungeonMapCatalogService(
-            DungeonRoomTopologyCoordinator roomTopologySupport,
-            SqlConsumer<Connection> afterDeleteHook
+            DungeonRoomTopologyService roomTopologyService,
+            DungeonRuntimeStateRepairService runtimeStateRepairService
     ) {
-        this.roomTopologySupport = Objects.requireNonNull(roomTopologySupport, "roomTopologySupport");
-        this.afterDeleteHook = Objects.requireNonNull(afterDeleteHook, "afterDeleteHook");
+        this.roomTopologyService = Objects.requireNonNull(roomTopologyService, "roomTopologyService");
+        this.runtimeStateRepairService = Objects.requireNonNull(runtimeStateRepairService, "runtimeStateRepairService");
     }
 
     public long createMap(String name) throws SQLException {
         try (Connection conn = DatabaseManager.getConnection()) {
-            return DungeonTransactionSupport.inTransaction(conn, () -> {
+            return DungeonTransactionRunner.inTransaction(conn, () -> {
                 long mapId = DungeonMapCatalogPersistence.insertMap(conn, name);
-                roomTopologySupport.createDefaultRoom(conn, mapId);
+                roomTopologyService.createDefaultRoom(conn, mapId);
                 return mapId;
             });
         }
@@ -41,9 +41,9 @@ public final class DungeonMapCatalogService {
 
     public void deleteMap(long mapId) throws SQLException {
         try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonTransactionSupport.inTransaction(conn, () -> {
+            DungeonTransactionRunner.inTransaction(conn, () -> {
                 DungeonMapCatalogPersistence.deleteMap(conn, mapId);
-                afterDeleteHook.accept(conn);
+                runtimeStateRepairService.repairStoredRuntimeState(conn);
                 return null;
             });
         }

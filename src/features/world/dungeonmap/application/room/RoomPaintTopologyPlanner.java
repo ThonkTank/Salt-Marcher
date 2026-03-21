@@ -27,7 +27,7 @@ public final class RoomPaintTopologyPlanner {
         }
         if (overlappingClusters.size() == 1) {
             RoomCluster cluster = overlappingClusters.getFirst();
-            if (cluster.canAbsorbPaintShape(shape) && !layout.hasDependentCorridors(cluster)) {
+            if (cluster.canAbsorbPaintShape(shape)) {
                 SimpleClusterPaintExpansion expansion = cluster.simplePaintExpansion(shape);
                 return new UpdateClusterRoomEditPlan(
                         cluster.clusterId(),
@@ -46,27 +46,27 @@ public final class RoomPaintTopologyPlanner {
         List<RoomCluster> overlappingClusters = layout.overlappingClusters(shape);
         if (overlappingClusters.size() == 1) {
             RoomCluster cluster = overlappingClusters.getFirst();
-            if (!layout.hasDependentCorridors(cluster)) {
-                SimpleClusterDeleteResult deleteResult = cluster.simpleDelete(shape);
-                if (deleteResult instanceof SimpleClusterDeleteResult.Unchanged) {
-                    return new NoOpRoomEditPlan();
-                }
-                if (deleteResult instanceof SimpleClusterDeleteResult.Deleted) {
-                    return new DeleteClusterRoomEditPlan(cluster.clusterId());
-                }
-                if (deleteResult instanceof SimpleClusterDeleteResult.Reduced reduced) {
-                    return new UpdateClusterRoomEditPlan(
-                            cluster.clusterId(),
-                            reduced.clusterShape(),
-                            cluster.singleRoom().roomId(),
-                            reduced.roomAnchor());
-                }
-                if (deleteResult instanceof SimpleClusterDeleteResult.Split split) {
-                    return new SplitClusterRoomEditPlan(
-                            layout.mapId(),
-                            cluster.clusterId(),
-                            splitFragments(layout, cluster, split.fragments()));
-                }
+            SimpleClusterDeleteResult deleteResult = cluster.simpleDelete(shape);
+            if (deleteResult instanceof SimpleClusterDeleteResult.Unchanged) {
+                return new NoOpRoomEditPlan();
+            }
+            if (deleteResult instanceof SimpleClusterDeleteResult.Deleted) {
+                return new DeleteClusterRoomEditPlan(cluster.clusterId());
+            }
+            if (deleteResult instanceof SimpleClusterDeleteResult.Reduced reduced) {
+                return new UpdateClusterRoomEditPlan(
+                        cluster.clusterId(),
+                        reduced.clusterShape(),
+                        cluster.singleRoom().roomId(),
+                        reduced.roomAnchor());
+            }
+            if (deleteResult instanceof SimpleClusterDeleteResult.Split split) {
+                return new SplitClusterRoomEditPlan(
+                        layout,
+                        layout.mapId(),
+                        cluster.clusterId(),
+                        cluster.singleRoom() == null ? null : cluster.singleRoom().roomId(),
+                        splitFragments(layout, cluster, split.fragments()));
             }
         }
         return new LegacyBridgeRoomEditPlan(shape, true);

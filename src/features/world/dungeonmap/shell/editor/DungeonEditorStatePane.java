@@ -35,6 +35,10 @@ public final class DungeonEditorStatePane {
         activeToolLabel.setText(shownTool.label());
     }
 
+    public void showCorridorStatus(String text) {
+        corridorLabel.setText(text == null || text.isBlank() ? "Kein Korridor gewählt" : text);
+    }
+
     private static VBox card(String title, Node... content) {
         Label titleLabel = new Label(title);
         titleLabel.getStyleClass().add("editor-panel-title");

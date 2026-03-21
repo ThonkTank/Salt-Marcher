@@ -22,6 +22,18 @@ public record CorridorDoorBinding(
         return clusterCenter == null ? relativeCell : clusterCenter.add(relativeCell);
     }
 
+    public static CorridorDoorBinding atAbsoluteCell(
+            long roomId,
+            long clusterId,
+            Point2i absoluteCell,
+            Point2i clusterCenter,
+            Point2i direction
+    ) {
+        Point2i resolvedAbsoluteCell = Objects.requireNonNull(absoluteCell, "absoluteCell");
+        Point2i resolvedCenter = clusterCenter == null ? new Point2i(0, 0) : clusterCenter;
+        return new CorridorDoorBinding(roomId, clusterId, resolvedAbsoluteCell.subtract(resolvedCenter), direction);
+    }
+
     public CorridorDoorBinding rebind(long clusterId, Point2i relativeCell) {
         return new CorridorDoorBinding(roomId, clusterId, relativeCell, direction);
     }

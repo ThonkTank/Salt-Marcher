@@ -50,6 +50,29 @@ public final class DungeonRoomWriteRepository {
         }
     }
 
+    public void replaceClusterEdges(Connection conn, long clusterId, List<ClusterBoundaryWrite> boundaries) throws SQLException {
+        List<ClusterBoundaryWrite> sanitized = boundaries == null ? List.of() : boundaries.stream()
+                .filter(java.util.Objects::nonNull)
+                .toList();
+        try (PreparedStatement delete = conn.prepareStatement(
+                "DELETE FROM dungeon_room_cluster_edges WHERE cluster_id=?")) {
+            delete.setLong(1, clusterId);
+            delete.executeUpdate();
+        }
+        try (PreparedStatement insert = conn.prepareStatement(
+                "INSERT INTO dungeon_room_cluster_edges(cluster_id, cell_x, cell_y, edge_direction, edge_type) VALUES(?,?,?,?,?)")) {
+            for (ClusterBoundaryWrite boundary : sanitized) {
+                insert.setLong(1, clusterId);
+                insert.setInt(2, boundary.cell().x());
+                insert.setInt(3, boundary.cell().y());
+                insert.setString(4, directionName(boundary.direction()));
+                insert.setString(5, boundary.type().name());
+                insert.addBatch();
+            }
+            insert.executeBatch();
+        }
+    }
+
     public long insertRoom(Connection conn, long mapId, long clusterId, String name, Point2i anchor) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "INSERT INTO dungeon_rooms(dungeon_map_id, cluster_id, name, component_x, component_y) VALUES(?,?,?,?,?)",
@@ -79,11 +102,30 @@ public final class DungeonRoomWriteRepository {
         }
     }
 
+    public void updateRoom(Connection conn, long roomId, String name, Point2i anchor) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "UPDATE dungeon_rooms SET name=?, component_x=?, component_y=? WHERE room_id=?")) {
+            ps.setString(1, name);
+            ps.setInt(2, anchor.x());
+            ps.setInt(3, anchor.y());
+            ps.setLong(4, roomId);
+            ps.executeUpdate();
+        }
+    }
+
     public void reassignRoomCluster(Connection conn, long roomId, long clusterId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE dungeon_rooms SET cluster_id=? WHERE room_id=?")) {
             ps.setLong(1, clusterId);
             ps.setLong(2, roomId);
+            ps.executeUpdate();
+        }
+    }
+
+    public void deleteRoom(Connection conn, long roomId) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "DELETE FROM dungeon_rooms WHERE room_id=?")) {
+            ps.setLong(1, roomId);
             ps.executeUpdate();
         }
     }
@@ -106,5 +148,15 @@ public final class DungeonRoomWriteRepository {
             }
             insert.executeBatch();
         }
+    }
+
+    private static String directionName(Point2i direction) {
+        return switch (direction.x() + "," + direction.y()) {
+            case "0,-1" -> "NORTH";
+            case "1,0" -> "EAST";
+            case "0,1" -> "SOUTH";
+            case "-1,0" -> "WEST";
+            default -> throw new IllegalArgumentException("Unbekannte Kantenrichtung: " + direction);
+        };
     }
 }

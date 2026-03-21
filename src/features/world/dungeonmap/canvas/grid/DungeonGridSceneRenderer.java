@@ -1,6 +1,7 @@
 package features.world.dungeonmap.canvas.grid;
 
 import features.world.dungeonmap.canvas.base.DungeonCanvasCamera;
+import features.world.dungeonmap.canvas.base.DungeonRenderState;
 import features.world.dungeonmap.canvas.base.DungeonCanvasTheme;
 import features.world.dungeonmap.canvas.base.DungeonSceneRenderer;
 import features.world.dungeonmap.model.DungeonLayout;
@@ -9,6 +10,7 @@ import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
+import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.text.TextAlignment;
@@ -26,18 +28,17 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             DungeonLayout mapModel,
             DungeonCanvasCamera camera,
             boolean editorMode,
-            String selectedTargetKey,
-            TileShape previewPaintShape,
-            boolean previewPaintDeleteMode
+            DungeonRenderState renderState
     ) {
         fillBackground(gc, width, height, editorMode);
         drawGrid(gc, width, height, camera, editorMode);
         if (editorMode) {
-            drawPaintPreview(gc, camera, previewPaintShape, previewPaintDeleteMode);
+            drawPaintPreview(gc, camera, renderState.previewPaintShape(), renderState.previewPaintDeleteMode());
         }
         drawRooms(gc, mapModel, camera, editorMode);
+        drawCorridors(gc, mapModel, camera, renderState.selectedTargetKey());
         if (editorMode) {
-            drawInteractiveLabels(gc, mapModel, camera, selectedTargetKey);
+            drawInteractiveLabels(gc, mapModel, camera, renderState.selectedTargetKey());
         }
         drawAxes(gc, width, height, camera, editorMode);
     }
@@ -178,6 +179,36 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             gc.fillText(handle.label(), bounds.getMinX() + bounds.getWidth() / 2.0, bounds.getMinY() + 16.5);
         }
         gc.setTextAlign(TextAlignment.LEFT);
+    }
+
+    private static void drawCorridors(
+            GraphicsContext gc,
+            DungeonLayout mapModel,
+            DungeonCanvasCamera camera,
+            String selectedTargetKey
+    ) {
+        double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
+        for (Corridor corridor : mapModel.corridors()) {
+            if (corridor == null || corridor.path() == null || corridor.path().floor() == null) {
+                continue;
+            }
+            boolean selected = java.util.Objects.equals("corridor:" + corridor.corridorId(), selectedTargetKey);
+            gc.setFill(selected ? DungeonCanvasTheme.CORRIDOR_SELECTED_FILL : DungeonCanvasTheme.CORRIDOR_FILL);
+            gc.setStroke(selected ? DungeonCanvasTheme.CORRIDOR_SELECTED_STROKE : DungeonCanvasTheme.CORRIDOR_STROKE);
+            gc.setLineWidth(selected ? 2.0 : 1.5);
+            for (Tile tile : corridor.path().floor().shape().tiles()) {
+                double x = camera.panX() + tile.x() * gridSize;
+                double y = camera.panY() + tile.y() * gridSize;
+                gc.fillRect(x + 5, y + 5, gridSize - 10, gridSize - 10);
+                gc.strokeRect(x + 7, y + 7, gridSize - 14, gridSize - 14);
+            }
+            for (var door : corridor.path().doors()) {
+                gc.setLineWidth(selected ? 3.0 : 2.0);
+                for (VertexEdge edge : door.edges()) {
+                    strokeEdge(gc, camera, gridSize, edge);
+                }
+            }
+        }
     }
 
     private static void drawPaintPreview(
