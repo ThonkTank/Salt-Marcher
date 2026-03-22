@@ -34,8 +34,9 @@ final class CorridorPlanner {
     private static final int MIN_CORNER_PENALTY_TILES = 2;
     private static final int CORNER_PENALTY_RELAXATION_INTERVAL = 12;
     private static final int MAX_EXIT_CANDIDATES_PER_ROOM = 12;
-    private static final int MAX_TARGETED_EXIT_CANDIDATES_PER_ROOM = 6;
-    private static final int MAX_EXIT_PAIR_PATH_EVALUATIONS = 10;
+    private static final int MAX_TARGETED_EXIT_CANDIDATES_PER_ROOM = 8;
+    private static final int MAX_EXIT_PAIR_PATH_EVALUATIONS = 16;
+    private static final int TARGETED_SIDE_NEIGHBOR_COUNT = 2;
 
     private CorridorPlanner() {
         throw new AssertionError("No instances");
@@ -290,13 +291,84 @@ final class CorridorPlanner {
         if (allExits.size() <= MAX_TARGETED_EXIT_CANDIDATES_PER_ROOM) {
             return allExits;
         }
-        return allExits.stream()
+        Map<Point2i, ExitCandidate> selected = new LinkedHashMap<>();
+        for (Point2i direction : preferredTargetDirections(roomCenter, targetCenter)) {
+            addProjectedSideCandidates(selected, allExits, direction, targetCenter);
+            if (selected.size() >= MAX_TARGETED_EXIT_CANDIDATES_PER_ROOM) {
+                return selected.values().stream()
+                        .limit(MAX_TARGETED_EXIT_CANDIDATES_PER_ROOM)
+                        .toList();
+            }
+        }
+        allExits.stream()
                 .sorted(Comparator
                         .comparingInt((ExitCandidate candidate) -> targetedExitHeuristic(candidate, roomCenter, targetCenter))
                         .thenComparingInt(candidate -> candidate.outsideCell().distanceTo(targetCenter))
                         .thenComparing(candidate -> candidate.outsideCell(), Point2i.POINT_ORDER))
+                .forEach(candidate -> addRepresentativeExit(selected, candidate));
+        return selected.values().stream()
                 .limit(MAX_TARGETED_EXIT_CANDIDATES_PER_ROOM)
                 .toList();
+    }
+
+    private static List<Point2i> preferredTargetDirections(Point2i roomCenter, Point2i targetCenter) {
+        if (roomCenter == null || targetCenter == null) {
+            return List.of();
+        }
+        List<Point2i> result = new ArrayList<>(4);
+        int deltaX = targetCenter.x() - roomCenter.x();
+        int deltaY = targetCenter.y() - roomCenter.y();
+        if (Math.abs(deltaX) >= Math.abs(deltaY)) {
+            addPreferredDirection(result, new Point2i(Integer.compare(deltaX, 0), 0));
+            addPreferredDirection(result, new Point2i(0, Integer.compare(deltaY, 0)));
+        } else {
+            addPreferredDirection(result, new Point2i(0, Integer.compare(deltaY, 0)));
+            addPreferredDirection(result, new Point2i(Integer.compare(deltaX, 0), 0));
+        }
+        addPreferredDirection(result, new Point2i(-Integer.compare(deltaX, 0), 0));
+        addPreferredDirection(result, new Point2i(0, -Integer.compare(deltaY, 0)));
+        return List.copyOf(result);
+    }
+
+    private static void addPreferredDirection(List<Point2i> directions, Point2i direction) {
+        if (direction == null || (direction.x() == 0 && direction.y() == 0) || directions.contains(direction)) {
+            return;
+        }
+        directions.add(direction);
+    }
+
+    private static void addProjectedSideCandidates(
+            Map<Point2i, ExitCandidate> selected,
+            List<ExitCandidate> allExits,
+            Point2i direction,
+            Point2i targetCenter
+    ) {
+        if (selected.size() >= MAX_TARGETED_EXIT_CANDIDATES_PER_ROOM) {
+            return;
+        }
+        List<ExitCandidate> onSide = allExits.stream()
+                .filter(candidate -> candidate.direction().equals(direction))
+                .sorted(projectedSideOrder(direction, targetCenter))
+                .toList();
+        for (int index = 0; index < Math.min(TARGETED_SIDE_NEIGHBOR_COUNT, onSide.size()); index++) {
+            addRepresentativeExit(selected, onSide.get(index));
+        }
+    }
+
+    private static Comparator<ExitCandidate> projectedSideOrder(Point2i direction, Point2i targetCenter) {
+        if (direction == null || targetCenter == null) {
+            return Comparator.comparing(candidate -> candidate.outsideCell(), Point2i.POINT_ORDER);
+        }
+        if (direction.x() != 0) {
+            return Comparator
+                    .comparingInt((ExitCandidate candidate) -> Math.abs(candidate.roomCell().y() - targetCenter.y()))
+                    .thenComparingInt(candidate -> candidate.outsideCell().distanceTo(targetCenter))
+                    .thenComparing(candidate -> candidate.outsideCell(), Point2i.POINT_ORDER);
+        }
+        return Comparator
+                .comparingInt((ExitCandidate candidate) -> Math.abs(candidate.roomCell().x() - targetCenter.x()))
+                .thenComparingInt(candidate -> candidate.outsideCell().distanceTo(targetCenter))
+                .thenComparing(candidate -> candidate.outsideCell(), Point2i.POINT_ORDER);
     }
 
     private static int targetedExitHeuristic(ExitCandidate candidate, Point2i roomCenter, Point2i targetCenter) {

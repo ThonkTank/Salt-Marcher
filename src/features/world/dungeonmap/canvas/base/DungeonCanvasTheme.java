@@ -47,7 +47,7 @@ public final class DungeonCanvasTheme {
     public static final double BASE_GRID = 32.0;
     public static final double MIN_ZOOM = 0.1;
     public static final double MAX_ZOOM = 4.0;
-    public static final double GRID_MIN_READABLE_SPACING = 16.0;
+    public static final double GRID_MIN_READABLE_SPACING = 10.0;
     public static final double GRID_MINOR_LINE_WIDTH = 0.9;
     public static final double GRID_MEDIUM_LINE_WIDTH = 1.05;
     public static final double GRID_MAJOR_LINE_WIDTH = 1.4;
