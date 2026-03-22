@@ -1,6 +1,9 @@
 package features.world.dungeonmap.shell.runtime;
 
 import features.world.api.WorldTravelSurface;
+import features.world.dungeonmap.application.runtime.DungeonHeading;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeDoorCatalog;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeDoorDescriptor;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationService;
 import features.world.dungeonmap.application.runtime.DungeonRoomInspectorPresenter;
@@ -19,6 +22,7 @@ import ui.async.UiAsyncTasks;
 import ui.shell.DetailsNavigator;
 import ui.shell.NavigationIcons;
 
+import java.util.List;
 import java.util.Objects;
 
 public final class DungeonRuntimeView extends AbstractDungeonMapView {
@@ -123,7 +127,10 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
             loadRuntimeNavigation();
             return;
         }
-        runtimeState.showNavigation(runtimeNavigationService.resolveNavigation(state().activeMap(), runtimeState.activeLocation()));
+        runtimeState.showNavigation(runtimeNavigationService.resolveNavigation(
+                state().activeMap(),
+                runtimeState.activeLocation(),
+                runtimeState.heading()));
     }
 
     private void loadRuntimeNavigation() {
@@ -162,11 +169,35 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         var layout = state().activeMap();
         runtimeState.showMoveInProgress();
         UiAsyncTasks.submit(
-                () -> runtimeNavigationService.moveToTile(layout, tile),
+                () -> runtimeNavigationService.moveToTile(layout, activeTile(), tile, runtimeState.heading()),
                 runtimeState::showNavigation,
                 failure -> {
                     System.err.println("DungeonRuntimeView.movePartyToTile(): " + failure.getMessage());
                     runtimeState.showFailure("Standort konnte nicht gespeichert werden");
+                });
+    }
+
+    private Point2i activeTile() {
+        DungeonRuntimeLocation location = runtimeState.activeLocation();
+        return location instanceof DungeonRuntimeLocation.Tile tile ? tile.tile() : null;
+    }
+
+    private void movePartyThroughDoor(DungeonRuntimeDoorDescriptor door) {
+        if (door == null || runtimeState.loading() || runtimeState.moving() || state().activeMap().mapId() <= 0) {
+            return;
+        }
+        var layout = state().activeMap();
+        var room = DungeonRuntimePresenter.roomForLocation(layout, runtimeState.activeLocation());
+        if (room == null) {
+            return;
+        }
+        runtimeState.showMoveInProgress();
+        UiAsyncTasks.submit(
+                () -> runtimeNavigationService.moveThroughDoor(layout, room, door),
+                runtimeState::showNavigation,
+                failure -> {
+                    System.err.println("DungeonRuntimeView.movePartyThroughDoor(): " + failure.getMessage());
+                    runtimeState.showFailure("Tuer konnte nicht benutzt werden");
                 });
     }
 
@@ -194,8 +225,25 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
                 state().activeMap().name(),
                 DungeonRuntimePresenter.activeLocationLabel(state().activeMap(), runtimeState.activeLocation()),
                 DungeonRuntimePresenter.tileLabel(runtimeState.activeLocation()),
+                DungeonRuntimePresenter.headingLabel(runtimeState.heading()),
                 runtimeStatusText(),
+                travelDoorActions(),
                 workspace()::resetView);
+    }
+
+    private List<WorldTravelSurface.DungeonDoorAction> travelDoorActions() {
+        var room = DungeonRuntimePresenter.roomForLocation(state().activeMap(), runtimeState.activeLocation());
+        if (room == null) {
+            return List.of();
+        }
+        return DungeonRuntimeDoorCatalog.describe(room, runtimeState.heading()).stream()
+                .map(this::toDoorAction)
+                .toList();
+    }
+
+    private WorldTravelSurface.DungeonDoorAction toDoorAction(DungeonRuntimeDoorDescriptor door) {
+        String label = door.label() + ": " + door.relativeLabel();
+        return new WorldTravelSurface.DungeonDoorAction(label, () -> movePartyThroughDoor(door));
     }
 
     private void publishRoomDetails() {
@@ -214,6 +262,6 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
             return;
         }
         lastPublishedRoomKey = entryKey;
-        detailsNavigator.showContent(room.name(), entryKey, () -> DungeonRoomInspectorPresenter.buildRoomNode(room));
+        detailsNavigator.showContent(room.name(), entryKey, () -> DungeonRoomInspectorPresenter.buildRoomNode(room, runtimeState.heading()));
     }
 }

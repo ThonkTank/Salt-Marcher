@@ -29,7 +29,8 @@ public final class CampaignStateSchemaSupport {
                 + "dungeon_location_type TEXT,"
                 + "dungeon_room_id     INTEGER REFERENCES dungeon_rooms(room_id) ON DELETE SET NULL,"
                 + "dungeon_corridor_id INTEGER REFERENCES dungeon_corridors(corridor_id) ON DELETE SET NULL,"
-                + "dungeon_location_key TEXT"
+                + "dungeon_location_key TEXT,"
+                + "dungeon_heading     TEXT"
                 + ")");
     }
 
@@ -46,6 +47,8 @@ public final class CampaignStateSchemaSupport {
         ensureColumn(conn, "campaign_state", "dungeon_corridor_id",
                 "INTEGER REFERENCES dungeon_corridors(corridor_id) ON DELETE SET NULL");
         ensureColumn(conn, "campaign_state", "dungeon_location_key",
+                "TEXT");
+        ensureColumn(conn, "campaign_state", "dungeon_heading",
                 "TEXT");
     }
 

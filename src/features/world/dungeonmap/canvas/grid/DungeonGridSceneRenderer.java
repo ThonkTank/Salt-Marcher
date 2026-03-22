@@ -1,6 +1,9 @@
 package features.world.dungeonmap.canvas.grid;
 
+import features.world.dungeonmap.application.room.RoomExitCatalog;
+import features.world.dungeonmap.application.room.RoomExitDescriptor;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
+import features.world.dungeonmap.application.runtime.DungeonRuntimePresenter;
 import features.world.dungeonmap.canvas.base.DungeonCanvasCamera;
 import features.world.dungeonmap.canvas.base.DungeonRenderState;
 import features.world.dungeonmap.canvas.base.DungeonCanvasTheme;
@@ -43,6 +46,9 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         Set<VertexEdge> selectedRoomBoundaryEdges = drawRooms(gc, mapModel, camera, editorMode, renderState.selectedTargetKey());
         drawCorridors(gc, mapModel, camera, editorMode, renderState.selectedTargetKey());
         drawPartyToken(gc, mapModel, camera, renderState.activeLocation());
+        if (!editorMode) {
+            drawDoorNumbers(gc, mapModel, camera, renderState.activeLocation());
+        }
         drawSelectedRoomBoundaries(gc, camera, DungeonCanvasTheme.BASE_GRID * camera.zoom(), selectedRoomBoundaryEdges);
         if (editorMode) {
             drawInteractiveLabels(gc, mapModel, camera, renderState.selectedTargetKey());
@@ -326,6 +332,48 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         gc.strokeOval(centerX - outerRadius, centerY - outerRadius, outerRadius * 2, outerRadius * 2);
         gc.setFill(DungeonCanvasTheme.PARTY_TOKEN_STROKE);
         gc.fillOval(centerX - innerRadius, centerY - innerRadius, innerRadius * 2, innerRadius * 2);
+    }
+
+    private static void drawDoorNumbers(
+            GraphicsContext gc,
+            DungeonLayout mapModel,
+            DungeonCanvasCamera camera,
+            DungeonRuntimeLocation activeLocation
+    ) {
+        Room room = DungeonRuntimePresenter.roomForLocation(mapModel, activeLocation);
+        if (room == null) {
+            return;
+        }
+        double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
+        for (RoomExitDescriptor exit : RoomExitCatalog.describe(room)) {
+            drawDoorNumber(gc, camera, gridSize, exit);
+        }
+    }
+
+    private static void drawDoorNumber(
+            GraphicsContext gc,
+            DungeonCanvasCamera camera,
+            double gridSize,
+            RoomExitDescriptor exit
+    ) {
+        if (exit == null || exit.anchorEdge() == null) {
+            return;
+        }
+        VertexEdge edge = exit.anchorEdge();
+        double centerX = camera.panX() + ((edge.start().x() + edge.end().x()) / 2.0) * gridSize;
+        double centerY = camera.panY() + ((edge.start().y() + edge.end().y()) / 2.0) * gridSize;
+        double width = 22.0;
+        double height = 18.0;
+        gc.setFill(DungeonCanvasTheme.LABEL_FILL);
+        gc.fillRoundRect(centerX - width / 2.0, centerY - height / 2.0, width, height, 10, 10);
+        gc.setStroke(DungeonCanvasTheme.LABEL_BORDER);
+        gc.setLineWidth(1.0);
+        gc.strokeRoundRect(centerX - width / 2.0, centerY - height / 2.0, width, height, 10, 10);
+        gc.setFill(DungeonCanvasTheme.LABEL_TEXT);
+        gc.setFont(DungeonCanvasTheme.ROOM_LABEL_FONT);
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.fillText(Integer.toString(exit.number()), centerX, centerY + 4.0);
+        gc.setTextAlign(TextAlignment.LEFT);
     }
 
     private static features.world.dungeonmap.model.geometry.Point2i activeCell(DungeonLayout mapModel, DungeonRuntimeLocation activeLocation) {

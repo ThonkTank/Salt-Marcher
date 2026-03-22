@@ -34,16 +34,18 @@ public final class RoomExitCatalog {
             return List.of();
         }
         List<List<ExitEdge>> openings = groupOpenings(exitEdges);
-        Map<String, Integer> countsBySide = new LinkedHashMap<>();
         List<RoomExitDescriptor> result = new ArrayList<>();
-        for (List<ExitEdge> opening : openings) {
+        for (int index = 0; index < openings.size(); index++) {
+            List<ExitEdge> opening = openings.get(index);
             ExitEdge representative = opening.getFirst();
-            String side = sideLabel(representative.direction());
-            int ordinal = countsBySide.merge(side, 1, Integer::sum);
+            int number = index + 1;
             result.add(new RoomExitDescriptor(
+                    number,
                     representative.roomCell(),
+                    representative.roomCell().add(representative.direction()),
                     representative.direction(),
-                    "Ausgang " + side + " " + ordinal,
+                    "Tuer " + number,
+                    representative.edge(),
                     opening.stream().map(ExitEdge::edge).sorted(VertexEdge.EDGE_ORDER).toList()));
         }
         return List.copyOf(result);
@@ -94,16 +96,6 @@ public final class RoomExitCatalog {
         }
         result.sort(Comparator.comparing((List<ExitEdge> opening) -> opening.getFirst(), EXIT_EDGE_ORDER));
         return List.copyOf(result);
-    }
-
-    private static String sideLabel(Point2i direction) {
-        return switch (direction.x() + "," + direction.y()) {
-            case "0,-1" -> "Nord";
-            case "1,0" -> "Ost";
-            case "0,1" -> "Sued";
-            case "-1,0" -> "West";
-            default -> "Unbekannt";
-        };
     }
 
     private static int compareDirection(Point2i left, Point2i right) {

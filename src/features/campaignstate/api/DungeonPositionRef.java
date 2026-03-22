@@ -5,6 +5,7 @@ public record DungeonPositionRef(
         CampaignDungeonLocationType locationType,
         Long roomId,
         Long corridorId,
-        String locationKey
+        String locationKey,
+        String heading
 ) {
 }

@@ -1,5 +1,6 @@
 package features.world.dungeonmap.state;
 
+import features.world.dungeonmap.application.runtime.DungeonHeading;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationSnapshot;
 
@@ -12,6 +13,7 @@ public final class DungeonRuntimeState {
 
     private DungeonRuntimeLocation persistedLocation;
     private DungeonRuntimeLocation previewLocation;
+    private DungeonHeading heading = DungeonHeading.defaultHeading();
     private boolean loading;
     private boolean dragging;
     private boolean moving;
@@ -31,6 +33,10 @@ public final class DungeonRuntimeState {
 
     public boolean moving() {
         return moving;
+    }
+
+    public DungeonHeading heading() {
+        return heading == null ? DungeonHeading.defaultHeading() : heading;
     }
 
     public String errorMessage() {
@@ -79,6 +85,7 @@ public final class DungeonRuntimeState {
 
     public void showNavigation(DungeonRuntimeNavigationSnapshot snapshot) {
         persistedLocation = snapshot == null ? null : snapshot.activeLocation();
+        heading = snapshot == null || snapshot.heading() == null ? DungeonHeading.defaultHeading() : snapshot.heading();
         previewLocation = null;
         loading = false;
         dragging = false;
@@ -101,6 +108,7 @@ public final class DungeonRuntimeState {
     public void clear() {
         persistedLocation = null;
         previewLocation = null;
+        heading = DungeonHeading.defaultHeading();
         loading = false;
         dragging = false;
         moving = false;

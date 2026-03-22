@@ -48,15 +48,15 @@ public final class DungeonCampaignStateAdapter {
 
     private static DungeonPositionRef toCampaignPosition(long mapId, DungeonRuntimeLocation location) {
         if (location == null) {
-            return new DungeonPositionRef(mapId, null, null, null, null);
+            return new DungeonPositionRef(mapId, null, null, null, null, null);
         }
         if (location instanceof DungeonRuntimeLocation.CorridorComponent corridorComponent) {
-            return new DungeonPositionRef(mapId, CampaignDungeonLocationType.CORRIDOR_COMPONENT, null, null, corridorComponent.componentId());
+            return new DungeonPositionRef(mapId, CampaignDungeonLocationType.CORRIDOR_COMPONENT, null, null, corridorComponent.componentId(), null);
         }
         if (location instanceof DungeonRuntimeLocation.Corridor corridor) {
-            return new DungeonPositionRef(mapId, CampaignDungeonLocationType.CORRIDOR, null, corridor.corridorId(), null);
+            return new DungeonPositionRef(mapId, CampaignDungeonLocationType.CORRIDOR, null, corridor.corridorId(), null, null);
         }
         DungeonRuntimeLocation.Room room = (DungeonRuntimeLocation.Room) location;
-        return new DungeonPositionRef(mapId, CampaignDungeonLocationType.ROOM, room.roomId(), null, null);
+        return new DungeonPositionRef(mapId, CampaignDungeonLocationType.ROOM, room.roomId(), null, null, null);
     }
 }

@@ -48,6 +48,11 @@ public final class DungeonRuntimePresenter {
         return tile == null ? "\u2014" : tile.x() + ", " + tile.y();
     }
 
+    public static String headingLabel(DungeonHeading heading) {
+        DungeonHeading resolved = heading == null ? DungeonHeading.defaultHeading() : heading;
+        return resolved.label();
+    }
+
     public static String structureLabelAtTile(DungeonLayout layout, Point2i tile) {
         if (layout == null || tile == null) {
             return "Kein Standort";

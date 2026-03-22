@@ -20,4 +20,5 @@ public class CampaignState {
     public Long DungeonRoomId;
     public Long DungeonCorridorId;
     public String DungeonLocationKey;
+    public String DungeonHeading;
 }

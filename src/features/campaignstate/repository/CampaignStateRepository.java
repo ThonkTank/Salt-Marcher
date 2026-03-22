@@ -33,8 +33,8 @@ public final class CampaignStateRepository {
         }
         try (PreparedStatement ps = conn.prepareStatement(
                 "INSERT INTO campaign_state(campaign_id, map_id, party_tile_id, calendar_id,"
-                        + " current_epoch_day, current_phase_id, current_weather, notes, dungeon_map_id, dungeon_location_type, dungeon_room_id, dungeon_corridor_id, dungeon_location_key)"
-                        + " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)"
+                        + " current_epoch_day, current_phase_id, current_weather, notes, dungeon_map_id, dungeon_location_type, dungeon_room_id, dungeon_corridor_id, dungeon_location_key, dungeon_heading)"
+                        + " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
                         + " ON CONFLICT(campaign_id) DO UPDATE SET"
                         + "   map_id=excluded.map_id,"
                         + "   party_tile_id=excluded.party_tile_id,"
@@ -47,7 +47,8 @@ public final class CampaignStateRepository {
                         + "   dungeon_location_type=excluded.dungeon_location_type,"
                         + "   dungeon_room_id=excluded.dungeon_room_id,"
                         + "   dungeon_corridor_id=excluded.dungeon_corridor_id,"
-                        + "   dungeon_location_key=excluded.dungeon_location_key")) {
+                        + "   dungeon_location_key=excluded.dungeon_location_key,"
+                        + "   dungeon_heading=excluded.dungeon_heading")) {
             ps.setLong(1, state.CampaignId);
             setNullableLong(ps, 2, state.MapId);
             setNullableLong(ps, 3, state.PartyTileId);
@@ -61,6 +62,7 @@ public final class CampaignStateRepository {
             setNullableLong(ps, 11, state.DungeonRoomId);
             setNullableLong(ps, 12, state.DungeonCorridorId);
             ps.setString(13, state.DungeonLocationKey);
+            ps.setString(14, state.DungeonHeading);
             ps.executeUpdate();
         }
     }
@@ -93,7 +95,7 @@ public final class CampaignStateRepository {
 
     public static Optional<DungeonPositionSummary> getDungeonPosition(Connection conn) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT dungeon_map_id, dungeon_location_type, dungeon_room_id, dungeon_corridor_id, dungeon_location_key FROM campaign_state WHERE campaign_id=1");
+                "SELECT dungeon_map_id, dungeon_location_type, dungeon_room_id, dungeon_corridor_id, dungeon_location_key, dungeon_heading FROM campaign_state WHERE campaign_id=1");
              ResultSet rs = ps.executeQuery()) {
             if (!rs.next()) {
                 return Optional.empty();
@@ -103,17 +105,18 @@ public final class CampaignStateRepository {
             Long roomId = getNullableLong(rs, "dungeon_room_id");
             Long corridorId = getNullableLong(rs, "dungeon_corridor_id");
             String locationKey = rs.getString("dungeon_location_key");
+            String heading = rs.getString("dungeon_heading");
             CampaignDungeonLocationType locationType = parseLocationType(locationTypeValue, roomId, corridorId, locationKey);
-            if (mapId == null && locationType == null && roomId == null && corridorId == null && locationKey == null) {
+            if (mapId == null && locationType == null && roomId == null && corridorId == null && locationKey == null && heading == null) {
                 return Optional.empty();
             }
-            return Optional.of(new DungeonPositionSummary(mapId, locationType, roomId, corridorId, locationKey));
+            return Optional.of(new DungeonPositionSummary(mapId, locationType, roomId, corridorId, locationKey, heading));
         }
     }
 
     public static void setDungeonPosition(Connection conn, DungeonPositionRef position) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE campaign_state SET dungeon_map_id=?, dungeon_location_type=?, dungeon_room_id=?, dungeon_corridor_id=?, dungeon_location_key=? WHERE campaign_id=1")) {
+                "UPDATE campaign_state SET dungeon_map_id=?, dungeon_location_type=?, dungeon_room_id=?, dungeon_corridor_id=?, dungeon_location_key=?, dungeon_heading=? WHERE campaign_id=1")) {
             setNullableLong(ps, 1, position == null ? null : position.mapId());
             ps.setString(2, position == null || position.locationType() == null ? null : position.locationType().name());
             setNullableLong(ps, 3, position != null && position.locationType() == CampaignDungeonLocationType.ROOM ? position.roomId() : null);
@@ -123,6 +126,7 @@ public final class CampaignStateRepository {
                     || position.locationType() == CampaignDungeonLocationType.CORRIDOR
                     ? null
                     : position.locationKey());
+            ps.setString(6, position == null ? null : position.heading());
             ps.executeUpdate();
         }
     }
@@ -216,6 +220,7 @@ public final class CampaignStateRepository {
         long dungeonCorridorId = rs.getLong("dungeon_corridor_id");
         s.DungeonCorridorId = rs.wasNull() ? null : dungeonCorridorId;
         s.DungeonLocationKey = rs.getString("dungeon_location_key");
+        s.DungeonHeading = rs.getString("dungeon_heading");
         return s;
     }
 

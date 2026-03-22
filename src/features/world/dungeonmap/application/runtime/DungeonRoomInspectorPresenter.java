@@ -1,7 +1,6 @@
 package features.world.dungeonmap.application.runtime;
 
 import features.world.dungeonmap.application.room.RoomExitCatalog;
-import features.world.dungeonmap.application.room.RoomExitDescriptor;
 import features.world.dungeonmap.model.structures.room.Room;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
@@ -16,7 +15,7 @@ public final class DungeonRoomInspectorPresenter {
         throw new AssertionError("No instances");
     }
 
-    public static Node buildRoomNode(Room room) {
+    public static Node buildRoomNode(Room room, DungeonHeading heading) {
         VBox box = new VBox(8);
         box.setPadding(new Insets(12));
         if (room == null) {
@@ -26,12 +25,12 @@ public final class DungeonRoomInspectorPresenter {
         box.getChildren().addAll(
                 sectionTitle("Visueller Eindruck"),
                 text(valueOrDash(room.narration().visualDescription())),
-                sectionTitle("Ausgaenge"));
-        List<RoomExitDescriptor> exits = RoomExitCatalog.describe(room);
-        for (RoomExitDescriptor exit : exits) {
+                sectionTitle("Tueren"));
+        List<DungeonRuntimeDoorDescriptor> exits = DungeonRuntimeDoorCatalog.describe(room, heading);
+        for (DungeonRuntimeDoorDescriptor exit : exits) {
             box.getChildren().addAll(
                     subTitle(exit.label()),
-                    text(valueOrDash(room.narration().exitDescription(exit.roomCell(), exit.direction()))));
+                    text(valueOrDash(exit.description())));
         }
         if (exits.isEmpty()) {
             box.getChildren().add(text("—"));

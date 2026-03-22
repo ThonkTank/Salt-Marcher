@@ -96,18 +96,29 @@ final class DungeonRuntimeLocations {
 
     static DungeonPositionRef toCampaignPosition(long mapId, DungeonRuntimeLocation location) {
         if (location instanceof DungeonRuntimeLocation.Tile tile) {
-            return new DungeonPositionRef(mapId, CampaignDungeonLocationType.TILE, null, null, formatTile(tile.tile()));
+            return new DungeonPositionRef(mapId, CampaignDungeonLocationType.TILE, null, null, formatTile(tile.tile()), null);
         }
         if (location instanceof DungeonRuntimeLocation.CorridorComponent corridorComponent) {
-            return new DungeonPositionRef(mapId, CampaignDungeonLocationType.CORRIDOR_COMPONENT, null, null, corridorComponent.componentId());
+            return new DungeonPositionRef(mapId, CampaignDungeonLocationType.CORRIDOR_COMPONENT, null, null, corridorComponent.componentId(), null);
         }
         if (location instanceof DungeonRuntimeLocation.Corridor corridor) {
-            return new DungeonPositionRef(mapId, CampaignDungeonLocationType.CORRIDOR, null, corridor.corridorId(), null);
+            return new DungeonPositionRef(mapId, CampaignDungeonLocationType.CORRIDOR, null, corridor.corridorId(), null, null);
         }
         if (location instanceof DungeonRuntimeLocation.Room room) {
-            return new DungeonPositionRef(mapId, CampaignDungeonLocationType.ROOM, room.roomId(), null, null);
+            return new DungeonPositionRef(mapId, CampaignDungeonLocationType.ROOM, room.roomId(), null, null, null);
         }
-        return new DungeonPositionRef(mapId, null, null, null, null);
+        return new DungeonPositionRef(mapId, null, null, null, null, null);
+    }
+
+    static DungeonPositionRef toCampaignPosition(long mapId, DungeonRuntimeLocation location, DungeonHeading heading) {
+        DungeonPositionRef ref = toCampaignPosition(mapId, location);
+        return new DungeonPositionRef(
+                ref.mapId(),
+                ref.locationType(),
+                ref.roomId(),
+                ref.corridorId(),
+                ref.locationKey(),
+                (heading == null ? DungeonHeading.defaultHeading() : heading).name());
     }
 
     static String formatTile(Point2i tile) {

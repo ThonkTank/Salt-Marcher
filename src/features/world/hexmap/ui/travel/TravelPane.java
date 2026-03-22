@@ -11,6 +11,8 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
+import java.util.List;
+
 /**
  * ScenePane-Inhalt fuer den Overworld-Reisemodus.
  * Platzhalter-Mockup fuer Reisekontext (Ort, Status, Wetter usw.).
@@ -33,6 +35,7 @@ public class TravelPane extends VBox implements WorldTravelSurface {
     private final Label detailValueThree = new Label();
     private final Label sectionHeader = new Label();
     private final Label sectionValue = new Label();
+    private final VBox actionItems = new VBox(6);
     private final Button actionButton = new Button();
 
     public TravelPane() {
@@ -52,6 +55,7 @@ public class TravelPane extends VBox implements WorldTravelSurface {
         sectionValue.getStyleClass().add("travel-placeholder");
         actionButton.getStyleClass().add("travel-action-button");
         actionButton.setMaxWidth(Double.MAX_VALUE);
+        actionItems.setFillWidth(true);
 
         getChildren().addAll(
                 buildLocationRow(),
@@ -95,7 +99,7 @@ public class TravelPane extends VBox implements WorldTravelSurface {
     }
 
     private VBox buildActionSection() {
-        VBox section = new VBox(4, sectionHeader, sectionValue, actionButton);
+        VBox section = new VBox(4, sectionHeader, sectionValue, actionItems, actionButton);
         return section;
     }
 
@@ -113,6 +117,7 @@ public class TravelPane extends VBox implements WorldTravelSurface {
         detailValueThree.setText("Normal");
         sectionHeader.setText("Interaktion");
         sectionValue.setText("Gruppenmarker auf der Karte ziehen");
+        actionItems.getChildren().clear();
         actionButton.setVisible(false);
         actionButton.setManaged(false);
         actionButton.setOnAction(null);
@@ -128,7 +133,9 @@ public class TravelPane extends VBox implements WorldTravelSurface {
             String mapName,
             String areaLabel,
             String tileLabel,
+            String headingLabel,
             String statusLabel,
+            List<DungeonDoorAction> doorActions,
             Runnable centerAction
     ) {
         String resolvedArea = areaLabel == null || areaLabel.isBlank() ? "Kein Standort" : areaLabel;
@@ -140,10 +147,13 @@ public class TravelPane extends VBox implements WorldTravelSurface {
         detailValueOne.setText(resolvedArea);
         detailKeyTwo.setText("Feld");
         detailValueTwo.setText(tileLabel == null || tileLabel.isBlank() ? "\u2014" : tileLabel);
-        detailKeyThree.setText("Status");
-        detailValueThree.setText(statusLabel == null || statusLabel.isBlank() ? "\u2014" : statusLabel);
+        detailKeyThree.setText("Blick");
+        detailValueThree.setText(headingLabel == null || headingLabel.isBlank() ? "\u2014" : headingLabel);
         sectionHeader.setText("Interaktion");
-        sectionValue.setText("Token im Dungeon auf ein begehbares Feld ziehen");
+        sectionValue.setText(statusLabel == null || statusLabel.isBlank()
+                ? "Token im Dungeon auf ein begehbares Feld ziehen"
+                : statusLabel);
+        rebuildDoorActions(doorActions);
         actionButton.setText("Ansicht zentrieren");
         actionButton.setVisible(centerAction != null);
         actionButton.setManaged(centerAction != null);
@@ -152,5 +162,31 @@ public class TravelPane extends VBox implements WorldTravelSurface {
                 centerAction.run();
             }
         });
+    }
+
+    private void rebuildDoorActions(List<DungeonDoorAction> doorActions) {
+        actionItems.getChildren().clear();
+        List<DungeonDoorAction> resolvedActions = doorActions == null ? List.of() : doorActions;
+        if (resolvedActions.isEmpty()) {
+            Label hint = new Label("Token im Dungeon auf ein begehbares Feld ziehen");
+            hint.getStyleClass().add("travel-placeholder");
+            hint.setWrapText(true);
+            actionItems.getChildren().add(hint);
+            return;
+        }
+        for (DungeonDoorAction action : resolvedActions) {
+            if (action == null) {
+                continue;
+            }
+            Button button = new Button(action.label() == null || action.label().isBlank() ? "Tuer" : action.label());
+            button.getStyleClass().add("travel-action-button");
+            button.setMaxWidth(Double.MAX_VALUE);
+            button.setOnAction(event -> {
+                if (action.action() != null) {
+                    action.action().run();
+                }
+            });
+            actionItems.getChildren().add(button);
+        }
     }
 }
