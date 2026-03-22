@@ -19,7 +19,7 @@ public record RoomExitDescriptor(
         roomCell = roomCell == null ? new Point2i(0, 0) : roomCell;
         outsideCell = outsideCell == null ? roomCell.add(direction == null ? new Point2i(0, -1) : direction) : outsideCell;
         direction = direction == null ? new Point2i(0, -1) : direction;
-        label = label == null || label.isBlank() ? "Tuer " + number : label;
+        label = label == null || label.isBlank() ? "Tür " + number : label;
         anchorEdge = anchorEdge == null ? VertexEdge.betweenCellAndStep(roomCell, direction) : anchorEdge;
         edges = edges == null ? List.of() : List.copyOf(edges);
     }

@@ -5,7 +5,7 @@ import features.world.dungeonmap.model.geometry.Point2i;
 public enum DungeonHeading {
     NORTH(new Point2i(0, -1), "Nord"),
     EAST(new Point2i(1, 0), "Ost"),
-    SOUTH(new Point2i(0, 1), "Sued"),
+    SOUTH(new Point2i(0, 1), "Süd"),
     WEST(new Point2i(-1, 0), "West");
 
     private final Point2i delta;

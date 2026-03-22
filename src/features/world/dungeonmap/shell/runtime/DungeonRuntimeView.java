@@ -198,7 +198,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
                 runtimeState::showNavigation,
                 failure -> {
                     System.err.println("DungeonRuntimeView.movePartyThroughDoor(): " + failure.getMessage());
-                    runtimeState.showFailure("Tuer konnte nicht benutzt werden");
+                    runtimeState.showFailure("Tür konnte nicht benutzt werden");
                 });
     }
 

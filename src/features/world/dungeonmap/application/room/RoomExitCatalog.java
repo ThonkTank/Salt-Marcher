@@ -44,7 +44,7 @@ public final class RoomExitCatalog {
                     representative.roomCell(),
                     representative.roomCell().add(representative.direction()),
                     representative.direction(),
-                    "Tuer " + number,
+                    "Tür " + number,
                     representative.edge(),
                     opening.stream().map(ExitEdge::edge).sorted(VertexEdge.EDGE_ORDER).toList()));
         }

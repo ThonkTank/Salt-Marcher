@@ -25,7 +25,7 @@ public final class DungeonRoomInspectorPresenter {
         box.getChildren().addAll(
                 sectionTitle("Visueller Eindruck"),
                 text(valueOrDash(room.narration().visualDescription())),
-                sectionTitle("Tueren"));
+                sectionTitle("Türen"));
         List<DungeonRuntimeDoorDescriptor> exits = DungeonRuntimeDoorCatalog.describe(room, heading);
         for (DungeonRuntimeDoorDescriptor exit : exits) {
             box.getChildren().addAll(
