@@ -1,7 +1,5 @@
 package features.campaignstate.repository;
 
-import database.SchemaCompatibility;
-
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -39,23 +37,5 @@ public final class CampaignStateSchemaSupport {
         try (Statement stmt = conn.createStatement()) {
             createSchema(stmt);
         }
-        ensureColumn(conn, "campaign_state", "dungeon_map_id",
-                "INTEGER REFERENCES dungeon_maps(dungeon_map_id) ON DELETE SET NULL");
-        ensureColumn(conn, "campaign_state", "dungeon_level_z",
-                "INTEGER NOT NULL DEFAULT 0");
-        ensureColumn(conn, "campaign_state", "dungeon_location_type",
-                "TEXT");
-        ensureColumn(conn, "campaign_state", "dungeon_room_id",
-                "INTEGER REFERENCES dungeon_rooms(room_id) ON DELETE SET NULL");
-        ensureColumn(conn, "campaign_state", "dungeon_corridor_id",
-                "INTEGER REFERENCES dungeon_corridors(corridor_id) ON DELETE SET NULL");
-        ensureColumn(conn, "campaign_state", "dungeon_location_key",
-                "TEXT");
-        ensureColumn(conn, "campaign_state", "dungeon_heading",
-                "TEXT");
-    }
-
-    private static void ensureColumn(Connection conn, String table, String column, String definition) throws SQLException {
-        SchemaCompatibility.ensureColumn(conn, table, column, definition);
     }
 }

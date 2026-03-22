@@ -24,11 +24,11 @@ final class DungeonRuntimeLocations {
             return null;
         }
         if (position.locationType() == CampaignDungeonLocationType.TILE && position.locationKey() != null) {
-            CubePoint tile = parseTile(position.locationKey(), position.levelZ());
+            CubePoint tile = parseTile(position.locationKey());
             return tile == null ? null : DungeonRuntimeLocation.tile(tile);
         }
         if (position.locationType() == CampaignDungeonLocationType.STAIR_EXIT && position.locationKey() != null) {
-            CubePoint tile = parseTile(position.locationKey(), position.levelZ());
+            CubePoint tile = parseTile(position.locationKey());
             long stairId = parseStairId(position.locationKey());
             return tile == null || stairId <= 0 ? null : DungeonRuntimeLocation.stairExit(stairId, tile);
         }
@@ -129,19 +129,19 @@ final class DungeonRuntimeLocations {
         return "stair:" + stairId + ":" + tile.x() + "," + tile.y() + "," + tile.z();
     }
 
-    private static CubePoint parseTile(String value, Integer fallbackLevelZ) {
+    private static CubePoint parseTile(String value) {
         if (value == null || !value.startsWith(TILE_PREFIX)) {
             return null;
         }
         String coordinates = value.substring(TILE_PREFIX.length());
         String[] parts = coordinates.split(",");
-        if (parts.length < 2 || parts.length > 3) {
+        if (parts.length != 3) {
             return null;
         }
         try {
             int x = Integer.parseInt(parts[0]);
             int y = Integer.parseInt(parts[1]);
-            int z = parts.length == 3 ? Integer.parseInt(parts[2]) : (fallbackLevelZ == null ? 0 : fallbackLevelZ);
+            int z = Integer.parseInt(parts[2]);
             return new CubePoint(x, y, z);
         } catch (NumberFormatException ignored) {
             return null;

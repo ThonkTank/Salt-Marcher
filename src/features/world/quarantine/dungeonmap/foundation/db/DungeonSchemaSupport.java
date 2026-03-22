@@ -1,7 +1,5 @@
 package features.world.quarantine.dungeonmap.foundation.db;
 
-import database.SchemaCompatibility;
-
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -109,39 +107,6 @@ public final class DungeonSchemaSupport {
                 + "cell_z           INTEGER NOT NULL,"
                 + "label            TEXT"
                 + ")");
-    }
-
-    public static void ensureCompatibility(Connection conn) throws SQLException {
-        try (Statement stmt = conn.createStatement()) {
-            createSchema(stmt);
-        }
-        SchemaCompatibility.ensureColumn(conn, "dungeon_room_clusters", "level_z", "INTEGER NOT NULL DEFAULT 0");
-        SchemaCompatibility.ensureColumn(conn, "dungeon_rooms", "level_z", "INTEGER NOT NULL DEFAULT 0");
-        SchemaCompatibility.ensureColumn(conn, "dungeon_corridors", "level_z", "INTEGER NOT NULL DEFAULT 0");
-        SchemaCompatibility.ensureColumn(conn, "dungeon_corridor_waypoints", "relative_z", "INTEGER NOT NULL DEFAULT 0");
-        try (Statement stmt = conn.createStatement()) {
-            stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_stairs ("
-                    + "stair_id         INTEGER PRIMARY KEY AUTOINCREMENT,"
-                    + "dungeon_map_id   INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
-                    + "name             TEXT"
-                    + ")");
-            stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_stair_path_nodes ("
-                    + "stair_id         INTEGER NOT NULL REFERENCES dungeon_stairs(stair_id) ON DELETE CASCADE,"
-                    + "sort_order       INTEGER NOT NULL,"
-                    + "cell_x           INTEGER NOT NULL,"
-                    + "cell_y           INTEGER NOT NULL,"
-                    + "cell_z           INTEGER NOT NULL,"
-                    + "PRIMARY KEY (stair_id, sort_order)"
-                    + ")");
-            stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_stair_exits ("
-                    + "stair_exit_id    INTEGER PRIMARY KEY AUTOINCREMENT,"
-                    + "stair_id         INTEGER NOT NULL REFERENCES dungeon_stairs(stair_id) ON DELETE CASCADE,"
-                    + "cell_x           INTEGER NOT NULL,"
-                    + "cell_y           INTEGER NOT NULL,"
-                    + "cell_z           INTEGER NOT NULL,"
-                    + "label            TEXT"
-                    + ")");
-        }
     }
 
     public static void resetSchema(Connection conn) throws SQLException {
