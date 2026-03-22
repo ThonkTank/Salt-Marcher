@@ -23,6 +23,17 @@ import java.util.stream.Collectors;
 
 public final class DungeonLayout {
 
+    public sealed interface CellStructure permits CellStructure.RoomStructure, CellStructure.NetworkStructure, CellStructure.CorridorStructure {
+        record RoomStructure(Room room) implements CellStructure {
+        }
+
+        record NetworkStructure(CorridorNetwork network) implements CellStructure {
+        }
+
+        record CorridorStructure(Corridor corridor) implements CellStructure {
+        }
+    }
+
     private static final DungeonLayout EMPTY = new DungeonLayout(0L, "Kein Dungeon", List.of(), List.of());
 
     private final long mapId;
@@ -240,6 +251,25 @@ public final class DungeonLayout {
     public CorridorNetwork corridorNetworkAtCell(Point2i cell) {
         String networkId = cell == null ? null : corridorNetworkIdByCell.get(cell);
         return networkId == null ? null : corridorNetworksById.get(networkId);
+    }
+
+    public CellStructure structureAtCell(Point2i cell) {
+        if (cell == null) {
+            return null;
+        }
+        Room room = roomAtCell(cell);
+        if (room != null) {
+            return new CellStructure.RoomStructure(room);
+        }
+        CorridorNetwork network = corridorNetworkAtCell(cell);
+        if (network != null) {
+            return new CellStructure.NetworkStructure(network);
+        }
+        Corridor corridor = corridorsAtCell(cell).stream()
+                .filter(candidate -> candidate != null && candidate.corridorId() != null)
+                .min(Comparator.comparing(Corridor::corridorId))
+                .orElse(null);
+        return corridor == null ? null : new CellStructure.CorridorStructure(corridor);
     }
 
     public Set<Point2i> traversableCells() {

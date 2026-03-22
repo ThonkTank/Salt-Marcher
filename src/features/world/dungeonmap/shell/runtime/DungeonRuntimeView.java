@@ -4,9 +4,9 @@ import features.world.api.WorldTravelSurface;
 import features.world.dungeonmap.application.runtime.DungeonHeading;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeDoorCatalog;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeDoorDescriptor;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeLabels;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationService;
-import features.world.dungeonmap.application.runtime.DungeonRuntimePresenter;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeSurface;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeSurfacePresenter;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeSurfaceResolver;
@@ -226,9 +226,9 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         }
         travelSurface.showDungeonTravel(
                 state().activeMap().name(),
-                DungeonRuntimePresenter.activeLocationLabel(state().activeMap(), runtimeState.activeLocation()),
-                DungeonRuntimePresenter.tileLabel(runtimeState.activeLocation()),
-                DungeonRuntimePresenter.headingLabel(runtimeState.heading()),
+                DungeonRuntimeLabels.activeLocationLabel(state().activeMap(), runtimeState.activeLocation()),
+                DungeonRuntimeLabels.tileLabel(runtimeState.activeLocation()),
+                DungeonRuntimeLabels.headingLabel(runtimeState.heading()),
                 runtimeStatusText(),
                 travelDoorActions(),
                 workspace()::resetView);
@@ -245,8 +245,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
     }
 
     private WorldTravelSurface.DungeonDoorAction toDoorAction(DungeonRuntimeDoorDescriptor door) {
-        String label = door.label() + ": " + door.relativeLabel();
-        return new WorldTravelSurface.DungeonDoorAction(label, () -> movePartyThroughDoor(door));
+        return new WorldTravelSurface.DungeonDoorAction(door.displayLabel(), () -> movePartyThroughDoor(door));
     }
 
     private void publishRoomDetails() {

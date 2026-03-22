@@ -8,9 +8,9 @@ import features.world.dungeonmap.model.structures.room.Room;
 
 import java.util.stream.Stream;
 
-public final class DungeonRuntimePresenter {
+public final class DungeonRuntimeLabels {
 
-    private DungeonRuntimePresenter() {
+    private DungeonRuntimeLabels() {
     }
 
     public static String activeLocationLabel(DungeonLayout layout, DungeonRuntimeLocation location) {
@@ -57,17 +57,15 @@ public final class DungeonRuntimePresenter {
         if (layout == null || tile == null) {
             return "Kein Standort";
         }
-        Room room = layout.roomAtCell(tile);
-        if (room != null) {
-            return roomLabel(layout, room.roomId());
+        DungeonLayout.CellStructure structure = layout.structureAtCell(tile);
+        if (structure instanceof DungeonLayout.CellStructure.RoomStructure roomStructure) {
+            return roomLabel(roomStructure.room());
         }
-        CorridorNetwork network = layout.corridorNetworkAtCell(tile);
-        if (network != null) {
-            return corridorLabel(layout, network.roomIds().stream());
+        if (structure instanceof DungeonLayout.CellStructure.NetworkStructure networkStructure) {
+            return corridorNetworkLabel(layout, networkStructure.network());
         }
-        Corridor corridor = layout.corridorsAtCell(tile).stream().findFirst().orElse(null);
-        if (corridor != null) {
-            return corridorLabel(layout, corridor.roomIds().stream());
+        if (structure instanceof DungeonLayout.CellStructure.CorridorStructure corridorStructure) {
+            return corridorLabel(layout, corridorStructure.corridor());
         }
         return "Kein Standort";
     }

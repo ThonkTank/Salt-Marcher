@@ -24,7 +24,7 @@ public final class DungeonRuntimeSurfacePresenter {
                 sectionTitle("Türen"));
         for (DungeonRuntimeDoorDescriptor door : surface.doors()) {
             box.getChildren().addAll(
-                    subTitle(door.label()),
+                    subTitle(door.displayLabel()),
                     text(valueOrDash(door.description())));
         }
         if (surface.doors().isEmpty()) {

@@ -7,6 +7,7 @@ import features.world.dungeonmap.model.geometry.VertexEdge;
 public record DungeonRuntimeDoorDescriptor(
         int number,
         String label,
+        String destinationLabel,
         Point2i roomCell,
         Point2i outsideCell,
         Point2i direction,
@@ -17,6 +18,7 @@ public record DungeonRuntimeDoorDescriptor(
     public DungeonRuntimeDoorDescriptor {
         number = number <= 0 ? 1 : number;
         label = label == null || label.isBlank() ? "Tür " + number : label;
+        destinationLabel = destinationLabel == null ? "" : destinationLabel.trim();
         roomCell = roomCell == null ? new Point2i(0, 0) : roomCell;
         direction = direction == null ? new Point2i(0, -1) : direction;
         outsideCell = outsideCell == null ? roomCell.add(direction) : outsideCell;
@@ -25,7 +27,12 @@ public record DungeonRuntimeDoorDescriptor(
         description = description == null || description.isBlank() ? describe(relativeLabel, "eine Tür") : description;
     }
 
-    public static DungeonRuntimeDoorDescriptor from(RoomExitDescriptor exit, DungeonHeading heading, String narration) {
+    public static DungeonRuntimeDoorDescriptor from(
+            RoomExitDescriptor exit,
+            DungeonHeading heading,
+            String destinationLabel,
+            String narration
+    ) {
         DungeonHeading resolvedHeading = heading == null ? DungeonHeading.defaultHeading() : heading;
         String relativeLabel = resolvedHeading.relativeLabel(exit.direction());
         String resolvedNarration = narration == null ? "" : narration.trim();
@@ -33,12 +40,17 @@ public record DungeonRuntimeDoorDescriptor(
         return new DungeonRuntimeDoorDescriptor(
                 exit.number(),
                 exit.label(),
+                destinationLabel,
                 exit.roomCell(),
                 exit.outsideCell(),
                 exit.direction(),
                 exit.anchorEdge(),
                 relativeLabel,
                 description);
+    }
+
+    public String displayLabel() {
+        return destinationLabel.isBlank() ? label : label + ": " + destinationLabel;
     }
 
     private static String describe(String relativeLabel, String subject) {

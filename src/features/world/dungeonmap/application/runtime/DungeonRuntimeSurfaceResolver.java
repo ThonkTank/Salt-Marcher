@@ -6,8 +6,6 @@ import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
 import features.world.dungeonmap.model.structures.room.Room;
 import ui.shell.DetailsNavigator;
 
-import java.util.Comparator;
-
 public final class DungeonRuntimeSurfaceResolver {
 
     private static final String CORRIDOR_VISUAL_DESCRIPTION = "Ein Korridor verbindet die angrenzenden Bereiche.";
@@ -25,7 +23,7 @@ public final class DungeonRuntimeSurfaceResolver {
             return null;
         }
         if (location instanceof DungeonRuntimeLocation.Room roomLocation) {
-            return roomSurface(layout.findRoom(roomLocation.roomId()), layout.mapId(), heading);
+            return roomSurface(layout, layout.findRoom(roomLocation.roomId()), heading);
         }
         if (location instanceof DungeonRuntimeLocation.CorridorComponent componentLocation) {
             CorridorNetwork network = layout.corridorNetworks().stream()
@@ -42,32 +40,30 @@ public final class DungeonRuntimeSurfaceResolver {
                     : corridorSurface(layout, corridor, heading);
         }
         if (location instanceof DungeonRuntimeLocation.Tile tileLocation) {
-            Room room = layout.roomAtCell(tileLocation.tile());
-            if (room != null) {
-                return roomSurface(room, layout.mapId(), heading);
+            DungeonLayout.CellStructure structure = layout.structureAtCell(tileLocation.tile());
+            if (structure instanceof DungeonLayout.CellStructure.RoomStructure roomStructure) {
+                return roomSurface(layout, roomStructure.room(), heading);
             }
-            CorridorNetwork network = layout.corridorNetworkAtCell(tileLocation.tile());
-            if (network != null) {
-                return corridorNetworkSurface(layout, network, heading);
+            if (structure instanceof DungeonLayout.CellStructure.NetworkStructure networkStructure) {
+                return corridorNetworkSurface(layout, networkStructure.network(), heading);
             }
-            Corridor corridor = layout.corridorsAtCell(tileLocation.tile()).stream()
-                    .filter(candidate -> candidate != null && candidate.corridorId() != null)
-                    .min(Comparator.comparing(Corridor::corridorId))
-                    .orElse(null);
-            return corridorSurface(layout, corridor, heading);
+            if (structure instanceof DungeonLayout.CellStructure.CorridorStructure corridorStructure) {
+                return corridorSurface(layout, corridorStructure.corridor(), heading);
+            }
+            return null;
         }
         return null;
     }
 
-    private static DungeonRuntimeSurface roomSurface(Room room, long mapId, DungeonHeading heading) {
+    private static DungeonRuntimeSurface roomSurface(DungeonLayout layout, Room room, DungeonHeading heading) {
         if (room == null || room.roomId() == null) {
             return null;
         }
         return new DungeonRuntimeSurface(
-                DungeonRuntimePresenter.roomLabel(room),
-                new DetailsNavigator.EntryKey("dungeon-room", mapId + ":" + room.roomId()),
+                DungeonRuntimeLabels.roomLabel(room),
+                new DetailsNavigator.EntryKey("dungeon-room", layout.mapId() + ":" + room.roomId()),
                 room.narration().visualDescription(),
-                DungeonRuntimeDoorCatalog.describe(room, heading));
+                DungeonRuntimeDoorCatalog.describe(layout, room, heading));
     }
 
     private static DungeonRuntimeSurface corridorNetworkSurface(
@@ -79,10 +75,10 @@ public final class DungeonRuntimeSurfaceResolver {
             return null;
         }
         return new DungeonRuntimeSurface(
-                DungeonRuntimePresenter.corridorNetworkLabel(layout, network),
+                DungeonRuntimeLabels.corridorNetworkLabel(layout, network),
                 new DetailsNavigator.EntryKey("dungeon-corridor-network", layout.mapId() + ":" + network.networkId()),
                 CORRIDOR_VISUAL_DESCRIPTION,
-                DungeonRuntimeDoorCatalog.describe(network, heading));
+                DungeonRuntimeDoorCatalog.describe(layout, network, heading));
     }
 
     private static DungeonRuntimeSurface corridorSurface(
@@ -94,9 +90,9 @@ public final class DungeonRuntimeSurfaceResolver {
             return null;
         }
         return new DungeonRuntimeSurface(
-                DungeonRuntimePresenter.corridorLabel(layout, corridor),
+                DungeonRuntimeLabels.corridorLabel(layout, corridor),
                 new DetailsNavigator.EntryKey("dungeon-corridor", layout.mapId() + ":" + corridor.corridorId()),
                 CORRIDOR_VISUAL_DESCRIPTION,
-                DungeonRuntimeDoorCatalog.describe(corridor, heading));
+                DungeonRuntimeDoorCatalog.describe(layout, corridor, heading));
     }
 }
