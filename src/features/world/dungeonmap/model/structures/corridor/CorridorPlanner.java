@@ -245,31 +245,17 @@ final class CorridorPlanner {
     ) {
         Point2i roomCenter = room.floor().shape().centerCell();
         Point2i connectedRoomCenter = connectedRoom.floor().shape().centerCell();
-        List<ExitCandidate> roomExits = targetedExitCandidates(room, connectedRoomCenter, context);
-        List<ExitCandidate> connectedExits = targetedExitCandidates(connectedRoom, roomCenter, context);
+        List<ExitCandidate> roomExits = roomToRoomCandidates(room, connectedRoomCenter, context);
+        List<ExitCandidate> connectedExits = roomToRoomCandidates(connectedRoom, roomCenter, context);
         if (roomExits.isEmpty() || connectedExits.isEmpty()) {
             return List.of();
         }
-        List<ExitPairCandidate> rankedPairs = new ArrayList<>();
-        for (ExitCandidate exit : roomExits) {
-            for (ExitCandidate target : connectedExits) {
-                rankedPairs.add(new ExitPairCandidate(
-                        exit,
-                        target,
-                        exitPairHeuristic(exit, roomCenter, target, connectedRoomCenter, context.waypointCells())));
-            }
-        }
-        rankedPairs.sort(Comparator
-                .comparingInt(ExitPairCandidate::heuristicScore)
-                .thenComparingInt(pair -> pair.exit().roomCell().distanceTo(roomCenter) + pair.target().roomCell().distanceTo(connectedRoomCenter))
-                .thenComparingInt(pair -> pair.exit().outsideCell().distanceTo(connectedRoomCenter))
-                .thenComparingInt(pair -> pair.target().outsideCell().distanceTo(roomCenter))
-                .thenComparing(pair -> pair.exit().outsideCell(), Point2i.POINT_ORDER)
-                .thenComparing(pair -> pair.target().outsideCell(), Point2i.POINT_ORDER));
-        if (rankedPairs.size() <= MAX_EXIT_PAIR_PATH_EVALUATIONS) {
-            return List.copyOf(rankedPairs);
-        }
-        return List.copyOf(rankedPairs.subList(0, MAX_EXIT_PAIR_PATH_EVALUATIONS));
+        return limitedExitPairs(rankedExitPairs(
+                roomExits,
+                connectedExits,
+                roomCenter,
+                connectedRoomCenter,
+                context.waypointCells()));
     }
 
     private static List<Point2i> normalizeSharedGapPath(Point2i start, Point2i target, List<Point2i> path) {
@@ -331,6 +317,46 @@ final class CorridorPlanner {
 
     private static List<ExitCandidate> targetedExitCandidates(Room room, Point2i targetCenter, PlannerContext context) {
         return candidateExitsFor(room, new RoomTarget(targetCenter), context);
+    }
+
+    private static List<ExitCandidate> roomToRoomCandidates(Room room, Point2i targetCenter, PlannerContext context) {
+        return targetedExitCandidates(room, targetCenter, context);
+    }
+
+    private static List<ExitPairCandidate> rankedExitPairs(
+            List<ExitCandidate> left,
+            List<ExitCandidate> right,
+            Point2i leftCenter,
+            Point2i rightCenter,
+            List<Point2i> waypointCells
+    ) {
+        if (left.isEmpty() || right.isEmpty()) {
+            return List.of();
+        }
+        List<ExitPairCandidate> rankedPairs = new ArrayList<>();
+        for (ExitCandidate exit : left) {
+            for (ExitCandidate target : right) {
+                rankedPairs.add(new ExitPairCandidate(
+                        exit,
+                        target,
+                        exitPairHeuristic(exit, leftCenter, target, rightCenter, waypointCells)));
+            }
+        }
+        rankedPairs.sort(Comparator
+                .comparingInt(ExitPairCandidate::heuristicScore)
+                .thenComparingInt(pair -> pair.exit().roomCell().distanceTo(leftCenter) + pair.target().roomCell().distanceTo(rightCenter))
+                .thenComparingInt(pair -> pair.exit().outsideCell().distanceTo(rightCenter))
+                .thenComparingInt(pair -> pair.target().outsideCell().distanceTo(leftCenter))
+                .thenComparing(pair -> pair.exit().outsideCell(), Point2i.POINT_ORDER)
+                .thenComparing(pair -> pair.target().outsideCell(), Point2i.POINT_ORDER));
+        return List.copyOf(rankedPairs);
+    }
+
+    private static List<ExitPairCandidate> limitedExitPairs(List<ExitPairCandidate> ranked) {
+        if (ranked.size() <= MAX_EXIT_PAIR_PATH_EVALUATIONS) {
+            return ranked;
+        }
+        return List.copyOf(ranked.subList(0, MAX_EXIT_PAIR_PATH_EVALUATIONS));
     }
 
     private static List<Point2i> preferredTargetDirections(Point2i roomCenter, Point2i targetCenter) {
