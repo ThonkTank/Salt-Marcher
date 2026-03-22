@@ -105,6 +105,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
 
     private void refreshRuntimeUi() {
         workspace().setActiveLocation(runtimeState.activeLocation());
+        workspace().setHeading(runtimeState.heading());
         refreshLabels();
         refreshTravelPane();
         publishRoomDetails();

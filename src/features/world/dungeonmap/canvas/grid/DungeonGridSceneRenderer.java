@@ -2,6 +2,7 @@ package features.world.dungeonmap.canvas.grid;
 
 import features.world.dungeonmap.application.room.RoomExitCatalog;
 import features.world.dungeonmap.application.room.RoomExitDescriptor;
+import features.world.dungeonmap.application.runtime.DungeonHeading;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeonmap.application.runtime.DungeonRuntimePresenter;
 import features.world.dungeonmap.canvas.base.DungeonCanvasCamera;
@@ -45,7 +46,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         }
         Set<VertexEdge> selectedRoomBoundaryEdges = drawRooms(gc, mapModel, camera, editorMode, renderState.selectedTargetKey());
         drawCorridors(gc, mapModel, camera, editorMode, renderState.selectedTargetKey());
-        drawPartyToken(gc, mapModel, camera, renderState.activeLocation());
+        drawPartyToken(gc, mapModel, camera, renderState.activeLocation(), renderState.heading());
         if (!editorMode) {
             drawDoorNumbers(gc, mapModel, camera, renderState.activeLocation());
         }
@@ -309,7 +310,8 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             GraphicsContext gc,
             DungeonLayout mapModel,
             DungeonCanvasCamera camera,
-            DungeonRuntimeLocation activeLocation
+            DungeonRuntimeLocation activeLocation,
+            DungeonHeading heading
     ) {
         if (mapModel == null || activeLocation == null) {
             return;
@@ -332,6 +334,30 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         gc.strokeOval(centerX - outerRadius, centerY - outerRadius, outerRadius * 2, outerRadius * 2);
         gc.setFill(DungeonCanvasTheme.PARTY_TOKEN_STROKE);
         gc.fillOval(centerX - innerRadius, centerY - innerRadius, innerRadius * 2, innerRadius * 2);
+        drawPartyHeading(gc, centerX, centerY, outerRadius, heading);
+    }
+
+    private static void drawPartyHeading(
+            GraphicsContext gc,
+            double centerX,
+            double centerY,
+            double outerRadius,
+            DungeonHeading heading
+    ) {
+        DungeonHeading resolvedHeading = heading == null ? DungeonHeading.defaultHeading() : heading;
+        double markerDistance = outerRadius + 5.0;
+        double markerRadius = Math.max(3.4, outerRadius * 0.28);
+        double markerX = centerX + resolvedHeading.delta().x() * markerDistance;
+        double markerY = centerY + resolvedHeading.delta().y() * markerDistance;
+        gc.setFill(DungeonCanvasTheme.PARTY_TOKEN_STROKE);
+        gc.fillOval(markerX - markerRadius, markerY - markerRadius, markerRadius * 2, markerRadius * 2);
+        gc.setStroke(DungeonCanvasTheme.PARTY_TOKEN_FILL);
+        gc.setLineWidth(1.6);
+        gc.strokeLine(
+                centerX + resolvedHeading.delta().x() * outerRadius,
+                centerY + resolvedHeading.delta().y() * outerRadius,
+                markerX,
+                markerY);
     }
 
     private static void drawDoorNumbers(
