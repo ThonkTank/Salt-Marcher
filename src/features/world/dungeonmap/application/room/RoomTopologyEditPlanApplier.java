@@ -120,7 +120,8 @@ public final class RoomTopologyEditPlanApplier {
                 room.name(),
                 new Floor(plan.clusterShape()),
                 room.walls(),
-                room.doors());
+                room.doors(),
+                room.narration());
         // The applier only projects the rewritten world snapshot; Corridor decides what reanchor/replan means locally.
         CorridorPlanningInput rewrittenPlanningInput = CorridorPlanningInputProjector.projectOverlay(
                 layout,

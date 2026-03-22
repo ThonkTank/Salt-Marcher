@@ -10,6 +10,7 @@ import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.objects.Floor;
 import features.world.dungeonmap.model.objects.Wall;
 import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.model.structures.room.RoomNarration;
 import features.world.dungeonmap.persistence.ClusterBoundaryWrite;
 
 import java.util.ArrayDeque;
@@ -344,7 +345,8 @@ public final class RoomCluster {
                 resolvedName,
                 new Floor(mergedShape),
                 mergedWallEdges.isEmpty() ? List.of() : List.of(new Wall(mergedWallEdges)),
-                mergedDoorEdges.isEmpty() ? List.of() : List.of(new Door(mergedDoorEdges)));
+                mergedDoorEdges.isEmpty() ? List.of() : List.of(new Door(mergedDoorEdges)),
+                findRoom(selected.iterator().next()).narration());
     }
 
     public RoomCluster withMergedRooms(Set<Long> roomIds, Long mergedRoomId, String mergedName) {
@@ -588,7 +590,8 @@ public final class RoomCluster {
                     candidate.name(),
                     new Floor(candidate.shape()),
                     wallEdges.isEmpty() ? List.of() : List.of(new Wall(wallEdges)),
-                    doorEdges.isEmpty() ? List.of() : List.of(new Door(doorEdges))));
+                    doorEdges.isEmpty() ? List.of() : List.of(new Door(doorEdges)),
+                    narrationFor(candidate.roomId())));
         }
         return List.copyOf(result);
     }
@@ -709,7 +712,13 @@ public final class RoomCluster {
                 room.name(),
                 room.floor(),
                 room.walls(),
-                room.doors());
+                room.doors(),
+                room.narration());
+    }
+
+    private RoomNarration narrationFor(Long roomId) {
+        Room room = findRoom(roomId);
+        return room == null ? RoomNarration.empty() : room.narration();
     }
 
     private static boolean sameRoomId(Room left, Room right) {

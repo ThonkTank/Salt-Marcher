@@ -26,6 +26,7 @@ public final class DungeonSchemaSupport {
                 + "dungeon_map_id  INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
                 + "cluster_id      INTEGER NOT NULL REFERENCES dungeon_room_clusters(cluster_id) ON DELETE CASCADE,"
                 + "name            TEXT NOT NULL,"
+                + "visual_description TEXT,"
                 + "component_x     INTEGER NOT NULL,"
                 + "component_y     INTEGER NOT NULL"
                 + ")");
@@ -72,6 +73,15 @@ public final class DungeonSchemaSupport {
                 + "relative_y        INTEGER NOT NULL,"
                 + "PRIMARY KEY (corridor_id, sort_order)"
                 + ")");
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_room_exit_descriptions ("
+                + "room_id          INTEGER NOT NULL REFERENCES dungeon_rooms(room_id) ON DELETE CASCADE,"
+                + "cell_x           INTEGER NOT NULL,"
+                + "cell_y           INTEGER NOT NULL,"
+                + "edge_direction   TEXT NOT NULL,"
+                + "description      TEXT,"
+                + "sort_order       INTEGER NOT NULL DEFAULT 0,"
+                + "PRIMARY KEY (room_id, cell_x, cell_y, edge_direction)"
+                + ")");
     }
 
     public static void resetSchema(Connection conn) throws SQLException {
@@ -79,6 +89,7 @@ public final class DungeonSchemaSupport {
             stmt.execute("PRAGMA foreign_keys = OFF");
             stmt.execute("DROP TABLE IF EXISTS dungeon_room_cluster_edges");
             stmt.execute("DROP TABLE IF EXISTS dungeon_room_cluster_vertices");
+            stmt.execute("DROP TABLE IF EXISTS dungeon_room_exit_descriptions");
             stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_waypoints");
             stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_door_overrides");
             stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_members");

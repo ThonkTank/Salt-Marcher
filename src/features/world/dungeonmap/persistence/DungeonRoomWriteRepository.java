@@ -1,6 +1,8 @@
 package features.world.dungeonmap.persistence;
 
 import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.structures.room.RoomExitNarration;
+import features.world.dungeonmap.model.structures.room.RoomNarration;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -110,6 +112,36 @@ public final class DungeonRoomWriteRepository {
             ps.setInt(3, anchor.y());
             ps.setLong(4, roomId);
             ps.executeUpdate();
+        }
+    }
+
+    public void replaceRoomNarration(Connection conn, long roomId, RoomNarration narration) throws SQLException {
+        RoomNarration resolvedNarration = narration == null ? RoomNarration.empty() : narration;
+        try (PreparedStatement ps = conn.prepareStatement(
+                "UPDATE dungeon_rooms SET visual_description=? WHERE room_id=?")) {
+            ps.setString(1, resolvedNarration.visualDescription());
+            ps.setLong(2, roomId);
+            ps.executeUpdate();
+        }
+        try (PreparedStatement delete = conn.prepareStatement(
+                "DELETE FROM dungeon_room_exit_descriptions WHERE room_id=?")) {
+            delete.setLong(1, roomId);
+            delete.executeUpdate();
+        }
+        try (PreparedStatement insert = conn.prepareStatement(
+                "INSERT INTO dungeon_room_exit_descriptions(room_id, cell_x, cell_y, edge_direction, description, sort_order)"
+                        + " VALUES(?,?,?,?,?,?)")) {
+            int sortOrder = 0;
+            for (RoomExitNarration exitNarration : resolvedNarration.exitNarrations()) {
+                insert.setLong(1, roomId);
+                insert.setInt(2, exitNarration.roomCell().x());
+                insert.setInt(3, exitNarration.roomCell().y());
+                insert.setString(4, directionName(exitNarration.direction()));
+                insert.setString(5, exitNarration.description());
+                insert.setInt(6, sortOrder++);
+                insert.addBatch();
+            }
+            insert.executeBatch();
         }
     }
 

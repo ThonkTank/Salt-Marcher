@@ -17,6 +17,8 @@ import features.world.dungeonmap.model.structures.corridor.CorridorDoorBinding;
 import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInput;
 import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInputProjector;
 import features.world.dungeonmap.model.structures.corridor.CorridorWaypointBinding;
+import features.world.dungeonmap.model.structures.room.RoomExitNarration;
+import features.world.dungeonmap.model.structures.room.RoomNarration;
 import features.world.dungeonmap.model.structures.room.Room;
 
 import java.sql.Connection;
@@ -111,8 +113,19 @@ public final class DungeonMapLoader {
     }
 
     private static List<Room> loadRooms(Connection conn, long mapId) throws SQLException {
+        Map<Long, List<RoomExitNarration>> exitNarrationsByRoomId = loadGrouped(conn,
+                "SELECT room_id, cell_x, cell_y, edge_direction, description"
+                        + " FROM dungeon_room_exit_descriptions"
+                        + " WHERE room_id IN (SELECT room_id FROM dungeon_rooms WHERE dungeon_map_id=?)"
+                        + " ORDER BY room_id, sort_order, cell_y, cell_x, edge_direction",
+                mapId,
+                rs -> rs.getLong("room_id"),
+                rs -> new RoomExitNarration(
+                        new Point2i(rs.getInt("cell_x"), rs.getInt("cell_y")),
+                        edgeDirectionDelta(rs.getString("edge_direction")),
+                        rs.getString("description")));
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT room_id, dungeon_map_id, cluster_id, name, component_x, component_y"
+                "SELECT room_id, dungeon_map_id, cluster_id, name, visual_description, component_x, component_y"
                         + " FROM dungeon_rooms WHERE dungeon_map_id=? ORDER BY room_id")) {
             ps.setLong(1, mapId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -127,7 +140,10 @@ public final class DungeonMapLoader {
                             normalizedRoomName(roomId, rs.getString("name")),
                             new Floor(TileShape.singleCell(anchor)),
                             List.of(),
-                            List.of()));
+                            List.of(),
+                            new RoomNarration(
+                                    rs.getString("visual_description"),
+                                    exitNarrationsByRoomId.getOrDefault(roomId, List.of()))));
                 }
                 return List.copyOf(rooms);
             }
@@ -315,7 +331,8 @@ public final class DungeonMapLoader {
                     room.name(),
                     new Floor(TileShape.fromAbsoluteCells(roomCells)),
                     wallsForRoom(roomCells, edgeObjects),
-                    doorsForRoom(roomCells, edgeObjects)));
+                    doorsForRoom(roomCells, edgeObjects),
+                    room.narration()));
         }
         if (!unclaimedCells.isEmpty()) {
             throw new IllegalStateException(

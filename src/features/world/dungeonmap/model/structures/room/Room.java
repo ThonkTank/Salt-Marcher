@@ -20,7 +20,8 @@ public record Room(
         String name,
         Floor floor,
         List<Wall> walls,
-        List<Door> doors
+        List<Door> doors,
+        RoomNarration narration
 ) {
     public static Room create(
             Long roomId,
@@ -29,7 +30,18 @@ public record Room(
             String name,
             Floor floor
     ) {
-        return resolved(roomId, mapId, clusterId, name, floor, List.of(), List.of());
+        return create(roomId, mapId, clusterId, name, floor, RoomNarration.empty());
+    }
+
+    public static Room create(
+            Long roomId,
+            long mapId,
+            long clusterId,
+            String name,
+            Floor floor,
+            RoomNarration narration
+    ) {
+        return resolved(roomId, mapId, clusterId, name, floor, List.of(), List.of(), narration);
     }
 
     public static Room resolved(
@@ -40,6 +52,19 @@ public record Room(
             Floor floor,
             Collection<Wall> walls,
             Collection<Door> doors
+    ) {
+        return resolved(roomId, mapId, clusterId, name, floor, walls, doors, RoomNarration.empty());
+    }
+
+    public static Room resolved(
+            Long roomId,
+            long mapId,
+            long clusterId,
+            String name,
+            Floor floor,
+            Collection<Wall> walls,
+            Collection<Door> doors,
+            RoomNarration narration
     ) {
         Floor resolvedFloor = floor == null ? new Floor(null) : floor;
         Set<VertexEdge> perimeterEdges = resolvedFloor.shape().boundaryEdges();
@@ -67,7 +92,8 @@ public record Room(
                 name,
                 resolvedFloor,
                 canonicalWalls,
-                resolvedDoors);
+                resolvedDoors,
+                narration);
     }
 
     public Room {
@@ -75,18 +101,23 @@ public record Room(
         floor = floor == null ? new Floor(null) : floor;
         walls = walls == null ? List.of() : List.copyOf(walls);
         doors = doors == null ? List.of() : List.copyOf(doors);
+        narration = narration == null ? RoomNarration.empty() : narration;
     }
 
     public Room withFloor(Floor floor) {
-        return resolved(roomId, mapId, clusterId, name, floor, walls, doors);
+        return resolved(roomId, mapId, clusterId, name, floor, walls, doors, narration);
     }
 
     public Room withBoundaries(List<Wall> walls, List<Door> doors) {
-        return resolved(roomId, mapId, clusterId, name, floor, walls, doors);
+        return resolved(roomId, mapId, clusterId, name, floor, walls, doors, narration);
     }
 
     public Room withResolvedState(Floor floor, List<Wall> walls, List<Door> doors) {
-        return resolved(roomId, mapId, clusterId, name, floor, walls, doors);
+        return resolved(roomId, mapId, clusterId, name, floor, walls, doors, narration);
+    }
+
+    public Room withNarration(RoomNarration narration) {
+        return resolved(roomId, mapId, clusterId, name, floor, walls, doors, narration);
     }
 
     public Floor floor() {
@@ -133,7 +164,8 @@ public record Room(
                 name,
                 floor.movedBy(delta),
                 walls.stream().map(wall -> wall.movedBy(delta)).toList(),
-                doors.stream().map(door -> door.movedBy(delta)).toList());
+                doors.stream().map(door -> door.movedBy(delta)).toList(),
+                narration);
     }
 
     public boolean blocks(Point2i fromCell, Point2i stepDelta) {
