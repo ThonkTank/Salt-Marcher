@@ -7,6 +7,7 @@ import features.world.dungeonmap.canvas.base.DungeonCanvasWorkspace;
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
 import features.world.dungeonmap.loading.DungeonMapCatalogEntry;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
+import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.shell.editor.interaction.CorridorInteractionController;
 import features.world.dungeonmap.shell.editor.interaction.ClusterSelectionDragController;
 import features.world.dungeonmap.shell.editor.interaction.DungeonEditorGridInteractionController;
@@ -140,8 +141,8 @@ final class DungeonEditorCoordinator {
             return;
         }
         String selectedTargetKey = selectionState.selectedTargetKey();
-        if (selectedTargetKey != null && selectedTargetKey.startsWith("corridor:")) {
-            statePane.showCorridorStatus("Gewählt: " + selectedTargetKey.replace("corridor:", "Korridor "));
+        if (Corridor.isTargetKey(selectedTargetKey)) {
+            statePane.showCorridorStatus("Gewählt: " + selectedTargetKey.replace(Corridor.targetKeyPrefix(), "Korridor "));
             return;
         }
         statePane.showCorridorStatus(null);

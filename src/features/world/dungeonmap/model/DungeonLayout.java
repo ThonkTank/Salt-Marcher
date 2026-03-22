@@ -284,7 +284,17 @@ public final class DungeonLayout {
         return new DungeonLayout(mapId, name, corridors, updatedClusters);
     }
 
-    public DungeonLayout withTranslatedCluster(Long clusterId, Point2i delta) {
+    public DungeonLayout withTranslatedClusterPreview(Long clusterId, Point2i delta) {
+        // Preview drags are a hot path. Keep the implementation explicitly preview-scoped even if corridor replan
+        // remains necessary for visual correctness.
+        return translatedCluster(clusterId, delta, true);
+    }
+
+    public DungeonLayout withTranslatedClusterReplanned(Long clusterId, Point2i delta) {
+        return translatedCluster(clusterId, delta, false);
+    }
+
+    private DungeonLayout translatedCluster(Long clusterId, Point2i delta, boolean previewMode) {
         if (clusterId == null || delta == null || (delta.x() == 0 && delta.y() == 0)) {
             return this;
         }
@@ -296,9 +306,9 @@ public final class DungeonLayout {
         List<RoomCluster> updatedClusters = clusters.stream()
                 .map(existing -> clusterId.equals(existing.clusterId()) ? movedCluster : existing)
                 .toList();
-        // This is part of the drag-preview loop via ClusterSelectionDragController.
-        // Keep corridor replanning here budgeted for preview use: no extra passes, no higher-order complexity, no heavy transient allocation spikes.
-        // If long-corridor profiling later shows pressure here, prefer drag-session reuse of planner internals over broader refactors.
+        // Preview and commit use separate entrypoints so hot-path callers must opt into preview behavior explicitly.
+        // Corridor replanning still happens in both paths for now; if preview pressure grows, optimize the preview path
+        // directly instead of smuggling the distinction through hidden callers.
         CorridorPlanningInput planningInput = CorridorPlanningInputProjector.project(updatedClusters);
         CorridorRewriteContext rewriteContext = corridorRewriteContext(
                 planningInput,

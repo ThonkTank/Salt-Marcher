@@ -124,7 +124,7 @@ public final class CorridorInteractionController {
             selectionState.clearSelection();
             return false;
         }
-        selectionState.selectTarget("corridor:" + corridor.corridorId());
+        selectionState.selectTarget(corridor.targetKey());
         draftState.clear();
         UiAsyncTasks.submitVoid(
                 () -> corridorEditService.delete(corridor.corridorId()),
@@ -182,7 +182,7 @@ public final class CorridorInteractionController {
                 .filter(candidate -> candidate != null && candidate.corridorId() != null)
                 .findFirst()
                 .orElse(null);
-        return corridor == null ? null : new CorridorEndpoint.Corridor(corridor.corridorId(), "corridor:" + corridor.corridorId());
+        return corridor == null ? null : new CorridorEndpoint.Corridor(corridor.corridorId(), corridor.targetKey());
     }
 
     private static Long singleRoomIdFor(DungeonEditorHitTarget hit, DungeonLayout layout) {

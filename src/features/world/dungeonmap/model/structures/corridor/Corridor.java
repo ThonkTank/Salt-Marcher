@@ -21,6 +21,8 @@ import java.util.Set;
  */
 public final class Corridor {
 
+    private static final String TARGET_KEY_PREFIX = "corridor:";
+
     private final Long corridorId;
     private final long mapId;
     // Corridor owns ordered room relations plus canonical relative bindings; pairwise room links stay a derived view.
@@ -58,6 +60,22 @@ public final class Corridor {
 
     public Long corridorId() {
         return corridorId;
+    }
+
+    public String targetKey() {
+        return targetKey(corridorId);
+    }
+
+    public static String targetKey(Long corridorId) {
+        return corridorId == null ? TARGET_KEY_PREFIX + "unassigned" : TARGET_KEY_PREFIX + corridorId;
+    }
+
+    public static boolean isTargetKey(String targetKey) {
+        return targetKey != null && targetKey.startsWith(TARGET_KEY_PREFIX);
+    }
+
+    public static String targetKeyPrefix() {
+        return TARGET_KEY_PREFIX;
     }
 
     public long mapId() {
@@ -333,8 +351,8 @@ public final class Corridor {
     }
 
     public Corridor replanned(CorridorPlanningInput input) {
-        // Preview drags call into this through DungeonLayout.withTranslatedCluster() on repeated pointer updates.
-        // Planner quality fixes are only acceptable here when they preserve the current performance budget.
+        // Preview drags call into this through DungeonLayout.withTranslatedClusterPreview() on repeated pointer updates.
+        // Planner quality fixes are only acceptable here when they preserve the current preview budget.
         return withPath(CorridorPlanner.plan(this, input));
     }
 

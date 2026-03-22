@@ -109,7 +109,8 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         Set<VertexEdge> roomBoundaryEdges = new LinkedHashSet<>();
         Set<VertexEdge> selectedRoomBoundaryEdges = new LinkedHashSet<>();
         for (RoomCluster cluster : mapModel.clusters()) {
-            boolean selected = java.util.Objects.equals(clusterSelectionKey(cluster), selectedTargetKey);
+            InteractiveLabelHandle handle = cluster.labelHandle();
+            boolean selected = handle != null && java.util.Objects.equals(handle.key(), selectedTargetKey);
             for (Room room : cluster.rooms()) {
                 Set<Tile> tiles = room.floor().shape().tiles();
                 fillRoomTiles(gc, camera, gridSize, tiles);
@@ -223,13 +224,6 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         gc.fillText(roomName, centerX, centerY);
     }
 
-    private static String clusterSelectionKey(RoomCluster cluster) {
-        if (cluster == null || cluster.clusterId() == null) {
-            return "cluster:unassigned";
-        }
-        return "cluster:" + cluster.clusterId();
-    }
-
     private static void drawInteractiveLabels(
             GraphicsContext gc,
             DungeonLayout mapModel,
@@ -266,7 +260,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             if (corridor == null || corridor.path() == null || corridor.path().floor() == null) {
                 continue;
             }
-            boolean selected = java.util.Objects.equals("corridor:" + corridor.corridorId(), selectedTargetKey);
+            boolean selected = java.util.Objects.equals(corridor.targetKey(), selectedTargetKey);
             Set<Tile> corridorTiles = corridor.path().floor().shape().tiles();
             gc.setFill(selected ? DungeonCanvasTheme.CORRIDOR_SELECTED_FILL : DungeonCanvasTheme.CELL_FILL);
             fillRoomTiles(gc, camera, gridSize, corridorTiles);
