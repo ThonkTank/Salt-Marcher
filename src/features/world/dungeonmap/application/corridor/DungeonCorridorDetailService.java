@@ -10,8 +10,6 @@ import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorDoorBinding;
 import features.world.dungeonmap.model.structures.corridor.CorridorWaypointBinding;
-import features.world.dungeonmap.persistence.DungeonCorridorWriteRepository;
-
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
@@ -20,14 +18,14 @@ import java.util.Objects;
 public final class DungeonCorridorDetailService {
 
     private final DungeonMapLoader mapLoader;
-    private final DungeonCorridorWriteRepository corridorWriteRepository;
+    private final DungeonCorridorPersistenceService corridorPersistenceService;
 
     public DungeonCorridorDetailService(
             DungeonMapLoader mapLoader,
-            DungeonCorridorWriteRepository corridorWriteRepository
+            DungeonCorridorPersistenceService corridorPersistenceService
     ) {
         this.mapLoader = Objects.requireNonNull(mapLoader, "mapLoader");
-        this.corridorWriteRepository = Objects.requireNonNull(corridorWriteRepository, "corridorWriteRepository");
+        this.corridorPersistenceService = Objects.requireNonNull(corridorPersistenceService, "corridorPersistenceService");
     }
 
     public void moveDoorBinding(long mapId, long corridorId, long roomId, Point2i cell, Point2i direction) throws SQLException {
@@ -78,9 +76,7 @@ public final class DungeonCorridorDetailService {
     private void persistBindings(long mapId, Corridor corridor) throws SQLException {
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                corridorWriteRepository.replaceCorridorRooms(conn, corridor.corridorId(), corridor.roomIds());
-                corridorWriteRepository.replaceCorridorWaypoints(conn, corridor.corridorId(), corridor.bindings().waypoints());
-                corridorWriteRepository.replaceCorridorDoorBindings(conn, corridor.corridorId(), corridor.bindings().doorBindings());
+                corridorPersistenceService.persistCorridor(conn, corridor);
                 return null;
             });
         }

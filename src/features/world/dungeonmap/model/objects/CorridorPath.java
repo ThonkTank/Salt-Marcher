@@ -31,20 +31,4 @@ public record CorridorPath(
     public static CorridorPath empty(GridRoute route) {
         return new CorridorPath(route, new Floor(TileShape.empty()), List.of(), false, false);
     }
-
-    public CorridorPath withRoute(GridRoute route) {
-        return new CorridorPath(route, floor, doors, directlyAdjacent, routable);
-    }
-
-    public CorridorPath withFloor(Floor floor) {
-        return new CorridorPath(route, floor, doors, directlyAdjacent, routable);
-    }
-
-    public CorridorPath withDoors(List<Door> doors) {
-        return new CorridorPath(route, floor, doors, directlyAdjacent, routable);
-    }
-
-    public CorridorPath withRuntimeGeometry(Floor floor, List<Door> doors, boolean directlyAdjacent, boolean routable) {
-        return new CorridorPath(route, floor, doors, directlyAdjacent, routable);
-    }
 }

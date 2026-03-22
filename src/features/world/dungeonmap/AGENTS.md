@@ -17,7 +17,7 @@ The feature ships two `AppView` implementations: `DungeonEditorView` (EDITOR) an
 - `model/` — immutable domain model in three strict layers (see **Model Layering** below)
 - `application/` — stateful edit services that plan and persist topology changes. Organized by domain concern:
   - `application/room/` — room paint topology: `DungeonRoomTopologyService` (orchestrator), `RoomPaintTopologyPlanner`, `RoomTopologyEditPlan` (sealed, 6 concrete types) / `RoomTopologyEditPlanApplier`
-  - `application/corridor/` — corridor lifecycle: `DungeonCorridorEditService` (CRUD), `DungeonCorridorPersistenceService` (batch persistence coordination — persist/delete corridors in a transaction), `DungeonCorridorRewriteCoordinator` (orchestrates corridor rewrite: delegates reanchor + replan to `Corridor` via `CorridorRewriteContext`), `DungeonCorridorRoomRewriteService` (rewrites corridor room membership after topology changes — merge/delete/split), `DungeonCorridorDetailService`
+  - `application/corridor/` — corridor lifecycle: `DungeonCorridorEditService` (CRUD), `DungeonCorridorPersistenceService` (single-corridor and batch persistence), `DungeonCorridorRoomRewriteService` (rewrites corridor room membership after topology changes — merge/delete/split), `DungeonCorridorDetailService`. Batch rewrite (reanchor + replan) lives on `Corridor.rewriteAll()`
   - `application/runtime/` — `DungeonRuntimeStateRepairService`, `DungeonRuntimeLocation`
   - `application/support/` — `DungeonTransactionRunner`
   - Services coordinate between model and persistence but must not reconstruct structure truth that already belongs on `Room`, `RoomCluster`, or `Corridor`
@@ -81,7 +81,7 @@ When rooms are painted, deleted, or merged, affected corridors must be reanchore
 1. `DungeonRoomTopologyService` applies room topology edit plan
 2. Detects affected corridors via `DungeonLayout.corridorsAffectedBy(ClusterRewrite)`
 3. Creates `CorridorRewriteContext` (before/after `CorridorPlanningInput`, affected corridor IDs, deleted cluster IDs)
-4. `DungeonCorridorRewriteCoordinator.rewriteCorridors()` — for each affected corridor:
+4. `Corridor.rewriteAll()` — for each affected corridor:
    - `corridor.reanchoredFor(context)` — re-target waypoint/door bindings to new cluster centers (relative offsets survive cluster movement)
    - `corridor.replannedFor(context)` — recompute corridor path via the corridor planning engine
 5. All changes (room topology + corridors) persisted in one transaction

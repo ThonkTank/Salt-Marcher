@@ -19,16 +19,6 @@ import java.util.Objects;
 
 public final class CorridorInteractionController {
 
-    private sealed interface CorridorEndpoint permits CorridorEndpoint.Room, CorridorEndpoint.Corridor {
-        String targetKey();
-
-        record Room(Long roomId, String targetKey) implements CorridorEndpoint {
-        }
-
-        record Corridor(Long corridorId, String targetKey) implements CorridorEndpoint {
-        }
-    }
-
     private final DungeonMapState mapState;
     private final DungeonMapLoadingService loadingService;
     private final DungeonEditorSessionState sessionState;
@@ -82,18 +72,18 @@ public final class CorridorInteractionController {
                 mapState.activeMap(),
                 event.canvasPoint(),
                 event.camera());
-        CorridorEndpoint endpoint = resolveEndpoint(hit, event.gridCell(), mapState.activeMap());
-        if (endpoint == null) {
+        DungeonCorridorDraftState.PendingTarget target = resolveTarget(hit, event.gridCell(), mapState.activeMap());
+        if (target == null) {
             draftState.clear();
             selectionState.clearSelection();
             return false;
         }
-        selectionState.selectTarget(endpoint.targetKey());
+        selectionState.selectTarget(target.targetKey());
         if (!draftState.hasPendingStart()) {
-            draftState.selectPendingStart(toPendingTarget(endpoint));
+            draftState.selectPendingStart(target);
             return true;
         }
-        if (Objects.equals(draftState.pendingStartTargetKey(), endpoint.targetKey())) {
+        if (Objects.equals(draftState.pendingStartTargetKey(), target.targetKey())) {
             draftState.clear();
             return true;
         }
@@ -105,7 +95,7 @@ public final class CorridorInteractionController {
         DungeonCorridorDraftState.PendingTarget start = draftState.pendingStart();
         draftState.clear();
         UiAsyncTasks.submitVoid(
-                () -> applyCreateAction(mapId, start, endpoint),
+                () -> applyCreateAction(mapId, start, target),
                 () -> loadingService.reload(mapId),
                 throwable -> UiErrorReporter.reportBackgroundFailure("CorridorInteractionController.handleCreatePressed()", throwable));
         return true;
@@ -136,44 +126,34 @@ public final class CorridorInteractionController {
     private void applyCreateAction(
             long mapId,
             DungeonCorridorDraftState.PendingTarget start,
-            CorridorEndpoint target
+            DungeonCorridorDraftState.PendingTarget target
     ) throws Exception {
         DungeonLayout layout = mapState.activeMap();
         if (layout == null || layout.mapId() != mapId) {
             return;
         }
-        if (start instanceof DungeonCorridorDraftState.PendingTarget.Room startRoom && target instanceof CorridorEndpoint.Room targetRoom) {
+        if (start instanceof DungeonCorridorDraftState.PendingTarget.Room startRoom && target instanceof DungeonCorridorDraftState.PendingTarget.Room targetRoom) {
             corridorEditService.create(layout, List.of(startRoom.roomId(), targetRoom.roomId()));
             return;
         }
-        if (start instanceof DungeonCorridorDraftState.PendingTarget.Room startRoom && target instanceof CorridorEndpoint.Corridor targetCorridor) {
+        if (start instanceof DungeonCorridorDraftState.PendingTarget.Room startRoom && target instanceof DungeonCorridorDraftState.PendingTarget.Corridor targetCorridor) {
             corridorEditService.addRoom(layout, targetCorridor.corridorId(), startRoom.roomId());
             return;
         }
-        if (start instanceof DungeonCorridorDraftState.PendingTarget.Corridor startCorridor && target instanceof CorridorEndpoint.Room targetRoom) {
+        if (start instanceof DungeonCorridorDraftState.PendingTarget.Corridor startCorridor && target instanceof DungeonCorridorDraftState.PendingTarget.Room targetRoom) {
             corridorEditService.addRoom(layout, startCorridor.corridorId(), targetRoom.roomId());
             return;
         }
         if (start instanceof DungeonCorridorDraftState.PendingTarget.Corridor startCorridor
-                && target instanceof CorridorEndpoint.Corridor targetCorridor) {
+                && target instanceof DungeonCorridorDraftState.PendingTarget.Corridor targetCorridor) {
             corridorEditService.merge(layout, targetCorridor.corridorId(), startCorridor.corridorId());
         }
     }
 
-    private static DungeonCorridorDraftState.PendingTarget toPendingTarget(CorridorEndpoint endpoint) {
-        if (endpoint instanceof CorridorEndpoint.Room room) {
-            return new DungeonCorridorDraftState.PendingTarget.Room(room.roomId(), room.targetKey());
-        }
-        if (endpoint instanceof CorridorEndpoint.Corridor corridor) {
-            return new DungeonCorridorDraftState.PendingTarget.Corridor(corridor.corridorId(), corridor.targetKey());
-        }
-        return null;
-    }
-
-    private static CorridorEndpoint resolveEndpoint(DungeonEditorHitTarget hit, features.world.dungeonmap.model.geometry.Point2i gridCell, DungeonLayout layout) {
+    private static DungeonCorridorDraftState.PendingTarget resolveTarget(DungeonEditorHitTarget hit, features.world.dungeonmap.model.geometry.Point2i gridCell, DungeonLayout layout) {
         Long roomId = singleRoomIdFor(hit, layout);
         if (roomId != null && hit != null) {
-            return new CorridorEndpoint.Room(roomId, hit.targetKey());
+            return new DungeonCorridorDraftState.PendingTarget.Room(roomId, hit.targetKey());
         }
         if (layout == null || gridCell == null) {
             return null;
@@ -182,7 +162,7 @@ public final class CorridorInteractionController {
                 .filter(candidate -> candidate != null && candidate.corridorId() != null)
                 .findFirst()
                 .orElse(null);
-        return corridor == null ? null : new CorridorEndpoint.Corridor(corridor.corridorId(), corridor.targetKey());
+        return corridor == null ? null : new DungeonCorridorDraftState.PendingTarget.Corridor(corridor.corridorId(), corridor.targetKey());
     }
 
     private static Long singleRoomIdFor(DungeonEditorHitTarget hit, DungeonLayout layout) {

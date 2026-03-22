@@ -16,21 +16,25 @@ public final class DungeonCorridorPersistenceService {
         this.corridorWriteRepository = Objects.requireNonNull(corridorWriteRepository, "corridorWriteRepository");
     }
 
+    public void persistCorridor(Connection conn, Corridor corridor) throws SQLException {
+        if (corridor == null || corridor.corridorId() == null) {
+            return;
+        }
+        if (!corridor.isPersistable()) {
+            corridorWriteRepository.deleteCorridor(conn, corridor.corridorId());
+            return;
+        }
+        corridorWriteRepository.replaceCorridorRooms(conn, corridor.corridorId(), corridor.roomIds());
+        corridorWriteRepository.replaceCorridorWaypoints(conn, corridor.corridorId(), corridor.bindings().waypoints());
+        corridorWriteRepository.replaceCorridorDoorBindings(conn, corridor.corridorId(), corridor.bindings().doorBindings());
+    }
+
     public void persistCorridors(Connection conn, Map<Long, Corridor> corridorsById) throws SQLException {
         if (corridorsById == null || corridorsById.isEmpty()) {
             return;
         }
         for (Corridor corridor : corridorsById.values()) {
-            if (corridor == null || corridor.corridorId() == null) {
-                continue;
-            }
-            if (!corridor.isPersistable()) {
-                corridorWriteRepository.deleteCorridor(conn, corridor.corridorId());
-                continue;
-            }
-            corridorWriteRepository.replaceCorridorRooms(conn, corridor.corridorId(), corridor.roomIds());
-            corridorWriteRepository.replaceCorridorWaypoints(conn, corridor.corridorId(), corridor.bindings().waypoints());
-            corridorWriteRepository.replaceCorridorDoorBindings(conn, corridor.corridorId(), corridor.bindings().doorBindings());
+            persistCorridor(conn, corridor);
         }
     }
 }

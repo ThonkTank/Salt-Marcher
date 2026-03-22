@@ -15,9 +15,14 @@ import java.util.Set;
 public final class DungeonCorridorEditService {
 
     private final DungeonCorridorWriteRepository corridorWriteRepository;
+    private final DungeonCorridorPersistenceService corridorPersistenceService;
 
-    public DungeonCorridorEditService(DungeonCorridorWriteRepository corridorWriteRepository) {
+    public DungeonCorridorEditService(
+            DungeonCorridorWriteRepository corridorWriteRepository,
+            DungeonCorridorPersistenceService corridorPersistenceService
+    ) {
         this.corridorWriteRepository = Objects.requireNonNull(corridorWriteRepository, "corridorWriteRepository");
+        this.corridorPersistenceService = Objects.requireNonNull(corridorPersistenceService, "corridorPersistenceService");
     }
 
     public void create(DungeonLayout layout, List<Long> roomIds) throws SQLException {
@@ -78,15 +83,12 @@ public final class DungeonCorridorEditService {
     }
 
     private void persistCorridor(DungeonLayout layout, Corridor corridor, Long deletedCorridorId) throws SQLException {
-        var planningInput = layout.corridorPlanningInput();
+        Corridor updated = corridor.isPersistable()
+                ? corridor.replanned(layout.corridorPlanningInput())
+                : corridor;
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                corridorWriteRepository.replaceCorridorRooms(conn, corridor.corridorId(), corridor.roomIds());
-                if (corridor.isPersistable()) {
-                    Corridor updated = corridor.replanned(planningInput);
-                    corridorWriteRepository.replaceCorridorWaypoints(conn, updated.corridorId(), updated.bindings().waypoints());
-                    corridorWriteRepository.replaceCorridorDoorBindings(conn, updated.corridorId(), updated.bindings().doorBindings());
-                }
+                corridorPersistenceService.persistCorridor(conn, updated);
                 if (deletedCorridorId != null) {
                     corridorWriteRepository.deleteCorridor(conn, deletedCorridorId);
                 }
