@@ -33,14 +33,15 @@ public final class CorridorPlanner {
     private static final int MAX_CORNER_PENALTY_TILES = 5;
     private static final int MIN_CORNER_PENALTY_TILES = 2;
     private static final int CORNER_PENALTY_RELAXATION_INTERVAL = 12;
-    private static final int MAX_EXIT_CANDIDATES_PER_ROOM = 12;
-    private static final int MAX_TARGETED_EXIT_CANDIDATES_PER_ROOM = 8;
-    private static final int PREVIEW_BASE_EXACT_EXIT_PAIR_EVALUATIONS = 20;
-    private static final int PREVIEW_ROOM_TARGET_EXACT_PAIR_EVALUATIONS = 24;
-    private static final int PREVIEW_COMPLEX_EXACT_EXIT_PAIR_EVALUATIONS = 28;
-    private static final int COMMIT_BASE_EXACT_EXIT_PAIR_EVALUATIONS = 24;
-    private static final int COMMIT_ROOM_TARGET_EXACT_PAIR_EVALUATIONS = 28;
-    private static final int COMMIT_COMPLEX_EXACT_EXIT_PAIR_EVALUATIONS = 32;
+    private static final PlannerConfig CONFIG = new PlannerConfig(
+            12,
+            8,
+            20,
+            24,
+            28,
+            24,
+            28,
+            32);
 
     private CorridorPlanner() {
         throw new AssertionError("No instances");
@@ -290,13 +291,14 @@ public final class CorridorPlanner {
         if (allExits.isEmpty()) {
             return List.of();
         }
-        int maxCandidates = targetCenter(target) == null
-                ? MAX_EXIT_CANDIDATES_PER_ROOM
-                : MAX_TARGETED_EXIT_CANDIDATES_PER_ROOM;
+        TargetGeometry geometry = TargetGeometry.forSelection(allExits, target);
+        int maxCandidates = geometry.hasTargetProjection()
+                ? CONFIG.maxTargetedExitCandidatesPerRoom()
+                : CONFIG.maxExitCandidatesPerRoom();
         if (allExits.size() <= maxCandidates) {
             return allExits;
         }
-        return sampleExits(buildExitBudget(allExits, target), maxCandidates);
+        return sampleExits(buildExitBudget(allExits, geometry), maxCandidates);
     }
 
     private static List<ExitCandidate> targetedExitCandidates(Room room, Point2i targetCenter, PlannerContext context) {
@@ -307,14 +309,12 @@ public final class CorridorPlanner {
         return targetedExitCandidates(room, targetCenter, context);
     }
 
-    private static ExitCandidateBudget buildExitBudget(List<ExitCandidate> allExits, ExitSelectionTarget target) {
+    private static ExitCandidateBudget buildExitBudget(List<ExitCandidate> allExits, TargetGeometry geometry) {
         if (allExits == null || allExits.isEmpty()) {
             return ExitCandidateBudget.empty();
         }
-        Point2i targetCenter = targetCenter(target);
-        Point2i roomCenter = centroidCell(allExits.stream()
-                .map(ExitCandidate::roomCell)
-                .toList());
+        Point2i targetCenter = geometry == null ? null : geometry.targetCenter();
+        Point2i roomCenter = geometry == null ? null : geometry.roomCenter();
         List<Point2i> sidePriority = targetCenter == null || roomCenter == null
                 ? List.copyOf(Point2i.CARDINAL_STEPS)
                 : preferredTargetDirections(roomCenter, targetCenter);
@@ -495,8 +495,8 @@ public final class CorridorPlanner {
             ExitSelectionTarget right
     ) {
         PlanningMode mode = context == null ? PlanningMode.COMMIT : context.planningMode();
-        Point2i leftCenter = targetCenter(left);
-        Point2i rightCenter = targetCenter(right);
+        Point2i leftCenter = TargetGeometry.targetCenterOf(left);
+        Point2i rightCenter = TargetGeometry.targetCenterOf(right);
         if (leftCenter == null || rightCenter == null) {
             return baseExactPairBudget(mode);
         }
@@ -516,20 +516,20 @@ public final class CorridorPlanner {
 
     private static int baseExactPairBudget(PlanningMode mode) {
         return mode == PlanningMode.PREVIEW
-                ? PREVIEW_BASE_EXACT_EXIT_PAIR_EVALUATIONS
-                : COMMIT_BASE_EXACT_EXIT_PAIR_EVALUATIONS;
+                ? CONFIG.previewBaseExactExitPairEvaluations()
+                : CONFIG.commitBaseExactExitPairEvaluations();
     }
 
     private static int roomTargetExactPairBudget(PlanningMode mode) {
         return mode == PlanningMode.PREVIEW
-                ? PREVIEW_ROOM_TARGET_EXACT_PAIR_EVALUATIONS
-                : COMMIT_ROOM_TARGET_EXACT_PAIR_EVALUATIONS;
+                ? CONFIG.previewRoomTargetExactPairEvaluations()
+                : CONFIG.commitRoomTargetExactPairEvaluations();
     }
 
     private static int complexExactPairBudget(PlanningMode mode) {
         return mode == PlanningMode.PREVIEW
-                ? PREVIEW_COMPLEX_EXACT_EXIT_PAIR_EVALUATIONS
-                : COMMIT_COMPLEX_EXACT_EXIT_PAIR_EVALUATIONS;
+                ? CONFIG.previewComplexExactExitPairEvaluations()
+                : CONFIG.commitComplexExactExitPairEvaluations();
     }
 
     private static int estimatedCornersToTarget(Point2i start, Point2i target) {
@@ -537,17 +537,6 @@ public final class CorridorPlanner {
             return 0;
         }
         return start.x() == target.x() || start.y() == target.y() ? 0 : 1;
-    }
-
-    private static Point2i targetCenter(ExitSelectionTarget target) {
-        if (target == null) {
-            return null;
-        }
-        return switch (target) {
-            case RoomTarget(Point2i centerCell) -> centerCell;
-            case NetworkTarget(Set<Point2i> cells) -> centroidCell(cells);
-            case WaypointTarget(List<Point2i> waypoints) -> centroidCell(waypoints);
-        };
     }
 
     private static int estimatedCornersViaWaypoints(
@@ -607,29 +596,6 @@ public final class CorridorPlanner {
         }
         distance += waypointCells.getLast().distanceTo(target);
         return distance;
-    }
-
-    private static Point2i centroidCell(Iterable<Point2i> cells) {
-        if (cells == null) {
-            return null;
-        }
-        long sumX = 0L;
-        long sumY = 0L;
-        int count = 0;
-        for (Point2i cell : cells) {
-            if (cell == null) {
-                continue;
-            }
-            sumX += cell.x();
-            sumY += cell.y();
-            count++;
-        }
-        if (count == 0) {
-            return null;
-        }
-        return new Point2i(
-                (int) Math.round(sumX / (double) count),
-                (int) Math.round(sumY / (double) count));
     }
 
     private static ConnectionPlan directAdjacencyPlan(
@@ -778,7 +744,7 @@ public final class CorridorPlanner {
     }
 
     private static void addRepresentativeExit(Map<Point2i, ExitCandidate> limited, ExitCandidate candidate) {
-        if (candidate == null || limited.size() >= MAX_EXIT_CANDIDATES_PER_ROOM) {
+        if (candidate == null || limited.size() >= CONFIG.maxExitCandidatesPerRoom()) {
             return;
         }
         limited.putIfAbsent(candidate.outsideCell(), candidate);
@@ -1065,12 +1031,6 @@ public final class CorridorPlanner {
         return new RouteCost(pathLength(path), cornerCount(path));
     }
 
-    private static List<Point2i> append(List<Point2i> points, Point2i last) {
-        List<Point2i> result = new ArrayList<>(points);
-        result.add(last);
-        return List.copyOf(result);
-    }
-
     private static int pathLength(List<Point2i> path) {
         return Math.max(0, path == null ? 0 : path.size() - 1);
     }
@@ -1122,6 +1082,18 @@ public final class CorridorPlanner {
     private record ExitPairCandidate(ExitCandidate exit, ExitCandidate target, int heuristicScore) {
     }
 
+    private record PlannerConfig(
+            int maxExitCandidatesPerRoom,
+            int maxTargetedExitCandidatesPerRoom,
+            int previewBaseExactExitPairEvaluations,
+            int previewRoomTargetExactPairEvaluations,
+            int previewComplexExactExitPairEvaluations,
+            int commitBaseExactExitPairEvaluations,
+            int commitRoomTargetExactPairEvaluations,
+            int commitComplexExactExitPairEvaluations
+    ) {
+    }
+
     public enum PlanningMode {
         PREVIEW,
         COMMIT
@@ -1137,6 +1109,53 @@ public final class CorridorPlanner {
     }
 
     private record WaypointTarget(List<Point2i> waypoints) implements ExitSelectionTarget {
+    }
+
+    private record TargetGeometry(Point2i roomCenter, Point2i targetCenter) {
+        private static TargetGeometry forSelection(List<ExitCandidate> allExits, ExitSelectionTarget target) {
+            List<Point2i> roomCells = allExits == null ? List.of() : allExits.stream()
+                    .map(ExitCandidate::roomCell)
+                    .toList();
+            return new TargetGeometry(centerOf(roomCells), targetCenterOf(target));
+        }
+
+        private static Point2i targetCenterOf(ExitSelectionTarget target) {
+            if (target == null) {
+                return null;
+            }
+            return switch (target) {
+                case RoomTarget(Point2i centerCell) -> centerCell;
+                case NetworkTarget(Set<Point2i> cells) -> centerOf(cells);
+                case WaypointTarget(List<Point2i> waypoints) -> centerOf(waypoints);
+            };
+        }
+
+        private static Point2i centerOf(Iterable<Point2i> cells) {
+            if (cells == null) {
+                return null;
+            }
+            long sumX = 0L;
+            long sumY = 0L;
+            int count = 0;
+            for (Point2i cell : cells) {
+                if (cell == null) {
+                    continue;
+                }
+                sumX += cell.x();
+                sumY += cell.y();
+                count++;
+            }
+            if (count == 0) {
+                return null;
+            }
+            return new Point2i(
+                    (int) Math.round(sumX / (double) count),
+                    (int) Math.round(sumY / (double) count));
+        }
+
+        private boolean hasTargetProjection() {
+            return targetCenter != null;
+        }
     }
 
     private record ExitSegmentBudget(Point2i direction, List<ExitCandidate> candidates, List<Integer> preferredIndices) {
