@@ -26,10 +26,7 @@ public final class DungeonRuntimeSurfaceResolver {
             return roomSurface(layout, layout.findRoom(roomLocation.roomId()), heading);
         }
         if (location instanceof DungeonRuntimeLocation.CorridorComponent componentLocation) {
-            CorridorNetwork network = layout.corridorNetworks().stream()
-                    .filter(candidate -> candidate.networkId().equals(componentLocation.componentId()))
-                    .findFirst()
-                    .orElse(null);
+            CorridorNetwork network = layout.findCorridorNetwork(componentLocation.componentId());
             return corridorNetworkSurface(layout, network, heading);
         }
         if (location instanceof DungeonRuntimeLocation.Corridor corridorLocation) {

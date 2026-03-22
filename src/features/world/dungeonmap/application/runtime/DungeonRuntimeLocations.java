@@ -70,9 +70,7 @@ final class DungeonRuntimeLocations {
             return layout.isTraversableCell(tile.tile());
         }
         if (location instanceof DungeonRuntimeLocation.CorridorComponent component) {
-            return layout.corridorNetworks().stream()
-                    .map(CorridorNetwork::networkId)
-                    .anyMatch(component.componentId()::equals);
+            return layout.findCorridorNetwork(component.componentId()) != null;
         }
         if (location instanceof DungeonRuntimeLocation.Corridor corridor) {
             return layout.findCorridor(corridor.corridorId()) != null;
@@ -138,10 +136,7 @@ final class DungeonRuntimeLocations {
     }
 
     private static Point2i corridorNetworkAnchor(DungeonLayout layout, String networkId) {
-        CorridorNetwork network = layout.corridorNetworks().stream()
-                .filter(candidate -> candidate.networkId().equals(networkId))
-                .findFirst()
-                .orElse(null);
+        CorridorNetwork network = layout.findCorridorNetwork(networkId);
         return network == null || network.floor() == null ? null : network.floor().shape().centerCell();
     }
 }

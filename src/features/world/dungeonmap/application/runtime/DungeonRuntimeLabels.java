@@ -28,10 +28,7 @@ public final class DungeonRuntimeLabels {
             return corridor == null ? "Korridor" : corridorLabel(layout, corridor.roomIds().stream());
         }
         if (location instanceof DungeonRuntimeLocation.CorridorComponent componentLocation) {
-            CorridorNetwork network = layout.corridorNetworks().stream()
-                    .filter(candidate -> candidate.networkId().equals(componentLocation.componentId()))
-                    .findFirst()
-                    .orElse(null);
+            CorridorNetwork network = layout.findCorridorNetwork(componentLocation.componentId());
             return network == null ? "Korridor" : corridorLabel(layout, network.roomIds().stream());
         }
         return "Kein Standort";

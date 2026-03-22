@@ -2,7 +2,6 @@ package features.world.dungeonmap.application.runtime;
 
 import features.campaignstate.api.CampaignStateApi;
 import features.campaignstate.api.CampaignStateReadApi;
-import features.campaignstate.api.DungeonPositionRef;
 import features.campaignstate.api.DungeonPositionSummary;
 import features.world.dungeonmap.catalog.persistence.DungeonMapCatalogPersistence;
 import features.world.dungeonmap.loading.DungeonMapLoader;
@@ -46,21 +45,13 @@ public final class DungeonRuntimeStateRepairService {
         DungeonHeading storedHeading = DungeonHeading.parse(storedPosition
                 .map(DungeonPositionSummary::heading)
                 .orElse(null));
-        DungeonRuntimeLocation resolvedLocation = resolveActiveLocation(layout, storedLocation);
+        DungeonRuntimeLocation resolvedLocation = DungeonRuntimeLocations.resolveActiveLocation(layout, storedLocation);
         if (resolvedLocation == null) {
             CampaignStateApi.clearDungeonPosition(conn);
             return;
         }
         if (!resolvedLocation.equals(storedLocation)) {
-            CampaignStateApi.setDungeonPosition(conn, toCampaignPosition(mapId, resolvedLocation, storedHeading));
+            CampaignStateApi.setDungeonPosition(conn, DungeonRuntimeLocations.toCampaignPosition(mapId, resolvedLocation, storedHeading));
         }
-    }
-
-    private static DungeonRuntimeLocation resolveActiveLocation(DungeonLayout layout, DungeonRuntimeLocation location) {
-        return DungeonRuntimeLocations.resolveActiveLocation(layout, location);
-    }
-
-    private static DungeonPositionRef toCampaignPosition(long mapId, DungeonRuntimeLocation location, DungeonHeading heading) {
-        return DungeonRuntimeLocations.toCampaignPosition(mapId, location, heading);
     }
 }

@@ -64,11 +64,11 @@ public final class DungeonRuntimeDoorCatalog {
             Function<RoomExitDescriptor, String> destinationLookup
     ) {
         return DoorExitCatalog.describe(cells, doors).stream()
-                .map(exit -> toDescriptor(
+                .map(exit -> DungeonRuntimeDoorDescriptor.from(
                         exit,
                         heading,
-                        destinationLookup == null ? "" : destinationLookup.apply(exit),
-                        narrationLookup == null ? "" : narrationLookup.apply(exit.roomCell(), exit.direction())))
+                        destinationLookup.apply(exit),
+                        narrationLookup.apply(exit.roomCell(), exit.direction())))
                 .toList();
     }
 
@@ -79,16 +79,7 @@ public final class DungeonRuntimeDoorCatalog {
             DungeonHeading heading
     ) {
         String narration = room.narration().exitDescription(exit.roomCell(), exit.direction());
-        return toDescriptor(exit, heading, destinationLabel(layout, room, exit), narration);
-    }
-
-    private static DungeonRuntimeDoorDescriptor toDescriptor(
-            RoomExitDescriptor exit,
-            DungeonHeading heading,
-            String destinationLabel,
-            String narration
-    ) {
-        return DungeonRuntimeDoorDescriptor.from(exit, heading, destinationLabel, narration);
+        return DungeonRuntimeDoorDescriptor.from(exit, heading, destinationLabel(layout, room, exit), narration);
     }
 
     private static String destinationLabel(DungeonLayout layout, Room room, RoomExitDescriptor exit) {
@@ -117,11 +108,7 @@ public final class DungeonRuntimeDoorCatalog {
     }
 
     private static boolean matchesDoor(Corridor corridor, VertexEdge anchorEdge) {
-        if (corridor == null || corridor.path() == null || anchorEdge == null) {
-            return false;
-        }
         return corridor.path().doors().stream()
-                .filter(door -> door != null)
                 .anyMatch(door -> door.edges().contains(anchorEdge));
     }
 

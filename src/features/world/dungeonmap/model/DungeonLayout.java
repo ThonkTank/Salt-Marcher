@@ -188,6 +188,16 @@ public final class DungeonLayout {
         return corridorId == null ? null : corridorsById.get(corridorId);
     }
 
+    public CorridorNetwork findCorridorNetwork(String networkId) {
+        if (networkId == null) {
+            return null;
+        }
+        return corridorNetworks().stream()
+                .filter(network -> network.networkId().equals(networkId))
+                .findFirst()
+                .orElse(null);
+    }
+
     public List<Corridor> corridorsForRoom(Long roomId) {
         if (roomId == null) {
             return List.of();

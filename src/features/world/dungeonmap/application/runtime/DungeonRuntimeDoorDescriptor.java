@@ -54,8 +54,6 @@ public record DungeonRuntimeDoorDescriptor(
     }
 
     private static String describe(String relativeLabel, String subject) {
-        String resolvedRelativeLabel = relativeLabel == null || relativeLabel.isBlank() ? "Direkt vor euch" : relativeLabel.trim();
-        String resolvedSubject = subject == null || subject.isBlank() ? "eine Tür" : subject.trim();
-        return resolvedRelativeLabel + " ist " + resolvedSubject;
+        return relativeLabel + " ist " + subject;
     }
 }
