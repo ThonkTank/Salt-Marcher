@@ -18,25 +18,19 @@ public final class DungeonEditorStatePane {
 
     private final VBox content = new VBox();
     private final Label activeToolLabel = new Label(DungeonEditorTool.SELECT.label());
-    private final Label wallPathLabel = new Label("Kein Startpunkt");
     private final Label corridorLabel = new Label("Kein Korridor gewählt");
+    private final VBox corridorCard = card("Korridor", corridorLabel);
     private final VBox narrationContent = new VBox(8);
+    private final VBox narrationCard = card("Raumbeschreibung", narrationContent);
     private final Map<Long, Button> narrationSaveButtons = new LinkedHashMap<>();
     private final Map<Long, Label> narrationStatusLabels = new LinkedHashMap<>();
 
     public DungeonEditorStatePane() {
         content.getStyleClass().add("dungeon-editor-sidebar");
-        Button cancelWallPathButton = new Button("Pfad verwerfen");
-        Button resetDoorButton = new Button("Auf Auto zurücksetzen");
-        Button deleteWaypointButton = new Button("Zwischenpunkt löschen");
-        cancelWallPathButton.setDisable(true);
-        resetDoorButton.setDisable(true);
-        deleteWaypointButton.setDisable(true);
         content.getChildren().addAll(
                 card("Werkzeug", activeToolLabel),
-                card("Wand", wallPathLabel, cancelWallPathButton),
-                card("Korridor", corridorLabel, resetDoorButton, deleteWaypointButton),
-                card("Raumbeschreibung", narrationContent));
+                narrationCard);
+        showCorridorStatus(null);
         showRoomNarrationEditors(List.of(), null);
     }
 
@@ -50,7 +44,15 @@ public final class DungeonEditorStatePane {
     }
 
     public void showCorridorStatus(String text) {
-        corridorLabel.setText(text == null || text.isBlank() ? "Kein Korridor gewählt" : text);
+        if (text == null || text.isBlank()) {
+            content.getChildren().remove(corridorCard);
+            corridorLabel.setText("Kein Korridor gewählt");
+            return;
+        }
+        corridorLabel.setText(text);
+        if (!content.getChildren().contains(corridorCard)) {
+            content.getChildren().add(1, corridorCard);
+        }
     }
 
     public void showRoomNarrationEditors(List<RoomNarrationCard> cards, SaveRoomNarrationHandler saveHandler) {
