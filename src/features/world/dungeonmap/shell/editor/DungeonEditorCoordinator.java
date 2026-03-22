@@ -3,8 +3,8 @@ package features.world.dungeonmap.shell.editor;
 import features.world.dungeonmap.application.corridor.DungeonCorridorEditService;
 import features.world.dungeonmap.application.room.DungeonBoundaryEditService;
 import features.world.dungeonmap.application.room.DungeonClusterMoveService;
-import features.world.dungeonmap.application.room.DungeonRoomEditService;
 import features.world.dungeonmap.application.room.DungeonRoomNarrationService;
+import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
 import features.world.dungeonmap.application.room.RoomExitCatalog;
 import features.world.dungeonmap.canvas.base.DungeonCanvasWorkspace;
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
@@ -56,7 +56,7 @@ final class DungeonEditorCoordinator {
             DungeonMapState mapState,
             DungeonEditorSessionState sessionState,
             DungeonMapCatalogService mapCatalogService,
-            DungeonRoomEditService roomEditService,
+            DungeonRoomTopologyService roomTopologyService,
             DungeonBoundaryEditService boundaryEditService,
             DungeonRoomNarrationService roomNarrationService,
             DungeonClusterMoveService clusterMoveService,
@@ -81,7 +81,7 @@ final class DungeonEditorCoordinator {
                 sessionState,
                 selectionState,
                 paintPreviewState,
-                Objects.requireNonNull(roomEditService, "roomEditService"));
+                Objects.requireNonNull(roomTopologyService, "roomTopologyService"));
         CorridorInteractionController corridorInteractionController = new CorridorInteractionController(
                 mapState,
                 loadingService,

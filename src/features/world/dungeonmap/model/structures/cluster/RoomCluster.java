@@ -23,6 +23,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 public final class RoomCluster {
@@ -167,7 +168,11 @@ public final class RoomCluster {
     }
 
     public boolean canAbsorbPaintShape(TileShape paintShape) {
-        return simplePaintExpansion(paintShape) != null;
+        return paintShape != null
+                && paintShape.size() > 0
+                && rooms.size() == 1
+                && singleRoom() != null
+                && singleRoom().roomId() != null;
     }
 
     public boolean overlaps(TileShape shape) {
@@ -176,61 +181,6 @@ public final class RoomCluster {
 
     public Room singleRoom() {
         return rooms.size() == 1 ? rooms.getFirst() : null;
-    }
-
-    public SimpleClusterPaintExpansion simplePaintExpansion(TileShape paintShape) {
-        if (paintShape == null || paintShape.size() == 0 || rooms.size() != 1) {
-            return null;
-        }
-        Room room = singleRoom();
-        if (room == null || room.roomId() == null) {
-            return null;
-        }
-        TileShape mergedShape = absorbedPaintShape(paintShape);
-        Point2i roomAnchor = updatedSingleRoomAnchorAfterAbsorb(paintShape);
-        return new SimpleClusterPaintExpansion(mergedShape, room.roomId(), roomAnchor);
-    }
-
-    public TileShape absorbedPaintShape(TileShape paintShape) {
-        return paintShape == null ? shape : shape.union(paintShape);
-    }
-
-    public Point2i updatedSingleRoomAnchorAfterAbsorb(TileShape paintShape) {
-        Room room = singleRoom();
-        if (room == null) {
-            throw new IllegalStateException("Cluster hat nicht genau einen Raum");
-        }
-        TileShape mergedShape = absorbedPaintShape(paintShape);
-        Point2i currentAnchor = room.floor().shape().anchor();
-        return mergedShape.contains(currentAnchor)
-                ? currentAnchor
-                : mergedShape.centerCell();
-    }
-
-    public SimpleClusterDeleteResult simpleDelete(TileShape deletedShape) {
-        if (deletedShape == null || deletedShape.size() == 0 || rooms.size() != 1) {
-            return null;
-        }
-        TileShape remainingShape = shape.subtract(deletedShape);
-        if (remainingShape.size() == shape.size()) {
-            return new SimpleClusterDeleteResult.Unchanged();
-        }
-        if (remainingShape.size() == 0) {
-            return new SimpleClusterDeleteResult.Deleted();
-        }
-        List<TileShape> components = remainingShape.connectedComponents();
-        Point2i currentAnchor = singleRoom().floor().shape().anchor();
-        if (components.size() == 1) {
-            TileShape componentShape = components.getFirst();
-            return new SimpleClusterDeleteResult.Reduced(componentShape, anchorFor(componentShape, currentAnchor));
-        }
-        List<SimpleClusterFragment> fragments = components.stream()
-                .map(componentShape -> new SimpleClusterFragment(componentShape, anchorFor(componentShape, currentAnchor)))
-                .sorted(Comparator
-                        .comparing((SimpleClusterFragment fragment) -> !fragment.clusterShape().contains(currentAnchor))
-                        .thenComparing(fragment -> fragment.clusterShape().centerCell(), Point2i.POINT_ORDER))
-                .toList();
-        return new SimpleClusterDeleteResult.Split(fragments);
     }
 
     public RoomCluster movedBy(Point2i delta) {
@@ -434,25 +384,13 @@ public final class RoomCluster {
 
     public Map<VertexEdge, ClusterBoundaryWrite.Type> internalBoundaryKinds() {
         Map<VertexEdge, ClusterBoundaryWrite.Type> result = new LinkedHashMap<>();
-        for (Room room : rooms) {
-            if (room == null) {
-                continue;
+        forEachInternalBoundary(shape, rooms, (edge, type) -> {
+            if (type == ClusterBoundaryWrite.Type.DOOR) {
+                result.put(edge, type);
+            } else {
+                result.putIfAbsent(edge, type);
             }
-            for (Wall wall : room.walls()) {
-                for (VertexEdge edge : wall.edges()) {
-                    if (isInternalEdge(cells, edge)) {
-                        result.putIfAbsent(edge, ClusterBoundaryWrite.Type.WALL);
-                    }
-                }
-            }
-            for (Door door : room.doors()) {
-                for (VertexEdge edge : door.edges()) {
-                    if (isInternalEdge(cells, edge)) {
-                        result.put(edge, ClusterBoundaryWrite.Type.DOOR);
-                    }
-                }
-            }
-        }
+        });
         return Map.copyOf(result);
     }
 
@@ -628,31 +566,12 @@ public final class RoomCluster {
             if (candidate == null || candidate.shape() == null || candidate.shape().size() == 0) {
                 continue;
             }
-            Set<VertexEdge> wallEdges = new LinkedHashSet<>();
-            Set<VertexEdge> doorEdges = new LinkedHashSet<>();
-            for (Point2i cell : candidate.shape().absoluteCells()) {
-                for (Point2i step : Point2i.CARDINAL_STEPS) {
-                    Point2i neighbor = cell.add(step);
-                    if (!clusterCells.contains(neighbor) || candidate.shape().contains(neighbor)) {
-                        continue;
-                    }
-                    VertexEdge edge = VertexEdge.betweenCellAndStep(cell, step);
-                    ClusterBoundaryWrite.Type type = boundaryKinds.getOrDefault(edge, ClusterBoundaryWrite.Type.WALL);
-                    if (type == ClusterBoundaryWrite.Type.DOOR) {
-                        doorEdges.add(edge);
-                    } else {
-                        wallEdges.add(edge);
-                    }
-                }
-            }
-            result.add(Room.resolved(
+            result.add(resolvedRoom(
+                    candidate.shape(),
+                    clusterCells,
+                    boundaryKinds,
                     candidate.roomId(),
-                    mapId,
-                    clusterId == null ? 0L : clusterId,
                     candidate.name(),
-                    new Floor(candidate.shape()),
-                    wallEdges.isEmpty() ? List.of() : List.of(new Wall(wallEdges)),
-                    doorEdges.isEmpty() ? List.of() : List.of(new Door(doorEdges)),
                     narrationFor(candidate.roomId())));
         }
         return List.copyOf(result);
@@ -1004,34 +923,15 @@ public final class RoomCluster {
             Map<VertexEdge, ClusterBoundaryWrite.Type> boundaryKinds
     ) {
         TileShape roomShape = TileShape.fromAbsoluteCells(roomCells);
-        Set<VertexEdge> wallEdges = new LinkedHashSet<>();
-        Set<VertexEdge> doorEdges = new LinkedHashSet<>();
-        for (Point2i cell : roomCells) {
-            for (Point2i step : Point2i.CARDINAL_STEPS) {
-                Point2i neighbor = cell.add(step);
-                if (!cells.contains(neighbor) || roomCells.contains(neighbor)) {
-                    continue;
-                }
-                VertexEdge candidateEdge = VertexEdge.betweenCellAndStep(cell, step);
-                ClusterBoundaryWrite.Type candidateType = boundaryKinds.getOrDefault(candidateEdge, ClusterBoundaryWrite.Type.WALL);
-                if (candidateType == ClusterBoundaryWrite.Type.DOOR) {
-                    doorEdges.add(candidateEdge);
-                } else {
-                    wallEdges.add(candidateEdge);
-                }
-            }
-        }
         Long roomId = retainedRoom == null ? null : retainedRoom.roomId();
         String roomName = retainedRoom == null ? normalizedRoomName(null, null) : retainedRoom.name();
         RoomNarration narration = retainedRoom == null ? RoomNarration.empty() : retainedRoom.narration();
-        return Room.resolved(
+        return resolvedRoom(
+                roomShape,
+                cells,
+                boundaryKinds,
                 roomId,
-                mapId,
-                clusterId == null ? 0L : clusterId,
                 roomName,
-                new Floor(roomShape),
-                wallEdges.isEmpty() ? List.of() : List.of(new Wall(wallEdges)),
-                doorEdges.isEmpty() ? List.of() : List.of(new Door(doorEdges)),
                 narration);
     }
 
@@ -1050,6 +950,81 @@ public final class RoomCluster {
         }
         Set<Point2i> clusterCells = clusterShape.absoluteCells();
         Map<VertexEdge, ClusterBoundaryWrite.Type> result = new LinkedHashMap<>();
+        forEachInternalBoundary(clusterShape, rooms, (edge, type) -> {
+            if (type == ClusterBoundaryWrite.Type.DOOR) {
+                result.put(edge, type);
+            } else {
+                result.putIfAbsent(edge, type);
+            }
+        });
+        return result.entrySet().stream()
+                .map(entry -> toBoundaryWrite(entry.getKey(), entry.getValue()))
+                .filter(java.util.Objects::nonNull)
+                .toList();
+    }
+
+    private Room resolvedRoom(
+            TileShape roomShape,
+            Set<Point2i> clusterCells,
+            Map<VertexEdge, ClusterBoundaryWrite.Type> boundaryKinds,
+            Long roomId,
+            String roomName,
+            RoomNarration narration
+    ) {
+        BoundarySets boundarySets = boundarySetsForRoom(
+                roomShape,
+                clusterCells,
+                boundaryKinds);
+        return Room.resolved(
+                roomId,
+                mapId,
+                clusterId == null ? 0L : clusterId,
+                roomName,
+                new Floor(roomShape),
+                boundarySets.walls().isEmpty() ? List.of() : List.of(new Wall(boundarySets.walls())),
+                boundarySets.doors().isEmpty() ? List.of() : List.of(new Door(boundarySets.doors())),
+                narration);
+    }
+
+    private static BoundarySets boundarySetsForRoom(
+            TileShape roomShape,
+            Set<Point2i> clusterCells,
+            Map<VertexEdge, ClusterBoundaryWrite.Type> boundaryKinds
+    ) {
+        Set<VertexEdge> wallEdges = new LinkedHashSet<>();
+        Set<VertexEdge> doorEdges = new LinkedHashSet<>();
+        if (roomShape == null || roomShape.size() == 0 || clusterCells == null || clusterCells.isEmpty()) {
+            return new BoundarySets(Set.of(), Set.of());
+        }
+        for (Point2i cell : roomShape.absoluteCells()) {
+            for (Point2i step : Point2i.CARDINAL_STEPS) {
+                Point2i neighbor = cell.add(step);
+                if (!clusterCells.contains(neighbor) || roomShape.contains(neighbor)) {
+                    continue;
+                }
+                VertexEdge edge = VertexEdge.betweenCellAndStep(cell, step);
+                ClusterBoundaryWrite.Type type = boundaryKinds == null
+                        ? ClusterBoundaryWrite.Type.WALL
+                        : boundaryKinds.getOrDefault(edge, ClusterBoundaryWrite.Type.WALL);
+                if (type == ClusterBoundaryWrite.Type.DOOR) {
+                    doorEdges.add(edge);
+                } else {
+                    wallEdges.add(edge);
+                }
+            }
+        }
+        return new BoundarySets(Set.copyOf(wallEdges), Set.copyOf(doorEdges));
+    }
+
+    private static void forEachInternalBoundary(
+            TileShape clusterShape,
+            List<Room> rooms,
+            BiConsumer<VertexEdge, ClusterBoundaryWrite.Type> consumer
+    ) {
+        if (clusterShape == null || clusterShape.size() == 0 || consumer == null) {
+            return;
+        }
+        Set<Point2i> clusterCells = clusterShape.absoluteCells();
         for (Room room : rooms == null ? List.<Room>of() : rooms) {
             if (room == null) {
                 continue;
@@ -1057,22 +1032,18 @@ public final class RoomCluster {
             for (Wall wall : room.walls()) {
                 for (VertexEdge edge : wall.edges()) {
                     if (isInternalEdge(clusterCells, edge)) {
-                        result.putIfAbsent(edge, ClusterBoundaryWrite.Type.WALL);
+                        consumer.accept(edge, ClusterBoundaryWrite.Type.WALL);
                     }
                 }
             }
             for (Door door : room.doors()) {
                 for (VertexEdge edge : door.edges()) {
                     if (isInternalEdge(clusterCells, edge)) {
-                        result.put(edge, ClusterBoundaryWrite.Type.DOOR);
+                        consumer.accept(edge, ClusterBoundaryWrite.Type.DOOR);
                     }
                 }
             }
         }
-        return result.entrySet().stream()
-                .map(entry -> toBoundaryWrite(entry.getKey(), entry.getValue()))
-                .filter(java.util.Objects::nonNull)
-                .toList();
     }
 
     private static ClusterBoundaryWrite toBoundaryWrite(VertexEdge edge, ClusterBoundaryWrite.Type type) {
@@ -1131,6 +1102,9 @@ public final class RoomCluster {
     }
 
     private record OverlapIndex(Map<Point2i, Room> roomsByCell, boolean hasOverlaps) {
+    }
+
+    private record BoundarySets(Set<VertexEdge> walls, Set<VertexEdge> doors) {
     }
 
     record RoomRewriteCandidate(

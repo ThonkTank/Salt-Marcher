@@ -16,7 +16,7 @@ The feature ships two `AppView` implementations: `DungeonEditorView` (EDITOR) an
 
 - `model/` — immutable domain model in three strict layers (see **Model Layering** below)
 - `application/` — stateful edit services that plan and persist topology changes. Organized by domain concern:
-  - `application/room/` — room paint topology: `DungeonRoomTopologyService` (orchestrator), `RoomPaintTopologyPlanner`, `RoomTopologyEditPlan` (sealed, 6 concrete types) / `RoomTopologyEditPlanApplier`
+  - `application/room/` — room paint topology: `DungeonRoomTopologyService` is the single room topology orchestrator for paint/delete/boundary edits; thin facades may wrap transaction entrypoints but must not re-plan topology outside the model
   - `application/corridor/` — corridor lifecycle: `DungeonCorridorEditService` (CRUD), `DungeonCorridorPersistenceService` (single-corridor and batch persistence), `DungeonCorridorRoomRewriteService` (rewrites corridor room membership after topology changes — merge/delete/split), `DungeonCorridorDetailService`. Batch rewrite (reanchor + replan) lives on `Corridor.rewriteAll()`
   - `application/runtime/` — `DungeonRuntimeStateRepairService`, `DungeonRuntimeLocation`
   - `application/support/` — `DungeonTransactionRunner`
@@ -58,7 +58,7 @@ The feature ships two `AppView` implementations: `DungeonEditorView` (EDITOR) an
 
 `DungeonEditorGridInteractionController` dispatches events by tool:
 - **SELECT** → `ClusterSelectionDragController` — click selects cluster (via `EditorSelectionState`), drag shows translated cluster preview (via `EditorLayoutPreviewState`)
-- **ROOM_PAINT / ROOM_DELETE** → `RoomPaintInteractionController` — manages `RoomPaintSession` (startCell, endCell, deleteMode), updates `EditorPaintPreviewState` during drag, calls `roomEditService.paint()`/`.delete()` on release
+- **ROOM_PAINT / ROOM_DELETE** → `RoomPaintInteractionController` — manages `RoomPaintSession` (startCell, endCell, deleteMode), updates `EditorPaintPreviewState` during drag, calls `DungeonRoomTopologyService.paint()`/`.delete()` on release
 - **CORRIDOR_CREATE / CORRIDOR_DELETE** → `CorridorInteractionController` — two-click flow via `DungeonCorridorDraftState` (first click stores pending endpoint, second click finalizes), sealed `CorridorEndpoint` (Room | Corridor)
 
 Canvas pointer events flow through `DungeonCanvasInteractionHandler` → `handlePressed`/`handleDragged`/`handleReleased` → state update → redraw. Hit testing: `DungeonGridHitTester` returns `DungeonEditorHitTarget` / `DungeonEditorLabelHitTarget` for cluster/room/corridor at canvas point.
@@ -78,7 +78,7 @@ Each state concern has a dedicated listener method — no monolithic refresh.
 
 When rooms are painted, deleted, or merged, affected corridors must be reanchored and replanned:
 
-1. `DungeonRoomTopologyService` applies room topology edit plan
+1. `DungeonRoomTopologyService` applies room topology changes directly through `RoomCluster` model operations
 2. Detects affected corridors via `DungeonLayout.corridorsAffectedBy(ClusterRewrite)`
 3. Creates `CorridorRewriteContext` (before/after `CorridorPlanningInput`, affected corridor IDs, deleted cluster IDs)
 4. `Corridor.rewriteAll()` — for each affected corridor:
@@ -115,7 +115,7 @@ geometry/  →  objects/  →  structures/
 ### Key Structures
 
 - **`Room`** — record: roomId, mapId, clusterId, name, Floor, Walls, Doors. `resolved()` factory ensures canonical wall/door set (walls cover all perimeter edges except where doors exist). Boundary normalization auto-synthesizes missing walls.
-- **`RoomCluster`** — groups rooms spatially, manages adjacency via overlap indexing. `simplePaintExpansion()` for room topology changes, `movedBy()` for translation. Produces `InteractiveLabelHandle` for canvas rendering.
+- **`RoomCluster`** — groups rooms spatially, manages adjacency via overlap indexing, and owns cluster-local rewrite logic for paint/delete/boundary changes. `movedBy()` handles translation. Produces `InteractiveLabelHandle` for canvas rendering.
 - **`Corridor`** — record: corridorId, mapId, roomIds, `CorridorBindings` (canonical relative truth), `CorridorPath` (runtime derived geometry). Bindings store waypoints and door entries as relative offsets from cluster centers → survive cluster movement without re-editing. Mutation methods: `withAddedRoom()`, `mergeWith()`, `reanchoredFor()`, `replannedFor()`.
 
 ### Layer Rules

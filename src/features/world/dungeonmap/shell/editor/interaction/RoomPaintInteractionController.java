@@ -1,6 +1,6 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
-import features.world.dungeonmap.application.room.DungeonRoomEditService;
+import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.geometry.Point2i;
@@ -22,7 +22,7 @@ public final class RoomPaintInteractionController {
     private final DungeonEditorSessionState sessionState;
     private final EditorSelectionState selectionState;
     private final EditorPaintPreviewState paintPreviewState;
-    private final DungeonRoomEditService roomEditService;
+    private final DungeonRoomTopologyService roomTopologyService;
 
     private RoomPaintSession paintSession;
 
@@ -32,14 +32,14 @@ public final class RoomPaintInteractionController {
             DungeonEditorSessionState sessionState,
             EditorSelectionState selectionState,
             EditorPaintPreviewState paintPreviewState,
-            DungeonRoomEditService roomEditService
+            DungeonRoomTopologyService roomTopologyService
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
         this.sessionState = Objects.requireNonNull(sessionState, "sessionState");
         this.selectionState = Objects.requireNonNull(selectionState, "selectionState");
         this.paintPreviewState = Objects.requireNonNull(paintPreviewState, "paintPreviewState");
-        this.roomEditService = Objects.requireNonNull(roomEditService, "roomEditService");
+        this.roomTopologyService = Objects.requireNonNull(roomTopologyService, "roomTopologyService");
     }
 
     public boolean handlePressed(DungeonCanvasPointerEvent event) {
@@ -92,9 +92,9 @@ public final class RoomPaintInteractionController {
         UiAsyncTasks.submitVoid(
                 () -> {
                     if (finishedSession.deleteMode()) {
-                        roomEditService.delete(mapId, shape);
+                        roomTopologyService.delete(mapId, shape);
                     } else {
-                        roomEditService.paint(mapId, shape);
+                        roomTopologyService.paint(mapId, shape);
                     }
                 },
                 () -> loadingService.reload(mapId),

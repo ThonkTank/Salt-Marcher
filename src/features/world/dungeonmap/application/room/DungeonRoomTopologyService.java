@@ -1,7 +1,9 @@
 package features.world.dungeonmap.application.room;
 
+import database.DatabaseManager;
 import features.world.dungeonmap.application.corridor.DungeonCorridorPersistenceService;
 import features.world.dungeonmap.application.corridor.DungeonCorridorRoomRewriteService;
+import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.Point2i;
@@ -47,6 +49,18 @@ public final class DungeonRoomTopologyService {
         this.corridorRoomRewriteService = Objects.requireNonNull(corridorRoomRewriteService, "corridorRoomRewriteService");
     }
 
+    public void paint(long mapId, TileShape shape) throws SQLException {
+        if (shape == null || shape.size() == 0) {
+            return;
+        }
+        try (Connection conn = DatabaseManager.getConnection()) {
+            DungeonTransactionRunner.inTransaction(conn, () -> {
+                paint(conn, mapId, shape);
+                return null;
+            });
+        }
+    }
+
     public void paint(Connection conn, long mapId, TileShape shape) throws SQLException {
         if (shape == null || shape.size() == 0) {
             return;
@@ -79,6 +93,18 @@ public final class DungeonRoomTopologyService {
 
         persistClusterRewrite(conn, mapId, rewrite);
         corridorPersistenceService.persistCorridors(conn, corridorsById);
+    }
+
+    public void delete(long mapId, TileShape shape) throws SQLException {
+        if (shape == null || shape.size() == 0) {
+            return;
+        }
+        try (Connection conn = DatabaseManager.getConnection()) {
+            DungeonTransactionRunner.inTransaction(conn, () -> {
+                delete(conn, mapId, shape);
+                return null;
+            });
+        }
     }
 
     public void delete(Connection conn, long mapId, TileShape shape) throws SQLException {

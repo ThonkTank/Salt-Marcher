@@ -8,11 +8,8 @@ import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationSer
 import features.world.dungeonmap.application.runtime.DungeonRuntimeStateRepairService;
 import features.world.dungeonmap.application.room.DungeonClusterMoveService;
 import features.world.dungeonmap.application.room.DungeonBoundaryEditService;
-import features.world.dungeonmap.application.room.DungeonRoomEditService;
 import features.world.dungeonmap.application.room.DungeonRoomNarrationService;
 import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
-import features.world.dungeonmap.application.room.RoomPaintTopologyPlanner;
-import features.world.dungeonmap.application.room.RoomTopologyEditPlanApplier;
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
 import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
@@ -50,15 +47,6 @@ public final class DungeonMapModule {
         DungeonMapCatalogService mapCatalogService = new DungeonMapCatalogService(
                 roomTopologyService,
                 new DungeonRuntimeStateRepairService(mapLoader));
-        DungeonRoomEditService roomEditService = new DungeonRoomEditService(
-                mapLoader,
-                new RoomPaintTopologyPlanner(),
-                new RoomTopologyEditPlanApplier(
-                        roomWriteRepository,
-                        geometryWriteMapper,
-                        corridorPersistenceService,
-                        corridorRoomRewriteService),
-                roomTopologyService);
         DungeonBoundaryEditService boundaryEditService = new DungeonBoundaryEditService(roomTopologyService);
         DungeonClusterMoveService clusterMoveService = new DungeonClusterMoveService(
                 mapLoader,
@@ -81,7 +69,7 @@ public final class DungeonMapModule {
                 loadingService,
                 state,
                 mapCatalogService,
-                roomEditService,
+                roomTopologyService,
                 boundaryEditService,
                 roomNarrationService,
                 clusterMoveService,
