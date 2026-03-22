@@ -9,12 +9,14 @@ import features.world.dungeonmap.model.geometry.Tile;
 import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
+import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.text.TextAlignment;
 
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -36,7 +38,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             drawPaintPreview(gc, camera, renderState.previewPaintShape(), renderState.previewPaintDeleteMode());
         }
         drawRooms(gc, mapModel, camera, editorMode);
-        drawCorridors(gc, mapModel, camera, renderState.selectedTargetKey());
+        drawCorridors(gc, mapModel, camera, editorMode, renderState.selectedTargetKey());
         if (editorMode) {
             drawInteractiveLabels(gc, mapModel, camera, renderState.selectedTargetKey());
         }
@@ -185,6 +187,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             GraphicsContext gc,
             DungeonLayout mapModel,
             DungeonCanvasCamera camera,
+            boolean editorMode,
             String selectedTargetKey
     ) {
         double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
@@ -193,22 +196,54 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 continue;
             }
             boolean selected = java.util.Objects.equals("corridor:" + corridor.corridorId(), selectedTargetKey);
-            gc.setFill(selected ? DungeonCanvasTheme.CORRIDOR_SELECTED_FILL : DungeonCanvasTheme.CORRIDOR_FILL);
-            gc.setStroke(selected ? DungeonCanvasTheme.CORRIDOR_SELECTED_STROKE : DungeonCanvasTheme.CORRIDOR_STROKE);
-            gc.setLineWidth(selected ? 2.0 : 1.5);
-            for (Tile tile : corridor.path().floor().shape().tiles()) {
-                double x = camera.panX() + tile.x() * gridSize;
-                double y = camera.panY() + tile.y() * gridSize;
-                gc.fillRect(x + 5, y + 5, gridSize - 10, gridSize - 10);
-                gc.strokeRect(x + 7, y + 7, gridSize - 14, gridSize - 14);
-            }
+            Set<Tile> corridorTiles = corridor.path().floor().shape().tiles();
+            gc.setFill(selected ? DungeonCanvasTheme.CORRIDOR_SELECTED_FILL : DungeonCanvasTheme.CELL_FILL);
+            fillRoomTiles(gc, camera, gridSize, corridorTiles);
+            strokeRoomTiles(gc, camera, gridSize, corridorTiles, DungeonCanvasTheme.grid(editorMode), 1.0);
+
+            Set<VertexEdge> wallEdges = new LinkedHashSet<>(corridor.path().floor().shape().boundaryEdges());
+            wallEdges.removeAll(boundaryEdges(corridor.path().doors()));
+            drawCorridorBoundaries(gc, camera, gridSize, wallEdges, selected);
+
             for (var door : corridor.path().doors()) {
+                gc.setStroke(selected ? DungeonCanvasTheme.CORRIDOR_SELECTED_STROKE : DungeonCanvasTheme.CORRIDOR_STROKE);
                 gc.setLineWidth(selected ? 3.0 : 2.0);
                 for (VertexEdge edge : door.edges()) {
                     strokeEdge(gc, camera, gridSize, edge);
                 }
             }
         }
+    }
+
+    private static void drawCorridorBoundaries(
+            GraphicsContext gc,
+            DungeonCanvasCamera camera,
+            double gridSize,
+            Set<VertexEdge> edges,
+            boolean selected
+    ) {
+        if (edges.isEmpty()) {
+            return;
+        }
+        gc.setStroke(selected ? DungeonCanvasTheme.CORRIDOR_SELECTED_STROKE : DungeonCanvasTheme.WALL_STROKE);
+        gc.setLineWidth(selected ? 2.5 : 2.0);
+        for (VertexEdge edge : edges) {
+            strokeEdge(gc, camera, gridSize, edge);
+        }
+    }
+
+    private static Set<VertexEdge> boundaryEdges(Collection<? extends Door> doors) {
+        Set<VertexEdge> edges = new LinkedHashSet<>();
+        if (doors == null) {
+            return edges;
+        }
+        for (var door : doors) {
+            if (door == null) {
+                continue;
+            }
+            edges.addAll(door.edges());
+        }
+        return edges;
     }
 
     private static void drawPaintPreview(

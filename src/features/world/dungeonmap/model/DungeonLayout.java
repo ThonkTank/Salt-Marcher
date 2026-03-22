@@ -6,6 +6,8 @@ import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
 import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInput;
+import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInputProjector;
+import features.world.dungeonmap.model.structures.corridor.CorridorRewriteContext;
 import features.world.dungeonmap.model.structures.room.Room;
 
 import java.util.LinkedHashMap;
@@ -227,24 +229,49 @@ public final class DungeonLayout {
                 .toList();
     }
 
+    /**
+     * Convenience facade for the canonical corridor-planning projection of this layout.
+     *
+     * <p>The projection logic lives exclusively on {@link CorridorPlanningInputProjector}; keeping this method on
+     * the layout preserves readable call sites without reintroducing a second implementation.</p>
+     */
     public CorridorPlanningInput corridorPlanningInput() {
-        return corridorPlanningInput(clusters);
+        return CorridorPlanningInputProjector.project(this);
     }
 
-    private static CorridorPlanningInput corridorPlanningInput(List<RoomCluster> clusters) {
-        Map<Long, Point2i> clusterCenters = new LinkedHashMap<>();
-        Map<Long, Room> roomsById = new LinkedHashMap<>();
-        for (RoomCluster cluster : clusters == null ? List.<RoomCluster>of() : clusters) {
-            if (cluster != null && cluster.clusterId() != null) {
-                clusterCenters.put(cluster.clusterId(), cluster.center());
-                for (Room room : cluster.rooms()) {
-                    if (room != null && room.roomId() != null) {
-                        roomsById.put(room.roomId(), room);
-                    }
-                }
-            }
+    public CorridorRewriteContext corridorRewriteContext(
+            DungeonLayout rewrittenLayout,
+            Set<Long> affectedCorridorIds,
+            Set<Long> deletedClusterIds
+    ) {
+        return corridorRewriteContext(
+                rewrittenLayout == null ? CorridorPlanningInput.empty() : rewrittenLayout.corridorPlanningInput(),
+                affectedCorridorIds,
+                deletedClusterIds);
+    }
+
+    public CorridorRewriteContext corridorRewriteContext(
+            CorridorPlanningInput rewrittenPlanningInput,
+            Set<Long> affectedCorridorIds,
+            Set<Long> deletedClusterIds
+    ) {
+        return new CorridorRewriteContext(
+                corridorPlanningInput(),
+                rewrittenPlanningInput == null ? CorridorPlanningInput.empty() : rewrittenPlanningInput,
+                affectedCorridorIds,
+                deletedClusterIds);
+    }
+
+    public static List<Corridor> rewriteCorridors(List<Corridor> corridors, CorridorRewriteContext context) {
+        if (corridors == null || corridors.isEmpty()) {
+            return List.of();
         }
-        return new CorridorPlanningInput(roomsById, clusterCenters);
+        if (context == null || context.affectedCorridorIds().isEmpty()) {
+            return List.copyOf(corridors);
+        }
+        return corridors.stream()
+                .map(corridor -> corridor == null ? null : corridor.reanchoredFor(context).replannedFor(context))
+                .toList();
     }
 
     public DungeonLayout withReplacedCluster(RoomCluster cluster) {
@@ -272,13 +299,12 @@ public final class DungeonLayout {
         // This is part of the drag-preview loop via ClusterSelectionDragController.
         // Keep corridor replanning here budgeted for preview use: no extra passes, no higher-order complexity, no heavy transient allocation spikes.
         // If long-corridor profiling later shows pressure here, prefer drag-session reuse of planner internals over broader refactors.
-        CorridorPlanningInput planningInput = corridorPlanningInput(updatedClusters);
-        List<Corridor> updatedCorridors = corridors.stream()
-                .map(corridor -> corridor.isAffectedByClusterRewrite(Set.of(clusterId))
-                        || corridor.isAffectedByRoomRewrite(movedCluster.roomIds())
-                        ? corridor.replanned(planningInput)
-                        : corridor)
-                .toList();
+        CorridorPlanningInput planningInput = CorridorPlanningInputProjector.project(updatedClusters);
+        CorridorRewriteContext rewriteContext = corridorRewriteContext(
+                planningInput,
+                corridorIdsAffectedBy(movedCluster.roomIds(), Set.of(clusterId)),
+                Set.of());
+        List<Corridor> updatedCorridors = rewriteCorridors(corridors, rewriteContext);
         return new DungeonLayout(mapId, name, updatedCorridors, updatedClusters);
     }
 

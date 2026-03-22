@@ -15,6 +15,10 @@ public record CorridorPlanningInput(
         Map<Long, Room> roomsById,
         Map<Long, Point2i> clusterCenters
 ) {
+    public static CorridorPlanningInput empty() {
+        return new CorridorPlanningInput(Map.of(), Map.of());
+    }
+
     public CorridorPlanningInput {
         roomsById = roomsById == null ? Map.of() : Map.copyOf(roomsById);
         clusterCenters = clusterCenters == null ? Map.of() : Map.copyOf(clusterCenters);

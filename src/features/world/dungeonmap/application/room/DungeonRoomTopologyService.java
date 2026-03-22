@@ -71,11 +71,11 @@ public final class DungeonRoomTopologyService {
 
         Map<Long, Corridor> corridorsById = new LinkedHashMap<>(layout.corridorsById());
         Set<Long> affectedCorridorIds = layout.corridorIdsAffectedBy(rewrite);
+        // Services orchestrate affected scope and ordering; corridor-local membership rules stay on Corridor.
         corridorsById = corridorRoomRewriteService.applyRoomRewrite(layout, corridorsById, rewrite);
         DungeonLayout rewrittenLayout = layout.applying(rewrite);
-        CorridorRewriteContext rewriteContext = new CorridorRewriteContext(
-                layout.corridorPlanningInput(),
-                rewrittenLayout.corridorPlanningInput(),
+        CorridorRewriteContext rewriteContext = layout.corridorRewriteContext(
+                rewrittenLayout,
                 affectedCorridorIds,
                 rewrite.deletedClusterIds());
         corridorsById = corridorRewriteCoordinator.rewriteCorridors(corridorsById, rewriteContext);
@@ -113,11 +113,11 @@ public final class DungeonRoomTopologyService {
                 continue;
             }
             Set<Long> affectedCorridorIds = workingLayout.corridorIdsAffectedBy(rewrite);
+            // Services orchestrate the step sequence; reanchor/replan still execute through the corridor rewrite path.
             corridorsById = corridorRoomRewriteService.applyRoomRewrite(workingLayout, corridorsById, rewrite);
             DungeonLayout rewrittenLayout = workingLayout.applying(rewrite);
-            CorridorRewriteContext rewriteContext = new CorridorRewriteContext(
-                    workingLayout.corridorPlanningInput(),
-                    rewrittenLayout.corridorPlanningInput(),
+            CorridorRewriteContext rewriteContext = workingLayout.corridorRewriteContext(
+                    rewrittenLayout,
                     affectedCorridorIds,
                     rewrite.deletedClusterIds());
             corridorsById = corridorRewriteCoordinator.rewriteCorridors(corridorsById, rewriteContext);

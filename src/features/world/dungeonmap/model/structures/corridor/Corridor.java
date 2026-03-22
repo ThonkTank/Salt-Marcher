@@ -198,6 +198,7 @@ public final class Corridor {
      * change once that removal is in scope.</p>
      */
     public Corridor rewrittenForDeletedRoom(Long deletedRoomId) {
+        // Corridor owns corridor-local rewrite truth; services only decide whether this rewrite step applies.
         return withRemovedRoom(deletedRoomId);
     }
 
@@ -208,6 +209,7 @@ public final class Corridor {
      * replacement room id; the corridor owns membership deduplication and door-binding cleanup.</p>
      */
     public Corridor rewrittenForMergedRooms(Set<Long> mergedRoomIds, Long replacementRoomId) {
+        // Corridor owns corridor-local rewrite truth; services only supply the already-resolved merge scope.
         return withMergedRooms(mergedRoomIds, replacementRoomId);
     }
 
@@ -222,6 +224,7 @@ public final class Corridor {
         if (input == null || !input.isUsableFor(this)) {
             return this;
         }
+        // Corridor owns the fragment choice once the external world facts have been projected into corridor-local input.
         Room replacement = chooseBestSplitFragment(input);
         if (replacement == null || replacement.roomId() == null) {
             return this;

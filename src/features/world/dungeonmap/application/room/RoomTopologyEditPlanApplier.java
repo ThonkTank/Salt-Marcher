@@ -7,6 +7,7 @@ import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.objects.Floor;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInput;
+import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInputProjector;
 import features.world.dungeonmap.model.structures.corridor.CorridorRewriteContext;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.structures.cluster.ClusterRewrite;
@@ -91,13 +92,18 @@ public final class RoomTopologyEditPlanApplier {
             insertedRooms.add(Room.create(roomId, plan.mapId(), clusterId, fragment.roomName(), new Floor(fragment.clusterShape())));
         }
         if (plan.sourceRoomId() != null) {
+            // The applier orchestrates persistence-time rewrite flow; corridor-local membership choice remains on Corridor.
             Map<Long, Corridor> corridorsById = corridorRoomRewriteService.applyRoomRewrite(
                     plan.layout(),
                     plan.layout().corridorsById(),
                     splitRewrite(plan.sourceClusterId(), plan.sourceRoomId(), insertedRooms));
-            CorridorRewriteContext rewriteContext = new CorridorRewriteContext(
-                    plan.layout().corridorPlanningInput(),
-                    planningInput(plan.layout(), roomsById(insertedRooms), replacementCenters, Set.of(plan.sourceRoomId())),
+            CorridorRewriteContext rewriteContext = plan.layout().corridorRewriteContext(
+                    CorridorPlanningInputProjector.projectOverlay(
+                            plan.layout(),
+                            roomsById(insertedRooms),
+                            replacementCenters,
+                            Set.of(plan.sourceRoomId()),
+                            Set.of(plan.sourceClusterId())),
                     plan.layout().corridorIdsAffectedBy(Set.of(plan.sourceRoomId()), Set.of(plan.sourceClusterId())),
                     Set.of(plan.sourceClusterId()));
             corridorPersistenceService.persistCorridors(conn, corridorRewriteCoordinator.rewriteCorridors(corridorsById, rewriteContext));
@@ -118,9 +124,14 @@ public final class RoomTopologyEditPlanApplier {
                 new Floor(plan.clusterShape()),
                 room.walls(),
                 room.doors());
-        CorridorRewriteContext rewriteContext = new CorridorRewriteContext(
-                layout.corridorPlanningInput(),
-                planningInput(layout, Map.of(updatedRoom.roomId(), updatedRoom), Map.of(plan.clusterId(), updatedCenter), Set.of()),
+        // The applier only projects the rewritten world snapshot; Corridor decides what reanchor/replan means locally.
+        CorridorRewriteContext rewriteContext = layout.corridorRewriteContext(
+                CorridorPlanningInputProjector.projectOverlay(
+                        layout,
+                        Map.of(updatedRoom.roomId(), updatedRoom),
+                        Map.of(plan.clusterId(), updatedCenter),
+                        Set.of(),
+                        Set.of()),
                 layout.corridorIdsAffectedBy(Set.of(room.roomId()), Set.of(plan.clusterId())),
                 Set.of());
         return corridorRewriteCoordinator.rewriteCorridors(layout.corridorsById(), rewriteContext);
@@ -139,10 +150,15 @@ public final class RoomTopologyEditPlanApplier {
                 Set.of(),
                 Set.of(plan.clusterId()),
                 Map.of());
+        // The applier chooses affected scope and ordering, but does not decide corridor-local delete behavior.
         Map<Long, Corridor> corridorsById = corridorRoomRewriteService.applyRoomRewrite(layout, layout.corridorsById(), rewrite);
-        CorridorRewriteContext rewriteContext = new CorridorRewriteContext(
-                layout.corridorPlanningInput(),
-                planningInput(layout, Map.of(), Map.of(), deletedRoomIds),
+        CorridorRewriteContext rewriteContext = layout.corridorRewriteContext(
+                CorridorPlanningInputProjector.projectOverlay(
+                        layout,
+                        Map.of(),
+                        Map.of(),
+                        deletedRoomIds,
+                        Set.of(plan.clusterId())),
                 layout.corridorIdsAffectedBy(deletedRoomIds, Set.of(plan.clusterId())),
                 Set.of(plan.clusterId()));
         return corridorRewriteCoordinator.rewriteCorridors(corridorsById, rewriteContext);
@@ -171,33 +187,4 @@ public final class RoomTopologyEditPlanApplier {
         }
         return Map.copyOf(result);
     }
-
-    private static CorridorPlanningInput planningInput(
-            DungeonLayout layout,
-            Map<Long, Room> replacementRooms,
-            Map<Long, Point2i> replacementCenters,
-            Set<Long> removedRoomIds
-    ) {
-        Map<Long, Room> roomsById = new LinkedHashMap<>();
-        Map<Long, Point2i> clusterCenters = new LinkedHashMap<>();
-        Set<Long> removedRooms = removedRoomIds == null ? Set.of() : Set.copyOf(removedRoomIds);
-        for (var cluster : layout.clusters()) {
-            if (cluster == null || cluster.clusterId() == null) {
-                continue;
-            }
-            clusterCenters.put(cluster.clusterId(), replacementCenters.getOrDefault(cluster.clusterId(), cluster.center()));
-            for (Room room : cluster.rooms()) {
-                if (room == null || room.roomId() == null || removedRooms.contains(room.roomId())) {
-                    continue;
-                }
-                roomsById.put(room.roomId(), replacementRooms.getOrDefault(room.roomId(), room));
-            }
-        }
-        roomsById.putAll(replacementRooms);
-        for (Room room : replacementRooms.values()) {
-            clusterCenters.put(room.clusterId(), replacementCenters.get(room.clusterId()));
-        }
-        return new CorridorPlanningInput(roomsById, clusterCenters);
-    }
-
 }

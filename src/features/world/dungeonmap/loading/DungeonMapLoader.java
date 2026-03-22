@@ -15,6 +15,8 @@ import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorBindings;
 import features.world.dungeonmap.model.structures.corridor.CorridorDoorBinding;
 import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInput;
+import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInputProjector;
+import features.world.dungeonmap.model.structures.corridor.CorridorRewriteContext;
 import features.world.dungeonmap.model.structures.corridor.CorridorWaypointBinding;
 import features.world.dungeonmap.model.structures.room.Room;
 
@@ -186,29 +188,16 @@ public final class DungeonMapLoader {
                             doorBindingsByCorridor.getOrDefault(entry.getKey(), List.of())),
                     CorridorPath.empty()));
         }
-        CorridorPlanningInput planningInput = corridorPlanningInput(clusters);
-        return result.stream()
-                .map(corridor -> corridor.replanned(planningInput))
-                .toList();
-    }
-
-    private static CorridorPlanningInput corridorPlanningInput(List<RoomCluster> clusters) {
-        Map<Long, Room> roomsById = new LinkedHashMap<>();
-        Map<Long, Point2i> clusterCenters = new LinkedHashMap<>();
-        for (RoomCluster cluster : clusters == null ? List.<RoomCluster>of() : clusters) {
-            if (cluster == null) {
-                continue;
-            }
-            if (cluster.clusterId() != null) {
-                clusterCenters.put(cluster.clusterId(), cluster.center());
-            }
-            for (Room room : cluster.rooms()) {
-                if (room != null && room.roomId() != null) {
-                    roomsById.put(room.roomId(), room);
-                }
-            }
-        }
-        return new CorridorPlanningInput(roomsById, clusterCenters);
+        CorridorPlanningInput planningInput = CorridorPlanningInputProjector.project(clusters);
+        CorridorRewriteContext rewriteContext = new CorridorRewriteContext(
+                planningInput,
+                planningInput,
+                result.stream()
+                        .map(Corridor::corridorId)
+                        .filter(java.util.Objects::nonNull)
+                        .collect(java.util.stream.Collectors.toUnmodifiableSet()),
+                Set.of());
+        return DungeonLayout.rewriteCorridors(result, rewriteContext);
     }
 
     private static <K, V> Map<K, List<V>> loadGrouped(
