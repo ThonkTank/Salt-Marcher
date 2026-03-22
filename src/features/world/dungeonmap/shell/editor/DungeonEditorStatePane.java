@@ -9,6 +9,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.VBox;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,38 +65,7 @@ public final class DungeonEditorStatePane {
             if (card == null) {
                 continue;
             }
-            TextArea visualArea = createTextArea(card.visualDescription());
-            Label visualTitle = new Label("Visueller Eindruck");
-            visualTitle.getStyleClass().add("text-muted");
-
-            VBox roomBox = new VBox(6, visualTitle, visualArea);
-            List<TextArea> exitAreas = new java.util.ArrayList<>();
-            for (RoomExitCard exit : card.exits()) {
-                Label exitTitle = new Label(exit.label());
-                exitTitle.getStyleClass().add("text-muted");
-                TextArea exitArea = createTextArea(exit.description());
-                exitAreas.add(exitArea);
-                roomBox.getChildren().addAll(exitTitle, exitArea);
-            }
-
-            Label statusLabel = new Label();
-            statusLabel.setWrapText(true);
-            Button saveButton = new Button("Speichern");
-            narrationSaveButtons.put(card.roomId(), saveButton);
-            narrationStatusLabels.put(card.roomId(), statusLabel);
-            saveButton.setOnAction(event -> {
-                if (saveHandler == null) {
-                    return;
-                }
-                java.util.ArrayList<RoomExitNarration> exitNarrations = new java.util.ArrayList<>();
-                for (int index = 0; index < card.exits().size(); index++) {
-                    RoomExitCard exit = card.exits().get(index);
-                    exitNarrations.add(new RoomExitNarration(exit.roomCell(), exit.direction(), exitAreas.get(index).getText()));
-                }
-                saveHandler.save(card.roomId(), new RoomNarration(visualArea.getText(), exitNarrations));
-            });
-            roomBox.getChildren().addAll(statusLabel, saveButton);
-            narrationContent.getChildren().add(card(card.roomName(), roomBox));
+            narrationContent.getChildren().add(buildNarrationCardUi(card, saveHandler));
         }
     }
 
@@ -132,6 +102,41 @@ public final class DungeonEditorStatePane {
         area.setWrapText(true);
         area.setPrefRowCount(3);
         return area;
+    }
+
+    private VBox buildNarrationCardUi(RoomNarrationCard card, SaveRoomNarrationHandler saveHandler) {
+        TextArea visualArea = createTextArea(card.visualDescription());
+        Label visualTitle = new Label("Visueller Eindruck");
+        visualTitle.getStyleClass().add("text-muted");
+
+        VBox roomBox = new VBox(6, visualTitle, visualArea);
+        List<TextArea> exitAreas = new ArrayList<>();
+        for (RoomExitCard exit : card.exits()) {
+            Label exitTitle = new Label(exit.label());
+            exitTitle.getStyleClass().add("text-muted");
+            TextArea exitArea = createTextArea(exit.description());
+            exitAreas.add(exitArea);
+            roomBox.getChildren().addAll(exitTitle, exitArea);
+        }
+
+        Label statusLabel = new Label();
+        statusLabel.setWrapText(true);
+        Button saveButton = new Button("Speichern");
+        narrationSaveButtons.put(card.roomId(), saveButton);
+        narrationStatusLabels.put(card.roomId(), statusLabel);
+        saveButton.setOnAction(event -> {
+            if (saveHandler == null) {
+                return;
+            }
+            ArrayList<RoomExitNarration> exitNarrations = new ArrayList<>();
+            for (int index = 0; index < card.exits().size(); index++) {
+                RoomExitCard exit = card.exits().get(index);
+                exitNarrations.add(new RoomExitNarration(exit.roomCell(), exit.direction(), exitAreas.get(index).getText()));
+            }
+            saveHandler.save(card.roomId(), new RoomNarration(visualArea.getText(), exitNarrations));
+        });
+        roomBox.getChildren().addAll(statusLabel, saveButton);
+        return card(card.roomName(), roomBox);
     }
 
     public record RoomNarrationCard(

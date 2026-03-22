@@ -12,7 +12,6 @@ import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
 import features.world.dungeonmap.shell.editor.interaction.CorridorInteractionController;
 import features.world.dungeonmap.shell.editor.interaction.ClusterSelectionDragController;
@@ -27,6 +26,8 @@ import features.world.dungeonmap.state.DungeonMapState;
 import ui.async.UiAsyncTasks;
 import ui.async.UiErrorReporter;
 
+import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 
 final class DungeonEditorCoordinator {
@@ -165,14 +166,14 @@ final class DungeonEditorCoordinator {
     private void refreshRoomNarrationStatePane() {
         RoomCluster cluster = selectedCluster();
         if (cluster == null) {
-            statePane.showRoomNarrationEditors(java.util.List.of(), this::saveRoomNarration);
+            statePane.showRoomNarrationEditors(List.of(), this::saveRoomNarration);
             return;
         }
         statePane.showRoomNarrationEditors(cluster.rooms().stream()
                 .filter(Objects::nonNull)
-                .sorted(java.util.Comparator
-                        .comparing(Room::name, java.util.Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
-                        .thenComparing(Room::roomId, java.util.Comparator.nullsLast(Long::compareTo)))
+                .sorted(Comparator
+                        .comparing(Room::name, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
+                        .thenComparing(Room::roomId, Comparator.nullsLast(Long::compareTo)))
                 .map(this::roomNarrationCard)
                 .toList(), this::saveRoomNarration);
     }
@@ -187,17 +188,8 @@ final class DungeonEditorCoordinator {
                                 exit.label(),
                                 exit.roomCell(),
                                 exit.direction(),
-                                exitDescription(room, exit.roomCell(), exit.direction())))
+                                room.narration().exitDescription(exit.roomCell(), exit.direction())))
                         .toList());
-    }
-
-    private String exitDescription(Room room, features.world.dungeonmap.model.geometry.Point2i roomCell,
-                                   features.world.dungeonmap.model.geometry.Point2i direction) {
-        return room.narration().exitNarrations().stream()
-                .filter(candidate -> candidate.roomCell().equals(roomCell) && candidate.direction().equals(direction))
-                .map(RoomExitNarration::description)
-                .findFirst()
-                .orElse("");
     }
 
     private void saveRoomNarration(long roomId, RoomNarration narration) {

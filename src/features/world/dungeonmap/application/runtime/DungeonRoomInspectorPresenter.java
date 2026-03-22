@@ -3,14 +3,12 @@ package features.world.dungeonmap.application.runtime;
 import features.world.dungeonmap.application.room.RoomExitCatalog;
 import features.world.dungeonmap.application.room.RoomExitDescriptor;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.List;
 
 public final class DungeonRoomInspectorPresenter {
 
@@ -29,30 +27,16 @@ public final class DungeonRoomInspectorPresenter {
                 sectionTitle("Visueller Eindruck"),
                 text(valueOrDash(room.narration().visualDescription())),
                 sectionTitle("Ausgaenge"));
-        Map<String, String> descriptionsByKey = descriptionsByExitKey(room);
-        java.util.List<RoomExitDescriptor> exits = RoomExitCatalog.describe(room);
+        List<RoomExitDescriptor> exits = RoomExitCatalog.describe(room);
         for (RoomExitDescriptor exit : exits) {
             box.getChildren().addAll(
                     subTitle(exit.label()),
-                    text(valueOrDash(descriptionsByKey.get(exitKey(exit.roomCell(), exit.direction())))));
+                    text(valueOrDash(room.narration().exitDescription(exit.roomCell(), exit.direction()))));
         }
         if (exits.isEmpty()) {
             box.getChildren().add(text("—"));
         }
         return box;
-    }
-
-    private static Map<String, String> descriptionsByExitKey(Room room) {
-        Map<String, String> result = new LinkedHashMap<>();
-        for (RoomExitNarration exitNarration : room.narration().exitNarrations()) {
-            result.put(exitKey(exitNarration.roomCell(), exitNarration.direction()), exitNarration.description());
-        }
-        return result;
-    }
-
-    private static String exitKey(features.world.dungeonmap.model.geometry.Point2i roomCell,
-                                  features.world.dungeonmap.model.geometry.Point2i direction) {
-        return roomCell.x() + ":" + roomCell.y() + ":" + direction.x() + ":" + direction.y();
     }
 
     private static Label sectionTitle(String text) {

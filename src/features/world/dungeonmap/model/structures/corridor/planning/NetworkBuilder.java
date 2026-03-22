@@ -159,7 +159,9 @@ final class NetworkBuilder {
         if (room == null || connectedRoom == null || Objects.equals(room.roomId(), connectedRoom.roomId())) {
             return null;
         }
-        ConnectionPlan best = directAdjacencyPlan(room, connectedRoom, context.doorBindings());
+        ConnectionPlan best = directAdjacencyAllowed(context)
+                ? directAdjacencyPlan(room, connectedRoom, context.doorBindings())
+                : null;
         for (ExitPairCandidate pair : ExitCandidateSelector.preselectExitPairs(room, connectedRoom, context, config)) {
             List<Point2i> path = ensureSingleCellForSharedGap(
                     pair.exit().outsideCell(),
@@ -175,6 +177,19 @@ final class NetworkBuilder {
                     path.isEmpty()));
         }
         return best;
+    }
+
+    private static boolean directAdjacencyAllowed(PlannerContext context) {
+        if (context == null) {
+            return false;
+        }
+        long connectedRooms = context.rooms().stream()
+                .filter(Objects::nonNull)
+                .map(Room::roomId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .count();
+        return connectedRooms == 2;
     }
 
     private static List<Point2i> ensureSingleCellForSharedGap(Point2i start, Point2i target, List<Point2i> path) {
