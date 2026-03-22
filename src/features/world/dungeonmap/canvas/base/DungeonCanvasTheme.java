@@ -11,8 +11,8 @@ public final class DungeonCanvasTheme {
 
     public static final Color RUNTIME_BACKGROUND = Color.web("#12181c");
     public static final Color EDITOR_BACKGROUND = Color.web("#12181c");
-    public static final Color RUNTIME_GRID_MINOR = Color.web("#56646e", 0.12);
-    public static final Color EDITOR_GRID_MINOR = Color.web("#56646e", 0.12);
+    public static final Color RUNTIME_GRID_MINOR = Color.web("#667782", 0.18);
+    public static final Color EDITOR_GRID_MINOR = Color.web("#667782", 0.18);
     public static final Color RUNTIME_GRID_MEDIUM = Color.web("#738390", 0.16);
     public static final Color EDITOR_GRID_MEDIUM = Color.web("#738390", 0.16);
     public static final Color RUNTIME_GRID_MAJOR = Color.web("#8d9ca8", 0.22);
@@ -45,10 +45,10 @@ public final class DungeonCanvasTheme {
     public static final Font ROOM_LABEL_FONT = Font.font("SansSerif", FontWeight.BOLD, 12);
     public static final Font GRAPH_NODE_FONT = Font.font("SansSerif", FontWeight.BOLD, 13);
     public static final double BASE_GRID = 32.0;
-    public static final double MIN_ZOOM = 0.4;
+    public static final double MIN_ZOOM = 0.1;
     public static final double MAX_ZOOM = 4.0;
     public static final double GRID_MIN_READABLE_SPACING = 16.0;
-    public static final double GRID_MINOR_LINE_WIDTH = 0.75;
+    public static final double GRID_MINOR_LINE_WIDTH = 0.9;
     public static final double GRID_MEDIUM_LINE_WIDTH = 1.05;
     public static final double GRID_MAJOR_LINE_WIDTH = 1.4;
     public static final double GRID_MAX_LINE_WIDTH = 1.8;
