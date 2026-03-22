@@ -72,7 +72,8 @@ public final class DungeonRuntimeNavigationService {
     public DungeonRuntimeNavigationSnapshot moveThroughDoor(
             DungeonLayout layout,
             DungeonRuntimeSurface surface,
-            DungeonRuntimeDoorDescriptor door
+            DungeonRuntimeDoorDescriptor door,
+            int currentLevel
     ) throws SQLException {
         if (layout == null || layout.mapId() <= 0) {
             throw new SQLException("Kein aktiver Dungeon geladen");
@@ -80,7 +81,7 @@ public final class DungeonRuntimeNavigationService {
         if (surface == null || door == null) {
             throw new SQLException("Keine Tür verfügbar");
         }
-        CubePoint resolvedTile = nearestTraversableTile(layout, CubePoint.at(door.outsideCell(), 0));
+        CubePoint resolvedTile = nearestTraversableTile(layout, CubePoint.at(door.outsideCell(), currentLevel));
         if (resolvedTile == null) {
             throw new SQLException("Ziel hinter der Tür ist nicht begehbar");
         }

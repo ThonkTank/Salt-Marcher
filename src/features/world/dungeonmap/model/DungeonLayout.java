@@ -98,7 +98,7 @@ public final class DungeonLayout {
         this.corridorNetworkIdByCell = indexCorridorNetworkIdsByCell(this.corridorNetworks);
         this.traversableCells = indexTraversableCells(this.clusters, this.corridors);
         this.traversableCubeCells = indexTraversableCubeCells(this.clusters, this.corridors, this.stairs, this.roomLevelsById, this.corridorLevelsById);
-        this.reachableLevels = indexReachableLevels(this.traversableCubeCells, this.stairs);
+        this.reachableLevels = indexReachableLevels(this.traversableCubeCells);
     }
 
     private static List<RoomCluster> projectCorridorDoorsIntoRooms(List<Corridor> corridors, List<RoomCluster> clusters) {
@@ -639,20 +639,13 @@ public final class DungeonLayout {
         return Set.copyOf(result);
     }
 
-    private static List<Integer> indexReachableLevels(Set<CubePoint> traversableCubeCells, List<DungeonStair> stairs) {
+    private static List<Integer> indexReachableLevels(Set<CubePoint> traversableCubeCells) {
         Set<Integer> result = new LinkedHashSet<>();
         if (traversableCubeCells != null) {
             traversableCubeCells.stream()
                     .map(CubePoint::z)
                     .sorted()
                     .forEach(result::add);
-        }
-        if (stairs != null) {
-            for (DungeonStair stair : stairs) {
-                if (stair != null) {
-                    stair.reachableLevels().stream().sorted().forEach(result::add);
-                }
-            }
         }
         return List.copyOf(result);
     }

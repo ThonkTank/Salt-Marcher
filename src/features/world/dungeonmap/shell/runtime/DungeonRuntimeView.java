@@ -211,9 +211,10 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         if (surface == null) {
             return;
         }
+        int currentLevel = activeTile() != null ? activeTile().z() : state().activeProjectionLevel();
         runtimeState.showMoveInProgress();
         UiAsyncTasks.submit(
-                () -> runtimeNavigationService.moveThroughDoor(layout, surface, door),
+                () -> runtimeNavigationService.moveThroughDoor(layout, surface, door, currentLevel),
                 runtimeState::showNavigation,
                 failure -> {
                     System.err.println("DungeonRuntimeView.movePartyThroughDoor(): " + failure.getMessage());

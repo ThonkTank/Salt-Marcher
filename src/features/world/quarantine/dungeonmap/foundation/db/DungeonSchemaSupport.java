@@ -109,6 +109,12 @@ public final class DungeonSchemaSupport {
                 + ")");
     }
 
+    public static void ensureCompatibility(Connection conn) throws SQLException {
+        try (Statement stmt = conn.createStatement()) {
+            createSchema(stmt);
+        }
+    }
+
     public static void resetSchema(Connection conn) throws SQLException {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("PRAGMA foreign_keys = OFF");
@@ -121,6 +127,9 @@ public final class DungeonSchemaSupport {
             stmt.execute("DROP TABLE IF EXISTS dungeon_corridors");
             stmt.execute("DROP TABLE IF EXISTS dungeon_rooms");
             stmt.execute("DROP TABLE IF EXISTS dungeon_room_clusters");
+            stmt.execute("DROP TABLE IF EXISTS dungeon_stair_exits");
+            stmt.execute("DROP TABLE IF EXISTS dungeon_stair_path_nodes");
+            stmt.execute("DROP TABLE IF EXISTS dungeon_stairs");
             stmt.execute("DROP TABLE IF EXISTS dungeon_maps");
             stmt.execute("PRAGMA foreign_keys = ON");
             createSchema(stmt);

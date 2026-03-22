@@ -56,7 +56,7 @@ final class DungeonRuntimeLocations {
         } else if (location instanceof DungeonRuntimeLocation.Room roomLocation) {
             resolvedTile = roomAnchor(layout, roomLocation.roomId());
         } else if (location instanceof DungeonRuntimeLocation.Corridor corridorLocation) {
-            resolvedTile = corridorAnchor(layout.findCorridor(corridorLocation.corridorId()));
+            resolvedTile = corridorAnchor(layout, layout.findCorridor(corridorLocation.corridorId()));
         } else if (location instanceof DungeonRuntimeLocation.CorridorComponent componentLocation) {
             resolvedTile = corridorNetworkAnchor(layout, componentLocation.componentId());
         }
@@ -173,15 +173,22 @@ final class DungeonRuntimeLocations {
         return layout.isTraversableCell(preferred) ? preferred : layout.nearestTraversableCell(preferred);
     }
 
-    private static CubePoint corridorAnchor(Corridor corridor) {
+    private static CubePoint corridorAnchor(DungeonLayout layout, Corridor corridor) {
         return corridor == null || corridor.path() == null || corridor.path().floor() == null
                 ? null
-                : CubePoint.at(corridor.path().floor().shape().centerCell(), 0);
+                : CubePoint.at(corridor.path().floor().shape().centerCell(), layout.levelForCorridor(corridor.corridorId()));
     }
 
     private static CubePoint corridorNetworkAnchor(DungeonLayout layout, String networkId) {
         CorridorNetwork network = layout.findCorridorNetwork(networkId);
-        return network == null || network.floor() == null ? null : CubePoint.at(network.floor().shape().centerCell(), 0);
+        if (network == null || network.floor() == null) {
+            return null;
+        }
+        Long corridorId = network.corridorIds().stream()
+                .filter(id -> id != null)
+                .findFirst()
+                .orElse(null);
+        return CubePoint.at(network.floor().shape().centerCell(), layout.levelForCorridor(corridorId));
     }
 
     private static CubePoint stairExitAnchor(DungeonLayout layout, long stairId, CubePoint preferred) {
