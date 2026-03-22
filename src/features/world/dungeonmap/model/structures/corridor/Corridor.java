@@ -367,17 +367,13 @@ public final class Corridor {
         if (context == null || !context.affects(corridorId) || !isPersistable()) {
             return this;
         }
-        return replanned(context.rewrittenPlanningInput(), CorridorPlanner.PlanningMode.COMMIT);
+        return replanned(context.rewrittenPlanningInput());
     }
 
     public Corridor replanned(CorridorPlanningInput input) {
-        return replanned(input, CorridorPlanner.PlanningMode.COMMIT);
-    }
-
-    public Corridor replanned(CorridorPlanningInput input, CorridorPlanner.PlanningMode planningMode) {
-        // Preview drags call into this through DungeonLayout.withTranslatedClusterPreview() on repeated pointer updates.
-        // Planner quality fixes are only acceptable here when they preserve the current preview budget.
-        return withPath(CorridorPlanner.plan(this, input, planningMode));
+        // Drag previews and committed moves both flow through DungeonLayout.withTranslatedCluster().
+        // Replanning must therefore preserve the same end topology for both.
+        return withPath(CorridorPlanner.plan(this, input));
     }
 
     public List<Room> resolvedRooms(CorridorPlanningInput input) {

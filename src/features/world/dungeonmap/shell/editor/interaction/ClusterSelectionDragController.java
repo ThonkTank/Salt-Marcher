@@ -67,7 +67,7 @@ public final class ClusterSelectionDragController {
             return true;
         }
         dragSession = dragSession.withCurrentDelta(delta);
-        layoutPreviewState.showPreview(dragSession.baseMap().withTranslatedClusterPreview(dragSession.clusterId(), delta));
+        layoutPreviewState.showPreview(dragSession.baseMap().withTranslatedCluster(dragSession.clusterId(), delta));
         return true;
     }
 
@@ -76,7 +76,7 @@ public final class ClusterSelectionDragController {
             return false;
         }
         Point2i delta = event.gridCell().subtract(dragSession.pressCell());
-        DungeonLayout committed = dragSession.baseMap().withTranslatedClusterReplanned(dragSession.clusterId(), delta);
+        DungeonLayout committed = dragSession.baseMap().withTranslatedCluster(dragSession.clusterId(), delta);
         Long mapId = dragSession.baseMap().mapId() > 0 ? dragSession.baseMap().mapId() : null;
         Long clusterId = dragSession.clusterId();
         selectionState.selectTarget(dragSession.targetKey());

@@ -25,7 +25,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public final class CorridorPlanner {
+final class CorridorPlanner {
 
     private static final Logger LOGGER = Logger.getLogger(CorridorPlanner.class.getName());
     private static final String PROFILE_PROPERTY = "saltmarcher.dungeonmap.corridorplanner.profile";
@@ -36,9 +36,6 @@ public final class CorridorPlanner {
     private static final PlannerConfig CONFIG = new PlannerConfig(
             12,
             8,
-            20,
-            24,
-            28,
             24,
             28,
             32);
@@ -48,10 +45,6 @@ public final class CorridorPlanner {
     }
 
     static CorridorPath plan(Corridor corridor, CorridorPlanningInput input) {
-        return plan(corridor, input, PlanningMode.COMMIT);
-    }
-
-    static CorridorPath plan(Corridor corridor, CorridorPlanningInput input, PlanningMode mode) {
         PlannerInstrumentation instrumentation = PlannerInstrumentation.createIfEnabled();
         long startedAt = instrumentation == null ? 0L : System.nanoTime();
         GridRoute route = resolvedRoute(corridor, input);
@@ -66,7 +59,7 @@ public final class CorridorPlanner {
 
             Map<Long, ResolvedCorridorDoorBinding> doorBindings = corridor.resolvedDoorBindings(input);
             List<Point2i> waypointCells = corridor.resolvedWaypointCells(input);
-            PlannerContext context = new PlannerContext(rooms, waypointCells, doorBindings, mode, instrumentation);
+            PlannerContext context = new PlannerContext(rooms, waypointCells, doorBindings, instrumentation);
             MutableNetwork network = bestNetwork(context);
 
             boolean routable = network.connectedRoomIds.size() == rooms.size()
@@ -494,42 +487,23 @@ public final class CorridorPlanner {
             ExitSelectionTarget left,
             ExitSelectionTarget right
     ) {
-        PlanningMode mode = context == null ? PlanningMode.COMMIT : context.planningMode();
         Point2i leftCenter = TargetGeometry.targetCenterOf(left);
         Point2i rightCenter = TargetGeometry.targetCenterOf(right);
         if (leftCenter == null || rightCenter == null) {
-            return baseExactPairBudget(mode);
+            return CONFIG.baseExactExitPairEvaluations();
         }
         int targetDistance = leftCenter.distanceTo(rightCenter);
         boolean hasWaypoints = context != null && !context.waypointCells().isEmpty();
         boolean roomToRoom = left instanceof RoomTarget && right instanceof RoomTarget;
         if (roomToRoom && (hasWaypoints || targetDistance >= 24)) {
-            return complexExactPairBudget(mode);
+            return CONFIG.complexExactExitPairEvaluations();
         }
         if (roomToRoom) {
-            return roomTargetExactPairBudget(mode);
+            return CONFIG.roomTargetExactPairEvaluations();
         }
         return hasWaypoints || targetDistance >= 24
-                ? roomTargetExactPairBudget(mode)
-                : baseExactPairBudget(mode);
-    }
-
-    private static int baseExactPairBudget(PlanningMode mode) {
-        return mode == PlanningMode.PREVIEW
-                ? CONFIG.previewBaseExactExitPairEvaluations()
-                : CONFIG.commitBaseExactExitPairEvaluations();
-    }
-
-    private static int roomTargetExactPairBudget(PlanningMode mode) {
-        return mode == PlanningMode.PREVIEW
-                ? CONFIG.previewRoomTargetExactPairEvaluations()
-                : CONFIG.commitRoomTargetExactPairEvaluations();
-    }
-
-    private static int complexExactPairBudget(PlanningMode mode) {
-        return mode == PlanningMode.PREVIEW
-                ? CONFIG.previewComplexExactExitPairEvaluations()
-                : CONFIG.commitComplexExactExitPairEvaluations();
+                ? CONFIG.roomTargetExactPairEvaluations()
+                : CONFIG.baseExactExitPairEvaluations();
     }
 
     private static int estimatedCornersToTarget(Point2i start, Point2i target) {
@@ -1085,18 +1059,10 @@ public final class CorridorPlanner {
     private record PlannerConfig(
             int maxExitCandidatesPerRoom,
             int maxTargetedExitCandidatesPerRoom,
-            int previewBaseExactExitPairEvaluations,
-            int previewRoomTargetExactPairEvaluations,
-            int previewComplexExactExitPairEvaluations,
-            int commitBaseExactExitPairEvaluations,
-            int commitRoomTargetExactPairEvaluations,
-            int commitComplexExactExitPairEvaluations
+            int baseExactExitPairEvaluations,
+            int roomTargetExactPairEvaluations,
+            int complexExactExitPairEvaluations
     ) {
-    }
-
-    public enum PlanningMode {
-        PREVIEW,
-        COMMIT
     }
 
     private sealed interface ExitSelectionTarget permits RoomTarget, NetworkTarget, WaypointTarget {
@@ -1263,7 +1229,6 @@ public final class CorridorPlanner {
         private final Map<Long, ResolvedCorridorDoorBinding> doorBindings;
         private final Map<Point2i, Long> occupancy;
         private final PathfindingSpace pathfindingSpace;
-        private final PlanningMode planningMode;
         private final PlannerInstrumentation instrumentation;
         private final Map<Long, List<ExitCandidate>> allExitCandidatesByRoomId = new HashMap<>();
 
@@ -1271,7 +1236,6 @@ public final class CorridorPlanner {
                 List<Room> rooms,
                 List<Point2i> waypointCells,
                 Map<Long, ResolvedCorridorDoorBinding> doorBindings,
-                PlanningMode planningMode,
                 PlannerInstrumentation instrumentation
         ) {
             this.rooms = rooms == null ? List.of() : List.copyOf(rooms);
@@ -1281,7 +1245,6 @@ public final class CorridorPlanner {
             // Future performance track only: if drag-preview profiling shows long-corridor pressure,
             // this occupancy/grid setup is the first candidate for per-drag-session reuse.
             this.pathfindingSpace = buildPathfindingSpace(this.occupancy.keySet());
-            this.planningMode = planningMode == null ? PlanningMode.COMMIT : planningMode;
             this.instrumentation = instrumentation;
         }
 
@@ -1303,10 +1266,6 @@ public final class CorridorPlanner {
 
         private PathfindingSpace pathfindingSpace() {
             return pathfindingSpace;
-        }
-
-        private PlanningMode planningMode() {
-            return planningMode;
         }
 
         private PlannerInstrumentation instrumentation() {

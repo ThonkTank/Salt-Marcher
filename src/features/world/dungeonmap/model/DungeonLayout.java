@@ -7,7 +7,6 @@ import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
 import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInput;
 import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInputProjector;
-import features.world.dungeonmap.model.structures.corridor.CorridorPlanner;
 import features.world.dungeonmap.model.structures.corridor.CorridorRewriteContext;
 import features.world.dungeonmap.model.structures.room.Room;
 
@@ -263,11 +262,7 @@ public final class DungeonLayout {
                 deletedClusterIds);
     }
 
-    public static List<Corridor> rewriteCorridors(
-            List<Corridor> corridors,
-            CorridorRewriteContext context,
-            CorridorPlanner.PlanningMode planningMode
-    ) {
+    public static List<Corridor> rewriteCorridors(List<Corridor> corridors, CorridorRewriteContext context) {
         if (corridors == null || corridors.isEmpty()) {
             return List.of();
         }
@@ -275,8 +270,7 @@ public final class DungeonLayout {
             return List.copyOf(corridors);
         }
         return corridors.stream()
-                .map(corridor -> corridor == null ? null : corridor.reanchoredFor(context)
-                        .replanned(context.rewrittenPlanningInput(), planningMode))
+                .map(corridor -> corridor == null ? null : corridor.reanchoredFor(context).replannedFor(context))
                 .toList();
     }
 
@@ -290,17 +284,7 @@ public final class DungeonLayout {
         return new DungeonLayout(mapId, name, corridors, updatedClusters);
     }
 
-    public DungeonLayout withTranslatedClusterPreview(Long clusterId, Point2i delta) {
-        // Preview drags are a hot path. Keep the implementation explicitly preview-scoped even if corridor replan
-        // remains necessary for visual correctness.
-        return translatedCluster(clusterId, delta, CorridorPlanner.PlanningMode.PREVIEW);
-    }
-
-    public DungeonLayout withTranslatedClusterReplanned(Long clusterId, Point2i delta) {
-        return translatedCluster(clusterId, delta, CorridorPlanner.PlanningMode.COMMIT);
-    }
-
-    private DungeonLayout translatedCluster(Long clusterId, Point2i delta, CorridorPlanner.PlanningMode planningMode) {
+    public DungeonLayout withTranslatedCluster(Long clusterId, Point2i delta) {
         if (clusterId == null || delta == null || (delta.x() == 0 && delta.y() == 0)) {
             return this;
         }
@@ -312,15 +296,13 @@ public final class DungeonLayout {
         List<RoomCluster> updatedClusters = clusters.stream()
                 .map(existing -> clusterId.equals(existing.clusterId()) ? movedCluster : existing)
                 .toList();
-        // Preview and commit use separate entrypoints so hot-path callers must opt into preview behavior explicitly.
-        // Corridor replanning still happens in both paths for now; if preview pressure grows, optimize the preview path
-        // directly instead of smuggling the distinction through hidden callers.
+        // All callers must see the same replanned topology. Performance work here must preserve that invariant.
         CorridorPlanningInput planningInput = CorridorPlanningInputProjector.project(updatedClusters);
         CorridorRewriteContext rewriteContext = corridorRewriteContext(
                 planningInput,
                 corridorIdsAffectedBy(movedCluster.roomIds(), Set.of(clusterId)),
                 Set.of());
-        List<Corridor> updatedCorridors = rewriteCorridors(corridors, rewriteContext, planningMode);
+        List<Corridor> updatedCorridors = rewriteCorridors(corridors, rewriteContext);
         return new DungeonLayout(mapId, name, updatedCorridors, updatedClusters);
     }
 
