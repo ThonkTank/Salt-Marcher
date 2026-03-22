@@ -122,38 +122,16 @@ public final class RoomCluster {
         }
 
         List<Room> rewrittenRooms = rewriteRoomsForBoundaryKinds(updatedBoundaryKinds);
-        Set<Long> deletedRoomIds = new LinkedHashSet<>();
-        Map<Long, Long> replacedRoomIds = new LinkedHashMap<>();
-        Set<Long> mergedRoomIds = new LinkedHashSet<>();
-        for (Room rewrittenRoom : rewrittenRooms) {
-            if (rewrittenRoom == null) {
-                continue;
-            }
-            List<Room> sourceRooms = roomsForShape(rewrittenRoom.floor().shape());
-            if (sourceRooms.size() <= 1) {
-                continue;
-            }
-            Long replacementRoomId = rewrittenRoom.roomId();
-            for (Room sourceRoom : sourceRooms) {
-                if (sourceRoom == null || sourceRoom.roomId() == null) {
-                    continue;
-                }
-                mergedRoomIds.add(sourceRoom.roomId());
-                replacedRoomIds.put(sourceRoom.roomId(), replacementRoomId);
-                if (!sourceRoom.roomId().equals(replacementRoomId)) {
-                    deletedRoomIds.add(sourceRoom.roomId());
-                }
-            }
-        }
+        BoundaryMergeResult merge = computeMergeMetadata(rewrittenRooms);
         return new ClusterRewrite(
                 clusterId,
                 shape,
                 center,
                 rewrittenRooms,
                 persistedInternalBoundaries(shape, rewrittenRooms),
-                deletedRoomIds,
-                replacedRoomIds,
-                mergedRoomIds,
+                merge.deletedRoomIds(),
+                merge.replacedRoomIds(),
+                merge.mergedRoomIds(),
                 Set.of(),
                 Map.of());
     }
@@ -989,6 +967,33 @@ public final class RoomCluster {
         return roomsForCells(roomShape.absoluteCells());
     }
 
+    private BoundaryMergeResult computeMergeMetadata(List<Room> rewrittenRooms) {
+        Set<Long> deletedRoomIds = new LinkedHashSet<>();
+        Map<Long, Long> replacedRoomIds = new LinkedHashMap<>();
+        Set<Long> mergedRoomIds = new LinkedHashSet<>();
+        for (Room rewrittenRoom : rewrittenRooms) {
+            if (rewrittenRoom == null) {
+                continue;
+            }
+            List<Room> sourceRooms = roomsForShape(rewrittenRoom.floor().shape());
+            if (sourceRooms.size() <= 1) {
+                continue;
+            }
+            Long replacementRoomId = rewrittenRoom.roomId();
+            for (Room sourceRoom : sourceRooms) {
+                if (sourceRoom == null || sourceRoom.roomId() == null) {
+                    continue;
+                }
+                mergedRoomIds.add(sourceRoom.roomId());
+                replacedRoomIds.put(sourceRoom.roomId(), replacementRoomId);
+                if (!sourceRoom.roomId().equals(replacementRoomId)) {
+                    deletedRoomIds.add(sourceRoom.roomId());
+                }
+            }
+        }
+        return new BoundaryMergeResult(deletedRoomIds, replacedRoomIds, mergedRoomIds);
+    }
+
     private Room retainedRoom(List<Room> sourceRooms) {
         return sourceRooms == null || sourceRooms.isEmpty() ? null : sourceRooms.getFirst();
     }
@@ -1116,6 +1121,13 @@ public final class RoomCluster {
 
     private static String signature(Long roomId, String name, TileShape shape) {
         return roomId + "|" + name + "|" + shape;
+    }
+
+    private record BoundaryMergeResult(
+            Set<Long> deletedRoomIds,
+            Map<Long, Long> replacedRoomIds,
+            Set<Long> mergedRoomIds
+    ) {
     }
 
     private record OverlapIndex(Map<Point2i, Room> roomsByCell, boolean hasOverlaps) {

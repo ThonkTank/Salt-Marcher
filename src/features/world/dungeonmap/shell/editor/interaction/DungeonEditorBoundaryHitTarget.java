@@ -1,6 +1,7 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
 import features.world.dungeonmap.model.geometry.VertexEdge;
+import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.persistence.ClusterBoundaryWrite;
 
 import java.util.Objects;
@@ -20,6 +21,6 @@ public record DungeonEditorBoundaryHitTarget(
 
     @Override
     public String targetKey() {
-        return features.world.dungeonmap.model.structures.cluster.RoomCluster.targetKey(targetRef.clusterId());
+        return RoomCluster.targetKey(targetRef.clusterId());
     }
 }

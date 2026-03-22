@@ -12,11 +12,14 @@ import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInput
 import features.world.dungeonmap.model.structures.corridor.CorridorRewriteContext;
 import features.world.dungeonmap.model.structures.room.Room;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public final class DungeonLayout {
 
@@ -61,43 +64,42 @@ public final class DungeonLayout {
     }
 
     private static List<RoomCluster> projectCorridorDoorsIntoRooms(List<Corridor> corridors, List<RoomCluster> clusters) {
-        if (corridors == null || corridors.isEmpty() || clusters == null || clusters.isEmpty()) {
-            return clusters == null ? List.of() : List.copyOf(clusters);
+        if (corridors.isEmpty() || clusters.isEmpty()) {
+            return clusters;
         }
         Map<Long, Room> roomsById = indexRooms(clusters);
         Map<Long, List<Door>> projectedDoorsByRoomId = new LinkedHashMap<>();
         for (Corridor corridor : corridors) {
-            if (corridor == null || corridor.path().doors().isEmpty()) {
+            if (corridor.path().doors().isEmpty()) {
                 continue;
             }
             Set<VertexEdge> corridorDoorEdges = corridor.path().doors().stream()
-                    .filter(java.util.Objects::nonNull)
                     .flatMap(door -> door.edges().stream())
-                    .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
             if (corridorDoorEdges.isEmpty()) {
                 continue;
             }
             for (Long roomId : corridor.roomIds()) {
                 Room room = roomsById.get(roomId);
-                if (room == null || room.roomId() == null) {
+                if (room == null) {
                     continue;
                 }
                 Set<VertexEdge> matchingEdges = room.floor().shape().boundaryEdges().stream()
                         .filter(corridorDoorEdges::contains)
-                        .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+                        .collect(Collectors.toCollection(LinkedHashSet::new));
                 if (matchingEdges.isEmpty()) {
                     continue;
                 }
-                projectedDoorsByRoomId.computeIfAbsent(room.roomId(), ignored -> new java.util.ArrayList<>())
+                projectedDoorsByRoomId.computeIfAbsent(roomId, ignored -> new ArrayList<>())
                         .add(new Door(matchingEdges));
             }
         }
         if (projectedDoorsByRoomId.isEmpty()) {
-            return List.copyOf(clusters);
+            return clusters;
         }
         return clusters.stream()
-                .map(cluster -> cluster == null ? null : cluster.withRooms(cluster.rooms().stream()
-                        .map(room -> room == null || room.roomId() == null
+                .map(cluster -> cluster.withRooms(cluster.rooms().stream()
+                        .map(room -> room.roomId() == null
                                 ? room
                                 : room.withAdditionalDoors(projectedDoorsByRoomId.getOrDefault(room.roomId(), List.of())))
                         .toList()))
@@ -253,7 +255,7 @@ public final class DungeonLayout {
             return null;
         }
         return traversableCells.stream()
-                .min(java.util.Comparator
+                .min(Comparator
                         .comparingInt((Point2i candidate) -> candidate.distanceTo(cell))
                         .thenComparing(Point2i.POINT_ORDER))
                 .orElse(null);
@@ -283,7 +285,7 @@ public final class DungeonLayout {
     public Set<Long> corridorIdsAffectedBy(Set<Long> roomIds, Set<Long> clusterIds) {
         return corridorsAffectedBy(roomIds, clusterIds).stream()
                 .map(Corridor::corridorId)
-                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     public List<Corridor> corridorsAffectedBy(Set<Long> roomIds, Set<Long> clusterIds) {
@@ -348,7 +350,7 @@ public final class DungeonLayout {
         if (rewrite == null || rewrite.targetClusterId() == null) {
             return this;
         }
-        List<RoomCluster> updatedClusters = new java.util.ArrayList<>();
+        List<RoomCluster> updatedClusters = new ArrayList<>();
         boolean replacedTarget = false;
         for (RoomCluster cluster : clusters) {
             if (cluster == null || cluster.clusterId() == null) {
@@ -467,7 +469,7 @@ public final class DungeonLayout {
                 continue;
             }
             for (Point2i cell : corridor.path().floor().shape().absoluteCells()) {
-                mutable.computeIfAbsent(cell, ignored -> new java.util.ArrayList<>()).add(corridor.corridorId());
+                mutable.computeIfAbsent(cell, ignored -> new ArrayList<>()).add(corridor.corridorId());
             }
         }
         Map<Point2i, List<Long>> result = new LinkedHashMap<>();
