@@ -5,8 +5,6 @@ import features.campaignstate.api.CampaignStateApi;
 import features.campaignstate.api.CampaignStateReadApi;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.structures.room.Room;
-
 import java.sql.Connection;
 import java.sql.SQLException;
 
@@ -73,18 +71,18 @@ public final class DungeonRuntimeNavigationService {
 
     public DungeonRuntimeNavigationSnapshot moveThroughDoor(
             DungeonLayout layout,
-            Room room,
+            DungeonRuntimeSurface surface,
             DungeonRuntimeDoorDescriptor door
     ) throws SQLException {
         if (layout == null || layout.mapId() <= 0) {
             throw new SQLException("Kein aktiver Dungeon geladen");
         }
-        if (room == null || door == null) {
-            throw new SQLException("Keine Tuer verfuegbar");
+        if (surface == null || door == null) {
+            throw new SQLException("Keine Tür verfügbar");
         }
         Point2i resolvedTile = nearestTraversableTile(layout, door.outsideCell());
         if (resolvedTile == null) {
-            throw new SQLException("Ziel hinter der Tuer ist nicht begehbar");
+            throw new SQLException("Ziel hinter der Tür ist nicht begehbar");
         }
         DungeonHeading nextHeading = DungeonHeading.fromDirection(door.direction());
         DungeonRuntimeLocation targetLocation = DungeonRuntimeLocation.tile(resolvedTile);

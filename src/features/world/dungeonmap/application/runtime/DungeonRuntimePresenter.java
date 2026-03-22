@@ -80,6 +80,13 @@ public final class DungeonRuntimePresenter {
         return room.name() == null || room.name().isBlank() ? "Raum " + room.roomId() : room.name();
     }
 
+    public static String roomLabel(Room room) {
+        if (room == null) {
+            return "Raum";
+        }
+        return room.name() == null || room.name().isBlank() ? "Raum " + room.roomId() : room.name();
+    }
+
     public static Room roomForLocation(DungeonLayout layout, DungeonRuntimeLocation location) {
         if (layout == null || location == null) {
             return null;
@@ -91,6 +98,20 @@ public final class DungeonRuntimePresenter {
             return layout.roomAtCell(tileLocation.tile());
         }
         return null;
+    }
+
+    public static String corridorLabel(DungeonLayout layout, Corridor corridor) {
+        if (corridor == null) {
+            return "Korridor";
+        }
+        return corridorLabel(layout, corridor.roomIds().stream());
+    }
+
+    public static String corridorNetworkLabel(DungeonLayout layout, CorridorNetwork network) {
+        if (network == null) {
+            return "Korridor";
+        }
+        return corridorLabel(layout, network.roomIds().stream());
     }
 
     private static Room roomForId(DungeonLayout layout, Long roomId) {

@@ -6,8 +6,10 @@ import features.world.dungeonmap.application.runtime.DungeonRuntimeDoorCatalog;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeDoorDescriptor;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationService;
-import features.world.dungeonmap.application.runtime.DungeonRoomInspectorPresenter;
 import features.world.dungeonmap.application.runtime.DungeonRuntimePresenter;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeSurface;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeSurfacePresenter;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeSurfaceResolver;
 import features.world.dungeonmap.canvas.base.DungeonViewMode;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.geometry.Point2i;
@@ -38,7 +40,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
     private final Label mapLabel = new Label();
     private long runtimeRequestSequence;
     private Long runtimeMapId;
-    private DetailsNavigator.EntryKey lastPublishedRoomKey;
+    private DetailsNavigator.EntryKey lastPublishedSurfaceKey;
 
     public DungeonRuntimeView(
             String title,
@@ -118,13 +120,13 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         }
         if (state().errorMessage() != null || state().activeMap().mapId() <= 0) {
             runtimeMapId = null;
-            lastPublishedRoomKey = null;
+            lastPublishedSurfaceKey = null;
             runtimeState.clear();
             return;
         }
         if (!Objects.equals(runtimeMapId, state().activeMapId())) {
             runtimeMapId = state().activeMapId();
-            lastPublishedRoomKey = null;
+            lastPublishedSurfaceKey = null;
             loadRuntimeNavigation();
             return;
         }
@@ -188,13 +190,13 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
             return;
         }
         var layout = state().activeMap();
-        var room = DungeonRuntimePresenter.roomForLocation(layout, runtimeState.activeLocation());
-        if (room == null) {
+        DungeonRuntimeSurface surface = activeSurface();
+        if (surface == null) {
             return;
         }
         runtimeState.showMoveInProgress();
         UiAsyncTasks.submit(
-                () -> runtimeNavigationService.moveThroughDoor(layout, room, door),
+                () -> runtimeNavigationService.moveThroughDoor(layout, surface, door),
                 runtimeState::showNavigation,
                 failure -> {
                     System.err.println("DungeonRuntimeView.movePartyThroughDoor(): " + failure.getMessage());
@@ -233,11 +235,11 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
     }
 
     private List<WorldTravelSurface.DungeonDoorAction> travelDoorActions() {
-        var room = DungeonRuntimePresenter.roomForLocation(state().activeMap(), runtimeState.activeLocation());
-        if (room == null) {
+        DungeonRuntimeSurface surface = activeSurface();
+        if (surface == null) {
             return List.of();
         }
-        return DungeonRuntimeDoorCatalog.describe(room, runtimeState.heading()).stream()
+        return surface.doors().stream()
                 .map(this::toDoorAction)
                 .toList();
     }
@@ -251,18 +253,20 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         if (runtimeState.loading() || runtimeState.moving() || runtimeState.dragging()) {
             return;
         }
-        var room = DungeonRuntimePresenter.roomForLocation(state().activeMap(), runtimeState.activeLocation());
-        if (room == null || room.roomId() == null) {
+        DungeonRuntimeSurface surface = activeSurface();
+        if (surface == null || surface.entryKey() == null) {
             return;
         }
-        DetailsNavigator.EntryKey entryKey = new DetailsNavigator.EntryKey(
-                "dungeon-room",
-                state().activeMap().mapId() + ":" + room.roomId());
+        DetailsNavigator.EntryKey entryKey = surface.entryKey();
         boolean refreshCurrentCard = detailsNavigator.isShowing(entryKey);
-        if (!refreshCurrentCard && Objects.equals(lastPublishedRoomKey, entryKey)) {
+        if (!refreshCurrentCard && Objects.equals(lastPublishedSurfaceKey, entryKey)) {
             return;
         }
-        lastPublishedRoomKey = entryKey;
-        detailsNavigator.showContent(room.name(), entryKey, () -> DungeonRoomInspectorPresenter.buildRoomNode(room, runtimeState.heading()));
+        lastPublishedSurfaceKey = entryKey;
+        detailsNavigator.showContent(surface.title(), entryKey, () -> DungeonRuntimeSurfacePresenter.buildNode(surface));
+    }
+
+    private DungeonRuntimeSurface activeSurface() {
+        return DungeonRuntimeSurfaceResolver.resolve(state().activeMap(), runtimeState.activeLocation(), runtimeState.heading());
     }
 }
