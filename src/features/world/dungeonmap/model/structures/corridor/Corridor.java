@@ -2,6 +2,7 @@ package features.world.dungeonmap.model.structures.corridor;
 
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.objects.CorridorPath;
+import features.world.dungeonmap.model.structures.corridor.planning.CorridorPlanningEngine;
 import features.world.dungeonmap.model.structures.room.Room;
 
 import java.util.ArrayList;
@@ -373,7 +374,7 @@ public final class Corridor {
     public Corridor replanned(CorridorPlanningInput input) {
         // Drag previews and committed moves both flow through DungeonLayout.withTranslatedCluster().
         // Replanning must therefore preserve the same end topology for both.
-        return withPath(CorridorPlanner.plan(this, input));
+        return withPath(CorridorPlanningEngine.plan(this, input));
     }
 
     public List<Room> resolvedRooms(CorridorPlanningInput input) {

@@ -83,10 +83,10 @@ When rooms are painted, deleted, or merged, affected corridors must be reanchore
 3. Creates `CorridorRewriteContext` (before/after `CorridorPlanningInput`, affected corridor IDs, deleted cluster IDs)
 4. `DungeonCorridorRewriteCoordinator.rewriteCorridors()` — for each affected corridor:
    - `corridor.reanchoredFor(context)` — re-target waypoint/door bindings to new cluster centers (relative offsets survive cluster movement)
-   - `corridor.replannedFor(context)` — recompute corridor path via `CorridorPlanner`
+   - `corridor.replannedFor(context)` — recompute corridor path via the corridor planning engine
 5. All changes (room topology + corridors) persisted in one transaction
 
-### Corridor Planning Algorithm (CorridorPlanner)
+### Corridor Planning Algorithm
 
 Routes corridor cells connecting rooms, respecting waypoints and door placements.
 
