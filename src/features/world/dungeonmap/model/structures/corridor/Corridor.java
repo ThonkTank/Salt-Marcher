@@ -210,42 +210,47 @@ public final class Corridor {
         return updated.withBindings(updated.bindings.withDoorBinding(binding));
     }
 
+    public Corridor mergeWith(Corridor other) {
+        if (other == null || other == this) {
+            return this;
+        }
+        if (mapId != other.mapId()) {
+            throw new IllegalArgumentException("Korridore aus unterschiedlichen Karten koennen nicht zusammengefuehrt werden");
+        }
+        List<Long> mergedRoomIds = mergedRoomIds(other);
+        // Merging is intentionally asymmetric: the kept corridor stays the editable route owner, so its
+        // waypoint and door choices survive while the merged-away corridor contributes only room membership.
+        Corridor mergedCorridor = resolved(
+                corridorId,
+                mapId,
+                mergedRoomIds,
+                sanitizedBindings(mergedRoomIds, bindings),
+                path);
+        return mergedCorridor.isPersistable() ? mergedCorridor : mergedCorridor.withPath(CorridorPath.empty());
+    }
+
     public Corridor withoutDoorBinding(Long roomId) {
         return withBindings(bindings.withoutDoorBinding(roomId));
     }
 
-    public Corridor withReanchoredBindings(
-            CorridorPlanningInput input,
-            Map<Long, Point2i> replacementClusterCenters,
-            Set<Long> deletedClusterIds
-    ) {
-        return withRoomClusterReassignment(input, Map.of(), replacementClusterCenters, deletedClusterIds);
-    }
-
-    public Corridor withRoomClusterReassignment(
-            CorridorPlanningInput input,
-            Map<Long, Long> roomClusterIds,
-            Map<Long, Point2i> replacementClusterCenters,
-            Set<Long> deletedClusterIds
-    ) {
-        if (input == null) {
+    public Corridor reanchoredFor(CorridorRewriteContext context) {
+        if (context == null || !context.affects(corridorId)) {
             return this;
         }
-        Map<Long, Long> reassignedRoomClusterIds = roomClusterIds == null ? Map.of() : Map.copyOf(roomClusterIds);
-        Map<Long, Point2i> replacements = replacementClusterCenters == null ? Map.of() : Map.copyOf(replacementClusterCenters);
-        Set<Long> deleted = deletedClusterIds == null ? Set.of() : Set.copyOf(deletedClusterIds);
-        Long fallbackClusterId = fallbackWaypointClusterId(input, reassignedRoomClusterIds);
+        CorridorPlanningInput previousInput = context.previousPlanningInput();
+        CorridorPlanningInput rewrittenInput = context.rewrittenPlanningInput();
+        Set<Long> deletedClusterIds = context.deletedClusterIds();
+        Long fallbackClusterId = fallbackWaypointClusterId(rewrittenInput);
         List<CorridorWaypointBinding> updatedWaypoints = new ArrayList<>();
         for (CorridorWaypointBinding waypoint : bindings.waypoints()) {
             Long targetClusterId = targetClusterId(
                     waypoint.clusterId(),
-                    replacements,
-                    deleted,
-                    input,
-                    fallbackClusterId,
-                    reassignedRoomClusterIds);
-            Point2i targetCenter = targetClusterId == null ? null : replacements.getOrDefault(targetClusterId, input.clusterCenter(targetClusterId));
-            Point2i previousCenter = input.clusterCenter(waypoint.clusterId());
+                    previousInput,
+                    rewrittenInput,
+                    deletedClusterIds,
+                    fallbackClusterId);
+            Point2i targetCenter = rewrittenInput.clusterCenter(targetClusterId);
+            Point2i previousCenter = previousInput.clusterCenter(waypoint.clusterId());
             if (targetClusterId == null || targetCenter == null || previousCenter == null) {
                 continue;
             }
@@ -254,23 +259,35 @@ public final class Corridor {
         }
         CorridorBindings updatedBindings = new CorridorBindings(updatedWaypoints, bindings.doorBindings());
         for (CorridorDoorBinding binding : bindings.doorBindings()) {
-            Room room = input.room(binding.roomId());
+            Room room = previousInput.room(binding.roomId());
             if (room == null) {
                 updatedBindings = updatedBindings.withoutDoorBinding(binding.roomId());
                 continue;
             }
-            Long targetClusterId = reassignedRoomClusterIds.getOrDefault(binding.roomId(), room.clusterId());
-            Point2i targetCenter = targetClusterId == null ? null : replacements.getOrDefault(targetClusterId, input.clusterCenter(targetClusterId));
-            if (targetCenter == null || deleted.contains(targetClusterId)) {
+            Room rewrittenRoom = rewrittenInput.room(binding.roomId());
+            Long targetClusterId = rewrittenRoom == null ? null : rewrittenRoom.clusterId();
+            Point2i targetCenter = rewrittenInput.clusterCenter(targetClusterId);
+            if (targetCenter == null || deletedClusterIds.contains(targetClusterId)) {
                 updatedBindings = updatedBindings.withoutDoorBinding(binding.roomId());
                 continue;
             }
-            Point2i previousCenter = input.clusterCenter(binding.clusterId());
+            Point2i previousCenter = previousInput.clusterCenter(binding.clusterId());
+            if (previousCenter == null) {
+                updatedBindings = updatedBindings.withoutDoorBinding(binding.roomId());
+                continue;
+            }
             Point2i absoluteCell = binding.absoluteCell(previousCenter);
             updatedBindings = updatedBindings.withDoorBinding(
                     CorridorDoorBinding.atAbsoluteCell(binding.roomId(), targetClusterId, absoluteCell, targetCenter, binding.direction()));
         }
         return withBindings(updatedBindings);
+    }
+
+    public Corridor replannedFor(CorridorRewriteContext context) {
+        if (context == null || !context.affects(corridorId) || !isPersistable()) {
+            return this;
+        }
+        return replanned(context.rewrittenPlanningInput());
     }
 
     public Corridor replanned(CorridorPlanningInput input) {
@@ -333,13 +350,7 @@ public final class Corridor {
         return resolved(corridorId, mapId, roomIds, bindings, path);
     }
 
-    private Long fallbackWaypointClusterId(CorridorPlanningInput input, Map<Long, Long> roomClusterIds) {
-        for (Long roomId : roomIds) {
-            Long reassignedClusterId = roomClusterIds.get(roomId);
-            if (reassignedClusterId != null) {
-                return reassignedClusterId;
-            }
-        }
+    private Long fallbackWaypointClusterId(CorridorPlanningInput input) {
         for (Long roomId : roomIds) {
             Room room = input.room(roomId);
             if (room != null) {
@@ -349,38 +360,29 @@ public final class Corridor {
         return null;
     }
 
-    private static Point2i reanchoredCenter(
-            long clusterId,
-            Map<Long, Point2i> replacements,
-            Set<Long> deletedClusterIds,
-            CorridorPlanningInput input,
-            Long fallbackClusterId,
-            Map<Long, Long> roomClusterIds
-    ) {
-        Long targetClusterId = targetClusterId(clusterId, replacements, deletedClusterIds, input, fallbackClusterId, roomClusterIds);
-        return targetClusterId == null ? null : replacements.getOrDefault(targetClusterId, input.clusterCenter(targetClusterId));
-    }
-
     private static Long targetClusterId(
             long clusterId,
-            Map<Long, Point2i> replacements,
+            CorridorPlanningInput previousInput,
+            CorridorPlanningInput rewrittenInput,
             Set<Long> deletedClusterIds,
-            CorridorPlanningInput input,
-            Long fallbackClusterId,
-            Map<Long, Long> roomClusterIds
+            Long fallbackClusterId
     ) {
-        if (replacements.containsKey(clusterId) || input.clusterCenter(clusterId) != null && !deletedClusterIds.contains(clusterId)) {
+        if (rewrittenInput.clusterCenter(clusterId) != null && !deletedClusterIds.contains(clusterId)) {
             return clusterId;
         }
-        for (Long reassignedClusterId : roomClusterIds.values()) {
-            if (reassignedClusterId != null && replacements.containsKey(reassignedClusterId)) {
-                return reassignedClusterId;
+        for (Room room : previousInput.roomsById().values()) {
+            if (room == null || room.clusterId() != clusterId) {
+                continue;
+            }
+            Room rewrittenRoom = rewrittenInput.room(room.roomId());
+            if (rewrittenRoom != null && rewrittenInput.clusterCenter(rewrittenRoom.clusterId()) != null) {
+                return rewrittenRoom.clusterId();
             }
         }
         if (deletedClusterIds.contains(clusterId)) {
             return fallbackClusterId;
         }
-        return input.clusterCenter(clusterId) == null ? null : clusterId;
+        return previousInput.clusterCenter(clusterId) == null ? null : clusterId;
     }
 
     private static List<RoomLink> deriveRoomLinks(List<Long> roomIds) {
@@ -394,6 +396,33 @@ public final class Corridor {
             links.add(new RoomLink(fromRoomId, toRoomId));
         }
         return List.copyOf(links);
+    }
+
+    private List<Long> mergedRoomIds(Corridor other) {
+        List<Long> mergedRoomIds = new ArrayList<>(roomIds);
+        for (Long roomId : other.roomIds()) {
+            if (roomId != null && !mergedRoomIds.contains(roomId)) {
+                mergedRoomIds.add(roomId);
+            }
+        }
+        return List.copyOf(mergedRoomIds);
+    }
+
+    private static CorridorBindings sanitizedBindings(List<Long> roomIds, CorridorBindings bindings) {
+        if (bindings == null) {
+            return CorridorBindings.empty();
+        }
+        Set<Long> connectedRoomIds = new LinkedHashSet<>(normalizeRoomIds(roomIds));
+        List<CorridorWaypointBinding> sanitizedWaypoints = bindings.waypoints().stream()
+                .filter(Objects::nonNull)
+                .toList();
+        Set<Long> seenDoorBindingRoomIds = new LinkedHashSet<>();
+        List<CorridorDoorBinding> sanitizedDoorBindings = bindings.doorBindings().stream()
+                .filter(Objects::nonNull)
+                .filter(binding -> connectedRoomIds.contains(binding.roomId()))
+                .filter(binding -> seenDoorBindingRoomIds.add(binding.roomId()))
+                .toList();
+        return new CorridorBindings(sanitizedWaypoints, sanitizedDoorBindings);
     }
 
     private static List<Long> normalizeRoomIds(List<Long> roomIds) {

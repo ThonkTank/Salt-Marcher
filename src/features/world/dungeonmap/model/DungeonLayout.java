@@ -191,30 +191,40 @@ public final class DungeonLayout {
         if (cluster == null || cluster.clusterId() == null) {
             return false;
         }
-        return !corridorIdsDependingOnClusters(Set.of(cluster.clusterId())).isEmpty()
-                || !corridorIdsDependingOnRooms(cluster.roomIds()).isEmpty();
+        return !corridorIdsAffectedBy(cluster.roomIds(), Set.of(cluster.clusterId())).isEmpty();
     }
 
-    public Set<Long> corridorIdsDependingOnClusters(Set<Long> clusterIds) {
-        if (clusterIds == null || clusterIds.isEmpty()) {
+    public Set<Long> corridorIdsAffectedBy(ClusterRewrite rewrite) {
+        if (rewrite == null) {
             return Set.of();
         }
-        return corridors.stream()
-                .filter(corridor -> corridor != null && corridor.corridorId() != null)
-                .filter(corridor -> corridor.isAffectedByClusterRewrite(clusterIds))
+        return corridorIdsAffectedBy(rewrite.affectedRoomIds(), rewrite.affectedClusterIds());
+    }
+
+    public List<Corridor> corridorsAffectedBy(ClusterRewrite rewrite) {
+        if (rewrite == null) {
+            return List.of();
+        }
+        return corridorsAffectedBy(rewrite.affectedRoomIds(), rewrite.affectedClusterIds());
+    }
+
+    public Set<Long> corridorIdsAffectedBy(Set<Long> roomIds, Set<Long> clusterIds) {
+        return corridorsAffectedBy(roomIds, clusterIds).stream()
                 .map(Corridor::corridorId)
                 .collect(java.util.stream.Collectors.toUnmodifiableSet());
     }
 
-    public Set<Long> corridorIdsDependingOnRooms(Set<Long> roomIds) {
-        if (roomIds == null || roomIds.isEmpty()) {
-            return Set.of();
+    public List<Corridor> corridorsAffectedBy(Set<Long> roomIds, Set<Long> clusterIds) {
+        if ((roomIds == null || roomIds.isEmpty()) && (clusterIds == null || clusterIds.isEmpty())) {
+            return List.of();
         }
+        Set<Long> affectedRoomIds = roomIds == null ? Set.of() : Set.copyOf(roomIds);
+        Set<Long> affectedClusterIds = clusterIds == null ? Set.of() : Set.copyOf(clusterIds);
         return corridors.stream()
                 .filter(corridor -> corridor != null && corridor.corridorId() != null)
-                .filter(corridor -> corridor.isAffectedByRoomRewrite(roomIds))
-                .map(Corridor::corridorId)
-                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+                .filter(corridor -> corridor.isAffectedByRoomRewrite(affectedRoomIds)
+                        || corridor.isAffectedByClusterRewrite(affectedClusterIds))
+                .toList();
     }
 
     public CorridorPlanningInput corridorPlanningInput() {

@@ -1,6 +1,16 @@
 package features.world.dungeonmap.application.room;
 
+import features.world.dungeonmap.application.corridor.DungeonCorridorRewriteCoordinator;
+import features.world.dungeonmap.application.corridor.DungeonCorridorPersistenceService;
+import features.world.dungeonmap.application.corridor.DungeonCorridorRoomRewriteService;
+import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.objects.Floor;
+import features.world.dungeonmap.model.structures.corridor.Corridor;
+import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInput;
+import features.world.dungeonmap.model.structures.corridor.CorridorRewriteContext;
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.structures.cluster.ClusterRewrite;
+import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.persistence.DungeonCorridorWriteRepository;
 import features.world.dungeonmap.persistence.ClusterGeometryWrite;
 import features.world.dungeonmap.persistence.DungeonRoomGeometryWriteMapper;
@@ -9,24 +19,32 @@ import features.world.dungeonmap.persistence.DungeonRoomWriteRepository;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 public final class RoomTopologyEditPlanApplier {
 
     private final DungeonRoomWriteRepository roomWriteRepository;
     private final DungeonRoomGeometryWriteMapper geometryWriteMapper;
-    private final RoomCorridorMutationApplier corridorMutationApplier;
+    private final DungeonCorridorPersistenceService corridorPersistenceService;
+    private final DungeonCorridorRoomRewriteService corridorRoomRewriteService;
+    private final DungeonCorridorRewriteCoordinator corridorRewriteCoordinator;
 
     public RoomTopologyEditPlanApplier(
             DungeonRoomWriteRepository roomWriteRepository,
             DungeonRoomGeometryWriteMapper geometryWriteMapper,
-            DungeonCorridorWriteRepository corridorWriteRepository
+            DungeonCorridorPersistenceService corridorPersistenceService,
+            DungeonCorridorRoomRewriteService corridorRoomRewriteService,
+            DungeonCorridorRewriteCoordinator corridorRewriteCoordinator
     ) {
         this.roomWriteRepository = Objects.requireNonNull(roomWriteRepository, "roomWriteRepository");
         this.geometryWriteMapper = Objects.requireNonNull(geometryWriteMapper, "geometryWriteMapper");
-        this.corridorMutationApplier = new RoomCorridorMutationApplier(
-                Objects.requireNonNull(corridorWriteRepository, "corridorWriteRepository"));
+        this.corridorPersistenceService = Objects.requireNonNull(corridorPersistenceService, "corridorPersistenceService");
+        this.corridorRoomRewriteService = Objects.requireNonNull(corridorRoomRewriteService, "corridorRoomRewriteService");
+        this.corridorRewriteCoordinator = Objects.requireNonNull(corridorRewriteCoordinator, "corridorRewriteCoordinator");
     }
 
     public void apply(Connection conn, DungeonLayout layout, RoomTopologyEditPlan plan) throws SQLException {
@@ -36,21 +54,12 @@ public final class RoomTopologyEditPlanApplier {
         }
         if (plan instanceof UpdateClusterRoomEditPlan updatePlan) {
             applyUpdate(conn, updatePlan);
-            corridorMutationApplier.afterClusterUpdated(
-                    conn,
-                    layout,
-                    updatePlan.clusterId(),
-                    updatePlan.clusterShape(),
-                    updatePlan.roomId());
+            corridorPersistenceService.persistCorridors(conn, rewrittenCorridorsForUpdate(layout, updatePlan));
             return;
         }
         if (plan instanceof DeleteClusterRoomEditPlan deletePlan) {
             roomWriteRepository.deleteCluster(conn, deletePlan.clusterId());
-            corridorMutationApplier.afterClusterDeleted(
-                    conn,
-                    layout,
-                    deletePlan.clusterId(),
-                    layout.findCluster(deletePlan.clusterId()) == null ? java.util.Set.of() : layout.findCluster(deletePlan.clusterId()).roomIds());
+            corridorPersistenceService.persistCorridors(conn, rewrittenCorridorsForDelete(layout, deletePlan));
             return;
         }
         if (plan instanceof SplitClusterRoomEditPlan splitPlan) {
@@ -71,26 +80,124 @@ public final class RoomTopologyEditPlanApplier {
     }
 
     private void applySplit(Connection conn, SplitClusterRoomEditPlan plan) throws SQLException {
-        List<RoomCorridorMutationApplier.InsertedFragment> insertedFragments = new ArrayList<>();
+        List<Room> insertedRooms = new ArrayList<>();
+        Map<Long, Point2i> replacementCenters = new LinkedHashMap<>();
         roomWriteRepository.deleteCluster(conn, plan.sourceClusterId());
         for (SplitClusterFragmentPlan fragment : plan.fragments()) {
             ClusterGeometryWrite geometry = geometryWriteMapper.toClusterGeometry(fragment.clusterShape());
             long clusterId = roomWriteRepository.insertCluster(conn, plan.mapId(), geometry);
             long roomId = roomWriteRepository.insertRoom(conn, plan.mapId(), clusterId, fragment.roomName(), fragment.roomAnchor());
-            insertedFragments.add(new RoomCorridorMutationApplier.InsertedFragment(
-                    clusterId,
-                    roomId,
-                    fragment.roomName(),
-                    fragment.clusterShape(),
-                    fragment.roomAnchor()));
+            replacementCenters.put(clusterId, fragment.clusterShape().centerCell());
+            insertedRooms.add(Room.create(roomId, plan.mapId(), clusterId, fragment.roomName(), new Floor(fragment.clusterShape())));
         }
         if (plan.sourceRoomId() != null) {
-            corridorMutationApplier.afterClusterSplit(
-                    conn,
+            Map<Long, Corridor> corridorsById = corridorRoomRewriteService.applyRoomRewrite(
                     plan.layout(),
-                    plan.sourceClusterId(),
-                    plan.sourceRoomId(),
-                    insertedFragments);
+                    plan.layout().corridorsById(),
+                    splitRewrite(plan.sourceClusterId(), plan.sourceRoomId(), insertedRooms));
+            CorridorRewriteContext rewriteContext = new CorridorRewriteContext(
+                    plan.layout().corridorPlanningInput(),
+                    planningInput(plan.layout(), roomsById(insertedRooms), replacementCenters, Set.of(plan.sourceRoomId())),
+                    plan.layout().corridorIdsAffectedBy(Set.of(plan.sourceRoomId()), Set.of(plan.sourceClusterId())),
+                    Set.of(plan.sourceClusterId()));
+            corridorPersistenceService.persistCorridors(conn, corridorRewriteCoordinator.rewriteCorridors(corridorsById, rewriteContext));
         }
     }
+
+    private Map<Long, Corridor> rewrittenCorridorsForUpdate(DungeonLayout layout, UpdateClusterRoomEditPlan plan) {
+        Room room = layout.findRoom(plan.roomId());
+        if (room == null) {
+            return layout.corridorsById();
+        }
+        Point2i updatedCenter = plan.clusterShape() == null ? layout.findCluster(plan.clusterId()).center() : plan.clusterShape().centerCell();
+        Room updatedRoom = Room.resolved(
+                room.roomId(),
+                room.mapId(),
+                room.clusterId(),
+                room.name(),
+                new Floor(plan.clusterShape()),
+                room.walls(),
+                room.doors());
+        CorridorRewriteContext rewriteContext = new CorridorRewriteContext(
+                layout.corridorPlanningInput(),
+                planningInput(layout, Map.of(updatedRoom.roomId(), updatedRoom), Map.of(plan.clusterId(), updatedCenter), Set.of()),
+                layout.corridorIdsAffectedBy(Set.of(room.roomId()), Set.of(plan.clusterId())),
+                Set.of());
+        return corridorRewriteCoordinator.rewriteCorridors(layout.corridorsById(), rewriteContext);
+    }
+
+    private Map<Long, Corridor> rewrittenCorridorsForDelete(DungeonLayout layout, DeleteClusterRoomEditPlan plan) {
+        Set<Long> deletedRoomIds = layout.findCluster(plan.clusterId()) == null ? Set.of() : layout.findCluster(plan.clusterId()).roomIds();
+        ClusterRewrite rewrite = new ClusterRewrite(
+                plan.clusterId(),
+                null,
+                null,
+                List.of(),
+                List.of(),
+                deletedRoomIds,
+                Map.of(),
+                Set.of(),
+                Set.of(plan.clusterId()),
+                Map.of());
+        Map<Long, Corridor> corridorsById = corridorRoomRewriteService.applyRoomRewrite(layout, layout.corridorsById(), rewrite);
+        CorridorRewriteContext rewriteContext = new CorridorRewriteContext(
+                layout.corridorPlanningInput(),
+                planningInput(layout, Map.of(), Map.of(), deletedRoomIds),
+                layout.corridorIdsAffectedBy(deletedRoomIds, Set.of(plan.clusterId())),
+                Set.of(plan.clusterId()));
+        return corridorRewriteCoordinator.rewriteCorridors(corridorsById, rewriteContext);
+    }
+
+    private static ClusterRewrite splitRewrite(long sourceClusterId, long sourceRoomId, List<Room> fragments) {
+        return new ClusterRewrite(
+                sourceClusterId,
+                null,
+                null,
+                List.of(),
+                List.of(),
+                Set.of(),
+                Map.of(),
+                Set.of(),
+                Set.of(sourceClusterId),
+                Map.of(sourceRoomId, fragments));
+    }
+
+    private static Map<Long, Room> roomsById(List<Room> rooms) {
+        Map<Long, Room> result = new LinkedHashMap<>();
+        for (Room room : rooms) {
+            if (room != null && room.roomId() != null) {
+                result.put(room.roomId(), room);
+            }
+        }
+        return Map.copyOf(result);
+    }
+
+    private static CorridorPlanningInput planningInput(
+            DungeonLayout layout,
+            Map<Long, Room> replacementRooms,
+            Map<Long, Point2i> replacementCenters,
+            Set<Long> removedRoomIds
+    ) {
+        Map<Long, Room> roomsById = new LinkedHashMap<>();
+        Map<Long, Point2i> clusterCenters = new LinkedHashMap<>();
+        Set<Long> removedRooms = removedRoomIds == null ? Set.of() : Set.copyOf(removedRoomIds);
+        for (var cluster : layout.clusters()) {
+            if (cluster == null || cluster.clusterId() == null) {
+                continue;
+            }
+            clusterCenters.put(cluster.clusterId(), replacementCenters.getOrDefault(cluster.clusterId(), cluster.center()));
+            for (Room room : cluster.rooms()) {
+                if (room == null || room.roomId() == null || removedRooms.contains(room.roomId())) {
+                    continue;
+                }
+                roomsById.put(room.roomId(), replacementRooms.getOrDefault(room.roomId(), room));
+            }
+        }
+        roomsById.putAll(replacementRooms);
+        for (Room room : replacementRooms.values()) {
+            clusterCenters.put(room.clusterId(), replacementCenters.get(room.clusterId()));
+        }
+        return new CorridorPlanningInput(roomsById, clusterCenters);
+    }
+
 }

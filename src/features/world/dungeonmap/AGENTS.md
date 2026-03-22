@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Scope
 
-This file covers the `dungeonmap` feature — a tile-grid dungeon editor and runtime viewer within the SaltMarcher app. See the root `CLAUDE.md` for build commands, project-wide conventions, and the cockpit shell architecture.
+This file covers the `dungeonmap` feature — a tile-grid dungeon editor and runtime viewer within the SaltMarcher app. See the root `CLAUDE.md` and `AGENTS.md` for build commands, project-wide conventions, and the cockpit shell architecture.
 
 ## Feature Architecture
 
@@ -15,11 +15,19 @@ The feature ships two `AppView` implementations: `DungeonEditorView` (EDITOR) an
 ### Package Roles
 
 - `model/` — immutable domain model in three strict layers (see **Model Layering** below)
-- `application/` — stateful edit services that plan and persist topology changes. Services coordinate between model and persistence, but must not reconstruct structure truth that already belongs on `Room`, `RoomCluster`, or `Corridor`
+- `application/` — stateful edit services that plan and persist topology changes. Organized by domain concern:
+  - `application/room/` — room paint topology: `DungeonRoomTopologyService` (orchestrator), `RoomPaintTopologyPlanner`, `RoomTopologyEditPlan`/`RoomTopologyEditPlanApplier`, `RoomCorridorMutationApplier`
+  - `application/corridor/` — corridor lifecycle: `DungeonCorridorEditService` (CRUD), `DungeonCorridorBindingReanchorService` (re-anchors bindings after room topology changes), `DungeonCorridorRoomReconcileService` (reconciles corridor membership after room merges/splits), `DungeonCorridorDetailService`
+  - `application/runtime/` — `DungeonRuntimeStateRepairService`, `DungeonRuntimeLocation`
+  - `application/support/` — `DungeonTransactionRunner`
+  - Services coordinate between model and persistence but must not reconstruct structure truth that already belongs on `Room`, `RoomCluster`, or `Corridor`
 - `loading/` — `DungeonMapLoader` (raw JDBC reads) + `DungeonMapLoadingService` (async loading with sequenced request deduplication). Loader hydrates rooms from stored cluster topology via BFS flood-fill
 - `persistence/` — write-side repositories (`DungeonRoomWriteRepository`, `DungeonRoomGeometryWriteMapper`). Read-side lives in `loading/`
 - `catalog/` — map CRUD (create/rename/delete) with its own `application/` + `persistence/` sub-packages
-- `canvas/` — JavaFX Canvas rendering. `DungeonCanvasWorkspace` dispatches to a `DungeonSceneRenderer` based on `DungeonViewMode` (GRID vs GRAPH). Shared render inputs travel through `DungeonRenderState` so renderers depend on one compact render-state object instead of a widening parameter list. Camera handles pan (right-drag) and zoom (scroll). Pointer events are translated to `DungeonCanvasPointerEvent` with cell coordinates
+- `canvas/` — JavaFX Canvas rendering, organized into sub-packages:
+  - `canvas/base/` — `DungeonCanvasWorkspace` dispatches to a `DungeonSceneRenderer` based on `DungeonViewMode` (GRID vs GRAPH). `DungeonRenderState` carries shared render inputs. `DungeonCanvasCamera` handles pan (right-drag) and zoom (scroll). `DungeonCanvasInteractionHandler` translates pointer events to `DungeonCanvasPointerEvent` with cell coordinates. `DungeonCanvasTheme` provides drawing constants
+  - `canvas/grid/` — `DungeonGridSceneRenderer` (tile-based view), `DungeonGridInteractiveLabels`
+  - `canvas/graph/` — `DungeonGraphSceneRenderer` (node-graph view)
 - `shell/` — view and UI coordinator layer. `DungeonEditorCoordinator` is the central wiring hub: it binds controls, tools, interaction controllers, and state listeners. Editor interactions are in `shell/editor/interaction/`
 - `state/` — observable transient state containers with listener lists (`DungeonMapState`, `DungeonEditorSessionState`, `EditorSelectionState`, `EditorLayoutPreviewState`, `EditorPaintPreviewState`, `DungeonCorridorDraftState`). These are the single source of truth for cross-class coordination
 - `bootstrap/` — `DungeonMapModule` composition root
@@ -39,7 +47,9 @@ The feature ships two `AppView` implementations: `DungeonEditorView` (EDITOR) an
 
 `DungeonEditorTool` enum defines tool modes (SELECT, ROOM_PAINT, ROOM_DELETE, CLUSTER_WALL/DOOR, CORRIDOR_CREATE/DELETE). Tools are grouped into `ToolFamily` for the dropdown toolbar. `DungeonEditorSessionState` holds current tool + view mode.
 
-`DungeonEditorGridInteractionController` delegates to specialized controllers: `ClusterSelectionDragController` for select/drag, `RoomPaintInteractionController` for paint/erase. Canvas pointer events flow through `DungeonCanvasInteractionHandler` → controller → state update → redraw.
+`DungeonEditorGridInteractionController` delegates to specialized controllers: `ClusterSelectionDragController` for select/drag, `RoomPaintInteractionController` for paint/erase, `CorridorInteractionController` for corridor create/delete. Canvas pointer events flow through `DungeonCanvasInteractionHandler` → controller → state update → redraw. Hit testing is handled by `DungeonEditorHitTester` and `DungeonGridHitTester`, with hit results wrapped in `DungeonEditorHitTarget`/`DungeonEditorLabelHitTarget`.
+
+Editor controls in `shell/editor/controls/` provide the left-panel UI: `DungeonEditorControls` composes `MapControls` (map selector/CRUD), `ToolControls` (tool palette), and `ViewModeControls` (grid/graph toggle). `ToolFamilyDropdownController` manages the tool family dropdown toolbar. `GuardState` tracks unsaved-changes guards.
 
 ## Model Layering
 

@@ -43,7 +43,8 @@ final class CorridorPlanner {
 
         Map<Long, ResolvedCorridorDoorBinding> doorBindings = corridor.resolvedDoorBindings(input);
         List<Point2i> waypointCells = corridor.resolvedWaypointCells(input);
-        MutableNetwork network = bestNetwork(rooms, waypointCells, doorBindings);
+        PlannerContext context = new PlannerContext(rooms, waypointCells, doorBindings);
+        MutableNetwork network = bestNetwork(context);
 
         boolean routable = network.connectedRoomIds.size() == rooms.size()
                 && (!network.corridorCells.isEmpty() || !network.doors.isEmpty());
@@ -55,40 +56,34 @@ final class CorridorPlanner {
                 routable);
     }
 
-    private static MutableNetwork bestNetwork(
-            List<Room> rooms,
-            List<Point2i> waypointCells,
-            Map<Long, ResolvedCorridorDoorBinding> doorBindings
-    ) {
+    private static MutableNetwork bestNetwork(PlannerContext context) {
         MutableNetwork best = null;
-        for (Room seedRoom : rooms) {
+        NetworkScore bestScore = null;
+        for (Room seedRoom : context.rooms()) {
             if (seedRoom == null || seedRoom.roomId() == null) {
                 continue;
             }
-            MutableNetwork candidate = buildNetwork(seedRoom, rooms, waypointCells, doorBindings);
-            if (best == null || candidate.score(rooms).compareTo(best.score(rooms)) < 0) {
+            MutableNetwork candidate = buildNetwork(seedRoom, context);
+            NetworkScore candidateScore = candidate.score(context.rooms());
+            if (bestScore == null || candidateScore.compareTo(bestScore) < 0) {
                 best = candidate;
+                bestScore = candidateScore;
             }
         }
         return best == null ? new MutableNetwork() : best;
     }
 
-    private static MutableNetwork buildNetwork(
-            Room seedRoom,
-            List<Room> rooms,
-            List<Point2i> waypointCells,
-            Map<Long, ResolvedCorridorDoorBinding> doorBindings
-    ) {
+    private static MutableNetwork buildNetwork(Room seedRoom, PlannerContext context) {
         MutableNetwork network = new MutableNetwork();
         network.connectedRoomIds.add(seedRoom.roomId());
-        if (!waypointCells.isEmpty()) {
-            ConnectionPlan seedPlan = bestSeedWaypointPlan(seedRoom, waypointCells, rooms, doorBindings);
+        if (!context.waypointCells().isEmpty()) {
+            ConnectionPlan seedPlan = bestSeedWaypointPlan(seedRoom, context);
             if (seedPlan != null) {
                 network.apply(seedPlan);
             }
         }
-        while (network.connectedRoomIds.size() < rooms.size()) {
-            ConnectionPlan next = bestNextPlan(rooms, network, doorBindings, waypointCells);
+        while (network.connectedRoomIds.size() < context.rooms().size()) {
+            ConnectionPlan next = bestNextPlan(context, network);
             if (next == null) {
                 break;
             }
@@ -122,16 +117,10 @@ final class CorridorPlanner {
         return new GridRoute(anchors);
     }
 
-    private static ConnectionPlan bestSeedWaypointPlan(
-            Room seedRoom,
-            List<Point2i> waypointCells,
-            List<Room> rooms,
-            Map<Long, ResolvedCorridorDoorBinding> doorBindings
-    ) {
+    private static ConnectionPlan bestSeedWaypointPlan(Room seedRoom, PlannerContext context) {
         ConnectionPlan best = null;
-        Map<Point2i, Long> occupancy = roomOccupancy(rooms);
-        for (ExitCandidate exit : exitCandidates(seedRoom, occupancy, doorBindings)) {
-            List<Point2i> path = pathThroughPoints(exit.outsideCell, waypointCells, occupancy);
+        for (ExitCandidate exit : context.exitCandidates(seedRoom)) {
+            List<Point2i> path = pathThroughPoints(exit.outsideCell, context.waypointCells(), context.occupancy());
             if (path.isEmpty()) {
                 continue;
             }
@@ -140,40 +129,29 @@ final class CorridorPlanner {
         return best;
     }
 
-    private static ConnectionPlan bestPlanForRoom(
-            Room room,
-            List<Room> orderedRooms,
-            MutableNetwork network,
-            Map<Long, ResolvedCorridorDoorBinding> doorBindings
-    ) {
+    private static ConnectionPlan bestPlanForRoom(Room room, PlannerContext context, MutableNetwork network) {
         ConnectionPlan best = null;
-        Map<Point2i, Long> occupancy = roomOccupancy(orderedRooms);
         if (!network.corridorCells.isEmpty()) {
-            best = better(best, bestPlanToNetwork(room, network.corridorCells, occupancy, doorBindings));
+            best = better(best, bestPlanToNetwork(room, network.corridorCells, context));
         }
-        for (Room connectedRoom : orderedRooms) {
+        for (Room connectedRoom : context.rooms()) {
             if (connectedRoom == null || !network.connectedRoomIds.contains(connectedRoom.roomId())) {
                 continue;
             }
-            best = better(best, bestPlanToConnectedRoom(room, connectedRoom, occupancy, doorBindings));
+            best = better(best, bestPlanToConnectedRoom(room, connectedRoom, context));
         }
         return best;
     }
 
-    private static ConnectionPlan bestNextPlan(
-            List<Room> rooms,
-            MutableNetwork network,
-            Map<Long, ResolvedCorridorDoorBinding> doorBindings,
-            List<Point2i> waypointCells
-    ) {
+    private static ConnectionPlan bestNextPlan(PlannerContext context, MutableNetwork network) {
         ConnectionPlan best = null;
         NetworkScore bestScore = null;
-        for (Room room : rooms) {
+        for (Room room : context.rooms()) {
             if (room == null || room.roomId() == null || network.connectedRoomIds.contains(room.roomId())) {
                 continue;
             }
-            for (ConnectionPlan candidate : connectionPlansForRoom(room, rooms, network, doorBindings, waypointCells)) {
-                NetworkScore candidateScore = network.scoreWith(rooms, candidate);
+            for (ConnectionPlan candidate : connectionPlansForRoom(room, context, network)) {
+                NetworkScore candidateScore = network.scoreWith(context.rooms(), candidate);
                 if (bestScore == null
                         || candidateScore.compareTo(bestScore) < 0
                         || (candidateScore.compareTo(bestScore) == 0 && candidate.score().compareTo(best.score()) < 0)) {
@@ -185,35 +163,28 @@ final class CorridorPlanner {
         return best;
     }
 
-    private static List<ConnectionPlan> connectionPlansForRoom(
-            Room room,
-            List<Room> orderedRooms,
-            MutableNetwork network,
-            Map<Long, ResolvedCorridorDoorBinding> doorBindings,
-            List<Point2i> waypointCells
-    ) {
+    private static List<ConnectionPlan> connectionPlansForRoom(Room room, PlannerContext context, MutableNetwork network) {
         List<ConnectionPlan> result = new ArrayList<>();
-        Map<Point2i, Long> occupancy = roomOccupancy(orderedRooms);
         if (network.corridorCells.isEmpty()) {
-            for (Room connectedRoom : orderedRooms) {
+            for (Room connectedRoom : context.rooms()) {
                 if (connectedRoom == null || !network.connectedRoomIds.contains(connectedRoom.roomId())) {
                     continue;
                 }
-                ConnectionPlan candidate = bestPlanToConnectedRoom(room, connectedRoom, occupancy, doorBindings);
+                ConnectionPlan candidate = bestPlanToConnectedRoom(room, connectedRoom, context);
                 if (candidate != null) {
                     result.add(candidate);
                 }
             }
         } else {
-            ConnectionPlan joinNetwork = bestPlanToNetwork(room, network.corridorCells, occupancy, doorBindings);
+            ConnectionPlan joinNetwork = bestPlanToNetwork(room, network.corridorCells, context);
             if (joinNetwork != null) {
                 result.add(joinNetwork);
             }
-            for (Room connectedRoom : orderedRooms) {
+            for (Room connectedRoom : context.rooms()) {
                 if (connectedRoom == null || !network.connectedRoomIds.contains(connectedRoom.roomId())) {
                     continue;
                 }
-                ConnectionPlan candidate = bestFreshPathPlan(room, connectedRoom, occupancy, doorBindings, waypointCells);
+                ConnectionPlan candidate = bestFreshPathPlan(room, connectedRoom, context);
                 if (candidate != null) {
                     result.add(candidate);
                 }
@@ -222,25 +193,19 @@ final class CorridorPlanner {
         return List.copyOf(result);
     }
 
-    private static ConnectionPlan bestFreshPathPlan(
-            Room room,
-            Room connectedRoom,
-            Map<Point2i, Long> occupancy,
-            Map<Long, ResolvedCorridorDoorBinding> doorBindings,
-            List<Point2i> waypointCells
-    ) {
+    private static ConnectionPlan bestFreshPathPlan(Room room, Room connectedRoom, PlannerContext context) {
         if (room == null || connectedRoom == null) {
             return null;
         }
         ConnectionPlan best = null;
-        List<ExitCandidate> roomExits = exitCandidates(room, occupancy, doorBindings);
-        List<ExitCandidate> connectedExits = exitCandidates(connectedRoom, occupancy, doorBindings);
+        List<ExitCandidate> roomExits = context.exitCandidates(room);
+        List<ExitCandidate> connectedExits = context.exitCandidates(connectedRoom);
         for (ExitCandidate exit : roomExits) {
             for (ExitCandidate target : connectedExits) {
-                List<Point2i> targets = waypointCells.isEmpty()
+                List<Point2i> targets = context.waypointCells().isEmpty()
                         ? List.of(target.outsideCell)
-                        : append(waypointCells, target.outsideCell);
-                List<Point2i> path = pathThroughPoints(exit.outsideCell, targets, occupancy);
+                        : append(context.waypointCells(), target.outsideCell);
+                List<Point2i> path = pathThroughPoints(exit.outsideCell, targets, context.occupancy());
                 if (path.isEmpty() && !exit.outsideCell.equals(target.outsideCell)) {
                     continue;
                 }
@@ -254,15 +219,10 @@ final class CorridorPlanner {
         return best;
     }
 
-    private static ConnectionPlan bestPlanToNetwork(
-            Room room,
-            Set<Point2i> networkCells,
-            Map<Point2i, Long> occupancy,
-            Map<Long, ResolvedCorridorDoorBinding> doorBindings
-    ) {
+    private static ConnectionPlan bestPlanToNetwork(Room room, Set<Point2i> networkCells, PlannerContext context) {
         ConnectionPlan best = null;
-        for (ExitCandidate exit : exitCandidates(room, occupancy, doorBindings)) {
-            List<Point2i> path = shortestPathToAny(exit.outsideCell, networkCells, occupancy);
+        for (ExitCandidate exit : context.exitCandidates(room)) {
+            List<Point2i> path = shortestPathToAny(exit.outsideCell, networkCells, context.occupancy());
             if (path == null) {
                 continue;
             }
@@ -271,21 +231,16 @@ final class CorridorPlanner {
         return best;
     }
 
-    private static ConnectionPlan bestPlanToConnectedRoom(
-            Room room,
-            Room connectedRoom,
-            Map<Point2i, Long> occupancy,
-            Map<Long, ResolvedCorridorDoorBinding> doorBindings
-    ) {
+    private static ConnectionPlan bestPlanToConnectedRoom(Room room, Room connectedRoom, PlannerContext context) {
         if (room == null || connectedRoom == null || Objects.equals(room.roomId(), connectedRoom.roomId())) {
             return null;
         }
-        ConnectionPlan best = directAdjacencyPlan(room, connectedRoom, doorBindings);
-        List<ExitCandidate> roomExits = exitCandidates(room, occupancy, doorBindings);
-        List<ExitCandidate> connectedExits = exitCandidates(connectedRoom, occupancy, doorBindings);
+        ConnectionPlan best = directAdjacencyPlan(room, connectedRoom, context.doorBindings());
+        List<ExitCandidate> roomExits = context.exitCandidates(room);
+        List<ExitCandidate> connectedExits = context.exitCandidates(connectedRoom);
         for (ExitCandidate exit : roomExits) {
             for (ExitCandidate target : connectedExits) {
-                List<Point2i> path = shortestPath(exit.outsideCell, target.outsideCell, occupancy);
+                List<Point2i> path = shortestPath(exit.outsideCell, target.outsideCell, context.occupancy());
                 if (path == null) {
                     continue;
                 }
@@ -416,35 +371,39 @@ final class CorridorPlanner {
     }
 
     private static List<Point2i> shortestPathToAny(Point2i start, Set<Point2i> goals, Map<Point2i, Long> roomOccupancy) {
-        List<Point2i> best = null;
-        for (Point2i goal : goals) {
-            List<Point2i> path = shortestPath(start, goal, roomOccupancy);
-            if (path == null) {
-                continue;
-            }
-            if (best == null || score(path).compareTo(score(best)) < 0) {
-                best = path;
-            }
-        }
-        return best;
+        return shortestPath(start, goals, roomOccupancy);
     }
 
     private static List<Point2i> shortestPath(Point2i start, Point2i goal, Map<Point2i, Long> roomOccupancy) {
-        if (start == null || goal == null) {
+        if (goal == null) {
             return null;
         }
-        if (start.equals(goal)) {
+        return shortestPath(start, Set.of(goal), roomOccupancy);
+    }
+
+    private static List<Point2i> shortestPath(Point2i start, Set<Point2i> goals, Map<Point2i, Long> roomOccupancy) {
+        if (start == null || goals == null || goals.isEmpty()) {
+            return null;
+        }
+        List<Point2i> goalList = goals.stream()
+                .filter(Objects::nonNull)
+                .filter(goal -> !roomOccupancy.containsKey(goal) || start.equals(goal))
+                .toList();
+        if (goalList.isEmpty()) {
+            return null;
+        }
+        if (goalList.contains(start)) {
             return List.of();
         }
-        if (roomOccupancy.containsKey(start) || roomOccupancy.containsKey(goal)) {
+        if (roomOccupancy.containsKey(start)) {
             return null;
         }
-        PathGrid grid = buildPathfindingGrid(roomOccupancy.keySet(), start, goal, PATHFINDING_GRID_PADDING);
+        PathGrid grid = buildPathfindingGrid(roomOccupancy.keySet(), start, goalList, PATHFINDING_GRID_PADDING);
         record QueueNode(PathStep step, int corners) {}
         PriorityQueue<QueueNode> open = new PriorityQueue<>(Comparator
                 .comparingInt(QueueNode::corners)
                 .thenComparingInt(node -> node.step.distance())
-                .thenComparingInt(node -> node.step.point().distanceTo(goal)));
+                .thenComparingInt(node -> distanceToClosestGoal(node.step.point(), goalList)));
         Map<PathStep, Integer> bestCornersByStep = new HashMap<>();
         Map<PathStep, PathStep> previous = new HashMap<>();
         PathStep startStep = new PathStep(start, -1, 0);
@@ -461,7 +420,7 @@ final class CorridorPlanner {
                 continue;
             }
             PathScore currentScore = new PathScore(node.step.distance(), node.corners());
-            if (node.step.point().equals(goal)) {
+            if (goalList.contains(node.step.point())) {
                 if (bestGoalStep == null) {
                     int shortestPossibleDistance = node.step.distance();
                     maxAllowedDistance = shortestPossibleDistance + toleratedExtraDistance(shortestPossibleDistance);
@@ -474,11 +433,13 @@ final class CorridorPlanner {
             }
             for (int directionIndex = 0; directionIndex < Point2i.CARDINAL_STEPS.size(); directionIndex++) {
                 Point2i next = node.step.point().add(Point2i.CARDINAL_STEPS.get(directionIndex));
-                if (!grid.isPassable(next) && !next.equals(goal)) {
+                boolean nextIsGoal = goalList.contains(next);
+                if (!grid.isPassable(next) && !nextIsGoal) {
                     continue;
                 }
                 int nextDistance = node.step.distance() + 1;
-                if (nextDistance > maxAllowedDistance || nextDistance + next.distanceTo(goal) > maxAllowedDistance) {
+                if (nextDistance > maxAllowedDistance
+                        || nextDistance + distanceToClosestGoal(next, goalList) > maxAllowedDistance) {
                     continue;
                 }
                 int nextCorners = node.step.directionIndex() < 0 || node.step.directionIndex() == directionIndex
@@ -497,11 +458,17 @@ final class CorridorPlanner {
         return bestGoalStep == null ? null : reconstructPath(previous, bestGoalStep);
     }
 
-    private static PathGrid buildPathfindingGrid(Set<Point2i> blocked, Point2i start, Point2i goal, int padding) {
-        int minX = Math.min(start.x(), goal.x()) - padding;
-        int maxX = Math.max(start.x(), goal.x()) + padding;
-        int minY = Math.min(start.y(), goal.y()) - padding;
-        int maxY = Math.max(start.y(), goal.y()) + padding;
+    private static PathGrid buildPathfindingGrid(Set<Point2i> blocked, Point2i start, Iterable<Point2i> goals, int padding) {
+        int minX = start.x() - padding;
+        int maxX = start.x() + padding;
+        int minY = start.y() - padding;
+        int maxY = start.y() + padding;
+        for (Point2i goal : goals) {
+            minX = Math.min(minX, goal.x() - padding);
+            maxX = Math.max(maxX, goal.x() + padding);
+            minY = Math.min(minY, goal.y() - padding);
+            maxY = Math.max(maxY, goal.y() + padding);
+        }
         for (Point2i point : blocked) {
             minX = Math.min(minX, point.x() - 2);
             maxX = Math.max(maxX, point.x() + 2);
@@ -520,6 +487,14 @@ final class CorridorPlanner {
             }
         }
         return new PathGrid(minX, minY, passable);
+    }
+
+    private static int distanceToClosestGoal(Point2i point, List<Point2i> goals) {
+        int best = Integer.MAX_VALUE;
+        for (Point2i goal : goals) {
+            best = Math.min(best, point.distanceTo(goal));
+        }
+        return best;
     }
 
     private static List<Point2i> reconstructPath(Map<PathStep, PathStep> previous, PathStep current) {
@@ -634,6 +609,50 @@ final class CorridorPlanner {
         }
     }
 
+    private static final class PlannerContext {
+        private final List<Room> rooms;
+        private final List<Point2i> waypointCells;
+        private final Map<Long, ResolvedCorridorDoorBinding> doorBindings;
+        private final Map<Point2i, Long> occupancy;
+        private final Map<Long, List<ExitCandidate>> exitCandidatesByRoomId = new HashMap<>();
+
+        private PlannerContext(
+                List<Room> rooms,
+                List<Point2i> waypointCells,
+                Map<Long, ResolvedCorridorDoorBinding> doorBindings
+        ) {
+            this.rooms = rooms == null ? List.of() : List.copyOf(rooms);
+            this.waypointCells = waypointCells == null ? List.of() : List.copyOf(waypointCells);
+            this.doorBindings = doorBindings == null ? Map.of() : Map.copyOf(doorBindings);
+            this.occupancy = roomOccupancy(this.rooms);
+        }
+
+        private List<Room> rooms() {
+            return rooms;
+        }
+
+        private List<Point2i> waypointCells() {
+            return waypointCells;
+        }
+
+        private Map<Long, ResolvedCorridorDoorBinding> doorBindings() {
+            return doorBindings;
+        }
+
+        private Map<Point2i, Long> occupancy() {
+            return occupancy;
+        }
+
+        private List<ExitCandidate> exitCandidates(Room room) {
+            if (room == null || room.roomId() == null) {
+                return List.of();
+            }
+            return exitCandidatesByRoomId.computeIfAbsent(
+                    room.roomId(),
+                    ignored -> CorridorPlanner.exitCandidates(room, occupancy, doorBindings));
+        }
+    }
+
     private record NetworkScore(
             int componentCount,
             int unreachablePairCount,
@@ -671,7 +690,8 @@ final class CorridorPlanner {
             for (Long roomId : roomsById.keySet()) {
                 link(adjacency, roomNode(roomId), roomNode(roomId));
             }
-            for (Door door : doors == null ? List.<Door>of() : iterableToList(doors)) {
+            Iterable<Door> safeDoors = doors == null ? List.<Door>of() : doors;
+            for (Door door : safeDoors) {
                 for (VertexEdge edge : door.edges()) {
                     Set<Point2i> touchingCells = edge.touchingCells();
                     Long firstRoom = null;
@@ -817,11 +837,4 @@ final class CorridorPlanner {
         return corners;
     }
 
-    private static <T> List<T> iterableToList(Iterable<T> values) {
-        List<T> result = new ArrayList<>();
-        for (T value : values) {
-            result.add(value);
-        }
-        return result;
-    }
 }

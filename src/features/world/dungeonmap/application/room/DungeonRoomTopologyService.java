@@ -1,7 +1,8 @@
 package features.world.dungeonmap.application.room;
 
-import features.world.dungeonmap.application.corridor.DungeonCorridorBindingReanchorService;
-import features.world.dungeonmap.application.corridor.DungeonCorridorRoomReconcileService;
+import features.world.dungeonmap.application.corridor.DungeonCorridorRewriteCoordinator;
+import features.world.dungeonmap.application.corridor.DungeonCorridorPersistenceService;
+import features.world.dungeonmap.application.corridor.DungeonCorridorRoomRewriteService;
 import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.Point2i;
@@ -9,6 +10,7 @@ import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.structures.cluster.ClusterRewrite;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
+import features.world.dungeonmap.model.structures.corridor.CorridorRewriteContext;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.persistence.DungeonCorridorWriteRepository;
 import features.world.dungeonmap.persistence.DungeonRoomGeometryWriteMapper;
@@ -29,24 +31,24 @@ public final class DungeonRoomTopologyService {
     private final DungeonMapLoader mapLoader;
     private final DungeonRoomWriteRepository roomWriteRepository;
     private final DungeonRoomGeometryWriteMapper geometryWriteMapper;
-    private final DungeonCorridorWriteRepository corridorWriteRepository;
-    private final DungeonCorridorRoomReconcileService corridorRoomReconcileService;
-    private final DungeonCorridorBindingReanchorService corridorBindingReanchorService;
+    private final DungeonCorridorPersistenceService corridorPersistenceService;
+    private final DungeonCorridorRoomRewriteService corridorRoomRewriteService;
+    private final DungeonCorridorRewriteCoordinator corridorRewriteCoordinator;
 
     public DungeonRoomTopologyService(
             DungeonMapLoader mapLoader,
             DungeonRoomWriteRepository roomWriteRepository,
             DungeonRoomGeometryWriteMapper geometryWriteMapper,
-            DungeonCorridorWriteRepository corridorWriteRepository,
-            DungeonCorridorRoomReconcileService corridorRoomReconcileService,
-            DungeonCorridorBindingReanchorService corridorBindingReanchorService
+            DungeonCorridorPersistenceService corridorPersistenceService,
+            DungeonCorridorRoomRewriteService corridorRoomRewriteService,
+            DungeonCorridorRewriteCoordinator corridorRewriteCoordinator
     ) {
         this.mapLoader = Objects.requireNonNull(mapLoader, "mapLoader");
         this.roomWriteRepository = Objects.requireNonNull(roomWriteRepository, "roomWriteRepository");
         this.geometryWriteMapper = Objects.requireNonNull(geometryWriteMapper, "geometryWriteMapper");
-        this.corridorWriteRepository = Objects.requireNonNull(corridorWriteRepository, "corridorWriteRepository");
-        this.corridorRoomReconcileService = Objects.requireNonNull(corridorRoomReconcileService, "corridorRoomReconcileService");
-        this.corridorBindingReanchorService = Objects.requireNonNull(corridorBindingReanchorService, "corridorBindingReanchorService");
+        this.corridorPersistenceService = Objects.requireNonNull(corridorPersistenceService, "corridorPersistenceService");
+        this.corridorRoomRewriteService = Objects.requireNonNull(corridorRoomRewriteService, "corridorRoomRewriteService");
+        this.corridorRewriteCoordinator = Objects.requireNonNull(corridorRewriteCoordinator, "corridorRewriteCoordinator");
     }
 
     public void paint(Connection conn, long mapId, TileShape shape) throws SQLException {
@@ -68,26 +70,18 @@ public final class DungeonRoomTopologyService {
         }
 
         Map<Long, Corridor> corridorsById = new LinkedHashMap<>(layout.corridorsById());
-        Long mergedReplacementRoomId = mergedReplacementRoomId(rewrite);
-        if (mergedReplacementRoomId != null && !rewrite.mergedRoomIds().isEmpty()) {
-            corridorsById = corridorRoomReconcileService.reassignMergedRoomCorridors(
-                    corridorsById,
-                    rewrite.mergedRoomIds(),
-                    mergedReplacementRoomId);
-        }
-
+        Set<Long> affectedCorridorIds = layout.corridorIdsAffectedBy(rewrite);
+        corridorsById = corridorRoomRewriteService.applyRoomRewrite(layout, corridorsById, rewrite);
         DungeonLayout rewrittenLayout = layout.applying(rewrite);
-        corridorsById = corridorBindingReanchorService.reanchorBindings(
-                layout,
-                rewrittenLayout,
-                corridorsById,
-                rewrite.affectedRoomIds(),
-                rewrite.affectedClusterIds(),
+        CorridorRewriteContext rewriteContext = new CorridorRewriteContext(
+                layout.corridorPlanningInput(),
+                rewrittenLayout.corridorPlanningInput(),
+                affectedCorridorIds,
                 rewrite.deletedClusterIds());
-        corridorsById = replanCorridors(rewrittenLayout, corridorsById);
+        corridorsById = corridorRewriteCoordinator.rewriteCorridors(corridorsById, rewriteContext);
 
         persistClusterRewrite(conn, mapId, rewrite);
-        persistCorridors(conn, corridorsById);
+        corridorPersistenceService.persistCorridors(conn, corridorsById);
     }
 
     public void delete(Connection conn, long mapId, TileShape shape) throws SQLException {
@@ -118,33 +112,20 @@ public final class DungeonRoomTopologyService {
             if (rewrite.isNoOp()) {
                 continue;
             }
-            for (Long deletedRoomId : rewrite.deletedRoomIds()) {
-                corridorsById = corridorRoomReconcileService.removeRoomFromCorridors(corridorsById, deletedRoomId);
-            }
-            for (Map.Entry<Long, List<Room>> entry : rewrite.splitFragmentsBySourceRoomId().entrySet()) {
-                if (entry.getValue().size() > 1) {
-                    corridorsById = corridorRoomReconcileService.reconcileSplitRoomCorridors(
-                            workingLayout,
-                            corridorsById,
-                            entry.getKey(),
-                            entry.getValue());
-                }
-            }
-
+            Set<Long> affectedCorridorIds = workingLayout.corridorIdsAffectedBy(rewrite);
+            corridorsById = corridorRoomRewriteService.applyRoomRewrite(workingLayout, corridorsById, rewrite);
             DungeonLayout rewrittenLayout = workingLayout.applying(rewrite);
-            corridorsById = corridorBindingReanchorService.reanchorBindings(
-                    workingLayout,
-                    rewrittenLayout,
-                    corridorsById,
-                    rewrite.affectedRoomIds(),
-                    rewrite.affectedClusterIds(),
+            CorridorRewriteContext rewriteContext = new CorridorRewriteContext(
+                    workingLayout.corridorPlanningInput(),
+                    rewrittenLayout.corridorPlanningInput(),
+                    affectedCorridorIds,
                     rewrite.deletedClusterIds());
-            corridorsById = replanCorridors(rewrittenLayout, corridorsById);
+            corridorsById = corridorRewriteCoordinator.rewriteCorridors(corridorsById, rewriteContext);
 
             persistClusterRewrite(conn, mapId, rewrite);
             workingLayout = rewrittenLayout;
         }
-        persistCorridors(conn, corridorsById);
+        corridorPersistenceService.persistCorridors(conn, corridorsById);
     }
 
     public void createDefaultRoom(Connection conn, long mapId) throws SQLException {
@@ -199,39 +180,6 @@ public final class DungeonRoomTopologyService {
                 roomWriteRepository.deleteCluster(conn, deletedClusterId);
             }
         }
-    }
-
-    private Map<Long, Corridor> replanCorridors(DungeonLayout layout, Map<Long, Corridor> corridorsById) {
-        Map<Long, Corridor> result = new LinkedHashMap<>();
-        for (Map.Entry<Long, Corridor> entry : corridorsById.entrySet()) {
-            Corridor corridor = entry.getValue();
-            result.put(entry.getKey(), corridor == null ? null : corridor.replanned(layout.corridorPlanningInput()));
-        }
-        return Map.copyOf(result);
-    }
-
-    private void persistCorridors(Connection conn, Map<Long, Corridor> corridorsById) throws SQLException {
-        for (Corridor corridor : corridorsById.values()) {
-            if (corridor == null || corridor.corridorId() == null) {
-                continue;
-            }
-            if (!corridor.isPersistable()) {
-                corridorWriteRepository.deleteCorridor(conn, corridor.corridorId());
-                continue;
-            }
-            corridorWriteRepository.replaceCorridorRooms(conn, corridor.corridorId(), corridor.roomIds());
-            corridorWriteRepository.replaceCorridorWaypoints(conn, corridor.corridorId(), corridor.bindings().waypoints());
-            corridorWriteRepository.replaceCorridorDoorBindings(conn, corridor.corridorId(), corridor.bindings().doorBindings());
-        }
-    }
-
-    private static Long mergedReplacementRoomId(ClusterRewrite rewrite) {
-        Set<Long> replacementIds = rewrite.replacedRoomIds().entrySet().stream()
-                .filter(entry -> rewrite.mergedRoomIds().contains(entry.getKey()))
-                .map(Map.Entry::getValue)
-                .filter(Objects::nonNull)
-                .collect(LinkedHashSet::new, Set::add, Set::addAll);
-        return replacementIds.size() == 1 ? replacementIds.iterator().next() : null;
     }
 
     private static String nextRoomName(DungeonLayout layout, Set<String> reservedNames) {

@@ -127,7 +127,7 @@ public final class CorridorInteractionController {
         selectionState.selectTarget("corridor:" + corridor.corridorId());
         draftState.clear();
         UiAsyncTasks.submitVoid(
-                () -> corridorEditService.delete(mapId, corridor.corridorId()),
+                () -> corridorEditService.delete(corridor.corridorId()),
                 () -> loadingService.reload(mapId),
                 throwable -> UiErrorReporter.reportBackgroundFailure("CorridorInteractionController.handleDeletePressed()", throwable));
         return true;
@@ -138,21 +138,25 @@ public final class CorridorInteractionController {
             DungeonCorridorDraftState.PendingTarget start,
             CorridorEndpoint target
     ) throws Exception {
+        DungeonLayout layout = mapState.activeMap();
+        if (layout == null || layout.mapId() != mapId) {
+            return;
+        }
         if (start instanceof DungeonCorridorDraftState.PendingTarget.Room startRoom && target instanceof CorridorEndpoint.Room targetRoom) {
-            corridorEditService.create(mapId, List.of(startRoom.roomId(), targetRoom.roomId()));
+            corridorEditService.create(layout, List.of(startRoom.roomId(), targetRoom.roomId()));
             return;
         }
         if (start instanceof DungeonCorridorDraftState.PendingTarget.Room startRoom && target instanceof CorridorEndpoint.Corridor targetCorridor) {
-            corridorEditService.addRoom(mapId, targetCorridor.corridorId(), startRoom.roomId());
+            corridorEditService.addRoom(layout, targetCorridor.corridorId(), startRoom.roomId());
             return;
         }
         if (start instanceof DungeonCorridorDraftState.PendingTarget.Corridor startCorridor && target instanceof CorridorEndpoint.Room targetRoom) {
-            corridorEditService.addRoom(mapId, startCorridor.corridorId(), targetRoom.roomId());
+            corridorEditService.addRoom(layout, startCorridor.corridorId(), targetRoom.roomId());
             return;
         }
         if (start instanceof DungeonCorridorDraftState.PendingTarget.Corridor startCorridor
                 && target instanceof CorridorEndpoint.Corridor targetCorridor) {
-            corridorEditService.merge(mapId, targetCorridor.corridorId(), startCorridor.corridorId());
+            corridorEditService.merge(layout, targetCorridor.corridorId(), startCorridor.corridorId());
         }
     }
 
