@@ -1,11 +1,13 @@
 package features.world.dungeonmap.application.corridor;
 
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.ClusterRewrite;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorSplitRewriteInput;
 import features.world.dungeonmap.model.structures.room.Room;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -59,7 +61,7 @@ public final class DungeonCorridorRoomRewriteService {
                 continue;
             }
             result.put(corridorId, corridor.rewrittenForSplit(
-                    CorridorSplitRewriteInput.forCorridor(corridor, layout, originalRoomId, fragments)));
+                    splitRewriteInput(corridor, layout, originalRoomId, fragments)));
         }
         return Map.copyOf(result);
     }
@@ -109,9 +111,31 @@ public final class DungeonCorridorRoomRewriteService {
                     continue;
                 }
                 corridorsById.put(corridorId, corridor.rewrittenForSplit(
-                        CorridorSplitRewriteInput.forCorridor(corridor, layout, originalRoomId, entry.getValue())));
+                        splitRewriteInput(corridor, layout, originalRoomId, entry.getValue())));
             }
         }
+    }
+
+    private CorridorSplitRewriteInput splitRewriteInput(
+            Corridor corridor,
+            DungeonLayout layout,
+            Long originalRoomId,
+            List<Room> fragments
+    ) {
+        if (corridor == null || layout == null || originalRoomId == null || fragments == null || fragments.isEmpty()) {
+            return new CorridorSplitRewriteInput(originalRoomId, fragments, List.of());
+        }
+        List<Point2i> connectedRoomCenters = new ArrayList<>();
+        for (Long roomId : corridor.roomIds()) {
+            if (Objects.equals(roomId, originalRoomId)) {
+                continue;
+            }
+            Room room = layout.findRoom(roomId);
+            if (room != null) {
+                connectedRoomCenters.add(room.floor().shape().centerCell());
+            }
+        }
+        return new CorridorSplitRewriteInput(originalRoomId, fragments, connectedRoomCenters);
     }
 
     private static Long mergedReplacementRoomId(ClusterRewrite rewrite) {
