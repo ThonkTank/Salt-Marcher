@@ -24,6 +24,9 @@ public final class MapControls {
     private final ComboBox<DungeonMapCatalogEntry> selector = new ComboBox<>();
     private final Button newMapButton = new Button("Neuen Dungeon");
     private final Button editMapButton = new Button("Dungeon bearbeiten");
+    private final Label levelLabel = new Label("Ebene z=0");
+    private final Button previousLevelButton = new Button("Ebene -");
+    private final Button nextLevelButton = new Button("Ebene +");
     private final VBox content;
     private boolean syncingSelection;
     private Consumer<DungeonMapCatalogEntry> onMapSelected;
@@ -52,6 +55,8 @@ public final class MapControls {
         editMapButton.setDisable(true);
         newMapButton.setMinWidth(Region.USE_PREF_SIZE);
         editMapButton.setMinWidth(Region.USE_PREF_SIZE);
+        previousLevelButton.setMinWidth(Region.USE_PREF_SIZE);
+        nextLevelButton.setMinWidth(Region.USE_PREF_SIZE);
         HBox row = new HBox(
                 8,
                 selector,
@@ -62,7 +67,9 @@ public final class MapControls {
         row.setAlignment(Pos.CENTER_LEFT);
         row.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(selector, Priority.ALWAYS);
-        content = new VBox(6, sectionLabelFactory.apply("Dungeon"), row);
+        HBox levelRow = new HBox(8, levelLabel, previousLevelButton, nextLevelButton);
+        levelRow.setAlignment(Pos.CENTER_LEFT);
+        content = new VBox(6, sectionLabelFactory.apply("Dungeon"), row, levelRow);
         content.setMaxWidth(Double.MAX_VALUE);
         content.getStyleClass().add("editor-toolbar-group");
     }
@@ -91,6 +98,22 @@ public final class MapControls {
             DungeonMapCatalogEntry selected = selector.getSelectionModel().getSelectedItem();
             if (selected != null && onEditMapRequested != null) {
                 onEditMapRequested.accept(new MapActionRequest(selected, editMapButton));
+            }
+        });
+    }
+
+    public void setOnPreviousLevelRequested(Runnable action) {
+        previousLevelButton.setOnAction(event -> {
+            if (action != null) {
+                action.run();
+            }
+        });
+    }
+
+    public void setOnNextLevelRequested(Runnable action) {
+        nextLevelButton.setOnAction(event -> {
+            if (action != null) {
+                action.run();
             }
         });
     }
@@ -124,5 +147,12 @@ public final class MapControls {
 
     public VBox content() {
         return content;
+    }
+
+    public void showLevels(List<Integer> levels, int activeLevel, boolean loading) {
+        List<Integer> visibleLevels = levels == null ? List.of() : levels;
+        levelLabel.setText("Ebene z=" + activeLevel);
+        previousLevelButton.setDisable(loading || visibleLevels.isEmpty() || activeLevel <= visibleLevels.stream().mapToInt(Integer::intValue).min().orElse(activeLevel));
+        nextLevelButton.setDisable(loading || visibleLevels.isEmpty() || activeLevel >= visibleLevels.stream().mapToInt(Integer::intValue).max().orElse(activeLevel));
     }
 }

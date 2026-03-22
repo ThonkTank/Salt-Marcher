@@ -1,6 +1,7 @@
 package features.world.dungeonmap.application.runtime;
 
 import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.geometry.CubePoint;
 
 public enum DungeonHeading {
     NORTH(new Point2i(0, -1), "Nord"),
@@ -81,6 +82,13 @@ public enum DungeonHeading {
             return deltaX >= 0 ? EAST : WEST;
         }
         return deltaY >= 0 ? SOUTH : NORTH;
+    }
+
+    public static DungeonHeading fromTravel(CubePoint from, CubePoint to, DungeonHeading fallback) {
+        if (from == null || to == null) {
+            return fallback == null ? defaultHeading() : fallback;
+        }
+        return fromTravel(from.projectedCell(), to.projectedCell(), fallback);
     }
 
     private static DungeonHeading rightOf(DungeonHeading heading) {

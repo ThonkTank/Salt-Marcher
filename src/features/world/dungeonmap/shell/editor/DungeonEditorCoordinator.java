@@ -123,6 +123,8 @@ final class DungeonEditorCoordinator {
 
     void refreshFromMapState() {
         controls.showMaps(mapState.maps(), mapState.activeMapId(), mapState.loading());
+        controls.showLevels(mapState.activeMap().reachableLevels(), mapState.activeProjectionLevel(), mapState.loading());
+        workspace.setProjectionLevel(mapState.activeProjectionLevel());
         refreshFromSessionState();
         refreshRoomNarrationStatePane();
     }
@@ -132,6 +134,8 @@ final class DungeonEditorCoordinator {
         controls.setOnNewMapRequested(mapDropdownController::showCreate);
         controls.setOnEditMapRequested(request ->
                 mapDropdownController.showEdit(new DungeonMapDropdownController.EditRequest(request.map(), request.anchor())));
+        controls.setOnPreviousLevelRequested(() -> mapState.setActiveProjectionLevel(mapState.activeProjectionLevel() - 1));
+        controls.setOnNextLevelRequested(() -> mapState.setActiveProjectionLevel(mapState.activeProjectionLevel() + 1));
         controls.setOnViewModeChanged(sessionState::selectViewMode);
         controls.setOnToolChanged(sessionState::selectTool);
         workspace.setInteractionHandler(interactionController);

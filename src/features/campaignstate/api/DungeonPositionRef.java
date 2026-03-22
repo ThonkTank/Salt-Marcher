@@ -2,6 +2,7 @@ package features.campaignstate.api;
 
 public record DungeonPositionRef(
         Long mapId,
+        Integer levelZ,
         CampaignDungeonLocationType locationType,
         Long roomId,
         Long corridorId,

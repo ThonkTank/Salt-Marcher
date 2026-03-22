@@ -81,7 +81,7 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
 
     private Point2i activeTile() {
         DungeonRuntimeLocation location = runtimeState.activeLocation();
-        return location instanceof DungeonRuntimeLocation.Tile tile ? tile.tile() : null;
+        return location instanceof DungeonRuntimeLocation.Tile tile ? tile.tile().projectedCell() : null;
     }
 
     private boolean interactionEnabled() {

@@ -4,7 +4,7 @@ import database.DatabaseManager;
 import features.campaignstate.api.CampaignStateApi;
 import features.campaignstate.api.CampaignStateReadApi;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.geometry.CubePoint;
 import java.sql.Connection;
 import java.sql.SQLException;
 
@@ -41,7 +41,7 @@ public final class DungeonRuntimeNavigationService {
         return new DungeonRuntimeNavigationSnapshot(resolvedLocation, resolvedHeading);
     }
 
-    public Point2i nearestTraversableTile(DungeonLayout layout, Point2i preferredTile) {
+    public CubePoint nearestTraversableTile(DungeonLayout layout, CubePoint preferredTile) {
         if (layout == null || layout.mapId() <= 0) {
             return null;
         }
@@ -50,14 +50,14 @@ public final class DungeonRuntimeNavigationService {
 
     public DungeonRuntimeNavigationSnapshot moveToTile(
             DungeonLayout layout,
-            Point2i fromTile,
-            Point2i tile,
+            CubePoint fromTile,
+            CubePoint tile,
             DungeonHeading currentHeading
     ) throws SQLException {
         if (layout == null || layout.mapId() <= 0) {
             throw new SQLException("Kein aktiver Dungeon geladen");
         }
-        Point2i resolvedTile = nearestTraversableTile(layout, tile);
+        CubePoint resolvedTile = nearestTraversableTile(layout, tile);
         if (resolvedTile == null) {
             throw new SQLException("Kein begehbares Dungeon-Feld gefunden");
         }
@@ -80,7 +80,7 @@ public final class DungeonRuntimeNavigationService {
         if (surface == null || door == null) {
             throw new SQLException("Keine Tür verfügbar");
         }
-        Point2i resolvedTile = nearestTraversableTile(layout, door.outsideCell());
+        CubePoint resolvedTile = nearestTraversableTile(layout, CubePoint.at(door.outsideCell(), 0));
         if (resolvedTile == null) {
             throw new SQLException("Ziel hinter der Tür ist nicht begehbar");
         }

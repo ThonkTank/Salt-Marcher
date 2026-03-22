@@ -29,6 +29,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
     private DungeonLayout mapModel = DungeonLayout.empty();
     private DungeonLayout previewMapModel;
     private DungeonViewMode viewMode = DungeonViewMode.GRID;
+    private int projectionLevel;
     private String selectedTargetKey;
     private TileShape previewPaintShape = TileShape.empty();
     private boolean previewPaintDeleteMode;
@@ -90,6 +91,14 @@ public final class DungeonCanvasWorkspace extends BorderPane {
             return;
         }
         this.viewMode = nextViewMode;
+        notifyViewChanged();
+    }
+
+    public void setProjectionLevel(int projectionLevel) {
+        if (this.projectionLevel == projectionLevel) {
+            return;
+        }
+        this.projectionLevel = projectionLevel;
         notifyViewChanged();
     }
 
@@ -238,7 +247,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
                 renderedMapModel(),
                 camera,
                 editorMode,
-                new DungeonRenderState(selectedTargetKey, previewPaintShape, previewPaintDeleteMode, activeLocation, heading));
+                new DungeonRenderState(selectedTargetKey, previewPaintShape, previewPaintDeleteMode, projectionLevel, activeLocation, heading));
     }
 
     private void notifyViewChanged() {
@@ -247,7 +256,8 @@ public final class DungeonCanvasWorkspace extends BorderPane {
     }
 
     private DungeonLayout renderedMapModel() {
-        return previewMapModel == null ? mapModel : previewMapModel;
+        DungeonLayout base = previewMapModel == null ? mapModel : previewMapModel;
+        return base == null ? DungeonLayout.empty() : base.projectedToLevel(projectionLevel);
     }
 
     private DungeonCanvasPointerEvent pointerEvent(MouseEvent event) {

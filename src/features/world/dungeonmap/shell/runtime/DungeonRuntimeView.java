@@ -12,13 +12,15 @@ import features.world.dungeonmap.application.runtime.DungeonRuntimeSurfacePresen
 import features.world.dungeonmap.application.runtime.DungeonRuntimeSurfaceResolver;
 import features.world.dungeonmap.canvas.base.DungeonViewMode;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
-import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.DungeonRuntimeState;
 import features.world.dungeonmap.shell.AbstractDungeonMapView;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import ui.async.UiAsyncTasks;
 import ui.shell.DetailsNavigator;
@@ -38,6 +40,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
     private final VBox controls;
     private final Label zoomLabel = new Label();
     private final Label mapLabel = new Label();
+    private final Label levelLabel = new Label();
     private long runtimeRequestSequence;
     private Long runtimeMapId;
     private DetailsNavigator.EntryKey lastPublishedSurfaceKey;
@@ -61,11 +64,20 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         workspace().setInteractionHandler(new DungeonRuntimeInteractionController(
                 state,
                 runtimeState,
-                tile -> runtimeNavigationService.nearestTraversableTile(state.activeMap(), tile),
+                tile -> {
+                    CubePoint resolved = runtimeNavigationService.nearestTraversableTile(
+                            state.activeMap(),
+                            CubePoint.at(tile, state.activeProjectionLevel()));
+                    return resolved == null ? null : resolved.projectedCell();
+                },
                 this::previewPartyTile,
                 this::movePartyToTile));
         runtimeState.addListener(this::refreshRuntimeUi);
-        this.controls = new VBox(10, zoomLabel, mapLabel);
+        Button upLevelButton = new Button("Ebene +");
+        Button downLevelButton = new Button("Ebene -");
+        upLevelButton.setOnAction(event -> state.setActiveProjectionLevel(state.activeProjectionLevel() + 1));
+        downLevelButton.setOnAction(event -> state.setActiveProjectionLevel(state.activeProjectionLevel() - 1));
+        this.controls = new VBox(10, zoomLabel, mapLabel, levelLabel, new HBox(8, downLevelButton, upLevelButton));
         this.controls.setPadding(new Insets(12));
         refreshRuntimeUi();
     }
@@ -103,6 +115,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
                 : state().errorMessage() != null
                 ? state().errorMessage()
                 : state().activeMap().name());
+        levelLabel.setText("Ebene z=" + state().activeProjectionLevel());
     }
 
     private void refreshRuntimeUi() {
@@ -157,22 +170,26 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
                 });
     }
 
-    private void previewPartyTile(Point2i tile) {
+    private void previewPartyTile(features.world.dungeonmap.model.geometry.Point2i tile) {
         if (tile == null) {
             runtimeState.clearDragPreview();
             return;
         }
-        runtimeState.showDragPreview(DungeonRuntimeLocation.tile(tile));
+        runtimeState.showDragPreview(DungeonRuntimeLocation.tile(CubePoint.at(tile, state().activeProjectionLevel())));
     }
 
-    private void movePartyToTile(Point2i tile) {
+    private void movePartyToTile(features.world.dungeonmap.model.geometry.Point2i tile) {
         if (runtimeState.loading() || runtimeState.moving() || state().activeMap().mapId() <= 0) {
             return;
         }
         var layout = state().activeMap();
         runtimeState.showMoveInProgress();
         UiAsyncTasks.submit(
-                () -> runtimeNavigationService.moveToTile(layout, activeTile(), tile, runtimeState.heading()),
+                () -> runtimeNavigationService.moveToTile(
+                        layout,
+                        activeTile(),
+                        CubePoint.at(tile, state().activeProjectionLevel()),
+                        runtimeState.heading()),
                 runtimeState::showNavigation,
                 failure -> {
                     System.err.println("DungeonRuntimeView.movePartyToTile(): " + failure.getMessage());
@@ -180,7 +197,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
                 });
     }
 
-    private Point2i activeTile() {
+    private CubePoint activeTile() {
         DungeonRuntimeLocation location = runtimeState.activeLocation();
         return location instanceof DungeonRuntimeLocation.Tile tile ? tile.tile() : null;
     }

@@ -2,6 +2,7 @@ package features.world.dungeonmap.loading;
 
 import database.DatabaseManager;
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.geometry.VertexEdge;
@@ -20,6 +21,8 @@ import features.world.dungeonmap.model.structures.corridor.CorridorWaypointBindi
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
 import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.model.structures.stair.DungeonStair;
+import features.world.dungeonmap.model.structures.stair.DungeonStairExit;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -79,13 +82,20 @@ public final class DungeonMapLoader {
     ) throws SQLException {
         List<Room> rooms = loadRooms(conn, map.mapId());
         List<RoomCluster> clusters = loadClusters(conn, map.mapId(), rooms);
+        Map<Long, Integer> clusterLevels = loadClusterLevels(conn, map.mapId());
+        Map<Long, Integer> roomLevels = loadRoomLevels(conn, map.mapId());
+        Map<Long, Integer> corridorLevels = loadCorridorLevels(conn, map.mapId());
         return new DungeonMapLoadResult(
                 maps,
                 new DungeonLayout(
                         map.mapId(),
                         map.name(),
                         loadCorridors(conn, map.mapId(), clusters),
-                        clusters),
+                        clusters,
+                        loadStairs(conn, map.mapId()),
+                        clusterLevels,
+                        roomLevels,
+                        corridorLevels),
                 null);
     }
 
@@ -110,6 +120,37 @@ public final class DungeonMapLoader {
             }
         }
         return null;
+    }
+
+    private static Map<Long, Integer> loadClusterLevels(Connection conn, long mapId) throws SQLException {
+        return loadLevelMap(conn,
+                "SELECT cluster_id AS entity_id, level_z FROM dungeon_room_clusters WHERE dungeon_map_id=?",
+                mapId);
+    }
+
+    private static Map<Long, Integer> loadRoomLevels(Connection conn, long mapId) throws SQLException {
+        return loadLevelMap(conn,
+                "SELECT room_id AS entity_id, level_z FROM dungeon_rooms WHERE dungeon_map_id=?",
+                mapId);
+    }
+
+    private static Map<Long, Integer> loadCorridorLevels(Connection conn, long mapId) throws SQLException {
+        return loadLevelMap(conn,
+                "SELECT corridor_id AS entity_id, level_z FROM dungeon_corridors WHERE dungeon_map_id=?",
+                mapId);
+    }
+
+    private static Map<Long, Integer> loadLevelMap(Connection conn, String sql, long mapId) throws SQLException {
+        Map<Long, Integer> result = new LinkedHashMap<>();
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, mapId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    result.put(rs.getLong("entity_id"), rs.getInt("level_z"));
+                }
+            }
+        }
+        return Map.copyOf(result);
     }
 
     private static List<Room> loadRooms(Connection conn, long mapId) throws SQLException {
@@ -207,6 +248,45 @@ public final class DungeonMapLoader {
         return result.stream()
                 .map(corridor -> corridor == null ? null : corridor.replanned(planningInput))
                 .toList();
+    }
+
+    private static List<DungeonStair> loadStairs(Connection conn, long mapId) throws SQLException {
+        Map<Long, List<CubePoint>> pathNodesByStairId = loadGrouped(conn,
+                "SELECT stair_id, cell_x, cell_y, cell_z"
+                        + " FROM dungeon_stair_path_nodes"
+                        + " WHERE stair_id IN (SELECT stair_id FROM dungeon_stairs WHERE dungeon_map_id=?)"
+                        + " ORDER BY stair_id, sort_order",
+                mapId,
+                rs -> rs.getLong("stair_id"),
+                rs -> new CubePoint(rs.getInt("cell_x"), rs.getInt("cell_y"), rs.getInt("cell_z")));
+        Map<Long, List<DungeonStairExit>> exitsByStairId = loadGrouped(conn,
+                "SELECT stair_id, stair_exit_id, cell_x, cell_y, cell_z, label"
+                        + " FROM dungeon_stair_exits"
+                        + " WHERE stair_id IN (SELECT stair_id FROM dungeon_stairs WHERE dungeon_map_id=?)"
+                        + " ORDER BY stair_id, stair_exit_id",
+                mapId,
+                rs -> rs.getLong("stair_id"),
+                rs -> new DungeonStairExit(
+                        rs.getLong("stair_exit_id"),
+                        new CubePoint(rs.getInt("cell_x"), rs.getInt("cell_y"), rs.getInt("cell_z")),
+                        rs.getString("label")));
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT stair_id, dungeon_map_id, name FROM dungeon_stairs WHERE dungeon_map_id=? ORDER BY stair_id")) {
+            ps.setLong(1, mapId);
+            try (ResultSet rs = ps.executeQuery()) {
+                List<DungeonStair> result = new ArrayList<>();
+                while (rs.next()) {
+                    long stairId = rs.getLong("stair_id");
+                    result.add(new DungeonStair(
+                            stairId,
+                            rs.getLong("dungeon_map_id"),
+                            rs.getString("name"),
+                            pathNodesByStairId.getOrDefault(stairId, List.of()),
+                            exitsByStairId.getOrDefault(stairId, List.of())));
+                }
+                return List.copyOf(result);
+            }
+        }
     }
 
     private static <K, V> Map<K, List<V>> loadGrouped(

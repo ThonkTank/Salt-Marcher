@@ -26,6 +26,7 @@ public final class CampaignStateSchemaSupport {
                 + "current_weather     TEXT,"
                 + "notes               TEXT,"
                 + "dungeon_map_id      INTEGER REFERENCES dungeon_maps(dungeon_map_id) ON DELETE SET NULL,"
+                + "dungeon_level_z     INTEGER NOT NULL DEFAULT 0,"
                 + "dungeon_location_type TEXT,"
                 + "dungeon_room_id     INTEGER REFERENCES dungeon_rooms(room_id) ON DELETE SET NULL,"
                 + "dungeon_corridor_id INTEGER REFERENCES dungeon_corridors(corridor_id) ON DELETE SET NULL,"
@@ -40,6 +41,8 @@ public final class CampaignStateSchemaSupport {
         }
         ensureColumn(conn, "campaign_state", "dungeon_map_id",
                 "INTEGER REFERENCES dungeon_maps(dungeon_map_id) ON DELETE SET NULL");
+        ensureColumn(conn, "campaign_state", "dungeon_level_z",
+                "INTEGER NOT NULL DEFAULT 0");
         ensureColumn(conn, "campaign_state", "dungeon_location_type",
                 "TEXT");
         ensureColumn(conn, "campaign_state", "dungeon_room_id",

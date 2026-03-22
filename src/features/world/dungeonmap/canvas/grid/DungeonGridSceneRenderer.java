@@ -413,7 +413,10 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
 
     private static features.world.dungeonmap.model.geometry.Point2i activeCell(DungeonLayout mapModel, DungeonRuntimeLocation activeLocation) {
         if (activeLocation instanceof DungeonRuntimeLocation.Tile tile) {
-            return tile.tile();
+            return tile.tile().projectedCell();
+        }
+        if (activeLocation instanceof DungeonRuntimeLocation.StairExit stairExit) {
+            return stairExit.tile().projectedCell();
         }
         if (activeLocation instanceof DungeonRuntimeLocation.Room room) {
             Room resolvedRoom = mapModel.findRoom(room.roomId());

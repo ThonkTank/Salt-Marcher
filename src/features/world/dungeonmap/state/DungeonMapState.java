@@ -13,6 +13,7 @@ public final class DungeonMapState {
     private List<DungeonMapCatalogEntry> maps = List.of();
     private DungeonLayout activeMap = DungeonLayout.empty();
     private Long activeMapId;
+    private int activeProjectionLevel;
     private boolean loading;
     private String errorMessage;
 
@@ -26,6 +27,10 @@ public final class DungeonMapState {
 
     public Long activeMapId() {
         return activeMapId;
+    }
+
+    public int activeProjectionLevel() {
+        return activeProjectionLevel;
     }
 
     public boolean loading() {
@@ -56,6 +61,7 @@ public final class DungeonMapState {
         this.maps = maps == null ? List.of() : List.copyOf(maps);
         this.activeMap = activeMap == null ? DungeonLayout.empty() : activeMap;
         this.activeMapId = this.activeMap.mapId() <= 0 ? null : this.activeMap.mapId();
+        this.activeProjectionLevel = resolvedProjectionLevel(this.activeMap, activeProjectionLevel);
         this.loading = false;
         this.errorMessage = null;
         notifyListeners();
@@ -71,9 +77,26 @@ public final class DungeonMapState {
     public void showEditedMap(DungeonLayout activeMap) {
         this.activeMap = activeMap == null ? DungeonLayout.empty() : activeMap;
         this.activeMapId = this.activeMap.mapId() <= 0 ? null : this.activeMap.mapId();
+        this.activeProjectionLevel = resolvedProjectionLevel(this.activeMap, activeProjectionLevel);
         this.loading = false;
         this.errorMessage = null;
         notifyListeners();
+    }
+
+    public void setActiveProjectionLevel(int levelZ) {
+        int resolvedLevel = resolvedProjectionLevel(activeMap, levelZ);
+        if (activeProjectionLevel == resolvedLevel) {
+            return;
+        }
+        activeProjectionLevel = resolvedLevel;
+        notifyListeners();
+    }
+
+    private static int resolvedProjectionLevel(DungeonLayout activeMap, int preferred) {
+        if (activeMap == null) {
+            return 0;
+        }
+        return activeMap.reachableLevels().contains(preferred) ? preferred : activeMap.defaultLevel();
     }
 
     private void notifyListeners() {

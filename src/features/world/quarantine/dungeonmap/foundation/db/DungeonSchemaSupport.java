@@ -1,5 +1,7 @@
 package features.world.quarantine.dungeonmap.foundation.db;
 
+import database.SchemaCompatibility;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -19,7 +21,8 @@ public final class DungeonSchemaSupport {
                 + "cluster_id       INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + "dungeon_map_id   INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
                 + "center_x         INTEGER NOT NULL,"
-                + "center_y         INTEGER NOT NULL"
+                + "center_y         INTEGER NOT NULL,"
+                + "level_z          INTEGER NOT NULL DEFAULT 0"
                 + ")");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_rooms ("
                 + "room_id         INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -28,11 +31,13 @@ public final class DungeonSchemaSupport {
                 + "name            TEXT NOT NULL,"
                 + "visual_description TEXT,"
                 + "component_x     INTEGER NOT NULL,"
-                + "component_y     INTEGER NOT NULL"
+                + "component_y     INTEGER NOT NULL,"
+                + "level_z         INTEGER NOT NULL DEFAULT 0"
                 + ")");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_corridors ("
                 + "corridor_id      INTEGER PRIMARY KEY AUTOINCREMENT,"
-                + "dungeon_map_id   INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE"
+                + "dungeon_map_id   INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
+                + "level_z          INTEGER NOT NULL DEFAULT 0"
                 + ")");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_corridor_members ("
                 + "corridor_id      INTEGER NOT NULL REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE,"
@@ -71,6 +76,7 @@ public final class DungeonSchemaSupport {
                 + "cluster_id        INTEGER NOT NULL REFERENCES dungeon_room_clusters(cluster_id) ON DELETE CASCADE,"
                 + "relative_x        INTEGER NOT NULL,"
                 + "relative_y        INTEGER NOT NULL,"
+                + "relative_z        INTEGER NOT NULL DEFAULT 0,"
                 + "PRIMARY KEY (corridor_id, sort_order)"
                 + ")");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_room_exit_descriptions ("
@@ -82,6 +88,60 @@ public final class DungeonSchemaSupport {
                 + "sort_order       INTEGER NOT NULL DEFAULT 0,"
                 + "PRIMARY KEY (room_id, cell_x, cell_y, edge_direction)"
                 + ")");
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_stairs ("
+                + "stair_id         INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + "dungeon_map_id   INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
+                + "name             TEXT"
+                + ")");
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_stair_path_nodes ("
+                + "stair_id         INTEGER NOT NULL REFERENCES dungeon_stairs(stair_id) ON DELETE CASCADE,"
+                + "sort_order       INTEGER NOT NULL,"
+                + "cell_x           INTEGER NOT NULL,"
+                + "cell_y           INTEGER NOT NULL,"
+                + "cell_z           INTEGER NOT NULL,"
+                + "PRIMARY KEY (stair_id, sort_order)"
+                + ")");
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_stair_exits ("
+                + "stair_exit_id    INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + "stair_id         INTEGER NOT NULL REFERENCES dungeon_stairs(stair_id) ON DELETE CASCADE,"
+                + "cell_x           INTEGER NOT NULL,"
+                + "cell_y           INTEGER NOT NULL,"
+                + "cell_z           INTEGER NOT NULL,"
+                + "label            TEXT"
+                + ")");
+    }
+
+    public static void ensureCompatibility(Connection conn) throws SQLException {
+        try (Statement stmt = conn.createStatement()) {
+            createSchema(stmt);
+        }
+        SchemaCompatibility.ensureColumn(conn, "dungeon_room_clusters", "level_z", "INTEGER NOT NULL DEFAULT 0");
+        SchemaCompatibility.ensureColumn(conn, "dungeon_rooms", "level_z", "INTEGER NOT NULL DEFAULT 0");
+        SchemaCompatibility.ensureColumn(conn, "dungeon_corridors", "level_z", "INTEGER NOT NULL DEFAULT 0");
+        SchemaCompatibility.ensureColumn(conn, "dungeon_corridor_waypoints", "relative_z", "INTEGER NOT NULL DEFAULT 0");
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_stairs ("
+                    + "stair_id         INTEGER PRIMARY KEY AUTOINCREMENT,"
+                    + "dungeon_map_id   INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
+                    + "name             TEXT"
+                    + ")");
+            stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_stair_path_nodes ("
+                    + "stair_id         INTEGER NOT NULL REFERENCES dungeon_stairs(stair_id) ON DELETE CASCADE,"
+                    + "sort_order       INTEGER NOT NULL,"
+                    + "cell_x           INTEGER NOT NULL,"
+                    + "cell_y           INTEGER NOT NULL,"
+                    + "cell_z           INTEGER NOT NULL,"
+                    + "PRIMARY KEY (stair_id, sort_order)"
+                    + ")");
+            stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_stair_exits ("
+                    + "stair_exit_id    INTEGER PRIMARY KEY AUTOINCREMENT,"
+                    + "stair_id         INTEGER NOT NULL REFERENCES dungeon_stairs(stair_id) ON DELETE CASCADE,"
+                    + "cell_x           INTEGER NOT NULL,"
+                    + "cell_y           INTEGER NOT NULL,"
+                    + "cell_z           INTEGER NOT NULL,"
+                    + "label            TEXT"
+                    + ")");
+        }
     }
 
     public static void resetSchema(Connection conn) throws SQLException {

@@ -1,9 +1,9 @@
 package features.world.dungeonmap.application.runtime;
 
-import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.geometry.CubePoint;
 
 public sealed interface DungeonRuntimeLocation
-        permits DungeonRuntimeLocation.Room, DungeonRuntimeLocation.Corridor, DungeonRuntimeLocation.CorridorComponent, DungeonRuntimeLocation.Tile {
+        permits DungeonRuntimeLocation.Room, DungeonRuntimeLocation.Corridor, DungeonRuntimeLocation.CorridorComponent, DungeonRuntimeLocation.Tile, DungeonRuntimeLocation.StairExit {
 
     static DungeonRuntimeLocation room(long roomId) {
         return new Room(roomId);
@@ -17,8 +17,12 @@ public sealed interface DungeonRuntimeLocation
         return new CorridorComponent(componentId);
     }
 
-    static DungeonRuntimeLocation tile(Point2i tile) {
+    static DungeonRuntimeLocation tile(CubePoint tile) {
         return new Tile(tile);
+    }
+
+    static DungeonRuntimeLocation stairExit(long stairId, CubePoint tile) {
+        return new StairExit(stairId, tile);
     }
 
     record Room(long roomId) implements DungeonRuntimeLocation {
@@ -30,9 +34,15 @@ public sealed interface DungeonRuntimeLocation
     record CorridorComponent(String componentId) implements DungeonRuntimeLocation {
     }
 
-    record Tile(Point2i tile) implements DungeonRuntimeLocation {
+    record Tile(CubePoint tile) implements DungeonRuntimeLocation {
         public Tile {
-            tile = tile == null ? new Point2i(0, 0) : tile;
+            tile = tile == null ? new CubePoint(0, 0, 0) : tile;
+        }
+    }
+
+    record StairExit(long stairId, CubePoint tile) implements DungeonRuntimeLocation {
+        public StairExit {
+            tile = tile == null ? new CubePoint(0, 0, 0) : tile;
         }
     }
 }

@@ -37,7 +37,8 @@ public final class DungeonRuntimeSurfaceResolver {
                     : corridorSurface(layout, corridor, heading);
         }
         if (location instanceof DungeonRuntimeLocation.Tile tileLocation) {
-            DungeonLayout.CellStructure structure = layout.structureAtCell(tileLocation.tile());
+            DungeonLayout projectedLayout = layout.projectedToLevel(tileLocation.tile().z());
+            DungeonLayout.CellStructure structure = projectedLayout.structureAtCell(tileLocation.tile().projectedCell());
             if (structure instanceof DungeonLayout.CellStructure.RoomStructure roomStructure) {
                 return roomSurface(layout, roomStructure.room(), heading);
             }
@@ -48,6 +49,13 @@ public final class DungeonRuntimeSurfaceResolver {
                 return corridorSurface(layout, corridorStructure.corridor(), heading);
             }
             return null;
+        }
+        if (location instanceof DungeonRuntimeLocation.StairExit stairExit) {
+            return new DungeonRuntimeSurface(
+                    "Treppe",
+                    new DetailsNavigator.EntryKey("dungeon-stair", layout.mapId() + ":" + stairExit.stairId()),
+                    "Eine Treppe verbindet mehrere erschlossene Höhenstufen.",
+                    java.util.List.of());
         }
         return null;
     }

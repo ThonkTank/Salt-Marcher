@@ -34,15 +34,16 @@ final class DungeonGraphProjection {
             return null;
         }
         if (activeLocation instanceof DungeonRuntimeLocation.Tile tile) {
-            var room = layout.roomAtCell(tile.tile());
+            DungeonLayout projectedLayout = layout.projectedToLevel(tile.tile().z());
+            var room = projectedLayout.roomAtCell(tile.tile().projectedCell());
             if (room != null) {
                 return room.roomId();
             }
-            var network = layout.corridorNetworkAtCell(tile.tile());
+            var network = projectedLayout.corridorNetworkAtCell(tile.tile().projectedCell());
             if (network != null) {
                 return network.roomIds().stream().sorted().findFirst().orElse(null);
             }
-            return layout.corridorsAtCell(tile.tile()).stream()
+            return projectedLayout.corridorsAtCell(tile.tile().projectedCell()).stream()
                     .flatMap(corridor -> corridor.roomIds().stream())
                     .sorted()
                     .findFirst()

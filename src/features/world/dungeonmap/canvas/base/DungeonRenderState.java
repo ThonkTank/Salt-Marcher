@@ -8,6 +8,7 @@ public record DungeonRenderState(
         String selectedTargetKey,
         TileShape previewPaintShape,
         boolean previewPaintDeleteMode,
+        int projectionLevel,
         DungeonRuntimeLocation activeLocation,
         DungeonHeading heading
 ) {
@@ -17,6 +18,6 @@ public record DungeonRenderState(
     }
 
     public static DungeonRenderState empty() {
-        return new DungeonRenderState(null, TileShape.empty(), false, null, DungeonHeading.defaultHeading());
+        return new DungeonRenderState(null, TileShape.empty(), false, 0, null, DungeonHeading.defaultHeading());
     }
 }

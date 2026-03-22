@@ -563,6 +563,7 @@ public final class DatabaseManager {
             EncounterSchemaSupport.ensureCompatibility(conn);
             // Dungeon data must survive normal app restarts. Explicit dungeon schema
             // resets remain a manual development action, never part of startup.
+            DungeonSchemaSupport.ensureCompatibility(conn);
             CampaignStateSchemaSupport.ensureCompatibility(conn);
             dropLegacyRoleColumns(conn);
 

@@ -16,6 +16,7 @@ public class CampaignState {
     public String CurrentWeather;
     public String Notes;
     public Long DungeonMapId;
+    public Integer DungeonLevelZ;
     public String DungeonLocationType;
     public Long DungeonRoomId;
     public Long DungeonCorridorId;

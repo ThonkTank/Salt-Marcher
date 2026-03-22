@@ -1,6 +1,7 @@
 package features.world.dungeonmap.application.runtime;
 
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
@@ -31,6 +32,9 @@ public final class DungeonRuntimeLabels {
             CorridorNetwork network = layout.findCorridorNetwork(componentLocation.componentId());
             return network == null ? "Korridor" : corridorLabel(layout, network.roomIds().stream());
         }
+        if (location instanceof DungeonRuntimeLocation.StairExit stairExit) {
+            return "Treppe z=" + stairExit.tile().z();
+        }
         return "Kein Standort";
     }
 
@@ -41,8 +45,8 @@ public final class DungeonRuntimeLabels {
         return tileLabel(tileLocation.tile());
     }
 
-    public static String tileLabel(Point2i tile) {
-        return tile == null ? "\u2014" : tile.x() + ", " + tile.y();
+    public static String tileLabel(CubePoint tile) {
+        return tile == null ? "\u2014" : tile.x() + ", " + tile.y() + ", z=" + tile.z();
     }
 
     public static String headingLabel(DungeonHeading heading) {
@@ -50,11 +54,11 @@ public final class DungeonRuntimeLabels {
         return resolved.label();
     }
 
-    public static String structureLabelAtTile(DungeonLayout layout, Point2i tile) {
+    public static String structureLabelAtTile(DungeonLayout layout, CubePoint tile) {
         if (layout == null || tile == null) {
             return "Kein Standort";
         }
-        DungeonLayout.CellStructure structure = layout.structureAtCell(tile);
+        DungeonLayout.CellStructure structure = layout.projectedToLevel(tile.z()).structureAtCell(tile.projectedCell());
         if (structure instanceof DungeonLayout.CellStructure.RoomStructure roomStructure) {
             return roomLabel(roomStructure.room());
         }
@@ -90,7 +94,7 @@ public final class DungeonRuntimeLabels {
             return roomForId(layout, roomLocation.roomId());
         }
         if (location instanceof DungeonRuntimeLocation.Tile tileLocation) {
-            return layout.roomAtCell(tileLocation.tile());
+            return layout.projectedToLevel(tileLocation.tile().z()).roomAtCell(tileLocation.tile().projectedCell());
         }
         return null;
     }

@@ -4,10 +4,13 @@ import features.campaignstate.api.CampaignDungeonLocationType;
 import features.campaignstate.api.DungeonPositionRef;
 import features.campaignstate.api.DungeonPositionSummary;
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
 import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.model.structures.stair.DungeonStair;
+import features.world.dungeonmap.model.structures.stair.DungeonStairExit;
 
 final class DungeonRuntimeLocations {
 
@@ -21,8 +24,13 @@ final class DungeonRuntimeLocations {
             return null;
         }
         if (position.locationType() == CampaignDungeonLocationType.TILE && position.locationKey() != null) {
-            Point2i tile = parseTile(position.locationKey());
+            CubePoint tile = parseTile(position.locationKey(), position.levelZ());
             return tile == null ? null : DungeonRuntimeLocation.tile(tile);
+        }
+        if (position.locationType() == CampaignDungeonLocationType.STAIR_EXIT && position.locationKey() != null) {
+            CubePoint tile = parseTile(position.locationKey(), position.levelZ());
+            long stairId = parseStairId(position.locationKey());
+            return tile == null || stairId <= 0 ? null : DungeonRuntimeLocation.stairExit(stairId, tile);
         }
         if (position.locationType() == CampaignDungeonLocationType.CORRIDOR_COMPONENT && position.locationKey() != null) {
             return DungeonRuntimeLocation.corridorComponent(position.locationKey());
@@ -40,9 +48,11 @@ final class DungeonRuntimeLocations {
         if (layout == null) {
             return null;
         }
-        Point2i resolvedTile = null;
+        CubePoint resolvedTile = null;
         if (location instanceof DungeonRuntimeLocation.Tile tileLocation) {
             resolvedTile = layout.isTraversableCell(tileLocation.tile()) ? tileLocation.tile() : null;
+        } else if (location instanceof DungeonRuntimeLocation.StairExit stairExit) {
+            resolvedTile = stairExitAnchor(layout, stairExit.stairId(), stairExit.tile());
         } else if (location instanceof DungeonRuntimeLocation.Room roomLocation) {
             resolvedTile = roomAnchor(layout, roomLocation.roomId());
         } else if (location instanceof DungeonRuntimeLocation.Corridor corridorLocation) {
@@ -53,7 +63,7 @@ final class DungeonRuntimeLocations {
         if (resolvedTile != null) {
             return DungeonRuntimeLocation.tile(resolvedTile);
         }
-        Point2i fallbackTile = layout.rooms().stream()
+        CubePoint fallbackTile = layout.rooms().stream()
                 .sorted(java.util.Comparator.comparing(room -> room.roomId() == null ? Long.MAX_VALUE : room.roomId()))
                 .map(room -> roomAnchor(layout, room.roomId()))
                 .filter(tile -> tile != null)
@@ -68,6 +78,9 @@ final class DungeonRuntimeLocations {
         }
         if (location instanceof DungeonRuntimeLocation.Tile tile) {
             return layout.isTraversableCell(tile.tile());
+        }
+        if (location instanceof DungeonRuntimeLocation.StairExit stairExit) {
+            return stairExitAnchor(layout, stairExit.stairId(), stairExit.tile()) != null;
         }
         if (location instanceof DungeonRuntimeLocation.CorridorComponent component) {
             return layout.findCorridorNetwork(component.componentId()) != null;
@@ -84,59 +97,111 @@ final class DungeonRuntimeLocations {
     static DungeonPositionRef toCampaignPosition(long mapId, DungeonRuntimeLocation location, DungeonHeading heading) {
         String headingValue = (heading == null ? DungeonHeading.defaultHeading() : heading).name();
         if (location instanceof DungeonRuntimeLocation.Tile tile) {
-            return new DungeonPositionRef(mapId, CampaignDungeonLocationType.TILE, null, null, formatTile(tile.tile()), headingValue);
+            return new DungeonPositionRef(mapId, tile.tile().z(), CampaignDungeonLocationType.TILE, null, null, formatTile(tile.tile()), headingValue);
+        }
+        if (location instanceof DungeonRuntimeLocation.StairExit stairExit) {
+            return new DungeonPositionRef(
+                    mapId,
+                    stairExit.tile().z(),
+                    CampaignDungeonLocationType.STAIR_EXIT,
+                    null,
+                    null,
+                    formatStairExit(stairExit.stairId(), stairExit.tile()),
+                    headingValue);
         }
         if (location instanceof DungeonRuntimeLocation.CorridorComponent corridorComponent) {
-            return new DungeonPositionRef(mapId, CampaignDungeonLocationType.CORRIDOR_COMPONENT, null, null, corridorComponent.componentId(), headingValue);
+            return new DungeonPositionRef(mapId, 0, CampaignDungeonLocationType.CORRIDOR_COMPONENT, null, null, corridorComponent.componentId(), headingValue);
         }
         if (location instanceof DungeonRuntimeLocation.Corridor corridor) {
-            return new DungeonPositionRef(mapId, CampaignDungeonLocationType.CORRIDOR, null, corridor.corridorId(), null, headingValue);
+            return new DungeonPositionRef(mapId, 0, CampaignDungeonLocationType.CORRIDOR, null, corridor.corridorId(), null, headingValue);
         }
         if (location instanceof DungeonRuntimeLocation.Room room) {
-            return new DungeonPositionRef(mapId, CampaignDungeonLocationType.ROOM, room.roomId(), null, null, headingValue);
+            return new DungeonPositionRef(mapId, 0, CampaignDungeonLocationType.ROOM, room.roomId(), null, null, headingValue);
         }
-        return new DungeonPositionRef(mapId, null, null, null, null, headingValue);
+        return new DungeonPositionRef(mapId, 0, null, null, null, null, headingValue);
     }
 
-    static String formatTile(Point2i tile) {
-        return tile == null ? null : TILE_PREFIX + tile.x() + "," + tile.y();
+    static String formatTile(CubePoint tile) {
+        return tile == null ? null : TILE_PREFIX + tile.x() + "," + tile.y() + "," + tile.z();
     }
 
-    private static Point2i parseTile(String value) {
+    private static String formatStairExit(long stairId, CubePoint tile) {
+        return "stair:" + stairId + ":" + tile.x() + "," + tile.y() + "," + tile.z();
+    }
+
+    private static CubePoint parseTile(String value, Integer fallbackLevelZ) {
         if (value == null || !value.startsWith(TILE_PREFIX)) {
             return null;
         }
         String coordinates = value.substring(TILE_PREFIX.length());
-        int separator = coordinates.indexOf(',');
-        if (separator <= 0 || separator >= coordinates.length() - 1) {
+        String[] parts = coordinates.split(",");
+        if (parts.length < 2 || parts.length > 3) {
             return null;
         }
         try {
-            int x = Integer.parseInt(coordinates.substring(0, separator));
-            int y = Integer.parseInt(coordinates.substring(separator + 1));
-            return new Point2i(x, y);
+            int x = Integer.parseInt(parts[0]);
+            int y = Integer.parseInt(parts[1]);
+            int z = parts.length == 3 ? Integer.parseInt(parts[2]) : (fallbackLevelZ == null ? 0 : fallbackLevelZ);
+            return new CubePoint(x, y, z);
         } catch (NumberFormatException ignored) {
             return null;
         }
     }
 
-    private static Point2i roomAnchor(DungeonLayout layout, Long roomId) {
+    private static long parseStairId(String value) {
+        if (value == null || !value.startsWith("stair:")) {
+            return -1L;
+        }
+        int separator = value.indexOf(':', "stair:".length());
+        if (separator <= "stair:".length()) {
+            return -1L;
+        }
+        try {
+            return Long.parseLong(value.substring("stair:".length(), separator));
+        } catch (NumberFormatException ignored) {
+            return -1L;
+        }
+    }
+
+    private static CubePoint roomAnchor(DungeonLayout layout, Long roomId) {
         Room room = layout.findRoom(roomId);
         if (room == null || room.floor() == null) {
             return null;
         }
         Point2i center = room.floor().shape().centerCell();
-        return layout.isTraversableCell(center) ? center : layout.nearestTraversableCell(center);
+        CubePoint preferred = CubePoint.at(center, layout.levelForRoom(roomId));
+        return layout.isTraversableCell(preferred) ? preferred : layout.nearestTraversableCell(preferred);
     }
 
-    private static Point2i corridorAnchor(Corridor corridor) {
+    private static CubePoint corridorAnchor(Corridor corridor) {
         return corridor == null || corridor.path() == null || corridor.path().floor() == null
                 ? null
-                : corridor.path().floor().shape().centerCell();
+                : CubePoint.at(corridor.path().floor().shape().centerCell(), 0);
     }
 
-    private static Point2i corridorNetworkAnchor(DungeonLayout layout, String networkId) {
+    private static CubePoint corridorNetworkAnchor(DungeonLayout layout, String networkId) {
         CorridorNetwork network = layout.findCorridorNetwork(networkId);
-        return network == null || network.floor() == null ? null : network.floor().shape().centerCell();
+        return network == null || network.floor() == null ? null : CubePoint.at(network.floor().shape().centerCell(), 0);
+    }
+
+    private static CubePoint stairExitAnchor(DungeonLayout layout, long stairId, CubePoint preferred) {
+        DungeonStair stair = layout.stairs().stream()
+                .filter(candidate -> candidate != null && candidate.stairId() != null && candidate.stairId() == stairId)
+                .findFirst()
+                .orElse(null);
+        if (stair == null) {
+            return null;
+        }
+        if (preferred != null) {
+            for (DungeonStairExit exit : stair.exits()) {
+                if (preferred.equals(exit.position())) {
+                    return exit.position();
+                }
+            }
+        }
+        return stair.exits().stream()
+                .map(DungeonStairExit::position)
+                .findFirst()
+                .orElseGet(() -> stair.path().stream().findFirst().orElse(null));
     }
 }

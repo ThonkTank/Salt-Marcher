@@ -1,5 +1,6 @@
 package features.world.dungeonmap.model;
 
+import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.objects.Door;
@@ -11,6 +12,7 @@ import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInput
 import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInputProjector;
 import features.world.dungeonmap.model.structures.corridor.CorridorRewriteContext;
 import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.model.structures.stair.DungeonStair;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -34,22 +36,28 @@ public final class DungeonLayout {
         }
     }
 
-    private static final DungeonLayout EMPTY = new DungeonLayout(0L, "Kein Dungeon", List.of(), List.of());
+    private static final DungeonLayout EMPTY = new DungeonLayout(0L, "Kein Dungeon", List.of(), List.of(), List.of(), Map.of(), Map.of(), Map.of());
 
     private final long mapId;
     private final String name;
     private final List<Corridor> corridors;
     private final List<RoomCluster> clusters;
+    private final List<DungeonStair> stairs;
     // Layout is only the global aggregation/query surface over self-managed structures.
     private final List<CorridorNetwork> corridorNetworks;
     private final Map<Long, Room> roomsById;
     private final Map<Long, Corridor> corridorsById;
     private final Map<Long, RoomCluster> clustersById;
+    private final Map<Long, Integer> clusterLevelsById;
+    private final Map<Long, Integer> roomLevelsById;
+    private final Map<Long, Integer> corridorLevelsById;
     private final Map<String, CorridorNetwork> corridorNetworksById;
     private final Map<Long, String> corridorNetworkIdByCorridorId;
     private final Map<Point2i, List<Long>> corridorIdsByCell;
     private final Map<Point2i, String> corridorNetworkIdByCell;
     private final Set<Point2i> traversableCells;
+    private final Set<CubePoint> traversableCubeCells;
+    private final List<Integer> reachableLevels;
 
     public DungeonLayout(
             long mapId,
@@ -57,21 +65,40 @@ public final class DungeonLayout {
             List<Corridor> corridors,
             List<RoomCluster> clusters
     ) {
+        this(mapId, name, corridors, clusters, List.of(), Map.of(), Map.of(), Map.of());
+    }
+
+    public DungeonLayout(
+            long mapId,
+            String name,
+            List<Corridor> corridors,
+            List<RoomCluster> clusters,
+            List<DungeonStair> stairs,
+            Map<Long, Integer> clusterLevelsById,
+            Map<Long, Integer> roomLevelsById,
+            Map<Long, Integer> corridorLevelsById
+    ) {
         this.mapId = mapId;
         this.name = name == null || name.isBlank() ? "Dungeon " + mapId : name;
         this.corridors = corridors == null ? List.of() : List.copyOf(corridors);
         this.clusters = projectCorridorDoorsIntoRooms(
                 this.corridors,
                 clusters == null ? List.of() : List.copyOf(clusters));
+        this.stairs = stairs == null ? List.of() : List.copyOf(stairs);
         this.corridorNetworks = CorridorNetwork.buildNetworks(mapId, this.corridors);
         this.roomsById = indexRooms(this.clusters);
         this.corridorsById = indexCorridors(this.corridors);
         this.clustersById = indexClusters(this.clusters);
+        this.clusterLevelsById = indexLevels(clusterLevelsById);
+        this.roomLevelsById = indexRoomLevels(this.roomsById, roomLevelsById, this.clusterLevelsById);
+        this.corridorLevelsById = indexLevels(corridorLevelsById);
         this.corridorNetworksById = indexCorridorNetworks(this.corridorNetworks);
         this.corridorNetworkIdByCorridorId = indexCorridorNetworkIdsByCorridorId(this.corridorNetworks);
         this.corridorIdsByCell = indexCorridorIdsByCell(this.corridors);
         this.corridorNetworkIdByCell = indexCorridorNetworkIdsByCell(this.corridorNetworks);
         this.traversableCells = indexTraversableCells(this.clusters, this.corridors);
+        this.traversableCubeCells = indexTraversableCubeCells(this.clusters, this.corridors, this.stairs, this.roomLevelsById, this.corridorLevelsById);
+        this.reachableLevels = indexReachableLevels(this.traversableCubeCells, this.stairs);
     }
 
     private static List<RoomCluster> projectCorridorDoorsIntoRooms(List<Corridor> corridors, List<RoomCluster> clusters) {
@@ -139,6 +166,18 @@ public final class DungeonLayout {
         return corridors;
     }
 
+    public List<DungeonStair> stairs() {
+        return stairs;
+    }
+
+    public List<Integer> reachableLevels() {
+        return reachableLevels;
+    }
+
+    public int defaultLevel() {
+        return reachableLevels.isEmpty() ? 0 : reachableLevels.getFirst();
+    }
+
     public Map<Long, Corridor> corridorsById() {
         return corridorsById;
     }
@@ -165,6 +204,18 @@ public final class DungeonLayout {
             }
         }
         return Map.copyOf(result);
+    }
+
+    public int levelForCluster(Long clusterId) {
+        return clusterId == null ? 0 : clusterLevelsById.getOrDefault(clusterId, 0);
+    }
+
+    public int levelForRoom(Long roomId) {
+        return roomId == null ? 0 : roomLevelsById.getOrDefault(roomId, 0);
+    }
+
+    public int levelForCorridor(Long corridorId) {
+        return corridorId == null ? 0 : corridorLevelsById.getOrDefault(corridorId, 0);
     }
 
     public List<RoomCluster> overlappingClusters(features.world.dungeonmap.model.geometry.TileShape shape) {
@@ -286,8 +337,16 @@ public final class DungeonLayout {
         return traversableCells;
     }
 
+    public Set<CubePoint> traversableCubeCells() {
+        return traversableCubeCells;
+    }
+
     public boolean isTraversableCell(Point2i cell) {
         return cell != null && traversableCells.contains(cell);
+    }
+
+    public boolean isTraversableCell(CubePoint point) {
+        return point != null && traversableCubeCells.contains(point);
     }
 
     public Point2i nearestTraversableCell(Point2i cell) {
@@ -297,7 +356,18 @@ public final class DungeonLayout {
         return traversableCells.stream()
                 .min(Comparator
                         .comparingInt((Point2i candidate) -> candidate.distanceTo(cell))
-                        .thenComparing(Point2i.POINT_ORDER))
+                .thenComparing(Point2i.POINT_ORDER))
+                .orElse(null);
+    }
+
+    public CubePoint nearestTraversableCell(CubePoint point) {
+        if (point == null || traversableCubeCells.isEmpty()) {
+            return null;
+        }
+        return traversableCubeCells.stream()
+                .min(Comparator
+                        .comparingInt((CubePoint candidate) -> candidate.manhattanDistanceTo(point))
+                        .thenComparing(CubePoint.POINT_ORDER))
                 .orElse(null);
     }
 
@@ -358,7 +428,7 @@ public final class DungeonLayout {
         List<RoomCluster> updatedClusters = clusters.stream()
                 .map(existing -> cluster.clusterId().equals(existing.clusterId()) ? cluster : existing)
                 .toList();
-        return new DungeonLayout(mapId, name, corridors, updatedClusters);
+        return new DungeonLayout(mapId, name, corridors, updatedClusters, stairs, clusterLevelsById, roomLevelsById, corridorLevelsById);
     }
 
     public DungeonLayout withTranslatedCluster(Long clusterId, Point2i delta) {
@@ -383,7 +453,7 @@ public final class DungeonLayout {
         List<Corridor> updatedCorridors = corridors.stream()
                 .map(corridor -> corridor == null ? null : corridor.reanchoredFor(rewriteContext).replannedFor(rewriteContext))
                 .toList();
-        return new DungeonLayout(mapId, name, updatedCorridors, updatedClusters);
+        return new DungeonLayout(mapId, name, updatedCorridors, updatedClusters, stairs, clusterLevelsById, roomLevelsById, corridorLevelsById);
     }
 
     public DungeonLayout applying(ClusterRewrite rewrite) {
@@ -419,7 +489,26 @@ public final class DungeonLayout {
                     rewrite.clusterCenter(),
                     rewrite.rooms()));
         }
-        return new DungeonLayout(mapId, name, corridors, updatedClusters);
+        return new DungeonLayout(mapId, name, corridors, updatedClusters, stairs, clusterLevelsById, roomLevelsById, corridorLevelsById);
+    }
+
+    public DungeonLayout projectedToLevel(int levelZ) {
+        List<RoomCluster> projectedClusters = clusters.stream()
+                .filter(cluster -> cluster != null && levelForCluster(cluster.clusterId()) == levelZ)
+                .toList();
+        List<Corridor> projectedCorridors = corridors.stream()
+                .filter(corridor -> corridor != null && levelForCorridor(corridor.corridorId()) == levelZ)
+                .toList();
+        List<DungeonStair> projectedStairs = stairs.stream()
+                .filter(stair -> stair != null && stair.reachableLevels().contains(levelZ))
+                .toList();
+        return new DungeonLayout(mapId, name, projectedCorridors, projectedClusters, projectedStairs, clusterLevelsById, roomLevelsById, corridorLevelsById);
+    }
+
+    public List<DungeonStair> stairsAtLevel(int levelZ) {
+        return stairs.stream()
+                .filter(stair -> stair != null && stair.reachableLevels().contains(levelZ))
+                .toList();
     }
 
     private static Map<Long, Room> indexRooms(List<RoomCluster> clusters) {
@@ -457,6 +546,40 @@ public final class DungeonLayout {
         return Map.copyOf(result);
     }
 
+    private static Map<Long, Integer> indexLevels(Map<Long, Integer> levels) {
+        Map<Long, Integer> result = new LinkedHashMap<>();
+        if (levels == null) {
+            return Map.of();
+        }
+        for (Map.Entry<Long, Integer> entry : levels.entrySet()) {
+            if (entry.getKey() != null) {
+                result.put(entry.getKey(), entry.getValue() == null ? 0 : entry.getValue());
+            }
+        }
+        return Map.copyOf(result);
+    }
+
+    private static Map<Long, Integer> indexRoomLevels(
+            Map<Long, Room> roomsById,
+            Map<Long, Integer> explicitRoomLevels,
+            Map<Long, Integer> clusterLevels
+    ) {
+        Map<Long, Integer> result = new LinkedHashMap<>();
+        if (roomsById == null || roomsById.isEmpty()) {
+            return Map.of();
+        }
+        for (Map.Entry<Long, Room> entry : roomsById.entrySet()) {
+            Long roomId = entry.getKey();
+            Room room = entry.getValue();
+            Integer level = explicitRoomLevels == null ? null : explicitRoomLevels.get(roomId);
+            if (level == null && room != null) {
+                level = clusterLevels.get(room.clusterId());
+            }
+            result.put(roomId, level == null ? 0 : level);
+        }
+        return Map.copyOf(result);
+    }
+
     private static Set<Point2i> indexTraversableCells(List<RoomCluster> clusters, List<Corridor> corridors) {
         Set<Point2i> result = new LinkedHashSet<>();
         for (RoomCluster cluster : clusters) {
@@ -475,6 +598,63 @@ public final class DungeonLayout {
             }
         }
         return Set.copyOf(result);
+    }
+
+    private static Set<CubePoint> indexTraversableCubeCells(
+            List<RoomCluster> clusters,
+            List<Corridor> corridors,
+            List<DungeonStair> stairs,
+            Map<Long, Integer> roomLevels,
+            Map<Long, Integer> corridorLevels
+    ) {
+        Set<CubePoint> result = new LinkedHashSet<>();
+        for (RoomCluster cluster : clusters) {
+            if (cluster == null) {
+                continue;
+            }
+            for (Room room : cluster.rooms()) {
+                if (room == null || room.floor() == null || room.roomId() == null) {
+                    continue;
+                }
+                int levelZ = roomLevels.getOrDefault(room.roomId(), 0);
+                for (Point2i cell : room.floor().shape().absoluteCells()) {
+                    result.add(CubePoint.at(cell, levelZ));
+                }
+            }
+        }
+        for (Corridor corridor : corridors) {
+            if (corridor == null || corridor.corridorId() == null || corridor.path() == null || corridor.path().floor() == null) {
+                continue;
+            }
+            int levelZ = corridorLevels.getOrDefault(corridor.corridorId(), 0);
+            for (Point2i cell : corridor.path().floor().shape().absoluteCells()) {
+                result.add(CubePoint.at(cell, levelZ));
+            }
+        }
+        for (DungeonStair stair : stairs) {
+            if (stair != null) {
+                result.addAll(stair.occupiedPositions());
+            }
+        }
+        return Set.copyOf(result);
+    }
+
+    private static List<Integer> indexReachableLevels(Set<CubePoint> traversableCubeCells, List<DungeonStair> stairs) {
+        Set<Integer> result = new LinkedHashSet<>();
+        if (traversableCubeCells != null) {
+            traversableCubeCells.stream()
+                    .map(CubePoint::z)
+                    .sorted()
+                    .forEach(result::add);
+        }
+        if (stairs != null) {
+            for (DungeonStair stair : stairs) {
+                if (stair != null) {
+                    stair.reachableLevels().stream().sorted().forEach(result::add);
+                }
+            }
+        }
+        return List.copyOf(result);
     }
 
     private static Map<String, CorridorNetwork> indexCorridorNetworks(List<CorridorNetwork> networks) {

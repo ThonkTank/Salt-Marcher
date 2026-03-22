@@ -61,8 +61,20 @@ public final class DungeonEditorControls extends VBox {
         mapControls.setOnEditMapRequested(onEditMapRequested);
     }
 
+    public void setOnPreviousLevelRequested(Runnable action) {
+        mapControls.setOnPreviousLevelRequested(action);
+    }
+
+    public void setOnNextLevelRequested(Runnable action) {
+        mapControls.setOnNextLevelRequested(action);
+    }
+
     public void showMaps(List<DungeonMapCatalogEntry> maps, Long activeMapId, boolean loading) {
         mapControls.showMaps(maps, activeMapId, loading);
+    }
+
+    public void showLevels(List<Integer> levels, int activeLevel, boolean loading) {
+        mapControls.showLevels(levels, activeLevel, loading);
     }
 
     private static Label sectionLabel(String text) {

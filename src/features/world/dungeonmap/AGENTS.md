@@ -16,9 +16,9 @@ The feature ships two `AppView` implementations: `DungeonEditorView` (EDITOR) an
 
 - `model/` — immutable domain model in three strict layers (see **Model Layering** below)
 - `application/` — stateful edit services that plan and persist topology changes. Organized by domain concern:
-  - `application/room/` — room paint topology: `DungeonRoomTopologyService` is the single room topology orchestrator for paint/delete/boundary edits; thin facades may wrap transaction entrypoints but must not re-plan topology outside the model
+  - `application/room/` — room paint topology: `DungeonRoomTopologyService` is the single room topology orchestrator for paint/delete/boundary edits; thin facades may wrap transaction entrypoints but must not re-plan topology outside the model. Exit catalogs: `DoorExitCatalog` groups adjacent door edges into logical openings via BFS, `RoomExitCatalog` wraps it per-room, `RoomExitDescriptor` carries the result
   - `application/corridor/` — corridor lifecycle: `DungeonCorridorEditService` (CRUD), `DungeonCorridorPersistenceService` (single-corridor and batch persistence), `DungeonCorridorRoomRewriteService` (rewrites corridor room membership after topology changes — merge/delete/split), `DungeonCorridorDetailService`. Batch rewrite (reanchor + replan) lives on `Corridor.rewriteAll()`
-  - `application/runtime/` — `DungeonRuntimeStateRepairService`, `DungeonRuntimeLocation`
+  - `application/runtime/` — runtime navigation subsystem: `DungeonRuntimeNavigationService` (orchestrator: load position, resolve surface, move party), `DungeonRuntimeLocation` (sealed: Room | Corridor | CorridorComponent | Tile), `DungeonHeading` (4 cardinal directions with relative-label logic), surface pipeline (`DungeonRuntimeSurfaceResolver` → `DungeonRuntimeSurface` → `DungeonRuntimeSurfacePresenter`), door pipeline (`DungeonRuntimeDoorCatalog` enriches exits with destination labels and narration → `DungeonRuntimeDoorDescriptor` adds heading-relative labels), `DungeonRuntimeLabels` (static label generation), `DungeonRuntimeLocations` (location ↔ persistence serialization), `DungeonRuntimeStateRepairService` (consistency repair)
   - `application/support/` — `DungeonTransactionRunner`
   - Services coordinate between model and persistence but must not reconstruct structure truth that already belongs on `Room`, `RoomCluster`, or `Corridor`
 - `loading/` — `DungeonMapLoader` (raw JDBC reads) + `DungeonMapLoadingService` (async loading with sequenced request deduplication via `requestSequence` AtomicLong — stale responses discarded). Loader hydrates rooms from stored cluster topology via BFS flood-fill
@@ -32,7 +32,7 @@ The feature ships two `AppView` implementations: `DungeonEditorView` (EDITOR) an
   - `shell/editor/` — `DungeonEditorView`, `DungeonEditorCoordinator` (central wiring hub: binds controls, tools, interaction controllers, and state listeners with separate listener methods per state concern), `DungeonEditorControls`, `DungeonEditorStatePane`
   - `shell/editor/controls/` — left-panel UI: `MapControls` (map selector/CRUD), `ToolControls` (tool palette), `ViewModeControls` (grid/graph toggle), `ToolFamilyDropdownController`, `GuardState`
   - `shell/editor/interaction/` — event dispatch and per-tool controllers (see **Editor Interaction Model** below)
-  - `shell/runtime/` — `DungeonRuntimeView`
+  - `shell/runtime/` — `DungeonRuntimeView` (publishes surfaces to `DetailsNavigator`, wires drag-to-move interaction), `DungeonRuntimeInteractionController` (drag-to-move: press on party tile → drag preview → release commits move)
 - `state/` — observable transient state containers with `CopyOnWriteArrayList` listener lists. These are the single source of truth for cross-class coordination:
   - `DungeonMapState` — loaded map data (catalog entries, active `DungeonLayout`, loading/error state)
   - `DungeonEditorSessionState` — current tool + view mode
@@ -40,6 +40,7 @@ The feature ships two `AppView` implementations: `DungeonEditorView` (EDITOR) an
   - `EditorLayoutPreviewState` — dragged cluster preview (`DungeonLayout` with translated cluster)
   - `EditorPaintPreviewState` — paint/delete preview shape + mode
   - `DungeonCorridorDraftState` — pending corridor endpoint for two-click creation flow
+  - `DungeonRuntimeState` — active location + heading, loading/dragging/moving mode flags, error state
 
 ### Quarantine
 
@@ -62,6 +63,20 @@ The feature ships two `AppView` implementations: `DungeonEditorView` (EDITOR) an
 - **CORRIDOR_CREATE / CORRIDOR_DELETE** → `CorridorInteractionController` — two-click flow via `DungeonCorridorDraftState` (first click stores pending endpoint, second click finalizes), sealed `CorridorEndpoint` (Room | Corridor)
 
 Canvas pointer events flow through `DungeonCanvasInteractionHandler` → `handlePressed`/`handleDragged`/`handleReleased` → state update → redraw. Hit testing: `DungeonGridHitTester` returns `DungeonEditorHitTarget` / `DungeonEditorLabelHitTarget` for cluster/room/corridor at canvas point.
+
+### Runtime Navigation Model
+
+`DungeonRuntimeInteractionController` implements drag-to-move: press on the party tile starts a drag, `DungeonRuntimeState.showDragPreview()` renders the preview, release commits the move via `DungeonRuntimeNavigationService.moveToTile()`/`moveThroughDoor()`.
+
+After each move, the runtime view resolves the new location into a presentable surface:
+
+1. `DungeonRuntimeSurfaceResolver` pattern-matches on `DungeonRuntimeLocation` (sealed: Room | Corridor | CorridorComponent | Tile) → builds `DungeonRuntimeSurface` (title, entry key, visual description, door list)
+2. Door enrichment pipeline: model door edges → `DoorExitCatalog` (BFS groups adjacent edges into openings) → `RoomExitDescriptor` → `DungeonRuntimeDoorCatalog` (adds destination labels, narration) → `DungeonRuntimeDoorDescriptor` (adds heading-relative labels via `DungeonHeading.relativeLabel()`)
+3. `DungeonRuntimeSurfacePresenter` converts the surface into JavaFX nodes → published to `DetailsNavigator`
+
+`DungeonRuntimeLabels` provides all display strings (room names, corridor labels joining connected room names, tile coordinates, heading names). `DungeonRuntimeLocations` handles bidirectional conversion between `DungeonRuntimeLocation` and the persisted campaign-state format.
+
+Room/corridor narration is model-owned (`RoomNarration`, `RoomExitNarration`). Surface resolution and label generation are static utilities in `application/runtime/`. Do not introduce a separate runtime details panel — surfaces are published through the shared `DetailsNavigator`.
 
 ### Coordinator Wiring (DungeonEditorCoordinator)
 
@@ -106,17 +121,18 @@ Instrumentation available via `saltmarcher.dungeonmap.corridorplanner.profile` s
 geometry/  →  objects/  →  structures/
 ```
 
-- **`geometry/`** — Pure grid math primitives: `Point2i`, `Tile`, `TileShape`, `VertexEdge`, `VertexPath`, `BoundaryNetwork`, `GridAnchor`, `GridRoute`. Domain-agnostic. No knowledge of walls, doors, rooms.
+- **`geometry/`** — Pure grid math primitives: `Point2i`, `CubePoint` (3D grid coordinate), `Tile`, `TileShape`, `VertexEdge`, `VertexPath`, `BoundaryNetwork`, `GridAnchor`, `GridRoute`. Domain-agnostic. No knowledge of walls, doors, rooms.
 - **`objects/`** — Thin domain objects over geometry: `Floor`, `Wall`, `Door`, `BoundaryObject`, `CorridorPath`. Each adds exactly one domain rule (e.g., traversal state) to a geometry primitive.
-- **`structures/`** — Self-managed compositions: `Room`, `RoomCluster`, `Corridor`, `CorridorNetwork`. Compose objects and own structure-level behavior.
+- **`structures/`** — Self-managed compositions: `Room`, `RoomCluster`, `Corridor`, `CorridorNetwork`, `DungeonStair`. Compose objects and own structure-level behavior.
 
 `DungeonLayout` is the immutable global lookup layer over structures. Mutations return new instances. Pre-computes corridor networks dynamically via `CorridorNetwork.buildNetworks()`. Key aggregate queries: `corridorsAffectedBy(ClusterRewrite)`, `overlappingClusters(TileShape)`, `corridorPlanningInput()`.
 
 ### Key Structures
 
-- **`Room`** — record: roomId, mapId, clusterId, name, Floor, Walls, Doors. `resolved()` factory ensures canonical wall/door set (walls cover all perimeter edges except where doors exist). Boundary normalization auto-synthesizes missing walls.
+- **`Room`** — record: roomId, mapId, clusterId, name, Floor, Walls, Doors, `RoomNarration` (visual description + per-exit `RoomExitNarration` entries). `resolved()` factory ensures canonical wall/door set (walls cover all perimeter edges except where doors exist). Boundary normalization auto-synthesizes missing walls.
 - **`RoomCluster`** — groups rooms spatially, manages adjacency via overlap indexing, and owns cluster-local rewrite logic for paint/delete/boundary changes. `movedBy()` handles translation. Produces `InteractiveLabelHandle` for canvas rendering.
 - **`Corridor`** — record: corridorId, mapId, roomIds, `CorridorBindings` (canonical relative truth), `CorridorPath` (runtime derived geometry). Bindings store waypoints and door entries as relative offsets from cluster centers → survive cluster movement without re-editing. Mutation methods: `withAddedRoom()`, `mergeWith()`, `reanchoredFor()`, `replannedFor()`.
+- **`DungeonStair`** — record: stairId, mapId, name, 3D path (`List<CubePoint>`), exits (`List<DungeonStairExit>`). Represents vertical connections across Z-levels. `DungeonStairExit` is a landing point at a specific `CubePoint`.
 
 ### Layer Rules
 
