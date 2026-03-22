@@ -35,8 +35,9 @@ final class CorridorPlanner {
     private static final int CORNER_PENALTY_RELAXATION_INTERVAL = 12;
     private static final int MAX_EXIT_CANDIDATES_PER_ROOM = 12;
     private static final int MAX_TARGETED_EXIT_CANDIDATES_PER_ROOM = 8;
-    private static final int MAX_EXIT_PAIR_PATH_EVALUATIONS = 64;
-    private static final int TARGETED_SIDE_NEIGHBOR_COUNT = 2;
+    private static final int BASE_EXACT_EXIT_PAIR_EVALUATIONS = 24;
+    private static final int ROOM_TARGET_EXACT_PAIR_EVALUATIONS = 28;
+    private static final int COMPLEX_EXACT_EXIT_PAIR_EVALUATIONS = 32;
 
     private CorridorPlanner() {
         throw new AssertionError("No instances");
@@ -245,6 +246,8 @@ final class CorridorPlanner {
     ) {
         Point2i roomCenter = room.floor().shape().centerCell();
         Point2i connectedRoomCenter = connectedRoom.floor().shape().centerCell();
+        ExitSelectionTarget roomTarget = new RoomTarget(connectedRoomCenter);
+        ExitSelectionTarget connectedTarget = new RoomTarget(roomCenter);
         List<ExitCandidate> roomExits = roomToRoomCandidates(room, connectedRoomCenter, context);
         List<ExitCandidate> connectedExits = roomToRoomCandidates(connectedRoom, roomCenter, context);
         if (roomExits.isEmpty() || connectedExits.isEmpty()) {
@@ -255,7 +258,7 @@ final class CorridorPlanner {
                 connectedExits,
                 roomCenter,
                 connectedRoomCenter,
-                context.waypointCells()));
+                context.waypointCells()), exactPairBudget(context, roomTarget, connectedTarget));
     }
 
     private static List<Point2i> normalizeSharedGapPath(Point2i start, Point2i target, List<Point2i> path) {
@@ -390,11 +393,11 @@ final class CorridorPlanner {
         return List.copyOf(rankedPairs);
     }
 
-    private static List<ExitPairCandidate> limitedExitPairs(List<ExitPairCandidate> ranked) {
-        if (ranked.size() <= MAX_EXIT_PAIR_PATH_EVALUATIONS) {
+    private static List<ExitPairCandidate> limitedExitPairs(List<ExitPairCandidate> ranked, int maxPairs) {
+        if (ranked.size() <= maxPairs) {
             return ranked;
         }
-        return List.copyOf(ranked.subList(0, MAX_EXIT_PAIR_PATH_EVALUATIONS));
+        return List.copyOf(ranked.subList(0, maxPairs));
     }
 
     private static List<Point2i> preferredTargetDirections(Point2i roomCenter, Point2i targetCenter) {
@@ -477,6 +480,30 @@ final class CorridorPlanner {
                 + sidePenalty
                 + centerPenalty
                 + targetAlignmentPenalty;
+    }
+
+    private static int exactPairBudget(
+            PlannerContext context,
+            ExitSelectionTarget left,
+            ExitSelectionTarget right
+    ) {
+        Point2i leftCenter = targetCenter(left);
+        Point2i rightCenter = targetCenter(right);
+        if (leftCenter == null || rightCenter == null) {
+            return BASE_EXACT_EXIT_PAIR_EVALUATIONS;
+        }
+        int targetDistance = leftCenter.distanceTo(rightCenter);
+        boolean hasWaypoints = context != null && !context.waypointCells().isEmpty();
+        boolean roomToRoom = left instanceof RoomTarget && right instanceof RoomTarget;
+        if (roomToRoom && (hasWaypoints || targetDistance >= 24)) {
+            return COMPLEX_EXACT_EXIT_PAIR_EVALUATIONS;
+        }
+        if (roomToRoom) {
+            return ROOM_TARGET_EXACT_PAIR_EVALUATIONS;
+        }
+        return hasWaypoints || targetDistance >= 24
+                ? ROOM_TARGET_EXACT_PAIR_EVALUATIONS
+                : BASE_EXACT_EXIT_PAIR_EVALUATIONS;
     }
 
     private static int estimatedCornersToTarget(Point2i start, Point2i target) {
