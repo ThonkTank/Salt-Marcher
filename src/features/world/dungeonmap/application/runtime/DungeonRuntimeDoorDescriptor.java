@@ -22,15 +22,14 @@ public record DungeonRuntimeDoorDescriptor(
         outsideCell = outsideCell == null ? roomCell.add(direction) : outsideCell;
         anchorEdge = anchorEdge == null ? VertexEdge.betweenCellAndStep(roomCell, direction) : anchorEdge;
         relativeLabel = relativeLabel == null || relativeLabel.isBlank() ? "Direkt vor euch" : relativeLabel;
-        description = description == null || description.isBlank() ? relativeLabel + " ist eine Tuer." : description;
+        description = description == null || description.isBlank() ? "eine Tuer" : description;
     }
 
     public static DungeonRuntimeDoorDescriptor from(RoomExitDescriptor exit, DungeonHeading heading, String narration) {
         DungeonHeading resolvedHeading = heading == null ? DungeonHeading.defaultHeading() : heading;
         String relativeLabel = resolvedHeading.relativeLabel(exit.direction());
-        String baseDescription = relativeLabel + " ist eine Tuer.";
         String resolvedNarration = narration == null ? "" : narration.trim();
-        String description = resolvedNarration.isBlank() ? baseDescription : baseDescription + " " + resolvedNarration;
+        String description = resolvedNarration.isBlank() ? "eine Tuer" : resolvedNarration;
         return new DungeonRuntimeDoorDescriptor(
                 exit.number(),
                 exit.label(),

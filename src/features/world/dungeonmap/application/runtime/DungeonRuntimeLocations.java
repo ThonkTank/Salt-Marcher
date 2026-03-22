@@ -1,7 +1,6 @@
 package features.world.dungeonmap.application.runtime;
 
 import features.campaignstate.api.CampaignDungeonLocationType;
-import features.campaignstate.api.CampaignStateReadApi;
 import features.campaignstate.api.DungeonPositionRef;
 import features.campaignstate.api.DungeonPositionSummary;
 import features.world.dungeonmap.model.DungeonLayout;
@@ -10,21 +9,11 @@ import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
 import features.world.dungeonmap.model.structures.room.Room;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-
 final class DungeonRuntimeLocations {
 
     private static final String TILE_PREFIX = "tile:";
 
     private DungeonRuntimeLocations() {
-    }
-
-    static DungeonRuntimeLocation storedActiveLocation(Connection conn, long mapId) throws SQLException {
-        return CampaignStateReadApi.getDungeonPosition(conn)
-                .filter(position -> position.mapId() != null && position.mapId() == mapId)
-                .map(DungeonRuntimeLocations::toRuntimeLocation)
-                .orElse(null);
     }
 
     static DungeonRuntimeLocation toRuntimeLocation(DungeonPositionSummary position) {
@@ -94,31 +83,21 @@ final class DungeonRuntimeLocations {
         return false;
     }
 
-    static DungeonPositionRef toCampaignPosition(long mapId, DungeonRuntimeLocation location) {
+    static DungeonPositionRef toCampaignPosition(long mapId, DungeonRuntimeLocation location, DungeonHeading heading) {
+        String headingValue = (heading == null ? DungeonHeading.defaultHeading() : heading).name();
         if (location instanceof DungeonRuntimeLocation.Tile tile) {
-            return new DungeonPositionRef(mapId, CampaignDungeonLocationType.TILE, null, null, formatTile(tile.tile()), null);
+            return new DungeonPositionRef(mapId, CampaignDungeonLocationType.TILE, null, null, formatTile(tile.tile()), headingValue);
         }
         if (location instanceof DungeonRuntimeLocation.CorridorComponent corridorComponent) {
-            return new DungeonPositionRef(mapId, CampaignDungeonLocationType.CORRIDOR_COMPONENT, null, null, corridorComponent.componentId(), null);
+            return new DungeonPositionRef(mapId, CampaignDungeonLocationType.CORRIDOR_COMPONENT, null, null, corridorComponent.componentId(), headingValue);
         }
         if (location instanceof DungeonRuntimeLocation.Corridor corridor) {
-            return new DungeonPositionRef(mapId, CampaignDungeonLocationType.CORRIDOR, null, corridor.corridorId(), null, null);
+            return new DungeonPositionRef(mapId, CampaignDungeonLocationType.CORRIDOR, null, corridor.corridorId(), null, headingValue);
         }
         if (location instanceof DungeonRuntimeLocation.Room room) {
-            return new DungeonPositionRef(mapId, CampaignDungeonLocationType.ROOM, room.roomId(), null, null, null);
+            return new DungeonPositionRef(mapId, CampaignDungeonLocationType.ROOM, room.roomId(), null, null, headingValue);
         }
-        return new DungeonPositionRef(mapId, null, null, null, null, null);
-    }
-
-    static DungeonPositionRef toCampaignPosition(long mapId, DungeonRuntimeLocation location, DungeonHeading heading) {
-        DungeonPositionRef ref = toCampaignPosition(mapId, location);
-        return new DungeonPositionRef(
-                ref.mapId(),
-                ref.locationType(),
-                ref.roomId(),
-                ref.corridorId(),
-                ref.locationKey(),
-                (heading == null ? DungeonHeading.defaultHeading() : heading).name());
+        return new DungeonPositionRef(mapId, null, null, null, null, headingValue);
     }
 
     static String formatTile(Point2i tile) {

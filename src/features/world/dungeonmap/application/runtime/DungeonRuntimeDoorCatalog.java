@@ -22,7 +22,7 @@ public final class DungeonRuntimeDoorCatalog {
     }
 
     private static DungeonRuntimeDoorDescriptor toDescriptor(Room room, RoomExitDescriptor exit, DungeonHeading heading) {
-        String narration = room == null ? "" : room.narration().exitDescription(exit.roomCell(), exit.direction());
+        String narration = room.narration().exitDescription(exit.roomCell(), exit.direction());
         return DungeonRuntimeDoorDescriptor.from(exit, heading, narration);
     }
 }
