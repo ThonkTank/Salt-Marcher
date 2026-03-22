@@ -25,7 +25,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-final class CorridorPlanner {
+public final class CorridorPlanner {
 
     private static final Logger LOGGER = Logger.getLogger(CorridorPlanner.class.getName());
     private static final String PROFILE_PROPERTY = "saltmarcher.dungeonmap.corridorplanner.profile";
@@ -1122,7 +1122,7 @@ final class CorridorPlanner {
     private record ExitPairCandidate(ExitCandidate exit, ExitCandidate target, int heuristicScore) {
     }
 
-    enum PlanningMode {
+    public enum PlanningMode {
         PREVIEW,
         COMMIT
     }

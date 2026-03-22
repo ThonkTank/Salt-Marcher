@@ -14,6 +14,7 @@ import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorBindings;
 import features.world.dungeonmap.model.structures.corridor.CorridorDoorBinding;
+import features.world.dungeonmap.model.structures.corridor.CorridorPlanner;
 import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInput;
 import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInputProjector;
 import features.world.dungeonmap.model.structures.corridor.CorridorRewriteContext;
@@ -197,7 +198,7 @@ public final class DungeonMapLoader {
                         .filter(java.util.Objects::nonNull)
                         .collect(java.util.stream.Collectors.toUnmodifiableSet()),
                 Set.of());
-        return DungeonLayout.rewriteCorridors(result, rewriteContext);
+        return DungeonLayout.rewriteCorridors(result, rewriteContext, CorridorPlanner.PlanningMode.COMMIT);
     }
 
     private static <K, V> Map<K, List<V>> loadGrouped(
