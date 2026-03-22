@@ -325,39 +325,47 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         double centerY = camera.panY() + (centerCell.y() + 0.5) * gridSize;
         double outerRadius = Math.max(7.5, gridSize * 0.26);
         double innerRadius = Math.max(3.2, outerRadius * 0.42);
+        DungeonHeading resolvedHeading = heading == null ? DungeonHeading.defaultHeading() : heading;
+        double forwardX = resolvedHeading.delta().x();
+        double forwardY = resolvedHeading.delta().y();
+        double sideX = -forwardY;
+        double sideY = forwardX;
+        double rearOffset = outerRadius * 0.92;
+        double shoulderOffset = outerRadius * 0.54;
+        double halfWidth = outerRadius * 0.92;
+        double shoulderWidth = outerRadius * 0.76;
+        double tipLength = outerRadius * 1.18;
+        double[] shapeX = {
+                centerX + forwardX * tipLength,
+                centerX + forwardX * shoulderOffset + sideX * shoulderWidth,
+                centerX - forwardX * rearOffset + sideX * halfWidth,
+                centerX - forwardX * outerRadius * 1.02,
+                centerX - forwardX * rearOffset - sideX * halfWidth,
+                centerX + forwardX * shoulderOffset - sideX * shoulderWidth
+        };
+        double[] shapeY = {
+                centerY + forwardY * tipLength,
+                centerY + forwardY * shoulderOffset + sideY * shoulderWidth,
+                centerY - forwardY * rearOffset + sideY * halfWidth,
+                centerY - forwardY * outerRadius * 1.02,
+                centerY - forwardY * rearOffset - sideY * halfWidth,
+                centerY + forwardY * shoulderOffset - sideY * shoulderWidth
+        };
+        double[] shadowX = new double[shapeX.length];
+        double[] shadowY = new double[shapeY.length];
+        for (int i = 0; i < shapeX.length; i++) {
+            shadowX[i] = shapeX[i] - 1.5;
+            shadowY[i] = shapeY[i] + 1.5;
+        }
         gc.setFill(DungeonCanvasTheme.PARTY_TOKEN_SHADOW);
-        gc.fillOval(centerX - outerRadius - 1.5, centerY - outerRadius + 1.5, (outerRadius + 1.5) * 2, (outerRadius + 1.5) * 2);
+        gc.fillPolygon(shadowX, shadowY, shadowX.length);
         gc.setFill(DungeonCanvasTheme.PARTY_TOKEN_FILL);
-        gc.fillOval(centerX - outerRadius, centerY - outerRadius, outerRadius * 2, outerRadius * 2);
+        gc.fillPolygon(shapeX, shapeY, shapeX.length);
         gc.setStroke(DungeonCanvasTheme.PARTY_TOKEN_STROKE);
         gc.setLineWidth(2.2);
-        gc.strokeOval(centerX - outerRadius, centerY - outerRadius, outerRadius * 2, outerRadius * 2);
+        gc.strokePolygon(shapeX, shapeY, shapeX.length);
         gc.setFill(DungeonCanvasTheme.PARTY_TOKEN_STROKE);
         gc.fillOval(centerX - innerRadius, centerY - innerRadius, innerRadius * 2, innerRadius * 2);
-        drawPartyHeading(gc, centerX, centerY, outerRadius, heading);
-    }
-
-    private static void drawPartyHeading(
-            GraphicsContext gc,
-            double centerX,
-            double centerY,
-            double outerRadius,
-            DungeonHeading heading
-    ) {
-        DungeonHeading resolvedHeading = heading == null ? DungeonHeading.defaultHeading() : heading;
-        double markerDistance = outerRadius + 5.0;
-        double markerRadius = Math.max(3.4, outerRadius * 0.28);
-        double markerX = centerX + resolvedHeading.delta().x() * markerDistance;
-        double markerY = centerY + resolvedHeading.delta().y() * markerDistance;
-        gc.setFill(DungeonCanvasTheme.PARTY_TOKEN_STROKE);
-        gc.fillOval(markerX - markerRadius, markerY - markerRadius, markerRadius * 2, markerRadius * 2);
-        gc.setStroke(DungeonCanvasTheme.PARTY_TOKEN_FILL);
-        gc.setLineWidth(1.6);
-        gc.strokeLine(
-                centerX + resolvedHeading.delta().x() * outerRadius,
-                centerY + resolvedHeading.delta().y() * outerRadius,
-                markerX,
-                markerY);
     }
 
     private static void drawDoorNumbers(
