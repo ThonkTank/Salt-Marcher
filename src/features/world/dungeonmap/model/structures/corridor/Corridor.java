@@ -367,13 +367,17 @@ public final class Corridor {
         if (context == null || !context.affects(corridorId) || !isPersistable()) {
             return this;
         }
-        return replanned(context.rewrittenPlanningInput());
+        return replanned(context.rewrittenPlanningInput(), CorridorPlanner.PlanningMode.COMMIT);
     }
 
     public Corridor replanned(CorridorPlanningInput input) {
+        return replanned(input, CorridorPlanner.PlanningMode.COMMIT);
+    }
+
+    public Corridor replanned(CorridorPlanningInput input, CorridorPlanner.PlanningMode planningMode) {
         // Preview drags call into this through DungeonLayout.withTranslatedClusterPreview() on repeated pointer updates.
         // Planner quality fixes are only acceptable here when they preserve the current preview budget.
-        return withPath(CorridorPlanner.plan(this, input));
+        return withPath(CorridorPlanner.plan(this, input, planningMode));
     }
 
     public List<Room> resolvedRooms(CorridorPlanningInput input) {

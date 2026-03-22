@@ -35,15 +35,22 @@ final class CorridorPlanner {
     private static final int CORNER_PENALTY_RELAXATION_INTERVAL = 12;
     private static final int MAX_EXIT_CANDIDATES_PER_ROOM = 12;
     private static final int MAX_TARGETED_EXIT_CANDIDATES_PER_ROOM = 8;
-    private static final int BASE_EXACT_EXIT_PAIR_EVALUATIONS = 24;
-    private static final int ROOM_TARGET_EXACT_PAIR_EVALUATIONS = 28;
-    private static final int COMPLEX_EXACT_EXIT_PAIR_EVALUATIONS = 32;
+    private static final int PREVIEW_BASE_EXACT_EXIT_PAIR_EVALUATIONS = 20;
+    private static final int PREVIEW_ROOM_TARGET_EXACT_PAIR_EVALUATIONS = 24;
+    private static final int PREVIEW_COMPLEX_EXACT_EXIT_PAIR_EVALUATIONS = 28;
+    private static final int COMMIT_BASE_EXACT_EXIT_PAIR_EVALUATIONS = 24;
+    private static final int COMMIT_ROOM_TARGET_EXACT_PAIR_EVALUATIONS = 28;
+    private static final int COMMIT_COMPLEX_EXACT_EXIT_PAIR_EVALUATIONS = 32;
 
     private CorridorPlanner() {
         throw new AssertionError("No instances");
     }
 
     static CorridorPath plan(Corridor corridor, CorridorPlanningInput input) {
+        return plan(corridor, input, PlanningMode.COMMIT);
+    }
+
+    static CorridorPath plan(Corridor corridor, CorridorPlanningInput input, PlanningMode mode) {
         PlannerInstrumentation instrumentation = PlannerInstrumentation.createIfEnabled();
         long startedAt = instrumentation == null ? 0L : System.nanoTime();
         GridRoute route = resolvedRoute(corridor, input);
@@ -58,7 +65,7 @@ final class CorridorPlanner {
 
             Map<Long, ResolvedCorridorDoorBinding> doorBindings = corridor.resolvedDoorBindings(input);
             List<Point2i> waypointCells = corridor.resolvedWaypointCells(input);
-            PlannerContext context = new PlannerContext(rooms, waypointCells, doorBindings, instrumentation);
+            PlannerContext context = new PlannerContext(rooms, waypointCells, doorBindings, mode, instrumentation);
             MutableNetwork network = bestNetwork(context);
 
             boolean routable = network.connectedRoomIds.size() == rooms.size()
@@ -487,23 +494,42 @@ final class CorridorPlanner {
             ExitSelectionTarget left,
             ExitSelectionTarget right
     ) {
+        PlanningMode mode = context == null ? PlanningMode.COMMIT : context.planningMode();
         Point2i leftCenter = targetCenter(left);
         Point2i rightCenter = targetCenter(right);
         if (leftCenter == null || rightCenter == null) {
-            return BASE_EXACT_EXIT_PAIR_EVALUATIONS;
+            return baseExactPairBudget(mode);
         }
         int targetDistance = leftCenter.distanceTo(rightCenter);
         boolean hasWaypoints = context != null && !context.waypointCells().isEmpty();
         boolean roomToRoom = left instanceof RoomTarget && right instanceof RoomTarget;
         if (roomToRoom && (hasWaypoints || targetDistance >= 24)) {
-            return COMPLEX_EXACT_EXIT_PAIR_EVALUATIONS;
+            return complexExactPairBudget(mode);
         }
         if (roomToRoom) {
-            return ROOM_TARGET_EXACT_PAIR_EVALUATIONS;
+            return roomTargetExactPairBudget(mode);
         }
         return hasWaypoints || targetDistance >= 24
-                ? ROOM_TARGET_EXACT_PAIR_EVALUATIONS
-                : BASE_EXACT_EXIT_PAIR_EVALUATIONS;
+                ? roomTargetExactPairBudget(mode)
+                : baseExactPairBudget(mode);
+    }
+
+    private static int baseExactPairBudget(PlanningMode mode) {
+        return mode == PlanningMode.PREVIEW
+                ? PREVIEW_BASE_EXACT_EXIT_PAIR_EVALUATIONS
+                : COMMIT_BASE_EXACT_EXIT_PAIR_EVALUATIONS;
+    }
+
+    private static int roomTargetExactPairBudget(PlanningMode mode) {
+        return mode == PlanningMode.PREVIEW
+                ? PREVIEW_ROOM_TARGET_EXACT_PAIR_EVALUATIONS
+                : COMMIT_ROOM_TARGET_EXACT_PAIR_EVALUATIONS;
+    }
+
+    private static int complexExactPairBudget(PlanningMode mode) {
+        return mode == PlanningMode.PREVIEW
+                ? PREVIEW_COMPLEX_EXACT_EXIT_PAIR_EVALUATIONS
+                : COMMIT_COMPLEX_EXACT_EXIT_PAIR_EVALUATIONS;
     }
 
     private static int estimatedCornersToTarget(Point2i start, Point2i target) {
@@ -1096,6 +1122,11 @@ final class CorridorPlanner {
     private record ExitPairCandidate(ExitCandidate exit, ExitCandidate target, int heuristicScore) {
     }
 
+    enum PlanningMode {
+        PREVIEW,
+        COMMIT
+    }
+
     private sealed interface ExitSelectionTarget permits RoomTarget, NetworkTarget, WaypointTarget {
     }
 
@@ -1213,6 +1244,7 @@ final class CorridorPlanner {
         private final Map<Long, ResolvedCorridorDoorBinding> doorBindings;
         private final Map<Point2i, Long> occupancy;
         private final PathfindingSpace pathfindingSpace;
+        private final PlanningMode planningMode;
         private final PlannerInstrumentation instrumentation;
         private final Map<Long, List<ExitCandidate>> allExitCandidatesByRoomId = new HashMap<>();
 
@@ -1220,6 +1252,7 @@ final class CorridorPlanner {
                 List<Room> rooms,
                 List<Point2i> waypointCells,
                 Map<Long, ResolvedCorridorDoorBinding> doorBindings,
+                PlanningMode planningMode,
                 PlannerInstrumentation instrumentation
         ) {
             this.rooms = rooms == null ? List.of() : List.copyOf(rooms);
@@ -1229,6 +1262,7 @@ final class CorridorPlanner {
             // Future performance track only: if drag-preview profiling shows long-corridor pressure,
             // this occupancy/grid setup is the first candidate for per-drag-session reuse.
             this.pathfindingSpace = buildPathfindingSpace(this.occupancy.keySet());
+            this.planningMode = planningMode == null ? PlanningMode.COMMIT : planningMode;
             this.instrumentation = instrumentation;
         }
 
@@ -1250,6 +1284,10 @@ final class CorridorPlanner {
 
         private PathfindingSpace pathfindingSpace() {
             return pathfindingSpace;
+        }
+
+        private PlanningMode planningMode() {
+            return planningMode;
         }
 
         private PlannerInstrumentation instrumentation() {

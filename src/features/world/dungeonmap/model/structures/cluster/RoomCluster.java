@@ -25,6 +25,8 @@ import java.util.function.Supplier;
 
 public final class RoomCluster {
 
+    private static final String TARGET_KEY_PREFIX = "cluster:";
+
     private final Long clusterId;
     private final long mapId;
     private final Point2i center;
@@ -86,9 +88,17 @@ public final class RoomCluster {
         return new RoomCluster(clusterId, mapId, center, rooms);
     }
 
+    public String targetKey() {
+        return targetKey(clusterId);
+    }
+
+    public static String targetKey(Long clusterId) {
+        return clusterId == null ? TARGET_KEY_PREFIX + "unassigned" : TARGET_KEY_PREFIX + clusterId;
+    }
+
     public InteractiveLabelHandle labelHandle() {
         return new InteractiveLabelHandle(
-                "cluster:" + (clusterId == null ? "unassigned" : clusterId),
+                targetKey(),
                 clusterId == null ? "Cluster" : "Cluster " + clusterId,
                 shape.centerAnchor());
     }

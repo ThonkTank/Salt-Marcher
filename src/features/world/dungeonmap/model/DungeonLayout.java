@@ -7,6 +7,7 @@ import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
 import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInput;
 import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInputProjector;
+import features.world.dungeonmap.model.structures.corridor.CorridorPlanner;
 import features.world.dungeonmap.model.structures.corridor.CorridorRewriteContext;
 import features.world.dungeonmap.model.structures.room.Room;
 
@@ -262,7 +263,11 @@ public final class DungeonLayout {
                 deletedClusterIds);
     }
 
-    public static List<Corridor> rewriteCorridors(List<Corridor> corridors, CorridorRewriteContext context) {
+    public static List<Corridor> rewriteCorridors(
+            List<Corridor> corridors,
+            CorridorRewriteContext context,
+            CorridorPlanner.PlanningMode planningMode
+    ) {
         if (corridors == null || corridors.isEmpty()) {
             return List.of();
         }
@@ -270,7 +275,8 @@ public final class DungeonLayout {
             return List.copyOf(corridors);
         }
         return corridors.stream()
-                .map(corridor -> corridor == null ? null : corridor.reanchoredFor(context).replannedFor(context))
+                .map(corridor -> corridor == null ? null : corridor.reanchoredFor(context)
+                        .replanned(context.rewrittenPlanningInput(), planningMode))
                 .toList();
     }
 
@@ -287,14 +293,14 @@ public final class DungeonLayout {
     public DungeonLayout withTranslatedClusterPreview(Long clusterId, Point2i delta) {
         // Preview drags are a hot path. Keep the implementation explicitly preview-scoped even if corridor replan
         // remains necessary for visual correctness.
-        return translatedCluster(clusterId, delta, true);
+        return translatedCluster(clusterId, delta, CorridorPlanner.PlanningMode.PREVIEW);
     }
 
     public DungeonLayout withTranslatedClusterReplanned(Long clusterId, Point2i delta) {
-        return translatedCluster(clusterId, delta, false);
+        return translatedCluster(clusterId, delta, CorridorPlanner.PlanningMode.COMMIT);
     }
 
-    private DungeonLayout translatedCluster(Long clusterId, Point2i delta, boolean previewMode) {
+    private DungeonLayout translatedCluster(Long clusterId, Point2i delta, CorridorPlanner.PlanningMode planningMode) {
         if (clusterId == null || delta == null || (delta.x() == 0 && delta.y() == 0)) {
             return this;
         }
@@ -314,7 +320,7 @@ public final class DungeonLayout {
                 planningInput,
                 corridorIdsAffectedBy(movedCluster.roomIds(), Set.of(clusterId)),
                 Set.of());
-        List<Corridor> updatedCorridors = rewriteCorridors(corridors, rewriteContext);
+        List<Corridor> updatedCorridors = rewriteCorridors(corridors, rewriteContext, planningMode);
         return new DungeonLayout(mapId, name, updatedCorridors, updatedClusters);
     }
 
