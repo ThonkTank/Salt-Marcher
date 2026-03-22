@@ -39,8 +39,9 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         if (editorMode) {
             drawPaintPreview(gc, camera, renderState.previewPaintShape(), renderState.previewPaintDeleteMode());
         }
-        drawRooms(gc, mapModel, camera, editorMode, renderState.selectedTargetKey());
+        Set<VertexEdge> selectedRoomBoundaryEdges = drawRooms(gc, mapModel, camera, editorMode, renderState.selectedTargetKey());
         drawCorridors(gc, mapModel, camera, editorMode, renderState.selectedTargetKey());
+        drawSelectedRoomBoundaries(gc, camera, DungeonCanvasTheme.BASE_GRID * camera.zoom(), selectedRoomBoundaryEdges);
         if (editorMode) {
             drawInteractiveLabels(gc, mapModel, camera, renderState.selectedTargetKey());
         }
@@ -96,7 +97,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         }
     }
 
-    private static void drawRooms(
+    private static Set<VertexEdge> drawRooms(
             GraphicsContext gc,
             DungeonLayout mapModel,
             DungeonCanvasCamera camera,
@@ -129,7 +130,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             }
         }
         drawRoomBoundaries(gc, camera, gridSize, roomBoundaryEdges);
-        drawSelectedRoomBoundaries(gc, camera, gridSize, selectedRoomBoundaryEdges);
+        return selectedRoomBoundaryEdges;
     }
 
     private static void fillRoomTiles(
@@ -244,7 +245,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             boolean selected = handle != null && java.util.Objects.equals(handle.key(), selectedTargetKey);
             gc.setFill(selected ? DungeonCanvasTheme.GRAPH_NODE_FILL : DungeonCanvasTheme.LABEL_FILL);
             gc.fillRoundRect(bounds.getMinX(), bounds.getMinY(), bounds.getWidth(), bounds.getHeight(), 14, 14);
-            gc.setStroke(selected ? DungeonCanvasTheme.GRAPH_NODE_STROKE : DungeonCanvasTheme.LABEL_BORDER);
+            gc.setStroke(selected ? DungeonCanvasTheme.ROOM_SELECTED_WALL_STROKE : DungeonCanvasTheme.LABEL_BORDER);
             gc.setLineWidth(selected ? 2.0 : 1.0);
             gc.strokeRoundRect(bounds.getMinX(), bounds.getMinY(), bounds.getWidth(), bounds.getHeight(), 14, 14);
             gc.setFill(DungeonCanvasTheme.LABEL_TEXT);
