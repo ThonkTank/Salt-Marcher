@@ -245,8 +245,8 @@ final class CorridorPlanner {
     ) {
         Point2i roomCenter = room.floor().shape().centerCell();
         Point2i connectedRoomCenter = connectedRoom.floor().shape().centerCell();
-        List<ExitCandidate> roomExits = candidateExitsFor(room, new RoomTarget(connectedRoomCenter), context);
-        List<ExitCandidate> connectedExits = candidateExitsFor(connectedRoom, new RoomTarget(roomCenter), context);
+        List<ExitCandidate> roomExits = targetedExitCandidates(room, connectedRoomCenter, context);
+        List<ExitCandidate> connectedExits = targetedExitCandidates(connectedRoom, roomCenter, context);
         if (roomExits.isEmpty() || connectedExits.isEmpty()) {
             return List.of();
         }
@@ -302,15 +302,8 @@ final class CorridorPlanner {
         if (targetCenter == null) {
             return limitExitCandidates(allExits);
         }
-        return targetedExitCandidates(allExits, room.floor().shape().centerCell(), targetCenter);
-    }
-
-    private static List<ExitCandidate> targetedExitCandidates(
-            List<ExitCandidate> allExits,
-            Point2i roomCenter,
-            Point2i targetCenter
-    ) {
-        if (allExits == null || allExits.isEmpty() || roomCenter == null || targetCenter == null) {
+        Point2i roomCenter = room.floor().shape().centerCell();
+        if (roomCenter == null) {
             return List.of();
         }
         if (allExits.size() <= MAX_TARGETED_EXIT_CANDIDATES_PER_ROOM) {
@@ -334,6 +327,10 @@ final class CorridorPlanner {
         return selected.values().stream()
                 .limit(MAX_TARGETED_EXIT_CANDIDATES_PER_ROOM)
                 .toList();
+    }
+
+    private static List<ExitCandidate> targetedExitCandidates(Room room, Point2i targetCenter, PlannerContext context) {
+        return candidateExitsFor(room, new RoomTarget(targetCenter), context);
     }
 
     private static List<Point2i> preferredTargetDirections(Point2i roomCenter, Point2i targetCenter) {
