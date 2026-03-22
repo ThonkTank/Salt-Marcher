@@ -3,29 +3,29 @@ package features.world.dungeonmap.state;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationSnapshot;
 
-import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public final class DungeonRuntimeState {
 
-    private final List<Runnable> listeners = new CopyOnWriteArrayList<>();
+    private final java.util.List<Runnable> listeners = new CopyOnWriteArrayList<>();
 
-    private DungeonRuntimeLocation activeLocation;
-    private List<Long> reachableRoomIds = List.of();
+    private DungeonRuntimeLocation persistedLocation;
+    private DungeonRuntimeLocation previewLocation;
     private boolean loading;
+    private boolean dragging;
     private boolean moving;
     private String errorMessage;
 
     public DungeonRuntimeLocation activeLocation() {
-        return activeLocation;
-    }
-
-    public List<Long> reachableRoomIds() {
-        return reachableRoomIds;
+        return previewLocation == null ? persistedLocation : previewLocation;
     }
 
     public boolean loading() {
         return loading;
+    }
+
+    public boolean dragging() {
+        return dragging;
     }
 
     public boolean moving() {
@@ -44,21 +44,43 @@ public final class DungeonRuntimeState {
 
     public void showLoading() {
         loading = true;
+        dragging = false;
+        moving = false;
+        previewLocation = null;
+        errorMessage = null;
+        notifyListeners();
+    }
+
+    public void showDragPreview(DungeonRuntimeLocation location) {
+        if (location == null) {
+            return;
+        }
+        previewLocation = location;
+        dragging = true;
         moving = false;
         errorMessage = null;
         notifyListeners();
     }
 
+    public void clearDragPreview() {
+        previewLocation = null;
+        dragging = false;
+        notifyListeners();
+    }
+
     public void showMoveInProgress() {
+        previewLocation = null;
+        dragging = false;
         moving = true;
         errorMessage = null;
         notifyListeners();
     }
 
     public void showNavigation(DungeonRuntimeNavigationSnapshot snapshot) {
-        activeLocation = snapshot == null ? null : snapshot.activeLocation();
-        reachableRoomIds = snapshot == null ? List.of() : snapshot.reachableRoomIds();
+        persistedLocation = snapshot == null ? null : snapshot.activeLocation();
+        previewLocation = null;
         loading = false;
+        dragging = false;
         moving = false;
         errorMessage = null;
         notifyListeners();
@@ -66,6 +88,8 @@ public final class DungeonRuntimeState {
 
     public void showFailure(String errorMessage) {
         loading = false;
+        previewLocation = null;
+        dragging = false;
         moving = false;
         this.errorMessage = errorMessage == null || errorMessage.isBlank()
                 ? "Standort konnte nicht geladen werden"
@@ -74,9 +98,10 @@ public final class DungeonRuntimeState {
     }
 
     public void clear() {
-        activeLocation = null;
-        reachableRoomIds = List.of();
+        persistedLocation = null;
+        previewLocation = null;
         loading = false;
+        dragging = false;
         moving = false;
         errorMessage = null;
         notifyListeners();

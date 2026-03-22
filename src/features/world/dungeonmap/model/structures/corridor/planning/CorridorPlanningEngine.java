@@ -29,20 +29,20 @@ public final class CorridorPlanningEngine {
     }
 
     public static CorridorPath plan(Corridor corridor, CorridorPlanningInput input) {
-        PlannerInstrumentation instrumentation = PlannerInstrumentation.createIfEnabled();
-        long startedAt = instrumentation == null ? 0L : System.nanoTime();
-        GridRoute route = resolvedRoute(corridor, input);
+        PlannerInstrumentation instrumentation = PlannerInstrumentation.create();
+        long startedAt = instrumentation.startTimer();
         try {
             if (corridor == null || input == null) {
-                return CorridorPath.empty(route);
+                return CorridorPath.empty(new GridRoute(List.of()));
             }
             List<Room> rooms = corridor.resolvedRooms(input);
+            List<Point2i> waypointCells = corridor.resolvedWaypointCells(input);
+            GridRoute route = buildRoute(rooms, waypointCells);
             if (rooms.size() < 2) {
                 return CorridorPath.empty(route);
             }
 
             Map<Long, ResolvedCorridorDoorBinding> doorBindings = corridor.resolvedDoorBindings(input);
-            List<Point2i> waypointCells = corridor.resolvedWaypointCells(input);
             PlannerContext context = new PlannerContext(rooms, waypointCells, doorBindings, instrumentation);
             MutableNetwork network = NetworkBuilder.bestNetwork(context, CONFIG);
 
@@ -55,24 +55,15 @@ public final class CorridorPlanningEngine {
                     network.directlyAdjacentOnly,
                     routable);
         } finally {
-            if (instrumentation != null) {
-                instrumentation.logSummary(System.nanoTime() - startedAt);
-            }
+            instrumentation.logSummary(startedAt);
         }
     }
 
-    private static GridRoute resolvedRoute(Corridor corridor, CorridorPlanningInput input) {
-        if (corridor == null || input == null) {
-            return new GridRoute(List.of());
-        }
-        List<Room> rooms = corridor.resolvedRooms(input);
+    private static GridRoute buildRoute(List<Room> rooms, List<Point2i> waypointCells) {
         List<GridAnchor> anchors = new ArrayList<>();
-        List<Point2i> waypoints = corridor.resolvedWaypointCells(input);
-        if (waypoints != null) {
-            for (Point2i waypoint : waypoints) {
-                if (waypoint != null) {
-                    anchors.add(GridAnchor.atTile(waypoint));
-                }
+        for (Point2i waypoint : waypointCells) {
+            if (waypoint != null) {
+                anchors.add(GridAnchor.atTile(waypoint));
             }
         }
         if (anchors.isEmpty()) {

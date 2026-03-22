@@ -58,7 +58,7 @@ final class ExitCandidateSelector {
         if (allExits.size() <= maxCandidates) {
             return allExits;
         }
-        return sampleExits(buildExitBudget(allExits, geometry), maxCandidates, config);
+        return sampleExits(allExits, geometry, maxCandidates);
     }
 
     static List<ExitCandidate> collectExitCandidates(
@@ -111,57 +111,81 @@ final class ExitCandidateSelector {
         return candidateExitsFor(room, new RoomTarget(targetCenter), context, config);
     }
 
-    private static ExitCandidateBudget buildExitBudget(List<ExitCandidate> allExits, TargetGeometry geometry) {
-        if (allExits == null || allExits.isEmpty()) {
-            return ExitCandidateBudget.empty();
+    private static List<ExitCandidate> sampleExits(
+            List<ExitCandidate> allExits,
+            TargetGeometry geometry,
+            int maxCandidates
+    ) {
+        if (allExits == null || allExits.isEmpty() || maxCandidates <= 0) {
+            return List.of();
         }
         Point2i targetCenter = geometry == null ? null : geometry.targetCenter();
         Point2i roomCenter = geometry == null ? null : geometry.roomCenter();
         List<Point2i> sidePriority = targetCenter == null || roomCenter == null
                 ? List.copyOf(Point2i.CARDINAL_STEPS)
                 : preferredTargetDirections(roomCenter, targetCenter);
-        List<ExitSegmentBudget> segments = new ArrayList<>();
+
+        // Build segments: group by direction, split into contiguous runs, sort candidates by target proximity
+        List<SortedSegment> segments = new ArrayList<>();
         for (Point2i direction : Point2i.CARDINAL_STEPS) {
             List<ExitCandidate> onSide = allExits.stream()
                     .filter(candidate -> candidate.direction().equals(direction))
                     .sorted(exitCandidateSideOrder(direction))
                     .toList();
             for (List<ExitCandidate> segment : contiguousExitSegments(onSide, direction)) {
-                segments.add(new ExitSegmentBudget(
-                        direction,
-                        segment,
-                        preferredSegmentIndices(segment, direction, targetCenter)));
+                List<ExitCandidate> ranked = rankByTargetProximity(segment, direction, targetCenter);
+                segments.add(new SortedSegment(direction, ranked));
             }
         }
-        return new ExitCandidateBudget(segments, targetCenter, sidePriority);
-    }
 
-    private static List<ExitCandidate> sampleExits(ExitCandidateBudget budget, int maxCandidates, PlannerConfig config) {
-        if (budget == null || budget.segments().isEmpty() || maxCandidates <= 0) {
-            return List.of();
-        }
-        List<ExitSegmentBudget> orderedSegments = orderedSegments(budget);
-        int totalCandidates = orderedSegments.stream()
-                .mapToInt(segment -> segment.candidates().size())
-                .sum();
-        int totalBudget = Math.min(maxCandidates, totalCandidates);
-        int[] allocations = new int[orderedSegments.size()];
+        // Order segments: target-facing sides first, then best candidate quality, then position
+        segments.sort(Comparator
+                .comparingInt((SortedSegment segment) -> sidePriorityIndex(sidePriority, segment.direction()))
+                .thenComparingInt(segment -> targetCenter != null
+                        ? segment.candidates().getFirst().outsideCell().distanceTo(targetCenter) : 0)
+                .thenComparing(segment -> segment.candidates().getFirst().outsideCell(), Point2i.POINT_ORDER));
+
+        // Allocate budget: 1 per segment minimum, then proportionally to larger segments
+        int totalBudget = Math.min(maxCandidates, allExits.size());
+        int[] allocations = new int[segments.size()];
         int allocated = 0;
-        for (int index = 0; index < orderedSegments.size() && allocated < totalBudget; index++) {
+        for (int index = 0; index < segments.size() && allocated < totalBudget; index++) {
             allocations[index] = 1;
             allocated++;
         }
         while (allocated < totalBudget) {
-            int nextSegment = nextSegmentAllocation(orderedSegments, allocations, budget);
-            if (nextSegment < 0) {
+            int best = -1;
+            double bestNeed = Double.NEGATIVE_INFINITY;
+            for (int index = 0; index < segments.size(); index++) {
+                if (allocations[index] >= segments.get(index).candidates().size()) {
+                    continue;
+                }
+                double need = (double) segments.get(index).candidates().size() / (allocations[index] + 1)
+                        - allocations[index];
+                need -= sidePriorityIndex(sidePriority, segments.get(index).direction()) * 0.01;
+                if (need > bestNeed) {
+                    bestNeed = need;
+                    best = index;
+                }
+            }
+            if (best < 0) {
                 break;
             }
-            allocations[nextSegment]++;
+            allocations[best]++;
             allocated++;
         }
+
+        // Collect top candidates from each segment
         Map<Point2i, ExitCandidate> sampled = new LinkedHashMap<>();
-        for (int index = 0; index < orderedSegments.size(); index++) {
-            addSegmentSamples(sampled, orderedSegments.get(index), allocations[index], config);
+        for (int index = 0; index < segments.size(); index++) {
+            List<ExitCandidate> candidates = segments.get(index).candidates();
+            for (int pick = 0; pick < Math.min(allocations[index], candidates.size()); pick++) {
+                ExitCandidate candidate = candidates.get(pick);
+                if (sampled.size() >= maxCandidates) {
+                    break;
+                }
+                sampled.putIfAbsent(candidate.outsideCell(), candidate);
+            }
         }
         return sampled.values().stream()
                 .limit(totalBudget)
@@ -171,6 +195,52 @@ final class ExitCandidateSelector {
                         .thenComparingInt(candidate -> candidate.direction().x())
                         .thenComparingInt(candidate -> candidate.direction().y()))
                 .toList();
+    }
+
+    private static List<ExitCandidate> rankByTargetProximity(
+            List<ExitCandidate> segment,
+            Point2i direction,
+            Point2i targetCenter
+    ) {
+        if (segment == null || segment.isEmpty()) {
+            return List.of();
+        }
+        if (targetCenter == null) {
+            return rankFromMiddleOut(segment);
+        }
+        return segment.stream()
+                .sorted(Comparator
+                        .comparingInt((ExitCandidate candidate) -> crossAxisDistance(candidate, direction, targetCenter))
+                        .thenComparingInt(candidate -> candidate.outsideCell().distanceTo(targetCenter))
+                        .thenComparing(candidate -> candidate.outsideCell(), Point2i.POINT_ORDER))
+                .toList();
+    }
+
+    private static int crossAxisDistance(ExitCandidate candidate, Point2i direction, Point2i targetCenter) {
+        if (direction.x() != 0) {
+            return Math.abs(candidate.roomCell().y() - targetCenter.y());
+        }
+        return Math.abs(candidate.roomCell().x() - targetCenter.x());
+    }
+
+    private static List<ExitCandidate> rankFromMiddleOut(List<ExitCandidate> segment) {
+        if (segment.size() <= 1) {
+            return List.copyOf(segment);
+        }
+        int middle = segment.size() / 2;
+        List<ExitCandidate> result = new ArrayList<>(segment.size());
+        result.add(segment.get(middle));
+        for (int offset = 1; result.size() < segment.size(); offset++) {
+            int left = middle - offset;
+            if (left >= 0) {
+                result.add(segment.get(left));
+            }
+            int right = middle + offset;
+            if (right < segment.size()) {
+                result.add(segment.get(right));
+            }
+        }
+        return List.copyOf(result);
     }
 
     private static List<ExitPairCandidate> rankedExitPairs(
@@ -341,42 +411,6 @@ final class ExitCandidateSelector {
         return distance;
     }
 
-    private static List<Integer> preferredSegmentIndices(
-            List<ExitCandidate> segment,
-            Point2i direction,
-            Point2i targetCenter
-    ) {
-        if (segment == null || segment.isEmpty()) {
-            return List.of();
-        }
-        if (targetCenter == null) {
-            return evenlyDistributedIndices(segment.size());
-        }
-        return java.util.stream.IntStream.range(0, segment.size())
-                .boxed()
-                .sorted(Comparator
-                        .comparingInt((Integer index) -> projectionPriority(index, segment, direction, targetCenter))
-                        .thenComparingInt(index -> segment.get(index).outsideCell().distanceTo(targetCenter))
-                        .thenComparing(index -> segment.get(index).outsideCell(), Point2i.POINT_ORDER))
-                .toList();
-    }
-
-    private static int projectionPriority(
-            int index,
-            List<ExitCandidate> segment,
-            Point2i direction,
-            Point2i targetCenter
-    ) {
-        ExitCandidate candidate = segment.get(index);
-        if (direction == null || targetCenter == null) {
-            return 0;
-        }
-        if (direction.x() != 0) {
-            return Math.abs(candidate.roomCell().y() - targetCenter.y());
-        }
-        return Math.abs(candidate.roomCell().x() - targetCenter.x());
-    }
-
     private static List<List<ExitCandidate>> contiguousExitSegments(List<ExitCandidate> candidates, Point2i direction) {
         if (candidates.isEmpty()) {
             return List.of();
@@ -415,92 +449,13 @@ final class ExitCandidateSelector {
                 .thenComparingInt(candidate -> candidate.roomCell().y());
     }
 
-    private static void addRepresentativeExit(
-            Map<Point2i, ExitCandidate> limited,
-            ExitCandidate candidate,
-            PlannerConfig config
-    ) {
-        if (candidate == null || limited.size() >= config.maxExitCandidatesPerRoom()) {
-            return;
-        }
-        limited.putIfAbsent(candidate.outsideCell(), candidate);
-    }
-
-    private static List<Integer> evenlyDistributedIndices(int size) {
-        if (size <= 0) {
-            return List.of();
-        }
-        List<Integer> result = new ArrayList<>(size);
-        if (size == 1) {
-            result.add(0);
-            return List.copyOf(result);
-        }
-        int middle = size / 2;
-        result.add(middle);
-        for (int offset = 1; result.size() < size; offset++) {
-            int left = middle - offset;
-            if (left >= 0) {
-                result.add(left);
-            }
-            int right = middle + offset;
-            if (right < size) {
-                result.add(right);
-            }
-        }
-        return List.copyOf(result);
-    }
-
-    private static List<ExitSegmentBudget> orderedSegments(ExitCandidateBudget budget) {
-        return budget.segments().stream()
-                .sorted(Comparator
-                        .comparingInt((ExitSegmentBudget segment) -> sidePriorityIndex(budget.sidePriority(), segment.direction()))
-                        .thenComparingInt(segment -> segment.candidates().size() == 0 ? Integer.MAX_VALUE : segment.preferredIndices().getFirst())
-                        .thenComparingInt(segment -> segment.candidates().size() == 0 ? Integer.MAX_VALUE : segment.candidates().getFirst().roomCell().distanceTo(segment.candidates().getLast().roomCell()))
-                        .thenComparing(segment -> segment.candidates().getFirst().outsideCell(), Point2i.POINT_ORDER))
-                .toList();
-    }
-
-    private static int nextSegmentAllocation(
-            List<ExitSegmentBudget> segments,
-            int[] allocations,
-            ExitCandidateBudget budget
-    ) {
-        int bestIndex = -1;
-        double bestNeed = Double.NEGATIVE_INFINITY;
-        for (int index = 0; index < segments.size(); index++) {
-            ExitSegmentBudget segment = segments.get(index);
-            if (allocations[index] >= segment.candidates().size()) {
-                continue;
-            }
-            double need = ((double) segment.candidates().size() / (allocations[index] + 1)) - allocations[index];
-            int sidePriority = sidePriorityIndex(budget.sidePriority(), segment.direction());
-            double weightedNeed = need - (sidePriority * 0.01);
-            if (weightedNeed > bestNeed) {
-                bestNeed = weightedNeed;
-                bestIndex = index;
-            }
-        }
-        return bestIndex;
-    }
-
     private static int sidePriorityIndex(List<Point2i> sidePriority, Point2i direction) {
         int index = sidePriority.indexOf(direction);
         return index >= 0 ? index : Integer.MAX_VALUE;
     }
+}
 
-    private static void addSegmentSamples(
-            Map<Point2i, ExitCandidate> sampled,
-            ExitSegmentBudget segment,
-            int sampleCount,
-            PlannerConfig config
-    ) {
-        if (segment == null || segment.candidates().isEmpty() || sampleCount <= 0) {
-            return;
-        }
-        for (int index = 0; index < Math.min(sampleCount, segment.preferredIndices().size()); index++) {
-            addRepresentativeExit(sampled, segment.candidates().get(segment.preferredIndices().get(index)), config);
-        }
-    }
+record SortedSegment(Point2i direction, List<ExitCandidate> candidates) {
 }
 
 record ExitPairCandidate(ExitCandidate exit, ExitCandidate target, int heuristicScore) {
@@ -562,19 +517,6 @@ record TargetGeometry(Point2i roomCenter, Point2i targetCenter) {
 
     boolean hasTargetProjection() {
         return targetCenter != null;
-    }
-}
-
-record ExitSegmentBudget(Point2i direction, List<ExitCandidate> candidates, List<Integer> preferredIndices) {
-}
-
-record ExitCandidateBudget(
-        List<ExitSegmentBudget> segments,
-        Point2i targetProjection,
-        List<Point2i> sidePriority
-) {
-    static ExitCandidateBudget empty() {
-        return new ExitCandidateBudget(List.of(), null, List.of());
     }
 }
 

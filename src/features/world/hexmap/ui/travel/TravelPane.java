@@ -1,6 +1,8 @@
 package features.world.hexmap.ui.travel;
 
+import features.world.api.WorldTravelSurface;
 import javafx.geometry.Pos;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
 import javafx.scene.layout.GridPane;
@@ -17,10 +19,39 @@ import javafx.scene.layout.VBox;
  * CampaignStateRepository / HexTileRepository ersetzt werden, sobald das
  * Overworld-Backend mit der UI verbunden ist.
  */
-public class TravelPane extends VBox {
+public class TravelPane extends VBox implements WorldTravelSurface {
+
+    private final Label iconLabel = new Label();
+    private final Label locationLabel = new Label();
+    private final Label statusBadge = new Label();
+    private final Label contextLabel = new Label();
+    private final Label detailKeyOne = new Label();
+    private final Label detailValueOne = new Label();
+    private final Label detailKeyTwo = new Label();
+    private final Label detailValueTwo = new Label();
+    private final Label detailKeyThree = new Label();
+    private final Label detailValueThree = new Label();
+    private final Label sectionHeader = new Label();
+    private final Label sectionValue = new Label();
+    private final Button actionButton = new Button();
 
     public TravelPane() {
         getStyleClass().add("travel-pane");
+
+        iconLabel.getStyleClass().add("travel-location-icon");
+        locationLabel.getStyleClass().add("travel-placeholder");
+        statusBadge.getStyleClass().add("travel-status-badge");
+        contextLabel.getStyleClass().add("travel-placeholder");
+        detailKeyOne.getStyleClass().add("travel-detail-key");
+        detailValueOne.getStyleClass().add("travel-detail-value");
+        detailKeyTwo.getStyleClass().add("travel-detail-key");
+        detailValueTwo.getStyleClass().add("travel-detail-value");
+        detailKeyThree.getStyleClass().add("travel-detail-key");
+        detailValueThree.getStyleClass().add("travel-detail-value");
+        sectionHeader.getStyleClass().add("travel-section-header");
+        sectionValue.getStyleClass().add("travel-placeholder");
+        actionButton.getStyleClass().add("travel-action-button");
+        actionButton.setMaxWidth(Double.MAX_VALUE);
 
         getChildren().addAll(
                 buildLocationRow(),
@@ -28,33 +59,21 @@ public class TravelPane extends VBox {
                 new Separator(),
                 buildDetailsGrid(),
                 new Separator(),
-                buildEventSection()
+                buildActionSection()
         );
+        showOverworldTravel();
     }
 
     private HBox buildLocationRow() {
-        Label icon = new Label("W");
-        icon.getStyleClass().add("travel-location-icon");
-
-        Label location = new Label("\u2014 Kein Ort gew\u00E4hlt \u2014");
-        location.getStyleClass().add("travel-placeholder");
-
-        HBox row = new HBox(6, icon, location);
+        HBox row = new HBox(6, iconLabel, locationLabel);
         row.setAlignment(Pos.CENTER_LEFT);
         return row;
     }
 
     private HBox buildStatusRow() {
-        Label statusBadge = new Label("Reisend");
-        statusBadge.getStyleClass().add("travel-status-badge");
-
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        Label day = new Label("\u2014");
-        day.getStyleClass().add("travel-placeholder");
-
-        HBox row = new HBox(8, statusBadge, spacer, day);
+        HBox row = new HBox(8, statusBadge, spacer, contextLabel);
         row.setAlignment(Pos.CENTER_LEFT);
         return row;
     }
@@ -65,44 +84,67 @@ public class TravelPane extends VBox {
         grid.setHgap(12);
         grid.setVgap(4);
 
-        grid.add(makeDetailKey("Wetter"), 0, 0);
-        grid.add(makeDetailValue("Bew\u00F6lkt"), 1, 0);
-
-        grid.add(makeDetailKey("Tageszeit"), 0, 1);
-        grid.add(makeDetailValue("Morgen"), 1, 1);
-
-        grid.add(makeDetailKey("Tempo"), 0, 2);
-        grid.add(makeDetailValue("Normal"), 1, 2);
+        grid.add(detailKeyOne, 0, 0);
+        grid.add(detailValueOne, 1, 0);
+        grid.add(detailKeyTwo, 0, 1);
+        grid.add(detailValueTwo, 1, 1);
+        grid.add(detailKeyThree, 0, 2);
+        grid.add(detailValueThree, 1, 2);
 
         return grid;
     }
 
-    private VBox buildEventSection() {
-        Label eventHeader = new Label("Letztes Ereignis");
-        eventHeader.getStyleClass().add("travel-section-header");
-
-        Label eventValue = new Label("\u2014 Keine besonderen Vorkommnisse \u2014");
-        eventValue.getStyleClass().add("travel-placeholder");
-
-        Label encounterHeader = new Label("N\u00E4chste Begegnung");
-        encounterHeader.getStyleClass().add("travel-section-header");
-
-        Label encounterValue = new Label("\u2014 W\u00FCrfeln \u2014");
-        encounterValue.getStyleClass().add("travel-placeholder");
-
-        VBox section = new VBox(4, eventHeader, eventValue, encounterHeader, encounterValue);
+    private VBox buildActionSection() {
+        VBox section = new VBox(4, sectionHeader, sectionValue, actionButton);
         return section;
     }
 
-    private Label makeDetailKey(String text) {
-        Label l = new Label(text);
-        l.getStyleClass().add("travel-detail-key");
-        return l;
+    @Override
+    public void showOverworldTravel() {
+        iconLabel.setText("W");
+        locationLabel.setText("\u2014 Kein Ort gew\u00E4hlt \u2014");
+        statusBadge.setText("Reisend");
+        contextLabel.setText("\u2014");
+        detailKeyOne.setText("Wetter");
+        detailValueOne.setText("Bew\u00F6lkt");
+        detailKeyTwo.setText("Tageszeit");
+        detailValueTwo.setText("Morgen");
+        detailKeyThree.setText("Tempo");
+        detailValueThree.setText("Normal");
+        sectionHeader.setText("Interaktion");
+        sectionValue.setText("Gruppenmarker auf der Karte ziehen");
+        actionButton.setVisible(false);
+        actionButton.setManaged(false);
+        actionButton.setOnAction(null);
     }
 
-    private Label makeDetailValue(String text) {
-        Label l = new Label(text);
-        l.getStyleClass().add("travel-detail-value");
-        return l;
+    @Override
+    public void showDungeonTravel(
+            String mapName,
+            String locationLabel,
+            String tileLabel,
+            String statusLabel,
+            Runnable centerAction
+    ) {
+        iconLabel.setText("D");
+        this.locationLabel.setText(mapName == null || mapName.isBlank() ? "Dungeon" : mapName);
+        statusBadge.setText("Dungeon");
+        contextLabel.setText(locationLabel == null || locationLabel.isBlank() ? "Kein Standort" : locationLabel);
+        detailKeyOne.setText("Bereich");
+        detailValueOne.setText(locationLabel == null || locationLabel.isBlank() ? "Kein Standort" : locationLabel);
+        detailKeyTwo.setText("Feld");
+        detailValueTwo.setText(tileLabel == null || tileLabel.isBlank() ? "\u2014" : tileLabel);
+        detailKeyThree.setText("Status");
+        detailValueThree.setText(statusLabel == null || statusLabel.isBlank() ? "\u2014" : statusLabel);
+        sectionHeader.setText("Interaktion");
+        sectionValue.setText("Token im Dungeon auf ein begehbares Feld ziehen");
+        actionButton.setText("Ansicht zentrieren");
+        actionButton.setVisible(centerAction != null);
+        actionButton.setManaged(centerAction != null);
+        actionButton.setOnAction(event -> {
+            if (centerAction != null) {
+                centerAction.run();
+            }
+        });
     }
 }

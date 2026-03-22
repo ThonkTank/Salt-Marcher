@@ -33,39 +33,6 @@ public final class DungeonCorridorRoomRewriteService {
         return Map.copyOf(result);
     }
 
-    Map<Long, Corridor> removeRooms(
-            Map<Long, Corridor> corridorsById,
-            Set<Long> deletedRoomIds
-    ) {
-        if (corridorsById == null || corridorsById.isEmpty() || deletedRoomIds == null || deletedRoomIds.isEmpty()) {
-            return corridorsById == null ? Map.of() : Map.copyOf(corridorsById);
-        }
-        Map<Long, Corridor> result = new LinkedHashMap<>(corridorsById);
-        applyDeletedRoomRewrite(result, deletedRoomIds);
-        return Map.copyOf(result);
-    }
-
-    Map<Long, Corridor> replaceSplitRoom(
-            DungeonLayout layout,
-            Map<Long, Corridor> corridorsById,
-            Long originalRoomId,
-            List<Room> fragments
-    ) {
-        if (layout == null || corridorsById == null || corridorsById.isEmpty() || originalRoomId == null || fragments == null || fragments.isEmpty()) {
-            return corridorsById == null ? Map.of() : Map.copyOf(corridorsById);
-        }
-        Map<Long, Corridor> result = new LinkedHashMap<>(corridorsById);
-        for (Long corridorId : layout.corridorIdsAffectedBy(Set.of(originalRoomId), Set.of())) {
-            Corridor corridor = result.get(corridorId);
-            if (corridor == null) {
-                continue;
-            }
-            result.put(corridorId, corridor.rewrittenForSplit(
-                    splitRewriteInput(corridor, layout, originalRoomId, fragments)));
-        }
-        return Map.copyOf(result);
-    }
-
     private void applyMergedRoomRewrite(Map<Long, Corridor> corridorsById, ClusterRewrite rewrite) {
         Long replacementRoomId = mergedReplacementRoomId(rewrite);
         if (replacementRoomId == null || rewrite.mergedRoomIds().isEmpty()) {

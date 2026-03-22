@@ -1,5 +1,6 @@
 package features.world.dungeonmap.bootstrap;
 
+import features.world.api.WorldTravelSurface;
 import features.world.dungeonmap.application.corridor.DungeonCorridorEditService;
 import features.world.dungeonmap.application.corridor.DungeonCorridorPersistenceService;
 import features.world.dungeonmap.application.corridor.DungeonCorridorRoomRewriteService;
@@ -29,7 +30,7 @@ public final class DungeonMapModule {
     private final AppView dungeonView;
     private final AppView dungeonEditorView;
 
-    public DungeonMapModule(DetailsNavigator detailsNavigator) {
+    public DungeonMapModule(DetailsNavigator detailsNavigator, WorldTravelSurface travelSurface) {
         Objects.requireNonNull(detailsNavigator, "detailsNavigator");
         DungeonMapLoader mapLoader = new DungeonMapLoader();
         DungeonCorridorWriteRepository corridorWriteRepository = new DungeonCorridorWriteRepository();
@@ -69,7 +70,8 @@ public final class DungeonMapModule {
                 false,
                 loadingService,
                 state,
-                new DungeonRuntimeNavigationService());
+                new DungeonRuntimeNavigationService(),
+                travelSurface);
         this.dungeonEditorView = new DungeonEditorView(
                 loadingService,
                 state,

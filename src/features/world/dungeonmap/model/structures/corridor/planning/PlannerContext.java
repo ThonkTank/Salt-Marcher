@@ -67,9 +67,7 @@ final class PlannerContext {
                 room.roomId(),
                 ignored -> {
                     List<ExitCandidate> candidates = ExitCandidateSelector.collectExitCandidates(room, occupancy, doorBindings);
-                    if (instrumentation != null) {
-                        instrumentation.recordExitCandidateCount(room.roomId(), candidates.size());
-                    }
+                    instrumentation.recordExitCandidateCount(room.roomId(), candidates.size());
                     return candidates;
                 });
     }

@@ -27,14 +27,12 @@ final class NetworkBuilder {
             }
             MutableNetwork candidate = buildNetwork(seedRoom, context, config);
             PlannerInstrumentation instrumentation = context.instrumentation();
-            long startedAt = instrumentation == null ? 0L : System.nanoTime();
+            long startedAt = instrumentation.startTimer();
             NetworkScorer.NetworkScore candidateScore;
             try {
                 candidateScore = candidate.score(context.rooms());
             } finally {
-                if (instrumentation != null) {
-                    instrumentation.recordNetworkScore(System.nanoTime() - startedAt);
-                }
+                instrumentation.recordNetworkScore(System.nanoTime() - startedAt);
             }
             if (bestScore == null || candidateScore.compareTo(bestScore) < 0) {
                 best = candidate;
@@ -143,7 +141,7 @@ final class NetworkBuilder {
                 new NetworkTarget(networkCells),
                 context,
                 config)) {
-            List<Point2i> path = RouteSearch.lowestCostRouteToAny(exit.outsideCell(), networkCells, context);
+            List<Point2i> path = RouteSearch.lowestCostRoute(exit.outsideCell(), networkCells, context);
             if (path == null) {
                 continue;
             }
@@ -163,7 +161,7 @@ final class NetworkBuilder {
         }
         ConnectionPlan best = directAdjacencyPlan(room, connectedRoom, context.doorBindings());
         for (ExitPairCandidate pair : ExitCandidateSelector.preselectExitPairs(room, connectedRoom, context, config)) {
-            List<Point2i> path = normalizeSharedGapPath(
+            List<Point2i> path = ensureSingleCellForSharedGap(
                     pair.exit().outsideCell(),
                     pair.target().outsideCell(),
                     RouteSearch.lowestCostRoute(pair.exit().outsideCell(), pair.target().outsideCell(), context));
@@ -179,14 +177,14 @@ final class NetworkBuilder {
         return best;
     }
 
-    private static List<Point2i> normalizeSharedGapPath(Point2i start, Point2i target, List<Point2i> path) {
+    private static List<Point2i> ensureSingleCellForSharedGap(Point2i start, Point2i target, List<Point2i> path) {
         if (path == null) {
             return null;
         }
-        if (!path.isEmpty() || start == null || target == null || !start.equals(target)) {
-            return path;
+        if (path.isEmpty() && start != null && start.equals(target)) {
+            return List.of(start);
         }
-        return List.of(start);
+        return path;
     }
 
     private static ConnectionPlan directAdjacencyPlan(

@@ -11,6 +11,7 @@ import features.world.dungeonmap.model.structures.corridor.CorridorRewriteContex
 import features.world.dungeonmap.model.structures.room.Room;
 
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,6 +33,7 @@ public final class DungeonLayout {
     private final Map<Long, String> corridorNetworkIdByCorridorId;
     private final Map<Point2i, List<Long>> corridorIdsByCell;
     private final Map<Point2i, String> corridorNetworkIdByCell;
+    private final Set<Point2i> traversableCells;
 
     public DungeonLayout(
             long mapId,
@@ -51,6 +53,7 @@ public final class DungeonLayout {
         this.corridorNetworkIdByCorridorId = indexCorridorNetworkIdsByCorridorId(this.corridorNetworks);
         this.corridorIdsByCell = indexCorridorIdsByCell(this.corridors);
         this.corridorNetworkIdByCell = indexCorridorNetworkIdsByCell(this.corridorNetworks);
+        this.traversableCells = indexTraversableCells(this.clusters, this.corridors);
     }
 
     public static DungeonLayout empty() {
@@ -187,6 +190,25 @@ public final class DungeonLayout {
     public CorridorNetwork corridorNetworkAtCell(Point2i cell) {
         String networkId = cell == null ? null : corridorNetworkIdByCell.get(cell);
         return networkId == null ? null : corridorNetworksById.get(networkId);
+    }
+
+    public Set<Point2i> traversableCells() {
+        return traversableCells;
+    }
+
+    public boolean isTraversableCell(Point2i cell) {
+        return cell != null && traversableCells.contains(cell);
+    }
+
+    public Point2i nearestTraversableCell(Point2i cell) {
+        if (cell == null || traversableCells.isEmpty()) {
+            return null;
+        }
+        return traversableCells.stream()
+                .min(java.util.Comparator
+                        .comparingInt((Point2i candidate) -> candidate.distanceTo(cell))
+                        .thenComparing(Point2i.POINT_ORDER))
+                .orElse(null);
     }
 
     public boolean hasDependentCorridors(RoomCluster cluster) {
@@ -343,6 +365,26 @@ public final class DungeonLayout {
             }
         }
         return Map.copyOf(result);
+    }
+
+    private static Set<Point2i> indexTraversableCells(List<RoomCluster> clusters, List<Corridor> corridors) {
+        Set<Point2i> result = new LinkedHashSet<>();
+        for (RoomCluster cluster : clusters) {
+            if (cluster == null) {
+                continue;
+            }
+            for (Room room : cluster.rooms()) {
+                if (room != null && room.floor() != null) {
+                    result.addAll(room.floor().shape().absoluteCells());
+                }
+            }
+        }
+        for (Corridor corridor : corridors) {
+            if (corridor != null && corridor.path() != null && corridor.path().floor() != null) {
+                result.addAll(corridor.path().floor().shape().absoluteCells());
+            }
+        }
+        return Set.copyOf(result);
     }
 
     private static Map<String, CorridorNetwork> indexCorridorNetworks(List<CorridorNetwork> networks) {

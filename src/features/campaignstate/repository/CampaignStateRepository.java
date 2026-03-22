@@ -118,7 +118,11 @@ public final class CampaignStateRepository {
             ps.setString(2, position == null || position.locationType() == null ? null : position.locationType().name());
             setNullableLong(ps, 3, position != null && position.locationType() == CampaignDungeonLocationType.ROOM ? position.roomId() : null);
             setNullableLong(ps, 4, position != null && position.locationType() == CampaignDungeonLocationType.CORRIDOR ? position.corridorId() : null);
-            ps.setString(5, position == null ? null : position.locationKey());
+            ps.setString(5, position == null
+                    || position.locationType() == CampaignDungeonLocationType.ROOM
+                    || position.locationType() == CampaignDungeonLocationType.CORRIDOR
+                    ? null
+                    : position.locationKey());
             ps.executeUpdate();
         }
     }
@@ -226,11 +230,15 @@ public final class CampaignStateRepository {
                 if (corridorId != null) {
                     return CampaignDungeonLocationType.CORRIDOR;
                 }
-                return locationKey != null && !locationKey.isBlank() ? CampaignDungeonLocationType.CORRIDOR_COMPONENT : null;
+                return locationKey == null || locationKey.isBlank()
+                        ? null
+                        : locationKey.startsWith("tile:")
+                        ? CampaignDungeonLocationType.TILE
+                        : CampaignDungeonLocationType.CORRIDOR_COMPONENT;
             }
         }
         if (locationKey != null && !locationKey.isBlank()) {
-            return CampaignDungeonLocationType.CORRIDOR_COMPONENT;
+            return locationKey.startsWith("tile:") ? CampaignDungeonLocationType.TILE : CampaignDungeonLocationType.CORRIDOR_COMPONENT;
         }
         if (corridorId != null) {
             return CampaignDungeonLocationType.CORRIDOR;

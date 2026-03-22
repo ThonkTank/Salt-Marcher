@@ -21,31 +21,6 @@ final class NetworkScorer {
     private NetworkScorer() {
     }
 
-    static int componentCount(Set<Point2i> corridorCells) {
-        if (corridorCells == null || corridorCells.isEmpty()) {
-            return 1;
-        }
-        Set<Point2i> unvisited = new HashSet<>(corridorCells);
-        int components = 0;
-        while (!unvisited.isEmpty()) {
-            Point2i seed = unvisited.iterator().next();
-            ArrayDeque<Point2i> queue = new ArrayDeque<>();
-            queue.add(seed);
-            unvisited.remove(seed);
-            components++;
-            while (!queue.isEmpty()) {
-                Point2i current = queue.removeFirst();
-                for (Point2i step : Point2i.CARDINAL_STEPS) {
-                    Point2i neighbor = current.add(step);
-                    if (unvisited.remove(neighbor)) {
-                        queue.addLast(neighbor);
-                    }
-                }
-            }
-        }
-        return components;
-    }
-
     static int corridorCornerCount(Set<Point2i> corridorCells) {
         int corners = 0;
         for (Point2i cell : corridorCells == null ? Set.<Point2i>of() : corridorCells) {
@@ -214,7 +189,7 @@ final class NetworkScorer {
                 }
             }
             return new NetworkScore(
-                    NetworkScorer.componentCount(corridorCells),
+                    corridorComponents.size(),
                     unreachablePairCount,
                     distanceSum,
                     maxDistance,

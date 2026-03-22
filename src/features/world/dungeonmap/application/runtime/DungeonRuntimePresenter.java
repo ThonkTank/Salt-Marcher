@@ -1,6 +1,7 @@
 package features.world.dungeonmap.application.runtime;
 
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
 import features.world.dungeonmap.model.structures.room.Room;
@@ -16,6 +17,9 @@ public final class DungeonRuntimePresenter {
         if (layout == null || location == null) {
             return "Kein Standort";
         }
+        if (location instanceof DungeonRuntimeLocation.Tile tileLocation) {
+            return structureLabelAtTile(layout, tileLocation.tile());
+        }
         if (location instanceof DungeonRuntimeLocation.Room roomLocation) {
             return roomLabel(layout, roomLocation.roomId());
         }
@@ -29,6 +33,36 @@ public final class DungeonRuntimePresenter {
                     .findFirst()
                     .orElse(null);
             return network == null ? "Korridor" : corridorLabel(layout, network.roomIds().stream());
+        }
+        return "Kein Standort";
+    }
+
+    public static String tileLabel(DungeonRuntimeLocation location) {
+        if (!(location instanceof DungeonRuntimeLocation.Tile tileLocation)) {
+            return "\u2014";
+        }
+        return tileLabel(tileLocation.tile());
+    }
+
+    public static String tileLabel(Point2i tile) {
+        return tile == null ? "\u2014" : tile.x() + ", " + tile.y();
+    }
+
+    public static String structureLabelAtTile(DungeonLayout layout, Point2i tile) {
+        if (layout == null || tile == null) {
+            return "Kein Standort";
+        }
+        Room room = layout.roomAtCell(tile);
+        if (room != null) {
+            return roomLabel(layout, room.roomId());
+        }
+        CorridorNetwork network = layout.corridorNetworkAtCell(tile);
+        if (network != null) {
+            return corridorLabel(layout, network.roomIds().stream());
+        }
+        Corridor corridor = layout.corridorsAtCell(tile).stream().findFirst().orElse(null);
+        if (corridor != null) {
+            return corridorLabel(layout, corridor.roomIds().stream());
         }
         return "Kein Standort";
     }

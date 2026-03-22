@@ -308,12 +308,11 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         if (mapModel == null || activeLocation == null) {
             return;
         }
-        TileShape activeShape = activeShape(mapModel, activeLocation);
-        if (activeShape == null || activeShape.size() == 0) {
+        var centerCell = activeCell(mapModel, activeLocation);
+        if (centerCell == null) {
             return;
         }
         double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
-        var centerCell = activeShape.centerCell();
         double centerX = camera.panX() + (centerCell.x() + 0.5) * gridSize;
         double centerY = camera.panY() + (centerCell.y() + 0.5) * gridSize;
         double outerRadius = Math.max(7.5, gridSize * 0.26);
@@ -329,23 +328,26 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         gc.fillOval(centerX - innerRadius, centerY - innerRadius, innerRadius * 2, innerRadius * 2);
     }
 
-    private static TileShape activeShape(DungeonLayout mapModel, DungeonRuntimeLocation activeLocation) {
+    private static features.world.dungeonmap.model.geometry.Point2i activeCell(DungeonLayout mapModel, DungeonRuntimeLocation activeLocation) {
+        if (activeLocation instanceof DungeonRuntimeLocation.Tile tile) {
+            return tile.tile();
+        }
         if (activeLocation instanceof DungeonRuntimeLocation.Room room) {
             Room resolvedRoom = mapModel.findRoom(room.roomId());
-            return resolvedRoom == null ? null : resolvedRoom.floor().shape();
+            return resolvedRoom == null ? null : resolvedRoom.floor().shape().centerCell();
         }
         if (activeLocation instanceof DungeonRuntimeLocation.Corridor corridor) {
             Corridor resolvedCorridor = mapModel.findCorridor(corridor.corridorId());
             return resolvedCorridor == null || resolvedCorridor.path() == null || resolvedCorridor.path().floor() == null
                     ? null
-                    : resolvedCorridor.path().floor().shape();
+                    : resolvedCorridor.path().floor().shape().centerCell();
         }
         if (activeLocation instanceof DungeonRuntimeLocation.CorridorComponent component) {
             var network = mapModel.corridorNetworks().stream()
                     .filter(candidate -> component.componentId().equals(candidate.networkId()))
                     .findFirst()
                     .orElse(null);
-            return network == null || network.floor() == null ? null : network.floor().shape();
+            return network == null || network.floor() == null ? null : network.floor().shape().centerCell();
         }
         return null;
     }

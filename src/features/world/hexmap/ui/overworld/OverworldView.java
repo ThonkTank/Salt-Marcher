@@ -1,5 +1,6 @@
 package features.world.hexmap.ui.overworld;
 
+import features.world.api.WorldTravelSurface;
 import javafx.scene.Node;
 import ui.shell.AppView;
 import ui.async.UiErrorReporter;
@@ -14,12 +15,14 @@ public class OverworldView implements AppView {
     private final OverworldControls overworldControls;
     private final HexMapPane hexMapPane;
     private final OverworldApplicationService applicationService;
+    private final WorldTravelSurface travelSurface;
     private boolean mapLoaded = false;
 
-    public OverworldView() {
+    public OverworldView(WorldTravelSurface travelSurface) {
         overworldControls = new OverworldControls();
         hexMapPane = new HexMapPane();
         applicationService = new OverworldApplicationService();
+        this.travelSurface = travelSurface;
         hexMapPane.setOnPartyTokenMoved(tileId ->
                 applicationService.schedulePartyTileUpdate(
                         tileId,
@@ -34,6 +37,9 @@ public class OverworldView implements AppView {
 
     @Override
     public void onShow() {
+        if (travelSurface != null) {
+            travelSurface.showOverworldTravel();
+        }
         if (!mapLoaded) {
             applicationService.loadInitialMap(
                     mapState -> {

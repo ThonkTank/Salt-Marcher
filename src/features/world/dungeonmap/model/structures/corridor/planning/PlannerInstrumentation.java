@@ -10,36 +10,55 @@ final class PlannerInstrumentation {
     private static final Logger LOGGER = Logger.getLogger(CorridorPlanningEngine.class.getName());
     private static final String PROFILE_PROPERTY = "saltmarcher.dungeonmap.corridorplanner.profile";
 
+    private final boolean enabled;
     private final Map<Long, Integer> exitCandidateCountByRoomId = new LinkedHashMap<>();
     private int routeSearchCalls = 0;
     private long routeSearchNanos = 0L;
     private int networkScoreCalls = 0;
     private long networkScoreNanos = 0L;
 
-    static PlannerInstrumentation createIfEnabled() {
-        return Boolean.getBoolean(PROFILE_PROPERTY) ? new PlannerInstrumentation() : null;
+    private PlannerInstrumentation(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    static PlannerInstrumentation create() {
+        return new PlannerInstrumentation(Boolean.getBoolean(PROFILE_PROPERTY));
+    }
+
+    long startTimer() {
+        return enabled ? System.nanoTime() : 0L;
     }
 
     void recordExitCandidateCount(Long roomId, int count) {
-        if (roomId != null) {
+        if (enabled && roomId != null) {
             exitCandidateCountByRoomId.put(roomId, count);
         }
     }
 
     void recordRouteSearchCall() {
-        routeSearchCalls++;
+        if (enabled) {
+            routeSearchCalls++;
+        }
     }
 
     void recordRouteSearchNanos(long nanos) {
-        routeSearchNanos += nanos;
+        if (enabled) {
+            routeSearchNanos += nanos;
+        }
     }
 
     void recordNetworkScore(long nanos) {
-        networkScoreCalls++;
-        networkScoreNanos += nanos;
+        if (enabled) {
+            networkScoreCalls++;
+            networkScoreNanos += nanos;
+        }
     }
 
-    void logSummary(long totalPlanNanos) {
+    void logSummary(long startedAtNanos) {
+        if (!enabled) {
+            return;
+        }
+        long totalPlanNanos = System.nanoTime() - startedAtNanos;
         LOGGER.log(
                 Level.INFO,
                 () -> "Corridor planning profile: totalMs=" + formatMillis(totalPlanNanos)

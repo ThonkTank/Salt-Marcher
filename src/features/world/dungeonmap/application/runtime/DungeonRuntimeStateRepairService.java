@@ -1,18 +1,14 @@
 package features.world.dungeonmap.application.runtime;
 
-import features.campaignstate.api.CampaignDungeonLocationType;
 import features.campaignstate.api.CampaignStateApi;
 import features.campaignstate.api.CampaignStateReadApi;
 import features.campaignstate.api.DungeonPositionRef;
-import features.campaignstate.api.DungeonPositionSummary;
 import features.world.dungeonmap.catalog.persistence.DungeonMapCatalogPersistence;
 import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Comparator;
 import java.util.Optional;
 
 public final class DungeonRuntimeStateRepairService {
@@ -57,10 +53,6 @@ public final class DungeonRuntimeStateRepairService {
 
     private static DungeonRuntimeLocation resolveActiveLocation(DungeonLayout layout, DungeonRuntimeLocation location) {
         return DungeonRuntimeLocations.resolveActiveLocation(layout, location);
-    }
-
-    private static boolean containsLocation(DungeonLayout layout, DungeonRuntimeLocation location) {
-        return DungeonRuntimeLocations.containsLocation(layout, location);
     }
 
     private static DungeonPositionRef toCampaignPosition(long mapId, DungeonRuntimeLocation location) {

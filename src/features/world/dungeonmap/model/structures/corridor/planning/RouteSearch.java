@@ -45,10 +45,6 @@ final class RouteSearch {
         return List.copyOf(result);
     }
 
-    static List<Point2i> lowestCostRouteToAny(Point2i start, Set<Point2i> goals, PlannerContext context) {
-        return lowestCostRoute(start, goals, context);
-    }
-
     static List<Point2i> lowestCostRoute(Point2i start, Point2i goal, PlannerContext context) {
         if (goal == null) {
             return null;
@@ -58,9 +54,10 @@ final class RouteSearch {
 
     static List<Point2i> lowestCostRoute(Point2i start, Set<Point2i> goals, PlannerContext context) {
         PlannerInstrumentation instrumentation = context == null ? null : context.instrumentation();
-        long startedAt = instrumentation == null ? 0L : System.nanoTime();
+        long startedAt = 0L;
         if (instrumentation != null) {
             instrumentation.recordRouteSearchCall();
+            startedAt = instrumentation.startTimer();
         }
         try {
             if (start == null || goals == null || goals.isEmpty() || context == null) {
