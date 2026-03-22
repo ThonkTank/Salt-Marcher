@@ -1,10 +1,10 @@
 package features.world.dungeonmap.canvas.grid;
 
-import features.world.dungeonmap.application.room.RoomExitCatalog;
-import features.world.dungeonmap.application.room.RoomExitDescriptor;
 import features.world.dungeonmap.application.runtime.DungeonHeading;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeDoorDescriptor;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
-import features.world.dungeonmap.application.runtime.DungeonRuntimePresenter;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeSurface;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeSurfaceResolver;
 import features.world.dungeonmap.canvas.base.DungeonCanvasCamera;
 import features.world.dungeonmap.canvas.base.DungeonRenderState;
 import features.world.dungeonmap.canvas.base.DungeonCanvasTheme;
@@ -48,7 +48,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         drawCorridors(gc, mapModel, camera, editorMode, renderState.selectedTargetKey());
         drawPartyToken(gc, mapModel, camera, renderState.activeLocation(), renderState.heading());
         if (!editorMode) {
-            drawDoorNumbers(gc, mapModel, camera, renderState.activeLocation());
+            drawDoorNumbers(gc, mapModel, camera, renderState.activeLocation(), renderState.heading());
         }
         drawSelectedRoomBoundaries(gc, camera, DungeonCanvasTheme.BASE_GRID * camera.zoom(), selectedRoomBoundaryEdges);
         if (editorMode) {
@@ -372,14 +372,15 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             GraphicsContext gc,
             DungeonLayout mapModel,
             DungeonCanvasCamera camera,
-            DungeonRuntimeLocation activeLocation
+            DungeonRuntimeLocation activeLocation,
+            DungeonHeading heading
     ) {
-        Room room = DungeonRuntimePresenter.roomForLocation(mapModel, activeLocation);
-        if (room == null) {
+        DungeonRuntimeSurface surface = DungeonRuntimeSurfaceResolver.resolve(mapModel, activeLocation, heading);
+        if (surface == null || surface.doors().isEmpty()) {
             return;
         }
         double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
-        for (RoomExitDescriptor exit : RoomExitCatalog.describe(room)) {
+        for (DungeonRuntimeDoorDescriptor exit : surface.doors()) {
             drawDoorNumber(gc, camera, gridSize, exit);
         }
     }
@@ -388,7 +389,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             GraphicsContext gc,
             DungeonCanvasCamera camera,
             double gridSize,
-            RoomExitDescriptor exit
+            DungeonRuntimeDoorDescriptor exit
     ) {
         if (exit == null || exit.anchorEdge() == null) {
             return;
