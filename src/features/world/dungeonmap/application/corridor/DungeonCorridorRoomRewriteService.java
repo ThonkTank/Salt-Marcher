@@ -73,10 +73,10 @@ public final class DungeonCorridorRoomRewriteService {
         }
         for (Map.Entry<Long, Corridor> entry : corridorsById.entrySet()) {
             Corridor corridor = entry.getValue();
-            if (corridor == null || !corridor.isAffectedByRoomRewrite(rewrite.mergedRoomIds())) {
+            if (corridor == null || !corridor.dependsOnAnyRoom(rewrite.mergedRoomIds())) {
                 continue;
             }
-            entry.setValue(corridor.rewrittenForMergedRooms(rewrite.mergedRoomIds(), replacementRoomId));
+            entry.setValue(corridor.withMergedRooms(rewrite.mergedRoomIds(), replacementRoomId));
         }
     }
 
@@ -90,7 +90,7 @@ public final class DungeonCorridorRoomRewriteService {
                 if (corridor == null || !corridor.connectsRoom(roomId)) {
                     continue;
                 }
-                entry.setValue(corridor.rewrittenForDeletedRoom(roomId));
+                entry.setValue(corridor.withRemovedRoom(roomId));
             }
         }
     }

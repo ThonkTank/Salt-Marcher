@@ -1,6 +1,5 @@
 package features.world.dungeonmap.application.room;
 
-import features.world.dungeonmap.application.corridor.DungeonCorridorRewriteCoordinator;
 import features.world.dungeonmap.application.corridor.DungeonCorridorPersistenceService;
 import features.world.dungeonmap.application.corridor.DungeonCorridorRoomRewriteService;
 import features.world.dungeonmap.loading.DungeonMapLoader;
@@ -12,7 +11,6 @@ import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorRewriteContext;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.persistence.DungeonCorridorWriteRepository;
 import features.world.dungeonmap.persistence.DungeonRoomGeometryWriteMapper;
 import features.world.dungeonmap.persistence.DungeonRoomWriteRepository;
 
@@ -33,22 +31,19 @@ public final class DungeonRoomTopologyService {
     private final DungeonRoomGeometryWriteMapper geometryWriteMapper;
     private final DungeonCorridorPersistenceService corridorPersistenceService;
     private final DungeonCorridorRoomRewriteService corridorRoomRewriteService;
-    private final DungeonCorridorRewriteCoordinator corridorRewriteCoordinator;
 
     public DungeonRoomTopologyService(
             DungeonMapLoader mapLoader,
             DungeonRoomWriteRepository roomWriteRepository,
             DungeonRoomGeometryWriteMapper geometryWriteMapper,
             DungeonCorridorPersistenceService corridorPersistenceService,
-            DungeonCorridorRoomRewriteService corridorRoomRewriteService,
-            DungeonCorridorRewriteCoordinator corridorRewriteCoordinator
+            DungeonCorridorRoomRewriteService corridorRoomRewriteService
     ) {
         this.mapLoader = Objects.requireNonNull(mapLoader, "mapLoader");
         this.roomWriteRepository = Objects.requireNonNull(roomWriteRepository, "roomWriteRepository");
         this.geometryWriteMapper = Objects.requireNonNull(geometryWriteMapper, "geometryWriteMapper");
         this.corridorPersistenceService = Objects.requireNonNull(corridorPersistenceService, "corridorPersistenceService");
         this.corridorRoomRewriteService = Objects.requireNonNull(corridorRoomRewriteService, "corridorRoomRewriteService");
-        this.corridorRewriteCoordinator = Objects.requireNonNull(corridorRewriteCoordinator, "corridorRewriteCoordinator");
     }
 
     public void paint(Connection conn, long mapId, TileShape shape) throws SQLException {
@@ -79,7 +74,7 @@ public final class DungeonRoomTopologyService {
                 rewrittenLayout.corridorPlanningInput(),
                 affectedCorridorIds,
                 rewrite.deletedClusterIds());
-        corridorsById = corridorRewriteCoordinator.rewriteCorridors(corridorsById, rewriteContext);
+        corridorsById = Corridor.rewriteAll(corridorsById, rewriteContext);
 
         persistClusterRewrite(conn, mapId, rewrite);
         corridorPersistenceService.persistCorridors(conn, corridorsById);
@@ -122,7 +117,7 @@ public final class DungeonRoomTopologyService {
                     rewrittenLayout.corridorPlanningInput(),
                     affectedCorridorIds,
                     rewrite.deletedClusterIds());
-            corridorsById = corridorRewriteCoordinator.rewriteCorridors(corridorsById, rewriteContext);
+            corridorsById = Corridor.rewriteAll(corridorsById, rewriteContext);
 
             persistClusterRewrite(conn, mapId, rewrite);
             workingLayout = rewrittenLayout;

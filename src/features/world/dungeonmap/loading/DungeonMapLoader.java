@@ -17,7 +17,6 @@ import features.world.dungeonmap.model.structures.corridor.CorridorDoorBinding;
 import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInput;
 import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInputProjector;
 import features.world.dungeonmap.model.structures.corridor.CorridorWaypointBinding;
-import features.world.dungeonmap.model.structures.corridor.LoadedCorridorPathMaterializer;
 import features.world.dungeonmap.model.structures.room.Room;
 
 import java.sql.Connection;
@@ -179,7 +178,7 @@ public final class DungeonMapLoader {
                         edgeDirectionDelta(rs.getString("edge_direction"))));
         List<Corridor> result = new ArrayList<>();
         for (Map.Entry<Long, List<Long>> entry : roomIdsByCorridor.entrySet()) {
-            result.add(new Corridor(
+            result.add(Corridor.resolved(
                     entry.getKey(),
                     mapId,
                     entry.getValue(),
@@ -189,7 +188,9 @@ public final class DungeonMapLoader {
                     CorridorPath.empty()));
         }
         CorridorPlanningInput planningInput = CorridorPlanningInputProjector.project(clusters);
-        return LoadedCorridorPathMaterializer.materialize(result, planningInput);
+        return result.stream()
+                .map(corridor -> corridor == null ? null : corridor.replanned(planningInput))
+                .toList();
     }
 
     private static <K, V> Map<K, List<V>> loadGrouped(

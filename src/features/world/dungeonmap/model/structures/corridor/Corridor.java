@@ -30,10 +30,6 @@ public final class Corridor {
     private final CorridorBindings bindings;
     private final CorridorPath path;
 
-    public static Corridor create(Long corridorId, long mapId, List<Long> roomIds) {
-        return resolved(corridorId, mapId, roomIds, CorridorBindings.empty(), CorridorPath.empty());
-    }
-
     public static Corridor resolved(
             Long corridorId,
             long mapId,
@@ -44,11 +40,7 @@ public final class Corridor {
         return new Corridor(corridorId, mapId, roomIds, bindings, path);
     }
 
-    public Corridor(Long corridorId, long mapId, List<Long> roomIds) {
-        this(corridorId, mapId, roomIds, CorridorBindings.empty(), CorridorPath.empty());
-    }
-
-    public Corridor(Long corridorId, long mapId, List<Long> roomIds, CorridorBindings bindings, CorridorPath path) {
+    private Corridor(Long corridorId, long mapId, List<Long> roomIds, CorridorBindings bindings, CorridorPath path) {
         this.corridorId = corridorId;
         this.mapId = mapId;
         this.roomIds = normalizeRoomIds(roomIds);
@@ -156,9 +148,6 @@ public final class Corridor {
         return false;
     }
 
-    public boolean isAffectedByRoomRewrite(Set<Long> roomIds) {
-        return dependsOnAnyRoom(roomIds);
-    }
 
     public boolean isDegenerate() {
         return roomIds.size() < 2;
@@ -166,6 +155,28 @@ public final class Corridor {
 
     public boolean isPersistable() {
         return !isDegenerate();
+    }
+
+    public static Map<Long, Corridor> rewriteAll(
+            Map<Long, Corridor> corridorsById,
+            CorridorRewriteContext context
+    ) {
+        if (corridorsById == null || corridorsById.isEmpty()) {
+            return Map.of();
+        }
+        if (context == null || context.affectedCorridorIds().isEmpty()) {
+            return Map.copyOf(corridorsById);
+        }
+        Map<Long, Corridor> result = new LinkedHashMap<>();
+        for (Map.Entry<Long, Corridor> entry : corridorsById.entrySet()) {
+            Corridor corridor = entry.getValue();
+            if (corridor == null) {
+                result.put(entry.getKey(), null);
+                continue;
+            }
+            result.put(entry.getKey(), corridor.reanchoredFor(context).replannedFor(context));
+        }
+        return Map.copyOf(result);
     }
 
     public Corridor withAddedRoom(Long roomId) {
@@ -217,28 +228,6 @@ public final class Corridor {
         return resolved(corridorId, mapId, updated, updatedBindings, path);
     }
 
-    /**
-     * Applies a room-delete membership rewrite for a single removed room.
-     *
-     * <p>This is the corridor-owned rewrite rule for delete orchestration. The caller decides whether the corridor
-     * is affected and in which sequence deletes are applied; the corridor decides how its membership and bindings
-     * change once that removal is in scope.</p>
-     */
-    public Corridor rewrittenForDeletedRoom(Long deletedRoomId) {
-        // Corridor owns corridor-local rewrite truth; services only decide whether this rewrite step applies.
-        return withRemovedRoom(deletedRoomId);
-    }
-
-    /**
-     * Applies a room-merge membership rewrite for a merged room set.
-     *
-     * <p>This is the corridor-owned rewrite rule for merge orchestration. The caller supplies the already-resolved
-     * replacement room id; the corridor owns membership deduplication and door-binding cleanup.</p>
-     */
-    public Corridor rewrittenForMergedRooms(Set<Long> mergedRoomIds, Long replacementRoomId) {
-        // Corridor owns corridor-local rewrite truth; services only supply the already-resolved merge scope.
-        return withMergedRooms(mergedRoomIds, replacementRoomId);
-    }
 
     /**
      * Rewrites a split source room using corridor-local decision facts only.

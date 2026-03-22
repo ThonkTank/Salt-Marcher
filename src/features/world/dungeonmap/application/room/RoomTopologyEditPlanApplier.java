@@ -1,6 +1,5 @@
 package features.world.dungeonmap.application.room;
 
-import features.world.dungeonmap.application.corridor.DungeonCorridorRewriteCoordinator;
 import features.world.dungeonmap.application.corridor.DungeonCorridorPersistenceService;
 import features.world.dungeonmap.application.corridor.DungeonCorridorRoomRewriteService;
 import features.world.dungeonmap.model.geometry.Point2i;
@@ -12,7 +11,6 @@ import features.world.dungeonmap.model.structures.corridor.CorridorRewriteContex
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.structures.cluster.ClusterRewrite;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.persistence.DungeonCorridorWriteRepository;
 import features.world.dungeonmap.persistence.ClusterGeometryWrite;
 import features.world.dungeonmap.persistence.DungeonRoomGeometryWriteMapper;
 import features.world.dungeonmap.persistence.DungeonRoomWriteRepository;
@@ -32,20 +30,17 @@ public final class RoomTopologyEditPlanApplier {
     private final DungeonRoomGeometryWriteMapper geometryWriteMapper;
     private final DungeonCorridorPersistenceService corridorPersistenceService;
     private final DungeonCorridorRoomRewriteService corridorRoomRewriteService;
-    private final DungeonCorridorRewriteCoordinator corridorRewriteCoordinator;
 
     public RoomTopologyEditPlanApplier(
             DungeonRoomWriteRepository roomWriteRepository,
             DungeonRoomGeometryWriteMapper geometryWriteMapper,
             DungeonCorridorPersistenceService corridorPersistenceService,
-            DungeonCorridorRoomRewriteService corridorRoomRewriteService,
-            DungeonCorridorRewriteCoordinator corridorRewriteCoordinator
+            DungeonCorridorRoomRewriteService corridorRoomRewriteService
     ) {
         this.roomWriteRepository = Objects.requireNonNull(roomWriteRepository, "roomWriteRepository");
         this.geometryWriteMapper = Objects.requireNonNull(geometryWriteMapper, "geometryWriteMapper");
         this.corridorPersistenceService = Objects.requireNonNull(corridorPersistenceService, "corridorPersistenceService");
         this.corridorRoomRewriteService = Objects.requireNonNull(corridorRoomRewriteService, "corridorRoomRewriteService");
-        this.corridorRewriteCoordinator = Objects.requireNonNull(corridorRewriteCoordinator, "corridorRewriteCoordinator");
     }
 
     public void apply(Connection conn, DungeonLayout layout, RoomTopologyEditPlan plan) throws SQLException {
@@ -108,7 +103,7 @@ public final class RoomTopologyEditPlanApplier {
                     rewrittenPlanningInput,
                     plan.layout().corridorIdsAffectedBy(Set.of(plan.sourceRoomId()), Set.of(plan.sourceClusterId())),
                     Set.of(plan.sourceClusterId()));
-            corridorPersistenceService.persistCorridors(conn, corridorRewriteCoordinator.rewriteCorridors(corridorsById, rewriteContext));
+            corridorPersistenceService.persistCorridors(conn, Corridor.rewriteAll(corridorsById, rewriteContext));
         }
     }
 
@@ -138,7 +133,7 @@ public final class RoomTopologyEditPlanApplier {
                 rewrittenPlanningInput,
                 layout.corridorIdsAffectedBy(Set.of(room.roomId()), Set.of(plan.clusterId())),
                 Set.of());
-        return corridorRewriteCoordinator.rewriteCorridors(layout.corridorsById(), rewriteContext);
+        return Corridor.rewriteAll(layout.corridorsById(), rewriteContext);
     }
 
     private Map<Long, Corridor> rewrittenCorridorsForDelete(DungeonLayout layout, DeleteClusterRoomEditPlan plan) {
@@ -167,7 +162,7 @@ public final class RoomTopologyEditPlanApplier {
                 rewrittenPlanningInput,
                 layout.corridorIdsAffectedBy(deletedRoomIds, Set.of(plan.clusterId())),
                 Set.of(plan.clusterId()));
-        return corridorRewriteCoordinator.rewriteCorridors(corridorsById, rewriteContext);
+        return Corridor.rewriteAll(corridorsById, rewriteContext);
     }
 
     private static ClusterRewrite splitRewrite(long sourceClusterId, long sourceRoomId, List<Room> fragments) {

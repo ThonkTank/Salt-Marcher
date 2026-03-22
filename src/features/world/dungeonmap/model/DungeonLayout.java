@@ -224,7 +224,7 @@ public final class DungeonLayout {
         Set<Long> affectedClusterIds = clusterIds == null ? Set.of() : Set.copyOf(clusterIds);
         return corridors.stream()
                 .filter(corridor -> corridor != null && corridor.corridorId() != null)
-                .filter(corridor -> corridor.isAffectedByRoomRewrite(affectedRoomIds)
+                .filter(corridor -> corridor.dependsOnAnyRoom(affectedRoomIds)
                         || corridor.isAffectedByClusterRewrite(affectedClusterIds))
                 .toList();
     }

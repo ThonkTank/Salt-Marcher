@@ -2,7 +2,6 @@ package features.world.dungeonmap.bootstrap;
 
 import features.world.dungeonmap.application.corridor.DungeonCorridorEditService;
 import features.world.dungeonmap.application.corridor.DungeonCorridorPersistenceService;
-import features.world.dungeonmap.application.corridor.DungeonCorridorRewriteCoordinator;
 import features.world.dungeonmap.application.corridor.DungeonCorridorRoomRewriteService;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationService;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeStateRepairService;
@@ -38,14 +37,12 @@ public final class DungeonMapModule {
         DungeonRoomWriteRepository roomWriteRepository = new DungeonRoomWriteRepository();
         DungeonRoomGeometryWriteMapper geometryWriteMapper = new DungeonRoomGeometryWriteMapper();
         DungeonCorridorRoomRewriteService corridorRoomRewriteService = new DungeonCorridorRoomRewriteService();
-        DungeonCorridorRewriteCoordinator corridorRewriteCoordinator = new DungeonCorridorRewriteCoordinator();
         DungeonRoomTopologyService roomTopologyService = new DungeonRoomTopologyService(
                 mapLoader,
                 roomWriteRepository,
                 geometryWriteMapper,
                 corridorPersistenceService,
-                corridorRoomRewriteService,
-                corridorRewriteCoordinator);
+                corridorRoomRewriteService);
         DungeonMapCatalogService mapCatalogService = new DungeonMapCatalogService(
                 roomTopologyService,
                 new DungeonRuntimeStateRepairService(mapLoader));
@@ -56,14 +53,13 @@ public final class DungeonMapModule {
                         roomWriteRepository,
                         geometryWriteMapper,
                         corridorPersistenceService,
-                        corridorRoomRewriteService,
-                        corridorRewriteCoordinator),
+                        corridorRoomRewriteService),
                 roomTopologyService);
         DungeonClusterMoveService clusterMoveService = new DungeonClusterMoveService(
                 mapLoader,
                 roomWriteRepository,
                 geometryWriteMapper);
-        DungeonCorridorEditService corridorEditService = new DungeonCorridorEditService(corridorWriteRepository);
+        DungeonCorridorEditService corridorEditService = new DungeonCorridorEditService(corridorWriteRepository, corridorPersistenceService);
         DungeonMapState state = new DungeonMapState();
         DungeonMapLoadingService loadingService = new DungeonMapLoadingService(
                 mapLoader,
