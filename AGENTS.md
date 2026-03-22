@@ -143,7 +143,9 @@ Start-of-task protocol for every implementation request:
 3. Push them to `main`.
 4. Only then begin the newly requested change.
 
-This is mandatory, not advisory. Do not start implementing a fresh task on top of uncommitted or unpushed carry-over changes. If you cannot safely complete that protocol, stop and surface the blocker explicitly instead of silently continuing on a dirty base.
+This is mandatory, not advisory. The presence of pre-existing local modifications is not a reason to pause and ask whether you should commit them; it is the trigger to perform steps 2 and 3 before starting the new task. Do not reinterpret this rule into "never commit/push existing changes" or "wait for approval because the tree is dirty". The required default action is: inspect, commit, push, then proceed.
+
+Only stop and surface a blocker when you hit a concrete obstacle that prevents the protocol itself from being completed safely, for example merge conflicts, missing push credentials, sandbox restrictions that require explicit approval, or suspected secrets in the pending changes. "There are already modified files" is not a blocker; it is the condition the protocol exists to handle.
 
 ## Security
 
