@@ -35,6 +35,9 @@ public final class DungeonCanvasTheme {
     public static final Color GRAPH_NODE_FILL = Color.web("#2f3a41");
     public static final Color GRAPH_NODE_STROKE = Color.web("#8a6a35");
     public static final Color GRAPH_NODE_TEXT = Color.web("#ecedee");
+    public static final Color PARTY_TOKEN_FILL = Color.web("#ffb62a");
+    public static final Color PARTY_TOKEN_STROKE = Color.web("#fff0c6");
+    public static final Color PARTY_TOKEN_SHADOW = Color.web("#120f08", 0.8);
     public static final Color LABEL_FILL = Color.web("#181f24");
     public static final Color LABEL_BORDER = Color.web("#8a6a35");
     public static final Color LABEL_TEXT = Color.web("#ecedee");

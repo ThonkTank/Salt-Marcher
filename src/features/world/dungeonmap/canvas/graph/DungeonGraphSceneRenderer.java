@@ -1,5 +1,6 @@
 package features.world.dungeonmap.canvas.graph;
 
+import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeonmap.canvas.base.DungeonCanvasCamera;
 import features.world.dungeonmap.canvas.base.DungeonRenderState;
 import features.world.dungeonmap.canvas.base.DungeonCanvasTheme;
@@ -30,7 +31,7 @@ public final class DungeonGraphSceneRenderer implements DungeonSceneRenderer {
         gc.fillRect(0, 0, width, height);
         Map<Long, Point2D> positions = graphPositions(mapModel, width, height, camera);
         drawLinks(gc, mapModel, positions, editorMode);
-        drawNodes(gc, mapModel, positions);
+        drawNodes(gc, mapModel, positions, renderState.activeLocation());
     }
 
     private static void drawLinks(GraphicsContext gc, DungeonLayout mapModel, Map<Long, Point2D> positions, boolean editorMode) {
@@ -48,20 +49,27 @@ public final class DungeonGraphSceneRenderer implements DungeonSceneRenderer {
         }
     }
 
-    private static void drawNodes(GraphicsContext gc, DungeonLayout mapModel, Map<Long, Point2D> positions) {
+    private static void drawNodes(
+            GraphicsContext gc,
+            DungeonLayout mapModel,
+            Map<Long, Point2D> positions,
+            DungeonRuntimeLocation activeLocation
+    ) {
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setFont(DungeonCanvasTheme.GRAPH_NODE_FONT);
+        Long activeRoomId = DungeonGraphProjection.activeRoomId(mapModel, activeLocation);
         for (Room room : mapModel.rooms()) {
             Point2D point = positions.get(room.roomId());
             if (point == null) {
                 continue;
             }
-            gc.setFill(DungeonCanvasTheme.GRAPH_NODE_FILL);
+            boolean active = room.roomId() != null && room.roomId().equals(activeRoomId);
+            gc.setFill(active ? DungeonCanvasTheme.PARTY_TOKEN_FILL : DungeonCanvasTheme.GRAPH_NODE_FILL);
             gc.fillRoundRect(point.getX() - 42, point.getY() - 18, 84, 36, 18, 18);
-            gc.setStroke(DungeonCanvasTheme.GRAPH_NODE_STROKE);
+            gc.setStroke(active ? DungeonCanvasTheme.PARTY_TOKEN_STROKE : DungeonCanvasTheme.GRAPH_NODE_STROKE);
             gc.setLineWidth(2);
             gc.strokeRoundRect(point.getX() - 42, point.getY() - 18, 84, 36, 18, 18);
-            gc.setFill(DungeonCanvasTheme.GRAPH_NODE_TEXT);
+            gc.setFill(active ? DungeonCanvasTheme.PARTY_TOKEN_SHADOW : DungeonCanvasTheme.GRAPH_NODE_TEXT);
             gc.fillText(room.name(), point.getX(), point.getY() + 4);
         }
         gc.setTextAlign(TextAlignment.LEFT);

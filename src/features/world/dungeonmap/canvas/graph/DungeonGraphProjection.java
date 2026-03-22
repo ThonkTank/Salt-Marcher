@@ -1,5 +1,7 @@
 package features.world.dungeonmap.canvas.graph;
 
+import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
+import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 
 import java.util.ArrayList;
@@ -25,6 +27,28 @@ final class DungeonGraphProjection {
             links.add(new RoomLink(fromRoomId, toRoomId));
         }
         return List.copyOf(links);
+    }
+
+    static Long activeRoomId(DungeonLayout layout, DungeonRuntimeLocation activeLocation) {
+        if (layout == null || activeLocation == null) {
+            return null;
+        }
+        if (activeLocation instanceof DungeonRuntimeLocation.Room room) {
+            return room.roomId();
+        }
+        if (activeLocation instanceof DungeonRuntimeLocation.Corridor corridor) {
+            Corridor resolvedCorridor = layout.findCorridor(corridor.corridorId());
+            return resolvedCorridor == null ? null : resolvedCorridor.roomIds().stream().findFirst().orElse(null);
+        }
+        if (activeLocation instanceof DungeonRuntimeLocation.CorridorComponent component) {
+            return layout.corridorNetworks().stream()
+                    .filter(candidate -> component.componentId().equals(candidate.networkId()))
+                    .flatMap(candidate -> candidate.roomIds().stream())
+                    .sorted()
+                    .findFirst()
+                    .orElse(null);
+        }
+        return null;
     }
 
     record RoomLink(long fromRoomId, long toRoomId) {

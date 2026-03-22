@@ -1,5 +1,6 @@
 package features.world.dungeonmap.canvas.base;
 
+import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeonmap.canvas.graph.DungeonGraphSceneRenderer;
 import features.world.dungeonmap.canvas.grid.DungeonGridSceneRenderer;
 import features.world.dungeonmap.model.DungeonLayout;
@@ -30,6 +31,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
     private String selectedTargetKey;
     private TileShape previewPaintShape = TileShape.empty();
     private boolean previewPaintDeleteMode;
+    private DungeonRuntimeLocation activeLocation;
     private DungeonCanvasInteractionHandler interactionHandler = new DungeonCanvasInteractionHandler() {
         @Override
         public boolean handlePressed(DungeonCanvasPointerEvent event) {
@@ -112,6 +114,14 @@ public final class DungeonCanvasWorkspace extends BorderPane {
         }
         this.previewPaintShape = nextPreviewPaintShape;
         this.previewPaintDeleteMode = deleteMode;
+        notifyViewChanged();
+    }
+
+    public void setActiveLocation(DungeonRuntimeLocation activeLocation) {
+        if (Objects.equals(this.activeLocation, activeLocation)) {
+            return;
+        }
+        this.activeLocation = activeLocation;
         notifyViewChanged();
     }
 
@@ -217,7 +227,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
                 renderedMapModel(),
                 camera,
                 editorMode,
-                new DungeonRenderState(selectedTargetKey, previewPaintShape, previewPaintDeleteMode));
+                new DungeonRenderState(selectedTargetKey, previewPaintShape, previewPaintDeleteMode, activeLocation));
     }
 
     private void notifyViewChanged() {

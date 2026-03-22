@@ -4,6 +4,7 @@ import features.world.dungeonmap.application.corridor.DungeonCorridorEditService
 import features.world.dungeonmap.application.corridor.DungeonCorridorPersistenceService;
 import features.world.dungeonmap.application.corridor.DungeonCorridorRewriteCoordinator;
 import features.world.dungeonmap.application.corridor.DungeonCorridorRoomRewriteService;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationService;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeStateRepairService;
 import features.world.dungeonmap.application.room.DungeonClusterMoveService;
 import features.world.dungeonmap.application.room.DungeonRoomEditService;
@@ -67,7 +68,12 @@ public final class DungeonMapModule {
         DungeonMapLoadingService loadingService = new DungeonMapLoadingService(
                 mapLoader,
                 state);
-        this.dungeonView = new DungeonRuntimeView("Dungeon", false, loadingService, state);
+        this.dungeonView = new DungeonRuntimeView(
+                "Dungeon",
+                false,
+                loadingService,
+                state,
+                new DungeonRuntimeNavigationService());
         this.dungeonEditorView = new DungeonEditorView(
                 loadingService,
                 state,

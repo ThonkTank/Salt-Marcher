@@ -1,5 +1,6 @@
 package features.world.dungeonmap.canvas.grid;
 
+import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeonmap.canvas.base.DungeonCanvasCamera;
 import features.world.dungeonmap.canvas.base.DungeonRenderState;
 import features.world.dungeonmap.canvas.base.DungeonCanvasTheme;
@@ -41,6 +42,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         }
         Set<VertexEdge> selectedRoomBoundaryEdges = drawRooms(gc, mapModel, camera, editorMode, renderState.selectedTargetKey());
         drawCorridors(gc, mapModel, camera, editorMode, renderState.selectedTargetKey());
+        drawPartyToken(gc, mapModel, camera, renderState.activeLocation());
         drawSelectedRoomBoundaries(gc, camera, DungeonCanvasTheme.BASE_GRID * camera.zoom(), selectedRoomBoundaryEdges);
         if (editorMode) {
             drawInteractiveLabels(gc, mapModel, camera, renderState.selectedTargetKey());
@@ -295,6 +297,57 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         for (VertexEdge edge : edges) {
             strokeEdge(gc, camera, gridSize, edge);
         }
+    }
+
+    private static void drawPartyToken(
+            GraphicsContext gc,
+            DungeonLayout mapModel,
+            DungeonCanvasCamera camera,
+            DungeonRuntimeLocation activeLocation
+    ) {
+        if (mapModel == null || activeLocation == null) {
+            return;
+        }
+        TileShape activeShape = activeShape(mapModel, activeLocation);
+        if (activeShape == null || activeShape.size() == 0) {
+            return;
+        }
+        double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
+        var centerCell = activeShape.centerCell();
+        double centerX = camera.panX() + (centerCell.x() + 0.5) * gridSize;
+        double centerY = camera.panY() + (centerCell.y() + 0.5) * gridSize;
+        double outerRadius = Math.max(7.5, gridSize * 0.26);
+        double innerRadius = Math.max(3.2, outerRadius * 0.42);
+        gc.setFill(DungeonCanvasTheme.PARTY_TOKEN_SHADOW);
+        gc.fillOval(centerX - outerRadius - 1.5, centerY - outerRadius + 1.5, (outerRadius + 1.5) * 2, (outerRadius + 1.5) * 2);
+        gc.setFill(DungeonCanvasTheme.PARTY_TOKEN_FILL);
+        gc.fillOval(centerX - outerRadius, centerY - outerRadius, outerRadius * 2, outerRadius * 2);
+        gc.setStroke(DungeonCanvasTheme.PARTY_TOKEN_STROKE);
+        gc.setLineWidth(2.2);
+        gc.strokeOval(centerX - outerRadius, centerY - outerRadius, outerRadius * 2, outerRadius * 2);
+        gc.setFill(DungeonCanvasTheme.PARTY_TOKEN_STROKE);
+        gc.fillOval(centerX - innerRadius, centerY - innerRadius, innerRadius * 2, innerRadius * 2);
+    }
+
+    private static TileShape activeShape(DungeonLayout mapModel, DungeonRuntimeLocation activeLocation) {
+        if (activeLocation instanceof DungeonRuntimeLocation.Room room) {
+            Room resolvedRoom = mapModel.findRoom(room.roomId());
+            return resolvedRoom == null ? null : resolvedRoom.floor().shape();
+        }
+        if (activeLocation instanceof DungeonRuntimeLocation.Corridor corridor) {
+            Corridor resolvedCorridor = mapModel.findCorridor(corridor.corridorId());
+            return resolvedCorridor == null || resolvedCorridor.path() == null || resolvedCorridor.path().floor() == null
+                    ? null
+                    : resolvedCorridor.path().floor().shape();
+        }
+        if (activeLocation instanceof DungeonRuntimeLocation.CorridorComponent component) {
+            var network = mapModel.corridorNetworks().stream()
+                    .filter(candidate -> component.componentId().equals(candidate.networkId()))
+                    .findFirst()
+                    .orElse(null);
+            return network == null || network.floor() == null ? null : network.floor().shape();
+        }
+        return null;
     }
 
     private static Set<VertexEdge> boundaryEdges(Collection<? extends Door> doors) {
