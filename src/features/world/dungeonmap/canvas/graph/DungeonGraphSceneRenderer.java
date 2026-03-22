@@ -37,7 +37,7 @@ public final class DungeonGraphSceneRenderer implements DungeonSceneRenderer {
         gc.setStroke(editorMode ? DungeonCanvasTheme.axis(editorMode) : DungeonCanvasTheme.GRAPH_LINK);
         gc.setLineWidth(3);
         for (Corridor corridor : mapModel.corridors()) {
-            for (Corridor.RoomLink roomLink : corridor.roomLinks()) {
+            for (DungeonGraphProjection.RoomLink roomLink : DungeonGraphProjection.roomLinks(corridor)) {
                 Point2D from = positions.get(roomLink.fromRoomId());
                 Point2D to = positions.get(roomLink.toRoomId());
                 if (from == null || to == null) {

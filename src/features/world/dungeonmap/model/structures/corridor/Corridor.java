@@ -26,11 +26,9 @@ public final class Corridor {
 
     private final Long corridorId;
     private final long mapId;
-    // Corridor owns ordered room relations plus canonical relative bindings; pairwise room links stay a derived view.
     private final List<Long> roomIds;
     private final CorridorBindings bindings;
     private final CorridorPath path;
-    private final List<RoomLink> roomLinks;
 
     public static Corridor create(Long corridorId, long mapId, List<Long> roomIds) {
         return resolved(corridorId, mapId, roomIds, CorridorBindings.empty(), CorridorPath.empty());
@@ -56,7 +54,6 @@ public final class Corridor {
         this.roomIds = normalizeRoomIds(roomIds);
         this.bindings = bindings == null ? CorridorBindings.empty() : bindings;
         this.path = path == null ? CorridorPath.empty() : path;
-        this.roomLinks = deriveRoomLinks(this.roomIds);
     }
 
     public Long corridorId() {
@@ -90,11 +87,6 @@ public final class Corridor {
         }
     }
 
-    public static String corridorLabel(String targetKey) {
-        Long corridorId = corridorIdFromKey(targetKey);
-        return corridorId == null ? "Korridor" : "Korridor " + corridorId;
-    }
-
     public static String targetKeyPrefix() {
         return TARGET_KEY_PREFIX;
     }
@@ -113,10 +105,6 @@ public final class Corridor {
 
     public CorridorPath path() {
         return path;
-    }
-
-    public List<RoomLink> roomLinks() {
-        return roomLinks;
     }
 
     public boolean connectsRoom(Long roomId) {
@@ -498,19 +486,6 @@ public final class Corridor {
         return new SplitFragmentScore(nearestRoomDistance, groupDistance);
     }
 
-    private static List<RoomLink> deriveRoomLinks(List<Long> roomIds) {
-        List<RoomLink> links = new ArrayList<>();
-        for (int index = 1; index < roomIds.size(); index++) {
-            Long fromRoomId = roomIds.get(index - 1);
-            Long toRoomId = roomIds.get(index);
-            if (fromRoomId == null || toRoomId == null || fromRoomId.equals(toRoomId)) {
-                continue;
-            }
-            links.add(new RoomLink(fromRoomId, toRoomId));
-        }
-        return List.copyOf(links);
-    }
-
     private List<Long> mergedRoomIds(Corridor other) {
         List<Long> mergedRoomIds = new ArrayList<>(roomIds);
         for (Long roomId : other.roomIds()) {
@@ -559,6 +534,4 @@ public final class Corridor {
         }
     }
 
-    public record RoomLink(long fromRoomId, long toRoomId) {
-    }
 }

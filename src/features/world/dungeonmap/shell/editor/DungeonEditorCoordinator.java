@@ -142,7 +142,7 @@ final class DungeonEditorCoordinator {
         }
         String selectedTargetKey = selectionState.selectedTargetKey();
         if (Corridor.isTargetKey(selectedTargetKey)) {
-            statePane.showCorridorStatus("Gewählt: " + Corridor.corridorLabel(selectedTargetKey));
+            statePane.showCorridorStatus("Gewählt: " + DungeonEditorSelectionLabels.corridorLabel(selectedTargetKey));
             return;
         }
         statePane.showCorridorStatus(null);
