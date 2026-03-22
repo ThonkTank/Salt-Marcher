@@ -1,6 +1,8 @@
 package features.world.dungeonmap.model;
 
 import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.geometry.VertexEdge;
+import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.structures.cluster.ClusterRewrite;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
@@ -44,7 +46,9 @@ public final class DungeonLayout {
         this.mapId = mapId;
         this.name = name == null || name.isBlank() ? "Dungeon " + mapId : name;
         this.corridors = corridors == null ? List.of() : List.copyOf(corridors);
-        this.clusters = clusters == null ? List.of() : List.copyOf(clusters);
+        this.clusters = projectCorridorDoorsIntoRooms(
+                this.corridors,
+                clusters == null ? List.of() : List.copyOf(clusters));
         this.corridorNetworks = CorridorNetwork.buildNetworks(mapId, this.corridors);
         this.roomsById = indexRooms(this.clusters);
         this.corridorsById = indexCorridors(this.corridors);
@@ -54,6 +58,50 @@ public final class DungeonLayout {
         this.corridorIdsByCell = indexCorridorIdsByCell(this.corridors);
         this.corridorNetworkIdByCell = indexCorridorNetworkIdsByCell(this.corridorNetworks);
         this.traversableCells = indexTraversableCells(this.clusters, this.corridors);
+    }
+
+    private static List<RoomCluster> projectCorridorDoorsIntoRooms(List<Corridor> corridors, List<RoomCluster> clusters) {
+        if (corridors == null || corridors.isEmpty() || clusters == null || clusters.isEmpty()) {
+            return clusters == null ? List.of() : List.copyOf(clusters);
+        }
+        Map<Long, Room> roomsById = indexRooms(clusters);
+        Map<Long, List<Door>> projectedDoorsByRoomId = new LinkedHashMap<>();
+        for (Corridor corridor : corridors) {
+            if (corridor == null || corridor.path().doors().isEmpty()) {
+                continue;
+            }
+            Set<VertexEdge> corridorDoorEdges = corridor.path().doors().stream()
+                    .filter(java.util.Objects::nonNull)
+                    .flatMap(door -> door.edges().stream())
+                    .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+            if (corridorDoorEdges.isEmpty()) {
+                continue;
+            }
+            for (Long roomId : corridor.roomIds()) {
+                Room room = roomsById.get(roomId);
+                if (room == null || room.roomId() == null) {
+                    continue;
+                }
+                Set<VertexEdge> matchingEdges = room.floor().shape().boundaryEdges().stream()
+                        .filter(corridorDoorEdges::contains)
+                        .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+                if (matchingEdges.isEmpty()) {
+                    continue;
+                }
+                projectedDoorsByRoomId.computeIfAbsent(room.roomId(), ignored -> new java.util.ArrayList<>())
+                        .add(new Door(matchingEdges));
+            }
+        }
+        if (projectedDoorsByRoomId.isEmpty()) {
+            return List.copyOf(clusters);
+        }
+        return clusters.stream()
+                .map(cluster -> cluster == null ? null : cluster.withRooms(cluster.rooms().stream()
+                        .map(room -> room == null || room.roomId() == null
+                                ? room
+                                : room.withAdditionalDoors(projectedDoorsByRoomId.getOrDefault(room.roomId(), List.of())))
+                        .toList()))
+                .toList();
     }
 
     public static DungeonLayout empty() {

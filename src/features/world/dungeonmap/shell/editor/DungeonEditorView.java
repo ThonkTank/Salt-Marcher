@@ -1,6 +1,7 @@
 package features.world.dungeonmap.shell.editor;
 
 import features.world.dungeonmap.application.corridor.DungeonCorridorEditService;
+import features.world.dungeonmap.application.room.DungeonBoundaryEditService;
 import features.world.dungeonmap.application.room.DungeonClusterMoveService;
 import features.world.dungeonmap.application.room.DungeonRoomEditService;
 import features.world.dungeonmap.application.room.DungeonRoomNarrationService;
@@ -24,6 +25,7 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
             DungeonMapState state,
             DungeonMapCatalogService mapCatalogService,
             DungeonRoomEditService roomEditService,
+            DungeonBoundaryEditService boundaryEditService,
             DungeonRoomNarrationService roomNarrationService,
             DungeonClusterMoveService clusterMoveService,
             DungeonCorridorEditService corridorEditService
@@ -38,6 +40,7 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
                 sessionState,
                 mapCatalogService,
                 roomEditService,
+                boundaryEditService,
                 roomNarrationService,
                 clusterMoveService,
                 corridorEditService);

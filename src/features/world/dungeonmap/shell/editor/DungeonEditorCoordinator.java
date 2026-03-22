@@ -1,6 +1,7 @@
 package features.world.dungeonmap.shell.editor;
 
 import features.world.dungeonmap.application.corridor.DungeonCorridorEditService;
+import features.world.dungeonmap.application.room.DungeonBoundaryEditService;
 import features.world.dungeonmap.application.room.DungeonClusterMoveService;
 import features.world.dungeonmap.application.room.DungeonRoomEditService;
 import features.world.dungeonmap.application.room.DungeonRoomNarrationService;
@@ -14,6 +15,7 @@ import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
 import features.world.dungeonmap.shell.editor.interaction.CorridorInteractionController;
+import features.world.dungeonmap.shell.editor.interaction.BoundaryInteractionController;
 import features.world.dungeonmap.shell.editor.interaction.ClusterSelectionDragController;
 import features.world.dungeonmap.shell.editor.interaction.DungeonEditorGridInteractionController;
 import features.world.dungeonmap.shell.editor.interaction.RoomPaintInteractionController;
@@ -55,6 +57,7 @@ final class DungeonEditorCoordinator {
             DungeonEditorSessionState sessionState,
             DungeonMapCatalogService mapCatalogService,
             DungeonRoomEditService roomEditService,
+            DungeonBoundaryEditService boundaryEditService,
             DungeonRoomNarrationService roomNarrationService,
             DungeonClusterMoveService clusterMoveService,
             DungeonCorridorEditService corridorEditService
@@ -86,12 +89,19 @@ final class DungeonEditorCoordinator {
                 selectionState,
                 corridorDraftState,
                 Objects.requireNonNull(corridorEditService, "corridorEditService"));
+        BoundaryInteractionController boundaryInteractionController = new BoundaryInteractionController(
+                mapState,
+                loadingService,
+                sessionState,
+                selectionState,
+                Objects.requireNonNull(boundaryEditService, "boundaryEditService"));
         this.interactionController = new DungeonEditorGridInteractionController(
                 mapState,
                 sessionState,
                 clusterSelectionDragController,
                 roomPaintInteractionController,
-                corridorInteractionController);
+                corridorInteractionController,
+                boundaryInteractionController);
         this.mapDropdownController = new DungeonMapDropdownController(
                 Objects.requireNonNull(mapCatalogService, "mapCatalogService"),
                 new MapReloadHandle());

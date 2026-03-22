@@ -7,6 +7,7 @@ import features.world.dungeonmap.application.corridor.DungeonCorridorRoomRewrite
 import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationService;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeStateRepairService;
 import features.world.dungeonmap.application.room.DungeonClusterMoveService;
+import features.world.dungeonmap.application.room.DungeonBoundaryEditService;
 import features.world.dungeonmap.application.room.DungeonRoomEditService;
 import features.world.dungeonmap.application.room.DungeonRoomNarrationService;
 import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
@@ -58,6 +59,7 @@ public final class DungeonMapModule {
                         corridorPersistenceService,
                         corridorRoomRewriteService),
                 roomTopologyService);
+        DungeonBoundaryEditService boundaryEditService = new DungeonBoundaryEditService(roomTopologyService);
         DungeonClusterMoveService clusterMoveService = new DungeonClusterMoveService(
                 mapLoader,
                 roomWriteRepository,
@@ -80,6 +82,7 @@ public final class DungeonMapModule {
                 state,
                 mapCatalogService,
                 roomEditService,
+                boundaryEditService,
                 roomNarrationService,
                 clusterMoveService,
                 corridorEditService);

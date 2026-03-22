@@ -8,6 +8,7 @@ import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.objects.BoundaryObject;
 import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.objects.Floor;
+import features.world.dungeonmap.model.geometry.VertexPath;
 import features.world.dungeonmap.model.objects.Wall;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
@@ -87,6 +88,74 @@ public final class RoomCluster {
 
     public RoomCluster withRooms(List<Room> rooms) {
         return new RoomCluster(clusterId, mapId, center, rooms);
+    }
+
+    public ClusterRewrite editBoundary(VertexEdge edge, ClusterBoundaryWrite.Type type, boolean deleteBoundary) {
+        if (edge == null || !isInternalEdge(cells, edge)) {
+            return null;
+        }
+        List<Point2i> touchingCells = edge.touchingCells().stream()
+                .sorted(Point2i.POINT_ORDER)
+                .toList();
+        if (touchingCells.size() != 2) {
+            return null;
+        }
+        Room leftRoom = roomAt(touchingCells.getFirst());
+        Room rightRoom = roomAt(touchingCells.getLast());
+        if (leftRoom == null || rightRoom == null || sameRoomId(leftRoom, rightRoom)) {
+            return null;
+        }
+
+        Map<VertexEdge, ClusterBoundaryWrite.Type> updatedBoundaryKinds = new LinkedHashMap<>(internalBoundaryKinds());
+        ClusterBoundaryWrite.Type resolvedType = type == null ? ClusterBoundaryWrite.Type.WALL : type;
+        ClusterBoundaryWrite.Type currentType = updatedBoundaryKinds.get(edge);
+        if (deleteBoundary) {
+            if (currentType == null) {
+                return null;
+            }
+            updatedBoundaryKinds.remove(edge);
+        } else {
+            if (resolvedType == currentType) {
+                return null;
+            }
+            updatedBoundaryKinds.put(edge, resolvedType);
+        }
+
+        List<Room> rewrittenRooms = rewriteRoomsForBoundaryKinds(updatedBoundaryKinds);
+        Set<Long> deletedRoomIds = new LinkedHashSet<>();
+        Map<Long, Long> replacedRoomIds = new LinkedHashMap<>();
+        Set<Long> mergedRoomIds = new LinkedHashSet<>();
+        for (Room rewrittenRoom : rewrittenRooms) {
+            if (rewrittenRoom == null) {
+                continue;
+            }
+            List<Room> sourceRooms = roomsForShape(rewrittenRoom.floor().shape());
+            if (sourceRooms.size() <= 1) {
+                continue;
+            }
+            Long replacementRoomId = rewrittenRoom.roomId();
+            for (Room sourceRoom : sourceRooms) {
+                if (sourceRoom == null || sourceRoom.roomId() == null) {
+                    continue;
+                }
+                mergedRoomIds.add(sourceRoom.roomId());
+                replacedRoomIds.put(sourceRoom.roomId(), replacementRoomId);
+                if (!sourceRoom.roomId().equals(replacementRoomId)) {
+                    deletedRoomIds.add(sourceRoom.roomId());
+                }
+            }
+        }
+        return new ClusterRewrite(
+                clusterId,
+                shape,
+                center,
+                rewrittenRooms,
+                persistedInternalBoundaries(shape, rewrittenRooms),
+                deletedRoomIds,
+                replacedRoomIds,
+                mergedRoomIds,
+                Set.of(),
+                Map.of());
     }
 
     public String targetKey() {
@@ -832,6 +901,142 @@ public final class RoomCluster {
     private static boolean isInternalEdge(Set<Point2i> clusterCells, VertexEdge edge) {
         Set<Point2i> touchingCells = edge.touchingCells();
         return touchingCells.size() == 2 && clusterCells.containsAll(touchingCells);
+    }
+
+    private List<Room> rewriteRoomsForBoundaryKinds(Map<VertexEdge, ClusterBoundaryWrite.Type> boundaryKinds) {
+        if (shape.size() == 0 || rooms.isEmpty()) {
+            return List.of();
+        }
+        Set<Point2i> remainingCells = new LinkedHashSet<>(cells);
+        List<VertexPath> barriers = barriersForBoundaryKinds(boundaryKinds);
+        List<Room> rewrittenRooms = new ArrayList<>();
+        for (Room room : rooms) {
+            if (room == null || room.roomId() == null) {
+                continue;
+            }
+            Point2i anchor = room.floor().shape().anchor();
+            if (!remainingCells.contains(anchor)) {
+                continue;
+            }
+            Set<Point2i> roomCells = reachableCells(anchor, remainingCells, barriers);
+            if (roomCells.isEmpty()) {
+                continue;
+            }
+            remainingCells.removeAll(roomCells);
+            List<Room> sourceRooms = roomsForCells(roomCells);
+            Room retainedRoom = retainedRoom(sourceRooms);
+            rewrittenRooms.add(resolveRoomForCells(retainedRoom, roomCells, boundaryKinds));
+        }
+        return List.copyOf(rewrittenRooms);
+    }
+
+    private List<VertexPath> barriersForBoundaryKinds(Map<VertexEdge, ClusterBoundaryWrite.Type> boundaryKinds) {
+        List<VertexPath> barriers = new ArrayList<>();
+        for (Map.Entry<VertexEdge, ClusterBoundaryWrite.Type> entry : boundaryKinds.entrySet()) {
+            if (entry.getKey() == null || entry.getValue() == null) {
+                continue;
+            }
+            if (entry.getValue() == ClusterBoundaryWrite.Type.DOOR) {
+                barriers.add(new Door(Set.of(entry.getKey())));
+            } else {
+                barriers.add(new Wall(Set.of(entry.getKey())));
+            }
+        }
+        return List.copyOf(barriers);
+    }
+
+    private Set<Point2i> reachableCells(Point2i startAnchor, Set<Point2i> traversableCells, List<VertexPath> barriers) {
+        Set<Point2i> visited = new LinkedHashSet<>();
+        Set<Point2i> frontier = new LinkedHashSet<>(traversableCells);
+        ArrayDeque<Point2i> queue = new ArrayDeque<>();
+        queue.add(startAnchor);
+        frontier.remove(startAnchor);
+        while (!queue.isEmpty()) {
+            Point2i current = queue.removeFirst();
+            visited.add(current);
+            for (Point2i step : Point2i.CARDINAL_STEPS) {
+                Point2i neighbor = current.add(step);
+                if (!frontier.contains(neighbor) || isBlocked(barriers, current, step)) {
+                    continue;
+                }
+                frontier.remove(neighbor);
+                queue.addLast(neighbor);
+            }
+        }
+        return Set.copyOf(visited);
+    }
+
+    private static boolean isBlocked(List<VertexPath> barriers, Point2i cell, Point2i step) {
+        for (VertexPath barrier : barriers) {
+            if (barrier != null && barrier.crosses(cell, step)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private List<Room> roomsForCells(Set<Point2i> roomCells) {
+        return rooms.stream()
+                .filter(room -> room != null && room.roomId() != null && !disjoint(room.cells(), roomCells))
+                .sorted(Comparator.comparing(Room::roomId, Comparator.nullsLast(Long::compareTo)))
+                .toList();
+    }
+
+    private List<Room> roomsForShape(TileShape roomShape) {
+        if (roomShape == null || roomShape.size() == 0) {
+            return List.of();
+        }
+        return roomsForCells(roomShape.absoluteCells());
+    }
+
+    private Room retainedRoom(List<Room> sourceRooms) {
+        return sourceRooms == null || sourceRooms.isEmpty() ? null : sourceRooms.getFirst();
+    }
+
+    private Room resolveRoomForCells(
+            Room retainedRoom,
+            Set<Point2i> roomCells,
+            Map<VertexEdge, ClusterBoundaryWrite.Type> boundaryKinds
+    ) {
+        TileShape roomShape = TileShape.fromAbsoluteCells(roomCells);
+        Set<VertexEdge> wallEdges = new LinkedHashSet<>();
+        Set<VertexEdge> doorEdges = new LinkedHashSet<>();
+        for (Point2i cell : roomCells) {
+            for (Point2i step : Point2i.CARDINAL_STEPS) {
+                Point2i neighbor = cell.add(step);
+                if (!cells.contains(neighbor) || roomCells.contains(neighbor)) {
+                    continue;
+                }
+                VertexEdge candidateEdge = VertexEdge.betweenCellAndStep(cell, step);
+                ClusterBoundaryWrite.Type candidateType = boundaryKinds.getOrDefault(candidateEdge, ClusterBoundaryWrite.Type.WALL);
+                if (candidateType == ClusterBoundaryWrite.Type.DOOR) {
+                    doorEdges.add(candidateEdge);
+                } else {
+                    wallEdges.add(candidateEdge);
+                }
+            }
+        }
+        Long roomId = retainedRoom == null ? null : retainedRoom.roomId();
+        String roomName = retainedRoom == null ? normalizedRoomName(null, null) : retainedRoom.name();
+        RoomNarration narration = retainedRoom == null ? RoomNarration.empty() : retainedRoom.narration();
+        return Room.resolved(
+                roomId,
+                mapId,
+                clusterId == null ? 0L : clusterId,
+                roomName,
+                new Floor(roomShape),
+                wallEdges.isEmpty() ? List.of() : List.of(new Wall(wallEdges)),
+                doorEdges.isEmpty() ? List.of() : List.of(new Door(doorEdges)),
+                narration);
+    }
+
+    private static boolean disjoint(Set<Point2i> left, Set<Point2i> right) {
+        for (Point2i point : left) {
+            if (right.contains(point)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static List<ClusterBoundaryWrite> persistedInternalBoundaries(TileShape clusterShape, List<Room> rooms) {

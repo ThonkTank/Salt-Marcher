@@ -9,6 +9,7 @@ import features.world.dungeonmap.model.objects.Floor;
 import features.world.dungeonmap.model.objects.Wall;
 
 import java.util.Collection;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -118,6 +119,22 @@ public record Room(
 
     public Room withNarration(RoomNarration narration) {
         return resolved(roomId, mapId, clusterId, name, floor, walls, doors, narration);
+    }
+
+    public Room withAdditionalDoors(Collection<Door> additionalDoors) {
+        if (additionalDoors == null || additionalDoors.isEmpty()) {
+            return this;
+        }
+        List<Door> combinedDoors = new ArrayList<>(doors);
+        boolean changed = false;
+        for (Door additionalDoor : additionalDoors) {
+            if (additionalDoor == null || additionalDoor.edges().isEmpty()) {
+                continue;
+            }
+            combinedDoors.add(additionalDoor);
+            changed = true;
+        }
+        return changed ? resolved(roomId, mapId, clusterId, name, floor, walls, combinedDoors, narration) : this;
     }
 
     public Floor floor() {

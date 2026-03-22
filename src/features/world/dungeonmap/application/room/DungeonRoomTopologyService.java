@@ -6,6 +6,7 @@ import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
+import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.structures.cluster.ClusterRewrite;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
@@ -127,6 +128,48 @@ public final class DungeonRoomTopologyService {
 
     public void createDefaultRoom(Connection conn, long mapId) throws SQLException {
         createCluster(conn, mapId, TileShape.singleCell(new Point2i(0, 0)), "Eingang");
+    }
+
+    public void editBoundary(
+            Connection conn,
+            long mapId,
+            long clusterId,
+            VertexEdge edge,
+            features.world.dungeonmap.persistence.ClusterBoundaryWrite.Type type,
+            boolean deleteBoundary
+    ) throws SQLException {
+        if (edge == null) {
+            return;
+        }
+        DungeonLayout layout = requireLayout(conn, mapId);
+        RoomCluster cluster = layout.findCluster(clusterId);
+        if (cluster == null) {
+            return;
+        }
+        ClusterRewrite rewrite = cluster.editBoundary(edge, type, deleteBoundary);
+        if (rewrite == null) {
+            return;
+        }
+
+        boolean affectsCorridors = !rewrite.affectedRoomIds().isEmpty();
+        if (!affectsCorridors) {
+            persistClusterRewrite(conn, mapId, rewrite);
+            return;
+        }
+
+        Map<Long, Corridor> corridorsById = new LinkedHashMap<>(layout.corridorsById());
+        Set<Long> affectedCorridorIds = layout.corridorIdsAffectedBy(rewrite);
+        corridorsById = corridorRoomRewriteService.applyRoomRewrite(layout, corridorsById, rewrite);
+        DungeonLayout rewrittenLayout = layout.applying(rewrite);
+        CorridorRewriteContext rewriteContext = new CorridorRewriteContext(
+                layout.corridorPlanningInput(),
+                rewrittenLayout.corridorPlanningInput(),
+                affectedCorridorIds,
+                rewrite.deletedClusterIds());
+        corridorsById = Corridor.rewriteAll(corridorsById, rewriteContext);
+
+        persistClusterRewrite(conn, mapId, rewrite);
+        corridorPersistenceService.persistCorridors(conn, corridorsById);
     }
 
     private void createCluster(Connection conn, long mapId, TileShape shape, String roomName) throws SQLException {

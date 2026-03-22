@@ -103,9 +103,10 @@ public final class ClusterSelectionDragController {
         if (target == null) {
             return null;
         }
-        return switch (target.targetRef()) {
-            case DungeonEditorTargetRef.ClusterRef clusterRef -> clusterRef.clusterId();
-        };
+        if (target.targetRef() instanceof DungeonEditorTargetRef.ClusterRef clusterRef) {
+            return clusterRef.clusterId();
+        }
+        return null;
     }
 
     private record ClusterDragSession(
