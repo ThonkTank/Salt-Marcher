@@ -35,7 +35,7 @@ final class CorridorPlanner {
     private static final int CORNER_PENALTY_RELAXATION_INTERVAL = 12;
     private static final int MAX_EXIT_CANDIDATES_PER_ROOM = 12;
     private static final int MAX_TARGETED_EXIT_CANDIDATES_PER_ROOM = 8;
-    private static final int MAX_EXIT_PAIR_PATH_EVALUATIONS = 16;
+    private static final int MAX_EXIT_PAIR_PATH_EVALUATIONS = 64;
     private static final int TARGETED_SIDE_NEIGHBOR_COUNT = 2;
 
     private CorridorPlanner() {
@@ -147,7 +147,11 @@ final class CorridorPlanner {
 
     private static ConnectionPlan bestSeedWaypointPlan(Room seedRoom, PlannerContext context) {
         ConnectionPlan best = null;
-        for (ExitCandidate exit : context.exitCandidates(seedRoom)) {
+        Point2i waypointCenter = centroidCell(context.waypointCells());
+        List<ExitCandidate> candidates = waypointCenter == null
+                ? context.exitCandidates(seedRoom)
+                : targetedExitCandidates(seedRoom, waypointCenter, context);
+        for (ExitCandidate exit : candidates) {
             List<Point2i> path = pathThroughPoints(exit.outsideCell, context.waypointCells(), context);
             if (path.isEmpty()) {
                 continue;
@@ -206,7 +210,11 @@ final class CorridorPlanner {
 
     private static ConnectionPlan bestPlanToNetwork(Room room, Set<Point2i> networkCells, PlannerContext context) {
         ConnectionPlan best = null;
-        for (ExitCandidate exit : context.exitCandidates(room)) {
+        Point2i networkCenter = centroidCell(networkCells);
+        List<ExitCandidate> candidates = networkCenter == null
+                ? context.exitCandidates(room)
+                : targetedExitCandidates(room, networkCenter, context);
+        for (ExitCandidate exit : candidates) {
             List<Point2i> path = lowestCostRouteToAny(exit.outsideCell, networkCells, context);
             if (path == null) {
                 continue;
@@ -475,6 +483,29 @@ final class CorridorPlanner {
         }
         distance += waypointCells.getLast().distanceTo(target);
         return distance;
+    }
+
+    private static Point2i centroidCell(Iterable<Point2i> cells) {
+        if (cells == null) {
+            return null;
+        }
+        long sumX = 0L;
+        long sumY = 0L;
+        int count = 0;
+        for (Point2i cell : cells) {
+            if (cell == null) {
+                continue;
+            }
+            sumX += cell.x();
+            sumY += cell.y();
+            count++;
+        }
+        if (count == 0) {
+            return null;
+        }
+        return new Point2i(
+                (int) Math.round(sumX / (double) count),
+                (int) Math.round(sumY / (double) count));
     }
 
     private static ConnectionPlan directAdjacencyPlan(

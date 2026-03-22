@@ -39,7 +39,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         if (editorMode) {
             drawPaintPreview(gc, camera, renderState.previewPaintShape(), renderState.previewPaintDeleteMode());
         }
-        drawRooms(gc, mapModel, camera, editorMode);
+        drawRooms(gc, mapModel, camera, editorMode, renderState.selectedTargetKey());
         drawCorridors(gc, mapModel, camera, editorMode, renderState.selectedTargetKey());
         if (editorMode) {
             drawInteractiveLabels(gc, mapModel, camera, renderState.selectedTargetKey());
@@ -96,16 +96,30 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         }
     }
 
-    private static void drawRooms(GraphicsContext gc, DungeonLayout mapModel, DungeonCanvasCamera camera, boolean editorMode) {
+    private static void drawRooms(
+            GraphicsContext gc,
+            DungeonLayout mapModel,
+            DungeonCanvasCamera camera,
+            boolean editorMode,
+            String selectedTargetKey
+    ) {
         double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
         gc.setFill(DungeonCanvasTheme.CELL_FILL);
         Set<VertexEdge> roomBoundaryEdges = new LinkedHashSet<>();
+        Set<VertexEdge> selectedRoomBoundaryEdges = new LinkedHashSet<>();
         for (RoomCluster cluster : mapModel.clusters()) {
+            boolean selected = java.util.Objects.equals(clusterSelectionKey(cluster), selectedTargetKey);
             for (Room room : cluster.rooms()) {
                 Set<Tile> tiles = room.floor().shape().tiles();
                 fillRoomTiles(gc, camera, gridSize, tiles);
                 strokeRoomTiles(gc, camera, gridSize, tiles, DungeonCanvasTheme.grid(editorMode), 1.0);
-                room.walls().forEach(wall -> roomBoundaryEdges.addAll(wall.edges()));
+                room.walls().forEach(wall -> {
+                    if (selected) {
+                        selectedRoomBoundaryEdges.addAll(wall.edges());
+                    } else {
+                        roomBoundaryEdges.addAll(wall.edges());
+                    }
+                });
                 if (!editorMode) {
                     gc.setFill(DungeonCanvasTheme.text(editorMode));
                     gc.setFont(DungeonCanvasTheme.ROOM_LABEL_FONT);
@@ -115,6 +129,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             }
         }
         drawRoomBoundaries(gc, camera, gridSize, roomBoundaryEdges);
+        drawSelectedRoomBoundaries(gc, camera, gridSize, selectedRoomBoundaryEdges);
     }
 
     private static void fillRoomTiles(
@@ -163,6 +178,22 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         }
     }
 
+    private static void drawSelectedRoomBoundaries(
+            GraphicsContext gc,
+            DungeonCanvasCamera camera,
+            double gridSize,
+            Set<VertexEdge> edges
+    ) {
+        if (edges.isEmpty()) {
+            return;
+        }
+        gc.setStroke(DungeonCanvasTheme.ROOM_SELECTED_WALL_STROKE);
+        gc.setLineWidth(2.6);
+        for (VertexEdge edge : edges) {
+            strokeEdge(gc, camera, gridSize, edge);
+        }
+    }
+
     private static void strokeEdge(
             GraphicsContext gc,
             DungeonCanvasCamera camera,
@@ -189,6 +220,13 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         double centerX = camera.panX() + (room.floor().shape().anchor().x() + 0.15) * gridSize;
         double centerY = camera.panY() + (room.floor().shape().anchor().y() + 0.55) * gridSize;
         gc.fillText(roomName, centerX, centerY);
+    }
+
+    private static String clusterSelectionKey(RoomCluster cluster) {
+        if (cluster == null || cluster.clusterId() == null) {
+            return "cluster:unassigned";
+        }
+        return "cluster:" + cluster.clusterId();
     }
 
     private static void drawInteractiveLabels(
