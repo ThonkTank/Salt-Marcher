@@ -1,6 +1,7 @@
 package features.world.dungeonmap.shell.editor;
 
 import features.world.dungeonmap.application.corridor.DungeonCorridorEditService;
+import features.world.dungeonmap.application.room.DungeonClusterMoveService;
 import features.world.dungeonmap.application.room.DungeonRoomEditService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasWorkspace;
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
@@ -43,6 +44,7 @@ final class DungeonEditorCoordinator {
             DungeonEditorSessionState sessionState,
             DungeonMapCatalogService mapCatalogService,
             DungeonRoomEditService roomEditService,
+            DungeonClusterMoveService clusterMoveService,
             DungeonCorridorEditService corridorEditService
     ) {
         this.controls = Objects.requireNonNull(controls, "controls");
@@ -53,8 +55,10 @@ final class DungeonEditorCoordinator {
         this.sessionState = Objects.requireNonNull(sessionState, "sessionState");
         ClusterSelectionDragController clusterSelectionDragController = new ClusterSelectionDragController(
                 mapState,
+                loadingService,
                 selectionState,
-                layoutPreviewState);
+                layoutPreviewState,
+                Objects.requireNonNull(clusterMoveService, "clusterMoveService"));
         RoomPaintInteractionController roomPaintInteractionController = new RoomPaintInteractionController(
                 mapState,
                 loadingService,

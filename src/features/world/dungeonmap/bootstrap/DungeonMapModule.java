@@ -5,6 +5,7 @@ import features.world.dungeonmap.application.corridor.DungeonCorridorPersistence
 import features.world.dungeonmap.application.corridor.DungeonCorridorRewriteCoordinator;
 import features.world.dungeonmap.application.corridor.DungeonCorridorRoomRewriteService;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeStateRepairService;
+import features.world.dungeonmap.application.room.DungeonClusterMoveService;
 import features.world.dungeonmap.application.room.DungeonRoomEditService;
 import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
 import features.world.dungeonmap.application.room.RoomPaintTopologyPlanner;
@@ -57,13 +58,23 @@ public final class DungeonMapModule {
                         corridorRoomRewriteService,
                         corridorRewriteCoordinator),
                 roomTopologyService);
+        DungeonClusterMoveService clusterMoveService = new DungeonClusterMoveService(
+                mapLoader,
+                roomWriteRepository,
+                geometryWriteMapper);
         DungeonCorridorEditService corridorEditService = new DungeonCorridorEditService(corridorWriteRepository);
         DungeonMapState state = new DungeonMapState();
         DungeonMapLoadingService loadingService = new DungeonMapLoadingService(
                 mapLoader,
                 state);
         this.dungeonView = new DungeonRuntimeView("Dungeon", false, loadingService, state);
-        this.dungeonEditorView = new DungeonEditorView(loadingService, state, mapCatalogService, roomEditService, corridorEditService);
+        this.dungeonEditorView = new DungeonEditorView(
+                loadingService,
+                state,
+                mapCatalogService,
+                roomEditService,
+                clusterMoveService,
+                corridorEditService);
     }
 
     public AppView dungeonView() {

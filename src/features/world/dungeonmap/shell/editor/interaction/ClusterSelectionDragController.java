@@ -1,31 +1,41 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
+import features.world.dungeonmap.application.room.DungeonClusterMoveService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
+import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.state.EditorLayoutPreviewState;
 import features.world.dungeonmap.state.EditorSelectionState;
 import features.world.dungeonmap.state.DungeonMapState;
+import ui.async.UiAsyncTasks;
+import ui.async.UiErrorReporter;
 
 import java.util.Objects;
 
 public final class ClusterSelectionDragController {
 
     private final DungeonMapState mapState;
+    private final DungeonMapLoadingService loadingService;
     private final EditorSelectionState selectionState;
     private final EditorLayoutPreviewState layoutPreviewState;
+    private final DungeonClusterMoveService clusterMoveService;
     private final DungeonEditorHitTester hitTester = new DungeonGridHitTester();
 
     private ClusterDragSession dragSession;
 
     public ClusterSelectionDragController(
             DungeonMapState mapState,
+            DungeonMapLoadingService loadingService,
             EditorSelectionState selectionState,
-            EditorLayoutPreviewState layoutPreviewState
+            EditorLayoutPreviewState layoutPreviewState,
+            DungeonClusterMoveService clusterMoveService
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
+        this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
         this.selectionState = Objects.requireNonNull(selectionState, "selectionState");
         this.layoutPreviewState = Objects.requireNonNull(layoutPreviewState, "layoutPreviewState");
+        this.clusterMoveService = Objects.requireNonNull(clusterMoveService, "clusterMoveService");
     }
 
     public boolean handlePressed(DungeonCanvasPointerEvent event) {
@@ -72,11 +82,19 @@ public final class ClusterSelectionDragController {
         DungeonLayout committed = Objects.equals(delta, dragSession.currentDelta()) && previewMap != null
                 ? previewMap
                 : dragSession.baseMap().withTranslatedCluster(dragSession.clusterId(), delta);
+        Long mapId = dragSession.baseMap().mapId() > 0 ? dragSession.baseMap().mapId() : null;
+        Long clusterId = dragSession.clusterId();
         selectionState.selectTarget(dragSession.targetKey());
         layoutPreviewState.clearPreview();
         dragSession = null;
         if (committed != null && committed != mapState.activeMap()) {
             mapState.showEditedMap(committed);
+        }
+        if (mapId != null && clusterId != null && (delta.x() != 0 || delta.y() != 0)) {
+            UiAsyncTasks.submitVoid(
+                    () -> clusterMoveService.move(mapId, clusterId, delta),
+                    () -> loadingService.reload(mapId),
+                    throwable -> UiErrorReporter.reportBackgroundFailure("ClusterSelectionDragController.handleReleased()", throwable));
         }
         return true;
     }

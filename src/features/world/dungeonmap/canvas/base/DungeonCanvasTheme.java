@@ -11,10 +11,16 @@ public final class DungeonCanvasTheme {
 
     public static final Color RUNTIME_BACKGROUND = Color.web("#12181c");
     public static final Color EDITOR_BACKGROUND = Color.web("#12181c");
-    public static final Color RUNTIME_GRID = Color.web("#2b353c");
-    public static final Color EDITOR_GRID = Color.web("#2b353c");
-    public static final Color RUNTIME_AXIS = Color.web("#8a6a35");
-    public static final Color EDITOR_AXIS = Color.web("#8a6a35");
+    public static final Color RUNTIME_GRID_MINOR = Color.web("#56646e", 0.12);
+    public static final Color EDITOR_GRID_MINOR = Color.web("#56646e", 0.12);
+    public static final Color RUNTIME_GRID_MEDIUM = Color.web("#738390", 0.16);
+    public static final Color EDITOR_GRID_MEDIUM = Color.web("#738390", 0.16);
+    public static final Color RUNTIME_GRID_MAJOR = Color.web("#8d9ca8", 0.22);
+    public static final Color EDITOR_GRID_MAJOR = Color.web("#8d9ca8", 0.22);
+    public static final Color RUNTIME_GRID_MAX = Color.web("#b1bcc5", 0.28);
+    public static final Color EDITOR_GRID_MAX = Color.web("#b1bcc5", 0.28);
+    public static final Color RUNTIME_AXIS = Color.web("#c5d1d8", 0.32);
+    public static final Color EDITOR_AXIS = Color.web("#c5d1d8", 0.32);
     public static final Color RUNTIME_TEXT = Color.web("#ecedee");
     public static final Color EDITOR_TEXT = Color.web("#ecedee");
     public static final Color CELL_FILL = Color.web("#2a3238");
@@ -41,6 +47,11 @@ public final class DungeonCanvasTheme {
     public static final double BASE_GRID = 32.0;
     public static final double MIN_ZOOM = 0.4;
     public static final double MAX_ZOOM = 4.0;
+    public static final double GRID_MIN_READABLE_SPACING = 16.0;
+    public static final double GRID_MINOR_LINE_WIDTH = 0.75;
+    public static final double GRID_MEDIUM_LINE_WIDTH = 1.05;
+    public static final double GRID_MAJOR_LINE_WIDTH = 1.4;
+    public static final double GRID_MAX_LINE_WIDTH = 1.8;
 
     private DungeonCanvasTheme() {
         throw new AssertionError("No instances");
@@ -51,7 +62,25 @@ public final class DungeonCanvasTheme {
     }
 
     public static Color grid(boolean editorMode) {
-        return editorMode ? EDITOR_GRID : RUNTIME_GRID;
+        return gridTier(editorMode, 0);
+    }
+
+    public static Color gridTier(boolean editorMode, int tier) {
+        return switch (tier) {
+            case 0 -> editorMode ? EDITOR_GRID_MINOR : RUNTIME_GRID_MINOR;
+            case 1 -> editorMode ? EDITOR_GRID_MEDIUM : RUNTIME_GRID_MEDIUM;
+            case 2 -> editorMode ? EDITOR_GRID_MAJOR : RUNTIME_GRID_MAJOR;
+            default -> editorMode ? EDITOR_GRID_MAX : RUNTIME_GRID_MAX;
+        };
+    }
+
+    public static double gridTierWidth(int tier) {
+        return switch (tier) {
+            case 0 -> GRID_MINOR_LINE_WIDTH;
+            case 1 -> GRID_MEDIUM_LINE_WIDTH;
+            case 2 -> GRID_MAJOR_LINE_WIDTH;
+            default -> GRID_MAX_LINE_WIDTH;
+        };
     }
 
     public static Color axis(boolean editorMode) {
