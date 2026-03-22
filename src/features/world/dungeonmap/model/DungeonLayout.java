@@ -239,41 +239,6 @@ public final class DungeonLayout {
         return CorridorPlanningInputProjector.project(this);
     }
 
-    public CorridorRewriteContext corridorRewriteContext(
-            DungeonLayout rewrittenLayout,
-            Set<Long> affectedCorridorIds,
-            Set<Long> deletedClusterIds
-    ) {
-        return corridorRewriteContext(
-                rewrittenLayout == null ? CorridorPlanningInput.empty() : rewrittenLayout.corridorPlanningInput(),
-                affectedCorridorIds,
-                deletedClusterIds);
-    }
-
-    public CorridorRewriteContext corridorRewriteContext(
-            CorridorPlanningInput rewrittenPlanningInput,
-            Set<Long> affectedCorridorIds,
-            Set<Long> deletedClusterIds
-    ) {
-        return new CorridorRewriteContext(
-                corridorPlanningInput(),
-                rewrittenPlanningInput == null ? CorridorPlanningInput.empty() : rewrittenPlanningInput,
-                affectedCorridorIds,
-                deletedClusterIds);
-    }
-
-    public static List<Corridor> rewriteCorridors(List<Corridor> corridors, CorridorRewriteContext context) {
-        if (corridors == null || corridors.isEmpty()) {
-            return List.of();
-        }
-        if (context == null || context.affectedCorridorIds().isEmpty()) {
-            return List.copyOf(corridors);
-        }
-        return corridors.stream()
-                .map(corridor -> corridor == null ? null : corridor.reanchoredFor(context).replannedFor(context))
-                .toList();
-    }
-
     public DungeonLayout withReplacedCluster(RoomCluster cluster) {
         if (cluster == null || cluster.clusterId() == null) {
             return this;
@@ -298,11 +263,14 @@ public final class DungeonLayout {
                 .toList();
         // All callers must see the same replanned topology. Performance work here must preserve that invariant.
         CorridorPlanningInput planningInput = CorridorPlanningInputProjector.project(updatedClusters);
-        CorridorRewriteContext rewriteContext = corridorRewriteContext(
+        CorridorRewriteContext rewriteContext = new CorridorRewriteContext(
+                corridorPlanningInput(),
                 planningInput,
                 corridorIdsAffectedBy(movedCluster.roomIds(), Set.of(clusterId)),
                 Set.of());
-        List<Corridor> updatedCorridors = rewriteCorridors(corridors, rewriteContext);
+        List<Corridor> updatedCorridors = corridors.stream()
+                .map(corridor -> corridor == null ? null : corridor.reanchoredFor(rewriteContext).replannedFor(rewriteContext))
+                .toList();
         return new DungeonLayout(mapId, name, updatedCorridors, updatedClusters);
     }
 

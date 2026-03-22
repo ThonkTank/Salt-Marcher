@@ -97,13 +97,15 @@ public final class RoomTopologyEditPlanApplier {
                     plan.layout(),
                     plan.layout().corridorsById(),
                     splitRewrite(plan.sourceClusterId(), plan.sourceRoomId(), insertedRooms));
-            CorridorRewriteContext rewriteContext = plan.layout().corridorRewriteContext(
-                    CorridorPlanningInputProjector.projectOverlay(
-                            plan.layout(),
-                            roomsById(insertedRooms),
-                            replacementCenters,
-                            Set.of(plan.sourceRoomId()),
-                            Set.of(plan.sourceClusterId())),
+            CorridorPlanningInput rewrittenPlanningInput = CorridorPlanningInputProjector.projectOverlay(
+                    plan.layout(),
+                    roomsById(insertedRooms),
+                    replacementCenters,
+                    Set.of(plan.sourceRoomId()),
+                    Set.of(plan.sourceClusterId()));
+            CorridorRewriteContext rewriteContext = new CorridorRewriteContext(
+                    plan.layout().corridorPlanningInput(),
+                    rewrittenPlanningInput,
                     plan.layout().corridorIdsAffectedBy(Set.of(plan.sourceRoomId()), Set.of(plan.sourceClusterId())),
                     Set.of(plan.sourceClusterId()));
             corridorPersistenceService.persistCorridors(conn, corridorRewriteCoordinator.rewriteCorridors(corridorsById, rewriteContext));
@@ -125,13 +127,15 @@ public final class RoomTopologyEditPlanApplier {
                 room.walls(),
                 room.doors());
         // The applier only projects the rewritten world snapshot; Corridor decides what reanchor/replan means locally.
-        CorridorRewriteContext rewriteContext = layout.corridorRewriteContext(
-                CorridorPlanningInputProjector.projectOverlay(
-                        layout,
-                        Map.of(updatedRoom.roomId(), updatedRoom),
-                        Map.of(plan.clusterId(), updatedCenter),
-                        Set.of(),
-                        Set.of()),
+        CorridorPlanningInput rewrittenPlanningInput = CorridorPlanningInputProjector.projectOverlay(
+                layout,
+                Map.of(updatedRoom.roomId(), updatedRoom),
+                Map.of(plan.clusterId(), updatedCenter),
+                Set.of(),
+                Set.of());
+        CorridorRewriteContext rewriteContext = new CorridorRewriteContext(
+                layout.corridorPlanningInput(),
+                rewrittenPlanningInput,
                 layout.corridorIdsAffectedBy(Set.of(room.roomId()), Set.of(plan.clusterId())),
                 Set.of());
         return corridorRewriteCoordinator.rewriteCorridors(layout.corridorsById(), rewriteContext);
@@ -152,13 +156,15 @@ public final class RoomTopologyEditPlanApplier {
                 Map.of());
         // The applier chooses affected scope and ordering, but does not decide corridor-local delete behavior.
         Map<Long, Corridor> corridorsById = corridorRoomRewriteService.applyRoomRewrite(layout, layout.corridorsById(), rewrite);
-        CorridorRewriteContext rewriteContext = layout.corridorRewriteContext(
-                CorridorPlanningInputProjector.projectOverlay(
-                        layout,
-                        Map.of(),
-                        Map.of(),
-                        deletedRoomIds,
-                        Set.of(plan.clusterId())),
+        CorridorPlanningInput rewrittenPlanningInput = CorridorPlanningInputProjector.projectOverlay(
+                layout,
+                Map.of(),
+                Map.of(),
+                deletedRoomIds,
+                Set.of(plan.clusterId()));
+        CorridorRewriteContext rewriteContext = new CorridorRewriteContext(
+                layout.corridorPlanningInput(),
+                rewrittenPlanningInput,
                 layout.corridorIdsAffectedBy(deletedRoomIds, Set.of(plan.clusterId())),
                 Set.of(plan.clusterId()));
         return corridorRewriteCoordinator.rewriteCorridors(corridorsById, rewriteContext);

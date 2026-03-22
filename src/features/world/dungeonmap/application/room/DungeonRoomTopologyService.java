@@ -74,8 +74,9 @@ public final class DungeonRoomTopologyService {
         // Services orchestrate affected scope and ordering; corridor-local membership rules stay on Corridor.
         corridorsById = corridorRoomRewriteService.applyRoomRewrite(layout, corridorsById, rewrite);
         DungeonLayout rewrittenLayout = layout.applying(rewrite);
-        CorridorRewriteContext rewriteContext = layout.corridorRewriteContext(
-                rewrittenLayout,
+        CorridorRewriteContext rewriteContext = new CorridorRewriteContext(
+                layout.corridorPlanningInput(),
+                rewrittenLayout.corridorPlanningInput(),
                 affectedCorridorIds,
                 rewrite.deletedClusterIds());
         corridorsById = corridorRewriteCoordinator.rewriteCorridors(corridorsById, rewriteContext);
@@ -116,8 +117,9 @@ public final class DungeonRoomTopologyService {
             // Services orchestrate the step sequence; reanchor/replan still execute through the corridor rewrite path.
             corridorsById = corridorRoomRewriteService.applyRoomRewrite(workingLayout, corridorsById, rewrite);
             DungeonLayout rewrittenLayout = workingLayout.applying(rewrite);
-            CorridorRewriteContext rewriteContext = workingLayout.corridorRewriteContext(
-                    rewrittenLayout,
+            CorridorRewriteContext rewriteContext = new CorridorRewriteContext(
+                    workingLayout.corridorPlanningInput(),
+                    rewrittenLayout.corridorPlanningInput(),
                     affectedCorridorIds,
                     rewrite.deletedClusterIds());
             corridorsById = corridorRewriteCoordinator.rewriteCorridors(corridorsById, rewriteContext);
