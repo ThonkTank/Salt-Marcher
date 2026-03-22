@@ -74,6 +74,26 @@ public final class Corridor {
         return targetKey != null && targetKey.startsWith(TARGET_KEY_PREFIX);
     }
 
+    public static Long corridorIdFromKey(String targetKey) {
+        if (!isTargetKey(targetKey)) {
+            return null;
+        }
+        String rawId = targetKey.substring(TARGET_KEY_PREFIX.length());
+        if (rawId.isBlank() || "unassigned".equals(rawId)) {
+            return null;
+        }
+        try {
+            return Long.parseLong(rawId);
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
+    public static String corridorLabel(String targetKey) {
+        Long corridorId = corridorIdFromKey(targetKey);
+        return corridorId == null ? "Korridor" : "Korridor " + corridorId;
+    }
+
     public static String targetKeyPrefix() {
         return TARGET_KEY_PREFIX;
     }
