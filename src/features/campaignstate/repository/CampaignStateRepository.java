@@ -230,9 +230,10 @@ public final class CampaignStateRepository {
                 if (corridorId != null) {
                     return CampaignDungeonLocationType.CORRIDOR;
                 }
-                return locationKey == null || locationKey.isBlank()
-                        ? null
-                        : locationKey.startsWith("tile:")
+                if (locationKey == null || locationKey.isBlank()) {
+                    return null;
+                }
+                return locationKey.startsWith("tile:")
                         ? CampaignDungeonLocationType.TILE
                         : CampaignDungeonLocationType.CORRIDOR_COMPONENT;
             }

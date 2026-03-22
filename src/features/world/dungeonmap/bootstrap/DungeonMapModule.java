@@ -8,6 +8,7 @@ import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationSer
 import features.world.dungeonmap.application.runtime.DungeonRuntimeStateRepairService;
 import features.world.dungeonmap.application.room.DungeonClusterMoveService;
 import features.world.dungeonmap.application.room.DungeonRoomEditService;
+import features.world.dungeonmap.application.room.DungeonRoomNarrationService;
 import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
 import features.world.dungeonmap.application.room.RoomPaintTopologyPlanner;
 import features.world.dungeonmap.application.room.RoomTopologyEditPlanApplier;
@@ -36,6 +37,7 @@ public final class DungeonMapModule {
         DungeonCorridorWriteRepository corridorWriteRepository = new DungeonCorridorWriteRepository();
         DungeonCorridorPersistenceService corridorPersistenceService = new DungeonCorridorPersistenceService(corridorWriteRepository);
         DungeonRoomWriteRepository roomWriteRepository = new DungeonRoomWriteRepository();
+        DungeonRoomNarrationService roomNarrationService = new DungeonRoomNarrationService(roomWriteRepository);
         DungeonRoomGeometryWriteMapper geometryWriteMapper = new DungeonRoomGeometryWriteMapper();
         DungeonCorridorRoomRewriteService corridorRoomRewriteService = new DungeonCorridorRoomRewriteService();
         DungeonRoomTopologyService roomTopologyService = new DungeonRoomTopologyService(
@@ -71,12 +73,14 @@ public final class DungeonMapModule {
                 loadingService,
                 state,
                 new DungeonRuntimeNavigationService(),
+                detailsNavigator,
                 travelSurface);
         this.dungeonEditorView = new DungeonEditorView(
                 loadingService,
                 state,
                 mapCatalogService,
                 roomEditService,
+                roomNarrationService,
                 clusterMoveService,
                 corridorEditService);
     }

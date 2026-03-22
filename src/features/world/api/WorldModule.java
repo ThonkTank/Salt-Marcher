@@ -1,7 +1,6 @@
 package features.world.api;
 
 import features.world.dungeonmap.bootstrap.DungeonMapModule;
-import features.world.hexmap.api.HexMapTravelSurface;
 import features.world.hexmap.api.HexMapModule;
 import ui.shell.AppView;
 import ui.shell.DetailsNavigator;
@@ -16,7 +15,7 @@ public final class WorldModule {
 
     private final HexMapModule hexMapModule;
     private final DungeonMapModule dungeonMapModule;
-    private final HexMapTravelSurface travelSurface = new HexMapTravelSurface();
+    private final WorldTravelSurface travelSurface = HexMapModule.createTravelSurface();
 
     public WorldModule(DetailsNavigator detailsNavigator) {
         Objects.requireNonNull(detailsNavigator, "detailsNavigator");

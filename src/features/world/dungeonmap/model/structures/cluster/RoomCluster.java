@@ -97,6 +97,21 @@ public final class RoomCluster {
         return clusterId == null ? TARGET_KEY_PREFIX + "unassigned" : TARGET_KEY_PREFIX + clusterId;
     }
 
+    public static boolean isTargetKey(String targetKey) {
+        return targetKey != null && targetKey.startsWith(TARGET_KEY_PREFIX);
+    }
+
+    public static Long clusterIdFromKey(String targetKey) {
+        if (!isTargetKey(targetKey)) {
+            return null;
+        }
+        String suffix = targetKey.substring(TARGET_KEY_PREFIX.length());
+        if (suffix.isBlank() || "unassigned".equals(suffix)) {
+            return null;
+        }
+        return Long.parseLong(suffix);
+    }
+
     public InteractiveLabelHandle labelHandle() {
         return new InteractiveLabelHandle(
                 targetKey(),

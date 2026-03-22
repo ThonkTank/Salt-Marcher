@@ -119,19 +119,25 @@ public class TravelPane extends VBox implements WorldTravelSurface {
     }
 
     @Override
+    public TravelPane sceneContent() {
+        return this;
+    }
+
+    @Override
     public void showDungeonTravel(
             String mapName,
-            String locationLabel,
+            String areaLabel,
             String tileLabel,
             String statusLabel,
             Runnable centerAction
     ) {
+        String resolvedArea = areaLabel == null || areaLabel.isBlank() ? "Kein Standort" : areaLabel;
         iconLabel.setText("D");
         this.locationLabel.setText(mapName == null || mapName.isBlank() ? "Dungeon" : mapName);
         statusBadge.setText("Dungeon");
-        contextLabel.setText(locationLabel == null || locationLabel.isBlank() ? "Kein Standort" : locationLabel);
+        contextLabel.setText(resolvedArea);
         detailKeyOne.setText("Bereich");
-        detailValueOne.setText(locationLabel == null || locationLabel.isBlank() ? "Kein Standort" : locationLabel);
+        detailValueOne.setText(resolvedArea);
         detailKeyTwo.setText("Feld");
         detailValueTwo.setText(tileLabel == null || tileLabel.isBlank() ? "\u2014" : tileLabel);
         detailKeyThree.setText("Status");

@@ -68,11 +68,28 @@ public final class DungeonRuntimePresenter {
     }
 
     public static String roomLabel(DungeonLayout layout, Long roomId) {
-        Room room = layout == null ? null : layout.findRoom(roomId);
+        Room room = roomForId(layout, roomId);
         if (room == null) {
             return roomId == null ? "Raum" : "Raum " + roomId;
         }
         return room.name() == null || room.name().isBlank() ? "Raum " + room.roomId() : room.name();
+    }
+
+    public static Room roomForLocation(DungeonLayout layout, DungeonRuntimeLocation location) {
+        if (layout == null || location == null) {
+            return null;
+        }
+        if (location instanceof DungeonRuntimeLocation.Room roomLocation) {
+            return roomForId(layout, roomLocation.roomId());
+        }
+        if (location instanceof DungeonRuntimeLocation.Tile tileLocation) {
+            return layout.roomAtCell(tileLocation.tile());
+        }
+        return null;
+    }
+
+    private static Room roomForId(DungeonLayout layout, Long roomId) {
+        return layout == null ? null : layout.findRoom(roomId);
     }
 
     private static String corridorLabel(DungeonLayout layout, Stream<Long> roomIds) {

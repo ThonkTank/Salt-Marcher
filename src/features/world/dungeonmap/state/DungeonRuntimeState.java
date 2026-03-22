@@ -3,11 +3,12 @@ package features.world.dungeonmap.state;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationSnapshot;
 
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public final class DungeonRuntimeState {
 
-    private final java.util.List<Runnable> listeners = new CopyOnWriteArrayList<>();
+    private final List<Runnable> listeners = new CopyOnWriteArrayList<>();
 
     private DungeonRuntimeLocation persistedLocation;
     private DungeonRuntimeLocation previewLocation;

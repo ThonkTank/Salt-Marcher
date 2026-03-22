@@ -1,7 +1,9 @@
 package features.world.dungeonmap.shell.runtime;
 
 import features.world.api.WorldTravelSurface;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationService;
+import features.world.dungeonmap.application.runtime.DungeonRoomInspectorPresenter;
 import features.world.dungeonmap.application.runtime.DungeonRuntimePresenter;
 import features.world.dungeonmap.canvas.base.DungeonViewMode;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
@@ -14,6 +16,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import ui.async.UiAsyncTasks;
+import ui.shell.DetailsNavigator;
 import ui.shell.NavigationIcons;
 
 import java.util.Objects;
@@ -23,6 +26,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
     private final String title;
     private final boolean editorMode;
     private final DungeonRuntimeNavigationService runtimeNavigationService;
+    private final DetailsNavigator detailsNavigator;
     private final WorldTravelSurface travelSurface;
     private final DungeonRuntimeState runtimeState = new DungeonRuntimeState();
     private final VBox controls;
@@ -30,6 +34,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
     private final Label mapLabel = new Label();
     private long runtimeRequestSequence;
     private Long runtimeMapId;
+    private DetailsNavigator.EntryKey lastPublishedRoomKey;
 
     public DungeonRuntimeView(
             String title,
@@ -37,12 +42,14 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
             DungeonMapLoadingService loadingService,
             DungeonMapState state,
             DungeonRuntimeNavigationService runtimeNavigationService,
+            DetailsNavigator detailsNavigator,
             WorldTravelSurface travelSurface
     ) {
         super(editorMode, loadingService, state);
         this.title = title;
         this.editorMode = editorMode;
         this.runtimeNavigationService = Objects.requireNonNull(runtimeNavigationService, "runtimeNavigationService");
+        this.detailsNavigator = Objects.requireNonNull(detailsNavigator, "detailsNavigator");
         this.travelSurface = travelSurface;
         workspace().setViewMode(DungeonViewMode.GRID);
         workspace().setInteractionHandler(new DungeonRuntimeInteractionController(
@@ -96,6 +103,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         workspace().setActiveLocation(runtimeState.activeLocation());
         refreshLabels();
         refreshTravelPane();
+        publishRoomDetails();
     }
 
     private void refreshRuntimeState() {
@@ -105,11 +113,13 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         }
         if (state().errorMessage() != null || state().activeMap().mapId() <= 0) {
             runtimeMapId = null;
+            lastPublishedRoomKey = null;
             runtimeState.clear();
             return;
         }
         if (!Objects.equals(runtimeMapId, state().activeMapId())) {
             runtimeMapId = state().activeMapId();
+            lastPublishedRoomKey = null;
             loadRuntimeNavigation();
             return;
         }
@@ -142,7 +152,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
             runtimeState.clearDragPreview();
             return;
         }
-        runtimeState.showDragPreview(features.world.dungeonmap.application.runtime.DungeonRuntimeLocation.tile(tile));
+        runtimeState.showDragPreview(DungeonRuntimeLocation.tile(tile));
     }
 
     private void movePartyToTile(Point2i tile) {
@@ -186,5 +196,24 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
                 DungeonRuntimePresenter.tileLabel(runtimeState.activeLocation()),
                 runtimeStatusText(),
                 workspace()::resetView);
+    }
+
+    private void publishRoomDetails() {
+        if (runtimeState.loading() || runtimeState.moving() || runtimeState.dragging()) {
+            return;
+        }
+        var room = DungeonRuntimePresenter.roomForLocation(state().activeMap(), runtimeState.activeLocation());
+        if (room == null || room.roomId() == null) {
+            return;
+        }
+        DetailsNavigator.EntryKey entryKey = new DetailsNavigator.EntryKey(
+                "dungeon-room",
+                state().activeMap().mapId() + ":" + room.roomId());
+        boolean refreshCurrentCard = detailsNavigator.isShowing(entryKey);
+        if (!refreshCurrentCard && Objects.equals(lastPublishedRoomKey, entryKey)) {
+            return;
+        }
+        lastPublishedRoomKey = entryKey;
+        detailsNavigator.showContent(room.name(), entryKey, () -> DungeonRoomInspectorPresenter.buildRoomNode(room));
     }
 }
