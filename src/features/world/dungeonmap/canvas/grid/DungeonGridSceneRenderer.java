@@ -301,7 +301,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
 
     private static void drawAxes(GraphicsContext gc, double width, double height, DungeonCanvasCamera camera, boolean editorMode) {
         gc.setStroke(DungeonCanvasTheme.axis(editorMode));
-        gc.setLineWidth(DungeonCanvasTheme.gridTierWidth(3));
+        gc.setLineWidth(DungeonCanvasTheme.axisLineWidth());
         double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
         double axisX = camera.panX();
         double axisY = camera.panY();

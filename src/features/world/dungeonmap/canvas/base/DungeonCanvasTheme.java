@@ -52,6 +52,7 @@ public final class DungeonCanvasTheme {
     public static final double GRID_MEDIUM_LINE_WIDTH = 1.05;
     public static final double GRID_MAJOR_LINE_WIDTH = 1.4;
     public static final double GRID_MAX_LINE_WIDTH = 1.8;
+    public static final double AXIS_LINE_WIDTH = 2.6;
 
     private DungeonCanvasTheme() {
         throw new AssertionError("No instances");
@@ -85,6 +86,10 @@ public final class DungeonCanvasTheme {
 
     public static Color axis(boolean editorMode) {
         return editorMode ? EDITOR_AXIS : RUNTIME_AXIS;
+    }
+
+    public static double axisLineWidth() {
+        return AXIS_LINE_WIDTH;
     }
 
     public static Color text(boolean editorMode) {

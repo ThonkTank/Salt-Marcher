@@ -568,17 +568,50 @@ final class CorridorPlanner {
         if (candidates == null || candidates.isEmpty()) {
             return List.of();
         }
+        List<List<ExitCandidate>> segments = new ArrayList<>();
         Map<Point2i, ExitCandidate> limited = new LinkedHashMap<>();
         for (Point2i direction : Point2i.CARDINAL_STEPS) {
             List<ExitCandidate> onSide = candidates.stream()
                     .filter(candidate -> candidate.direction().equals(direction))
                     .sorted(exitCandidateSideOrder(direction))
                     .toList();
-            for (List<ExitCandidate> segment : contiguousExitSegments(onSide, direction)) {
-                addRepresentativeExit(limited, segment.getFirst());
-                addRepresentativeExit(limited, segment.get(segment.size() / 2));
-                addRepresentativeExit(limited, segment.getLast());
+            segments.addAll(contiguousExitSegments(onSide, direction));
+        }
+        if (segments.isEmpty()) {
+            return List.of();
+        }
+        int totalCandidates = segments.stream()
+                .mapToInt(List::size)
+                .sum();
+        int totalBudget = Math.min(MAX_EXIT_CANDIDATES_PER_ROOM, totalCandidates);
+        int[] allocations = new int[segments.size()];
+        int allocated = 0;
+        for (int index = 0; index < segments.size() && allocated < totalBudget; index++) {
+            allocations[index] = 1;
+            allocated++;
+        }
+        while (allocated < totalBudget) {
+            int bestSegmentIndex = -1;
+            double bestNeed = Double.NEGATIVE_INFINITY;
+            for (int index = 0; index < segments.size(); index++) {
+                List<ExitCandidate> segment = segments.get(index);
+                if (allocations[index] >= segment.size()) {
+                    continue;
+                }
+                double need = ((double) segment.size() / (allocations[index] + 1)) - allocations[index];
+                if (need > bestNeed) {
+                    bestNeed = need;
+                    bestSegmentIndex = index;
+                }
             }
+            if (bestSegmentIndex < 0) {
+                break;
+            }
+            allocations[bestSegmentIndex]++;
+            allocated++;
+        }
+        for (int index = 0; index < segments.size(); index++) {
+            addDistributedSegmentSamples(limited, segments.get(index), allocations[index]);
         }
         return limited.values().stream()
                 .limit(MAX_EXIT_CANDIDATES_PER_ROOM)
@@ -588,6 +621,30 @@ final class CorridorPlanner {
                         .thenComparingInt(candidate -> candidate.direction.x())
                         .thenComparingInt(candidate -> candidate.direction.y()))
                 .toList();
+    }
+
+    private static void addDistributedSegmentSamples(
+            Map<Point2i, ExitCandidate> limited,
+            List<ExitCandidate> segment,
+            int sampleCount
+    ) {
+        if (segment == null || segment.isEmpty() || sampleCount <= 0) {
+            return;
+        }
+        if (sampleCount >= segment.size()) {
+            for (ExitCandidate candidate : segment) {
+                addRepresentativeExit(limited, candidate);
+            }
+            return;
+        }
+        if (sampleCount == 1) {
+            addRepresentativeExit(limited, segment.get(segment.size() / 2));
+            return;
+        }
+        for (int sampleIndex = 0; sampleIndex < sampleCount; sampleIndex++) {
+            int candidateIndex = (int) Math.round(sampleIndex * (segment.size() - 1.0) / (sampleCount - 1.0));
+            addRepresentativeExit(limited, segment.get(candidateIndex));
+        }
     }
 
     private static List<List<ExitCandidate>> contiguousExitSegments(List<ExitCandidate> candidates, Point2i direction) {
