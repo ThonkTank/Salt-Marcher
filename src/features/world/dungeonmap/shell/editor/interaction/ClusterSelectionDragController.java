@@ -57,6 +57,8 @@ public final class ClusterSelectionDragController {
             return true;
         }
         dragSession = dragSession.withCurrentDelta(delta);
+        // Drag preview is a hot path: withTranslatedCluster() may cascade into corridor replanning on every mouse move.
+        // Planner refactors in this path must not add extra asymptotic work or noticeable allocation churn.
         layoutPreviewState.showPreview(dragSession.baseMap().withTranslatedCluster(dragSession.clusterId(), delta));
         return true;
     }
@@ -66,7 +68,10 @@ public final class ClusterSelectionDragController {
             return false;
         }
         Point2i delta = event.gridCell().subtract(dragSession.pressCell());
-        DungeonLayout committed = dragSession.baseMap().withTranslatedCluster(dragSession.clusterId(), delta);
+        DungeonLayout previewMap = layoutPreviewState.previewMap();
+        DungeonLayout committed = Objects.equals(delta, dragSession.currentDelta()) && previewMap != null
+                ? previewMap
+                : dragSession.baseMap().withTranslatedCluster(dragSession.clusterId(), delta);
         selectionState.selectTarget(dragSession.targetKey());
         layoutPreviewState.clearPreview();
         dragSession = null;

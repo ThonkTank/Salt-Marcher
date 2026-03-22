@@ -14,6 +14,8 @@ import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 
+import java.util.Objects;
+
 public final class DungeonCanvasWorkspace extends BorderPane {
 
     private final Canvas canvas = new Canvas();
@@ -70,34 +72,47 @@ public final class DungeonCanvasWorkspace extends BorderPane {
     }
 
     public void setMapModel(DungeonLayout mapModel) {
-        this.mapModel = mapModel == null ? DungeonLayout.empty() : mapModel;
-        redraw();
-        stateListener.run();
+        DungeonLayout nextMapModel = mapModel == null ? DungeonLayout.empty() : mapModel;
+        if (this.mapModel == nextMapModel) {
+            return;
+        }
+        this.mapModel = nextMapModel;
+        notifyViewChanged();
     }
 
     public void setViewMode(DungeonViewMode viewMode) {
-        this.viewMode = viewMode == null ? DungeonViewMode.GRID : viewMode;
-        redraw();
-        stateListener.run();
+        DungeonViewMode nextViewMode = viewMode == null ? DungeonViewMode.GRID : viewMode;
+        if (this.viewMode == nextViewMode) {
+            return;
+        }
+        this.viewMode = nextViewMode;
+        notifyViewChanged();
     }
 
     public void setPreviewMapModel(DungeonLayout previewMapModel) {
+        if (this.previewMapModel == previewMapModel) {
+            return;
+        }
         this.previewMapModel = previewMapModel;
-        redraw();
-        stateListener.run();
+        notifyViewChanged();
     }
 
     public void setSelectedTargetKey(String selectedTargetKey) {
+        if (Objects.equals(this.selectedTargetKey, selectedTargetKey)) {
+            return;
+        }
         this.selectedTargetKey = selectedTargetKey;
-        redraw();
-        stateListener.run();
+        notifyViewChanged();
     }
 
     public void setPreviewPaintShape(TileShape previewPaintShape, boolean deleteMode) {
-        this.previewPaintShape = previewPaintShape == null ? TileShape.empty() : previewPaintShape;
+        TileShape nextPreviewPaintShape = previewPaintShape == null ? TileShape.empty() : previewPaintShape;
+        if (this.previewPaintShape.equals(nextPreviewPaintShape) && this.previewPaintDeleteMode == deleteMode) {
+            return;
+        }
+        this.previewPaintShape = nextPreviewPaintShape;
         this.previewPaintDeleteMode = deleteMode;
-        redraw();
-        stateListener.run();
+        notifyViewChanged();
     }
 
     public void setInteractionHandler(DungeonCanvasInteractionHandler interactionHandler) {
@@ -111,8 +126,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
 
     public void resetView() {
         camera.reset();
-        redraw();
-        stateListener.run();
+        notifyViewChanged();
     }
 
     public double zoom() {
@@ -145,7 +159,6 @@ public final class DungeonCanvasWorkspace extends BorderPane {
     private void handleDrag(MouseEvent event) {
         if (activePointerCapture == PointerCapture.INTERACTION) {
             if (interactionHandler.handleDragged(pointerEvent(event))) {
-                redraw();
                 stateListener.run();
             }
             event.consume();
@@ -205,6 +218,11 @@ public final class DungeonCanvasWorkspace extends BorderPane {
                 camera,
                 editorMode,
                 new DungeonRenderState(selectedTargetKey, previewPaintShape, previewPaintDeleteMode));
+    }
+
+    private void notifyViewChanged() {
+        redraw();
+        stateListener.run();
     }
 
     private DungeonLayout renderedMapModel() {

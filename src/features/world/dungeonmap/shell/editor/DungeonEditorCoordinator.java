@@ -80,12 +80,16 @@ final class DungeonEditorCoordinator {
                 new MapReloadHandle());
         installBindings();
         sessionState.addListener(this::refreshFromSessionState);
-        selectionState.addListener(this::refreshFromInteractionState);
-        layoutPreviewState.addListener(this::refreshFromInteractionState);
-        paintPreviewState.addListener(this::refreshFromInteractionState);
-        corridorDraftState.addListener(this::refreshFromInteractionState);
+        selectionState.addListener(this::refreshSelectionState);
+        selectionState.addListener(this::refreshCorridorStatePane);
+        layoutPreviewState.addListener(this::refreshLayoutPreviewState);
+        paintPreviewState.addListener(this::refreshPaintPreviewState);
+        corridorDraftState.addListener(this::refreshCorridorStatePane);
         refreshFromSessionState();
-        refreshFromInteractionState();
+        refreshSelectionState();
+        refreshLayoutPreviewState();
+        refreshPaintPreviewState();
+        refreshCorridorStatePane();
     }
 
     void refreshFromMapState() {
@@ -114,11 +118,16 @@ final class DungeonEditorCoordinator {
         refreshCorridorStatePane();
     }
 
-    private void refreshFromInteractionState() {
+    private void refreshSelectionState() {
         workspace.setSelectedTargetKey(selectionState.selectedTargetKey());
+    }
+
+    private void refreshLayoutPreviewState() {
         workspace.setPreviewMapModel(layoutPreviewState.previewMap());
+    }
+
+    private void refreshPaintPreviewState() {
         workspace.setPreviewPaintShape(paintPreviewState.previewShape(), paintPreviewState.deleteMode());
-        refreshCorridorStatePane();
     }
 
     private void refreshCorridorStatePane() {

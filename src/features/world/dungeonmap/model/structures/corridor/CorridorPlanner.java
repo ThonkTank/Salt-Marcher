@@ -22,38 +22,56 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 final class CorridorPlanner {
 
+    private static final Logger LOGGER = Logger.getLogger(CorridorPlanner.class.getName());
+    private static final String PROFILE_PROPERTY = "saltmarcher.dungeonmap.corridorplanner.profile";
     private static final int PATHFINDING_GRID_PADDING = 6;
+    private static final int MAX_CORNER_PENALTY_TILES = 5;
+    private static final int MIN_CORNER_PENALTY_TILES = 2;
+    private static final int CORNER_PENALTY_RELAXATION_INTERVAL = 12;
+    private static final int MAX_EXIT_CANDIDATES_PER_ROOM = 12;
+    private static final int MAX_TARGETED_EXIT_CANDIDATES_PER_ROOM = 6;
+    private static final int MAX_EXIT_PAIR_PATH_EVALUATIONS = 10;
 
     private CorridorPlanner() {
         throw new AssertionError("No instances");
     }
 
     static CorridorPath plan(Corridor corridor, CorridorPlanningInput input) {
+        PlannerInstrumentation instrumentation = PlannerInstrumentation.createIfEnabled();
+        long startedAt = instrumentation == null ? 0L : System.nanoTime();
         GridRoute route = resolvedRoute(corridor, input);
-        if (corridor == null || input == null) {
-            return CorridorPath.empty(route);
-        }
-        List<Room> rooms = corridor.resolvedRooms(input);
-        if (rooms.size() < 2) {
-            return CorridorPath.empty(route);
-        }
+        try {
+            if (corridor == null || input == null) {
+                return CorridorPath.empty(route);
+            }
+            List<Room> rooms = corridor.resolvedRooms(input);
+            if (rooms.size() < 2) {
+                return CorridorPath.empty(route);
+            }
 
-        Map<Long, ResolvedCorridorDoorBinding> doorBindings = corridor.resolvedDoorBindings(input);
-        List<Point2i> waypointCells = corridor.resolvedWaypointCells(input);
-        PlannerContext context = new PlannerContext(rooms, waypointCells, doorBindings);
-        MutableNetwork network = bestNetwork(context);
+            Map<Long, ResolvedCorridorDoorBinding> doorBindings = corridor.resolvedDoorBindings(input);
+            List<Point2i> waypointCells = corridor.resolvedWaypointCells(input);
+            PlannerContext context = new PlannerContext(rooms, waypointCells, doorBindings, instrumentation);
+            MutableNetwork network = bestNetwork(context);
 
-        boolean routable = network.connectedRoomIds.size() == rooms.size()
-                && (!network.corridorCells.isEmpty() || !network.doors.isEmpty());
-        return new CorridorPath(
-                route,
-                new Floor(TileShape.fromAbsoluteCells(network.corridorCells)),
-                List.copyOf(network.doors.values()),
-                network.directlyAdjacentOnly,
-                routable);
+            boolean routable = network.connectedRoomIds.size() == rooms.size()
+                    && (!network.corridorCells.isEmpty() || !network.doors.isEmpty());
+            return new CorridorPath(
+                    route,
+                    new Floor(TileShape.fromAbsoluteCells(network.corridorCells)),
+                    List.copyOf(network.doors.values()),
+                    network.directlyAdjacentOnly,
+                    routable);
+        } finally {
+            if (instrumentation != null) {
+                instrumentation.logSummary(System.nanoTime() - startedAt);
+            }
+        }
     }
 
     private static MutableNetwork bestNetwork(PlannerContext context) {
@@ -64,7 +82,16 @@ final class CorridorPlanner {
                 continue;
             }
             MutableNetwork candidate = buildNetwork(seedRoom, context);
-            NetworkScore candidateScore = candidate.score(context.rooms());
+            PlannerInstrumentation instrumentation = context == null ? null : context.instrumentation();
+            long startedAt = instrumentation == null ? 0L : System.nanoTime();
+            NetworkScore candidateScore;
+            try {
+                candidateScore = candidate.score(context.rooms());
+            } finally {
+                if (instrumentation != null) {
+                    instrumentation.recordNetworkScore(System.nanoTime() - startedAt);
+                }
+            }
             if (bestScore == null || candidateScore.compareTo(bestScore) < 0) {
                 best = candidate;
                 bestScore = candidateScore;
@@ -120,7 +147,7 @@ final class CorridorPlanner {
     private static ConnectionPlan bestSeedWaypointPlan(Room seedRoom, PlannerContext context) {
         ConnectionPlan best = null;
         for (ExitCandidate exit : context.exitCandidates(seedRoom)) {
-            List<Point2i> path = pathThroughPoints(exit.outsideCell, context.waypointCells(), context.occupancy());
+            List<Point2i> path = pathThroughPoints(exit.outsideCell, context.waypointCells(), context);
             if (path.isEmpty()) {
                 continue;
             }
@@ -129,38 +156,30 @@ final class CorridorPlanner {
         return best;
     }
 
-    private static ConnectionPlan bestPlanForRoom(Room room, PlannerContext context, MutableNetwork network) {
-        ConnectionPlan best = null;
-        if (!network.corridorCells.isEmpty()) {
-            best = better(best, bestPlanToNetwork(room, network.corridorCells, context));
-        }
-        for (Room connectedRoom : context.rooms()) {
-            if (connectedRoom == null || !network.connectedRoomIds.contains(connectedRoom.roomId())) {
-                continue;
-            }
-            best = better(best, bestPlanToConnectedRoom(room, connectedRoom, context));
-        }
-        return best;
-    }
-
     private static ConnectionPlan bestNextPlan(PlannerContext context, MutableNetwork network) {
         ConnectionPlan best = null;
-        NetworkScore bestScore = null;
         for (Room room : context.rooms()) {
             if (room == null || room.roomId() == null || network.connectedRoomIds.contains(room.roomId())) {
                 continue;
             }
             for (ConnectionPlan candidate : connectionPlansForRoom(room, context, network)) {
-                NetworkScore candidateScore = network.scoreWith(context.rooms(), candidate);
-                if (bestScore == null
-                        || candidateScore.compareTo(bestScore) < 0
-                        || (candidateScore.compareTo(bestScore) == 0 && candidate.score().compareTo(best.score()) < 0)) {
+                if (compareLocalCandidate(candidate, best) < 0) {
                     best = candidate;
-                    bestScore = candidateScore;
                 }
             }
         }
         return best;
+    }
+
+    private static int compareLocalCandidate(ConnectionPlan candidate, ConnectionPlan currentBest) {
+        if (currentBest == null) {
+            return -1;
+        }
+        int routeComparison = candidate.score().compareTo(currentBest.score());
+        if (routeComparison != 0) {
+            return routeComparison;
+        }
+        return Boolean.compare(currentBest.directlyAdjacent(), candidate.directlyAdjacent());
     }
 
     private static List<ConnectionPlan> connectionPlansForRoom(Room room, PlannerContext context, MutableNetwork network) {
@@ -180,49 +199,14 @@ final class CorridorPlanner {
             if (joinNetwork != null) {
                 result.add(joinNetwork);
             }
-            for (Room connectedRoom : context.rooms()) {
-                if (connectedRoom == null || !network.connectedRoomIds.contains(connectedRoom.roomId())) {
-                    continue;
-                }
-                ConnectionPlan candidate = bestFreshPathPlan(room, connectedRoom, context);
-                if (candidate != null) {
-                    result.add(candidate);
-                }
-            }
         }
         return List.copyOf(result);
-    }
-
-    private static ConnectionPlan bestFreshPathPlan(Room room, Room connectedRoom, PlannerContext context) {
-        if (room == null || connectedRoom == null) {
-            return null;
-        }
-        ConnectionPlan best = null;
-        List<ExitCandidate> roomExits = context.exitCandidates(room);
-        List<ExitCandidate> connectedExits = context.exitCandidates(connectedRoom);
-        for (ExitCandidate exit : roomExits) {
-            for (ExitCandidate target : connectedExits) {
-                List<Point2i> targets = context.waypointCells().isEmpty()
-                        ? List.of(target.outsideCell)
-                        : append(context.waypointCells(), target.outsideCell);
-                List<Point2i> path = pathThroughPoints(exit.outsideCell, targets, context.occupancy());
-                if (path.isEmpty() && !exit.outsideCell.equals(target.outsideCell)) {
-                    continue;
-                }
-                best = better(best, new ConnectionPlan(
-                        room.roomId(),
-                        path,
-                        List.of(exit.door, target.door),
-                        path.isEmpty()));
-            }
-        }
-        return best;
     }
 
     private static ConnectionPlan bestPlanToNetwork(Room room, Set<Point2i> networkCells, PlannerContext context) {
         ConnectionPlan best = null;
         for (ExitCandidate exit : context.exitCandidates(room)) {
-            List<Point2i> path = shortestPathToAny(exit.outsideCell, networkCells, context.occupancy());
+            List<Point2i> path = lowestCostRouteToAny(exit.outsideCell, networkCells, context);
             if (path == null) {
                 continue;
             }
@@ -236,22 +220,189 @@ final class CorridorPlanner {
             return null;
         }
         ConnectionPlan best = directAdjacencyPlan(room, connectedRoom, context.doorBindings());
-        List<ExitCandidate> roomExits = context.exitCandidates(room);
-        List<ExitCandidate> connectedExits = context.exitCandidates(connectedRoom);
-        for (ExitCandidate exit : roomExits) {
-            for (ExitCandidate target : connectedExits) {
-                List<Point2i> path = shortestPath(exit.outsideCell, target.outsideCell, context.occupancy());
-                if (path == null) {
-                    continue;
-                }
-                best = better(best, new ConnectionPlan(
-                        room.roomId(),
-                        path,
-                        List.of(exit.door, target.door),
-                        path.isEmpty()));
+        for (ExitPairCandidate pair : preselectExitPairs(room, connectedRoom, context)) {
+            List<Point2i> path = normalizeSharedGapPath(
+                    pair.exit().outsideCell(),
+                    pair.target().outsideCell(),
+                    lowestCostRoute(pair.exit().outsideCell(), pair.target().outsideCell(), context));
+            if (path == null) {
+                continue;
             }
+            best = better(best, new ConnectionPlan(
+                    room.roomId(),
+                    path,
+                    List.of(pair.exit().door(), pair.target().door()),
+                    path.isEmpty()));
         }
         return best;
+    }
+
+    private static List<ExitPairCandidate> preselectExitPairs(
+            Room room,
+            Room connectedRoom,
+            PlannerContext context
+    ) {
+        Point2i roomCenter = room.floor().shape().centerCell();
+        Point2i connectedRoomCenter = connectedRoom.floor().shape().centerCell();
+        List<ExitCandidate> roomExits = targetedExitCandidates(room, connectedRoomCenter, context);
+        List<ExitCandidate> connectedExits = targetedExitCandidates(connectedRoom, roomCenter, context);
+        if (roomExits.isEmpty() || connectedExits.isEmpty()) {
+            return List.of();
+        }
+        List<ExitPairCandidate> rankedPairs = new ArrayList<>();
+        for (ExitCandidate exit : roomExits) {
+            for (ExitCandidate target : connectedExits) {
+                rankedPairs.add(new ExitPairCandidate(
+                        exit,
+                        target,
+                        exitPairHeuristic(exit, roomCenter, target, connectedRoomCenter, context.waypointCells())));
+            }
+        }
+        rankedPairs.sort(Comparator
+                .comparingInt(ExitPairCandidate::heuristicScore)
+                .thenComparingInt(pair -> pair.exit().roomCell().distanceTo(roomCenter) + pair.target().roomCell().distanceTo(connectedRoomCenter))
+                .thenComparingInt(pair -> pair.exit().outsideCell().distanceTo(connectedRoomCenter))
+                .thenComparingInt(pair -> pair.target().outsideCell().distanceTo(roomCenter))
+                .thenComparing(pair -> pair.exit().outsideCell(), Point2i.POINT_ORDER)
+                .thenComparing(pair -> pair.target().outsideCell(), Point2i.POINT_ORDER));
+        if (rankedPairs.size() <= MAX_EXIT_PAIR_PATH_EVALUATIONS) {
+            return List.copyOf(rankedPairs);
+        }
+        return List.copyOf(rankedPairs.subList(0, MAX_EXIT_PAIR_PATH_EVALUATIONS));
+    }
+
+    private static List<Point2i> normalizeSharedGapPath(Point2i start, Point2i target, List<Point2i> path) {
+        if (path == null) {
+            return null;
+        }
+        if (!path.isEmpty() || start == null || target == null || !start.equals(target)) {
+            return path;
+        }
+        return List.of(start);
+    }
+
+    private static List<ExitCandidate> targetedExitCandidates(Room room, Point2i targetCenter, PlannerContext context) {
+        if (room == null || targetCenter == null) {
+            return List.of();
+        }
+        Point2i roomCenter = room.floor().shape().centerCell();
+        List<ExitCandidate> allExits = context.allExitCandidates(room);
+        if (allExits.size() <= MAX_TARGETED_EXIT_CANDIDATES_PER_ROOM) {
+            return allExits;
+        }
+        return allExits.stream()
+                .sorted(Comparator
+                        .comparingInt((ExitCandidate candidate) -> targetedExitHeuristic(candidate, roomCenter, targetCenter))
+                        .thenComparingInt(candidate -> candidate.outsideCell().distanceTo(targetCenter))
+                        .thenComparing(candidate -> candidate.outsideCell(), Point2i.POINT_ORDER))
+                .limit(MAX_TARGETED_EXIT_CANDIDATES_PER_ROOM)
+                .toList();
+    }
+
+    private static int targetedExitHeuristic(ExitCandidate candidate, Point2i roomCenter, Point2i targetCenter) {
+        Point2i deltaToTarget = targetCenter.subtract(roomCenter);
+        Point2i candidateDelta = candidate.outsideCell().subtract(roomCenter);
+        int estimatedDistance = candidate.outsideCell().distanceTo(targetCenter);
+        int offAxisPenalty = Math.abs(cross(candidateDelta, deltaToTarget));
+        int inwardPenalty = dot(candidateDelta, deltaToTarget) < 0 ? roomCenter.distanceTo(targetCenter) : 0;
+        int estimatedCorners = estimatedCornersToTarget(candidate.outsideCell(), targetCenter);
+        return routeValue(estimatedDistance, estimatedCorners) + offAxisPenalty + inwardPenalty;
+    }
+
+    private static int dot(Point2i left, Point2i right) {
+        return left.x() * right.x() + left.y() * right.y();
+    }
+
+    private static int cross(Point2i left, Point2i right) {
+        return left.x() * right.y() - left.y() * right.x();
+    }
+
+    private static int exitPairHeuristic(
+            ExitCandidate exit,
+            Point2i roomCenter,
+            ExitCandidate target,
+            Point2i targetRoomCenter,
+            List<Point2i> waypointCells
+    ) {
+        int directDistance = exit.outsideCell().distanceTo(target.outsideCell());
+        int estimatedCorners = estimatedCornersViaWaypoints(exit, target, waypointCells);
+        int sidePenalty = exit.direction().equals(target.direction()) ? cornerPenaltyTiles(directDistance) : 0;
+        Point2i reverseTargetDirection = new Point2i(-target.direction().x(), -target.direction().y());
+        int approachPenalty = exit.direction().equals(reverseTargetDirection) ? 0 : 1;
+        int centerPenalty = exit.roomCell().distanceTo(roomCenter) + target.roomCell().distanceTo(targetRoomCenter);
+        int targetAlignmentPenalty = exit.outsideCell().distanceTo(targetRoomCenter) + target.outsideCell().distanceTo(roomCenter);
+        int waypointDistance = waypointRouteHeuristic(exit.outsideCell(), target.outsideCell(), waypointCells);
+        int estimatedDistance = directDistance + waypointDistance;
+        return routeValue(estimatedDistance, estimatedCorners + approachPenalty)
+                + sidePenalty
+                + centerPenalty
+                + targetAlignmentPenalty;
+    }
+
+    private static int estimatedCornersToTarget(Point2i start, Point2i target) {
+        if (start == null || target == null) {
+            return 0;
+        }
+        return start.x() == target.x() || start.y() == target.y() ? 0 : 1;
+    }
+
+    private static int estimatedCornersViaWaypoints(
+            ExitCandidate exit,
+            ExitCandidate target,
+            List<Point2i> waypointCells
+    ) {
+        List<Point2i> anchors = new ArrayList<>();
+        anchors.add(exit.outsideCell());
+        if (waypointCells != null) {
+            anchors.addAll(waypointCells);
+        }
+        anchors.add(target.outsideCell());
+        int corners = 0;
+        Point2i previousDirection = null;
+        for (int index = 1; index < anchors.size(); index++) {
+            Point2i from = anchors.get(index - 1);
+            Point2i to = anchors.get(index);
+            Point2i stepDirection = dominantDirection(from, to);
+            if (stepDirection == null) {
+                continue;
+            }
+            if (previousDirection != null && !previousDirection.equals(stepDirection)) {
+                corners++;
+            }
+            previousDirection = stepDirection;
+        }
+        if (previousDirection != null && !previousDirection.equals(exit.direction())) {
+            corners++;
+        }
+        Point2i reverseTargetDirection = new Point2i(-target.direction().x(), -target.direction().y());
+        if (previousDirection != null && !previousDirection.equals(reverseTargetDirection)) {
+            corners++;
+        }
+        return corners;
+    }
+
+    private static Point2i dominantDirection(Point2i from, Point2i to) {
+        if (from == null || to == null || from.equals(to)) {
+            return null;
+        }
+        int deltaX = to.x() - from.x();
+        int deltaY = to.y() - from.y();
+        if (Math.abs(deltaX) >= Math.abs(deltaY)) {
+            return new Point2i(Integer.compare(deltaX, 0), 0);
+        }
+        return new Point2i(0, Integer.compare(deltaY, 0));
+    }
+
+    private static int waypointRouteHeuristic(Point2i start, Point2i target, List<Point2i> waypointCells) {
+        if (waypointCells == null || waypointCells.isEmpty()) {
+            return 0;
+        }
+        int distance = start.distanceTo(waypointCells.getFirst());
+        for (int index = 1; index < waypointCells.size(); index++) {
+            distance += waypointCells.get(index - 1).distanceTo(waypointCells.get(index));
+        }
+        distance += waypointCells.getLast().distanceTo(target);
+        return distance;
     }
 
     private static ConnectionPlan directAdjacencyPlan(
@@ -289,6 +440,22 @@ final class CorridorPlanner {
             Map<Point2i, Long> occupancy,
             Map<Long, ResolvedCorridorDoorBinding> doorBindings
     ) {
+        List<ExitCandidate> allCandidates = collectExitCandidates(room, occupancy, doorBindings);
+        if (allCandidates.isEmpty()) {
+            return List.of();
+        }
+        ResolvedCorridorDoorBinding binding = doorBindings.get(room.roomId());
+        if (binding != null) {
+            return allCandidates;
+        }
+        return limitExitCandidates(allCandidates);
+    }
+
+    private static List<ExitCandidate> collectExitCandidates(
+            Room room,
+            Map<Point2i, Long> occupancy,
+            Map<Long, ResolvedCorridorDoorBinding> doorBindings
+    ) {
         if (room == null || room.roomId() == null) {
             return List.of();
         }
@@ -315,12 +482,85 @@ final class CorridorPlanner {
                         new Door(Set.of(VertexEdge.betweenCellAndStep(cell, direction)))));
             }
         }
-        result.sort(Comparator
+        List<ExitCandidate> sorted = result.stream()
+                .sorted(Comparator
                 .comparingInt((ExitCandidate candidate) -> candidate.outsideCell.x())
                 .thenComparingInt(candidate -> candidate.outsideCell.y())
                 .thenComparingInt(candidate -> candidate.direction.x())
-                .thenComparingInt(candidate -> candidate.direction.y()));
-        return List.copyOf(result);
+                .thenComparingInt(candidate -> candidate.direction.y()))
+                .toList();
+        return List.copyOf(sorted);
+    }
+
+    private static List<ExitCandidate> limitExitCandidates(List<ExitCandidate> candidates) {
+        if (candidates == null || candidates.isEmpty()) {
+            return List.of();
+        }
+        Map<Point2i, ExitCandidate> limited = new LinkedHashMap<>();
+        for (Point2i direction : Point2i.CARDINAL_STEPS) {
+            List<ExitCandidate> onSide = candidates.stream()
+                    .filter(candidate -> candidate.direction().equals(direction))
+                    .sorted(exitCandidateSideOrder(direction))
+                    .toList();
+            for (List<ExitCandidate> segment : contiguousExitSegments(onSide, direction)) {
+                addRepresentativeExit(limited, segment.getFirst());
+                addRepresentativeExit(limited, segment.get(segment.size() / 2));
+                addRepresentativeExit(limited, segment.getLast());
+            }
+        }
+        return limited.values().stream()
+                .limit(MAX_EXIT_CANDIDATES_PER_ROOM)
+                .sorted(Comparator
+                        .comparingInt((ExitCandidate candidate) -> candidate.outsideCell.x())
+                        .thenComparingInt(candidate -> candidate.outsideCell.y())
+                        .thenComparingInt(candidate -> candidate.direction.x())
+                        .thenComparingInt(candidate -> candidate.direction.y()))
+                .toList();
+    }
+
+    private static List<List<ExitCandidate>> contiguousExitSegments(List<ExitCandidate> candidates, Point2i direction) {
+        if (candidates.isEmpty()) {
+            return List.of();
+        }
+        List<List<ExitCandidate>> segments = new ArrayList<>();
+        List<ExitCandidate> current = new ArrayList<>();
+        ExitCandidate previous = null;
+        for (ExitCandidate candidate : candidates) {
+            if (previous != null && !isAdjacentOnSide(previous, candidate, direction)) {
+                segments.add(List.copyOf(current));
+                current = new ArrayList<>();
+            }
+            current.add(candidate);
+            previous = candidate;
+        }
+        segments.add(List.copyOf(current));
+        return List.copyOf(segments);
+    }
+
+    private static boolean isAdjacentOnSide(ExitCandidate previous, ExitCandidate current, Point2i direction) {
+        Point2i delta = current.roomCell().subtract(previous.roomCell());
+        if (direction.x() != 0) {
+            return delta.x() == 0 && Math.abs(delta.y()) == 1;
+        }
+        return delta.y() == 0 && Math.abs(delta.x()) == 1;
+    }
+
+    private static Comparator<ExitCandidate> exitCandidateSideOrder(Point2i direction) {
+        if (direction.x() != 0) {
+            return Comparator
+                    .comparingInt((ExitCandidate candidate) -> candidate.roomCell().y())
+                    .thenComparingInt(candidate -> candidate.roomCell().x());
+        }
+        return Comparator
+                .comparingInt((ExitCandidate candidate) -> candidate.roomCell().x())
+                .thenComparingInt(candidate -> candidate.roomCell().y());
+    }
+
+    private static void addRepresentativeExit(Map<Point2i, ExitCandidate> limited, ExitCandidate candidate) {
+        if (candidate == null || limited.size() >= MAX_EXIT_CANDIDATES_PER_ROOM) {
+            return;
+        }
+        limited.putIfAbsent(candidate.outsideCell(), candidate);
     }
 
     private static ConnectionPlan better(ConnectionPlan current, ConnectionPlan candidate) {
@@ -346,7 +586,7 @@ final class CorridorPlanner {
         return Map.copyOf(result);
     }
 
-    private static List<Point2i> pathThroughPoints(Point2i start, List<Point2i> targets, Map<Point2i, Long> roomOccupancy) {
+    private static List<Point2i> pathThroughPoints(Point2i start, List<Point2i> targets, PlannerContext context) {
         if (start == null || targets == null || targets.isEmpty()) {
             return List.of();
         }
@@ -356,7 +596,7 @@ final class CorridorPlanner {
             if (target == null) {
                 continue;
             }
-            List<Point2i> leg = shortestPath(current, target, roomOccupancy);
+            List<Point2i> leg = lowestCostRoute(current, target, context);
             if (leg == null) {
                 return List.of();
             }
@@ -370,95 +610,124 @@ final class CorridorPlanner {
         return List.copyOf(result);
     }
 
-    private static List<Point2i> shortestPathToAny(Point2i start, Set<Point2i> goals, Map<Point2i, Long> roomOccupancy) {
-        return shortestPath(start, goals, roomOccupancy);
+    private static List<Point2i> lowestCostRouteToAny(Point2i start, Set<Point2i> goals, PlannerContext context) {
+        return lowestCostRoute(start, goals, context);
     }
 
-    private static List<Point2i> shortestPath(Point2i start, Point2i goal, Map<Point2i, Long> roomOccupancy) {
+    private static List<Point2i> lowestCostRoute(Point2i start, Point2i goal, PlannerContext context) {
         if (goal == null) {
             return null;
         }
-        return shortestPath(start, Set.of(goal), roomOccupancy);
+        return lowestCostRoute(start, Set.of(goal), context);
     }
 
-    private static List<Point2i> shortestPath(Point2i start, Set<Point2i> goals, Map<Point2i, Long> roomOccupancy) {
-        if (start == null || goals == null || goals.isEmpty()) {
-            return null;
+    private static List<Point2i> lowestCostRoute(Point2i start, Set<Point2i> goals, PlannerContext context) {
+        PlannerInstrumentation instrumentation = context == null ? null : context.instrumentation();
+        long startedAt = instrumentation == null ? 0L : System.nanoTime();
+        if (instrumentation != null) {
+            instrumentation.recordRouteSearchCall();
         }
-        List<Point2i> goalList = goals.stream()
-                .filter(Objects::nonNull)
-                .filter(goal -> !roomOccupancy.containsKey(goal) || start.equals(goal))
-                .toList();
-        if (goalList.isEmpty()) {
-            return null;
-        }
-        if (goalList.contains(start)) {
-            return List.of();
-        }
-        if (roomOccupancy.containsKey(start)) {
-            return null;
-        }
-        PathGrid grid = buildPathfindingGrid(roomOccupancy.keySet(), start, goalList, PATHFINDING_GRID_PADDING);
-        record QueueNode(PathStep step, int corners) {}
-        PriorityQueue<QueueNode> open = new PriorityQueue<>(Comparator
-                .comparingInt(QueueNode::corners)
-                .thenComparingInt(node -> node.step.distance())
-                .thenComparingInt(node -> distanceToClosestGoal(node.step.point(), goalList)));
-        Map<PathStep, Integer> bestCornersByStep = new HashMap<>();
-        Map<PathStep, PathStep> previous = new HashMap<>();
-        PathStep startStep = new PathStep(start, -1, 0);
-        open.add(new QueueNode(startStep, 0));
-        bestCornersByStep.put(startStep, 0);
+        try {
+            if (start == null || goals == null || goals.isEmpty() || context == null) {
+                return null;
+            }
+            Map<Point2i, Long> roomOccupancy = context.occupancy();
+            List<Point2i> goalList = goals.stream()
+                    .filter(Objects::nonNull)
+                    .filter(goal -> !roomOccupancy.containsKey(goal) || start.equals(goal))
+                    .toList();
+            if (goalList.isEmpty()) {
+                return null;
+            }
+            if (goalList.contains(start)) {
+                return List.of();
+            }
+            if (roomOccupancy.containsKey(start)) {
+                return null;
+            }
+            PathGrid grid = context.pathfindingSpace().gridFor(start, goalList, PATHFINDING_GRID_PADDING);
+            record QueueNode(PathNode node) {}
+            PriorityQueue<QueueNode> open = new PriorityQueue<>(Comparator
+                    .comparing((QueueNode queueNode) -> queueNode.node().score())
+                    .thenComparingInt(queueNode -> distanceToClosestGoal(queueNode.node().state().point(), goalList)));
+            // The visit identity is cell + incoming direction only. Distance stays in the score so a slightly longer
+            // variant of the same state cannot force arbitrary re-expansion unless it improves the dominant score.
+            Map<PathState, RouteCost> bestCostByState = new HashMap<>();
+            Map<PathState, PathState> previous = new HashMap<>();
+            PathNode startNode = new PathNode(new PathState(start, -1), new RouteCost(0, 0));
+            open.add(new QueueNode(startNode));
+            bestCostByState.put(startNode.state(), startNode.score());
 
-        int maxAllowedDistance = Integer.MAX_VALUE;
-        PathStep bestGoalStep = null;
-        PathScore bestGoalScore = null;
-        while (!open.isEmpty()) {
-            QueueNode node = open.poll();
-            Integer currentCorners = bestCornersByStep.get(node.step());
-            if (currentCorners == null || currentCorners != node.corners()) {
-                continue;
+            PathNode bestGoalNode = null;
+            RouteCost bestGoalCost = null;
+            while (!open.isEmpty()) {
+                PathNode node = open.poll().node();
+                RouteCost currentBestCost = bestCostByState.get(node.state());
+                if (currentBestCost == null || !currentBestCost.equals(node.score())) {
+                    continue;
+                }
+                if (goalList.contains(node.state().point())) {
+                    if (bestGoalCost == null || node.score().compareTo(bestGoalCost) < 0) {
+                        bestGoalNode = node;
+                        bestGoalCost = node.score();
+                    }
+                    continue;
+                }
+                for (int directionIndex = 0; directionIndex < Point2i.CARDINAL_STEPS.size(); directionIndex++) {
+                    Point2i next = node.state().point().add(Point2i.CARDINAL_STEPS.get(directionIndex));
+                    boolean nextIsGoal = goalList.contains(next);
+                    if (!grid.isPassable(next) && !nextIsGoal) {
+                        continue;
+                    }
+                    int nextDistance = node.score().distance() + 1;
+                    int nextCorners = node.state().directionIndex() < 0 || node.state().directionIndex() == directionIndex
+                            ? node.score().corners()
+                            : node.score().corners() + 1;
+                    PathState nextState = new PathState(next, directionIndex);
+                    RouteCost nextCost = new RouteCost(nextDistance, nextCorners);
+                    if (!improves(bestCostByState.get(nextState), nextCost)) {
+                        continue;
+                    }
+                    int optimisticRemainingDistance = distanceToClosestGoal(next, goalList);
+                    RouteCost optimisticCost = nextCost.optimisticCompletion(optimisticRemainingDistance);
+                    if (bestGoalCost != null && !improves(bestGoalCost, optimisticCost)) {
+                        continue;
+                    }
+                    bestCostByState.put(nextState, nextCost);
+                    previous.put(nextState, node.state());
+                    open.add(new QueueNode(new PathNode(nextState, nextCost)));
+                }
             }
-            PathScore currentScore = new PathScore(node.step.distance(), node.corners());
-            if (goalList.contains(node.step.point())) {
-                if (bestGoalStep == null) {
-                    int shortestPossibleDistance = node.step.distance();
-                    maxAllowedDistance = shortestPossibleDistance + toleratedExtraDistance(shortestPossibleDistance);
-                }
-                if (bestGoalScore == null || currentScore.compareTo(bestGoalScore) < 0) {
-                    bestGoalStep = node.step();
-                    bestGoalScore = currentScore;
-                }
-                continue;
-            }
-            for (int directionIndex = 0; directionIndex < Point2i.CARDINAL_STEPS.size(); directionIndex++) {
-                Point2i next = node.step.point().add(Point2i.CARDINAL_STEPS.get(directionIndex));
-                boolean nextIsGoal = goalList.contains(next);
-                if (!grid.isPassable(next) && !nextIsGoal) {
-                    continue;
-                }
-                int nextDistance = node.step.distance() + 1;
-                if (nextDistance > maxAllowedDistance
-                        || nextDistance + distanceToClosestGoal(next, goalList) > maxAllowedDistance) {
-                    continue;
-                }
-                int nextCorners = node.step.directionIndex() < 0 || node.step.directionIndex() == directionIndex
-                        ? node.corners()
-                        : node.corners() + 1;
-                PathStep nextStep = new PathStep(next, directionIndex, nextDistance);
-                Integer bestKnownCorners = bestCornersByStep.get(nextStep);
-                if (bestKnownCorners != null && bestKnownCorners <= nextCorners) {
-                    continue;
-                }
-                bestCornersByStep.put(nextStep, nextCorners);
-                previous.put(nextStep, node.step());
-                open.add(new QueueNode(nextStep, nextCorners));
+            return bestGoalNode == null ? null : reconstructPath(previous, bestGoalNode.state());
+        } finally {
+            if (instrumentation != null) {
+                instrumentation.recordRouteSearchNanos(System.nanoTime() - startedAt);
             }
         }
-        return bestGoalStep == null ? null : reconstructPath(previous, bestGoalStep);
     }
 
-    private static PathGrid buildPathfindingGrid(Set<Point2i> blocked, Point2i start, Iterable<Point2i> goals, int padding) {
+    private static PathfindingSpace buildPathfindingSpace(Set<Point2i> blocked) {
+        if (blocked == null || blocked.isEmpty()) {
+            return PathfindingSpace.empty();
+        }
+        int minX = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE;
+        int minY = Integer.MAX_VALUE;
+        int maxY = Integer.MIN_VALUE;
+        for (Point2i point : blocked) {
+            minX = Math.min(minX, point.x());
+            maxX = Math.max(maxX, point.x());
+            minY = Math.min(minY, point.y());
+            maxY = Math.max(maxY, point.y());
+        }
+        boolean[][] blockedCells = new boolean[maxX - minX + 1][maxY - minY + 1];
+        for (Point2i point : blocked) {
+            blockedCells[point.x() - minX][point.y() - minY] = true;
+        }
+        return new PathfindingSpace(minX, minY, maxX, maxY, blockedCells);
+    }
+
+    private static PathGrid buildPathfindingGrid(PathfindingSpace blockedSpace, Point2i start, Iterable<Point2i> goals, int padding) {
         int minX = start.x() - padding;
         int maxX = start.x() + padding;
         int minY = start.y() - padding;
@@ -469,24 +738,13 @@ final class CorridorPlanner {
             minY = Math.min(minY, goal.y() - padding);
             maxY = Math.max(maxY, goal.y() + padding);
         }
-        for (Point2i point : blocked) {
-            minX = Math.min(minX, point.x() - 2);
-            maxX = Math.max(maxX, point.x() + 2);
-            minY = Math.min(minY, point.y() - 2);
-            maxY = Math.max(maxY, point.y() + 2);
+        if (!blockedSpace.isEmpty()) {
+            minX = Math.min(minX, blockedSpace.minX() - 2);
+            maxX = Math.max(maxX, blockedSpace.maxX() + 2);
+            minY = Math.min(minY, blockedSpace.minY() - 2);
+            maxY = Math.max(maxY, blockedSpace.maxY() + 2);
         }
-        boolean[][] passable = new boolean[maxX - minX + 1][maxY - minY + 1];
-        for (boolean[] row : passable) {
-            java.util.Arrays.fill(row, true);
-        }
-        for (Point2i point : blocked) {
-            int x = point.x() - minX;
-            int y = point.y() - minY;
-            if (x >= 0 && x < passable.length && y >= 0 && y < passable[x].length) {
-                passable[x][y] = false;
-            }
-        }
-        return new PathGrid(minX, minY, passable);
+        return new PathGrid(minX, minY, maxX, maxY, blockedSpace);
     }
 
     private static int distanceToClosestGoal(Point2i point, List<Point2i> goals) {
@@ -497,7 +755,7 @@ final class CorridorPlanner {
         return best;
     }
 
-    private static List<Point2i> reconstructPath(Map<PathStep, PathStep> previous, PathStep current) {
+    private static List<Point2i> reconstructPath(Map<PathState, PathState> previous, PathState current) {
         ArrayDeque<Point2i> path = new ArrayDeque<>();
         path.addFirst(current.point());
         while (previous.containsKey(current)) {
@@ -507,8 +765,8 @@ final class CorridorPlanner {
         return List.copyOf(path);
     }
 
-    private static PathScore score(List<Point2i> path) {
-        return new PathScore(pathLength(path), cornerCount(path));
+    private static RouteCost score(List<Point2i> path) {
+        return new RouteCost(pathLength(path), cornerCount(path));
     }
 
     private static List<Point2i> append(List<Point2i> points, Point2i last) {
@@ -537,42 +795,99 @@ final class CorridorPlanner {
         return corners;
     }
 
-    private static int toleratedExtraDistance(int shortestDistance) {
-        if (shortestDistance <= 0) {
-            return 0;
+    private static boolean improves(RouteCost bestKnownCost, RouteCost candidateCost) {
+        return bestKnownCost == null || candidateCost.compareTo(bestKnownCost) < 0;
+    }
+
+    private static int compareRoutePriority(int distance, int corners, int otherDistance, int otherCorners) {
+        int valueComparison = Integer.compare(routeValue(distance, corners), routeValue(otherDistance, otherCorners));
+        if (valueComparison != 0) {
+            return valueComparison;
         }
-        return Math.max(1, (int) Math.ceil(shortestDistance * 0.10d));
+        int cornerComparison = Integer.compare(corners, otherCorners);
+        if (cornerComparison != 0) {
+            return cornerComparison;
+        }
+        return Integer.compare(distance, otherDistance);
+    }
+
+    private static int routeValue(int distance, int corners) {
+        return distance + corners * cornerPenaltyTiles(distance);
+    }
+
+    private static int cornerPenaltyTiles(int distance) {
+        if (distance <= 0) {
+            return MAX_CORNER_PENALTY_TILES;
+        }
+        int relaxedPenalty = MAX_CORNER_PENALTY_TILES - (distance / CORNER_PENALTY_RELAXATION_INTERVAL);
+        return Math.max(MIN_CORNER_PENALTY_TILES, relaxedPenalty);
+    }
+
+    private record ExitPairCandidate(ExitCandidate exit, ExitCandidate target, int heuristicScore) {
     }
 
     private record ExitCandidate(Point2i roomCell, Point2i outsideCell, Point2i direction, Door door) {
     }
 
     private record ConnectionPlan(long roomId, List<Point2i> pathCells, List<Door> doors, boolean directlyAdjacent) {
-        private PathScore score() {
+        private RouteCost score() {
             return CorridorPlanner.score(pathCells);
         }
     }
 
-    private record PathScore(int distance, int corners) implements Comparable<PathScore> {
+    private record RouteCost(int distance, int corners) implements Comparable<RouteCost> {
+        private RouteCost optimisticCompletion(int remainingDistance) {
+            return new RouteCost(distance + Math.max(0, remainingDistance), corners);
+        }
+
         @Override
-        public int compareTo(PathScore other) {
-            int cornerComparison = Integer.compare(corners, other.corners);
-            if (cornerComparison != 0) {
-                return cornerComparison;
-            }
-            return Integer.compare(distance, other.distance);
+        public int compareTo(RouteCost other) {
+            // Each corner must buy enough tile savings to offset its current route-length penalty.
+            return compareRoutePriority(distance, corners, other.distance, other.corners);
         }
     }
 
-    private record PathGrid(int minX, int minY, boolean[][] passable) {
+    private record PathGrid(int minX, int minY, int maxX, int maxY, PathfindingSpace blockedSpace) {
         private boolean isPassable(Point2i point) {
+            return point.x() >= minX
+                    && point.x() <= maxX
+                    && point.y() >= minY
+                    && point.y() <= maxY
+                    && !blockedSpace.isBlocked(point);
+        }
+    }
+
+    private record PathfindingSpace(int minX, int minY, int maxX, int maxY, boolean[][] blockedCells) {
+        private static PathfindingSpace empty() {
+            return new PathfindingSpace(0, 0, -1, -1, new boolean[0][0]);
+        }
+
+        private boolean isEmpty() {
+            return blockedCells.length == 0;
+        }
+
+        private boolean isBlocked(Point2i point) {
+            if (isEmpty()) {
+                return false;
+            }
             int x = point.x() - minX;
             int y = point.y() - minY;
-            return x >= 0 && x < passable.length && y >= 0 && y < passable[x].length && passable[x][y];
+            return x >= 0
+                    && x < blockedCells.length
+                    && y >= 0
+                    && y < blockedCells[x].length
+                    && blockedCells[x][y];
+        }
+
+        private PathGrid gridFor(Point2i start, Iterable<Point2i> goals, int padding) {
+            return buildPathfindingGrid(this, start, goals, padding);
         }
     }
 
-    private record PathStep(Point2i point, int directionIndex, int distance) {
+    private record PathState(Point2i point, int directionIndex) {
+    }
+
+    private record PathNode(PathState state, RouteCost score) {
     }
 
     private static final class MutableNetwork {
@@ -595,18 +910,6 @@ final class CorridorPlanner {
         private NetworkScore score(List<Room> rooms) {
             return NetworkScore.forNetwork(rooms, corridorCells, doors.values());
         }
-
-        private NetworkScore scoreWith(List<Room> rooms, ConnectionPlan candidate) {
-            Set<Point2i> candidateCells = new LinkedHashSet<>(corridorCells);
-            candidateCells.addAll(candidate.pathCells());
-            Map<VertexEdge, Door> candidateDoors = new LinkedHashMap<>(doors);
-            for (Door door : candidate.doors()) {
-                for (VertexEdge edge : door.edges()) {
-                    candidateDoors.putIfAbsent(edge, new Door(Set.of(edge)));
-                }
-            }
-            return NetworkScore.forNetwork(rooms, candidateCells, candidateDoors.values());
-        }
     }
 
     private static final class PlannerContext {
@@ -614,17 +917,25 @@ final class CorridorPlanner {
         private final List<Point2i> waypointCells;
         private final Map<Long, ResolvedCorridorDoorBinding> doorBindings;
         private final Map<Point2i, Long> occupancy;
+        private final PathfindingSpace pathfindingSpace;
+        private final PlannerInstrumentation instrumentation;
+        private final Map<Long, List<ExitCandidate>> allExitCandidatesByRoomId = new HashMap<>();
         private final Map<Long, List<ExitCandidate>> exitCandidatesByRoomId = new HashMap<>();
 
         private PlannerContext(
                 List<Room> rooms,
                 List<Point2i> waypointCells,
-                Map<Long, ResolvedCorridorDoorBinding> doorBindings
+                Map<Long, ResolvedCorridorDoorBinding> doorBindings,
+                PlannerInstrumentation instrumentation
         ) {
             this.rooms = rooms == null ? List.of() : List.copyOf(rooms);
             this.waypointCells = waypointCells == null ? List.of() : List.copyOf(waypointCells);
             this.doorBindings = doorBindings == null ? Map.of() : Map.copyOf(doorBindings);
             this.occupancy = roomOccupancy(this.rooms);
+            // Future performance track only: if drag-preview profiling shows long-corridor pressure,
+            // this occupancy/grid setup is the first candidate for per-drag-session reuse.
+            this.pathfindingSpace = buildPathfindingSpace(this.occupancy.keySet());
+            this.instrumentation = instrumentation;
         }
 
         private List<Room> rooms() {
@@ -643,13 +954,82 @@ final class CorridorPlanner {
             return occupancy;
         }
 
+        private PathfindingSpace pathfindingSpace() {
+            return pathfindingSpace;
+        }
+
+        private PlannerInstrumentation instrumentation() {
+            return instrumentation;
+        }
+
         private List<ExitCandidate> exitCandidates(Room room) {
             if (room == null || room.roomId() == null) {
                 return List.of();
             }
             return exitCandidatesByRoomId.computeIfAbsent(
                     room.roomId(),
-                    ignored -> CorridorPlanner.exitCandidates(room, occupancy, doorBindings));
+                    ignored -> {
+                        List<ExitCandidate> candidates = CorridorPlanner.exitCandidates(room, occupancy, doorBindings);
+                        if (instrumentation != null) {
+                            instrumentation.recordExitCandidateCount(room.roomId(), candidates.size());
+                        }
+                        return candidates;
+                    });
+        }
+
+        private List<ExitCandidate> allExitCandidates(Room room) {
+            if (room == null || room.roomId() == null) {
+                return List.of();
+            }
+            return allExitCandidatesByRoomId.computeIfAbsent(
+                    room.roomId(),
+                    ignored -> CorridorPlanner.collectExitCandidates(room, occupancy, doorBindings));
+        }
+    }
+
+    private static final class PlannerInstrumentation {
+        private final Map<Long, Integer> exitCandidateCountByRoomId = new LinkedHashMap<>();
+        private int routeSearchCalls = 0;
+        private long routeSearchNanos = 0L;
+        private int networkScoreCalls = 0;
+        private long networkScoreNanos = 0L;
+
+        private static PlannerInstrumentation createIfEnabled() {
+            return Boolean.getBoolean(PROFILE_PROPERTY) ? new PlannerInstrumentation() : null;
+        }
+
+        private void recordExitCandidateCount(Long roomId, int count) {
+            if (roomId != null) {
+                exitCandidateCountByRoomId.put(roomId, count);
+            }
+        }
+
+        private void recordRouteSearchCall() {
+            routeSearchCalls++;
+        }
+
+        private void recordRouteSearchNanos(long nanos) {
+            routeSearchNanos += nanos;
+        }
+
+        private void recordNetworkScore(long nanos) {
+            networkScoreCalls++;
+            networkScoreNanos += nanos;
+        }
+
+        private void logSummary(long totalPlanNanos) {
+            LOGGER.log(
+                    Level.INFO,
+                    () -> "CorridorPlanner profile: totalMs=" + formatMillis(totalPlanNanos)
+                            + ", routeSearchCalls=" + routeSearchCalls
+                            + ", routeSearchMs=" + formatMillis(routeSearchNanos)
+                            + ", networkScoreCalls=" + networkScoreCalls
+                            + ", networkScoreMs=" + formatMillis(networkScoreNanos)
+                            + ", exitCandidatesByRoomId=" + exitCandidateCountByRoomId);
+        }
+
+        private static String formatMillis(long nanos) {
+            return String.format(java.util.Locale.ROOT, "%.3f", nanos / 1_000_000.0d);
         }
     }
 
@@ -661,6 +1041,10 @@ final class CorridorPlanner {
             int corridorCellCount,
             int cornerCount
     ) implements Comparable<NetworkScore> {
+        private int routeValue() {
+            return CorridorPlanner.routeValue(corridorCellCount, cornerCount);
+        }
+
         private static NetworkScore forNetwork(
                 List<Room> rooms,
                 Set<Point2i> corridorCells,
@@ -677,19 +1061,15 @@ final class CorridorPlanner {
                     occupancy.put(cell, room.roomId());
                 }
             }
-            Map<Object, Set<Object>> adjacency = new LinkedHashMap<>();
-            for (Point2i cell : corridorCells) {
-                link(adjacency, cell, cell);
-                for (Point2i step : Point2i.CARDINAL_STEPS) {
-                    Point2i neighbor = cell.add(step);
-                    if (corridorCells.contains(neighbor)) {
-                        link(adjacency, cell, neighbor);
-                    }
+            List<Set<Point2i>> corridorComponents = corridorComponents(corridorCells);
+            Map<Point2i, Integer> componentIndexByCell = new HashMap<>();
+            for (int componentIndex = 0; componentIndex < corridorComponents.size(); componentIndex++) {
+                for (Point2i cell : corridorComponents.get(componentIndex)) {
+                    componentIndexByCell.put(cell, componentIndex);
                 }
             }
-            for (Long roomId : roomsById.keySet()) {
-                link(adjacency, roomNode(roomId), roomNode(roomId));
-            }
+            Map<Integer, Map<Long, Set<Point2i>>> attachmentCellsByComponentAndRoom = new HashMap<>();
+            Set<RoomPair> directRoomPairs = new HashSet<>();
             Iterable<Door> safeDoors = doors == null ? List.<Door>of() : doors;
             for (Door door : safeDoors) {
                 for (VertexEdge edge : door.edges()) {
@@ -710,11 +1090,17 @@ final class CorridorPlanner {
                         }
                     }
                     if (firstRoom != null && secondRoom != null) {
-                        link(adjacency, roomNode(firstRoom), roomNode(secondRoom));
+                        directRoomPairs.add(RoomPair.of(firstRoom, secondRoom));
                         continue;
                     }
                     if (firstRoom != null && corridorCell != null) {
-                        link(adjacency, roomNode(firstRoom), corridorCell);
+                        Integer componentIndex = componentIndexByCell.get(corridorCell);
+                        if (componentIndex != null) {
+                            attachmentCellsByComponentAndRoom
+                                    .computeIfAbsent(componentIndex, ignored -> new HashMap<>())
+                                    .computeIfAbsent(firstRoom, ignored -> new LinkedHashSet<>())
+                                    .add(corridorCell);
+                        }
                     }
                 }
             }
@@ -724,9 +1110,13 @@ final class CorridorPlanner {
             List<Long> orderedRoomIds = roomsById.keySet().stream().sorted().toList();
             for (int index = 0; index < orderedRoomIds.size(); index++) {
                 Long sourceRoomId = orderedRoomIds.get(index);
-                Map<Object, Integer> distances = bfs(adjacency, roomNode(sourceRoomId));
                 for (int otherIndex = index + 1; otherIndex < orderedRoomIds.size(); otherIndex++) {
-                    Integer distance = distances.get(roomNode(orderedRoomIds.get(otherIndex)));
+                    Long targetRoomId = orderedRoomIds.get(otherIndex);
+                    Integer distance = connectionDistance(
+                            sourceRoomId,
+                            targetRoomId,
+                            directRoomPairs,
+                            attachmentCellsByComponentAndRoom);
                     if (distance == null) {
                         unreachablePairCount++;
                         continue;
@@ -754,6 +1144,10 @@ final class CorridorPlanner {
             if (compare != 0) {
                 return compare;
             }
+            compare = compareRoutePriority(corridorCellCount, cornerCount, other.corridorCellCount, other.cornerCount);
+            if (compare != 0) {
+                return compare;
+            }
             compare = Integer.compare(distanceSum, other.distanceSum);
             if (compare != 0) {
                 return compare;
@@ -762,40 +1156,80 @@ final class CorridorPlanner {
             if (compare != 0) {
                 return compare;
             }
-            compare = Integer.compare(cornerCount, other.cornerCount);
-            if (compare != 0) {
-                return compare;
-            }
-            return Integer.compare(corridorCellCount, other.corridorCellCount);
+            return Integer.compare(routeValue(), other.routeValue());
         }
     }
 
-    private static Object roomNode(Long roomId) {
-        return "room:" + roomId;
+    private static Integer connectionDistance(
+            Long sourceRoomId,
+            Long targetRoomId,
+            Set<RoomPair> directRoomPairs,
+            Map<Integer, Map<Long, Set<Point2i>>> attachmentCellsByComponentAndRoom
+    ) {
+        if (directRoomPairs.contains(RoomPair.of(sourceRoomId, targetRoomId))) {
+            return 1;
+        }
+        Integer best = null;
+        for (Map<Long, Set<Point2i>> attachmentsByRoom : attachmentCellsByComponentAndRoom.values()) {
+            Set<Point2i> sourceAttachments = attachmentsByRoom.get(sourceRoomId);
+            Set<Point2i> targetAttachments = attachmentsByRoom.get(targetRoomId);
+            if (sourceAttachments == null || targetAttachments == null) {
+                continue;
+            }
+            int distance = minimumAttachmentDistance(sourceAttachments, targetAttachments);
+            if (best == null || distance < best) {
+                best = distance;
+            }
+        }
+        return best;
     }
 
-    private static void link(Map<Object, Set<Object>> adjacency, Object left, Object right) {
-        adjacency.computeIfAbsent(left, ignored -> new LinkedHashSet<>()).add(right);
-        adjacency.computeIfAbsent(right, ignored -> new LinkedHashSet<>()).add(left);
+    private static int minimumAttachmentDistance(Set<Point2i> sourceAttachments, Set<Point2i> targetAttachments) {
+        int best = Integer.MAX_VALUE;
+        for (Point2i source : sourceAttachments) {
+            for (Point2i target : targetAttachments) {
+                best = Math.min(best, source.distanceTo(target) + 2);
+            }
+        }
+        return best;
     }
 
-    private static Map<Object, Integer> bfs(Map<Object, Set<Object>> adjacency, Object start) {
-        Map<Object, Integer> distanceByNode = new LinkedHashMap<>();
-        ArrayDeque<Object> queue = new ArrayDeque<>();
-        queue.add(start);
-        distanceByNode.put(start, 0);
-        while (!queue.isEmpty()) {
-            Object current = queue.removeFirst();
-            int currentDistance = distanceByNode.get(current);
-            for (Object neighbor : adjacency.getOrDefault(current, Set.of())) {
-                if (distanceByNode.containsKey(neighbor)) {
-                    continue;
+    private static List<Set<Point2i>> corridorComponents(Set<Point2i> corridorCells) {
+        if (corridorCells == null || corridorCells.isEmpty()) {
+            return List.of();
+        }
+        List<Set<Point2i>> components = new ArrayList<>();
+        Set<Point2i> unvisited = new LinkedHashSet<>(corridorCells);
+        while (!unvisited.isEmpty()) {
+            Point2i start = unvisited.iterator().next();
+            Set<Point2i> component = new LinkedHashSet<>();
+            ArrayDeque<Point2i> queue = new ArrayDeque<>();
+            queue.add(start);
+            unvisited.remove(start);
+            while (!queue.isEmpty()) {
+                Point2i cell = queue.removeFirst();
+                component.add(cell);
+                for (Point2i step : Point2i.CARDINAL_STEPS) {
+                    Point2i neighbor = cell.add(step);
+                    if (unvisited.remove(neighbor)) {
+                        queue.addLast(neighbor);
+                    }
                 }
-                distanceByNode.put(neighbor, currentDistance + 1);
-                queue.addLast(neighbor);
             }
+            components.add(Set.copyOf(component));
         }
-        return distanceByNode;
+        return List.copyOf(components);
+    }
+
+    private record RoomPair(Long firstRoomId, Long secondRoomId) {
+        private static RoomPair of(Long firstRoomId, Long secondRoomId) {
+            if (firstRoomId == null || secondRoomId == null) {
+                return new RoomPair(firstRoomId, secondRoomId);
+            }
+            return firstRoomId <= secondRoomId
+                    ? new RoomPair(firstRoomId, secondRoomId)
+                    : new RoomPair(secondRoomId, firstRoomId);
+        }
     }
 
     private static int componentCount(Set<Point2i> corridorCells) {

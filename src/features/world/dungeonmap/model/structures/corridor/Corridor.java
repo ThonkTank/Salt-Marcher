@@ -1,7 +1,7 @@
 package features.world.dungeonmap.model.structures.corridor;
 
-import features.world.dungeonmap.model.objects.CorridorPath;
 import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.objects.CorridorPath;
 import features.world.dungeonmap.model.structures.room.Room;
 
 import java.util.ArrayList;
@@ -190,6 +190,45 @@ public final class Corridor {
         return resolved(corridorId, mapId, updated, updatedBindings, path);
     }
 
+    /**
+     * Applies a room-delete membership rewrite for a single removed room.
+     *
+     * <p>This is the corridor-owned rewrite rule for delete orchestration. The caller decides whether the corridor
+     * is affected and in which sequence deletes are applied; the corridor decides how its membership and bindings
+     * change once that removal is in scope.</p>
+     */
+    public Corridor rewrittenForDeletedRoom(Long deletedRoomId) {
+        return withRemovedRoom(deletedRoomId);
+    }
+
+    /**
+     * Applies a room-merge membership rewrite for a merged room set.
+     *
+     * <p>This is the corridor-owned rewrite rule for merge orchestration. The caller supplies the already-resolved
+     * replacement room id; the corridor owns membership deduplication and door-binding cleanup.</p>
+     */
+    public Corridor rewrittenForMergedRooms(Set<Long> mergedRoomIds, Long replacementRoomId) {
+        return withMergedRooms(mergedRoomIds, replacementRoomId);
+    }
+
+    /**
+     * Rewrites a split source room using corridor-local decision facts only.
+     *
+     * <p>The caller prepares a {@link CorridorSplitRewriteInput} with the split source room, candidate fragments,
+     * and the relevant centers of the corridor's remaining connected rooms. The corridor then owns the fragment
+     * choice without reaching back into broader application or layout state.</p>
+     */
+    public Corridor rewrittenForSplit(CorridorSplitRewriteInput input) {
+        if (input == null || !input.isUsableFor(this)) {
+            return this;
+        }
+        Room replacement = chooseBestSplitFragment(input);
+        if (replacement == null || replacement.roomId() == null) {
+            return this;
+        }
+        return withReplacedRoom(input.originalRoomId(), replacement.roomId());
+    }
+
     public Corridor withInsertedWaypoint(int index, CorridorWaypointBinding waypoint) {
         return withBindings(bindings.withInsertedWaypoint(index, waypoint));
     }
@@ -291,6 +330,8 @@ public final class Corridor {
     }
 
     public Corridor replanned(CorridorPlanningInput input) {
+        // Preview drags call into this through DungeonLayout.withTranslatedCluster() on repeated pointer updates.
+        // Planner quality fixes are only acceptable here when they preserve the current performance budget.
         return withPath(CorridorPlanner.plan(this, input));
     }
 
@@ -385,6 +426,36 @@ public final class Corridor {
         return previousInput.clusterCenter(clusterId) == null ? null : clusterId;
     }
 
+    private Room chooseBestSplitFragment(CorridorSplitRewriteInput input) {
+        Room bestFragment = null;
+        SplitFragmentScore bestScore = null;
+        for (Room fragment : input.fragments()) {
+            if (fragment == null || fragment.roomId() == null) {
+                continue;
+            }
+            SplitFragmentScore score = splitFragmentScore(fragment, input.connectedRoomCenters());
+            if (bestScore == null || score.compareTo(bestScore) < 0) {
+                bestFragment = fragment;
+                bestScore = score;
+            }
+        }
+        return bestFragment;
+    }
+
+    private SplitFragmentScore splitFragmentScore(Room fragment, List<Point2i> connectedRoomCenters) {
+        Point2i fragmentCenter = fragment.floor().shape().centerCell();
+        int nearestRoomDistance = connectedRoomCenters.stream()
+                .filter(Objects::nonNull)
+                .mapToInt(fragmentCenter::distanceTo)
+                .min()
+                .orElse(Integer.MAX_VALUE);
+        int groupDistance = connectedRoomCenters.stream()
+                .filter(Objects::nonNull)
+                .mapToInt(fragmentCenter::distanceTo)
+                .sum();
+        return new SplitFragmentScore(nearestRoomDistance, groupDistance);
+    }
+
     private static List<RoomLink> deriveRoomLinks(List<Long> roomIds) {
         List<RoomLink> links = new ArrayList<>();
         for (int index = 1; index < roomIds.size(); index++) {
@@ -433,6 +504,17 @@ public final class Corridor {
             }
         }
         return List.copyOf(result);
+    }
+
+    private record SplitFragmentScore(int nearestRoomDistance, int groupDistance) implements Comparable<SplitFragmentScore> {
+        @Override
+        public int compareTo(SplitFragmentScore other) {
+            int nearest = Integer.compare(nearestRoomDistance, other.nearestRoomDistance);
+            if (nearest != 0) {
+                return nearest;
+            }
+            return Integer.compare(groupDistance, other.groupDistance);
+        }
     }
 
     public record RoomLink(long fromRoomId, long toRoomId) {

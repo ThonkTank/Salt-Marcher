@@ -1,9 +1,9 @@
 package features.world.dungeonmap.application.corridor;
 
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.ClusterRewrite;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
+import features.world.dungeonmap.model.structures.corridor.CorridorSplitRewriteInput;
 import features.world.dungeonmap.model.structures.room.Room;
 
 import java.util.LinkedHashMap;
@@ -24,6 +24,7 @@ public final class DungeonCorridorRoomRewriteService {
             return corridorsById == null ? Map.of() : Map.copyOf(corridorsById);
         }
         Map<Long, Corridor> result = new LinkedHashMap<>(corridorsById);
+        // Membership rewrite order stays application-owned; each individual rewrite rule lives on Corridor.
         applyMergedRoomRewrite(result, rewrite);
         applyDeletedRoomRewrite(result, rewrite.deletedRoomIds());
         applySplitRoomRewrite(layout, result, rewrite);
@@ -54,13 +55,11 @@ public final class DungeonCorridorRoomRewriteService {
         Map<Long, Corridor> result = new LinkedHashMap<>(corridorsById);
         for (Long corridorId : layout.corridorIdsAffectedBy(Set.of(originalRoomId), Set.of())) {
             Corridor corridor = result.get(corridorId);
-            if (corridor == null || !corridor.connectsRoom(originalRoomId)) {
+            if (corridor == null) {
                 continue;
             }
-            Room target = chooseBestFragment(layout, corridor, originalRoomId, fragments);
-            if (target != null && target.roomId() != null) {
-                result.put(corridorId, corridor.withReplacedRoom(originalRoomId, target.roomId()));
-            }
+            result.put(corridorId, corridor.rewrittenForSplit(
+                    CorridorSplitRewriteInput.forCorridor(corridor, layout, originalRoomId, fragments)));
         }
         return Map.copyOf(result);
     }
@@ -75,7 +74,7 @@ public final class DungeonCorridorRoomRewriteService {
             if (corridor == null || !corridor.isAffectedByRoomRewrite(rewrite.mergedRoomIds())) {
                 continue;
             }
-            entry.setValue(corridor.withMergedRooms(rewrite.mergedRoomIds(), replacementRoomId));
+            entry.setValue(corridor.rewrittenForMergedRooms(rewrite.mergedRoomIds(), replacementRoomId));
         }
     }
 
@@ -89,7 +88,7 @@ public final class DungeonCorridorRoomRewriteService {
                 if (corridor == null || !corridor.connectsRoom(roomId)) {
                     continue;
                 }
-                entry.setValue(corridor.withRemovedRoom(roomId));
+                entry.setValue(corridor.rewrittenForDeletedRoom(roomId));
             }
         }
     }
@@ -106,50 +105,13 @@ public final class DungeonCorridorRoomRewriteService {
             Long originalRoomId = entry.getKey();
             for (Long corridorId : layout.corridorIdsAffectedBy(Set.of(originalRoomId), Set.of())) {
                 Corridor corridor = corridorsById.get(corridorId);
-                if (corridor == null || !corridor.connectsRoom(originalRoomId)) {
+                if (corridor == null) {
                     continue;
                 }
-                Room target = chooseBestFragment(layout, corridor, originalRoomId, entry.getValue());
-                if (target != null && target.roomId() != null) {
-                    corridorsById.put(corridorId, corridor.withReplacedRoom(originalRoomId, target.roomId()));
-                }
+                corridorsById.put(corridorId, corridor.rewrittenForSplit(
+                        CorridorSplitRewriteInput.forCorridor(corridor, layout, originalRoomId, entry.getValue())));
             }
         }
-    }
-
-    private static Room chooseBestFragment(
-            DungeonLayout layout,
-            Corridor corridor,
-            Long originalRoomId,
-            List<Room> fragments
-    ) {
-        Room bestFragment = null;
-        FragmentScore bestScore = null;
-        for (Room fragment : fragments) {
-            if (fragment == null || fragment.roomId() == null) {
-                continue;
-            }
-            Point2i fragmentCenter = fragment.floor().shape().centerCell();
-            int nearestRoomDistance = corridor.roomIds().stream()
-                    .filter(roomId -> !Objects.equals(roomId, originalRoomId))
-                    .map(layout::findRoom)
-                    .filter(Objects::nonNull)
-                    .mapToInt(room -> fragmentCenter.distanceTo(room.floor().shape().centerCell()))
-                    .min()
-                    .orElse(Integer.MAX_VALUE);
-            int groupDistance = corridor.roomIds().stream()
-                    .filter(roomId -> !Objects.equals(roomId, originalRoomId))
-                    .map(layout::findRoom)
-                    .filter(Objects::nonNull)
-                    .mapToInt(room -> fragmentCenter.distanceTo(room.floor().shape().centerCell()))
-                    .sum();
-            FragmentScore score = new FragmentScore(nearestRoomDistance, groupDistance);
-            if (bestScore == null || score.compareTo(bestScore) < 0) {
-                bestFragment = fragment;
-                bestScore = score;
-            }
-        }
-        return bestFragment;
     }
 
     private static Long mergedReplacementRoomId(ClusterRewrite rewrite) {
@@ -159,16 +121,5 @@ public final class DungeonCorridorRoomRewriteService {
                 .filter(Objects::nonNull)
                 .collect(LinkedHashSet::new, Set::add, Set::addAll);
         return replacementIds.size() == 1 ? replacementIds.iterator().next() : null;
-    }
-
-    private record FragmentScore(int nearestRoomDistance, int groupDistance) implements Comparable<FragmentScore> {
-        @Override
-        public int compareTo(FragmentScore other) {
-            int nearest = Integer.compare(nearestRoomDistance, other.nearestRoomDistance);
-            if (nearest != 0) {
-                return nearest;
-            }
-            return Integer.compare(groupDistance, other.groupDistance);
-        }
     }
 }
