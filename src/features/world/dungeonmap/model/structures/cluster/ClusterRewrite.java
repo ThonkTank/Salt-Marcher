@@ -21,7 +21,8 @@ public record ClusterRewrite(
         Map<Long, Long> replacedRoomIds,
         Set<Long> mergedRoomIds,
         Set<Long> deletedClusterIds,
-        Map<Long, List<Room>> splitFragmentsBySourceRoomId
+        Map<Long, List<Room>> splitFragmentsBySourceRoomId,
+        boolean topologyChanged
 ) {
     public ClusterRewrite {
         rooms = rooms == null ? List.of() : List.copyOf(rooms);
@@ -38,7 +39,8 @@ public record ClusterRewrite(
     }
 
     public boolean isNoOp() {
-        return !deletesCluster()
+        return !topologyChanged
+                && !deletesCluster()
                 && deletedRoomIds.isEmpty()
                 && replacedRoomIds.isEmpty()
                 && mergedRoomIds.isEmpty()
