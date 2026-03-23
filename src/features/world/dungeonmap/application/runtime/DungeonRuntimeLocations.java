@@ -32,7 +32,7 @@ final class DungeonRuntimeLocations {
             long stairId = parseStairId(position.locationKey());
             return tile == null || stairId <= 0 ? null : DungeonRuntimeLocation.stairExit(stairId, tile);
         }
-        if (position.locationType() == CampaignDungeonLocationType.CORRIDOR_COMPONENT && position.locationKey() != null && position.locationKey().startsWith("transition:")) {
+        if (position.locationType() == CampaignDungeonLocationType.TRANSITION && position.locationKey() != null) {
             Long transitionId = parseTransitionId(position.locationKey());
             return transitionId == null ? null : DungeonRuntimeLocation.transition(transitionId);
         }
@@ -119,7 +119,7 @@ final class DungeonRuntimeLocations {
                     headingValue);
         }
         if (location instanceof DungeonRuntimeLocation.Transition transition) {
-            return new DungeonPositionRef(mapId, 0, CampaignDungeonLocationType.CORRIDOR_COMPONENT, null, null, formatTransition(transition.transitionId()), headingValue);
+            return new DungeonPositionRef(mapId, 0, CampaignDungeonLocationType.TRANSITION, null, null, formatTransition(transition.transitionId()), headingValue);
         }
         if (location instanceof DungeonRuntimeLocation.CorridorComponent corridorComponent) {
             return new DungeonPositionRef(mapId, 0, CampaignDungeonLocationType.CORRIDOR_COMPONENT, null, null, corridorComponent.componentId(), headingValue);

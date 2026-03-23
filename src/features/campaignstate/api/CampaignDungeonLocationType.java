@@ -5,5 +5,6 @@ public enum CampaignDungeonLocationType {
     CORRIDOR,
     CORRIDOR_COMPONENT,
     TILE,
-    STAIR_EXIT
+    STAIR_EXIT,
+    TRANSITION
 }

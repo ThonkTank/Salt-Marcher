@@ -37,6 +37,7 @@ public final class DungeonRuntimeTransitionCatalog {
         if (layout == null || network == null || network.floor() == null) {
             return List.of();
         }
+        // All corridors in a network share the same z-level.
         Integer levelZ = network.corridorIds().stream()
                 .filter(id -> id != null)
                 .map(layout::levelForCorridor)
@@ -82,7 +83,6 @@ public final class DungeonRuntimeTransitionCatalog {
             return "Overworld-Feld " + overworld.tileId();
         }
         if (destination instanceof DungeonTransitionDestination.DungeonMapDestination dungeon) {
-            String mapName = layout == null ? null : layout.name();
             if (dungeon.transitionId() == null) {
                 return "Dungeon " + dungeon.mapId();
             }

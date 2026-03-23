@@ -15,6 +15,7 @@ public final class DungeonTransitionDraftState {
     private boolean bidirectional;
     private Long targetDungeonMapId;
     private Long targetTransitionId;
+    private Long targetOverworldMapId;
     private Long targetOverworldTileId;
     private Long preparedTransitionId;
     private String placementError;
@@ -49,6 +50,10 @@ public final class DungeonTransitionDraftState {
         return targetOverworldTileId;
     }
 
+    public Long targetOverworldMapId() {
+        return targetOverworldMapId;
+    }
+
     public Long preparedTransitionId() {
         return preparedTransitionId;
     }
@@ -62,13 +67,13 @@ public final class DungeonTransitionDraftState {
         }
         return switch (destinationType) {
             case OVERWORLD_TILE -> targetOverworldTileId == null || targetOverworldTileId <= 0
-                    ? "Overworld-Tile-ID eintragen"
+                    ? "Overworld-Ziel wählen"
                     : "Zum Platzieren Feld anklicken";
             case DUNGEON_MAP -> targetDungeonMapId == null || targetDungeonMapId <= 0
                     ? "Zielkarte wählen"
                     : bidirectional || (targetTransitionId != null && targetTransitionId > 0)
                     ? "Zum Platzieren Feld anklicken"
-                    : "Ziel-Übergang eintragen";
+                    : "Ziel-Übergang wählen";
         };
     }
 
@@ -91,6 +96,10 @@ public final class DungeonTransitionDraftState {
         }
         this.destinationType = next;
         this.preparedTransitionId = null;
+        this.targetTransitionId = null;
+        this.targetDungeonMapId = null;
+        this.targetOverworldMapId = null;
+        this.targetOverworldTileId = null;
         placementError = null;
         notifyListeners();
     }
@@ -100,6 +109,9 @@ public final class DungeonTransitionDraftState {
             return;
         }
         this.bidirectional = bidirectional;
+        if (bidirectional) {
+            this.targetTransitionId = null;
+        }
         placementError = null;
         notifyListeners();
     }
@@ -109,6 +121,7 @@ public final class DungeonTransitionDraftState {
             return;
         }
         this.targetDungeonMapId = targetDungeonMapId;
+        this.targetTransitionId = null;
         placementError = null;
         notifyListeners();
     }
@@ -122,10 +135,12 @@ public final class DungeonTransitionDraftState {
         notifyListeners();
     }
 
-    public void setTargetOverworldTileId(Long targetOverworldTileId) {
-        if (Objects.equals(this.targetOverworldTileId, targetOverworldTileId)) {
+    public void setOverworldTarget(Long targetOverworldMapId, Long targetOverworldTileId) {
+        if (Objects.equals(this.targetOverworldMapId, targetOverworldMapId)
+                && Objects.equals(this.targetOverworldTileId, targetOverworldTileId)) {
             return;
         }
+        this.targetOverworldMapId = targetOverworldMapId;
         this.targetOverworldTileId = targetOverworldTileId;
         placementError = null;
         notifyListeners();
@@ -163,7 +178,7 @@ public final class DungeonTransitionDraftState {
                 destinationType,
                 targetDungeonMapId,
                 targetTransitionId,
-                null,
+                targetOverworldMapId,
                 targetOverworldTileId,
                 bidirectional);
     }

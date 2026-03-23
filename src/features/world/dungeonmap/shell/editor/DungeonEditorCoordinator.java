@@ -4,6 +4,8 @@ import features.world.dungeonmap.application.corridor.DungeonCorridorEditService
 import features.world.dungeonmap.application.stair.DungeonStairEditService;
 import features.world.dungeonmap.application.transition.DungeonTransitionEditRequest;
 import features.world.dungeonmap.application.transition.DungeonTransitionEditService;
+import features.world.dungeonmap.application.transition.DungeonTransitionTargetCatalogService;
+import features.world.dungeonmap.application.transition.DungeonTransitionTargetSummary;
 import features.world.dungeonmap.application.room.DungeonBoundaryEditService;
 import features.world.dungeonmap.application.room.DungeonClusterMoveService;
 import features.world.dungeonmap.application.room.DungeonRoomNarrationService;
@@ -34,6 +36,8 @@ import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.DungeonStairDraftState;
 import features.world.dungeonmap.state.DungeonTransitionDraftState;
+import features.world.api.OverworldTransitionTargetSummary;
+import features.world.api.WorldReadApi;
 import ui.async.UiAsyncTasks;
 import ui.async.UiErrorReporter;
 
@@ -51,6 +55,7 @@ final class DungeonEditorCoordinator {
     private final DungeonEditorSessionState sessionState;
     private final DungeonRoomNarrationService roomNarrationService;
     private final DungeonMapDropdownController mapDropdownController;
+    private final DungeonTransitionTargetCatalogService transitionTargetCatalogService = new DungeonTransitionTargetCatalogService();
     private final EditorSelectionState selectionState = new EditorSelectionState();
     private final EditorLayoutPreviewState layoutPreviewState = new EditorLayoutPreviewState();
     private final EditorPaintPreviewState paintPreviewState = new EditorPaintPreviewState();
@@ -61,6 +66,12 @@ final class DungeonEditorCoordinator {
     private final StairInteractionController stairInteractionController;
     private final TransitionInteractionController transitionInteractionController;
     private final DungeonEditorGridInteractionController interactionController;
+    private List<DungeonTransitionTargetSummary> targetTransitions = List.of();
+    private List<OverworldTransitionTargetSummary> overworldTargets = List.of();
+    private Long loadedTargetTransitionMapId;
+    private boolean overworldTargetsLoaded;
+    private long targetTransitionRequestSequence;
+    private long overworldTargetRequestSequence;
     private DungeonEditorTool previousTool = DungeonEditorTool.SELECT;
     private Long previousMapId;
 
@@ -152,6 +163,7 @@ final class DungeonEditorCoordinator {
         corridorDraftState.addListener(this::refreshCorridorStatePane);
         stairDraftState.addListener(this::refreshStairStatePane);
         transitionDraftState.addListener(this::refreshTransitionStatePane);
+        transitionDraftState.addListener(this::refreshTransitionTargetOptions);
         refreshFromSessionState();
         refreshSelectionState();
         refreshLayoutPreviewState();
@@ -159,6 +171,7 @@ final class DungeonEditorCoordinator {
         refreshCorridorStatePane();
         refreshStairStatePane();
         refreshTransitionStatePane();
+        refreshTransitionTargetOptions();
         refreshRoomNarrationStatePane();
     }
 
@@ -174,6 +187,10 @@ final class DungeonEditorCoordinator {
         workspace.setProjectionLevel(mapState.activeProjectionLevel());
         if (mapChanged && sessionState.selectedTool() == DungeonEditorTool.STAIR_CREATE) {
             stairDraftState.resetForLevel(mapState.activeProjectionLevel());
+        }
+        if (mapChanged) {
+            loadedTargetTransitionMapId = null;
+            targetTransitions = List.of();
         }
         refreshFromSessionState();
         refreshRoomNarrationStatePane();
@@ -202,8 +219,11 @@ final class DungeonEditorCoordinator {
         statePane.setOnTransitionDestinationTypeChanged(transitionDraftState::setDestinationType);
         statePane.setOnTransitionBidirectionalChanged(transitionDraftState::setBidirectional);
         statePane.setOnTransitionTargetMapChanged(transitionDraftState::setTargetDungeonMapId);
-        statePane.setOnTransitionTargetTransitionIdChanged(transitionDraftState::setTargetTransitionId);
-        statePane.setOnTransitionTargetOverworldTileChanged(transitionDraftState::setTargetOverworldTileId);
+        statePane.setOnTransitionTargetTransitionChanged(transitionDraftState::setTargetTransitionId);
+        statePane.setOnTransitionTargetOverworldChanged(target ->
+                transitionDraftState.setOverworldTarget(
+                        target == null ? null : target.mapId(),
+                        target == null ? null : target.tileId()));
         statePane.setOnPreparedTransitionSelected(transitionDraftState::setPreparedTransitionId);
         workspace.setInteractionHandler(interactionController);
     }
@@ -225,6 +245,7 @@ final class DungeonEditorCoordinator {
         refreshCorridorStatePane();
         refreshStairStatePane();
         refreshTransitionStatePane();
+        refreshTransitionTargetOptions();
         previousTool = selectedTool;
     }
 
@@ -295,9 +316,12 @@ final class DungeonEditorCoordinator {
                     transitionDraftState.bidirectional(),
                     transitionDraftState.targetDungeonMapId(),
                     transitionDraftState.targetTransitionId(),
+                    transitionDraftState.targetOverworldMapId(),
                     transitionDraftState.targetOverworldTileId(),
                     transitionDraftState.preparedTransitionId(),
                     mapState.maps(),
+                    targetTransitions,
+                    overworldTargets,
                     preparedTransitionCards(),
                     summary,
                     summary));
@@ -309,9 +333,12 @@ final class DungeonEditorCoordinator {
                 transitionDraftState.bidirectional(),
                 transitionDraftState.targetDungeonMapId(),
                 transitionDraftState.targetTransitionId(),
+                transitionDraftState.targetOverworldMapId(),
                 transitionDraftState.targetOverworldTileId(),
                 transitionDraftState.preparedTransitionId(),
                 targetMapChoices(),
+                targetTransitions,
+                overworldTargets,
                 preparedTransitionCards(),
                 transitionSummary(),
                 transitionDraftState.displayStatus()));
@@ -402,6 +429,80 @@ final class DungeonEditorCoordinator {
             case OVERWORLD_TILE -> "Overworld-Übergang";
             case DUNGEON_MAP -> transitionDraftState.bidirectional() ? "Dungeon-Übergang (zweiseitig)" : "Dungeon-Übergang";
         };
+    }
+
+    private void refreshTransitionTargetOptions() {
+        if (sessionState.selectedTool() != DungeonEditorTool.TRANSITION_CREATE) {
+            return;
+        }
+        if (transitionDraftState.preparedTransitionId() != null && transitionDraftState.preparedTransitionId() > 0) {
+            return;
+        }
+        if (transitionDraftState.destinationType() == DungeonTransitionEditRequest.DestinationType.OVERWORLD_TILE) {
+            loadOverworldTargetsIfNeeded();
+            if (!targetTransitions.isEmpty()) {
+                targetTransitions = List.of();
+                loadedTargetTransitionMapId = null;
+            }
+            return;
+        }
+        if (transitionDraftState.bidirectional()) {
+            if (!targetTransitions.isEmpty()) {
+                targetTransitions = List.of();
+                loadedTargetTransitionMapId = null;
+            }
+            return;
+        }
+        Long targetMapId = transitionDraftState.targetDungeonMapId();
+        if (targetMapId == null || targetMapId <= 0) {
+            if (!targetTransitions.isEmpty()) {
+                targetTransitions = List.of();
+                loadedTargetTransitionMapId = null;
+            }
+            return;
+        }
+        if (Objects.equals(loadedTargetTransitionMapId, targetMapId)) {
+            return;
+        }
+        long requestId = ++targetTransitionRequestSequence;
+        UiAsyncTasks.submit(
+                () -> transitionTargetCatalogService.loadPlacedTargets(targetMapId),
+                results -> {
+                    if (requestId != targetTransitionRequestSequence
+                            || !Objects.equals(transitionDraftState.targetDungeonMapId(), targetMapId)
+                            || transitionDraftState.bidirectional()
+                            || transitionDraftState.destinationType() != DungeonTransitionEditRequest.DestinationType.DUNGEON_MAP) {
+                        return;
+                    }
+                    targetTransitions = results == null ? List.of() : results;
+                    loadedTargetTransitionMapId = targetMapId;
+                    boolean selectionStillValid = targetTransitions.stream()
+                            .anyMatch(target -> target != null && Objects.equals(target.transitionId(), transitionDraftState.targetTransitionId()));
+                    if (!selectionStillValid && transitionDraftState.targetTransitionId() != null) {
+                        transitionDraftState.setTargetTransitionId(null);
+                    }
+                    refreshTransitionStatePane();
+                },
+                throwable -> UiErrorReporter.reportBackgroundFailure("DungeonEditorCoordinator.loadTargetTransitions()", throwable));
+    }
+
+    private void loadOverworldTargetsIfNeeded() {
+        if (overworldTargetsLoaded) {
+            return;
+        }
+        long requestId = ++overworldTargetRequestSequence;
+        UiAsyncTasks.submit(
+                WorldReadApi::loadOverworldTransitionTargets,
+                results -> {
+                    if (requestId != overworldTargetRequestSequence
+                            || transitionDraftState.destinationType() != DungeonTransitionEditRequest.DestinationType.OVERWORLD_TILE) {
+                        return;
+                    }
+                    overworldTargets = results == null ? List.of() : results;
+                    overworldTargetsLoaded = true;
+                    refreshTransitionStatePane();
+                },
+                throwable -> UiErrorReporter.reportBackgroundFailure("DungeonEditorCoordinator.loadOverworldTargets()", throwable));
     }
 
     private final class MapReloadHandle implements DungeonMapDropdownController.ReloadHandle {
