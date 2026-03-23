@@ -16,6 +16,7 @@ public final class DungeonStairDraftState {
     private int inputLevel;
     private List<Integer> exitLevels = List.of();
     private String statusMessage = MIN_LEVELS_MESSAGE;
+    private String placementError;
 
     public void addListener(Runnable listener) {
         if (listener != null) {
@@ -39,6 +40,10 @@ public final class DungeonStairDraftState {
         return statusMessage;
     }
 
+    public String displayStatus() {
+        return placementError == null || placementError.isBlank() ? statusMessage : placementError;
+    }
+
     public boolean canPlace() {
         return exitLevels.size() >= 2;
     }
@@ -54,6 +59,7 @@ public final class DungeonStairDraftState {
         inputLevel = level;
         exitLevels = nextExitLevels;
         statusMessage = nextStatusMessage;
+        placementError = null;
         notifyListeners();
     }
 
@@ -65,6 +71,7 @@ public final class DungeonStairDraftState {
         if (Objects.equals(statusMessage, DUPLICATE_MESSAGE)) {
             statusMessage = statusFor(exitLevels);
         }
+        placementError = null;
         notifyListeners();
     }
 
@@ -86,6 +93,7 @@ public final class DungeonStairDraftState {
         updated.add(inputLevel);
         exitLevels = List.copyOf(updated);
         statusMessage = statusFor(exitLevels);
+        placementError = null;
         notifyListeners();
     }
 
@@ -97,16 +105,37 @@ public final class DungeonStairDraftState {
         updated.remove(Integer.valueOf(level));
         exitLevels = List.copyOf(updated);
         statusMessage = statusFor(exitLevels);
+        placementError = null;
+        notifyListeners();
+    }
+
+    public void showPlacementError(String message) {
+        String nextMessage = message == null || message.isBlank() ? null : message.trim();
+        if (Objects.equals(placementError, nextMessage)) {
+            return;
+        }
+        placementError = nextMessage;
+        notifyListeners();
+    }
+
+    public void clearPlacementError() {
+        if (placementError == null) {
+            return;
+        }
+        placementError = null;
         notifyListeners();
     }
 
     public void clear() {
-        if (inputLevel == 0 && exitLevels.isEmpty() && Objects.equals(statusMessage, MIN_LEVELS_MESSAGE)) {
+        if (inputLevel == 0 && exitLevels.isEmpty()
+                && Objects.equals(statusMessage, MIN_LEVELS_MESSAGE)
+                && placementError == null) {
             return;
         }
         inputLevel = 0;
         exitLevels = List.of();
         statusMessage = MIN_LEVELS_MESSAGE;
+        placementError = null;
         notifyListeners();
     }
 

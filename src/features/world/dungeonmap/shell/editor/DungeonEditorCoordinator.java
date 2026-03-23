@@ -243,7 +243,7 @@ final class DungeonEditorCoordinator {
                 new DungeonEditorStatePane.StairDraftCard(
                         stairDraftState.inputLevel(),
                         stairDraftState.exitLevels(),
-                        stairDraftState.statusMessage(),
+                        stairDraftState.displayStatus(),
                         true));
     }
 
