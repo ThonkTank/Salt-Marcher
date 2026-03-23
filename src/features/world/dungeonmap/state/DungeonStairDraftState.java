@@ -9,7 +9,7 @@ public final class DungeonStairDraftState {
 
     private static final String READY_MESSAGE = "Zum Platzieren Feld anklicken";
     private static final String MIN_LEVELS_MESSAGE = "Mindestens zwei verschiedene Ebenen";
-    private static final String DUPLICATE_MESSAGE = "Ausgänge dürfen nicht doppelt sein.";
+    private static final String DUPLICATE_MESSAGE = "Ausgänge dürfen nicht doppelt sein";
 
     private final List<Runnable> listeners = new CopyOnWriteArrayList<>();
 
