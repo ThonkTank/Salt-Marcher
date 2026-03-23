@@ -1,4 +1,4 @@
-package features.world.quarantine.dungeonmap.foundation.db;
+package features.world.dungeonmap.persistence;
 
 import java.sql.Connection;
 import java.sql.SQLException;
