@@ -238,14 +238,6 @@ public final class RoomCluster {
         return hasOverlappingRooms;
     }
 
-    public boolean coversExactlyKnownCells() {
-        return roomsByCell.keySet().equals(cells);
-    }
-
-    public boolean isValidPartition() {
-        return !hasOverlappingRooms && coversExactlyKnownCells();
-    }
-
     public boolean canMergeRooms(Set<Long> roomIds) {
         Set<Long> selected = normalizedRoomIds(roomIds);
         if (selected.size() < 2 || !roomsById.keySet().containsAll(selected)) {

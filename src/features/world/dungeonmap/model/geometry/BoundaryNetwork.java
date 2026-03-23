@@ -32,10 +32,6 @@ public final class BoundaryNetwork extends VertexPath {
         return new BoundaryNetwork(edges);
     }
 
-    public BoundaryNetwork mergedWith(BoundaryNetwork other) {
-        return other == null ? this : recreate(withAddedEdges(other.edges()).edges());
-    }
-
     @Override
     protected BoundaryNetwork recreate(Collection<VertexEdge> edges) {
         return new BoundaryNetwork(edges);

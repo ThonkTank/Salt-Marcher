@@ -389,9 +389,7 @@ public final class DungeonLayout {
         return traversableCells;
     }
 
-    public Set<CubePoint> traversableCubeCells() {
-        return traversableCubeCells;
-    }
+
 
     public boolean isTraversableCell(Point2i cell) {
         return cell != null && traversableCells.contains(cell);

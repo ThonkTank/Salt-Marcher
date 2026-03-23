@@ -111,10 +111,6 @@ public final class TileShape {
         return relativeTiles.size();
     }
 
-    public boolean isSingleTile() {
-        return size() == 1;
-    }
-
     public boolean overlaps(TileShape other) {
         if (other == null) {
             return false;

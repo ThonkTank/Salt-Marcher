@@ -34,10 +34,6 @@ public record Point2i(int x, int y) {
         return other == null ? this : new Point2i(x + other.x, y + other.y);
     }
 
-    public Point2i translate(int deltaX, int deltaY) {
-        return new Point2i(x + deltaX, y + deltaY);
-    }
-
     public Point2i subtract(Point2i other) {
         return other == null ? this : new Point2i(x - other.x, y - other.y);
     }

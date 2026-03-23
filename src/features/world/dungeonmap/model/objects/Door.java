@@ -37,9 +37,7 @@ public final class Door extends VertexPath {
     }
 
     public enum TraversalState {
-        OPEN(false),
-        CLOSED(true),
-        LOCKED(true);
+        CLOSED(true);
 
         private final boolean blocksTraversal;
 

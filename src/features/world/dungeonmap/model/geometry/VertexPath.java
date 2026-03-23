@@ -41,16 +41,6 @@ public abstract class VertexPath {
         return Set.copyOf(result);
     }
 
-    public final Set<Point2i> branchVertices() {
-        Set<Point2i> result = new LinkedHashSet<>();
-        for (Point2i vertex : vertices()) {
-            if (degreeOf(vertex) > 2) {
-                result.add(vertex);
-            }
-        }
-        return Set.copyOf(result);
-    }
-
     public final int degreeOf(Point2i vertex) {
         return edgesTouching(vertex).size();
     }
@@ -166,17 +156,7 @@ public abstract class VertexPath {
         return visited.equals(vertices());
     }
 
-    public final boolean isLoop() {
-        if (edges.isEmpty() || !isConnected()) {
-            return false;
-        }
-        for (Point2i vertex : vertices()) {
-            if (degreeOf(vertex) != 2) {
-                return false;
-            }
-        }
-        return true;
-    }
+
 
     public final List<List<Point2i>> orderedChains() {
         if (edges.isEmpty()) {

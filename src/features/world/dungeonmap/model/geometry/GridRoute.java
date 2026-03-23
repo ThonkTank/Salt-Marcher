@@ -65,30 +65,7 @@ public final class GridRoute {
         return anchor != null && anchors.contains(anchor);
     }
 
-    public boolean containsKind(GridAnchor.Kind kind) {
-        if (kind == null) {
-            return false;
-        }
-        for (GridAnchor anchor : anchors) {
-            if (anchor.kind() == kind) {
-                return true;
-            }
-        }
-        return false;
-    }
 
-    public boolean isLoop() {
-        return anchors.size() > 1 && anchors.getFirst().equals(anchors.getLast());
-    }
-
-    public boolean isOrthogonal() {
-        for (Segment segment : segments()) {
-            if (!segment.isAxisAligned()) {
-                return false;
-            }
-        }
-        return true;
-    }
 
     public int minGridX2() {
         return anchors.stream().map(GridAnchor::doubledGridPoint).mapToInt(Point2i::x).min().orElse(0);

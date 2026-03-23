@@ -108,10 +108,6 @@ public record Room(
         return resolved(roomId, mapId, clusterId, name, floor, walls, doorEdges, narration);
     }
 
-    public Room withResolvedState(Floor floor, List<Wall> walls, Set<VertexEdge> doorEdges) {
-        return resolved(roomId, mapId, clusterId, name, floor, walls, doorEdges, narration);
-    }
-
     public Room withNarration(RoomNarration narration) {
         return resolved(roomId, mapId, clusterId, name, floor, walls, doorEdges, narration);
     }
@@ -137,10 +133,6 @@ public record Room(
 
     public Set<VertexEdge> boundaryEdges() {
         return boundaryNetwork().edges();
-    }
-
-    public boolean hasBoundaryEdge(VertexEdge edge) {
-        return edge != null && boundaryEdges().contains(edge);
     }
 
     public Set<Point2i> cells() {

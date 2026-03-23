@@ -89,10 +89,6 @@ public final class Corridor {
         return roomId != null && roomIds.contains(roomId);
     }
 
-    public boolean connectsAll(Set<Long> roomIds) {
-        return roomIds != null && roomIds.size() >= 2 && this.roomIds.containsAll(roomIds);
-    }
-
     public boolean dependsOnCluster(Long clusterId) {
         if (clusterId == null) {
             return false;
