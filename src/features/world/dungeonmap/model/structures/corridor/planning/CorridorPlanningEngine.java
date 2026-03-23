@@ -34,13 +34,13 @@ public final class CorridorPlanningEngine {
         long startedAt = instrumentation.startTimer();
         try {
             if (corridor == null || input == null) {
-                return CorridorPath.empty(new GridRoute(List.of()));
+                return CorridorPath.unroutable(new GridRoute(List.of()));
             }
             List<Room> rooms = corridor.resolvedRooms(input);
             List<Point2i> waypointCells = corridor.resolvedWaypointCells(input);
             GridRoute route = buildRoute(rooms, waypointCells);
             if (rooms.size() < 2) {
-                return CorridorPath.empty(route);
+                return CorridorPath.unroutable(route);
             }
 
             Map<Long, ResolvedCorridorDoorBinding> doorBindings = corridor.resolvedDoorBindings(input);

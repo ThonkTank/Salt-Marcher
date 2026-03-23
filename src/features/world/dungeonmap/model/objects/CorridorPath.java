@@ -29,7 +29,7 @@ public record CorridorPath(
         return new CorridorPath(GridRoute.empty(), new Floor(TileShape.empty()), Set.of(), false, false);
     }
 
-    public static CorridorPath empty(GridRoute route) {
+    public static CorridorPath unroutable(GridRoute route) {
         return new CorridorPath(route, new Floor(TileShape.empty()), Set.of(), false, false);
     }
 }
