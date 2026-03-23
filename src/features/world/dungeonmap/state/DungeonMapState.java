@@ -4,6 +4,7 @@ import features.world.dungeonmap.loading.DungeonMapCatalogEntry;
 import features.world.dungeonmap.model.DungeonLayout;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public final class DungeonMapState {
@@ -58,10 +59,13 @@ public final class DungeonMapState {
     }
 
     public void showLoaded(List<DungeonMapCatalogEntry> maps, DungeonLayout activeMap) {
+        Long previousMapId = activeMapId;
         this.maps = maps == null ? List.of() : List.copyOf(maps);
         this.activeMap = activeMap == null ? DungeonLayout.empty() : activeMap;
         this.activeMapId = this.activeMap.mapId() <= 0 ? null : this.activeMap.mapId();
-        this.activeProjectionLevel = resolvedProjectionLevel(this.activeMap, activeProjectionLevel);
+        this.activeProjectionLevel = Objects.equals(previousMapId, this.activeMapId)
+                ? activeProjectionLevel
+                : defaultProjectionLevel(this.activeMap);
         this.loading = false;
         this.errorMessage = null;
         notifyListeners();
@@ -77,13 +81,20 @@ public final class DungeonMapState {
     public void showEditedMap(DungeonLayout activeMap) {
         this.activeMap = activeMap == null ? DungeonLayout.empty() : activeMap;
         this.activeMapId = this.activeMap.mapId() <= 0 ? null : this.activeMap.mapId();
-        this.activeProjectionLevel = resolvedProjectionLevel(this.activeMap, activeProjectionLevel);
         this.loading = false;
         this.errorMessage = null;
         notifyListeners();
     }
 
     public void setActiveProjectionLevel(int levelZ) {
+        if (activeProjectionLevel == levelZ) {
+            return;
+        }
+        activeProjectionLevel = levelZ;
+        notifyListeners();
+    }
+
+    public void setReachableProjectionLevel(int levelZ) {
         int resolvedLevel = resolvedProjectionLevel(activeMap, levelZ);
         if (activeProjectionLevel == resolvedLevel) {
             return;
@@ -97,6 +108,10 @@ public final class DungeonMapState {
             return 0;
         }
         return activeMap.reachableLevels().contains(preferred) ? preferred : activeMap.defaultLevel();
+    }
+
+    private static int defaultProjectionLevel(DungeonLayout activeMap) {
+        return activeMap == null ? 0 : activeMap.defaultLevel();
     }
 
     private void notifyListeners() {

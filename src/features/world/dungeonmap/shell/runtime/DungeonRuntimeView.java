@@ -76,8 +76,8 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         runtimeState.addListener(this::refreshRuntimeUi);
         Button upLevelButton = new Button("Ebene +");
         Button downLevelButton = new Button("Ebene -");
-        upLevelButton.setOnAction(event -> state.setActiveProjectionLevel(state.activeProjectionLevel() + 1));
-        downLevelButton.setOnAction(event -> state.setActiveProjectionLevel(state.activeProjectionLevel() - 1));
+        upLevelButton.setOnAction(event -> state.setReachableProjectionLevel(state.activeProjectionLevel() + 1));
+        downLevelButton.setOnAction(event -> state.setReachableProjectionLevel(state.activeProjectionLevel() - 1));
         this.controls = new VBox(10, zoomLabel, mapLabel, levelLabel, new HBox(8, downLevelButton, upLevelButton));
         this.controls.setPadding(new Insets(12));
         refreshRuntimeUi();
@@ -138,6 +138,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
             runtimeState.clear();
             return;
         }
+        state().setReachableProjectionLevel(state().activeProjectionLevel());
         if (!Objects.equals(runtimeMapId, state().activeMapId())) {
             runtimeMapId = state().activeMapId();
             lastPublishedSurfaceKey = null;

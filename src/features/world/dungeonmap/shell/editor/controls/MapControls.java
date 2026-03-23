@@ -149,10 +149,9 @@ public final class MapControls {
         return content;
     }
 
-    public void showLevels(List<Integer> levels, int activeLevel, boolean loading) {
-        List<Integer> visibleLevels = levels == null ? List.of() : levels;
+    public void showLevels(List<Integer> levels, int activeLevel, boolean loading, boolean navigationEnabled) {
         levelLabel.setText("Ebene z=" + activeLevel);
-        previousLevelButton.setDisable(loading || visibleLevels.isEmpty() || activeLevel <= visibleLevels.stream().mapToInt(Integer::intValue).min().orElse(activeLevel));
-        nextLevelButton.setDisable(loading || visibleLevels.isEmpty() || activeLevel >= visibleLevels.stream().mapToInt(Integer::intValue).max().orElse(activeLevel));
+        previousLevelButton.setDisable(loading || !navigationEnabled);
+        nextLevelButton.setDisable(loading || !navigationEnabled);
     }
 }

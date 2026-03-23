@@ -145,7 +145,11 @@ final class DungeonEditorCoordinator {
 
     void refreshFromMapState() {
         controls.showMaps(mapState.maps(), mapState.activeMapId(), mapState.loading());
-        controls.showLevels(mapState.activeMap().reachableLevels(), mapState.activeProjectionLevel(), mapState.loading());
+        controls.showLevels(
+                mapState.activeMap().reachableLevels(),
+                mapState.activeProjectionLevel(),
+                mapState.loading(),
+                mapState.activeMapId() != null);
         workspace.setProjectionLevel(mapState.activeProjectionLevel());
         refreshFromSessionState();
         refreshStairPreviewState();
