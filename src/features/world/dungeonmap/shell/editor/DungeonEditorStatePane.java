@@ -27,9 +27,7 @@ public final class DungeonEditorStatePane {
 
     public DungeonEditorStatePane() {
         content.getStyleClass().add("dungeon-editor-sidebar");
-        content.getChildren().addAll(
-                card("Werkzeug", activeToolLabel),
-                narrationCard);
+        content.getChildren().add(card("Werkzeug", activeToolLabel));
         showCorridorStatus(null);
         showRoomNarrationEditors(List.of(), null);
     }
@@ -60,8 +58,11 @@ public final class DungeonEditorStatePane {
         narrationSaveButtons.clear();
         narrationStatusLabels.clear();
         if (cards == null || cards.isEmpty()) {
-            narrationContent.getChildren().add(text("Cluster mit Raum wählen"));
+            content.getChildren().remove(narrationCard);
             return;
+        }
+        if (!content.getChildren().contains(narrationCard)) {
+            content.getChildren().add(narrationCard);
         }
         for (RoomNarrationCard card : cards) {
             if (card == null) {
