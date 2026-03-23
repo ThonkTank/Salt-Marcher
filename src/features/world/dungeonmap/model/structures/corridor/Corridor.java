@@ -301,30 +301,27 @@ public final class Corridor {
             Point2i absoluteCell = waypoint.absoluteCell(previousCenter);
             updatedWaypoints.add(CorridorWaypointBinding.atAbsoluteCell(targetClusterId, absoluteCell, targetCenter));
         }
-        CorridorBindings updatedBindings = new CorridorBindings(updatedWaypoints, bindings.doorBindings());
+        List<CorridorDoorBinding> updatedDoorBindings = new ArrayList<>();
         for (CorridorDoorBinding binding : bindings.doorBindings()) {
             Room room = previousInput.room(binding.roomId());
             if (room == null) {
-                updatedBindings = updatedBindings.withoutDoorBinding(binding.roomId());
                 continue;
             }
             Room rewrittenRoom = rewrittenInput.room(binding.roomId());
             Long targetClusterId = rewrittenRoom == null ? null : rewrittenRoom.clusterId();
             Point2i targetCenter = rewrittenInput.clusterCenter(targetClusterId);
             if (targetCenter == null || deletedClusterIds.contains(targetClusterId)) {
-                updatedBindings = updatedBindings.withoutDoorBinding(binding.roomId());
                 continue;
             }
             Point2i previousCenter = previousInput.clusterCenter(binding.clusterId());
             if (previousCenter == null) {
-                updatedBindings = updatedBindings.withoutDoorBinding(binding.roomId());
                 continue;
             }
             Point2i absoluteCell = binding.absoluteCell(previousCenter);
-            updatedBindings = updatedBindings.withDoorBinding(
+            updatedDoorBindings.add(
                     CorridorDoorBinding.atAbsoluteCell(binding.roomId(), targetClusterId, absoluteCell, targetCenter, binding.direction()));
         }
-        return withBindings(updatedBindings);
+        return withBindings(new CorridorBindings(updatedWaypoints, updatedDoorBindings));
     }
 
     public Corridor replannedFor(CorridorRewriteContext context) {
