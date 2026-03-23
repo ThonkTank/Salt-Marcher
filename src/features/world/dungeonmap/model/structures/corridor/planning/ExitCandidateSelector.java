@@ -2,7 +2,6 @@ package features.world.dungeonmap.model.structures.corridor.planning;
 
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.VertexEdge;
-import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.structures.corridor.ResolvedCorridorDoorBinding;
 import features.world.dungeonmap.model.structures.room.Room;
 
@@ -89,7 +88,7 @@ final class ExitCandidateSelector {
                         cell,
                         outsideCell,
                         direction,
-                        new Door(Set.of(VertexEdge.betweenCellAndStep(cell, direction)))));
+                        VertexEdge.betweenCellAndStep(cell, direction)));
             }
         }
         List<ExitCandidate> sorted = result.stream()
@@ -520,5 +519,5 @@ record TargetGeometry(Point2i roomCenter, Point2i targetCenter) {
     }
 }
 
-record ExitCandidate(Point2i roomCell, Point2i outsideCell, Point2i direction, Door door) {
+record ExitCandidate(Point2i roomCell, Point2i outsideCell, Point2i direction, VertexEdge doorEdge) {
 }

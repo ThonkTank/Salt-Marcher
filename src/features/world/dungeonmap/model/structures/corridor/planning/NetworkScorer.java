@@ -2,7 +2,6 @@ package features.world.dungeonmap.model.structures.corridor.planning;
 
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.VertexEdge;
-import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.structures.room.Room;
 
 import java.util.ArrayDeque;
@@ -111,7 +110,7 @@ final class NetworkScorer {
         static NetworkScore forNetwork(
                 List<Room> rooms,
                 Set<Point2i> corridorCells,
-                Iterable<Door> doors
+                Set<VertexEdge> doorEdges
         ) {
             Map<Long, Room> roomsById = new LinkedHashMap<>();
             Map<Point2i, Long> occupancy = new LinkedHashMap<>();
@@ -133,37 +132,34 @@ final class NetworkScorer {
             }
             Map<Integer, Map<Long, Set<Point2i>>> attachmentCellsByComponentAndRoom = new HashMap<>();
             Set<RoomPair> directRoomPairs = new HashSet<>();
-            Iterable<Door> safeDoors = doors == null ? List.<Door>of() : doors;
-            for (Door door : safeDoors) {
-                for (VertexEdge edge : door.edges()) {
-                    Set<Point2i> touchingCells = edge.touchingCells();
-                    Long firstRoom = null;
-                    Long secondRoom = null;
-                    Point2i corridorCell = null;
-                    for (Point2i cell : touchingCells) {
-                        Long roomId = occupancy.get(cell);
-                        if (roomId != null) {
-                            if (firstRoom == null) {
-                                firstRoom = roomId;
-                            } else if (!Objects.equals(firstRoom, roomId)) {
-                                secondRoom = roomId;
-                            }
-                        } else if (corridorCells.contains(cell)) {
-                            corridorCell = cell;
+            for (VertexEdge edge : doorEdges == null ? Set.<VertexEdge>of() : doorEdges) {
+                Set<Point2i> touchingCells = edge.touchingCells();
+                Long firstRoom = null;
+                Long secondRoom = null;
+                Point2i corridorCell = null;
+                for (Point2i cell : touchingCells) {
+                    Long roomId = occupancy.get(cell);
+                    if (roomId != null) {
+                        if (firstRoom == null) {
+                            firstRoom = roomId;
+                        } else if (!Objects.equals(firstRoom, roomId)) {
+                            secondRoom = roomId;
                         }
+                    } else if (corridorCells.contains(cell)) {
+                        corridorCell = cell;
                     }
-                    if (firstRoom != null && secondRoom != null) {
-                        directRoomPairs.add(RoomPair.of(firstRoom, secondRoom));
-                        continue;
-                    }
-                    if (firstRoom != null && corridorCell != null) {
-                        Integer componentIndex = componentIndexByCell.get(corridorCell);
-                        if (componentIndex != null) {
-                            attachmentCellsByComponentAndRoom
-                                    .computeIfAbsent(componentIndex, ignored -> new HashMap<>())
-                                    .computeIfAbsent(firstRoom, ignored -> new LinkedHashSet<>())
-                                    .add(corridorCell);
-                        }
+                }
+                if (firstRoom != null && secondRoom != null) {
+                    directRoomPairs.add(RoomPair.of(firstRoom, secondRoom));
+                    continue;
+                }
+                if (firstRoom != null && corridorCell != null) {
+                    Integer componentIndex = componentIndexByCell.get(corridorCell);
+                    if (componentIndex != null) {
+                        attachmentCellsByComponentAndRoom
+                                .computeIfAbsent(componentIndex, ignored -> new HashMap<>())
+                                .computeIfAbsent(firstRoom, ignored -> new LinkedHashSet<>())
+                                .add(corridorCell);
                     }
                 }
             }

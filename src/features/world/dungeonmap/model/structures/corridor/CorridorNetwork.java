@@ -3,7 +3,6 @@ package features.world.dungeonmap.model.structures.corridor;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.geometry.VertexEdge;
-import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.objects.Floor;
 
 import java.util.ArrayDeque;
@@ -24,15 +23,15 @@ public final class CorridorNetwork {
     private final Set<Long> corridorIds;
     private final Set<Long> roomIds;
     private final Floor floor;
-    private final List<Door> doors;
+    private final Set<VertexEdge> doorEdges;
 
-    public CorridorNetwork(String networkId, long mapId, Set<Long> corridorIds, Set<Long> roomIds, Floor floor, List<Door> doors) {
+    public CorridorNetwork(String networkId, long mapId, Set<Long> corridorIds, Set<Long> roomIds, Floor floor, Set<VertexEdge> doorEdges) {
         this.networkId = networkId;
         this.mapId = mapId;
         this.corridorIds = corridorIds == null ? Set.of() : Set.copyOf(corridorIds);
         this.roomIds = roomIds == null ? Set.of() : Set.copyOf(roomIds);
         this.floor = floor == null ? new Floor(TileShape.empty()) : floor;
-        this.doors = doors == null ? List.of() : List.copyOf(doors);
+        this.doorEdges = doorEdges == null ? Set.of() : Set.copyOf(doorEdges);
     }
 
     public String networkId() {
@@ -55,8 +54,8 @@ public final class CorridorNetwork {
         return floor;
     }
 
-    public List<Door> doors() {
-        return doors;
+    public Set<VertexEdge> doorEdges() {
+        return doorEdges;
     }
 
     public boolean containsCorridor(Long corridorId) {
@@ -79,10 +78,8 @@ public final class CorridorNetwork {
             for (Point2i cell : corridor.path().floor().shape().absoluteCells()) {
                 corridorIdsByCell.computeIfAbsent(cell, ignored -> new LinkedHashSet<>()).add(corridor.corridorId());
             }
-            for (Door door : corridor.path().doors()) {
-                for (VertexEdge edge : door.edges()) {
-                    corridorIdsByDoorEdge.computeIfAbsent(edge, ignored -> new LinkedHashSet<>()).add(corridor.corridorId());
-                }
+            for (VertexEdge edge : corridor.path().doorEdges()) {
+                corridorIdsByDoorEdge.computeIfAbsent(edge, ignored -> new LinkedHashSet<>()).add(corridor.corridorId());
             }
         }
         Map<Long, Set<Long>> adjacency = new LinkedHashMap<>();
@@ -110,18 +107,15 @@ public final class CorridorNetwork {
             }
             roomIds.addAll(corridor.roomIds());
             cells.addAll(corridor.path().floor().shape().absoluteCells());
-            for (Door door : corridor.path().doors()) {
-                doorEdges.addAll(door.edges());
-            }
+            doorEdges.addAll(corridor.path().doorEdges());
         }
-        List<Door> doors = doorEdges.isEmpty() ? List.of() : List.of(new Door(doorEdges));
         return new CorridorNetwork(
                 networkIdFor(component),
                 mapId,
                 component,
                 roomIds,
                 new Floor(TileShape.fromAbsoluteCells(cells)),
-                doors);
+                doorEdges);
     }
 
     private static void linkOverlaps(Map<Long, Set<Long>> adjacency, Iterable<Set<Long>> overlappingIds) {

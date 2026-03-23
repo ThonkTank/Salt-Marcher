@@ -14,6 +14,7 @@ import features.world.dungeonmap.model.structures.room.Room;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public final class CorridorPlanningEngine {
 
@@ -47,11 +48,11 @@ public final class CorridorPlanningEngine {
             MutableNetwork network = NetworkBuilder.bestNetwork(context, CONFIG);
 
             boolean routable = network.connectedRoomIds.size() == rooms.size()
-                    && (!network.corridorCells.isEmpty() || !network.doors.isEmpty());
+                    && (!network.corridorCells.isEmpty() || !network.doorEdges.isEmpty());
             return new CorridorPath(
                     route,
                     new Floor(TileShape.fromAbsoluteCells(network.corridorCells)),
-                    List.copyOf(network.doors.values()),
+                    Set.copyOf(network.doorEdges),
                     network.directlyAdjacentOnly,
                     routable);
         } finally {

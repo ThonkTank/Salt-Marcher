@@ -5,7 +5,6 @@ import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 import features.world.dungeonmap.model.geometry.VertexEdge;
-import features.world.dungeonmap.model.objects.BoundaryObject;
 import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.objects.Floor;
 import features.world.dungeonmap.model.geometry.VertexPath;
@@ -357,7 +356,7 @@ public final class RoomCluster {
                 resolvedName,
                 new Floor(mergedShape),
                 mergedWallEdges.isEmpty() ? List.of() : List.of(new Wall(mergedWallEdges)),
-                mergedDoorEdges.isEmpty() ? List.of() : List.of(new Door(mergedDoorEdges)),
+                mergedDoorEdges,
                 findRoom(selected.iterator().next()).narration());
     }
 
@@ -693,7 +692,7 @@ public final class RoomCluster {
                 room.name(),
                 room.floor(),
                 room.walls(),
-                room.doors(),
+                room.doorEdges(),
                 room.narration());
     }
 
@@ -743,10 +742,15 @@ public final class RoomCluster {
             if (room == null) {
                 continue;
             }
-            Collection<? extends BoundaryObject> boundaries = doors ? room.doors() : room.walls();
-            BoundaryNetwork network = BoundaryNetwork.fromPaths(boundaries.stream()
-                    .map(BoundaryObject::path)
-                    .toList());
+            if (doors) {
+                for (VertexEdge edge : room.doorEdges()) {
+                    if (boundaryEdges.contains(edge)) {
+                        result.add(edge);
+                    }
+                }
+                continue;
+            }
+            BoundaryNetwork network = BoundaryNetwork.fromPaths(room.walls());
             for (VertexEdge edge : network.edges()) {
                 if (boundaryEdges.contains(edge)) {
                     result.add(edge);
@@ -982,7 +986,7 @@ public final class RoomCluster {
                 roomName,
                 new Floor(roomShape),
                 boundarySets.walls().isEmpty() ? List.of() : List.of(new Wall(boundarySets.walls())),
-                boundarySets.doors().isEmpty() ? List.of() : List.of(new Door(boundarySets.doors())),
+                boundarySets.doors(),
                 narration);
     }
 
@@ -1036,11 +1040,9 @@ public final class RoomCluster {
                     }
                 }
             }
-            for (Door door : room.doors()) {
-                for (VertexEdge edge : door.edges()) {
-                    if (isInternalEdge(clusterCells, edge)) {
-                        consumer.accept(edge, ClusterBoundaryWrite.Type.DOOR);
-                    }
+            for (VertexEdge edge : room.doorEdges()) {
+                if (isInternalEdge(clusterCells, edge)) {
+                    consumer.accept(edge, ClusterBoundaryWrite.Type.DOOR);
                 }
             }
         }

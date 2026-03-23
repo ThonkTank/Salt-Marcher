@@ -2,7 +2,6 @@ package features.world.dungeonmap.model.structures.corridor.planning;
 
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.VertexEdge;
-import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.structures.corridor.ResolvedCorridorDoorBinding;
 import features.world.dungeonmap.model.structures.room.Room;
 
@@ -72,7 +71,7 @@ final class NetworkBuilder {
             if (path.isEmpty()) {
                 continue;
             }
-            best = better(best, new ConnectionPlan(seedRoom.roomId(), path, List.of(exit.door()), false));
+            best = better(best, new ConnectionPlan(seedRoom.roomId(), path, List.of(exit.doorEdge()), false));
         }
         return best;
     }
@@ -145,7 +144,7 @@ final class NetworkBuilder {
             if (path == null) {
                 continue;
             }
-            best = better(best, new ConnectionPlan(room.roomId(), path, List.of(exit.door()), path.isEmpty()));
+            best = better(best, new ConnectionPlan(room.roomId(), path, List.of(exit.doorEdge()), path.isEmpty()));
         }
         return best;
     }
@@ -173,7 +172,7 @@ final class NetworkBuilder {
             best = better(best, new ConnectionPlan(
                     room.roomId(),
                     path,
-                    List.of(pair.exit().door(), pair.target().door()),
+                    List.of(pair.exit().doorEdge(), pair.target().doorEdge()),
                     path.isEmpty()));
         }
         return best;
@@ -225,8 +224,8 @@ final class NetworkBuilder {
                         && (!connectedBinding.absoluteCell().equals(otherCell) || !connectedBinding.direction().equals(reverse))) {
                     continue;
                 }
-                Door door = new Door(Set.of(VertexEdge.betweenCellAndStep(cell, step)));
-                return new ConnectionPlan(room.roomId(), List.of(), List.of(door), true);
+                VertexEdge doorEdge = VertexEdge.betweenCellAndStep(cell, step);
+                return new ConnectionPlan(room.roomId(), List.of(), List.of(doorEdge), true);
             }
         }
         return null;
@@ -246,26 +245,22 @@ final class NetworkBuilder {
 final class MutableNetwork {
     final Set<Long> connectedRoomIds = new LinkedHashSet<>();
     final Set<Point2i> corridorCells = new LinkedHashSet<>();
-    final Map<VertexEdge, Door> doors = new LinkedHashMap<>();
+    final Set<VertexEdge> doorEdges = new LinkedHashSet<>();
     boolean directlyAdjacentOnly = true;
 
     void apply(ConnectionPlan plan) {
         connectedRoomIds.add(plan.roomId());
         corridorCells.addAll(plan.pathCells());
-        for (Door door : plan.doors()) {
-            for (VertexEdge edge : door.edges()) {
-                doors.putIfAbsent(edge, new Door(Set.of(edge)));
-            }
-        }
+        doorEdges.addAll(plan.doorEdges());
         directlyAdjacentOnly = directlyAdjacentOnly && plan.directlyAdjacent();
     }
 
     NetworkScorer.NetworkScore score(List<Room> rooms) {
-        return NetworkScorer.NetworkScore.forNetwork(rooms, corridorCells, doors.values());
+        return NetworkScorer.NetworkScore.forNetwork(rooms, corridorCells, doorEdges);
     }
 }
 
-record ConnectionPlan(long roomId, List<Point2i> pathCells, List<Door> doors, boolean directlyAdjacent) {
+record ConnectionPlan(long roomId, List<Point2i> pathCells, List<VertexEdge> doorEdges, boolean directlyAdjacent) {
     RouteCost score() {
         return RouteSearch.score(pathCells);
     }

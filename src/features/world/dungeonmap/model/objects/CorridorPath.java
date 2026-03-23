@@ -2,8 +2,9 @@ package features.world.dungeonmap.model.objects;
 
 import features.world.dungeonmap.model.geometry.GridRoute;
 import features.world.dungeonmap.model.geometry.TileShape;
+import features.world.dungeonmap.model.geometry.VertexEdge;
 
-import java.util.List;
+import java.util.Set;
 
 /**
  * Runtime-owned resolved corridor path object.
@@ -14,21 +15,21 @@ import java.util.List;
 public record CorridorPath(
         GridRoute route,
         Floor floor,
-        List<Door> doors,
+        Set<VertexEdge> doorEdges,
         boolean directlyAdjacent,
         boolean routable
 ) {
     public CorridorPath {
         route = route == null ? GridRoute.empty() : route;
         floor = floor == null ? new Floor(TileShape.empty()) : floor;
-        doors = doors == null ? List.of() : List.copyOf(doors);
+        doorEdges = doorEdges == null ? Set.of() : Set.copyOf(doorEdges);
     }
 
     public static CorridorPath empty() {
-        return new CorridorPath(GridRoute.empty(), new Floor(TileShape.empty()), List.of(), false, false);
+        return new CorridorPath(GridRoute.empty(), new Floor(TileShape.empty()), Set.of(), false, false);
     }
 
     public static CorridorPath empty(GridRoute route) {
-        return new CorridorPath(route, new Floor(TileShape.empty()), List.of(), false, false);
+        return new CorridorPath(route, new Floor(TileShape.empty()), Set.of(), false, false);
     }
 }

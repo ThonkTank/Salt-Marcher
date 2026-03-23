@@ -14,6 +14,6 @@ public final class RoomExitCatalog {
         if (room == null) {
             return List.of();
         }
-        return DoorExitCatalog.describe(room.cells(), room.doors());
+        return DoorExitCatalog.describe(room.cells(), room.doorEdges());
     }
 }

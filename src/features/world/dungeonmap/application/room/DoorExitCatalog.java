@@ -2,13 +2,10 @@ package features.world.dungeonmap.application.room;
 
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.VertexEdge;
-import features.world.dungeonmap.model.objects.Door;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -23,11 +20,11 @@ public final class DoorExitCatalog {
         throw new AssertionError("No instances");
     }
 
-    public static List<RoomExitDescriptor> describe(Set<Point2i> cells, Collection<Door> doors) {
-        if (cells == null || cells.isEmpty() || doors == null || doors.isEmpty()) {
+    public static List<RoomExitDescriptor> describe(Set<Point2i> cells, Set<VertexEdge> doorEdges) {
+        if (cells == null || cells.isEmpty() || doorEdges == null || doorEdges.isEmpty()) {
             return List.of();
         }
-        List<ExitEdge> exitEdges = collectExitEdges(cells, doors);
+        List<ExitEdge> exitEdges = collectExitEdges(cells, doorEdges);
         if (exitEdges.isEmpty()) {
             return List.of();
         }
@@ -49,14 +46,8 @@ public final class DoorExitCatalog {
         return List.copyOf(result);
     }
 
-    private static List<ExitEdge> collectExitEdges(Set<Point2i> cells, Collection<Door> doors) {
+    private static List<ExitEdge> collectExitEdges(Set<Point2i> cells, Set<VertexEdge> doorEdges) {
         List<ExitEdge> result = new ArrayList<>();
-        Set<VertexEdge> doorEdges = new LinkedHashSet<>();
-        for (Door door : doors) {
-            if (door != null) {
-                doorEdges.addAll(door.edges());
-            }
-        }
         for (Point2i cell : cells) {
             for (Point2i step : Point2i.CARDINAL_STEPS) {
                 VertexEdge edge = VertexEdge.betweenCellAndStep(cell, step);
@@ -101,13 +92,22 @@ public final class DoorExitCatalog {
     }
 
     private static int directionOrder(Point2i direction) {
-        return switch (direction.x() + "," + direction.y()) {
-            case "0,-1" -> 0;
-            case "1,0" -> 1;
-            case "0,1" -> 2;
-            case "-1,0" -> 3;
-            default -> 4;
-        };
+        if (direction == null) {
+            return 4;
+        }
+        if (direction.x() == 0 && direction.y() == -1) {
+            return 0;
+        }
+        if (direction.x() == 1 && direction.y() == 0) {
+            return 1;
+        }
+        if (direction.x() == 0 && direction.y() == 1) {
+            return 2;
+        }
+        if (direction.x() == -1 && direction.y() == 0) {
+            return 3;
+        }
+        return 4;
     }
 
     private record ExitEdge(Point2i roomCell, Point2i direction, VertexEdge edge) {

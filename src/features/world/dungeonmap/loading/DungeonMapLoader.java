@@ -179,12 +179,12 @@ public final class DungeonMapLoader {
                             rs.getLong("dungeon_map_id"),
                             rs.getLong("cluster_id"),
                             normalizedRoomName(roomId, rs.getString("name")),
-                            new Floor(TileShape.singleCell(anchor)),
-                            List.of(),
-                            List.of(),
-                            new RoomNarration(
-                                    rs.getString("visual_description"),
-                                    exitNarrationsByRoomId.getOrDefault(roomId, List.of()))));
+                    new Floor(TileShape.singleCell(anchor)),
+                    List.of(),
+                    Set.of(),
+                    new RoomNarration(
+                            rs.getString("visual_description"),
+                            exitNarrationsByRoomId.getOrDefault(roomId, List.of()))));
                 }
                 return List.copyOf(rooms);
             }
@@ -479,7 +479,7 @@ public final class DungeonMapLoader {
         return walls.isEmpty() ? List.of() : List.of(new Wall(walls));
     }
 
-    private static List<Door> doorsForRoom(Set<Point2i> roomCells, List<EdgeObject> edgeObjects) {
+    private static Set<VertexEdge> doorsForRoom(Set<Point2i> roomCells, List<EdgeObject> edgeObjects) {
         Set<VertexEdge> doors = new LinkedHashSet<>();
         for (EdgeObject edgeObject : edgeObjects) {
             Door door = edgeObject.door();
@@ -487,7 +487,7 @@ public final class DungeonMapLoader {
                 doors.addAll(door.edges());
             }
         }
-        return doors.isEmpty() ? List.of() : List.of(new Door(doors));
+        return Set.copyOf(doors);
     }
 
     private static boolean touchesRoom(Set<Point2i> roomCells, VertexPath boundary) {
