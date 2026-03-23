@@ -536,10 +536,7 @@ public final class RoomCluster {
                 fragmentsBySourceRoomId,
                 rewrittenRooms);
         List<ClusterRewriteSplit> componentClusters = deleteRewriteClusters(rewrittenClusterShape, rewrittenRooms);
-        ClusterRewriteSplit retainedCluster = componentClusters.isEmpty()
-                ? new ClusterRewriteSplit(clusterId, rewrittenClusterShape, rewrittenClusterShape.centerCell(), rewrittenRooms,
-                persistedInternalBoundaries(rewrittenClusterShape, rewrittenRooms))
-                : componentClusters.getFirst().withClusterId(clusterId);
+        ClusterRewriteSplit retainedCluster = componentClusters.getFirst().withClusterId(clusterId);
         List<ClusterRewriteSplit> splitClusters = componentClusters.stream()
                 .skip(1)
                 .toList();

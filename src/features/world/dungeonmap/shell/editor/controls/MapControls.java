@@ -74,9 +74,11 @@ public final class MapControls {
         row.setAlignment(Pos.CENTER_LEFT);
         row.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(selector, Priority.ALWAYS);
-        HBox levelRow = new HBox(8, levelLabel, previousLevelButton, nextLevelButton);
+        Region levelSpacer = new Region();
+        HBox.setHgrow(levelSpacer, Priority.ALWAYS);
+        HBox levelRow = new HBox(8, levelLabel, previousLevelButton, nextLevelButton, levelSpacer, overlayControls.trigger());
         levelRow.setAlignment(Pos.CENTER_LEFT);
-        content = new VBox(6, sectionLabelFactory.apply("Dungeon"), row, levelRow, overlayControls.content());
+        content = new VBox(6, sectionLabelFactory.apply("Dungeon"), row, levelRow);
         content.setMaxWidth(Double.MAX_VALUE);
         content.getStyleClass().add("editor-toolbar-group");
     }

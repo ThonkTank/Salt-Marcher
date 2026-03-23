@@ -1639,6 +1639,15 @@
     -fx-min-width: 260;
     -fx-pref-width: 320;
 }
+.dungeon-overlay-trigger {
+    -fx-alignment: CENTER_LEFT;
+    -fx-content-display: LEFT;
+    -fx-padding: 5 10;
+}
+.dungeon-overlay-dropdown {
+    -fx-min-width: 280;
+    -fx-pref-width: 320;
+}
 .adventuring-day-toolbar-popup {
     -fx-min-width: 380;
     -fx-pref-width: 420;

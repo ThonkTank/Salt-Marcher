@@ -228,9 +228,6 @@ public final class DungeonRoomTopologyService {
         }
         List<ClusterRewriteSplit> realizedSplitClusters = new java.util.ArrayList<>();
         for (ClusterRewriteSplit splitCluster : rewrite.splitClusters()) {
-            if (splitCluster == null) {
-                continue;
-            }
             long splitClusterId = roomWriteRepository.insertCluster(
                     conn,
                     mapId,
@@ -247,9 +244,6 @@ public final class DungeonRoomTopologyService {
         roomWriteRepository.replaceClusterEdges(conn, realizedRewrite.targetClusterId(), realizedRewrite.persistedBoundaries());
         persistRooms(conn, mapId, realizedRewrite.targetClusterId(), realizedRewrite.rooms(), levelZ);
         for (ClusterRewriteSplit splitCluster : realizedRewrite.splitClusters()) {
-            if (splitCluster == null || splitCluster.clusterId() == null) {
-                continue;
-            }
             persistRooms(conn, mapId, splitCluster.clusterId(), splitCluster.rooms(), levelZ);
         }
         for (Long deletedClusterId : realizedRewrite.deletedClusterIds()) {

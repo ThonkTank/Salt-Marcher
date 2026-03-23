@@ -3,6 +3,8 @@ package features.world.dungeonmap.shell.controls;
 import features.world.dungeonmap.state.DungeonLevelOverlayMode;
 import features.world.dungeonmap.state.DungeonLevelOverlaySettings;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
+import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
@@ -14,6 +16,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
+import ui.components.AnchoredDropdown;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -21,12 +24,16 @@ import java.util.function.Function;
 
 public final class DungeonLevelOverlayControls {
 
+    private final Button triggerButton = new Button();
     private final ComboBox<DungeonLevelOverlayMode> modeSelector = new ComboBox<>();
     private final Spinner<Integer> rangeSpinner = new Spinner<>();
     private final Slider opacitySlider = new Slider(10, 90, 35);
     private final Label opacityLabel = new Label();
     private final TextField selectedLevelsField = new TextField();
-    private final VBox content;
+    private final HBox rangeRow;
+    private final HBox selectedRow;
+    private final VBox dropdownContent;
+    private final AnchoredDropdown dropdown;
 
     private Consumer<DungeonLevelOverlayMode> onModeChanged = ignored -> {};
     private Consumer<Integer> onRangeChanged = ignored -> {};
@@ -67,19 +74,24 @@ public final class DungeonLevelOverlayControls {
         selectedLevelsField.setPrefColumnCount(10);
         HBox.setHgrow(selectedLevelsField, Priority.ALWAYS);
 
-        HBox modeRow = row(new Label("Overlay"), modeSelector);
-        HBox rangeRow = row(new Label("Umfang"), rangeSpinner);
+        triggerButton.getStyleClass().addAll("toolbar-action-button", "dungeon-overlay-trigger");
+        triggerButton.setMinWidth(Region.USE_PREF_SIZE);
+        triggerButton.setOnAction(event -> toggleDropdown());
+
+        HBox modeRow = row(new Label("Modus"), modeSelector);
+        rangeRow = row(new Label("Umfang"), rangeSpinner);
         HBox opacityRow = row(new Label("Stärke"), opacitySlider, opacityLabel);
-        HBox selectedRow = row(new Label("Ebenen"), selectedLevelsField);
-        content = new VBox(6, sectionLabelFactory.apply("Overlay"), modeRow, rangeRow, opacityRow, selectedRow);
-        content.getStyleClass().add("editor-toolbar-group");
-        content.setMaxWidth(Double.MAX_VALUE);
+        selectedRow = row(new Label("Ebenen"), selectedLevelsField);
+        dropdownContent = new VBox(6, sectionLabelFactory.apply("Overlay"), modeRow, opacityRow, rangeRow, selectedRow);
+        dropdownContent.getStyleClass().addAll("dropdown-window", "dropdown-form", "dungeon-overlay-dropdown");
+        dropdownContent.setMaxWidth(Double.MAX_VALUE);
+        dropdown = new AnchoredDropdown(dropdownContent);
 
         modeSelector.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
             if (syncing || newValue == null) {
                 return;
             }
-            updateEnabledState(newValue);
+            updateEnabledState(newValue, triggerButton.isDisabled());
             onModeChanged.accept(newValue);
         });
         rangeSpinner.valueProperty().addListener((obs, oldValue, newValue) -> {
@@ -102,8 +114,8 @@ public final class DungeonLevelOverlayControls {
         showSettings(DungeonLevelOverlaySettings.defaults(), false);
     }
 
-    public VBox content() {
-        return content;
+    public Node trigger() {
+        return triggerButton;
     }
 
     public void setOnModeChanged(Consumer<DungeonLevelOverlayMode> onModeChanged) {
@@ -131,11 +143,11 @@ public final class DungeonLevelOverlayControls {
         displayedSelectedLevels = resolved.selectedLevels();
         selectedLevelsField.setText(formatLevels(displayedSelectedLevels));
         updateOpacityLabel();
-        updateEnabledState(resolved.mode());
+        triggerButton.setText(summaryText(resolved));
+        triggerButton.setDisable(disabled);
         modeSelector.setDisable(disabled);
-        rangeSpinner.setDisable(disabled || !resolved.mode().usesRange());
         opacitySlider.setDisable(disabled);
-        selectedLevelsField.setDisable(disabled || !resolved.mode().usesSelectedLevels());
+        updateEnabledState(resolved.mode(), disabled);
         syncing = false;
     }
 
@@ -153,14 +165,32 @@ public final class DungeonLevelOverlayControls {
         onSelectedLevelsChanged.accept(parsedLevels);
     }
 
-    private void updateEnabledState(DungeonLevelOverlayMode mode) {
+    private void updateEnabledState(DungeonLevelOverlayMode mode, boolean globalDisabled) {
         DungeonLevelOverlayMode resolvedMode = mode == null ? DungeonLevelOverlayMode.OFF : mode;
-        rangeSpinner.setDisable(modeSelector.isDisabled() || !resolvedMode.usesRange());
-        selectedLevelsField.setDisable(modeSelector.isDisabled() || !resolvedMode.usesSelectedLevels());
+        boolean rangeVisible = resolvedMode.usesRange();
+        boolean selectedVisible = resolvedMode.usesSelectedLevels();
+        rangeRow.setManaged(rangeVisible);
+        rangeRow.setVisible(rangeVisible);
+        selectedRow.setManaged(selectedVisible);
+        selectedRow.setVisible(selectedVisible);
+        rangeSpinner.setDisable(globalDisabled || !rangeVisible);
+        selectedLevelsField.setDisable(globalDisabled || !selectedVisible);
     }
 
     private void updateOpacityLabel() {
         opacityLabel.setText(Math.round(opacitySlider.getValue()) + "%");
+    }
+
+    private void toggleDropdown() {
+        if (triggerButton.isDisabled()) {
+            return;
+        }
+        if (dropdown.isShowing()) {
+            dropdown.hide();
+            return;
+        }
+        dropdown.show(triggerButton, AnchoredDropdown.HorizontalAlignment.LEFT, 2);
+        dropdown.requestFocus(modeSelector);
     }
 
     private static HBox row(Region... nodes) {
@@ -168,6 +198,23 @@ public final class DungeonLevelOverlayControls {
         row.setAlignment(Pos.CENTER_LEFT);
         row.setMaxWidth(Double.MAX_VALUE);
         return row;
+    }
+
+    private static String summaryText(DungeonLevelOverlaySettings settings) {
+        return switch (settings.mode()) {
+            case OFF -> "Overlay: Aus";
+            case NEARBY -> "Overlay: Nachbarn · ±" + settings.levelRange() + " · " + percentageText(settings.opacity());
+            case SELECTED -> "Overlay: Auswahl · z=" + levelsSummary(settings.selectedLevels()) + " · " + percentageText(settings.opacity());
+        };
+    }
+
+    private static String levelsSummary(List<Integer> levels) {
+        String formatted = formatLevels(levels);
+        return formatted.isBlank() ? "-" : formatted;
+    }
+
+    private static String percentageText(double opacity) {
+        return Math.round(opacity * 100.0) + "%";
     }
 
     private static String formatLevels(List<Integer> levels) {

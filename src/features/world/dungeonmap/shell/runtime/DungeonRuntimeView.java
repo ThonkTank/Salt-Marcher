@@ -23,6 +23,8 @@ import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import ui.async.UiAsyncTasks;
 import ui.shell.DetailsNavigator;
@@ -84,7 +86,10 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         overlayControls.setOnRangeChanged(state::setLevelOverlayRange);
         overlayControls.setOnOpacityChanged(state::setLevelOverlayOpacity);
         overlayControls.setOnSelectedLevelsChanged(state::setSelectedOverlayLevels);
-        this.controls = new VBox(10, zoomLabel, mapLabel, levelLabel, new HBox(8, downLevelButton, upLevelButton), overlayControls.content());
+        Region levelSpacer = new Region();
+        HBox.setHgrow(levelSpacer, Priority.ALWAYS);
+        HBox levelRow = new HBox(8, levelLabel, downLevelButton, upLevelButton, levelSpacer, overlayControls.trigger());
+        this.controls = new VBox(10, zoomLabel, mapLabel, levelRow);
         this.controls.setPadding(new Insets(12));
         refreshRuntimeUi();
     }
