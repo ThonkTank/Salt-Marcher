@@ -1399,6 +1399,10 @@
     -fx-border-color: -sm-accent-hover;
     -fx-border-width: 2;
 }
+.dungeon-editor-toolbar .toolbar-action-button:focused {
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+}
 .dungeon-tool-settings-pane .combo-box,
 .dungeon-tool-settings-pane .spinner,
 .dungeon-selection-editor-pane .combo-box,

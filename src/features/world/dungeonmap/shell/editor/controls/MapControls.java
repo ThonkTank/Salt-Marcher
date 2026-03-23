@@ -32,6 +32,8 @@ public final class MapControls {
     private Consumer<DungeonMapCatalogEntry> onMapSelected;
 
     public MapControls(ViewModeControls viewModeControls, Function<String, Label> sectionLabelFactory) {
+        previousLevelButton.getStyleClass().add("toolbar-action-button");
+        nextLevelButton.getStyleClass().add("toolbar-action-button");
         selector.setConverter(new StringConverter<>() {
             @Override
             public String toString(DungeonMapCatalogEntry entry) {
