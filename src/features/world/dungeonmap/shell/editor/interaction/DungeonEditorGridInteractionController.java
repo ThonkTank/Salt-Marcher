@@ -18,6 +18,7 @@ public final class DungeonEditorGridInteractionController implements DungeonCanv
     private final CorridorInteractionController corridorInteractionController;
     private final BoundaryInteractionController boundaryInteractionController;
     private final StairInteractionController stairInteractionController;
+    private final TransitionInteractionController transitionInteractionController;
 
     public DungeonEditorGridInteractionController(
             DungeonMapState mapState,
@@ -26,7 +27,8 @@ public final class DungeonEditorGridInteractionController implements DungeonCanv
             RoomPaintInteractionController roomPaintInteractionController,
             CorridorInteractionController corridorInteractionController,
             BoundaryInteractionController boundaryInteractionController,
-            StairInteractionController stairInteractionController
+            StairInteractionController stairInteractionController,
+            TransitionInteractionController transitionInteractionController
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.sessionState = Objects.requireNonNull(sessionState, "sessionState");
@@ -35,6 +37,7 @@ public final class DungeonEditorGridInteractionController implements DungeonCanv
         this.corridorInteractionController = Objects.requireNonNull(corridorInteractionController, "corridorInteractionController");
         this.boundaryInteractionController = Objects.requireNonNull(boundaryInteractionController, "boundaryInteractionController");
         this.stairInteractionController = Objects.requireNonNull(stairInteractionController, "stairInteractionController");
+        this.transitionInteractionController = Objects.requireNonNull(transitionInteractionController, "transitionInteractionController");
     }
 
     @Override
@@ -68,7 +71,16 @@ public final class DungeonEditorGridInteractionController implements DungeonCanv
             roomPaintInteractionController.clear();
             corridorInteractionController.clear();
             boundaryInteractionController.clear();
+            transitionInteractionController.clear();
             return stairInteractionController.handlePressed(event);
+        }
+        if (sessionState.selectedTool().isTransitionTool()) {
+            clusterSelectionDragController.clear();
+            roomPaintInteractionController.clear();
+            corridorInteractionController.clear();
+            boundaryInteractionController.clear();
+            stairInteractionController.clear();
+            return transitionInteractionController.handlePressed(event);
         }
         if (sessionState.selectedTool() != DungeonEditorTool.SELECT) {
             clear();
@@ -77,6 +89,7 @@ public final class DungeonEditorGridInteractionController implements DungeonCanv
         roomPaintInteractionController.clear();
         corridorInteractionController.clear();
         stairInteractionController.clear();
+        transitionInteractionController.clear();
         return clusterSelectionDragController.handlePressed(event);
     }
 
@@ -93,6 +106,9 @@ public final class DungeonEditorGridInteractionController implements DungeonCanv
         }
         if (sessionState.selectedTool().isStairTool()) {
             return stairInteractionController.handleDragged(event);
+        }
+        if (sessionState.selectedTool().isTransitionTool()) {
+            return transitionInteractionController.handleDragged(event);
         }
         if (!interactionEnabled() || sessionState.selectedTool() != DungeonEditorTool.SELECT) {
             return false;
@@ -114,6 +130,9 @@ public final class DungeonEditorGridInteractionController implements DungeonCanv
         if (sessionState.selectedTool().isStairTool()) {
             return stairInteractionController.handleReleased(event);
         }
+        if (sessionState.selectedTool().isTransitionTool()) {
+            return transitionInteractionController.handleReleased(event);
+        }
         if (sessionState.selectedTool() != DungeonEditorTool.SELECT) {
             return false;
         }
@@ -126,6 +145,7 @@ public final class DungeonEditorGridInteractionController implements DungeonCanv
         corridorInteractionController.clear();
         boundaryInteractionController.clear();
         stairInteractionController.clear();
+        transitionInteractionController.clear();
     }
 
     private boolean interactionEnabled() {

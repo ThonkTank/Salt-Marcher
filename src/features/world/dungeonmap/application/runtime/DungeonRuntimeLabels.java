@@ -7,6 +7,7 @@ import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
+import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 
 import java.util.stream.Stream;
 
@@ -35,6 +36,10 @@ public final class DungeonRuntimeLabels {
         }
         if (location instanceof DungeonRuntimeLocation.StairExit stairExit) {
             return structureLabelAtTile(layout, stairExit.tile());
+        }
+        if (location instanceof DungeonRuntimeLocation.Transition transitionLocation) {
+            DungeonTransition transition = layout.findTransition(transitionLocation.transitionId());
+            return transition == null ? "Übergang" : transition.name();
         }
         return "Kein Standort";
     }
@@ -72,6 +77,10 @@ public final class DungeonRuntimeLabels {
         DungeonStair stair = layout.stairsAtPoint(tile).stream().findFirst().orElse(null);
         if (stair != null) {
             return stair.name();
+        }
+        DungeonTransition transition = layout.transitionsAtPoint(tile).stream().findFirst().orElse(null);
+        if (transition != null) {
+            return transition.name();
         }
         return "Kein Standort";
     }

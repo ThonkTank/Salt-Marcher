@@ -2,6 +2,8 @@ package features.world.dungeonmap.shell.editor;
 
 import features.world.dungeonmap.application.corridor.DungeonCorridorEditService;
 import features.world.dungeonmap.application.stair.DungeonStairEditService;
+import features.world.dungeonmap.application.transition.DungeonTransitionEditRequest;
+import features.world.dungeonmap.application.transition.DungeonTransitionEditService;
 import features.world.dungeonmap.application.room.DungeonBoundaryEditService;
 import features.world.dungeonmap.application.room.DungeonClusterMoveService;
 import features.world.dungeonmap.application.room.DungeonRoomNarrationService;
@@ -16,12 +18,14 @@ import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
+import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.shell.editor.interaction.CorridorInteractionController;
 import features.world.dungeonmap.shell.editor.interaction.BoundaryInteractionController;
 import features.world.dungeonmap.shell.editor.interaction.ClusterSelectionDragController;
 import features.world.dungeonmap.shell.editor.interaction.DungeonEditorGridInteractionController;
 import features.world.dungeonmap.shell.editor.interaction.RoomPaintInteractionController;
 import features.world.dungeonmap.shell.editor.interaction.StairInteractionController;
+import features.world.dungeonmap.shell.editor.interaction.TransitionInteractionController;
 import features.world.dungeonmap.state.DungeonCorridorDraftState;
 import features.world.dungeonmap.state.EditorLayoutPreviewState;
 import features.world.dungeonmap.state.EditorPaintPreviewState;
@@ -29,6 +33,7 @@ import features.world.dungeonmap.state.EditorSelectionState;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.DungeonStairDraftState;
+import features.world.dungeonmap.state.DungeonTransitionDraftState;
 import ui.async.UiAsyncTasks;
 import ui.async.UiErrorReporter;
 
@@ -51,8 +56,10 @@ final class DungeonEditorCoordinator {
     private final EditorPaintPreviewState paintPreviewState = new EditorPaintPreviewState();
     private final DungeonCorridorDraftState corridorDraftState = new DungeonCorridorDraftState();
     private final DungeonStairDraftState stairDraftState = new DungeonStairDraftState();
+    private final DungeonTransitionDraftState transitionDraftState = new DungeonTransitionDraftState();
     private final DungeonStairEditService stairEditService;
     private final StairInteractionController stairInteractionController;
+    private final TransitionInteractionController transitionInteractionController;
     private final DungeonEditorGridInteractionController interactionController;
     private DungeonEditorTool previousTool = DungeonEditorTool.SELECT;
     private Long previousMapId;
@@ -70,7 +77,8 @@ final class DungeonEditorCoordinator {
             DungeonRoomNarrationService roomNarrationService,
             DungeonClusterMoveService clusterMoveService,
             DungeonCorridorEditService corridorEditService,
-            DungeonStairEditService stairEditService
+            DungeonStairEditService stairEditService,
+            DungeonTransitionEditService transitionEditService
     ) {
         this.controls = Objects.requireNonNull(controls, "controls");
         this.statePane = Objects.requireNonNull(statePane, "statePane");
@@ -113,6 +121,13 @@ final class DungeonEditorCoordinator {
                 selectionState,
                 stairDraftState,
                 this.stairEditService);
+        this.transitionInteractionController = new TransitionInteractionController(
+                mapState,
+                loadingService,
+                sessionState,
+                selectionState,
+                transitionDraftState,
+                Objects.requireNonNull(transitionEditService, "transitionEditService"));
         this.interactionController = new DungeonEditorGridInteractionController(
                 mapState,
                 sessionState,
@@ -120,7 +135,8 @@ final class DungeonEditorCoordinator {
                 roomPaintInteractionController,
                 corridorInteractionController,
                 boundaryInteractionController,
-                this.stairInteractionController);
+                this.stairInteractionController,
+                this.transitionInteractionController);
         this.mapDropdownController = new DungeonMapDropdownController(
                 Objects.requireNonNull(mapCatalogService, "mapCatalogService"),
                 new MapReloadHandle());
@@ -130,16 +146,19 @@ final class DungeonEditorCoordinator {
         selectionState.addListener(this::refreshCorridorStatePane);
         selectionState.addListener(this::refreshStairStatePane);
         selectionState.addListener(this::refreshRoomNarrationStatePane);
+        selectionState.addListener(this::refreshTransitionStatePane);
         layoutPreviewState.addListener(this::refreshLayoutPreviewState);
         paintPreviewState.addListener(this::refreshPaintPreviewState);
         corridorDraftState.addListener(this::refreshCorridorStatePane);
         stairDraftState.addListener(this::refreshStairStatePane);
+        transitionDraftState.addListener(this::refreshTransitionStatePane);
         refreshFromSessionState();
         refreshSelectionState();
         refreshLayoutPreviewState();
         refreshPaintPreviewState();
         refreshCorridorStatePane();
         refreshStairStatePane();
+        refreshTransitionStatePane();
         refreshRoomNarrationStatePane();
     }
 
@@ -179,6 +198,13 @@ final class DungeonEditorCoordinator {
         statePane.setOnStairLevelIncrementRequested(() -> stairDraftState.adjustInputLevel(1));
         statePane.setOnStairAddRequested(stairDraftState::addExitLevel);
         statePane.setOnStairExitRemoveRequested(stairDraftState::removeExitLevel);
+        statePane.setOnTransitionNameChanged(transitionDraftState::setName);
+        statePane.setOnTransitionDestinationTypeChanged(transitionDraftState::setDestinationType);
+        statePane.setOnTransitionBidirectionalChanged(transitionDraftState::setBidirectional);
+        statePane.setOnTransitionTargetMapChanged(transitionDraftState::setTargetDungeonMapId);
+        statePane.setOnTransitionTargetTransitionIdChanged(transitionDraftState::setTargetTransitionId);
+        statePane.setOnTransitionTargetOverworldTileChanged(transitionDraftState::setTargetOverworldTileId);
+        statePane.setOnPreparedTransitionSelected(transitionDraftState::setPreparedTransitionId);
         workspace.setInteractionHandler(interactionController);
     }
 
@@ -198,6 +224,7 @@ final class DungeonEditorCoordinator {
         statePane.refresh(selectedTool);
         refreshCorridorStatePane();
         refreshStairStatePane();
+        refreshTransitionStatePane();
         previousTool = selectedTool;
     }
 
@@ -248,6 +275,46 @@ final class DungeonEditorCoordinator {
                         stairDraftState.exitLevels(),
                         stairDraftState.displayStatus(),
                         true));
+    }
+
+    private void refreshTransitionStatePane() {
+        if (sessionState.selectedTool() != DungeonEditorTool.TRANSITION_CREATE
+                && sessionState.selectedTool() != DungeonEditorTool.TRANSITION_DELETE
+                && !DungeonTransition.isTargetKey(selectionState.selectedTargetKey())) {
+            statePane.showTransitionDraft(null);
+            return;
+        }
+        if (sessionState.selectedTool() == DungeonEditorTool.TRANSITION_DELETE) {
+            String selectedTargetKey = selectionState.selectedTargetKey();
+            String summary = DungeonTransition.isTargetKey(selectedTargetKey)
+                    ? "Gewählt: " + DungeonEditorSelectionLabels.transitionLabel(selectedTargetKey)
+                    : "Übergangsfeld anklicken, um zu löschen";
+            statePane.showTransitionDraft(new DungeonEditorStatePane.TransitionDraftCard(
+                    transitionDraftState.name(),
+                    transitionDraftState.destinationType(),
+                    transitionDraftState.bidirectional(),
+                    transitionDraftState.targetDungeonMapId(),
+                    transitionDraftState.targetTransitionId(),
+                    transitionDraftState.targetOverworldTileId(),
+                    transitionDraftState.preparedTransitionId(),
+                    mapState.maps(),
+                    preparedTransitionCards(),
+                    summary,
+                    summary));
+            return;
+        }
+        statePane.showTransitionDraft(new DungeonEditorStatePane.TransitionDraftCard(
+                transitionDraftState.name(),
+                transitionDraftState.destinationType(),
+                transitionDraftState.bidirectional(),
+                transitionDraftState.targetDungeonMapId(),
+                transitionDraftState.targetTransitionId(),
+                transitionDraftState.targetOverworldTileId(),
+                transitionDraftState.preparedTransitionId(),
+                targetMapChoices(),
+                preparedTransitionCards(),
+                transitionSummary(),
+                transitionDraftState.displayStatus()));
     }
 
     private void refreshRoomNarrationStatePane() {
@@ -308,6 +375,33 @@ final class DungeonEditorCoordinator {
         if (entry != null) {
             loadingService.loadMap(entry.mapId());
         }
+    }
+
+    private List<DungeonMapCatalogEntry> targetMapChoices() {
+        Long currentMapId = mapState.activeMapId();
+        return mapState.maps().stream()
+                .filter(map -> map != null && !Objects.equals(map.mapId(), currentMapId))
+                .toList();
+    }
+
+    private List<DungeonEditorStatePane.PreparedTransitionCard> preparedTransitionCards() {
+        return mapState.activeMap().transitions().stream()
+                .filter(transition -> transition != null && transition.transitionId() != null && !transition.isPlaced())
+                .sorted(Comparator.comparing(DungeonTransition::transitionId))
+                .map(transition -> new DungeonEditorStatePane.PreparedTransitionCard(
+                        transition.transitionId(),
+                        transition.name() + " (" + transition.transitionId() + ")"))
+                .toList();
+    }
+
+    private String transitionSummary() {
+        if (transitionDraftState.preparedTransitionId() != null && transitionDraftState.preparedTransitionId() > 0) {
+            return "Vorbereitet: Übergang " + transitionDraftState.preparedTransitionId();
+        }
+        return switch (transitionDraftState.destinationType()) {
+            case OVERWORLD_TILE -> "Overworld-Übergang";
+            case DUNGEON_MAP -> transitionDraftState.bidirectional() ? "Dungeon-Übergang (zweiseitig)" : "Dungeon-Übergang";
+        };
     }
 
     private final class MapReloadHandle implements DungeonMapDropdownController.ReloadHandle {

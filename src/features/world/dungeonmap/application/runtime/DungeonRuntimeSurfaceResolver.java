@@ -5,6 +5,7 @@ import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
 import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import ui.shell.DetailsNavigator;
 
 import java.util.List;
@@ -65,6 +66,9 @@ public final class DungeonRuntimeSurfaceResolver {
         if (structure instanceof DungeonLayout.CellStructure.StairStructure stairStructure) {
             return stairOnlySurface(layout, stairStructure.stair(), tile);
         }
+        if (structure instanceof DungeonLayout.CellStructure.TransitionStructure transitionStructure) {
+            return transitionOnlySurface(layout, transitionStructure.transition(), tile);
+        }
         return null;
     }
 
@@ -82,7 +86,8 @@ public final class DungeonRuntimeSurfaceResolver {
                 new DetailsNavigator.EntryKey("dungeon-room", layout.mapId() + ":" + room.roomId()),
                 room.narration().visualDescription(),
                 DungeonRuntimeDoorCatalog.describe(layout, room, heading),
-                DungeonRuntimeStairCatalog.describe(layout, room, activeTile));
+                DungeonRuntimeStairCatalog.describe(layout, room, activeTile),
+                DungeonRuntimeTransitionCatalog.describe(layout, room));
     }
 
     private static DungeonRuntimeSurface corridorNetworkSurface(
@@ -99,7 +104,8 @@ public final class DungeonRuntimeSurfaceResolver {
                 new DetailsNavigator.EntryKey("dungeon-corridor-network", layout.mapId() + ":" + network.networkId()),
                 "",
                 DungeonRuntimeDoorCatalog.describe(layout, network, heading),
-                DungeonRuntimeStairCatalog.describe(layout, network, activeTile));
+                DungeonRuntimeStairCatalog.describe(layout, network, activeTile),
+                DungeonRuntimeTransitionCatalog.describe(layout, network));
     }
 
     private static DungeonRuntimeSurface corridorSurface(
@@ -116,7 +122,8 @@ public final class DungeonRuntimeSurfaceResolver {
                 new DetailsNavigator.EntryKey("dungeon-corridor", layout.mapId() + ":" + corridor.corridorId()),
                 "",
                 DungeonRuntimeDoorCatalog.describe(layout, corridor, heading),
-                DungeonRuntimeStairCatalog.describe(layout, corridor, activeTile));
+                DungeonRuntimeStairCatalog.describe(layout, corridor, activeTile),
+                DungeonRuntimeTransitionCatalog.describe(layout, corridor));
     }
 
     private static DungeonRuntimeSurface stairOnlySurface(
@@ -139,6 +146,24 @@ public final class DungeonRuntimeSurfaceResolver {
                                 .map(CubePoint::projectedCell)
                                 .collect(Collectors.toSet()),
                         activeTile == null ? 0 : activeTile.z(),
-                        activeTile));
+                        activeTile),
+                DungeonRuntimeTransitionCatalog.describeAtTile(layout, activeTile));
+    }
+
+    private static DungeonRuntimeSurface transitionOnlySurface(
+            DungeonLayout layout,
+            DungeonTransition transition,
+            CubePoint activeTile
+    ) {
+        if (layout == null || transition == null || transition.transitionId() == null) {
+            return null;
+        }
+        return new DungeonRuntimeSurface(
+                transition.name(),
+                new DetailsNavigator.EntryKey("dungeon-transition", layout.mapId() + ":" + transition.transitionId()),
+                transition.name(),
+                List.of(),
+                List.of(),
+                DungeonRuntimeTransitionCatalog.describeAtTile(layout, activeTile));
     }
 }

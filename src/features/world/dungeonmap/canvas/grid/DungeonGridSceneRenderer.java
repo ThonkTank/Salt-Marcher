@@ -21,6 +21,7 @@ import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
+import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -71,6 +72,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 renderState.projectionLevel(),
                 currentPalette,
                 false);
+        drawTransitions(gc, projectedMap, camera, renderState.selectedTargetKey(), currentPalette);
         drawPartyToken(gc, mapModel, camera, renderState.activeLocation(), renderState.heading(), renderState.projectionLevel());
         if (!editorMode) {
             drawDoorNumbers(gc, projectedMap, camera, renderState.activeLocation(), renderState.heading());
@@ -427,6 +429,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 false);
         drawCorridors(gc, projected, camera, renderState.selectedTargetKey(), palette);
         drawStairs(gc, projected, camera, editorMode, renderState.selectedTargetKey(), overlay.level(), palette, true);
+        drawTransitions(gc, projected, camera, renderState.selectedTargetKey(), palette);
         drawSelectedRoomBoundaries(
                 gc,
                 camera,
@@ -536,6 +539,35 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         gc.strokePolygon(shapeX, shapeY, shapeX.length);
         gc.setFill(DungeonCanvasTheme.PARTY_TOKEN_STROKE);
         gc.fillOval(centerX - innerRadius, centerY - innerRadius, innerRadius * 2, innerRadius * 2);
+    }
+
+    private static void drawTransitions(
+            GraphicsContext gc,
+            DungeonLayout mapModel,
+            DungeonCanvasCamera camera,
+            String selectedTargetKey,
+            LayerPalette palette
+    ) {
+        double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setFont(Font.font(Math.max(10.0, gridSize * 0.35)));
+        for (DungeonTransition transition : mapModel.transitions()) {
+            if (transition == null || !transition.isPlaced()) {
+                continue;
+            }
+            double centerX = camera.panX() + (transition.anchor().x() + 0.5) * gridSize;
+            double centerY = camera.panY() + (transition.anchor().y() + 0.5) * gridSize;
+            double radius = Math.max(8.0, gridSize * 0.24);
+            boolean selected = java.util.Objects.equals(transition.targetKey(), selectedTargetKey);
+            gc.setFill(selected ? palette.selectedWallStroke() : palette.stairExitFill());
+            gc.fillRoundRect(centerX - radius, centerY - radius, radius * 2, radius * 2, 8, 8);
+            gc.setStroke(selected ? palette.corridorSelectedStroke() : palette.stairStroke());
+            gc.setLineWidth(selected ? 2.2 : 1.5);
+            gc.strokeRoundRect(centerX - radius, centerY - radius, radius * 2, radius * 2, 8, 8);
+            gc.setFill(DungeonCanvasTheme.LABEL_TEXT);
+            gc.fillText("→", centerX, centerY + 4.0);
+        }
+        gc.setTextAlign(TextAlignment.LEFT);
     }
 
     private static void drawDoorNumbers(

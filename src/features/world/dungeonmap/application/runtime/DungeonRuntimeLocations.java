@@ -32,6 +32,10 @@ final class DungeonRuntimeLocations {
             long stairId = parseStairId(position.locationKey());
             return tile == null || stairId <= 0 ? null : DungeonRuntimeLocation.stairExit(stairId, tile);
         }
+        if (position.locationType() == CampaignDungeonLocationType.CORRIDOR_COMPONENT && position.locationKey() != null && position.locationKey().startsWith("transition:")) {
+            Long transitionId = parseTransitionId(position.locationKey());
+            return transitionId == null ? null : DungeonRuntimeLocation.transition(transitionId);
+        }
         if (position.locationType() == CampaignDungeonLocationType.CORRIDOR_COMPONENT && position.locationKey() != null) {
             return DungeonRuntimeLocation.corridorComponent(position.locationKey());
         }
@@ -53,6 +57,8 @@ final class DungeonRuntimeLocations {
             resolvedTile = layout.isTraversableCell(tileLocation.tile()) ? tileLocation.tile() : null;
         } else if (location instanceof DungeonRuntimeLocation.StairExit stairExit) {
             resolvedTile = stairExitAnchor(layout, stairExit.stairId(), stairExit.tile());
+        } else if (location instanceof DungeonRuntimeLocation.Transition transitionLocation) {
+            resolvedTile = transitionAnchor(layout, transitionLocation.transitionId());
         } else if (location instanceof DungeonRuntimeLocation.Room roomLocation) {
             resolvedTile = roomAnchor(layout, roomLocation.roomId());
         } else if (location instanceof DungeonRuntimeLocation.Corridor corridorLocation) {
@@ -82,6 +88,9 @@ final class DungeonRuntimeLocations {
         if (location instanceof DungeonRuntimeLocation.StairExit stairExit) {
             return stairExitAnchor(layout, stairExit.stairId(), stairExit.tile()) != null;
         }
+        if (location instanceof DungeonRuntimeLocation.Transition transition) {
+            return transitionAnchor(layout, transition.transitionId()) != null;
+        }
         if (location instanceof DungeonRuntimeLocation.CorridorComponent component) {
             return layout.findCorridorNetwork(component.componentId()) != null;
         }
@@ -108,6 +117,9 @@ final class DungeonRuntimeLocations {
                     null,
                     formatStairExit(stairExit.stairId(), stairExit.tile()),
                     headingValue);
+        }
+        if (location instanceof DungeonRuntimeLocation.Transition transition) {
+            return new DungeonPositionRef(mapId, 0, CampaignDungeonLocationType.CORRIDOR_COMPONENT, null, null, formatTransition(transition.transitionId()), headingValue);
         }
         if (location instanceof DungeonRuntimeLocation.CorridorComponent corridorComponent) {
             return new DungeonPositionRef(mapId, 0, CampaignDungeonLocationType.CORRIDOR_COMPONENT, null, null, corridorComponent.componentId(), headingValue);
@@ -186,6 +198,21 @@ final class DungeonRuntimeLocations {
         }
     }
 
+    private static String formatTransition(long transitionId) {
+        return "transition:" + transitionId;
+    }
+
+    private static Long parseTransitionId(String value) {
+        if (value == null || !value.startsWith("transition:")) {
+            return null;
+        }
+        try {
+            return Long.parseLong(value.substring("transition:".length()));
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
     private static CubePoint roomAnchor(DungeonLayout layout, Long roomId) {
         Room room = layout.findRoom(roomId);
         if (room == null || room.floor() == null) {
@@ -233,5 +260,10 @@ final class DungeonRuntimeLocations {
                 .map(DungeonStairExit::position)
                 .findFirst()
                 .orElseGet(() -> stair.path().stream().findFirst().orElse(null));
+    }
+
+    private static CubePoint transitionAnchor(DungeonLayout layout, long transitionId) {
+        var transition = layout.findTransition(transitionId);
+        return transition == null ? null : transition.anchor();
     }
 }

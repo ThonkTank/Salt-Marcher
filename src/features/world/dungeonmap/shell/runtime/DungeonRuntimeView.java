@@ -9,6 +9,7 @@ import features.world.dungeonmap.application.runtime.DungeonRuntimeLocationTileR
 import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationService;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationSnapshot;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeStairDescriptor;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeTransitionDescriptor;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeSurface;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeSurfacePresenter;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeSurfaceResolver;
@@ -279,6 +280,9 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         surface.stairs().stream()
                 .map(this::toStairAction)
                 .forEach(actions::add);
+        surface.transitions().stream()
+                .map(this::toTransitionAction)
+                .forEach(actions::add);
         return List.copyOf(actions);
     }
 
@@ -288,6 +292,10 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
 
     private WorldTravelSurface.DungeonDoorAction toDoorAction(DungeonRuntimeDoorDescriptor door) {
         return new WorldTravelSurface.DungeonDoorAction(door.displayLabel(), () -> movePartyThroughDoor(door));
+    }
+
+    private WorldTravelSurface.DungeonDoorAction toTransitionAction(DungeonRuntimeTransitionDescriptor transition) {
+        return new WorldTravelSurface.DungeonDoorAction(transition.displayLabel(), () -> movePartyThroughTransition(transition));
     }
 
     private void movePartyThroughStair(DungeonRuntimeStairDescriptor stair) {
@@ -305,7 +313,27 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
                 });
     }
 
+    private void movePartyThroughTransition(DungeonRuntimeTransitionDescriptor transition) {
+        if (transition == null || runtimeState.loading() || runtimeState.moving() || state().activeMap().mapId() <= 0) {
+            return;
+        }
+        var layout = state().activeMap();
+        runtimeState.showMoveInProgress();
+        UiAsyncTasks.submit(
+                () -> runtimeNavigationService.moveThroughTransition(layout, transition, runtimeState.heading()),
+                this::applyNavigationSnapshot,
+                failure -> {
+                    System.err.println("DungeonRuntimeView.movePartyThroughTransition(): " + failure.getMessage());
+                    runtimeState.showFailure("Übergang konnte nicht benutzt werden");
+                });
+    }
+
     private void applyNavigationSnapshot(DungeonRuntimeNavigationSnapshot snapshot) {
+        if (snapshot != null && snapshot.mapId() != null && !Objects.equals(snapshot.mapId(), state().activeMapId())) {
+            runtimeState.showLoading();
+            loadingService().loadMap(snapshot.mapId());
+            return;
+        }
         runtimeState.showNavigation(snapshot);
         CubePoint activeTile = DungeonRuntimeLocationTileResolver.resolve(state().activeMap(), runtimeState.activeLocation());
         if (activeTile != null) {
@@ -327,7 +355,10 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
             return;
         }
         lastPublishedSurfaceKey = entryKey;
-        detailsNavigator.showContent(surface.title(), entryKey, () -> DungeonRuntimeSurfacePresenter.buildNode(surface, this::movePartyThroughStair));
+        detailsNavigator.showContent(surface.title(), entryKey, () -> DungeonRuntimeSurfacePresenter.buildNode(
+                surface,
+                this::movePartyThroughStair,
+                this::movePartyThroughTransition));
     }
 
     private DungeonRuntimeSurface activeSurface() {

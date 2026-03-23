@@ -7,6 +7,7 @@ import features.world.dungeonmap.application.corridor.DungeonCorridorRoomRewrite
 import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationService;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeStateRepairService;
 import features.world.dungeonmap.application.stair.DungeonStairEditService;
+import features.world.dungeonmap.application.transition.DungeonTransitionEditService;
 import features.world.dungeonmap.application.room.DungeonClusterMoveService;
 import features.world.dungeonmap.application.room.DungeonBoundaryEditService;
 import features.world.dungeonmap.application.room.DungeonRoomNarrationService;
@@ -16,6 +17,7 @@ import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.persistence.DungeonCorridorWriteRepository;
 import features.world.dungeonmap.persistence.DungeonStairWriteRepository;
+import features.world.dungeonmap.persistence.DungeonTransitionWriteRepository;
 import features.world.dungeonmap.persistence.DungeonRoomGeometryWriteMapper;
 import features.world.dungeonmap.persistence.DungeonRoomWriteRepository;
 import features.world.dungeonmap.shell.editor.DungeonEditorView;
@@ -38,6 +40,7 @@ public final class DungeonMapModule {
         DungeonCorridorPersistenceService corridorPersistenceService = new DungeonCorridorPersistenceService(corridorWriteRepository);
         DungeonRoomWriteRepository roomWriteRepository = new DungeonRoomWriteRepository();
         DungeonStairWriteRepository stairWriteRepository = new DungeonStairWriteRepository();
+        DungeonTransitionWriteRepository transitionWriteRepository = new DungeonTransitionWriteRepository();
         DungeonRoomNarrationService roomNarrationService = new DungeonRoomNarrationService(roomWriteRepository);
         DungeonRoomGeometryWriteMapper geometryWriteMapper = new DungeonRoomGeometryWriteMapper();
         DungeonCorridorRoomRewriteService corridorRoomRewriteService = new DungeonCorridorRoomRewriteService();
@@ -48,6 +51,7 @@ public final class DungeonMapModule {
                 corridorPersistenceService,
                 corridorRoomRewriteService);
         DungeonStairEditService stairEditService = new DungeonStairEditService(roomTopologyService, stairWriteRepository);
+        DungeonTransitionEditService transitionEditService = new DungeonTransitionEditService(roomTopologyService, transitionWriteRepository);
         DungeonMapCatalogService mapCatalogService = new DungeonMapCatalogService(
                 roomTopologyService,
                 new DungeonRuntimeStateRepairService(mapLoader));
@@ -78,7 +82,8 @@ public final class DungeonMapModule {
                 roomNarrationService,
                 clusterMoveService,
                 corridorEditService,
-                stairEditService);
+                stairEditService,
+                transitionEditService);
     }
 
     public AppView dungeonView() {

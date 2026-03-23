@@ -2,6 +2,7 @@ package features.world.dungeonmap.application.runtime;
 
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
 import features.world.dungeonmap.model.structures.room.Room;
@@ -21,6 +22,10 @@ public final class DungeonRuntimeLocationTileResolver {
         }
         if (location instanceof DungeonRuntimeLocation.StairExit stairExit) {
             return stairExit.tile();
+        }
+        if (location instanceof DungeonRuntimeLocation.Transition transitionLocation) {
+            DungeonTransition transition = layout.findTransition(transitionLocation.transitionId());
+            return transition == null ? null : transition.anchor();
         }
         if (location instanceof DungeonRuntimeLocation.Room roomLocation) {
             Room room = layout.findRoom(roomLocation.roomId());

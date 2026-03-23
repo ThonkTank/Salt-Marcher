@@ -5,6 +5,8 @@ import features.campaignstate.api.CampaignStateApi;
 import features.campaignstate.api.CampaignStateReadApi;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.structures.transition.DungeonTransition;
+import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
 import java.sql.Connection;
 import java.sql.SQLException;
 
@@ -38,7 +40,7 @@ public final class DungeonRuntimeNavigationService {
         }
         DungeonRuntimeLocation resolvedLocation = DungeonRuntimeLocations.resolveActiveLocation(layout, preferredLocation);
         DungeonHeading resolvedHeading = preferredHeading == null ? DungeonHeading.defaultHeading() : preferredHeading;
-        return new DungeonRuntimeNavigationSnapshot(resolvedLocation, resolvedHeading);
+        return new DungeonRuntimeNavigationSnapshot(layout.mapId(), resolvedLocation, resolvedHeading);
     }
 
     public CubePoint nearestTraversableTile(DungeonLayout layout, CubePoint preferredTile) {
@@ -113,5 +115,42 @@ public final class DungeonRuntimeNavigationService {
             CampaignStateApi.setDungeonPosition(conn, DungeonRuntimeLocations.toCampaignPosition(layout.mapId(), targetLocation, currentHeading));
         }
         return resolveNavigation(layout, targetLocation, currentHeading);
+    }
+
+    public DungeonRuntimeNavigationSnapshot moveThroughTransition(
+            DungeonLayout layout,
+            DungeonRuntimeTransitionDescriptor transitionDescriptor,
+            DungeonHeading currentHeading
+    ) throws SQLException {
+        if (layout == null || layout.mapId() <= 0) {
+            throw new SQLException("Kein aktiver Dungeon geladen");
+        }
+        if (transitionDescriptor == null) {
+            throw new SQLException("Kein Übergang verfügbar");
+        }
+        DungeonTransition transition = layout.findTransition(transitionDescriptor.transitionId());
+        if (transition == null || transition.destination() == null) {
+            throw new SQLException("Übergang konnte nicht aufgelöst werden");
+        }
+        if (transition.destination() instanceof DungeonTransitionDestination.OverworldTileDestination overworld) {
+            try (Connection conn = DatabaseManager.getConnection()) {
+                CampaignStateApi.updatePartyTile(conn, overworld.tileId());
+                CampaignStateApi.clearDungeonPosition(conn);
+            }
+            return DungeonRuntimeNavigationSnapshot.empty();
+        }
+        if (transition.destination() instanceof DungeonTransitionDestination.DungeonMapDestination dungeon) {
+            if (dungeon.transitionId() == null) {
+                throw new SQLException("Ziel-Übergang ist noch nicht platziert");
+            }
+            try (Connection conn = DatabaseManager.getConnection()) {
+                CampaignStateApi.setDungeonPosition(conn, DungeonRuntimeLocations.toCampaignPosition(
+                        dungeon.mapId(),
+                        DungeonRuntimeLocation.transition(dungeon.transitionId()),
+                        currentHeading));
+            }
+            return new DungeonRuntimeNavigationSnapshot(dungeon.mapId(), DungeonRuntimeLocation.transition(dungeon.transitionId()), currentHeading);
+        }
+        throw new SQLException("Unbekanntes Übergangsziel");
     }
 }

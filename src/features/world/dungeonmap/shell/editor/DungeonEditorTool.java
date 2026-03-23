@@ -11,7 +11,9 @@ public enum DungeonEditorTool {
     CORRIDOR_CREATE("Korridor erstellen"),
     CORRIDOR_DELETE("Korridor löschen"),
     STAIR_CREATE("Treppe erstellen"),
-    STAIR_DELETE("Treppe löschen");
+    STAIR_DELETE("Treppe löschen"),
+    TRANSITION_CREATE("Übergang erstellen"),
+    TRANSITION_DELETE("Übergang löschen");
 
     private final String label;
 
@@ -35,6 +37,10 @@ public enum DungeonEditorTool {
         return this == STAIR_CREATE || this == STAIR_DELETE;
     }
 
+    public boolean isTransitionTool() {
+        return this == TRANSITION_CREATE || this == TRANSITION_DELETE;
+    }
+
     public boolean isWallTool() {
         return this == CLUSTER_WALL || this == CLUSTER_WALL_DELETE;
     }
@@ -50,6 +56,7 @@ public enum DungeonEditorTool {
             case CLUSTER_DOOR, CLUSTER_DOOR_DELETE -> CLUSTER_DOOR;
             case CORRIDOR_CREATE, CORRIDOR_DELETE -> CORRIDOR_CREATE;
             case STAIR_CREATE, STAIR_DELETE -> STAIR_CREATE;
+            case TRANSITION_CREATE, TRANSITION_DELETE -> TRANSITION_CREATE;
             case SELECT -> this;
         };
     }
@@ -61,6 +68,7 @@ public enum DungeonEditorTool {
             case CLUSTER_DOOR, CLUSTER_DOOR_DELETE -> CLUSTER_DOOR_DELETE;
             case CORRIDOR_CREATE, CORRIDOR_DELETE -> CORRIDOR_DELETE;
             case STAIR_CREATE, STAIR_DELETE -> STAIR_DELETE;
+            case TRANSITION_CREATE, TRANSITION_DELETE -> TRANSITION_DELETE;
             case SELECT -> this;
         };
     }

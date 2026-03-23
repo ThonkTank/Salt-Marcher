@@ -26,6 +26,7 @@ public final class ToolControls {
     private final Button doorButton = createButton("Tür");
     private final Button corridorButton = createButton("Korridor");
     private final Button stairButton = createButton("Treppe");
+    private final Button transitionButton = createButton("Übergang");
     private final GuardState sync = new GuardState();
     private final ToolFamilyDropdownController dropdownController;
     private final VBox content;
@@ -42,6 +43,7 @@ public final class ToolControls {
         familyButtons.put(ToolFamily.DOOR, doorButton);
         familyButtons.put(ToolFamily.CORRIDOR, corridorButton);
         familyButtons.put(ToolFamily.STAIR, stairButton);
+        familyButtons.put(ToolFamily.TRANSITION, transitionButton);
 
         toolGroup.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
             if (sync.isActive()) {
@@ -62,7 +64,7 @@ public final class ToolControls {
             familyButton.setOnAction(event -> activateFamily(family));
         }
 
-        HBox row = new HBox(6, selectButton, roomButton, wallButton, doorButton, corridorButton, stairButton);
+        HBox row = new HBox(6, selectButton, roomButton, wallButton, doorButton, corridorButton, stairButton, transitionButton);
         row.setAlignment(Pos.CENTER_LEFT);
         content = new VBox(6, sectionLabelFactory.apply("Werkzeug"), row);
         content.getStyleClass().add("editor-toolbar-group");

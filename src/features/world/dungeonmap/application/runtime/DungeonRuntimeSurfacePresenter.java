@@ -16,7 +16,11 @@ public final class DungeonRuntimeSurfacePresenter {
         throw new AssertionError("No instances");
     }
 
-    public static Node buildNode(DungeonRuntimeSurface surface, Consumer<DungeonRuntimeStairDescriptor> onStairSelected) {
+    public static Node buildNode(
+            DungeonRuntimeSurface surface,
+            Consumer<DungeonRuntimeStairDescriptor> onStairSelected,
+            Consumer<DungeonRuntimeTransitionDescriptor> onTransitionSelected
+    ) {
         VBox box = new VBox(8);
         box.setPadding(new Insets(12));
         if (surface == null) {
@@ -49,6 +53,24 @@ public final class DungeonRuntimeSurfacePresenter {
                 box.getChildren().add(button);
                 if (stair.description() != null && !stair.description().isBlank()) {
                     box.getChildren().add(text(stair.description()));
+                }
+            }
+        }
+        box.getChildren().add(sectionTitle("Übergänge"));
+        if (surface.transitions().isEmpty()) {
+            box.getChildren().add(text("—"));
+        } else {
+            for (DungeonRuntimeTransitionDescriptor transition : surface.transitions()) {
+                Button button = new Button(transition.displayLabel());
+                button.setMaxWidth(Double.MAX_VALUE);
+                button.setOnAction(event -> {
+                    if (onTransitionSelected != null) {
+                        onTransitionSelected.accept(transition);
+                    }
+                });
+                box.getChildren().add(button);
+                if (transition.description() != null && !transition.description().isBlank()) {
+                    box.getChildren().add(text(transition.description()));
                 }
             }
         }

@@ -7,7 +7,8 @@ enum ToolFamily {
     WALL(DungeonEditorTool.CLUSTER_WALL, DungeonEditorTool.CLUSTER_WALL_DELETE),
     DOOR(DungeonEditorTool.CLUSTER_DOOR, DungeonEditorTool.CLUSTER_DOOR_DELETE),
     CORRIDOR(DungeonEditorTool.CORRIDOR_CREATE, DungeonEditorTool.CORRIDOR_DELETE),
-    STAIR(DungeonEditorTool.STAIR_CREATE, DungeonEditorTool.STAIR_DELETE);
+    STAIR(DungeonEditorTool.STAIR_CREATE, DungeonEditorTool.STAIR_DELETE),
+    TRANSITION(DungeonEditorTool.TRANSITION_CREATE, DungeonEditorTool.TRANSITION_DELETE);
 
     private final DungeonEditorTool primaryTool;
     private final DungeonEditorTool secondaryTool;
@@ -24,6 +25,7 @@ enum ToolFamily {
             case DOOR -> "Tür";
             case CORRIDOR -> "Korridor";
             case STAIR -> "Treppe";
+            case TRANSITION -> "Übergang";
         };
     }
 
@@ -46,6 +48,7 @@ enum ToolFamily {
             case CLUSTER_DOOR, CLUSTER_DOOR_DELETE -> DOOR;
             case CORRIDOR_CREATE, CORRIDOR_DELETE -> CORRIDOR;
             case STAIR_CREATE, STAIR_DELETE -> STAIR;
+            case TRANSITION_CREATE, TRANSITION_DELETE -> TRANSITION;
         };
     }
 }

@@ -6,6 +6,7 @@ import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
+import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.state.EditorLayoutPreviewState;
 import features.world.dungeonmap.state.EditorSelectionState;
 import features.world.dungeonmap.state.DungeonMapState;
@@ -54,6 +55,11 @@ public final class ClusterSelectionDragController {
             DungeonStair stair = stairAt(event.gridCell());
             if (stair != null) {
                 selectionState.selectTarget(stair.targetKey());
+                return true;
+            }
+            DungeonTransition transition = transitionAt(event.gridCell());
+            if (transition != null) {
+                selectionState.selectTarget(transition.targetKey());
                 return true;
             }
             selectionState.clearSelection();
@@ -119,6 +125,13 @@ public final class ClusterSelectionDragController {
     private DungeonStair stairAt(Point2i cell) {
         return mapState.activeMap().stairsAtCell(cell, mapState.activeProjectionLevel()).stream()
                 .filter(candidate -> candidate != null && candidate.stairId() != null)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private DungeonTransition transitionAt(Point2i cell) {
+        return mapState.activeMap().transitionsAtCell(cell, mapState.activeProjectionLevel()).stream()
+                .filter(candidate -> candidate != null && candidate.transitionId() != null)
                 .findFirst()
                 .orElse(null);
     }
