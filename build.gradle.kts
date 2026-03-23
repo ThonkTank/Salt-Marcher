@@ -545,9 +545,9 @@ tasks.register("crawlerSpellsPipeline") {
 val checkNoCompiledArtifactsInSource by tasks.registering {
     group = "verification"
     description = "Fail if compiled .class artifacts are present inside src/."
+    val sourceRoot = layout.projectDirectory.dir("src").asFile.toPath()
 
     doLast {
-        val sourceRoot = project.layout.projectDirectory.dir("src").asFile.toPath()
         val offendingFiles = Files.walk(sourceRoot)
             .use { paths: java.util.stream.Stream<Path> ->
                 paths
@@ -572,9 +572,9 @@ val checkNoStdStreamsInFeatureServicesAndRepositories by tasks.registering {
     group = "verification"
     description = "Fail on new System.out/System.err usage in feature service/repository code."
     val stdStreamPattern = Regex("""System\.(?:out|err)\.println\(""")
+    val projectRoot = layout.projectDirectory.asFile.toPath()
 
     doLast {
-        val projectRoot = project.layout.projectDirectory.asFile.toPath()
         val offenders = fileTree("src/features") {
             include("**/service/**/*.java")
             include("**/repository/**/*.java")
@@ -601,9 +601,9 @@ val checkRepositorySqlExceptionConvention by tasks.registering {
     val sqlSwallowPattern = Regex(
         """catch\s*\(\s*SQLException\b[\s\S]*?(?:System\.(?:out|err)\.println\(|return\s+(?:Optional\.empty\(\)|0L|false|null)\s*;)[\s\S]*?\}"""
     )
+    val projectRoot = layout.projectDirectory.asFile.toPath()
 
     doLast {
-        val projectRoot = project.layout.projectDirectory.asFile.toPath()
         val offenders = fileTree("src/features") {
             include("**/repository/*Repository.java")
         }.files
@@ -630,9 +630,9 @@ val checkUiAsyncSubmissionConvention by tasks.registering {
     group = "verification"
     description = "Fail when UI code bypasses UiAsyncTasks and calls UiAsyncExecutor.submit directly."
     val directExecutorPattern = Regex("""\bUiAsyncExecutor\.submit\(""")
+    val projectRoot = layout.projectDirectory.asFile.toPath()
 
     doLast {
-        val projectRoot = project.layout.projectDirectory.asFile.toPath()
         val offenders = fileTree("src") {
             include("**/*.java")
             exclude("ui/async/**")
@@ -655,6 +655,7 @@ val checkUiAsyncSubmissionConvention by tasks.registering {
 val checkFeatureApiBoundaryConvention by tasks.registering {
     group = "verification"
     description = "Fail when cross-feature consumers bypass feature api packages."
+    val projectRoot = layout.projectDirectory.asFile.toPath()
 
     data class FeatureBoundary(
         val ownerPathPrefix: String,
@@ -743,7 +744,6 @@ val checkFeatureApiBoundaryConvention by tasks.registering {
     )
 
     doLast {
-        val projectRoot = project.layout.projectDirectory.asFile.toPath()
         val offenders = fileTree("src") {
             include("features/**/*.java")
             include("ui/**/*.java")
@@ -781,9 +781,9 @@ val checkDungeonEditorArchitectureConvention by tasks.registering {
     group = "verification"
     description = "Fail when dungeon editor UI packages reach through forbidden architecture boundaries."
     val importPattern = Regex("""^\s*import\s+([a-zA-Z0-9_.]+);""", RegexOption.MULTILINE)
+    val projectRoot = layout.projectDirectory.asFile.toPath()
 
     doLast {
-        val projectRoot = project.layout.projectDirectory.asFile.toPath()
         fun importedPackages(sourceFile: File): List<String> {
             return importPattern.findAll(sourceFile.readText())
                 .map { it.groupValues[1] }
