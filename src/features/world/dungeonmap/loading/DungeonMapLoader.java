@@ -1,6 +1,7 @@
 package features.world.dungeonmap.loading;
 
 import database.DatabaseManager;
+import features.world.dungeonmap.model.CorridorPlanningInputProjector;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
@@ -16,7 +17,6 @@ import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorBindings;
 import features.world.dungeonmap.model.structures.corridor.CorridorDoorBinding;
 import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInput;
-import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInputProjector;
 import features.world.dungeonmap.model.structures.corridor.CorridorWaypointBinding;
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import features.world.dungeonmap.model.structures.room.RoomNarration;

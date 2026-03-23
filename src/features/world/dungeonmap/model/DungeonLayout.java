@@ -10,7 +10,6 @@ import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
 import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInput;
-import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInputProjector;
 import features.world.dungeonmap.model.structures.corridor.CorridorRewriteContext;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
