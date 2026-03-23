@@ -3,6 +3,7 @@ package features.world.dungeonmap.model.structures.stair;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridAnchor;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
+import features.world.dungeonmap.model.structures.TargetKey;
 
 import java.util.Comparator;
 import java.util.LinkedHashSet;
@@ -34,22 +35,15 @@ public record DungeonStair(
     }
 
     public String targetKey() {
-        return stairId == null ? TARGET_KEY_PREFIX + "unassigned" : TARGET_KEY_PREFIX + stairId;
+        return TargetKey.of(TARGET_KEY_PREFIX, stairId).value();
     }
 
     public static boolean isTargetKey(String targetKey) {
-        return targetKey != null && targetKey.startsWith(TARGET_KEY_PREFIX);
+        return TargetKey.matches(targetKey, TARGET_KEY_PREFIX);
     }
 
     public static Long stairIdFromKey(String targetKey) {
-        if (!isTargetKey(targetKey)) {
-            return null;
-        }
-        String suffix = targetKey.substring(TARGET_KEY_PREFIX.length());
-        if (suffix.isBlank() || "unassigned".equals(suffix)) {
-            return null;
-        }
-        return Long.parseLong(suffix);
+        return TargetKey.parseId(targetKey, TARGET_KEY_PREFIX);
     }
 
     public int minReachZ() {

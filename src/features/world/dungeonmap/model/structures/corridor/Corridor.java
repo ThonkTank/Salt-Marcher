@@ -2,6 +2,7 @@ package features.world.dungeonmap.model.structures.corridor;
 
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.objects.CorridorPath;
+import features.world.dungeonmap.model.structures.TargetKey;
 import features.world.dungeonmap.model.structures.corridor.planning.CorridorPlanningEngine;
 import features.world.dungeonmap.model.structures.room.Room;
 
@@ -57,30 +58,15 @@ public final class Corridor {
     }
 
     public static String targetKey(Long corridorId) {
-        return corridorId == null ? TARGET_KEY_PREFIX + "unassigned" : TARGET_KEY_PREFIX + corridorId;
+        return TargetKey.of(TARGET_KEY_PREFIX, corridorId).value();
     }
 
     public static boolean isTargetKey(String targetKey) {
-        return targetKey != null && targetKey.startsWith(TARGET_KEY_PREFIX);
+        return TargetKey.matches(targetKey, TARGET_KEY_PREFIX);
     }
 
     public static Long corridorIdFromKey(String targetKey) {
-        if (!isTargetKey(targetKey)) {
-            return null;
-        }
-        String rawId = targetKey.substring(TARGET_KEY_PREFIX.length());
-        if (rawId.isBlank() || "unassigned".equals(rawId)) {
-            return null;
-        }
-        try {
-            return Long.parseLong(rawId);
-        } catch (NumberFormatException ignored) {
-            return null;
-        }
-    }
-
-    public static String targetKeyPrefix() {
-        return TARGET_KEY_PREFIX;
+        return TargetKey.parseId(targetKey, TARGET_KEY_PREFIX);
     }
 
     public long mapId() {

@@ -8,6 +8,7 @@ import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.objects.Floor;
 import features.world.dungeonmap.model.objects.Wall;
+import features.world.dungeonmap.model.structures.TargetKey;
 import features.world.dungeonmap.model.structures.room.Room;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -92,22 +93,15 @@ public final class RoomCluster {
     }
 
     public static String targetKey(Long clusterId) {
-        return clusterId == null ? TARGET_KEY_PREFIX + "unassigned" : TARGET_KEY_PREFIX + clusterId;
+        return TargetKey.of(TARGET_KEY_PREFIX, clusterId).value();
     }
 
     public static boolean isTargetKey(String targetKey) {
-        return targetKey != null && targetKey.startsWith(TARGET_KEY_PREFIX);
+        return TargetKey.matches(targetKey, TARGET_KEY_PREFIX);
     }
 
     public static Long clusterIdFromKey(String targetKey) {
-        if (!isTargetKey(targetKey)) {
-            return null;
-        }
-        String suffix = targetKey.substring(TARGET_KEY_PREFIX.length());
-        if (suffix.isBlank() || "unassigned".equals(suffix)) {
-            return null;
-        }
-        return Long.parseLong(suffix);
+        return TargetKey.parseId(targetKey, TARGET_KEY_PREFIX);
     }
 
     public InteractiveLabelHandle labelHandle() {
