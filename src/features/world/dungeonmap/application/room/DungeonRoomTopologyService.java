@@ -50,10 +50,6 @@ public final class DungeonRoomTopologyService {
         this.corridorRoomRewriteService = Objects.requireNonNull(corridorRoomRewriteService, "corridorRoomRewriteService");
     }
 
-    public void paint(long mapId, TileShape shape) throws SQLException {
-        paint(mapId, 0, shape);
-    }
-
     public void paint(long mapId, int levelZ, TileShape shape) throws SQLException {
         if (shape == null || shape.size() == 0) {
             return;
@@ -64,10 +60,6 @@ public final class DungeonRoomTopologyService {
                 return null;
             });
         }
-    }
-
-    public void paint(Connection conn, long mapId, TileShape shape) throws SQLException {
-        paint(conn, mapId, 0, shape);
     }
 
     public void paint(Connection conn, long mapId, int levelZ, TileShape shape) throws SQLException {
@@ -88,24 +80,12 @@ public final class DungeonRoomTopologyService {
             return;
         }
 
-        Map<Long, Corridor> corridorsById = new LinkedHashMap<>(layout.corridorsById());
-        Set<Long> affectedCorridorIds = layout.corridorIdsAffectedBy(rewrite);
-        // Services orchestrate affected scope and ordering; corridor-local membership rules stay on Corridor.
-        corridorsById = corridorRoomRewriteService.applyRoomRewrite(layout, corridorsById, rewrite);
-        DungeonLayout rewrittenLayout = layout.applying(rewrite);
-        CorridorRewriteContext rewriteContext = new CorridorRewriteContext(
-                layout.corridorPlanningInput(),
-                rewrittenLayout.corridorPlanningInput(),
-                affectedCorridorIds,
-                rewrite.deletedClusterIds());
-        corridorsById = Corridor.rewriteAll(corridorsById, rewriteContext);
-
+        Map<Long, Corridor> corridorsById = applyCorridorCascade(
+                layout,
+                new LinkedHashMap<>(layout.corridorsById()),
+                rewrite);
         persistClusterRewrite(conn, mapId, rewrite, levelZ);
         corridorPersistenceService.persistCorridors(conn, corridorsById);
-    }
-
-    public void delete(long mapId, TileShape shape) throws SQLException {
-        delete(mapId, 0, shape);
     }
 
     public void delete(long mapId, int levelZ, TileShape shape) throws SQLException {
@@ -118,10 +98,6 @@ public final class DungeonRoomTopologyService {
                 return null;
             });
         }
-    }
-
-    public void delete(Connection conn, long mapId, TileShape shape) throws SQLException {
-        delete(conn, mapId, 0, shape);
     }
 
     public void delete(Connection conn, long mapId, int levelZ, TileShape shape) throws SQLException {
@@ -152,19 +128,9 @@ public final class DungeonRoomTopologyService {
             if (rewrite.isNoOp()) {
                 continue;
             }
-            Set<Long> affectedCorridorIds = workingLayout.corridorIdsAffectedBy(rewrite);
-            // Services orchestrate the step sequence; reanchor/replan still execute through the corridor rewrite path.
-            corridorsById = corridorRoomRewriteService.applyRoomRewrite(workingLayout, corridorsById, rewrite);
-            DungeonLayout rewrittenLayout = workingLayout.applying(rewrite);
-            CorridorRewriteContext rewriteContext = new CorridorRewriteContext(
-                    workingLayout.corridorPlanningInput(),
-                    rewrittenLayout.corridorPlanningInput(),
-                    affectedCorridorIds,
-                    rewrite.deletedClusterIds());
-            corridorsById = Corridor.rewriteAll(corridorsById, rewriteContext);
-
+            corridorsById = applyCorridorCascade(workingLayout, corridorsById, rewrite);
             persistClusterRewrite(conn, mapId, rewrite, workingLayout.levelForCluster(rewrite.targetClusterId()));
-            workingLayout = rewrittenLayout;
+            workingLayout = workingLayout.applying(rewrite);
         }
         corridorPersistenceService.persistCorridors(conn, corridorsById);
     }
@@ -211,19 +177,29 @@ public final class DungeonRoomTopologyService {
             return;
         }
 
-        Map<Long, Corridor> corridorsById = new LinkedHashMap<>(layout.corridorsById());
-        Set<Long> affectedCorridorIds = layout.corridorIdsAffectedBy(rewrite);
-        corridorsById = corridorRoomRewriteService.applyRoomRewrite(layout, corridorsById, rewrite);
-        DungeonLayout rewrittenLayout = layout.applying(rewrite);
-        CorridorRewriteContext rewriteContext = new CorridorRewriteContext(
-                layout.corridorPlanningInput(),
-                rewrittenLayout.corridorPlanningInput(),
-                affectedCorridorIds,
-                rewrite.deletedClusterIds());
-        corridorsById = Corridor.rewriteAll(corridorsById, rewriteContext);
-
+        Map<Long, Corridor> corridorsById = applyCorridorCascade(
+                layout,
+                new LinkedHashMap<>(layout.corridorsById()),
+                rewrite);
         persistClusterRewrite(conn, mapId, rewrite, layout.levelForCluster(rewrite.targetClusterId()));
         corridorPersistenceService.persistCorridors(conn, corridorsById);
+    }
+
+    private Map<Long, Corridor> applyCorridorCascade(
+            DungeonLayout beforeLayout,
+            Map<Long, Corridor> corridorsById,
+            ClusterRewrite rewrite
+    ) {
+        Set<Long> affectedCorridorIds = beforeLayout.corridorIdsAffectedBy(rewrite);
+        // Services orchestrate affected scope and ordering; corridor-local membership rules stay on Corridor.
+        corridorsById = corridorRoomRewriteService.applyRoomRewrite(beforeLayout, corridorsById, rewrite);
+        DungeonLayout afterLayout = beforeLayout.applying(rewrite);
+        CorridorRewriteContext rewriteContext = new CorridorRewriteContext(
+                beforeLayout.corridorPlanningInput(),
+                afterLayout.corridorPlanningInput(),
+                affectedCorridorIds,
+                rewrite.deletedClusterIds());
+        return Corridor.rewriteAll(corridorsById, rewriteContext);
     }
 
     private void createCluster(Connection conn, long mapId, int levelZ, TileShape shape, String roomName) throws SQLException {

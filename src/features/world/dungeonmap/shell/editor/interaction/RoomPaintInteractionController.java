@@ -47,7 +47,7 @@ public final class RoomPaintInteractionController {
             clear();
             return false;
         }
-        Point2i cell = event == null ? null : event.gridCell();
+        Point2i cell = event.gridCell();
         if (cell == null || !sessionState.selectedTool().isRoomTool()) {
             clear();
             return false;
@@ -62,7 +62,7 @@ public final class RoomPaintInteractionController {
         if (event == null || !event.isPrimaryButtonDown()) {
             return false;
         }
-        Point2i cell = event == null ? null : event.gridCell();
+        Point2i cell = event.gridCell();
         if (paintSession == null || cell == null || !sessionState.selectedTool().isRoomTool()) {
             return false;
         }
@@ -78,7 +78,7 @@ public final class RoomPaintInteractionController {
         if (event == null) {
             return false;
         }
-        Point2i cell = event == null ? null : event.gridCell();
+        Point2i cell = event.gridCell();
         if (paintSession == null || cell == null) {
             return false;
         }

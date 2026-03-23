@@ -167,14 +167,6 @@ public final class RoomCluster {
                 shape.centerAnchor());
     }
 
-    public boolean canAbsorbPaintShape(TileShape paintShape) {
-        return paintShape != null
-                && paintShape.size() > 0
-                && rooms.size() == 1
-                && singleRoom() != null
-                && singleRoom().roomId() != null;
-    }
-
     public boolean overlaps(TileShape shape) {
         return shape != null && this.shape.overlaps(shape);
     }
