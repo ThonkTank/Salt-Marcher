@@ -140,7 +140,6 @@ final class DungeonEditorCoordinator {
         refreshPaintPreviewState();
         refreshCorridorStatePane();
         refreshStairStatePane();
-        workspace.setPreviewStairPath(List.of());
         refreshRoomNarrationStatePane();
     }
 
@@ -157,7 +156,6 @@ final class DungeonEditorCoordinator {
             stairDraftState.resetForLevel(mapState.activeProjectionLevel());
         }
         refreshFromSessionState();
-        workspace.setPreviewStairPath(List.of());
         refreshRoomNarrationStatePane();
         previousMapId = mapState.activeMapId();
     }

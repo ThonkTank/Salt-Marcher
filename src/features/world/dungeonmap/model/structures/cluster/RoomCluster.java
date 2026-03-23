@@ -133,7 +133,8 @@ public final class RoomCluster {
                 merge.replacedRoomIds(),
                 merge.mergedRoomIds(),
                 Set.of(),
-                Map.of());
+                Map.of(),
+                true);
     }
 
     public String targetKey() {
@@ -471,7 +472,8 @@ public final class RoomCluster {
                 replacedRoomIds,
                 mergedRoomIds.size() > 1 ? mergedRoomIds : Set.of(),
                 deletedClusterIds,
-                Map.of());
+                Map.of(),
+                true);
     }
 
     public ClusterRewrite applyDelete(TileShape deletedShape, Supplier<String> roomNameSupplier) {
@@ -493,7 +495,8 @@ public final class RoomCluster {
                     Map.of(),
                     Set.of(),
                     Set.of(clusterId),
-                    Map.of());
+                    Map.of(),
+                    true);
         }
 
         Map<VertexEdge, ClusterBoundaryWrite.Type> previousBoundaryKinds = internalBoundaryKinds();
@@ -547,7 +550,8 @@ public final class RoomCluster {
                 Map.of(),
                 Set.of(),
                 Set.of(),
-                splitFragmentsBySourceRoomId);
+                splitFragmentsBySourceRoomId,
+                true);
     }
 
     public List<Room> reconciledRooms(
@@ -783,7 +787,8 @@ public final class RoomCluster {
                 Map.of(),
                 Set.of(),
                 Set.of(),
-                Map.of());
+                Map.of(),
+                false);
     }
 
     private static List<RoomCluster> normalizedClusters(List<RoomCluster> clusters) {

@@ -32,9 +32,7 @@ public final class DungeonStairEditService {
         if (layout == null || layout.mapId() <= 0) {
             throw new SQLException("Kein aktiver Dungeon geladen");
         }
-        List<Integer> normalizedExitLevels = normalizeExitLevels(exitLevels);
-        List<Integer> sortedExitLevels = sortedDistinctLevels(normalizedExitLevels);
-        validate(layout, normalizedExitLevels);
+        List<Integer> sortedExitLevels = validateAndSortExitLevels(exitLevels);
         List<CubePoint> pathNodes = buildVerticalPath(anchorCell, sortedExitLevels);
         List<DungeonStairExit> exits = buildExits(anchorCell, sortedExitLevels);
         try (Connection conn = DatabaseManager.getConnection()) {
@@ -57,21 +55,21 @@ public final class DungeonStairEditService {
         }
     }
 
-    private static List<Integer> normalizeExitLevels(List<Integer> exitLevels) {
+    private static List<Integer> validateAndSortExitLevels(List<Integer> exitLevels) throws SQLException {
         ArrayList<Integer> result = new ArrayList<>();
         for (Integer level : exitLevels == null ? List.<Integer>of() : exitLevels) {
             if (level != null) {
                 result.add(level);
             }
         }
+        if (result.size() < 2) {
+            throw new SQLException("Mindestens zwei verschiedene Ebenen");
+        }
+        if (result.stream().distinct().count() != result.size()) {
+            throw new SQLException("Ausgänge dürfen nicht doppelt sein");
+        }
+        result.sort(Integer::compareTo);
         return List.copyOf(result);
-    }
-
-    private static List<Integer> sortedDistinctLevels(List<Integer> exitLevels) {
-        return exitLevels.stream()
-                .distinct()
-                .sorted()
-                .toList();
     }
 
     private static List<CubePoint> buildVerticalPath(Point2i anchorCell, List<Integer> sortedExitLevels) {
@@ -83,21 +81,6 @@ public final class DungeonStairEditService {
             result.add(CubePoint.at(anchorCell, level));
         }
         return List.copyOf(result);
-    }
-
-    private static void validate(
-            DungeonLayout layout,
-            List<Integer> normalizedExitLevels
-    ) throws SQLException {
-        if (layout == null || layout.mapId() <= 0) {
-            throw new SQLException("Kein aktiver Dungeon geladen");
-        }
-        if (normalizedExitLevels.stream().distinct().count() != normalizedExitLevels.size()) {
-            throw new SQLException("Ausgänge dürfen nicht doppelt sein");
-        }
-        if (normalizedExitLevels.size() < 2) {
-            throw new SQLException("Mindestens zwei verschiedene Ebenen");
-        }
     }
 
     private static List<DungeonStairExit> buildExits(Point2i anchorCell, List<Integer> sortedExitLevels) {

@@ -5,7 +5,6 @@ import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeonmap.canvas.graph.DungeonGraphSceneRenderer;
 import features.world.dungeonmap.canvas.grid.DungeonGridSceneRenderer;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
 import javafx.geometry.Insets;
@@ -34,7 +33,6 @@ public final class DungeonCanvasWorkspace extends BorderPane {
     private String selectedTargetKey;
     private TileShape previewPaintShape = TileShape.empty();
     private boolean previewPaintDeleteMode;
-    private java.util.List<CubePoint> previewStairPath = java.util.List.of();
     private DungeonRuntimeLocation activeLocation;
     private DungeonHeading heading = DungeonHeading.defaultHeading();
     private DungeonCanvasInteractionHandler interactionHandler = new DungeonCanvasInteractionHandler() {
@@ -127,15 +125,6 @@ public final class DungeonCanvasWorkspace extends BorderPane {
         }
         this.previewPaintShape = nextPreviewPaintShape;
         this.previewPaintDeleteMode = deleteMode;
-        notifyViewChanged();
-    }
-
-    public void setPreviewStairPath(java.util.List<CubePoint> previewStairPath) {
-        java.util.List<CubePoint> nextPreviewStairPath = previewStairPath == null ? java.util.List.of() : java.util.List.copyOf(previewStairPath);
-        if (this.previewStairPath.equals(nextPreviewStairPath)) {
-            return;
-        }
-        this.previewStairPath = nextPreviewStairPath;
         notifyViewChanged();
     }
 
@@ -258,7 +247,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
                 renderedMapModel(),
                 camera,
                 editorMode,
-                new DungeonRenderState(selectedTargetKey, previewPaintShape, previewPaintDeleteMode, previewStairPath, projectionLevel, activeLocation, heading));
+                new DungeonRenderState(selectedTargetKey, previewPaintShape, previewPaintDeleteMode, projectionLevel, activeLocation, heading));
     }
 
     private void notifyViewChanged() {
