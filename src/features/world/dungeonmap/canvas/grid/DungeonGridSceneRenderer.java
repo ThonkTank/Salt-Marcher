@@ -3,8 +3,10 @@ package features.world.dungeonmap.canvas.grid;
 import features.world.dungeonmap.application.runtime.DungeonHeading;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeDoorDescriptor;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeLocationTileResolver;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeSurface;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeSurfaceResolver;
+import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.canvas.base.DungeonCanvasCamera;
 import features.world.dungeonmap.canvas.base.DungeonRenderState;
 import features.world.dungeonmap.canvas.base.DungeonCanvasTheme;
@@ -69,7 +71,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 renderState.projectionLevel(),
                 currentPalette,
                 false);
-        drawPartyToken(gc, projectedMap, camera, renderState.activeLocation(), renderState.heading());
+        drawPartyToken(gc, mapModel, camera, renderState.activeLocation(), renderState.heading(), renderState.projectionLevel());
         if (!editorMode) {
             drawDoorNumbers(gc, projectedMap, camera, renderState.activeLocation(), renderState.heading());
         }
@@ -477,15 +479,17 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             DungeonLayout mapModel,
             DungeonCanvasCamera camera,
             DungeonRuntimeLocation activeLocation,
-            DungeonHeading heading
+            DungeonHeading heading,
+            int projectionLevel
     ) {
         if (mapModel == null || activeLocation == null) {
             return;
         }
-        var centerCell = activeCell(mapModel, activeLocation);
-        if (centerCell == null) {
+        CubePoint activeTile = DungeonRuntimeLocationTileResolver.resolve(mapModel, activeLocation);
+        if (activeTile == null || activeTile.z() != projectionLevel) {
             return;
         }
+        var centerCell = activeTile.projectedCell();
         double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
         double centerX = camera.panX() + (centerCell.x() + 0.5) * gridSize;
         double centerY = camera.panY() + (centerCell.y() + 0.5) * gridSize;
@@ -575,33 +579,6 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         gc.setTextAlign(TextAlignment.CENTER);
         gc.fillText(Integer.toString(exit.number()), centerX, centerY + 4.0);
         gc.setTextAlign(TextAlignment.LEFT);
-    }
-
-    private static features.world.dungeonmap.model.geometry.Point2i activeCell(DungeonLayout mapModel, DungeonRuntimeLocation activeLocation) {
-        if (activeLocation instanceof DungeonRuntimeLocation.Tile tile) {
-            return tile.tile().projectedCell();
-        }
-        if (activeLocation instanceof DungeonRuntimeLocation.StairExit stairExit) {
-            return stairExit.tile().projectedCell();
-        }
-        if (activeLocation instanceof DungeonRuntimeLocation.Room room) {
-            Room resolvedRoom = mapModel.findRoom(room.roomId());
-            return resolvedRoom == null ? null : resolvedRoom.floor().shape().centerCell();
-        }
-        if (activeLocation instanceof DungeonRuntimeLocation.Corridor corridor) {
-            Corridor resolvedCorridor = mapModel.findCorridor(corridor.corridorId());
-            return resolvedCorridor == null || resolvedCorridor.path() == null || resolvedCorridor.path().floor() == null
-                    ? null
-                    : resolvedCorridor.path().floor().shape().centerCell();
-        }
-        if (activeLocation instanceof DungeonRuntimeLocation.CorridorComponent component) {
-            var network = mapModel.corridorNetworks().stream()
-                    .filter(candidate -> component.componentId().equals(candidate.networkId()))
-                    .findFirst()
-                    .orElse(null);
-            return network == null || network.floor() == null ? null : network.floor().shape().centerCell();
-        }
-        return null;
     }
 
     private static Set<VertexEdge> boundaryEdges(Collection<? extends Door> doors) {

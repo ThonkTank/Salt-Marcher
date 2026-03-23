@@ -5,7 +5,9 @@ import features.world.dungeonmap.application.runtime.DungeonHeading;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeDoorDescriptor;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLabels;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeLocationTileResolver;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationService;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationSnapshot;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeStairDescriptor;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeSurface;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeSurfacePresenter;
@@ -156,7 +158,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
             loadRuntimeNavigation();
             return;
         }
-        runtimeState.showNavigation(runtimeNavigationService.resolveNavigation(
+        applyNavigationSnapshot(runtimeNavigationService.resolveNavigation(
                 state().activeMap(),
                 runtimeState.activeLocation(),
                 runtimeState.heading()));
@@ -172,7 +174,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
                     if (requestId != runtimeRequestSequence || !Objects.equals(runtimeMapId, state().activeMapId())) {
                         return;
                     }
-                    runtimeState.showNavigation(snapshot);
+                    applyNavigationSnapshot(snapshot);
                 },
                 failure -> {
                     if (requestId != runtimeRequestSequence) {
@@ -203,7 +205,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
                         activeTile(),
                         CubePoint.at(tile, state().activeProjectionLevel()),
                         runtimeState.heading()),
-                runtimeState::showNavigation,
+                this::applyNavigationSnapshot,
                 failure -> {
                     System.err.println("DungeonRuntimeView.movePartyToTile(): " + failure.getMessage());
                     runtimeState.showFailure("Standort konnte nicht gespeichert werden");
@@ -228,7 +230,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         runtimeState.showMoveInProgress();
         UiAsyncTasks.submit(
                 () -> runtimeNavigationService.moveThroughDoor(layout, surface, door, currentLevel),
-                runtimeState::showNavigation,
+                this::applyNavigationSnapshot,
                 failure -> {
                     System.err.println("DungeonRuntimeView.movePartyThroughDoor(): " + failure.getMessage());
                     runtimeState.showFailure("Tür konnte nicht benutzt werden");
@@ -296,11 +298,19 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         runtimeState.showMoveInProgress();
         UiAsyncTasks.submit(
                 () -> runtimeNavigationService.moveThroughStair(layout, stair, runtimeState.heading()),
-                runtimeState::showNavigation,
+                this::applyNavigationSnapshot,
                 failure -> {
                     System.err.println("DungeonRuntimeView.movePartyThroughStair(): " + failure.getMessage());
                     runtimeState.showFailure("Treppe konnte nicht benutzt werden");
                 });
+    }
+
+    private void applyNavigationSnapshot(DungeonRuntimeNavigationSnapshot snapshot) {
+        runtimeState.showNavigation(snapshot);
+        CubePoint activeTile = DungeonRuntimeLocationTileResolver.resolve(state().activeMap(), runtimeState.activeLocation());
+        if (activeTile != null) {
+            state().setReachableProjectionLevel(activeTile.z());
+        }
     }
 
     private void publishRoomDetails() {
