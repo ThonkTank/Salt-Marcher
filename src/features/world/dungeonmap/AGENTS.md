@@ -71,7 +71,7 @@ Canvas pointer events flow through `DungeonCanvasInteractionHandler` → `handle
 After each move, the runtime view resolves the new location into a presentable surface:
 
 1. `DungeonRuntimeSurfaceResolver` pattern-matches on `DungeonRuntimeLocation` (sealed: Room | Corridor | CorridorComponent | Tile) → builds `DungeonRuntimeSurface` (title, entry key, visual description, door list)
-2. Door enrichment pipeline: model door edges → `DoorExitCatalog` (BFS groups adjacent edges into openings) → `RoomExitDescriptor` → `DungeonRuntimeDoorCatalog` (adds destination labels, narration) → `DungeonRuntimeDoorDescriptor` (adds heading-relative labels via `DungeonHeading.relativeLabel()`)
+2. Door enrichment pipeline: structures expose door-edge sets, `DungeonLayout` owns the canonical door registry (`VertexEdge -> Door`), `DoorExitCatalog` groups adjacent edges into openings, then `DungeonRuntimeDoorCatalog`/`DungeonRuntimeDoorDescriptor` add destination labels, narration, and heading-relative labels
 3. `DungeonRuntimeSurfacePresenter` converts the surface into JavaFX nodes → published to `DetailsNavigator`
 
 `DungeonRuntimeLabels` provides all display strings (room names, corridor labels joining connected room names, tile coordinates, heading names). `DungeonRuntimeLocations` handles bidirectional conversion between `DungeonRuntimeLocation` and the persisted campaign-state format.
@@ -122,14 +122,14 @@ geometry/  →  objects/  →  structures/
 ```
 
 - **`geometry/`** — Pure grid math primitives: `Point2i`, `CubePoint` (3D grid coordinate), `Tile`, `TileShape`, `VertexEdge`, `VertexPath`, `BoundaryNetwork`, `GridAnchor`, `GridRoute`. Domain-agnostic. No knowledge of walls, doors, rooms.
-- **`objects/`** — Thin domain objects over geometry: `Floor`, `Wall`, `Door`, `BoundaryObject`, `CorridorPath`. Each adds exactly one domain rule (e.g., traversal state) to a geometry primitive.
+- **`objects/`** — Thin domain objects over geometry: `Floor`, `Wall`, `Door`, `CorridorPath`. `Door` remains the runtime/registry carrier for traversal state; room/corridor structures themselves store only `VertexEdge` door references.
 - **`structures/`** — Self-managed compositions: `Room`, `RoomCluster`, `Corridor`, `CorridorNetwork`, `DungeonStair`. Compose objects and own structure-level behavior.
 
 `DungeonLayout` is the immutable global lookup layer over structures. Mutations return new instances. Pre-computes corridor networks dynamically via `CorridorNetwork.buildNetworks()`. Key aggregate queries: `corridorsAffectedBy(ClusterRewrite)`, `overlappingClusters(TileShape)`, `corridorPlanningInput()`.
 
 ### Key Structures
 
-- **`Room`** — record: roomId, mapId, clusterId, name, Floor, Walls, Doors, `RoomNarration` (visual description + per-exit `RoomExitNarration` entries). `resolved()` factory ensures canonical wall/door set (walls cover all perimeter edges except where doors exist). Boundary normalization auto-synthesizes missing walls.
+- **`Room`** — record: roomId, mapId, clusterId, name, Floor, Walls, `doorEdges`, `RoomNarration` (visual description + per-exit `RoomExitNarration` entries). `resolved()` factory ensures canonical wall/door-edge sets (walls cover all perimeter edges except where doors exist). Boundary normalization auto-synthesizes missing walls.
 - **`RoomCluster`** — groups rooms spatially, manages adjacency via overlap indexing, and owns cluster-local rewrite logic for paint/delete/boundary changes. `movedBy()` handles translation. Produces `InteractiveLabelHandle` for canvas rendering.
 - **`Corridor`** — record: corridorId, mapId, roomIds, `CorridorBindings` (canonical relative truth), `CorridorPath` (runtime derived geometry). Bindings store waypoints and door entries as relative offsets from cluster centers → survive cluster movement without re-editing. Mutation methods: `withAddedRoom()`, `mergeWith()`, `reanchoredFor()`, `replannedFor()`.
 - **`DungeonStair`** — record: stairId, mapId, name, 3D path (`List<CubePoint>`), exits (`List<DungeonStairExit>`). Represents vertical connections across Z-levels. `DungeonStairExit` is a landing point at a specific `CubePoint`.
@@ -140,7 +140,7 @@ geometry/  →  objects/  →  structures/
 - Objects should stay thin — "geometry + one domain rule".
 - Structures may query geometry and objects but must not re-implement primitive math.
 - Each query has exactly one canonical owner on the lowest sensible layer — no convenience duplicates across layers.
-- Runtime state (open/closed/locked) belongs in objects, not geometry.
+- Runtime state (open/closed/locked) belongs in the `DungeonLayout` door registry, not in geometry or duplicated structure projections.
 - `Room` is the canonical owner of room-local topology. `RoomCluster` owns only multi-room facts (grouping, adjacency, partition). Application services must not derive room topology from raw geometry.
 - Selection/interactions keys are canonical semantic identity. If a structure or boundary owner exposes that identity (for example `RoomCluster.labelHandle().key()` or a corridor target-key API), renderers/coordinators/controllers may consume it but must not locally reconstruct or parse it.
 - Corridor bindings are canonical structure truth; absolute corridor geometry is runtime state derived from bindings plus current room/cluster layout.
@@ -150,4 +150,4 @@ geometry/  →  objects/  →  structures/
 
 ### Persistence Model
 
-Cluster geometry is stored as relative vertex loops with a center anchor. Rooms store only their anchor cell and cluster membership — runtime floor shapes are hydrated via BFS flood-fill against cluster cells and boundary edges. Edge objects (walls/doors) are stored per-cluster as `(cell, direction, type)` tuples. Corridors store member room IDs, relative waypoint bindings, and relative door bindings.
+Cluster geometry is stored as relative vertex loops with a center anchor. Rooms store only their anchor cell and cluster membership — runtime floor shapes are hydrated via BFS flood-fill against cluster cells and boundary edges. Boundary persistence still stores `(cell, direction, type)` tuples, but hydrated rooms/corridors retain only wall objects plus door-edge sets; canonical `Door` instances are rebuilt once in the `DungeonLayout` registry. Corridors store member room IDs, relative waypoint bindings, and relative door bindings.

@@ -6,7 +6,6 @@ import features.world.dungeonmap.application.room.RoomExitDescriptor;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.VertexEdge;
-import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
 import features.world.dungeonmap.model.structures.room.Room;
@@ -38,7 +37,7 @@ public final class DungeonRuntimeDoorCatalog {
         }
         return describe(
                 corridor.path().floor().shape().absoluteCells(),
-                corridor.path().doors(),
+                corridor.path().doorEdges(),
                 heading,
                 (cell, direction) -> "",
                 exit -> destinationRoomLabel(layout, exit.outsideCell(), Set.of()));
@@ -50,7 +49,7 @@ public final class DungeonRuntimeDoorCatalog {
         }
         return describe(
                 network.floor().shape().absoluteCells(),
-                network.doors(),
+                network.doorEdges(),
                 heading,
                 (cell, direction) -> "",
                 exit -> destinationRoomLabel(layout, exit.outsideCell(), Set.of()));
@@ -58,12 +57,12 @@ public final class DungeonRuntimeDoorCatalog {
 
     private static List<DungeonRuntimeDoorDescriptor> describe(
             Set<Point2i> cells,
-            List<Door> doors,
+            Set<VertexEdge> doorEdges,
             DungeonHeading heading,
             BiFunction<Point2i, Point2i, String> narrationLookup,
             Function<RoomExitDescriptor, String> destinationLookup
     ) {
-        return DoorExitCatalog.describe(cells, doors).stream()
+        return DoorExitCatalog.describe(cells, doorEdges).stream()
                 .map(exit -> DungeonRuntimeDoorDescriptor.from(
                         exit,
                         heading,
@@ -108,8 +107,7 @@ public final class DungeonRuntimeDoorCatalog {
     }
 
     private static boolean matchesDoor(Corridor corridor, VertexEdge anchorEdge) {
-        return corridor.path().doors().stream()
-                .anyMatch(door -> door.edges().contains(anchorEdge));
+        return corridor.path().doorEdges().contains(anchorEdge);
     }
 
     private static String destinationRoomLabel(DungeonLayout layout, Point2i targetCell, Set<Long> excludedRoomIds) {

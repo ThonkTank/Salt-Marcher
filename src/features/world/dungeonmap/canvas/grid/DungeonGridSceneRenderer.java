@@ -279,15 +279,13 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             strokeRoomTiles(gc, camera, gridSize, corridorTiles, DungeonCanvasTheme.grid(editorMode), 1.0);
 
             Set<VertexEdge> wallEdges = new LinkedHashSet<>(corridor.path().floor().shape().boundaryEdges());
-            wallEdges.removeAll(boundaryEdges(corridor.path().doors()));
+            wallEdges.removeAll(corridor.path().doorEdges());
             drawCorridorBoundaries(gc, camera, gridSize, wallEdges, selected);
 
-            for (var door : corridor.path().doors()) {
-                gc.setStroke(selected ? DungeonCanvasTheme.CORRIDOR_SELECTED_STROKE : DungeonCanvasTheme.CORRIDOR_STROKE);
-                gc.setLineWidth(selected ? 3.0 : 2.0);
-                for (VertexEdge edge : door.edges()) {
-                    strokeEdge(gc, camera, gridSize, edge);
-                }
+            gc.setStroke(selected ? DungeonCanvasTheme.CORRIDOR_SELECTED_STROKE : DungeonCanvasTheme.CORRIDOR_STROKE);
+            gc.setLineWidth(selected ? 3.0 : 2.0);
+            for (VertexEdge edge : corridor.path().doorEdges()) {
+                strokeEdge(gc, camera, gridSize, edge);
             }
         }
     }
