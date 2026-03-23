@@ -187,10 +187,6 @@ public final class RoomCluster {
                 .toList());
     }
 
-    public RoomCluster withReplacedRoom(Room room) {
-        return room == null ? this : withAddedRoom(room);
-    }
-
     public Room createRoom(Long roomId, String name, Floor floor) {
         return Room.create(
                 roomId,
@@ -334,14 +330,6 @@ public final class RoomCluster {
 
     public ClusterRewrite applyDelete(TileShape deletedShape, Supplier<String> roomNameSupplier) {
         return ClusterRewritePlanner.applyDelete(this, deletedShape, roomNameSupplier);
-    }
-
-    public List<Room> reconciledRooms(
-            TileShape clusterShape,
-            List<ClusterRewritePlanner.RoomRewriteCandidate> candidates,
-            Map<VertexEdge, InternalBoundaryType> previousKinds
-    ) {
-        return ClusterRewritePlanner.reconciledRooms(this, clusterShape, candidates, previousKinds);
     }
 
     public Map<VertexEdge, InternalBoundaryType> persistedInternalBoundaries() {
@@ -552,12 +540,6 @@ public final class RoomCluster {
         return name == null || name.isBlank()
                 ? "Raum " + (roomId == null ? "neu" : roomId)
                 : name.trim();
-    }
-
-    private static Point2i anchorFor(TileShape componentShape, Point2i currentAnchor) {
-        return componentShape.contains(currentAnchor)
-                ? currentAnchor
-                : componentShape.centerCell();
     }
 
     private static boolean disjoint(Set<Point2i> left, Set<Point2i> right) {
