@@ -26,14 +26,34 @@ public record ClusterRewrite(
         boolean topologyChanged
 ) {
     public ClusterRewrite {
-        rooms = rooms == null ? List.of() : List.copyOf(rooms);
-        internalBoundaryKinds = internalBoundaryKinds == null ? Map.of() : Map.copyOf(internalBoundaryKinds);
-        deletedRoomIds = deletedRoomIds == null ? Set.of() : Set.copyOf(deletedRoomIds);
-        replacedRoomIds = replacedRoomIds == null ? Map.of() : Map.copyOf(replacedRoomIds);
-        mergedRoomIds = mergedRoomIds == null ? Set.of() : Set.copyOf(mergedRoomIds);
-        deletedClusterIds = deletedClusterIds == null ? Set.of() : Set.copyOf(deletedClusterIds);
+        rooms = List.copyOf(rooms);
+        internalBoundaryKinds = Map.copyOf(internalBoundaryKinds);
+        deletedRoomIds = Set.copyOf(deletedRoomIds);
+        replacedRoomIds = Map.copyOf(replacedRoomIds);
+        mergedRoomIds = Set.copyOf(mergedRoomIds);
+        deletedClusterIds = Set.copyOf(deletedClusterIds);
         splitFragmentsBySourceRoomId = immutableRoomLists(splitFragmentsBySourceRoomId);
-        splitClusters = splitClusters == null ? List.of() : List.copyOf(splitClusters);
+        splitClusters = List.copyOf(splitClusters);
+    }
+
+    public static Builder builder(
+            Long targetClusterId,
+            TileShape clusterShape,
+            Point2i clusterCenter,
+            List<Room> rooms,
+            Map<VertexEdge, InternalBoundaryType> internalBoundaryKinds
+    ) {
+        return new Builder(targetClusterId, clusterShape, clusterCenter, rooms, internalBoundaryKinds);
+    }
+
+    public static ClusterRewrite unchanged(
+            Long targetClusterId,
+            TileShape clusterShape,
+            Point2i clusterCenter,
+            List<Room> rooms,
+            Map<VertexEdge, InternalBoundaryType> internalBoundaryKinds
+    ) {
+        return builder(targetClusterId, clusterShape, clusterCenter, rooms, internalBoundaryKinds).build();
     }
 
     public boolean deletesCluster() {
@@ -47,6 +67,7 @@ public record ClusterRewrite(
                 && replacedRoomIds.isEmpty()
                 && mergedRoomIds.isEmpty()
                 && deletedClusterIds.isEmpty()
+                && splitFragmentsBySourceRoomId.isEmpty()
                 && splitClusters.isEmpty();
     }
 
@@ -73,19 +94,97 @@ public record ClusterRewrite(
     }
 
     public ClusterRewrite withSplitClusters(List<ClusterRewriteSplit> splitClusters) {
-        return new ClusterRewrite(
-                targetClusterId,
-                clusterShape,
-                clusterCenter,
-                rooms,
-                internalBoundaryKinds,
-                deletedRoomIds,
-                replacedRoomIds,
-                mergedRoomIds,
-                deletedClusterIds,
-                splitFragmentsBySourceRoomId,
-                splitClusters,
-                topologyChanged);
+        return builder(targetClusterId, clusterShape, clusterCenter, rooms, internalBoundaryKinds)
+                .deletedRoomIds(deletedRoomIds)
+                .replacedRoomIds(replacedRoomIds)
+                .mergedRoomIds(mergedRoomIds)
+                .deletedClusterIds(deletedClusterIds)
+                .splitFragmentsBySourceRoomId(splitFragmentsBySourceRoomId)
+                .splitClusters(splitClusters)
+                .topologyChanged(topologyChanged)
+                .build();
+    }
+
+    public static final class Builder {
+        private final Long targetClusterId;
+        private final TileShape clusterShape;
+        private final Point2i clusterCenter;
+        private final List<Room> rooms;
+        private final Map<VertexEdge, InternalBoundaryType> internalBoundaryKinds;
+        private Set<Long> deletedRoomIds = Set.of();
+        private Map<Long, Long> replacedRoomIds = Map.of();
+        private Set<Long> mergedRoomIds = Set.of();
+        private Set<Long> deletedClusterIds = Set.of();
+        private Map<Long, List<Room>> splitFragmentsBySourceRoomId = Map.of();
+        private List<ClusterRewriteSplit> splitClusters = List.of();
+        private boolean topologyChanged;
+
+        private Builder(
+                Long targetClusterId,
+                TileShape clusterShape,
+                Point2i clusterCenter,
+                List<Room> rooms,
+                Map<VertexEdge, InternalBoundaryType> internalBoundaryKinds
+        ) {
+            this.targetClusterId = targetClusterId;
+            this.clusterShape = clusterShape;
+            this.clusterCenter = clusterCenter;
+            this.rooms = rooms == null ? List.of() : List.copyOf(rooms);
+            this.internalBoundaryKinds = internalBoundaryKinds == null ? Map.of() : Map.copyOf(internalBoundaryKinds);
+        }
+
+        public Builder deletedRoomIds(Set<Long> deletedRoomIds) {
+            this.deletedRoomIds = deletedRoomIds == null ? Set.of() : Set.copyOf(deletedRoomIds);
+            return this;
+        }
+
+        public Builder replacedRoomIds(Map<Long, Long> replacedRoomIds) {
+            this.replacedRoomIds = replacedRoomIds == null ? Map.of() : Map.copyOf(replacedRoomIds);
+            return this;
+        }
+
+        public Builder mergedRoomIds(Set<Long> mergedRoomIds) {
+            this.mergedRoomIds = mergedRoomIds == null ? Set.of() : Set.copyOf(mergedRoomIds);
+            return this;
+        }
+
+        public Builder deletedClusterIds(Set<Long> deletedClusterIds) {
+            this.deletedClusterIds = deletedClusterIds == null ? Set.of() : Set.copyOf(deletedClusterIds);
+            return this;
+        }
+
+        public Builder splitFragmentsBySourceRoomId(Map<Long, List<Room>> splitFragmentsBySourceRoomId) {
+            this.splitFragmentsBySourceRoomId = splitFragmentsBySourceRoomId == null
+                    ? Map.of()
+                    : immutableRoomLists(splitFragmentsBySourceRoomId);
+            return this;
+        }
+
+        public Builder splitClusters(List<ClusterRewriteSplit> splitClusters) {
+            this.splitClusters = splitClusters == null ? List.of() : List.copyOf(splitClusters);
+            return this;
+        }
+
+        public Builder topologyChanged(boolean topologyChanged) {
+            this.topologyChanged = topologyChanged;
+            return this;
+        }
+
+        public ClusterRewrite build() {
+            return new ClusterRewrite(
+                    targetClusterId,
+                    clusterShape,
+                    clusterCenter,
+                    rooms,
+                    internalBoundaryKinds,
+                    deletedRoomIds,
+                    replacedRoomIds,
+                    mergedRoomIds,
+                    deletedClusterIds,
+                    splitFragmentsBySourceRoomId,
+                    splitClusters,
+                    topologyChanged);
+        }
     }
 
     private static Map<Long, List<Room>> immutableRoomLists(Map<Long, List<Room>> source) {

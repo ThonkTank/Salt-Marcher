@@ -87,19 +87,18 @@ final class ClusterRewritePlanner {
         }
         Set<Long> deletedRoomIds = new LinkedHashSet<>(mergedRoomIds);
         deletedRoomIds.remove(retainedRoom.roomId());
-        return new ClusterRewrite(
-                cluster.clusterId(),
-                rewrittenClusterShape,
-                rewrittenClusterShape.centerCell(),
-                rewrittenRooms,
-                boundaryKindsFor(rewrittenClusterShape, rewrittenRooms),
-                deletedRoomIds,
-                replacedRoomIds,
-                mergedRoomIds.size() > 1 ? mergedRoomIds : Set.of(),
-                deletedClusterIds,
-                Map.of(),
-                List.of(),
-                true);
+        return ClusterRewrite.builder(
+                        cluster.clusterId(),
+                        rewrittenClusterShape,
+                        rewrittenClusterShape.centerCell(),
+                        rewrittenRooms,
+                        boundaryKindsFor(rewrittenClusterShape, rewrittenRooms))
+                .deletedRoomIds(deletedRoomIds)
+                .replacedRoomIds(replacedRoomIds)
+                .mergedRoomIds(mergedRoomIds.size() > 1 ? mergedRoomIds : Set.of())
+                .deletedClusterIds(deletedClusterIds)
+                .topologyChanged(true)
+                .build();
     }
 
     static ClusterRewrite applyDelete(RoomCluster cluster, TileShape deletedShape, Supplier<String> roomNameSupplier) {
@@ -111,19 +110,16 @@ final class ClusterRewritePlanner {
             return unchangedRewrite(cluster);
         }
         if (remainingCells.isEmpty()) {
-            return new ClusterRewrite(
-                    cluster.clusterId(),
-                    TileShape.singleCell(cluster.center()),
-                    cluster.center(),
-                    List.of(),
-                    Map.of(),
-                    cluster.roomIds(),
-                    Map.of(),
-                    Set.of(),
-                    Set.of(cluster.clusterId()),
-                    Map.of(),
-                    List.of(),
-                    true);
+            return ClusterRewrite.builder(
+                            cluster.clusterId(),
+                            TileShape.singleCell(cluster.center()),
+                            cluster.center(),
+                            List.of(),
+                            Map.of())
+                    .deletedRoomIds(cluster.roomIds())
+                    .deletedClusterIds(Set.of(cluster.clusterId()))
+                    .topologyChanged(true)
+                    .build();
         }
 
         Map<VertexEdge, InternalBoundaryType> previousBoundaryKinds = cluster.internalBoundaryKinds();
@@ -169,19 +165,17 @@ final class ClusterRewritePlanner {
         List<ClusterRewriteSplit> splitClusters = componentClusters.stream()
                 .skip(1)
                 .toList();
-        return new ClusterRewrite(
-                cluster.clusterId(),
-                retainedCluster.clusterShape(),
-                retainedCluster.clusterCenter(),
-                retainedCluster.rooms(),
-                retainedCluster.internalBoundaryKinds(),
-                deletedRoomIds,
-                Map.of(),
-                Set.of(),
-                Set.of(),
-                splitFragmentsBySourceRoomId,
-                splitClusters,
-                true);
+        return ClusterRewrite.builder(
+                        cluster.clusterId(),
+                        retainedCluster.clusterShape(),
+                        retainedCluster.clusterCenter(),
+                        retainedCluster.rooms(),
+                        retainedCluster.internalBoundaryKinds())
+                .deletedRoomIds(deletedRoomIds)
+                .splitFragmentsBySourceRoomId(splitFragmentsBySourceRoomId)
+                .splitClusters(splitClusters)
+                .topologyChanged(true)
+                .build();
     }
 
     static ClusterRewrite editBoundary(RoomCluster cluster, VertexEdge edge, InternalBoundaryType type, boolean deleteBoundary) {
@@ -217,19 +211,17 @@ final class ClusterRewritePlanner {
 
         List<Room> rewrittenRooms = rewriteRoomsForBoundaryKinds(cluster, updatedBoundaryKinds);
         BoundaryMergeResult merge = computeMergeMetadata(cluster, rewrittenRooms);
-        return new ClusterRewrite(
-                cluster.clusterId(),
-                cluster.shape(),
-                cluster.center(),
-                rewrittenRooms,
-                boundaryKindsFor(cluster.shape(), rewrittenRooms),
-                merge.deletedRoomIds(),
-                merge.replacedRoomIds(),
-                merge.mergedRoomIds(),
-                Set.of(),
-                Map.of(),
-                List.of(),
-                true);
+        return ClusterRewrite.builder(
+                        cluster.clusterId(),
+                        cluster.shape(),
+                        cluster.center(),
+                        rewrittenRooms,
+                        boundaryKindsFor(cluster.shape(), rewrittenRooms))
+                .deletedRoomIds(merge.deletedRoomIds())
+                .replacedRoomIds(merge.replacedRoomIds())
+                .mergedRoomIds(merge.mergedRoomIds())
+                .topologyChanged(true)
+                .build();
     }
 
     static List<Room> reconciledRooms(
@@ -551,19 +543,12 @@ final class ClusterRewritePlanner {
         if (cluster == null) {
             return null;
         }
-        return new ClusterRewrite(
+        return ClusterRewrite.unchanged(
                 cluster.clusterId(),
                 cluster.shape(),
                 cluster.center(),
                 cluster.rooms(),
-                cluster.internalBoundaryKinds(),
-                Set.of(),
-                Map.of(),
-                Set.of(),
-                Set.of(),
-                Map.of(),
-                List.of(),
-                false);
+                cluster.internalBoundaryKinds());
     }
 
     static boolean isInternalEdge(Set<Point2i> clusterCells, VertexEdge edge) {
