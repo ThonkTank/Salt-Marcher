@@ -33,9 +33,9 @@ public final class RoomCluster {
     private final TileShape shape;
     private final Map<Long, Room> roomsById;
     private final Map<Point2i, Room> roomsByCell;
-    private final Map<Long, Set<Long>> adjacentRoomIdsByRoomId;
-    private final List<Set<Long>> components;
-    private final Map<Long, Set<Long>> componentByRoomId;
+    private Map<Long, Set<Long>> adjacentRoomIdsByRoomId;
+    private List<Set<Long>> components;
+    private Map<Long, Set<Long>> componentByRoomId;
     private final boolean hasOverlappingRooms;
 
     public RoomCluster(
@@ -48,8 +48,6 @@ public final class RoomCluster {
         Map<Long, Room> resolvedRoomsById = indexRoomsById(resolvedRooms);
         OverlapIndex overlapIndex = indexRoomsByCell(resolvedRooms);
         Set<Point2i> resolvedCells = indexCells(resolvedRooms);
-        Map<Long, Set<Long>> resolvedAdjacency = indexAdjacentRoomIds(resolvedRoomsById, overlapIndex.roomsByCell());
-        List<Set<Long>> resolvedComponents = components(resolvedRoomsById.keySet(), resolvedAdjacency);
 
         this.clusterId = clusterId;
         this.mapId = mapId;
@@ -59,9 +57,9 @@ public final class RoomCluster {
         this.shape = TileShape.fromAbsoluteCells(resolvedCells);
         this.roomsById = resolvedRoomsById;
         this.roomsByCell = overlapIndex.roomsByCell();
-        this.adjacentRoomIdsByRoomId = immutableSetMap(resolvedAdjacency);
-        this.components = immutableComponents(resolvedComponents);
-        this.componentByRoomId = indexComponentByRoomId(this.components);
+        this.adjacentRoomIdsByRoomId = null;
+        this.components = null;
+        this.componentByRoomId = null;
         this.hasOverlappingRooms = overlapIndex.hasOverlaps();
     }
 
@@ -225,15 +223,15 @@ public final class RoomCluster {
     }
 
     public Set<Long> adjacentRoomIds(Long roomId) {
-        return roomId == null ? Set.of() : adjacentRoomIdsByRoomId.getOrDefault(roomId, Set.of());
+        return roomId == null ? Set.of() : adjacency().getOrDefault(roomId, Set.of());
     }
 
     public List<Set<Long>> components() {
-        return components;
+        return componentsLazy();
     }
 
     public Set<Long> componentContaining(Long roomId) {
-        return roomId == null ? Set.of() : componentByRoomId.getOrDefault(roomId, Set.of());
+        return roomId == null ? Set.of() : componentByRoomId().getOrDefault(roomId, Set.of());
     }
 
     public Set<Long> componentContaining(Point2i cell) {
@@ -242,7 +240,7 @@ public final class RoomCluster {
     }
 
     public boolean isConnected() {
-        return roomsById.isEmpty() || components.size() <= 1;
+        return roomsById.isEmpty() || componentsLazy().size() <= 1;
     }
 
     public boolean hasOverlappingRooms() {
@@ -447,6 +445,27 @@ public final class RoomCluster {
             result.put(entry.getKey(), Set.copyOf(entry.getValue()));
         }
         return Map.copyOf(result);
+    }
+
+    private Map<Long, Set<Long>> adjacency() {
+        if (adjacentRoomIdsByRoomId == null) {
+            adjacentRoomIdsByRoomId = immutableSetMap(indexAdjacentRoomIds(roomsById, roomsByCell));
+        }
+        return adjacentRoomIdsByRoomId;
+    }
+
+    private List<Set<Long>> componentsLazy() {
+        if (components == null) {
+            components = immutableComponents(components(roomsById.keySet(), adjacency()));
+        }
+        return components;
+    }
+
+    private Map<Long, Set<Long>> componentByRoomId() {
+        if (componentByRoomId == null) {
+            componentByRoomId = indexComponentByRoomId(componentsLazy());
+        }
+        return componentByRoomId;
     }
 
     private static List<Set<Long>> immutableComponents(List<Set<Long>> components) {
