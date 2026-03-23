@@ -13,6 +13,7 @@ import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public final class DungeonRuntimeStairCatalog {
 
@@ -107,7 +108,7 @@ public final class DungeonRuntimeStairCatalog {
         Set<CubePoint> originPositions = stair.exitsAtLevel(levelZ).stream()
                 .map(DungeonStairExit::position)
                 .filter(position -> position != null && surfaceCells.contains(position.projectedCell()))
-                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+                .collect(Collectors.toCollection(LinkedHashSet::new));
         if (originPositions.isEmpty()) {
             return List.of();
         }
@@ -137,6 +138,6 @@ public final class DungeonRuntimeStairCatalog {
     private static String description(DungeonStair stair, DungeonStairExit exit) {
         String stairName = stair == null || stair.name() == null || stair.name().isBlank() ? "die Treppe" : stair.name();
         String target = destinationLabel(exit);
-        return "Ueber " + stairName + " gelangt ihr zu " + target + ".";
+        return "Über " + stairName + " gelangt ihr zu " + target + ".";
     }
 }

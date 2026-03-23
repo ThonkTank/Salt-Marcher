@@ -34,6 +34,7 @@ public final class RoomCluster {
     private final TileShape shape;
     private final Map<Long, Room> roomsById;
     private final Map<Point2i, Room> roomsByCell;
+    // Lazy-computed on first access; safe because RoomCluster is only accessed on the FX application thread.
     private Map<Long, Set<Long>> adjacentRoomIdsByRoomId;
     private List<Set<Long>> components;
     private Map<Long, Set<Long>> componentByRoomId;

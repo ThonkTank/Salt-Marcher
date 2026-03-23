@@ -8,6 +8,7 @@ import features.world.dungeonmap.model.structures.room.Room;
 import ui.shell.DetailsNavigator;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public final class DungeonRuntimeSurfaceResolver {
 
@@ -129,14 +130,14 @@ public final class DungeonRuntimeSurfaceResolver {
         return new DungeonRuntimeSurface(
                 stair.name(),
                 new DetailsNavigator.EntryKey("dungeon-stair", layout.mapId() + ":" + stair.stairId()),
-                "Eine Treppe verbindet mehrere erschlossene Hoehenstufen.",
+                "Eine Treppe verbindet mehrere erschlossene Höhenstufen.",
                 List.of(),
                 DungeonRuntimeStairCatalog.describeAtCells(
                         layout,
                         stair.occupiedPositions().stream()
                                 .filter(position -> position != null && position.z() == (activeTile == null ? 0 : activeTile.z()))
                                 .map(CubePoint::projectedCell)
-                                .collect(java.util.stream.Collectors.toSet()),
+                                .collect(Collectors.toSet()),
                         activeTile == null ? 0 : activeTile.z(),
                         activeTile));
     }

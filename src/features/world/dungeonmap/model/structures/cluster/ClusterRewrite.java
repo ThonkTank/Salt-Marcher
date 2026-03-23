@@ -24,6 +24,7 @@ public record ClusterRewrite(
         List<ClusterRewriteSplit> splitClusters,
         boolean topologyChanged
 ) {
+    // Null-intolerant: use builder() or unchanged() factories which handle null gracefully.
     public ClusterRewrite {
         rooms = List.copyOf(rooms);
         persistedBoundaries = List.copyOf(persistedBoundaries);
