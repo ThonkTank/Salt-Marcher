@@ -1,11 +1,10 @@
 package features.world.dungeonmap.application.runtime;
 
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.model.structures.stair.DungeonStair;
-import features.world.dungeonmap.model.structures.stair.DungeonStairExit;
 import ui.shell.DetailsNavigator;
 
 import java.util.List;
@@ -25,47 +24,55 @@ public final class DungeonRuntimeSurfaceResolver {
             return null;
         }
         if (location instanceof DungeonRuntimeLocation.Room roomLocation) {
-            return roomSurface(layout, layout.findRoom(roomLocation.roomId()), heading);
+            return roomSurface(layout, layout.findRoom(roomLocation.roomId()), heading, null);
         }
         if (location instanceof DungeonRuntimeLocation.CorridorComponent componentLocation) {
             CorridorNetwork network = layout.findCorridorNetwork(componentLocation.componentId());
-            return corridorNetworkSurface(layout, network, heading);
+            return corridorNetworkSurface(layout, network, heading, null);
         }
         if (location instanceof DungeonRuntimeLocation.Corridor corridorLocation) {
             Corridor corridor = layout.findCorridor(corridorLocation.corridorId());
             CorridorNetwork network = corridor == null ? null : layout.corridorNetworkForCorridor(corridor.corridorId());
             return network != null
-                    ? corridorNetworkSurface(layout, network, heading)
-                    : corridorSurface(layout, corridor, heading);
+                    ? corridorNetworkSurface(layout, network, heading, null)
+                    : corridorSurface(layout, corridor, heading, null);
         }
         if (location instanceof DungeonRuntimeLocation.Tile tileLocation) {
-            DungeonLayout projectedLayout = layout.projectedToLevel(tileLocation.tile().z());
-            DungeonStair stair = layout.stairsAtPoint(tileLocation.tile()).stream()
-                    .filter(candidate -> candidate != null)
-                    .findFirst()
-                    .orElse(null);
-            if (stair != null) {
-                return stairSurface(layout, stair, tileLocation.tile());
-            }
-            DungeonLayout.CellStructure structure = projectedLayout.structureAtCell(tileLocation.tile().projectedCell());
-            if (structure instanceof DungeonLayout.CellStructure.RoomStructure roomStructure) {
-                return roomSurface(layout, roomStructure.room(), heading);
-            }
-            if (structure instanceof DungeonLayout.CellStructure.NetworkStructure networkStructure) {
-                return corridorNetworkSurface(layout, networkStructure.network(), heading);
-            }
-            if (structure instanceof DungeonLayout.CellStructure.CorridorStructure corridorStructure) {
-                return corridorSurface(layout, corridorStructure.corridor(), heading);
-            }
-            return null;
+            return tileSurface(layout, tileLocation.tile(), heading);
         }
         if (location instanceof DungeonRuntimeLocation.StairExit stairExit) {
-            return stairSurface(layout, layout.findStair(stairExit.stairId()), stairExit.tile());
+            return tileSurface(layout, stairExit.tile(), heading);
         }
         return null;
     }
 
-    private static DungeonRuntimeSurface roomSurface(DungeonLayout layout, Room room, DungeonHeading heading) {
+    private static DungeonRuntimeSurface tileSurface(DungeonLayout layout, CubePoint tile, DungeonHeading heading) {
+        if (layout == null || tile == null) {
+            return null;
+        }
+        DungeonLayout projectedLayout = layout.projectedToLevel(tile.z());
+        DungeonLayout.CellStructure structure = projectedLayout.structureAtCell(tile.projectedCell());
+        if (structure instanceof DungeonLayout.CellStructure.RoomStructure roomStructure) {
+            return roomSurface(layout, roomStructure.room(), heading, tile);
+        }
+        if (structure instanceof DungeonLayout.CellStructure.NetworkStructure networkStructure) {
+            return corridorNetworkSurface(layout, networkStructure.network(), heading, tile);
+        }
+        if (structure instanceof DungeonLayout.CellStructure.CorridorStructure corridorStructure) {
+            return corridorSurface(layout, corridorStructure.corridor(), heading, tile);
+        }
+        if (structure instanceof DungeonLayout.CellStructure.StairStructure stairStructure) {
+            return stairOnlySurface(layout, stairStructure.stair(), tile);
+        }
+        return null;
+    }
+
+    private static DungeonRuntimeSurface roomSurface(
+            DungeonLayout layout,
+            Room room,
+            DungeonHeading heading,
+            CubePoint activeTile
+    ) {
         if (room == null || room.roomId() == null) {
             return null;
         }
@@ -74,13 +81,14 @@ public final class DungeonRuntimeSurfaceResolver {
                 new DetailsNavigator.EntryKey("dungeon-room", layout.mapId() + ":" + room.roomId()),
                 room.narration().visualDescription(),
                 DungeonRuntimeDoorCatalog.describe(layout, room, heading),
-                List.of());
+                DungeonRuntimeStairCatalog.describe(layout, room, activeTile));
     }
 
     private static DungeonRuntimeSurface corridorNetworkSurface(
             DungeonLayout layout,
             CorridorNetwork network,
-            DungeonHeading heading
+            DungeonHeading heading,
+            CubePoint activeTile
     ) {
         if (layout == null || network == null || network.networkId() == null) {
             return null;
@@ -90,13 +98,14 @@ public final class DungeonRuntimeSurfaceResolver {
                 new DetailsNavigator.EntryKey("dungeon-corridor-network", layout.mapId() + ":" + network.networkId()),
                 "",
                 DungeonRuntimeDoorCatalog.describe(layout, network, heading),
-                List.of());
+                DungeonRuntimeStairCatalog.describe(layout, network, activeTile));
     }
 
     private static DungeonRuntimeSurface corridorSurface(
             DungeonLayout layout,
             Corridor corridor,
-            DungeonHeading heading
+            DungeonHeading heading,
+            CubePoint activeTile
     ) {
         if (layout == null || corridor == null || corridor.corridorId() == null) {
             return null;
@@ -106,33 +115,29 @@ public final class DungeonRuntimeSurfaceResolver {
                 new DetailsNavigator.EntryKey("dungeon-corridor", layout.mapId() + ":" + corridor.corridorId()),
                 "",
                 DungeonRuntimeDoorCatalog.describe(layout, corridor, heading),
-                List.of());
+                DungeonRuntimeStairCatalog.describe(layout, corridor, activeTile));
     }
 
-    private static DungeonRuntimeSurface stairSurface(DungeonLayout layout, DungeonStair stair, features.world.dungeonmap.model.geometry.CubePoint activeTile) {
+    private static DungeonRuntimeSurface stairOnlySurface(
+            DungeonLayout layout,
+            features.world.dungeonmap.model.structures.stair.DungeonStair stair,
+            CubePoint activeTile
+    ) {
         if (layout == null || stair == null || stair.stairId() == null) {
             return null;
         }
-        List<DungeonRuntimeSurfaceAction> actions = stair.exits().stream()
-                .filter(exit -> exit != null && exit.position() != null)
-                .filter(exit -> activeTile == null || !activeTile.equals(exit.position()))
-                .map(exit -> toStairAction(stair, exit))
-                .toList();
         return new DungeonRuntimeSurface(
                 stair.name(),
                 new DetailsNavigator.EntryKey("dungeon-stair", layout.mapId() + ":" + stair.stairId()),
-                "Eine Treppe verbindet mehrere erschlossene Höhenstufen.",
+                "Eine Treppe verbindet mehrere erschlossene Hoehenstufen.",
                 List.of(),
-                actions);
-    }
-
-    private static DungeonRuntimeSurfaceAction toStairAction(DungeonStair stair, DungeonStairExit exit) {
-        String label = exit.label() == null || exit.label().isBlank()
-                ? "Nach z=" + exit.position().z()
-                : exit.label();
-        return new DungeonRuntimeSurfaceAction(
-                label,
-                "Bewegt die Gruppe auf die verbundene Ebene.",
-                DungeonRuntimeLocation.stairExit(stair.stairId(), exit.position()));
+                DungeonRuntimeStairCatalog.describeAtCells(
+                        layout,
+                        stair.occupiedPositions().stream()
+                                .filter(position -> position != null && position.z() == (activeTile == null ? 0 : activeTile.z()))
+                                .map(CubePoint::projectedCell)
+                                .collect(java.util.stream.Collectors.toSet()),
+                        activeTile == null ? 0 : activeTile.z(),
+                        activeTile));
     }
 }

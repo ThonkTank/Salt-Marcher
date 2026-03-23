@@ -2,7 +2,6 @@ package features.world.dungeonmap.model.structures.cluster;
 
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
-import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.structures.room.Room;
 
 import java.util.LinkedHashMap;
@@ -16,7 +15,7 @@ public record ClusterRewrite(
         TileShape clusterShape,
         Point2i clusterCenter,
         List<Room> rooms,
-        Map<VertexEdge, InternalBoundaryType> internalBoundaryKinds,
+        List<InternalBoundaryEdge> persistedBoundaries,
         Set<Long> deletedRoomIds,
         Map<Long, Long> replacedRoomIds,
         Set<Long> mergedRoomIds,
@@ -27,7 +26,7 @@ public record ClusterRewrite(
 ) {
     public ClusterRewrite {
         rooms = List.copyOf(rooms);
-        internalBoundaryKinds = Map.copyOf(internalBoundaryKinds);
+        persistedBoundaries = List.copyOf(persistedBoundaries);
         deletedRoomIds = Set.copyOf(deletedRoomIds);
         replacedRoomIds = Map.copyOf(replacedRoomIds);
         mergedRoomIds = Set.copyOf(mergedRoomIds);
@@ -41,9 +40,9 @@ public record ClusterRewrite(
             TileShape clusterShape,
             Point2i clusterCenter,
             List<Room> rooms,
-            Map<VertexEdge, InternalBoundaryType> internalBoundaryKinds
+            List<InternalBoundaryEdge> persistedBoundaries
     ) {
-        return new Builder(targetClusterId, clusterShape, clusterCenter, rooms, internalBoundaryKinds);
+        return new Builder(targetClusterId, clusterShape, clusterCenter, rooms, persistedBoundaries);
     }
 
     public static ClusterRewrite unchanged(
@@ -51,9 +50,9 @@ public record ClusterRewrite(
             TileShape clusterShape,
             Point2i clusterCenter,
             List<Room> rooms,
-            Map<VertexEdge, InternalBoundaryType> internalBoundaryKinds
+            List<InternalBoundaryEdge> persistedBoundaries
     ) {
-        return builder(targetClusterId, clusterShape, clusterCenter, rooms, internalBoundaryKinds).build();
+        return builder(targetClusterId, clusterShape, clusterCenter, rooms, persistedBoundaries).build();
     }
 
     public boolean deletesCluster() {
@@ -94,7 +93,7 @@ public record ClusterRewrite(
     }
 
     public ClusterRewrite withSplitClusters(List<ClusterRewriteSplit> splitClusters) {
-        return builder(targetClusterId, clusterShape, clusterCenter, rooms, internalBoundaryKinds)
+        return builder(targetClusterId, clusterShape, clusterCenter, rooms, persistedBoundaries)
                 .deletedRoomIds(deletedRoomIds)
                 .replacedRoomIds(replacedRoomIds)
                 .mergedRoomIds(mergedRoomIds)
@@ -110,7 +109,7 @@ public record ClusterRewrite(
         private final TileShape clusterShape;
         private final Point2i clusterCenter;
         private final List<Room> rooms;
-        private final Map<VertexEdge, InternalBoundaryType> internalBoundaryKinds;
+        private final List<InternalBoundaryEdge> persistedBoundaries;
         private Set<Long> deletedRoomIds = Set.of();
         private Map<Long, Long> replacedRoomIds = Map.of();
         private Set<Long> mergedRoomIds = Set.of();
@@ -124,13 +123,13 @@ public record ClusterRewrite(
                 TileShape clusterShape,
                 Point2i clusterCenter,
                 List<Room> rooms,
-                Map<VertexEdge, InternalBoundaryType> internalBoundaryKinds
+                List<InternalBoundaryEdge> persistedBoundaries
         ) {
             this.targetClusterId = targetClusterId;
             this.clusterShape = clusterShape;
             this.clusterCenter = clusterCenter;
             this.rooms = rooms == null ? List.of() : List.copyOf(rooms);
-            this.internalBoundaryKinds = internalBoundaryKinds == null ? Map.of() : Map.copyOf(internalBoundaryKinds);
+            this.persistedBoundaries = persistedBoundaries == null ? List.of() : List.copyOf(persistedBoundaries);
         }
 
         public Builder deletedRoomIds(Set<Long> deletedRoomIds) {
@@ -176,7 +175,7 @@ public record ClusterRewrite(
                     clusterShape,
                     clusterCenter,
                     rooms,
-                    internalBoundaryKinds,
+                    persistedBoundaries,
                     deletedRoomIds,
                     replacedRoomIds,
                     mergedRoomIds,

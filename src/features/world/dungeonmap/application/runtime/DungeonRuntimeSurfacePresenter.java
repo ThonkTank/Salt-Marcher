@@ -4,9 +4,9 @@ import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
-import javafx.scene.layout.VBox;
 
 import java.util.function.Consumer;
 
@@ -16,7 +16,7 @@ public final class DungeonRuntimeSurfacePresenter {
         throw new AssertionError("No instances");
     }
 
-    public static Node buildNode(DungeonRuntimeSurface surface, Consumer<DungeonRuntimeSurfaceAction> onActionSelected) {
+    public static Node buildNode(DungeonRuntimeSurface surface, Consumer<DungeonRuntimeStairDescriptor> onStairSelected) {
         VBox box = new VBox(8);
         box.setPadding(new Insets(12));
         if (surface == null) {
@@ -34,21 +34,21 @@ public final class DungeonRuntimeSurfacePresenter {
         box.getChildren().addAll(
                 sectionTitle("Visueller Eindruck"),
                 descriptionBlock);
-        box.getChildren().add(sectionTitle("Aktionen"));
-        if (surface.actions().isEmpty()) {
+        box.getChildren().add(sectionTitle("Treppen"));
+        if (surface.stairs().isEmpty()) {
             box.getChildren().add(text("—"));
         } else {
-            for (DungeonRuntimeSurfaceAction action : surface.actions()) {
-                Button button = new Button(action.label());
+            for (DungeonRuntimeStairDescriptor stair : surface.stairs()) {
+                Button button = new Button(stair.displayLabel());
                 button.setMaxWidth(Double.MAX_VALUE);
                 button.setOnAction(event -> {
-                    if (onActionSelected != null) {
-                        onActionSelected.accept(action);
+                    if (onStairSelected != null) {
+                        onStairSelected.accept(stair);
                     }
                 });
                 box.getChildren().add(button);
-                if (action.description() != null && !action.description().isBlank()) {
-                    box.getChildren().add(text(action.description()));
+                if (stair.description() != null && !stair.description().isBlank()) {
+                    box.getChildren().add(text(stair.description()));
                 }
             }
         }

@@ -12,6 +12,7 @@ import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.structures.cluster.ClusterRewrite;
 import features.world.dungeonmap.model.structures.cluster.ClusterRewriteSplit;
+import features.world.dungeonmap.model.structures.cluster.InternalBoundaryEdge;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
@@ -235,7 +236,7 @@ public final class DungeonRoomTopologyService {
                     mapId,
                     geometryWriteMapper.toClusterGeometry(splitCluster.clusterShape()),
                     levelZ);
-            roomWriteRepository.replaceClusterEdges(conn, splitClusterId, toBoundaryWrites(splitCluster.internalBoundaryKinds()));
+            roomWriteRepository.replaceClusterEdges(conn, splitClusterId, toBoundaryWrites(splitCluster.persistedBoundaries()));
             realizedSplitClusters.add(splitCluster.withClusterId(splitClusterId));
         }
         ClusterRewrite realizedRewrite = rewrite.withSplitClusters(realizedSplitClusters);
@@ -243,7 +244,7 @@ public final class DungeonRoomTopologyService {
                 conn,
                 realizedRewrite.targetClusterId(),
                 geometryWriteMapper.toClusterGeometry(realizedRewrite.clusterShape()));
-        roomWriteRepository.replaceClusterEdges(conn, realizedRewrite.targetClusterId(), toBoundaryWrites(realizedRewrite.internalBoundaryKinds()));
+        roomWriteRepository.replaceClusterEdges(conn, realizedRewrite.targetClusterId(), toBoundaryWrites(realizedRewrite.persistedBoundaries()));
         persistRooms(conn, mapId, realizedRewrite.targetClusterId(), realizedRewrite.rooms(), levelZ);
         for (ClusterRewriteSplit splitCluster : realizedRewrite.splitClusters()) {
             persistRooms(conn, mapId, splitCluster.clusterId(), splitCluster.rooms(), levelZ);
@@ -260,29 +261,21 @@ public final class DungeonRoomTopologyService {
         return type == InternalBoundaryType.DOOR ? ClusterBoundaryWrite.Type.DOOR : ClusterBoundaryWrite.Type.WALL;
     }
 
-    private static List<ClusterBoundaryWrite> toBoundaryWrites(Map<VertexEdge, InternalBoundaryType> boundaryKinds) {
-        if (boundaryKinds == null || boundaryKinds.isEmpty()) {
+    private static List<ClusterBoundaryWrite> toBoundaryWrites(List<InternalBoundaryEdge> boundaries) {
+        if (boundaries == null || boundaries.isEmpty()) {
             return List.of();
         }
-        return boundaryKinds.entrySet().stream()
-                .map(entry -> toBoundaryWrite(entry.getKey(), entry.getValue()))
+        return boundaries.stream()
+                .map(DungeonRoomTopologyService::toBoundaryWrite)
                 .filter(Objects::nonNull)
                 .toList();
     }
 
-    private static ClusterBoundaryWrite toBoundaryWrite(VertexEdge edge, InternalBoundaryType type) {
-        if (edge == null) {
+    private static ClusterBoundaryWrite toBoundaryWrite(InternalBoundaryEdge boundary) {
+        if (boundary == null || boundary.cell() == null || boundary.direction() == null) {
             return null;
         }
-        List<Point2i> touchingCells = edge.touchingCells().stream()
-                .sorted(Point2i.POINT_ORDER)
-                .toList();
-        if (touchingCells.size() != 2) {
-            return null;
-        }
-        Point2i baseCell = touchingCells.getFirst();
-        Point2i direction = baseCell.directionToCardinal(touchingCells.get(1));
-        return direction == null ? null : new ClusterBoundaryWrite(baseCell, direction, toBoundaryWriteType(type));
+        return new ClusterBoundaryWrite(boundary.cell(), boundary.direction(), toBoundaryWriteType(boundary.type()));
     }
 
     private void persistRooms(

@@ -9,12 +9,12 @@ public record DungeonRuntimeSurface(
         DetailsNavigator.EntryKey entryKey,
         String visualDescription,
         List<DungeonRuntimeDoorDescriptor> doors,
-        List<DungeonRuntimeSurfaceAction> actions
+        List<DungeonRuntimeStairDescriptor> stairs
 ) {
     public DungeonRuntimeSurface {
         title = title == null || title.isBlank() ? "Dungeon" : title;
         visualDescription = visualDescription == null ? "" : visualDescription.trim();
         doors = doors == null ? List.of() : List.copyOf(doors);
-        actions = actions == null ? List.of() : List.copyOf(actions);
+        stairs = stairs == null ? List.of() : List.copyOf(stairs);
     }
 }

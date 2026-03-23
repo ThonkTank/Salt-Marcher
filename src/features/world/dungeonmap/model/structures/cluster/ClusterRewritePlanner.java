@@ -92,7 +92,7 @@ final class ClusterRewritePlanner {
                         rewrittenClusterShape,
                         rewrittenClusterShape.centerCell(),
                         rewrittenRooms,
-                        boundaryKindsFor(rewrittenClusterShape, rewrittenRooms))
+                        persistedBoundaries(rewrittenClusterShape, rewrittenRooms))
                 .deletedRoomIds(deletedRoomIds)
                 .replacedRoomIds(replacedRoomIds)
                 .mergedRoomIds(mergedRoomIds.size() > 1 ? mergedRoomIds : Set.of())
@@ -115,7 +115,7 @@ final class ClusterRewritePlanner {
                             TileShape.singleCell(cluster.center()),
                             cluster.center(),
                             List.of(),
-                            Map.of())
+                            List.of())
                     .deletedRoomIds(cluster.roomIds())
                     .deletedClusterIds(Set.of(cluster.clusterId()))
                     .topologyChanged(true)
@@ -170,7 +170,7 @@ final class ClusterRewritePlanner {
                         retainedCluster.clusterShape(),
                         retainedCluster.clusterCenter(),
                         retainedCluster.rooms(),
-                        retainedCluster.internalBoundaryKinds())
+                        retainedCluster.persistedBoundaries())
                 .deletedRoomIds(deletedRoomIds)
                 .splitFragmentsBySourceRoomId(splitFragmentsBySourceRoomId)
                 .splitClusters(splitClusters)
@@ -216,7 +216,7 @@ final class ClusterRewritePlanner {
                         cluster.shape(),
                         cluster.center(),
                         rewrittenRooms,
-                        boundaryKindsFor(cluster.shape(), rewrittenRooms))
+                        persistedBoundaries(cluster.shape(), rewrittenRooms))
                 .deletedRoomIds(merge.deletedRoomIds())
                 .replacedRoomIds(merge.replacedRoomIds())
                 .mergedRoomIds(merge.mergedRoomIds())
@@ -449,7 +449,7 @@ final class ClusterRewritePlanner {
                             componentShape,
                             componentShape.centerCell(),
                             componentRooms,
-                            boundaryKindsFor(componentShape, componentRooms));
+                            persistedBoundaries(componentShape, componentRooms));
                 })
                 .toList();
     }
@@ -463,6 +463,17 @@ final class ClusterRewritePlanner {
                 .filter(room -> room != null && !disjoint(room.cells(), componentCells))
                 .sorted(Comparator.comparing(Room::roomId, Comparator.nullsLast(Long::compareTo))
                         .thenComparing(room -> room.floor().shape().centerCell(), Point2i.POINT_ORDER))
+                .toList();
+    }
+
+    static List<InternalBoundaryEdge> persistedBoundaries(TileShape clusterShape, List<Room> rooms) {
+        if (clusterShape == null || clusterShape.size() == 0) {
+            return List.of();
+        }
+        Map<VertexEdge, InternalBoundaryType> boundaryKinds = boundaryKindsFor(clusterShape, rooms);
+        return boundaryKinds.entrySet().stream()
+                .map(entry -> toInternalBoundaryEdge(entry.getKey(), entry.getValue()))
+                .filter(java.util.Objects::nonNull)
                 .toList();
     }
 
@@ -548,7 +559,22 @@ final class ClusterRewritePlanner {
                 cluster.shape(),
                 cluster.center(),
                 cluster.rooms(),
-                cluster.internalBoundaryKinds());
+                persistedBoundaries(cluster.shape(), cluster.rooms()));
+    }
+
+    static InternalBoundaryEdge toInternalBoundaryEdge(VertexEdge edge, InternalBoundaryType type) {
+        if (edge == null) {
+            return null;
+        }
+        List<Point2i> touchingCells = edge.touchingCells().stream()
+                .sorted(Point2i.POINT_ORDER)
+                .toList();
+        if (touchingCells.size() != 2) {
+            return null;
+        }
+        Point2i baseCell = touchingCells.getFirst();
+        Point2i direction = baseCell.directionToCardinal(touchingCells.get(1));
+        return direction == null ? null : new InternalBoundaryEdge(baseCell, direction, type);
     }
 
     static boolean isInternalEdge(Set<Point2i> clusterCells, VertexEdge edge) {

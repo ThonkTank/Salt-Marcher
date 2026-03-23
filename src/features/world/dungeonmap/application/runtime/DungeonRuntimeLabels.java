@@ -34,8 +34,7 @@ public final class DungeonRuntimeLabels {
             return network == null ? "Korridor" : corridorLabel(layout, network.roomIds().stream());
         }
         if (location instanceof DungeonRuntimeLocation.StairExit stairExit) {
-            DungeonStair stair = layout.findStair(stairExit.stairId());
-            return stair == null ? "Treppe z=" + stairExit.tile().z() : stair.name() + " z=" + stairExit.tile().z();
+            return structureLabelAtTile(layout, stairExit.tile());
         }
         return "Kein Standort";
     }
@@ -61,10 +60,6 @@ public final class DungeonRuntimeLabels {
             return "Kein Standort";
         }
         DungeonLayout.CellStructure structure = layout.projectedToLevel(tile.z()).structureAtCell(tile.projectedCell());
-        DungeonStair stair = layout.stairsAtPoint(tile).stream().findFirst().orElse(null);
-        if (stair != null) {
-            return stair.name();
-        }
         if (structure instanceof DungeonLayout.CellStructure.RoomStructure roomStructure) {
             return roomLabel(roomStructure.room());
         }
@@ -73,6 +68,10 @@ public final class DungeonRuntimeLabels {
         }
         if (structure instanceof DungeonLayout.CellStructure.CorridorStructure corridorStructure) {
             return corridorLabel(layout, corridorStructure.corridor());
+        }
+        DungeonStair stair = layout.stairsAtPoint(tile).stream().findFirst().orElse(null);
+        if (stair != null) {
+            return stair.name();
         }
         return "Kein Standort";
     }

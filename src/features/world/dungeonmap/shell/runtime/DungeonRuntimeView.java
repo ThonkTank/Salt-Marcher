@@ -2,12 +2,11 @@ package features.world.dungeonmap.shell.runtime;
 
 import features.world.api.WorldTravelSurface;
 import features.world.dungeonmap.application.runtime.DungeonHeading;
-import features.world.dungeonmap.application.runtime.DungeonRuntimeDoorCatalog;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeDoorDescriptor;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLabels;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationService;
-import features.world.dungeonmap.application.runtime.DungeonRuntimeSurfaceAction;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeStairDescriptor;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeSurface;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeSurfacePresenter;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeSurfaceResolver;
@@ -275,28 +274,28 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         surface.doors().stream()
                 .map(this::toDoorAction)
                 .forEach(actions::add);
-        surface.actions().stream()
-                .map(this::toSurfaceAction)
+        surface.stairs().stream()
+                .map(this::toStairAction)
                 .forEach(actions::add);
         return List.copyOf(actions);
     }
 
-    private WorldTravelSurface.DungeonDoorAction toSurfaceAction(DungeonRuntimeSurfaceAction action) {
-        return new WorldTravelSurface.DungeonDoorAction(action.label(), () -> movePartyThroughStair(action));
+    private WorldTravelSurface.DungeonDoorAction toStairAction(DungeonRuntimeStairDescriptor stair) {
+        return new WorldTravelSurface.DungeonDoorAction(stair.displayLabel(), () -> movePartyThroughStair(stair));
     }
 
     private WorldTravelSurface.DungeonDoorAction toDoorAction(DungeonRuntimeDoorDescriptor door) {
         return new WorldTravelSurface.DungeonDoorAction(door.displayLabel(), () -> movePartyThroughDoor(door));
     }
 
-    private void movePartyThroughStair(DungeonRuntimeSurfaceAction action) {
-        if (action == null || runtimeState.loading() || runtimeState.moving() || state().activeMap().mapId() <= 0) {
+    private void movePartyThroughStair(DungeonRuntimeStairDescriptor stair) {
+        if (stair == null || runtimeState.loading() || runtimeState.moving() || state().activeMap().mapId() <= 0) {
             return;
         }
         var layout = state().activeMap();
         runtimeState.showMoveInProgress();
         UiAsyncTasks.submit(
-                () -> runtimeNavigationService.moveThroughStair(layout, action, runtimeState.heading()),
+                () -> runtimeNavigationService.moveThroughStair(layout, stair, runtimeState.heading()),
                 runtimeState::showNavigation,
                 failure -> {
                     System.err.println("DungeonRuntimeView.movePartyThroughStair(): " + failure.getMessage());

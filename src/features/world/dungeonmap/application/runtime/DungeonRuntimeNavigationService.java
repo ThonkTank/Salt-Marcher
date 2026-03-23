@@ -95,13 +95,13 @@ public final class DungeonRuntimeNavigationService {
 
     public DungeonRuntimeNavigationSnapshot moveThroughStair(
             DungeonLayout layout,
-            DungeonRuntimeSurfaceAction action,
+            DungeonRuntimeStairDescriptor stair,
             DungeonHeading currentHeading
     ) throws SQLException {
         if (layout == null || layout.mapId() <= 0) {
             throw new SQLException("Kein aktiver Dungeon geladen");
         }
-        if (action == null || !(action.targetLocation() instanceof DungeonRuntimeLocation.StairExit stairExit)) {
+        if (stair == null || !(stair.targetLocation() instanceof DungeonRuntimeLocation.StairExit stairExit)) {
             throw new SQLException("Kein Treppenziel verfügbar");
         }
         CubePoint resolvedTile = nearestTraversableTile(layout, stairExit.tile());
