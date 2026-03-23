@@ -5,6 +5,7 @@ import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.structures.cluster.ClusterRewrite;
+import features.world.dungeonmap.model.structures.cluster.ClusterRewriteSplit;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
@@ -541,7 +542,24 @@ public final class DungeonLayout {
                     rewrite.clusterCenter(),
                     rewrite.rooms()));
         }
-        return new DungeonLayout(mapId, name, corridors, updatedClusters, stairs, clusterLevelsById, roomLevelsById, corridorLevelsById);
+        for (ClusterRewriteSplit splitCluster : rewrite.splitClusters()) {
+            if (splitCluster == null || splitCluster.clusterId() == null) {
+                continue;
+            }
+            updatedClusters.add(new RoomCluster(
+                    splitCluster.clusterId(),
+                    mapId,
+                    splitCluster.clusterCenter(),
+                    splitCluster.rooms()));
+        }
+        Map<Long, Integer> updatedClusterLevels = new LinkedHashMap<>(clusterLevelsById);
+        int targetLevel = clusterLevelsById.getOrDefault(rewrite.targetClusterId(), 0);
+        for (ClusterRewriteSplit splitCluster : rewrite.splitClusters()) {
+            if (splitCluster != null && splitCluster.clusterId() != null) {
+                updatedClusterLevels.put(splitCluster.clusterId(), targetLevel);
+            }
+        }
+        return new DungeonLayout(mapId, name, corridors, updatedClusters, stairs, updatedClusterLevels, roomLevelsById, corridorLevelsById);
     }
 
     public DungeonLayout projectedToLevel(int levelZ) {

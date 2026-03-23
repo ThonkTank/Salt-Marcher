@@ -7,6 +7,7 @@ import features.world.dungeonmap.canvas.grid.DungeonGridSceneRenderer;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
+import features.world.dungeonmap.state.DungeonLevelOverlaySettings;
 import javafx.geometry.Insets;
 import javafx.geometry.Point2D;
 import javafx.scene.canvas.Canvas;
@@ -30,6 +31,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
     private DungeonLayout previewMapModel;
     private DungeonViewMode viewMode = DungeonViewMode.GRID;
     private int projectionLevel;
+    private DungeonLevelOverlaySettings levelOverlaySettings = DungeonLevelOverlaySettings.defaults();
     private String selectedTargetKey;
     private TileShape previewPaintShape = TileShape.empty();
     private boolean previewPaintDeleteMode;
@@ -107,6 +109,17 @@ public final class DungeonCanvasWorkspace extends BorderPane {
             return;
         }
         this.previewMapModel = previewMapModel;
+        notifyViewChanged();
+    }
+
+    public void setLevelOverlaySettings(DungeonLevelOverlaySettings levelOverlaySettings) {
+        DungeonLevelOverlaySettings nextSettings = levelOverlaySettings == null
+                ? DungeonLevelOverlaySettings.defaults()
+                : levelOverlaySettings;
+        if (Objects.equals(this.levelOverlaySettings, nextSettings)) {
+            return;
+        }
+        this.levelOverlaySettings = nextSettings;
         notifyViewChanged();
     }
 
@@ -247,7 +260,14 @@ public final class DungeonCanvasWorkspace extends BorderPane {
                 renderedMapModel(),
                 camera,
                 editorMode,
-                new DungeonRenderState(selectedTargetKey, previewPaintShape, previewPaintDeleteMode, projectionLevel, activeLocation, heading));
+                new DungeonRenderState(
+                        selectedTargetKey,
+                        previewPaintShape,
+                        previewPaintDeleteMode,
+                        projectionLevel,
+                        levelOverlaySettings,
+                        activeLocation,
+                        heading));
     }
 
     private void notifyViewChanged() {
@@ -257,7 +277,8 @@ public final class DungeonCanvasWorkspace extends BorderPane {
 
     private DungeonLayout renderedMapModel() {
         DungeonLayout base = previewMapModel == null ? mapModel : previewMapModel;
-        return base == null ? DungeonLayout.empty() : base.projectedToLevel(projectionLevel);
+        DungeonLayout resolved = base == null ? DungeonLayout.empty() : base;
+        return viewMode == DungeonViewMode.GRAPH ? resolved.projectedToLevel(projectionLevel) : resolved;
     }
 
     private DungeonCanvasPointerEvent pointerEvent(MouseEvent event) {

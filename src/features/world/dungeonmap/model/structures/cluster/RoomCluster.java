@@ -134,6 +134,7 @@ public final class RoomCluster {
                 merge.mergedRoomIds(),
                 Set.of(),
                 Map.of(),
+                List.of(),
                 true);
     }
 
@@ -465,6 +466,7 @@ public final class RoomCluster {
                 mergedRoomIds.size() > 1 ? mergedRoomIds : Set.of(),
                 deletedClusterIds,
                 Map.of(),
+                List.of(),
                 true);
     }
 
@@ -488,6 +490,7 @@ public final class RoomCluster {
                     Set.of(),
                     Set.of(clusterId),
                     Map.of(),
+                    List.of(),
                     true);
         }
 
@@ -532,17 +535,26 @@ public final class RoomCluster {
         Map<Long, List<Room>> splitFragmentsBySourceRoomId = resolvedFragmentsBySourceRoomId(
                 fragmentsBySourceRoomId,
                 rewrittenRooms);
+        List<ClusterRewriteSplit> componentClusters = deleteRewriteClusters(rewrittenClusterShape, rewrittenRooms);
+        ClusterRewriteSplit retainedCluster = componentClusters.isEmpty()
+                ? new ClusterRewriteSplit(clusterId, rewrittenClusterShape, rewrittenClusterShape.centerCell(), rewrittenRooms,
+                persistedInternalBoundaries(rewrittenClusterShape, rewrittenRooms))
+                : componentClusters.getFirst().withClusterId(clusterId);
+        List<ClusterRewriteSplit> splitClusters = componentClusters.stream()
+                .skip(1)
+                .toList();
         return new ClusterRewrite(
                 clusterId,
-                rewrittenClusterShape,
-                rewrittenClusterShape.centerCell(),
-                rewrittenRooms,
-                persistedInternalBoundaries(rewrittenClusterShape, rewrittenRooms),
+                retainedCluster.clusterShape(),
+                retainedCluster.clusterCenter(),
+                retainedCluster.rooms(),
+                retainedCluster.persistedBoundaries(),
                 deletedRoomIds,
                 Map.of(),
                 Set.of(),
                 Set.of(),
                 splitFragmentsBySourceRoomId,
+                splitClusters,
                 true);
     }
 
@@ -780,7 +792,41 @@ public final class RoomCluster {
                 Set.of(),
                 Set.of(),
                 Map.of(),
+                List.of(),
                 false);
+    }
+
+    private List<ClusterRewriteSplit> deleteRewriteClusters(TileShape rewrittenClusterShape, List<Room> rewrittenRooms) {
+        if (rewrittenClusterShape == null || rewrittenClusterShape.size() == 0) {
+            return List.of();
+        }
+        return rewrittenClusterShape.connectedComponents().stream()
+                .sorted(Comparator
+                        .comparing((TileShape component) -> !component.contains(center))
+                        .thenComparingInt(component -> component.centerCell().distanceTo(center))
+                        .thenComparing(TileShape::centerCell, Point2i.POINT_ORDER))
+                .map(componentShape -> {
+                    List<Room> componentRooms = roomsForDeleteComponent(componentShape, rewrittenRooms);
+                    return new ClusterRewriteSplit(
+                            null,
+                            componentShape,
+                            componentShape.centerCell(),
+                            componentRooms,
+                            persistedInternalBoundaries(componentShape, componentRooms));
+                })
+                .toList();
+    }
+
+    private static List<Room> roomsForDeleteComponent(TileShape componentShape, List<Room> rewrittenRooms) {
+        if (componentShape == null || componentShape.size() == 0) {
+            return List.of();
+        }
+        Set<Point2i> componentCells = componentShape.absoluteCells();
+        return rewrittenRooms.stream()
+                .filter(room -> room != null && !disjoint(room.cells(), componentCells))
+                .sorted(Comparator.comparing(Room::roomId, Comparator.nullsLast(Long::compareTo))
+                        .thenComparing(room -> room.floor().shape().centerCell(), Point2i.POINT_ORDER))
+                .toList();
     }
 
     private static List<RoomCluster> normalizedClusters(List<RoomCluster> clusters) {

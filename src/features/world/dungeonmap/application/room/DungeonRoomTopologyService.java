@@ -11,6 +11,7 @@ import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.structures.cluster.ClusterRewrite;
+import features.world.dungeonmap.model.structures.cluster.ClusterRewriteSplit;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorRewriteContext;
@@ -80,11 +81,11 @@ public final class DungeonRoomTopologyService {
             return;
         }
 
+        ClusterRewrite persistedRewrite = persistClusterRewrite(conn, mapId, rewrite, levelZ);
         Map<Long, Corridor> corridorsById = applyCorridorCascade(
                 layout,
                 new LinkedHashMap<>(layout.corridorsById()),
-                rewrite);
-        persistClusterRewrite(conn, mapId, rewrite, levelZ);
+                persistedRewrite);
         corridorPersistenceService.persistCorridors(conn, corridorsById);
     }
 
@@ -128,9 +129,13 @@ public final class DungeonRoomTopologyService {
             if (rewrite.isNoOp()) {
                 continue;
             }
-            corridorsById = applyCorridorCascade(workingLayout, corridorsById, rewrite);
-            persistClusterRewrite(conn, mapId, rewrite, workingLayout.levelForCluster(rewrite.targetClusterId()));
-            workingLayout = workingLayout.applying(rewrite);
+            ClusterRewrite persistedRewrite = persistClusterRewrite(
+                    conn,
+                    mapId,
+                    rewrite,
+                    workingLayout.levelForCluster(rewrite.targetClusterId()));
+            corridorsById = applyCorridorCascade(workingLayout, corridorsById, persistedRewrite);
+            workingLayout = workingLayout.applying(persistedRewrite);
         }
         corridorPersistenceService.persistCorridors(conn, corridorsById);
     }
@@ -177,11 +182,11 @@ public final class DungeonRoomTopologyService {
             return;
         }
 
+        ClusterRewrite persistedRewrite = persistClusterRewrite(conn, mapId, rewrite, layout.levelForCluster(rewrite.targetClusterId()));
         Map<Long, Corridor> corridorsById = applyCorridorCascade(
                 layout,
                 new LinkedHashMap<>(layout.corridorsById()),
-                rewrite);
-        persistClusterRewrite(conn, mapId, rewrite, layout.levelForCluster(rewrite.targetClusterId()));
+                persistedRewrite);
         corridorPersistenceService.persistCorridors(conn, corridorsById);
     }
 
@@ -208,9 +213,9 @@ public final class DungeonRoomTopologyService {
         roomWriteRepository.insertRoom(conn, mapId, clusterId, roomName, shape.centerCell(), levelZ);
     }
 
-    private void persistClusterRewrite(Connection conn, long mapId, ClusterRewrite rewrite, int levelZ) throws SQLException {
+    private ClusterRewrite persistClusterRewrite(Connection conn, long mapId, ClusterRewrite rewrite, int levelZ) throws SQLException {
         if (rewrite == null || rewrite.targetClusterId() == null) {
-            return;
+            return rewrite;
         }
         for (Long roomId : rewrite.deletedRoomIds()) {
             if (roomId != null) {
@@ -219,14 +224,50 @@ public final class DungeonRoomTopologyService {
         }
         if (rewrite.deletesCluster()) {
             roomWriteRepository.deleteCluster(conn, rewrite.targetClusterId());
-            return;
+            return rewrite;
         }
+        List<ClusterRewriteSplit> realizedSplitClusters = new java.util.ArrayList<>();
+        for (ClusterRewriteSplit splitCluster : rewrite.splitClusters()) {
+            if (splitCluster == null) {
+                continue;
+            }
+            long splitClusterId = roomWriteRepository.insertCluster(
+                    conn,
+                    mapId,
+                    geometryWriteMapper.toClusterGeometry(splitCluster.clusterShape()),
+                    levelZ);
+            roomWriteRepository.replaceClusterEdges(conn, splitClusterId, splitCluster.persistedBoundaries());
+            realizedSplitClusters.add(splitCluster.withClusterId(splitClusterId));
+        }
+        ClusterRewrite realizedRewrite = rewrite.withSplitClusters(realizedSplitClusters);
         roomWriteRepository.updateClusterGeometry(
                 conn,
-                rewrite.targetClusterId(),
-                geometryWriteMapper.toClusterGeometry(rewrite.clusterShape()));
-        roomWriteRepository.replaceClusterEdges(conn, rewrite.targetClusterId(), rewrite.persistedBoundaries());
-        for (Room room : rewrite.rooms()) {
+                realizedRewrite.targetClusterId(),
+                geometryWriteMapper.toClusterGeometry(realizedRewrite.clusterShape()));
+        roomWriteRepository.replaceClusterEdges(conn, realizedRewrite.targetClusterId(), realizedRewrite.persistedBoundaries());
+        persistRooms(conn, mapId, realizedRewrite.targetClusterId(), realizedRewrite.rooms(), levelZ);
+        for (ClusterRewriteSplit splitCluster : realizedRewrite.splitClusters()) {
+            if (splitCluster == null || splitCluster.clusterId() == null) {
+                continue;
+            }
+            persistRooms(conn, mapId, splitCluster.clusterId(), splitCluster.rooms(), levelZ);
+        }
+        for (Long deletedClusterId : realizedRewrite.deletedClusterIds()) {
+            if (deletedClusterId != null && !deletedClusterId.equals(realizedRewrite.targetClusterId())) {
+                roomWriteRepository.deleteCluster(conn, deletedClusterId);
+            }
+        }
+        return realizedRewrite;
+    }
+
+    private void persistRooms(
+            Connection conn,
+            long mapId,
+            long clusterId,
+            List<Room> rooms,
+            int levelZ
+    ) throws SQLException {
+        for (Room room : rooms) {
             if (room == null) {
                 continue;
             }
@@ -234,7 +275,7 @@ public final class DungeonRoomTopologyService {
                 long roomId = roomWriteRepository.insertRoom(
                         conn,
                         mapId,
-                        rewrite.targetClusterId(),
+                        clusterId,
                         room.name(),
                         room.floor().shape().centerCell(),
                         levelZ);
@@ -243,13 +284,8 @@ public final class DungeonRoomTopologyService {
                 }
                 continue;
             }
-            roomWriteRepository.reassignRoomCluster(conn, room.roomId(), rewrite.targetClusterId());
+            roomWriteRepository.reassignRoomCluster(conn, room.roomId(), clusterId);
             roomWriteRepository.updateRoom(conn, room.roomId(), room.name(), room.floor().shape().centerCell(), levelZ);
-        }
-        for (Long deletedClusterId : rewrite.deletedClusterIds()) {
-            if (deletedClusterId != null && !deletedClusterId.equals(rewrite.targetClusterId())) {
-                roomWriteRepository.deleteCluster(conn, deletedClusterId);
-            }
         }
     }
 

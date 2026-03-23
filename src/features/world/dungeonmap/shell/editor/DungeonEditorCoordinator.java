@@ -151,6 +151,7 @@ final class DungeonEditorCoordinator {
                 mapState.activeProjectionLevel(),
                 mapState.loading(),
                 mapState.activeMapId() != null);
+        controls.showOverlaySettings(mapState.levelOverlaySettings(), mapState.loading());
         workspace.setProjectionLevel(mapState.activeProjectionLevel());
         if (mapChanged && sessionState.selectedTool() == DungeonEditorTool.STAIR_CREATE) {
             stairDraftState.resetForLevel(mapState.activeProjectionLevel());
@@ -167,6 +168,10 @@ final class DungeonEditorCoordinator {
                 mapDropdownController.showEdit(new DungeonMapDropdownController.EditRequest(request.map(), request.anchor())));
         controls.setOnPreviousLevelRequested(() -> mapState.setActiveProjectionLevel(mapState.activeProjectionLevel() - 1));
         controls.setOnNextLevelRequested(() -> mapState.setActiveProjectionLevel(mapState.activeProjectionLevel() + 1));
+        controls.setOnOverlayModeChanged(mapState::setLevelOverlayMode);
+        controls.setOnOverlayRangeChanged(mapState::setLevelOverlayRange);
+        controls.setOnOverlayOpacityChanged(mapState::setLevelOverlayOpacity);
+        controls.setOnSelectedOverlayLevelsChanged(mapState::setSelectedOverlayLevels);
         controls.setOnViewModeChanged(sessionState::selectViewMode);
         controls.setOnToolChanged(sessionState::selectTool);
         statePane.setOnStairInputLevelChanged(stairDraftState::setInputLevel);

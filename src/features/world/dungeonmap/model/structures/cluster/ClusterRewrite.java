@@ -22,6 +22,7 @@ public record ClusterRewrite(
         Set<Long> mergedRoomIds,
         Set<Long> deletedClusterIds,
         Map<Long, List<Room>> splitFragmentsBySourceRoomId,
+        List<ClusterRewriteSplit> splitClusters,
         boolean topologyChanged
 ) {
     public ClusterRewrite {
@@ -32,6 +33,7 @@ public record ClusterRewrite(
         mergedRoomIds = mergedRoomIds == null ? Set.of() : Set.copyOf(mergedRoomIds);
         deletedClusterIds = deletedClusterIds == null ? Set.of() : Set.copyOf(deletedClusterIds);
         splitFragmentsBySourceRoomId = immutableRoomLists(splitFragmentsBySourceRoomId);
+        splitClusters = splitClusters == null ? List.of() : List.copyOf(splitClusters);
     }
 
     public boolean deletesCluster() {
@@ -44,7 +46,8 @@ public record ClusterRewrite(
                 && deletedRoomIds.isEmpty()
                 && replacedRoomIds.isEmpty()
                 && mergedRoomIds.isEmpty()
-                && deletedClusterIds.isEmpty();
+                && deletedClusterIds.isEmpty()
+                && splitClusters.isEmpty();
     }
 
     public Set<Long> affectedClusterIds() {
@@ -59,7 +62,30 @@ public record ClusterRewrite(
         Set<Long> result = new LinkedHashSet<>(deletedRoomIds);
         result.addAll(replacedRoomIds.keySet());
         result.addAll(mergedRoomIds);
+        for (ClusterRewriteSplit splitCluster : splitClusters) {
+            for (Room room : splitCluster.rooms()) {
+                if (room != null && room.roomId() != null) {
+                    result.add(room.roomId());
+                }
+            }
+        }
         return Set.copyOf(result);
+    }
+
+    public ClusterRewrite withSplitClusters(List<ClusterRewriteSplit> splitClusters) {
+        return new ClusterRewrite(
+                targetClusterId,
+                clusterShape,
+                clusterCenter,
+                rooms,
+                persistedBoundaries,
+                deletedRoomIds,
+                replacedRoomIds,
+                mergedRoomIds,
+                deletedClusterIds,
+                splitFragmentsBySourceRoomId,
+                splitClusters,
+                topologyChanged);
     }
 
     private static Map<Long, List<Room>> immutableRoomLists(Map<Long, List<Room>> source) {

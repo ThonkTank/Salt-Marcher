@@ -15,6 +15,7 @@ public final class DungeonMapState {
     private DungeonLayout activeMap = DungeonLayout.empty();
     private Long activeMapId;
     private int activeProjectionLevel;
+    private DungeonLevelOverlaySettings levelOverlaySettings = DungeonLevelOverlaySettings.defaults();
     private boolean loading;
     private String errorMessage;
 
@@ -32,6 +33,10 @@ public final class DungeonMapState {
 
     public int activeProjectionLevel() {
         return activeProjectionLevel;
+    }
+
+    public DungeonLevelOverlaySettings levelOverlaySettings() {
+        return levelOverlaySettings;
     }
 
     public boolean loading() {
@@ -103,6 +108,38 @@ public final class DungeonMapState {
         notifyListeners();
     }
 
+    public void setLevelOverlayMode(DungeonLevelOverlayMode mode) {
+        updateLevelOverlaySettings(new DungeonLevelOverlaySettings(
+                mode,
+                levelOverlaySettings.levelRange(),
+                levelOverlaySettings.opacity(),
+                levelOverlaySettings.selectedLevels()));
+    }
+
+    public void setLevelOverlayRange(int levelRange) {
+        updateLevelOverlaySettings(new DungeonLevelOverlaySettings(
+                levelOverlaySettings.mode(),
+                levelRange,
+                levelOverlaySettings.opacity(),
+                levelOverlaySettings.selectedLevels()));
+    }
+
+    public void setLevelOverlayOpacity(double opacity) {
+        updateLevelOverlaySettings(new DungeonLevelOverlaySettings(
+                levelOverlaySettings.mode(),
+                levelOverlaySettings.levelRange(),
+                opacity,
+                levelOverlaySettings.selectedLevels()));
+    }
+
+    public void setSelectedOverlayLevels(List<Integer> levels) {
+        updateLevelOverlaySettings(new DungeonLevelOverlaySettings(
+                levelOverlaySettings.mode(),
+                levelOverlaySettings.levelRange(),
+                levelOverlaySettings.opacity(),
+                levels));
+    }
+
     private static int resolvedProjectionLevel(DungeonLayout activeMap, int preferred) {
         if (activeMap == null) {
             return 0;
@@ -112,6 +149,15 @@ public final class DungeonMapState {
 
     private static int defaultProjectionLevel(DungeonLayout activeMap) {
         return activeMap == null ? 0 : activeMap.defaultLevel();
+    }
+
+    private void updateLevelOverlaySettings(DungeonLevelOverlaySettings settings) {
+        DungeonLevelOverlaySettings resolved = settings == null ? DungeonLevelOverlaySettings.defaults() : settings;
+        if (Objects.equals(levelOverlaySettings, resolved)) {
+            return;
+        }
+        levelOverlaySettings = resolved;
+        notifyListeners();
     }
 
     private void notifyListeners() {

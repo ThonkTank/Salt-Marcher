@@ -65,6 +65,7 @@ public abstract class AbstractDungeonMapView implements AppView {
     private void refreshFromState() {
         workspace.setMapModel(state.activeMap());
         workspace.setProjectionLevel(state.activeProjectionLevel());
+        workspace.setLevelOverlaySettings(state.levelOverlaySettings());
         onStateRefreshed();
     }
 }

@@ -14,9 +14,10 @@ import features.world.dungeonmap.application.runtime.DungeonRuntimeSurfaceResolv
 import features.world.dungeonmap.canvas.base.DungeonViewMode;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.shell.AbstractDungeonMapView;
+import features.world.dungeonmap.shell.controls.DungeonLevelOverlayControls;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.DungeonRuntimeState;
-import features.world.dungeonmap.shell.AbstractDungeonMapView;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -42,6 +43,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
     private final Label zoomLabel = new Label();
     private final Label mapLabel = new Label();
     private final Label levelLabel = new Label();
+    private final DungeonLevelOverlayControls overlayControls = new DungeonLevelOverlayControls(DungeonRuntimeView::sectionLabel);
     private long runtimeRequestSequence;
     private Long runtimeMapId;
     private DetailsNavigator.EntryKey lastPublishedSurfaceKey;
@@ -78,7 +80,11 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         Button downLevelButton = new Button("Ebene -");
         upLevelButton.setOnAction(event -> state.setReachableProjectionLevel(state.activeProjectionLevel() + 1));
         downLevelButton.setOnAction(event -> state.setReachableProjectionLevel(state.activeProjectionLevel() - 1));
-        this.controls = new VBox(10, zoomLabel, mapLabel, levelLabel, new HBox(8, downLevelButton, upLevelButton));
+        overlayControls.setOnModeChanged(state::setLevelOverlayMode);
+        overlayControls.setOnRangeChanged(state::setLevelOverlayRange);
+        overlayControls.setOnOpacityChanged(state::setLevelOverlayOpacity);
+        overlayControls.setOnSelectedLevelsChanged(state::setSelectedOverlayLevels);
+        this.controls = new VBox(10, zoomLabel, mapLabel, levelLabel, new HBox(8, downLevelButton, upLevelButton), overlayControls.content());
         this.controls.setPadding(new Insets(12));
         refreshRuntimeUi();
     }
@@ -117,6 +123,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
                 ? state().errorMessage()
                 : state().activeMap().name());
         levelLabel.setText("Ebene z=" + state().activeProjectionLevel());
+        overlayControls.showSettings(state().levelOverlaySettings(), state().loading() || state().activeMapId() == null);
     }
 
     private void refreshRuntimeUi() {
@@ -311,5 +318,11 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
 
     private DungeonRuntimeSurface activeSurface() {
         return DungeonRuntimeSurfaceResolver.resolve(state().activeMap(), runtimeState.activeLocation(), runtimeState.heading());
+    }
+
+    private static Label sectionLabel(String text) {
+        Label label = new Label(text);
+        label.getStyleClass().addAll("section-header", "text-muted");
+        return label;
     }
 }

@@ -2,6 +2,9 @@ package features.world.dungeonmap.shell.editor.controls;
 
 import features.world.dungeonmap.loading.DungeonMapCatalogEntry;
 import features.world.dungeonmap.shell.editor.DungeonEditorControls.MapActionRequest;
+import features.world.dungeonmap.shell.controls.DungeonLevelOverlayControls;
+import features.world.dungeonmap.state.DungeonLevelOverlayMode;
+import features.world.dungeonmap.state.DungeonLevelOverlaySettings;
 import javafx.beans.value.ObservableValue;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -27,11 +30,13 @@ public final class MapControls {
     private final Label levelLabel = new Label("Ebene z=0");
     private final Button previousLevelButton = new Button("Ebene -");
     private final Button nextLevelButton = new Button("Ebene +");
+    private final DungeonLevelOverlayControls overlayControls;
     private final VBox content;
     private boolean syncingSelection;
     private Consumer<DungeonMapCatalogEntry> onMapSelected;
 
     public MapControls(ViewModeControls viewModeControls, Function<String, Label> sectionLabelFactory) {
+        overlayControls = new DungeonLevelOverlayControls(sectionLabelFactory);
         previousLevelButton.getStyleClass().add("toolbar-action-button");
         nextLevelButton.getStyleClass().add("toolbar-action-button");
         selector.setConverter(new StringConverter<>() {
@@ -71,7 +76,7 @@ public final class MapControls {
         HBox.setHgrow(selector, Priority.ALWAYS);
         HBox levelRow = new HBox(8, levelLabel, previousLevelButton, nextLevelButton);
         levelRow.setAlignment(Pos.CENTER_LEFT);
-        content = new VBox(6, sectionLabelFactory.apply("Dungeon"), row, levelRow);
+        content = new VBox(6, sectionLabelFactory.apply("Dungeon"), row, levelRow, overlayControls.content());
         content.setMaxWidth(Double.MAX_VALUE);
         content.getStyleClass().add("editor-toolbar-group");
     }
@@ -120,6 +125,22 @@ public final class MapControls {
         });
     }
 
+    public void setOnOverlayModeChanged(Consumer<DungeonLevelOverlayMode> action) {
+        overlayControls.setOnModeChanged(action);
+    }
+
+    public void setOnOverlayRangeChanged(Consumer<Integer> action) {
+        overlayControls.setOnRangeChanged(action);
+    }
+
+    public void setOnOverlayOpacityChanged(Consumer<Double> action) {
+        overlayControls.setOnOpacityChanged(action);
+    }
+
+    public void setOnSelectedOverlayLevelsChanged(Consumer<List<Integer>> action) {
+        overlayControls.setOnSelectedLevelsChanged(action);
+    }
+
     public void showMaps(List<DungeonMapCatalogEntry> maps, Long activeMapId, boolean loading) {
         syncingSelection = true;
         List<DungeonMapCatalogEntry> visibleMaps = maps == null ? List.of() : List.copyOf(maps);
@@ -155,5 +176,9 @@ public final class MapControls {
         levelLabel.setText("Ebene z=" + activeLevel);
         previousLevelButton.setDisable(loading || !navigationEnabled);
         nextLevelButton.setDisable(loading || !navigationEnabled);
+    }
+
+    public void showOverlaySettings(DungeonLevelOverlaySettings settings, boolean disabled) {
+        overlayControls.showSettings(settings, disabled);
     }
 }

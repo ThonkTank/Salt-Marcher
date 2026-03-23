@@ -6,6 +6,8 @@ import features.world.dungeonmap.shell.editor.controls.MapControls;
 import features.world.dungeonmap.shell.editor.controls.ToolControls;
 import features.world.dungeonmap.shell.editor.controls.ToolFamilyDropdownController;
 import features.world.dungeonmap.shell.editor.controls.ViewModeControls;
+import features.world.dungeonmap.state.DungeonLevelOverlayMode;
+import features.world.dungeonmap.state.DungeonLevelOverlaySettings;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -69,12 +71,32 @@ public final class DungeonEditorControls extends VBox {
         mapControls.setOnNextLevelRequested(action);
     }
 
+    public void setOnOverlayModeChanged(Consumer<DungeonLevelOverlayMode> action) {
+        mapControls.setOnOverlayModeChanged(action);
+    }
+
+    public void setOnOverlayRangeChanged(Consumer<Integer> action) {
+        mapControls.setOnOverlayRangeChanged(action);
+    }
+
+    public void setOnOverlayOpacityChanged(Consumer<Double> action) {
+        mapControls.setOnOverlayOpacityChanged(action);
+    }
+
+    public void setOnSelectedOverlayLevelsChanged(Consumer<List<Integer>> action) {
+        mapControls.setOnSelectedOverlayLevelsChanged(action);
+    }
+
     public void showMaps(List<DungeonMapCatalogEntry> maps, Long activeMapId, boolean loading) {
         mapControls.showMaps(maps, activeMapId, loading);
     }
 
     public void showLevels(List<Integer> levels, int activeLevel, boolean loading, boolean navigationEnabled) {
         mapControls.showLevels(levels, activeLevel, loading, navigationEnabled);
+    }
+
+    public void showOverlaySettings(DungeonLevelOverlaySettings settings, boolean disabled) {
+        mapControls.showOverlaySettings(settings, disabled);
     }
 
     private static Label sectionLabel(String text) {
