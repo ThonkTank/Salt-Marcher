@@ -6,6 +6,7 @@ import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
 import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.model.structures.stair.DungeonStair;
 
 import java.util.stream.Stream;
 
@@ -33,7 +34,8 @@ public final class DungeonRuntimeLabels {
             return network == null ? "Korridor" : corridorLabel(layout, network.roomIds().stream());
         }
         if (location instanceof DungeonRuntimeLocation.StairExit stairExit) {
-            return "Treppe z=" + stairExit.tile().z();
+            DungeonStair stair = layout.findStair(stairExit.stairId());
+            return stair == null ? "Treppe z=" + stairExit.tile().z() : stair.name() + " z=" + stairExit.tile().z();
         }
         return "Kein Standort";
     }
@@ -59,6 +61,10 @@ public final class DungeonRuntimeLabels {
             return "Kein Standort";
         }
         DungeonLayout.CellStructure structure = layout.projectedToLevel(tile.z()).structureAtCell(tile.projectedCell());
+        DungeonStair stair = layout.stairsAtPoint(tile).stream().findFirst().orElse(null);
+        if (stair != null) {
+            return stair.name();
+        }
         if (structure instanceof DungeonLayout.CellStructure.RoomStructure roomStructure) {
             return roomLabel(roomStructure.room());
         }

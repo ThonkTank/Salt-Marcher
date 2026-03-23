@@ -28,7 +28,7 @@ final class DungeonRuntimeLocations {
             return tile == null ? null : DungeonRuntimeLocation.tile(tile);
         }
         if (position.locationType() == CampaignDungeonLocationType.STAIR_EXIT && position.locationKey() != null) {
-            CubePoint tile = parseTile(position.locationKey());
+            CubePoint tile = parseStairTile(position.locationKey());
             long stairId = parseStairId(position.locationKey());
             return tile == null || stairId <= 0 ? null : DungeonRuntimeLocation.stairExit(stairId, tile);
         }
@@ -143,6 +143,29 @@ final class DungeonRuntimeLocations {
             int y = Integer.parseInt(parts[1]);
             int z = Integer.parseInt(parts[2]);
             return new CubePoint(x, y, z);
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
+    private static CubePoint parseStairTile(String value) {
+        if (value == null || !value.startsWith("stair:")) {
+            return null;
+        }
+        int separator = value.indexOf(':', "stair:".length());
+        if (separator <= "stair:".length() || separator >= value.length() - 1) {
+            return null;
+        }
+        String coordinates = value.substring(separator + 1);
+        String[] parts = coordinates.split(",");
+        if (parts.length != 3) {
+            return null;
+        }
+        try {
+            return new CubePoint(
+                    Integer.parseInt(parts[0]),
+                    Integer.parseInt(parts[1]),
+                    Integer.parseInt(parts[2]));
         } catch (NumberFormatException ignored) {
             return null;
         }

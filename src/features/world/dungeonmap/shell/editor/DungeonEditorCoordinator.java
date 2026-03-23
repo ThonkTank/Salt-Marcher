@@ -1,6 +1,7 @@
 package features.world.dungeonmap.shell.editor;
 
 import features.world.dungeonmap.application.corridor.DungeonCorridorEditService;
+import features.world.dungeonmap.application.stair.DungeonStairEditService;
 import features.world.dungeonmap.application.room.DungeonBoundaryEditService;
 import features.world.dungeonmap.application.room.DungeonClusterMoveService;
 import features.world.dungeonmap.application.room.DungeonRoomNarrationService;
@@ -14,17 +15,20 @@ import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
+import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.shell.editor.interaction.CorridorInteractionController;
 import features.world.dungeonmap.shell.editor.interaction.BoundaryInteractionController;
 import features.world.dungeonmap.shell.editor.interaction.ClusterSelectionDragController;
 import features.world.dungeonmap.shell.editor.interaction.DungeonEditorGridInteractionController;
 import features.world.dungeonmap.shell.editor.interaction.RoomPaintInteractionController;
+import features.world.dungeonmap.shell.editor.interaction.StairInteractionController;
 import features.world.dungeonmap.state.DungeonCorridorDraftState;
 import features.world.dungeonmap.state.EditorLayoutPreviewState;
 import features.world.dungeonmap.state.EditorPaintPreviewState;
 import features.world.dungeonmap.state.EditorSelectionState;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
+import features.world.dungeonmap.state.DungeonStairDraftState;
 import ui.async.UiAsyncTasks;
 import ui.async.UiErrorReporter;
 
@@ -46,6 +50,9 @@ final class DungeonEditorCoordinator {
     private final EditorLayoutPreviewState layoutPreviewState = new EditorLayoutPreviewState();
     private final EditorPaintPreviewState paintPreviewState = new EditorPaintPreviewState();
     private final DungeonCorridorDraftState corridorDraftState = new DungeonCorridorDraftState();
+    private final DungeonStairDraftState stairDraftState = new DungeonStairDraftState();
+    private final DungeonStairEditService stairEditService;
+    private final StairInteractionController stairInteractionController;
     private final DungeonEditorGridInteractionController interactionController;
 
     DungeonEditorCoordinator(
@@ -60,7 +67,8 @@ final class DungeonEditorCoordinator {
             DungeonBoundaryEditService boundaryEditService,
             DungeonRoomNarrationService roomNarrationService,
             DungeonClusterMoveService clusterMoveService,
-            DungeonCorridorEditService corridorEditService
+            DungeonCorridorEditService corridorEditService,
+            DungeonStairEditService stairEditService
     ) {
         this.controls = Objects.requireNonNull(controls, "controls");
         this.statePane = Objects.requireNonNull(statePane, "statePane");
@@ -69,6 +77,7 @@ final class DungeonEditorCoordinator {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.sessionState = Objects.requireNonNull(sessionState, "sessionState");
         this.roomNarrationService = Objects.requireNonNull(roomNarrationService, "roomNarrationService");
+        this.stairEditService = Objects.requireNonNull(stairEditService, "stairEditService");
         ClusterSelectionDragController clusterSelectionDragController = new ClusterSelectionDragController(
                 mapState,
                 loadingService,
@@ -95,13 +104,21 @@ final class DungeonEditorCoordinator {
                 sessionState,
                 selectionState,
                 Objects.requireNonNull(boundaryEditService, "boundaryEditService"));
+        this.stairInteractionController = new StairInteractionController(
+                mapState,
+                loadingService,
+                sessionState,
+                selectionState,
+                stairDraftState,
+                this.stairEditService);
         this.interactionController = new DungeonEditorGridInteractionController(
                 mapState,
                 sessionState,
                 clusterSelectionDragController,
                 roomPaintInteractionController,
                 corridorInteractionController,
-                boundaryInteractionController);
+                boundaryInteractionController,
+                this.stairInteractionController);
         this.mapDropdownController = new DungeonMapDropdownController(
                 Objects.requireNonNull(mapCatalogService, "mapCatalogService"),
                 new MapReloadHandle());
@@ -109,15 +126,20 @@ final class DungeonEditorCoordinator {
         sessionState.addListener(this::refreshFromSessionState);
         selectionState.addListener(this::refreshSelectionState);
         selectionState.addListener(this::refreshCorridorStatePane);
+        selectionState.addListener(this::refreshStairStatePane);
         selectionState.addListener(this::refreshRoomNarrationStatePane);
         layoutPreviewState.addListener(this::refreshLayoutPreviewState);
         paintPreviewState.addListener(this::refreshPaintPreviewState);
         corridorDraftState.addListener(this::refreshCorridorStatePane);
+        stairDraftState.addListener(this::refreshStairStatePane);
+        stairDraftState.addListener(this::refreshStairPreviewState);
         refreshFromSessionState();
         refreshSelectionState();
         refreshLayoutPreviewState();
         refreshPaintPreviewState();
         refreshCorridorStatePane();
+        refreshStairStatePane();
+        refreshStairPreviewState();
         refreshRoomNarrationStatePane();
     }
 
@@ -126,6 +148,7 @@ final class DungeonEditorCoordinator {
         controls.showLevels(mapState.activeMap().reachableLevels(), mapState.activeProjectionLevel(), mapState.loading());
         workspace.setProjectionLevel(mapState.activeProjectionLevel());
         refreshFromSessionState();
+        refreshStairPreviewState();
         refreshRoomNarrationStatePane();
     }
 
@@ -150,6 +173,7 @@ final class DungeonEditorCoordinator {
         }
         statePane.refresh(sessionState.selectedTool());
         refreshCorridorStatePane();
+        refreshStairStatePane();
     }
 
     private void refreshSelectionState() {
@@ -164,6 +188,10 @@ final class DungeonEditorCoordinator {
         workspace.setPreviewPaintShape(paintPreviewState.previewShape(), paintPreviewState.deleteMode());
     }
 
+    private void refreshStairPreviewState() {
+        workspace.setPreviewStairPath(stairEditService.expandedPath(stairDraftState.pathNodes()));
+    }
+
     private void refreshCorridorStatePane() {
         if (corridorDraftState.hasPendingStart()) {
             statePane.showCorridorStatus("Start gewählt, Zielraum anklicken");
@@ -175,6 +203,51 @@ final class DungeonEditorCoordinator {
             return;
         }
         statePane.showCorridorStatus(null);
+    }
+
+    private void refreshStairStatePane() {
+        if (sessionState.selectedTool() != DungeonEditorTool.STAIR_CREATE
+                && sessionState.selectedTool() != DungeonEditorTool.STAIR_DELETE
+                && !DungeonStair.isTargetKey(selectionState.selectedTargetKey())) {
+            statePane.showStairDraft(null, null, null, null);
+            return;
+        }
+        if (sessionState.selectedTool() == DungeonEditorTool.STAIR_DELETE) {
+            String selectedTargetKey = selectionState.selectedTargetKey();
+            String summary = DungeonStair.isTargetKey(selectedTargetKey)
+                    ? "Gewählt: " + DungeonEditorSelectionLabels.stairLabel(selectedTargetKey)
+                    : "Treppenfeld anklicken, um zu löschen";
+            statePane.showStairDraft(
+                    new DungeonEditorStatePane.StairDraftCard(List.of(), summary, null, false, false, false),
+                    null,
+                    null,
+                    null);
+            return;
+        }
+        String validationMessage = stairEditService.validationMessage(mapState.activeMap(), stairDraftState.pathNodes());
+        statePane.showStairDraft(
+                new DungeonEditorStatePane.StairDraftCard(
+                        stairDraftState.pathNodes(),
+                        stairSummary(),
+                        validationMessage,
+                        !stairDraftState.isEmpty(),
+                        !stairDraftState.isEmpty(),
+                        validationMessage == null && stairDraftState.pathNodes().size() >= 2),
+                stairDraftState::undoLast,
+                stairDraftState::clear,
+                stairInteractionController::saveDraft);
+    }
+
+    private String stairSummary() {
+        if (stairDraftState.isEmpty()) {
+            return "Klicks setzen Knoten auf der aktuellen Ebene";
+        }
+        var start = stairDraftState.startNode();
+        var end = stairDraftState.endNode();
+        return "Knoten: " + stairDraftState.pathNodes().size()
+                + " | Start z=" + (start == null ? "?" : start.z())
+                + " | Ziel z=" + (end == null ? "?" : end.z())
+                + " | Ebenen: " + stairDraftState.levelCount();
     }
 
     private void refreshRoomNarrationStatePane() {

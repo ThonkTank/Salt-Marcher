@@ -7,6 +7,7 @@ import features.world.dungeonmap.application.runtime.DungeonRuntimeDoorDescripto
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLabels;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationService;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeSurfaceAction;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeSurface;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeSurfacePresenter;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeSurfaceResolver;
@@ -248,22 +249,46 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
                 DungeonRuntimeLabels.tileLabel(runtimeState.activeLocation()),
                 DungeonRuntimeLabels.headingLabel(runtimeState.heading()),
                 runtimeStatusText(),
-                travelDoorActions(),
+                travelActions(),
                 workspace()::resetView);
     }
 
-    private List<WorldTravelSurface.DungeonDoorAction> travelDoorActions() {
+    private List<WorldTravelSurface.DungeonDoorAction> travelActions() {
         DungeonRuntimeSurface surface = activeSurface();
         if (surface == null) {
             return List.of();
         }
-        return surface.doors().stream()
+        List<WorldTravelSurface.DungeonDoorAction> actions = new java.util.ArrayList<>();
+        surface.doors().stream()
                 .map(this::toDoorAction)
-                .toList();
+                .forEach(actions::add);
+        surface.actions().stream()
+                .map(this::toSurfaceAction)
+                .forEach(actions::add);
+        return List.copyOf(actions);
+    }
+
+    private WorldTravelSurface.DungeonDoorAction toSurfaceAction(DungeonRuntimeSurfaceAction action) {
+        return new WorldTravelSurface.DungeonDoorAction(action.label(), () -> movePartyThroughStair(action));
     }
 
     private WorldTravelSurface.DungeonDoorAction toDoorAction(DungeonRuntimeDoorDescriptor door) {
         return new WorldTravelSurface.DungeonDoorAction(door.displayLabel(), () -> movePartyThroughDoor(door));
+    }
+
+    private void movePartyThroughStair(DungeonRuntimeSurfaceAction action) {
+        if (action == null || runtimeState.loading() || runtimeState.moving() || state().activeMap().mapId() <= 0) {
+            return;
+        }
+        var layout = state().activeMap();
+        runtimeState.showMoveInProgress();
+        UiAsyncTasks.submit(
+                () -> runtimeNavigationService.moveThroughStair(layout, action, runtimeState.heading()),
+                runtimeState::showNavigation,
+                failure -> {
+                    System.err.println("DungeonRuntimeView.movePartyThroughStair(): " + failure.getMessage());
+                    runtimeState.showFailure("Treppe konnte nicht benutzt werden");
+                });
     }
 
     private void publishRoomDetails() {
@@ -280,7 +305,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
             return;
         }
         lastPublishedSurfaceKey = entryKey;
-        detailsNavigator.showContent(surface.title(), entryKey, () -> DungeonRuntimeSurfacePresenter.buildNode(surface));
+        detailsNavigator.showContent(surface.title(), entryKey, () -> DungeonRuntimeSurfacePresenter.buildNode(surface, this::movePartyThroughStair));
     }
 
     private DungeonRuntimeSurface activeSurface() {

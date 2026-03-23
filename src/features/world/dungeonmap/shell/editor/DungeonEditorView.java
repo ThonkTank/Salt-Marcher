@@ -1,6 +1,7 @@
 package features.world.dungeonmap.shell.editor;
 
 import features.world.dungeonmap.application.corridor.DungeonCorridorEditService;
+import features.world.dungeonmap.application.stair.DungeonStairEditService;
 import features.world.dungeonmap.application.room.DungeonBoundaryEditService;
 import features.world.dungeonmap.application.room.DungeonClusterMoveService;
 import features.world.dungeonmap.application.room.DungeonRoomNarrationService;
@@ -28,7 +29,8 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
             DungeonBoundaryEditService boundaryEditService,
             DungeonRoomNarrationService roomNarrationService,
             DungeonClusterMoveService clusterMoveService,
-            DungeonCorridorEditService corridorEditService
+            DungeonCorridorEditService corridorEditService,
+            DungeonStairEditService stairEditService
     ) {
         super(true, loadingService, state);
         coordinator = new DungeonEditorCoordinator(
@@ -43,7 +45,8 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
                 boundaryEditService,
                 roomNarrationService,
                 clusterMoveService,
-                corridorEditService);
+                corridorEditService,
+                stairEditService);
     }
 
     @Override

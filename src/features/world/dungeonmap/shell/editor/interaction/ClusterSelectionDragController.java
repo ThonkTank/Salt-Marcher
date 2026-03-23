@@ -5,6 +5,7 @@ import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.state.EditorLayoutPreviewState;
 import features.world.dungeonmap.state.EditorSelectionState;
 import features.world.dungeonmap.state.DungeonMapState;
@@ -50,6 +51,11 @@ public final class ClusterSelectionDragController {
         clear();
         Long clusterId = clusterIdFor(hit);
         if (clusterId == null) {
+            DungeonStair stair = stairAt(event.gridCell());
+            if (stair != null) {
+                selectionState.selectTarget(stair.targetKey());
+                return true;
+            }
             selectionState.clearSelection();
             return false;
         }
@@ -106,7 +112,15 @@ public final class ClusterSelectionDragController {
         return switch (target.targetRef()) {
             case DungeonEditorTargetRef.ClusterRef clusterRef -> clusterRef.clusterId();
             case DungeonEditorTargetRef.BoundaryRef boundaryRef -> boundaryRef.clusterId();
+            case DungeonEditorTargetRef.StairRef ignored -> null;
         };
+    }
+
+    private DungeonStair stairAt(Point2i cell) {
+        return mapState.activeMap().stairsAtCell(cell, mapState.activeProjectionLevel()).stream()
+                .filter(candidate -> candidate != null && candidate.stairId() != null)
+                .findFirst()
+                .orElse(null);
     }
 
     private record ClusterDragSession(

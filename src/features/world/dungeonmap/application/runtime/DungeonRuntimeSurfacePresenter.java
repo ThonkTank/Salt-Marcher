@@ -2,8 +2,11 @@ package features.world.dungeonmap.application.runtime;
 
 import javafx.geometry.Insets;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
+
+import java.util.function.Consumer;
 
 public final class DungeonRuntimeSurfacePresenter {
 
@@ -11,7 +14,7 @@ public final class DungeonRuntimeSurfacePresenter {
         throw new AssertionError("No instances");
     }
 
-    public static Node buildNode(DungeonRuntimeSurface surface) {
+    public static Node buildNode(DungeonRuntimeSurface surface, Consumer<DungeonRuntimeSurfaceAction> onActionSelected) {
         VBox box = new VBox(8);
         box.setPadding(new Insets(12));
         if (surface == null) {
@@ -29,6 +32,24 @@ public final class DungeonRuntimeSurfacePresenter {
         }
         if (surface.doors().isEmpty()) {
             box.getChildren().add(text("—"));
+        }
+        box.getChildren().add(sectionTitle("Aktionen"));
+        if (surface.actions().isEmpty()) {
+            box.getChildren().add(text("—"));
+        } else {
+            for (DungeonRuntimeSurfaceAction action : surface.actions()) {
+                Button button = new Button(action.label());
+                button.setMaxWidth(Double.MAX_VALUE);
+                button.setOnAction(event -> {
+                    if (onActionSelected != null) {
+                        onActionSelected.accept(action);
+                    }
+                });
+                box.getChildren().add(button);
+                if (action.description() != null && !action.description().isBlank()) {
+                    box.getChildren().add(text(action.description()));
+                }
+            }
         }
         return box;
     }

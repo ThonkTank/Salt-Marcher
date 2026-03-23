@@ -18,6 +18,7 @@ import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
@@ -46,12 +47,14 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         }
         Set<VertexEdge> selectedRoomBoundaryEdges = drawRooms(gc, mapModel, camera, editorMode, renderState.selectedTargetKey());
         drawCorridors(gc, mapModel, camera, editorMode, renderState.selectedTargetKey());
+        drawStairs(gc, mapModel, camera, editorMode, renderState.selectedTargetKey());
         drawPartyToken(gc, mapModel, camera, renderState.activeLocation(), renderState.heading());
         if (!editorMode) {
             drawDoorNumbers(gc, mapModel, camera, renderState.activeLocation(), renderState.heading());
         }
         drawSelectedRoomBoundaries(gc, camera, DungeonCanvasTheme.BASE_GRID * camera.zoom(), selectedRoomBoundaryEdges);
         if (editorMode) {
+            drawStairPreview(gc, camera, renderState.previewStairPath(), renderState.projectionLevel());
             drawInteractiveLabels(gc, mapModel, camera, renderState.selectedTargetKey());
         }
         drawAxes(gc, width, height, camera, editorMode);
@@ -306,6 +309,45 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         }
     }
 
+    private static void drawStairs(
+            GraphicsContext gc,
+            DungeonLayout mapModel,
+            DungeonCanvasCamera camera,
+            boolean editorMode,
+            String selectedTargetKey
+    ) {
+        double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setFont(DungeonCanvasTheme.ROOM_LABEL_FONT);
+        for (DungeonStair stair : mapModel.stairs()) {
+            if (stair == null) {
+                continue;
+            }
+            boolean selected = java.util.Objects.equals(stair.targetKey(), selectedTargetKey);
+            gc.setFill(selected ? DungeonCanvasTheme.CORRIDOR_SELECTED_FILL : DungeonCanvasTheme.CORRIDOR_FILL);
+            gc.setStroke(selected ? DungeonCanvasTheme.CORRIDOR_SELECTED_STROKE : DungeonCanvasTheme.CORRIDOR_STROKE);
+            gc.setLineWidth(selected ? 2.5 : 1.8);
+            for (var node : stair.path()) {
+                double x = camera.panX() + node.x() * gridSize;
+                double y = camera.panY() + node.y() * gridSize;
+                gc.fillRoundRect(x + gridSize * 0.18, y + gridSize * 0.18, gridSize * 0.64, gridSize * 0.64, 10, 10);
+                gc.strokeRoundRect(x + gridSize * 0.18, y + gridSize * 0.18, gridSize * 0.64, gridSize * 0.64, 10, 10);
+            }
+            for (var exit : stair.exits()) {
+                double centerX = camera.panX() + (exit.position().x() + 0.5) * gridSize;
+                double centerY = camera.panY() + (exit.position().y() + 0.5) * gridSize;
+                double radius = Math.max(6.0, gridSize * 0.18);
+                gc.setFill(selected ? DungeonCanvasTheme.LABEL_TEXT : DungeonCanvasTheme.ROOM_SELECTED_WALL_STROKE);
+                gc.fillOval(centerX - radius, centerY - radius, radius * 2, radius * 2);
+                if (editorMode) {
+                    gc.setFill(DungeonCanvasTheme.LABEL_TEXT);
+                    gc.fillText(Integer.toString(exit.position().z()), centerX, centerY - gridSize * 0.38);
+                }
+            }
+        }
+        gc.setTextAlign(TextAlignment.LEFT);
+    }
+
     private static void drawPartyToken(
             GraphicsContext gc,
             DungeonLayout mapModel,
@@ -470,6 +512,38 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             double y = camera.panY() + tile.y() * gridSize;
             gc.fillRect(x, y, gridSize, gridSize);
             gc.strokeRect(x, y, gridSize, gridSize);
+        }
+    }
+
+    private static void drawStairPreview(
+            GraphicsContext gc,
+            DungeonCanvasCamera camera,
+            java.util.List<features.world.dungeonmap.model.geometry.CubePoint> previewStairPath,
+            int projectionLevel
+    ) {
+        if (previewStairPath == null || previewStairPath.isEmpty()) {
+            return;
+        }
+        double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
+        gc.setStroke(DungeonCanvasTheme.ROOM_SELECTED_WALL_STROKE);
+        gc.setFill(DungeonCanvasTheme.PAINT_PREVIEW_FILL);
+        gc.setLineWidth(2.0);
+        features.world.dungeonmap.model.geometry.CubePoint previous = null;
+        for (var node : previewStairPath) {
+            if (node.z() == projectionLevel) {
+                double x = camera.panX() + node.x() * gridSize;
+                double y = camera.panY() + node.y() * gridSize;
+                gc.fillRoundRect(x + gridSize * 0.22, y + gridSize * 0.22, gridSize * 0.56, gridSize * 0.56, 10, 10);
+                gc.strokeRoundRect(x + gridSize * 0.22, y + gridSize * 0.22, gridSize * 0.56, gridSize * 0.56, 10, 10);
+            }
+            if (previous != null && previous.z() == projectionLevel && node.z() == projectionLevel) {
+                double startX = camera.panX() + (previous.x() + 0.5) * gridSize;
+                double startY = camera.panY() + (previous.y() + 0.5) * gridSize;
+                double endX = camera.panX() + (node.x() + 0.5) * gridSize;
+                double endY = camera.panY() + (node.y() + 0.5) * gridSize;
+                gc.strokeLine(startX, startY, endX, endY);
+            }
+            previous = node;
         }
     }
 

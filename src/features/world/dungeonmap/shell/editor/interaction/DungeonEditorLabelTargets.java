@@ -2,7 +2,6 @@ package features.world.dungeonmap.shell.editor.interaction;
 
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
-
 import java.util.ArrayList;
 import java.util.List;
 

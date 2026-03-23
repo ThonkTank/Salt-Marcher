@@ -1,6 +1,8 @@
 package features.world.dungeonmap.model.structures.stair;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.GridAnchor;
+import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 
 import java.util.Comparator;
 import java.util.LinkedHashSet;
@@ -39,6 +41,17 @@ public record DungeonStair(
         return targetKey != null && targetKey.startsWith(TARGET_KEY_PREFIX);
     }
 
+    public static Long stairIdFromKey(String targetKey) {
+        if (!isTargetKey(targetKey)) {
+            return null;
+        }
+        String suffix = targetKey.substring(TARGET_KEY_PREFIX.length());
+        if (suffix.isBlank() || "unassigned".equals(suffix)) {
+            return null;
+        }
+        return Long.parseLong(suffix);
+    }
+
     public int minReachZ() {
         return occupiedPositions().stream().mapToInt(CubePoint::z).min().orElse(0);
     }
@@ -67,5 +80,22 @@ public record DungeonStair(
         return exits.stream()
                 .filter(exit -> exit.position().z() == levelZ)
                 .toList();
+    }
+
+    public InteractiveLabelHandle labelHandle(int levelZ) {
+        CubePoint anchorPoint = exitsAtLevel(levelZ).stream()
+                .map(DungeonStairExit::position)
+                .findFirst()
+                .orElseGet(() -> path.stream()
+                        .filter(node -> node.z() == levelZ)
+                        .findFirst()
+                        .orElse(null));
+        if (anchorPoint == null) {
+            return null;
+        }
+        return new InteractiveLabelHandle(
+                targetKey(),
+                name,
+                GridAnchor.atTile(anchorPoint.projectedCell()));
     }
 }

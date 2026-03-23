@@ -6,6 +6,7 @@ import features.world.dungeonmap.application.corridor.DungeonCorridorPersistence
 import features.world.dungeonmap.application.corridor.DungeonCorridorRoomRewriteService;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationService;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeStateRepairService;
+import features.world.dungeonmap.application.stair.DungeonStairEditService;
 import features.world.dungeonmap.application.room.DungeonClusterMoveService;
 import features.world.dungeonmap.application.room.DungeonBoundaryEditService;
 import features.world.dungeonmap.application.room.DungeonRoomNarrationService;
@@ -14,6 +15,7 @@ import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
 import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.persistence.DungeonCorridorWriteRepository;
+import features.world.dungeonmap.persistence.DungeonStairWriteRepository;
 import features.world.dungeonmap.persistence.DungeonRoomGeometryWriteMapper;
 import features.world.dungeonmap.persistence.DungeonRoomWriteRepository;
 import features.world.dungeonmap.shell.editor.DungeonEditorView;
@@ -35,7 +37,9 @@ public final class DungeonMapModule {
         DungeonCorridorWriteRepository corridorWriteRepository = new DungeonCorridorWriteRepository();
         DungeonCorridorPersistenceService corridorPersistenceService = new DungeonCorridorPersistenceService(corridorWriteRepository);
         DungeonRoomWriteRepository roomWriteRepository = new DungeonRoomWriteRepository();
+        DungeonStairWriteRepository stairWriteRepository = new DungeonStairWriteRepository();
         DungeonRoomNarrationService roomNarrationService = new DungeonRoomNarrationService(roomWriteRepository);
+        DungeonStairEditService stairEditService = new DungeonStairEditService(stairWriteRepository);
         DungeonRoomGeometryWriteMapper geometryWriteMapper = new DungeonRoomGeometryWriteMapper();
         DungeonCorridorRoomRewriteService corridorRoomRewriteService = new DungeonCorridorRoomRewriteService();
         DungeonRoomTopologyService roomTopologyService = new DungeonRoomTopologyService(
@@ -73,7 +77,8 @@ public final class DungeonMapModule {
                 boundaryEditService,
                 roomNarrationService,
                 clusterMoveService,
-                corridorEditService);
+                corridorEditService,
+                stairEditService);
     }
 
     public AppView dungeonView() {

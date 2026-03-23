@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 
 public final class DungeonLayout {
 
-    public sealed interface CellStructure permits CellStructure.RoomStructure, CellStructure.NetworkStructure, CellStructure.CorridorStructure {
+    public sealed interface CellStructure permits CellStructure.RoomStructure, CellStructure.NetworkStructure, CellStructure.CorridorStructure, CellStructure.StairStructure {
         record RoomStructure(Room room) implements CellStructure {
         }
 
@@ -33,6 +33,9 @@ public final class DungeonLayout {
         }
 
         record CorridorStructure(Corridor corridor) implements CellStructure {
+        }
+
+        record StairStructure(DungeonStair stair) implements CellStructure {
         }
     }
 
@@ -48,6 +51,7 @@ public final class DungeonLayout {
     private final Map<Long, Room> roomsById;
     private final Map<Long, Corridor> corridorsById;
     private final Map<Long, RoomCluster> clustersById;
+    private final Map<Long, DungeonStair> stairsById;
     private final Map<Long, Integer> clusterLevelsById;
     private final Map<Long, Integer> roomLevelsById;
     private final Map<Long, Integer> corridorLevelsById;
@@ -55,6 +59,7 @@ public final class DungeonLayout {
     private final Map<Long, String> corridorNetworkIdByCorridorId;
     private final Map<Point2i, List<Long>> corridorIdsByCell;
     private final Map<Point2i, String> corridorNetworkIdByCell;
+    private final Map<CubePoint, List<Long>> stairIdsByPoint;
     private final Set<Point2i> traversableCells;
     private final Set<CubePoint> traversableCubeCells;
     private final List<Integer> reachableLevels;
@@ -89,6 +94,7 @@ public final class DungeonLayout {
         this.roomsById = indexRooms(this.clusters);
         this.corridorsById = indexCorridors(this.corridors);
         this.clustersById = indexClusters(this.clusters);
+        this.stairsById = indexStairs(this.stairs);
         this.clusterLevelsById = indexLevels(clusterLevelsById);
         this.roomLevelsById = indexRoomLevels(this.roomsById, roomLevelsById, this.clusterLevelsById);
         this.corridorLevelsById = indexLevels(corridorLevelsById);
@@ -96,6 +102,7 @@ public final class DungeonLayout {
         this.corridorNetworkIdByCorridorId = indexCorridorNetworkIdsByCorridorId(this.corridorNetworks);
         this.corridorIdsByCell = indexCorridorIdsByCell(this.corridors);
         this.corridorNetworkIdByCell = indexCorridorNetworkIdsByCell(this.corridorNetworks);
+        this.stairIdsByPoint = indexStairIdsByPoint(this.stairs);
         this.traversableCells = indexTraversableCells(this.clusters, this.corridors);
         this.traversableCubeCells = indexTraversableCubeCells(this.clusters, this.corridors, this.stairs, this.roomLevelsById, this.corridorLevelsById);
         this.reachableLevels = indexReachableLevels(this.traversableCubeCells);
@@ -239,6 +246,10 @@ public final class DungeonLayout {
         return corridorId == null ? null : corridorsById.get(corridorId);
     }
 
+    public DungeonStair findStair(Long stairId) {
+        return stairId == null ? null : stairsById.get(stairId);
+    }
+
     public CorridorNetwork findCorridorNetwork(String networkId) {
         if (networkId == null) {
             return null;
@@ -314,6 +325,21 @@ public final class DungeonLayout {
         return networkId == null ? null : corridorNetworksById.get(networkId);
     }
 
+    public List<DungeonStair> stairsAtCell(Point2i cell, int levelZ) {
+        if (cell == null) {
+            return List.of();
+        }
+        return stairsAtPoint(CubePoint.at(cell, levelZ));
+    }
+
+    public List<DungeonStair> stairsAtPoint(CubePoint point) {
+        List<Long> stairIds = point == null ? List.of() : stairIdsByPoint.getOrDefault(point, List.of());
+        return stairIds.stream()
+                .map(this::findStair)
+                .filter(stair -> stair != null)
+                .toList();
+    }
+
     public CellStructure structureAtCell(Point2i cell) {
         if (cell == null) {
             return null;
@@ -330,7 +356,14 @@ public final class DungeonLayout {
                 .filter(candidate -> candidate != null && candidate.corridorId() != null)
                 .min(Comparator.comparing(Corridor::corridorId))
                 .orElse(null);
-        return corridor == null ? null : new CellStructure.CorridorStructure(corridor);
+        if (corridor != null) {
+            return new CellStructure.CorridorStructure(corridor);
+        }
+        DungeonStair stair = stairsAtCell(cell, defaultLevel()).stream()
+                .filter(candidate -> candidate != null && candidate.stairId() != null)
+                .min(Comparator.comparing(DungeonStair::stairId))
+                .orElse(null);
+        return stair == null ? null : new CellStructure.StairStructure(stair);
     }
 
     public Set<Point2i> traversableCells() {
@@ -546,6 +579,16 @@ public final class DungeonLayout {
         return Map.copyOf(result);
     }
 
+    private static Map<Long, DungeonStair> indexStairs(List<DungeonStair> stairs) {
+        Map<Long, DungeonStair> result = new LinkedHashMap<>();
+        for (DungeonStair stair : stairs) {
+            if (stair != null && stair.stairId() != null) {
+                result.put(stair.stairId(), stair);
+            }
+        }
+        return Map.copyOf(result);
+    }
+
     private static Map<Long, Integer> indexLevels(Map<Long, Integer> levels) {
         Map<Long, Integer> result = new LinkedHashMap<>();
         if (levels == null) {
@@ -701,6 +744,23 @@ public final class DungeonLayout {
             for (Point2i cell : network.floor().shape().absoluteCells()) {
                 result.put(cell, network.networkId());
             }
+        }
+        return Map.copyOf(result);
+    }
+
+    private static Map<CubePoint, List<Long>> indexStairIdsByPoint(List<DungeonStair> stairs) {
+        Map<CubePoint, List<Long>> mutable = new LinkedHashMap<>();
+        for (DungeonStair stair : stairs) {
+            if (stair == null || stair.stairId() == null) {
+                continue;
+            }
+            for (CubePoint point : stair.occupiedPositions()) {
+                mutable.computeIfAbsent(point, ignored -> new ArrayList<>()).add(stair.stairId());
+            }
+        }
+        Map<CubePoint, List<Long>> result = new LinkedHashMap<>();
+        for (Map.Entry<CubePoint, List<Long>> entry : mutable.entrySet()) {
+            result.put(entry.getKey(), List.copyOf(entry.getValue()));
         }
         return Map.copyOf(result);
     }

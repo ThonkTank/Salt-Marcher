@@ -92,4 +92,26 @@ public final class DungeonRuntimeNavigationService {
         }
         return resolveNavigation(layout, targetLocation, nextHeading);
     }
+
+    public DungeonRuntimeNavigationSnapshot moveThroughStair(
+            DungeonLayout layout,
+            DungeonRuntimeSurfaceAction action,
+            DungeonHeading currentHeading
+    ) throws SQLException {
+        if (layout == null || layout.mapId() <= 0) {
+            throw new SQLException("Kein aktiver Dungeon geladen");
+        }
+        if (action == null || !(action.targetLocation() instanceof DungeonRuntimeLocation.StairExit stairExit)) {
+            throw new SQLException("Kein Treppenziel verfügbar");
+        }
+        CubePoint resolvedTile = nearestTraversableTile(layout, stairExit.tile());
+        if (resolvedTile == null) {
+            throw new SQLException("Treppenziel ist nicht begehbar");
+        }
+        DungeonRuntimeLocation targetLocation = DungeonRuntimeLocation.stairExit(stairExit.stairId(), resolvedTile);
+        try (Connection conn = DatabaseManager.getConnection()) {
+            CampaignStateApi.setDungeonPosition(conn, DungeonRuntimeLocations.toCampaignPosition(layout.mapId(), targetLocation, currentHeading));
+        }
+        return resolveNavigation(layout, targetLocation, currentHeading);
+    }
 }

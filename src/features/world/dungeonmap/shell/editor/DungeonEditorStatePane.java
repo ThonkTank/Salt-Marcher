@@ -1,6 +1,7 @@
 package features.world.dungeonmap.shell.editor;
 
 import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import javafx.scene.Node;
@@ -20,6 +21,12 @@ public final class DungeonEditorStatePane {
     private final Label activeToolLabel = new Label(DungeonEditorTool.SELECT.label());
     private final Label corridorLabel = new Label("Kein Korridor gewählt");
     private final VBox corridorCard = card("Korridor", corridorLabel);
+    private final Label stairSummaryLabel = new Label("Keine Treppe gewählt");
+    private final Label stairValidationLabel = new Label();
+    private final Button stairUndoButton = new Button("Punkt rückgängig");
+    private final Button stairDiscardButton = new Button("Verwerfen");
+    private final Button stairSaveButton = new Button("Treppe speichern");
+    private final VBox stairCard = card("Treppe", stairSummaryLabel, stairValidationLabel, stairUndoButton, stairDiscardButton, stairSaveButton);
     private final VBox narrationContent = new VBox(8);
     private final VBox narrationCard = card("Raumbeschreibung", narrationContent);
     private final Map<Long, Button> narrationSaveButtons = new LinkedHashMap<>();
@@ -28,7 +35,9 @@ public final class DungeonEditorStatePane {
     public DungeonEditorStatePane() {
         content.getStyleClass().add("dungeon-editor-sidebar");
         content.getChildren().add(card("Werkzeug", activeToolLabel));
+        stairValidationLabel.setWrapText(true);
         showCorridorStatus(null);
+        showStairDraft(null, null, null, null);
         showRoomNarrationEditors(List.of(), null);
     }
 
@@ -50,6 +59,44 @@ public final class DungeonEditorStatePane {
         corridorLabel.setText(text);
         if (!content.getChildren().contains(corridorCard)) {
             content.getChildren().add(1, corridorCard);
+        }
+    }
+
+    public void showStairDraft(StairDraftCard card, Runnable onUndo, Runnable onDiscard, Runnable onSave) {
+        if (card == null) {
+            content.getChildren().remove(stairCard);
+            stairSummaryLabel.setText("Keine Treppe gewählt");
+            stairValidationLabel.setText("");
+            stairUndoButton.setOnAction(null);
+            stairDiscardButton.setOnAction(null);
+            stairSaveButton.setOnAction(null);
+            stairUndoButton.setDisable(true);
+            stairDiscardButton.setDisable(true);
+            stairSaveButton.setDisable(true);
+            return;
+        }
+        stairSummaryLabel.setText(card.summary());
+        stairValidationLabel.setText(card.validationMessage() == null ? "" : card.validationMessage());
+        stairUndoButton.setDisable(!card.canUndo());
+        stairDiscardButton.setDisable(!card.canDiscard());
+        stairSaveButton.setDisable(!card.canSave());
+        stairUndoButton.setOnAction(event -> {
+            if (onUndo != null) {
+                onUndo.run();
+            }
+        });
+        stairDiscardButton.setOnAction(event -> {
+            if (onDiscard != null) {
+                onDiscard.run();
+            }
+        });
+        stairSaveButton.setOnAction(event -> {
+            if (onSave != null) {
+                onSave.run();
+            }
+        });
+        if (!content.getChildren().contains(stairCard)) {
+            content.getChildren().add(1, stairCard);
         }
     }
 
@@ -161,5 +208,15 @@ public final class DungeonEditorStatePane {
     @FunctionalInterface
     public interface SaveRoomNarrationHandler {
         void save(long roomId, RoomNarration narration);
+    }
+
+    public record StairDraftCard(
+            List<CubePoint> nodes,
+            String summary,
+            String validationMessage,
+            boolean canUndo,
+            boolean canDiscard,
+            boolean canSave
+    ) {
     }
 }

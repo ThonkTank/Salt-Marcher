@@ -17,6 +17,7 @@ public final class DungeonEditorGridInteractionController implements DungeonCanv
     private final RoomPaintInteractionController roomPaintInteractionController;
     private final CorridorInteractionController corridorInteractionController;
     private final BoundaryInteractionController boundaryInteractionController;
+    private final StairInteractionController stairInteractionController;
 
     public DungeonEditorGridInteractionController(
             DungeonMapState mapState,
@@ -24,7 +25,8 @@ public final class DungeonEditorGridInteractionController implements DungeonCanv
             ClusterSelectionDragController clusterSelectionDragController,
             RoomPaintInteractionController roomPaintInteractionController,
             CorridorInteractionController corridorInteractionController,
-            BoundaryInteractionController boundaryInteractionController
+            BoundaryInteractionController boundaryInteractionController,
+            StairInteractionController stairInteractionController
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.sessionState = Objects.requireNonNull(sessionState, "sessionState");
@@ -32,6 +34,7 @@ public final class DungeonEditorGridInteractionController implements DungeonCanv
         this.roomPaintInteractionController = Objects.requireNonNull(roomPaintInteractionController, "roomPaintInteractionController");
         this.corridorInteractionController = Objects.requireNonNull(corridorInteractionController, "corridorInteractionController");
         this.boundaryInteractionController = Objects.requireNonNull(boundaryInteractionController, "boundaryInteractionController");
+        this.stairInteractionController = Objects.requireNonNull(stairInteractionController, "stairInteractionController");
     }
 
     @Override
@@ -43,19 +46,29 @@ public final class DungeonEditorGridInteractionController implements DungeonCanv
         if (sessionState.selectedTool().isCorridorTool()) {
             clusterSelectionDragController.clear();
             roomPaintInteractionController.clear();
+            stairInteractionController.clear();
             return corridorInteractionController.handlePressed(event);
         }
         if (sessionState.selectedTool().isRoomTool()) {
             clusterSelectionDragController.clear();
             corridorInteractionController.clear();
             boundaryInteractionController.clear();
+            stairInteractionController.clear();
             return roomPaintInteractionController.handlePressed(event);
         }
         if (sessionState.selectedTool().isWallTool() || sessionState.selectedTool().isDoorTool()) {
             clusterSelectionDragController.clear();
             roomPaintInteractionController.clear();
             corridorInteractionController.clear();
+            stairInteractionController.clear();
             return boundaryInteractionController.handlePressed(event);
+        }
+        if (sessionState.selectedTool().isStairTool()) {
+            clusterSelectionDragController.clear();
+            roomPaintInteractionController.clear();
+            corridorInteractionController.clear();
+            boundaryInteractionController.clear();
+            return stairInteractionController.handlePressed(event);
         }
         if (sessionState.selectedTool() != DungeonEditorTool.SELECT) {
             clear();
@@ -63,6 +76,7 @@ public final class DungeonEditorGridInteractionController implements DungeonCanv
         }
         roomPaintInteractionController.clear();
         corridorInteractionController.clear();
+        stairInteractionController.clear();
         return clusterSelectionDragController.handlePressed(event);
     }
 
@@ -76,6 +90,9 @@ public final class DungeonEditorGridInteractionController implements DungeonCanv
         }
         if (sessionState.selectedTool().isWallTool() || sessionState.selectedTool().isDoorTool()) {
             return boundaryInteractionController.handleDragged(event);
+        }
+        if (sessionState.selectedTool().isStairTool()) {
+            return stairInteractionController.handleDragged(event);
         }
         if (!interactionEnabled() || sessionState.selectedTool() != DungeonEditorTool.SELECT) {
             return false;
@@ -94,6 +111,9 @@ public final class DungeonEditorGridInteractionController implements DungeonCanv
         if (sessionState.selectedTool().isWallTool() || sessionState.selectedTool().isDoorTool()) {
             return boundaryInteractionController.handleReleased(event);
         }
+        if (sessionState.selectedTool().isStairTool()) {
+            return stairInteractionController.handleReleased(event);
+        }
         if (sessionState.selectedTool() != DungeonEditorTool.SELECT) {
             return false;
         }
@@ -105,6 +125,7 @@ public final class DungeonEditorGridInteractionController implements DungeonCanv
         roomPaintInteractionController.clear();
         corridorInteractionController.clear();
         boundaryInteractionController.clear();
+        stairInteractionController.clear();
     }
 
     private boolean interactionEnabled() {
