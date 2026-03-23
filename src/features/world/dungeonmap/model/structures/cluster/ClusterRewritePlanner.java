@@ -196,7 +196,7 @@ final class ClusterRewritePlanner {
             return null;
         }
 
-        Map<VertexEdge, InternalBoundaryType> updatedBoundaryKinds = new LinkedHashMap<>(cluster.internalBoundaryKinds());
+        Map<VertexEdge, InternalBoundaryType> updatedBoundaryKinds = new LinkedHashMap<>(computeInternalBoundaries(cluster.shape(), cluster.rooms()));
         InternalBoundaryType resolvedType = type == null ? InternalBoundaryType.WALL : type;
         InternalBoundaryType currentType = updatedBoundaryKinds.get(edge);
         if (deleteBoundary) {
@@ -471,18 +471,14 @@ final class ClusterRewritePlanner {
     }
 
     static List<InternalBoundaryEdge> persistedBoundaries(TileShape clusterShape, List<Room> rooms) {
-        if (clusterShape == null || clusterShape.size() == 0) {
-            return List.of();
-        }
-        Map<VertexEdge, InternalBoundaryType> boundaryKinds = boundaryKindsFor(clusterShape, rooms);
-        return boundaryKinds.entrySet().stream()
+        return computeInternalBoundaries(clusterShape, rooms).entrySet().stream()
                 .map(entry -> toInternalBoundaryEdge(entry.getKey(), entry.getValue()))
                 .filter(java.util.Objects::nonNull)
                 .toList();
     }
 
-    static Map<VertexEdge, InternalBoundaryType> persistedInternalBoundaries(TileShape clusterShape, List<Room> rooms) {
-        return boundaryKindsFor(clusterShape, rooms);
+    static Map<VertexEdge, InternalBoundaryType> internalBoundaryKinds(TileShape clusterShape, List<Room> rooms) {
+        return computeInternalBoundaries(clusterShape, rooms);
     }
 
     static void forEachInternalBoundary(
@@ -600,7 +596,7 @@ final class ClusterRewritePlanner {
                 .toList();
     }
 
-    private static Map<VertexEdge, InternalBoundaryType> boundaryKindsFor(TileShape clusterShape, List<Room> rooms) {
+    private static Map<VertexEdge, InternalBoundaryType> computeInternalBoundaries(TileShape clusterShape, List<Room> rooms) {
         if (clusterShape == null || clusterShape.size() == 0) {
             return Map.of();
         }

@@ -321,7 +321,7 @@ public final class RoomCluster {
     }
 
     public Map<VertexEdge, InternalBoundaryType> internalBoundaryKinds() {
-        return ClusterRewritePlanner.persistedInternalBoundaries(shape, rooms);
+        return ClusterRewritePlanner.internalBoundaryKinds(shape, rooms);
     }
 
     public ClusterRewrite applyPaint(TileShape paintShape, List<RoomCluster> overlappingClusters) {
@@ -332,8 +332,8 @@ public final class RoomCluster {
         return ClusterRewritePlanner.applyDelete(this, deletedShape, roomNameSupplier);
     }
 
-    public Map<VertexEdge, InternalBoundaryType> persistedInternalBoundaries() {
-        return ClusterRewritePlanner.persistedInternalBoundaries(shape, rooms);
+    public List<InternalBoundaryEdge> persistedInternalBoundaries() {
+        return ClusterRewritePlanner.persistedBoundaries(shape, rooms);
     }
 
     private static Map<Long, Room> indexRoomsById(List<Room> rooms) {
