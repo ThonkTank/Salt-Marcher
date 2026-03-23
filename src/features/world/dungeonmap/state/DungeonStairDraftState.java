@@ -1,7 +1,5 @@
 package features.world.dungeonmap.state;
 
-import features.world.dungeonmap.model.geometry.CubePoint;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -9,9 +7,15 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public final class DungeonStairDraftState {
 
+    private static final String READY_MESSAGE = "Zum Platzieren Feld anklicken";
+    private static final String MIN_LEVELS_MESSAGE = "Mindestens zwei verschiedene Ebenen";
+    private static final String DUPLICATE_MESSAGE = "Ausgänge dürfen nicht doppelt sein.";
+
     private final List<Runnable> listeners = new CopyOnWriteArrayList<>();
 
-    private List<CubePoint> pathNodes = List.of();
+    private int inputLevel;
+    private List<Integer> exitLevels = List.of();
+    private String statusMessage = MIN_LEVELS_MESSAGE;
 
     public void addListener(Runnable listener) {
         if (listener != null) {
@@ -23,57 +27,91 @@ public final class DungeonStairDraftState {
         listeners.remove(listener);
     }
 
-    public List<CubePoint> pathNodes() {
-        return pathNodes;
+    public int inputLevel() {
+        return inputLevel;
     }
 
-    public boolean isEmpty() {
-        return pathNodes.isEmpty();
+    public List<Integer> exitLevels() {
+        return exitLevels;
     }
 
-    public int levelCount() {
-        return (int) pathNodes.stream()
-                .map(CubePoint::z)
-                .distinct()
-                .count();
+    public String statusMessage() {
+        return statusMessage;
     }
 
-    public CubePoint startNode() {
-        return pathNodes.isEmpty() ? null : pathNodes.getFirst();
+    public boolean canPlace() {
+        return exitLevels.size() >= 2;
     }
 
-    public CubePoint endNode() {
-        return pathNodes.isEmpty() ? null : pathNodes.getLast();
-    }
-
-    public void append(CubePoint node) {
-        CubePoint resolved = node == null ? null : new CubePoint(node.x(), node.y(), node.z());
-        if (resolved == null) {
+    public void resetForLevel(int level) {
+        List<Integer> nextExitLevels = List.of(level);
+        String nextStatusMessage = statusFor(nextExitLevels);
+        if (inputLevel == level
+                && exitLevels.equals(nextExitLevels)
+                && Objects.equals(statusMessage, nextStatusMessage)) {
             return;
         }
-        if (!pathNodes.isEmpty() && Objects.equals(pathNodes.getLast(), resolved)) {
-            return;
-        }
-        ArrayList<CubePoint> updated = new ArrayList<>(pathNodes);
-        updated.add(resolved);
-        pathNodes = List.copyOf(updated);
+        inputLevel = level;
+        exitLevels = nextExitLevels;
+        statusMessage = nextStatusMessage;
         notifyListeners();
     }
 
-    public void undoLast() {
-        if (pathNodes.isEmpty()) {
+    public void setInputLevel(int level) {
+        if (inputLevel == level && !Objects.equals(statusMessage, DUPLICATE_MESSAGE)) {
             return;
         }
-        pathNodes = List.copyOf(pathNodes.subList(0, pathNodes.size() - 1));
+        inputLevel = level;
+        if (Objects.equals(statusMessage, DUPLICATE_MESSAGE)) {
+            statusMessage = statusFor(exitLevels);
+        }
+        notifyListeners();
+    }
+
+    public void adjustInputLevel(int delta) {
+        if (delta != 0) {
+            setInputLevel(inputLevel + delta);
+        }
+    }
+
+    public void addExitLevel() {
+        if (exitLevels.contains(inputLevel)) {
+            if (!Objects.equals(statusMessage, DUPLICATE_MESSAGE)) {
+                statusMessage = DUPLICATE_MESSAGE;
+                notifyListeners();
+            }
+            return;
+        }
+        ArrayList<Integer> updated = new ArrayList<>(exitLevels);
+        updated.add(inputLevel);
+        exitLevels = List.copyOf(updated);
+        statusMessage = statusFor(exitLevels);
+        notifyListeners();
+    }
+
+    public void removeExitLevel(int level) {
+        if (!exitLevels.contains(level)) {
+            return;
+        }
+        ArrayList<Integer> updated = new ArrayList<>(exitLevels);
+        updated.remove(Integer.valueOf(level));
+        exitLevels = List.copyOf(updated);
+        statusMessage = statusFor(exitLevels);
         notifyListeners();
     }
 
     public void clear() {
-        if (pathNodes.isEmpty()) {
+        if (inputLevel == 0 && exitLevels.isEmpty() && Objects.equals(statusMessage, MIN_LEVELS_MESSAGE)) {
             return;
         }
-        pathNodes = List.of();
+        inputLevel = 0;
+        exitLevels = List.of();
+        statusMessage = MIN_LEVELS_MESSAGE;
         notifyListeners();
+    }
+
+    private static String statusFor(List<Integer> levels) {
+        return levels.size() >= 2 ? READY_MESSAGE : MIN_LEVELS_MESSAGE;
     }
 
     private void notifyListeners() {

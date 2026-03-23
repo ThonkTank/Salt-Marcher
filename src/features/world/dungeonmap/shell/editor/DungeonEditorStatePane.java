@@ -1,19 +1,24 @@
 package features.world.dungeonmap.shell.editor;
 
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.structures.room.RoomNarration;
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
+import features.world.dungeonmap.model.structures.room.RoomNarration;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
+import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.IntConsumer;
 
 public final class DungeonEditorStatePane {
 
@@ -22,22 +27,44 @@ public final class DungeonEditorStatePane {
     private final Label corridorLabel = new Label("Kein Korridor gewählt");
     private final VBox corridorCard = card("Korridor", corridorLabel);
     private final Label stairSummaryLabel = new Label("Keine Treppe gewählt");
-    private final Label stairValidationLabel = new Label();
-    private final Button stairUndoButton = new Button("Punkt rückgängig");
-    private final Button stairDiscardButton = new Button("Verwerfen");
-    private final Button stairSaveButton = new Button("Treppe speichern");
-    private final VBox stairCard = card("Treppe", stairSummaryLabel, stairValidationLabel, stairUndoButton, stairDiscardButton, stairSaveButton);
+    private final TextField stairInputField = new TextField();
+    private final Button stairLevelDownButton = new Button("Ebene -");
+    private final Button stairLevelUpButton = new Button("Ebene +");
+    private final Button stairAddButton = new Button("Hinzufügen");
+    private final FlowPane stairExitTokens = new FlowPane();
+    private final Label stairStatusLabel = new Label();
+    private final HBox stairInputRow = new HBox(6, stairLevelDownButton, stairInputField, stairLevelUpButton, stairAddButton);
+    private final VBox stairEditorContent = new VBox(6, stairInputRow, stairExitTokens);
+    private final VBox stairCard = card("Treppen-Ausgänge", stairSummaryLabel, stairEditorContent, stairStatusLabel);
     private final VBox narrationContent = new VBox(8);
     private final VBox narrationCard = card("Raumbeschreibung", narrationContent);
     private final Map<Long, Button> narrationSaveButtons = new LinkedHashMap<>();
     private final Map<Long, Label> narrationStatusLabels = new LinkedHashMap<>();
+    private IntConsumer onStairInputLevelChanged = level -> { };
+    private Runnable onStairLevelDecrementRequested = () -> { };
+    private Runnable onStairLevelIncrementRequested = () -> { };
+    private Runnable onStairAddRequested = () -> { };
+    private IntConsumer onStairExitRemoveRequested = level -> { };
+    private boolean syncingStairInput;
 
     public DungeonEditorStatePane() {
         content.getStyleClass().add("dungeon-editor-sidebar");
         content.getChildren().add(card("Werkzeug", activeToolLabel));
-        stairValidationLabel.setWrapText(true);
+        stairInputField.setTextFormatter(new TextFormatter<>(change ->
+                change.getControlNewText().matches("-?\\d*") ? change : null));
+        stairInputField.setPrefColumnCount(4);
+        stairInputField.setMaxWidth(70);
+        stairInputField.textProperty().addListener((obs, oldValue, newValue) -> handleStairInputChanged(newValue));
+        stairInputField.setOnAction(event -> onStairAddRequested.run());
+        stairLevelDownButton.setOnAction(event -> onStairLevelDecrementRequested.run());
+        stairLevelUpButton.setOnAction(event -> onStairLevelIncrementRequested.run());
+        stairAddButton.setOnAction(event -> onStairAddRequested.run());
+        stairInputRow.setAlignment(Pos.CENTER_LEFT);
+        stairExitTokens.setHgap(6);
+        stairExitTokens.setVgap(6);
+        stairStatusLabel.setWrapText(true);
         showCorridorStatus(null);
-        showStairDraft(null, null, null, null);
+        showStairDraft(null);
         showRoomNarrationEditors(List.of(), null);
     }
 
@@ -62,39 +89,45 @@ public final class DungeonEditorStatePane {
         }
     }
 
-    public void showStairDraft(StairDraftCard card, Runnable onUndo, Runnable onDiscard, Runnable onSave) {
+    public void setOnStairInputLevelChanged(IntConsumer onStairInputLevelChanged) {
+        this.onStairInputLevelChanged = onStairInputLevelChanged == null ? level -> { } : onStairInputLevelChanged;
+    }
+
+    public void setOnStairLevelDecrementRequested(Runnable onStairLevelDecrementRequested) {
+        this.onStairLevelDecrementRequested = onStairLevelDecrementRequested == null ? () -> { } : onStairLevelDecrementRequested;
+    }
+
+    public void setOnStairLevelIncrementRequested(Runnable onStairLevelIncrementRequested) {
+        this.onStairLevelIncrementRequested = onStairLevelIncrementRequested == null ? () -> { } : onStairLevelIncrementRequested;
+    }
+
+    public void setOnStairAddRequested(Runnable onStairAddRequested) {
+        this.onStairAddRequested = onStairAddRequested == null ? () -> { } : onStairAddRequested;
+    }
+
+    public void setOnStairExitRemoveRequested(IntConsumer onStairExitRemoveRequested) {
+        this.onStairExitRemoveRequested = onStairExitRemoveRequested == null ? level -> { } : onStairExitRemoveRequested;
+    }
+
+    public void showStairDraft(StairDraftCard card) {
         if (card == null) {
             content.getChildren().remove(stairCard);
             stairSummaryLabel.setText("Keine Treppe gewählt");
-            stairValidationLabel.setText("");
-            stairUndoButton.setOnAction(null);
-            stairDiscardButton.setOnAction(null);
-            stairSaveButton.setOnAction(null);
-            stairUndoButton.setDisable(true);
-            stairDiscardButton.setDisable(true);
-            stairSaveButton.setDisable(true);
+            stairStatusLabel.setText("");
+            syncStairInput(null);
+            stairExitTokens.getChildren().clear();
             return;
         }
-        stairSummaryLabel.setText(card.summary());
-        stairValidationLabel.setText(card.validationMessage() == null ? "" : card.validationMessage());
-        stairUndoButton.setDisable(!card.canUndo());
-        stairDiscardButton.setDisable(!card.canDiscard());
-        stairSaveButton.setDisable(!card.canSave());
-        stairUndoButton.setOnAction(event -> {
-            if (onUndo != null) {
-                onUndo.run();
-            }
-        });
-        stairDiscardButton.setOnAction(event -> {
-            if (onDiscard != null) {
-                onDiscard.run();
-            }
-        });
-        stairSaveButton.setOnAction(event -> {
-            if (onSave != null) {
-                onSave.run();
-            }
-        });
+        stairSummaryLabel.setText(card.editable() ? "Aktuelle Ebene als Ausgang hinzufügen" : card.statusMessage());
+        stairEditorContent.setManaged(card.editable());
+        stairEditorContent.setVisible(card.editable());
+        stairStatusLabel.setText(card.editable() ? blankToEmpty(card.statusMessage()) : "");
+        stairLevelDownButton.setDisable(!card.editable());
+        stairLevelUpButton.setDisable(!card.editable());
+        stairInputField.setDisable(!card.editable());
+        stairAddButton.setDisable(!card.editable());
+        syncStairInput(card.inputLevel());
+        renderStairTokens(card.exitLevels());
         if (!content.getChildren().contains(stairCard)) {
             content.getChildren().add(1, stairCard);
         }
@@ -112,10 +145,9 @@ public final class DungeonEditorStatePane {
             content.getChildren().add(narrationCard);
         }
         for (RoomNarrationCard card : cards) {
-            if (card == null) {
-                continue;
+            if (card != null) {
+                narrationContent.getChildren().add(buildNarrationCardUi(card, saveHandler));
             }
-            narrationContent.getChildren().add(buildNarrationCardUi(card, saveHandler));
         }
     }
 
@@ -141,17 +173,55 @@ public final class DungeonEditorStatePane {
         return box;
     }
 
-    private static Label text(String text) {
-        Label label = new Label(text);
-        label.setWrapText(true);
-        return label;
-    }
-
     private static TextArea createTextArea(String text) {
         TextArea area = new TextArea(text == null ? "" : text);
         area.setWrapText(true);
         area.setPrefRowCount(3);
         return area;
+    }
+
+    private void handleStairInputChanged(String value) {
+        if (syncingStairInput) {
+            return;
+        }
+        if (value == null || value.isBlank() || "-".equals(value.trim())) {
+            return;
+        }
+        try {
+            onStairInputLevelChanged.accept(Integer.parseInt(value.trim()));
+        } catch (NumberFormatException ignored) {
+            // The state owner keeps the canonical numeric value and will re-render it on refresh.
+        }
+    }
+
+    private void syncStairInput(Integer level) {
+        syncingStairInput = true;
+        stairInputField.setText(level == null ? "" : Integer.toString(level));
+        syncingStairInput = false;
+    }
+
+    private void renderStairTokens(List<Integer> exitLevels) {
+        stairExitTokens.getChildren().clear();
+        for (Integer level : exitLevels == null ? List.<Integer>of() : exitLevels) {
+            if (level != null) {
+                stairExitTokens.getChildren().add(createStairToken(level));
+            }
+        }
+    }
+
+    private Node createStairToken(int level) {
+        Label label = new Label("z=" + level);
+        Button removeButton = new Button("x");
+        removeButton.getStyleClass().add("chip-remove-btn");
+        removeButton.setOnAction(event -> onStairExitRemoveRequested.accept(level));
+        HBox token = new HBox(4, label, removeButton);
+        token.setAlignment(Pos.CENTER_LEFT);
+        token.getStyleClass().addAll("chip", "chip-cr");
+        return token;
+    }
+
+    private static String blankToEmpty(String text) {
+        return text == null ? "" : text;
     }
 
     private VBox buildNarrationCardUi(RoomNarrationCard card, SaveRoomNarrationHandler saveHandler) {
@@ -211,12 +281,10 @@ public final class DungeonEditorStatePane {
     }
 
     public record StairDraftCard(
-            List<CubePoint> nodes,
-            String summary,
-            String validationMessage,
-            boolean canUndo,
-            boolean canDiscard,
-            boolean canSave
+            Integer inputLevel,
+            List<Integer> exitLevels,
+            String statusMessage,
+            boolean editable
     ) {
     }
 }

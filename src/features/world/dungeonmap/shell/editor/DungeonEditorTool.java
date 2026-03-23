@@ -10,7 +10,7 @@ public enum DungeonEditorTool {
     CLUSTER_DOOR_DELETE("Tür löschen"),
     CORRIDOR_CREATE("Korridor erstellen"),
     CORRIDOR_DELETE("Korridor löschen"),
-    STAIR_CREATE("Treppe zeichnen"),
+    STAIR_CREATE("Treppe erstellen"),
     STAIR_DELETE("Treppe löschen");
 
     private final String label;

@@ -54,6 +54,8 @@ final class DungeonEditorCoordinator {
     private final DungeonStairEditService stairEditService;
     private final StairInteractionController stairInteractionController;
     private final DungeonEditorGridInteractionController interactionController;
+    private DungeonEditorTool previousTool = DungeonEditorTool.SELECT;
+    private Long previousMapId;
 
     DungeonEditorCoordinator(
             DungeonEditorControls controls,
@@ -132,18 +134,18 @@ final class DungeonEditorCoordinator {
         paintPreviewState.addListener(this::refreshPaintPreviewState);
         corridorDraftState.addListener(this::refreshCorridorStatePane);
         stairDraftState.addListener(this::refreshStairStatePane);
-        stairDraftState.addListener(this::refreshStairPreviewState);
         refreshFromSessionState();
         refreshSelectionState();
         refreshLayoutPreviewState();
         refreshPaintPreviewState();
         refreshCorridorStatePane();
         refreshStairStatePane();
-        refreshStairPreviewState();
+        workspace.setPreviewStairPath(List.of());
         refreshRoomNarrationStatePane();
     }
 
     void refreshFromMapState() {
+        boolean mapChanged = !Objects.equals(previousMapId, mapState.activeMapId());
         controls.showMaps(mapState.maps(), mapState.activeMapId(), mapState.loading());
         controls.showLevels(
                 mapState.activeMap().reachableLevels(),
@@ -151,9 +153,13 @@ final class DungeonEditorCoordinator {
                 mapState.loading(),
                 mapState.activeMapId() != null);
         workspace.setProjectionLevel(mapState.activeProjectionLevel());
+        if (mapChanged && sessionState.selectedTool() == DungeonEditorTool.STAIR_CREATE) {
+            stairDraftState.resetForLevel(mapState.activeProjectionLevel());
+        }
         refreshFromSessionState();
-        refreshStairPreviewState();
+        workspace.setPreviewStairPath(List.of());
         refreshRoomNarrationStatePane();
+        previousMapId = mapState.activeMapId();
     }
 
     private void installBindings() {
@@ -165,23 +171,31 @@ final class DungeonEditorCoordinator {
         controls.setOnNextLevelRequested(() -> mapState.setActiveProjectionLevel(mapState.activeProjectionLevel() + 1));
         controls.setOnViewModeChanged(sessionState::selectViewMode);
         controls.setOnToolChanged(sessionState::selectTool);
+        statePane.setOnStairInputLevelChanged(stairDraftState::setInputLevel);
+        statePane.setOnStairLevelDecrementRequested(() -> stairDraftState.adjustInputLevel(-1));
+        statePane.setOnStairLevelIncrementRequested(() -> stairDraftState.adjustInputLevel(1));
+        statePane.setOnStairAddRequested(stairDraftState::addExitLevel);
+        statePane.setOnStairExitRemoveRequested(stairDraftState::removeExitLevel);
         workspace.setInteractionHandler(interactionController);
     }
 
     private void refreshFromSessionState() {
+        DungeonEditorTool selectedTool = sessionState.selectedTool();
+        boolean enteringStairCreate = selectedTool == DungeonEditorTool.STAIR_CREATE
+                && previousTool != DungeonEditorTool.STAIR_CREATE;
         controls.selectViewMode(sessionState.viewMode());
-        controls.showDisplayedTool(sessionState.selectedTool());
+        controls.showDisplayedTool(selectedTool);
         workspace.setViewMode(sessionState.viewMode());
-        if (sessionState.selectedTool() != DungeonEditorTool.SELECT || sessionState.viewMode() != features.world.dungeonmap.canvas.base.DungeonViewMode.GRID) {
+        if (selectedTool != DungeonEditorTool.SELECT || sessionState.viewMode() != features.world.dungeonmap.canvas.base.DungeonViewMode.GRID) {
             interactionController.clear();
         }
-        statePane.refresh(sessionState.selectedTool());
+        if (enteringStairCreate) {
+            stairDraftState.resetForLevel(mapState.activeProjectionLevel());
+        }
+        statePane.refresh(selectedTool);
         refreshCorridorStatePane();
         refreshStairStatePane();
-    }
-
-    private void refreshSelectionState() {
-        workspace.setSelectedTargetKey(selectionState.selectedTargetKey());
+        previousTool = selectedTool;
     }
 
     private void refreshLayoutPreviewState() {
@@ -192,8 +206,8 @@ final class DungeonEditorCoordinator {
         workspace.setPreviewPaintShape(paintPreviewState.previewShape(), paintPreviewState.deleteMode());
     }
 
-    private void refreshStairPreviewState() {
-        workspace.setPreviewStairPath(stairEditService.expandedPath(stairDraftState.pathNodes()));
+    private void refreshSelectionState() {
+        workspace.setSelectedTargetKey(selectionState.selectedTargetKey());
     }
 
     private void refreshCorridorStatePane() {
@@ -213,7 +227,7 @@ final class DungeonEditorCoordinator {
         if (sessionState.selectedTool() != DungeonEditorTool.STAIR_CREATE
                 && sessionState.selectedTool() != DungeonEditorTool.STAIR_DELETE
                 && !DungeonStair.isTargetKey(selectionState.selectedTargetKey())) {
-            statePane.showStairDraft(null, null, null, null);
+            statePane.showStairDraft(null);
             return;
         }
         if (sessionState.selectedTool() == DungeonEditorTool.STAIR_DELETE) {
@@ -222,36 +236,15 @@ final class DungeonEditorCoordinator {
                     ? "Gewählt: " + DungeonEditorSelectionLabels.stairLabel(selectedTargetKey)
                     : "Treppenfeld anklicken, um zu löschen";
             statePane.showStairDraft(
-                    new DungeonEditorStatePane.StairDraftCard(List.of(), summary, null, false, false, false),
-                    null,
-                    null,
-                    null);
+                    new DungeonEditorStatePane.StairDraftCard(null, List.of(), summary, false));
             return;
         }
-        String validationMessage = stairEditService.validationMessage(mapState.activeMap(), stairDraftState.pathNodes());
         statePane.showStairDraft(
                 new DungeonEditorStatePane.StairDraftCard(
-                        stairDraftState.pathNodes(),
-                        stairSummary(),
-                        validationMessage,
-                        !stairDraftState.isEmpty(),
-                        !stairDraftState.isEmpty(),
-                        validationMessage == null && stairDraftState.pathNodes().size() >= 2),
-                stairDraftState::undoLast,
-                stairDraftState::clear,
-                stairInteractionController::saveDraft);
-    }
-
-    private String stairSummary() {
-        if (stairDraftState.isEmpty()) {
-            return "Klicks setzen Knoten auf der aktuellen Ebene";
-        }
-        var start = stairDraftState.startNode();
-        var end = stairDraftState.endNode();
-        return "Knoten: " + stairDraftState.pathNodes().size()
-                + " | Start z=" + (start == null ? "?" : start.z())
-                + " | Ziel z=" + (end == null ? "?" : end.z())
-                + " | Ebenen: " + stairDraftState.levelCount();
+                        stairDraftState.inputLevel(),
+                        stairDraftState.exitLevels(),
+                        stairDraftState.statusMessage(),
+                        true));
     }
 
     private void refreshRoomNarrationStatePane() {

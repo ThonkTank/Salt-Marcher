@@ -3,7 +3,6 @@ package features.world.dungeonmap.shell.editor.interaction;
 import features.world.dungeonmap.application.stair.DungeonStairEditService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
-import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
@@ -67,28 +66,16 @@ public final class StairInteractionController {
         }
     }
 
-    public void saveDraft() {
-        Long mapId = mapState.activeMapId();
-        if (mapId == null) {
-            return;
-        }
-        var draftNodes = stairDraftState.pathNodes();
-        UiAsyncTasks.submitVoid(
-                () -> stairEditService.create(mapState.activeMap(), draftNodes),
-                () -> {
-                    stairDraftState.clear();
-                    loadingService.reload(mapId);
-                },
-                throwable -> UiErrorReporter.reportBackgroundFailure("StairInteractionController.saveDraft()", throwable));
-    }
-
     private boolean handleCreatePressed(Point2i gridCell) {
-        if (gridCell == null) {
+        Long mapId = mapState.activeMapId();
+        if (mapId == null || gridCell == null || !stairDraftState.canPlace()) {
             return false;
         }
-        CubePoint node = CubePoint.at(gridCell, mapState.activeProjectionLevel());
-        stairDraftState.append(node);
         selectionState.clearSelection();
+        UiAsyncTasks.submitVoid(
+                () -> stairEditService.create(mapState.activeMap(), gridCell, stairDraftState.exitLevels()),
+                () -> loadingService.reload(mapId),
+                throwable -> UiErrorReporter.reportBackgroundFailure("StairInteractionController.handleCreatePressed()", throwable));
         return true;
     }
 

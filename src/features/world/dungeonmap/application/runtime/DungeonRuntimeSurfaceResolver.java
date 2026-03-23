@@ -12,8 +12,6 @@ import java.util.List;
 
 public final class DungeonRuntimeSurfaceResolver {
 
-    private static final String CORRIDOR_VISUAL_DESCRIPTION = "Ein Korridor verbindet die angrenzenden Bereiche.";
-
     private DungeonRuntimeSurfaceResolver() {
         throw new AssertionError("No instances");
     }
@@ -90,7 +88,7 @@ public final class DungeonRuntimeSurfaceResolver {
         return new DungeonRuntimeSurface(
                 DungeonRuntimeLabels.corridorNetworkLabel(layout, network),
                 new DetailsNavigator.EntryKey("dungeon-corridor-network", layout.mapId() + ":" + network.networkId()),
-                CORRIDOR_VISUAL_DESCRIPTION,
+                "",
                 DungeonRuntimeDoorCatalog.describe(layout, network, heading),
                 List.of());
     }
@@ -106,7 +104,7 @@ public final class DungeonRuntimeSurfaceResolver {
         return new DungeonRuntimeSurface(
                 DungeonRuntimeLabels.corridorLabel(layout, corridor),
                 new DetailsNavigator.EntryKey("dungeon-corridor", layout.mapId() + ":" + corridor.corridorId()),
-                CORRIDOR_VISUAL_DESCRIPTION,
+                "",
                 DungeonRuntimeDoorCatalog.describe(layout, corridor, heading),
                 List.of());
     }
