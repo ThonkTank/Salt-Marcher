@@ -477,11 +477,14 @@ public final class Corridor {
                 .filter(Objects::nonNull)
                 .toList();
         Set<Long> seenDoorBindingRoomIds = new LinkedHashSet<>();
-        List<CorridorDoorBinding> sanitizedDoorBindings = bindings.doorBindings().stream()
-                .filter(Objects::nonNull)
-                .filter(binding -> connectedRoomIds.contains(binding.roomId()))
-                .filter(binding -> seenDoorBindingRoomIds.add(binding.roomId()))
-                .toList();
+        List<CorridorDoorBinding> sanitizedDoorBindings = new ArrayList<>();
+        for (CorridorDoorBinding binding : bindings.doorBindings()) {
+            if (binding != null
+                    && connectedRoomIds.contains(binding.roomId())
+                    && seenDoorBindingRoomIds.add(binding.roomId())) {
+                sanitizedDoorBindings.add(binding);
+            }
+        }
         return new CorridorBindings(sanitizedWaypoints, sanitizedDoorBindings);
     }
 
