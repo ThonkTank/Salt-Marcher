@@ -78,7 +78,8 @@ final class ClusterRewritePlanner {
                 retainedRoom.floor().shape().anchor()));
 
         TileShape rewrittenClusterShape = TileShape.fromAbsoluteCells(mergedClusterCells);
-        List<Room> rewrittenRooms = reconciledRooms(cluster, rewrittenClusterShape, candidates, previousBoundaryKinds);
+        List<ReconciledRoom> reconciledRooms = reconciledRooms(cluster, rewrittenClusterShape, candidates, previousBoundaryKinds);
+        List<Room> rewrittenRooms = rooms(reconciledRooms);
         Map<Long, Long> replacedRoomIds = new LinkedHashMap<>();
         for (Long mergedRoomId : mergedRoomIds) {
             if (!mergedRoomId.equals(retainedRoom.roomId())) {
@@ -156,10 +157,11 @@ final class ClusterRewritePlanner {
         }
 
         TileShape rewrittenClusterShape = TileShape.fromAbsoluteCells(remainingCells);
-        List<Room> rewrittenRooms = reconciledRooms(cluster, rewrittenClusterShape, candidates, previousBoundaryKinds);
+        List<ReconciledRoom> reconciledRooms = reconciledRooms(cluster, rewrittenClusterShape, candidates, previousBoundaryKinds);
+        List<Room> rewrittenRooms = rooms(reconciledRooms);
         Map<Long, List<Room>> splitFragmentsBySourceRoomId = resolvedFragmentsBySourceRoomId(
                 fragmentsBySourceRoomId,
-                rewrittenRooms);
+                reconciledRooms);
         List<ClusterRewriteSplit> componentClusters = deleteRewriteClusters(cluster, rewrittenClusterShape, rewrittenRooms);
         ClusterRewriteSplit retainedCluster = componentClusters.getFirst().withClusterId(cluster.clusterId());
         List<ClusterRewriteSplit> splitClusters = componentClusters.stream()
@@ -224,7 +226,7 @@ final class ClusterRewritePlanner {
                 .build();
     }
 
-    static List<Room> reconciledRooms(
+    static List<ReconciledRoom> reconciledRooms(
             RoomCluster cluster,
             TileShape clusterShape,
             List<RoomRewriteCandidate> candidates,
@@ -235,21 +237,23 @@ final class ClusterRewritePlanner {
         }
         Set<Point2i> clusterCells = clusterShape.absoluteCells();
         Map<VertexEdge, InternalBoundaryType> boundaryKinds = previousKinds == null ? Map.of() : Map.copyOf(previousKinds);
-        List<Room> result = new ArrayList<>();
+        List<ReconciledRoom> result = new ArrayList<>();
         for (RoomRewriteCandidate candidate : candidates == null ? List.<RoomRewriteCandidate>of() : candidates) {
             if (candidate == null || candidate.shape() == null || candidate.shape().size() == 0) {
                 continue;
             }
             Room room = cluster.findRoom(candidate.roomId());
             RoomNarration narration = room == null ? RoomNarration.empty() : room.narration();
-            result.add(resolvedRoom(
-                    cluster,
-                    candidate.shape(),
-                    clusterCells,
-                    boundaryKinds,
-                    candidate.roomId(),
-                    candidate.name(),
-                    narration));
+            result.add(new ReconciledRoom(
+                    candidate,
+                    resolvedRoom(
+                            cluster,
+                            candidate.shape(),
+                            clusterCells,
+                            boundaryKinds,
+                            candidate.roomId(),
+                            candidate.name(),
+                            narration)));
         }
         return List.copyOf(result);
     }
@@ -511,30 +515,26 @@ final class ClusterRewritePlanner {
 
     static Map<Long, List<Room>> resolvedFragmentsBySourceRoomId(
             Map<Long, List<RoomRewriteCandidate>> candidatesBySourceRoomId,
-            List<Room> rooms
+            List<ReconciledRoom> reconciledRooms
     ) {
         if (candidatesBySourceRoomId == null || candidatesBySourceRoomId.isEmpty()) {
             return Map.of();
         }
-        Map<String, Room> roomBySignature = new LinkedHashMap<>();
-        for (Room room : rooms) {
-            if (room != null) {
-                roomBySignature.put(signature(room.roomId(), room.name(), room.floor().shape()), room);
+        Map<RoomRewriteCandidate, Room> roomByCandidate = new LinkedHashMap<>();
+        for (ReconciledRoom reconciledRoom : reconciledRooms == null ? List.<ReconciledRoom>of() : reconciledRooms) {
+            if (reconciledRoom != null && reconciledRoom.candidate() != null && reconciledRoom.room() != null) {
+                roomByCandidate.put(reconciledRoom.candidate(), reconciledRoom.room());
             }
         }
         Map<Long, List<Room>> result = new LinkedHashMap<>();
         for (Map.Entry<Long, List<RoomRewriteCandidate>> entry : candidatesBySourceRoomId.entrySet()) {
             List<Room> resolved = entry.getValue().stream()
-                    .map(candidate -> roomBySignature.get(signature(candidate.roomId(), candidate.name(), candidate.shape())))
+                    .map(roomByCandidate::get)
                     .filter(java.util.Objects::nonNull)
                     .toList();
             result.put(entry.getKey(), resolved);
         }
         return Map.copyOf(result);
-    }
-
-    static String signature(Long roomId, String name, TileShape shape) {
-        return roomId + "|" + name + "|" + shape;
     }
 
     static List<RoomCluster> normalizedClusters(List<RoomCluster> clusters) {
@@ -588,6 +588,16 @@ final class ClusterRewritePlanner {
         }
         String generated = roomNameSupplier.get();
         return generated == null || generated.isBlank() ? fallbackName : generated.trim();
+    }
+
+    private static List<Room> rooms(List<ReconciledRoom> reconciledRooms) {
+        if (reconciledRooms == null || reconciledRooms.isEmpty()) {
+            return List.of();
+        }
+        return reconciledRooms.stream()
+                .map(ReconciledRoom::room)
+                .filter(java.util.Objects::nonNull)
+                .toList();
     }
 
     private static Map<VertexEdge, InternalBoundaryType> boundaryKindsFor(TileShape clusterShape, List<Room> rooms) {
@@ -660,5 +670,11 @@ final class ClusterRewritePlanner {
         static RoomRewriteCandidate create(Long sourceRoomId, String name, TileShape shape, Point2i preferredAnchor) {
             return new RoomRewriteCandidate(sourceRoomId, null, name, shape, preferredAnchor);
         }
+    }
+
+    record ReconciledRoom(
+            RoomRewriteCandidate candidate,
+            Room room
+    ) {
     }
 }
