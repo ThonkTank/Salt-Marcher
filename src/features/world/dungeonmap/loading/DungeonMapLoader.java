@@ -23,6 +23,9 @@ import features.world.dungeonmap.model.structures.room.RoomNarration;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.stair.DungeonStairExit;
+import features.world.dungeonmap.model.structures.transition.DungeonTransition;
+import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
+import features.world.dungeonmap.persistence.DungeonTransitionSchemaSupport;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -67,6 +70,7 @@ public final class DungeonMapLoader {
         if (conn == null) {
             throw new IllegalArgumentException("conn darf nicht null sein");
         }
+        DungeonTransitionSchemaSupport.ensureCompatibility(conn);
         List<DungeonMapCatalogEntry> maps = loadCatalog(conn);
         DungeonMapCatalogEntry map = findMap(maps, mapId);
         if (map == null) {
@@ -93,6 +97,7 @@ public final class DungeonMapLoader {
                         loadCorridors(conn, map.mapId(), clusters),
                         clusters,
                         loadStairs(conn, map.mapId()),
+                        loadTransitions(conn, map.mapId()),
                         clusterLevels,
                         roomLevels,
                         corridorLevels),
@@ -283,6 +288,41 @@ public final class DungeonMapLoader {
                             rs.getString("name"),
                             pathNodesByStairId.getOrDefault(stairId, List.of()),
                             exitsByStairId.getOrDefault(stairId, List.of())));
+                }
+                return List.copyOf(result);
+            }
+        }
+    }
+
+    private static List<DungeonTransition> loadTransitions(Connection conn, long mapId) throws SQLException {
+        DungeonTransitionSchemaSupport.ensureCompatibility(conn);
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT transition_id, dungeon_map_id, name, cell_x, cell_y, level_z, destination_type,"
+                        + " target_overworld_map_id, target_overworld_tile_id, target_dungeon_map_id,"
+                        + " target_transition_id, linked_transition_id"
+                        + " FROM dungeon_transitions WHERE dungeon_map_id=? ORDER BY transition_id")) {
+            ps.setLong(1, mapId);
+            try (ResultSet rs = ps.executeQuery()) {
+                List<DungeonTransition> result = new ArrayList<>();
+                while (rs.next()) {
+                    CubePoint anchor = rs.getObject("cell_x") == null
+                            ? null
+                            : new CubePoint(rs.getInt("cell_x"), rs.getInt("cell_y"), rs.getInt("level_z"));
+                    String destinationType = rs.getString("destination_type");
+                    DungeonTransitionDestination destination = "DUNGEON_MAP".equals(destinationType)
+                            ? new DungeonTransitionDestination.DungeonMapDestination(
+                            rs.getLong("target_dungeon_map_id"),
+                            nullableLong(rs, "target_transition_id"))
+                            : new DungeonTransitionDestination.OverworldTileDestination(
+                            rs.getLong("target_overworld_map_id"),
+                            rs.getLong("target_overworld_tile_id"));
+                    result.add(new DungeonTransition(
+                            rs.getLong("transition_id"),
+                            rs.getLong("dungeon_map_id"),
+                            rs.getString("name"),
+                            anchor,
+                            destination,
+                            nullableLong(rs, "linked_transition_id")));
                 }
                 return List.copyOf(result);
             }
@@ -615,6 +655,11 @@ public final class DungeonMapLoader {
             }
         }
         return inside;
+    }
+
+    private static Long nullableLong(ResultSet rs, String column) throws SQLException {
+        long value = rs.getLong(column);
+        return rs.wasNull() ? null : value;
     }
 
     private record EdgeObject(Wall wall, Door door) {

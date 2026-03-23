@@ -13,6 +13,7 @@ import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInput
 import features.world.dungeonmap.model.structures.corridor.CorridorRewriteContext;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
+import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -25,7 +26,7 @@ import java.util.stream.Collectors;
 
 public final class DungeonLayout {
 
-    public sealed interface CellStructure permits CellStructure.RoomStructure, CellStructure.NetworkStructure, CellStructure.CorridorStructure, CellStructure.StairStructure {
+    public sealed interface CellStructure permits CellStructure.RoomStructure, CellStructure.NetworkStructure, CellStructure.CorridorStructure, CellStructure.StairStructure, CellStructure.TransitionStructure {
         record RoomStructure(Room room) implements CellStructure {
         }
 
@@ -37,15 +38,19 @@ public final class DungeonLayout {
 
         record StairStructure(DungeonStair stair) implements CellStructure {
         }
+
+        record TransitionStructure(DungeonTransition transition) implements CellStructure {
+        }
     }
 
-    private static final DungeonLayout EMPTY = new DungeonLayout(0L, "Kein Dungeon", List.of(), List.of(), List.of(), Map.of(), Map.of(), Map.of());
+    private static final DungeonLayout EMPTY = new DungeonLayout(0L, "Kein Dungeon", List.of(), List.of(), List.of(), List.of(), Map.of(), Map.of(), Map.of());
 
     private final long mapId;
     private final String name;
     private final List<Corridor> corridors;
     private final List<RoomCluster> clusters;
     private final List<DungeonStair> stairs;
+    private final List<DungeonTransition> transitions;
     // Layout is only the global aggregation/query surface over self-managed structures.
     private final List<CorridorNetwork> corridorNetworks;
     private final Map<VertexEdge, Door> doorRegistry;
@@ -53,6 +58,7 @@ public final class DungeonLayout {
     private final Map<Long, Corridor> corridorsById;
     private final Map<Long, RoomCluster> clustersById;
     private final Map<Long, DungeonStair> stairsById;
+    private final Map<Long, DungeonTransition> transitionsById;
     private final Map<Long, Integer> clusterLevelsById;
     private final Map<Long, Integer> roomLevelsById;
     private final Map<Long, Integer> corridorLevelsById;
@@ -61,6 +67,7 @@ public final class DungeonLayout {
     private final Map<Point2i, List<Long>> corridorIdsByCell;
     private final Map<Point2i, String> corridorNetworkIdByCell;
     private final Map<CubePoint, List<Long>> stairIdsByPoint;
+    private final Map<CubePoint, List<Long>> transitionIdsByPoint;
     private final Set<Point2i> traversableCells;
     private final Set<CubePoint> traversableCubeCells;
     private final List<Integer> reachableLevels;
@@ -71,7 +78,7 @@ public final class DungeonLayout {
             List<Corridor> corridors,
             List<RoomCluster> clusters
     ) {
-        this(mapId, name, corridors, clusters, List.of(), Map.of(), Map.of(), Map.of());
+        this(mapId, name, corridors, clusters, List.of(), List.of(), Map.of(), Map.of(), Map.of());
     }
 
     public DungeonLayout(
@@ -80,6 +87,7 @@ public final class DungeonLayout {
             List<Corridor> corridors,
             List<RoomCluster> clusters,
             List<DungeonStair> stairs,
+            List<DungeonTransition> transitions,
             Map<Long, Integer> clusterLevelsById,
             Map<Long, Integer> roomLevelsById,
             Map<Long, Integer> corridorLevelsById
@@ -91,12 +99,14 @@ public final class DungeonLayout {
                 this.corridors,
                 clusters == null ? List.of() : List.copyOf(clusters));
         this.stairs = stairs == null ? List.of() : List.copyOf(stairs);
+        this.transitions = transitions == null ? List.of() : List.copyOf(transitions);
         this.corridorNetworks = CorridorNetwork.buildNetworks(mapId, this.corridors);
         this.doorRegistry = indexDoors(this.clusters, this.corridors);
         this.roomsById = indexRooms(this.clusters);
         this.corridorsById = indexCorridors(this.corridors);
         this.clustersById = indexClusters(this.clusters);
         this.stairsById = indexStairs(this.stairs);
+        this.transitionsById = indexTransitions(this.transitions);
         this.clusterLevelsById = indexLevels(clusterLevelsById);
         this.roomLevelsById = indexRoomLevels(this.roomsById, roomLevelsById, this.clusterLevelsById);
         this.corridorLevelsById = indexLevels(corridorLevelsById);
@@ -105,6 +115,7 @@ public final class DungeonLayout {
         this.corridorIdsByCell = indexCorridorIdsByCell(this.corridors);
         this.corridorNetworkIdByCell = indexCorridorNetworkIdsByCell(this.corridorNetworks);
         this.stairIdsByPoint = indexStairIdsByPoint(this.stairs);
+        this.transitionIdsByPoint = indexTransitionIdsByPoint(this.transitions);
         this.traversableCells = indexTraversableCells(this.clusters, this.corridors);
         this.traversableCubeCells = indexTraversableCubeCells(this.clusters, this.corridors, this.stairs, this.roomLevelsById, this.corridorLevelsById);
         this.reachableLevels = indexReachableLevels(this.traversableCubeCells);
@@ -175,6 +186,10 @@ public final class DungeonLayout {
 
     public List<DungeonStair> stairs() {
         return stairs;
+    }
+
+    public List<DungeonTransition> transitions() {
+        return transitions;
     }
 
     public List<Integer> reachableLevels() {
@@ -269,6 +284,10 @@ public final class DungeonLayout {
         return stairId == null ? null : stairsById.get(stairId);
     }
 
+    public DungeonTransition findTransition(Long transitionId) {
+        return transitionId == null ? null : transitionsById.get(transitionId);
+    }
+
     public CorridorNetwork findCorridorNetwork(String networkId) {
         if (networkId == null) {
             return null;
@@ -359,6 +378,21 @@ public final class DungeonLayout {
                 .toList();
     }
 
+    public List<DungeonTransition> transitionsAtCell(Point2i cell, int levelZ) {
+        if (cell == null) {
+            return List.of();
+        }
+        return transitionsAtPoint(CubePoint.at(cell, levelZ));
+    }
+
+    public List<DungeonTransition> transitionsAtPoint(CubePoint point) {
+        List<Long> transitionIds = point == null ? List.of() : transitionIdsByPoint.getOrDefault(point, List.of());
+        return transitionIds.stream()
+                .map(this::findTransition)
+                .filter(transition -> transition != null)
+                .toList();
+    }
+
     public CellStructure structureAtCell(Point2i cell) {
         if (cell == null) {
             return null;
@@ -382,7 +416,14 @@ public final class DungeonLayout {
                 .filter(candidate -> candidate != null && candidate.stairId() != null)
                 .min(Comparator.comparing(DungeonStair::stairId))
                 .orElse(null);
-        return stair == null ? null : new CellStructure.StairStructure(stair);
+        if (stair != null) {
+            return new CellStructure.StairStructure(stair);
+        }
+        DungeonTransition transition = transitionsAtCell(cell, defaultLevel()).stream()
+                .filter(candidate -> candidate != null && candidate.transitionId() != null)
+                .min(Comparator.comparing(DungeonTransition::transitionId))
+                .orElse(null);
+        return transition == null ? null : new CellStructure.TransitionStructure(transition);
     }
 
     public Set<Point2i> traversableCells() {
@@ -478,7 +519,7 @@ public final class DungeonLayout {
         List<RoomCluster> updatedClusters = clusters.stream()
                 .map(existing -> cluster.clusterId().equals(existing.clusterId()) ? cluster : existing)
                 .toList();
-        return new DungeonLayout(mapId, name, corridors, updatedClusters, stairs, clusterLevelsById, roomLevelsById, corridorLevelsById);
+        return new DungeonLayout(mapId, name, corridors, updatedClusters, stairs, transitions, clusterLevelsById, roomLevelsById, corridorLevelsById);
     }
 
     public DungeonLayout withTranslatedCluster(Long clusterId, Point2i delta) {
@@ -503,7 +544,7 @@ public final class DungeonLayout {
         List<Corridor> updatedCorridors = corridors.stream()
                 .map(corridor -> corridor == null ? null : corridor.reanchoredFor(rewriteContext).replannedFor(rewriteContext))
                 .toList();
-        return new DungeonLayout(mapId, name, updatedCorridors, updatedClusters, stairs, clusterLevelsById, roomLevelsById, corridorLevelsById);
+        return new DungeonLayout(mapId, name, updatedCorridors, updatedClusters, stairs, transitions, clusterLevelsById, roomLevelsById, corridorLevelsById);
     }
 
     public DungeonLayout applying(ClusterRewrite rewrite) {
@@ -551,7 +592,7 @@ public final class DungeonLayout {
         for (ClusterRewriteSplit splitCluster : rewrite.splitClusters()) {
             updatedClusterLevels.put(splitCluster.clusterId(), targetLevel);
         }
-        return new DungeonLayout(mapId, name, corridors, updatedClusters, stairs, updatedClusterLevels, roomLevelsById, corridorLevelsById);
+        return new DungeonLayout(mapId, name, corridors, updatedClusters, stairs, transitions, updatedClusterLevels, roomLevelsById, corridorLevelsById);
     }
 
     public DungeonLayout projectedToLevel(int levelZ) {
@@ -564,12 +605,21 @@ public final class DungeonLayout {
         List<DungeonStair> projectedStairs = stairs.stream()
                 .filter(stair -> stair != null && stair.reachableLevels().contains(levelZ))
                 .toList();
-        return new DungeonLayout(mapId, name, projectedCorridors, projectedClusters, projectedStairs, clusterLevelsById, roomLevelsById, corridorLevelsById);
+        List<DungeonTransition> projectedTransitions = transitions.stream()
+                .filter(transition -> transition != null && transition.isPlaced() && transition.levelZ() == levelZ)
+                .toList();
+        return new DungeonLayout(mapId, name, projectedCorridors, projectedClusters, projectedStairs, projectedTransitions, clusterLevelsById, roomLevelsById, corridorLevelsById);
     }
 
     public List<DungeonStair> stairsAtLevel(int levelZ) {
         return stairs.stream()
                 .filter(stair -> stair != null && stair.reachableLevels().contains(levelZ))
+                .toList();
+    }
+
+    public List<DungeonTransition> transitionsAtLevel(int levelZ) {
+        return transitions.stream()
+                .filter(transition -> transition != null && transition.isPlaced() && transition.levelZ() == levelZ)
                 .toList();
     }
 
@@ -639,6 +689,16 @@ public final class DungeonLayout {
         for (DungeonStair stair : stairs) {
             if (stair != null && stair.stairId() != null) {
                 result.put(stair.stairId(), stair);
+            }
+        }
+        return Map.copyOf(result);
+    }
+
+    private static Map<Long, DungeonTransition> indexTransitions(List<DungeonTransition> transitions) {
+        Map<Long, DungeonTransition> result = new LinkedHashMap<>();
+        for (DungeonTransition transition : transitions) {
+            if (transition != null && transition.transitionId() != null) {
+                result.put(transition.transitionId(), transition);
             }
         }
         return Map.copyOf(result);
@@ -812,6 +872,21 @@ public final class DungeonLayout {
             for (CubePoint point : stair.occupiedPositions()) {
                 mutable.computeIfAbsent(point, ignored -> new ArrayList<>()).add(stair.stairId());
             }
+        }
+        Map<CubePoint, List<Long>> result = new LinkedHashMap<>();
+        for (Map.Entry<CubePoint, List<Long>> entry : mutable.entrySet()) {
+            result.put(entry.getKey(), List.copyOf(entry.getValue()));
+        }
+        return Map.copyOf(result);
+    }
+
+    private static Map<CubePoint, List<Long>> indexTransitionIdsByPoint(List<DungeonTransition> transitions) {
+        Map<CubePoint, List<Long>> mutable = new LinkedHashMap<>();
+        for (DungeonTransition transition : transitions) {
+            if (transition == null || transition.transitionId() == null || !transition.isPlaced()) {
+                continue;
+            }
+            mutable.computeIfAbsent(transition.anchor(), ignored -> new ArrayList<>()).add(transition.transitionId());
         }
         Map<CubePoint, List<Long>> result = new LinkedHashMap<>();
         for (Map.Entry<CubePoint, List<Long>> entry : mutable.entrySet()) {
