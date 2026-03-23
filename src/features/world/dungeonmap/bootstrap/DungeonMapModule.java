@@ -39,7 +39,6 @@ public final class DungeonMapModule {
         DungeonRoomWriteRepository roomWriteRepository = new DungeonRoomWriteRepository();
         DungeonStairWriteRepository stairWriteRepository = new DungeonStairWriteRepository();
         DungeonRoomNarrationService roomNarrationService = new DungeonRoomNarrationService(roomWriteRepository);
-        DungeonStairEditService stairEditService = new DungeonStairEditService(stairWriteRepository);
         DungeonRoomGeometryWriteMapper geometryWriteMapper = new DungeonRoomGeometryWriteMapper();
         DungeonCorridorRoomRewriteService corridorRoomRewriteService = new DungeonCorridorRoomRewriteService();
         DungeonRoomTopologyService roomTopologyService = new DungeonRoomTopologyService(
@@ -48,6 +47,7 @@ public final class DungeonMapModule {
                 geometryWriteMapper,
                 corridorPersistenceService,
                 corridorRoomRewriteService);
+        DungeonStairEditService stairEditService = new DungeonStairEditService(roomTopologyService, stairWriteRepository);
         DungeonMapCatalogService mapCatalogService = new DungeonMapCatalogService(
                 roomTopologyService,
                 new DungeonRuntimeStateRepairService(mapLoader));

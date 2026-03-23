@@ -1,6 +1,7 @@
 package features.world.dungeonmap.application.stair;
 
 import database.DatabaseManager;
+import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CubePoint;
@@ -16,9 +17,14 @@ import java.util.Objects;
 
 public final class DungeonStairEditService {
 
+    private final DungeonRoomTopologyService roomTopologyService;
     private final DungeonStairWriteRepository stairWriteRepository;
 
-    public DungeonStairEditService(DungeonStairWriteRepository stairWriteRepository) {
+    public DungeonStairEditService(
+            DungeonRoomTopologyService roomTopologyService,
+            DungeonStairWriteRepository stairWriteRepository
+    ) {
+        this.roomTopologyService = Objects.requireNonNull(roomTopologyService, "roomTopologyService");
         this.stairWriteRepository = Objects.requireNonNull(stairWriteRepository, "stairWriteRepository");
     }
 
@@ -27,12 +33,13 @@ public final class DungeonStairEditService {
             throw new SQLException("Kein aktiver Dungeon geladen");
         }
         List<Integer> normalizedExitLevels = normalizeExitLevels(exitLevels);
-        validate(layout, anchorCell, normalizedExitLevels);
         List<Integer> sortedExitLevels = sortedDistinctLevels(normalizedExitLevels);
+        validate(layout, normalizedExitLevels);
         List<CubePoint> pathNodes = buildVerticalPath(anchorCell, sortedExitLevels);
         List<DungeonStairExit> exits = buildExits(anchorCell, sortedExitLevels);
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
+                ensureTraversableExitCells(conn, layout.mapId(), anchorCell, sortedExitLevels);
                 long stairId = stairWriteRepository.insertStair(conn, layout.mapId(), null);
                 stairWriteRepository.replacePathNodes(conn, stairId, pathNodes);
                 stairWriteRepository.replaceExits(conn, stairId, exits);
@@ -80,7 +87,6 @@ public final class DungeonStairEditService {
 
     private static void validate(
             DungeonLayout layout,
-            Point2i anchorCell,
             List<Integer> normalizedExitLevels
     ) throws SQLException {
         if (layout == null || layout.mapId() <= 0) {
@@ -91,15 +97,6 @@ public final class DungeonStairEditService {
         }
         if (normalizedExitLevels.size() < 2) {
             throw new SQLException("Mindestens zwei verschiedene Ebenen");
-        }
-        if (anchorCell == null) {
-            return;
-        }
-        for (Integer level : sortedDistinctLevels(normalizedExitLevels)) {
-            CubePoint exitPoint = CubePoint.at(anchorCell, level);
-            if (!layout.isTraversableCell(exitPoint)) {
-                throw new SQLException("Ausgang auf Ebene z=" + level + " liegt nicht auf einem begehbaren Feld");
-            }
         }
     }
 
@@ -113,5 +110,14 @@ public final class DungeonStairEditService {
             result.add(new DungeonStairExit(0L, exitPoint, "Ebene z=" + level));
         }
         return List.copyOf(result);
+    }
+
+    private void ensureTraversableExitCells(Connection conn, long mapId, Point2i anchorCell, List<Integer> exitLevels) throws SQLException {
+        if (anchorCell == null) {
+            throw new SQLException("Kein Zielfeld gewählt");
+        }
+        for (Integer level : exitLevels) {
+            roomTopologyService.ensureTraversableCell(conn, mapId, anchorCell, level);
+        }
     }
 }

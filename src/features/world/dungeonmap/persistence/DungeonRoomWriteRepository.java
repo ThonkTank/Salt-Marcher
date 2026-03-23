@@ -14,13 +14,18 @@ import java.util.List;
 public final class DungeonRoomWriteRepository {
 
     public long insertCluster(Connection conn, long mapId, ClusterGeometryWrite geometry) throws SQLException {
+        return insertCluster(conn, mapId, geometry, 0);
+    }
+
+    public long insertCluster(Connection conn, long mapId, ClusterGeometryWrite geometry, int levelZ) throws SQLException {
         long clusterId;
         try (PreparedStatement ps = conn.prepareStatement(
-                "INSERT INTO dungeon_room_clusters(dungeon_map_id, center_x, center_y) VALUES(?,?,?)",
+                "INSERT INTO dungeon_room_clusters(dungeon_map_id, center_x, center_y, level_z) VALUES(?,?,?,?)",
                 Statement.RETURN_GENERATED_KEYS)) {
             ps.setLong(1, mapId);
             ps.setInt(2, geometry.center().x());
             ps.setInt(3, geometry.center().y());
+            ps.setInt(4, levelZ);
             ps.executeUpdate();
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (!rs.next()) {
@@ -76,14 +81,19 @@ public final class DungeonRoomWriteRepository {
     }
 
     public long insertRoom(Connection conn, long mapId, long clusterId, String name, Point2i anchor) throws SQLException {
+        return insertRoom(conn, mapId, clusterId, name, anchor, 0);
+    }
+
+    public long insertRoom(Connection conn, long mapId, long clusterId, String name, Point2i anchor, int levelZ) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "INSERT INTO dungeon_rooms(dungeon_map_id, cluster_id, name, component_x, component_y) VALUES(?,?,?,?,?)",
+                "INSERT INTO dungeon_rooms(dungeon_map_id, cluster_id, name, component_x, component_y, level_z) VALUES(?,?,?,?,?,?)",
                 Statement.RETURN_GENERATED_KEYS)) {
             ps.setLong(1, mapId);
             ps.setLong(2, clusterId);
             ps.setString(3, name);
             ps.setInt(4, anchor.x());
             ps.setInt(5, anchor.y());
+            ps.setInt(6, levelZ);
             ps.executeUpdate();
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (!rs.next()) {
@@ -105,12 +115,17 @@ public final class DungeonRoomWriteRepository {
     }
 
     public void updateRoom(Connection conn, long roomId, String name, Point2i anchor) throws SQLException {
+        updateRoom(conn, roomId, name, anchor, 0);
+    }
+
+    public void updateRoom(Connection conn, long roomId, String name, Point2i anchor, int levelZ) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE dungeon_rooms SET name=?, component_x=?, component_y=? WHERE room_id=?")) {
+                "UPDATE dungeon_rooms SET name=?, component_x=?, component_y=?, level_z=? WHERE room_id=?")) {
             ps.setString(1, name);
             ps.setInt(2, anchor.x());
             ps.setInt(3, anchor.y());
-            ps.setLong(4, roomId);
+            ps.setInt(4, levelZ);
+            ps.setLong(5, roomId);
             ps.executeUpdate();
         }
     }
