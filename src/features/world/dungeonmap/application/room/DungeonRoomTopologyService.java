@@ -105,18 +105,26 @@ public final class DungeonRoomTopologyService {
     }
 
     public void delete(long mapId, TileShape shape) throws SQLException {
+        delete(mapId, 0, shape);
+    }
+
+    public void delete(long mapId, int levelZ, TileShape shape) throws SQLException {
         if (shape == null || shape.size() == 0) {
             return;
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                delete(conn, mapId, shape);
+                delete(conn, mapId, levelZ, shape);
                 return null;
             });
         }
     }
 
     public void delete(Connection conn, long mapId, TileShape shape) throws SQLException {
+        delete(conn, mapId, 0, shape);
+    }
+
+    public void delete(Connection conn, long mapId, int levelZ, TileShape shape) throws SQLException {
         if (shape == null || shape.size() == 0) {
             return;
         }
@@ -129,7 +137,7 @@ public final class DungeonRoomTopologyService {
             }
         }
 
-        List<Long> affectedClusterIds = workingLayout.overlappingClusters(shape).stream()
+        List<Long> affectedClusterIds = overlappingClustersAtLevel(workingLayout, shape, levelZ).stream()
                 .map(RoomCluster::clusterId)
                 .filter(Objects::nonNull)
                 .sorted()

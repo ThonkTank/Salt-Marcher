@@ -86,15 +86,16 @@ public final class RoomPaintInteractionController {
         TileShape shape = finishedSession.previewShape();
         clear();
         Long mapId = mapState.activeMapId();
+        int activeLevel = mapState.activeProjectionLevel();
         if (mapId == null || shape.size() == 0) {
             return true;
         }
         UiAsyncTasks.submitVoid(
                 () -> {
                     if (finishedSession.deleteMode()) {
-                        roomTopologyService.delete(mapId, shape);
+                        roomTopologyService.delete(mapId, activeLevel, shape);
                     } else {
-                        roomTopologyService.paint(mapId, shape);
+                        roomTopologyService.paint(mapId, activeLevel, shape);
                     }
                 },
                 () -> loadingService.reload(mapId),
