@@ -2,8 +2,8 @@ package features.world.dungeonmap.model.structures.cluster;
 
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
+import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.persistence.ClusterBoundaryWrite;
 
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -16,7 +16,7 @@ public record ClusterRewrite(
         TileShape clusterShape,
         Point2i clusterCenter,
         List<Room> rooms,
-        List<ClusterBoundaryWrite> persistedBoundaries,
+        Map<VertexEdge, InternalBoundaryType> internalBoundaryKinds,
         Set<Long> deletedRoomIds,
         Map<Long, Long> replacedRoomIds,
         Set<Long> mergedRoomIds,
@@ -27,7 +27,7 @@ public record ClusterRewrite(
 ) {
     public ClusterRewrite {
         rooms = rooms == null ? List.of() : List.copyOf(rooms);
-        persistedBoundaries = persistedBoundaries == null ? List.of() : List.copyOf(persistedBoundaries);
+        internalBoundaryKinds = internalBoundaryKinds == null ? Map.of() : Map.copyOf(internalBoundaryKinds);
         deletedRoomIds = deletedRoomIds == null ? Set.of() : Set.copyOf(deletedRoomIds);
         replacedRoomIds = replacedRoomIds == null ? Map.of() : Map.copyOf(replacedRoomIds);
         mergedRoomIds = mergedRoomIds == null ? Set.of() : Set.copyOf(mergedRoomIds);
@@ -78,7 +78,7 @@ public record ClusterRewrite(
                 clusterShape,
                 clusterCenter,
                 rooms,
-                persistedBoundaries,
+                internalBoundaryKinds,
                 deletedRoomIds,
                 replacedRoomIds,
                 mergedRoomIds,

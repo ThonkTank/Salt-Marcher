@@ -2,28 +2,29 @@ package features.world.dungeonmap.model.structures.cluster;
 
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
+import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.persistence.ClusterBoundaryWrite;
 
 import java.util.List;
+import java.util.Map;
 
 public record ClusterRewriteSplit(
         Long clusterId,
         TileShape clusterShape,
         Point2i clusterCenter,
         List<Room> rooms,
-        List<ClusterBoundaryWrite> persistedBoundaries
+        Map<VertexEdge, InternalBoundaryType> internalBoundaryKinds
 ) {
     public ClusterRewriteSplit {
         rooms = rooms == null ? List.of() : List.copyOf(rooms);
-        persistedBoundaries = persistedBoundaries == null ? List.of() : List.copyOf(persistedBoundaries);
+        internalBoundaryKinds = internalBoundaryKinds == null ? Map.of() : Map.copyOf(internalBoundaryKinds);
     }
 
     public ClusterRewriteSplit withClusterId(Long clusterId) {
         List<Room> reassignedRooms = rooms.stream()
                 .map(room -> reassignCluster(room, clusterId))
                 .toList();
-        return new ClusterRewriteSplit(clusterId, clusterShape, clusterCenter, reassignedRooms, persistedBoundaries);
+        return new ClusterRewriteSplit(clusterId, clusterShape, clusterCenter, reassignedRooms, internalBoundaryKinds);
     }
 
     private static Room reassignCluster(Room room, Long clusterId) {

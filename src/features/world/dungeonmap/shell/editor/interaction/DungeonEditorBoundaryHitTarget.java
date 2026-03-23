@@ -1,22 +1,22 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
 import features.world.dungeonmap.model.geometry.VertexEdge;
+import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
-import features.world.dungeonmap.persistence.ClusterBoundaryWrite;
 
 import java.util.Objects;
 
 public record DungeonEditorBoundaryHitTarget(
         DungeonEditorTargetRef.BoundaryRef targetRef,
         VertexEdge edge,
-        ClusterBoundaryWrite.Type boundaryType,
+        InternalBoundaryType boundaryType,
         long priority
 ) implements DungeonEditorHitTarget {
 
     public DungeonEditorBoundaryHitTarget {
         targetRef = Objects.requireNonNull(targetRef, "targetRef");
         edge = Objects.requireNonNull(edge, "edge");
-        boundaryType = boundaryType == null ? ClusterBoundaryWrite.Type.WALL : boundaryType;
+        boundaryType = boundaryType == null ? InternalBoundaryType.WALL : boundaryType;
     }
 
     @Override

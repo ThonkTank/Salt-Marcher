@@ -12,10 +12,12 @@ import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.structures.cluster.ClusterRewrite;
 import features.world.dungeonmap.model.structures.cluster.ClusterRewriteSplit;
+import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorRewriteContext;
 import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.persistence.ClusterBoundaryWrite;
 import features.world.dungeonmap.persistence.DungeonRoomGeometryWriteMapper;
 import features.world.dungeonmap.persistence.DungeonRoomWriteRepository;
 
@@ -160,7 +162,7 @@ public final class DungeonRoomTopologyService {
             long mapId,
             long clusterId,
             VertexEdge edge,
-            features.world.dungeonmap.persistence.ClusterBoundaryWrite.Type type,
+            InternalBoundaryType type,
             boolean deleteBoundary
     ) throws SQLException {
         if (edge == null) {
@@ -233,7 +235,7 @@ public final class DungeonRoomTopologyService {
                     mapId,
                     geometryWriteMapper.toClusterGeometry(splitCluster.clusterShape()),
                     levelZ);
-            roomWriteRepository.replaceClusterEdges(conn, splitClusterId, splitCluster.persistedBoundaries());
+            roomWriteRepository.replaceClusterEdges(conn, splitClusterId, toBoundaryWrites(splitCluster.internalBoundaryKinds()));
             realizedSplitClusters.add(splitCluster.withClusterId(splitClusterId));
         }
         ClusterRewrite realizedRewrite = rewrite.withSplitClusters(realizedSplitClusters);
@@ -241,7 +243,7 @@ public final class DungeonRoomTopologyService {
                 conn,
                 realizedRewrite.targetClusterId(),
                 geometryWriteMapper.toClusterGeometry(realizedRewrite.clusterShape()));
-        roomWriteRepository.replaceClusterEdges(conn, realizedRewrite.targetClusterId(), realizedRewrite.persistedBoundaries());
+        roomWriteRepository.replaceClusterEdges(conn, realizedRewrite.targetClusterId(), toBoundaryWrites(realizedRewrite.internalBoundaryKinds()));
         persistRooms(conn, mapId, realizedRewrite.targetClusterId(), realizedRewrite.rooms(), levelZ);
         for (ClusterRewriteSplit splitCluster : realizedRewrite.splitClusters()) {
             persistRooms(conn, mapId, splitCluster.clusterId(), splitCluster.rooms(), levelZ);
@@ -252,6 +254,35 @@ public final class DungeonRoomTopologyService {
             }
         }
         return realizedRewrite;
+    }
+
+    private static ClusterBoundaryWrite.Type toBoundaryWriteType(InternalBoundaryType type) {
+        return type == InternalBoundaryType.DOOR ? ClusterBoundaryWrite.Type.DOOR : ClusterBoundaryWrite.Type.WALL;
+    }
+
+    private static List<ClusterBoundaryWrite> toBoundaryWrites(Map<VertexEdge, InternalBoundaryType> boundaryKinds) {
+        if (boundaryKinds == null || boundaryKinds.isEmpty()) {
+            return List.of();
+        }
+        return boundaryKinds.entrySet().stream()
+                .map(entry -> toBoundaryWrite(entry.getKey(), entry.getValue()))
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    private static ClusterBoundaryWrite toBoundaryWrite(VertexEdge edge, InternalBoundaryType type) {
+        if (edge == null) {
+            return null;
+        }
+        List<Point2i> touchingCells = edge.touchingCells().stream()
+                .sorted(Point2i.POINT_ORDER)
+                .toList();
+        if (touchingCells.size() != 2) {
+            return null;
+        }
+        Point2i baseCell = touchingCells.getFirst();
+        Point2i direction = baseCell.directionToCardinal(touchingCells.get(1));
+        return direction == null ? null : new ClusterBoundaryWrite(baseCell, direction, toBoundaryWriteType(type));
     }
 
     private void persistRooms(

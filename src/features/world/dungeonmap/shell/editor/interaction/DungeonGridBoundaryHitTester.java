@@ -5,8 +5,8 @@ import features.world.dungeonmap.canvas.base.DungeonCanvasTheme;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.VertexEdge;
+import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
-import features.world.dungeonmap.persistence.ClusterBoundaryWrite;
 import javafx.geometry.Point2D;
 
 import java.util.Map;
@@ -27,7 +27,7 @@ final class DungeonGridBoundaryHitTester {
             if (cluster == null || cluster.clusterId() == null) {
                 continue;
             }
-            for (Map.Entry<VertexEdge, ClusterBoundaryWrite.Type> entry : cluster.internalBoundaryKinds().entrySet()) {
+            for (Map.Entry<VertexEdge, InternalBoundaryType> entry : cluster.internalBoundaryKinds().entrySet()) {
                 VertexEdge edge = entry.getKey();
                 double distance = distanceToEdge(canvasPoint, edge, camera, gridSize);
                 if (distance > bestDistance) {

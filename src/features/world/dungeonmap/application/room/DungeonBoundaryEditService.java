@@ -3,7 +3,7 @@ package features.world.dungeonmap.application.room;
 import database.DatabaseManager;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.geometry.VertexEdge;
-import features.world.dungeonmap.persistence.ClusterBoundaryWrite;
+import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -21,7 +21,7 @@ public final class DungeonBoundaryEditService {
             long mapId,
             Long clusterId,
             VertexEdge edge,
-            ClusterBoundaryWrite.Type type,
+            InternalBoundaryType type,
             boolean deleteBoundary
     ) throws SQLException {
         if (mapId <= 0 || clusterId == null || edge == null) {
