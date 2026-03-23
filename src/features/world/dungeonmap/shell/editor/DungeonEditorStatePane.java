@@ -28,12 +28,12 @@ public final class DungeonEditorStatePane {
     private final VBox corridorCard = card("Korridor", corridorLabel);
     private final Label stairSummaryLabel = new Label("Keine Treppe gewählt");
     private final TextField stairInputField = new TextField();
-    private final Button stairLevelDownButton = new Button("Ebene -");
-    private final Button stairLevelUpButton = new Button("Ebene +");
+    private final Button stairLevelDownButton = new Button("-");
+    private final Button stairLevelUpButton = new Button("+");
     private final Button stairAddButton = new Button("Hinzufügen");
     private final FlowPane stairExitTokens = new FlowPane();
     private final Label stairStatusLabel = new Label();
-    private final HBox stairInputRow = new HBox(6, stairLevelDownButton, stairInputField, stairLevelUpButton, stairAddButton);
+    private final HBox stairInputRow = new HBox(6, stairInputField, stairLevelDownButton, stairLevelUpButton, stairAddButton);
     private final VBox stairEditorContent = new VBox(6, stairInputRow, stairExitTokens);
     private final VBox stairCard = card("Treppen-Ausgänge", stairSummaryLabel, stairEditorContent, stairStatusLabel);
     private final VBox narrationContent = new VBox(8);
@@ -54,6 +54,8 @@ public final class DungeonEditorStatePane {
                 change.getControlNewText().matches("-?\\d*") ? change : null));
         stairInputField.setPrefColumnCount(4);
         stairInputField.setMaxWidth(70);
+        stairLevelDownButton.getStyleClass().add("compact");
+        stairLevelUpButton.getStyleClass().add("compact");
         stairInputField.textProperty().addListener((obs, oldValue, newValue) -> handleStairInputChanged(newValue));
         stairInputField.setOnAction(event -> onStairAddRequested.run());
         stairLevelDownButton.setOnAction(event -> onStairLevelDecrementRequested.run());
