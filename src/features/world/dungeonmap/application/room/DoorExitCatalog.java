@@ -49,16 +49,16 @@ public final class DoorExitCatalog {
 
     private static List<ExitEdge> collectExitEdges(Set<Point2i> cells, List<? extends Connection> connections) {
         List<ExitEdge> result = new ArrayList<>();
-        Set<VertexEdge> doorEdges = new java.util.LinkedHashSet<>();
+        Set<VertexEdge> boundaryEdges = new java.util.LinkedHashSet<>();
         for (Connection connection : connections) {
             if (connection != null && connection.door() != null) {
-                doorEdges.addAll(connection.door().edges());
+                boundaryEdges.addAll(connection.door().edges());
             }
         }
         for (Point2i cell : cells) {
             for (Point2i step : Point2i.CARDINAL_STEPS) {
                 VertexEdge edge = VertexEdge.betweenCellAndStep(cell, step);
-                if (doorEdges.contains(edge)) {
+                if (boundaryEdges.contains(edge)) {
                     result.add(new ExitEdge(cell, step, edge));
                 }
             }

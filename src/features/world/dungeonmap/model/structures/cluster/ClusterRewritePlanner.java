@@ -354,7 +354,7 @@ final class ClusterRewritePlanner {
             Map<VertexEdge, InternalBoundaryType> boundaryKinds
     ) {
         Set<VertexEdge> wallEdges = new LinkedHashSet<>();
-        Set<VertexEdge> doorEdges = new LinkedHashSet<>();
+        Set<VertexEdge> connectionEdges = new LinkedHashSet<>();
         if (roomShape == null || roomShape.size() == 0 || clusterCells == null || clusterCells.isEmpty()) {
             return new BoundarySets(Set.of(), Set.of());
         }
@@ -373,13 +373,13 @@ final class ClusterRewritePlanner {
                         ? InternalBoundaryType.WALL
                         : boundaryKinds.getOrDefault(edge, InternalBoundaryType.WALL);
                 if (type == InternalBoundaryType.DOOR) {
-                    doorEdges.add(edge);
+                    connectionEdges.add(edge);
                 } else {
                     wallEdges.add(edge);
                 }
             }
         }
-        return new BoundarySets(Set.copyOf(wallEdges), Set.copyOf(doorEdges));
+        return new BoundarySets(Set.copyOf(wallEdges), Set.copyOf(connectionEdges));
     }
 
     static List<VertexPath> barriersForBoundaryKinds(Map<VertexEdge, InternalBoundaryType> boundaryKinds) {

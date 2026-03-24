@@ -9,6 +9,7 @@ import features.world.dungeonmap.model.structures.cluster.ClusterRewriteSplit;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.connection.Connection;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
+import features.world.dungeonmap.model.structures.connection.CorridorConnection;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
@@ -211,7 +212,7 @@ public final class DungeonLayout {
             return false;
         }
         return corridor.path().floorsByLevel().containsKey(levelZ)
-                || corridorConnectionReachesLevel(corridor, levelZ, roomLevelsById);
+                || corridorConnectionReachesLevel(corridor, levelZ);
     }
 
     public List<RoomCluster> overlappingClusters(features.world.dungeonmap.model.geometry.TileShape shape) {
@@ -850,8 +851,7 @@ public final class DungeonLayout {
             return floorLevel;
         }
         return corridor.connections().stream()
-                .map(connection -> connectionLevel(connection, roomLevelsById))
-                .filter(Objects::nonNull)
+                .map(CorridorConnection::levelZ)
                 .min(Integer::compareTo)
                 .orElse(0);
     }
@@ -862,8 +862,8 @@ public final class DungeonLayout {
             return Set.of();
         }
         Set<VertexEdge> result = new LinkedHashSet<>();
-        for (Connection connection : corridor.connections()) {
-            if (!Objects.equals(connectionLevel(connection, roomLevelsById), levelZ) || connection.door() == null) {
+        for (CorridorConnection connection : corridor.connections()) {
+            if (connection.levelZ() != levelZ || connection.door() == null) {
                 continue;
             }
             result.addAll(connection.door().edges());
@@ -871,25 +871,9 @@ public final class DungeonLayout {
         return Set.copyOf(result);
     }
 
-    private static boolean corridorConnectionReachesLevel(
-            Corridor corridor,
-            int levelZ,
-            Map<Long, Integer> roomLevelsById
-    ) {
+    private static boolean corridorConnectionReachesLevel(Corridor corridor, int levelZ) {
         return corridor.connections().stream()
-                .anyMatch(connection -> Objects.equals(connectionLevel(connection, roomLevelsById), levelZ));
-    }
-
-    private static Integer connectionLevel(Connection connection, Map<Long, Integer> roomLevelsById) {
-        if (connection == null) {
-            return null;
-        }
-        for (ConnectionEndpoint endpoint : connection.endpoints()) {
-            if (endpoint != null && endpoint.type() == features.world.dungeonmap.model.structures.connection.ConnectionEndpointType.ROOM) {
-                return roomLevelsById.getOrDefault(endpoint.id(), 0);
-            }
-        }
-        return 0;
+                .anyMatch(connection -> connection.levelZ() == levelZ);
     }
 
     private static Set<Point2i> indexTraversableCells(List<RoomCluster> clusters, List<Corridor> corridors) {

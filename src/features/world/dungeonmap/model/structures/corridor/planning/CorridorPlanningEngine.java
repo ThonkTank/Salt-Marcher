@@ -193,7 +193,8 @@ public final class CorridorPlanningEngine {
                     new Door(Set.of(doorEdge.edge()), Door.TraversalState.CLOSED),
                     List.of(
                             ConnectionEndpoint.room(doorEdge.roomId()),
-                            ConnectionEndpoint.corridor(corridor.corridorId()))));
+                            ConnectionEndpoint.corridor(corridor.corridorId())),
+                    doorEdge.levelZ()));
         }
         return List.copyOf(result);
     }

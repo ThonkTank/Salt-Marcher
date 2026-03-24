@@ -8,7 +8,8 @@ public record CorridorConnection(
         Long corridorId,
         long mapId,
         Door door,
-        List<ConnectionEndpoint> endpoints
+        List<ConnectionEndpoint> endpoints,
+        int levelZ
 ) implements Connection {
 
     public CorridorConnection {
