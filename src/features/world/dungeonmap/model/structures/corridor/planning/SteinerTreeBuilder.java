@@ -259,14 +259,20 @@ final class SteinerTreeBuilder {
                 if (!second.cells().contains(secondCell)) {
                     continue;
                 }
-                DoorEdge edge = new DoorEdge(
+                int level = context.roomLevel(first.roomId());
+                Point2i reverse = new Point2i(-step.x(), -step.y());
+                DoorEdge firstDoor = new DoorEdge(
                         first.roomId(),
                         VertexEdge.betweenCellAndStep(firstCell, step),
-                        context.roomLevel(first.roomId()));
+                        level);
+                DoorEdge secondDoor = new DoorEdge(
+                        second.roomId(),
+                        VertexEdge.betweenCellAndStep(secondCell, reverse),
+                        level);
                 return new SteinerTree(
                         Set.of(first.roomId(), second.roomId()),
                         Set.of(),
-                        Set.of(edge),
+                        Set.of(firstDoor, secondDoor),
                         Map.of(),
                         new RouteCost(0, 0));
             }
