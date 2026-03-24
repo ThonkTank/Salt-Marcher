@@ -4,8 +4,11 @@ import features.world.dungeonmap.application.transition.DungeonTransitionEditReq
 import features.world.dungeonmap.application.transition.DungeonTransitionTargetSummary;
 import features.world.dungeonmap.loading.DungeonMapCatalogEntry;
 import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.structures.room.RoomAtmosphere;
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
+import features.world.dungeonmap.model.structures.room.RoomLightLevel;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
+import features.world.dungeonmap.model.structures.room.RoomWallFinish;
 import features.world.api.OverworldTransitionTargetSummary;
 import javafx.collections.FXCollections;
 import javafx.geometry.Pos;
@@ -430,11 +433,50 @@ public final class DungeonEditorStatePane {
     }
 
     private VBox buildNarrationCardUi(RoomNarrationCard card, SaveRoomNarrationHandler saveHandler) {
-        TextArea visualArea = createTextArea(card.visualDescription());
-        Label visualTitle = new Label("Visueller Eindruck");
-        visualTitle.getStyleClass().add("text-muted");
+        Label generatedTitle = new Label("Automatische Beschreibung");
+        generatedTitle.getStyleClass().add("text-muted");
+        Label generatedDescription = new Label(blankToEmpty(card.generatedDescription()));
+        generatedDescription.setWrapText(true);
 
-        VBox roomBox = new VBox(6, visualTitle, visualArea);
+        Label wallTitle = new Label("Wandbeschaffenheit");
+        wallTitle.getStyleClass().add("text-muted");
+        ComboBox<RoomWallFinish> wallBox = enumComboBox(RoomWallFinish.values(), RoomWallFinish::label);
+        wallBox.setValue(card.wallFinish());
+
+        Label lightTitle = new Label("Licht");
+        lightTitle.getStyleClass().add("text-muted");
+        ComboBox<RoomLightLevel> lightBox = enumComboBox(RoomLightLevel.values(), RoomLightLevel::label);
+        lightBox.setValue(card.lightLevel());
+
+        Label atmosphereTitle = new Label("Atmosphäre");
+        atmosphereTitle.getStyleClass().add("text-muted");
+        ComboBox<RoomAtmosphere> atmosphereBox = enumComboBox(RoomAtmosphere.values(), RoomAtmosphere::label);
+        atmosphereBox.setValue(card.atmosphere());
+
+        Label notesTitle = new Label("Besonderheiten");
+        notesTitle.getStyleClass().add("text-muted");
+        TextArea notesArea = createTextArea(card.notes());
+        notesArea.setPromptText("Freitext für Geruch, Spuren, Einrichtung, Auffälligkeiten");
+
+        Label overrideTitle = new Label("Eigene Gesamtbeschreibung");
+        overrideTitle.getStyleClass().add("text-muted");
+        TextArea overrideArea = createTextArea(card.visualDescriptionOverride());
+        overrideArea.setPromptText("Optional: überschreibt den automatisch erzeugten Raumtext");
+
+        VBox roomBox = new VBox(
+                6,
+                generatedTitle,
+                generatedDescription,
+                wallTitle,
+                wallBox,
+                lightTitle,
+                lightBox,
+                atmosphereTitle,
+                atmosphereBox,
+                notesTitle,
+                notesArea,
+                overrideTitle,
+                overrideArea);
         List<TextArea> exitAreas = new ArrayList<>();
         for (RoomExitCard exit : card.exits()) {
             Label exitTitle = new Label(exit.label());
@@ -458,16 +500,44 @@ public final class DungeonEditorStatePane {
                 RoomExitCard exit = card.exits().get(index);
                 exitNarrations.add(new RoomExitNarration(exit.roomCell(), exit.direction(), exitAreas.get(index).getText()));
             }
-            saveHandler.save(card.roomId(), new RoomNarration(visualArea.getText(), exitNarrations));
+            saveHandler.save(card.roomId(), new RoomNarration(
+                    wallBox.getValue(),
+                    lightBox.getValue(),
+                    atmosphereBox.getValue(),
+                    notesArea.getText(),
+                    overrideArea.getText(),
+                    exitNarrations));
         });
         roomBox.getChildren().addAll(statusLabel, saveButton);
         return card(card.roomName(), roomBox);
     }
 
+    private static <T> ComboBox<T> enumComboBox(T[] values, java.util.function.Function<T, String> labeler) {
+        ComboBox<T> box = new ComboBox<>(FXCollections.observableArrayList(values));
+        box.setMaxWidth(Double.MAX_VALUE);
+        box.setConverter(new javafx.util.StringConverter<>() {
+            @Override
+            public String toString(T value) {
+                return value == null ? "" : blankToEmpty(labeler.apply(value));
+            }
+
+            @Override
+            public T fromString(String string) {
+                return null;
+            }
+        });
+        return box;
+    }
+
     public record RoomNarrationCard(
             long roomId,
             String roomName,
-            String visualDescription,
+            String generatedDescription,
+            RoomWallFinish wallFinish,
+            RoomLightLevel lightLevel,
+            RoomAtmosphere atmosphere,
+            String notes,
+            String visualDescriptionOverride,
             List<RoomExitCard> exits
     ) {
     }

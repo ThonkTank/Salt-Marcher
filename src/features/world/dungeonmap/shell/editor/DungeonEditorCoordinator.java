@@ -8,6 +8,7 @@ import features.world.dungeonmap.application.transition.DungeonTransitionTargetC
 import features.world.dungeonmap.application.transition.DungeonTransitionTargetSummary;
 import features.world.dungeonmap.application.room.DungeonBoundaryEditService;
 import features.world.dungeonmap.application.room.DungeonClusterMoveService;
+import features.world.dungeonmap.application.room.DungeonRoomDescriptionComposer;
 import features.world.dungeonmap.application.room.DungeonRoomNarrationService;
 import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
 import features.world.dungeonmap.application.room.RoomExitCatalog;
@@ -363,7 +364,12 @@ final class DungeonEditorCoordinator {
         return new DungeonEditorStatePane.RoomNarrationCard(
                 room.roomId() == null ? 0L : room.roomId(),
                 room.name(),
-                room.narration().visualDescription(),
+                DungeonRoomDescriptionComposer.generatedDescription(room),
+                room.narration().wallFinish(),
+                room.narration().lightLevel(),
+                room.narration().atmosphere(),
+                room.narration().notes(),
+                room.narration().visualDescriptionOverride(),
                 RoomExitCatalog.describe(room).stream()
                         .map(exit -> new DungeonEditorStatePane.RoomExitCard(
                                 exit.label(),

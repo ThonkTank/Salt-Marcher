@@ -5,13 +5,27 @@ import features.world.dungeonmap.model.geometry.Point2i;
 import java.util.List;
 
 public record RoomNarration(
-        String visualDescription,
+        RoomWallFinish wallFinish,
+        RoomLightLevel lightLevel,
+        RoomAtmosphere atmosphere,
+        String notes,
+        String visualDescriptionOverride,
         List<RoomExitNarration> exitNarrations
 ) {
-    private static final RoomNarration EMPTY = new RoomNarration("", List.of());
+    private static final RoomNarration EMPTY = new RoomNarration(
+            RoomWallFinish.UNSPECIFIED,
+            RoomLightLevel.UNSPECIFIED,
+            RoomAtmosphere.UNSPECIFIED,
+            "",
+            "",
+            List.of());
 
     public RoomNarration {
-        visualDescription = visualDescription == null ? "" : visualDescription.trim();
+        wallFinish = wallFinish == null ? RoomWallFinish.UNSPECIFIED : wallFinish;
+        lightLevel = lightLevel == null ? RoomLightLevel.UNSPECIFIED : lightLevel;
+        atmosphere = atmosphere == null ? RoomAtmosphere.UNSPECIFIED : atmosphere;
+        notes = notes == null ? "" : notes.trim();
+        visualDescriptionOverride = visualDescriptionOverride == null ? "" : visualDescriptionOverride.trim();
         exitNarrations = exitNarrations == null ? List.of() : List.copyOf(exitNarrations.stream()
                 .filter(java.util.Objects::nonNull)
                 .toList());
@@ -27,5 +41,9 @@ public record RoomNarration(
                 .map(RoomExitNarration::description)
                 .findFirst()
                 .orElse("");
+    }
+
+    public boolean hasVisualDescriptionOverride() {
+        return !visualDescriptionOverride.isBlank();
     }
 }

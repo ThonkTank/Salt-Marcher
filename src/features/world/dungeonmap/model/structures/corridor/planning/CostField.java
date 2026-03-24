@@ -100,10 +100,10 @@ final class CostField {
                 }
             }
             return new FloodResult(
-                    Map.copyOf(best),
-                    Map.copyOf(predecessors),
-                    Set.copyOf(reached),
-                    Map.copyOf(bestStateByPoint));
+                    best,
+                    predecessors,
+                    reached,
+                    bestStateByPoint);
         } finally {
             if (instrumentation != null) {
                 instrumentation.recordFloodNanos(System.nanoTime() - startedAt);

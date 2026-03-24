@@ -1,5 +1,6 @@
 package features.world.dungeonmap.application.runtime;
 
+import features.world.dungeonmap.application.room.DungeonRoomDescriptionComposer;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
@@ -84,7 +85,7 @@ public final class DungeonRuntimeSurfaceResolver {
         return new DungeonRuntimeSurface(
                 DungeonRuntimeLabels.roomLabel(room),
                 new DetailsNavigator.EntryKey("dungeon-room", layout.mapId() + ":" + room.roomId()),
-                room.narration().visualDescription(),
+                DungeonRoomDescriptionComposer.finalDescription(room),
                 DungeonRuntimeDoorCatalog.describe(layout, room, heading),
                 DungeonRuntimeStairCatalog.describe(layout, room, activeTile),
                 DungeonRuntimeTransitionCatalog.describe(layout, room));
