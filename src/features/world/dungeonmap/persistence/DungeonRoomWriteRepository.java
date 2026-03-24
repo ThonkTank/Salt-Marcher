@@ -104,6 +104,26 @@ public final class DungeonRoomWriteRepository {
         }
     }
 
+    public void replaceClusterEdges(
+            Connection conn,
+            long clusterId,
+            Point2i clusterCenter,
+            Map<Integer, List<ClusterBoundaryWrite>> boundariesByLevel
+    ) throws SQLException {
+        Map<Integer, List<ClusterBoundaryWrite>> resolvedBoundariesByLevel = boundariesByLevel == null ? Map.of() : Map.copyOf(boundariesByLevel);
+        try (PreparedStatement delete = conn.prepareStatement(
+                "DELETE FROM dungeon_room_cluster_edges WHERE cluster_id=?")) {
+            delete.setLong(1, clusterId);
+            delete.executeUpdate();
+        }
+        for (Map.Entry<Integer, List<ClusterBoundaryWrite>> entry : resolvedBoundariesByLevel.entrySet()) {
+            if (entry == null || entry.getKey() == null) {
+                continue;
+            }
+            replaceClusterEdges(conn, clusterId, clusterCenter, entry.getKey(), entry.getValue());
+        }
+    }
+
     public long insertRoom(Connection conn, long mapId, long clusterId, String name, Point2i anchor) throws SQLException {
         return insertRoom(conn, mapId, clusterId, name, anchor, 0);
     }

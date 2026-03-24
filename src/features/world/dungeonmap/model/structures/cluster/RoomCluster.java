@@ -361,12 +361,12 @@ public final class RoomCluster {
         return ClusterRewritePlanner.internalBoundaryKinds(shape, rooms, localConnections);
     }
 
-    public ClusterRewrite applyPaint(TileShape paintShape, List<RoomCluster> overlappingClusters) {
-        return ClusterRewritePlanner.applyPaint(this, paintShape, overlappingClusters);
+    public ClusterRewrite applyPaint(TileShape paintShape, List<RoomCluster> overlappingClusters, int paintLevel) {
+        return ClusterRewritePlanner.applyPaint(this, paintShape, overlappingClusters, paintLevel);
     }
 
-    public ClusterRewrite applyDelete(TileShape deletedShape, Supplier<String> roomNameSupplier) {
-        return ClusterRewritePlanner.applyDelete(this, deletedShape, roomNameSupplier);
+    public ClusterRewrite applyDelete(TileShape deletedShape, Supplier<String> roomNameSupplier, int deleteLevel) {
+        return ClusterRewritePlanner.applyDelete(this, deletedShape, roomNameSupplier, deleteLevel);
     }
 
     public List<InternalBoundaryEdge> persistedInternalBoundaries() {
