@@ -121,11 +121,6 @@ final class SteinerTreeBuilder {
                 context.instrumentation().recordRipUpCycle();
                 Set<CubePoint> remaining = current.cellsWithout(branch);
                 Map<PathState, RouteCost> sources = zeroSources(remaining);
-                for (Long connectedRoomId : current.connectedRoomIds()) {
-                    if (!connectedRoomId.equals(room.roomId())) {
-                        addZeroSources(sources, context.entryCells(connectedRoomId));
-                    }
-                }
                 if (sources.isEmpty()) {
                     continue;
                 }
