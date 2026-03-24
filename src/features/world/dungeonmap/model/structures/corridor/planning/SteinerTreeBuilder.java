@@ -63,9 +63,11 @@ final class SteinerTreeBuilder {
         Map<Long, Set<CubePoint>> attachmentCellsByRoomId = new LinkedHashMap<>();
         connected.add(root.roomId());
         Set<CubePoint> rootEntryCells = context.entryCells(root.roomId());
-        if (!routeThroughWaypoints(treeCells, rootEntryCells, context)) {
+        WaypointRouteResult waypointRoute = routeThroughWaypoints(treeCells, rootEntryCells, context);
+        if (!waypointRoute.success()) {
             return null;
         }
+        CubePoint rootDoorEntry = waypointRoute.rootEntryCell();
         while (connected.size() < context.targetRooms().size()) {
             Set<CubePoint> targets = context.allTargetEntryCells(connected);
             if (targets.isEmpty()) {
@@ -88,6 +90,9 @@ final class SteinerTreeBuilder {
             if (path.isEmpty()) {
                 break;
             }
+            if (rootDoorEntry == null && treeCells.isEmpty()) {
+                rootDoorEntry = path.getFirst();
+            }
             DoorEdge door = deriveDoorEdge(nearest.entryCell(), nearest.room(), context);
             treeCells.addAll(path);
             if (door != null) {
@@ -96,6 +101,7 @@ final class SteinerTreeBuilder {
             attachmentCellsByRoomId.put(nearest.room().roomId(), Set.of(nearest.entryCell()));
             connected.add(nearest.room().roomId());
         }
+        addDoorEdge(openings, connected.size() > 1 ? deriveDoorEdge(rootDoorEntry, root, context) : null);
         return new SteinerTree(
                 Set.copyOf(connected),
                 Set.copyOf(treeCells),
@@ -279,14 +285,15 @@ final class SteinerTreeBuilder {
                 replacementDoors);
     }
 
-    private static boolean routeThroughWaypoints(
+    private static WaypointRouteResult routeThroughWaypoints(
             Set<CubePoint> treeCells,
             Set<CubePoint> rootEntryCells,
             PlannerContext context
     ) {
+        CubePoint rootEntryCell = null;
         for (CubePoint waypoint : context.waypointCells()) {
             if (waypoint == null || !context.searchVolume().isPassable(waypoint)) {
-                return false;
+                return new WaypointRouteResult(false, null);
             }
             Map<PathState, RouteCost> floodSources = treeCells.isEmpty()
                     ? zeroSources(rootEntryCells)
@@ -299,12 +306,15 @@ final class SteinerTreeBuilder {
                     context.instrumentation());
             CubePoint reachedWaypoint = bestReachedEntry(flood, Set.of(waypoint));
             if (reachedWaypoint == null) {
-                return false;
+                return new WaypointRouteResult(false, null);
             }
             List<CubePoint> path = CostField.extractPath(flood, reachedWaypoint);
+            if (rootEntryCell == null && treeCells.isEmpty() && !path.isEmpty()) {
+                rootEntryCell = path.getFirst();
+            }
             treeCells.addAll(path);
         }
-        return true;
+        return new WaypointRouteResult(true, rootEntryCell);
     }
 
     private static ReachedRoom findNearestReached(FloodResult flood, PlannerContext context, Set<Long> connected) {
@@ -503,5 +513,11 @@ record TripleJunctionResult(
         List<CubePoint> secondPath,
         List<CubePoint> thirdPath,
         List<CubePoint> boundaryPath
+) {
+}
+
+record WaypointRouteResult(
+        boolean success,
+        CubePoint rootEntryCell
 ) {
 }

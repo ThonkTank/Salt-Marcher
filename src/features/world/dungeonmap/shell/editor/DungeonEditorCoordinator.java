@@ -12,6 +12,7 @@ import features.world.dungeonmap.application.room.DungeonRoomNarrationService;
 import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
 import features.world.dungeonmap.application.room.RoomExitCatalog;
 import features.world.dungeonmap.canvas.base.DungeonCanvasWorkspace;
+import features.world.dungeonmap.canvas.base.DungeonViewMode;
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
 import features.world.dungeonmap.loading.DungeonMapCatalogEntry;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
@@ -75,6 +76,7 @@ final class DungeonEditorCoordinator {
     private long targetTransitionRequestSequence;
     private long overworldTargetRequestSequence;
     private DungeonEditorTool previousTool = DungeonEditorTool.SELECT;
+    private DungeonViewMode previousViewMode = DungeonViewMode.GRID;
     private Long previousMapId;
 
     DungeonEditorCoordinator(
@@ -193,6 +195,9 @@ final class DungeonEditorCoordinator {
                 mapState.activeMapId() != null);
         controls.showOverlaySettings(mapState.levelOverlaySettings(), mapState.loading());
         workspace.setProjectionLevel(mapState.activeProjectionLevel());
+        if (mapChanged) {
+            interactionController.clear();
+        }
         if (mapChanged && sessionState.selectedTool() == DungeonEditorTool.STAIR_CREATE) {
             stairDraftState.resetForLevel(mapState.activeProjectionLevel());
         }
@@ -240,12 +245,14 @@ final class DungeonEditorCoordinator {
 
     private void refreshFromSessionState() {
         DungeonEditorTool selectedTool = sessionState.selectedTool();
+        DungeonViewMode selectedViewMode = sessionState.viewMode();
+        boolean sessionChanged = selectedTool != previousTool || selectedViewMode != previousViewMode;
         boolean enteringStairCreate = selectedTool == DungeonEditorTool.STAIR_CREATE
                 && previousTool != DungeonEditorTool.STAIR_CREATE;
         controls.selectViewMode(sessionState.viewMode());
         controls.showDisplayedTool(selectedTool);
-        workspace.setViewMode(sessionState.viewMode());
-        if (selectedTool != DungeonEditorTool.SELECT || sessionState.viewMode() != features.world.dungeonmap.canvas.base.DungeonViewMode.GRID) {
+        workspace.setViewMode(selectedViewMode);
+        if (sessionChanged) {
             interactionController.clear();
         }
         if (enteringStairCreate) {
@@ -257,6 +264,7 @@ final class DungeonEditorCoordinator {
         refreshTransitionStatePane();
         refreshTransitionTargetOptions();
         previousTool = selectedTool;
+        previousViewMode = selectedViewMode;
     }
 
     private void refreshLayoutPreviewState() {
@@ -283,7 +291,10 @@ final class DungeonEditorCoordinator {
 
     private void refreshCorridorStatePane() {
         if (corridorDraftState.hasPendingStart()) {
-            statePane.showCorridorStatus("Start gewählt, Zielraum anklicken");
+            String startLabel = corridorDraftState.pendingStartDisplayLabel();
+            statePane.showCorridorStatus((startLabel == null || startLabel.isBlank() ? "Start gewählt" : "Start: " + startLabel)
+                    + " auf z=" + corridorDraftState.pendingStartLevel()
+                    + ", Zielraum oder Korridor anklicken");
             return;
         }
         String selectedTargetKey = selectionState.selectedTargetKey();

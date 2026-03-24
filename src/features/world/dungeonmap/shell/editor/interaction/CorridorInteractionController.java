@@ -6,6 +6,7 @@ import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
+import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonCorridorDraftState;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
@@ -81,7 +82,10 @@ public final class CorridorInteractionController {
         }
         selectionState.selectTarget(target.targetKey());
         if (!draftState.hasPendingStart()) {
-            draftState.selectPendingStart(target);
+            draftState.selectPendingStart(
+                    target,
+                    mapState.activeProjectionLevel(),
+                    displayLabel(target, mapState.activeMap()));
             return true;
         }
         if (Objects.equals(draftState.pendingStartTargetKey(), target.targetKey())) {
@@ -158,6 +162,20 @@ public final class CorridorInteractionController {
             return DungeonLayout.empty();
         }
         return layout.projectedToLevel(mapState.activeProjectionLevel());
+    }
+
+    private static String displayLabel(DungeonCorridorDraftState.PendingTarget target, DungeonLayout layout) {
+        if (target instanceof DungeonCorridorDraftState.PendingTarget.Room roomTarget) {
+            Room room = layout == null ? null : layout.findRoom(roomTarget.roomId());
+            if (room != null && room.name() != null && !room.name().isBlank()) {
+                return room.name();
+            }
+            return roomTarget.roomId() == null ? "Raum" : "Raum " + roomTarget.roomId();
+        }
+        if (target instanceof DungeonCorridorDraftState.PendingTarget.Corridor corridorTarget) {
+            return corridorTarget.corridorId() == null ? "Korridor" : "Korridor " + corridorTarget.corridorId();
+        }
+        return "Ziel";
     }
 
     private static DungeonCorridorDraftState.PendingTarget resolveTarget(DungeonEditorHitTarget hit, features.world.dungeonmap.model.geometry.Point2i gridCell, DungeonLayout layout) {
