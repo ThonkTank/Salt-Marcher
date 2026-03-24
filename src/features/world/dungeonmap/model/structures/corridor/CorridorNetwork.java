@@ -4,6 +4,8 @@ import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.objects.Floor;
+import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
+import features.world.dungeonmap.model.structures.connection.ConnectionEndpointType;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -60,7 +62,12 @@ public final class CorridorNetwork {
         return roomId != null && roomIds.contains(roomId);
     }
 
-    public static List<CorridorNetwork> buildNetworks(long mapId, List<Corridor> corridors, List<Door> doors) {
+    public static List<CorridorNetwork> buildNetworks(
+            long mapId,
+            List<Corridor> corridors,
+            List<Door> doors,
+            Map<Door, List<ConnectionEndpoint>> endpointsByDoor
+    ) {
         Map<Long, Corridor> routableById = new LinkedHashMap<>();
         Map<Point2i, Set<Long>> corridorIdsByCell = new LinkedHashMap<>();
         for (Corridor corridor : corridors == null ? List.<Corridor>of() : corridors) {
@@ -77,7 +84,7 @@ public final class CorridorNetwork {
             adjacency.put(corridorId, new LinkedHashSet<>());
         }
         linkOverlaps(adjacency, corridorIdsByCell.values());
-        linkDoorOverlaps(adjacency, doors);
+        linkDoorOverlaps(adjacency, doors, endpointsByDoor);
         List<Set<Long>> components = connectedComponents(routableById.keySet(), adjacency);
         List<CorridorNetwork> result = new ArrayList<>();
         for (Set<Long> component : components) {
@@ -105,15 +112,21 @@ public final class CorridorNetwork {
                 new Floor(TileShape.fromAbsoluteCells(cells)));
     }
 
-    private static void linkDoorOverlaps(Map<Long, Set<Long>> adjacency, List<Door> doors) {
+    private static void linkDoorOverlaps(
+            Map<Long, Set<Long>> adjacency,
+            List<Door> doors,
+            Map<Door, List<ConnectionEndpoint>> endpointsByDoor
+    ) {
         for (Door door : doors == null ? List.<Door>of() : doors) {
-            if (door == null || door.sides().isEmpty()) {
+            if (door == null) {
                 continue;
             }
             Set<Long> touchingCorridors = new LinkedHashSet<>();
-            for (Door.DoorSide side : door.sides()) {
-                if (side != null && side.type() == Door.SideType.CORRIDOR && side.id() != null) {
-                    touchingCorridors.add(side.id());
+            for (ConnectionEndpoint endpoint : endpointsByDoor.getOrDefault(door, List.of())) {
+                if (endpoint != null
+                        && endpoint.type() == ConnectionEndpointType.CORRIDOR
+                        && endpoint.id() != null) {
+                    touchingCorridors.add(endpoint.id());
                 }
             }
             linkOverlaps(adjacency, List.of(touchingCorridors));

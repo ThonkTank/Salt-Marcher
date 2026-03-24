@@ -6,7 +6,8 @@ import features.world.dungeonmap.application.room.RoomExitDescriptor;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.objects.Door;
-import features.world.dungeonmap.model.objects.Door.DoorSide;
+import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
+import features.world.dungeonmap.model.structures.connection.ConnectionEndpointType;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
 import features.world.dungeonmap.model.structures.room.Room;
@@ -40,7 +41,7 @@ public final class DungeonRuntimeDoorCatalog {
                 layout.doorsForCorridor(corridor.corridorId()),
                 heading,
                 (cell, direction) -> "",
-                exit -> destinationLabel(layout, layout.doorAt(exit.anchorEdge()), DoorSide.corridor(corridor.corridorId())));
+                exit -> destinationLabel(layout, layout.doorAt(exit.anchorEdge()), ConnectionEndpoint.corridor(corridor.corridorId())));
     }
 
     public static List<DungeonRuntimeDoorDescriptor> describe(DungeonLayout layout, CorridorNetwork network, DungeonHeading heading) {
@@ -85,27 +86,29 @@ public final class DungeonRuntimeDoorCatalog {
         if (layout == null || room == null || exit == null) {
             return "";
         }
-        return destinationLabel(layout, layout.doorAt(exit.anchorEdge()), DoorSide.room(room.roomId()));
+        return destinationLabel(layout, layout.doorAt(exit.anchorEdge()), ConnectionEndpoint.room(room.roomId()));
     }
 
-    private static String destinationLabel(DungeonLayout layout, Door door, DoorSide activeSide) {
+    private static String destinationLabel(DungeonLayout layout, Door door, ConnectionEndpoint activeEndpoint) {
         if (layout == null || door == null) {
             return "";
         }
-        DoorSide opposite = activeSide == null ? firstNonCorridorRoomSide(door) : door.oppositeOf(activeSide);
+        ConnectionEndpoint opposite = activeEndpoint == null
+                ? firstRoomEndpoint(layout, door)
+                : layout.oppositeEndpoint(door, activeEndpoint);
         if (opposite == null) {
             return "";
         }
-        if (opposite.type() == Door.SideType.ROOM && opposite.id() != null) {
+        if (opposite.type() == ConnectionEndpointType.ROOM && opposite.id() != null) {
             return DungeonRuntimeLabels.roomLabel(layout, opposite.id());
         }
-        if (opposite.type() == Door.SideType.CORRIDOR && opposite.id() != null) {
+        if (opposite.type() == ConnectionEndpointType.CORRIDOR && opposite.id() != null) {
             Corridor corridor = layout.findCorridor(opposite.id());
             if (corridor == null) {
                 return "";
             }
             return corridor.roomIds().stream()
-                    .filter(roomId -> roomId != null && (activeSide == null || !roomId.equals(activeSide.id())))
+                    .filter(roomId -> roomId != null && (activeEndpoint == null || !roomId.equals(activeEndpoint.id())))
                     .map(roomId -> DungeonRuntimeLabels.roomLabel(layout, roomId))
                     .filter(label -> label != null && !label.isBlank())
                     .distinct()
@@ -115,12 +118,12 @@ public final class DungeonRuntimeDoorCatalog {
         return "";
     }
 
-    private static DoorSide firstNonCorridorRoomSide(Door door) {
-        if (door == null) {
+    private static ConnectionEndpoint firstRoomEndpoint(DungeonLayout layout, Door door) {
+        if (layout == null || door == null) {
             return null;
         }
-        return door.sides().stream()
-                .filter(side -> side != null && side.type() == Door.SideType.ROOM)
+        return layout.endpointsForDoor(door).stream()
+                .filter(endpoint -> endpoint != null && endpoint.type() == ConnectionEndpointType.ROOM)
                 .findFirst()
                 .orElse(null);
     }
