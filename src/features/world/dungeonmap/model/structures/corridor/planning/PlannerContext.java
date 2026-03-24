@@ -17,7 +17,7 @@ final class PlannerContext {
     private final Map<Long, Room> targetRoomsById;
     private final Map<Long, Integer> roomLevels;
     private final Map<Long, ResolvedCorridorDoorBinding> doorBindings;
-    private final List<Point2i> waypointCells;
+    private final List<CubePoint> waypointCells;
     private final SearchVolume searchVolume;
     private final PlannerInstrumentation instrumentation;
     private final Map<Long, Set<CubePoint>> entryCellsByRoomId;
@@ -27,7 +27,7 @@ final class PlannerContext {
             List<Room> targetRooms,
             Map<Long, Integer> roomLevels,
             Set<CubePoint> allObstacles,
-            List<Point2i> waypointCells,
+            List<CubePoint> waypointCells,
             Map<Long, ResolvedCorridorDoorBinding> doorBindings,
             PlannerInstrumentation instrumentation
     ) {
@@ -52,7 +52,7 @@ final class PlannerContext {
         return targetRooms;
     }
 
-    List<Point2i> waypointCells() {
+    List<CubePoint> waypointCells() {
         return waypointCells;
     }
 

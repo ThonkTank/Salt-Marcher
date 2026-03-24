@@ -254,18 +254,17 @@ final class SteinerTreeBuilder {
             Map<PathState, RouteCost> sources,
             PlannerContext context
     ) {
-        for (Point2i waypoint : context.waypointCells()) {
-            Set<CubePoint> waypointTargets = waypointTargets(waypoint, context.searchVolume());
-            if (waypointTargets.isEmpty()) {
+        for (CubePoint waypoint : context.waypointCells()) {
+            if (waypoint == null || !context.searchVolume().isPassable(waypoint)) {
                 return false;
             }
             FloodResult flood = CostField.flood(
                     sources,
                     context.searchVolume(),
-                    waypointTargets,
+                    Set.of(waypoint),
                     Map.of(),
                     context.instrumentation());
-            CubePoint reachedWaypoint = bestReachedEntry(flood, waypointTargets);
+            CubePoint reachedWaypoint = bestReachedEntry(flood, Set.of(waypoint));
             if (reachedWaypoint == null) {
                 return false;
             }
@@ -274,20 +273,6 @@ final class SteinerTreeBuilder {
             addZeroSources(sources, path);
         }
         return true;
-    }
-
-    private static Set<CubePoint> waypointTargets(Point2i waypoint, SearchVolume volume) {
-        if (waypoint == null || volume == null) {
-            return Set.of();
-        }
-        Set<CubePoint> result = new LinkedHashSet<>();
-        for (int z = volume.minZ(); z <= volume.maxZ(); z++) {
-            CubePoint point = CubePoint.at(waypoint, z);
-            if (volume.isPassable(point)) {
-                result.add(point);
-            }
-        }
-        return Set.copyOf(result);
     }
 
     private static ReachedRoom findNearestReached(FloodResult flood, PlannerContext context, Set<Long> connected) {

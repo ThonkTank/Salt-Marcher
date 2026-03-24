@@ -34,9 +34,10 @@ public final class CorridorPlanningEngine {
                 return CorridorPath.unroutable(new GridRoute(List.of()));
             }
             List<Room> rooms = corridor.resolvedRooms(input);
-            List<Point2i> waypointCells = corridor.resolvedWaypointCells(input);
+            List<Point2i> waypointCells2d = corridor.resolvedWaypointCells(input);
+            List<CubePoint> waypointCells = resolveWaypointCells(waypointCells2d, rooms, input);
             Map<Long, ResolvedCorridorDoorBinding> doorBindings = corridor.resolvedDoorBindings(input);
-            GridRoute route = buildRoute(rooms, waypointCells);
+            GridRoute route = buildRoute(rooms, waypointCells2d);
             if (rooms.size() < 2) {
                 return CorridorPath.unroutable(route);
             }
@@ -86,6 +87,40 @@ public final class CorridorPlanningEngine {
             }
         }
         return Set.copyOf(result);
+    }
+
+    private static List<CubePoint> resolveWaypointCells(
+            List<Point2i> waypointCells,
+            List<Room> rooms,
+            CorridorPlanningInput input
+    ) {
+        if (waypointCells == null || waypointCells.isEmpty()) {
+            return List.of();
+        }
+        List<CubePoint> result = new ArrayList<>();
+        for (Point2i waypoint : waypointCells) {
+            if (waypoint == null) {
+                continue;
+            }
+            result.add(CubePoint.at(waypoint, nearestRoomLevel(waypoint, rooms, input)));
+        }
+        return List.copyOf(result);
+    }
+
+    private static int nearestRoomLevel(Point2i waypoint, List<Room> rooms, CorridorPlanningInput input) {
+        Room nearest = null;
+        int bestDistance = Integer.MAX_VALUE;
+        for (Room room : rooms == null ? List.<Room>of() : rooms) {
+            if (room == null || room.roomId() == null || room.floor() == null || room.floor().shape() == null) {
+                continue;
+            }
+            int distance = room.floor().shape().centerCell().distanceTo(waypoint);
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                nearest = room;
+            }
+        }
+        return nearest == null ? 0 : input.roomLevel(nearest.roomId());
     }
 
     private static CorridorPath toCorridorPath(GridRoute route, SteinerTree tree, List<Room> rooms) {
