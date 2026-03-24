@@ -24,6 +24,7 @@ import features.world.dungeonmap.persistence.DungeonRoomWriteRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -166,7 +167,18 @@ public final class DungeonRoomTopologyService {
             InternalBoundaryType type,
             boolean deleteBoundary
     ) throws SQLException {
-        if (edge == null) {
+        editBoundary(conn, mapId, clusterId, edge == null ? List.<VertexEdge>of() : List.of(edge), type, deleteBoundary);
+    }
+
+    public void editBoundary(
+            Connection conn,
+            long mapId,
+            long clusterId,
+            Collection<VertexEdge> edges,
+            InternalBoundaryType type,
+            boolean deleteBoundary
+    ) throws SQLException {
+        if (edges == null || edges.isEmpty()) {
             return;
         }
         DungeonLayout layout = requireLayout(conn, mapId);
@@ -174,7 +186,7 @@ public final class DungeonRoomTopologyService {
         if (cluster == null) {
             return;
         }
-        ClusterRewrite rewrite = cluster.editBoundary(edge, type, deleteBoundary);
+        ClusterRewrite rewrite = cluster.editBoundary(edges, type, deleteBoundary);
         if (rewrite == null) {
             return;
         }

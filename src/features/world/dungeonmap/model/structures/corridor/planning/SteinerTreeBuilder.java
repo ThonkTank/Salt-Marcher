@@ -93,7 +93,6 @@ final class SteinerTreeBuilder {
             attachmentCellsByRoomId.put(nearest.room().roomId(), Set.of(nearest.entryCell()));
             connected.add(nearest.room().roomId());
             addZeroSources(sources, path);
-            addZeroSources(sources, context.entryCells(nearest.room().roomId()));
         }
         return new SteinerTree(
                 Set.copyOf(connected),

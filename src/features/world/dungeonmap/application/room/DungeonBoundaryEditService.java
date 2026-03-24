@@ -7,6 +7,7 @@ import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.Objects;
 
 public final class DungeonBoundaryEditService {
@@ -24,12 +25,22 @@ public final class DungeonBoundaryEditService {
             InternalBoundaryType type,
             boolean deleteBoundary
     ) throws SQLException {
-        if (mapId <= 0 || clusterId == null || edge == null) {
+        apply(mapId, clusterId, edge == null ? java.util.List.<VertexEdge>of() : java.util.List.of(edge), type, deleteBoundary);
+    }
+
+    public void apply(
+            long mapId,
+            Long clusterId,
+            Collection<VertexEdge> edges,
+            InternalBoundaryType type,
+            boolean deleteBoundary
+    ) throws SQLException {
+        if (mapId <= 0 || clusterId == null || edges == null || edges.isEmpty()) {
             return;
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                topologyService.editBoundary(conn, mapId, clusterId, edge, type, deleteBoundary);
+                topologyService.editBoundary(conn, mapId, clusterId, edges, type, deleteBoundary);
                 return null;
             });
         }

@@ -180,35 +180,49 @@ final class ClusterRewritePlanner {
                 .build();
     }
 
-    static ClusterRewrite editBoundary(RoomCluster cluster, VertexEdge edge, InternalBoundaryType type, boolean deleteBoundary) {
-        if (cluster == null || edge == null || !isInternalEdge(cluster.cells(), edge)) {
+    static ClusterRewrite editBoundary(RoomCluster cluster, Collection<VertexEdge> edges, InternalBoundaryType type, boolean deleteBoundary) {
+        if (cluster == null || edges == null || edges.isEmpty()) {
             return null;
         }
-        List<Point2i> touchingCells = edge.touchingCells().stream()
-                .sorted(Point2i.POINT_ORDER)
-                .toList();
-        if (touchingCells.size() != 2) {
-            return null;
-        }
-        Room leftRoom = cluster.roomAt(touchingCells.getFirst());
-        Room rightRoom = cluster.roomAt(touchingCells.getLast());
-        if (leftRoom == null || rightRoom == null || sameRoomId(leftRoom, rightRoom)) {
-            return null;
-        }
-
         Map<VertexEdge, InternalBoundaryType> updatedBoundaryKinds = new LinkedHashMap<>(computeInternalBoundaries(cluster.shape(), cluster.rooms()));
         InternalBoundaryType resolvedType = type == null ? InternalBoundaryType.WALL : type;
-        InternalBoundaryType currentType = updatedBoundaryKinds.get(edge);
-        if (deleteBoundary) {
-            if (currentType == null) {
-                return null;
+        boolean changed = false;
+        for (VertexEdge edge : edges) {
+            if (edge == null || !isInternalEdge(cluster.cells(), edge)) {
+                continue;
             }
-            updatedBoundaryKinds.remove(edge);
-        } else {
+            List<Point2i> touchingCells = edge.touchingCells().stream()
+                    .sorted(Point2i.POINT_ORDER)
+                    .toList();
+            if (touchingCells.size() != 2) {
+                continue;
+            }
+            Room leftRoom = cluster.roomAt(touchingCells.getFirst());
+            Room rightRoom = cluster.roomAt(touchingCells.getLast());
+            if (leftRoom == null || rightRoom == null || sameRoomId(leftRoom, rightRoom)) {
+                continue;
+            }
+            InternalBoundaryType currentType = updatedBoundaryKinds.get(edge);
+            if (deleteBoundary) {
+                if (currentType == null) {
+                    continue;
+                }
+                updatedBoundaryKinds.remove(edge);
+                changed = true;
+                continue;
+            }
+            if (resolvedType == InternalBoundaryType.WALL && currentType == InternalBoundaryType.DOOR) {
+                continue;
+            }
             if (resolvedType == currentType) {
-                return null;
+                continue;
             }
             updatedBoundaryKinds.put(edge, resolvedType);
+            changed = true;
+        }
+
+        if (!changed) {
+            return null;
         }
 
         List<Room> rewrittenRooms = rewriteRoomsForBoundaryKinds(cluster, updatedBoundaryKinds);

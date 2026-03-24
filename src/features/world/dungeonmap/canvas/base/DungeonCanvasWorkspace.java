@@ -7,6 +7,7 @@ import features.world.dungeonmap.canvas.grid.DungeonGridSceneRenderer;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
+import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.state.DungeonLevelOverlaySettings;
 import javafx.geometry.Insets;
 import javafx.geometry.Point2D;
@@ -18,6 +19,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 
 import java.util.Objects;
+import java.util.Set;
 
 public final class DungeonCanvasWorkspace extends BorderPane {
 
@@ -35,6 +37,9 @@ public final class DungeonCanvasWorkspace extends BorderPane {
     private String selectedTargetKey;
     private TileShape previewPaintShape = TileShape.empty();
     private boolean previewPaintDeleteMode;
+    private Set<VertexEdge> previewBoundaryEdges = Set.of();
+    private Set<VertexEdge> previewBoundarySkippedEdges = Set.of();
+    private boolean previewBoundaryDeleteMode;
     private DungeonRuntimeLocation activeLocation;
     private DungeonHeading heading = DungeonHeading.defaultHeading();
     private DungeonCanvasInteractionHandler interactionHandler = new DungeonCanvasInteractionHandler() {
@@ -138,6 +143,24 @@ public final class DungeonCanvasWorkspace extends BorderPane {
         }
         this.previewPaintShape = nextPreviewPaintShape;
         this.previewPaintDeleteMode = deleteMode;
+        notifyViewChanged();
+    }
+
+    public void setPreviewBoundaryEdges(
+            Set<VertexEdge> previewBoundaryEdges,
+            Set<VertexEdge> previewBoundarySkippedEdges,
+            boolean deleteMode
+    ) {
+        Set<VertexEdge> nextPreviewEdges = previewBoundaryEdges == null ? Set.of() : Set.copyOf(previewBoundaryEdges);
+        Set<VertexEdge> nextSkippedEdges = previewBoundarySkippedEdges == null ? Set.of() : Set.copyOf(previewBoundarySkippedEdges);
+        if (Objects.equals(this.previewBoundaryEdges, nextPreviewEdges)
+                && Objects.equals(this.previewBoundarySkippedEdges, nextSkippedEdges)
+                && this.previewBoundaryDeleteMode == deleteMode) {
+            return;
+        }
+        this.previewBoundaryEdges = nextPreviewEdges;
+        this.previewBoundarySkippedEdges = nextSkippedEdges;
+        this.previewBoundaryDeleteMode = deleteMode;
         notifyViewChanged();
     }
 
@@ -264,6 +287,9 @@ public final class DungeonCanvasWorkspace extends BorderPane {
                         selectedTargetKey,
                         previewPaintShape,
                         previewPaintDeleteMode,
+                        previewBoundaryEdges,
+                        previewBoundarySkippedEdges,
+                        previewBoundaryDeleteMode,
                         projectionLevel,
                         levelOverlaySettings,
                         activeLocation,
@@ -300,11 +326,11 @@ public final class DungeonCanvasWorkspace extends BorderPane {
     }
 
     private static boolean isInteractionPress(MouseEvent event) {
-        return event.getButton() == MouseButton.PRIMARY;
+        return event.getButton() == MouseButton.PRIMARY || event.getButton() == MouseButton.SECONDARY;
     }
 
     private static boolean isPanPress(MouseEvent event) {
-        return event.getButton() == MouseButton.SECONDARY;
+        return event.getButton() == MouseButton.MIDDLE;
     }
 
     private enum PointerCapture {

@@ -86,7 +86,11 @@ public final class RoomCluster {
     }
 
     public ClusterRewrite editBoundary(VertexEdge edge, InternalBoundaryType type, boolean deleteBoundary) {
-        return ClusterRewritePlanner.editBoundary(this, edge, type, deleteBoundary);
+        return editBoundary(edge == null ? List.<VertexEdge>of() : List.of(edge), type, deleteBoundary);
+    }
+
+    public ClusterRewrite editBoundary(Collection<VertexEdge> edges, InternalBoundaryType type, boolean deleteBoundary) {
+        return ClusterRewritePlanner.editBoundary(this, edges, type, deleteBoundary);
     }
 
     public String targetKey() {
