@@ -103,6 +103,10 @@ public final class RoomCluster {
         return new RoomCluster(clusterId, mapId, center, rooms, localConnections);
     }
 
+    public RoomCluster withRoomsAndLocalConnections(List<Room> rooms, List<LocalConnection> localConnections) {
+        return new RoomCluster(clusterId, mapId, center, rooms, localConnections);
+    }
+
     public ClusterRewrite editBoundary(VertexEdge edge, InternalBoundaryType type, boolean deleteBoundary) {
         return editBoundary(edge == null ? List.<VertexEdge>of() : List.of(edge), type, deleteBoundary);
     }
@@ -153,7 +157,9 @@ public final class RoomCluster {
                 rooms.stream()
                         .map(room -> room == null ? null : room.movedBy(delta))
                         .toList(),
-                localConnections);
+                localConnections.stream()
+                        .map(connection -> movedConnection(connection, delta))
+                        .toList());
     }
 
     public Set<Point2i> cells() {
@@ -291,9 +297,7 @@ public final class RoomCluster {
         }
         TileShape mergedShape = mergedShape(selected);
         Set<VertexEdge> boundaryEdges = mergedShape.boundaryEdges();
-        Set<VertexEdge> mergedDoorEdges = collectEdges(selected, true, boundaryEdges);
-        Set<VertexEdge> mergedWallEdges = collectEdges(selected, false, boundaryEdges);
-        mergedWallEdges.removeAll(mergedDoorEdges);
+        Set<VertexEdge> mergedWallEdges = collectWallEdges(selected, boundaryEdges);
         Long resolvedRoomId = mergedRoomId != null ? mergedRoomId : selected.iterator().next();
         String resolvedName = mergedName == null || mergedName.isBlank()
                 ? findRoom(selected.iterator().next()).name()
@@ -305,7 +309,6 @@ public final class RoomCluster {
                 resolvedName,
                 new Floor(mergedShape),
                 mergedWallEdges.isEmpty() ? List.of() : List.of(new Wall(mergedWallEdges)),
-                mergedDoorEdges,
                 findRoom(selected.iterator().next()).narration());
     }
 
@@ -331,7 +334,7 @@ public final class RoomCluster {
     }
 
     public Map<VertexEdge, InternalBoundaryType> internalBoundaryKinds() {
-        return ClusterRewritePlanner.internalBoundaryKinds(shape, rooms);
+        return ClusterRewritePlanner.internalBoundaryKinds(shape, rooms, localConnections);
     }
 
     public ClusterRewrite applyPaint(TileShape paintShape, List<RoomCluster> overlappingClusters) {
@@ -343,7 +346,7 @@ public final class RoomCluster {
     }
 
     public List<InternalBoundaryEdge> persistedInternalBoundaries() {
-        return ClusterRewritePlanner.persistedBoundaries(shape, rooms);
+        return ClusterRewritePlanner.persistedBoundaries(shape, rooms, internalBoundaryKinds());
     }
 
     private static Map<Long, Room> indexRoomsById(List<Room> rooms) {
@@ -483,7 +486,6 @@ public final class RoomCluster {
                 room.name(),
                 room.floor(),
                 room.walls(),
-                room.doorEdges(),
                 room.narration());
     }
 
@@ -521,19 +523,11 @@ public final class RoomCluster {
         return mergedShape == null ? TileShape.singleCell(null) : mergedShape;
     }
 
-    private Set<VertexEdge> collectEdges(Set<Long> roomIds, boolean doors, Set<VertexEdge> boundaryEdges) {
+    private Set<VertexEdge> collectWallEdges(Set<Long> roomIds, Set<VertexEdge> boundaryEdges) {
         Set<VertexEdge> result = new LinkedHashSet<>();
         for (Long roomId : roomIds) {
             Room room = findRoom(roomId);
             if (room == null) {
-                continue;
-            }
-            if (doors) {
-                for (VertexEdge edge : room.doorEdges()) {
-                    if (boundaryEdges.contains(edge)) {
-                        result.add(edge);
-                    }
-                }
                 continue;
             }
             BoundaryNetwork network = BoundaryNetwork.fromPaths(room.walls());
@@ -550,6 +544,18 @@ public final class RoomCluster {
         return name == null || name.isBlank()
                 ? "Raum " + (roomId == null ? "neu" : roomId)
                 : name.trim();
+    }
+
+    private static LocalConnection movedConnection(LocalConnection connection, Point2i delta) {
+        if (connection == null || delta == null || connection.door() == null) {
+            return connection;
+        }
+        return new LocalConnection(
+                connection.connectionId(),
+                connection.mapId(),
+                connection.clusterId(),
+                connection.door().movedBy(delta),
+                connection.endpoints());
     }
 
     private static boolean disjoint(Set<Point2i> left, Set<Point2i> right) {

@@ -39,7 +39,7 @@ public final class DungeonRuntimeTransitionCatalog {
         if (layout == null || network == null || network.floor() == null) {
             return List.of();
         }
-        // All corridors in a network share the same z-level.
+        // Networks stay 2D; use the canonical corridor compatibility level for whole-surface lookups.
         Integer levelZ = network.corridorIds().stream()
                 .filter(id -> id != null)
                 .map(layout::levelForCorridor)

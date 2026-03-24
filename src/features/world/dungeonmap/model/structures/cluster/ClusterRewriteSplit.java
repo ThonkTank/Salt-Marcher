@@ -2,6 +2,7 @@ package features.world.dungeonmap.model.structures.cluster;
 
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
+import features.world.dungeonmap.model.structures.connection.LocalConnection;
 import features.world.dungeonmap.model.structures.room.Room;
 
 import java.util.List;
@@ -11,10 +12,12 @@ public record ClusterRewriteSplit(
         TileShape clusterShape,
         Point2i clusterCenter,
         List<Room> rooms,
+        List<LocalConnection> localConnections,
         List<InternalBoundaryEdge> persistedBoundaries
 ) {
     public ClusterRewriteSplit {
         rooms = rooms == null ? List.of() : List.copyOf(rooms);
+        localConnections = localConnections == null ? List.of() : List.copyOf(localConnections);
         persistedBoundaries = persistedBoundaries == null ? List.of() : List.copyOf(persistedBoundaries);
     }
 
@@ -22,7 +25,10 @@ public record ClusterRewriteSplit(
         List<Room> reassignedRooms = rooms.stream()
                 .map(room -> reassignCluster(room, clusterId))
                 .toList();
-        return new ClusterRewriteSplit(clusterId, clusterShape, clusterCenter, reassignedRooms, persistedBoundaries);
+        List<LocalConnection> reassignedConnections = localConnections.stream()
+                .map(connection -> reassignCluster(connection, clusterId))
+                .toList();
+        return new ClusterRewriteSplit(clusterId, clusterShape, clusterCenter, reassignedRooms, reassignedConnections, persistedBoundaries);
     }
 
     private static Room reassignCluster(Room room, Long clusterId) {
@@ -37,7 +43,19 @@ public record ClusterRewriteSplit(
                 room.name(),
                 room.floor(),
                 room.walls(),
-                room.doorEdges(),
                 room.narration());
+    }
+
+    private static LocalConnection reassignCluster(LocalConnection connection, Long clusterId) {
+        if (connection == null) {
+            return null;
+        }
+        long resolvedClusterId = clusterId == null ? connection.clusterId() : clusterId;
+        return new LocalConnection(
+                connection.connectionId(),
+                connection.mapId(),
+                resolvedClusterId,
+                connection.door(),
+                connection.endpoints());
     }
 }

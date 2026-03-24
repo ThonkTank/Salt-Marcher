@@ -53,6 +53,7 @@ public final class DungeonRuntimeStairCatalog {
         if (layout == null || network == null || network.floor() == null) {
             return List.of();
         }
+        // Networks stay 2D; use the canonical corridor compatibility level for whole-surface lookups.
         Integer levelZ = network.corridorIds().stream()
                 .filter(id -> id != null)
                 .map(layout::levelForCorridor)

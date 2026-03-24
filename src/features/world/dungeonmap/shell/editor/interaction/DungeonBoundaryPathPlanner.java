@@ -181,9 +181,10 @@ final class DungeonBoundaryPathPlanner {
         if (cluster == null || allowedEdges == null || allowedEdges.isEmpty()) {
             return Set.of();
         }
-        return cluster.rooms().stream()
+        return cluster.localConnections().stream()
                 .filter(Objects::nonNull)
-                .flatMap(room -> room.doorEdges().stream())
+                .filter(connection -> connection.door() != null)
+                .flatMap(connection -> connection.door().edges().stream())
                 .filter(allowedEdges::contains)
                 .sorted(VertexEdge.EDGE_ORDER)
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));

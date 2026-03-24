@@ -7,6 +7,8 @@ import features.world.dungeonmap.model.geometry.VertexPath;
 import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.objects.Floor;
 import features.world.dungeonmap.model.objects.Wall;
+import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
+import features.world.dungeonmap.model.structures.connection.LocalConnection;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
 
@@ -94,7 +96,8 @@ final class ClusterRewritePlanner {
                         rewrittenClusterShape,
                         rewrittenClusterShape.centerCell(),
                         rewrittenRooms,
-                        persistedBoundaries(rewrittenClusterShape, rewrittenRooms))
+                        localConnections(rewrittenClusterShape, cluster.mapId(), cluster.clusterId(), rewrittenRooms, previousBoundaryKinds),
+                        persistedBoundaries(rewrittenClusterShape, rewrittenRooms, previousBoundaryKinds))
                 .deletedRoomIds(deletedRoomIds)
                 .replacedRoomIds(replacedRoomIds)
                 .mergedRoomIds(mergedRoomIds.size() > 1 ? mergedRoomIds : Set.of())
@@ -116,6 +119,7 @@ final class ClusterRewritePlanner {
                             cluster.clusterId(),
                             TileShape.singleCell(cluster.center()),
                             cluster.center(),
+                            List.of(),
                             List.of(),
                             List.of())
                     .deletedRoomIds(cluster.roomIds())
@@ -163,7 +167,11 @@ final class ClusterRewritePlanner {
         Map<Long, List<Room>> splitFragmentsBySourceRoomId = resolvedFragmentsBySourceRoomId(
                 fragmentsBySourceRoomId,
                 reconciledRooms);
-        List<ClusterRewriteSplit> componentClusters = deleteRewriteClusters(cluster, rewrittenClusterShape, rewrittenRooms);
+        List<ClusterRewriteSplit> componentClusters = deleteRewriteClusters(
+                cluster,
+                rewrittenClusterShape,
+                rewrittenRooms,
+                previousBoundaryKinds);
         ClusterRewriteSplit retainedCluster = componentClusters.getFirst().withClusterId(cluster.clusterId());
         List<ClusterRewriteSplit> splitClusters = componentClusters.stream()
                 .skip(1)
@@ -173,6 +181,7 @@ final class ClusterRewritePlanner {
                         retainedCluster.clusterShape(),
                         retainedCluster.clusterCenter(),
                         retainedCluster.rooms(),
+                        retainedCluster.localConnections(),
                         retainedCluster.persistedBoundaries())
                 .deletedRoomIds(deletedRoomIds)
                 .splitFragmentsBySourceRoomId(splitFragmentsBySourceRoomId)
@@ -185,7 +194,7 @@ final class ClusterRewritePlanner {
         if (cluster == null || edges == null || edges.isEmpty()) {
             return null;
         }
-        Map<VertexEdge, InternalBoundaryType> updatedBoundaryKinds = new LinkedHashMap<>(computeInternalBoundaries(cluster.shape(), cluster.rooms()));
+        Map<VertexEdge, InternalBoundaryType> updatedBoundaryKinds = new LinkedHashMap<>(computeInternalBoundaries(cluster.shape(), cluster.rooms(), cluster.localConnections()));
         InternalBoundaryType resolvedType = type == null ? InternalBoundaryType.WALL : type;
         boolean changed = false;
         for (VertexEdge edge : edges) {
@@ -233,7 +242,8 @@ final class ClusterRewritePlanner {
                         cluster.shape(),
                         cluster.center(),
                         rewrittenRooms,
-                        persistedBoundaries(cluster.shape(), rewrittenRooms))
+                        localConnections(cluster.shape(), cluster.mapId(), cluster.clusterId(), rewrittenRooms, updatedBoundaryKinds),
+                        persistedBoundaries(cluster.shape(), rewrittenRooms, updatedBoundaryKinds))
                 .deletedRoomIds(merge.deletedRoomIds())
                 .replacedRoomIds(merge.replacedRoomIds())
                 .mergedRoomIds(merge.mergedRoomIds())
@@ -335,7 +345,6 @@ final class ClusterRewritePlanner {
                 roomName,
                 new Floor(roomShape),
                 boundarySets.walls().isEmpty() ? List.of() : List.of(new Wall(boundarySets.walls())),
-                boundarySets.doors(),
                 narration);
     }
 
@@ -352,7 +361,11 @@ final class ClusterRewritePlanner {
         for (Point2i cell : roomShape.absoluteCells()) {
             for (Point2i step : Point2i.CARDINAL_STEPS) {
                 Point2i neighbor = cell.add(step);
-                if (!clusterCells.contains(neighbor) || roomShape.contains(neighbor)) {
+                if (roomShape.contains(neighbor)) {
+                    continue;
+                }
+                if (!clusterCells.contains(neighbor)) {
+                    wallEdges.add(VertexEdge.betweenCellAndStep(cell, step));
                     continue;
                 }
                 VertexEdge edge = VertexEdge.betweenCellAndStep(cell, step);
@@ -493,7 +506,8 @@ final class ClusterRewritePlanner {
     static List<ClusterRewriteSplit> deleteRewriteClusters(
             RoomCluster cluster,
             TileShape rewrittenClusterShape,
-            List<Room> rewrittenRooms
+            List<Room> rewrittenRooms,
+            Map<VertexEdge, InternalBoundaryType> boundaryKinds
     ) {
         if (cluster == null || rewrittenClusterShape == null || rewrittenClusterShape.size() == 0) {
             return List.of();
@@ -510,7 +524,8 @@ final class ClusterRewritePlanner {
                             componentShape,
                             componentShape.centerCell(),
                             componentRooms,
-                            persistedBoundaries(componentShape, componentRooms));
+                            localConnections(componentShape, cluster.mapId(), null, componentRooms, boundaryKinds),
+                            persistedBoundaries(componentShape, componentRooms, boundaryKinds));
                 })
                 .toList();
     }
@@ -527,20 +542,47 @@ final class ClusterRewritePlanner {
                 .toList();
     }
 
-    static List<InternalBoundaryEdge> persistedBoundaries(TileShape clusterShape, List<Room> rooms) {
-        return computeInternalBoundaries(clusterShape, rooms).entrySet().stream()
+    static List<InternalBoundaryEdge> persistedBoundaries(
+            TileShape clusterShape,
+            List<Room> rooms,
+            Map<VertexEdge, InternalBoundaryType> boundaryKinds
+    ) {
+        return computeInternalBoundaries(clusterShape, rooms, boundaryKinds).entrySet().stream()
                 .map(entry -> toInternalBoundaryEdge(entry.getKey(), entry.getValue()))
                 .filter(java.util.Objects::nonNull)
                 .toList();
     }
 
-    static Map<VertexEdge, InternalBoundaryType> internalBoundaryKinds(TileShape clusterShape, List<Room> rooms) {
-        return computeInternalBoundaries(clusterShape, rooms);
+    static List<LocalConnection> localConnections(
+            TileShape clusterShape,
+            long mapId,
+            Long clusterId,
+            List<Room> rooms,
+            Map<VertexEdge, InternalBoundaryType> boundaryKinds
+    ) {
+        if (clusterShape == null || clusterShape.size() == 0 || clusterId == null) {
+            return List.of();
+        }
+        Map<Point2i, Room> roomsByCell = roomsByCell(rooms);
+        return computeInternalBoundaries(clusterShape, rooms, boundaryKinds).entrySet().stream()
+                .filter(entry -> entry.getValue() == InternalBoundaryType.DOOR)
+                .map(entry -> localConnectionForEdge(entry.getKey(), mapId, clusterId, roomsByCell))
+                .filter(java.util.Objects::nonNull)
+                .toList();
+    }
+
+    static Map<VertexEdge, InternalBoundaryType> internalBoundaryKinds(
+            TileShape clusterShape,
+            List<Room> rooms,
+            List<LocalConnection> localConnections
+    ) {
+        return computeInternalBoundaries(clusterShape, rooms, boundaryKinds(localConnections));
     }
 
     static void forEachInternalBoundary(
             TileShape clusterShape,
             List<Room> rooms,
+            Map<VertexEdge, InternalBoundaryType> boundaryKinds,
             BiConsumer<VertexEdge, InternalBoundaryType> consumer
     ) {
         if (clusterShape == null || clusterShape.size() == 0 || consumer == null) {
@@ -558,10 +600,10 @@ final class ClusterRewritePlanner {
                     }
                 }
             }
-            for (VertexEdge edge : room.doorEdges()) {
-                if (isInternalEdge(clusterCells, edge)) {
-                    consumer.accept(edge, InternalBoundaryType.DOOR);
-                }
+        }
+        for (Map.Entry<VertexEdge, InternalBoundaryType> entry : (boundaryKinds == null ? Map.<VertexEdge, InternalBoundaryType>of() : boundaryKinds).entrySet()) {
+            if (isInternalEdge(clusterCells, entry.getKey()) && entry.getValue() == InternalBoundaryType.DOOR) {
+                consumer.accept(entry.getKey(), InternalBoundaryType.DOOR);
             }
         }
     }
@@ -612,7 +654,8 @@ final class ClusterRewritePlanner {
                 cluster.shape(),
                 cluster.center(),
                 cluster.rooms(),
-                persistedBoundaries(cluster.shape(), cluster.rooms()));
+                cluster.localConnections(),
+                persistedBoundaries(cluster.shape(), cluster.rooms(), cluster.internalBoundaryKinds()));
     }
 
     static InternalBoundaryEdge toInternalBoundaryEdge(VertexEdge edge, InternalBoundaryType type) {
@@ -653,12 +696,16 @@ final class ClusterRewritePlanner {
                 .toList();
     }
 
-    private static Map<VertexEdge, InternalBoundaryType> computeInternalBoundaries(TileShape clusterShape, List<Room> rooms) {
+    private static Map<VertexEdge, InternalBoundaryType> computeInternalBoundaries(
+            TileShape clusterShape,
+            List<Room> rooms,
+            Map<VertexEdge, InternalBoundaryType> boundaryKinds
+    ) {
         if (clusterShape == null || clusterShape.size() == 0) {
             return Map.of();
         }
         Map<VertexEdge, InternalBoundaryType> result = new LinkedHashMap<>();
-        forEachInternalBoundary(clusterShape, rooms, (edge, type) -> {
+        forEachInternalBoundary(clusterShape, rooms, boundaryKinds, (edge, type) -> {
             if (type == InternalBoundaryType.DOOR) {
                 result.put(edge, type);
             } else {
@@ -697,6 +744,60 @@ final class ClusterRewritePlanner {
         return name == null || name.isBlank()
                 ? "Raum " + (roomId == null ? "neu" : roomId)
                 : name.trim();
+    }
+
+    private static Map<Point2i, Room> roomsByCell(List<Room> rooms) {
+        Map<Point2i, Room> result = new LinkedHashMap<>();
+        for (Room room : rooms == null ? List.<Room>of() : rooms) {
+            if (room == null) {
+                continue;
+            }
+            for (Point2i cell : room.cells()) {
+                result.put(cell, room);
+            }
+        }
+        return Map.copyOf(result);
+    }
+
+    private static LocalConnection localConnectionForEdge(
+            VertexEdge edge,
+            long mapId,
+            long clusterId,
+            Map<Point2i, Room> roomsByCell
+    ) {
+        if (edge == null) {
+            return null;
+        }
+        List<Point2i> touchingCells = edge.touchingCells().stream()
+                .sorted(Point2i.POINT_ORDER)
+                .toList();
+        if (touchingCells.size() != 2) {
+            return null;
+        }
+        Room leftRoom = roomsByCell.get(touchingCells.getFirst());
+        Room rightRoom = roomsByCell.get(touchingCells.getLast());
+        if (leftRoom == null || rightRoom == null || sameRoomId(leftRoom, rightRoom)) {
+            return null;
+        }
+        return new LocalConnection(
+                null,
+                mapId,
+                clusterId,
+                new Door(Set.of(edge)),
+                List.of(ConnectionEndpoint.room(leftRoom.roomId()), ConnectionEndpoint.room(rightRoom.roomId())));
+    }
+
+    private static Map<VertexEdge, InternalBoundaryType> boundaryKinds(List<LocalConnection> localConnections) {
+        Map<VertexEdge, InternalBoundaryType> result = new LinkedHashMap<>();
+        for (LocalConnection connection : localConnections == null ? List.<LocalConnection>of() : localConnections) {
+            if (connection == null || connection.door() == null) {
+                continue;
+            }
+            for (VertexEdge edge : connection.door().edges()) {
+                result.put(edge, InternalBoundaryType.DOOR);
+            }
+        }
+        return Map.copyOf(result);
     }
 
     record BoundaryMergeResult(
