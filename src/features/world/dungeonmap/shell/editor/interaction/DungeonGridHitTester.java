@@ -58,8 +58,8 @@ public final class DungeonGridHitTester {
         }
         double worldX = (canvasPoint.getX() - camera.panX()) / gridSize;
         double worldY = (canvasPoint.getY() - camera.panY()) / gridSize;
-        int cellX = (int) Math.floor(worldPoint.getX());
-        int cellY = (int) Math.floor(worldPoint.getY());
+        int cellX = (int) Math.floor(worldX);
+        int cellY = (int) Math.floor(worldY);
         Room room = layout.roomAtCell(new features.world.dungeonmap.model.geometry.Point2i(cellX, cellY));
         if (room == null || room.roomId() == null) {
             return null;

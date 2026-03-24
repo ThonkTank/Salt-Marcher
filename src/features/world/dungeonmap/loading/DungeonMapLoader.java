@@ -12,6 +12,7 @@ import features.world.dungeonmap.model.objects.CorridorPath;
 import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.objects.Floor;
 import features.world.dungeonmap.model.objects.Wall;
+import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.LocalConnection;
@@ -484,11 +485,14 @@ public final class DungeonMapLoader {
     private static List<VertexPath> barriers(List<EdgeObject> edgeObjects) {
         List<VertexPath> result = new ArrayList<>(edgeObjects.size());
         for (EdgeObject edgeObject : edgeObjects) {
-            if (edgeObject.wall() != null) {
-                result.add(edgeObject.wall());
+            if (edgeObject == null || edgeObject.edge() == null) {
+                continue;
             }
-            if (edgeObject.door() != null) {
-                result.add(edgeObject.door());
+            if (edgeObject.isWall()) {
+                result.add(new Wall(Set.of(edgeObject.edge())));
+            }
+            if (edgeObject.isDoor()) {
+                result.add(new Door(Set.of(edgeObject.edge())));
             }
         }
         return List.copyOf(result);
@@ -530,13 +534,6 @@ public final class DungeonMapLoader {
 
     private static List<Wall> wallsForRoom(Set<Point2i> clusterCells, Set<Point2i> roomCells, List<EdgeObject> edgeObjects) {
         Set<VertexEdge> walls = new LinkedHashSet<>();
-        Set<VertexEdge> doorEdges = new LinkedHashSet<>();
-        for (EdgeObject edgeObject : edgeObjects) {
-            Door door = edgeObject.door();
-            if (door != null) {
-                doorEdges.addAll(door.edges());
-            }
-        }
         for (Point2i cell : roomCells) {
             for (Point2i step : Point2i.CARDINAL_STEPS) {
                 Point2i neighbor = cell.add(step);
@@ -544,15 +541,14 @@ public final class DungeonMapLoader {
                     continue;
                 }
                 VertexEdge edge = VertexEdge.betweenCellAndStep(cell, step);
-                if (!clusterCells.contains(neighbor) || !doorEdges.contains(edge)) {
+                if (!clusterCells.contains(neighbor)) {
                     walls.add(edge);
                 }
             }
         }
         for (EdgeObject edgeObject : edgeObjects) {
-            Wall wall = edgeObject.wall();
-            if (wall != null && touchesRoom(roomCells, wall)) {
-                walls.addAll(wall.edges());
+            if (edgeObject != null && edgeObject.isWall() && touchesRoom(roomCells, edgeObject.edge())) {
+                walls.add(edgeObject.edge());
             }
         }
         return walls.isEmpty() ? List.of() : List.of(new Wall(walls));
@@ -575,15 +571,12 @@ public final class DungeonMapLoader {
         }
         List<LocalConnection> result = new ArrayList<>();
         for (EdgeObject edgeObject : edgeObjects) {
-            Door door = edgeObject.door();
-            if (door == null) {
+            if (edgeObject == null || !edgeObject.isDoor() || edgeObject.edge() == null) {
                 continue;
             }
-            for (VertexEdge edge : door.edges()) {
-                LocalConnection connection = materializeLocalConnection(mapId, clusterId, edge, roomsByCell);
-                if (connection != null) {
-                    result.add(connection);
-                }
+            LocalConnection connection = materializeLocalConnection(mapId, clusterId, edgeObject.edge(), roomsByCell);
+            if (connection != null) {
+                result.add(connection);
             }
         }
         return List.copyOf(result);
@@ -601,13 +594,19 @@ public final class DungeonMapLoader {
         List<Point2i> touchingCells = edge.touchingCells().stream()
                 .sorted(Point2i.POINT_ORDER)
                 .toList();
-        if (touchingCells.size() != 2) {
+        if (touchingCells.isEmpty() || touchingCells.size() > 2) {
             return null;
         }
-        Room leftRoom = roomsByCell.get(touchingCells.getFirst());
-        Room rightRoom = roomsByCell.get(touchingCells.getLast());
-        if (leftRoom == null || rightRoom == null || leftRoom.roomId() == null || rightRoom.roomId() == null
-                || leftRoom.roomId().equals(rightRoom.roomId())) {
+        List<Room> touchingRooms = touchingCells.stream()
+                .map(roomsByCell::get)
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .toList();
+        if (touchingRooms.isEmpty()) {
+            return null;
+        }
+        List<ConnectionEndpoint> endpoints = endpointsForDoor(clusterId, touchingRooms);
+        if (endpoints.size() != 2) {
             return null;
         }
         return new LocalConnection(
@@ -615,7 +614,26 @@ public final class DungeonMapLoader {
                 mapId,
                 clusterId,
                 new Door(Set.of(edge)),
-                List.of(ConnectionEndpoint.room(leftRoom.roomId()), ConnectionEndpoint.room(rightRoom.roomId())));
+                endpoints);
+    }
+
+    private static List<ConnectionEndpoint> endpointsForDoor(long clusterId, List<Room> touchingRooms) {
+        if (touchingRooms == null || touchingRooms.isEmpty()) {
+            return List.of();
+        }
+        if (touchingRooms.size() >= 2) {
+            Room leftRoom = touchingRooms.getFirst();
+            Room rightRoom = touchingRooms.get(1);
+            if (leftRoom.roomId() == null || rightRoom.roomId() == null || leftRoom.roomId().equals(rightRoom.roomId())) {
+                return List.of();
+            }
+            return List.of(ConnectionEndpoint.room(leftRoom.roomId()), ConnectionEndpoint.room(rightRoom.roomId()));
+        }
+        Room room = touchingRooms.getFirst();
+        if (room.roomId() == null) {
+            return List.of();
+        }
+        return List.of(ConnectionEndpoint.room(room.roomId()), ConnectionEndpoint.cluster(clusterId));
     }
 
     private static boolean touchesRoom(Set<Point2i> roomCells, VertexPath boundary) {
@@ -679,10 +697,7 @@ public final class DungeonMapLoader {
             default -> throw new IllegalArgumentException("Unbekannte Kantenrichtung: " + direction);
         };
         VertexEdge edge = VertexEdge.betweenCellAndStep(cell, delta);
-        if ("DOOR".equals(type)) {
-            return new EdgeObject(null, new Door(Set.of(edge)));
-        }
-        return new EdgeObject(new Wall(Set.of(edge)), null);
+        return new EdgeObject(edge, "DOOR".equals(type) ? InternalBoundaryType.DOOR : InternalBoundaryType.WALL);
     }
 
     private static TileShape tileShapeFromRelativeVertices(Point2i anchor, List<Point2i> relativeVertices) {
@@ -756,13 +771,13 @@ public final class DungeonMapLoader {
         return rs.wasNull() ? null : value;
     }
 
-    private record EdgeObject(Wall wall, Door door) {
+    private record EdgeObject(VertexEdge edge, InternalBoundaryType type) {
         boolean isWall() {
-            return wall != null;
+            return type == InternalBoundaryType.WALL;
         }
 
         boolean isDoor() {
-            return door != null;
+            return type == InternalBoundaryType.DOOR;
         }
     }
 }

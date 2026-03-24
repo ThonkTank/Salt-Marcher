@@ -10,6 +10,10 @@ public record ConnectionEndpoint(ConnectionEndpointType type, Long id) {
         return new ConnectionEndpoint(ConnectionEndpointType.ROOM, roomId);
     }
 
+    public static ConnectionEndpoint cluster(Long clusterId) {
+        return new ConnectionEndpoint(ConnectionEndpointType.CLUSTER, clusterId);
+    }
+
     public static ConnectionEndpoint corridor(Long corridorId) {
         return new ConnectionEndpoint(ConnectionEndpointType.CORRIDOR, corridorId);
     }
