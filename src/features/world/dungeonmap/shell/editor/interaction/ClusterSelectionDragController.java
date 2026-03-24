@@ -112,14 +112,7 @@ public final class ClusterSelectionDragController {
     }
 
     private static Long clusterIdFor(DungeonEditorHitTarget target) {
-        if (target == null) {
-            return null;
-        }
-        return switch (target.targetRef()) {
-            case DungeonEditorTargetRef.ClusterRef clusterRef -> clusterRef.clusterId();
-            case DungeonEditorTargetRef.BoundaryRef boundaryRef -> boundaryRef.clusterId();
-            case DungeonEditorTargetRef.StairRef ignored -> null;
-        };
+        return target == null ? null : target.clusterId();
     }
 
     private DungeonStair stairAt(Point2i cell) {

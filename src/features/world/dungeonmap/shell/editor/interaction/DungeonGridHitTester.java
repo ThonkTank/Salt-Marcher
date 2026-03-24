@@ -31,7 +31,7 @@ public final class DungeonGridHitTester {
             }
             DungeonEditorLabelHitTarget target = new DungeonEditorLabelHitTarget(
                     handle,
-                    new DungeonEditorTargetRef.ClusterRef(cluster.clusterId()),
+                    cluster.clusterId(),
                     CLUSTER_LABEL_PRIORITY);
             Point2D anchorPoint = DungeonGridInteractiveLabels.anchorPoint(handle, camera, gridSize);
             double distance = anchorPoint.distance(canvasPoint);

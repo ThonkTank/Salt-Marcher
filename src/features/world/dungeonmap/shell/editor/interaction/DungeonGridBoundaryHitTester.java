@@ -42,7 +42,7 @@ final class DungeonGridBoundaryHitTester {
                     continue;
                 }
                 bestTarget = new DungeonEditorBoundaryHitTarget(
-                        new DungeonEditorTargetRef.BoundaryRef(cluster.clusterId(), baseCell, direction),
+                        new DungeonEditorBoundaryRef(cluster.clusterId(), baseCell, direction),
                         edge,
                         entry.getValue(),
                         BOUNDARY_PRIORITY);

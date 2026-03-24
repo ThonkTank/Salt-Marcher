@@ -86,7 +86,7 @@ public final class BoundaryInteractionController {
             return false;
         }
         DungeonEditorBoundaryHitTarget hit = boundaryHitTester.hitTest(mapState.activeMap(), event.canvasPoint(), event.camera());
-        if (hit == null || hit.targetRef().clusterId() == null) {
+        if (hit == null || hit.clusterId() == null) {
             selectionState.clearSelection();
             return false;
         }
@@ -97,7 +97,7 @@ public final class BoundaryInteractionController {
         }
         boolean deleteBoundary = sessionState.selectedTool() == DungeonEditorTool.CLUSTER_DOOR_DELETE;
         UiAsyncTasks.submitVoid(
-                () -> boundaryEditService.apply(mapId, hit.targetRef().clusterId(), hit.edge(), InternalBoundaryType.DOOR, deleteBoundary),
+                () -> boundaryEditService.apply(mapId, hit.clusterId(), hit.edge(), InternalBoundaryType.DOOR, deleteBoundary),
                 () -> loadingService.reload(mapId),
                 throwable -> UiErrorReporter.reportBackgroundFailure("BoundaryInteractionController.handleDoorPressed()", throwable));
         return true;
@@ -218,8 +218,8 @@ public final class BoundaryInteractionController {
         }
 
         DungeonEditorBoundaryHitTarget boundaryHit = boundaryHitTester.hitTest(layout, event.canvasPoint(), event.camera());
-        if (boundaryHit != null && boundaryHit.targetRef().clusterId() != null) {
-            RoomCluster boundaryCluster = clusterOnActiveLevel(boundaryHit.targetRef().clusterId(), layout);
+        if (boundaryHit != null && boundaryHit.clusterId() != null) {
+            RoomCluster boundaryCluster = clusterOnActiveLevel(boundaryHit.clusterId(), layout);
             if (boundaryCluster != null && pathPlanner.isEditableVertex(boundaryCluster, vertex, deleteMode)) {
                 return boundaryCluster;
             }

@@ -176,13 +176,10 @@ public final class CorridorInteractionController {
     }
 
     private static Long singleRoomIdFor(DungeonEditorHitTarget hit, DungeonLayout layout) {
-        if (hit == null || layout == null) {
+        if (hit == null || layout == null || hit.clusterId() == null) {
             return null;
         }
-        if (!(hit.targetRef() instanceof DungeonEditorTargetRef.ClusterRef clusterRef) || clusterRef.clusterId() == null) {
-            return null;
-        }
-        RoomCluster cluster = layout.findCluster(clusterRef.clusterId());
+        RoomCluster cluster = layout.findCluster(hit.clusterId());
         return cluster == null || cluster.singleRoom() == null ? null : cluster.singleRoom().roomId();
     }
 }

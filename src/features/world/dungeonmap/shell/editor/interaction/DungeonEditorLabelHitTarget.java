@@ -6,13 +6,13 @@ import java.util.Objects;
 
 public record DungeonEditorLabelHitTarget(
         InteractiveLabelHandle handle,
-        DungeonEditorTargetRef targetRef,
+        Long clusterId,
         long priority
 ) implements DungeonEditorHitTarget {
 
     public DungeonEditorLabelHitTarget {
         handle = Objects.requireNonNull(handle, "handle");
-        targetRef = Objects.requireNonNull(targetRef, "targetRef");
+        clusterId = Objects.requireNonNull(clusterId, "clusterId");
     }
 
     @Override

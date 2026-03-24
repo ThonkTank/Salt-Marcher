@@ -4,7 +4,7 @@ public sealed interface DungeonEditorHitTarget permits DungeonEditorBoundaryHitT
 
     String targetKey();
 
-    DungeonEditorTargetRef targetRef();
+    Long clusterId();
 
     long priority();
 }

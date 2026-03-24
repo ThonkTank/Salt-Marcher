@@ -7,7 +7,7 @@ import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import java.util.Objects;
 
 public record DungeonEditorBoundaryHitTarget(
-        DungeonEditorTargetRef.BoundaryRef targetRef,
+        DungeonEditorBoundaryRef targetRef,
         VertexEdge edge,
         InternalBoundaryType boundaryType,
         long priority
@@ -22,5 +22,10 @@ public record DungeonEditorBoundaryHitTarget(
     @Override
     public String targetKey() {
         return RoomCluster.targetKey(targetRef.clusterId());
+    }
+
+    @Override
+    public Long clusterId() {
+        return targetRef.clusterId();
     }
 }
