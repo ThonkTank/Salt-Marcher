@@ -2,7 +2,7 @@ package features.world.dungeonmap.application.room;
 
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.VertexEdge;
-import features.world.dungeonmap.model.objects.Door;
+import features.world.dungeonmap.model.structures.connection.Connection;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -21,11 +21,11 @@ public final class DoorExitCatalog {
         throw new AssertionError("No instances");
     }
 
-    public static List<RoomExitDescriptor> describe(Set<Point2i> cells, List<Door> doors) {
-        if (cells == null || cells.isEmpty() || doors == null || doors.isEmpty()) {
+    public static List<RoomExitDescriptor> describe(Set<Point2i> cells, List<? extends Connection> connections) {
+        if (cells == null || cells.isEmpty() || connections == null || connections.isEmpty()) {
             return List.of();
         }
-        List<ExitEdge> exitEdges = collectExitEdges(cells, doors);
+        List<ExitEdge> exitEdges = collectExitEdges(cells, connections);
         if (exitEdges.isEmpty()) {
             return List.of();
         }
@@ -47,12 +47,12 @@ public final class DoorExitCatalog {
         return List.copyOf(result);
     }
 
-    private static List<ExitEdge> collectExitEdges(Set<Point2i> cells, List<Door> doors) {
+    private static List<ExitEdge> collectExitEdges(Set<Point2i> cells, List<? extends Connection> connections) {
         List<ExitEdge> result = new ArrayList<>();
         Set<VertexEdge> doorEdges = new java.util.LinkedHashSet<>();
-        for (Door door : doors) {
-            if (door != null) {
-                doorEdges.addAll(door.edges());
+        for (Connection connection : connections) {
+            if (connection != null && connection.door() != null) {
+                doorEdges.addAll(connection.door().edges());
             }
         }
         for (Point2i cell : cells) {

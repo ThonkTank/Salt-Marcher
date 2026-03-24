@@ -5,13 +5,14 @@ import features.world.dungeonmap.application.room.RoomExitCatalog;
 import features.world.dungeonmap.application.room.RoomExitDescriptor;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.objects.Door;
+import features.world.dungeonmap.model.structures.connection.Connection;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpointType;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
 import features.world.dungeonmap.model.structures.room.Room;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -38,32 +39,38 @@ public final class DungeonRuntimeDoorCatalog {
         }
         return describe(
                 DungeonRuntimeCorridorGeometry.canonicalCells(layout, corridor),
-                layout.doorsForCorridor(corridor.corridorId()),
+                layout.connectionsForCorridor(corridor.corridorId()),
                 heading,
                 (cell, direction) -> "",
-                exit -> destinationLabel(layout, layout.doorAt(exit.anchorEdge()), ConnectionEndpoint.corridor(corridor.corridorId())));
+                exit -> destinationLabel(layout, layout.connectionAt(exit.anchorEdge()), ConnectionEndpoint.corridor(corridor.corridorId())));
     }
 
     public static List<DungeonRuntimeDoorDescriptor> describe(DungeonLayout layout, CorridorNetwork network, DungeonHeading heading) {
         if (layout == null || network == null || network.floor() == null) {
             return List.of();
         }
+        Set<Connection> connections = new LinkedHashSet<>();
+        for (Long corridorId : network.corridorIds()) {
+            if (corridorId != null) {
+                connections.addAll(layout.connectionsForCorridor(corridorId));
+            }
+        }
         return describe(
                 network.floor().shape().absoluteCells(),
-                layout.doorsForNetwork(network.networkId()),
+                List.copyOf(connections),
                 heading,
                 (cell, direction) -> "",
-                exit -> destinationLabel(layout, layout.doorAt(exit.anchorEdge()), null));
+                exit -> destinationLabel(layout, layout.connectionAt(exit.anchorEdge()), activeEndpoint(network, layout.connectionAt(exit.anchorEdge()))));
     }
 
     private static List<DungeonRuntimeDoorDescriptor> describe(
             Set<Point2i> cells,
-            List<Door> doors,
+            List<? extends Connection> connections,
             DungeonHeading heading,
             BiFunction<Point2i, Point2i, String> narrationLookup,
             Function<RoomExitDescriptor, String> destinationLookup
     ) {
-        return DoorExitCatalog.describe(cells, doors).stream()
+        return DoorExitCatalog.describe(cells, connections).stream()
                 .map(exit -> DungeonRuntimeDoorDescriptor.from(
                         exit,
                         heading,
@@ -86,24 +93,45 @@ public final class DungeonRuntimeDoorCatalog {
         if (layout == null || room == null || exit == null) {
             return "";
         }
-        return destinationLabel(layout, layout.doorAt(exit.anchorEdge()), ConnectionEndpoint.room(room.roomId()));
+        return destinationLabel(layout, layout.connectionAt(exit.anchorEdge()), ConnectionEndpoint.room(room.roomId()));
     }
 
-    private static String destinationLabel(DungeonLayout layout, Door door, ConnectionEndpoint activeEndpoint) {
-        if (layout == null || door == null) {
+    private static String destinationLabel(DungeonLayout layout, Connection connection, ConnectionEndpoint activeEndpoint) {
+        if (layout == null || connection == null) {
             return "";
         }
-        ConnectionEndpoint opposite = activeEndpoint == null
-                ? firstRoomEndpoint(layout, door)
-                : layout.oppositeEndpoint(door, activeEndpoint);
-        if (opposite == null) {
+        ConnectionEndpoint destination = activeEndpoint == null
+                ? null
+                : connection.oppositeOf(activeEndpoint);
+        return endpointLabel(layout, destination, activeEndpoint);
+    }
+
+    private static ConnectionEndpoint activeEndpoint(CorridorNetwork network, Connection connection) {
+        if (network == null || connection == null) {
+            return null;
+        }
+        return connection.endpoints().stream()
+                .filter(endpoint -> endpoint != null
+                        && endpoint.type() == ConnectionEndpointType.CORRIDOR
+                        && endpoint.id() != null
+                        && network.containsCorridor(endpoint.id()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private static String endpointLabel(
+            DungeonLayout layout,
+            ConnectionEndpoint destination,
+            ConnectionEndpoint activeEndpoint
+    ) {
+        if (layout == null || destination == null) {
             return "";
         }
-        if (opposite.type() == ConnectionEndpointType.ROOM && opposite.id() != null) {
-            return DungeonRuntimeLabels.roomLabel(layout, opposite.id());
+        if (destination.type() == ConnectionEndpointType.ROOM && destination.id() != null) {
+            return DungeonRuntimeLabels.roomLabel(layout, destination.id());
         }
-        if (opposite.type() == ConnectionEndpointType.CORRIDOR && opposite.id() != null) {
-            Corridor corridor = layout.findCorridor(opposite.id());
+        if (destination.type() == ConnectionEndpointType.CORRIDOR && destination.id() != null) {
+            Corridor corridor = layout.findCorridor(destination.id());
             if (corridor == null) {
                 return "";
             }
@@ -115,16 +143,17 @@ public final class DungeonRuntimeDoorCatalog {
                     .reduce((left, right) -> left + ", " + right)
                     .orElse("");
         }
-        return "";
-    }
-
-    private static ConnectionEndpoint firstRoomEndpoint(DungeonLayout layout, Door door) {
-        if (layout == null || door == null) {
-            return null;
+        if (destination.type() == ConnectionEndpointType.CLUSTER && destination.id() != null) {
+            return "Raumverbund " + destination.id();
         }
-        return layout.endpointsForDoor(door).stream()
-                .filter(endpoint -> endpoint != null && endpoint.type() == ConnectionEndpointType.ROOM)
-                .findFirst()
-                .orElse(null);
+        if (destination.type() == ConnectionEndpointType.STAIR && destination.id() != null) {
+            var stair = layout.findStair(destination.id());
+            return stair == null ? "Treppe" : stair.name();
+        }
+        if (destination.type() == ConnectionEndpointType.TRANSITION && destination.id() != null) {
+            var transition = layout.findTransition(destination.id());
+            return transition == null ? "Übergang" : transition.label();
+        }
+        return "";
     }
 }

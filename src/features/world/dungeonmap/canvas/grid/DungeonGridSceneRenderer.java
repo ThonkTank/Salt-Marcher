@@ -17,8 +17,8 @@ import features.world.dungeonmap.model.geometry.Tile;
 import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
-import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
+import features.world.dungeonmap.model.structures.connection.Connection;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
@@ -163,6 +163,8 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         gc.setFill(palette.roomFill());
         Set<VertexEdge> roomBoundaryEdges = new LinkedHashSet<>();
         Set<VertexEdge> selectedRoomBoundaryEdges = new LinkedHashSet<>();
+        Set<Connection> roomDoorConnections = new LinkedHashSet<>();
+        Set<Connection> selectedRoomDoorConnections = new LinkedHashSet<>();
         for (RoomCluster cluster : mapModel.clusters()) {
             InteractiveLabelHandle handle = cluster.labelHandle();
             boolean selectedCluster = handle != null && java.util.Objects.equals(handle.key(), selectedTargetKey);
@@ -172,9 +174,12 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 Set<Tile> tiles = room.floor().shape().tiles();
                 fillRoomTiles(gc, camera, gridSize, tiles);
                 strokeRoomTiles(gc, camera, gridSize, tiles, palette.roomStroke(), 1.0);
+                List<Connection> roomConnections = room.roomId() == null
+                        ? List.of()
+                        : mapModel.connectionsForRoom(room.roomId());
                 Set<VertexEdge> doorEdges = room.roomId() == null
                         ? Set.of()
-                        : boundaryEdges(mapModel.doorsForRoom(room.roomId()));
+                        : boundaryEdges(roomConnections);
                 room.walls().forEach(wall -> {
                     Set<VertexEdge> wallEdges = new LinkedHashSet<>(wall.edges());
                     wallEdges.removeAll(doorEdges);
@@ -190,9 +195,16 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                     drawRoomLabel(gc, room.name(), camera, gridSize, room);
                     gc.setFill(palette.roomFill());
                 }
+                if (selectedCluster || selectedRoom) {
+                    selectedRoomDoorConnections.addAll(roomConnections);
+                } else {
+                    roomDoorConnections.addAll(roomConnections);
+                }
             }
         }
         drawRoomBoundaries(gc, camera, gridSize, roomBoundaryEdges, palette.wallStroke());
+        drawConnections(gc, camera, gridSize, roomDoorConnections, null, palette.wallStroke(), 2.0);
+        drawConnections(gc, camera, gridSize, selectedRoomDoorConnections, null, palette.selectedWallStroke(), 3.0);
         return selectedRoomBoundaryEdges;
     }
 
@@ -407,17 +419,14 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             Set<VertexEdge> wallEdges = new LinkedHashSet<>(corridor.path().floorAtLevel(projectionLevel).shape().boundaryEdges());
             wallEdges.removeAll(levelDoorEdges);
             drawCorridorBoundaries(gc, camera, gridSize, wallEdges, selected, palette);
-
-            for (Door door : corridor.corridorId() == null ? List.<Door>of() : mapModel.doorsForCorridor(corridor.corridorId())) {
-                if (door == null || java.util.Collections.disjoint(door.edges(), levelDoorEdges)) {
-                    continue;
-                }
-                gc.setStroke(selected ? palette.corridorSelectedStroke() : palette.corridorStroke());
-                gc.setLineWidth(selected ? 3.0 : 2.0);
-                for (VertexEdge edge : door.edges()) {
-                    strokeEdge(gc, camera, gridSize, edge);
-                }
-            }
+            drawConnections(
+                    gc,
+                    camera,
+                    gridSize,
+                    corridor.corridorId() == null ? List.of() : mapModel.connectionsForCorridor(corridor.corridorId()),
+                    levelDoorEdges,
+                    selected ? palette.corridorSelectedStroke() : palette.corridorStroke(),
+                    selected ? 3.0 : 2.0);
         }
     }
 
@@ -711,16 +720,43 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         gc.setTextAlign(TextAlignment.LEFT);
     }
 
-    private static Set<VertexEdge> boundaryEdges(Collection<? extends Door> doors) {
-        Set<VertexEdge> edges = new LinkedHashSet<>();
-        if (doors == null) {
-            return edges;
+    private static void drawConnections(
+            GraphicsContext gc,
+            DungeonCanvasCamera camera,
+            double gridSize,
+            Collection<? extends Connection> connections,
+            Set<VertexEdge> visibleEdges,
+            Color stroke,
+            double lineWidth
+    ) {
+        if (connections == null || connections.isEmpty()) {
+            return;
         }
-        for (var door : doors) {
-            if (door == null) {
+        gc.setStroke(stroke);
+        gc.setLineWidth(lineWidth);
+        for (Connection connection : connections) {
+            if (connection == null || connection.door() == null) {
                 continue;
             }
-            edges.addAll(door.edges());
+            for (VertexEdge edge : connection.door().edges()) {
+                if (visibleEdges != null && !visibleEdges.contains(edge)) {
+                    continue;
+                }
+                strokeEdge(gc, camera, gridSize, edge);
+            }
+        }
+    }
+
+    private static Set<VertexEdge> boundaryEdges(Collection<? extends Connection> connections) {
+        Set<VertexEdge> edges = new LinkedHashSet<>();
+        if (connections == null) {
+            return edges;
+        }
+        for (Connection connection : connections) {
+            if (connection == null || connection.door() == null) {
+                continue;
+            }
+            edges.addAll(connection.door().edges());
         }
         return edges;
     }
