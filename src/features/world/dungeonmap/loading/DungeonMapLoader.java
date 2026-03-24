@@ -372,14 +372,16 @@ public final class DungeonMapLoader {
                 rs -> rs.getLong("cluster_id"),
                 rs -> new Point2i(rs.getInt("relative_x"), rs.getInt("relative_y")));
 
+        Map<Long, Point2i> centersByClusterId = loadClusterCenters(conn, mapId);
         Map<Long, List<EdgeObject>> edgesByClusterId = loadGrouped(conn,
                 "SELECT cluster_id, cell_x, cell_y, edge_direction, edge_type FROM dungeon_room_cluster_edges"
                         + " WHERE cluster_id IN (SELECT cluster_id FROM dungeon_room_clusters WHERE dungeon_map_id=?)"
                         + " ORDER BY cluster_id, cell_y, cell_x, edge_direction",
                 mapId,
                 rs -> rs.getLong("cluster_id"),
-                rs -> edgeObject(
+                rs -> edgeObjectRelativeToCenter(
                         new Point2i(rs.getInt("cell_x"), rs.getInt("cell_y")),
+                        centersByClusterId.get(rs.getLong("cluster_id")),
                         rs.getString("edge_direction"),
                         rs.getString("edge_type")));
 
@@ -400,7 +402,7 @@ public final class DungeonMapLoader {
                     clusters.add(new RoomCluster(
                             clusterId,
                             rs.getLong("dungeon_map_id"),
-                            new Point2i(rs.getInt("center_x"), rs.getInt("center_y")),
+                            centersByClusterId.getOrDefault(clusterId, new Point2i(rs.getInt("center_x"), rs.getInt("center_y"))),
                             hydrateRooms(
                                     clusterId,
                                     clusterCells,
@@ -416,6 +418,21 @@ public final class DungeonMapLoader {
         Map<Long, List<Room>> result = new LinkedHashMap<>();
         for (Room room : rooms) {
             result.computeIfAbsent(room.clusterId(), ignored -> new ArrayList<>()).add(room);
+        }
+        return Map.copyOf(result);
+    }
+
+    private static Map<Long, Point2i> loadClusterCenters(Connection conn, long mapId) throws SQLException {
+        Map<Long, Point2i> result = new LinkedHashMap<>();
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT cluster_id, center_x, center_y FROM dungeon_room_clusters"
+                        + " WHERE dungeon_map_id=? ORDER BY cluster_id")) {
+            ps.setLong(1, mapId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    result.put(rs.getLong("cluster_id"), new Point2i(rs.getInt("center_x"), rs.getInt("center_y")));
+                }
+            }
         }
         return Map.copyOf(result);
     }
@@ -583,6 +600,12 @@ public final class DungeonMapLoader {
             case "WEST" -> new Point2i(-1, 0);
             default -> throw new IllegalArgumentException("Unbekannte Korridor-Tuerrichtung: " + direction);
         };
+    }
+
+    private static EdgeObject edgeObjectRelativeToCenter(Point2i relativeCell, Point2i center, String direction, String type) {
+        Point2i absoluteCell = (relativeCell == null ? new Point2i(0, 0) : relativeCell)
+                .add(center == null ? new Point2i(0, 0) : center);
+        return edgeObject(absoluteCell, direction, type);
     }
 
     private static EdgeObject edgeObject(Point2i cell, String direction, String type) {

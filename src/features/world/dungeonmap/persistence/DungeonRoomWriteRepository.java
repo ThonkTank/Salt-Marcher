@@ -57,10 +57,16 @@ public final class DungeonRoomWriteRepository {
         }
     }
 
-    public void replaceClusterEdges(Connection conn, long clusterId, List<ClusterBoundaryWrite> boundaries) throws SQLException {
+    public void replaceClusterEdges(
+            Connection conn,
+            long clusterId,
+            Point2i clusterCenter,
+            List<ClusterBoundaryWrite> boundaries
+    ) throws SQLException {
         List<ClusterBoundaryWrite> sanitized = boundaries == null ? List.of() : boundaries.stream()
                 .filter(java.util.Objects::nonNull)
                 .toList();
+        Point2i resolvedCenter = clusterCenter == null ? new Point2i(0, 0) : clusterCenter;
         try (PreparedStatement delete = conn.prepareStatement(
                 "DELETE FROM dungeon_room_cluster_edges WHERE cluster_id=?")) {
             delete.setLong(1, clusterId);
@@ -70,8 +76,9 @@ public final class DungeonRoomWriteRepository {
                 "INSERT INTO dungeon_room_cluster_edges(cluster_id, cell_x, cell_y, edge_direction, edge_type) VALUES(?,?,?,?,?)")) {
             for (ClusterBoundaryWrite boundary : sanitized) {
                 insert.setLong(1, clusterId);
-                insert.setInt(2, boundary.cell().x());
-                insert.setInt(3, boundary.cell().y());
+                Point2i relativeCell = boundary.cell().subtract(resolvedCenter);
+                insert.setInt(2, relativeCell.x());
+                insert.setInt(3, relativeCell.y());
                 insert.setString(4, directionName(boundary.direction()));
                 insert.setString(5, boundary.type().name());
                 insert.addBatch();

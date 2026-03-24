@@ -224,7 +224,7 @@ public final class DungeonRoomTopologyService {
 
     private void createCluster(Connection conn, long mapId, int levelZ, TileShape shape, String roomName) throws SQLException {
         long clusterId = roomWriteRepository.insertCluster(conn, mapId, geometryWriteMapper.toClusterGeometry(shape), levelZ);
-        roomWriteRepository.replaceClusterEdges(conn, clusterId, List.of());
+        roomWriteRepository.replaceClusterEdges(conn, clusterId, shape.centerCell(), List.of());
         roomWriteRepository.insertRoom(conn, mapId, clusterId, roomName, shape.centerCell(), levelZ);
     }
 
@@ -248,7 +248,11 @@ public final class DungeonRoomTopologyService {
                     mapId,
                     geometryWriteMapper.toClusterGeometry(splitCluster.clusterShape()),
                     levelZ);
-            roomWriteRepository.replaceClusterEdges(conn, splitClusterId, toBoundaryWrites(splitCluster.persistedBoundaries()));
+            roomWriteRepository.replaceClusterEdges(
+                    conn,
+                    splitClusterId,
+                    splitCluster.clusterCenter(),
+                    toBoundaryWrites(splitCluster.persistedBoundaries()));
             realizedSplitClusters.add(splitCluster.withClusterId(splitClusterId));
         }
         ClusterRewrite realizedRewrite = rewrite.withSplitClusters(realizedSplitClusters);
@@ -256,7 +260,11 @@ public final class DungeonRoomTopologyService {
                 conn,
                 realizedRewrite.targetClusterId(),
                 geometryWriteMapper.toClusterGeometry(realizedRewrite.clusterShape()));
-        roomWriteRepository.replaceClusterEdges(conn, realizedRewrite.targetClusterId(), toBoundaryWrites(realizedRewrite.persistedBoundaries()));
+        roomWriteRepository.replaceClusterEdges(
+                conn,
+                realizedRewrite.targetClusterId(),
+                realizedRewrite.clusterCenter(),
+                toBoundaryWrites(realizedRewrite.persistedBoundaries()));
         persistRooms(conn, mapId, realizedRewrite.targetClusterId(), realizedRewrite.rooms(), levelZ);
         for (ClusterRewriteSplit splitCluster : realizedRewrite.splitClusters()) {
             persistRooms(conn, mapId, splitCluster.clusterId(), splitCluster.rooms(), levelZ);
