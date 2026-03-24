@@ -52,7 +52,7 @@ public final class CorridorPlanningEngine {
                     doorBindings,
                     instrumentation);
             SteinerTree tree = SteinerTreeBuilder.bestTree(context);
-            return toCorridorPath(route, tree, rooms);
+            return toCorridorPath(route, tree, rooms, input.roomLevels());
         } finally {
             instrumentation.logSummary(startedAt);
         }
@@ -124,37 +124,18 @@ public final class CorridorPlanningEngine {
         return nearest == null ? 0 : input.roomLevel(nearest.roomId());
     }
 
-    private static CorridorPath toCorridorPath(GridRoute route, SteinerTree tree, List<Room> rooms) {
+    private static CorridorPath toCorridorPath(
+            GridRoute route,
+            SteinerTree tree,
+            List<Room> rooms,
+            Map<Long, Integer> roomLevels
+    ) {
         if (tree == null || !tree.isRoutable()) {
             return CorridorPath.unroutable(route);
         }
-        Map<Integer, Set<Point2i>> occupiedRoomCellsByLevel = occupiedRoomCellsByLevel(rooms, tree);
-        Set<CubePoint> corridorCells = tree.corridorCells().stream()
-                .filter(cell -> !occupiesRoomCell(cell, occupiedRoomCellsByLevel))
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-        Map<Integer, Floor> floorsByLevel = new LinkedHashMap<>();
-        Set<Integer> occupiedLevels = corridorCells.stream()
-                .map(CubePoint::z)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-        for (Integer level : occupiedLevels) {
-            Set<Point2i> levelCells = corridorCells.stream()
-                    .filter(cell -> cell.z() == level)
-                    .map(CubePoint::projectedCell)
-                    .collect(Collectors.toCollection(LinkedHashSet::new));
-            floorsByLevel.put(level, new Floor(TileShape.fromAbsoluteCells(levelCells)));
-        }
-        Map<Integer, Set<VertexEdge>> mutableDoorEdgesByLevel = new LinkedHashMap<>();
-        for (DoorEdge doorEdge : tree.doorEdges()) {
-            if (doorEdge != null && doorEdge.edge() != null) {
-                mutableDoorEdgesByLevel
-                        .computeIfAbsent(doorEdge.levelZ(), ignored -> new LinkedHashSet<>())
-                        .add(doorEdge.edge());
-            }
-        }
-        Map<Integer, Set<VertexEdge>> doorEdgesByLevel = new LinkedHashMap<>();
-        for (Map.Entry<Integer, Set<VertexEdge>> entry : mutableDoorEdgesByLevel.entrySet()) {
-            doorEdgesByLevel.put(entry.getKey(), Set.copyOf(entry.getValue()));
-        }
+        Set<CubePoint> corridorCells = filterCorridorCells(tree, rooms, roomLevels);
+        Map<Integer, Floor> floorsByLevel = floorsByLevel(corridorCells);
+        Map<Integer, Set<VertexEdge>> doorEdgesByLevel = doorEdgesByLevel(tree);
         boolean directlyAdjacent = corridorCells.isEmpty() && !doorEdgesByLevel.isEmpty();
         boolean routable = tree.connectedRoomIds().size() >= rooms.size()
                 && (!floorsByLevel.isEmpty() || !doorEdgesByLevel.isEmpty());
@@ -166,23 +147,65 @@ public final class CorridorPlanningEngine {
                 routable);
     }
 
-    private static Map<Integer, Set<Point2i>> occupiedRoomCellsByLevel(List<Room> rooms, SteinerTree tree) {
-        Map<Integer, Set<Point2i>> result = new LinkedHashMap<>();
-        if (rooms == null || rooms.isEmpty() || tree == null) {
+    private static Set<CubePoint> filterCorridorCells(
+            SteinerTree tree,
+            List<Room> rooms,
+            Map<Long, Integer> roomLevels
+    ) {
+        Map<Integer, Set<Point2i>> occupiedRoomCellsByLevel = occupiedRoomCellsByLevel(rooms, roomLevels);
+        return tree.corridorCells().stream()
+                .filter(cell -> !occupiesRoomCell(cell, occupiedRoomCellsByLevel))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private static Map<Integer, Floor> floorsByLevel(Set<CubePoint> corridorCells) {
+        if (corridorCells == null || corridorCells.isEmpty()) {
             return Map.of();
         }
-        Map<Long, Integer> doorLevelsByRoomId = tree.doorEdges().stream()
-                .filter(doorEdge -> doorEdge != null)
-                .collect(Collectors.toMap(
-                        DoorEdge::roomId,
-                        DoorEdge::levelZ,
-                        (first, second) -> first,
-                        LinkedHashMap::new));
+        Map<Integer, Set<Point2i>> cellsByLevel = new LinkedHashMap<>();
+        for (CubePoint corridorCell : corridorCells) {
+            if (corridorCell == null) {
+                continue;
+            }
+            cellsByLevel.computeIfAbsent(corridorCell.z(), ignored -> new LinkedHashSet<>())
+                    .add(corridorCell.projectedCell());
+        }
+        Map<Integer, Floor> result = new LinkedHashMap<>();
+        for (Map.Entry<Integer, Set<Point2i>> entry : cellsByLevel.entrySet()) {
+            result.put(entry.getKey(), new Floor(TileShape.fromAbsoluteCells(entry.getValue())));
+        }
+        return Map.copyOf(result);
+    }
+
+    private static Map<Integer, Set<VertexEdge>> doorEdgesByLevel(SteinerTree tree) {
+        if (tree == null) {
+            return Map.of();
+        }
+        Map<Integer, Set<VertexEdge>> mutableDoorEdgesByLevel = new LinkedHashMap<>();
+        for (DoorEdge doorEdge : tree.doorEdges()) {
+            if (doorEdge != null && doorEdge.edge() != null) {
+                mutableDoorEdgesByLevel
+                        .computeIfAbsent(doorEdge.levelZ(), ignored -> new LinkedHashSet<>())
+                        .add(doorEdge.edge());
+            }
+        }
+        Map<Integer, Set<VertexEdge>> result = new LinkedHashMap<>();
+        for (Map.Entry<Integer, Set<VertexEdge>> entry : mutableDoorEdgesByLevel.entrySet()) {
+            result.put(entry.getKey(), Set.copyOf(entry.getValue()));
+        }
+        return Map.copyOf(result);
+    }
+
+    private static Map<Integer, Set<Point2i>> occupiedRoomCellsByLevel(List<Room> rooms, Map<Long, Integer> roomLevels) {
+        Map<Integer, Set<Point2i>> result = new LinkedHashMap<>();
+        if (rooms == null || rooms.isEmpty()) {
+            return Map.of();
+        }
         for (Room room : rooms) {
             if (room == null || room.roomId() == null) {
                 continue;
             }
-            int level = doorLevelsByRoomId.getOrDefault(room.roomId(), 0);
+            int level = roomLevels == null ? 0 : roomLevels.getOrDefault(room.roomId(), 0);
             result.computeIfAbsent(level, ignored -> new LinkedHashSet<>())
                     .addAll(room.cells());
         }
