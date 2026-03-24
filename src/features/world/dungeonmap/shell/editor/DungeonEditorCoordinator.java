@@ -401,7 +401,7 @@ final class DungeonEditorCoordinator {
                 room.roomId() == null ? 0L : room.roomId(),
                 room.name(),
                 room.narration().visualDescription(),
-                RoomExitCatalog.describe(room).stream()
+                RoomExitCatalog.describe(mapState.activeMap(), room).stream()
                         .map(exit -> new DungeonEditorStatePane.RoomExitCard(
                                 exit.label(),
                                 exit.roomCell(),

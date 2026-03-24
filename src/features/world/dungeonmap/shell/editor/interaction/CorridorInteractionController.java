@@ -68,11 +68,12 @@ public final class CorridorInteractionController {
     }
 
     private boolean handleCreatePressed(DungeonCanvasPointerEvent event) {
+        DungeonLayout projected = projectedLayout();
         DungeonEditorHitTarget hit = hitTester.hitTest(
-                mapState.activeMap(),
+                projected,
                 event.canvasPoint(),
                 event.camera());
-        DungeonCorridorDraftState.PendingTarget target = resolveTarget(hit, event.gridCell(), mapState.activeMap());
+        DungeonCorridorDraftState.PendingTarget target = resolveTarget(hit, event.gridCell(), projected);
         if (target == null) {
             draftState.clear();
             selectionState.clearSelection();
@@ -106,7 +107,8 @@ public final class CorridorInteractionController {
         if (mapId == null || event.gridCell() == null) {
             return false;
         }
-        Corridor corridor = mapState.activeMap().corridorsAtCell(event.gridCell()).stream()
+        DungeonLayout projected = projectedLayout();
+        Corridor corridor = projected.corridorsAtCell(event.gridCell()).stream()
                 .filter(candidate -> candidate != null && candidate.corridorId() != null)
                 .findFirst()
                 .orElse(null);
@@ -148,6 +150,14 @@ public final class CorridorInteractionController {
                 && target instanceof DungeonCorridorDraftState.PendingTarget.Corridor targetCorridor) {
             corridorEditService.merge(layout, targetCorridor.corridorId(), startCorridor.corridorId());
         }
+    }
+
+    private DungeonLayout projectedLayout() {
+        DungeonLayout layout = mapState.activeMap();
+        if (layout == null) {
+            return DungeonLayout.empty();
+        }
+        return layout.projectedToLevel(mapState.activeProjectionLevel());
     }
 
     private static DungeonCorridorDraftState.PendingTarget resolveTarget(DungeonEditorHitTarget hit, features.world.dungeonmap.model.geometry.Point2i gridCell, DungeonLayout layout) {

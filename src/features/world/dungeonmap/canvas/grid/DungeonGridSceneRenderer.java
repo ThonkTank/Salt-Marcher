@@ -170,11 +170,16 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 Set<Tile> tiles = room.floor().shape().tiles();
                 fillRoomTiles(gc, camera, gridSize, tiles);
                 strokeRoomTiles(gc, camera, gridSize, tiles, palette.roomStroke(), 1.0);
+                Set<VertexEdge> doorEdges = room.roomId() == null
+                        ? Set.of()
+                        : boundaryEdges(mapModel.doorsForRoom(room.roomId()));
                 room.walls().forEach(wall -> {
+                    Set<VertexEdge> wallEdges = new LinkedHashSet<>(wall.edges());
+                    wallEdges.removeAll(doorEdges);
                     if (selected) {
-                        selectedRoomBoundaryEdges.addAll(wall.edges());
+                        selectedRoomBoundaryEdges.addAll(wallEdges);
                     } else {
-                        roomBoundaryEdges.addAll(wall.edges());
+                        roomBoundaryEdges.addAll(wallEdges);
                     }
                 });
                 if (showRuntimeLabels) {
@@ -391,13 +396,20 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             strokeRoomTiles(gc, camera, gridSize, corridorTiles, palette.roomStroke(), 1.0);
 
             Set<VertexEdge> wallEdges = new LinkedHashSet<>(corridor.path().floor().shape().boundaryEdges());
-            wallEdges.removeAll(corridor.path().doorEdges());
+            if (corridor.corridorId() != null) {
+                wallEdges.removeAll(boundaryEdges(mapModel.doorsForCorridor(corridor.corridorId())));
+            }
             drawCorridorBoundaries(gc, camera, gridSize, wallEdges, selected, palette);
 
-            gc.setStroke(selected ? palette.corridorSelectedStroke() : palette.corridorStroke());
-            gc.setLineWidth(selected ? 3.0 : 2.0);
-            for (VertexEdge edge : corridor.path().doorEdges()) {
-                strokeEdge(gc, camera, gridSize, edge);
+            for (Door door : corridor.corridorId() == null ? List.<Door>of() : mapModel.doorsForCorridor(corridor.corridorId())) {
+                if (door == null) {
+                    continue;
+                }
+                gc.setStroke(selected ? palette.corridorSelectedStroke() : palette.corridorStroke());
+                gc.setLineWidth(selected ? 3.0 : 2.0);
+                for (VertexEdge edge : door.edges()) {
+                    strokeEdge(gc, camera, gridSize, edge);
+                }
             }
         }
     }

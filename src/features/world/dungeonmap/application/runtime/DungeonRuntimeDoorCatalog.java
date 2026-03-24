@@ -5,12 +5,12 @@ import features.world.dungeonmap.application.room.RoomExitCatalog;
 import features.world.dungeonmap.application.room.RoomExitDescriptor;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.geometry.VertexEdge;
+import features.world.dungeonmap.model.objects.Door;
+import features.world.dungeonmap.model.objects.Door.DoorSide;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
 import features.world.dungeonmap.model.structures.room.Room;
 
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -26,7 +26,7 @@ public final class DungeonRuntimeDoorCatalog {
         if (layout == null || room == null) {
             return List.of();
         }
-        return RoomExitCatalog.describe(room).stream()
+        return RoomExitCatalog.describe(layout, room).stream()
                 .map(exit -> toDescriptor(layout, room, exit, heading))
                 .toList();
     }
@@ -37,10 +37,10 @@ public final class DungeonRuntimeDoorCatalog {
         }
         return describe(
                 corridor.path().floor().shape().absoluteCells(),
-                corridor.path().doorEdges(),
+                layout.doorsForCorridor(corridor.corridorId()),
                 heading,
                 (cell, direction) -> "",
-                exit -> destinationRoomLabel(layout, exit.outsideCell(), Set.of()));
+                exit -> destinationLabel(layout, layout.doorAt(exit.anchorEdge()), DoorSide.corridor(corridor.corridorId())));
     }
 
     public static List<DungeonRuntimeDoorDescriptor> describe(DungeonLayout layout, CorridorNetwork network, DungeonHeading heading) {
@@ -49,20 +49,20 @@ public final class DungeonRuntimeDoorCatalog {
         }
         return describe(
                 network.floor().shape().absoluteCells(),
-                network.doorEdges(),
+                layout.doorsForNetwork(network.networkId()),
                 heading,
                 (cell, direction) -> "",
-                exit -> destinationRoomLabel(layout, exit.outsideCell(), Set.of()));
+                exit -> destinationLabel(layout, layout.doorAt(exit.anchorEdge()), null));
     }
 
     private static List<DungeonRuntimeDoorDescriptor> describe(
             Set<Point2i> cells,
-            Set<VertexEdge> doorEdges,
+            List<Door> doors,
             DungeonHeading heading,
             BiFunction<Point2i, Point2i, String> narrationLookup,
             Function<RoomExitDescriptor, String> destinationLookup
     ) {
-        return DoorExitCatalog.describe(cells, doorEdges).stream()
+        return DoorExitCatalog.describe(cells, doors).stream()
                 .map(exit -> DungeonRuntimeDoorDescriptor.from(
                         exit,
                         heading,
@@ -85,39 +85,43 @@ public final class DungeonRuntimeDoorCatalog {
         if (layout == null || room == null || exit == null) {
             return "";
         }
-        Set<String> labels = new LinkedHashSet<>();
-        for (Corridor corridor : layout.corridorsForRoom(room.roomId())) {
-            if (corridor == null || corridor.path() == null || !matchesDoor(corridor, exit.anchorEdge())) {
-                continue;
-            }
-            for (Long roomId : corridor.roomIds()) {
-                if (roomId == null || roomId.equals(room.roomId())) {
-                    continue;
-                }
-                String label = DungeonRuntimeLabels.roomLabel(layout, roomId);
-                if (label != null && !label.isBlank()) {
-                    labels.add(label);
-                }
-            }
-        }
-        if (!labels.isEmpty()) {
-            return String.join(", ", labels);
-        }
-        return destinationRoomLabel(layout, exit.outsideCell(), Set.of(room.roomId()));
+        return destinationLabel(layout, layout.doorAt(exit.anchorEdge()), DoorSide.room(room.roomId()));
     }
 
-    private static boolean matchesDoor(Corridor corridor, VertexEdge anchorEdge) {
-        return corridor.path().doorEdges().contains(anchorEdge);
+    private static String destinationLabel(DungeonLayout layout, Door door, DoorSide activeSide) {
+        if (layout == null || door == null) {
+            return "";
+        }
+        DoorSide opposite = activeSide == null ? firstNonCorridorRoomSide(door) : door.oppositeOf(activeSide);
+        if (opposite == null) {
+            return "";
+        }
+        if (opposite.type() == Door.SideType.ROOM && opposite.id() != null) {
+            return DungeonRuntimeLabels.roomLabel(layout, opposite.id());
+        }
+        if (opposite.type() == Door.SideType.CORRIDOR && opposite.id() != null) {
+            Corridor corridor = layout.findCorridor(opposite.id());
+            if (corridor == null) {
+                return "";
+            }
+            return corridor.roomIds().stream()
+                    .filter(roomId -> roomId != null && (activeSide == null || !roomId.equals(activeSide.id())))
+                    .map(roomId -> DungeonRuntimeLabels.roomLabel(layout, roomId))
+                    .filter(label -> label != null && !label.isBlank())
+                    .distinct()
+                    .reduce((left, right) -> left + ", " + right)
+                    .orElse("");
+        }
+        return "";
     }
 
-    private static String destinationRoomLabel(DungeonLayout layout, Point2i targetCell, Set<Long> excludedRoomIds) {
-        if (layout == null || targetCell == null) {
-            return "";
+    private static DoorSide firstNonCorridorRoomSide(Door door) {
+        if (door == null) {
+            return null;
         }
-        Room room = layout.roomAtCell(targetCell);
-        if (room == null || (room.roomId() != null && excludedRoomIds.contains(room.roomId()))) {
-            return "";
-        }
-        return DungeonRuntimeLabels.roomLabel(room);
+        return door.sides().stream()
+                .filter(side -> side != null && side.type() == Door.SideType.ROOM)
+                .findFirst()
+                .orElse(null);
     }
 }
