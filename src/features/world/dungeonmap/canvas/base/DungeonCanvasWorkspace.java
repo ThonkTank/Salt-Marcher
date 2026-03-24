@@ -20,6 +20,7 @@ import javafx.scene.layout.StackPane;
 
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.IntConsumer;
 
 public final class DungeonCanvasWorkspace extends BorderPane {
 
@@ -63,6 +64,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
     private Point2D lastPointer;
     private PointerCapture activePointerCapture = PointerCapture.NONE;
     private Runnable stateListener = () -> {};
+    private IntConsumer levelScrollListener = ignored -> {};
 
     public DungeonCanvasWorkspace(boolean editorMode, DungeonLayout mapModel) {
         this.editorMode = editorMode;
@@ -198,6 +200,10 @@ public final class DungeonCanvasWorkspace extends BorderPane {
         this.stateListener.run();
     }
 
+    public void setOnLevelScrollRequested(IntConsumer levelScrollListener) {
+        this.levelScrollListener = levelScrollListener == null ? ignored -> {} : levelScrollListener;
+    }
+
     public void resetView() {
         camera.reset();
         notifyViewChanged();
@@ -272,6 +278,12 @@ public final class DungeonCanvasWorkspace extends BorderPane {
     }
 
     private void handleScroll(ScrollEvent event) {
+        if (event.isShiftDown()) {
+            int levelDelta = event.getDeltaY() >= 0 ? 1 : -1;
+            levelScrollListener.accept(levelDelta);
+            event.consume();
+            return;
+        }
         double factor = event.getDeltaY() >= 0 ? 1.1 : 1.0 / 1.1;
         camera.zoomAt(factor, event.getX(), event.getY());
         redraw();

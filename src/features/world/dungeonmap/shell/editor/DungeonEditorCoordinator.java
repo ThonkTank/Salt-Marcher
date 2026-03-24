@@ -233,6 +233,8 @@ final class DungeonEditorCoordinator {
                         target == null ? null : target.mapId(),
                         target == null ? null : target.tileId()));
         statePane.setOnPreparedTransitionSelected(transitionDraftState::setPreparedTransitionId);
+        workspace.setOnLevelScrollRequested(levelDelta ->
+                mapState.setActiveProjectionLevel(mapState.activeProjectionLevel() + levelDelta));
         workspace.setInteractionHandler(interactionController);
     }
 
