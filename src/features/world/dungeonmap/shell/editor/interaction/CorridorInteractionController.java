@@ -25,7 +25,7 @@ public final class CorridorInteractionController {
     private final EditorSelectionState selectionState;
     private final DungeonCorridorDraftState draftState;
     private final DungeonCorridorEditService corridorEditService;
-    private final DungeonEditorHitTester hitTester = new DungeonGridHitTester();
+    private final DungeonGridHitTester hitTester = new DungeonGridHitTester();
 
     public CorridorInteractionController(
             DungeonMapState mapState,

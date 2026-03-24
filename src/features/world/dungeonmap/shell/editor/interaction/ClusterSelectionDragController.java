@@ -22,7 +22,7 @@ public final class ClusterSelectionDragController {
     private final EditorSelectionState selectionState;
     private final EditorLayoutPreviewState layoutPreviewState;
     private final DungeonClusterMoveService clusterMoveService;
-    private final DungeonEditorHitTester hitTester = new DungeonGridHitTester();
+    private final DungeonGridHitTester hitTester = new DungeonGridHitTester();
 
     private ClusterDragSession dragSession;
 
