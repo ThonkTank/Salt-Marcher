@@ -46,8 +46,9 @@ public final class DungeonStairEditService {
             throw new SQLException("Kein aktiver Dungeon geladen");
         }
         List<Integer> sortedExitLevels = validateAndSortExitLevels(exitLevels);
-        StairShape validatedShape = validateShape(shape, dimension1, dimension2);
-        StairDirection validatedDirection = direction == null ? StairDirection.defaultDirection() : direction;
+        StairShape validatedShape = requireShape(shape);
+        StairDirection validatedDirection = requireDirection(direction);
+        validateDimensions(validatedShape, dimension1, dimension2);
         List<CubePoint> pathNodes = StairPathGenerator.generatePath(
                 validatedShape,
                 anchorCell,
@@ -101,18 +102,25 @@ public final class DungeonStairEditService {
         return List.copyOf(result);
     }
 
-    private static StairShape validateShape(StairShape shape, int dimension1, int dimension2) throws SQLException {
-        StairShape resolvedShape = shape == null ? StairShape.LADDER : shape;
-        if (resolvedShape.needsSideLength() && dimension1 <= 0) {
-            throw new SQLException("Seitenlänge muss größer als 0 sein");
+    private static StairShape requireShape(StairShape shape) throws SQLException {
+        if (shape == null) {
+            throw new SQLException("Treppenform fehlt");
         }
-        if (resolvedShape.needsDimensions() && (dimension1 <= 0 || dimension2 <= 0)) {
-            throw new SQLException("Breite und Tiefe müssen größer als 0 sein");
+        return shape;
+    }
+
+    private static StairDirection requireDirection(StairDirection direction) throws SQLException {
+        if (direction == null) {
+            throw new SQLException("Treppenrichtung fehlt");
         }
-        if (resolvedShape.needsRadius() && dimension1 <= 0) {
-            throw new SQLException("Radius muss größer als 0 sein");
+        return direction;
+    }
+
+    private static void validateDimensions(StairShape shape, int dimension1, int dimension2) throws SQLException {
+        String validationMessage = shape.validateDimensions(dimension1, dimension2).orElse(null);
+        if (validationMessage != null) {
+            throw new SQLException(validationMessage);
         }
-        return resolvedShape;
     }
 
     private static List<DungeonStairExit> buildExits(List<CubePoint> pathNodes, List<Integer> sortedExitLevels) throws SQLException {

@@ -1,5 +1,7 @@
 package features.world.dungeonmap.model.structures.stair;
 
+import java.util.Optional;
+
 public enum StairShape {
     LADDER("Leiter"),
     STRAIGHT("Gerade Treppe"),
@@ -31,6 +33,19 @@ public enum StairShape {
 
     public boolean needsRadius() {
         return this == CIRCULAR;
+    }
+
+    public Optional<String> validateDimensions(int dimension1, int dimension2) {
+        if (needsSideLength() && dimension1 <= 0) {
+            return Optional.of("Seitenlänge muss größer als 0 sein");
+        }
+        if (needsDimensions() && (dimension1 <= 0 || dimension2 <= 0)) {
+            return Optional.of("Breite und Tiefe müssen größer als 0 sein");
+        }
+        if (needsRadius() && dimension1 <= 0) {
+            return Optional.of("Radius muss größer als 0 sein");
+        }
+        return Optional.empty();
     }
 
     public static StairShape parse(String value) {

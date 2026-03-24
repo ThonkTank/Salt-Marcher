@@ -13,9 +13,6 @@ public final class DungeonStairDraftState {
     private static final String READY_MESSAGE = "Zum Platzieren Feld anklicken";
     private static final String MIN_LEVELS_MESSAGE = "Mindestens zwei verschiedene Ebenen";
     private static final String DUPLICATE_MESSAGE = "Ausgänge dürfen nicht doppelt sein";
-    private static final String SIDE_LENGTH_MESSAGE = "Seitenlänge muss größer als 0 sein";
-    private static final String DIMENSIONS_MESSAGE = "Breite und Tiefe müssen größer als 0 sein";
-    private static final String RADIUS_MESSAGE = "Radius muss größer als 0 sein";
 
     private final List<Runnable> listeners = new CopyOnWriteArrayList<>();
 
@@ -219,26 +216,11 @@ public final class DungeonStairDraftState {
         if (levels.size() < 2) {
             return MIN_LEVELS_MESSAGE;
         }
-        String validationMessage = validationMessage(shape, dimension1, dimension2);
-        return validationMessage == null ? READY_MESSAGE : validationMessage;
-    }
-
-    private static String validationMessage(StairShape shape, int dimension1, int dimension2) {
-        StairShape resolvedShape = shape == null ? StairShape.LADDER : shape;
-        if (resolvedShape.needsSideLength() && dimension1 <= 0) {
-            return SIDE_LENGTH_MESSAGE;
-        }
-        if (resolvedShape.needsDimensions() && (dimension1 <= 0 || dimension2 <= 0)) {
-            return DIMENSIONS_MESSAGE;
-        }
-        if (resolvedShape.needsRadius() && dimension1 <= 0) {
-            return RADIUS_MESSAGE;
-        }
-        return null;
+        return shape.validateDimensions(dimension1, dimension2).orElse(READY_MESSAGE);
     }
 
     private String validationMessage() {
-        return validationMessage(shape, dimension1, dimension2);
+        return shape.validateDimensions(dimension1, dimension2).orElse(null);
     }
 
     private static int normalizeDimension1(StairShape shape, int currentValue) {

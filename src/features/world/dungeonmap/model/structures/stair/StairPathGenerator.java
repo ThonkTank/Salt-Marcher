@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 public final class StairPathGenerator {
@@ -25,13 +26,17 @@ public final class StairPathGenerator {
             int dimension1,
             int dimension2
     ) {
-        StairShape resolvedShape = shape == null ? StairShape.LADDER : shape;
-        StairDirection resolvedDirection = direction == null ? StairDirection.defaultDirection() : direction;
+        StairShape resolvedShape = Objects.requireNonNull(shape, "shape");
+        StairDirection resolvedDirection = Objects.requireNonNull(direction, "direction");
         if (anchor == null) {
             return List.of();
         }
         if (maxZ < minZ) {
             throw new IllegalArgumentException("maxZ darf nicht kleiner als minZ sein");
+        }
+        String validationMessage = resolvedShape.validateDimensions(dimension1, dimension2).orElse(null);
+        if (validationMessage != null) {
+            throw new IllegalArgumentException(validationMessage);
         }
         int stepCount = maxZ - minZ + 1;
         List<Point2i> projectedPath = switch (resolvedShape) {
@@ -75,9 +80,6 @@ public final class StairPathGenerator {
             int firstSegmentLength,
             int secondSegmentLength
     ) {
-        if (firstSegmentLength <= 0 || secondSegmentLength <= 0) {
-            throw new IllegalArgumentException("Treppenmaße müssen größer als 0 sein");
-        }
         ArrayList<Point2i> result = new ArrayList<>(stepCount);
         Point2i current = anchor;
         StairDirection currentDirection = direction;
@@ -105,9 +107,6 @@ public final class StairPathGenerator {
             int stepCount,
             int radius
     ) {
-        if (radius <= 0) {
-            throw new IllegalArgumentException("Radius muss größer als 0 sein");
-        }
         List<Point2i> loop = circularLoop(anchor, radius);
         if (loop.isEmpty()) {
             throw new IllegalArgumentException("Kreisförmiger Treppenpfad konnte nicht erzeugt werden");
