@@ -8,6 +8,7 @@ import features.world.dungeonmap.persistence.DungeonCorridorWriteRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -33,6 +34,7 @@ public final class DungeonCorridorEditService {
         if (requestedRoomIds.size() < 2 || layout.findCorridorContainingAllRooms(requestedRoomIds) != null) {
             return;
         }
+        rejectSameClusterOnlyCorridor(layout, requestedRoomIds);
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
                 corridorWriteRepository.insertCorridor(conn, layout.mapId(), roomIds);
@@ -53,6 +55,9 @@ public final class DungeonCorridorEditService {
     public void addRoom(DungeonLayout layout, long corridorId, long roomId) throws SQLException {
         requireLayout(layout);
         Corridor corridor = requireCorridor(layout, corridorId);
+        Set<Long> mergedRoomIds = new LinkedHashSet<>(corridor.roomIds());
+        mergedRoomIds.add(roomId);
+        rejectSameClusterOnlyCorridor(layout, mergedRoomIds);
         persistCorridor(layout, corridor.withAddedRoom(roomId));
     }
 
@@ -63,6 +68,9 @@ public final class DungeonCorridorEditService {
         }
         Corridor kept = requireCorridor(layout, keptCorridorId);
         Corridor merged = requireCorridor(layout, mergedCorridorId);
+        Set<Long> mergedRoomIds = new LinkedHashSet<>(kept.roomIds());
+        mergedRoomIds.addAll(merged.roomIds());
+        rejectSameClusterOnlyCorridor(layout, mergedRoomIds);
         persistCorridor(layout, kept.mergeWith(merged), mergedCorridorId);
     }
 
@@ -76,6 +84,33 @@ public final class DungeonCorridorEditService {
         if (layout == null) {
             throw new SQLException("Dungeon konnte nicht geladen werden");
         }
+    }
+
+    private static void rejectSameClusterOnlyCorridor(DungeonLayout layout, Set<Long> roomIds) {
+        if (isSameClusterOnlyCorridor(layout, roomIds)) {
+            throw new IllegalArgumentException("Korridore innerhalb eines Clusters sind nicht erlaubt");
+        }
+    }
+
+    private static boolean isSameClusterOnlyCorridor(DungeonLayout layout, Set<Long> roomIds) {
+        if (layout == null || roomIds == null || roomIds.size() < 2) {
+            return false;
+        }
+        Set<Long> clusterIds = new LinkedHashSet<>();
+        for (Long roomId : roomIds) {
+            if (roomId == null) {
+                continue;
+            }
+            var room = layout.findRoom(roomId);
+            if (room == null) {
+                return false;
+            }
+            clusterIds.add(room.clusterId());
+            if (clusterIds.size() > 1) {
+                return false;
+            }
+        }
+        return clusterIds.size() == 1;
     }
 
     private void persistCorridor(DungeonLayout layout, Corridor corridor) throws SQLException {
