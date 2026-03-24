@@ -4,10 +4,12 @@ import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 
+import java.util.ArrayDeque;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -61,6 +63,48 @@ record SteinerTree(
         return Set.copyOf(result);
     }
 
+    Set<CubePoint> connectingSubtreeCells(Set<Long> roomIds) {
+        if (roomIds == null || roomIds.isEmpty() || corridorCells.isEmpty()) {
+            return Set.of();
+        }
+        List<CubePoint> anchors = roomIds.stream()
+                .map(attachmentCellsByRoomId::get)
+                .filter(Objects::nonNull)
+                .flatMap(Set::stream)
+                .distinct()
+                .toList();
+        if (anchors.size() < 2) {
+            return Set.of();
+        }
+        Set<CubePoint> result = new LinkedHashSet<>();
+        CubePoint root = anchors.getFirst();
+        result.add(root);
+        for (int index = 1; index < anchors.size(); index++) {
+            List<CubePoint> path = findPath(root, anchors.get(index));
+            if (path.isEmpty()) {
+                return Set.of();
+            }
+            result.addAll(path);
+        }
+        return Set.copyOf(result);
+    }
+
+    Set<CubePoint> boundaryCells(Set<CubePoint> subtreeCells) {
+        if (subtreeCells == null || subtreeCells.isEmpty()) {
+            return Set.of();
+        }
+        Set<CubePoint> boundaries = new LinkedHashSet<>();
+        for (CubePoint cell : subtreeCells) {
+            boolean touchesOutside = CostField.STEPS.stream()
+                    .map(cell::add)
+                    .anyMatch(neighbor -> corridorCells.contains(neighbor) && !subtreeCells.contains(neighbor));
+            if (touchesOutside) {
+                boundaries.add(cell);
+            }
+        }
+        return Set.copyOf(boundaries);
+    }
+
     SteinerTree withReplacedBranch(
             long roomId,
             Set<CubePoint> oldBranch,
@@ -88,6 +132,45 @@ record SteinerTree(
             updatedAttachments.remove(roomId);
         } else {
             updatedAttachments.put(roomId, Set.of(newPath.getLast()));
+        }
+        return new SteinerTree(
+                Set.copyOf(connectedRoomIds),
+                Set.copyOf(updatedCells),
+                Set.copyOf(updatedDoors),
+                Map.copyOf(updatedAttachments),
+                SteinerTreeBuilder.scoreCells(updatedCells));
+    }
+
+    SteinerTree withReplacedSubtree(
+            Set<Long> roomIds,
+            Set<CubePoint> oldSubtree,
+            Set<CubePoint> newSubtree,
+            Map<Long, Set<CubePoint>> replacementAttachments,
+            Set<DoorEdge> replacementDoorEdges
+    ) {
+        Set<Long> replacedRoomIds = roomIds == null ? Set.of() : Set.copyOf(roomIds);
+        Set<CubePoint> updatedCells = new LinkedHashSet<>(corridorCells);
+        if (oldSubtree != null) {
+            updatedCells.removeAll(oldSubtree);
+        }
+        if (newSubtree != null) {
+            updatedCells.addAll(newSubtree);
+        }
+        Set<DoorEdge> updatedDoors = new LinkedHashSet<>();
+        for (DoorEdge edge : doorEdges) {
+            if (edge == null || !replacedRoomIds.contains(edge.roomId())) {
+                updatedDoors.add(edge);
+            }
+        }
+        if (replacementDoorEdges != null) {
+            updatedDoors.addAll(replacementDoorEdges);
+        }
+        Map<Long, Set<CubePoint>> updatedAttachments = new LinkedHashMap<>(attachmentCellsByRoomId);
+        for (Long roomId : replacedRoomIds) {
+            updatedAttachments.remove(roomId);
+        }
+        if (replacementAttachments != null) {
+            updatedAttachments.putAll(replacementAttachments);
         }
         return new SteinerTree(
                 Set.copyOf(connectedRoomIds),
@@ -126,6 +209,45 @@ record SteinerTree(
                 .map(cell::add)
                 .filter(corridorCells::contains)
                 .toList();
+    }
+
+    private List<CubePoint> findPath(CubePoint start, CubePoint target) {
+        if (start == null || target == null || !corridorCells.contains(start) || !corridorCells.contains(target)) {
+            return List.of();
+        }
+        if (start.equals(target)) {
+            return List.of(start);
+        }
+        ArrayDeque<CubePoint> queue = new ArrayDeque<>();
+        Map<CubePoint, CubePoint> previousByCell = new LinkedHashMap<>();
+        Set<CubePoint> visited = new LinkedHashSet<>();
+        queue.add(start);
+        visited.add(start);
+        while (!queue.isEmpty()) {
+            CubePoint current = queue.removeFirst();
+            for (CubePoint neighbor : neighbors(current)) {
+                if (!visited.add(neighbor)) {
+                    continue;
+                }
+                previousByCell.put(neighbor, current);
+                if (neighbor.equals(target)) {
+                    return reconstructPath(previousByCell, target);
+                }
+                queue.addLast(neighbor);
+            }
+        }
+        return List.of();
+    }
+
+    private static List<CubePoint> reconstructPath(Map<CubePoint, CubePoint> previousByCell, CubePoint target) {
+        ArrayDeque<CubePoint> path = new ArrayDeque<>();
+        CubePoint current = target;
+        path.addFirst(current);
+        while (previousByCell.containsKey(current)) {
+            current = previousByCell.get(current);
+            path.addFirst(current);
+        }
+        return List.copyOf(path);
     }
 }
 

@@ -33,6 +33,9 @@ final class SteinerTreeBuilder {
         if (best != null && best.connectedRoomIds().size() > 2) {
             best = ripUpAndReroute(best, context);
         }
+        if (best != null && best.connectedRoomIds().size() >= 3) {
+            best = zelikovskyImprove(best, context);
+        }
         return best == null ? SteinerTree.empty() : best;
     }
 
@@ -152,6 +155,100 @@ final class SteinerTreeBuilder {
         return current;
     }
 
+    private static SteinerTree zelikovskyImprove(SteinerTree tree, PlannerContext context) {
+        SteinerTree current = tree;
+        List<Room> rooms = context.targetRooms();
+        boolean improved = true;
+        while (improved) {
+            improved = false;
+            for (int first = 0; first < rooms.size(); first++) {
+                for (int second = first + 1; second < rooms.size(); second++) {
+                    for (int third = second + 1; third < rooms.size(); third++) {
+                        SteinerTree candidate = tryTripleImprovement(
+                                current,
+                                rooms.get(first),
+                                rooms.get(second),
+                                rooms.get(third),
+                                context);
+                        if (candidate != null && candidate.totalCost().compareTo(current.totalCost()) < 0) {
+                            current = candidate;
+                            improved = true;
+                        }
+                    }
+                }
+            }
+        }
+        return current;
+    }
+
+    private static SteinerTree tryTripleImprovement(
+            SteinerTree tree,
+            Room first,
+            Room second,
+            Room third,
+            PlannerContext context
+    ) {
+        if (tree == null || first == null || second == null || third == null
+                || first.roomId() == null || second.roomId() == null || third.roomId() == null) {
+            return null;
+        }
+        Set<Long> tripleRoomIds = Set.of(first.roomId(), second.roomId(), third.roomId());
+        Set<CubePoint> currentSubtree = tree.connectingSubtreeCells(tripleRoomIds);
+        if (currentSubtree.isEmpty()) {
+            return null;
+        }
+        Set<CubePoint> boundaryCells = tree.boundaryCells(currentSubtree);
+        if (boundaryCells.size() > 1) {
+            return null;
+        }
+
+        FloodResult floodFirst = CostField.floodFull(zeroSources(context.entryCells(first.roomId())), context.searchVolume(), context.instrumentation());
+        FloodResult floodSecond = CostField.floodFull(zeroSources(context.entryCells(second.roomId())), context.searchVolume(), context.instrumentation());
+        FloodResult floodThird = CostField.floodFull(zeroSources(context.entryCells(third.roomId())), context.searchVolume(), context.instrumentation());
+        FloodResult floodBoundary = boundaryCells.isEmpty()
+                ? null
+                : CostField.floodFull(zeroSources(boundaryCells), context.searchVolume(), context.instrumentation());
+
+        CubePoint bestJunction = bestTripleJunction(floodFirst, floodSecond, floodThird, floodBoundary);
+        if (bestJunction == null) {
+            return null;
+        }
+
+        List<CubePoint> firstPath = CostField.extractPath(floodFirst, bestJunction);
+        List<CubePoint> secondPath = CostField.extractPath(floodSecond, bestJunction);
+        List<CubePoint> thirdPath = CostField.extractPath(floodThird, bestJunction);
+        List<CubePoint> boundaryPath = floodBoundary == null ? List.of() : CostField.extractPath(floodBoundary, bestJunction);
+        if (firstPath.isEmpty() || secondPath.isEmpty() || thirdPath.isEmpty()) {
+            return null;
+        }
+
+        Set<CubePoint> replacementCells = new LinkedHashSet<>();
+        replacementCells.addAll(firstPath);
+        replacementCells.addAll(secondPath);
+        replacementCells.addAll(thirdPath);
+        replacementCells.addAll(boundaryPath);
+        if (scoreCells(replacementCells).compareTo(scoreCells(currentSubtree)) >= 0) {
+            return null;
+        }
+
+        Map<Long, Set<CubePoint>> replacementAttachments = new LinkedHashMap<>();
+        replacementAttachments.put(first.roomId(), Set.of(firstPath.getFirst()));
+        replacementAttachments.put(second.roomId(), Set.of(secondPath.getFirst()));
+        replacementAttachments.put(third.roomId(), Set.of(thirdPath.getFirst()));
+
+        Set<DoorEdge> replacementDoors = new LinkedHashSet<>();
+        addDoorEdge(replacementDoors, deriveDoorEdge(firstPath.getFirst(), first, context));
+        addDoorEdge(replacementDoors, deriveDoorEdge(secondPath.getFirst(), second, context));
+        addDoorEdge(replacementDoors, deriveDoorEdge(thirdPath.getFirst(), third, context));
+
+        return tree.withReplacedSubtree(
+                tripleRoomIds,
+                currentSubtree,
+                replacementCells,
+                replacementAttachments,
+                replacementDoors);
+    }
+
     private static boolean routeThroughWaypoints(
             Set<CubePoint> treeCells,
             Map<PathState, RouteCost> sources,
@@ -229,6 +326,62 @@ final class SteinerTreeBuilder {
             }
         }
         return bestEntry;
+    }
+
+    private static CubePoint bestTripleJunction(
+            FloodResult floodFirst,
+            FloodResult floodSecond,
+            FloodResult floodThird,
+            FloodResult floodBoundary
+    ) {
+        Set<CubePoint> candidates = new LinkedHashSet<>(floodFirst.bestStateByPoint().keySet());
+        candidates.retainAll(floodSecond.bestStateByPoint().keySet());
+        candidates.retainAll(floodThird.bestStateByPoint().keySet());
+        if (floodBoundary != null) {
+            candidates.retainAll(floodBoundary.bestStateByPoint().keySet());
+        }
+        CubePoint bestJunction = null;
+        int bestScore = Integer.MAX_VALUE;
+        for (CubePoint candidate : candidates) {
+            int score = tripleJunctionScore(candidate, floodFirst, floodSecond, floodThird, floodBoundary);
+            if (score < bestScore) {
+                bestScore = score;
+                bestJunction = candidate;
+            }
+        }
+        return bestJunction;
+    }
+
+    private static int tripleJunctionScore(
+            CubePoint candidate,
+            FloodResult floodFirst,
+            FloodResult floodSecond,
+            FloodResult floodThird,
+            FloodResult floodBoundary
+    ) {
+        RouteCost firstCost = floodFirst.bestCostAt(candidate);
+        RouteCost secondCost = floodSecond.bestCostAt(candidate);
+        RouteCost thirdCost = floodThird.bestCostAt(candidate);
+        if (firstCost == null || secondCost == null || thirdCost == null) {
+            return Integer.MAX_VALUE;
+        }
+        int score = RouteSearch.routeValue(firstCost.distance(), firstCost.corners())
+                + RouteSearch.routeValue(secondCost.distance(), secondCost.corners())
+                + RouteSearch.routeValue(thirdCost.distance(), thirdCost.corners());
+        if (floodBoundary != null) {
+            RouteCost boundaryCost = floodBoundary.bestCostAt(candidate);
+            if (boundaryCost == null) {
+                return Integer.MAX_VALUE;
+            }
+            score += RouteSearch.routeValue(boundaryCost.distance(), boundaryCost.corners());
+        }
+        return score;
+    }
+
+    private static void addDoorEdge(Set<DoorEdge> target, DoorEdge edge) {
+        if (target != null && edge != null) {
+            target.add(edge);
+        }
     }
 
     private static DoorEdge deriveDoorEdge(CubePoint entryCell, Room room, PlannerContext context) {

@@ -32,12 +32,36 @@ final class CostField {
             Map<CubePoint, Long> targetRoomByEntryCell,
             PlannerInstrumentation instrumentation
     ) {
+        return floodInternal(sources, volume, targetEntryCells, targetRoomByEntryCell, instrumentation, true);
+    }
+
+    static FloodResult floodFull(
+            Map<PathState, RouteCost> sources,
+            SearchVolume volume,
+            PlannerInstrumentation instrumentation
+    ) {
+        return floodInternal(sources, volume, Set.of(), Map.of(), instrumentation, false);
+    }
+
+    private static FloodResult floodInternal(
+            Map<PathState, RouteCost> sources,
+            SearchVolume volume,
+            Set<CubePoint> targetEntryCells,
+            Map<CubePoint, Long> targetRoomByEntryCell,
+            PlannerInstrumentation instrumentation,
+            boolean stopWhenTargetsReached
+    ) {
         long startedAt = instrumentation == null ? 0L : instrumentation.startTimer();
         if (instrumentation != null) {
             instrumentation.recordFloodCall();
         }
         try {
-            if (sources == null || sources.isEmpty() || volume == null || targetEntryCells == null || targetEntryCells.isEmpty()) {
+            if (sources == null || sources.isEmpty() || volume == null) {
+                return new FloodResult(Map.of(), Map.of(), Set.of(), Map.of());
+            }
+            Set<CubePoint> targets = targetEntryCells == null ? Set.of() : targetEntryCells;
+            Map<CubePoint, Long> roomsByEntry = targetRoomByEntryCell == null ? Map.of() : targetRoomByEntryCell;
+            if (stopWhenTargetsReached && targets.isEmpty()) {
                 return new FloodResult(Map.of(), Map.of(), Set.of(), Map.of());
             }
             PriorityQueue<PathNode> open = new PriorityQueue<>(Comparator.comparing(PathNode::score));
@@ -45,7 +69,7 @@ final class CostField {
             Map<PathState, PathState> predecessors = new HashMap<>();
             Map<CubePoint, PathState> bestStateByPoint = new HashMap<>();
             Set<Long> reachedRoomIds = new LinkedHashSet<>();
-            int expectedRoomCount = targetRoomCount(targetRoomByEntryCell);
+            int expectedRoomCount = targetRoomCount(roomsByEntry);
             for (Map.Entry<PathState, RouteCost> entry : sources.entrySet()) {
                 if (entry.getKey() == null || entry.getKey().point() == null || entry.getValue() == null) {
                     continue;
@@ -64,20 +88,20 @@ final class CostField {
                     continue;
                 }
                 CubePoint cell = node.state().point();
-                if (targetEntryCells.contains(cell)) {
+                if (targets.contains(cell)) {
                     reached.add(cell);
-                    Long roomId = targetRoomByEntryCell == null ? null : targetRoomByEntryCell.get(cell);
+                    Long roomId = roomsByEntry.get(cell);
                     if (roomId != null) {
                         reachedRoomIds.add(roomId);
                     }
-                    if (expectedRoomCount > 0 && reachedRoomIds.size() >= expectedRoomCount) {
+                    if (stopWhenTargetsReached && expectedRoomCount > 0 && reachedRoomIds.size() >= expectedRoomCount) {
                         break;
                     }
                     continue;
                 }
                 for (int directionIndex = 0; directionIndex < STEPS.size(); directionIndex++) {
                     CubePoint next = cell.add(STEPS.get(directionIndex));
-                    if (!volume.isPassable(next) && !targetEntryCells.contains(next)) {
+                    if (!volume.isPassable(next) && !targets.contains(next)) {
                         continue;
                     }
                     boolean vertical = directionIndex >= 4;
