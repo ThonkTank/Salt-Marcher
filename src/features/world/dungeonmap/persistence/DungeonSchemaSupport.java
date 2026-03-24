@@ -1,8 +1,6 @@
 package features.world.dungeonmap.persistence;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -30,10 +28,6 @@ public final class DungeonSchemaSupport {
                 + "cluster_id      INTEGER NOT NULL REFERENCES dungeon_room_clusters(cluster_id) ON DELETE CASCADE,"
                 + "name            TEXT NOT NULL,"
                 + "visual_description TEXT,"
-                + "wall_finish     TEXT,"
-                + "light_level     TEXT,"
-                + "atmosphere      TEXT,"
-                + "detail_notes    TEXT,"
                 + "component_x     INTEGER NOT NULL,"
                 + "component_y     INTEGER NOT NULL,"
                 + "level_z         INTEGER NOT NULL DEFAULT 0"
@@ -119,10 +113,6 @@ public final class DungeonSchemaSupport {
         try (Statement stmt = conn.createStatement()) {
             createSchema(stmt);
         }
-        ensureColumn(conn, "dungeon_rooms", "wall_finish", "TEXT");
-        ensureColumn(conn, "dungeon_rooms", "light_level", "TEXT");
-        ensureColumn(conn, "dungeon_rooms", "atmosphere", "TEXT");
-        ensureColumn(conn, "dungeon_rooms", "detail_notes", "TEXT");
     }
 
     public static void resetSchema(Connection conn) throws SQLException {
@@ -146,24 +136,4 @@ public final class DungeonSchemaSupport {
         }
     }
 
-    private static void ensureColumn(Connection conn, String tableName, String columnName, String columnType) throws SQLException {
-        if (hasColumn(conn, tableName, columnName)) {
-            return;
-        }
-        try (Statement stmt = conn.createStatement()) {
-            stmt.execute("ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + columnType);
-        }
-    }
-
-    private static boolean hasColumn(Connection conn, String tableName, String columnName) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement("PRAGMA table_info(" + tableName + ")");
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                if (columnName.equalsIgnoreCase(rs.getString("name"))) {
-                    return true;
-                }
-            }
-            return false;
-        }
-    }
 }

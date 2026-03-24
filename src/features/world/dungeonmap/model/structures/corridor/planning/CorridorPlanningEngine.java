@@ -14,6 +14,7 @@ import features.world.dungeonmap.model.structures.corridor.ResolvedCorridorDoorB
 import features.world.dungeonmap.model.structures.room.Room;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -130,17 +131,37 @@ public final class CorridorPlanningEngine {
         Set<Point2i> projectedCells = tree.corridorCells().stream()
                 .map(CubePoint::projectedCell)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
+        Map<Integer, Floor> floorsByLevel = new LinkedHashMap<>();
+        for (Integer level : tree.levels()) {
+            Set<Point2i> levelCells = tree.cellsAtLevel(level);
+            floorsByLevel.put(level, new Floor(TileShape.fromAbsoluteCells(levelCells)));
+        }
         Set<VertexEdge> doorEdges = tree.doorEdges().stream()
                 .map(DoorEdge::edge)
                 .filter(java.util.Objects::nonNull)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
+        Map<Integer, Set<VertexEdge>> doorEdgesByLevel = tree.doorEdges().stream()
+                .filter(java.util.Objects::nonNull)
+                .filter(doorEdge -> doorEdge.edge() != null)
+                .collect(Collectors.groupingBy(
+                        DoorEdge::levelZ,
+                        LinkedHashMap::new,
+                        Collectors.mapping(DoorEdge::edge, Collectors.toCollection(LinkedHashSet::new))))
+                .entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> Set.copyOf(entry.getValue()),
+                        (left, right) -> left,
+                        LinkedHashMap::new));
         boolean directlyAdjacent = tree.corridorCells().isEmpty() && !doorEdges.isEmpty();
         boolean routable = tree.connectedRoomIds().size() >= rooms.size()
                 && (!projectedCells.isEmpty() || !doorEdges.isEmpty());
         return new CorridorPath(
                 route,
                 new Floor(TileShape.fromAbsoluteCells(projectedCells)),
+                Map.copyOf(floorsByLevel),
                 Set.copyOf(doorEdges),
+                doorEdgesByLevel,
                 directlyAdjacent,
                 routable);
     }

@@ -20,10 +20,7 @@ import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInput
 import features.world.dungeonmap.model.structures.corridor.CorridorWaypointBinding;
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
-import features.world.dungeonmap.model.structures.room.RoomAtmosphere;
-import features.world.dungeonmap.model.structures.room.RoomLightLevel;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.model.structures.room.RoomWallFinish;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.stair.DungeonStairExit;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
@@ -174,8 +171,7 @@ public final class DungeonMapLoader {
                         edgeDirectionDelta(rs.getString("edge_direction")),
                         rs.getString("description")));
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT room_id, dungeon_map_id, cluster_id, name, visual_description, wall_finish, light_level,"
-                        + " atmosphere, detail_notes, component_x, component_y"
+                "SELECT room_id, dungeon_map_id, cluster_id, name, visual_description, component_x, component_y"
                         + " FROM dungeon_rooms WHERE dungeon_map_id=? ORDER BY room_id")) {
             ps.setLong(1, mapId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -192,10 +188,6 @@ public final class DungeonMapLoader {
                     List.of(),
                     Set.of(),
                     new RoomNarration(
-                            RoomWallFinish.fromStorage(rs.getString("wall_finish")),
-                            RoomLightLevel.fromStorage(rs.getString("light_level")),
-                            RoomAtmosphere.fromStorage(rs.getString("atmosphere")),
-                            rs.getString("detail_notes"),
                             rs.getString("visual_description"),
                             exitNarrationsByRoomId.getOrDefault(roomId, List.of()))));
                 }

@@ -133,14 +133,9 @@ public final class DungeonRoomWriteRepository {
     public void replaceRoomNarration(Connection conn, long roomId, RoomNarration narration) throws SQLException {
         RoomNarration resolvedNarration = narration == null ? RoomNarration.empty() : narration;
         try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE dungeon_rooms SET visual_description=?, wall_finish=?, light_level=?, atmosphere=?, detail_notes=?"
-                        + " WHERE room_id=?")) {
-            ps.setString(1, resolvedNarration.visualDescriptionOverride());
-            ps.setString(2, resolvedNarration.wallFinish().name());
-            ps.setString(3, resolvedNarration.lightLevel().name());
-            ps.setString(4, resolvedNarration.atmosphere().name());
-            ps.setString(5, resolvedNarration.notes());
-            ps.setLong(6, roomId);
+                "UPDATE dungeon_rooms SET visual_description=? WHERE room_id=?")) {
+            ps.setString(1, resolvedNarration.visualDescription());
+            ps.setLong(2, roomId);
             ps.executeUpdate();
         }
         try (PreparedStatement delete = conn.prepareStatement(
