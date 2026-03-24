@@ -128,12 +128,22 @@ public final class CorridorPlanningEngine {
         if (tree == null || !tree.isRoutable()) {
             return CorridorPath.unroutable(route);
         }
-        Set<Point2i> projectedCells = tree.corridorCells().stream()
+        Map<Integer, Set<Point2i>> occupiedRoomCellsByLevel = occupiedRoomCellsByLevel(rooms, tree);
+        Set<CubePoint> corridorCells = tree.corridorCells().stream()
+                .filter(cell -> !occupiesRoomCell(cell, occupiedRoomCellsByLevel))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        Set<Point2i> projectedCells = corridorCells.stream()
                 .map(CubePoint::projectedCell)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
         Map<Integer, Floor> floorsByLevel = new LinkedHashMap<>();
-        for (Integer level : tree.levels()) {
-            Set<Point2i> levelCells = tree.cellsAtLevel(level);
+        Set<Integer> occupiedLevels = corridorCells.stream()
+                .map(CubePoint::z)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        for (Integer level : occupiedLevels) {
+            Set<Point2i> levelCells = corridorCells.stream()
+                    .filter(cell -> cell.z() == level)
+                    .map(CubePoint::projectedCell)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
             floorsByLevel.put(level, new Floor(TileShape.fromAbsoluteCells(levelCells)));
         }
         Set<VertexEdge> doorEdges = tree.doorEdges().stream()
@@ -152,7 +162,7 @@ public final class CorridorPlanningEngine {
         for (Map.Entry<Integer, Set<VertexEdge>> entry : mutableDoorEdgesByLevel.entrySet()) {
             doorEdgesByLevel.put(entry.getKey(), Set.copyOf(entry.getValue()));
         }
-        boolean directlyAdjacent = tree.corridorCells().isEmpty() && !doorEdges.isEmpty();
+        boolean directlyAdjacent = corridorCells.isEmpty() && !doorEdges.isEmpty();
         boolean routable = tree.connectedRoomIds().size() >= rooms.size()
                 && (!projectedCells.isEmpty() || !doorEdges.isEmpty());
         return new CorridorPath(
@@ -163,5 +173,36 @@ public final class CorridorPlanningEngine {
                 doorEdgesByLevel,
                 directlyAdjacent,
                 routable);
+    }
+
+    private static Map<Integer, Set<Point2i>> occupiedRoomCellsByLevel(List<Room> rooms, SteinerTree tree) {
+        Map<Integer, Set<Point2i>> result = new LinkedHashMap<>();
+        if (rooms == null || rooms.isEmpty() || tree == null) {
+            return Map.of();
+        }
+        Map<Long, Integer> doorLevelsByRoomId = tree.doorEdges().stream()
+                .filter(doorEdge -> doorEdge != null)
+                .collect(Collectors.toMap(
+                        DoorEdge::roomId,
+                        DoorEdge::levelZ,
+                        (first, second) -> first,
+                        LinkedHashMap::new));
+        for (Room room : rooms) {
+            if (room == null || room.roomId() == null) {
+                continue;
+            }
+            int level = doorLevelsByRoomId.getOrDefault(room.roomId(), 0);
+            result.computeIfAbsent(level, ignored -> new LinkedHashSet<>())
+                    .addAll(room.cells());
+        }
+        return Map.copyOf(result);
+    }
+
+    private static boolean occupiesRoomCell(CubePoint cell, Map<Integer, Set<Point2i>> occupiedRoomCellsByLevel) {
+        if (cell == null || occupiedRoomCellsByLevel == null || occupiedRoomCellsByLevel.isEmpty()) {
+            return false;
+        }
+        Set<Point2i> occupiedCells = occupiedRoomCellsByLevel.get(cell.z());
+        return occupiedCells != null && occupiedCells.contains(cell.projectedCell());
     }
 }
