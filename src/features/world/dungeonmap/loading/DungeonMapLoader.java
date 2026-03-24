@@ -93,7 +93,7 @@ public final class DungeonMapLoader {
         List<Room> rooms = loadRooms(conn, map.mapId());
         List<RoomCluster> clusters = loadClusters(conn, map.mapId(), rooms);
         Map<Long, Integer> clusterLevels = loadClusterLevels(conn, map.mapId());
-        Map<Long, Integer> roomLevels = loadRoomLevels(conn, map.mapId());
+        Map<Long, Integer> roomLevels = deriveRoomLevels(clusters);
         return new DungeonMapLoadResult(
                 maps,
                 new DungeonLayout(
@@ -137,12 +137,6 @@ public final class DungeonMapLoader {
                 mapId);
     }
 
-    private static Map<Long, Integer> loadRoomLevels(Connection conn, long mapId) throws SQLException {
-        return loadLevelMap(conn,
-                "SELECT room_id AS entity_id, level_z FROM dungeon_rooms WHERE dungeon_map_id=?",
-                mapId);
-    }
-
     private static Map<Long, Integer> loadLevelMap(Connection conn, String sql, long mapId) throws SQLException {
         Map<Long, Integer> result = new LinkedHashMap<>();
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -157,6 +151,7 @@ public final class DungeonMapLoader {
     }
 
     private static List<Room> loadRooms(Connection conn, long mapId) throws SQLException {
+        Map<Long, Map<Integer, Point2i>> additionalAnchorsByRoomId = loadRoomFloorAnchors(conn, mapId);
         Map<Long, List<RoomExitNarration>> exitNarrationsByRoomId = loadGrouped(conn,
                 "SELECT room_id, cell_x, cell_y, edge_direction, description"
                         + " FROM dungeon_room_exit_descriptions"
@@ -169,20 +164,26 @@ public final class DungeonMapLoader {
                         edgeDirectionDelta(rs.getString("edge_direction")),
                         rs.getString("description")));
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT room_id, dungeon_map_id, cluster_id, name, visual_description, component_x, component_y"
+                "SELECT room_id, dungeon_map_id, cluster_id, name, visual_description, component_x, component_y, level_z"
                         + " FROM dungeon_rooms WHERE dungeon_map_id=? ORDER BY room_id")) {
             ps.setLong(1, mapId);
             try (ResultSet rs = ps.executeQuery()) {
                 List<Room> rooms = new ArrayList<>();
                 while (rs.next()) {
                     long roomId = rs.getLong("room_id");
-                    Point2i anchor = new Point2i(rs.getInt("component_x"), rs.getInt("component_y"));
+                    int primaryLevel = rs.getInt("level_z");
+                    Point2i primaryAnchor = new Point2i(rs.getInt("component_x"), rs.getInt("component_y"));
+                    Map<Integer, Floor> floors = new LinkedHashMap<>();
+                    floors.put(primaryLevel, new Floor(TileShape.singleCell(primaryAnchor)));
+                    for (Map.Entry<Integer, Point2i> entry : additionalAnchorsByRoomId.getOrDefault(roomId, Map.of()).entrySet()) {
+                        floors.put(entry.getKey(), new Floor(TileShape.singleCell(entry.getValue())));
+                    }
                     rooms.add(Room.resolved(
                             roomId,
                             rs.getLong("dungeon_map_id"),
                             rs.getLong("cluster_id"),
                             normalizedRoomName(roomId, rs.getString("name")),
-                            new Floor(TileShape.singleCell(anchor)),
+                            floors,
                             List.of(),
                             new RoomNarration(
                                     rs.getString("visual_description"),
@@ -368,27 +369,28 @@ public final class DungeonMapLoader {
         return result;
     }
 
-    private static List<RoomCluster> loadClusters(Connection conn, long mapId, List<Room> rooms) throws SQLException {
-        Map<Long, List<Point2i>> verticesByClusterId = loadGrouped(conn,
-                "SELECT cluster_id, relative_x, relative_y FROM dungeon_room_cluster_vertices"
-                        + " WHERE cluster_id IN (SELECT cluster_id FROM dungeon_room_clusters WHERE dungeon_map_id=?)"
-                        + " ORDER BY cluster_id, vertex_index",
-                mapId,
-                rs -> rs.getLong("cluster_id"),
-                rs -> new Point2i(rs.getInt("relative_x"), rs.getInt("relative_y")));
+    private static Map<Long, Map<Integer, Point2i>> loadRoomFloorAnchors(Connection conn, long mapId) throws SQLException {
+        Map<Long, Map<Integer, Point2i>> result = new LinkedHashMap<>();
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT room_id, level_z, anchor_x, anchor_y"
+                        + " FROM dungeon_room_floors"
+                        + " WHERE room_id IN (SELECT room_id FROM dungeon_rooms WHERE dungeon_map_id=?)"
+                        + " ORDER BY room_id, level_z")) {
+            ps.setLong(1, mapId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    result.computeIfAbsent(rs.getLong("room_id"), ignored -> new LinkedHashMap<>())
+                            .put(rs.getInt("level_z"), new Point2i(rs.getInt("anchor_x"), rs.getInt("anchor_y")));
+                }
+            }
+        }
+        return copyNestedMap(result);
+    }
 
+    private static List<RoomCluster> loadClusters(Connection conn, long mapId, List<Room> rooms) throws SQLException {
+        Map<Long, Map<Integer, List<Point2i>>> verticesByClusterId = loadClusterVerticesByLevel(conn, mapId);
         Map<Long, Point2i> centersByClusterId = loadClusterCenters(conn, mapId);
-        Map<Long, List<EdgeObject>> edgesByClusterId = loadGrouped(conn,
-                "SELECT cluster_id, cell_x, cell_y, edge_direction, edge_type FROM dungeon_room_cluster_edges"
-                        + " WHERE cluster_id IN (SELECT cluster_id FROM dungeon_room_clusters WHERE dungeon_map_id=?)"
-                        + " ORDER BY cluster_id, cell_y, cell_x, edge_direction",
-                mapId,
-                rs -> rs.getLong("cluster_id"),
-                rs -> edgeObjectRelativeToCenter(
-                        new Point2i(rs.getInt("cell_x"), rs.getInt("cell_y")),
-                        centersByClusterId.get(rs.getLong("cluster_id")),
-                        rs.getString("edge_direction"),
-                        rs.getString("edge_type")));
+        Map<Long, Map<Integer, List<EdgeObject>>> edgesByClusterId = loadClusterEdgesByLevel(conn, mapId, centersByClusterId);
 
         List<RoomCluster> clusters = new ArrayList<>();
         Map<Long, List<Room>> roomsByClusterId = roomsByClusterId(rooms);
@@ -399,26 +401,74 @@ public final class DungeonMapLoader {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     long clusterId = rs.getLong("cluster_id");
-                    List<EdgeObject> edgeObjects = List.copyOf(edgesByClusterId.getOrDefault(clusterId, List.of()));
-                    Set<Point2i> clusterCells = tileShapeFromRelativeVertices(
-                            new Point2i(rs.getInt("center_x"), rs.getInt("center_y")),
-                            List.copyOf(verticesByClusterId.getOrDefault(clusterId, List.of())))
-                            .absoluteCells();
+                    Point2i center = centersByClusterId.getOrDefault(clusterId, new Point2i(rs.getInt("center_x"), rs.getInt("center_y")));
+                    Map<Integer, TileShape> clusterShapesByLevel = clusterShapesByLevel(
+                            center,
+                            verticesByClusterId.getOrDefault(clusterId, Map.of()));
+                    Map<Integer, List<EdgeObject>> edgeObjectsByLevel = edgesByClusterId.getOrDefault(clusterId, Map.of());
                     List<Room> hydratedRooms = hydrateRooms(
                             clusterId,
-                            clusterCells,
-                            edgeObjects,
+                            clusterShapesByLevel,
+                            edgeObjectsByLevel,
                             roomsByClusterId.getOrDefault(clusterId, List.of()));
                     clusters.add(new RoomCluster(
                             clusterId,
                             rs.getLong("dungeon_map_id"),
-                            centersByClusterId.getOrDefault(clusterId, new Point2i(rs.getInt("center_x"), rs.getInt("center_y"))),
+                            center,
                             hydratedRooms,
-                            materializeLocalConnections(rs.getLong("dungeon_map_id"), clusterId, hydratedRooms, edgeObjects)));
+                            materializeLocalConnections(
+                                    rs.getLong("dungeon_map_id"),
+                                    clusterId,
+                                    hydratedRooms,
+                                    flattenEdges(edgeObjectsByLevel))));
                 }
             }
         }
         return List.copyOf(clusters);
+    }
+
+    private static Map<Long, Map<Integer, List<Point2i>>> loadClusterVerticesByLevel(Connection conn, long mapId) throws SQLException {
+        Map<Long, Map<Integer, List<Point2i>>> result = new LinkedHashMap<>();
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT cluster_id, level_z, relative_x, relative_y FROM dungeon_room_cluster_vertices"
+                        + " WHERE cluster_id IN (SELECT cluster_id FROM dungeon_room_clusters WHERE dungeon_map_id=?)"
+                        + " ORDER BY cluster_id, level_z, vertex_index")) {
+            ps.setLong(1, mapId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    result.computeIfAbsent(rs.getLong("cluster_id"), ignored -> new LinkedHashMap<>())
+                            .computeIfAbsent(rs.getInt("level_z"), ignored -> new ArrayList<>())
+                            .add(new Point2i(rs.getInt("relative_x"), rs.getInt("relative_y")));
+                }
+            }
+        }
+        return copyNestedLists(result);
+    }
+
+    private static Map<Long, Map<Integer, List<EdgeObject>>> loadClusterEdgesByLevel(
+            Connection conn,
+            long mapId,
+            Map<Long, Point2i> centersByClusterId
+    ) throws SQLException {
+        Map<Long, Map<Integer, List<EdgeObject>>> result = new LinkedHashMap<>();
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT cluster_id, level_z, cell_x, cell_y, edge_direction, edge_type FROM dungeon_room_cluster_edges"
+                        + " WHERE cluster_id IN (SELECT cluster_id FROM dungeon_room_clusters WHERE dungeon_map_id=?)"
+                        + " ORDER BY cluster_id, level_z, cell_y, cell_x, edge_direction")) {
+            ps.setLong(1, mapId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    result.computeIfAbsent(rs.getLong("cluster_id"), ignored -> new LinkedHashMap<>())
+                            .computeIfAbsent(rs.getInt("level_z"), ignored -> new ArrayList<>())
+                            .add(edgeObjectRelativeToCenter(
+                                    new Point2i(rs.getInt("cell_x"), rs.getInt("cell_y")),
+                                    centersByClusterId.get(rs.getLong("cluster_id")),
+                                    rs.getString("edge_direction"),
+                                    rs.getString("edge_type")));
+                }
+            }
+        }
+        return copyNestedLists(result);
     }
 
     private static Map<Long, List<Room>> roomsByClusterId(List<Room> rooms) {
@@ -446,8 +496,8 @@ public final class DungeonMapLoader {
 
     private static List<Room> hydrateRooms(
             long clusterId,
-            Set<Point2i> clusterCells,
-            List<EdgeObject> edgeObjects,
+            Map<Integer, TileShape> clusterShapesByLevel,
+            Map<Integer, List<EdgeObject>> edgesByLevel,
             List<Room> rooms
     ) {
         // Persistence stores cluster topology in aggregate form; after loading, each room owns its runtime shape
@@ -455,42 +505,133 @@ public final class DungeonMapLoader {
         if (rooms == null || rooms.isEmpty()) {
             return List.of();
         }
-        List<VertexPath> barriers = barriers(edgeObjects);
-        Set<Point2i> unclaimedCells = new LinkedHashSet<>(clusterCells);
+        Map<Long, Map<Integer, Floor>> floorsByRoomId = initialFloorsByRoomId(rooms);
+        Map<Long, List<Wall>> wallsByRoomId = new LinkedHashMap<>();
+        for (Map.Entry<Integer, TileShape> levelEntry : clusterShapesByLevel.entrySet()) {
+            int levelZ = levelEntry.getKey();
+            Set<Point2i> clusterCells = levelEntry.getValue().absoluteCells();
+            List<EdgeObject> edgeObjects = edgesByLevel.getOrDefault(levelZ, List.of());
+            List<VertexPath> barriers = barriers(edgeObjects);
+            Set<Point2i> unclaimedCells = new LinkedHashSet<>(clusterCells);
+            for (Room room : rooms) {
+                if (room == null || room.roomId() == null) {
+                    continue;
+                }
+                Floor anchorFloor = room.floorAtLevel(levelZ);
+                if (anchorFloor == null || anchorFloor.shape() == null) {
+                    continue;
+                }
+                Point2i anchor = anchorFloor.shape().anchor();
+                if (!clusterCells.contains(anchor)) {
+                    throw new IllegalStateException(
+                            "Raum " + room.roomId() + " hat einen Anker ausserhalb von Cluster " + clusterId + " auf Ebene " + levelZ);
+                }
+                if (!unclaimedCells.contains(anchor)) {
+                    throw new IllegalStateException(
+                            "Raum " + room.roomId() + " teilt sich einen offenen Bereich in Cluster " + clusterId + " auf Ebene " + levelZ);
+                }
+                Set<Point2i> roomCells = reachableCells(anchor, unclaimedCells, barriers);
+                if (roomCells.isEmpty()) {
+                    throw new IllegalStateException(
+                            "Raum " + room.roomId() + " konnte in Cluster " + clusterId + " auf Ebene " + levelZ + " nicht hydriert werden");
+                }
+                unclaimedCells.removeAll(roomCells);
+                floorsByRoomId.computeIfAbsent(room.roomId(), ignored -> new LinkedHashMap<>())
+                        .put(levelZ, new Floor(TileShape.fromAbsoluteCells(roomCells)));
+                wallsByRoomId.computeIfAbsent(room.roomId(), ignored -> new ArrayList<>())
+                        .addAll(wallsForRoom(clusterCells, roomCells, edgeObjects));
+            }
+            if (!unclaimedCells.isEmpty()) {
+                throw new IllegalStateException(
+                        "Cluster " + clusterId + " enthaelt Zellen ohne Raumankerzuordnung auf Ebene " + levelZ);
+            }
+        }
         List<Room> hydratedRooms = new ArrayList<>();
         for (Room room : rooms) {
             if (room == null || room.roomId() == null) {
                 continue;
             }
-            Point2i anchor = room.floor().shape().anchor();
-            if (!clusterCells.contains(anchor)) {
-                throw new IllegalStateException(
-                        "Raum " + room.roomId() + " hat einen Anker ausserhalb von Cluster " + clusterId);
-            }
-            if (!unclaimedCells.contains(anchor)) {
-                throw new IllegalStateException(
-                        "Raum " + room.roomId() + " teilt sich einen offenen Bereich in Cluster " + clusterId);
-            }
-            Set<Point2i> roomCells = reachableCells(anchor, unclaimedCells, barriers);
-            if (roomCells.isEmpty()) {
-                throw new IllegalStateException(
-                        "Raum " + room.roomId() + " konnte in Cluster " + clusterId + " nicht hydriert werden");
-            }
-            unclaimedCells.removeAll(roomCells);
             hydratedRooms.add(Room.resolved(
                     room.roomId(),
                     room.mapId(),
                     room.clusterId(),
                     room.name(),
-                    new Floor(TileShape.fromAbsoluteCells(roomCells)),
-                    wallsForRoom(clusterCells, roomCells, edgeObjects),
+                    floorsByRoomId.getOrDefault(room.roomId(), room.floors()),
+                    mergeWalls(wallsByRoomId.getOrDefault(room.roomId(), List.of())),
                     room.narration()));
         }
-        if (!unclaimedCells.isEmpty()) {
-            throw new IllegalStateException(
-                    "Cluster " + clusterId + " enthaelt Zellen ohne Raumankerzuordnung");
-        }
         return List.copyOf(hydratedRooms);
+    }
+
+    private static Map<Long, Integer> deriveRoomLevels(List<RoomCluster> clusters) {
+        Map<Long, Integer> result = new LinkedHashMap<>();
+        for (RoomCluster cluster : clusters == null ? List.<RoomCluster>of() : clusters) {
+            if (cluster == null) {
+                continue;
+            }
+            for (Room room : cluster.rooms()) {
+                if (room != null && room.roomId() != null) {
+                    result.put(room.roomId(), room.primaryLevel());
+                }
+            }
+        }
+        return Map.copyOf(result);
+    }
+
+    private static Map<Integer, TileShape> clusterShapesByLevel(Point2i center, Map<Integer, List<Point2i>> verticesByLevel) {
+        Map<Integer, TileShape> result = new LinkedHashMap<>();
+        for (Map.Entry<Integer, List<Point2i>> entry : verticesByLevel.entrySet()) {
+            result.put(entry.getKey(), tileShapeFromRelativeVertices(center, List.copyOf(entry.getValue())));
+        }
+        return Map.copyOf(result);
+    }
+
+    private static Map<Long, Map<Integer, Floor>> initialFloorsByRoomId(List<Room> rooms) {
+        Map<Long, Map<Integer, Floor>> result = new LinkedHashMap<>();
+        for (Room room : rooms) {
+            if (room != null && room.roomId() != null) {
+                result.put(room.roomId(), new LinkedHashMap<>(room.floors()));
+            }
+        }
+        return result;
+    }
+
+    private static List<Wall> mergeWalls(List<Wall> walls) {
+        Set<VertexEdge> mergedEdges = new LinkedHashSet<>();
+        for (Wall wall : walls) {
+            if (wall != null) {
+                mergedEdges.addAll(wall.edges());
+            }
+        }
+        return mergedEdges.isEmpty() ? List.of() : List.of(new Wall(mergedEdges));
+    }
+
+    private static List<EdgeObject> flattenEdges(Map<Integer, List<EdgeObject>> edgesByLevel) {
+        List<EdgeObject> result = new ArrayList<>();
+        for (List<EdgeObject> edges : edgesByLevel.values()) {
+            result.addAll(edges);
+        }
+        return List.copyOf(result);
+    }
+
+    private static <K1, K2, V> Map<K1, Map<K2, V>> copyNestedMap(Map<K1, Map<K2, V>> source) {
+        Map<K1, Map<K2, V>> result = new LinkedHashMap<>();
+        for (Map.Entry<K1, Map<K2, V>> entry : source.entrySet()) {
+            result.put(entry.getKey(), Map.copyOf(entry.getValue()));
+        }
+        return Map.copyOf(result);
+    }
+
+    private static <K1, K2, V> Map<K1, Map<K2, List<V>>> copyNestedLists(Map<K1, Map<K2, List<V>>> source) {
+        Map<K1, Map<K2, List<V>>> result = new LinkedHashMap<>();
+        for (Map.Entry<K1, Map<K2, List<V>>> outerEntry : source.entrySet()) {
+            Map<K2, List<V>> nested = new LinkedHashMap<>();
+            for (Map.Entry<K2, List<V>> innerEntry : outerEntry.getValue().entrySet()) {
+                nested.put(innerEntry.getKey(), List.copyOf(innerEntry.getValue()));
+            }
+            result.put(outerEntry.getKey(), Map.copyOf(nested));
+        }
+        return Map.copyOf(result);
     }
 
     private static List<VertexPath> barriers(List<EdgeObject> edgeObjects) {
