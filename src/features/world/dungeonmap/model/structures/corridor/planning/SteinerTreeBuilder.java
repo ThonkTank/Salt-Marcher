@@ -439,14 +439,21 @@ final class SteinerTreeBuilder {
         Set<CubePoint> unique = cells == null ? Set.of() : Set.copyOf(cells);
         int corners = 0;
         for (CubePoint cell : unique) {
-            boolean hasX = unique.contains(cell.add(new CubePoint(-1, 0, 0)))
-                    || unique.contains(cell.add(new CubePoint(1, 0, 0)));
-            boolean hasY = unique.contains(cell.add(new CubePoint(0, -1, 0)))
-                    || unique.contains(cell.add(new CubePoint(0, 1, 0)));
-            boolean hasZ = unique.contains(cell.add(new CubePoint(0, 0, -1)))
-                    || unique.contains(cell.add(new CubePoint(0, 0, 1)));
-            int axes = (hasX ? 1 : 0) + (hasY ? 1 : 0) + (hasZ ? 1 : 0);
-            if (axes >= 2) {
+            boolean hasX = false;
+            boolean hasY = false;
+            boolean hasZ = false;
+            for (CubePoint step : CostField.STEPS) {
+                if (unique.contains(cell.add(step))) {
+                    if (step.x() != 0) {
+                        hasX = true;
+                    } else if (step.y() != 0) {
+                        hasY = true;
+                    } else {
+                        hasZ = true;
+                    }
+                }
+            }
+            if ((hasX ? 1 : 0) + (hasY ? 1 : 0) + (hasZ ? 1 : 0) >= 2) {
                 corners++;
             }
         }
