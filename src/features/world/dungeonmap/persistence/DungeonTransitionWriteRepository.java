@@ -13,7 +13,6 @@ import java.sql.Statement;
 public final class DungeonTransitionWriteRepository {
 
     public long insert(Connection conn, DungeonTransition transition) throws SQLException {
-        DungeonTransitionSchemaSupport.ensureCompatibility(conn);
         try (PreparedStatement ps = conn.prepareStatement(
                 "INSERT INTO dungeon_transitions("
                         + "dungeon_map_id, description, cell_x, cell_y, level_z, destination_type,"
@@ -33,7 +32,6 @@ public final class DungeonTransitionWriteRepository {
     }
 
     public void updatePlacement(Connection conn, long transitionId, CubePoint anchor) throws SQLException {
-        DungeonTransitionSchemaSupport.ensureCompatibility(conn);
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE dungeon_transitions SET cell_x=?, cell_y=?, level_z=? WHERE transition_id=?")) {
             if (anchor == null) {
@@ -51,7 +49,6 @@ public final class DungeonTransitionWriteRepository {
     }
 
     public void updateTargetTransition(Connection conn, long transitionId, Long targetTransitionId) throws SQLException {
-        DungeonTransitionSchemaSupport.ensureCompatibility(conn);
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE dungeon_transitions SET target_transition_id=? WHERE transition_id=?")) {
             if (targetTransitionId == null) {
@@ -65,7 +62,6 @@ public final class DungeonTransitionWriteRepository {
     }
 
     public void updateLinkedTransition(Connection conn, long transitionId, Long linkedTransitionId) throws SQLException {
-        DungeonTransitionSchemaSupport.ensureCompatibility(conn);
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE dungeon_transitions SET linked_transition_id=? WHERE transition_id=?")) {
             if (linkedTransitionId == null) {
@@ -79,7 +75,6 @@ public final class DungeonTransitionWriteRepository {
     }
 
     public void clearLinksTo(Connection conn, long transitionId) throws SQLException {
-        DungeonTransitionSchemaSupport.ensureCompatibility(conn);
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE dungeon_transitions"
                         + " SET target_transition_id=CASE WHEN target_transition_id=? THEN NULL ELSE target_transition_id END,"
@@ -94,7 +89,6 @@ public final class DungeonTransitionWriteRepository {
     }
 
     public void delete(Connection conn, long transitionId) throws SQLException {
-        DungeonTransitionSchemaSupport.ensureCompatibility(conn);
         try (PreparedStatement ps = conn.prepareStatement(
                 "DELETE FROM dungeon_transitions WHERE transition_id=?")) {
             ps.setLong(1, transitionId);

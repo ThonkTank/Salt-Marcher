@@ -10,6 +10,7 @@ import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.stair.DungeonStairExit;
 import features.world.dungeonmap.model.structures.stair.StairPathGenerator;
 import features.world.dungeonmap.model.structures.stair.StairShape;
+import features.world.dungeonmap.persistence.DungeonSchemaSupport;
 import features.world.dungeonmap.persistence.DungeonStairWriteRepository;
 
 import java.sql.Connection;
@@ -60,6 +61,7 @@ public final class DungeonStairEditService {
         List<DungeonStairExit> exits = buildExits(pathNodes, sortedExitLevels);
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
+                DungeonSchemaSupport.ensureCompatibility(conn);
                 ensureTraversableExitCells(conn, layout.mapId(), exits);
                 long stairId = stairWriteRepository.insertStair(
                         conn,
@@ -79,6 +81,7 @@ public final class DungeonStairEditService {
     public void delete(long stairId) throws SQLException {
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
+                DungeonSchemaSupport.ensureCompatibility(conn);
                 stairWriteRepository.deleteStair(conn, stairId);
                 return null;
             });

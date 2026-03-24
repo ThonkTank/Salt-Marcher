@@ -1,6 +1,7 @@
 package features.world.dungeonmap.model.structures.cluster;
 
 import features.world.dungeonmap.model.geometry.BoundaryNetwork;
+import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
@@ -36,6 +37,7 @@ public final class RoomCluster {
     private final TileShape shape;
     private final Map<Long, Room> roomsById;
     private final Map<Point2i, Room> roomsByCell;
+    private final Map<CubePoint, Room> roomsByPoint;
     // Lazy-computed on first access; safe because RoomCluster is only accessed on the FX application thread.
     private Map<Long, Set<Long>> adjacentRoomIdsByRoomId;
     private List<Set<Long>> components;
@@ -73,6 +75,7 @@ public final class RoomCluster {
         this.shape = TileShape.fromAbsoluteCells(resolvedCells);
         this.roomsById = resolvedRoomsById;
         this.roomsByCell = overlapIndex.roomsByCell();
+        this.roomsByPoint = indexRoomsByPoint(resolvedRooms);
         this.adjacentRoomIdsByRoomId = null;
         this.components = null;
         this.componentByRoomId = null;
@@ -241,8 +244,16 @@ public final class RoomCluster {
         return cell == null ? null : roomsByCell.get(cell);
     }
 
+    public Room roomAt(CubePoint point) {
+        return point == null ? null : roomsByPoint.get(point);
+    }
+
     public boolean contains(Point2i cell) {
         return cell != null && cells.contains(cell);
+    }
+
+    public Set<CubePoint> cubePoints() {
+        return Set.copyOf(roomsByPoint.keySet());
     }
 
     public List<Room> adjacentRooms(Room room) {
@@ -387,6 +398,19 @@ public final class RoomCluster {
             }
         }
         return new OverlapIndex(Map.copyOf(result), hasOverlaps);
+    }
+
+    private static Map<CubePoint, Room> indexRoomsByPoint(List<Room> rooms) {
+        Map<CubePoint, Room> result = new LinkedHashMap<>();
+        for (Room room : rooms) {
+            if (room == null) {
+                continue;
+            }
+            for (CubePoint point : room.cubePoints()) {
+                result.putIfAbsent(point, room);
+            }
+        }
+        return Map.copyOf(result);
     }
 
     private static Set<Point2i> indexCells(List<Room> rooms) {

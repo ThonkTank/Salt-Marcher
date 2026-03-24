@@ -23,7 +23,6 @@ public final class DungeonStairWriteRepository {
             int dimension1,
             int dimension2
     ) throws SQLException {
-        DungeonSchemaSupport.ensureCompatibility(conn);
         try (PreparedStatement ps = conn.prepareStatement(
                 "INSERT INTO dungeon_stairs(dungeon_map_id, name, shape, direction, dimension1, dimension2)"
                         + " VALUES(?, ?, ?, ?, ?, ?)",
@@ -45,7 +44,6 @@ public final class DungeonStairWriteRepository {
     }
 
     public void replacePathNodes(Connection conn, long stairId, List<CubePoint> pathNodes) throws SQLException {
-        DungeonSchemaSupport.ensureCompatibility(conn);
         try (PreparedStatement delete = conn.prepareStatement(
                 "DELETE FROM dungeon_stair_path_nodes WHERE stair_id=?")) {
             delete.setLong(1, stairId);
@@ -67,7 +65,6 @@ public final class DungeonStairWriteRepository {
     }
 
     public void replaceExits(Connection conn, long stairId, List<DungeonStairExit> exits) throws SQLException {
-        DungeonSchemaSupport.ensureCompatibility(conn);
         try (PreparedStatement delete = conn.prepareStatement(
                 "DELETE FROM dungeon_stair_exits WHERE stair_id=?")) {
             delete.setLong(1, stairId);
@@ -88,7 +85,6 @@ public final class DungeonStairWriteRepository {
     }
 
     public void deleteStair(Connection conn, long stairId) throws SQLException {
-        DungeonSchemaSupport.ensureCompatibility(conn);
         try (PreparedStatement ps = conn.prepareStatement(
                 "DELETE FROM dungeon_stairs WHERE stair_id=?")) {
             ps.setLong(1, stairId);

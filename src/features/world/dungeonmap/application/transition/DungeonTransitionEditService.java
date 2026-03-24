@@ -83,6 +83,7 @@ public final class DungeonTransitionEditService {
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
+                DungeonTransitionSchemaSupport.ensureCompatibility(conn);
                 DungeonTransition transition = requireTransition(conn, transitionId);
                 roomTopologyService.ensureTraversableCell(conn, transition.mapId(), anchorCell, levelZ);
                 transitionWriteRepository.updatePlacement(conn, transitionId, CubePoint.at(anchorCell, levelZ));
@@ -203,7 +204,6 @@ public final class DungeonTransitionEditService {
     }
 
     private static DungeonTransition requireTransition(Connection conn, Long transitionId) throws SQLException {
-        DungeonTransitionSchemaSupport.ensureCompatibility(conn);
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT transition_id, dungeon_map_id, description, cell_x, cell_y, level_z, destination_type,"
                         + " target_overworld_map_id, target_overworld_tile_id, target_dungeon_map_id,"
