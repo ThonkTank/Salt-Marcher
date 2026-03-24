@@ -1,7 +1,7 @@
 package features.world.dungeonmap.persistence;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.structures.stair.StairDirection;
+import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.structures.stair.DungeonStairExit;
 import features.world.dungeonmap.model.structures.stair.StairShape;
 
@@ -19,7 +19,7 @@ public final class DungeonStairWriteRepository {
             long mapId,
             String name,
             StairShape shape,
-            StairDirection direction,
+            CardinalDirection direction,
             int dimension1,
             int dimension2
     ) throws SQLException {
@@ -31,7 +31,7 @@ public final class DungeonStairWriteRepository {
             ps.setLong(1, mapId);
             ps.setString(2, name);
             ps.setString(3, (shape == null ? StairShape.LADDER : shape).name());
-            ps.setInt(4, (direction == null ? StairDirection.defaultDirection() : direction).code());
+            ps.setInt(4, (direction == null ? CardinalDirection.defaultDirection() : direction).code());
             ps.setInt(5, Math.max(0, dimension1));
             ps.setInt(6, Math.max(0, dimension2));
             ps.executeUpdate();

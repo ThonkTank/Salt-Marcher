@@ -1,6 +1,7 @@
 package features.world.dungeonmap.application.runtime;
 
 import features.world.dungeonmap.application.room.RoomExitDescriptor;
+import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
@@ -32,13 +33,13 @@ public record DungeonRuntimeDoorDescriptor(
 
     public static DungeonRuntimeDoorDescriptor from(
             RoomExitDescriptor exit,
-            DungeonHeading heading,
+            CardinalDirection heading,
             ConnectionEndpoint activeEndpoint,
             ConnectionEndpoint destinationEndpoint,
             String destinationLabel,
             String narration
     ) {
-        DungeonHeading resolvedHeading = heading == null ? DungeonHeading.defaultHeading() : heading;
+        CardinalDirection resolvedHeading = heading == null ? CardinalDirection.defaultDirection() : heading;
         String relativeLabel = resolvedHeading.relativeLabel(exit.direction());
         String resolvedNarration = narration == null ? "" : narration.trim();
         String description = describe(relativeLabel, resolvedNarration.isBlank() ? "eine Tür" : resolvedNarration);

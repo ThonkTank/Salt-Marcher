@@ -1,7 +1,6 @@
 package features.world.dungeonmap.shell.runtime;
 
 import features.world.api.WorldTravelSurface;
-import features.world.dungeonmap.application.runtime.DungeonHeading;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeDoorDescriptor;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLabels;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
@@ -15,6 +14,7 @@ import features.world.dungeonmap.application.runtime.DungeonRuntimeSurfacePresen
 import features.world.dungeonmap.application.runtime.DungeonRuntimeSurfaceResolver;
 import features.world.dungeonmap.canvas.base.DungeonViewMode;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
+import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.shell.AbstractDungeonMapView;
 import features.world.dungeonmap.shell.controls.DungeonLevelOverlayControls;

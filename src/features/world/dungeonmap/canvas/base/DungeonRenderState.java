@@ -1,6 +1,6 @@
 package features.world.dungeonmap.canvas.base;
 
-import features.world.dungeonmap.application.runtime.DungeonHeading;
+import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
@@ -21,14 +21,14 @@ public record DungeonRenderState(
         int projectionLevel,
         DungeonLevelOverlaySettings levelOverlaySettings,
         DungeonRuntimeLocation activeLocation,
-        DungeonHeading heading
+        CardinalDirection heading
 ) {
     public DungeonRenderState {
         previewPaintShape = previewPaintShape == null ? TileShape.empty() : previewPaintShape;
         previewBoundaryEdges = previewBoundaryEdges == null ? Set.of() : Set.copyOf(previewBoundaryEdges);
         previewBoundarySkippedEdges = previewBoundarySkippedEdges == null ? Set.of() : Set.copyOf(previewBoundarySkippedEdges);
         levelOverlaySettings = levelOverlaySettings == null ? DungeonLevelOverlaySettings.defaults() : levelOverlaySettings;
-        heading = heading == null ? DungeonHeading.defaultHeading() : heading;
+        heading = heading == null ? CardinalDirection.defaultDirection() : heading;
     }
 
     public static DungeonRenderState empty() {
@@ -44,6 +44,6 @@ public record DungeonRenderState(
                 0,
                 DungeonLevelOverlaySettings.defaults(),
                 null,
-                DungeonHeading.defaultHeading());
+                CardinalDirection.defaultDirection());
     }
 }

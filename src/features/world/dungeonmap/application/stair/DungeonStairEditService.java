@@ -4,10 +4,10 @@ import database.DatabaseManager;
 import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.stair.DungeonStairExit;
-import features.world.dungeonmap.model.structures.stair.StairDirection;
 import features.world.dungeonmap.model.structures.stair.StairPathGenerator;
 import features.world.dungeonmap.model.structures.stair.StairShape;
 import features.world.dungeonmap.persistence.DungeonStairWriteRepository;
@@ -37,7 +37,7 @@ public final class DungeonStairEditService {
             DungeonLayout layout,
             Point2i anchorCell,
             StairShape shape,
-            StairDirection direction,
+            CardinalDirection direction,
             int dimension1,
             int dimension2,
             List<Integer> exitLevels
@@ -47,7 +47,7 @@ public final class DungeonStairEditService {
         }
         List<Integer> sortedExitLevels = validateAndSortExitLevels(exitLevels);
         StairShape validatedShape = requireShape(shape);
-        StairDirection validatedDirection = requireDirection(direction);
+        CardinalDirection validatedDirection = requireDirection(direction);
         validateDimensions(validatedShape, dimension1, dimension2);
         List<CubePoint> pathNodes = StairPathGenerator.generatePath(
                 validatedShape,
@@ -109,7 +109,7 @@ public final class DungeonStairEditService {
         return shape;
     }
 
-    private static StairDirection requireDirection(StairDirection direction) throws SQLException {
+    private static CardinalDirection requireDirection(CardinalDirection direction) throws SQLException {
         if (direction == null) {
             throw new SQLException("Treppenrichtung fehlt");
         }

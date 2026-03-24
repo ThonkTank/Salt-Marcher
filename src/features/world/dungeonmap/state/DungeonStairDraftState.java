@@ -1,6 +1,6 @@
 package features.world.dungeonmap.state;
 
-import features.world.dungeonmap.model.structures.stair.StairDirection;
+import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.structures.stair.StairShape;
 
 import java.util.ArrayList;
@@ -18,7 +18,7 @@ public final class DungeonStairDraftState {
 
     private int inputLevel;
     private StairShape shape = StairShape.LADDER;
-    private StairDirection direction = StairDirection.defaultDirection();
+    private CardinalDirection direction = CardinalDirection.defaultDirection();
     private int dimension1 = 1;
     private int dimension2 = 1;
     private List<Integer> exitLevels = List.of();
@@ -47,7 +47,7 @@ public final class DungeonStairDraftState {
         return shape;
     }
 
-    public StairDirection direction() {
+    public CardinalDirection direction() {
         return direction;
     }
 
@@ -136,8 +136,8 @@ public final class DungeonStairDraftState {
         refreshStatusAndNotify();
     }
 
-    public void setDirection(StairDirection direction) {
-        StairDirection nextDirection = direction == null ? StairDirection.defaultDirection() : direction;
+    public void setDirection(CardinalDirection direction) {
+        CardinalDirection nextDirection = direction == null ? CardinalDirection.defaultDirection() : direction;
         if (this.direction == nextDirection) {
             return;
         }
@@ -193,7 +193,7 @@ public final class DungeonStairDraftState {
     public void clear() {
         if (inputLevel == 0
                 && shape == StairShape.LADDER
-                && direction == StairDirection.defaultDirection()
+                && direction == CardinalDirection.defaultDirection()
                 && dimension1 == 1
                 && dimension2 == 1
                 && exitLevels.isEmpty()
@@ -203,7 +203,7 @@ public final class DungeonStairDraftState {
         }
         inputLevel = 0;
         shape = StairShape.LADDER;
-        direction = StairDirection.defaultDirection();
+        direction = CardinalDirection.defaultDirection();
         dimension1 = 1;
         dimension2 = 1;
         exitLevels = List.of();

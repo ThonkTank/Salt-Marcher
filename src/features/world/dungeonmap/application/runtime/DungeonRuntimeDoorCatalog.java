@@ -4,6 +4,7 @@ import features.world.dungeonmap.application.room.DoorExitCatalog;
 import features.world.dungeonmap.application.room.RoomExitCatalog;
 import features.world.dungeonmap.application.room.RoomExitDescriptor;
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.connection.Connection;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
@@ -24,7 +25,7 @@ public final class DungeonRuntimeDoorCatalog {
         throw new AssertionError("No instances");
     }
 
-    public static List<DungeonRuntimeDoorDescriptor> describe(DungeonLayout layout, Room room, DungeonHeading heading) {
+    public static List<DungeonRuntimeDoorDescriptor> describe(DungeonLayout layout, Room room, CardinalDirection heading) {
         if (layout == null || room == null) {
             return List.of();
         }
@@ -33,7 +34,7 @@ public final class DungeonRuntimeDoorCatalog {
                 .toList();
     }
 
-    public static List<DungeonRuntimeDoorDescriptor> describe(DungeonLayout layout, Corridor corridor, DungeonHeading heading) {
+    public static List<DungeonRuntimeDoorDescriptor> describe(DungeonLayout layout, Corridor corridor, CardinalDirection heading) {
         if (layout == null || corridor == null || corridor.path() == null) {
             return List.of();
         }
@@ -45,7 +46,7 @@ public final class DungeonRuntimeDoorCatalog {
                 exit -> doorContext(layout, layout.connectionAt(exit.anchorEdge()), ConnectionEndpoint.corridor(corridor.corridorId())));
     }
 
-    public static List<DungeonRuntimeDoorDescriptor> describe(DungeonLayout layout, CorridorNetwork network, DungeonHeading heading) {
+    public static List<DungeonRuntimeDoorDescriptor> describe(DungeonLayout layout, CorridorNetwork network, CardinalDirection heading) {
         if (layout == null || network == null || network.floor() == null) {
             return List.of();
         }
@@ -69,7 +70,7 @@ public final class DungeonRuntimeDoorCatalog {
     private static List<DungeonRuntimeDoorDescriptor> describe(
             Set<Point2i> cells,
             List<? extends Connection> connections,
-            DungeonHeading heading,
+            CardinalDirection heading,
             BiFunction<Point2i, Point2i, String> narrationLookup,
             Function<RoomExitDescriptor, DoorContext> contextLookup
     ) {
@@ -91,7 +92,7 @@ public final class DungeonRuntimeDoorCatalog {
             DungeonLayout layout,
             Room room,
             RoomExitDescriptor exit,
-            DungeonHeading heading
+            CardinalDirection heading
     ) {
         String narration = room.narration().exitDescription(exit.roomCell(), exit.direction());
         DoorContext context = doorContext(layout, layout.connectionAt(exit.anchorEdge()), ConnectionEndpoint.room(room.roomId()));

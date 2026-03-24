@@ -1,6 +1,7 @@
 package features.world.dungeonmap.application.runtime;
 
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
@@ -55,8 +56,8 @@ public final class DungeonRuntimeLabels {
         return tile == null ? "\u2014" : tile.x() + ", " + tile.y() + ", z=" + tile.z();
     }
 
-    public static String headingLabel(DungeonHeading heading) {
-        DungeonHeading resolved = heading == null ? DungeonHeading.defaultHeading() : heading;
+    public static String headingLabel(CardinalDirection heading) {
+        CardinalDirection resolved = heading == null ? CardinalDirection.defaultDirection() : heading;
         return resolved.label();
     }
 

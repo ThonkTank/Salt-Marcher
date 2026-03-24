@@ -1,10 +1,10 @@
 package features.world.dungeonmap.canvas.base;
 
-import features.world.dungeonmap.application.runtime.DungeonHeading;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeonmap.canvas.graph.DungeonGraphSceneRenderer;
 import features.world.dungeonmap.canvas.grid.DungeonGridSceneRenderer;
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.geometry.VertexEdge;
@@ -44,7 +44,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
     private Point2i previewBoundaryCurrentVertex;
     private boolean previewBoundaryDeleteMode;
     private DungeonRuntimeLocation activeLocation;
-    private DungeonHeading heading = DungeonHeading.defaultHeading();
+    private CardinalDirection heading = CardinalDirection.defaultDirection();
     private DungeonCanvasInteractionHandler interactionHandler = new DungeonCanvasInteractionHandler() {
         @Override
         public boolean handlePressed(DungeonCanvasPointerEvent event) {
@@ -182,8 +182,8 @@ public final class DungeonCanvasWorkspace extends BorderPane {
         notifyViewChanged();
     }
 
-    public void setHeading(DungeonHeading heading) {
-        DungeonHeading nextHeading = heading == null ? DungeonHeading.defaultHeading() : heading;
+    public void setHeading(CardinalDirection heading) {
+        CardinalDirection nextHeading = heading == null ? CardinalDirection.defaultDirection() : heading;
         if (this.heading == nextHeading) {
             return;
         }

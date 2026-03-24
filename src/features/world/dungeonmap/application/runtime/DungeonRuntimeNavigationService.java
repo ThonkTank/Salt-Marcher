@@ -4,6 +4,7 @@ import database.DatabaseManager;
 import features.campaignstate.api.CampaignStateApi;
 import features.campaignstate.api.CampaignStateReadApi;
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.VertexEdge;
@@ -28,25 +29,25 @@ public final class DungeonRuntimeNavigationService {
                     .filter(position -> position.mapId() != null && position.mapId() == layout.mapId())
                     .orElse(null);
             DungeonRuntimeLocation storedLocation = DungeonRuntimeLocations.toRuntimeLocation(storedPosition);
-            DungeonHeading storedHeading = DungeonHeading.parse(storedPosition == null ? null : storedPosition.heading());
+            CardinalDirection storedHeading = CardinalDirection.parse(storedPosition == null ? null : storedPosition.heading());
             return resolveNavigation(layout, storedLocation, storedHeading);
         }
     }
 
     public DungeonRuntimeNavigationSnapshot resolveNavigation(DungeonLayout layout, DungeonRuntimeLocation preferredLocation) {
-        return resolveNavigation(layout, preferredLocation, DungeonHeading.defaultHeading());
+        return resolveNavigation(layout, preferredLocation, CardinalDirection.defaultDirection());
     }
 
     public DungeonRuntimeNavigationSnapshot resolveNavigation(
             DungeonLayout layout,
             DungeonRuntimeLocation preferredLocation,
-            DungeonHeading preferredHeading
+            CardinalDirection preferredHeading
     ) {
         if (layout == null || layout.mapId() <= 0) {
             return DungeonRuntimeNavigationSnapshot.empty();
         }
         DungeonRuntimeLocation resolvedLocation = DungeonRuntimeLocations.resolveActiveLocation(layout, preferredLocation);
-        DungeonHeading resolvedHeading = preferredHeading == null ? DungeonHeading.defaultHeading() : preferredHeading;
+        CardinalDirection resolvedHeading = preferredHeading == null ? CardinalDirection.defaultDirection() : preferredHeading;
         return new DungeonRuntimeNavigationSnapshot(layout.mapId(), resolvedLocation, resolvedHeading);
     }
 
@@ -61,7 +62,7 @@ public final class DungeonRuntimeNavigationService {
             DungeonLayout layout,
             CubePoint fromTile,
             CubePoint tile,
-            DungeonHeading currentHeading
+            CardinalDirection currentHeading
     ) throws SQLException {
         if (layout == null || layout.mapId() <= 0) {
             throw new SQLException("Kein aktiver Dungeon geladen");
@@ -71,7 +72,7 @@ public final class DungeonRuntimeNavigationService {
             throw new SQLException("Kein begehbares Dungeon-Feld gefunden");
         }
         DungeonRuntimeLocation targetLocation = DungeonRuntimeLocation.tile(resolvedTile);
-        DungeonHeading nextHeading = DungeonHeading.fromTravel(fromTile, resolvedTile, currentHeading);
+        CardinalDirection nextHeading = CardinalDirection.fromTravel(fromTile, resolvedTile, currentHeading);
         try (Connection conn = DatabaseManager.getConnection()) {
             CampaignStateApi.setDungeonPosition(conn, DungeonRuntimeLocations.toCampaignPosition(layout.mapId(), targetLocation, nextHeading));
         }
@@ -100,7 +101,7 @@ public final class DungeonRuntimeNavigationService {
         if (resolvedTile == null) {
             throw new SQLException("Ziel hinter der Verbindung ist nicht begehbar");
         }
-        DungeonHeading nextHeading = DungeonHeading.fromDirection(descriptor.direction());
+        CardinalDirection nextHeading = CardinalDirection.fromDirection(descriptor.direction());
         DungeonRuntimeLocation targetLocation = DungeonRuntimeLocation.tile(resolvedTile);
         try (Connection conn = DatabaseManager.getConnection()) {
             CampaignStateApi.setDungeonPosition(conn, DungeonRuntimeLocations.toCampaignPosition(layout.mapId(), targetLocation, nextHeading));
@@ -111,7 +112,7 @@ public final class DungeonRuntimeNavigationService {
     public DungeonRuntimeNavigationSnapshot moveThroughStair(
             DungeonLayout layout,
             DungeonRuntimeStairDescriptor stair,
-            DungeonHeading currentHeading
+            CardinalDirection currentHeading
     ) throws SQLException {
         if (layout == null || layout.mapId() <= 0) {
             throw new SQLException("Kein aktiver Dungeon geladen");
@@ -133,7 +134,7 @@ public final class DungeonRuntimeNavigationService {
     public DungeonRuntimeNavigationSnapshot moveThroughTransition(
             DungeonLayout layout,
             DungeonRuntimeTransitionDescriptor transitionDescriptor,
-            DungeonHeading currentHeading
+            CardinalDirection currentHeading
     ) throws SQLException {
         if (layout == null || layout.mapId() <= 0) {
             throw new SQLException("Kein aktiver Dungeon geladen");

@@ -4,6 +4,7 @@ import features.campaignstate.api.CampaignDungeonLocationType;
 import features.campaignstate.api.DungeonPositionRef;
 import features.campaignstate.api.DungeonPositionSummary;
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
@@ -103,8 +104,8 @@ final class DungeonRuntimeLocations {
         return false;
     }
 
-    static DungeonPositionRef toCampaignPosition(long mapId, DungeonRuntimeLocation location, DungeonHeading heading) {
-        String headingValue = (heading == null ? DungeonHeading.defaultHeading() : heading).name();
+    static DungeonPositionRef toCampaignPosition(long mapId, DungeonRuntimeLocation location, CardinalDirection heading) {
+        String headingValue = (heading == null ? CardinalDirection.defaultDirection() : heading).name();
         if (location instanceof DungeonRuntimeLocation.Tile tile) {
             return new DungeonPositionRef(mapId, tile.tile().z(), CampaignDungeonLocationType.TILE, null, null, formatTile(tile.tile()), headingValue);
         }

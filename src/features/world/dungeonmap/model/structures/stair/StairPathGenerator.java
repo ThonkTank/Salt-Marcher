@@ -1,6 +1,7 @@
 package features.world.dungeonmap.model.structures.stair;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.Point2i;
 
 import java.util.ArrayList;
@@ -20,14 +21,14 @@ public final class StairPathGenerator {
     public static List<CubePoint> generatePath(
             StairShape shape,
             Point2i anchor,
-            StairDirection direction,
+            CardinalDirection direction,
             int minZ,
             int maxZ,
             int dimension1,
             int dimension2
     ) {
         StairShape resolvedShape = Objects.requireNonNull(shape, "shape");
-        StairDirection resolvedDirection = Objects.requireNonNull(direction, "direction");
+        CardinalDirection resolvedDirection = Objects.requireNonNull(direction, "direction");
         if (anchor == null) {
             return List.of();
         }
@@ -62,7 +63,7 @@ public final class StairPathGenerator {
         return List.copyOf(result);
     }
 
-    private static List<Point2i> straightPath(Point2i anchor, StairDirection direction, int stepCount) {
+    private static List<Point2i> straightPath(Point2i anchor, CardinalDirection direction, int stepCount) {
         ArrayList<Point2i> result = new ArrayList<>(stepCount);
         Point2i current = anchor;
         result.add(current);
@@ -75,14 +76,14 @@ public final class StairPathGenerator {
 
     private static List<Point2i> spiralPath(
             Point2i anchor,
-            StairDirection direction,
+            CardinalDirection direction,
             int stepCount,
             int firstSegmentLength,
             int secondSegmentLength
     ) {
         ArrayList<Point2i> result = new ArrayList<>(stepCount);
         Point2i current = anchor;
-        StairDirection currentDirection = direction;
+        CardinalDirection currentDirection = direction;
         int segmentIndex = 0;
         int segmentSteps = 0;
         int currentSegmentLength = firstSegmentLength;
@@ -103,7 +104,7 @@ public final class StairPathGenerator {
 
     private static List<Point2i> circularPath(
             Point2i anchor,
-            StairDirection direction,
+            CardinalDirection direction,
             int stepCount,
             int radius
     ) {
@@ -177,7 +178,7 @@ public final class StairPathGenerator {
         return angle < 0 ? angle + Math.PI * 2.0 : angle;
     }
 
-    private static int startIndexForDirection(List<Point2i> loop, Point2i anchor, StairDirection direction) {
+    private static int startIndexForDirection(List<Point2i> loop, Point2i anchor, CardinalDirection direction) {
         Point2i delta = direction.delta();
         double targetAngle = Math.atan2(delta.y(), delta.x());
         if (targetAngle < 0) {

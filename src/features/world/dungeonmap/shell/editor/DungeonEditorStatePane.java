@@ -3,8 +3,8 @@ package features.world.dungeonmap.shell.editor;
 import features.world.dungeonmap.application.transition.DungeonTransitionEditRequest;
 import features.world.dungeonmap.application.transition.DungeonTransitionTargetSummary;
 import features.world.dungeonmap.loading.DungeonMapCatalogEntry;
+import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.structures.stair.StairDirection;
 import features.world.dungeonmap.model.structures.stair.StairShape;
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
@@ -98,7 +98,7 @@ public final class DungeonEditorStatePane {
     private Runnable onStairAddRequested = () -> { };
     private IntConsumer onStairExitRemoveRequested = level -> { };
     private Consumer<StairShape> onStairShapeChanged = value -> { };
-    private Consumer<StairDirection> onStairDirectionChanged = value -> { };
+    private Consumer<CardinalDirection> onStairDirectionChanged = value -> { };
     private IntConsumer onStairDimension1Changed = value -> { };
     private IntConsumer onStairDimension2Changed = value -> { };
     private Consumer<String> onTransitionDescriptionChanged = value -> { };
@@ -161,10 +161,10 @@ public final class DungeonEditorStatePane {
         stairInputRow.setAlignment(Pos.CENTER_LEFT);
         stairDimension1Row.setAlignment(Pos.CENTER_LEFT);
         stairDimension2Row.setAlignment(Pos.CENTER_LEFT);
-        configureDirectionButton(stairNorthButton, StairDirection.NORTH);
-        configureDirectionButton(stairEastButton, StairDirection.EAST);
-        configureDirectionButton(stairSouthButton, StairDirection.SOUTH);
-        configureDirectionButton(stairWestButton, StairDirection.WEST);
+        configureDirectionButton(stairNorthButton, CardinalDirection.NORTH);
+        configureDirectionButton(stairEastButton, CardinalDirection.EAST);
+        configureDirectionButton(stairSouthButton, CardinalDirection.SOUTH);
+        configureDirectionButton(stairWestButton, CardinalDirection.WEST);
         stairDirectionButtons.setHgap(6);
         stairDirectionButtons.setVgap(6);
         stairDirectionButtons.getChildren().setAll(stairNorthButton, stairEastButton, stairSouthButton, stairWestButton);
@@ -307,7 +307,7 @@ public final class DungeonEditorStatePane {
         this.onStairShapeChanged = onStairShapeChanged == null ? value -> { } : onStairShapeChanged;
     }
 
-    public void setOnStairDirectionChanged(Consumer<StairDirection> onStairDirectionChanged) {
+    public void setOnStairDirectionChanged(Consumer<CardinalDirection> onStairDirectionChanged) {
         this.onStairDirectionChanged = onStairDirectionChanged == null ? value -> { } : onStairDirectionChanged;
     }
 
@@ -353,7 +353,7 @@ public final class DungeonEditorStatePane {
             stairSummaryLabel.setText("Keine Treppe gewählt");
             stairStatusLabel.setText("");
             syncStairInput(null);
-            syncStairShape(null, StairDirection.defaultDirection());
+            syncStairShape(null, CardinalDirection.defaultDirection());
             syncStairDimensions(null, null);
             stairExitTokens.getChildren().clear();
             return;
@@ -493,10 +493,10 @@ public final class DungeonEditorStatePane {
         syncingStairInput = false;
     }
 
-    private void syncStairShape(StairShape shape, StairDirection direction) {
+    private void syncStairShape(StairShape shape, CardinalDirection direction) {
         syncingStairShape = true;
         stairShapeBox.setValue(shape);
-        updateDirectionSelection(direction == null ? StairDirection.defaultDirection() : direction);
+        updateDirectionSelection(direction == null ? CardinalDirection.defaultDirection() : direction);
         syncingStairShape = false;
     }
 
@@ -521,7 +521,7 @@ public final class DungeonEditorStatePane {
         }
     }
 
-    private void configureDirectionButton(Button button, StairDirection direction) {
+    private void configureDirectionButton(Button button, CardinalDirection direction) {
         button.getStyleClass().add("compact");
         button.setOnAction(event -> {
             if (!syncingStairShape) {
@@ -530,11 +530,11 @@ public final class DungeonEditorStatePane {
         });
     }
 
-    private void updateDirectionSelection(StairDirection selectedDirection) {
-        setDirectionButtonSelected(stairNorthButton, selectedDirection == StairDirection.NORTH);
-        setDirectionButtonSelected(stairEastButton, selectedDirection == StairDirection.EAST);
-        setDirectionButtonSelected(stairSouthButton, selectedDirection == StairDirection.SOUTH);
-        setDirectionButtonSelected(stairWestButton, selectedDirection == StairDirection.WEST);
+    private void updateDirectionSelection(CardinalDirection selectedDirection) {
+        setDirectionButtonSelected(stairNorthButton, selectedDirection == CardinalDirection.NORTH);
+        setDirectionButtonSelected(stairEastButton, selectedDirection == CardinalDirection.EAST);
+        setDirectionButtonSelected(stairSouthButton, selectedDirection == CardinalDirection.SOUTH);
+        setDirectionButtonSelected(stairWestButton, selectedDirection == CardinalDirection.WEST);
     }
 
     private static void setDirectionButtonSelected(Button button, boolean selected) {
@@ -676,7 +676,7 @@ public final class DungeonEditorStatePane {
     public record StairDraftCard(
             Integer inputLevel,
             StairShape shape,
-            StairDirection direction,
+            CardinalDirection direction,
             Integer dimension1,
             Integer dimension2,
             List<Integer> exitLevels,

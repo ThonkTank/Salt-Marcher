@@ -1,12 +1,14 @@
 package features.world.dungeonmap.application.runtime;
 
+import features.world.dungeonmap.model.geometry.CardinalDirection;
+
 public record DungeonRuntimeNavigationSnapshot(
         Long mapId,
         DungeonRuntimeLocation activeLocation,
-        DungeonHeading heading
+        CardinalDirection heading
 ) {
 
     public static DungeonRuntimeNavigationSnapshot empty() {
-        return new DungeonRuntimeNavigationSnapshot(null, null, DungeonHeading.defaultHeading());
+        return new DungeonRuntimeNavigationSnapshot(null, null, CardinalDirection.defaultDirection());
     }
 }

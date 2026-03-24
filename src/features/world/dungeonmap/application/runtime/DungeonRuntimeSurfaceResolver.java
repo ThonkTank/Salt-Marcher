@@ -1,5 +1,7 @@
 package features.world.dungeonmap.application.runtime;
+
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
@@ -19,7 +21,7 @@ public final class DungeonRuntimeSurfaceResolver {
     public static DungeonRuntimeSurface resolve(
             DungeonLayout layout,
             DungeonRuntimeLocation location,
-            DungeonHeading heading
+            CardinalDirection heading
     ) {
         if (layout == null || location == null) {
             return null;
@@ -47,7 +49,7 @@ public final class DungeonRuntimeSurfaceResolver {
         return null;
     }
 
-    private static DungeonRuntimeSurface tileSurface(DungeonLayout layout, CubePoint tile, DungeonHeading heading) {
+    private static DungeonRuntimeSurface tileSurface(DungeonLayout layout, CubePoint tile, CardinalDirection heading) {
         if (layout == null || tile == null) {
             return null;
         }
@@ -74,7 +76,7 @@ public final class DungeonRuntimeSurfaceResolver {
     private static DungeonRuntimeSurface roomSurface(
             DungeonLayout layout,
             Room room,
-            DungeonHeading heading,
+            CardinalDirection heading,
             CubePoint activeTile
     ) {
         if (room == null || room.roomId() == null) {
@@ -92,7 +94,7 @@ public final class DungeonRuntimeSurfaceResolver {
     private static DungeonRuntimeSurface corridorNetworkSurface(
             DungeonLayout layout,
             CorridorNetwork network,
-            DungeonHeading heading,
+            CardinalDirection heading,
             CubePoint activeTile
     ) {
         if (layout == null || network == null || network.networkId() == null) {
@@ -110,7 +112,7 @@ public final class DungeonRuntimeSurfaceResolver {
     private static DungeonRuntimeSurface corridorSurface(
             DungeonLayout layout,
             Corridor corridor,
-            DungeonHeading heading,
+            CardinalDirection heading,
             CubePoint activeTile
     ) {
         if (layout == null || corridor == null || corridor.corridorId() == null) {

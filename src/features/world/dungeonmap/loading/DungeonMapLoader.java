@@ -3,6 +3,7 @@ package features.world.dungeonmap.loading;
 import database.DatabaseManager;
 import features.world.dungeonmap.model.CorridorPlanningInputProjector;
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
@@ -25,7 +26,6 @@ import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
-import features.world.dungeonmap.model.structures.stair.StairDirection;
 import features.world.dungeonmap.model.structures.stair.DungeonStairExit;
 import features.world.dungeonmap.model.structures.stair.StairShape;
 import features.world.dungeonmap.persistence.DungeonSchemaSupport;
@@ -177,7 +177,7 @@ public final class DungeonMapLoader {
                 while (rs.next()) {
                     long roomId = rs.getLong("room_id");
                     Point2i anchor = new Point2i(rs.getInt("component_x"), rs.getInt("component_y"));
-                    rooms.add(new Room(
+                    rooms.add(Room.resolved(
                             roomId,
                             rs.getLong("dungeon_map_id"),
                             rs.getLong("cluster_id"),
@@ -297,7 +297,7 @@ public final class DungeonMapLoader {
                             rs.getLong("dungeon_map_id"),
                             rs.getString("name"),
                             StairShape.parse(rs.getString("shape")),
-                            StairDirection.fromCode(rs.getInt("direction")),
+                            CardinalDirection.fromCode(rs.getInt("direction")),
                             rs.getInt("dimension1"),
                             rs.getInt("dimension2"),
                             pathNodesByStairId.getOrDefault(stairId, List.of()),

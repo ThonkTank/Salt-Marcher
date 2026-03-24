@@ -1,6 +1,5 @@
 package features.world.dungeonmap.canvas.grid;
 
-import features.world.dungeonmap.application.runtime.DungeonHeading;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeDoorDescriptor;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLocationTileResolver;
@@ -12,6 +11,7 @@ import features.world.dungeonmap.canvas.base.DungeonRenderState;
 import features.world.dungeonmap.canvas.base.DungeonCanvasTheme;
 import features.world.dungeonmap.canvas.base.DungeonSceneRenderer;
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.Tile;
 import features.world.dungeonmap.model.geometry.TileShape;
@@ -589,7 +589,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             DungeonLayout mapModel,
             DungeonCanvasCamera camera,
             DungeonRuntimeLocation activeLocation,
-            DungeonHeading heading,
+            CardinalDirection heading,
             int projectionLevel
     ) {
         if (mapModel == null || activeLocation == null) {
@@ -605,7 +605,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         double centerY = camera.panY() + (centerCell.y() + 0.5) * gridSize;
         double outerRadius = Math.max(7.5, gridSize * 0.26);
         double innerRadius = Math.max(3.2, outerRadius * 0.42);
-        DungeonHeading resolvedHeading = heading == null ? DungeonHeading.defaultHeading() : heading;
+        CardinalDirection resolvedHeading = heading == null ? CardinalDirection.defaultDirection() : heading;
         double forwardX = resolvedHeading.delta().x();
         double forwardY = resolvedHeading.delta().y();
         double sideX = -forwardY;
@@ -682,7 +682,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             DungeonLayout mapModel,
             DungeonCanvasCamera camera,
             DungeonRuntimeLocation activeLocation,
-            DungeonHeading heading
+            CardinalDirection heading
     ) {
         DungeonRuntimeSurface surface = DungeonRuntimeSurfaceResolver.resolve(mapModel, activeLocation, heading);
         if (surface == null || surface.doors().isEmpty()) {

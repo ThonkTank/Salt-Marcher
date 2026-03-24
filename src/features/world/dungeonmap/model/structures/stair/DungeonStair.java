@@ -1,6 +1,7 @@
 package features.world.dungeonmap.model.structures.stair;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.GridAnchor;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 import features.world.dungeonmap.model.structures.TargetKey;
@@ -15,7 +16,7 @@ public record DungeonStair(
         long mapId,
         String name,
         StairShape shape,
-        StairDirection direction,
+        CardinalDirection direction,
         int dimension1,
         int dimension2,
         List<CubePoint> path,
@@ -29,7 +30,7 @@ public record DungeonStair(
                 ? "Treppe " + (stairId == null ? "neu" : stairId)
                 : name.trim();
         shape = shape == null ? StairShape.LADDER : shape;
-        direction = direction == null ? StairDirection.defaultDirection() : direction;
+        direction = direction == null ? CardinalDirection.defaultDirection() : direction;
         dimension1 = Math.max(0, dimension1);
         dimension2 = Math.max(0, dimension2);
         path = path == null ? List.of() : path.stream()

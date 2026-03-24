@@ -6,6 +6,7 @@ import features.campaignstate.api.DungeonPositionSummary;
 import features.world.dungeonmap.catalog.persistence.DungeonMapCatalogPersistence;
 import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.CardinalDirection;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -42,7 +43,7 @@ public final class DungeonRuntimeStateRepairService {
         DungeonRuntimeLocation storedLocation = storedPosition
                 .map(DungeonRuntimeLocations::toRuntimeLocation)
                 .orElse(null);
-        DungeonHeading storedHeading = DungeonHeading.parse(storedPosition
+        CardinalDirection storedHeading = CardinalDirection.parse(storedPosition
                 .map(DungeonPositionSummary::heading)
                 .orElse(null));
         DungeonRuntimeLocation resolvedLocation = DungeonRuntimeLocations.resolveActiveLocation(layout, storedLocation);

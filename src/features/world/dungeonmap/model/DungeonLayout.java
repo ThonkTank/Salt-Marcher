@@ -832,6 +832,9 @@ public final class DungeonLayout {
             Room room = entry.getValue();
             Integer level = explicitRoomLevels == null ? null : explicitRoomLevels.get(roomId);
             if (level == null && room != null) {
+                level = room.primaryLevel();
+            }
+            if (level == null && room != null) {
                 level = clusterLevels.get(room.clusterId());
             }
             result.put(roomId, level == null ? 0 : level);
@@ -883,8 +886,8 @@ public final class DungeonLayout {
                 continue;
             }
             for (Room room : cluster.rooms()) {
-                if (room != null && room.floor() != null) {
-                    result.addAll(room.floor().shape().absoluteCells());
+                if (room != null) {
+                    result.addAll(room.cells());
                 }
             }
         }
@@ -908,13 +911,10 @@ public final class DungeonLayout {
                 continue;
             }
             for (Room room : cluster.rooms()) {
-                if (room == null || room.floor() == null || room.roomId() == null) {
+                if (room == null || room.roomId() == null) {
                     continue;
                 }
-                int levelZ = roomLevels.getOrDefault(room.roomId(), 0);
-                for (Point2i cell : room.floor().shape().absoluteCells()) {
-                    result.add(CubePoint.at(cell, levelZ));
-                }
+                result.addAll(room.cubePoints());
             }
         }
         for (Corridor corridor : corridors) {

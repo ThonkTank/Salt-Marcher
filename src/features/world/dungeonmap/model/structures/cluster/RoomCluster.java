@@ -497,7 +497,7 @@ public final class RoomCluster {
                 mapId,
                 clusterId == null ? room.clusterId() : clusterId,
                 room.name(),
-                room.floor(),
+                room.floors(),
                 room.walls(),
                 room.narration());
     }
