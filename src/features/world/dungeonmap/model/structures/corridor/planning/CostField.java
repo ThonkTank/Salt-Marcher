@@ -107,12 +107,13 @@ final class CostField {
                     boolean vertical = directionIndex >= 4;
                     int nextDistance = node.score().distance() + (vertical ? VIA_COST : 1);
                     int nextCorners = node.score().corners();
+                    int nextLevelChanges = node.score().levelChanges() + (vertical ? 1 : 0);
                     int previousDirection = node.state().directionIndex();
                     if (!vertical && previousDirection >= 0 && previousDirection < 4 && previousDirection != directionIndex) {
                         nextCorners++;
                     }
                     PathState nextState = new PathState(next, directionIndex);
-                    RouteCost nextCost = new RouteCost(nextDistance, nextCorners);
+                    RouteCost nextCost = new RouteCost(nextDistance, nextCorners, nextLevelChanges);
                     RouteCost known = best.get(nextState);
                     if (known != null && known.compareTo(nextCost) <= 0) {
                         continue;

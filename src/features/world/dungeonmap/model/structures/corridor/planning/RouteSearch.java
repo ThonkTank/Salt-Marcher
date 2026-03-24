@@ -7,14 +7,28 @@ final class RouteSearch {
     static final int MAX_CORNER_PENALTY_TILES = 5;
     static final int MIN_CORNER_PENALTY_TILES = 2;
     static final int CORNER_PENALTY_RELAXATION_INTERVAL = 12;
+    static final int LEVEL_CHANGE_PENALTY_TILES = 10;
 
     private RouteSearch() {
     }
 
-    static int compareRoutePriority(int distance, int corners, int otherDistance, int otherCorners) {
-        int valueComparison = Integer.compare(routeValue(distance, corners), routeValue(otherDistance, otherCorners));
+    static int compareRoutePriority(
+            int distance,
+            int corners,
+            int levelChanges,
+            int otherDistance,
+            int otherCorners,
+            int otherLevelChanges
+    ) {
+        int valueComparison = Integer.compare(
+                routeValue(distance, corners, levelChanges),
+                routeValue(otherDistance, otherCorners, otherLevelChanges));
         if (valueComparison != 0) {
             return valueComparison;
+        }
+        int levelChangeComparison = Integer.compare(levelChanges, otherLevelChanges);
+        if (levelChangeComparison != 0) {
+            return levelChangeComparison;
         }
         int cornerComparison = Integer.compare(corners, otherCorners);
         if (cornerComparison != 0) {
@@ -23,8 +37,10 @@ final class RouteSearch {
         return Integer.compare(distance, otherDistance);
     }
 
-    static int routeValue(int distance, int corners) {
-        return distance + corners * cornerPenaltyTiles(distance);
+    static int routeValue(int distance, int corners, int levelChanges) {
+        return distance
+                + corners * cornerPenaltyTiles(distance)
+                + levelChanges * LEVEL_CHANGE_PENALTY_TILES;
     }
 
     static int cornerPenaltyTiles(int distance) {
@@ -36,10 +52,16 @@ final class RouteSearch {
     }
 }
 
-record RouteCost(int distance, int corners) implements Comparable<RouteCost> {
+record RouteCost(int distance, int corners, int levelChanges) implements Comparable<RouteCost> {
     @Override
     public int compareTo(RouteCost other) {
-        return RouteSearch.compareRoutePriority(distance, corners, other.distance, other.corners);
+        return RouteSearch.compareRoutePriority(
+                distance,
+                corners,
+                levelChanges,
+                other.distance,
+                other.corners,
+                other.levelChanges);
     }
 }
 

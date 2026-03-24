@@ -392,15 +392,18 @@ final class SteinerTreeBuilder {
         if (firstCost == null || secondCost == null || thirdCost == null) {
             return Integer.MAX_VALUE;
         }
-        int score = RouteSearch.routeValue(firstCost.distance(), firstCost.corners())
-                + RouteSearch.routeValue(secondCost.distance(), secondCost.corners())
-                + RouteSearch.routeValue(thirdCost.distance(), thirdCost.corners());
+        int score = RouteSearch.routeValue(firstCost.distance(), firstCost.corners(), firstCost.levelChanges())
+                + RouteSearch.routeValue(secondCost.distance(), secondCost.corners(), secondCost.levelChanges())
+                + RouteSearch.routeValue(thirdCost.distance(), thirdCost.corners(), thirdCost.levelChanges());
         if (floodBoundary != null) {
             RouteCost boundaryCost = floodBoundary.bestCostAt(candidate);
             if (boundaryCost == null) {
                 return Integer.MAX_VALUE;
             }
-            score += RouteSearch.routeValue(boundaryCost.distance(), boundaryCost.corners());
+            score += RouteSearch.routeValue(
+                    boundaryCost.distance(),
+                    boundaryCost.corners(),
+                    boundaryCost.levelChanges());
         }
         return score;
     }
@@ -455,7 +458,7 @@ final class SteinerTreeBuilder {
                         Set.of(),
                         Set.of(firstDoor, secondDoor),
                         Map.of(),
-                        new RouteCost(0, 0));
+                        new RouteCost(0, 0, 0));
             }
         }
         return null;
@@ -473,7 +476,7 @@ final class SteinerTreeBuilder {
         }
         for (CubePoint cell : cells) {
             if (cell != null) {
-                sources.put(new PathState(cell, -1), new RouteCost(0, 0));
+                sources.put(new PathState(cell, -1), new RouteCost(0, 0, 0));
             }
         }
     }
@@ -481,6 +484,7 @@ final class SteinerTreeBuilder {
     static RouteCost scoreCells(Collection<CubePoint> cells) {
         Set<CubePoint> unique = cells == null ? Set.of() : Set.copyOf(cells);
         int corners = 0;
+        int levelChanges = 0;
         for (CubePoint cell : unique) {
             boolean hasX = false;
             boolean hasY = false;
@@ -496,11 +500,14 @@ final class SteinerTreeBuilder {
                     }
                 }
             }
+            if (unique.contains(cell.add(new CubePoint(0, 0, 1)))) {
+                levelChanges++;
+            }
             if ((hasX ? 1 : 0) + (hasY ? 1 : 0) + (hasZ ? 1 : 0) >= 2) {
                 corners++;
             }
         }
-        return new RouteCost(unique.size(), corners);
+        return new RouteCost(unique.size(), corners, levelChanges);
     }
 }
 

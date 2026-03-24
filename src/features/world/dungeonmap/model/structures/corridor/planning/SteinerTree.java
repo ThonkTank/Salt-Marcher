@@ -21,7 +21,7 @@ record SteinerTree(
         RouteCost totalCost
 ) {
     static SteinerTree empty() {
-        return new SteinerTree(Set.of(), Set.of(), Set.of(), Map.of(), new RouteCost(0, 0));
+        return new SteinerTree(Set.of(), Set.of(), Set.of(), Map.of(), new RouteCost(0, 0, 0));
     }
 
     boolean isRoutable() {
