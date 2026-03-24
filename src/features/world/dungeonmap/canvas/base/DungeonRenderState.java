@@ -2,6 +2,7 @@ package features.world.dungeonmap.canvas.base;
 
 import features.world.dungeonmap.application.runtime.DungeonHeading;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
+import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.state.DungeonLevelOverlaySettings;
@@ -14,6 +15,8 @@ public record DungeonRenderState(
         boolean previewPaintDeleteMode,
         Set<VertexEdge> previewBoundaryEdges,
         Set<VertexEdge> previewBoundarySkippedEdges,
+        Point2i previewBoundaryStartVertex,
+        Point2i previewBoundaryCurrentVertex,
         boolean previewBoundaryDeleteMode,
         int projectionLevel,
         DungeonLevelOverlaySettings levelOverlaySettings,
@@ -35,6 +38,8 @@ public record DungeonRenderState(
                 false,
                 Set.of(),
                 Set.of(),
+                null,
+                null,
                 false,
                 0,
                 DungeonLevelOverlaySettings.defaults(),

@@ -200,12 +200,12 @@ final class ClusterRewritePlanner {
             }
             Room leftRoom = cluster.roomAt(touchingCells.getFirst());
             Room rightRoom = cluster.roomAt(touchingCells.getLast());
-            if (leftRoom == null || rightRoom == null || sameRoomId(leftRoom, rightRoom)) {
+            if (leftRoom == null || rightRoom == null) {
                 continue;
             }
             InternalBoundaryType currentType = updatedBoundaryKinds.get(edge);
             if (deleteBoundary) {
-                if (currentType == null) {
+                if (currentType == null || sameRoomId(leftRoom, rightRoom)) {
                     continue;
                 }
                 updatedBoundaryKinds.remove(edge);
@@ -280,6 +280,7 @@ final class ClusterRewritePlanner {
         Set<Point2i> remainingCells = new LinkedHashSet<>(cluster.cells());
         List<VertexPath> barriers = barriersForBoundaryKinds(boundaryKinds);
         List<Room> rewrittenRooms = new ArrayList<>();
+        Set<Long> retainedRoomIds = new LinkedHashSet<>();
         for (Room room : cluster.rooms()) {
             if (room == null || room.roomId() == null) {
                 continue;
@@ -294,8 +295,25 @@ final class ClusterRewritePlanner {
             }
             remainingCells.removeAll(roomCells);
             List<Room> sourceRooms = roomsForCells(cluster, roomCells);
-            Room retainedRoom = retainedRoom(sourceRooms);
-            rewrittenRooms.add(resolveRoomForCells(cluster, retainedRoom, roomCells, boundaryKinds));
+            Room retainedRoom = retainedRoom(sourceRooms, retainedRoomIds);
+            rewrittenRooms.add(resolveRoomForCells(cluster, retainedRoom, roomCells, boundaryKinds, sourceRooms));
+        }
+        while (!remainingCells.isEmpty()) {
+            Point2i anchor = remainingCells.stream()
+                    .min(Point2i.POINT_ORDER)
+                    .orElse(null);
+            if (anchor == null) {
+                break;
+            }
+            Set<Point2i> roomCells = reachableCells(anchor, remainingCells, barriers);
+            if (roomCells.isEmpty()) {
+                remainingCells.remove(anchor);
+                continue;
+            }
+            remainingCells.removeAll(roomCells);
+            List<Room> sourceRooms = roomsForCells(cluster, roomCells);
+            Room retainedRoom = retainedRoom(sourceRooms, retainedRoomIds);
+            rewrittenRooms.add(resolveRoomForCells(cluster, retainedRoom, roomCells, boundaryKinds, sourceRooms));
         }
         return List.copyOf(rewrittenRooms);
     }
@@ -397,20 +415,34 @@ final class ClusterRewritePlanner {
                 .toList();
     }
 
-    static Room retainedRoom(List<Room> sourceRooms) {
-        return sourceRooms == null || sourceRooms.isEmpty() ? null : sourceRooms.getFirst();
+    static Room retainedRoom(List<Room> sourceRooms, Set<Long> retainedRoomIds) {
+        if (sourceRooms == null || sourceRooms.isEmpty()) {
+            return null;
+        }
+        for (Room sourceRoom : sourceRooms) {
+            if (sourceRoom == null || sourceRoom.roomId() == null) {
+                continue;
+            }
+            if (retainedRoomIds == null || retainedRoomIds.add(sourceRoom.roomId())) {
+                return sourceRoom;
+            }
+        }
+        return null;
     }
 
     static Room resolveRoomForCells(
             RoomCluster cluster,
             Room retainedRoom,
             Set<Point2i> roomCells,
-            Map<VertexEdge, InternalBoundaryType> boundaryKinds
+            Map<VertexEdge, InternalBoundaryType> boundaryKinds,
+            List<Room> sourceRooms
     ) {
         TileShape roomShape = TileShape.fromAbsoluteCells(roomCells);
         Long roomId = retainedRoom == null ? null : retainedRoom.roomId();
-        String roomName = retainedRoom == null ? normalizedRoomName(null, null) : retainedRoom.name();
-        RoomNarration narration = retainedRoom == null ? RoomNarration.empty() : retainedRoom.narration();
+        String roomName = retainedRoom == null ? derivedSplitRoomName(sourceRooms) : retainedRoom.name();
+        RoomNarration narration = retainedRoom == null
+                ? (sourceRooms == null || sourceRooms.isEmpty() ? RoomNarration.empty() : sourceRooms.getFirst().narration())
+                : retainedRoom.narration();
         return resolvedRoom(
                 cluster,
                 roomShape,
@@ -419,6 +451,16 @@ final class ClusterRewritePlanner {
                 roomId,
                 roomName,
                 narration);
+    }
+
+    private static String derivedSplitRoomName(List<Room> sourceRooms) {
+        if (sourceRooms != null && !sourceRooms.isEmpty()) {
+            Room sourceRoom = sourceRooms.getFirst();
+            if (sourceRoom != null && sourceRoom.name() != null && !sourceRoom.name().isBlank()) {
+                return sourceRoom.name().trim() + " Teil";
+            }
+        }
+        return normalizedRoomName(null, null);
     }
 
     static BoundaryMergeResult computeMergeMetadata(RoomCluster cluster, List<Room> rewrittenRooms) {

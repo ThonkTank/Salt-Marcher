@@ -50,6 +50,10 @@ public final class DungeonCanvasTheme {
     public static final Color BOUNDARY_PREVIEW_STROKE = Color.web("#7ac9ff");
     public static final Color BOUNDARY_DELETE_PREVIEW_STROKE = Color.web("#f09a9a");
     public static final Color BOUNDARY_SKIPPED_PREVIEW_STROKE = Color.web("#d8d18d");
+    public static final Color BOUNDARY_START_VERTEX_FILL = Color.web("#fff0c6");
+    public static final Color BOUNDARY_START_VERTEX_STROKE = Color.web("#7ac9ff");
+    public static final Color BOUNDARY_CURRENT_VERTEX_FILL = Color.web("#ffe2a6");
+    public static final Color BOUNDARY_CURRENT_VERTEX_STROKE = Color.web("#ffb62a");
     public static final Font HUD_FONT = Font.font("SansSerif", FontWeight.BOLD, 14);
     public static final Font ROOM_LABEL_FONT = Font.font("SansSerif", FontWeight.BOLD, 12);
     public static final Font GRAPH_NODE_FONT = Font.font("SansSerif", FontWeight.BOLD, 13);

@@ -270,6 +270,8 @@ final class DungeonEditorCoordinator {
         workspace.setPreviewBoundaryEdges(
                 draft == null ? java.util.Set.of() : draft.previewEdges(),
                 draft == null ? java.util.Set.of() : draft.skippedDoorEdges(),
+                draft == null ? null : draft.startVertex(),
+                draft == null ? null : draft.currentVertex(),
                 draft != null && draft.deleteMode());
     }
 

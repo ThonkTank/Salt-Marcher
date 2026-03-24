@@ -12,6 +12,7 @@ import features.world.dungeonmap.canvas.base.DungeonRenderState;
 import features.world.dungeonmap.canvas.base.DungeonCanvasTheme;
 import features.world.dungeonmap.canvas.base.DungeonSceneRenderer;
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.Tile;
 import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.geometry.VertexEdge;
@@ -84,6 +85,8 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                     DungeonCanvasTheme.BASE_GRID * camera.zoom(),
                     renderState.previewBoundaryEdges(),
                     renderState.previewBoundarySkippedEdges(),
+                    renderState.previewBoundaryStartVertex(),
+                    renderState.previewBoundaryCurrentVertex(),
                     renderState.previewBoundaryDeleteMode());
         }
         drawSelectedRoomBoundaries(
@@ -256,11 +259,10 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             double gridSize,
             Set<VertexEdge> previewEdges,
             Set<VertexEdge> skippedEdges,
+            Point2i startVertex,
+            Point2i currentVertex,
             boolean deleteMode
     ) {
-        if ((previewEdges == null || previewEdges.isEmpty()) && (skippedEdges == null || skippedEdges.isEmpty())) {
-            return;
-        }
         if (previewEdges != null && !previewEdges.isEmpty()) {
             gc.setStroke(deleteMode ? DungeonCanvasTheme.BOUNDARY_DELETE_PREVIEW_STROKE : DungeonCanvasTheme.BOUNDARY_PREVIEW_STROKE);
             gc.setLineWidth(3.2);
@@ -277,6 +279,45 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             }
             gc.setLineDashes();
         }
+        if (startVertex != null) {
+            drawBoundaryVertexMarker(
+                    gc,
+                    camera,
+                    gridSize,
+                    startVertex,
+                    DungeonCanvasTheme.BOUNDARY_START_VERTEX_FILL,
+                    DungeonCanvasTheme.BOUNDARY_START_VERTEX_STROKE,
+                    currentVertex != null && currentVertex.equals(startVertex) ? 6.0 : 5.0);
+        }
+        if (currentVertex != null && !currentVertex.equals(startVertex)) {
+            drawBoundaryVertexMarker(
+                    gc,
+                    camera,
+                    gridSize,
+                    currentVertex,
+                    DungeonCanvasTheme.BOUNDARY_CURRENT_VERTEX_FILL,
+                    DungeonCanvasTheme.BOUNDARY_CURRENT_VERTEX_STROKE,
+                    5.0);
+        }
+    }
+
+    private static void drawBoundaryVertexMarker(
+            GraphicsContext gc,
+            DungeonCanvasCamera camera,
+            double gridSize,
+            Point2i vertex,
+            Color fill,
+            Color stroke,
+            double radius
+    ) {
+        double centerX = camera.panX() + vertex.x() * gridSize;
+        double centerY = camera.panY() + vertex.y() * gridSize;
+        double diameter = radius * 2.0;
+        gc.setFill(fill);
+        gc.fillOval(centerX - radius, centerY - radius, diameter, diameter);
+        gc.setStroke(stroke);
+        gc.setLineWidth(2.0);
+        gc.strokeOval(centerX - radius, centerY - radius, diameter, diameter);
     }
 
     private static void strokeEdge(

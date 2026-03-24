@@ -39,6 +39,8 @@ public final class DungeonCanvasWorkspace extends BorderPane {
     private boolean previewPaintDeleteMode;
     private Set<VertexEdge> previewBoundaryEdges = Set.of();
     private Set<VertexEdge> previewBoundarySkippedEdges = Set.of();
+    private Point2i previewBoundaryStartVertex;
+    private Point2i previewBoundaryCurrentVertex;
     private boolean previewBoundaryDeleteMode;
     private DungeonRuntimeLocation activeLocation;
     private DungeonHeading heading = DungeonHeading.defaultHeading();
@@ -149,17 +151,23 @@ public final class DungeonCanvasWorkspace extends BorderPane {
     public void setPreviewBoundaryEdges(
             Set<VertexEdge> previewBoundaryEdges,
             Set<VertexEdge> previewBoundarySkippedEdges,
+            Point2i previewBoundaryStartVertex,
+            Point2i previewBoundaryCurrentVertex,
             boolean deleteMode
     ) {
         Set<VertexEdge> nextPreviewEdges = previewBoundaryEdges == null ? Set.of() : Set.copyOf(previewBoundaryEdges);
         Set<VertexEdge> nextSkippedEdges = previewBoundarySkippedEdges == null ? Set.of() : Set.copyOf(previewBoundarySkippedEdges);
         if (Objects.equals(this.previewBoundaryEdges, nextPreviewEdges)
                 && Objects.equals(this.previewBoundarySkippedEdges, nextSkippedEdges)
+                && Objects.equals(this.previewBoundaryStartVertex, previewBoundaryStartVertex)
+                && Objects.equals(this.previewBoundaryCurrentVertex, previewBoundaryCurrentVertex)
                 && this.previewBoundaryDeleteMode == deleteMode) {
             return;
         }
         this.previewBoundaryEdges = nextPreviewEdges;
         this.previewBoundarySkippedEdges = nextSkippedEdges;
+        this.previewBoundaryStartVertex = previewBoundaryStartVertex;
+        this.previewBoundaryCurrentVertex = previewBoundaryCurrentVertex;
         this.previewBoundaryDeleteMode = deleteMode;
         notifyViewChanged();
     }
@@ -289,6 +297,8 @@ public final class DungeonCanvasWorkspace extends BorderPane {
                         previewPaintDeleteMode,
                         previewBoundaryEdges,
                         previewBoundarySkippedEdges,
+                        previewBoundaryStartVertex,
+                        previewBoundaryCurrentVertex,
                         previewBoundaryDeleteMode,
                         projectionLevel,
                         levelOverlaySettings,
