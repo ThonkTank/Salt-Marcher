@@ -4,10 +4,8 @@ import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridAnchor;
 import features.world.dungeonmap.model.geometry.GridRoute;
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.objects.CorridorPath;
-import features.world.dungeonmap.model.objects.Floor;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInput;
 import features.world.dungeonmap.model.structures.corridor.ResolvedCorridorDoorBinding;
@@ -137,13 +135,12 @@ public final class CorridorPlanningEngine {
             return CorridorPath.unroutable(route);
         }
         Set<CubePoint> corridorCells = filterCorridorCells(tree, rooms, roomLevels);
-        Map<Integer, Floor> floorsByLevel = floorsByLevel(corridorCells);
         boolean directlyAdjacent = corridorCells.isEmpty() && tree != null && !tree.openings().isEmpty();
         boolean routable = tree.connectedRoomIds().size() >= rooms.size()
-                && (!floorsByLevel.isEmpty() || !tree.openings().isEmpty());
+                && (!corridorCells.isEmpty() || !tree.openings().isEmpty());
         return new CorridorPath(
                 route,
-                Map.copyOf(floorsByLevel),
+                corridorCells,
                 directlyAdjacent,
                 routable);
     }
@@ -157,25 +154,6 @@ public final class CorridorPlanningEngine {
         return tree.corridorCells().stream()
                 .filter(cell -> !occupiesRoomCell(cell, occupiedRoomCellsByLevel))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
-    }
-
-    private static Map<Integer, Floor> floorsByLevel(Set<CubePoint> corridorCells) {
-        if (corridorCells == null || corridorCells.isEmpty()) {
-            return Map.of();
-        }
-        Map<Integer, Set<Point2i>> cellsByLevel = new LinkedHashMap<>();
-        for (CubePoint corridorCell : corridorCells) {
-            if (corridorCell == null) {
-                continue;
-            }
-            cellsByLevel.computeIfAbsent(corridorCell.z(), ignored -> new LinkedHashSet<>())
-                    .add(corridorCell.projectedCell());
-        }
-        Map<Integer, Floor> result = new LinkedHashMap<>();
-        for (Map.Entry<Integer, Set<Point2i>> entry : cellsByLevel.entrySet()) {
-            result.put(entry.getKey(), new Floor(TileShape.fromAbsoluteCells(entry.getValue())));
-        }
-        return Map.copyOf(result);
     }
 
     private static List<CorridorConnection> corridorConnections(Corridor corridor, SteinerTree tree) {

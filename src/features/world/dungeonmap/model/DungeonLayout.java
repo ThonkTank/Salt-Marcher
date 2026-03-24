@@ -921,15 +921,7 @@ public final class DungeonLayout {
             if (corridor == null || corridor.path() == null) {
                 continue;
             }
-            for (Map.Entry<Integer, features.world.dungeonmap.model.objects.Floor> entry : corridor.path().floorsByLevel().entrySet()) {
-                if (entry == null || entry.getValue() == null) {
-                    continue;
-                }
-                int levelZ = entry.getKey();
-                for (Point2i cell : entry.getValue().shape().absoluteCells()) {
-                    result.add(CubePoint.at(cell, levelZ));
-                }
-            }
+            result.addAll(corridor.path().cells());
         }
         for (DungeonStair stair : stairs) {
             if (stair != null) {
@@ -999,13 +991,9 @@ public final class DungeonLayout {
             if (corridor == null || corridor.corridorId() == null || corridor.path() == null) {
                 continue;
             }
-            for (Map.Entry<Integer, features.world.dungeonmap.model.objects.Floor> entry : corridor.path().floorsByLevel().entrySet()) {
-                if (entry == null || entry.getValue() == null) {
-                    continue;
-                }
-                int levelZ = entry.getKey();
-                for (Point2i cell : entry.getValue().shape().absoluteCells()) {
-                    mutable.computeIfAbsent(CubePoint.at(cell, levelZ), ignored -> new ArrayList<>()).add(corridor.corridorId());
+            for (CubePoint cell : corridor.path().cells()) {
+                if (cell != null) {
+                    mutable.computeIfAbsent(cell, ignored -> new ArrayList<>()).add(corridor.corridorId());
                 }
             }
         }
