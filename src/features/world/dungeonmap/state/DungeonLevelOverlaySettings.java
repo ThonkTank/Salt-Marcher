@@ -10,7 +10,7 @@ public record DungeonLevelOverlaySettings(
         List<Integer> selectedLevels
 ) {
 
-    private static final int DEFAULT_LEVEL_RANGE = 1;
+    private static final int DEFAULT_LEVEL_RANGE = 2;
     private static final int MAX_LEVEL_RANGE = 6;
     private static final double DEFAULT_OPACITY = 0.35;
 
@@ -27,7 +27,7 @@ public record DungeonLevelOverlaySettings(
 
     public static DungeonLevelOverlaySettings defaults() {
         return new DungeonLevelOverlaySettings(
-                DungeonLevelOverlayMode.OFF,
+                DungeonLevelOverlayMode.NEARBY,
                 DEFAULT_LEVEL_RANGE,
                 DEFAULT_OPACITY,
                 List.of());

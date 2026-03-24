@@ -240,6 +240,14 @@ public final class DungeonLayout {
         return corridorId == null ? 0 : corridorLevelsById.getOrDefault(corridorId, 0);
     }
 
+    private static boolean corridorReachesLevel(Corridor corridor, int levelZ) {
+        if (corridor.path() == null) {
+            return false;
+        }
+        var levels = corridor.path().floorsByLevel();
+        return levels != null && !levels.isEmpty() && levels.containsKey(levelZ);
+    }
+
     public List<RoomCluster> overlappingClusters(features.world.dungeonmap.model.geometry.TileShape shape) {
         if (shape == null || shape.size() == 0) {
             return List.of();
@@ -600,7 +608,7 @@ public final class DungeonLayout {
                 .filter(cluster -> cluster != null && levelForCluster(cluster.clusterId()) == levelZ)
                 .toList();
         List<Corridor> projectedCorridors = corridors.stream()
-                .filter(corridor -> corridor != null && levelForCorridor(corridor.corridorId()) == levelZ)
+                .filter(corridor -> corridor != null && corridorReachesLevel(corridor, levelZ))
                 .toList();
         List<DungeonStair> projectedStairs = stairs.stream()
                 .filter(stair -> stair != null && stair.reachableLevels().contains(levelZ))
