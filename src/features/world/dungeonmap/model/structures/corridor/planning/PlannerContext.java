@@ -95,6 +95,20 @@ final class PlannerContext {
         return entryCell == null ? null : roomIdByEntryCell.get(entryCell);
     }
 
+    Map<CubePoint, Long> targetRoomsByEntryCell(Set<CubePoint> entryCells) {
+        if (entryCells == null || entryCells.isEmpty()) {
+            return Map.of();
+        }
+        Map<CubePoint, Long> result = new LinkedHashMap<>();
+        for (CubePoint entryCell : entryCells) {
+            Long roomId = roomIdAtEntryCell(entryCell);
+            if (roomId != null) {
+                result.put(entryCell, roomId);
+            }
+        }
+        return Map.copyOf(result);
+    }
+
     private static Map<Long, Room> indexRoomsById(List<Room> rooms) {
         Map<Long, Room> result = new LinkedHashMap<>();
         for (Room room : rooms == null ? List.<Room>of() : rooms) {

@@ -68,7 +68,12 @@ final class SteinerTreeBuilder {
             if (targets.isEmpty()) {
                 break;
             }
-            FloodResult flood = CostField.flood(sources, context.searchVolume(), targets, context.instrumentation());
+            FloodResult flood = CostField.flood(
+                    sources,
+                    context.searchVolume(),
+                    targets,
+                    context.targetRoomsByEntryCell(targets),
+                    context.instrumentation());
             ReachedRoom nearest = findNearestReached(flood, context, connected);
             if (nearest == null) {
                 break;
@@ -124,6 +129,7 @@ final class SteinerTreeBuilder {
                         sources,
                         context.searchVolume(),
                         context.entryCells(room.roomId()),
+                        context.targetRoomsByEntryCell(context.entryCells(room.roomId())),
                         context.instrumentation());
                 CubePoint bestEntry = bestReachedEntry(flood, context.entryCells(room.roomId()));
                 if (bestEntry == null) {
@@ -156,7 +162,12 @@ final class SteinerTreeBuilder {
             if (waypointTargets.isEmpty()) {
                 return false;
             }
-            FloodResult flood = CostField.flood(sources, context.searchVolume(), waypointTargets, context.instrumentation());
+            FloodResult flood = CostField.flood(
+                    sources,
+                    context.searchVolume(),
+                    waypointTargets,
+                    Map.of(),
+                    context.instrumentation());
             CubePoint reachedWaypoint = bestReachedEntry(flood, waypointTargets);
             if (reachedWaypoint == null) {
                 return false;

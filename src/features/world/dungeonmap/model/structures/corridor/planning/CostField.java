@@ -29,6 +29,7 @@ final class CostField {
             Map<PathState, RouteCost> sources,
             SearchVolume volume,
             Set<CubePoint> targetEntryCells,
+            Map<CubePoint, Long> targetRoomByEntryCell,
             PlannerInstrumentation instrumentation
     ) {
         long startedAt = instrumentation == null ? 0L : instrumentation.startTimer();
@@ -43,6 +44,8 @@ final class CostField {
             Map<PathState, RouteCost> best = new HashMap<>();
             Map<PathState, PathState> predecessors = new HashMap<>();
             Map<CubePoint, PathState> bestStateByPoint = new HashMap<>();
+            Set<Long> reachedRoomIds = new LinkedHashSet<>();
+            int expectedRoomCount = targetRoomCount(targetRoomByEntryCell);
             for (Map.Entry<PathState, RouteCost> entry : sources.entrySet()) {
                 if (entry.getKey() == null || entry.getKey().point() == null || entry.getValue() == null) {
                     continue;
@@ -63,6 +66,13 @@ final class CostField {
                 CubePoint cell = node.state().point();
                 if (targetEntryCells.contains(cell)) {
                     reached.add(cell);
+                    Long roomId = targetRoomByEntryCell == null ? null : targetRoomByEntryCell.get(cell);
+                    if (roomId != null) {
+                        reachedRoomIds.add(roomId);
+                    }
+                    if (expectedRoomCount > 0 && reachedRoomIds.size() >= expectedRoomCount) {
+                        break;
+                    }
                     continue;
                 }
                 for (int directionIndex = 0; directionIndex < STEPS.size(); directionIndex++) {
@@ -134,6 +144,13 @@ final class CostField {
         if (currentBestCost == null || candidateCost.compareTo(currentBestCost) < 0) {
             bestStateByPoint.put(candidateState.point(), candidateState);
         }
+    }
+
+    private static int targetRoomCount(Map<CubePoint, Long> targetRoomByEntryCell) {
+        if (targetRoomByEntryCell == null || targetRoomByEntryCell.isEmpty()) {
+            return 0;
+        }
+        return new LinkedHashSet<>(targetRoomByEntryCell.values()).size();
     }
 }
 
