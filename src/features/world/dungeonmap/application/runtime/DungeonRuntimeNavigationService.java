@@ -215,11 +215,11 @@ public final class DungeonRuntimeNavigationService {
         }
         return switch (endpoint.type()) {
             case ROOM -> {
-                Room room = layout.roomAtCell(cell);
+                Room room = roomAt(layout, CubePoint.at(cell, currentLevel));
                 yield room != null && endpoint.id().equals(room.roomId());
             }
             case CLUSTER -> {
-                RoomCluster cluster = layout.clusterAtCell(cell);
+                RoomCluster cluster = clusterAt(layout, CubePoint.at(cell, currentLevel));
                 yield cluster != null && endpoint.id().equals(cluster.clusterId());
             }
             case CORRIDOR -> layout.corridorsAtCell(cell, currentLevel).stream()
@@ -238,17 +238,35 @@ public final class DungeonRuntimeNavigationService {
         return switch (endpoint.type()) {
             case ROOM -> {
                 Room room = layout.findRoom(endpoint.id());
-                if (room == null || room.floor() == null) {
+                if (room == null) {
                     yield null;
                 }
-                yield nearestTraversableTile(layout, CubePoint.at(room.floor().shape().centerCell(), layout.levelForRoom(room.roomId())));
+                CubePoint preferred = room.levels().contains(currentLevel)
+                        ? CubePoint.at(room.floorAtLevel(currentLevel).shape().centerCell(), currentLevel)
+                        : room.levels().stream()
+                        .sorted()
+                        .map(level -> CubePoint.at(room.floorAtLevel(level).shape().centerCell(), level))
+                        .findFirst()
+                        .orElse(null);
+                yield nearestTraversableTile(layout, preferred);
             }
             case CLUSTER -> {
                 RoomCluster cluster = layout.findCluster(endpoint.id());
                 if (cluster == null) {
                     yield null;
                 }
-                yield nearestTraversableTile(layout, CubePoint.at(cluster.center(), layout.levelForCluster(cluster.clusterId())));
+                CubePoint preferred = cluster.rooms().stream()
+                        .filter(room -> room != null && room.levels().contains(currentLevel))
+                        .map(room -> CubePoint.at(room.floorAtLevel(currentLevel).shape().centerCell(), currentLevel))
+                        .findFirst()
+                        .orElseGet(() -> cluster.rooms().stream()
+                                .filter(room -> room != null)
+                                .flatMap(room -> room.levels().stream()
+                                        .sorted()
+                                        .map(level -> CubePoint.at(room.floorAtLevel(level).shape().centerCell(), level)))
+                                .findFirst()
+                                .orElse(null));
+                yield nearestTraversableTile(layout, preferred);
             }
             case CORRIDOR -> {
                 Corridor corridor = layout.findCorridor(endpoint.id());
@@ -275,5 +293,33 @@ public final class DungeonRuntimeNavigationService {
                 yield transition == null ? null : nearestTraversableTile(layout, transition.anchor());
             }
         };
+    }
+
+    private static Room roomAt(DungeonLayout layout, CubePoint point) {
+        if (layout == null || point == null) {
+            return null;
+        }
+        for (RoomCluster cluster : layout.clusters()) {
+            if (cluster == null) {
+                continue;
+            }
+            Room room = cluster.roomAt(point);
+            if (room != null) {
+                return room;
+            }
+        }
+        return null;
+    }
+
+    private static RoomCluster clusterAt(DungeonLayout layout, CubePoint point) {
+        if (layout == null || point == null) {
+            return null;
+        }
+        for (RoomCluster cluster : layout.clusters()) {
+            if (cluster != null && cluster.cubePoints().contains(point)) {
+                return cluster;
+            }
+        }
+        return null;
     }
 }

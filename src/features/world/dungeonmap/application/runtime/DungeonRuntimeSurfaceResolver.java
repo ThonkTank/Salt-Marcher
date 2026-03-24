@@ -26,19 +26,20 @@ public final class DungeonRuntimeSurfaceResolver {
         if (layout == null || location == null) {
             return null;
         }
+        CubePoint activeTile = DungeonRuntimeLocationTileResolver.resolve(layout, location);
         if (location instanceof DungeonRuntimeLocation.Room roomLocation) {
-            return roomSurface(layout, layout.findRoom(roomLocation.roomId()), heading, null);
+            return roomSurface(layout, layout.findRoom(roomLocation.roomId()), heading, activeTile);
         }
         if (location instanceof DungeonRuntimeLocation.CorridorComponent componentLocation) {
             CorridorNetwork network = layout.findCorridorNetwork(componentLocation.componentId());
-            return corridorNetworkSurface(layout, network, heading, null);
+            return corridorNetworkSurface(layout, network, heading, activeTile);
         }
         if (location instanceof DungeonRuntimeLocation.Corridor corridorLocation) {
             Corridor corridor = layout.findCorridor(corridorLocation.corridorId());
             CorridorNetwork network = corridor == null ? null : layout.corridorNetworkForCorridor(corridor.corridorId());
             return network != null
-                    ? corridorNetworkSurface(layout, network, heading, null)
-                    : corridorSurface(layout, corridor, heading, null);
+                    ? corridorNetworkSurface(layout, network, heading, activeTile)
+                    : corridorSurface(layout, corridor, heading, activeTile);
         }
         if (location instanceof DungeonRuntimeLocation.Tile tileLocation) {
             return tileSurface(layout, tileLocation.tile(), heading);
@@ -88,7 +89,7 @@ public final class DungeonRuntimeSurfaceResolver {
                 room.narration().visualDescription(),
                 DungeonRuntimeDoorCatalog.describe(layout, room, heading),
                 DungeonRuntimeStairCatalog.describe(layout, room, activeTile),
-                DungeonRuntimeTransitionCatalog.describe(layout, room));
+                DungeonRuntimeTransitionCatalog.describe(layout, room, activeTile));
     }
 
     private static DungeonRuntimeSurface corridorNetworkSurface(
@@ -106,7 +107,7 @@ public final class DungeonRuntimeSurfaceResolver {
                 "",
                 DungeonRuntimeDoorCatalog.describe(layout, network, heading),
                 DungeonRuntimeStairCatalog.describe(layout, network, activeTile),
-                DungeonRuntimeTransitionCatalog.describe(layout, network));
+                DungeonRuntimeTransitionCatalog.describe(layout, network, activeTile));
     }
 
     private static DungeonRuntimeSurface corridorSurface(
@@ -124,7 +125,7 @@ public final class DungeonRuntimeSurfaceResolver {
                 "",
                 DungeonRuntimeDoorCatalog.describe(layout, corridor, heading),
                 DungeonRuntimeStairCatalog.describe(layout, corridor, activeTile),
-                DungeonRuntimeTransitionCatalog.describe(layout, corridor));
+                DungeonRuntimeTransitionCatalog.describe(layout, corridor, activeTile));
     }
 
     private static DungeonRuntimeSurface stairOnlySurface(

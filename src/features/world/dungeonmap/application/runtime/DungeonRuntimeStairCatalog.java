@@ -29,8 +29,9 @@ public final class DungeonRuntimeStairCatalog {
         if (layout == null || room == null || room.roomId() == null) {
             return List.of();
         }
-        int levelZ = layout.levelForRoom(room.roomId());
-        return describe(layout, room.cells(), levelZ, activeTile);
+        return levelsForRoomSurface(room, activeTile).stream()
+                .flatMap(levelZ -> describe(layout, room.cellsAtLevel(levelZ), levelZ, activeTile).stream())
+                .toList();
     }
 
     public static List<DungeonRuntimeStairDescriptor> describe(
@@ -140,5 +141,17 @@ public final class DungeonRuntimeStairCatalog {
         String stairName = stair == null || stair.name() == null || stair.name().isBlank() ? "die Treppe" : stair.name();
         String target = destinationLabel(exit);
         return "Über " + stairName + " gelangt ihr zu " + target + ".";
+    }
+
+    private static List<Integer> levelsForRoomSurface(Room room, CubePoint activeTile) {
+        if (room == null) {
+            return List.of();
+        }
+        if (activeTile != null && room.contains(activeTile)) {
+            return List.of(activeTile.z());
+        }
+        return room.levels().stream()
+                .sorted()
+                .toList();
     }
 }

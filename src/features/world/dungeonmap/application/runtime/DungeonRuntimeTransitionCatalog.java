@@ -19,14 +19,16 @@ public final class DungeonRuntimeTransitionCatalog {
         throw new AssertionError("No instances");
     }
 
-    public static List<DungeonRuntimeTransitionDescriptor> describe(DungeonLayout layout, Room room) {
+    public static List<DungeonRuntimeTransitionDescriptor> describe(DungeonLayout layout, Room room, CubePoint activeTile) {
         if (layout == null || room == null || room.roomId() == null) {
             return List.of();
         }
-        return describe(layout, room.cells(), layout.levelForRoom(room.roomId()));
+        return levelsForRoomSurface(room, activeTile).stream()
+                .flatMap(levelZ -> describe(layout, room.cellsAtLevel(levelZ), levelZ).stream())
+                .toList();
     }
 
-    public static List<DungeonRuntimeTransitionDescriptor> describe(DungeonLayout layout, Corridor corridor) {
+    public static List<DungeonRuntimeTransitionDescriptor> describe(DungeonLayout layout, Corridor corridor, CubePoint activeTile) {
         if (layout == null || corridor == null || corridor.corridorId() == null || corridor.path() == null) {
             return List.of();
         }
@@ -35,7 +37,7 @@ public final class DungeonRuntimeTransitionCatalog {
                 layout.levelForCorridor(corridor.corridorId()));
     }
 
-    public static List<DungeonRuntimeTransitionDescriptor> describe(DungeonLayout layout, CorridorNetwork network) {
+    public static List<DungeonRuntimeTransitionDescriptor> describe(DungeonLayout layout, CorridorNetwork network, CubePoint activeTile) {
         if (layout == null || network == null || network.floor() == null) {
             return List.of();
         }
@@ -108,5 +110,17 @@ public final class DungeonRuntimeTransitionCatalog {
             return transition.label() + " führt zu Übergang " + dungeon.transitionId() + " auf Dungeon " + dungeon.mapId() + ".";
         }
         return transition.label();
+    }
+
+    private static List<Integer> levelsForRoomSurface(Room room, CubePoint activeTile) {
+        if (room == null) {
+            return List.of();
+        }
+        if (activeTile != null && room.contains(activeTile)) {
+            return List.of(activeTile.z());
+        }
+        return room.levels().stream()
+                .sorted()
+                .toList();
     }
 }
