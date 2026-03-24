@@ -409,7 +409,8 @@ final class SteinerTreeBuilder {
         for (Point2i step : Point2i.CARDINAL_STEPS) {
             Point2i projected = entryCell.projectedCell().add(step);
             if (entryCell.z() == roomZ && room.cells().contains(projected)) {
-                VertexEdge edge = VertexEdge.betweenCellAndStep(projected, step);
+                Point2i boundaryStep = new Point2i(-step.x(), -step.y());
+                VertexEdge edge = VertexEdge.betweenCellAndStep(projected, boundaryStep);
                 return new DoorEdge(room.roomId(), edge, roomZ);
             }
         }
