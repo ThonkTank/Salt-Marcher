@@ -165,8 +165,10 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         Set<VertexEdge> selectedRoomBoundaryEdges = new LinkedHashSet<>();
         for (RoomCluster cluster : mapModel.clusters()) {
             InteractiveLabelHandle handle = cluster.labelHandle();
-            boolean selected = handle != null && java.util.Objects.equals(handle.key(), selectedTargetKey);
+            boolean selectedCluster = handle != null && java.util.Objects.equals(handle.key(), selectedTargetKey);
             for (Room room : cluster.rooms()) {
+                boolean selectedRoom = Room.isTargetKey(selectedTargetKey)
+                        && java.util.Objects.equals(room.roomId(), Room.roomIdFromKey(selectedTargetKey));
                 Set<Tile> tiles = room.floor().shape().tiles();
                 fillRoomTiles(gc, camera, gridSize, tiles);
                 strokeRoomTiles(gc, camera, gridSize, tiles, palette.roomStroke(), 1.0);
@@ -176,7 +178,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 room.walls().forEach(wall -> {
                     Set<VertexEdge> wallEdges = new LinkedHashSet<>(wall.edges());
                     wallEdges.removeAll(doorEdges);
-                    if (selected) {
+                    if (selectedCluster || selectedRoom) {
                         selectedRoomBoundaryEdges.addAll(wallEdges);
                     } else {
                         roomBoundaryEdges.addAll(wallEdges);

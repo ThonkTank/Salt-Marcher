@@ -5,6 +5,7 @@ import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.state.EditorLayoutPreviewState;
@@ -45,29 +46,33 @@ public final class ClusterSelectionDragController {
             clear();
             return false;
         }
+        DungeonLayout projectedLayout = projectedLayout();
         DungeonEditorHitTarget hit = hitTester.hitTest(
-                mapState.activeMap(),
+                projectedLayout,
                 event.canvasPoint(),
                 event.camera());
         clear();
-        Long clusterId = clusterIdFor(hit);
-        if (clusterId == null) {
-            DungeonStair stair = stairAt(event.gridCell());
-            if (stair != null) {
-                selectionState.selectTarget(stair.targetKey());
-                return true;
-            }
-            DungeonTransition transition = transitionAt(event.gridCell());
-            if (transition != null) {
-                selectionState.selectTarget(transition.targetKey());
-                return true;
-            }
-            selectionState.clearSelection();
-            return false;
+        if (isClusterLabelHit(hit)) {
+            selectionState.selectTarget(hit.targetKey());
+            dragSession = new ClusterDragSession(hit.clusterId(), hit.targetKey(), mapState.activeMap(), event.gridCell());
+            return true;
         }
-        selectionState.selectTarget(hit.targetKey());
-        dragSession = new ClusterDragSession(clusterId, hit.targetKey(), mapState.activeMap(), event.gridCell());
-        return true;
+        DungeonStair stair = stairAt(event.gridCell());
+        if (stair != null) {
+            selectionState.selectTarget(stair.targetKey());
+            return true;
+        }
+        DungeonTransition transition = transitionAt(event.gridCell());
+        if (transition != null) {
+            selectionState.selectTarget(transition.targetKey());
+            return true;
+        }
+        if (hit != null) {
+            selectionState.selectTarget(hit.targetKey());
+            return true;
+        }
+        selectionState.clearSelection();
+        return false;
     }
 
     public boolean handleDragged(DungeonCanvasPointerEvent event) {
@@ -111,8 +116,18 @@ public final class ClusterSelectionDragController {
         layoutPreviewState.clearPreview();
     }
 
-    private static Long clusterIdFor(DungeonEditorHitTarget target) {
-        return target == null ? null : target.clusterId();
+    private DungeonLayout projectedLayout() {
+        DungeonLayout layout = mapState.activeMap();
+        if (layout == null) {
+            return DungeonLayout.empty();
+        }
+        return layout.projectedToLevel(mapState.activeProjectionLevel());
+    }
+
+    private static boolean isClusterLabelHit(DungeonEditorHitTarget target) {
+        return target != null
+                && target.clusterId() != null
+                && RoomCluster.isTargetKey(target.targetKey());
     }
 
     private DungeonStair stairAt(Point2i cell) {

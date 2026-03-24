@@ -8,6 +8,7 @@ import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
+import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonBoundaryDraftState;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
@@ -238,10 +239,14 @@ public final class BoundaryInteractionController {
 
     private RoomCluster selectedCluster(DungeonLayout layout) {
         String targetKey = selectionState.selectedTargetKey();
-        if (!RoomCluster.isTargetKey(targetKey)) {
+        if (RoomCluster.isTargetKey(targetKey)) {
+            return clusterOnActiveLevel(RoomCluster.clusterIdFromKey(targetKey), layout);
+        }
+        if (!Room.isTargetKey(targetKey) || layout == null) {
             return null;
         }
-        return clusterOnActiveLevel(RoomCluster.clusterIdFromKey(targetKey), layout);
+        Room room = layout.findRoom(Room.roomIdFromKey(targetKey));
+        return room == null ? null : clusterOnActiveLevel(room.clusterId(), layout);
     }
 
     private RoomCluster clusterOnActiveLevel(Long clusterId, DungeonLayout layout) {

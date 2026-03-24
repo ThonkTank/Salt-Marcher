@@ -194,7 +194,7 @@ final class ClusterRewritePlanner {
         if (cluster == null || edges == null || edges.isEmpty()) {
             return null;
         }
-        Map<VertexEdge, InternalBoundaryType> updatedBoundaryKinds = new LinkedHashMap<>(computeInternalBoundaries(cluster.shape(), cluster.rooms(), cluster.localConnections()));
+        Map<VertexEdge, InternalBoundaryType> updatedBoundaryKinds = new LinkedHashMap<>(cluster.internalBoundaryKinds());
         InternalBoundaryType resolvedType = type == null ? InternalBoundaryType.WALL : type;
         boolean changed = false;
         for (VertexEdge edge : edges) {
@@ -560,13 +560,14 @@ final class ClusterRewritePlanner {
             List<Room> rooms,
             Map<VertexEdge, InternalBoundaryType> boundaryKinds
     ) {
-        if (clusterShape == null || clusterShape.size() == 0 || clusterId == null) {
+        if (clusterShape == null || clusterShape.size() == 0) {
             return List.of();
         }
+        long resolvedClusterId = clusterId == null ? 0L : clusterId;
         Map<Point2i, Room> roomsByCell = roomsByCell(rooms);
         return computeInternalBoundaries(clusterShape, rooms, boundaryKinds).entrySet().stream()
                 .filter(entry -> entry.getValue() == InternalBoundaryType.DOOR)
-                .map(entry -> localConnectionForEdge(entry.getKey(), mapId, clusterId, roomsByCell))
+                .map(entry -> localConnectionForEdge(entry.getKey(), mapId, resolvedClusterId, roomsByCell))
                 .filter(java.util.Objects::nonNull)
                 .toList();
     }

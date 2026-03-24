@@ -176,7 +176,13 @@ public final class CorridorInteractionController {
     }
 
     private static Long singleRoomIdFor(DungeonEditorHitTarget hit, DungeonLayout layout) {
-        if (hit == null || layout == null || hit.clusterId() == null) {
+        if (hit == null || layout == null) {
+            return null;
+        }
+        if (hit.roomId() != null) {
+            return hit.roomId();
+        }
+        if (hit.clusterId() == null) {
             return null;
         }
         RoomCluster cluster = layout.findCluster(hit.clusterId());

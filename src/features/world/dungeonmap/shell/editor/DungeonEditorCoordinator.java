@@ -382,6 +382,11 @@ final class DungeonEditorCoordinator {
     }
 
     private void refreshRoomNarrationStatePane() {
+        Room selectedRoom = selectedRoom();
+        if (selectedRoom != null) {
+            statePane.showRoomNarrationEditors(List.of(roomNarrationCard(selectedRoom)), this::saveRoomNarration);
+            return;
+        }
         RoomCluster cluster = selectedCluster();
         if (cluster == null) {
             statePane.showRoomNarrationEditors(List.of(), this::saveRoomNarration);
@@ -433,6 +438,14 @@ final class DungeonEditorCoordinator {
             return null;
         }
         return mapState.activeMap().findCluster(RoomCluster.clusterIdFromKey(targetKey));
+    }
+
+    private Room selectedRoom() {
+        String targetKey = selectionState.selectedTargetKey();
+        if (!Room.isTargetKey(targetKey)) {
+            return null;
+        }
+        return mapState.activeMap().findRoom(Room.roomIdFromKey(targetKey));
     }
 
     private void loadSelectedMap(DungeonMapCatalogEntry entry) {

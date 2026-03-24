@@ -1,6 +1,7 @@
 package features.world.dungeonmap.shell.editor;
 
 import features.world.dungeonmap.model.structures.corridor.Corridor;
+import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 
@@ -12,6 +13,11 @@ final class DungeonEditorSelectionLabels {
     static String corridorLabel(String targetKey) {
         Long corridorId = Corridor.corridorIdFromKey(targetKey);
         return corridorId == null ? "Korridor" : "Korridor " + corridorId;
+    }
+
+    static String roomLabel(String targetKey) {
+        Long roomId = Room.roomIdFromKey(targetKey);
+        return roomId == null ? "Raum" : "Raum " + roomId;
     }
 
     static String stairLabel(String targetKey) {

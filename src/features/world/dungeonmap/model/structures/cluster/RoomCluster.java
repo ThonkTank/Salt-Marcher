@@ -100,7 +100,20 @@ public final class RoomCluster {
     }
 
     public RoomCluster withRooms(List<Room> rooms) {
-        return new RoomCluster(clusterId, mapId, center, rooms, localConnections);
+        List<Room> resolvedRooms = rooms == null ? List.of() : List.copyOf(rooms);
+        TileShape resolvedShape = TileShape.fromAbsoluteCells(indexCells(resolvedRooms));
+        long resolvedClusterId = clusterId == null ? 0L : clusterId;
+        return new RoomCluster(
+                clusterId,
+                mapId,
+                center,
+                resolvedRooms,
+                ClusterRewritePlanner.localConnections(
+                        resolvedShape,
+                        mapId,
+                        resolvedClusterId,
+                        resolvedRooms,
+                        internalBoundaryKinds()));
     }
 
     public RoomCluster withRoomsAndLocalConnections(List<Room> rooms, List<LocalConnection> localConnections) {
