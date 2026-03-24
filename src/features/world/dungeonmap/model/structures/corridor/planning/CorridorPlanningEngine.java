@@ -140,19 +140,18 @@ public final class CorridorPlanningEngine {
                 .map(DoorEdge::edge)
                 .filter(java.util.Objects::nonNull)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
-        Map<Integer, Set<VertexEdge>> doorEdgesByLevel = tree.doorEdges().stream()
-                .filter(java.util.Objects::nonNull)
-                .filter(doorEdge -> doorEdge.edge() != null)
-                .collect(Collectors.groupingBy(
-                        DoorEdge::levelZ,
-                        LinkedHashMap::new,
-                        Collectors.mapping(DoorEdge::edge, Collectors.toCollection(LinkedHashSet::new))))
-                .entrySet().stream()
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        entry -> Set.copyOf(entry.getValue()),
-                        (left, right) -> left,
-                        LinkedHashMap::new));
+        Map<Integer, Set<VertexEdge>> mutableDoorEdgesByLevel = new LinkedHashMap<>();
+        for (DoorEdge doorEdge : tree.doorEdges()) {
+            if (doorEdge != null && doorEdge.edge() != null) {
+                mutableDoorEdgesByLevel
+                        .computeIfAbsent(doorEdge.levelZ(), ignored -> new LinkedHashSet<>())
+                        .add(doorEdge.edge());
+            }
+        }
+        Map<Integer, Set<VertexEdge>> doorEdgesByLevel = new LinkedHashMap<>();
+        for (Map.Entry<Integer, Set<VertexEdge>> entry : mutableDoorEdgesByLevel.entrySet()) {
+            doorEdgesByLevel.put(entry.getKey(), Set.copyOf(entry.getValue()));
+        }
         boolean directlyAdjacent = tree.corridorCells().isEmpty() && !doorEdges.isEmpty();
         boolean routable = tree.connectedRoomIds().size() >= rooms.size()
                 && (!projectedCells.isEmpty() || !doorEdges.isEmpty());
