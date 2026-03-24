@@ -22,16 +22,16 @@ final class DungeonBoundaryPathPlanner {
             return PathResult.empty();
         }
         Set<VertexEdge> traversableEdges = internalClusterEdges(cluster);
-        Set<VertexEdge> doorEdges = doorEdges(cluster, traversableEdges);
+        Set<VertexEdge> localConnectionEdges = localConnectionEdges(cluster, traversableEdges);
         List<VertexEdge> route = shortestPath(start, goal, traversableEdges);
         if (route.isEmpty()) {
             return PathResult.empty();
         }
         Set<VertexEdge> committedEdges = new LinkedHashSet<>(route);
-        committedEdges.removeAll(doorEdges);
-        Set<VertexEdge> skippedDoorEdges = new LinkedHashSet<>(route);
-        skippedDoorEdges.retainAll(doorEdges);
-        return new PathResult(route, committedEdges, skippedDoorEdges);
+        committedEdges.removeAll(localConnectionEdges);
+        Set<VertexEdge> skippedConnectionEdges = new LinkedHashSet<>(route);
+        skippedConnectionEdges.retainAll(localConnectionEdges);
+        return new PathResult(route, committedEdges, skippedConnectionEdges);
     }
 
     PathResult findDeletePath(RoomCluster cluster, Point2i start, Point2i goal) {
@@ -173,11 +173,11 @@ final class DungeonBoundaryPathPlanner {
             return Set.of();
         }
         Set<VertexEdge> result = new LinkedHashSet<>(cluster.shape().boundaryEdges());
-        result.removeAll(doorEdges(cluster, result));
+        result.removeAll(localConnectionEdges(cluster, result));
         return Set.copyOf(result);
     }
 
-    private static Set<VertexEdge> doorEdges(RoomCluster cluster, Set<VertexEdge> allowedEdges) {
+    private static Set<VertexEdge> localConnectionEdges(RoomCluster cluster, Set<VertexEdge> allowedEdges) {
         if (cluster == null || allowedEdges == null || allowedEdges.isEmpty()) {
             return Set.of();
         }
@@ -193,12 +193,12 @@ final class DungeonBoundaryPathPlanner {
     record PathResult(
             List<VertexEdge> routeEdges,
             Set<VertexEdge> committedEdges,
-            Set<VertexEdge> skippedDoorEdges
+            Set<VertexEdge> skippedConnectionEdges
     ) {
         PathResult {
             routeEdges = routeEdges == null ? List.of() : List.copyOf(routeEdges);
             committedEdges = committedEdges == null ? Set.of() : Set.copyOf(committedEdges);
-            skippedDoorEdges = skippedDoorEdges == null ? Set.of() : Set.copyOf(skippedDoorEdges);
+            skippedConnectionEdges = skippedConnectionEdges == null ? Set.of() : Set.copyOf(skippedConnectionEdges);
         }
 
         static PathResult empty() {

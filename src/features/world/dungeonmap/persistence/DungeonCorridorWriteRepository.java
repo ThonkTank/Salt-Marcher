@@ -76,7 +76,7 @@ public final class DungeonCorridorWriteRepository {
             delete.executeUpdate();
         }
         try (PreparedStatement insert = conn.prepareStatement(
-                "INSERT INTO dungeon_corridor_waypoints(corridor_id, sort_order, cluster_id, relative_x, relative_y) VALUES(?,?,?,?,?)")) {
+                "INSERT INTO dungeon_corridor_waypoints(corridor_id, sort_order, cluster_id, relative_x, relative_y, relative_z) VALUES(?,?,?,?,?,?)")) {
             for (int index = 0; index < sanitized.size(); index++) {
                 CorridorWaypointBinding waypoint = sanitized.get(index);
                 insert.setLong(1, corridorId);
@@ -84,6 +84,7 @@ public final class DungeonCorridorWriteRepository {
                 insert.setLong(3, waypoint.clusterId());
                 insert.setInt(4, waypoint.relativeCell().x());
                 insert.setInt(5, waypoint.relativeCell().y());
+                insert.setInt(6, waypoint.levelZ());
                 insert.addBatch();
             }
             insert.executeBatch();

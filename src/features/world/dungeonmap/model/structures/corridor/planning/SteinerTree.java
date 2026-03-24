@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 record SteinerTree(
         Set<Long> connectedRoomIds,
         Set<CubePoint> corridorCells,
-        Set<DoorEdge> doorEdges,
+        Set<DoorEdge> openings,
         Map<Long, Set<CubePoint>> attachmentCellsByRoomId,
         RouteCost totalCost
 ) {
@@ -25,7 +25,7 @@ record SteinerTree(
     }
 
     boolean isRoutable() {
-        return !connectedRoomIds.isEmpty() && (!corridorCells.isEmpty() || !doorEdges.isEmpty());
+        return !connectedRoomIds.isEmpty() && (!corridorCells.isEmpty() || !openings.isEmpty());
     }
 
     Set<CubePoint> branchCells(long roomId) {
@@ -123,7 +123,7 @@ record SteinerTree(
             updatedCells.addAll(newPath);
         }
         Set<DoorEdge> updatedDoors = new LinkedHashSet<>();
-        for (DoorEdge edge : doorEdges) {
+        for (DoorEdge edge : openings) {
             if (edge == null || edge.roomId() != roomId) {
                 updatedDoors.add(edge);
             }
@@ -161,7 +161,7 @@ record SteinerTree(
             updatedCells.addAll(newSubtree);
         }
         Set<DoorEdge> updatedDoors = new LinkedHashSet<>();
-        for (DoorEdge edge : doorEdges) {
+        for (DoorEdge edge : openings) {
             if (edge == null || !replacedRoomIds.contains(edge.roomId())) {
                 updatedDoors.add(edge);
             }

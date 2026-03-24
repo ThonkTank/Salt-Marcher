@@ -17,12 +17,12 @@ public final class DungeonBoundaryDraftState {
             Point2i startVertex,
             Point2i currentVertex,
             Set<VertexEdge> previewEdges,
-            Set<VertexEdge> skippedDoorEdges,
+            Set<VertexEdge> skippedConnectionEdges,
             String statusMessage
     ) {
         public Draft {
             previewEdges = previewEdges == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(previewEdges));
-            skippedDoorEdges = skippedDoorEdges == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(skippedDoorEdges));
+            skippedConnectionEdges = skippedConnectionEdges == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(skippedConnectionEdges));
             statusMessage = statusMessage == null ? "" : statusMessage;
         }
     }

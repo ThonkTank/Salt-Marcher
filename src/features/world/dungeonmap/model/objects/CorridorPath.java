@@ -10,10 +10,10 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Runtime-owned resolved corridor path object.
+ * Runtime-owned routed connection structure for one corridor.
  *
- * <p>CorridorPath owns the current route intent and resolved corridor floor for one corridor. The canonical
- * editable truth still lives in the corridor structure bindings.</p>
+ * <p>The canonical editable truth lives on corridor bindings. This object only carries the currently resolved
+ * routed shape that connectivity planning produced for runtime use and rendering.</p>
  */
 public record CorridorPath(
         GridRoute route,

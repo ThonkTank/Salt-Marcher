@@ -138,9 +138,9 @@ public final class CorridorPlanningEngine {
         }
         Set<CubePoint> corridorCells = filterCorridorCells(tree, rooms, roomLevels);
         Map<Integer, Floor> floorsByLevel = floorsByLevel(corridorCells);
-        boolean directlyAdjacent = corridorCells.isEmpty() && tree != null && !tree.doorEdges().isEmpty();
+        boolean directlyAdjacent = corridorCells.isEmpty() && tree != null && !tree.openings().isEmpty();
         boolean routable = tree.connectedRoomIds().size() >= rooms.size()
-                && (!floorsByLevel.isEmpty() || !tree.doorEdges().isEmpty());
+                && (!floorsByLevel.isEmpty() || !tree.openings().isEmpty());
         return new CorridorPath(
                 route,
                 Map.copyOf(floorsByLevel),
@@ -179,11 +179,11 @@ public final class CorridorPlanningEngine {
     }
 
     private static List<CorridorConnection> corridorConnections(Corridor corridor, SteinerTree tree) {
-        if (corridor == null || tree == null || tree.doorEdges().isEmpty()) {
+        if (corridor == null || tree == null || tree.openings().isEmpty()) {
             return List.of();
         }
         List<CorridorConnection> result = new ArrayList<>();
-        for (DoorEdge doorEdge : tree.doorEdges()) {
+        for (DoorEdge doorEdge : tree.openings()) {
             if (doorEdge == null || doorEdge.edge() == null) {
                 continue;
             }

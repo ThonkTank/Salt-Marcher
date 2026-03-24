@@ -161,7 +161,7 @@ public final class BoundaryInteractionController {
                     currentDraft.startVertex(),
                     currentDraft.currentVertex(),
                     currentDraft.previewEdges(),
-                    currentDraft.skippedDoorEdges(),
+                    currentDraft.skippedConnectionEdges(),
                     deleteMode
                             ? "Pfad kann nur entlang bestehender Innenwände verlaufen"
                             : "Zwischen diesen Eckpunkten gibt es keinen gültigen Pfad"));
@@ -170,8 +170,8 @@ public final class BoundaryInteractionController {
 
         Set<VertexEdge> nextPreview = new LinkedHashSet<>(currentDraft.previewEdges());
         nextPreview.addAll(result.committedEdges());
-        Set<VertexEdge> nextSkipped = new LinkedHashSet<>(currentDraft.skippedDoorEdges());
-        nextSkipped.addAll(result.skippedDoorEdges());
+        Set<VertexEdge> nextSkipped = new LinkedHashSet<>(currentDraft.skippedConnectionEdges());
+        nextSkipped.addAll(result.skippedConnectionEdges());
         draftState.showDraft(new DungeonBoundaryDraftState.Draft(
                 currentDraft.clusterId(),
                 currentDraft.deleteMode(),
@@ -270,14 +270,14 @@ public final class BoundaryInteractionController {
             RoomCluster cluster,
             boolean deleteMode,
             Set<VertexEdge> previewEdges,
-            Set<VertexEdge> skippedDoorEdges
+            Set<VertexEdge> skippedConnectionEdges
     ) {
         if (deleteMode) {
             return previewEdges.isEmpty()
                     ? "Nur Außenwände getroffen, nichts zu löschen"
                     : "Innenwandpfad aktiv, Rechtsklick schließt ab";
         }
-        if (!skippedDoorEdges.isEmpty()) {
+        if (!skippedConnectionEdges.isEmpty()) {
             return "Pfad aktiv, Türen bleiben erhalten, Rechtsklick schließt ab";
         }
         if (cluster != null && !previewEdges.isEmpty()) {

@@ -217,7 +217,7 @@ public final class DungeonMapLoader {
             }
         }
         Map<Long, List<CorridorWaypointBinding>> waypointBindingsByCorridor = loadGrouped(conn,
-                "SELECT corridor_id, cluster_id, relative_x, relative_y"
+                "SELECT corridor_id, cluster_id, relative_x, relative_y, relative_z"
                         + " FROM dungeon_corridor_waypoints"
                         + " WHERE corridor_id IN (SELECT corridor_id FROM dungeon_corridors WHERE dungeon_map_id=?)"
                         + " ORDER BY corridor_id, sort_order",
@@ -225,7 +225,8 @@ public final class DungeonMapLoader {
                 rs -> rs.getLong("corridor_id"),
                 rs -> new CorridorWaypointBinding(
                         rs.getLong("cluster_id"),
-                        new Point2i(rs.getInt("relative_x"), rs.getInt("relative_y"))));
+                        new Point2i(rs.getInt("relative_x"), rs.getInt("relative_y")),
+                        rs.getInt("relative_z")));
         Map<Long, List<CorridorDoorBinding>> doorBindingsByCorridor = loadGrouped(conn,
                 "SELECT corridor_id, room_id, cluster_id, relative_cell_x, relative_cell_y, edge_direction"
                         + " FROM dungeon_corridor_door_overrides"

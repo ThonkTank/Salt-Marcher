@@ -59,7 +59,7 @@ final class SteinerTreeBuilder {
         }
         Set<Long> connected = new LinkedHashSet<>();
         Set<CubePoint> treeCells = new LinkedHashSet<>();
-        Set<DoorEdge> doorEdges = new LinkedHashSet<>();
+        Set<DoorEdge> openings = new LinkedHashSet<>();
         Map<Long, Set<CubePoint>> attachmentCellsByRoomId = new LinkedHashMap<>();
         connected.add(root.roomId());
         Set<CubePoint> rootEntryCells = context.entryCells(root.roomId());
@@ -91,7 +91,7 @@ final class SteinerTreeBuilder {
             DoorEdge door = deriveDoorEdge(nearest.entryCell(), nearest.room(), context);
             treeCells.addAll(path);
             if (door != null) {
-                doorEdges.add(door);
+                openings.add(door);
             }
             attachmentCellsByRoomId.put(nearest.room().roomId(), Set.of(nearest.entryCell()));
             connected.add(nearest.room().roomId());
@@ -99,7 +99,7 @@ final class SteinerTreeBuilder {
         return new SteinerTree(
                 Set.copyOf(connected),
                 Set.copyOf(treeCells),
-                Set.copyOf(doorEdges),
+                Set.copyOf(openings),
                 Map.copyOf(attachmentCellsByRoomId),
                 scoreCells(treeCells));
     }

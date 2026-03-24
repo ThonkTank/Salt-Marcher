@@ -51,7 +51,7 @@ public final class DungeonCorridorDetailService {
         }
         Corridor updated = requireCorridor(layout, corridorId).withInsertedWaypoint(
                 index,
-                CorridorWaypointBinding.atAbsoluteCell(clusterId, cell, cluster.center()));
+                CorridorWaypointBinding.atAbsoluteCell(clusterId, cell, cluster.center(), 0));
         persistBindings(mapId, updated);
     }
 
@@ -63,7 +63,7 @@ public final class DungeonCorridorDetailService {
         }
         Corridor updated = requireCorridor(layout, corridorId).withMovedWaypoint(
                 index,
-                CorridorWaypointBinding.atAbsoluteCell(clusterId, cell, cluster.center()));
+                CorridorWaypointBinding.atAbsoluteCell(clusterId, cell, cluster.center(), 0));
         persistBindings(mapId, updated);
     }
 

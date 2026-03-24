@@ -255,20 +255,6 @@ public final class DungeonLayout {
         return edge == null ? null : connectionsByEdge.get(edge);
     }
 
-    public List<Door> doorsForRoom(long roomId) {
-        return connectionsForRoom(roomId).stream()
-                .map(Connection::door)
-                .filter(Objects::nonNull)
-                .toList();
-    }
-
-    public List<Door> doorsForCorridor(long corridorId) {
-        return connectionsForCorridor(corridorId).stream()
-                .map(Connection::door)
-                .filter(Objects::nonNull)
-                .toList();
-    }
-
     public List<Door> doorsForNetwork(String networkId) {
         CorridorNetwork network = findCorridorNetwork(networkId);
         if (network == null) {
@@ -276,7 +262,10 @@ public final class DungeonLayout {
         }
         Set<Door> result = new LinkedHashSet<>();
         for (Long corridorId : network.corridorIds()) {
-            result.addAll(doorsForCorridor(corridorId));
+            result.addAll(connectionsForCorridor(corridorId).stream()
+                    .map(Connection::door)
+                    .filter(Objects::nonNull)
+                    .toList());
         }
         return List.copyOf(result);
     }
@@ -867,7 +856,7 @@ public final class DungeonLayout {
                 .orElse(0);
     }
 
-    public Set<VertexEdge> doorEdgesForCorridorAtLevel(long corridorId, int levelZ) {
+    public Set<VertexEdge> connectionEdgesForCorridorAtLevel(long corridorId, int levelZ) {
         Corridor corridor = findCorridor(corridorId);
         if (corridor == null) {
             return Set.of();

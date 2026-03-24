@@ -6,6 +6,9 @@ import java.util.List;
 
 /**
  * Shared connectivity contract for dungeon structures that join exactly two endpoints.
+ *
+ * <p>Doors are boundary objects on a connection. The connection itself owns the semantic connectivity between
+ * its endpoints.</p>
  */
 public interface Connection {
 

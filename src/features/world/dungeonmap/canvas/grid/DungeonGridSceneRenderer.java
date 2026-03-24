@@ -177,12 +177,12 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 List<Connection> roomConnections = room.roomId() == null
                         ? List.of()
                         : mapModel.connectionsForRoom(room.roomId());
-                Set<VertexEdge> doorEdges = room.roomId() == null
+                Set<VertexEdge> connectionEdges = room.roomId() == null
                         ? Set.of()
                         : boundaryEdges(roomConnections);
                 room.walls().forEach(wall -> {
                     Set<VertexEdge> wallEdges = new LinkedHashSet<>(wall.edges());
-                    wallEdges.removeAll(doorEdges);
+                    wallEdges.removeAll(connectionEdges);
                     if (selectedCluster || selectedRoom) {
                         selectedRoomBoundaryEdges.addAll(wallEdges);
                     } else {
@@ -406,10 +406,10 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             }
             boolean selected = java.util.Objects.equals(corridor.targetKey(), selectedTargetKey);
             Set<Tile> corridorTiles = corridor.path().floorAtLevel(projectionLevel).shape().tiles();
-            Set<VertexEdge> levelDoorEdges = corridor.corridorId() == null
+            Set<VertexEdge> levelConnectionEdges = corridor.corridorId() == null
                     ? Set.of()
-                    : mapModel.doorEdgesForCorridorAtLevel(corridor.corridorId(), projectionLevel);
-            if (corridorTiles.isEmpty() && levelDoorEdges.isEmpty()) {
+                    : mapModel.connectionEdgesForCorridorAtLevel(corridor.corridorId(), projectionLevel);
+            if (corridorTiles.isEmpty() && levelConnectionEdges.isEmpty()) {
                 continue;
             }
             gc.setFill(selected ? palette.corridorSelectedFill() : palette.corridorFill());
@@ -417,14 +417,14 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             strokeRoomTiles(gc, camera, gridSize, corridorTiles, palette.roomStroke(), 1.0);
 
             Set<VertexEdge> wallEdges = new LinkedHashSet<>(corridor.path().floorAtLevel(projectionLevel).shape().boundaryEdges());
-            wallEdges.removeAll(levelDoorEdges);
+            wallEdges.removeAll(levelConnectionEdges);
             drawCorridorBoundaries(gc, camera, gridSize, wallEdges, selected, palette);
             drawConnections(
                     gc,
                     camera,
                     gridSize,
                     corridor.corridorId() == null ? List.of() : mapModel.connectionsForCorridor(corridor.corridorId()),
-                    levelDoorEdges,
+                    levelConnectionEdges,
                     selected ? palette.corridorSelectedStroke() : palette.corridorStroke(),
                     selected ? 3.0 : 2.0);
         }

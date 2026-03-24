@@ -312,7 +312,11 @@ public final class Corridor {
                 continue;
             }
             Point2i absoluteCell = waypoint.absoluteCell(previousCenter);
-            updatedWaypoints.add(CorridorWaypointBinding.atAbsoluteCell(targetClusterId, absoluteCell, targetCenter));
+            updatedWaypoints.add(CorridorWaypointBinding.atAbsoluteCell(
+                    targetClusterId,
+                    absoluteCell,
+                    targetCenter,
+                    waypoint.levelZ()));
         }
         List<CorridorDoorBinding> updatedDoorBindings = new ArrayList<>();
         for (CorridorDoorBinding binding : bindings.doorBindings()) {
