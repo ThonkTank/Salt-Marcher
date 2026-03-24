@@ -23,13 +23,41 @@ public final class CorridorPlanningInputProjector {
     }
 
     public static CorridorPlanningInput project(DungeonLayout layout) {
-        // CorridorPlanningInput is only external world projection, never a second owner of corridor rewrite rules.
-        return layout == null ? CorridorPlanningInput.empty() : project(layout.clusters());
+        if (layout == null) {
+            return CorridorPlanningInput.empty();
+        }
+        Map<Long, Room> roomsById = new LinkedHashMap<>();
+        Map<Long, Point2i> clusterCenters = new LinkedHashMap<>();
+        Map<Long, Integer> roomLevels = new LinkedHashMap<>();
+        for (RoomCluster cluster : layout.clusters()) {
+            if (cluster == null || cluster.clusterId() == null) {
+                continue;
+            }
+            if (cluster.center() != null) {
+                clusterCenters.put(cluster.clusterId(), cluster.center());
+            }
+            for (Room room : cluster.rooms()) {
+                if (room != null && room.roomId() != null) {
+                    roomsById.put(room.roomId(), room);
+                    roomLevels.put(room.roomId(), layout.levelForRoom(room.roomId()));
+                }
+            }
+        }
+        return new CorridorPlanningInput(roomsById, clusterCenters, roomLevels);
     }
 
     public static CorridorPlanningInput project(List<RoomCluster> clusters) {
+        return project(clusters, Map.of(), Map.of());
+    }
+
+    public static CorridorPlanningInput project(
+            List<RoomCluster> clusters,
+            Map<Long, Integer> explicitRoomLevels,
+            Map<Long, Integer> clusterLevels
+    ) {
         Map<Long, Room> roomsById = new LinkedHashMap<>();
         Map<Long, Point2i> clusterCenters = new LinkedHashMap<>();
+        Map<Long, Integer> roomLevels = new LinkedHashMap<>();
         for (RoomCluster cluster : clusters == null ? List.<RoomCluster>of() : clusters) {
             if (cluster == null || cluster.clusterId() == null) {
                 continue;
@@ -40,9 +68,14 @@ public final class CorridorPlanningInputProjector {
             for (Room room : cluster.rooms()) {
                 if (room != null && room.roomId() != null) {
                     roomsById.put(room.roomId(), room);
+                    Integer level = explicitRoomLevels == null ? null : explicitRoomLevels.get(room.roomId());
+                    if (level == null) {
+                        level = clusterLevels == null ? null : clusterLevels.get(cluster.clusterId());
+                    }
+                    roomLevels.put(room.roomId(), level == null ? 0 : level);
                 }
             }
         }
-        return new CorridorPlanningInput(roomsById, clusterCenters);
+        return new CorridorPlanningInput(roomsById, clusterCenters, roomLevels);
     }
 }

@@ -535,7 +535,7 @@ public final class DungeonLayout {
                 .map(existing -> clusterId.equals(existing.clusterId()) ? movedCluster : existing)
                 .toList();
         // All callers must see the same replanned topology. Performance work here must preserve that invariant.
-        CorridorPlanningInput planningInput = CorridorPlanningInputProjector.project(updatedClusters);
+        CorridorPlanningInput planningInput = CorridorPlanningInputProjector.project(updatedClusters, roomLevelsById, clusterLevelsById);
         CorridorRewriteContext rewriteContext = new CorridorRewriteContext(
                 corridorPlanningInput(),
                 planningInput,

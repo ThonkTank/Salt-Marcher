@@ -13,15 +13,17 @@ import java.util.Map;
  */
 public record CorridorPlanningInput(
         Map<Long, Room> roomsById,
-        Map<Long, Point2i> clusterCenters
+        Map<Long, Point2i> clusterCenters,
+        Map<Long, Integer> roomLevels
 ) {
     public static CorridorPlanningInput empty() {
-        return new CorridorPlanningInput(Map.of(), Map.of());
+        return new CorridorPlanningInput(Map.of(), Map.of(), Map.of());
     }
 
     public CorridorPlanningInput {
         roomsById = roomsById == null ? Map.of() : Map.copyOf(roomsById);
         clusterCenters = clusterCenters == null ? Map.of() : Map.copyOf(clusterCenters);
+        roomLevels = roomLevels == null ? Map.of() : Map.copyOf(roomLevels);
     }
 
     public Room room(Long roomId) {
@@ -30,5 +32,9 @@ public record CorridorPlanningInput(
 
     public Point2i clusterCenter(Long clusterId) {
         return clusterId == null ? null : clusterCenters.get(clusterId);
+    }
+
+    public int roomLevel(Long roomId) {
+        return roomId == null ? 0 : roomLevels.getOrDefault(roomId, 0);
     }
 }

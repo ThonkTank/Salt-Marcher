@@ -1,85 +1,177 @@
 package features.world.dungeonmap.model.structures.corridor.planning;
 
+import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.corridor.ResolvedCorridorDoorBinding;
 import features.world.dungeonmap.model.structures.room.Room;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 final class PlannerContext {
 
-    private final List<Room> rooms;
-    private final List<Point2i> waypointCells;
+    private final List<Room> targetRooms;
+    private final Map<Long, Room> targetRoomsById;
+    private final Map<Long, Integer> roomLevels;
     private final Map<Long, ResolvedCorridorDoorBinding> doorBindings;
-    private final Map<Point2i, Long> occupancy;
-    private final PathfindingSpace pathfindingSpace;
+    private final List<Point2i> waypointCells;
+    private final SearchVolume searchVolume;
     private final PlannerInstrumentation instrumentation;
-    private final Map<Long, List<ExitCandidate>> allExitCandidatesByRoomId = new HashMap<>();
+    private final Map<Long, Set<CubePoint>> entryCellsByRoomId;
+    private final Map<CubePoint, Long> roomIdByEntryCell;
 
     PlannerContext(
-            List<Room> rooms,
+            List<Room> targetRooms,
+            Map<Long, Integer> roomLevels,
+            Set<CubePoint> allObstacles,
             List<Point2i> waypointCells,
             Map<Long, ResolvedCorridorDoorBinding> doorBindings,
             PlannerInstrumentation instrumentation
     ) {
-        this.rooms = rooms == null ? List.of() : List.copyOf(rooms);
-        this.waypointCells = waypointCells == null ? List.of() : List.copyOf(waypointCells);
+        this.targetRooms = targetRooms == null ? List.of() : List.copyOf(targetRooms);
+        this.targetRoomsById = indexRoomsById(this.targetRooms);
+        this.roomLevels = roomLevels == null ? Map.of() : Map.copyOf(roomLevels);
         this.doorBindings = doorBindings == null ? Map.of() : Map.copyOf(doorBindings);
-        this.occupancy = roomOccupancy(this.rooms);
-        // Future performance track only: if drag-preview profiling shows long-corridor pressure,
-        // this occupancy/grid setup is the first candidate for per-drag-session reuse.
-        this.pathfindingSpace = RouteSearch.buildPathfindingSpace(this.occupancy.keySet());
+        this.waypointCells = waypointCells == null ? List.of() : List.copyOf(waypointCells);
         this.instrumentation = instrumentation;
+        this.searchVolume = SearchVolume.enclosing(allObstacles, this.targetRooms, this.roomLevels, this.waypointCells);
+        this.entryCellsByRoomId = computeEntryCells(
+                this.targetRooms,
+                this.roomLevels,
+                allObstacles,
+                this.doorBindings,
+                searchVolume,
+                instrumentation);
+        this.roomIdByEntryCell = indexRoomIdByEntryCell(entryCellsByRoomId);
     }
 
-    List<Room> rooms() {
-        return rooms;
+    List<Room> targetRooms() {
+        return targetRooms;
     }
 
     List<Point2i> waypointCells() {
         return waypointCells;
     }
 
-    Map<Long, ResolvedCorridorDoorBinding> doorBindings() {
-        return doorBindings;
-    }
-
-    Map<Point2i, Long> occupancy() {
-        return occupancy;
-    }
-
-    PathfindingSpace pathfindingSpace() {
-        return pathfindingSpace;
+    SearchVolume searchVolume() {
+        return searchVolume;
     }
 
     PlannerInstrumentation instrumentation() {
         return instrumentation;
     }
 
-    List<ExitCandidate> allExitCandidates(Room room) {
-        if (room == null || room.roomId() == null) {
-            return List.of();
-        }
-        return allExitCandidatesByRoomId.computeIfAbsent(
-                room.roomId(),
-                ignored -> {
-                    List<ExitCandidate> candidates = ExitCandidateSelector.collectExitCandidates(room, occupancy, doorBindings);
-                    instrumentation.recordExitCandidateCount(room.roomId(), candidates.size());
-                    return candidates;
-                });
+    Room room(Long roomId) {
+        return roomId == null ? null : targetRoomsById.get(roomId);
     }
 
-    private static Map<Point2i, Long> roomOccupancy(List<Room> rooms) {
-        Map<Point2i, Long> result = new LinkedHashMap<>();
+    Set<CubePoint> entryCells(Long roomId) {
+        if (roomId == null) {
+            return Set.of();
+        }
+        return entryCellsByRoomId.getOrDefault(roomId, Set.of());
+    }
+
+    Set<CubePoint> allTargetEntryCells(Set<Long> excludeRoomIds) {
+        Set<Long> excluded = excludeRoomIds == null ? Set.of() : Set.copyOf(excludeRoomIds);
+        Set<CubePoint> result = new LinkedHashSet<>();
+        for (Room room : targetRooms) {
+            if (room == null || room.roomId() == null || excluded.contains(room.roomId())) {
+                continue;
+            }
+            result.addAll(entryCells(room.roomId()));
+        }
+        return Set.copyOf(result);
+    }
+
+    int roomLevel(Long roomId) {
+        return roomId == null ? 0 : roomLevels.getOrDefault(roomId, 0);
+    }
+
+    Long roomIdAtEntryCell(CubePoint entryCell) {
+        return entryCell == null ? null : roomIdByEntryCell.get(entryCell);
+    }
+
+    private static Map<Long, Room> indexRoomsById(List<Room> rooms) {
+        Map<Long, Room> result = new LinkedHashMap<>();
         for (Room room : rooms == null ? List.<Room>of() : rooms) {
+            if (room != null && room.roomId() != null) {
+                result.put(room.roomId(), room);
+            }
+        }
+        return Map.copyOf(result);
+    }
+
+    private static Map<Long, Set<CubePoint>> computeEntryCells(
+            List<Room> targetRooms,
+            Map<Long, Integer> roomLevels,
+            Set<CubePoint> allObstacles,
+            Map<Long, ResolvedCorridorDoorBinding> doorBindings,
+            SearchVolume searchVolume,
+            PlannerInstrumentation instrumentation
+    ) {
+        Map<Long, Set<CubePoint>> result = new LinkedHashMap<>();
+        Set<CubePoint> obstacles = allObstacles == null ? Set.of() : Set.copyOf(allObstacles);
+        boolean allowVerticalEntries = searchVolume.minZ() < searchVolume.maxZ();
+        for (Room room : targetRooms == null ? List.<Room>of() : targetRooms) {
             if (room == null || room.roomId() == null) {
                 continue;
             }
-            for (Point2i cell : room.cells()) {
-                result.put(cell, room.roomId());
+            int roomLevel = roomLevels == null ? 0 : roomLevels.getOrDefault(room.roomId(), 0);
+            Set<CubePoint> entryCells = new LinkedHashSet<>();
+            ResolvedCorridorDoorBinding binding = doorBindings == null ? null : doorBindings.get(room.roomId());
+            if (binding != null && binding.absoluteCell() != null && binding.direction() != null) {
+                CubePoint boundEntry = CubePoint.at(binding.absoluteCell().add(binding.direction()), roomLevel);
+                if (isValidEntry(boundEntry, obstacles, searchVolume)) {
+                    entryCells.add(boundEntry);
+                }
+            } else {
+                for (Point2i roomCell : room.cells()) {
+                    for (Point2i step : Point2i.CARDINAL_STEPS) {
+                        Point2i outsideCell = roomCell.add(step);
+                        if (room.cells().contains(outsideCell)) {
+                            continue;
+                        }
+                        CubePoint candidate = CubePoint.at(outsideCell, roomLevel);
+                        if (isValidEntry(candidate, obstacles, searchVolume)) {
+                            entryCells.add(candidate);
+                        }
+                    }
+                    if (allowVerticalEntries) {
+                        CubePoint above = CubePoint.at(roomCell, roomLevel + 1);
+                        CubePoint below = CubePoint.at(roomCell, roomLevel - 1);
+                        if (isValidEntry(above, obstacles, searchVolume)) {
+                            entryCells.add(above);
+                        }
+                        if (isValidEntry(below, obstacles, searchVolume)) {
+                            entryCells.add(below);
+                        }
+                    }
+                }
+            }
+            if (instrumentation != null) {
+                instrumentation.recordEntryCellCount(room.roomId(), entryCells.size());
+            }
+            result.put(room.roomId(), Set.copyOf(entryCells));
+        }
+        return Map.copyOf(result);
+    }
+
+    private static boolean isValidEntry(CubePoint point, Set<CubePoint> obstacles, SearchVolume searchVolume) {
+        return point != null
+                && searchVolume.isInBounds(point)
+                && !obstacles.contains(point)
+                && searchVolume.isPassable(point);
+    }
+
+    private static Map<CubePoint, Long> indexRoomIdByEntryCell(Map<Long, Set<CubePoint>> entryCellsByRoomId) {
+        Map<CubePoint, Long> result = new LinkedHashMap<>();
+        for (Map.Entry<Long, Set<CubePoint>> entry : entryCellsByRoomId.entrySet()) {
+            for (CubePoint cell : entry.getValue()) {
+                result.put(cell, entry.getKey());
             }
         }
         return Map.copyOf(result);

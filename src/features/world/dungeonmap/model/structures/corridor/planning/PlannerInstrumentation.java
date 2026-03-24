@@ -11,11 +11,11 @@ final class PlannerInstrumentation {
     private static final String PROFILE_PROPERTY = "saltmarcher.dungeonmap.corridorplanner.profile";
 
     private final boolean enabled;
-    private final Map<Long, Integer> exitCandidateCountByRoomId = new LinkedHashMap<>();
-    private int routeSearchCalls = 0;
-    private long routeSearchNanos = 0L;
-    private int networkScoreCalls = 0;
-    private long networkScoreNanos = 0L;
+    private final Map<Long, Integer> entryCellCountByRoomId = new LinkedHashMap<>();
+    private int floodCalls = 0;
+    private long floodNanos = 0L;
+    private int treeBuilds = 0;
+    private int ripUpCycles = 0;
 
     private PlannerInstrumentation(boolean enabled) {
         this.enabled = enabled;
@@ -29,28 +29,33 @@ final class PlannerInstrumentation {
         return enabled ? System.nanoTime() : 0L;
     }
 
-    void recordExitCandidateCount(Long roomId, int count) {
+    void recordEntryCellCount(Long roomId, int count) {
         if (enabled && roomId != null) {
-            exitCandidateCountByRoomId.put(roomId, count);
+            entryCellCountByRoomId.put(roomId, count);
         }
     }
 
-    void recordRouteSearchCall() {
+    void recordFloodCall() {
         if (enabled) {
-            routeSearchCalls++;
+            floodCalls++;
         }
     }
 
-    void recordRouteSearchNanos(long nanos) {
+    void recordFloodNanos(long nanos) {
         if (enabled) {
-            routeSearchNanos += nanos;
+            floodNanos += nanos;
         }
     }
 
-    void recordNetworkScore(long nanos) {
+    void recordTreeBuild() {
         if (enabled) {
-            networkScoreCalls++;
-            networkScoreNanos += nanos;
+            treeBuilds++;
+        }
+    }
+
+    void recordRipUpCycle() {
+        if (enabled) {
+            ripUpCycles++;
         }
     }
 
@@ -62,11 +67,11 @@ final class PlannerInstrumentation {
         LOGGER.log(
                 Level.INFO,
                 () -> "Corridor planning profile: totalMs=" + formatMillis(totalPlanNanos)
-                        + ", routeSearchCalls=" + routeSearchCalls
-                        + ", routeSearchMs=" + formatMillis(routeSearchNanos)
-                        + ", networkScoreCalls=" + networkScoreCalls
-                        + ", networkScoreMs=" + formatMillis(networkScoreNanos)
-                        + ", exitCandidatesByRoomId=" + exitCandidateCountByRoomId);
+                        + ", floodCalls=" + floodCalls
+                        + ", floodMs=" + formatMillis(floodNanos)
+                        + ", treeBuilds=" + treeBuilds
+                        + ", ripUpCycles=" + ripUpCycles
+                        + ", entryCellsByRoomId=" + entryCellCountByRoomId);
     }
 
     private static String formatMillis(long nanos) {
