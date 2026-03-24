@@ -41,7 +41,6 @@ final class PlannerContext {
         this.entryCellsByRoomId = computeEntryCells(
                 this.targetRooms,
                 this.roomLevels,
-                allObstacles,
                 this.doorBindings,
                 searchVolume,
                 instrumentation);
@@ -122,13 +121,11 @@ final class PlannerContext {
     private static Map<Long, Set<CubePoint>> computeEntryCells(
             List<Room> targetRooms,
             Map<Long, Integer> roomLevels,
-            Set<CubePoint> allObstacles,
             Map<Long, ResolvedCorridorDoorBinding> doorBindings,
             SearchVolume searchVolume,
             PlannerInstrumentation instrumentation
     ) {
         Map<Long, Set<CubePoint>> result = new LinkedHashMap<>();
-        Set<CubePoint> obstacles = allObstacles == null ? Set.of() : Set.copyOf(allObstacles);
         boolean allowVerticalEntries = searchVolume.minZ() < searchVolume.maxZ();
         for (Room room : targetRooms == null ? List.<Room>of() : targetRooms) {
             if (room == null || room.roomId() == null) {
@@ -139,7 +136,7 @@ final class PlannerContext {
             ResolvedCorridorDoorBinding binding = doorBindings == null ? null : doorBindings.get(room.roomId());
             if (binding != null && binding.absoluteCell() != null && binding.direction() != null) {
                 CubePoint boundEntry = CubePoint.at(binding.absoluteCell().add(binding.direction()), roomLevel);
-                if (isValidEntry(boundEntry, obstacles, searchVolume)) {
+                if (isValidEntry(boundEntry, searchVolume)) {
                     entryCells.add(boundEntry);
                 }
             } else {
@@ -150,17 +147,17 @@ final class PlannerContext {
                             continue;
                         }
                         CubePoint candidate = CubePoint.at(outsideCell, roomLevel);
-                        if (isValidEntry(candidate, obstacles, searchVolume)) {
+                        if (isValidEntry(candidate, searchVolume)) {
                             entryCells.add(candidate);
                         }
                     }
                     if (allowVerticalEntries) {
                         CubePoint above = CubePoint.at(roomCell, roomLevel + 1);
                         CubePoint below = CubePoint.at(roomCell, roomLevel - 1);
-                        if (isValidEntry(above, obstacles, searchVolume)) {
+                        if (isValidEntry(above, searchVolume)) {
                             entryCells.add(above);
                         }
-                        if (isValidEntry(below, obstacles, searchVolume)) {
+                        if (isValidEntry(below, searchVolume)) {
                             entryCells.add(below);
                         }
                     }
@@ -174,11 +171,8 @@ final class PlannerContext {
         return Map.copyOf(result);
     }
 
-    private static boolean isValidEntry(CubePoint point, Set<CubePoint> obstacles, SearchVolume searchVolume) {
-        return point != null
-                && searchVolume.isInBounds(point)
-                && !obstacles.contains(point)
-                && searchVolume.isPassable(point);
+    private static boolean isValidEntry(CubePoint point, SearchVolume searchVolume) {
+        return point != null && searchVolume.isPassable(point);
     }
 
     private static Map<CubePoint, Long> indexRoomIdByEntryCell(Map<Long, Set<CubePoint>> entryCellsByRoomId) {
