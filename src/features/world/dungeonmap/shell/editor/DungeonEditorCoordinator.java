@@ -29,6 +29,7 @@ import features.world.dungeonmap.shell.editor.interaction.RoomPaintInteractionCo
 import features.world.dungeonmap.shell.editor.interaction.StairInteractionController;
 import features.world.dungeonmap.shell.editor.interaction.TransitionInteractionController;
 import features.world.dungeonmap.state.DungeonCorridorDraftState;
+import features.world.dungeonmap.state.DungeonBoundaryDraftState;
 import features.world.dungeonmap.state.EditorLayoutPreviewState;
 import features.world.dungeonmap.state.EditorPaintPreviewState;
 import features.world.dungeonmap.state.EditorSelectionState;
@@ -59,6 +60,7 @@ final class DungeonEditorCoordinator {
     private final EditorSelectionState selectionState = new EditorSelectionState();
     private final EditorLayoutPreviewState layoutPreviewState = new EditorLayoutPreviewState();
     private final EditorPaintPreviewState paintPreviewState = new EditorPaintPreviewState();
+    private final DungeonBoundaryDraftState boundaryDraftState = new DungeonBoundaryDraftState();
     private final DungeonCorridorDraftState corridorDraftState = new DungeonCorridorDraftState();
     private final DungeonStairDraftState stairDraftState = new DungeonStairDraftState();
     private final DungeonTransitionDraftState transitionDraftState = new DungeonTransitionDraftState();
@@ -124,6 +126,7 @@ final class DungeonEditorCoordinator {
                 loadingService,
                 sessionState,
                 selectionState,
+                boundaryDraftState,
                 Objects.requireNonNull(boundaryEditService, "boundaryEditService"));
         this.stairInteractionController = new StairInteractionController(
                 mapState,
@@ -155,11 +158,14 @@ final class DungeonEditorCoordinator {
         sessionState.addListener(this::refreshFromSessionState);
         selectionState.addListener(this::refreshSelectionState);
         selectionState.addListener(this::refreshCorridorStatePane);
+        selectionState.addListener(this::refreshBoundaryStatePane);
         selectionState.addListener(this::refreshStairStatePane);
         selectionState.addListener(this::refreshRoomNarrationStatePane);
         selectionState.addListener(this::refreshTransitionStatePane);
         layoutPreviewState.addListener(this::refreshLayoutPreviewState);
         paintPreviewState.addListener(this::refreshPaintPreviewState);
+        boundaryDraftState.addListener(this::refreshBoundaryPreviewState);
+        boundaryDraftState.addListener(this::refreshBoundaryStatePane);
         corridorDraftState.addListener(this::refreshCorridorStatePane);
         stairDraftState.addListener(this::refreshStairStatePane);
         transitionDraftState.addListener(this::refreshTransitionStatePane);
@@ -168,7 +174,9 @@ final class DungeonEditorCoordinator {
         refreshSelectionState();
         refreshLayoutPreviewState();
         refreshPaintPreviewState();
+        refreshBoundaryPreviewState();
         refreshCorridorStatePane();
+        refreshBoundaryStatePane();
         refreshStairStatePane();
         refreshTransitionStatePane();
         refreshTransitionTargetOptions();
@@ -257,6 +265,14 @@ final class DungeonEditorCoordinator {
         workspace.setPreviewPaintShape(paintPreviewState.previewShape(), paintPreviewState.deleteMode());
     }
 
+    private void refreshBoundaryPreviewState() {
+        DungeonBoundaryDraftState.Draft draft = boundaryDraftState.draft();
+        workspace.setPreviewBoundaryEdges(
+                draft == null ? java.util.Set.of() : draft.previewEdges(),
+                draft == null ? java.util.Set.of() : draft.skippedDoorEdges(),
+                draft != null && draft.deleteMode());
+    }
+
     private void refreshSelectionState() {
         workspace.setSelectedTargetKey(selectionState.selectedTargetKey());
     }
@@ -272,6 +288,23 @@ final class DungeonEditorCoordinator {
             return;
         }
         statePane.showCorridorStatus(null);
+    }
+
+    private void refreshBoundaryStatePane() {
+        DungeonBoundaryDraftState.Draft draft = boundaryDraftState.draft();
+        if (draft != null) {
+            statePane.showBoundaryDraft(draft.statusMessage());
+            return;
+        }
+        if (sessionState.selectedTool() == DungeonEditorTool.CLUSTER_WALL) {
+            statePane.showBoundaryDraft("Eckpunkte anklicken, Rechtsklick schließt ab");
+            return;
+        }
+        if (sessionState.selectedTool() == DungeonEditorTool.CLUSTER_WALL_DELETE) {
+            statePane.showBoundaryDraft("Eckpunkte auf bestehender Innenwand anklicken, Rechtsklick schließt ab");
+            return;
+        }
+        statePane.showBoundaryDraft(null);
     }
 
     private void refreshStairStatePane() {

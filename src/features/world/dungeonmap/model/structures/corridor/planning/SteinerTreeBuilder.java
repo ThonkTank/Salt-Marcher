@@ -62,8 +62,8 @@ final class SteinerTreeBuilder {
         Set<DoorEdge> doorEdges = new LinkedHashSet<>();
         Map<Long, Set<CubePoint>> attachmentCellsByRoomId = new LinkedHashMap<>();
         connected.add(root.roomId());
-        Map<PathState, RouteCost> sources = zeroSources(context.entryCells(root.roomId()));
-        if (!routeThroughWaypoints(treeCells, sources, context)) {
+        Set<CubePoint> rootEntryCells = context.entryCells(root.roomId());
+        if (!routeThroughWaypoints(treeCells, rootEntryCells, context)) {
             return null;
         }
         while (connected.size() < context.targetRooms().size()) {
@@ -71,8 +71,11 @@ final class SteinerTreeBuilder {
             if (targets.isEmpty()) {
                 break;
             }
+            Map<PathState, RouteCost> floodSources = treeCells.isEmpty()
+                    ? zeroSources(rootEntryCells)
+                    : zeroSources(treeCells);
             FloodResult flood = CostField.flood(
-                    sources,
+                    floodSources,
                     context.searchVolume(),
                     targets,
                     context.targetRoomsByEntryCell(targets),
@@ -92,7 +95,6 @@ final class SteinerTreeBuilder {
             }
             attachmentCellsByRoomId.put(nearest.room().roomId(), Set.of(nearest.entryCell()));
             connected.add(nearest.room().roomId());
-            addZeroSources(sources, path);
         }
         return new SteinerTree(
                 Set.copyOf(connected),
@@ -284,15 +286,18 @@ final class SteinerTreeBuilder {
 
     private static boolean routeThroughWaypoints(
             Set<CubePoint> treeCells,
-            Map<PathState, RouteCost> sources,
+            Set<CubePoint> rootEntryCells,
             PlannerContext context
     ) {
         for (CubePoint waypoint : context.waypointCells()) {
             if (waypoint == null || !context.searchVolume().isPassable(waypoint)) {
                 return false;
             }
+            Map<PathState, RouteCost> floodSources = treeCells.isEmpty()
+                    ? zeroSources(rootEntryCells)
+                    : zeroSources(treeCells);
             FloodResult flood = CostField.flood(
-                    sources,
+                    floodSources,
                     context.searchVolume(),
                     Set.of(waypoint),
                     Map.of(),
@@ -303,7 +308,6 @@ final class SteinerTreeBuilder {
             }
             List<CubePoint> path = CostField.extractPath(flood, reachedWaypoint);
             treeCells.addAll(path);
-            addZeroSources(sources, path);
         }
         return true;
     }

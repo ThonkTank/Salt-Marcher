@@ -47,6 +47,9 @@ public final class DungeonCanvasTheme {
     public static final Color PAINT_PREVIEW_STROKE = Color.web("#7ac9ff");
     public static final Color DELETE_PREVIEW_FILL = Color.web("#c26464", 0.24);
     public static final Color DELETE_PREVIEW_STROKE = Color.web("#f09a9a");
+    public static final Color BOUNDARY_PREVIEW_STROKE = Color.web("#7ac9ff");
+    public static final Color BOUNDARY_DELETE_PREVIEW_STROKE = Color.web("#f09a9a");
+    public static final Color BOUNDARY_SKIPPED_PREVIEW_STROKE = Color.web("#d8d18d");
     public static final Font HUD_FONT = Font.font("SansSerif", FontWeight.BOLD, 14);
     public static final Font ROOM_LABEL_FONT = Font.font("SansSerif", FontWeight.BOLD, 12);
     public static final Font GRAPH_NODE_FONT = Font.font("SansSerif", FontWeight.BOLD, 13);

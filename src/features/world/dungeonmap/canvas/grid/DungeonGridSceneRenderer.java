@@ -77,6 +77,15 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         if (!editorMode) {
             drawDoorNumbers(gc, projectedMap, camera, renderState.activeLocation(), renderState.heading());
         }
+        if (editorMode) {
+            drawBoundaryPreview(
+                    gc,
+                    camera,
+                    DungeonCanvasTheme.BASE_GRID * camera.zoom(),
+                    renderState.previewBoundaryEdges(),
+                    renderState.previewBoundarySkippedEdges(),
+                    renderState.previewBoundaryDeleteMode());
+        }
         drawSelectedRoomBoundaries(
                 gc,
                 camera,
@@ -238,6 +247,35 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         gc.setLineWidth(2.6);
         for (VertexEdge edge : edges) {
             strokeEdge(gc, camera, gridSize, edge);
+        }
+    }
+
+    private static void drawBoundaryPreview(
+            GraphicsContext gc,
+            DungeonCanvasCamera camera,
+            double gridSize,
+            Set<VertexEdge> previewEdges,
+            Set<VertexEdge> skippedEdges,
+            boolean deleteMode
+    ) {
+        if ((previewEdges == null || previewEdges.isEmpty()) && (skippedEdges == null || skippedEdges.isEmpty())) {
+            return;
+        }
+        if (previewEdges != null && !previewEdges.isEmpty()) {
+            gc.setStroke(deleteMode ? DungeonCanvasTheme.BOUNDARY_DELETE_PREVIEW_STROKE : DungeonCanvasTheme.BOUNDARY_PREVIEW_STROKE);
+            gc.setLineWidth(3.2);
+            for (VertexEdge edge : previewEdges) {
+                strokeEdge(gc, camera, gridSize, edge);
+            }
+        }
+        if (skippedEdges != null && !skippedEdges.isEmpty()) {
+            gc.setStroke(DungeonCanvasTheme.BOUNDARY_SKIPPED_PREVIEW_STROKE);
+            gc.setLineWidth(2.2);
+            gc.setLineDashes(8.0, 5.0);
+            for (VertexEdge edge : skippedEdges) {
+                strokeEdge(gc, camera, gridSize, edge);
+            }
+            gc.setLineDashes();
         }
     }
 

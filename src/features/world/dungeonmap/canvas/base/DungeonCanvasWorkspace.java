@@ -230,7 +230,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
             event.consume();
             return;
         }
-        if (activePointerCapture != PointerCapture.PAN || !event.isSecondaryButtonDown()) {
+        if (activePointerCapture != PointerCapture.PAN || !event.isMiddleButtonDown()) {
             return;
         }
         if (lastPointer == null) {

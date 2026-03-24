@@ -12,6 +12,7 @@ import features.world.dungeonmap.model.structures.room.RoomNarration;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;

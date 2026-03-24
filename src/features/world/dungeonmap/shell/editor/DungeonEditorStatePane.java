@@ -33,6 +33,8 @@ public final class DungeonEditorStatePane {
 
     private final VBox content = new VBox();
     private final Label activeToolLabel = new Label(DungeonEditorTool.SELECT.label());
+    private final Label boundaryLabel = new Label("Kein Wandpfad aktiv");
+    private final VBox boundaryCard = card("Wandpfad", boundaryLabel);
     private final Label corridorLabel = new Label("Kein Korridor gewählt");
     private final VBox corridorCard = card("Korridor", corridorLabel);
     private final Label stairSummaryLabel = new Label("Keine Treppe gewählt");
@@ -175,6 +177,7 @@ public final class DungeonEditorStatePane {
         preparedTransitionButtons.setVgap(6);
         transitionStatusLabel.setWrapText(true);
         showCorridorStatus(null);
+        showBoundaryDraft(null);
         showStairDraft(null);
         showTransitionDraft(null);
         showRoomNarrationEditors(List.of(), null);
@@ -198,6 +201,18 @@ public final class DungeonEditorStatePane {
         corridorLabel.setText(text);
         if (!content.getChildren().contains(corridorCard)) {
             content.getChildren().add(1, corridorCard);
+        }
+    }
+
+    public void showBoundaryDraft(String text) {
+        if (text == null || text.isBlank()) {
+            content.getChildren().remove(boundaryCard);
+            boundaryLabel.setText("Kein Wandpfad aktiv");
+            return;
+        }
+        boundaryLabel.setText(text);
+        if (!content.getChildren().contains(boundaryCard)) {
+            content.getChildren().add(1, boundaryCard);
         }
     }
 
