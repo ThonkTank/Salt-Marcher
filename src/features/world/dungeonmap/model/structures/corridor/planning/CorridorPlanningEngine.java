@@ -5,12 +5,14 @@ import features.world.dungeonmap.model.geometry.GridAnchor;
 import features.world.dungeonmap.model.geometry.GridRoute;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
-import features.world.dungeonmap.model.geometry.VertexEdge;
+import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.objects.CorridorPath;
 import features.world.dungeonmap.model.objects.Floor;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInput;
 import features.world.dungeonmap.model.structures.corridor.ResolvedCorridorDoorBinding;
+import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
+import features.world.dungeonmap.model.structures.connection.CorridorConnection;
 import features.world.dungeonmap.model.structures.room.Room;
 
 import java.util.ArrayList;
@@ -27,12 +29,12 @@ public final class CorridorPlanningEngine {
         throw new AssertionError("No instances");
     }
 
-    public static CorridorPath plan(Corridor corridor, CorridorPlanningInput input) {
+    public static CorridorPlan plan(Corridor corridor, CorridorPlanningInput input) {
         PlannerInstrumentation instrumentation = PlannerInstrumentation.create();
         long startedAt = instrumentation.startTimer();
         try {
             if (corridor == null || input == null) {
-                return CorridorPath.unroutable(new GridRoute(List.of()));
+                return new CorridorPlan(CorridorPath.unroutable(new GridRoute(List.of())), List.of());
             }
             List<Room> rooms = corridor.resolvedRooms(input);
             List<Point2i> waypointCells2d = corridor.resolvedWaypointCells(input);
@@ -40,7 +42,7 @@ public final class CorridorPlanningEngine {
             Map<Long, ResolvedCorridorDoorBinding> doorBindings = corridor.resolvedDoorBindings(input);
             GridRoute route = buildRoute(rooms, waypointCells2d);
             if (rooms.size() < 2) {
-                return CorridorPath.unroutable(route);
+                return new CorridorPlan(CorridorPath.unroutable(route), List.of());
             }
 
             Set<CubePoint> allObstacles = buildObstacles(input.roomsById(), input.roomLevels());
@@ -52,7 +54,8 @@ public final class CorridorPlanningEngine {
                     doorBindings,
                     instrumentation);
             SteinerTree tree = SteinerTreeBuilder.bestTree(context);
-            return toCorridorPath(route, tree, rooms, input.roomLevels());
+            CorridorPath path = toCorridorPath(route, tree, rooms, input.roomLevels());
+            return new CorridorPlan(path, corridorConnections(corridor, tree));
         } finally {
             instrumentation.logSummary(startedAt);
         }
@@ -135,14 +138,12 @@ public final class CorridorPlanningEngine {
         }
         Set<CubePoint> corridorCells = filterCorridorCells(tree, rooms, roomLevels);
         Map<Integer, Floor> floorsByLevel = floorsByLevel(corridorCells);
-        Map<Integer, Set<VertexEdge>> doorEdgesByLevel = doorEdgesByLevel(tree);
-        boolean directlyAdjacent = corridorCells.isEmpty() && !doorEdgesByLevel.isEmpty();
+        boolean directlyAdjacent = corridorCells.isEmpty() && tree != null && !tree.doorEdges().isEmpty();
         boolean routable = tree.connectedRoomIds().size() >= rooms.size()
-                && (!floorsByLevel.isEmpty() || !doorEdgesByLevel.isEmpty());
+                && (!floorsByLevel.isEmpty() || !tree.doorEdges().isEmpty());
         return new CorridorPath(
                 route,
                 Map.copyOf(floorsByLevel),
-                doorEdgesByLevel,
                 directlyAdjacent,
                 routable);
     }
@@ -177,23 +178,24 @@ public final class CorridorPlanningEngine {
         return Map.copyOf(result);
     }
 
-    private static Map<Integer, Set<VertexEdge>> doorEdgesByLevel(SteinerTree tree) {
-        if (tree == null) {
-            return Map.of();
+    private static List<CorridorConnection> corridorConnections(Corridor corridor, SteinerTree tree) {
+        if (corridor == null || tree == null || tree.doorEdges().isEmpty()) {
+            return List.of();
         }
-        Map<Integer, Set<VertexEdge>> mutableDoorEdgesByLevel = new LinkedHashMap<>();
+        List<CorridorConnection> result = new ArrayList<>();
         for (DoorEdge doorEdge : tree.doorEdges()) {
-            if (doorEdge != null && doorEdge.edge() != null) {
-                mutableDoorEdgesByLevel
-                        .computeIfAbsent(doorEdge.levelZ(), ignored -> new LinkedHashSet<>())
-                        .add(doorEdge.edge());
+            if (doorEdge == null || doorEdge.edge() == null) {
+                continue;
             }
+            result.add(new CorridorConnection(
+                    corridor.corridorId(),
+                    corridor.mapId(),
+                    new Door(Set.of(doorEdge.edge()), Door.TraversalState.CLOSED),
+                    List.of(
+                            ConnectionEndpoint.room(doorEdge.roomId()),
+                            ConnectionEndpoint.corridor(corridor.corridorId()))));
         }
-        Map<Integer, Set<VertexEdge>> result = new LinkedHashMap<>();
-        for (Map.Entry<Integer, Set<VertexEdge>> entry : mutableDoorEdgesByLevel.entrySet()) {
-            result.put(entry.getKey(), Set.copyOf(entry.getValue()));
-        }
-        return Map.copyOf(result);
+        return List.copyOf(result);
     }
 
     private static Map<Integer, Set<Point2i>> occupiedRoomCellsByLevel(List<Room> rooms, Map<Long, Integer> roomLevels) {

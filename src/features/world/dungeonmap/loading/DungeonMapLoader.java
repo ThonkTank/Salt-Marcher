@@ -247,7 +247,8 @@ public final class DungeonMapLoader {
                     new CorridorBindings(
                             waypointBindingsByCorridor.getOrDefault(entry.getKey(), List.of()),
                             doorBindingsByCorridor.getOrDefault(entry.getKey(), List.of())),
-                    CorridorPath.empty()));
+                    CorridorPath.empty(),
+                    List.of()));
         }
         CorridorPlanningInput planningInput = CorridorPlanningInputProjector.project(
                 clusters,

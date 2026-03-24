@@ -8,6 +8,7 @@ import features.world.dungeonmap.model.structures.cluster.ClusterRewrite;
 import features.world.dungeonmap.model.structures.cluster.ClusterRewriteSplit;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
+import features.world.dungeonmap.model.structures.connection.CorridorConnection;
 import features.world.dungeonmap.model.structures.connection.LocalConnection;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
@@ -104,10 +105,10 @@ public final class DungeonLayout {
         this.clusters = clusters == null ? List.of() : List.copyOf(clusters);
         this.stairs = stairs == null ? List.of() : List.copyOf(stairs);
         this.transitions = transitions == null ? List.of() : List.copyOf(transitions);
-        Map<Door, List<ConnectionEndpoint>> localEndpointsByDoor = indexLocalEndpointsByDoor(this.clusters);
+        Map<Door, List<ConnectionEndpoint>> explicitEndpointsByDoor = indexExplicitEndpointsByDoor(this.clusters, this.corridors);
         this.doors = indexDoors(this.clusters, this.corridors);
         this.doorRegistry = indexDoorsByEdge(this.doors);
-        this.endpointsByDoor = indexEndpointsByDoor(this.doors, localEndpointsByDoor, this.clusters, this.corridors);
+        this.endpointsByDoor = indexEndpointsByDoor(this.doors, explicitEndpointsByDoor, this.clusters, this.corridors);
         this.doorsByEndpoint = indexDoorsByEndpoint(this.endpointsByDoor);
         this.corridorNetworks = CorridorNetwork.buildNetworks(mapId, this.corridors, this.doors, this.endpointsByDoor);
         this.roomsById = indexRooms(this.clusters);
@@ -207,12 +208,12 @@ public final class DungeonLayout {
         return canonicalLevelForCorridor(corridorsById.get(corridorId));
     }
 
-    private static boolean corridorReachesLevel(Corridor corridor, int levelZ) {
+    private boolean corridorReachesLevel(Corridor corridor, int levelZ) {
         if (corridor.path() == null) {
             return false;
         }
         return corridor.path().floorsByLevel().containsKey(levelZ)
-                || corridor.path().doorEdgesByLevel().containsKey(levelZ);
+                || corridorConnectionReachesLevel(corridor, levelZ, roomLevelsById);
     }
 
     public List<RoomCluster> overlappingClusters(features.world.dungeonmap.model.geometry.TileShape shape) {
@@ -692,10 +693,9 @@ public final class DungeonLayout {
             if (corridor == null || corridor.path() == null) {
                 continue;
             }
-            for (VertexEdge edge : corridor.path().doorEdges()) {
-                Door corridorDoor = corridorDoor(corridor, edge, clusters);
-                if (corridorDoor != null) {
-                    result.add(corridorDoor);
+            for (CorridorConnection connection : corridor.connections()) {
+                if (connection != null && connection.door() != null) {
+                    result.add(connection.door());
                 }
             }
         }
@@ -715,20 +715,9 @@ public final class DungeonLayout {
         return Map.copyOf(result);
     }
 
-    private static Door corridorDoor(Corridor corridor, VertexEdge edge, List<RoomCluster> clusters) {
-        if (corridor == null || corridor.corridorId() == null || edge == null) {
-            return null;
-        }
-        Room room = findTouchingRoom(edge, clusters);
-        if (room == null || room.roomId() == null) {
-            return null;
-        }
-        return new Door(Set.of(edge), Door.TraversalState.CLOSED);
-    }
-
     private static Map<Door, List<ConnectionEndpoint>> indexEndpointsByDoor(
             List<Door> doors,
-            Map<Door, List<ConnectionEndpoint>> localEndpointsByDoor,
+            Map<Door, List<ConnectionEndpoint>> explicitEndpointsByDoor,
             List<RoomCluster> clusters,
             List<Corridor> corridors
     ) {
@@ -738,7 +727,7 @@ public final class DungeonLayout {
             if (door == null) {
                 continue;
             }
-            List<ConnectionEndpoint> endpoints = localEndpointsByDoor.get(door);
+            List<ConnectionEndpoint> endpoints = explicitEndpointsByDoor.get(door);
             if (endpoints == null || endpoints.isEmpty()) {
                 endpoints = resolveEndpoints(door, clusters, corridorsById);
             }
@@ -747,13 +736,27 @@ public final class DungeonLayout {
         return Map.copyOf(result);
     }
 
-    private static Map<Door, List<ConnectionEndpoint>> indexLocalEndpointsByDoor(List<RoomCluster> clusters) {
+    private static Map<Door, List<ConnectionEndpoint>> indexExplicitEndpointsByDoor(
+            List<RoomCluster> clusters,
+            List<Corridor> corridors
+    ) {
         Map<Door, List<ConnectionEndpoint>> result = new LinkedHashMap<>();
         for (RoomCluster cluster : clusters) {
             if (cluster == null) {
                 continue;
             }
             for (LocalConnection connection : cluster.localConnections()) {
+                if (connection == null || connection.door() == null) {
+                    continue;
+                }
+                result.put(connection.door(), connection.endpoints());
+            }
+        }
+        for (Corridor corridor : corridors) {
+            if (corridor == null) {
+                continue;
+            }
+            for (CorridorConnection connection : corridor.connections()) {
                 if (connection == null || connection.door() == null) {
                     continue;
                 }
@@ -833,8 +836,12 @@ public final class DungeonLayout {
         }
         for (Corridor corridor : corridorsById.values()) {
             if (corridor != null
-                    && corridor.path() != null
-                    && corridor.path().doorEdges().contains(edge)) {
+                    && corridor.connections().stream()
+                    .filter(Objects::nonNull)
+                    .map(CorridorConnection::door)
+                    .filter(Objects::nonNull)
+                    .flatMap(door -> door.edges().stream())
+                    .anyMatch(edge::equals)) {
                 return corridor;
             }
         }
@@ -915,7 +922,7 @@ public final class DungeonLayout {
         return Map.copyOf(result);
     }
 
-    private static int canonicalLevelForCorridor(Corridor corridor) {
+    private int canonicalLevelForCorridor(Corridor corridor) {
         if (corridor == null || corridor.path() == null) {
             return 0;
         }
@@ -926,10 +933,47 @@ public final class DungeonLayout {
         if (floorLevel != null) {
             return floorLevel;
         }
-        return corridor.path().doorEdgesByLevel().keySet().stream()
+        return corridor.connections().stream()
+                .map(connection -> connectionLevel(connection, roomLevelsById))
                 .filter(Objects::nonNull)
                 .min(Integer::compareTo)
                 .orElse(0);
+    }
+
+    public Set<VertexEdge> doorEdgesForCorridorAtLevel(long corridorId, int levelZ) {
+        Corridor corridor = findCorridor(corridorId);
+        if (corridor == null) {
+            return Set.of();
+        }
+        Set<VertexEdge> result = new LinkedHashSet<>();
+        for (CorridorConnection connection : corridor.connections()) {
+            if (!Objects.equals(connectionLevel(connection, roomLevelsById), levelZ) || connection.door() == null) {
+                continue;
+            }
+            result.addAll(connection.door().edges());
+        }
+        return Set.copyOf(result);
+    }
+
+    private static boolean corridorConnectionReachesLevel(
+            Corridor corridor,
+            int levelZ,
+            Map<Long, Integer> roomLevelsById
+    ) {
+        return corridor.connections().stream()
+                .anyMatch(connection -> Objects.equals(connectionLevel(connection, roomLevelsById), levelZ));
+    }
+
+    private static Integer connectionLevel(CorridorConnection connection, Map<Long, Integer> roomLevelsById) {
+        if (connection == null) {
+            return null;
+        }
+        for (ConnectionEndpoint endpoint : connection.endpoints()) {
+            if (endpoint != null && endpoint.type() == features.world.dungeonmap.model.structures.connection.ConnectionEndpointType.ROOM) {
+                return roomLevelsById.getOrDefault(endpoint.id(), 0);
+            }
+        }
+        return 0;
     }
 
     private static Set<Point2i> indexTraversableCells(List<RoomCluster> clusters, List<Corridor> corridors) {

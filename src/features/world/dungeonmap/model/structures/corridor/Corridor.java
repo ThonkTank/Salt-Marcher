@@ -2,7 +2,9 @@ package features.world.dungeonmap.model.structures.corridor;
 
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.objects.CorridorPath;
+import features.world.dungeonmap.model.structures.connection.CorridorConnection;
 import features.world.dungeonmap.model.structures.TargetKey;
+import features.world.dungeonmap.model.structures.corridor.planning.CorridorPlan;
 import features.world.dungeonmap.model.structures.corridor.planning.CorridorPlanningEngine;
 import features.world.dungeonmap.model.structures.room.Room;
 
@@ -30,23 +32,33 @@ public final class Corridor {
     private final List<Long> roomIds;
     private final CorridorBindings bindings;
     private final CorridorPath path;
+    private final List<CorridorConnection> connections;
 
     public static Corridor resolved(
             Long corridorId,
             long mapId,
             List<Long> roomIds,
             CorridorBindings bindings,
-            CorridorPath path
+            CorridorPath path,
+            List<CorridorConnection> connections
     ) {
-        return new Corridor(corridorId, mapId, roomIds, bindings, path);
+        return new Corridor(corridorId, mapId, roomIds, bindings, path, connections);
     }
 
-    private Corridor(Long corridorId, long mapId, List<Long> roomIds, CorridorBindings bindings, CorridorPath path) {
+    private Corridor(
+            Long corridorId,
+            long mapId,
+            List<Long> roomIds,
+            CorridorBindings bindings,
+            CorridorPath path,
+            List<CorridorConnection> connections
+    ) {
         this.corridorId = corridorId;
         this.mapId = mapId;
         this.roomIds = normalizeRoomIds(roomIds);
         this.bindings = bindings == null ? CorridorBindings.empty() : bindings;
         this.path = path == null ? CorridorPath.empty() : path;
+        this.connections = connections == null ? List.of() : List.copyOf(connections);
     }
 
     public Long corridorId() {
@@ -83,6 +95,10 @@ public final class Corridor {
 
     public CorridorPath path() {
         return path;
+    }
+
+    public List<CorridorConnection> connections() {
+        return connections;
     }
 
     public boolean connectsRoom(Long roomId) {
@@ -167,7 +183,7 @@ public final class Corridor {
         }
         List<Long> updated = new ArrayList<>(roomIds);
         updated.add(roomId);
-        return resolved(corridorId, mapId, updated, bindings, path);
+        return resolved(corridorId, mapId, updated, bindings, path, connections);
     }
 
     public Corridor withRemovedRoom(Long roomId) {
@@ -177,7 +193,7 @@ public final class Corridor {
         List<Long> updated = roomIds.stream()
                 .filter(existing -> !Objects.equals(existing, roomId))
                 .toList();
-        Corridor updatedCorridor = resolved(corridorId, mapId, updated, bindings.withoutDoorBinding(roomId), path);
+        Corridor updatedCorridor = resolved(corridorId, mapId, updated, bindings.withoutDoorBinding(roomId), path, connections);
         return updatedCorridor.isPersistable() ? updatedCorridor : updatedCorridor.withPath(CorridorPath.empty());
     }
 
@@ -195,7 +211,7 @@ public final class Corridor {
                 updatedBindings = updatedBindings.withoutDoorBinding(mergedRoomId);
             }
         }
-        return resolved(corridorId, mapId, updated, updatedBindings, path);
+        return resolved(corridorId, mapId, updated, updatedBindings, path, connections);
     }
 
     public Corridor withReplacedRoom(Long oldRoomId, Long newRoomId) {
@@ -207,7 +223,7 @@ public final class Corridor {
                 .distinct()
                 .toList();
         CorridorBindings updatedBindings = bindings.withoutDoorBinding(oldRoomId);
-        return resolved(corridorId, mapId, updated, updatedBindings, path);
+        return resolved(corridorId, mapId, updated, updatedBindings, path, connections);
     }
 
 
@@ -265,7 +281,8 @@ public final class Corridor {
                 mapId,
                 mergedRoomIds,
                 sanitizedBindings(mergedRoomIds, bindings),
-                path);
+                path,
+                connections);
         return mergedCorridor.isPersistable() ? mergedCorridor : mergedCorridor.withPath(CorridorPath.empty());
     }
 
@@ -330,7 +347,8 @@ public final class Corridor {
     public Corridor replanned(CorridorPlanningInput input) {
         // Drag previews and committed moves both flow through DungeonLayout.withTranslatedCluster().
         // Replanning must therefore preserve the same end topology for both.
-        return withPath(CorridorPlanningEngine.plan(this, input));
+        CorridorPlan plan = CorridorPlanningEngine.plan(this, input);
+        return withPath(plan.path()).withConnections(plan.connections());
     }
 
     public List<Room> resolvedRooms(CorridorPlanningInput input) {
@@ -382,11 +400,15 @@ public final class Corridor {
     }
 
     private Corridor withBindings(CorridorBindings bindings) {
-        return resolved(corridorId, mapId, roomIds, bindings, path);
+        return resolved(corridorId, mapId, roomIds, bindings, path, connections);
     }
 
     private Corridor withPath(CorridorPath path) {
-        return resolved(corridorId, mapId, roomIds, bindings, path);
+        return resolved(corridorId, mapId, roomIds, bindings, path, connections);
+    }
+
+    private Corridor withConnections(List<CorridorConnection> connections) {
+        return resolved(corridorId, mapId, roomIds, bindings, path, connections);
     }
 
     private Long fallbackWaypointClusterId(CorridorPlanningInput input) {

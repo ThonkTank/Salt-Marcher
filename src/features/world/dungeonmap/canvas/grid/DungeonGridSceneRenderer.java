@@ -394,7 +394,9 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             }
             boolean selected = java.util.Objects.equals(corridor.targetKey(), selectedTargetKey);
             Set<Tile> corridorTiles = corridor.path().floorAtLevel(projectionLevel).shape().tiles();
-            Set<VertexEdge> levelDoorEdges = corridor.path().doorEdgesAtLevel(projectionLevel);
+            Set<VertexEdge> levelDoorEdges = corridor.corridorId() == null
+                    ? Set.of()
+                    : mapModel.doorEdgesForCorridorAtLevel(corridor.corridorId(), projectionLevel);
             if (corridorTiles.isEmpty() && levelDoorEdges.isEmpty()) {
                 continue;
             }
