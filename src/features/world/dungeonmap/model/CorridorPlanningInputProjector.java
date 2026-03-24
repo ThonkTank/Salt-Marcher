@@ -8,6 +8,7 @@ import features.world.dungeonmap.model.structures.room.Room;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Canonical world projector for {@link CorridorPlanningInput}.
@@ -27,7 +28,7 @@ public final class CorridorPlanningInputProjector {
         }
         Map<Long, Room> roomsById = new LinkedHashMap<>();
         Map<Long, Point2i> clusterCenters = new LinkedHashMap<>();
-        Map<Long, Integer> roomLevels = new LinkedHashMap<>();
+        Map<Long, Set<Integer>> roomLevels = new LinkedHashMap<>();
         for (RoomCluster cluster : layout.clusters()) {
             if (cluster == null || cluster.clusterId() == null) {
                 continue;
@@ -38,7 +39,7 @@ public final class CorridorPlanningInputProjector {
             for (Room room : cluster.rooms()) {
                 if (room != null && room.roomId() != null) {
                     roomsById.put(room.roomId(), room);
-                    roomLevels.put(room.roomId(), room.primaryLevel());
+                    roomLevels.put(room.roomId(), layout.levelsForRoom(room.roomId()));
                 }
             }
         }
@@ -48,7 +49,7 @@ public final class CorridorPlanningInputProjector {
     public static CorridorPlanningInput project(List<RoomCluster> clusters) {
         Map<Long, Room> roomsById = new LinkedHashMap<>();
         Map<Long, Point2i> clusterCenters = new LinkedHashMap<>();
-        Map<Long, Integer> roomLevels = new LinkedHashMap<>();
+        Map<Long, Set<Integer>> roomLevels = new LinkedHashMap<>();
         for (RoomCluster cluster : clusters == null ? List.<RoomCluster>of() : clusters) {
             if (cluster == null || cluster.clusterId() == null) {
                 continue;
@@ -59,7 +60,7 @@ public final class CorridorPlanningInputProjector {
             for (Room room : cluster.rooms()) {
                 if (room != null && room.roomId() != null) {
                     roomsById.put(room.roomId(), room);
-                    roomLevels.put(room.roomId(), room.primaryLevel());
+                    roomLevels.put(room.roomId(), room.levels());
                 }
             }
         }

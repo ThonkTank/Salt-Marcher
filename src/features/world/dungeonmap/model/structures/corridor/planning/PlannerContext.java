@@ -15,7 +15,7 @@ final class PlannerContext {
 
     private final List<Room> targetRooms;
     private final Map<Long, Room> targetRoomsById;
-    private final Map<Long, Integer> roomLevels;
+    private final Map<Long, Set<Integer>> roomLevels;
     private final Map<Long, ResolvedCorridorDoorBinding> doorBindings;
     private final List<CubePoint> waypointCells;
     private final SearchVolume searchVolume;
@@ -25,7 +25,7 @@ final class PlannerContext {
 
     PlannerContext(
             List<Room> targetRooms,
-            Map<Long, Integer> roomLevels,
+            Map<Long, Set<Integer>> roomLevels,
             Set<CubePoint> allObstacles,
             List<CubePoint> waypointCells,
             Map<Long, ResolvedCorridorDoorBinding> doorBindings,
@@ -87,7 +87,11 @@ final class PlannerContext {
     }
 
     int roomLevel(Long roomId) {
-        return roomId == null ? 0 : roomLevels.getOrDefault(roomId, 0);
+        if (roomId == null) {
+            return 0;
+        }
+        Set<Integer> levels = roomLevels.getOrDefault(roomId, Set.of(0));
+        return levels.stream().mapToInt(Integer::intValue).min().orElse(0);
     }
 
     Long roomIdAtEntryCell(CubePoint entryCell) {
@@ -120,7 +124,7 @@ final class PlannerContext {
 
     private static Map<Long, Set<CubePoint>> computeEntryCells(
             List<Room> targetRooms,
-            Map<Long, Integer> roomLevels,
+            Map<Long, Set<Integer>> roomLevels,
             Map<Long, ResolvedCorridorDoorBinding> doorBindings,
             SearchVolume searchVolume,
             PlannerInstrumentation instrumentation
@@ -131,34 +135,39 @@ final class PlannerContext {
             if (room == null || room.roomId() == null) {
                 continue;
             }
-            int roomLevel = roomLevels == null ? 0 : roomLevels.getOrDefault(room.roomId(), 0);
+            Set<Integer> levels = roomLevels == null ? Set.of(0) : roomLevels.getOrDefault(room.roomId(), Set.of(0));
             Set<CubePoint> entryCells = new LinkedHashSet<>();
             ResolvedCorridorDoorBinding binding = doorBindings == null ? null : doorBindings.get(room.roomId());
             if (binding != null && binding.absoluteCell() != null && binding.direction() != null) {
-                CubePoint boundEntry = CubePoint.at(binding.absoluteCell().add(binding.direction()), roomLevel);
-                if (isValidEntry(boundEntry, searchVolume)) {
-                    entryCells.add(boundEntry);
+                for (int roomLevel : levels) {
+                    CubePoint boundEntry = CubePoint.at(binding.absoluteCell().add(binding.direction()), roomLevel);
+                    if (isValidEntry(boundEntry, searchVolume)) {
+                        entryCells.add(boundEntry);
+                    }
                 }
             } else {
-                for (Point2i roomCell : room.cells()) {
-                    for (Point2i step : Point2i.CARDINAL_STEPS) {
-                        Point2i outsideCell = roomCell.add(step);
-                        if (room.cells().contains(outsideCell)) {
-                            continue;
+                for (int roomLevel : levels) {
+                    Set<Point2i> roomCells = room.cellsAtLevel(roomLevel);
+                    for (Point2i roomCell : roomCells) {
+                        for (Point2i step : Point2i.CARDINAL_STEPS) {
+                            Point2i outsideCell = roomCell.add(step);
+                            if (roomCells.contains(outsideCell)) {
+                                continue;
+                            }
+                            CubePoint candidate = CubePoint.at(outsideCell, roomLevel);
+                            if (isValidEntry(candidate, searchVolume)) {
+                                entryCells.add(candidate);
+                            }
                         }
-                        CubePoint candidate = CubePoint.at(outsideCell, roomLevel);
-                        if (isValidEntry(candidate, searchVolume)) {
-                            entryCells.add(candidate);
-                        }
-                    }
-                    if (allowVerticalEntries) {
-                        CubePoint above = CubePoint.at(roomCell, roomLevel + 1);
-                        CubePoint below = CubePoint.at(roomCell, roomLevel - 1);
-                        if (isValidEntry(above, searchVolume)) {
-                            entryCells.add(above);
-                        }
-                        if (isValidEntry(below, searchVolume)) {
-                            entryCells.add(below);
+                        if (allowVerticalEntries) {
+                            CubePoint above = CubePoint.at(roomCell, roomLevel + 1);
+                            CubePoint below = CubePoint.at(roomCell, roomLevel - 1);
+                            if (isValidEntry(above, searchVolume)) {
+                                entryCells.add(above);
+                            }
+                            if (isValidEntry(below, searchVolume)) {
+                                entryCells.add(below);
+                            }
                         }
                     }
                 }

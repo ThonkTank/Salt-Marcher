@@ -75,7 +75,7 @@ public final class CorridorPlanningEngine {
         return new GridRoute(anchors);
     }
 
-    private static Set<CubePoint> buildObstacles(Map<Long, Room> roomsById, Map<Long, Integer> roomLevels) {
+    private static Set<CubePoint> buildObstacles(Map<Long, Room> roomsById, Map<Long, Set<Integer>> roomLevels) {
         Set<CubePoint> result = new LinkedHashSet<>();
         if (roomsById == null || roomsById.isEmpty()) {
             return Set.of();
@@ -84,9 +84,11 @@ public final class CorridorPlanningEngine {
             if (room == null || room.roomId() == null) {
                 continue;
             }
-            int levelZ = roomLevels == null ? 0 : roomLevels.getOrDefault(room.roomId(), 0);
-            for (Point2i cell : room.cells()) {
-                result.add(CubePoint.at(cell, levelZ));
+            Set<Integer> levels = roomLevels == null ? Set.of(0) : roomLevels.getOrDefault(room.roomId(), Set.of(0));
+            for (int levelZ : levels) {
+                for (Point2i cell : room.cellsAtLevel(levelZ)) {
+                    result.add(CubePoint.at(cell, levelZ));
+                }
             }
         }
         return Set.copyOf(result);
@@ -117,7 +119,7 @@ public final class CorridorPlanningEngine {
             GridRoute route,
             SteinerTree tree,
             List<Room> rooms,
-            Map<Long, Integer> roomLevels
+            Map<Long, Set<Integer>> roomLevels
     ) {
         if (tree == null || !tree.isRoutable()) {
             return CorridorPath.unroutable(route);
@@ -136,7 +138,7 @@ public final class CorridorPlanningEngine {
     private static Set<CubePoint> filterCorridorCells(
             SteinerTree tree,
             List<Room> rooms,
-            Map<Long, Integer> roomLevels
+            Map<Long, Set<Integer>> roomLevels
     ) {
         Map<Integer, Set<Point2i>> occupiedRoomCellsByLevel = occupiedRoomCellsByLevel(rooms, roomLevels);
         return tree.corridorCells().stream()
@@ -165,7 +167,7 @@ public final class CorridorPlanningEngine {
         return List.copyOf(result);
     }
 
-    private static Map<Integer, Set<Point2i>> occupiedRoomCellsByLevel(List<Room> rooms, Map<Long, Integer> roomLevels) {
+    private static Map<Integer, Set<Point2i>> occupiedRoomCellsByLevel(List<Room> rooms, Map<Long, Set<Integer>> roomLevels) {
         Map<Integer, Set<Point2i>> result = new LinkedHashMap<>();
         if (rooms == null || rooms.isEmpty()) {
             return Map.of();
@@ -174,9 +176,11 @@ public final class CorridorPlanningEngine {
             if (room == null || room.roomId() == null) {
                 continue;
             }
-            int level = roomLevels == null ? 0 : roomLevels.getOrDefault(room.roomId(), 0);
-            result.computeIfAbsent(level, ignored -> new LinkedHashSet<>())
-                    .addAll(room.cells());
+            Set<Integer> levels = roomLevels == null ? Set.of(0) : roomLevels.getOrDefault(room.roomId(), Set.of(0));
+            for (int level : levels) {
+                result.computeIfAbsent(level, ignored -> new LinkedHashSet<>())
+                        .addAll(room.cellsAtLevel(level));
+            }
         }
         return Map.copyOf(result);
     }

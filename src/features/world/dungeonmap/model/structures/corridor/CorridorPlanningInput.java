@@ -4,6 +4,7 @@ import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.room.Room;
 
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Minimal external facts that a self-managed corridor needs for replanning.
@@ -14,7 +15,7 @@ import java.util.Map;
 public record CorridorPlanningInput(
         Map<Long, Room> roomsById,
         Map<Long, Point2i> clusterCenters,
-        Map<Long, Integer> roomLevels
+        Map<Long, Set<Integer>> roomLevels
 ) {
     public static CorridorPlanningInput empty() {
         return new CorridorPlanningInput(Map.of(), Map.of(), Map.of());
@@ -35,6 +36,11 @@ public record CorridorPlanningInput(
     }
 
     public int roomLevel(Long roomId) {
-        return roomId == null ? 0 : roomLevels.getOrDefault(roomId, 0);
+        Set<Integer> levels = roomLevels(roomId);
+        return levels.isEmpty() ? 0 : levels.stream().mapToInt(Integer::intValue).min().orElse(0);
+    }
+
+    public Set<Integer> roomLevels(Long roomId) {
+        return roomId == null ? Set.of() : roomLevels.getOrDefault(roomId, Set.of(0));
     }
 }

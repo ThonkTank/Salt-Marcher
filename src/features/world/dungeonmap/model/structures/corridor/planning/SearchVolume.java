@@ -35,7 +35,7 @@ final class SearchVolume {
     static SearchVolume enclosing(
             Set<CubePoint> obstacles,
             List<Room> targetRooms,
-            Map<Long, Integer> roomLevels,
+            Map<Long, Set<Integer>> roomLevels,
             List<CubePoint> waypointCells
     ) {
         Set<CubePoint> boundsPoints = new LinkedHashSet<>();
@@ -46,9 +46,11 @@ final class SearchVolume {
             if (room == null || room.roomId() == null) {
                 continue;
             }
-            int levelZ = roomLevels == null ? 0 : roomLevels.getOrDefault(room.roomId(), 0);
-            for (Point2i cell : room.cells()) {
-                boundsPoints.add(CubePoint.at(cell, levelZ));
+            Set<Integer> levels = roomLevels == null ? Set.of(0) : roomLevels.getOrDefault(room.roomId(), Set.of(0));
+            for (int levelZ : levels) {
+                for (Point2i cell : room.cellsAtLevel(levelZ)) {
+                    boundsPoints.add(CubePoint.at(cell, levelZ));
+                }
             }
         }
         for (CubePoint waypoint : waypointCells == null ? List.<CubePoint>of() : waypointCells) {
