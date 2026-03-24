@@ -297,7 +297,7 @@ public final class DungeonMapLoader {
     private static List<DungeonTransition> loadTransitions(Connection conn, long mapId) throws SQLException {
         DungeonTransitionSchemaSupport.ensureCompatibility(conn);
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT transition_id, dungeon_map_id, name, cell_x, cell_y, level_z, destination_type,"
+                "SELECT transition_id, dungeon_map_id, description, cell_x, cell_y, level_z, destination_type,"
                         + " target_overworld_map_id, target_overworld_tile_id, target_dungeon_map_id,"
                         + " target_transition_id, linked_transition_id"
                         + " FROM dungeon_transitions WHERE dungeon_map_id=? ORDER BY transition_id")) {
@@ -319,7 +319,7 @@ public final class DungeonMapLoader {
                     result.add(new DungeonTransition(
                             rs.getLong("transition_id"),
                             rs.getLong("dungeon_map_id"),
-                            rs.getString("name"),
+                            rs.getString("description"),
                             anchor,
                             destination,
                             nullableLong(rs, "linked_transition_id")));

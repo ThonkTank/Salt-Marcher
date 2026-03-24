@@ -10,7 +10,7 @@ public final class DungeonTransitionDraftState {
 
     private final List<Runnable> listeners = new CopyOnWriteArrayList<>();
 
-    private String name = "";
+    private String description = "";
     private DungeonTransitionEditRequest.DestinationType destinationType = DungeonTransitionEditRequest.DestinationType.OVERWORLD_TILE;
     private boolean bidirectional;
     private Long targetDungeonMapId;
@@ -26,8 +26,8 @@ public final class DungeonTransitionDraftState {
         }
     }
 
-    public String name() {
-        return name;
+    public String description() {
+        return description;
     }
 
     public DungeonTransitionEditRequest.DestinationType destinationType() {
@@ -77,12 +77,12 @@ public final class DungeonTransitionDraftState {
         };
     }
 
-    public void setName(String name) {
-        String next = name == null ? "" : name.trim();
-        if (Objects.equals(this.name, next)) {
+    public void setDescription(String description) {
+        String next = description == null ? "" : description.trim();
+        if (Objects.equals(this.description, next)) {
             return;
         }
-        this.name = next;
+        this.description = next;
         placementError = null;
         notifyListeners();
     }
@@ -174,7 +174,7 @@ public final class DungeonTransitionDraftState {
 
     public DungeonTransitionEditRequest createRequest() {
         return new DungeonTransitionEditRequest(
-                name,
+                description,
                 destinationType,
                 targetDungeonMapId,
                 targetTransitionId,

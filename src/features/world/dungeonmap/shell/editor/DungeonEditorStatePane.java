@@ -14,8 +14,8 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
@@ -45,7 +45,7 @@ public final class DungeonEditorStatePane {
     private final HBox stairInputRow = new HBox(6, stairInputField, stairLevelDownButton, stairLevelUpButton, stairAddButton);
     private final VBox stairEditorContent = new VBox(6, stairInputRow, stairExitTokens);
     private final VBox stairCard = card("Treppen-Ausgänge", stairSummaryLabel, stairEditorContent, stairStatusLabel);
-    private final TextField transitionNameField = new TextField();
+    private final TextArea transitionDescriptionArea = new TextArea();
     private final ComboBox<DungeonTransitionEditRequest.DestinationType> transitionDestinationTypeBox = new ComboBox<>();
     private final CheckBox transitionBidirectionalBox = new CheckBox("Zweiseitig");
     private final ComboBox<DungeonMapCatalogEntry> transitionTargetMapBox = new ComboBox<>();
@@ -57,7 +57,7 @@ public final class DungeonEditorStatePane {
     private final VBox transitionCard = card(
             "Übergänge",
             transitionSummaryLabel,
-            transitionNameField,
+            transitionDescriptionArea,
             transitionDestinationTypeBox,
             transitionBidirectionalBox,
             transitionTargetMapBox,
@@ -74,7 +74,7 @@ public final class DungeonEditorStatePane {
     private Runnable onStairLevelIncrementRequested = () -> { };
     private Runnable onStairAddRequested = () -> { };
     private IntConsumer onStairExitRemoveRequested = level -> { };
-    private Consumer<String> onTransitionNameChanged = value -> { };
+    private Consumer<String> onTransitionDescriptionChanged = value -> { };
     private Consumer<DungeonTransitionEditRequest.DestinationType> onTransitionDestinationTypeChanged = value -> { };
     private Consumer<Boolean> onTransitionBidirectionalChanged = value -> { };
     private Consumer<Long> onTransitionTargetMapChanged = value -> { };
@@ -102,7 +102,9 @@ public final class DungeonEditorStatePane {
         stairExitTokens.setHgap(6);
         stairExitTokens.setVgap(6);
         stairStatusLabel.setWrapText(true);
-        transitionNameField.setPromptText("Name");
+        transitionDescriptionArea.setPromptText("Beschreibung");
+        transitionDescriptionArea.setWrapText(true);
+        transitionDescriptionArea.setPrefRowCount(3);
         transitionTargetTransitionBox.setPromptText("Ziel-Übergang");
         transitionTargetOverworldBox.setPromptText("Overworld-Ziel");
         transitionDestinationTypeBox.setItems(FXCollections.observableArrayList(DungeonTransitionEditRequest.DestinationType.values()));
@@ -164,9 +166,9 @@ public final class DungeonEditorStatePane {
                 onTransitionTargetOverworldChanged.accept(newValue);
             }
         });
-        transitionNameField.textProperty().addListener((obs, oldValue, newValue) -> {
+        transitionDescriptionArea.textProperty().addListener((obs, oldValue, newValue) -> {
             if (!syncingTransitionFields) {
-                onTransitionNameChanged.accept(newValue);
+                onTransitionDescriptionChanged.accept(newValue);
             }
         });
         preparedTransitionButtons.setHgap(6);
@@ -219,8 +221,8 @@ public final class DungeonEditorStatePane {
         this.onStairExitRemoveRequested = onStairExitRemoveRequested == null ? level -> { } : onStairExitRemoveRequested;
     }
 
-    public void setOnTransitionNameChanged(Consumer<String> onTransitionNameChanged) {
-        this.onTransitionNameChanged = onTransitionNameChanged == null ? value -> { } : onTransitionNameChanged;
+    public void setOnTransitionDescriptionChanged(Consumer<String> onTransitionDescriptionChanged) {
+        this.onTransitionDescriptionChanged = onTransitionDescriptionChanged == null ? value -> { } : onTransitionDescriptionChanged;
     }
 
     public void setOnTransitionDestinationTypeChanged(Consumer<DungeonTransitionEditRequest.DestinationType> onTransitionDestinationTypeChanged) {
@@ -281,7 +283,7 @@ public final class DungeonEditorStatePane {
         }
         transitionSummaryLabel.setText(card.summary());
         syncingTransitionFields = true;
-        transitionNameField.setText(card.name() == null ? "" : card.name());
+        transitionDescriptionArea.setText(card.description() == null ? "" : card.description());
         transitionDestinationTypeBox.setValue(card.destinationType());
         transitionBidirectionalBox.setSelected(card.bidirectional());
         transitionTargetMapBox.setItems(FXCollections.observableArrayList(card.maps()));
@@ -492,7 +494,7 @@ public final class DungeonEditorStatePane {
     }
 
     public record TransitionDraftCard(
-            String name,
+            String description,
             DungeonTransitionEditRequest.DestinationType destinationType,
             boolean bidirectional,
             Long targetDungeonMapId,

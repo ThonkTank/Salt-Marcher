@@ -17,17 +17,18 @@ public final class DungeonTransitionTargetCatalogService {
         }
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(
-                     "SELECT transition_id, name, cell_x, cell_y, level_z"
+                     "SELECT transition_id, description, cell_x, cell_y, level_z"
                              + " FROM dungeon_transitions"
                              + " WHERE dungeon_map_id=? AND cell_x IS NOT NULL AND cell_y IS NOT NULL AND level_z IS NOT NULL"
-                             + " ORDER BY lower(coalesce(name, '')), transition_id")) {
+                             + " ORDER BY transition_id")) {
             ps.setLong(1, mapId);
             try (ResultSet rs = ps.executeQuery()) {
                 List<DungeonTransitionTargetSummary> result = new ArrayList<>();
                 while (rs.next()) {
                     long transitionId = rs.getLong("transition_id");
-                    String name = rs.getString("name");
-                    String label = (name == null || name.isBlank() ? "Übergang " + transitionId : name)
+                    String description = rs.getString("description");
+                    String label = "Übergang " + transitionId
+                            + (description == null || description.isBlank() ? "" : " · " + description)
                             + " · "
                             + rs.getInt("cell_x") + ", " + rs.getInt("cell_y") + ", z=" + rs.getInt("level_z");
                     result.add(new DungeonTransitionTargetSummary(transitionId, mapId, label));

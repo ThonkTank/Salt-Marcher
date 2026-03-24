@@ -52,11 +52,10 @@ public final class DungeonRuntimeTransitionCatalog {
         }
         return layout.transitionsAtPoint(tile).stream()
                 .filter(transition -> transition != null && transition.transitionId() != null)
-                .sorted(Comparator.comparing(DungeonTransition::name, String.CASE_INSENSITIVE_ORDER)
-                        .thenComparing(DungeonTransition::transitionId))
+                .sorted(Comparator.comparing(DungeonTransition::transitionId))
                 .map(transition -> new DungeonRuntimeTransitionDescriptor(
                         transition.transitionId(),
-                        transition.name(),
+                        transition.label(),
                         destinationLabel(layout, transition.destination()),
                         description(layout, transition)))
                 .toList();
@@ -68,11 +67,10 @@ public final class DungeonRuntimeTransitionCatalog {
         }
         return layout.transitionsAtLevel(levelZ).stream()
                 .filter(transition -> transition.anchor() != null && cells.contains(transition.anchor().projectedCell()))
-                .sorted(Comparator.comparing(DungeonTransition::name, String.CASE_INSENSITIVE_ORDER)
-                        .thenComparing(DungeonTransition::transitionId))
+                .sorted(Comparator.comparing(DungeonTransition::transitionId))
                 .map(transition -> new DungeonRuntimeTransitionDescriptor(
                         transition.transitionId(),
-                        transition.name(),
+                        transition.label(),
                         destinationLabel(layout, transition.destination()),
                         description(layout, transition)))
                 .toList();
@@ -95,15 +93,18 @@ public final class DungeonRuntimeTransitionCatalog {
         if (transition == null) {
             return "";
         }
+        if (transition.description() != null && !transition.description().isBlank()) {
+            return transition.description();
+        }
         if (transition.destination() instanceof DungeonTransitionDestination.OverworldTileDestination overworld) {
-            return transition.name() + " führt zum Overworld-Feld " + overworld.tileId() + ".";
+            return transition.label() + " führt zum Overworld-Feld " + overworld.tileId() + ".";
         }
         if (transition.destination() instanceof DungeonTransitionDestination.DungeonMapDestination dungeon) {
             if (dungeon.transitionId() == null) {
-                return transition.name() + " führt zu Dungeon " + dungeon.mapId() + ".";
+                return transition.label() + " führt zu Dungeon " + dungeon.mapId() + ".";
             }
-            return transition.name() + " führt zu Übergang " + dungeon.transitionId() + " auf Dungeon " + dungeon.mapId() + ".";
+            return transition.label() + " führt zu Übergang " + dungeon.transitionId() + " auf Dungeon " + dungeon.mapId() + ".";
         }
-        return transition.name();
+        return transition.label();
     }
 }

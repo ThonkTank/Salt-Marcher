@@ -8,7 +8,7 @@ import features.world.dungeonmap.model.structures.TargetKey;
 public record DungeonTransition(
         Long transitionId,
         long mapId,
-        String name,
+        String description,
         CubePoint anchor,
         DungeonTransitionDestination destination,
         Long linkedTransitionId
@@ -17,9 +17,11 @@ public record DungeonTransition(
     private static final String TARGET_KEY_PREFIX = "transition:";
 
     public DungeonTransition {
-        name = name == null || name.isBlank()
-                ? "Übergang " + (transitionId == null ? "neu" : transitionId)
-                : name.trim();
+        description = description == null ? "" : description.trim();
+    }
+
+    public String label() {
+        return "Übergang " + (transitionId == null ? "neu" : transitionId);
     }
 
     public String targetKey() {
@@ -48,7 +50,7 @@ public record DungeonTransition(
         }
         return new InteractiveLabelHandle(
                 targetKey(),
-                name,
+                label(),
                 GridAnchor.atTile(anchor.projectedCell()));
     }
 

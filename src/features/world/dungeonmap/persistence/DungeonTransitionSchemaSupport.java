@@ -18,7 +18,7 @@ public final class DungeonTransitionSchemaSupport {
             stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_transitions ("
                     + "transition_id            INTEGER PRIMARY KEY AUTOINCREMENT,"
                     + "dungeon_map_id           INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
-                    + "name                     TEXT,"
+                    + "description              TEXT,"
                     + "cell_x                   INTEGER,"
                     + "cell_y                   INTEGER,"
                     + "level_z                  INTEGER,"

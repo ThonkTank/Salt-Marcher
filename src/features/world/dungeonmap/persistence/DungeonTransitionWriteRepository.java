@@ -16,7 +16,7 @@ public final class DungeonTransitionWriteRepository {
         DungeonTransitionSchemaSupport.ensureCompatibility(conn);
         try (PreparedStatement ps = conn.prepareStatement(
                 "INSERT INTO dungeon_transitions("
-                        + "dungeon_map_id, name, cell_x, cell_y, level_z, destination_type,"
+                        + "dungeon_map_id, description, cell_x, cell_y, level_z, destination_type,"
                         + "target_overworld_map_id, target_overworld_tile_id, target_dungeon_map_id,"
                         + "target_transition_id, linked_transition_id"
                         + ") VALUES(?,?,?,?,?,?,?,?,?,?,?)",
@@ -109,7 +109,7 @@ public final class DungeonTransitionWriteRepository {
         CubePoint anchor = transition.anchor();
         DungeonTransitionDestination destination = transition.destination();
         ps.setLong(1, transition.mapId());
-        ps.setString(2, transition.name());
+        ps.setString(2, transition.description());
         if (anchor == null) {
             ps.setNull(3, java.sql.Types.INTEGER);
             ps.setNull(4, java.sql.Types.INTEGER);

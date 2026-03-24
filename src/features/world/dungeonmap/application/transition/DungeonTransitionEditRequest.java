@@ -1,7 +1,7 @@
 package features.world.dungeonmap.application.transition;
 
 public record DungeonTransitionEditRequest(
-        String name,
+        String description,
         DestinationType destinationType,
         Long targetDungeonMapId,
         Long targetTransitionId,

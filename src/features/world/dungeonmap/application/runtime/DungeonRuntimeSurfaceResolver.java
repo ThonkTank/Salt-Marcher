@@ -159,9 +159,9 @@ public final class DungeonRuntimeSurfaceResolver {
             return null;
         }
         return new DungeonRuntimeSurface(
-                transition.name(),
+                transition.label(),
                 new DetailsNavigator.EntryKey("dungeon-transition", layout.mapId() + ":" + transition.transitionId()),
-                transition.name(),
+                transition.description().isBlank() ? transition.label() : transition.description(),
                 List.of(),
                 List.of(),
                 DungeonRuntimeTransitionCatalog.describeAtTile(layout, activeTile));

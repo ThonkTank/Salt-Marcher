@@ -39,7 +39,7 @@ public final class DungeonRuntimeLabels {
         }
         if (location instanceof DungeonRuntimeLocation.Transition transitionLocation) {
             DungeonTransition transition = layout.findTransition(transitionLocation.transitionId());
-            return transition == null ? "Übergang" : transition.name();
+            return transition == null ? "Übergang" : transition.label();
         }
         return "Kein Standort";
     }
@@ -80,7 +80,7 @@ public final class DungeonRuntimeLabels {
         }
         DungeonTransition transition = layout.transitionsAtPoint(tile).stream().findFirst().orElse(null);
         if (transition != null) {
-            return transition.name();
+            return transition.label();
         }
         return "Kein Standort";
     }

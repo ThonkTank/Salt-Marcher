@@ -215,7 +215,7 @@ final class DungeonEditorCoordinator {
         statePane.setOnStairLevelIncrementRequested(() -> stairDraftState.adjustInputLevel(1));
         statePane.setOnStairAddRequested(stairDraftState::addExitLevel);
         statePane.setOnStairExitRemoveRequested(stairDraftState::removeExitLevel);
-        statePane.setOnTransitionNameChanged(transitionDraftState::setName);
+        statePane.setOnTransitionDescriptionChanged(transitionDraftState::setDescription);
         statePane.setOnTransitionDestinationTypeChanged(transitionDraftState::setDestinationType);
         statePane.setOnTransitionBidirectionalChanged(transitionDraftState::setBidirectional);
         statePane.setOnTransitionTargetMapChanged(transitionDraftState::setTargetDungeonMapId);
@@ -311,7 +311,7 @@ final class DungeonEditorCoordinator {
                     ? "Gewählt: " + DungeonEditorSelectionLabels.transitionLabel(selectedTargetKey)
                     : "Übergangsfeld anklicken, um zu löschen";
             statePane.showTransitionDraft(new DungeonEditorStatePane.TransitionDraftCard(
-                    transitionDraftState.name(),
+                    transitionDraftState.description(),
                     transitionDraftState.destinationType(),
                     transitionDraftState.bidirectional(),
                     transitionDraftState.targetDungeonMapId(),
@@ -328,7 +328,7 @@ final class DungeonEditorCoordinator {
             return;
         }
         statePane.showTransitionDraft(new DungeonEditorStatePane.TransitionDraftCard(
-                transitionDraftState.name(),
+                transitionDraftState.description(),
                 transitionDraftState.destinationType(),
                 transitionDraftState.bidirectional(),
                 transitionDraftState.targetDungeonMapId(),
@@ -417,7 +417,7 @@ final class DungeonEditorCoordinator {
                 .sorted(Comparator.comparing(DungeonTransition::transitionId))
                 .map(transition -> new DungeonEditorStatePane.PreparedTransitionCard(
                         transition.transitionId(),
-                        transition.name() + " (" + transition.transitionId() + ")"))
+                        transition.label()))
                 .toList();
     }
 

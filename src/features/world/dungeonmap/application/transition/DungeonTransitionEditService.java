@@ -53,7 +53,7 @@ public final class DungeonTransitionEditService {
                 long transitionId = transitionWriteRepository.insert(conn, new DungeonTransition(
                         null,
                         layout.mapId(),
-                        resolvedRequest.name(),
+                        resolvedRequest.description(),
                         anchor,
                         destination,
                         null));
@@ -62,7 +62,7 @@ public final class DungeonTransitionEditService {
                     long counterpartId = transitionWriteRepository.insert(conn, new DungeonTransition(
                             null,
                             dungeonDestination.mapId(),
-                            resolvedRequest.name(),
+                            resolvedRequest.description(),
                             null,
                             new DungeonTransitionDestination.DungeonMapDestination(layout.mapId(), transitionId),
                             transitionId));
@@ -128,7 +128,7 @@ public final class DungeonTransitionEditService {
                 throw new SQLException("Overworld-Zielfeld existiert nicht");
             }
             return new DungeonTransitionEditRequest(
-                    request.name(),
+                    request.description(),
                     request.destinationType(),
                     null,
                     null,
@@ -205,7 +205,7 @@ public final class DungeonTransitionEditService {
     private static DungeonTransition requireTransition(Connection conn, Long transitionId) throws SQLException {
         DungeonTransitionSchemaSupport.ensureCompatibility(conn);
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT transition_id, dungeon_map_id, name, cell_x, cell_y, level_z, destination_type,"
+                "SELECT transition_id, dungeon_map_id, description, cell_x, cell_y, level_z, destination_type,"
                         + " target_overworld_map_id, target_overworld_tile_id, target_dungeon_map_id,"
                         + " target_transition_id, linked_transition_id"
                         + " FROM dungeon_transitions WHERE transition_id=?")) {
@@ -231,7 +231,7 @@ public final class DungeonTransitionEditService {
                 return new DungeonTransition(
                         rs.getLong("transition_id"),
                         rs.getLong("dungeon_map_id"),
-                        rs.getString("name"),
+                        rs.getString("description"),
                         anchor,
                         destination,
                         nullableLong(rs, "linked_transition_id"));
