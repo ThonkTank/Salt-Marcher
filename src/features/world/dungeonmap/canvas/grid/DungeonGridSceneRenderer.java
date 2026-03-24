@@ -63,7 +63,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 renderState.selectedTargetKey(),
                 currentPalette,
                 !editorMode);
-        drawCorridors(gc, projectedMap, camera, renderState.selectedTargetKey(), currentPalette);
+        drawCorridors(gc, projectedMap, camera, renderState.selectedTargetKey(), renderState.projectionLevel(), currentPalette);
         drawStairs(
                 gc,
                 projectedMap,
@@ -382,27 +382,30 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             DungeonLayout mapModel,
             DungeonCanvasCamera camera,
             String selectedTargetKey,
+            int projectionLevel,
             LayerPalette palette
     ) {
         double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
         for (Corridor corridor : mapModel.corridors()) {
-            if (corridor == null || corridor.path() == null || corridor.path().floor() == null) {
+            if (corridor == null || corridor.path() == null) {
                 continue;
             }
             boolean selected = java.util.Objects.equals(corridor.targetKey(), selectedTargetKey);
-            Set<Tile> corridorTiles = corridor.path().floor().shape().tiles();
+            Set<Tile> corridorTiles = corridor.path().floorAtLevel(projectionLevel).shape().tiles();
+            Set<VertexEdge> levelDoorEdges = corridor.path().doorEdgesAtLevel(projectionLevel);
+            if (corridorTiles.isEmpty() && levelDoorEdges.isEmpty()) {
+                continue;
+            }
             gc.setFill(selected ? palette.corridorSelectedFill() : palette.corridorFill());
             fillRoomTiles(gc, camera, gridSize, corridorTiles);
             strokeRoomTiles(gc, camera, gridSize, corridorTiles, palette.roomStroke(), 1.0);
 
-            Set<VertexEdge> wallEdges = new LinkedHashSet<>(corridor.path().floor().shape().boundaryEdges());
-            if (corridor.corridorId() != null) {
-                wallEdges.removeAll(boundaryEdges(mapModel.doorsForCorridor(corridor.corridorId())));
-            }
+            Set<VertexEdge> wallEdges = new LinkedHashSet<>(corridor.path().floorAtLevel(projectionLevel).shape().boundaryEdges());
+            wallEdges.removeAll(levelDoorEdges);
             drawCorridorBoundaries(gc, camera, gridSize, wallEdges, selected, palette);
 
             for (Door door : corridor.corridorId() == null ? List.<Door>of() : mapModel.doorsForCorridor(corridor.corridorId())) {
-                if (door == null) {
+                if (door == null || java.util.Collections.disjoint(door.edges(), levelDoorEdges)) {
                     continue;
                 }
                 gc.setStroke(selected ? palette.corridorSelectedStroke() : palette.corridorStroke());
@@ -518,7 +521,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 renderState.selectedTargetKey(),
                 palette,
                 false);
-        drawCorridors(gc, projected, camera, renderState.selectedTargetKey(), palette);
+        drawCorridors(gc, projected, camera, renderState.selectedTargetKey(), overlay.level(), palette);
         drawStairs(gc, projected, camera, editorMode, renderState.selectedTargetKey(), overlay.level(), palette, true);
         drawTransitions(gc, projected, camera, renderState.selectedTargetKey(), palette);
         drawSelectedRoomBoundaries(

@@ -132,9 +132,6 @@ public final class CorridorPlanningEngine {
         Set<CubePoint> corridorCells = tree.corridorCells().stream()
                 .filter(cell -> !occupiesRoomCell(cell, occupiedRoomCellsByLevel))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
-        Set<Point2i> projectedCells = corridorCells.stream()
-                .map(CubePoint::projectedCell)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
         Map<Integer, Floor> floorsByLevel = new LinkedHashMap<>();
         Set<Integer> occupiedLevels = corridorCells.stream()
                 .map(CubePoint::z)
@@ -146,10 +143,6 @@ public final class CorridorPlanningEngine {
                     .collect(Collectors.toCollection(LinkedHashSet::new));
             floorsByLevel.put(level, new Floor(TileShape.fromAbsoluteCells(levelCells)));
         }
-        Set<VertexEdge> doorEdges = tree.doorEdges().stream()
-                .map(DoorEdge::edge)
-                .filter(java.util.Objects::nonNull)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
         Map<Integer, Set<VertexEdge>> mutableDoorEdgesByLevel = new LinkedHashMap<>();
         for (DoorEdge doorEdge : tree.doorEdges()) {
             if (doorEdge != null && doorEdge.edge() != null) {
@@ -162,14 +155,12 @@ public final class CorridorPlanningEngine {
         for (Map.Entry<Integer, Set<VertexEdge>> entry : mutableDoorEdgesByLevel.entrySet()) {
             doorEdgesByLevel.put(entry.getKey(), Set.copyOf(entry.getValue()));
         }
-        boolean directlyAdjacent = corridorCells.isEmpty() && !doorEdges.isEmpty();
+        boolean directlyAdjacent = corridorCells.isEmpty() && !doorEdgesByLevel.isEmpty();
         boolean routable = tree.connectedRoomIds().size() >= rooms.size()
-                && (!projectedCells.isEmpty() || !doorEdges.isEmpty());
+                && (!floorsByLevel.isEmpty() || !doorEdgesByLevel.isEmpty());
         return new CorridorPath(
                 route,
-                new Floor(TileShape.fromAbsoluteCells(projectedCells)),
                 Map.copyOf(floorsByLevel),
-                Set.copyOf(doorEdges),
                 doorEdgesByLevel,
                 directlyAdjacent,
                 routable);

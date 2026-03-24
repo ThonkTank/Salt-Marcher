@@ -208,8 +208,8 @@ public final class DungeonLayout {
         if (corridor.path() == null) {
             return false;
         }
-        var levels = corridor.path().floorsByLevel();
-        return levels != null && !levels.isEmpty() && levels.containsKey(levelZ);
+        return corridor.path().floorsByLevel().containsKey(levelZ)
+                || corridor.path().doorEdgesByLevel().containsKey(levelZ);
     }
 
     public List<RoomCluster> overlappingClusters(features.world.dungeonmap.model.geometry.TileShape shape) {
