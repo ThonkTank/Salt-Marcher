@@ -220,23 +220,19 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         return location instanceof DungeonRuntimeLocation.Tile tile ? tile.tile() : null;
     }
 
-    private void movePartyThroughDoor(DungeonRuntimeDoorDescriptor door) {
+    private void movePartyThroughConnection(DungeonRuntimeDoorDescriptor door) {
         if (door == null || runtimeState.loading() || runtimeState.moving() || state().activeMap().mapId() <= 0) {
             return;
         }
         var layout = state().activeMap();
-        DungeonRuntimeSurface surface = activeSurface();
-        if (surface == null) {
-            return;
-        }
         int currentLevel = activeTile() != null ? activeTile().z() : state().activeProjectionLevel();
         runtimeState.showMoveInProgress();
         UiAsyncTasks.submit(
-                () -> runtimeNavigationService.moveThroughDoor(layout, surface, door, currentLevel),
+                () -> runtimeNavigationService.moveThroughConnection(layout, door, currentLevel),
                 this::applyNavigationSnapshot,
                 failure -> {
-                    System.err.println("DungeonRuntimeView.movePartyThroughDoor(): " + failure.getMessage());
-                    runtimeState.showFailure("Tür konnte nicht benutzt werden");
+                    System.err.println("DungeonRuntimeView.movePartyThroughConnection(): " + failure.getMessage());
+                    runtimeState.showFailure("Verbindung konnte nicht benutzt werden");
                 });
     }
 
@@ -277,7 +273,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         }
         List<WorldTravelSurface.DungeonDoorAction> actions = new java.util.ArrayList<>();
         surface.doors().stream()
-                .map(this::toDoorAction)
+                .map(this::toConnectionAction)
                 .forEach(actions::add);
         surface.stairs().stream()
                 .map(this::toStairAction)
@@ -292,8 +288,8 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         return new WorldTravelSurface.DungeonDoorAction(stair.displayLabel(), () -> movePartyThroughStair(stair));
     }
 
-    private WorldTravelSurface.DungeonDoorAction toDoorAction(DungeonRuntimeDoorDescriptor door) {
-        return new WorldTravelSurface.DungeonDoorAction(door.displayLabel(), () -> movePartyThroughDoor(door));
+    private WorldTravelSurface.DungeonDoorAction toConnectionAction(DungeonRuntimeDoorDescriptor door) {
+        return new WorldTravelSurface.DungeonDoorAction(door.displayLabel(), () -> movePartyThroughConnection(door));
     }
 
     private WorldTravelSurface.DungeonDoorAction toTransitionAction(DungeonRuntimeTransitionDescriptor transition) {

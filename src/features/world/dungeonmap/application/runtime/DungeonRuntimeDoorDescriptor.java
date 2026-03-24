@@ -3,6 +3,7 @@ package features.world.dungeonmap.application.runtime;
 import features.world.dungeonmap.application.room.RoomExitDescriptor;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.VertexEdge;
+import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 
 public record DungeonRuntimeDoorDescriptor(
         int number,
@@ -12,6 +13,8 @@ public record DungeonRuntimeDoorDescriptor(
         Point2i outsideCell,
         Point2i direction,
         VertexEdge anchorEdge,
+        ConnectionEndpoint activeEndpoint,
+        ConnectionEndpoint destinationEndpoint,
         String relativeLabel,
         String description
 ) {
@@ -30,6 +33,8 @@ public record DungeonRuntimeDoorDescriptor(
     public static DungeonRuntimeDoorDescriptor from(
             RoomExitDescriptor exit,
             DungeonHeading heading,
+            ConnectionEndpoint activeEndpoint,
+            ConnectionEndpoint destinationEndpoint,
             String destinationLabel,
             String narration
     ) {
@@ -45,6 +50,8 @@ public record DungeonRuntimeDoorDescriptor(
                 exit.outsideCell(),
                 exit.direction(),
                 exit.anchorEdge(),
+                activeEndpoint,
+                destinationEndpoint,
                 relativeLabel,
                 description);
     }

@@ -7,15 +7,18 @@ import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
+import features.world.dungeonmap.model.structures.connection.Connection;
 import javafx.geometry.Point2D;
 
 import java.util.Map;
+import java.util.Objects;
 
 final class DungeonGridBoundaryHitTester {
 
     private static final long BOUNDARY_PRIORITY = 10L;
+    private static final long CONNECTION_PRIORITY = 10L;
 
-    DungeonEditorBoundaryHitTarget hitTest(DungeonLayout layout, Point2D canvasPoint, DungeonCanvasCamera camera) {
+    DungeonEditorBoundaryHitTarget hitBoundary(DungeonLayout layout, Point2D canvasPoint, DungeonCanvasCamera camera) {
         if (layout == null || canvasPoint == null || camera == null) {
             return null;
         }
@@ -46,6 +49,30 @@ final class DungeonGridBoundaryHitTester {
                         edge,
                         entry.getValue(),
                         BOUNDARY_PRIORITY);
+                bestDistance = distance;
+            }
+        }
+        return bestTarget;
+    }
+
+    DungeonEditorConnectionHitTarget hitConnection(DungeonLayout layout, Point2D canvasPoint, DungeonCanvasCamera camera) {
+        if (layout == null || canvasPoint == null || camera == null) {
+            return null;
+        }
+        double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
+        double maxDistance = Math.max(7.0, gridSize * 0.22);
+        DungeonEditorConnectionHitTarget bestTarget = null;
+        double bestDistance = maxDistance;
+        for (Connection connection : layout.connections()) {
+            if (connection == null || connection.door() == null) {
+                continue;
+            }
+            for (VertexEdge edge : connection.door().edges().stream().filter(Objects::nonNull).toList()) {
+                double distance = distanceToEdge(canvasPoint, edge, camera, gridSize);
+                if (distance > bestDistance) {
+                    continue;
+                }
+                bestTarget = new DungeonEditorConnectionHitTarget(connection, edge, CONNECTION_PRIORITY);
                 bestDistance = distance;
             }
         }

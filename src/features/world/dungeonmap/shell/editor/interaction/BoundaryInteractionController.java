@@ -8,6 +8,7 @@ import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
+import features.world.dungeonmap.model.structures.connection.LocalConnection;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonBoundaryDraftState;
@@ -86,8 +87,13 @@ public final class BoundaryInteractionController {
         if (!event.isPrimaryButton()) {
             return false;
         }
-        DungeonEditorBoundaryHitTarget hit = boundaryHitTester.hitTest(mapState.activeMap(), event.canvasPoint(), event.camera());
-        if (hit == null || hit.clusterId() == null) {
+        DungeonEditorConnectionHitTarget hit = boundaryHitTester.hitConnection(mapState.activeMap(), event.canvasPoint(), event.camera());
+        if (hit == null || !hit.editableAsLocalConnection()) {
+            selectionState.clearSelection();
+            return false;
+        }
+        LocalConnection localConnection = hit.localConnection();
+        if (localConnection == null) {
             selectionState.clearSelection();
             return false;
         }
@@ -98,7 +104,7 @@ public final class BoundaryInteractionController {
         }
         boolean deleteBoundary = sessionState.selectedTool() == DungeonEditorTool.CLUSTER_DOOR_DELETE;
         UiAsyncTasks.submitVoid(
-                () -> boundaryEditService.apply(mapId, hit.clusterId(), hit.edge(), InternalBoundaryType.DOOR, deleteBoundary),
+                () -> boundaryEditService.apply(mapId, localConnection.clusterId(), hit.edge(), InternalBoundaryType.DOOR, deleteBoundary),
                 () -> loadingService.reload(mapId),
                 throwable -> UiErrorReporter.reportBackgroundFailure("BoundaryInteractionController.handleDoorPressed()", throwable));
         return true;
@@ -218,7 +224,7 @@ public final class BoundaryInteractionController {
             return selectedCluster;
         }
 
-        DungeonEditorBoundaryHitTarget boundaryHit = boundaryHitTester.hitTest(layout, event.canvasPoint(), event.camera());
+        DungeonEditorBoundaryHitTarget boundaryHit = boundaryHitTester.hitBoundary(layout, event.canvasPoint(), event.camera());
         if (boundaryHit != null && boundaryHit.clusterId() != null) {
             RoomCluster boundaryCluster = clusterOnActiveLevel(boundaryHit.clusterId(), layout);
             if (boundaryCluster != null && pathPlanner.isEditableVertex(boundaryCluster, vertex, deleteMode)) {

@@ -42,7 +42,7 @@ public final class DungeonRuntimeDoorCatalog {
                 layout.connectionsForCorridor(corridor.corridorId()),
                 heading,
                 (cell, direction) -> "",
-                exit -> destinationLabel(layout, layout.connectionAt(exit.anchorEdge()), ConnectionEndpoint.corridor(corridor.corridorId())));
+                exit -> doorContext(layout, layout.connectionAt(exit.anchorEdge()), ConnectionEndpoint.corridor(corridor.corridorId())));
     }
 
     public static List<DungeonRuntimeDoorDescriptor> describe(DungeonLayout layout, CorridorNetwork network, DungeonHeading heading) {
@@ -60,7 +60,10 @@ public final class DungeonRuntimeDoorCatalog {
                 List.copyOf(connections),
                 heading,
                 (cell, direction) -> "",
-                exit -> destinationLabel(layout, layout.connectionAt(exit.anchorEdge()), activeEndpoint(network, layout.connectionAt(exit.anchorEdge()))));
+                exit -> {
+                    Connection connection = layout.connectionAt(exit.anchorEdge());
+                    return doorContext(layout, connection, activeEndpoint(network, connection));
+                });
     }
 
     private static List<DungeonRuntimeDoorDescriptor> describe(
@@ -68,14 +71,19 @@ public final class DungeonRuntimeDoorCatalog {
             List<? extends Connection> connections,
             DungeonHeading heading,
             BiFunction<Point2i, Point2i, String> narrationLookup,
-            Function<RoomExitDescriptor, String> destinationLookup
+            Function<RoomExitDescriptor, DoorContext> contextLookup
     ) {
         return DoorExitCatalog.describe(cells, connections).stream()
-                .map(exit -> DungeonRuntimeDoorDescriptor.from(
-                        exit,
-                        heading,
-                        destinationLookup.apply(exit),
-                        narrationLookup.apply(exit.roomCell(), exit.direction())))
+                .map(exit -> {
+                    DoorContext context = contextLookup.apply(exit);
+                    return DungeonRuntimeDoorDescriptor.from(
+                            exit,
+                            heading,
+                            context.activeEndpoint(),
+                            context.destinationEndpoint(),
+                            context.destinationLabel(),
+                            narrationLookup.apply(exit.roomCell(), exit.direction()));
+                })
                 .toList();
     }
 
@@ -86,24 +94,24 @@ public final class DungeonRuntimeDoorCatalog {
             DungeonHeading heading
     ) {
         String narration = room.narration().exitDescription(exit.roomCell(), exit.direction());
-        return DungeonRuntimeDoorDescriptor.from(exit, heading, destinationLabel(layout, room, exit), narration);
+        DoorContext context = doorContext(layout, layout.connectionAt(exit.anchorEdge()), ConnectionEndpoint.room(room.roomId()));
+        return DungeonRuntimeDoorDescriptor.from(
+                exit,
+                heading,
+                context.activeEndpoint(),
+                context.destinationEndpoint(),
+                context.destinationLabel(),
+                narration);
     }
 
-    private static String destinationLabel(DungeonLayout layout, Room room, RoomExitDescriptor exit) {
-        if (layout == null || room == null || exit == null) {
-            return "";
-        }
-        return destinationLabel(layout, layout.connectionAt(exit.anchorEdge()), ConnectionEndpoint.room(room.roomId()));
-    }
-
-    private static String destinationLabel(DungeonLayout layout, Connection connection, ConnectionEndpoint activeEndpoint) {
+    private static DoorContext doorContext(DungeonLayout layout, Connection connection, ConnectionEndpoint activeEndpoint) {
         if (layout == null || connection == null) {
-            return "";
+            return new DoorContext(activeEndpoint, null, "");
         }
         ConnectionEndpoint destination = activeEndpoint == null
                 ? null
                 : connection.oppositeOf(activeEndpoint);
-        return endpointLabel(layout, destination, activeEndpoint);
+        return new DoorContext(activeEndpoint, destination, endpointLabel(layout, destination, activeEndpoint));
     }
 
     private static ConnectionEndpoint activeEndpoint(CorridorNetwork network, Connection connection) {
@@ -155,5 +163,12 @@ public final class DungeonRuntimeDoorCatalog {
             return transition == null ? "Übergang" : transition.label();
         }
         return "";
+    }
+
+    private record DoorContext(
+            ConnectionEndpoint activeEndpoint,
+            ConnectionEndpoint destinationEndpoint,
+            String destinationLabel
+    ) {
     }
 }

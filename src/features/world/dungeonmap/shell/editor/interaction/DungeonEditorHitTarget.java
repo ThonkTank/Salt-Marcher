@@ -1,10 +1,12 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
-public sealed interface DungeonEditorHitTarget permits DungeonEditorBoundaryHitTarget, DungeonEditorLabelHitTarget, DungeonEditorRoomHitTarget {
+public sealed interface DungeonEditorHitTarget permits DungeonEditorBoundaryHitTarget, DungeonEditorConnectionHitTarget, DungeonEditorLabelHitTarget, DungeonEditorRoomHitTarget {
 
     String targetKey();
 
-    Long clusterId();
+    default Long clusterId() {
+        return null;
+    }
 
     default Long roomId() {
         return null;
