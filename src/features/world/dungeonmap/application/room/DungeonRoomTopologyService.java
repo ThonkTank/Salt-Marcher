@@ -224,7 +224,7 @@ public final class DungeonRoomTopologyService {
 
     private void createCluster(Connection conn, long mapId, int levelZ, TileShape shape, String roomName) throws SQLException {
         long clusterId = roomWriteRepository.insertCluster(conn, mapId, geometryWriteMapper.toClusterGeometry(shape), levelZ);
-        roomWriteRepository.replaceClusterEdges(conn, clusterId, shape.centerCell(), List.of());
+        roomWriteRepository.replaceClusterEdges(conn, clusterId, shape.centerCell(), levelZ, List.of());
         roomWriteRepository.insertRoom(conn, mapId, clusterId, roomName, shape.centerCell(), levelZ);
     }
 
@@ -246,12 +246,13 @@ public final class DungeonRoomTopologyService {
             long splitClusterId = roomWriteRepository.insertCluster(
                     conn,
                     mapId,
-                    geometryWriteMapper.toClusterGeometry(splitCluster.clusterShape()),
-                    levelZ);
+                    geometryWriteMapper.toClusterGeometry(shapesByLevel(splitCluster.rooms())),
+                    primaryLevel(splitCluster.rooms(), levelZ));
             roomWriteRepository.replaceClusterEdges(
                     conn,
                     splitClusterId,
                     splitCluster.clusterCenter(),
+                    levelZ,
                     toBoundaryWrites(splitCluster.persistedBoundaries()));
             realizedSplitClusters.add(splitCluster.withClusterId(splitClusterId));
         }
@@ -259,15 +260,17 @@ public final class DungeonRoomTopologyService {
         roomWriteRepository.updateClusterGeometry(
                 conn,
                 realizedRewrite.targetClusterId(),
-                geometryWriteMapper.toClusterGeometry(realizedRewrite.clusterShape()));
+                geometryWriteMapper.toClusterGeometry(shapesByLevel(realizedRewrite.rooms())),
+                primaryLevel(realizedRewrite.rooms(), levelZ));
         roomWriteRepository.replaceClusterEdges(
                 conn,
                 realizedRewrite.targetClusterId(),
                 realizedRewrite.clusterCenter(),
+                levelZ,
                 toBoundaryWrites(realizedRewrite.persistedBoundaries()));
-        persistRooms(conn, mapId, realizedRewrite.targetClusterId(), realizedRewrite.rooms(), levelZ);
+        persistRooms(conn, mapId, realizedRewrite.targetClusterId(), realizedRewrite.rooms());
         for (ClusterRewriteSplit splitCluster : realizedRewrite.splitClusters()) {
-            persistRooms(conn, mapId, splitCluster.clusterId(), splitCluster.rooms(), levelZ);
+            persistRooms(conn, mapId, splitCluster.clusterId(), splitCluster.rooms());
         }
         for (Long deletedClusterId : realizedRewrite.deletedClusterIds()) {
             if (deletedClusterId != null && !deletedClusterId.equals(realizedRewrite.targetClusterId())) {
@@ -302,8 +305,7 @@ public final class DungeonRoomTopologyService {
             Connection conn,
             long mapId,
             long clusterId,
-            List<Room> rooms,
-            int levelZ
+            List<Room> rooms
     ) throws SQLException {
         for (Room room : rooms) {
             if (room == null) {
@@ -315,16 +317,61 @@ public final class DungeonRoomTopologyService {
                         mapId,
                         clusterId,
                         room.name(),
-                        room.floor().shape().centerCell(),
-                        levelZ);
+                        anchorsByLevel(room),
+                        room.primaryLevel());
                 if (roomId <= 0) {
                     throw new SQLException("Raum konnte nicht angelegt werden");
                 }
                 continue;
             }
             roomWriteRepository.reassignRoomCluster(conn, room.roomId(), clusterId);
-            roomWriteRepository.updateRoom(conn, room.roomId(), room.name(), room.floor().shape().centerCell(), levelZ);
+            roomWriteRepository.updateRoom(conn, room.roomId(), room.name(), anchorsByLevel(room), room.primaryLevel());
         }
+    }
+
+    private static Map<Integer, TileShape> shapesByLevel(List<Room> rooms) {
+        Map<Integer, java.util.Set<Point2i>> cellsByLevel = new LinkedHashMap<>();
+        for (Room room : rooms == null ? List.<Room>of() : rooms) {
+            if (room == null) {
+                continue;
+            }
+            for (Map.Entry<Integer, features.world.dungeonmap.model.objects.Floor> entry : room.floors().entrySet()) {
+                if (entry == null || entry.getKey() == null || entry.getValue() == null) {
+                    continue;
+                }
+                cellsByLevel.computeIfAbsent(entry.getKey(), ignored -> new java.util.LinkedHashSet<>())
+                        .addAll(entry.getValue().shape().absoluteCells());
+            }
+        }
+        if (cellsByLevel.isEmpty()) {
+            return Map.of(0, TileShape.empty());
+        }
+        Map<Integer, TileShape> result = new LinkedHashMap<>();
+        for (Map.Entry<Integer, java.util.Set<Point2i>> entry : cellsByLevel.entrySet()) {
+            result.put(entry.getKey(), TileShape.fromAbsoluteCells(entry.getValue()));
+        }
+        return Map.copyOf(result);
+    }
+
+    private static Map<Integer, Point2i> anchorsByLevel(Room room) {
+        if (room == null || room.floors().isEmpty()) {
+            return Map.of(0, new Point2i(0, 0));
+        }
+        Map<Integer, Point2i> result = new LinkedHashMap<>();
+        for (Map.Entry<Integer, features.world.dungeonmap.model.objects.Floor> entry : room.floors().entrySet()) {
+            if (entry == null || entry.getKey() == null || entry.getValue() == null) {
+                continue;
+            }
+            result.put(entry.getKey(), entry.getValue().shape().centerCell());
+        }
+        return result.isEmpty() ? Map.of(0, new Point2i(0, 0)) : Map.copyOf(result);
+    }
+
+    private static int primaryLevel(List<Room> rooms, int fallbackLevel) {
+        return shapesByLevel(rooms).keySet().stream()
+                .mapToInt(Integer::intValue)
+                .min()
+                .orElse(fallbackLevel);
     }
 
     private static List<RoomCluster> overlappingClustersAtLevel(DungeonLayout layout, TileShape shape, int levelZ) {

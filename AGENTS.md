@@ -94,6 +94,7 @@ The rules in this section are decision filters, not soft preferences. When multi
 
 ### Repository & Service Conventions
 - Repositories are stateless (`Connection` passed in). Let repositories propagate `SQLException`; fallback behavior, retries, and user-facing degradation belong in services
+- Services may propagate `SQLException` from repositories and transaction boundaries, but business validation must use domain/argument exceptions (`IllegalArgumentException` or a feature-specific edit exception), not `SQLException`
 - Utility services (`*Calculator`, `*Scoring`, `*Tuning`, `*Setup`, `*Classifier`, `*Generator`) are static-only with private constructor
 - Stateful workflow/session services (`*ApplicationService`, `*Session`) are instance-based
 - `service/generation/internal` contains search collaborators; keep internals package-private where possible

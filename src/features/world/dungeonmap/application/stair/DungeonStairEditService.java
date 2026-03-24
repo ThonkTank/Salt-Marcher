@@ -43,9 +43,7 @@ public final class DungeonStairEditService {
             int dimension2,
             List<Integer> exitLevels
     ) throws SQLException {
-        if (layout == null || layout.mapId() <= 0) {
-            throw new SQLException("Kein aktiver Dungeon geladen");
-        }
+        requireLayout(layout);
         List<Integer> sortedExitLevels = validateAndSortExitLevels(exitLevels);
         StairShape validatedShape = requireShape(shape);
         CardinalDirection validatedDirection = requireDirection(direction);
@@ -88,7 +86,13 @@ public final class DungeonStairEditService {
         }
     }
 
-    private static List<Integer> validateAndSortExitLevels(List<Integer> exitLevels) throws SQLException {
+    private static void requireLayout(DungeonLayout layout) {
+        if (layout == null || layout.mapId() <= 0) {
+            throw new IllegalArgumentException("Kein aktiver Dungeon geladen");
+        }
+    }
+
+    private static List<Integer> validateAndSortExitLevels(List<Integer> exitLevels) {
         ArrayList<Integer> result = new ArrayList<>();
         for (Integer level : exitLevels == null ? List.<Integer>of() : exitLevels) {
             if (level != null) {
@@ -96,37 +100,37 @@ public final class DungeonStairEditService {
             }
         }
         if (result.size() < 2) {
-            throw new SQLException("Mindestens zwei verschiedene Ebenen");
+            throw new IllegalArgumentException("Mindestens zwei verschiedene Ebenen");
         }
         if (result.stream().distinct().count() != result.size()) {
-            throw new SQLException("Ausgänge dürfen nicht doppelt sein");
+            throw new IllegalArgumentException("Ausgänge dürfen nicht doppelt sein");
         }
         result.sort(Integer::compareTo);
         return List.copyOf(result);
     }
 
-    private static StairShape requireShape(StairShape shape) throws SQLException {
+    private static StairShape requireShape(StairShape shape) {
         if (shape == null) {
-            throw new SQLException("Treppenform fehlt");
+            throw new IllegalArgumentException("Treppenform fehlt");
         }
         return shape;
     }
 
-    private static CardinalDirection requireDirection(CardinalDirection direction) throws SQLException {
+    private static CardinalDirection requireDirection(CardinalDirection direction) {
         if (direction == null) {
-            throw new SQLException("Treppenrichtung fehlt");
+            throw new IllegalArgumentException("Treppenrichtung fehlt");
         }
         return direction;
     }
 
-    private static void validateDimensions(StairShape shape, int dimension1, int dimension2) throws SQLException {
+    private static void validateDimensions(StairShape shape, int dimension1, int dimension2) {
         String validationMessage = shape.validateDimensions(dimension1, dimension2).orElse(null);
         if (validationMessage != null) {
-            throw new SQLException(validationMessage);
+            throw new IllegalArgumentException(validationMessage);
         }
     }
 
-    private static List<DungeonStairExit> buildExits(List<CubePoint> pathNodes, List<Integer> sortedExitLevels) throws SQLException {
+    private static List<DungeonStairExit> buildExits(List<CubePoint> pathNodes, List<Integer> sortedExitLevels) {
         if (pathNodes == null || pathNodes.isEmpty() || sortedExitLevels.isEmpty()) {
             return List.of();
         }
@@ -138,7 +142,7 @@ public final class DungeonStairEditService {
         for (Integer level : sortedExitLevels) {
             CubePoint exitPoint = pathPointByLevel.get(level);
             if (exitPoint == null) {
-                throw new SQLException("Treppenpfad deckt Ebene z=" + level + " nicht ab");
+                throw new IllegalArgumentException("Treppenpfad deckt Ebene z=" + level + " nicht ab");
             }
             result.add(new DungeonStairExit(0L, exitPoint, "Ebene z=" + level));
         }
@@ -147,7 +151,7 @@ public final class DungeonStairEditService {
 
     private void ensureTraversableExitCells(Connection conn, long mapId, List<DungeonStairExit> exits) throws SQLException {
         if (exits == null || exits.isEmpty()) {
-            throw new SQLException("Mindestens zwei Ausgänge erforderlich");
+            throw new IllegalArgumentException("Mindestens zwei Ausgänge erforderlich");
         }
         for (DungeonStairExit exit : exits) {
             roomTopologyService.ensureTraversableCell(conn, mapId, exit.position().projectedCell(), exit.position().z());

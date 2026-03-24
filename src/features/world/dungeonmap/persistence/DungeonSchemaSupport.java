@@ -45,18 +45,27 @@ public final class DungeonSchemaSupport {
                 + ")");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_room_cluster_vertices ("
                 + "cluster_id       INTEGER NOT NULL REFERENCES dungeon_room_clusters(cluster_id) ON DELETE CASCADE,"
+                + "level_z          INTEGER NOT NULL DEFAULT 0,"
                 + "vertex_index     INTEGER NOT NULL,"
                 + "relative_x       INTEGER NOT NULL,"
                 + "relative_y       INTEGER NOT NULL,"
-                + "PRIMARY KEY (cluster_id, vertex_index)"
+                + "PRIMARY KEY (cluster_id, level_z, vertex_index)"
                 + ")");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_room_cluster_edges ("
                 + "cluster_id       INTEGER NOT NULL REFERENCES dungeon_room_clusters(cluster_id) ON DELETE CASCADE,"
+                + "level_z          INTEGER NOT NULL DEFAULT 0,"
                 + "cell_x           INTEGER NOT NULL,"
                 + "cell_y           INTEGER NOT NULL,"
                 + "edge_direction   TEXT NOT NULL,"
                 + "edge_type        TEXT NOT NULL,"
-                + "PRIMARY KEY (cluster_id, cell_x, cell_y, edge_direction)"
+                + "PRIMARY KEY (cluster_id, level_z, cell_x, cell_y, edge_direction)"
+                + ")");
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_room_floors ("
+                + "room_id          INTEGER NOT NULL REFERENCES dungeon_rooms(room_id) ON DELETE CASCADE,"
+                + "level_z          INTEGER NOT NULL,"
+                + "anchor_x         INTEGER NOT NULL,"
+                + "anchor_y         INTEGER NOT NULL,"
+                + "PRIMARY KEY (room_id, level_z)"
                 + ")");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_corridor_door_overrides ("
                 + "corridor_id       INTEGER NOT NULL REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE,"
@@ -137,6 +146,7 @@ public final class DungeonSchemaSupport {
     public static void resetSchema(Connection conn) throws SQLException {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("PRAGMA foreign_keys = OFF");
+            stmt.execute("DROP TABLE IF EXISTS dungeon_room_floors");
             stmt.execute("DROP TABLE IF EXISTS dungeon_room_cluster_edges");
             stmt.execute("DROP TABLE IF EXISTS dungeon_room_cluster_vertices");
             stmt.execute("DROP TABLE IF EXISTS dungeon_room_exit_descriptions");
