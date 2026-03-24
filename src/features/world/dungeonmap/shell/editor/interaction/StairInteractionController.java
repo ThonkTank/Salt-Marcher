@@ -74,7 +74,14 @@ public final class StairInteractionController {
         selectionState.clearSelection();
         stairDraftState.clearPlacementError();
         UiAsyncTasks.submitVoid(
-                () -> stairEditService.create(mapState.activeMap(), gridCell, stairDraftState.exitLevels()),
+                () -> stairEditService.create(
+                        mapState.activeMap(),
+                        gridCell,
+                        stairDraftState.shape(),
+                        stairDraftState.direction(),
+                        stairDraftState.dimension1(),
+                        stairDraftState.dimension2(),
+                        stairDraftState.exitLevels()),
                 () -> {
                     stairDraftState.clearPlacementError();
                     loadingService.reload(mapId);

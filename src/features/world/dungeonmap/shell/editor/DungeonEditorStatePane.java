@@ -4,6 +4,8 @@ import features.world.dungeonmap.application.transition.DungeonTransitionEditReq
 import features.world.dungeonmap.application.transition.DungeonTransitionTargetSummary;
 import features.world.dungeonmap.loading.DungeonMapCatalogEntry;
 import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.structures.stair.StairDirection;
+import features.world.dungeonmap.model.structures.stair.StairShape;
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
 import features.world.api.OverworldTransitionTargetSummary;
@@ -38,6 +40,18 @@ public final class DungeonEditorStatePane {
     private final Label corridorLabel = new Label("Kein Korridor gewählt");
     private final VBox corridorCard = card("Korridor", corridorLabel);
     private final Label stairSummaryLabel = new Label("Keine Treppe gewählt");
+    private final ComboBox<StairShape> stairShapeBox = new ComboBox<>();
+    private final FlowPane stairDirectionButtons = new FlowPane();
+    private final Button stairNorthButton = new Button("N");
+    private final Button stairEastButton = new Button("O");
+    private final Button stairSouthButton = new Button("S");
+    private final Button stairWestButton = new Button("W");
+    private final TextField stairDimension1Field = new TextField();
+    private final TextField stairDimension2Field = new TextField();
+    private final Label stairDimension1Label = new Label("Maß 1");
+    private final Label stairDimension2Label = new Label("Maß 2");
+    private final HBox stairDimension1Row = new HBox(6, stairDimension1Label, stairDimension1Field);
+    private final HBox stairDimension2Row = new HBox(6, stairDimension2Label, stairDimension2Field);
     private final TextField stairInputField = new TextField();
     private final Button stairLevelDownButton = new Button("-");
     private final Button stairLevelUpButton = new Button("+");
@@ -45,7 +59,14 @@ public final class DungeonEditorStatePane {
     private final FlowPane stairExitTokens = new FlowPane();
     private final Label stairStatusLabel = new Label();
     private final HBox stairInputRow = new HBox(6, stairInputField, stairLevelDownButton, stairLevelUpButton, stairAddButton);
-    private final VBox stairEditorContent = new VBox(6, stairInputRow, stairExitTokens);
+    private final VBox stairEditorContent = new VBox(
+            6,
+            stairShapeBox,
+            stairDirectionButtons,
+            stairDimension1Row,
+            stairDimension2Row,
+            stairInputRow,
+            stairExitTokens);
     private final VBox stairCard = card("Treppen-Ausgänge", stairSummaryLabel, stairEditorContent, stairStatusLabel);
     private final TextArea transitionDescriptionArea = new TextArea();
     private final ComboBox<DungeonTransitionEditRequest.DestinationType> transitionDestinationTypeBox = new ComboBox<>();
@@ -76,6 +97,10 @@ public final class DungeonEditorStatePane {
     private Runnable onStairLevelIncrementRequested = () -> { };
     private Runnable onStairAddRequested = () -> { };
     private IntConsumer onStairExitRemoveRequested = level -> { };
+    private Consumer<StairShape> onStairShapeChanged = value -> { };
+    private Consumer<StairDirection> onStairDirectionChanged = value -> { };
+    private IntConsumer onStairDimension1Changed = value -> { };
+    private IntConsumer onStairDimension2Changed = value -> { };
     private Consumer<String> onTransitionDescriptionChanged = value -> { };
     private Consumer<DungeonTransitionEditRequest.DestinationType> onTransitionDestinationTypeChanged = value -> { };
     private Consumer<Boolean> onTransitionBidirectionalChanged = value -> { };
@@ -84,6 +109,8 @@ public final class DungeonEditorStatePane {
     private Consumer<OverworldTransitionTargetSummary> onTransitionTargetOverworldChanged = value -> { };
     private Consumer<Long> onPreparedTransitionSelected = value -> { };
     private boolean syncingStairInput;
+    private boolean syncingStairShape;
+    private boolean syncingStairDimensions;
     private boolean syncingTransitionFields;
 
     public DungeonEditorStatePane() {
@@ -91,16 +118,56 @@ public final class DungeonEditorStatePane {
         content.getChildren().add(card("Werkzeug", activeToolLabel));
         stairInputField.setTextFormatter(new TextFormatter<>(change ->
                 change.getControlNewText().matches("-?\\d*") ? change : null));
+        stairDimension1Field.setTextFormatter(new TextFormatter<>(change ->
+                change.getControlNewText().matches("-?\\d*") ? change : null));
+        stairDimension2Field.setTextFormatter(new TextFormatter<>(change ->
+                change.getControlNewText().matches("-?\\d*") ? change : null));
         stairInputField.setPrefColumnCount(4);
         stairInputField.setMaxWidth(70);
+        stairDimension1Field.setPrefColumnCount(4);
+        stairDimension1Field.setMaxWidth(70);
+        stairDimension2Field.setPrefColumnCount(4);
+        stairDimension2Field.setMaxWidth(70);
         stairLevelDownButton.getStyleClass().add("compact");
         stairLevelUpButton.getStyleClass().add("compact");
+        stairShapeBox.setItems(FXCollections.observableArrayList(StairShape.values()));
+        stairShapeBox.setConverter(new javafx.util.StringConverter<>() {
+            @Override
+            public String toString(StairShape value) {
+                return value == null ? "" : value.label();
+            }
+
+            @Override
+            public StairShape fromString(String string) {
+                return null;
+            }
+        });
+        stairShapeBox.valueProperty().addListener((obs, oldValue, newValue) -> {
+            if (!syncingStairShape) {
+                onStairShapeChanged.accept(newValue);
+            }
+        });
         stairInputField.textProperty().addListener((obs, oldValue, newValue) -> handleStairInputChanged(newValue));
+        stairDimension1Field.textProperty().addListener((obs, oldValue, newValue) ->
+                handleStairDimensionChanged(newValue, onStairDimension1Changed));
+        stairDimension2Field.textProperty().addListener((obs, oldValue, newValue) ->
+                handleStairDimensionChanged(newValue, onStairDimension2Changed));
         stairInputField.setOnAction(event -> onStairAddRequested.run());
+        stairDimension1Field.setOnAction(event -> handleStairDimensionChanged(stairDimension1Field.getText(), onStairDimension1Changed));
+        stairDimension2Field.setOnAction(event -> handleStairDimensionChanged(stairDimension2Field.getText(), onStairDimension2Changed));
         stairLevelDownButton.setOnAction(event -> onStairLevelDecrementRequested.run());
         stairLevelUpButton.setOnAction(event -> onStairLevelIncrementRequested.run());
         stairAddButton.setOnAction(event -> onStairAddRequested.run());
         stairInputRow.setAlignment(Pos.CENTER_LEFT);
+        stairDimension1Row.setAlignment(Pos.CENTER_LEFT);
+        stairDimension2Row.setAlignment(Pos.CENTER_LEFT);
+        configureDirectionButton(stairNorthButton, StairDirection.NORTH);
+        configureDirectionButton(stairEastButton, StairDirection.EAST);
+        configureDirectionButton(stairSouthButton, StairDirection.SOUTH);
+        configureDirectionButton(stairWestButton, StairDirection.WEST);
+        stairDirectionButtons.setHgap(6);
+        stairDirectionButtons.setVgap(6);
+        stairDirectionButtons.getChildren().setAll(stairNorthButton, stairEastButton, stairSouthButton, stairWestButton);
         stairExitTokens.setHgap(6);
         stairExitTokens.setVgap(6);
         stairStatusLabel.setWrapText(true);
@@ -236,6 +303,22 @@ public final class DungeonEditorStatePane {
         this.onStairExitRemoveRequested = onStairExitRemoveRequested == null ? level -> { } : onStairExitRemoveRequested;
     }
 
+    public void setOnStairShapeChanged(Consumer<StairShape> onStairShapeChanged) {
+        this.onStairShapeChanged = onStairShapeChanged == null ? value -> { } : onStairShapeChanged;
+    }
+
+    public void setOnStairDirectionChanged(Consumer<StairDirection> onStairDirectionChanged) {
+        this.onStairDirectionChanged = onStairDirectionChanged == null ? value -> { } : onStairDirectionChanged;
+    }
+
+    public void setOnStairDimension1Changed(IntConsumer onStairDimension1Changed) {
+        this.onStairDimension1Changed = onStairDimension1Changed == null ? value -> { } : onStairDimension1Changed;
+    }
+
+    public void setOnStairDimension2Changed(IntConsumer onStairDimension2Changed) {
+        this.onStairDimension2Changed = onStairDimension2Changed == null ? value -> { } : onStairDimension2Changed;
+    }
+
     public void setOnTransitionDescriptionChanged(Consumer<String> onTransitionDescriptionChanged) {
         this.onTransitionDescriptionChanged = onTransitionDescriptionChanged == null ? value -> { } : onTransitionDescriptionChanged;
     }
@@ -270,6 +353,8 @@ public final class DungeonEditorStatePane {
             stairSummaryLabel.setText("Keine Treppe gewählt");
             stairStatusLabel.setText("");
             syncStairInput(null);
+            syncStairShape(null, StairDirection.defaultDirection());
+            syncStairDimensions(null, null);
             stairExitTokens.getChildren().clear();
             return;
         }
@@ -281,6 +366,10 @@ public final class DungeonEditorStatePane {
         stairLevelUpButton.setDisable(!card.editable());
         stairInputField.setDisable(!card.editable());
         stairAddButton.setDisable(!card.editable());
+        stairShapeBox.setDisable(!card.editable());
+        syncStairShape(card.shape(), card.direction());
+        syncStairDimensions(card.dimension1(), card.dimension2());
+        updateStairShapeVisibility(card.shape(), card.editable());
         syncStairInput(card.inputLevel());
         renderStairTokens(card.exitLevels());
         if (!content.getChildren().contains(stairCard)) {
@@ -404,6 +493,90 @@ public final class DungeonEditorStatePane {
         syncingStairInput = false;
     }
 
+    private void syncStairShape(StairShape shape, StairDirection direction) {
+        syncingStairShape = true;
+        stairShapeBox.setValue(shape);
+        updateDirectionSelection(direction == null ? StairDirection.defaultDirection() : direction);
+        syncingStairShape = false;
+    }
+
+    private void syncStairDimensions(Integer dimension1, Integer dimension2) {
+        syncingStairDimensions = true;
+        stairDimension1Field.setText(dimension1 == null ? "" : Integer.toString(dimension1));
+        stairDimension2Field.setText(dimension2 == null ? "" : Integer.toString(dimension2));
+        syncingStairDimensions = false;
+    }
+
+    private void handleStairDimensionChanged(String value, IntConsumer consumer) {
+        if (syncingStairDimensions) {
+            return;
+        }
+        if (value == null || value.isBlank() || "-".equals(value.trim())) {
+            return;
+        }
+        try {
+            consumer.accept(Integer.parseInt(value.trim()));
+        } catch (NumberFormatException ignored) {
+            // The state owner keeps the canonical numeric value and will re-render it on refresh.
+        }
+    }
+
+    private void configureDirectionButton(Button button, StairDirection direction) {
+        button.getStyleClass().add("compact");
+        button.setOnAction(event -> {
+            if (!syncingStairShape) {
+                onStairDirectionChanged.accept(direction);
+            }
+        });
+    }
+
+    private void updateDirectionSelection(StairDirection selectedDirection) {
+        setDirectionButtonSelected(stairNorthButton, selectedDirection == StairDirection.NORTH);
+        setDirectionButtonSelected(stairEastButton, selectedDirection == StairDirection.EAST);
+        setDirectionButtonSelected(stairSouthButton, selectedDirection == StairDirection.SOUTH);
+        setDirectionButtonSelected(stairWestButton, selectedDirection == StairDirection.WEST);
+    }
+
+    private static void setDirectionButtonSelected(Button button, boolean selected) {
+        if (selected) {
+            if (!button.getStyleClass().contains("selected")) {
+                button.getStyleClass().add("selected");
+            }
+            return;
+        }
+        button.getStyleClass().remove("selected");
+    }
+
+    private void updateStairShapeVisibility(StairShape shape, boolean editable) {
+        StairShape resolvedShape = shape == null ? StairShape.LADDER : shape;
+        boolean showDirection = editable && resolvedShape.needsDirection();
+        stairDirectionButtons.setManaged(showDirection);
+        stairDirectionButtons.setVisible(showDirection);
+        stairDimension1Label.setText(stairDimension1Label(resolvedShape));
+        stairDimension2Label.setText("Tiefe");
+        boolean showDimension1 = editable && (resolvedShape.needsSideLength()
+                || resolvedShape.needsDimensions()
+                || resolvedShape.needsRadius());
+        boolean showDimension2 = editable && resolvedShape.needsDimensions();
+        stairDimension1Row.setManaged(showDimension1);
+        stairDimension1Row.setVisible(showDimension1);
+        stairDimension2Row.setManaged(showDimension2);
+        stairDimension2Row.setVisible(showDimension2);
+    }
+
+    private static String stairDimension1Label(StairShape shape) {
+        if (shape == StairShape.SQUARE) {
+            return "Seitenlänge";
+        }
+        if (shape == StairShape.RECTANGULAR) {
+            return "Breite";
+        }
+        if (shape == StairShape.CIRCULAR) {
+            return "Radius";
+        }
+        return "Maß";
+    }
+
     private void renderStairTokens(List<Integer> exitLevels) {
         stairExitTokens.getChildren().clear();
         for (Integer level : exitLevels == null ? List.<Integer>of() : exitLevels) {
@@ -502,6 +675,10 @@ public final class DungeonEditorStatePane {
 
     public record StairDraftCard(
             Integer inputLevel,
+            StairShape shape,
+            StairDirection direction,
+            Integer dimension1,
+            Integer dimension2,
             List<Integer> exitLevels,
             String statusMessage,
             boolean editable

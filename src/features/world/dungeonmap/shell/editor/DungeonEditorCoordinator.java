@@ -228,6 +228,10 @@ final class DungeonEditorCoordinator {
         statePane.setOnStairLevelIncrementRequested(() -> stairDraftState.adjustInputLevel(1));
         statePane.setOnStairAddRequested(stairDraftState::addExitLevel);
         statePane.setOnStairExitRemoveRequested(stairDraftState::removeExitLevel);
+        statePane.setOnStairShapeChanged(stairDraftState::setShape);
+        statePane.setOnStairDirectionChanged(stairDraftState::setDirection);
+        statePane.setOnStairDimension1Changed(stairDraftState::setDimension1);
+        statePane.setOnStairDimension2Changed(stairDraftState::setDimension2);
         statePane.setOnTransitionDescriptionChanged(transitionDraftState::setDescription);
         statePane.setOnTransitionDestinationTypeChanged(transitionDraftState::setDestinationType);
         statePane.setOnTransitionBidirectionalChanged(transitionDraftState::setBidirectional);
@@ -335,12 +339,24 @@ final class DungeonEditorCoordinator {
                     ? "Gewählt: " + DungeonEditorSelectionLabels.stairLabel(selectedTargetKey)
                     : "Treppenfeld anklicken, um zu löschen";
             statePane.showStairDraft(
-                    new DungeonEditorStatePane.StairDraftCard(null, List.of(), summary, false));
+                    new DungeonEditorStatePane.StairDraftCard(
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            List.of(),
+                            summary,
+                            false));
             return;
         }
         statePane.showStairDraft(
                 new DungeonEditorStatePane.StairDraftCard(
                         stairDraftState.inputLevel(),
+                        stairDraftState.shape(),
+                        stairDraftState.direction(),
+                        stairDraftState.dimension1(),
+                        stairDraftState.dimension2(),
                         stairDraftState.exitLevels(),
                         stairDraftState.displayStatus(),
                         true));

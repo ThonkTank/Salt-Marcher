@@ -25,7 +25,10 @@ import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
+import features.world.dungeonmap.model.structures.stair.StairDirection;
 import features.world.dungeonmap.model.structures.stair.DungeonStairExit;
+import features.world.dungeonmap.model.structures.stair.StairShape;
+import features.world.dungeonmap.persistence.DungeonSchemaSupport;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
 import features.world.dungeonmap.persistence.DungeonTransitionSchemaSupport;
@@ -261,6 +264,7 @@ public final class DungeonMapLoader {
     }
 
     private static List<DungeonStair> loadStairs(Connection conn, long mapId) throws SQLException {
+        DungeonSchemaSupport.ensureCompatibility(conn);
         Map<Long, List<CubePoint>> pathNodesByStairId = loadGrouped(conn,
                 "SELECT stair_id, cell_x, cell_y, cell_z"
                         + " FROM dungeon_stair_path_nodes"
@@ -281,7 +285,8 @@ public final class DungeonMapLoader {
                         new CubePoint(rs.getInt("cell_x"), rs.getInt("cell_y"), rs.getInt("cell_z")),
                         rs.getString("label")));
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT stair_id, dungeon_map_id, name FROM dungeon_stairs WHERE dungeon_map_id=? ORDER BY stair_id")) {
+                "SELECT stair_id, dungeon_map_id, name, shape, direction, dimension1, dimension2"
+                        + " FROM dungeon_stairs WHERE dungeon_map_id=? ORDER BY stair_id")) {
             ps.setLong(1, mapId);
             try (ResultSet rs = ps.executeQuery()) {
                 List<DungeonStair> result = new ArrayList<>();
@@ -291,6 +296,10 @@ public final class DungeonMapLoader {
                             stairId,
                             rs.getLong("dungeon_map_id"),
                             rs.getString("name"),
+                            StairShape.parse(rs.getString("shape")),
+                            StairDirection.fromCode(rs.getInt("direction")),
+                            rs.getInt("dimension1"),
+                            rs.getInt("dimension2"),
                             pathNodesByStairId.getOrDefault(stairId, List.of()),
                             exitsByStairId.getOrDefault(stairId, List.of())));
                 }

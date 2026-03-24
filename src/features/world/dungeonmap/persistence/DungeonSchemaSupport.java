@@ -89,7 +89,11 @@ public final class DungeonSchemaSupport {
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_stairs ("
                 + "stair_id         INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + "dungeon_map_id   INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
-                + "name             TEXT"
+                + "name             TEXT,"
+                + "shape            TEXT NOT NULL DEFAULT 'LADDER',"
+                + "direction        INTEGER NOT NULL DEFAULT 0,"
+                + "dimension1       INTEGER NOT NULL DEFAULT 0,"
+                + "dimension2       INTEGER NOT NULL DEFAULT 0"
                 + ")");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_stair_path_nodes ("
                 + "stair_id         INTEGER NOT NULL REFERENCES dungeon_stairs(stair_id) ON DELETE CASCADE,"
@@ -112,6 +116,21 @@ public final class DungeonSchemaSupport {
     public static void ensureCompatibility(Connection conn) throws SQLException {
         try (Statement stmt = conn.createStatement()) {
             createSchema(stmt);
+            addColumnIfMissing(stmt, "dungeon_stairs", "shape TEXT NOT NULL DEFAULT 'LADDER'");
+            addColumnIfMissing(stmt, "dungeon_stairs", "direction INTEGER NOT NULL DEFAULT 0");
+            addColumnIfMissing(stmt, "dungeon_stairs", "dimension1 INTEGER NOT NULL DEFAULT 0");
+            addColumnIfMissing(stmt, "dungeon_stairs", "dimension2 INTEGER NOT NULL DEFAULT 0");
+        }
+    }
+
+    private static void addColumnIfMissing(Statement stmt, String table, String columnDefinition) throws SQLException {
+        try {
+            stmt.execute("ALTER TABLE " + table + " ADD COLUMN " + columnDefinition);
+        } catch (SQLException ex) {
+            String message = ex.getMessage();
+            if (message == null || !message.toLowerCase(java.util.Locale.ROOT).contains("duplicate column name")) {
+                throw ex;
+            }
         }
     }
 

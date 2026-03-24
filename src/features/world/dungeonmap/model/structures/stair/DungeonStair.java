@@ -14,6 +14,10 @@ public record DungeonStair(
         Long stairId,
         long mapId,
         String name,
+        StairShape shape,
+        StairDirection direction,
+        int dimension1,
+        int dimension2,
         List<CubePoint> path,
         List<DungeonStairExit> exits
 ) {
@@ -24,6 +28,10 @@ public record DungeonStair(
         name = name == null || name.isBlank()
                 ? "Treppe " + (stairId == null ? "neu" : stairId)
                 : name.trim();
+        shape = shape == null ? StairShape.LADDER : shape;
+        direction = direction == null ? StairDirection.defaultDirection() : direction;
+        dimension1 = Math.max(0, dimension1);
+        dimension2 = Math.max(0, dimension2);
         path = path == null ? List.of() : path.stream()
                 .filter(java.util.Objects::nonNull)
                 .sorted(CubePoint.POINT_ORDER)
