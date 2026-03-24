@@ -86,7 +86,7 @@ public final class BoundaryInteractionController {
         if (!event.isPrimaryButton()) {
             return false;
         }
-        DungeonLayout layout = mapState.activeMap();
+        DungeonLayout layout = activeProjectedLayout();
         DungeonEditorBoundaryHitTarget hit = boundaryHitTester.hitBoundary(layout, event.canvasPoint(), event.camera());
         if (!isEditableDoorBoundary(hit, layout)) {
             selectionState.clearSelection();
@@ -107,7 +107,7 @@ public final class BoundaryInteractionController {
     }
 
     private boolean handleWallPressed(DungeonCanvasPointerEvent event, boolean deleteMode) {
-        DungeonLayout layout = mapState.activeMap();
+        DungeonLayout layout = activeProjectedLayout();
         Point2i vertex = vertexHitTester.hitTest(event.canvasPoint(), event.camera());
         if (layout == null || vertex == null) {
             if (!draftState.hasDraft()) {
@@ -237,6 +237,14 @@ public final class BoundaryInteractionController {
                         .thenComparing(RoomCluster::clusterId, java.util.Comparator.nullsLast(Long::compareTo)))
                 .findFirst()
                 .orElse(null);
+    }
+
+    private DungeonLayout activeProjectedLayout() {
+        DungeonLayout layout = mapState.activeMap();
+        if (layout == null) {
+            return null;
+        }
+        return layout.projectedToLevel(mapState.activeProjectionLevel());
     }
 
     private RoomCluster selectedCluster(DungeonLayout layout) {

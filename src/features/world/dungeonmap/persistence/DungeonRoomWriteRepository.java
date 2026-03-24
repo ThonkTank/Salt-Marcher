@@ -266,7 +266,7 @@ public final class DungeonRoomWriteRepository {
     }
 
     public void replaceRoomFloors(Connection conn, long roomId, Map<Integer, Point2i> anchorsByLevel) throws SQLException {
-        Map<Integer, Point2i> resolvedAnchors = normalizedAnchorsByLevel(anchorsByLevel, 0);
+        Map<Integer, Point2i> resolvedAnchors = normalizedAnchorsByLevel(anchorsByLevel, primaryLevel(anchorsByLevel, 0));
         try (PreparedStatement delete = conn.prepareStatement(
                 "DELETE FROM dungeon_room_floors WHERE room_id=?")) {
             delete.setLong(1, roomId);
