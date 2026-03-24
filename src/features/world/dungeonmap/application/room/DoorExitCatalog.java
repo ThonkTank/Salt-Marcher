@@ -2,6 +2,7 @@ package features.world.dungeonmap.application.room;
 
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.VertexEdge;
+import features.world.dungeonmap.model.objects.Door;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -20,11 +21,11 @@ public final class DoorExitCatalog {
         throw new AssertionError("No instances");
     }
 
-    public static List<RoomExitDescriptor> describe(Set<Point2i> cells, Set<VertexEdge> doorEdges) {
-        if (cells == null || cells.isEmpty() || doorEdges == null || doorEdges.isEmpty()) {
+    public static List<RoomExitDescriptor> describe(Set<Point2i> cells, List<Door> doors) {
+        if (cells == null || cells.isEmpty() || doors == null || doors.isEmpty()) {
             return List.of();
         }
-        List<ExitEdge> exitEdges = collectExitEdges(cells, doorEdges);
+        List<ExitEdge> exitEdges = collectExitEdges(cells, doors);
         if (exitEdges.isEmpty()) {
             return List.of();
         }
@@ -46,8 +47,14 @@ public final class DoorExitCatalog {
         return List.copyOf(result);
     }
 
-    private static List<ExitEdge> collectExitEdges(Set<Point2i> cells, Set<VertexEdge> doorEdges) {
+    private static List<ExitEdge> collectExitEdges(Set<Point2i> cells, List<Door> doors) {
         List<ExitEdge> result = new ArrayList<>();
+        Set<VertexEdge> doorEdges = new java.util.LinkedHashSet<>();
+        for (Door door : doors) {
+            if (door != null) {
+                doorEdges.addAll(door.edges());
+            }
+        }
         for (Point2i cell : cells) {
             for (Point2i step : Point2i.CARDINAL_STEPS) {
                 VertexEdge edge = VertexEdge.betweenCellAndStep(cell, step);
