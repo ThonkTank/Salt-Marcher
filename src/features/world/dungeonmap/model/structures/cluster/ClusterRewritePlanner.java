@@ -808,7 +808,7 @@ final class ClusterRewritePlanner {
     ) {
     }
 
-    record BoundarySets(Set<VertexEdge> walls, Set<VertexEdge> doors) {
+    record BoundarySets(Set<VertexEdge> walls, Set<VertexEdge> connectionEdges) {
     }
 
     record RoomRewriteCandidate(

@@ -7,6 +7,7 @@ import features.world.dungeonmap.model.structures.connection.Connection;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -49,7 +50,7 @@ public final class DoorExitCatalog {
 
     private static List<ExitEdge> collectExitEdges(Set<Point2i> cells, List<? extends Connection> connections) {
         List<ExitEdge> result = new ArrayList<>();
-        Set<VertexEdge> boundaryEdges = new java.util.LinkedHashSet<>();
+        Set<VertexEdge> boundaryEdges = new LinkedHashSet<>();
         for (Connection connection : connections) {
             if (connection != null && connection.door() != null) {
                 boundaryEdges.addAll(connection.door().edges());

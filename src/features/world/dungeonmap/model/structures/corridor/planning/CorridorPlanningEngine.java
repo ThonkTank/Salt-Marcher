@@ -8,6 +8,7 @@ import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.objects.CorridorPath;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInput;
+import features.world.dungeonmap.model.structures.corridor.CorridorWaypointBinding;
 import features.world.dungeonmap.model.structures.corridor.ResolvedCorridorDoorBinding;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.CorridorConnection;
@@ -36,7 +37,7 @@ public final class CorridorPlanningEngine {
             }
             List<Room> rooms = corridor.resolvedRooms(input);
             List<Point2i> waypointCells2d = corridor.resolvedWaypointCells(input);
-            List<CubePoint> waypointCells = resolveWaypointCells(waypointCells2d, rooms, input);
+            List<CubePoint> waypointCells = resolveWaypointCells(corridor.bindings().waypoints(), input);
             Map<Long, ResolvedCorridorDoorBinding> doorBindings = corridor.resolvedDoorBindings(input);
             GridRoute route = buildRoute(rooms, waypointCells2d);
             if (rooms.size() < 2) {
@@ -92,37 +93,24 @@ public final class CorridorPlanningEngine {
     }
 
     private static List<CubePoint> resolveWaypointCells(
-            List<Point2i> waypointCells,
-            List<Room> rooms,
+            List<CorridorWaypointBinding> waypointBindings,
             CorridorPlanningInput input
     ) {
-        if (waypointCells == null || waypointCells.isEmpty()) {
+        if (waypointBindings == null || waypointBindings.isEmpty() || input == null) {
             return List.of();
         }
         List<CubePoint> result = new ArrayList<>();
-        for (Point2i waypoint : waypointCells) {
-            if (waypoint == null) {
+        for (CorridorWaypointBinding binding : waypointBindings) {
+            if (binding == null) {
                 continue;
             }
-            result.add(CubePoint.at(waypoint, nearestRoomLevel(waypoint, rooms, input)));
+            Point2i clusterCenter = input.clusterCenter(binding.clusterId());
+            if (clusterCenter == null) {
+                continue;
+            }
+            result.add(CubePoint.at(binding.absoluteCell(clusterCenter), binding.levelZ()));
         }
         return List.copyOf(result);
-    }
-
-    private static int nearestRoomLevel(Point2i waypoint, List<Room> rooms, CorridorPlanningInput input) {
-        Room nearest = null;
-        int bestDistance = Integer.MAX_VALUE;
-        for (Room room : rooms == null ? List.<Room>of() : rooms) {
-            if (room == null || room.roomId() == null || room.floor() == null || room.floor().shape() == null) {
-                continue;
-            }
-            int distance = room.floor().shape().centerCell().distanceTo(waypoint);
-            if (distance < bestDistance) {
-                bestDistance = distance;
-                nearest = room;
-            }
-        }
-        return nearest == null ? 0 : input.roomLevel(nearest.roomId());
     }
 
     private static CorridorPath toCorridorPath(
