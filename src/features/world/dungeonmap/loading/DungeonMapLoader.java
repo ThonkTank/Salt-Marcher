@@ -93,18 +93,16 @@ public final class DungeonMapLoader {
         List<Room> rooms = loadRooms(conn, map.mapId());
         List<RoomCluster> clusters = loadClusters(conn, map.mapId(), rooms);
         Map<Long, Integer> clusterLevels = loadClusterLevels(conn, map.mapId());
-        Map<Long, Integer> roomLevels = deriveRoomLevels(clusters);
         return new DungeonMapLoadResult(
                 maps,
                 new DungeonLayout(
                         map.mapId(),
                         map.name(),
-                        loadCorridors(conn, map.mapId(), clusters, roomLevels, clusterLevels),
+                        loadCorridors(conn, map.mapId(), clusters),
                         clusters,
                         loadStairs(conn, map.mapId()),
                         loadTransitions(conn, map.mapId()),
-                        clusterLevels,
-                        roomLevels),
+                        clusterLevels),
                 null);
     }
 
@@ -197,9 +195,7 @@ public final class DungeonMapLoader {
     private static List<Corridor> loadCorridors(
             Connection conn,
             long mapId,
-            List<RoomCluster> clusters,
-            Map<Long, Integer> roomLevels,
-            Map<Long, Integer> clusterLevels
+            List<RoomCluster> clusters
     ) throws SQLException {
         Map<Long, List<Long>> roomIdsByCorridor = new LinkedHashMap<>();
         try (PreparedStatement ps = conn.prepareStatement(
@@ -255,10 +251,7 @@ public final class DungeonMapLoader {
                     CorridorPath.empty(),
                     List.of()));
         }
-        CorridorPlanningInput planningInput = CorridorPlanningInputProjector.project(
-                clusters,
-                roomLevels,
-                clusterLevels);
+        CorridorPlanningInput planningInput = CorridorPlanningInputProjector.project(clusters);
         return result.stream()
                 .map(corridor -> corridor == null ? null : corridor.replanned(planningInput))
                 .toList();
@@ -561,21 +554,6 @@ public final class DungeonMapLoader {
                     room.narration()));
         }
         return List.copyOf(hydratedRooms);
-    }
-
-    private static Map<Long, Integer> deriveRoomLevels(List<RoomCluster> clusters) {
-        Map<Long, Integer> result = new LinkedHashMap<>();
-        for (RoomCluster cluster : clusters == null ? List.<RoomCluster>of() : clusters) {
-            if (cluster == null) {
-                continue;
-            }
-            for (Room room : cluster.rooms()) {
-                if (room != null && room.roomId() != null) {
-                    result.put(room.roomId(), room.primaryLevel());
-                }
-            }
-        }
-        return Map.copyOf(result);
     }
 
     private static Map<Integer, TileShape> clusterShapesByLevel(Point2i center, Map<Integer, List<Point2i>> verticesByLevel) {

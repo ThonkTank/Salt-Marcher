@@ -8,7 +8,6 @@ import features.world.dungeonmap.model.structures.room.Room;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Canonical world projector for {@link CorridorPlanningInput}.
@@ -39,7 +38,7 @@ public final class CorridorPlanningInputProjector {
             for (Room room : cluster.rooms()) {
                 if (room != null && room.roomId() != null) {
                     roomsById.put(room.roomId(), room);
-                    roomLevels.put(room.roomId(), layout.levelForRoom(room.roomId()));
+                    roomLevels.put(room.roomId(), room.primaryLevel());
                 }
             }
         }
@@ -47,14 +46,6 @@ public final class CorridorPlanningInputProjector {
     }
 
     public static CorridorPlanningInput project(List<RoomCluster> clusters) {
-        return project(clusters, Map.of(), Map.of());
-    }
-
-    public static CorridorPlanningInput project(
-            List<RoomCluster> clusters,
-            Map<Long, Integer> explicitRoomLevels,
-            Map<Long, Integer> clusterLevels
-    ) {
         Map<Long, Room> roomsById = new LinkedHashMap<>();
         Map<Long, Point2i> clusterCenters = new LinkedHashMap<>();
         Map<Long, Integer> roomLevels = new LinkedHashMap<>();
@@ -68,11 +59,7 @@ public final class CorridorPlanningInputProjector {
             for (Room room : cluster.rooms()) {
                 if (room != null && room.roomId() != null) {
                     roomsById.put(room.roomId(), room);
-                    Integer level = explicitRoomLevels == null ? null : explicitRoomLevels.get(room.roomId());
-                    if (level == null) {
-                        level = clusterLevels == null ? null : clusterLevels.get(cluster.clusterId());
-                    }
-                    roomLevels.put(room.roomId(), level == null ? 0 : level);
+                    roomLevels.put(room.roomId(), room.primaryLevel());
                 }
             }
         }
