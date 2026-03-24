@@ -45,7 +45,11 @@ record SteinerTree(
                 List<CubePoint> nextCandidates = neighbors(current).stream()
                         .filter(candidate -> !candidate.equals(previousCell))
                         .toList();
-                if (nextCandidates.size() != 1) {
+                if (nextCandidates.size() > 1) {
+                    branch.remove(current);
+                    break;
+                }
+                if (nextCandidates.isEmpty()) {
                     break;
                 }
                 previous = current;
