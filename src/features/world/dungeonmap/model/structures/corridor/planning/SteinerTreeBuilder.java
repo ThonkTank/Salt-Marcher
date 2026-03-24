@@ -201,45 +201,79 @@ final class SteinerTreeBuilder {
         if (boundaryCells.size() > 1) {
             return null;
         }
+        TripleJunctionResult junction = findTripleJunction(first, second, third, boundaryCells, context);
+        if (junction == null) {
+            return null;
+        }
+        return buildTripleReplacement(tree, tripleRoomIds, currentSubtree, junction, first, second, third, context);
+    }
 
-        FloodResult floodFirst = CostField.floodFull(zeroSources(context.entryCells(first.roomId())), context.searchVolume(), context.instrumentation());
-        FloodResult floodSecond = CostField.floodFull(zeroSources(context.entryCells(second.roomId())), context.searchVolume(), context.instrumentation());
-        FloodResult floodThird = CostField.floodFull(zeroSources(context.entryCells(third.roomId())), context.searchVolume(), context.instrumentation());
+    private static TripleJunctionResult findTripleJunction(
+            Room first,
+            Room second,
+            Room third,
+            Set<CubePoint> boundaryCells,
+            PlannerContext context
+    ) {
+        FloodResult floodFirst = CostField.floodFull(
+                zeroSources(context.entryCells(first.roomId())),
+                context.searchVolume(),
+                context.instrumentation());
+        FloodResult floodSecond = CostField.floodFull(
+                zeroSources(context.entryCells(second.roomId())),
+                context.searchVolume(),
+                context.instrumentation());
+        FloodResult floodThird = CostField.floodFull(
+                zeroSources(context.entryCells(third.roomId())),
+                context.searchVolume(),
+                context.instrumentation());
         FloodResult floodBoundary = boundaryCells.isEmpty()
                 ? null
                 : CostField.floodFull(zeroSources(boundaryCells), context.searchVolume(), context.instrumentation());
 
-        CubePoint bestJunction = bestTripleJunction(floodFirst, floodSecond, floodThird, floodBoundary);
-        if (bestJunction == null) {
+        CubePoint junction = bestTripleJunction(floodFirst, floodSecond, floodThird, floodBoundary);
+        if (junction == null) {
             return null;
         }
 
-        List<CubePoint> firstPath = CostField.extractPath(floodFirst, bestJunction);
-        List<CubePoint> secondPath = CostField.extractPath(floodSecond, bestJunction);
-        List<CubePoint> thirdPath = CostField.extractPath(floodThird, bestJunction);
-        List<CubePoint> boundaryPath = floodBoundary == null ? List.of() : CostField.extractPath(floodBoundary, bestJunction);
+        List<CubePoint> firstPath = CostField.extractPath(floodFirst, junction);
+        List<CubePoint> secondPath = CostField.extractPath(floodSecond, junction);
+        List<CubePoint> thirdPath = CostField.extractPath(floodThird, junction);
         if (firstPath.isEmpty() || secondPath.isEmpty() || thirdPath.isEmpty()) {
             return null;
         }
+        List<CubePoint> boundaryPath = floodBoundary == null ? List.of() : CostField.extractPath(floodBoundary, junction);
+        return new TripleJunctionResult(junction, firstPath, secondPath, thirdPath, boundaryPath);
+    }
 
+    private static SteinerTree buildTripleReplacement(
+            SteinerTree tree,
+            Set<Long> tripleRoomIds,
+            Set<CubePoint> currentSubtree,
+            TripleJunctionResult junction,
+            Room first,
+            Room second,
+            Room third,
+            PlannerContext context
+    ) {
         Set<CubePoint> replacementCells = new LinkedHashSet<>();
-        replacementCells.addAll(firstPath);
-        replacementCells.addAll(secondPath);
-        replacementCells.addAll(thirdPath);
-        replacementCells.addAll(boundaryPath);
+        replacementCells.addAll(junction.firstPath());
+        replacementCells.addAll(junction.secondPath());
+        replacementCells.addAll(junction.thirdPath());
+        replacementCells.addAll(junction.boundaryPath());
         if (scoreCells(replacementCells).compareTo(scoreCells(currentSubtree)) >= 0) {
             return null;
         }
 
         Map<Long, Set<CubePoint>> replacementAttachments = new LinkedHashMap<>();
-        replacementAttachments.put(first.roomId(), Set.of(firstPath.getFirst()));
-        replacementAttachments.put(second.roomId(), Set.of(secondPath.getFirst()));
-        replacementAttachments.put(third.roomId(), Set.of(thirdPath.getFirst()));
+        replacementAttachments.put(first.roomId(), Set.of(junction.firstPath().getFirst()));
+        replacementAttachments.put(second.roomId(), Set.of(junction.secondPath().getFirst()));
+        replacementAttachments.put(third.roomId(), Set.of(junction.thirdPath().getFirst()));
 
         Set<DoorEdge> replacementDoors = new LinkedHashSet<>();
-        addDoorEdge(replacementDoors, deriveDoorEdge(firstPath.getFirst(), first, context));
-        addDoorEdge(replacementDoors, deriveDoorEdge(secondPath.getFirst(), second, context));
-        addDoorEdge(replacementDoors, deriveDoorEdge(thirdPath.getFirst(), third, context));
+        addDoorEdge(replacementDoors, deriveDoorEdge(junction.firstPath().getFirst(), first, context));
+        addDoorEdge(replacementDoors, deriveDoorEdge(junction.secondPath().getFirst(), second, context));
+        addDoorEdge(replacementDoors, deriveDoorEdge(junction.thirdPath().getFirst(), third, context));
 
         return tree.withReplacedSubtree(
                 tripleRoomIds,
@@ -462,4 +496,13 @@ final class SteinerTreeBuilder {
 }
 
 record ReachedRoom(Room room, CubePoint entryCell, RouteCost cost) {
+}
+
+record TripleJunctionResult(
+        CubePoint junction,
+        List<CubePoint> firstPath,
+        List<CubePoint> secondPath,
+        List<CubePoint> thirdPath,
+        List<CubePoint> boundaryPath
+) {
 }
