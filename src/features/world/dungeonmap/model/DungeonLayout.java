@@ -7,9 +7,8 @@ import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.structures.cluster.ClusterRewrite;
 import features.world.dungeonmap.model.structures.cluster.ClusterRewriteSplit;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
+import features.world.dungeonmap.model.structures.connection.Connection;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
-import features.world.dungeonmap.model.structures.connection.CorridorConnection;
-import features.world.dungeonmap.model.structures.connection.LocalConnection;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
@@ -57,9 +56,9 @@ public final class DungeonLayout {
     private final List<DungeonStair> stairs;
     private final List<DungeonTransition> transitions;
     // Layout is only the global aggregation/query surface over self-managed structures.
-    private final List<Door> doors;
-    private final Map<VertexEdge, Door> doorRegistry;
-    private final Map<ConnectionEndpoint, List<Door>> doorsByEndpoint;
+    private final List<Connection> connections;
+    private final Map<VertexEdge, Connection> connectionsByEdge;
+    private final Map<ConnectionEndpoint, List<Connection>> connectionsByEndpoint;
     private final Map<Door, List<ConnectionEndpoint>> endpointsByDoor;
     private final List<CorridorNetwork> corridorNetworks;
     private final Map<Long, Room> roomsById;
@@ -105,12 +104,11 @@ public final class DungeonLayout {
         this.clusters = clusters == null ? List.of() : List.copyOf(clusters);
         this.stairs = stairs == null ? List.of() : List.copyOf(stairs);
         this.transitions = transitions == null ? List.of() : List.copyOf(transitions);
-        Map<Door, List<ConnectionEndpoint>> explicitEndpointsByDoor = indexExplicitEndpointsByDoor(this.clusters, this.corridors);
-        this.doors = indexDoors(this.clusters, this.corridors);
-        this.doorRegistry = indexDoorsByEdge(this.doors);
-        this.endpointsByDoor = indexEndpointsByDoor(this.doors, explicitEndpointsByDoor, this.clusters, this.corridors);
-        this.doorsByEndpoint = indexDoorsByEndpoint(this.endpointsByDoor);
-        this.corridorNetworks = CorridorNetwork.buildNetworks(mapId, this.corridors, this.doors, this.endpointsByDoor);
+        this.connections = indexConnections(this.clusters, this.corridors);
+        this.connectionsByEdge = indexConnectionsByEdge(this.connections);
+        this.connectionsByEndpoint = indexConnectionsByEndpoint(this.connections);
+        this.endpointsByDoor = indexEndpointsByDoor(this.connections);
+        this.corridorNetworks = CorridorNetwork.buildNetworks(mapId, this.corridors, doors(), this.endpointsByDoor);
         this.roomsById = indexRooms(this.clusters);
         this.corridorsById = indexCorridors(this.corridors);
         this.clustersById = indexClusters(this.clusters);
@@ -230,7 +228,14 @@ public final class DungeonLayout {
     }
 
     public List<Door> doors() {
-        return doors;
+        return connections.stream()
+                .map(Connection::door)
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    public List<Connection> connections() {
+        return connections;
     }
 
     public Room findRoom(Long roomId) {
@@ -242,15 +247,26 @@ public final class DungeonLayout {
     }
 
     public Door doorAt(VertexEdge edge) {
-        return edge == null ? null : doorRegistry.get(edge);
+        Connection connection = connectionAt(edge);
+        return connection == null ? null : connection.door();
+    }
+
+    public Connection connectionAt(VertexEdge edge) {
+        return edge == null ? null : connectionsByEdge.get(edge);
     }
 
     public List<Door> doorsForRoom(long roomId) {
-        return doorsFor(ConnectionEndpoint.room(roomId));
+        return connectionsForRoom(roomId).stream()
+                .map(Connection::door)
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     public List<Door> doorsForCorridor(long corridorId) {
-        return doorsFor(ConnectionEndpoint.corridor(corridorId));
+        return connectionsForCorridor(corridorId).stream()
+                .map(Connection::door)
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     public List<Door> doorsForNetwork(String networkId) {
@@ -263,6 +279,28 @@ public final class DungeonLayout {
             result.addAll(doorsForCorridor(corridorId));
         }
         return List.copyOf(result);
+    }
+
+    public List<Connection> connectionsForRoom(long roomId) {
+        return connectionsFor(ConnectionEndpoint.room(roomId));
+    }
+
+    public List<Connection> connectionsForCluster(long clusterId) {
+        RoomCluster cluster = findCluster(clusterId);
+        if (cluster == null) {
+            return List.of();
+        }
+        Set<Connection> result = new LinkedHashSet<>(connectionsFor(ConnectionEndpoint.cluster(clusterId)));
+        for (Room room : cluster.rooms()) {
+            if (room != null && room.roomId() != null) {
+                result.addAll(connectionsForRoom(room.roomId()));
+            }
+        }
+        return List.copyOf(result);
+    }
+
+    public List<Connection> connectionsForCorridor(long corridorId) {
+        return connectionsFor(ConnectionEndpoint.corridor(corridorId));
     }
 
     public List<Door> doorsAtEdges(Set<VertexEdge> edges) {
@@ -293,11 +331,11 @@ public final class DungeonLayout {
         return endpoints.get(0).equals(endpoint) ? endpoints.get(1) : endpoints.get(0);
     }
 
-    private List<Door> doorsFor(ConnectionEndpoint endpoint) {
+    private List<Connection> connectionsFor(ConnectionEndpoint endpoint) {
         if (endpoint == null) {
             return List.of();
         }
-        return doorsByEndpoint.getOrDefault(endpoint, List.of());
+        return connectionsByEndpoint.getOrDefault(endpoint, List.of());
     }
 
     public DungeonStair findStair(Long stairId) {
@@ -676,176 +714,65 @@ public final class DungeonLayout {
         return Map.copyOf(result);
     }
 
-    private static List<Door> indexDoors(List<RoomCluster> clusters, List<Corridor> corridors) {
-        List<Door> result = new ArrayList<>();
+    private static List<Connection> indexConnections(List<RoomCluster> clusters, List<Corridor> corridors) {
+        List<Connection> result = new ArrayList<>();
         for (RoomCluster cluster : clusters) {
             if (cluster == null) {
                 continue;
             }
-            for (LocalConnection connection : cluster.localConnections()) {
-                Door manualDoor = connection == null ? null : connection.door();
-                if (manualDoor != null) {
-                    result.add(manualDoor);
-                }
-            }
-        }
-        for (Corridor corridor : corridors) {
-            if (corridor == null || corridor.path() == null) {
-                continue;
-            }
-            for (CorridorConnection connection : corridor.connections()) {
-                if (connection != null && connection.door() != null) {
-                    result.add(connection.door());
-                }
-            }
-        }
-        return List.copyOf(result);
-    }
-
-    private static Map<VertexEdge, Door> indexDoorsByEdge(List<Door> doors) {
-        Map<VertexEdge, Door> result = new LinkedHashMap<>();
-        for (Door door : doors) {
-            if (door == null) {
-                continue;
-            }
-            for (VertexEdge edge : door.edges()) {
-                result.putIfAbsent(edge, door);
-            }
-        }
-        return Map.copyOf(result);
-    }
-
-    private static Map<Door, List<ConnectionEndpoint>> indexEndpointsByDoor(
-            List<Door> doors,
-            Map<Door, List<ConnectionEndpoint>> explicitEndpointsByDoor,
-            List<RoomCluster> clusters,
-            List<Corridor> corridors
-    ) {
-        Map<Door, List<ConnectionEndpoint>> result = new LinkedHashMap<>();
-        Map<Long, Corridor> corridorsById = indexCorridors(corridors);
-        for (Door door : doors) {
-            if (door == null) {
-                continue;
-            }
-            List<ConnectionEndpoint> endpoints = explicitEndpointsByDoor.get(door);
-            if (endpoints == null || endpoints.isEmpty()) {
-                endpoints = resolveEndpoints(door, clusters, corridorsById);
-            }
-            result.put(door, endpoints);
-        }
-        return Map.copyOf(result);
-    }
-
-    private static Map<Door, List<ConnectionEndpoint>> indexExplicitEndpointsByDoor(
-            List<RoomCluster> clusters,
-            List<Corridor> corridors
-    ) {
-        Map<Door, List<ConnectionEndpoint>> result = new LinkedHashMap<>();
-        for (RoomCluster cluster : clusters) {
-            if (cluster == null) {
-                continue;
-            }
-            for (LocalConnection connection : cluster.localConnections()) {
-                if (connection == null || connection.door() == null) {
-                    continue;
-                }
-                result.put(connection.door(), connection.endpoints());
-            }
+            result.addAll(cluster.localConnections().stream()
+                    .filter(Objects::nonNull)
+                    .map(Connection.class::cast)
+                    .toList());
         }
         for (Corridor corridor : corridors) {
             if (corridor == null) {
                 continue;
             }
-            for (CorridorConnection connection : corridor.connections()) {
-                if (connection == null || connection.door() == null) {
-                    continue;
-                }
-                result.put(connection.door(), connection.endpoints());
+            result.addAll(corridor.connections().stream()
+                    .filter(Objects::nonNull)
+                    .map(Connection.class::cast)
+                    .toList());
+        }
+        return List.copyOf(result);
+    }
+
+    private static Map<VertexEdge, Connection> indexConnectionsByEdge(List<Connection> connections) {
+        Map<VertexEdge, Connection> result = new LinkedHashMap<>();
+        for (Connection connection : connections) {
+            if (connection == null || connection.door() == null) {
+                continue;
+            }
+            for (VertexEdge edge : connection.door().edges()) {
+                result.putIfAbsent(edge, connection);
             }
         }
         return Map.copyOf(result);
     }
 
-    private static Map<ConnectionEndpoint, List<Door>> indexDoorsByEndpoint(Map<Door, List<ConnectionEndpoint>> endpointsByDoor) {
-        Map<ConnectionEndpoint, List<Door>> result = new LinkedHashMap<>();
-        for (Map.Entry<Door, List<ConnectionEndpoint>> entry : endpointsByDoor.entrySet()) {
-            Door door = entry.getKey();
-            if (door == null) {
+    private static Map<Door, List<ConnectionEndpoint>> indexEndpointsByDoor(List<Connection> connections) {
+        Map<Door, List<ConnectionEndpoint>> result = new LinkedHashMap<>();
+        for (Connection connection : connections) {
+            if (connection == null || connection.door() == null) {
                 continue;
             }
-            for (ConnectionEndpoint endpoint : entry.getValue()) {
-                result.computeIfAbsent(endpoint, ignored -> new ArrayList<>()).add(door);
+            result.put(connection.door(), connection.endpoints());
+        }
+        return Map.copyOf(result);
+    }
+
+    private static Map<ConnectionEndpoint, List<Connection>> indexConnectionsByEndpoint(List<Connection> connections) {
+        Map<ConnectionEndpoint, List<Connection>> result = new LinkedHashMap<>();
+        for (Connection connection : connections) {
+            if (connection == null) {
+                continue;
+            }
+            for (ConnectionEndpoint endpoint : connection.endpoints()) {
+                result.computeIfAbsent(endpoint, ignored -> new ArrayList<>()).add(connection);
             }
         }
         return result.entrySet().stream()
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, entry -> List.copyOf(entry.getValue())));
-    }
-
-    private static List<ConnectionEndpoint> resolveEndpoints(
-            Door door,
-            List<RoomCluster> clusters,
-            Map<Long, Corridor> corridorsById
-    ) {
-        if (door == null) {
-            return List.of();
-        }
-        Set<ConnectionEndpoint> endpoints = new LinkedHashSet<>();
-        for (VertexEdge edge : door.edges()) {
-            for (Room touchingRoom : findTouchingRooms(edge, clusters)) {
-                if (touchingRoom != null && touchingRoom.roomId() != null) {
-                    endpoints.add(ConnectionEndpoint.room(touchingRoom.roomId()));
-                }
-            }
-            Corridor touchingCorridor = findTouchingCorridor(edge, corridorsById);
-            if (touchingCorridor != null && touchingCorridor.corridorId() != null) {
-                endpoints.add(ConnectionEndpoint.corridor(touchingCorridor.corridorId()));
-            }
-            if (endpoints.size() >= 2) {
-                break;
-            }
-        }
-        return List.copyOf(endpoints);
-    }
-
-    private static Room findTouchingRoom(VertexEdge edge, List<RoomCluster> clusters) {
-        return findTouchingRooms(edge, clusters).stream().findFirst().orElse(null);
-    }
-
-    private static List<Room> findTouchingRooms(VertexEdge edge, List<RoomCluster> clusters) {
-        if (edge == null || clusters == null) {
-            return List.of();
-        }
-        Set<Room> result = new LinkedHashSet<>();
-        for (Point2i cell : edge.touchingCells()) {
-            for (RoomCluster cluster : clusters) {
-                if (cluster == null) {
-                    continue;
-                }
-                Room room = cluster.roomAt(cell);
-                if (room != null) {
-                    result.add(room);
-                }
-            }
-        }
-        return List.copyOf(result);
-    }
-
-    private static Corridor findTouchingCorridor(VertexEdge edge, Map<Long, Corridor> corridorsById) {
-        if (edge == null || corridorsById == null) {
-            return null;
-        }
-        for (Corridor corridor : corridorsById.values()) {
-            if (corridor != null
-                    && corridor.connections().stream()
-                    .filter(Objects::nonNull)
-                    .map(CorridorConnection::door)
-                    .filter(Objects::nonNull)
-                    .flatMap(door -> door.edges().stream())
-                    .anyMatch(edge::equals)) {
-                return corridor;
-            }
-        }
-        return null;
     }
 
     private static Map<Long, RoomCluster> indexClusters(List<RoomCluster> clusters) {
@@ -946,7 +873,7 @@ public final class DungeonLayout {
             return Set.of();
         }
         Set<VertexEdge> result = new LinkedHashSet<>();
-        for (CorridorConnection connection : corridor.connections()) {
+        for (Connection connection : corridor.connections()) {
             if (!Objects.equals(connectionLevel(connection, roomLevelsById), levelZ) || connection.door() == null) {
                 continue;
             }
@@ -964,7 +891,7 @@ public final class DungeonLayout {
                 .anyMatch(connection -> Objects.equals(connectionLevel(connection, roomLevelsById), levelZ));
     }
 
-    private static Integer connectionLevel(CorridorConnection connection, Map<Long, Integer> roomLevelsById) {
+    private static Integer connectionLevel(Connection connection, Map<Long, Integer> roomLevelsById) {
         if (connection == null) {
             return null;
         }
