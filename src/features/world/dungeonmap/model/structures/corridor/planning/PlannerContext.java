@@ -15,7 +15,6 @@ final class PlannerContext {
 
     private final List<Room> targetRooms;
     private final Map<Long, Room> targetRoomsById;
-    private final Map<Long, Set<Integer>> roomLevels;
     private final Map<Long, ResolvedCorridorDoorBinding> doorBindings;
     private final List<CubePoint> waypointCells;
     private final SearchVolume searchVolume;
@@ -25,7 +24,6 @@ final class PlannerContext {
 
     PlannerContext(
             List<Room> targetRooms,
-            Map<Long, Set<Integer>> roomLevels,
             Set<CubePoint> allObstacles,
             List<CubePoint> waypointCells,
             Map<Long, ResolvedCorridorDoorBinding> doorBindings,
@@ -33,14 +31,12 @@ final class PlannerContext {
     ) {
         this.targetRooms = targetRooms == null ? List.of() : List.copyOf(targetRooms);
         this.targetRoomsById = indexRoomsById(this.targetRooms);
-        this.roomLevels = roomLevels == null ? Map.of() : Map.copyOf(roomLevels);
         this.doorBindings = doorBindings == null ? Map.of() : Map.copyOf(doorBindings);
         this.waypointCells = waypointCells == null ? List.of() : List.copyOf(waypointCells);
         this.instrumentation = instrumentation;
-        this.searchVolume = SearchVolume.enclosing(allObstacles, this.targetRooms, this.roomLevels, this.waypointCells);
+        this.searchVolume = SearchVolume.enclosing(allObstacles, this.targetRooms, this.waypointCells);
         this.entryCellsByRoomId = computeEntryCells(
                 this.targetRooms,
-                this.roomLevels,
                 this.doorBindings,
                 searchVolume,
                 instrumentation);
@@ -87,11 +83,8 @@ final class PlannerContext {
     }
 
     int roomLevel(Long roomId) {
-        if (roomId == null) {
-            return 0;
-        }
-        Set<Integer> levels = roomLevels.getOrDefault(roomId, Set.of(0));
-        return levels.stream().mapToInt(Integer::intValue).min().orElse(0);
+        Room room = room(roomId);
+        return room == null ? 0 : room.primaryLevel();
     }
 
     Long roomIdAtEntryCell(CubePoint entryCell) {
@@ -124,7 +117,6 @@ final class PlannerContext {
 
     private static Map<Long, Set<CubePoint>> computeEntryCells(
             List<Room> targetRooms,
-            Map<Long, Set<Integer>> roomLevels,
             Map<Long, ResolvedCorridorDoorBinding> doorBindings,
             SearchVolume searchVolume,
             PlannerInstrumentation instrumentation
@@ -135,7 +127,7 @@ final class PlannerContext {
             if (room == null || room.roomId() == null) {
                 continue;
             }
-            Set<Integer> levels = roomLevels == null ? Set.of(0) : roomLevels.getOrDefault(room.roomId(), Set.of(0));
+            Set<Integer> levels = room.levels();
             Set<CubePoint> entryCells = new LinkedHashSet<>();
             ResolvedCorridorDoorBinding binding = doorBindings == null ? null : doorBindings.get(room.roomId());
             if (binding != null && binding.absoluteCell() != null && binding.direction() != null) {

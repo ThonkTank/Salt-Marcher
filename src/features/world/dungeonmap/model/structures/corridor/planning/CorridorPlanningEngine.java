@@ -44,16 +44,15 @@ public final class CorridorPlanningEngine {
                 return new CorridorPlan(CorridorPath.unroutable(route), List.of());
             }
 
-            Set<CubePoint> allObstacles = buildObstacles(input.roomsById(), input.roomLevels());
+            Set<CubePoint> allObstacles = buildObstacles(input.roomsById());
             PlannerContext context = new PlannerContext(
                     rooms,
-                    input.roomLevels(),
                     allObstacles,
                     waypointCells,
                     doorBindings,
                     instrumentation);
             SteinerTree tree = SteinerTreeBuilder.bestTree(context);
-            CorridorPath path = toCorridorPath(route, tree, rooms, input.roomLevels());
+            CorridorPath path = toCorridorPath(route, tree, rooms);
             return new CorridorPlan(path, corridorConnections(corridor, tree));
         } finally {
             instrumentation.logSummary(startedAt);
@@ -75,7 +74,7 @@ public final class CorridorPlanningEngine {
         return new GridRoute(anchors);
     }
 
-    private static Set<CubePoint> buildObstacles(Map<Long, Room> roomsById, Map<Long, Set<Integer>> roomLevels) {
+    private static Set<CubePoint> buildObstacles(Map<Long, Room> roomsById) {
         Set<CubePoint> result = new LinkedHashSet<>();
         if (roomsById == null || roomsById.isEmpty()) {
             return Set.of();
@@ -84,12 +83,7 @@ public final class CorridorPlanningEngine {
             if (room == null || room.roomId() == null) {
                 continue;
             }
-            Set<Integer> levels = roomLevels == null ? Set.of(0) : roomLevels.getOrDefault(room.roomId(), Set.of(0));
-            for (int levelZ : levels) {
-                for (Point2i cell : room.cellsAtLevel(levelZ)) {
-                    result.add(CubePoint.at(cell, levelZ));
-                }
-            }
+            result.addAll(room.cubePoints());
         }
         return Set.copyOf(result);
     }
@@ -118,13 +112,12 @@ public final class CorridorPlanningEngine {
     private static CorridorPath toCorridorPath(
             GridRoute route,
             SteinerTree tree,
-            List<Room> rooms,
-            Map<Long, Set<Integer>> roomLevels
+            List<Room> rooms
     ) {
         if (tree == null || !tree.isRoutable()) {
             return CorridorPath.unroutable(route);
         }
-        Set<CubePoint> corridorCells = filterCorridorCells(tree, rooms, roomLevels);
+        Set<CubePoint> corridorCells = filterCorridorCells(tree, rooms);
         boolean directlyAdjacent = corridorCells.isEmpty() && tree != null && !tree.openings().isEmpty();
         boolean routable = tree.connectedRoomIds().size() >= rooms.size()
                 && (!corridorCells.isEmpty() || !tree.openings().isEmpty());
@@ -135,12 +128,8 @@ public final class CorridorPlanningEngine {
                 routable);
     }
 
-    private static Set<CubePoint> filterCorridorCells(
-            SteinerTree tree,
-            List<Room> rooms,
-            Map<Long, Set<Integer>> roomLevels
-    ) {
-        Map<Integer, Set<Point2i>> occupiedRoomCellsByLevel = occupiedRoomCellsByLevel(rooms, roomLevels);
+    private static Set<CubePoint> filterCorridorCells(SteinerTree tree, List<Room> rooms) {
+        Map<Integer, Set<Point2i>> occupiedRoomCellsByLevel = occupiedRoomCellsByLevel(rooms);
         return tree.corridorCells().stream()
                 .filter(cell -> !occupiesRoomCell(cell, occupiedRoomCellsByLevel))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
@@ -167,7 +156,7 @@ public final class CorridorPlanningEngine {
         return List.copyOf(result);
     }
 
-    private static Map<Integer, Set<Point2i>> occupiedRoomCellsByLevel(List<Room> rooms, Map<Long, Set<Integer>> roomLevels) {
+    private static Map<Integer, Set<Point2i>> occupiedRoomCellsByLevel(List<Room> rooms) {
         Map<Integer, Set<Point2i>> result = new LinkedHashMap<>();
         if (rooms == null || rooms.isEmpty()) {
             return Map.of();
@@ -176,10 +165,9 @@ public final class CorridorPlanningEngine {
             if (room == null || room.roomId() == null) {
                 continue;
             }
-            Set<Integer> levels = roomLevels == null ? Set.of(0) : roomLevels.getOrDefault(room.roomId(), Set.of(0));
-            for (int level : levels) {
-                result.computeIfAbsent(level, ignored -> new LinkedHashSet<>())
-                        .addAll(room.cellsAtLevel(level));
+            for (CubePoint cell : room.cubePoints()) {
+                result.computeIfAbsent(cell.z(), ignored -> new LinkedHashSet<>())
+                        .add(cell.projectedCell());
             }
         }
         return Map.copyOf(result);

@@ -319,8 +319,8 @@ public final class RoomCluster {
         if (!canMergeRooms(selected)) {
             throw new IllegalArgumentException("Zu mergende Raeume muessen existieren und im Cluster zusammenhaengend sein");
         }
-        TileShape mergedShape = mergedShape(selected);
-        Set<VertexEdge> boundaryEdges = mergedShape.boundaryEdges();
+        Map<Integer, Floor> mergedFloors = mergedFloors(selected);
+        Set<VertexEdge> boundaryEdges = mergedBoundaryEdges(mergedFloors);
         Set<VertexEdge> mergedWallEdges = collectWallEdges(selected, boundaryEdges);
         Long resolvedRoomId = mergedRoomId != null ? mergedRoomId : selected.iterator().next();
         String resolvedName = mergedName == null || mergedName.isBlank()
@@ -331,7 +331,7 @@ public final class RoomCluster {
                 mapId,
                 clusterId == null ? 0L : clusterId,
                 resolvedName,
-                new Floor(mergedShape),
+                mergedFloors,
                 mergedWallEdges.isEmpty() ? List.of() : List.of(new Wall(mergedWallEdges)),
                 findRoom(selected.iterator().next()).narration());
     }
@@ -546,18 +546,36 @@ public final class RoomCluster {
         return Set.copyOf(result);
     }
 
-    private TileShape mergedShape(Set<Long> roomIds) {
-        TileShape mergedShape = null;
+    private Map<Integer, Floor> mergedFloors(Set<Long> roomIds) {
+        Map<Integer, TileShape> mergedShapesByLevel = new LinkedHashMap<>();
         for (Long roomId : roomIds) {
             Room room = findRoom(roomId);
             if (room == null) {
                 continue;
             }
-            mergedShape = mergedShape == null
-                    ? room.floor().shape()
-                    : mergedShape.union(room.floor().shape());
+            for (Map.Entry<Integer, Floor> entry : room.floors().entrySet()) {
+                if (entry == null || entry.getKey() == null || entry.getValue() == null) {
+                    continue;
+                }
+                mergedShapesByLevel.merge(entry.getKey(), entry.getValue().shape(), TileShape::union);
+            }
         }
-        return mergedShape == null ? TileShape.singleCell(null) : mergedShape;
+        if (mergedShapesByLevel.isEmpty()) {
+            return Map.of(0, new Floor(TileShape.singleCell(null)));
+        }
+        Map<Integer, Floor> result = new LinkedHashMap<>();
+        for (Map.Entry<Integer, TileShape> entry : mergedShapesByLevel.entrySet()) {
+            result.put(entry.getKey(), new Floor(entry.getValue()));
+        }
+        return Map.copyOf(result);
+    }
+
+    private static Set<VertexEdge> mergedBoundaryEdges(Map<Integer, Floor> floors) {
+        Set<VertexEdge> result = new LinkedHashSet<>();
+        for (Floor floor : floors.values()) {
+            result.addAll(floor.shape().boundaryEdges());
+        }
+        return Set.copyOf(result);
     }
 
     private Set<VertexEdge> collectWallEdges(Set<Long> roomIds, Set<VertexEdge> boundaryEdges) {

@@ -1,12 +1,10 @@
 package features.world.dungeonmap.model.structures.corridor.planning;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.room.Room;
 
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 final class SearchVolume {
@@ -35,7 +33,6 @@ final class SearchVolume {
     static SearchVolume enclosing(
             Set<CubePoint> obstacles,
             List<Room> targetRooms,
-            Map<Long, Set<Integer>> roomLevels,
             List<CubePoint> waypointCells
     ) {
         Set<CubePoint> boundsPoints = new LinkedHashSet<>();
@@ -46,12 +43,7 @@ final class SearchVolume {
             if (room == null || room.roomId() == null) {
                 continue;
             }
-            Set<Integer> levels = roomLevels == null ? Set.of(0) : roomLevels.getOrDefault(room.roomId(), Set.of(0));
-            for (int levelZ : levels) {
-                for (Point2i cell : room.cellsAtLevel(levelZ)) {
-                    boundsPoints.add(CubePoint.at(cell, levelZ));
-                }
-            }
+            boundsPoints.addAll(room.cubePoints());
         }
         for (CubePoint waypoint : waypointCells == null ? List.<CubePoint>of() : waypointCells) {
             if (waypoint != null) {
