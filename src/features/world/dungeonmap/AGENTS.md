@@ -135,16 +135,17 @@ geometry/  →  objects/  →  structures/
 
 - **`geometry/`** — Pure grid math primitives: `Point2i`, `CubePoint` (3D grid coordinate), `Tile`, `TileShape`, `VertexEdge`, `VertexPath`, `BoundaryNetwork`, `GridAnchor`, `GridRoute`. Domain-agnostic. No knowledge of walls, doors, rooms.
 - **`objects/`** — Thin domain objects over geometry: `Floor`, `Wall`, `Door`, `CorridorPath`. `Door` remains the runtime/registry carrier for traversal state; room/corridor structures themselves store only `VertexEdge` door references.
-- **`structures/`** — Self-managed compositions: `Room`, `RoomCluster`, `Corridor`, `CorridorNetwork`, `DungeonStair`. Compose objects and own structure-level behavior.
+- **`structures/`** — Self-managed compositions: `Room`, `RoomCluster`, `Corridor`, `CorridorNetwork`, `DungeonStair`, `DungeonTransition`. Compose objects and own structure-level behavior.
 
-`DungeonLayout` is the immutable global lookup layer over structures. Mutations return new instances. Pre-computes corridor networks dynamically via `CorridorNetwork.buildNetworks()`. Key aggregate queries: `corridorsAffectedBy(ClusterRewrite)`, `overlappingClusters(TileShape)`, `corridorPlanningInput()`.
+`DungeonLayout` is the immutable global lookup layer over structures. Mutations return new instances. Pre-computes corridor networks dynamically via `CorridorNetwork.buildNetworks()`. Key aggregate queries: `corridorsAffectedBy(ClusterRewrite)`, `overlappingClusters(TileShape)`, `corridorPlanningInput()`. Spatial indexes for stairs and transitions: `stairsAtCell(cell, z)`, `stairsAtLevel(z)`, `transitionsAtCell(cell, z)`, `transitionsAtLevel(z)`, `findStair(id)`, `findTransition(id)`. Stair exit positions are included in traversable cells.
 
 ### Key Structures
 
 - **`Room`** — record: roomId, mapId, clusterId, name, Floor, Walls, `doorEdges`, `RoomNarration` (visual description + per-exit `RoomExitNarration` entries). `resolved()` factory ensures canonical wall/door-edge sets (walls cover all perimeter edges except where doors exist). Boundary normalization auto-synthesizes missing walls.
 - **`RoomCluster`** — groups rooms spatially, manages adjacency via overlap indexing, and owns cluster-local rewrite logic for paint/delete/boundary changes. `movedBy()` handles translation. Produces `InteractiveLabelHandle` for canvas rendering.
 - **`Corridor`** — record: corridorId, mapId, roomIds, `CorridorBindings` (canonical relative truth), `CorridorPath` (runtime derived geometry). Bindings store waypoints and door entries as relative offsets from cluster centers → survive cluster movement without re-editing. Mutation methods: `withAddedRoom()`, `mergeWith()`, `reanchoredFor()`, `replannedFor()`.
-- **`DungeonStair`** — record: stairId, mapId, name, 3D path (`List<CubePoint>`), exits (`List<DungeonStairExit>`). Represents vertical connections across Z-levels. `DungeonStairExit` is a landing point at a specific `CubePoint`.
+- **`DungeonStair`** — record: stairId, mapId, name, 3D path (`List<CubePoint>`), exits (`List<DungeonStairExit>`). Represents vertical connections across Z-levels. `DungeonStairExit` is a landing point at a specific `CubePoint`. Path auto-generated from lowest to highest exit Z. Target key: `stair:ID`. Queries: `reachableLevels()`, `occupiedPositions()`, `exitsAtLevel(z)`, `labelHandle(z)`.
+- **`DungeonTransition`** — record: transitionId, mapId, description, anchor (`CubePoint`, nullable for unprepared), destination (`DungeonTransitionDestination`: sealed — `OverworldTileDestination(mapId, tileId)` | `DungeonMapDestination(mapId, transitionId)`), linkedTransitionId (for bidirectional pairs). `isPlaced()` checks non-null anchor. Target key: `transition:ID`. Label: "Übergang N".
 
 ### Layer Rules
 
@@ -159,7 +160,11 @@ geometry/  →  objects/  →  structures/
 - `Corridor` is the canonical owner of corridor-local edit truth. Membership changes, waypoint edits, door-binding edits, binding re-anchoring (`reanchoredFor(context)`), and path replanning (`replannedFor(context)`) belong on `Corridor`/`CorridorBindings`, not in application services or interaction controllers. `CorridorRewriteContext` carries the before/after `CorridorPlanningInput` plus affected corridor and deleted cluster IDs for a single topology rewrite step.
 - Clean `dungeonmap/` code must not depend on `features.world.quarantine.dungeonmap`. Shared helpers such as transactions, room-topology orchestration, corridor reconciliation, and runtime-state repair belong locally under `application/` when still needed.
 - Observable transient state belongs in `state/`, not scattered across shell/canvas packages.
+- `DungeonStair` is the canonical owner of stair topology: path, exits, reachable levels. Application services must not reconstruct level connectivity from raw geometry.
+- `DungeonTransition` is the canonical owner of transition identity and destination. Transitions may exist unprepared (anchor=null) — services must guard `isPlaced()` before spatial queries. Bidirectional linking is managed by the edit service, not the model.
 
 ### Persistence Model
 
 Cluster geometry is stored as relative vertex loops with a center anchor. Rooms store only their anchor cell and cluster membership — runtime floor shapes are hydrated via BFS flood-fill against cluster cells and boundary edges. Boundary persistence still stores `(cell, direction, type)` tuples, but hydrated rooms/corridors retain only wall objects plus door-edge sets; canonical `Door` instances are rebuilt once in the `DungeonLayout` registry. Corridors store member room IDs, relative waypoint bindings, and relative door bindings.
+
+Stairs use three tables: `dungeon_stairs` (identity + name), `dungeon_stair_path_nodes` (ordered 3D path), `dungeon_stair_exits` (exit points with labels). Transitions use `dungeon_transitions` with nullable placement coordinates (cell_x/y, level_z — null for unprepared), destination type discriminator (`OVERWORLD_TILE` | `DUNGEON_MAP`), target FKs per type, and optional `linked_transition_id` for bidirectional pairs.
