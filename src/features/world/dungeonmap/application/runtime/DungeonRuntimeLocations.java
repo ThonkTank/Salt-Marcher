@@ -224,9 +224,7 @@ final class DungeonRuntimeLocations {
     }
 
     private static CubePoint corridorAnchor(DungeonLayout layout, Corridor corridor) {
-        return corridor == null || corridor.path() == null || corridor.path().floor() == null
-                ? null
-                : CubePoint.at(corridor.path().floor().shape().centerCell(), layout.levelForCorridor(corridor.corridorId()));
+        return DungeonRuntimeCorridorGeometry.canonicalAnchor(layout, corridor);
     }
 
     private static CubePoint corridorNetworkAnchor(DungeonLayout layout, String networkId) {

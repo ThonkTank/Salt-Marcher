@@ -42,7 +42,7 @@ public final class DungeonRuntimeStairCatalog {
             return List.of();
         }
         int levelZ = layout.levelForCorridor(corridor.corridorId());
-        return describe(layout, corridor.path().floor().shape().absoluteCells(), levelZ, activeTile);
+        return describe(layout, DungeonRuntimeCorridorGeometry.canonicalCells(layout, corridor), levelZ, activeTile);
     }
 
     public static List<DungeonRuntimeStairDescriptor> describe(

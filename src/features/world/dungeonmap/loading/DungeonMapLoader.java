@@ -407,7 +407,8 @@ public final class DungeonMapLoader {
                                     clusterId,
                                     clusterCells,
                                     edgeObjects,
-                                    roomsByClusterId.getOrDefault(clusterId, List.of()))));
+                                    roomsByClusterId.getOrDefault(clusterId, List.of())),
+                            List.of()));
                 }
             }
         }

@@ -8,6 +8,7 @@ import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.objects.Floor;
 import features.world.dungeonmap.model.objects.Wall;
+import features.world.dungeonmap.model.structures.connection.LocalConnection;
 import features.world.dungeonmap.model.structures.TargetKey;
 import features.world.dungeonmap.model.structures.room.Room;
 import java.util.ArrayDeque;
@@ -30,6 +31,7 @@ public final class RoomCluster {
     private final Point2i center;
     // A cluster manages room grouping/runtime lookup, but room truth lives in the rooms.
     private final List<Room> rooms;
+    private final List<LocalConnection> localConnections;
     private final Set<Point2i> cells;
     private final TileShape shape;
     private final Map<Long, Room> roomsById;
@@ -46,7 +48,18 @@ public final class RoomCluster {
             Point2i center,
             List<Room> rooms
     ) {
+        this(clusterId, mapId, center, rooms, List.of());
+    }
+
+    public RoomCluster(
+            Long clusterId,
+            long mapId,
+            Point2i center,
+            List<Room> rooms,
+            List<LocalConnection> localConnections
+    ) {
         List<Room> resolvedRooms = rooms == null ? List.of() : List.copyOf(rooms);
+        List<LocalConnection> resolvedLocalConnections = localConnections == null ? List.of() : List.copyOf(localConnections);
         Map<Long, Room> resolvedRoomsById = indexRoomsById(resolvedRooms);
         OverlapIndex overlapIndex = indexRoomsByCell(resolvedRooms);
         Set<Point2i> resolvedCells = indexCells(resolvedRooms);
@@ -55,6 +68,7 @@ public final class RoomCluster {
         this.mapId = mapId;
         this.center = center == null ? new Point2i(0, 0) : center;
         this.rooms = resolvedRooms;
+        this.localConnections = resolvedLocalConnections;
         this.cells = resolvedCells;
         this.shape = TileShape.fromAbsoluteCells(resolvedCells);
         this.roomsById = resolvedRoomsById;
@@ -81,8 +95,12 @@ public final class RoomCluster {
         return rooms;
     }
 
+    public List<LocalConnection> localConnections() {
+        return localConnections;
+    }
+
     public RoomCluster withRooms(List<Room> rooms) {
-        return new RoomCluster(clusterId, mapId, center, rooms);
+        return new RoomCluster(clusterId, mapId, center, rooms, localConnections);
     }
 
     public ClusterRewrite editBoundary(VertexEdge edge, InternalBoundaryType type, boolean deleteBoundary) {
@@ -134,7 +152,8 @@ public final class RoomCluster {
                 center.add(delta),
                 rooms.stream()
                         .map(room -> room == null ? null : room.movedBy(delta))
-                        .toList());
+                        .toList(),
+                localConnections);
     }
 
     public Set<Point2i> cells() {

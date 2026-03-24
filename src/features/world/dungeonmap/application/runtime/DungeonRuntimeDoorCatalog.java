@@ -37,7 +37,7 @@ public final class DungeonRuntimeDoorCatalog {
             return List.of();
         }
         return describe(
-                corridor.path().floor().shape().absoluteCells(),
+                DungeonRuntimeCorridorGeometry.canonicalCells(layout, corridor),
                 layout.doorsForCorridor(corridor.corridorId()),
                 heading,
                 (cell, direction) -> "",

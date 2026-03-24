@@ -30,7 +30,9 @@ public final class DungeonRuntimeTransitionCatalog {
         if (layout == null || corridor == null || corridor.corridorId() == null || corridor.path() == null) {
             return List.of();
         }
-        return describe(layout, corridor.path().floor().shape().absoluteCells(), layout.levelForCorridor(corridor.corridorId()));
+        return describe(layout,
+                DungeonRuntimeCorridorGeometry.canonicalCells(layout, corridor),
+                layout.levelForCorridor(corridor.corridorId()));
     }
 
     public static List<DungeonRuntimeTransitionDescriptor> describe(DungeonLayout layout, CorridorNetwork network) {

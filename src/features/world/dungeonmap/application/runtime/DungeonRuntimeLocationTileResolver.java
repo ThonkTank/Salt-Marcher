@@ -35,9 +35,7 @@ public final class DungeonRuntimeLocationTileResolver {
         }
         if (location instanceof DungeonRuntimeLocation.Corridor corridorLocation) {
             Corridor corridor = layout.findCorridor(corridorLocation.corridorId());
-            return corridor == null || corridor.path() == null || corridor.path().floor() == null
-                    ? null
-                    : CubePoint.at(corridor.path().floor().shape().centerCell(), layout.levelForCorridor(corridor.corridorId()));
+            return DungeonRuntimeCorridorGeometry.canonicalAnchor(layout, corridor);
         }
         if (location instanceof DungeonRuntimeLocation.CorridorComponent componentLocation) {
             CorridorNetwork network = layout.findCorridorNetwork(componentLocation.componentId());
