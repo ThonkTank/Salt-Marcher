@@ -37,11 +37,12 @@ final class CostField {
         }
         try {
             if (sources == null || sources.isEmpty() || volume == null || targetEntryCells == null || targetEntryCells.isEmpty()) {
-                return new FloodResult(Map.of(), Map.of(), Set.of());
+                return new FloodResult(Map.of(), Map.of(), Set.of(), Map.of());
             }
             PriorityQueue<PathNode> open = new PriorityQueue<>(Comparator.comparing(PathNode::score));
             Map<PathState, RouteCost> best = new HashMap<>();
             Map<PathState, PathState> predecessors = new HashMap<>();
+            Map<CubePoint, PathState> bestStateByPoint = new HashMap<>();
             for (Map.Entry<PathState, RouteCost> entry : sources.entrySet()) {
                 if (entry.getKey() == null || entry.getKey().point() == null || entry.getValue() == null) {
                     continue;
@@ -49,6 +50,7 @@ final class CostField {
                 RouteCost known = best.get(entry.getKey());
                 if (known == null || entry.getValue().compareTo(known) < 0) {
                     best.put(entry.getKey(), entry.getValue());
+                    updateBestStateByPoint(bestStateByPoint, best, entry.getKey(), entry.getValue());
                     open.add(new PathNode(entry.getKey(), entry.getValue()));
                 }
             }
@@ -82,11 +84,16 @@ final class CostField {
                         continue;
                     }
                     best.put(nextState, nextCost);
+                    updateBestStateByPoint(bestStateByPoint, best, nextState, nextCost);
                     predecessors.put(nextState, node.state());
                     open.add(new PathNode(nextState, nextCost));
                 }
             }
-            return new FloodResult(Map.copyOf(best), Map.copyOf(predecessors), Set.copyOf(reached));
+            return new FloodResult(
+                    Map.copyOf(best),
+                    Map.copyOf(predecessors),
+                    Set.copyOf(reached),
+                    Map.copyOf(bestStateByPoint));
         } finally {
             if (instrumentation != null) {
                 instrumentation.recordFloodNanos(System.nanoTime() - startedAt);
@@ -111,38 +118,37 @@ final class CostField {
         }
         return List.copyOf(path);
     }
+
+    private static void updateBestStateByPoint(
+            Map<CubePoint, PathState> bestStateByPoint,
+            Map<PathState, RouteCost> best,
+            PathState candidateState,
+            RouteCost candidateCost
+    ) {
+        PathState currentBestState = bestStateByPoint.get(candidateState.point());
+        if (currentBestState == null) {
+            bestStateByPoint.put(candidateState.point(), candidateState);
+            return;
+        }
+        RouteCost currentBestCost = best.get(currentBestState);
+        if (currentBestCost == null || candidateCost.compareTo(currentBestCost) < 0) {
+            bestStateByPoint.put(candidateState.point(), candidateState);
+        }
+    }
 }
 
 record FloodResult(
         Map<PathState, RouteCost> costs,
         Map<PathState, PathState> predecessors,
-        Set<CubePoint> reachedTargets
+        Set<CubePoint> reachedTargets,
+        Map<CubePoint, PathState> bestStateByPoint
 ) {
     RouteCost bestCostAt(CubePoint point) {
-        RouteCost best = null;
-        for (Map.Entry<PathState, RouteCost> entry : costs.entrySet()) {
-            if (!entry.getKey().point().equals(point)) {
-                continue;
-            }
-            if (best == null || entry.getValue().compareTo(best) < 0) {
-                best = entry.getValue();
-            }
-        }
-        return best;
+        PathState state = bestStateAt(point);
+        return state == null ? null : costs.get(state);
     }
 
     PathState bestStateAt(CubePoint point) {
-        PathState bestState = null;
-        RouteCost bestCost = null;
-        for (Map.Entry<PathState, RouteCost> entry : costs.entrySet()) {
-            if (!entry.getKey().point().equals(point)) {
-                continue;
-            }
-            if (bestCost == null || entry.getValue().compareTo(bestCost) < 0) {
-                bestState = entry.getKey();
-                bestCost = entry.getValue();
-            }
-        }
-        return bestState;
+        return point == null ? null : bestStateByPoint.get(point);
     }
 }
