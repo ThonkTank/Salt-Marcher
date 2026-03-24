@@ -71,6 +71,7 @@ public final class DungeonLayout {
     private final Map<String, CorridorNetwork> corridorNetworksById;
     private final Map<Long, String> corridorNetworkIdByCorridorId;
     private final Map<Point2i, List<Long>> corridorIdsByCell;
+    private final Map<CubePoint, List<Long>> corridorIdsByPoint;
     private final Map<Point2i, String> corridorNetworkIdByCell;
     private final Map<CubePoint, List<Long>> stairIdsByPoint;
     private final Map<CubePoint, List<Long>> transitionIdsByPoint;
@@ -120,6 +121,7 @@ public final class DungeonLayout {
         this.corridorNetworksById = indexCorridorNetworks(this.corridorNetworks);
         this.corridorNetworkIdByCorridorId = indexCorridorNetworkIdsByCorridorId(this.corridorNetworks);
         this.corridorIdsByCell = indexCorridorIdsByCell(this.corridors);
+        this.corridorIdsByPoint = indexCorridorIdsByPoint(this.corridors);
         this.corridorNetworkIdByCell = indexCorridorNetworkIdsByCell(this.corridorNetworks);
         this.stairIdsByPoint = indexStairIdsByPoint(this.stairs);
         this.transitionIdsByPoint = indexTransitionIdsByPoint(this.transitions);
@@ -370,6 +372,21 @@ public final class DungeonLayout {
 
     public List<Corridor> corridorsAtCell(Point2i cell) {
         List<Long> corridorIds = cell == null ? List.of() : corridorIdsByCell.getOrDefault(cell, List.of());
+        return corridorIds.stream()
+                .map(this::findCorridor)
+                .filter(corridor -> corridor != null)
+                .toList();
+    }
+
+    public List<Corridor> corridorsAtCell(Point2i cell, int levelZ) {
+        if (cell == null) {
+            return List.of();
+        }
+        return corridorsAtPoint(CubePoint.at(cell, levelZ));
+    }
+
+    public List<Corridor> corridorsAtPoint(CubePoint point) {
+        List<Long> corridorIds = point == null ? List.of() : corridorIdsByPoint.getOrDefault(point, List.of());
         return corridorIds.stream()
                 .map(this::findCorridor)
                 .filter(corridor -> corridor != null)
@@ -998,12 +1015,36 @@ public final class DungeonLayout {
             if (corridor == null || corridor.corridorId() == null || corridor.path() == null) {
                 continue;
             }
+            // Keep the legacy 2D corridor lookup aggregate for projection-based callers.
             for (Point2i cell : corridor.path().floor().shape().absoluteCells()) {
                 mutable.computeIfAbsent(cell, ignored -> new ArrayList<>()).add(corridor.corridorId());
             }
         }
         Map<Point2i, List<Long>> result = new LinkedHashMap<>();
         for (Map.Entry<Point2i, List<Long>> entry : mutable.entrySet()) {
+            result.put(entry.getKey(), List.copyOf(entry.getValue()));
+        }
+        return Map.copyOf(result);
+    }
+
+    private static Map<CubePoint, List<Long>> indexCorridorIdsByPoint(List<Corridor> corridors) {
+        Map<CubePoint, List<Long>> mutable = new LinkedHashMap<>();
+        for (Corridor corridor : corridors) {
+            if (corridor == null || corridor.corridorId() == null || corridor.path() == null) {
+                continue;
+            }
+            for (Map.Entry<Integer, features.world.dungeonmap.model.objects.Floor> entry : corridor.path().floorsByLevel().entrySet()) {
+                if (entry == null || entry.getValue() == null) {
+                    continue;
+                }
+                int levelZ = entry.getKey();
+                for (Point2i cell : entry.getValue().shape().absoluteCells()) {
+                    mutable.computeIfAbsent(CubePoint.at(cell, levelZ), ignored -> new ArrayList<>()).add(corridor.corridorId());
+                }
+            }
+        }
+        Map<CubePoint, List<Long>> result = new LinkedHashMap<>();
+        for (Map.Entry<CubePoint, List<Long>> entry : mutable.entrySet()) {
             result.put(entry.getKey(), List.copyOf(entry.getValue()));
         }
         return Map.copyOf(result);
