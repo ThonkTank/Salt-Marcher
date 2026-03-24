@@ -94,7 +94,7 @@ public final class DungeonMapLoader {
                 new DungeonLayout(
                         map.mapId(),
                         map.name(),
-                        loadCorridors(conn, map.mapId(), clusters),
+                        loadCorridors(conn, map.mapId(), clusters, roomLevels, clusterLevels),
                         clusters,
                         loadStairs(conn, map.mapId()),
                         loadTransitions(conn, map.mapId()),
@@ -196,7 +196,13 @@ public final class DungeonMapLoader {
         }
     }
 
-    private static List<Corridor> loadCorridors(Connection conn, long mapId, List<RoomCluster> clusters) throws SQLException {
+    private static List<Corridor> loadCorridors(
+            Connection conn,
+            long mapId,
+            List<RoomCluster> clusters,
+            Map<Long, Integer> roomLevels,
+            Map<Long, Integer> clusterLevels
+    ) throws SQLException {
         Map<Long, List<Long>> roomIdsByCorridor = new LinkedHashMap<>();
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT c.corridor_id, m.room_id"
@@ -249,7 +255,10 @@ public final class DungeonMapLoader {
                             doorBindingsByCorridor.getOrDefault(entry.getKey(), List.of())),
                     CorridorPath.empty()));
         }
-        CorridorPlanningInput planningInput = CorridorPlanningInputProjector.project(clusters);
+        CorridorPlanningInput planningInput = CorridorPlanningInputProjector.project(
+                clusters,
+                roomLevels,
+                clusterLevels);
         return result.stream()
                 .map(corridor -> corridor == null ? null : corridor.replanned(planningInput))
                 .toList();
