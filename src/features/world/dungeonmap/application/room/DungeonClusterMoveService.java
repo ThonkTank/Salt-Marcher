@@ -48,7 +48,7 @@ public final class DungeonClusterMoveService {
                     if (room == null || room.roomId() == null) {
                         continue;
                     }
-                    roomWriteRepository.updateRoomPosition(conn, room.roomId(), anchorsByLevel(room), room.primaryLevel());
+                    roomWriteRepository.updateRoomPosition(conn, room.roomId(), room.anchorsByLevel(), room.primaryLevel());
                 }
             });
         }
@@ -90,20 +90,6 @@ public final class DungeonClusterMoveService {
             result.put(entry.getKey(), TileShape.fromAbsoluteCells(entry.getValue()));
         }
         return Map.copyOf(result);
-    }
-
-    private static Map<Integer, Point2i> anchorsByLevel(Room room) {
-        if (room == null || room.floors().isEmpty()) {
-            return Map.of(0, new Point2i(0, 0));
-        }
-        Map<Integer, Point2i> result = new LinkedHashMap<>();
-        for (Map.Entry<Integer, features.world.dungeonmap.model.objects.Floor> entry : room.floors().entrySet()) {
-            if (entry == null || entry.getKey() == null || entry.getValue() == null) {
-                continue;
-            }
-            result.put(entry.getKey(), entry.getValue().shape().centerCell());
-        }
-        return result.isEmpty() ? Map.of(0, new Point2i(0, 0)) : Map.copyOf(result);
     }
 
     private static int primaryLevel(RoomCluster cluster) {

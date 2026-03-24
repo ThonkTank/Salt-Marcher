@@ -3,6 +3,7 @@ package features.world.dungeonmap.model.structures.room;
 import features.world.dungeonmap.model.geometry.BoundaryNetwork;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.objects.Floor;
 import features.world.dungeonmap.model.objects.Wall;
@@ -147,6 +148,34 @@ public record Room(
 
     public Set<Integer> levels() {
         return Set.copyOf(floors.keySet());
+    }
+
+    public Map<Integer, TileShape> shapesByLevel() {
+        if (floors.isEmpty()) {
+            return Map.of(0, TileShape.empty());
+        }
+        Map<Integer, TileShape> result = new LinkedHashMap<>();
+        for (Map.Entry<Integer, Floor> entry : floors.entrySet()) {
+            if (entry == null || entry.getKey() == null || entry.getValue() == null) {
+                continue;
+            }
+            result.put(entry.getKey(), entry.getValue().shape());
+        }
+        return result.isEmpty() ? Map.of(0, TileShape.empty()) : Map.copyOf(result);
+    }
+
+    public Map<Integer, Point2i> anchorsByLevel() {
+        if (floors.isEmpty()) {
+            return Map.of(0, new Point2i(0, 0));
+        }
+        Map<Integer, Point2i> result = new LinkedHashMap<>();
+        for (Map.Entry<Integer, Floor> entry : floors.entrySet()) {
+            if (entry == null || entry.getKey() == null || entry.getValue() == null) {
+                continue;
+            }
+            result.put(entry.getKey(), entry.getValue().shape().anchor());
+        }
+        return result.isEmpty() ? Map.of(0, new Point2i(0, 0)) : Map.copyOf(result);
     }
 
     public int primaryLevel() {
