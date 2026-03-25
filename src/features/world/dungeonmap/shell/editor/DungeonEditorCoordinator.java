@@ -11,7 +11,6 @@ import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasWorkspace;
 import features.world.dungeonmap.canvas.base.DungeonViewMode;
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
-import features.world.dungeonmap.loading.DungeonMapCatalogEntry;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.shell.editor.interaction.CorridorInteractionController;
 import features.world.dungeonmap.shell.editor.interaction.BoundaryInteractionController;
@@ -36,6 +35,7 @@ import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.DungeonStairDraftState;
 import features.world.dungeonmap.state.DungeonTransitionDraftState;
+import javafx.scene.Node;
 
 import java.util.List;
 import java.util.Objects;
@@ -48,21 +48,11 @@ final class DungeonEditorCoordinator {
     private final DungeonMapLoadingService loadingService;
     private final DungeonMapState mapState;
     private final DungeonEditorSessionState sessionState;
-    private final DungeonMapDropdownController mapDropdownController;
-    private final DungeonTransitionTargetCatalogService transitionTargetCatalogService = new DungeonTransitionTargetCatalogService();
     private final EditorSelectionState selectionState = new EditorSelectionState();
     private final EditorLayoutPreviewState layoutPreviewState = new EditorLayoutPreviewState();
     private final EditorPaintPreviewState paintPreviewState = new EditorPaintPreviewState();
     private final DungeonBoundaryDraftState boundaryDraftState = new DungeonBoundaryDraftState();
-    private final DungeonCorridorDraftState corridorDraftState = new DungeonCorridorDraftState();
-    private final DungeonStairDraftState stairDraftState = new DungeonStairDraftState();
-    private final DungeonTransitionDraftState transitionDraftState = new DungeonTransitionDraftState();
-    private final DungeonStairEditService stairEditService;
-    private final StairInteractionController stairInteractionController;
-    private final TransitionInteractionController transitionInteractionController;
     private final DungeonEditorGridInteractionController interactionController;
-    private DungeonEditorTool previousTool;
-    private DungeonViewMode previousViewMode;
     private Long previousMapId;
 
     DungeonEditorCoordinator(
@@ -87,7 +77,6 @@ final class DungeonEditorCoordinator {
         this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.sessionState = Objects.requireNonNull(sessionState, "sessionState");
-        this.stairEditService = Objects.requireNonNull(stairEditService, "stairEditService");
         ClusterSelectionDragController clusterSelectionDragController = new ClusterSelectionDragController(
                 mapState,
                 loadingService,
@@ -101,6 +90,7 @@ final class DungeonEditorCoordinator {
                 selectionState,
                 paintPreviewState,
                 Objects.requireNonNull(roomTopologyService, "roomTopologyService"));
+        DungeonCorridorDraftState corridorDraftState = new DungeonCorridorDraftState();
         CorridorInteractionController corridorInteractionController = new CorridorInteractionController(
                 mapState,
                 loadingService,
@@ -115,20 +105,23 @@ final class DungeonEditorCoordinator {
                 selectionState,
                 boundaryDraftState,
                 Objects.requireNonNull(boundaryEditService, "boundaryEditService"));
-        this.stairInteractionController = new StairInteractionController(
+        DungeonStairDraftState stairDraftState = new DungeonStairDraftState();
+        StairInteractionController stairInteractionController = new StairInteractionController(
                 mapState,
                 loadingService,
                 sessionState,
                 selectionState,
                 stairDraftState,
-                this.stairEditService);
-        this.transitionInteractionController = new TransitionInteractionController(
+                Objects.requireNonNull(stairEditService, "stairEditService"));
+        DungeonTransitionDraftState transitionDraftState = new DungeonTransitionDraftState();
+        TransitionInteractionController transitionInteractionController = new TransitionInteractionController(
                 mapState,
                 loadingService,
                 sessionState,
                 selectionState,
                 transitionDraftState,
                 Objects.requireNonNull(transitionEditService, "transitionEditService"));
+        DungeonTransitionTargetCatalogService transitionTargetCatalogService = new DungeonTransitionTargetCatalogService();
         List<EditorToolHandler> toolHandlers = List.of(
                 new SelectionToolHandler(
                         clusterSelectionDragController,
@@ -139,9 +132,9 @@ final class DungeonEditorCoordinator {
                 new RoomPaintToolHandler(roomPaintInteractionController, paintPreviewState),
                 new CorridorToolHandler(corridorInteractionController, selectionState, corridorDraftState),
                 new BoundaryToolHandler(boundaryInteractionController, boundaryDraftState),
-                new StairToolHandler(this.stairInteractionController, mapState, stairDraftState, selectionState),
+                new StairToolHandler(stairInteractionController, mapState, stairDraftState, selectionState),
                 new TransitionToolHandler(
-                        this.transitionInteractionController,
+                        transitionInteractionController,
                         transitionDraftState,
                         transitionTargetCatalogService,
                         mapState,
@@ -150,10 +143,21 @@ final class DungeonEditorCoordinator {
                 mapState,
                 sessionState,
                 toolHandlers);
-        this.mapDropdownController = new DungeonMapDropdownController(
+        toolHandlers.forEach(handler -> handler.setRefreshCallback(this::refreshToolStatePane));
+        DungeonMapDropdownController mapDropdownController = new DungeonMapDropdownController(
                 Objects.requireNonNull(mapCatalogService, "mapCatalogService"),
-                new MapReloadHandle());
-        installBindings();
+                new DungeonMapDropdownController.ReloadHandle() {
+                    @Override
+                    public void reload(Long preferredMapId) {
+                        loadingService.reload(preferredMapId);
+                    }
+
+                    @Override
+                    public Long sessionMapId() {
+                        return mapState.activeMapId();
+                    }
+                });
+        installBindings(mapDropdownController);
         sessionState.addListener(this::refreshFromSessionState);
         selectionState.addListener(this::refreshSelectionState);
         layoutPreviewState.addListener(this::refreshLayoutPreviewState);
@@ -179,12 +183,16 @@ final class DungeonEditorCoordinator {
         if (mapChanged) {
             interactionController.activateTool(sessionState.selectedTool());
         }
-        refreshFromSessionState();
+        refreshToolStatePane();
         previousMapId = mapState.activeMapId();
     }
 
-    private void installBindings() {
-        controls.setOnMapSelected(this::loadSelectedMap);
+    private void installBindings(DungeonMapDropdownController mapDropdownController) {
+        controls.setOnMapSelected(entry -> {
+            if (entry != null) {
+                loadingService.loadMap(entry.mapId());
+            }
+        });
         controls.setOnNewMapRequested(mapDropdownController::showCreate);
         controls.setOnEditMapRequested(request ->
                 mapDropdownController.showEdit(new DungeonMapDropdownController.EditRequest(request.map(), request.anchor())));
@@ -204,21 +212,11 @@ final class DungeonEditorCoordinator {
     private void refreshFromSessionState() {
         DungeonEditorTool selectedTool = sessionState.selectedTool();
         DungeonViewMode selectedViewMode = sessionState.viewMode();
-        boolean sessionChanged = selectedTool != previousTool || selectedViewMode != previousViewMode;
-        controls.selectViewMode(sessionState.viewMode());
+        controls.selectViewMode(selectedViewMode);
         controls.showDisplayedTool(selectedTool);
         workspace.setViewMode(selectedViewMode);
-        if (sessionChanged) {
-            interactionController.activateTool(selectedTool);
-        }
-        EditorToolHandler handler = interactionController.activeHandler();
-        if (handler != null) {
-            handler.setRefreshCallback(() ->
-                    statePane.refresh(sessionState.selectedTool(), handler.statePaneContent()));
-        }
-        statePane.refresh(selectedTool, handler == null ? null : handler.statePaneContent());
-        previousTool = selectedTool;
-        previousViewMode = selectedViewMode;
+        interactionController.activateTool(selectedTool);
+        refreshToolStatePane();
     }
 
     private void refreshLayoutPreviewState() {
@@ -243,21 +241,9 @@ final class DungeonEditorCoordinator {
         workspace.setSelectedTargetKey(selectionState.selectedTargetKey());
     }
 
-    private void loadSelectedMap(DungeonMapCatalogEntry entry) {
-        if (entry != null) {
-            loadingService.loadMap(entry.mapId());
-        }
-    }
-
-    private final class MapReloadHandle implements DungeonMapDropdownController.ReloadHandle {
-        @Override
-        public void reload(Long preferredMapId) {
-            loadingService.reload(preferredMapId);
-        }
-
-        @Override
-        public Long sessionMapId() {
-            return mapState.activeMapId();
-        }
+    private void refreshToolStatePane() {
+        EditorToolHandler handler = interactionController.activeHandler();
+        Node toolContent = handler == null ? null : handler.statePaneContent();
+        statePane.refresh(sessionState.selectedTool(), toolContent);
     }
 }

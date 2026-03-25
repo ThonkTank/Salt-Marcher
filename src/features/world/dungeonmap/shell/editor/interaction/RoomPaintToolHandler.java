@@ -11,17 +11,13 @@ import java.util.Set;
 public final class RoomPaintToolHandler implements EditorToolHandler {
 
     private final RoomPaintInteractionController controller;
-    private final EditorPaintPreviewState paintPreviewState;
-
-    private DungeonEditorTool activeTool;
-    private Runnable refreshCallback;
 
     public RoomPaintToolHandler(
             RoomPaintInteractionController controller,
             EditorPaintPreviewState paintPreviewState
     ) {
         this.controller = Objects.requireNonNull(controller, "controller");
-        this.paintPreviewState = Objects.requireNonNull(paintPreviewState, "paintPreviewState");
+        Objects.requireNonNull(paintPreviewState, "paintPreviewState");
     }
 
     @Override
@@ -31,7 +27,6 @@ public final class RoomPaintToolHandler implements EditorToolHandler {
 
     @Override
     public void activate(DungeonEditorTool tool) {
-        activeTool = tool;
     }
 
     @Override
@@ -61,6 +56,5 @@ public final class RoomPaintToolHandler implements EditorToolHandler {
 
     @Override
     public void setRefreshCallback(Runnable callback) {
-        refreshCallback = callback;
     }
 }

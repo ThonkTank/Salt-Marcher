@@ -8,30 +8,21 @@ public final class DungeonEditorStatePane {
 
     private final VBox content = new VBox();
     private final Label activeToolLabel = new Label(DungeonEditorTool.SELECT.label());
-    private Node toolStateContent;
 
     public DungeonEditorStatePane() {
         content.getStyleClass().add("dungeon-editor-sidebar");
-        content.getChildren().add(card("Werkzeug", activeToolLabel));
+        refresh(DungeonEditorTool.SELECT, null);
     }
 
     public Node content() {
         return content;
     }
 
-    public void refresh(DungeonEditorTool activeTool) {
-        refresh(activeTool, null);
-    }
-
-    public void refresh(DungeonEditorTool activeTool, Node extraContent) {
-        DungeonEditorTool shownTool = activeTool == null ? DungeonEditorTool.SELECT : activeTool;
-        activeToolLabel.setText(shownTool.label());
-        if (toolStateContent != null) {
-            content.getChildren().remove(toolStateContent);
-        }
-        toolStateContent = extraContent;
-        if (toolStateContent != null && !content.getChildren().contains(toolStateContent)) {
-            content.getChildren().add(1, toolStateContent);
+    public void refresh(DungeonEditorTool tool, Node toolContent) {
+        activeToolLabel.setText((tool == null ? DungeonEditorTool.SELECT : tool).label());
+        content.getChildren().setAll(card("Werkzeug", activeToolLabel));
+        if (toolContent != null) {
+            content.getChildren().add(toolContent);
         }
     }
 
