@@ -3,6 +3,7 @@ package features.world.dungeonmap.model.structures.corridor.planning;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.structures.room.Room;
 
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -92,6 +93,18 @@ final class SearchVolume {
 
     boolean isPassable(CubePoint point) {
         return isInBounds(point) && !blocked[point.x() - minX][point.y() - minY][point.z() - minZ];
+    }
+
+    boolean isFootprintPassable(Collection<CubePoint> cells) {
+        if (cells == null || cells.isEmpty()) {
+            return false;
+        }
+        for (CubePoint cell : cells) {
+            if (!isPassable(cell)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     boolean isInBounds(CubePoint point) {
