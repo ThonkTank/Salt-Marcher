@@ -8,7 +8,6 @@ import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.objects.CorridorPath;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInput;
-import features.world.dungeonmap.model.structures.corridor.CorridorWaypointBinding;
 import features.world.dungeonmap.model.structures.corridor.ResolvedCorridorDoorBinding;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.CorridorConnection;
@@ -37,10 +36,9 @@ public final class CorridorPlanningEngine {
                 return new CorridorPlan(CorridorPath.unroutable(new GridRoute(List.of())), List.of(), List.of());
             }
             List<Room> rooms = corridor.resolvedRooms(input);
-            List<Point2i> waypointCells2d = corridor.resolvedWaypointCells(input);
-            List<CubePoint> waypointCells = resolveWaypointCells(corridor.bindings().waypoints(), input);
+            List<CubePoint> waypointCells = corridor.resolvedWaypointCells(input);
             Map<Long, ResolvedCorridorDoorBinding> doorBindings = corridor.resolvedDoorBindings(input);
-            GridRoute route = buildRoute(rooms, waypointCells2d);
+            GridRoute route = buildRoute(rooms, waypointCells);
             if (rooms.size() < 2) {
                 return new CorridorPlan(CorridorPath.unroutable(route), List.of(), List.of());
             }
@@ -61,11 +59,11 @@ public final class CorridorPlanningEngine {
         }
     }
 
-    private static GridRoute buildRoute(List<Room> rooms, List<Point2i> waypointCells) {
+    private static GridRoute buildRoute(List<Room> rooms, List<CubePoint> waypointCells) {
         List<GridAnchor> anchors = new ArrayList<>();
-        for (Point2i waypoint : waypointCells) {
+        for (CubePoint waypoint : waypointCells) {
             if (waypoint != null) {
-                anchors.add(GridAnchor.atTile(waypoint));
+                anchors.add(GridAnchor.atTile(waypoint.projectedCell()));
             }
         }
         if (anchors.isEmpty()) {
@@ -95,27 +93,6 @@ public final class CorridorPlanningEngine {
             return Set.of();
         }
         return Set.copyOf(result);
-    }
-
-    private static List<CubePoint> resolveWaypointCells(
-            List<CorridorWaypointBinding> waypointBindings,
-            CorridorPlanningInput input
-    ) {
-        if (waypointBindings == null || waypointBindings.isEmpty() || input == null) {
-            return List.of();
-        }
-        List<CubePoint> result = new ArrayList<>();
-        for (CorridorWaypointBinding binding : waypointBindings) {
-            if (binding == null) {
-                continue;
-            }
-            Point2i clusterCenter = input.clusterCenter(binding.clusterId());
-            if (clusterCenter == null) {
-                continue;
-            }
-            result.add(CubePoint.at(binding.absoluteCell(clusterCenter), binding.levelZ()));
-        }
-        return List.copyOf(result);
     }
 
     private static CorridorPath toCorridorPath(

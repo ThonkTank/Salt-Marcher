@@ -1,5 +1,6 @@
 package features.world.dungeonmap.model.structures.corridor;
 
+import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.objects.CorridorPath;
 import features.world.dungeonmap.model.structures.connection.CorridorConnection;
@@ -383,15 +384,15 @@ public final class Corridor {
         return List.copyOf(result);
     }
 
-    public List<Point2i> resolvedWaypointCells(CorridorPlanningInput input) {
+    public List<CubePoint> resolvedWaypointCells(CorridorPlanningInput input) {
         if (input == null || bindings.waypoints().isEmpty()) {
             return List.of();
         }
-        List<Point2i> result = new ArrayList<>();
+        List<CubePoint> result = new ArrayList<>();
         for (CorridorWaypointBinding waypoint : bindings.waypoints()) {
             Point2i clusterCenter = input.clusterCenter(waypoint.clusterId());
             if (clusterCenter != null) {
-                result.add(waypoint.absoluteCell(clusterCenter));
+                result.add(CubePoint.at(waypoint.absoluteCell(clusterCenter), waypoint.levelZ()));
             }
         }
         return List.copyOf(result);
