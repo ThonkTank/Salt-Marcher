@@ -64,10 +64,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 renderState.projectionLevel(),
                 LayerPalette.current(editorMode),
                 false);
-        Set<VertexEdge> selectedRoomBoundaryEdges = drawRooms(renderPass);
-        drawCorridors(renderPass);
-        drawStairs(renderPass);
-        drawTransitions(renderPass);
+        Set<VertexEdge> selectedRoomBoundaryEdges = drawStructures(renderPass);
         drawPartyToken(gc, mapModel, camera, renderState.activeLocation(), renderState.heading(), renderState.projectionLevel());
         if (!editorMode) {
             drawDoorNumbers(gc, projectedMap, camera, renderState.activeLocation(), renderState.heading());
@@ -464,6 +461,14 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         gc.setTextAlign(TextAlignment.LEFT);
     }
 
+    private static Set<VertexEdge> drawStructures(StructureRenderPass pass) {
+        Set<VertexEdge> selectedBoundaryEdges = drawRooms(pass);
+        drawCorridors(pass);
+        drawStairs(pass);
+        drawTransitions(pass);
+        return selectedBoundaryEdges;
+    }
+
     private static void drawOverlayLevels(
             GraphicsContext gc,
             DungeonLayout mapModel,
@@ -503,10 +508,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 overlay.level(),
                 palette,
                 true);
-        Set<VertexEdge> selectedRoomBoundaryEdges = drawRooms(overlayPass);
-        drawCorridors(overlayPass);
-        drawStairs(overlayPass);
-        drawTransitions(overlayPass);
+        Set<VertexEdge> selectedRoomBoundaryEdges = drawStructures(overlayPass);
         drawSelectedRoomBoundaries(overlayPass, selectedRoomBoundaryEdges, palette.selectedWallStroke());
         gc.restore();
     }
