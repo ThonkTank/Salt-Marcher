@@ -2,6 +2,7 @@ package features.world.dungeonmap.shell.editor.interaction;
 
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
+import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.DungeonStairDraftState;
 import javafx.scene.Node;
 
@@ -11,6 +12,7 @@ import java.util.Set;
 public final class StairToolHandler implements EditorToolHandler {
 
     private final StairInteractionController controller;
+    private final DungeonMapState mapState;
     private final DungeonStairDraftState stairDraftState;
 
     private DungeonEditorTool activeTool;
@@ -18,9 +20,11 @@ public final class StairToolHandler implements EditorToolHandler {
 
     public StairToolHandler(
             StairInteractionController controller,
+            DungeonMapState mapState,
             DungeonStairDraftState stairDraftState
     ) {
         this.controller = Objects.requireNonNull(controller, "controller");
+        this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.stairDraftState = Objects.requireNonNull(stairDraftState, "stairDraftState");
     }
 
@@ -32,11 +36,14 @@ public final class StairToolHandler implements EditorToolHandler {
     @Override
     public void activate(DungeonEditorTool tool) {
         activeTool = tool;
+        if (tool == DungeonEditorTool.STAIR_CREATE) {
+            stairDraftState.resetForLevel(mapState.activeProjectionLevel());
+        }
     }
 
     @Override
     public void deactivate() {
-        stairDraftState.clear();
+        controller.clear();
     }
 
     @Override

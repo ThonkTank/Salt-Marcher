@@ -7,148 +7,93 @@ import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
 
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public final class DungeonEditorGridInteractionController implements DungeonCanvasInteractionHandler {
 
     private final DungeonMapState mapState;
     private final DungeonEditorSessionState sessionState;
-    private final ClusterSelectionDragController clusterSelectionDragController;
-    private final RoomPaintInteractionController roomPaintInteractionController;
-    private final CorridorInteractionController corridorInteractionController;
-    private final BoundaryInteractionController boundaryInteractionController;
-    private final StairInteractionController stairInteractionController;
-    private final TransitionInteractionController transitionInteractionController;
+    private final Map<DungeonEditorTool, EditorToolHandler> handlersByTool;
+    private EditorToolHandler activeHandler;
 
     public DungeonEditorGridInteractionController(
             DungeonMapState mapState,
             DungeonEditorSessionState sessionState,
-            ClusterSelectionDragController clusterSelectionDragController,
-            RoomPaintInteractionController roomPaintInteractionController,
-            CorridorInteractionController corridorInteractionController,
-            BoundaryInteractionController boundaryInteractionController,
-            StairInteractionController stairInteractionController,
-            TransitionInteractionController transitionInteractionController
+            List<EditorToolHandler> handlers
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.sessionState = Objects.requireNonNull(sessionState, "sessionState");
-        this.clusterSelectionDragController = Objects.requireNonNull(clusterSelectionDragController, "clusterSelectionDragController");
-        this.roomPaintInteractionController = Objects.requireNonNull(roomPaintInteractionController, "roomPaintInteractionController");
-        this.corridorInteractionController = Objects.requireNonNull(corridorInteractionController, "corridorInteractionController");
-        this.boundaryInteractionController = Objects.requireNonNull(boundaryInteractionController, "boundaryInteractionController");
-        this.stairInteractionController = Objects.requireNonNull(stairInteractionController, "stairInteractionController");
-        this.transitionInteractionController = Objects.requireNonNull(transitionInteractionController, "transitionInteractionController");
+        this.handlersByTool = buildHandlerMap(Objects.requireNonNull(handlers, "handlers"));
     }
 
     @Override
     public boolean handlePressed(DungeonCanvasPointerEvent event) {
         if (!interactionEnabled()) {
-            clear();
+            clearActiveHandler();
             return false;
         }
-        if (sessionState.selectedTool().isCorridorTool()) {
-            clusterSelectionDragController.clear();
-            roomPaintInteractionController.clear();
-            stairInteractionController.clear();
-            return corridorInteractionController.handlePressed(event);
-        }
-        if (sessionState.selectedTool().isRoomTool()) {
-            clusterSelectionDragController.clear();
-            corridorInteractionController.clear();
-            boundaryInteractionController.clear();
-            stairInteractionController.clear();
-            return roomPaintInteractionController.handlePressed(event);
-        }
-        if (sessionState.selectedTool().isWallTool() || sessionState.selectedTool().isDoorTool()) {
-            clusterSelectionDragController.clear();
-            roomPaintInteractionController.clear();
-            corridorInteractionController.clear();
-            stairInteractionController.clear();
-            return boundaryInteractionController.handlePressed(event);
-        }
-        if (sessionState.selectedTool().isStairTool()) {
-            clusterSelectionDragController.clear();
-            roomPaintInteractionController.clear();
-            corridorInteractionController.clear();
-            boundaryInteractionController.clear();
-            transitionInteractionController.clear();
-            return stairInteractionController.handlePressed(event);
-        }
-        if (sessionState.selectedTool().isTransitionTool()) {
-            clusterSelectionDragController.clear();
-            roomPaintInteractionController.clear();
-            corridorInteractionController.clear();
-            boundaryInteractionController.clear();
-            stairInteractionController.clear();
-            return transitionInteractionController.handlePressed(event);
-        }
-        if (sessionState.selectedTool() != DungeonEditorTool.SELECT) {
-            clear();
-            return false;
-        }
-        roomPaintInteractionController.clear();
-        corridorInteractionController.clear();
-        stairInteractionController.clear();
-        transitionInteractionController.clear();
-        return clusterSelectionDragController.handlePressed(event);
+        return activeHandler != null && activeHandler.handlePressed(event);
     }
 
     @Override
     public boolean handleDragged(DungeonCanvasPointerEvent event) {
-        if (sessionState.selectedTool().isRoomTool()) {
-            return roomPaintInteractionController.handleDragged(event);
-        }
-        if (sessionState.selectedTool().isCorridorTool()) {
-            return corridorInteractionController.handleDragged(event);
-        }
-        if (sessionState.selectedTool().isWallTool() || sessionState.selectedTool().isDoorTool()) {
-            return boundaryInteractionController.handleDragged(event);
-        }
-        if (sessionState.selectedTool().isStairTool()) {
-            return stairInteractionController.handleDragged(event);
-        }
-        if (sessionState.selectedTool().isTransitionTool()) {
-            return transitionInteractionController.handleDragged(event);
-        }
-        if (!interactionEnabled() || sessionState.selectedTool() != DungeonEditorTool.SELECT) {
+        if (!interactionEnabled()) {
             return false;
         }
-        return clusterSelectionDragController.handleDragged(event);
+        return activeHandler != null && activeHandler.handleDragged(event);
     }
 
     @Override
     public boolean handleReleased(DungeonCanvasPointerEvent event) {
-        if (sessionState.selectedTool().isRoomTool()) {
-            return roomPaintInteractionController.handleReleased(event);
-        }
-        if (sessionState.selectedTool().isCorridorTool()) {
-            return corridorInteractionController.handleReleased(event);
-        }
-        if (sessionState.selectedTool().isWallTool() || sessionState.selectedTool().isDoorTool()) {
-            return boundaryInteractionController.handleReleased(event);
-        }
-        if (sessionState.selectedTool().isStairTool()) {
-            return stairInteractionController.handleReleased(event);
-        }
-        if (sessionState.selectedTool().isTransitionTool()) {
-            return transitionInteractionController.handleReleased(event);
-        }
-        if (sessionState.selectedTool() != DungeonEditorTool.SELECT) {
+        if (!interactionEnabled()) {
             return false;
         }
-        return clusterSelectionDragController.handleReleased(event);
+        return activeHandler != null && activeHandler.handleReleased(event);
     }
 
-    public void clear() {
-        clusterSelectionDragController.clear();
-        roomPaintInteractionController.clear();
-        corridorInteractionController.clear();
-        boundaryInteractionController.clear();
-        stairInteractionController.clear();
-        transitionInteractionController.clear();
+    public void activateTool(DungeonEditorTool tool) {
+        EditorToolHandler nextHandler = handlersByTool.get(tool);
+        if (nextHandler == null) {
+            clearActiveHandler();
+            return;
+        }
+        if (activeHandler != null && activeHandler != nextHandler) {
+            activeHandler.deactivate();
+        }
+        activeHandler = nextHandler;
+        activeHandler.activate(tool);
+    }
+
+    public void clearActiveHandler() {
+        if (activeHandler == null) {
+            return;
+        }
+        activeHandler.deactivate();
+        activeHandler = null;
+    }
+
+    public EditorToolHandler activeHandler() {
+        return activeHandler;
     }
 
     private boolean interactionEnabled() {
         return sessionState.viewMode() == DungeonViewMode.GRID && !mapState.loading();
+    }
+
+    private static Map<DungeonEditorTool, EditorToolHandler> buildHandlerMap(List<EditorToolHandler> handlers) {
+        Map<DungeonEditorTool, EditorToolHandler> handlersByTool = new EnumMap<>(DungeonEditorTool.class);
+        for (EditorToolHandler handler : handlers) {
+            Objects.requireNonNull(handler, "handler");
+            for (DungeonEditorTool tool : handler.supportedTools()) {
+                EditorToolHandler previous = handlersByTool.put(tool, handler);
+                if (previous != null) {
+                    throw new IllegalArgumentException("Duplicate editor tool handler for " + tool);
+                }
+            }
+        }
+        return Map.copyOf(handlersByTool);
     }
 }

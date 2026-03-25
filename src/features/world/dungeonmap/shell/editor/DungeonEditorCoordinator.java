@@ -26,8 +26,15 @@ import features.world.dungeonmap.shell.editor.interaction.CorridorInteractionCon
 import features.world.dungeonmap.shell.editor.interaction.BoundaryInteractionController;
 import features.world.dungeonmap.shell.editor.interaction.ClusterSelectionDragController;
 import features.world.dungeonmap.shell.editor.interaction.DungeonEditorGridInteractionController;
+import features.world.dungeonmap.shell.editor.interaction.EditorToolHandler;
+import features.world.dungeonmap.shell.editor.interaction.RoomPaintToolHandler;
+import features.world.dungeonmap.shell.editor.interaction.SelectionToolHandler;
+import features.world.dungeonmap.shell.editor.interaction.CorridorToolHandler;
+import features.world.dungeonmap.shell.editor.interaction.BoundaryToolHandler;
 import features.world.dungeonmap.shell.editor.interaction.RoomPaintInteractionController;
+import features.world.dungeonmap.shell.editor.interaction.StairToolHandler;
 import features.world.dungeonmap.shell.editor.interaction.StairInteractionController;
+import features.world.dungeonmap.shell.editor.interaction.TransitionToolHandler;
 import features.world.dungeonmap.shell.editor.interaction.TransitionInteractionController;
 import features.world.dungeonmap.state.DungeonCorridorDraftState;
 import features.world.dungeonmap.state.DungeonBoundaryDraftState;
@@ -75,8 +82,8 @@ final class DungeonEditorCoordinator {
     private boolean overworldTargetsLoaded;
     private long targetTransitionRequestSequence;
     private long overworldTargetRequestSequence;
-    private DungeonEditorTool previousTool = DungeonEditorTool.SELECT;
-    private DungeonViewMode previousViewMode = DungeonViewMode.GRID;
+    private DungeonEditorTool previousTool;
+    private DungeonViewMode previousViewMode;
     private Long previousMapId;
 
     DungeonEditorCoordinator(
@@ -144,15 +151,17 @@ final class DungeonEditorCoordinator {
                 selectionState,
                 transitionDraftState,
                 Objects.requireNonNull(transitionEditService, "transitionEditService"));
+        List<EditorToolHandler> toolHandlers = List.of(
+                new SelectionToolHandler(clusterSelectionDragController),
+                new RoomPaintToolHandler(roomPaintInteractionController, paintPreviewState),
+                new CorridorToolHandler(corridorInteractionController, corridorDraftState),
+                new BoundaryToolHandler(boundaryInteractionController, boundaryDraftState),
+                new StairToolHandler(this.stairInteractionController, mapState, stairDraftState),
+                new TransitionToolHandler(this.transitionInteractionController, transitionDraftState));
         this.interactionController = new DungeonEditorGridInteractionController(
                 mapState,
                 sessionState,
-                clusterSelectionDragController,
-                roomPaintInteractionController,
-                corridorInteractionController,
-                boundaryInteractionController,
-                this.stairInteractionController,
-                this.transitionInteractionController);
+                toolHandlers);
         this.mapDropdownController = new DungeonMapDropdownController(
                 Objects.requireNonNull(mapCatalogService, "mapCatalogService"),
                 new MapReloadHandle());
@@ -196,10 +205,7 @@ final class DungeonEditorCoordinator {
         controls.showOverlaySettings(mapState.levelOverlaySettings(), mapState.loading());
         workspace.setProjectionLevel(mapState.activeProjectionLevel());
         if (mapChanged) {
-            interactionController.clear();
-        }
-        if (mapChanged && sessionState.selectedTool() == DungeonEditorTool.STAIR_CREATE) {
-            stairDraftState.resetForLevel(mapState.activeProjectionLevel());
+            interactionController.activateTool(sessionState.selectedTool());
         }
         if (mapChanged) {
             loadedTargetTransitionMapId = null;
@@ -251,16 +257,11 @@ final class DungeonEditorCoordinator {
         DungeonEditorTool selectedTool = sessionState.selectedTool();
         DungeonViewMode selectedViewMode = sessionState.viewMode();
         boolean sessionChanged = selectedTool != previousTool || selectedViewMode != previousViewMode;
-        boolean enteringStairCreate = selectedTool == DungeonEditorTool.STAIR_CREATE
-                && previousTool != DungeonEditorTool.STAIR_CREATE;
         controls.selectViewMode(sessionState.viewMode());
         controls.showDisplayedTool(selectedTool);
         workspace.setViewMode(selectedViewMode);
         if (sessionChanged) {
-            interactionController.clear();
-        }
-        if (enteringStairCreate) {
-            stairDraftState.resetForLevel(mapState.activeProjectionLevel());
+            interactionController.activateTool(selectedTool);
         }
         statePane.refresh(selectedTool);
         refreshCorridorStatePane();
