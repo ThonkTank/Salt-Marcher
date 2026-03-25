@@ -146,19 +146,19 @@ public final class MapControls {
         overlayControls.setOnSelectedLevelsChanged(action);
     }
 
-    public void showMaps(List<DungeonMapCatalogEntry> maps, Long activeMapId, boolean loading, String errorMessage) {
+    public void showMaps(List<DungeonMapCatalogEntry> maps, Long activeMapId, boolean busy, String statusMessage) {
         syncingSelection = true;
         List<DungeonMapCatalogEntry> visibleMaps = maps == null ? List.of() : List.copyOf(maps);
         selector.getItems().setAll(visibleMaps);
-        selector.setDisable(loading || visibleMaps.isEmpty());
-        newMapButton.setDisable(loading);
-        editMapButton.setDisable(loading || selector.getSelectionModel().getSelectedItem() == null);
-        statusLabel.setText(loading ? "" : (errorMessage == null ? "" : errorMessage));
+        selector.setDisable(busy || visibleMaps.isEmpty());
+        newMapButton.setDisable(busy);
+        editMapButton.setDisable(busy || selector.getSelectionModel().getSelectedItem() == null);
+        statusLabel.setText(statusMessage == null ? "" : statusMessage);
         if (activeMapId != null) {
             for (DungeonMapCatalogEntry entry : visibleMaps) {
                 if (entry != null && entry.mapId() == activeMapId) {
                     selector.getSelectionModel().select(entry);
-                    editMapButton.setDisable(loading);
+                    editMapButton.setDisable(busy);
                     syncingSelection = false;
                     return;
                 }
@@ -169,7 +169,7 @@ public final class MapControls {
             editMapButton.setDisable(true);
         } else {
             selector.getSelectionModel().selectFirst();
-            editMapButton.setDisable(loading);
+            editMapButton.setDisable(busy);
         }
         syncingSelection = false;
     }
@@ -178,10 +178,10 @@ public final class MapControls {
         return content;
     }
 
-    public void showLevels(List<Integer> levels, int activeLevel, boolean loading, boolean navigationEnabled) {
+    public void showLevels(List<Integer> levels, int activeLevel, boolean busy, boolean navigationEnabled) {
         levelLabel.setText("Ebene z=" + activeLevel);
-        previousLevelButton.setDisable(loading || !navigationEnabled);
-        nextLevelButton.setDisable(loading || !navigationEnabled);
+        previousLevelButton.setDisable(busy || !navigationEnabled);
+        nextLevelButton.setDisable(busy || !navigationEnabled);
     }
 
     public void showOverlaySettings(DungeonLevelOverlaySettings settings, boolean disabled) {

@@ -326,6 +326,9 @@ public final class DungeonCanvasWorkspace extends BorderPane {
     }
 
     private void applyLevelChange(int levelDelta) {
+        if (mapState.busy()) {
+            return;
+        }
         if (levelScrollHandler != null) {
             levelScrollHandler.accept(levelDelta);
         } else {

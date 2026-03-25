@@ -171,7 +171,7 @@ public final class StairTool implements EditorTool {
         }
         state.clearSelection();
         clearPlacementError();
-        UiAsyncTasks.submitVoid(
+        loadingService.submitReloadingWrite(
                 () -> stairEditService.create(
                         mapState.activeMap(),
                         gridCell,
@@ -180,9 +180,9 @@ public final class StairTool implements EditorTool {
                         dimension1,
                         dimension2,
                         exitLevels),
+                mapId,
                 () -> {
                     clearPlacementError();
-                    loadingService.reload(mapId);
                 },
                 throwable -> {
                     showPlacementError(throwable == null ? "Treppe konnte nicht platziert werden" : throwable.getMessage());
@@ -205,9 +205,10 @@ public final class StairTool implements EditorTool {
             return false;
         }
         state.selectTarget(stair.targetKey());
-        UiAsyncTasks.submitVoid(
+        loadingService.submitReloadingWrite(
                 () -> stairEditService.delete(stair.stairId()),
-                () -> loadingService.reload(mapId),
+                mapId,
+                null,
                 throwable -> UiErrorReporter.reportBackgroundFailure("StairTool.handleDeletePressed()", throwable));
         return true;
     }

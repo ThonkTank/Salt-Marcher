@@ -153,9 +153,10 @@ public final class SelectionTool implements EditorTool {
         state.clearPreview();
         dragSession = null;
         if (mapId != null && clusterId != null && (delta.x() != 0 || delta.y() != 0 || levelDelta != 0)) {
-            UiAsyncTasks.submitVoid(
+            loadingService.submitReloadingWrite(
                     () -> clusterMoveService.move(mapId, clusterId, delta, levelDelta),
-                    () -> loadingService.reload(mapId),
+                    mapId,
+                    null,
                     throwable -> UiErrorReporter.reportBackgroundFailure("SelectionTool.released()", throwable));
         }
         return true;
@@ -276,11 +277,11 @@ public final class SelectionTool implements EditorTool {
             exitNarrations.add(new RoomExitNarration(exit.roomCell(), exit.direction(), exitAreas.get(index).getText()));
         }
         setRoomNarrationSaveState(card.roomId(), true, "Speichert...");
-        UiAsyncTasks.submitVoid(
+        loadingService.submitReloadingWrite(
                 () -> roomNarrationService.saveNarration(card.roomId(), new RoomNarration(visualArea.getText(), exitNarrations)),
+                mapState.activeMapId(),
                 () -> {
                     setRoomNarrationSaveState(card.roomId(), false, "Gespeichert");
-                    loadingService.reload(mapState.activeMapId());
                 },
                 throwable -> {
                     UiErrorReporter.reportBackgroundFailure("SelectionTool.saveRoomNarration()", throwable);

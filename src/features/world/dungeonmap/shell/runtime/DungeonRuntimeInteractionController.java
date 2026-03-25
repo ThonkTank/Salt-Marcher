@@ -86,6 +86,6 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
     }
 
     private boolean interactionEnabled() {
-        return !mapState.loading() && !runtimeState.loading() && !runtimeState.moving();
+        return !mapState.busy() && !runtimeState.loading() && !runtimeState.moving();
     }
 }

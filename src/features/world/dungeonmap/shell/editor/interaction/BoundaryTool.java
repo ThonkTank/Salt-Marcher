@@ -144,9 +144,10 @@ public final class BoundaryTool implements EditorTool {
             return true;
         }
         boolean deleteBoundary = sessionState.selectedTool() == DungeonEditorTool.CLUSTER_DOOR_DELETE;
-        UiAsyncTasks.submitVoid(
+        loadingService.submitReloadingWrite(
                 () -> boundaryEditService.apply(mapId, clusterId, hit.edge(), InternalBoundaryType.DOOR, deleteBoundary),
-                () -> loadingService.reload(mapId),
+                mapId,
+                null,
                 throwable -> UiErrorReporter.reportBackgroundFailure("BoundaryTool.handleDoorPressed()", throwable));
         return true;
     }
@@ -238,9 +239,10 @@ public final class BoundaryTool implements EditorTool {
         if (mapId == null || edges.isEmpty()) {
             return true;
         }
-        UiAsyncTasks.submitVoid(
+        loadingService.submitReloadingWrite(
                 () -> boundaryEditService.apply(mapId, currentDraft.clusterId(), edges, InternalBoundaryType.WALL, currentDraft.deleteMode()),
-                () -> loadingService.reload(mapId),
+                mapId,
+                null,
                 throwable -> UiErrorReporter.reportBackgroundFailure("BoundaryTool.finishDraft()", throwable));
         return true;
     }

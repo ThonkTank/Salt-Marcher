@@ -96,7 +96,7 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
     }
 
     private boolean interactionEnabled() {
-        return sessionState.viewMode() == DungeonViewMode.GRID && !mapState.loading();
+        return sessionState.viewMode() == DungeonViewMode.GRID && !mapState.busy();
     }
 
     private EditorToolContext contextFor(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {

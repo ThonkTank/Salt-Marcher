@@ -17,6 +17,7 @@ public final class DungeonMapState {
     private int activeProjectionLevel;
     private DungeonLevelOverlaySettings levelOverlaySettings = DungeonLevelOverlaySettings.defaults();
     private boolean loading;
+    private boolean mutationPending;
     private String errorMessage;
 
     public List<DungeonMapCatalogEntry> maps() {
@@ -43,6 +44,14 @@ public final class DungeonMapState {
         return loading;
     }
 
+    public boolean mutationPending() {
+        return mutationPending;
+    }
+
+    public boolean busy() {
+        return loading || mutationPending;
+    }
+
     public String errorMessage() {
         return errorMessage;
     }
@@ -63,6 +72,11 @@ public final class DungeonMapState {
         notifyListeners();
     }
 
+    public void showMutationPending() {
+        mutationPending = true;
+        notifyListeners();
+    }
+
     public void showLoaded(List<DungeonMapCatalogEntry> maps, DungeonLayout activeMap, String errorMessage) {
         Long previousMapId = activeMapId;
         this.maps = maps == null ? List.of() : List.copyOf(maps);
@@ -72,6 +86,7 @@ public final class DungeonMapState {
                 ? activeProjectionLevel
                 : defaultProjectionLevel(this.activeMap);
         this.loading = false;
+        this.mutationPending = false;
         this.errorMessage = errorMessage == null || errorMessage.isBlank() ? null : errorMessage;
         notifyListeners();
     }
@@ -79,7 +94,16 @@ public final class DungeonMapState {
     public void showLoadFailure(List<DungeonMapCatalogEntry> maps, String errorMessage) {
         this.maps = maps == null ? List.of() : List.copyOf(maps);
         this.loading = false;
+        this.mutationPending = false;
         this.errorMessage = errorMessage == null || errorMessage.isBlank() ? "Dungeon konnte nicht geladen werden" : errorMessage;
+        notifyListeners();
+    }
+
+    public void clearMutationPending() {
+        if (!mutationPending) {
+            return;
+        }
+        mutationPending = false;
         notifyListeners();
     }
 

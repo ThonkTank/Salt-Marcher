@@ -1,21 +1,27 @@
 package features.world.dungeonmap.shell.editor;
 
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
+import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.loading.DungeonMapCatalogEntry;
 import javafx.scene.Node;
 import ui.async.UiErrorReporter;
-import ui.async.UiAsyncTasks;
 
 import java.util.Objects;
 
 public final class DungeonMapDropdownController {
 
     private final DungeonMapCatalogService mapCatalogService;
+    private final DungeonMapLoadingService loadingService;
     private final ReloadHandle reloadHandle;
     private final DungeonMapEditorDropdown mapDropdown = new DungeonMapEditorDropdown();
 
-    public DungeonMapDropdownController(DungeonMapCatalogService mapCatalogService, ReloadHandle reloadHandle) {
+    public DungeonMapDropdownController(
+            DungeonMapCatalogService mapCatalogService,
+            DungeonMapLoadingService loadingService,
+            ReloadHandle reloadHandle
+    ) {
         this.mapCatalogService = Objects.requireNonNull(mapCatalogService, "mapCatalogService");
+        this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
         this.reloadHandle = Objects.requireNonNull(reloadHandle, "reloadHandle");
     }
 
@@ -33,9 +39,10 @@ public final class DungeonMapDropdownController {
 
     private void createMap(String name) {
         mapDropdown.setBusy(true);
-        UiAsyncTasks.submit(
+        loadingService.submitReloadingTask(
                 () -> mapCatalogService.createMap(name),
-                this::reloadAfterChange,
+                mapId -> mapId,
+                ignored -> mapDropdown.hide(),
                 throwable -> {
                     UiErrorReporter.reportBackgroundFailure("DungeonMapDropdownController.createMap()", throwable);
                     mapDropdown.showError("Dungeon konnte nicht erstellt werden.");
@@ -47,9 +54,10 @@ public final class DungeonMapDropdownController {
             return;
         }
         mapDropdown.setBusy(true);
-        UiAsyncTasks.submitVoid(
+        loadingService.submitReloadingWrite(
                 () -> mapCatalogService.renameMap(mapId, name),
-                () -> reloadAfterChange(mapId),
+                mapId,
+                mapDropdown::hide,
                 throwable -> {
                     UiErrorReporter.reportBackgroundFailure("DungeonMapDropdownController.updateMap()", throwable);
                     mapDropdown.showError("Dungeon konnte nicht gespeichert werden.");
@@ -62,28 +70,21 @@ public final class DungeonMapDropdownController {
         }
         long mapId = map.mapId();
         mapDropdown.setBusy(true);
-        UiAsyncTasks.submitVoid(
+        Long preferredMapId = Objects.equals(mapId, reloadHandle.sessionMapId()) ? null : reloadHandle.sessionMapId();
+        loadingService.submitReloadingWrite(
                 () -> mapCatalogService.deleteMap(mapId),
-                () -> {
-                    Long preferredMapId = Objects.equals(mapId, reloadHandle.sessionMapId()) ? null : reloadHandle.sessionMapId();
-                    reloadAfterChange(preferredMapId);
-                },
+                preferredMapId,
+                mapDropdown::hide,
                 throwable -> {
                     UiErrorReporter.reportBackgroundFailure("DungeonMapDropdownController.deleteMap()", throwable);
                     mapDropdown.showError("Dungeon konnte nicht geloescht werden.");
                 });
     }
 
-    private void reloadAfterChange(Long preferredMapId) {
-        reloadHandle.reload(preferredMapId);
-        mapDropdown.hide();
-    }
-
     public record EditRequest(DungeonMapCatalogEntry map, Node anchor) {
     }
 
     public interface ReloadHandle {
-        void reload(Long preferredMapId);
         Long sessionMapId();
     }
 }

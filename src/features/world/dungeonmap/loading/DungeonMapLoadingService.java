@@ -2,11 +2,15 @@ package features.world.dungeonmap.loading;
 
 import features.world.dungeonmap.state.DungeonMapState;
 import javafx.application.Platform;
+import ui.async.UiAsyncTasks;
 
 import java.sql.SQLException;
+import java.util.concurrent.Callable;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -44,6 +48,52 @@ public final class DungeonMapLoadingService {
             return;
         }
         loadMap(preferredMapId);
+    }
+
+    public void submitReloadingWrite(
+            UiAsyncTasks.ThrowingRunnable work,
+            Long preferredMapId,
+            Runnable onPersisted,
+            Consumer<Throwable> onFailure
+    ) {
+        state.showMutationPending();
+        UiAsyncTasks.submitVoid(
+                work,
+                () -> {
+                    if (onPersisted != null) {
+                        onPersisted.run();
+                    }
+                    reload(preferredMapId);
+                },
+                failure -> {
+                    state.clearMutationPending();
+                    if (onFailure != null) {
+                        onFailure.accept(failure);
+                    }
+                });
+    }
+
+    public <T> void submitReloadingTask(
+            Callable<T> work,
+            Function<T, Long> preferredMapIdResolver,
+            Consumer<T> onPersisted,
+            Consumer<Throwable> onFailure
+    ) {
+        state.showMutationPending();
+        UiAsyncTasks.submit(
+                work,
+                value -> {
+                    if (onPersisted != null) {
+                        onPersisted.accept(value);
+                    }
+                    reload(preferredMapIdResolver == null ? null : preferredMapIdResolver.apply(value));
+                },
+                failure -> {
+                    state.clearMutationPending();
+                    if (onFailure != null) {
+                        onFailure.accept(failure);
+                    }
+                });
     }
 
     private void startRequest(boolean initialRequest, Supplier<DungeonMapLoadResult> task) {

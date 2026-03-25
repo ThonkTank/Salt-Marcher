@@ -30,12 +30,8 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
 
         DungeonMapDropdownController mapDropdownController = new DungeonMapDropdownController(
                 mapCatalogService,
+                loadingService,
                 new DungeonMapDropdownController.ReloadHandle() {
-                    @Override
-                    public void reload(Long preferredMapId) {
-                        loadingService.reload(preferredMapId);
-                    }
-
                     @Override
                     public Long sessionMapId() {
                         return mapState.activeMapId();
@@ -60,13 +56,13 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
         // Map state → controls refresh (workspace syncs itself via DungeonMapState listener)
         mapState.addListener(() -> {
             boolean mapChanged = !Objects.equals(previousMapId, mapState.activeMapId());
-            controls.showMaps(mapState.maps(), mapState.activeMapId(), mapState.loading(), mapState.errorMessage());
+            controls.showMaps(mapState.maps(), mapState.activeMapId(), mapState.busy(), mapStatusText(mapState));
             controls.showLevels(
                     mapState.activeMap().reachableLevels(),
                     mapState.activeProjectionLevel(),
-                    mapState.loading(),
+                    mapState.busy(),
                     mapState.activeMapId() != null);
-            controls.showOverlaySettings(mapState.levelOverlaySettings(), mapState.loading());
+            controls.showOverlaySettings(mapState.levelOverlaySettings(), mapState.busy());
             if (mapChanged) {
                 editorInteraction.activateTool(sessionState.selectedTool());
             }
@@ -117,5 +113,12 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
     @Override
     public Node getStateContent() {
         return statePane.content();
+    }
+
+    private static String mapStatusText(DungeonMapState mapState) {
+        if (mapState.mutationPending()) {
+            return "Aenderungen werden gespeichert...";
+        }
+        return mapState.errorMessage();
     }
 }

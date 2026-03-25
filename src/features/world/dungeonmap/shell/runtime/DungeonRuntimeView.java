@@ -134,7 +134,9 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
 
     private void refreshLabels() {
         zoomLabel.setText("Zoom: " + Math.round(workspace().zoom() * 100) + "%");
-        mapLabel.setText(state().loading()
+        mapLabel.setText(state().mutationPending()
+                ? "Speichere Dungeon..."
+                : state().loading()
                 ? "Lade Dungeon..."
                 : state().errorMessage() != null && state().activeMap().mapId() <= 0
                 ? state().errorMessage()
@@ -142,7 +144,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
                 ? state().activeMap().name() + " | " + state().errorMessage()
                 : state().activeMap().name());
         levelLabel.setText("Ebene z=" + state().activeProjectionLevel());
-        overlayControls.showSettings(state().levelOverlaySettings(), state().loading() || state().activeMapId() == null);
+        overlayControls.showSettings(state().levelOverlaySettings(), state().busy() || state().activeMapId() == null);
     }
 
     private void refreshRuntimeUi() {
@@ -154,7 +156,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
     }
 
     private void refreshRuntimeState() {
-        if (state().loading()) {
+        if (state().busy()) {
             runtimeState.showLoading();
             return;
         }

@@ -141,9 +141,10 @@ public final class CorridorTool implements EditorTool {
         }
         EditorDraft.PendingStart start = draft.pendingStart();
         clear();
-        UiAsyncTasks.submitVoid(
+        loadingService.submitReloadingWrite(
                 () -> applyCreateAction(mapId, start.target(), target),
-                () -> loadingService.reload(mapId),
+                mapId,
+                null,
                 throwable -> UiErrorReporter.reportBackgroundFailure("CorridorTool.handleCreatePressed()", throwable));
         return true;
     }
@@ -164,9 +165,10 @@ public final class CorridorTool implements EditorTool {
         }
         state.selectTarget(corridor.targetKey());
         clear();
-        UiAsyncTasks.submitVoid(
+        loadingService.submitReloadingWrite(
                 () -> corridorEditService.delete(corridor.corridorId()),
-                () -> loadingService.reload(mapId),
+                mapId,
+                null,
                 throwable -> UiErrorReporter.reportBackgroundFailure("CorridorTool.handleDeletePressed()", throwable));
         return true;
     }

@@ -109,7 +109,7 @@ public final class PaintTool implements EditorTool {
         if (mapId == null || shape.size() == 0) {
             return true;
         }
-        UiAsyncTasks.submitVoid(
+        loadingService.submitReloadingWrite(
                 () -> {
                     if (finishedSession.deleteMode()) {
                         roomTopologyService.delete(mapId, activeLevel, shape);
@@ -117,7 +117,8 @@ public final class PaintTool implements EditorTool {
                         roomTopologyService.paint(mapId, activeLevel, shape);
                     }
                 },
-                () -> loadingService.reload(mapId),
+                mapId,
+                null,
                 throwable -> UiErrorReporter.reportBackgroundFailure("PaintTool.released()", throwable));
         return true;
     }

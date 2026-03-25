@@ -169,25 +169,27 @@ public final class TransitionTool implements EditorTool {
         clearPlacementError();
         state.clearSelection();
         if (preparedTransitionId != null && preparedTransitionId > 0) {
-            UiAsyncTasks.submitVoid(
+            loadingService.submitReloadingWrite(
                     () -> transitionEditService.placePrepared(
                             preparedTransitionId,
                             event.gridCell(),
                             mapState.activeProjectionLevel()),
-                    () -> loadingService.reload(mapId),
+                    mapId,
+                    null,
                     throwable -> {
                         showPlacementError(throwable == null ? "Übergang konnte nicht platziert werden" : throwable.getMessage());
                         UiErrorReporter.reportBackgroundFailure("TransitionTool.handleCreatePressed()", throwable);
                     });
             return true;
         }
-        UiAsyncTasks.submitVoid(
+        loadingService.submitReloadingWrite(
                 () -> transitionEditService.create(
                         mapState.activeMap(),
                         event.gridCell(),
                         mapState.activeProjectionLevel(),
                         createRequest()),
-                () -> loadingService.reload(mapId),
+                mapId,
+                null,
                 throwable -> {
                     showPlacementError(throwable == null ? "Übergang konnte nicht erstellt werden" : throwable.getMessage());
                     UiErrorReporter.reportBackgroundFailure("TransitionTool.handleCreatePressed()", throwable);
@@ -209,9 +211,10 @@ public final class TransitionTool implements EditorTool {
             return false;
         }
         state.selectTarget(transition.targetKey());
-        UiAsyncTasks.submitVoid(
+        loadingService.submitReloadingWrite(
                 () -> transitionEditService.delete(transition.transitionId()),
-                () -> loadingService.reload(mapId),
+                mapId,
+                null,
                 throwable -> UiErrorReporter.reportBackgroundFailure("TransitionTool.handleDeletePressed()", throwable));
         return true;
     }
