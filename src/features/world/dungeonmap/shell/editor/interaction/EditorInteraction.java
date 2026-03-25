@@ -21,7 +21,6 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
     private final DungeonMapState mapState;
     private final DungeonEditorSessionState sessionState;
     private final EditorInteractionState state;
-    private final List<EditorTool> tools;
     private final Map<DungeonEditorTool, EditorTool> toolsByEnum;
     private final DungeonGridHitTester hitTester = new DungeonGridHitTester();
     private EditorTool activeTool;
@@ -36,9 +35,9 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.sessionState = Objects.requireNonNull(sessionState, "sessionState");
         this.state = Objects.requireNonNull(state, "state");
-        this.tools = List.copyOf(Objects.requireNonNull(tools, "tools"));
-        this.toolsByEnum = buildToolMap(this.tools);
-        this.tools.forEach(tool -> tool.setRefreshCallback(() -> toolStateChanged.run()));
+        List<EditorTool> toolList = List.copyOf(Objects.requireNonNull(tools, "tools"));
+        this.toolsByEnum = buildToolMap(toolList);
+        toolList.forEach(tool -> tool.setRefreshCallback(() -> toolStateChanged.run()));
     }
 
     @Override
