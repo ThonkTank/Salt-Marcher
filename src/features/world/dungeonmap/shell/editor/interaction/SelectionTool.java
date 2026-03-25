@@ -171,11 +171,7 @@ public final class SelectionTool implements EditorTool {
             return false;
         }
         int nextLevel = dragSession.currentLevel() + delta;
-        if (nextLevel == dragSession.currentLevel()) {
-            return true;
-        }
         dragSession = dragSession.withCurrentLevel(nextLevel);
-        mapState.setActiveProjectionLevel(nextLevel);
         state.showPreview(new EditorPreview.LayoutPreview(previewMap()));
         return true;
     }

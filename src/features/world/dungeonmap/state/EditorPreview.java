@@ -1,6 +1,7 @@
 package features.world.dungeonmap.state;
 
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 
@@ -21,8 +22,8 @@ public sealed interface EditorPreview permits EditorPreview.LayoutPreview, Edito
     record BoundaryPreview(
             Set<VertexEdge> edges,
             Set<VertexEdge> skippedConnectionEdges,
-            Object startVertex,
-            Object currentVertex,
+            Point2i startVertex,
+            Point2i currentVertex,
             boolean deleteMode
     ) implements EditorPreview {
         public BoundaryPreview {

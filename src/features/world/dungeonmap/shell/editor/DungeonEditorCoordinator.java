@@ -109,8 +109,8 @@ final class DungeonEditorCoordinator {
             workspace.setPreviewBoundaryEdges(
                     boundaryPreview.edges(),
                     boundaryPreview.skippedConnectionEdges(),
-                    (Point2i) boundaryPreview.startVertex(),
-                    (Point2i) boundaryPreview.currentVertex(),
+                    boundaryPreview.startVertex(),
+                    boundaryPreview.currentVertex(),
                     boundaryPreview.deleteMode());
         } else {
             workspace.setPreviewMapModel(null);
