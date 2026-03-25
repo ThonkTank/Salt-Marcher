@@ -205,7 +205,7 @@ public final class RoomCluster {
         List<Room> updated = new ArrayList<>();
         boolean replaced = false;
         for (Room existing : rooms) {
-            if (!sameRoomId(existing, room)) {
+            if (!ClusterRewritePlanner.sameRoomId(existing, room)) {
                 updated.add(existing);
                 continue;
             }
@@ -232,7 +232,7 @@ public final class RoomCluster {
                 roomId,
                 mapId,
                 clusterId == null ? 0L : clusterId,
-                normalizedRoomName(roomId, name),
+                ClusterRewritePlanner.normalizedRoomName(roomId, name),
                 floor);
     }
 
@@ -526,13 +526,6 @@ public final class RoomCluster {
                 room.narration());
     }
 
-    private static boolean sameRoomId(Room left, Room right) {
-        return left != null
-                && right != null
-                && left.roomId() != null
-                && left.roomId().equals(right.roomId());
-    }
-
     private static Set<Long> normalizedRoomIds(Set<Long> roomIds) {
         Set<Long> result = new LinkedHashSet<>();
         if (roomIds == null) {
@@ -595,12 +588,6 @@ public final class RoomCluster {
         return result;
     }
 
-    private static String normalizedRoomName(Long roomId, String name) {
-        return name == null || name.isBlank()
-                ? "Raum " + (roomId == null ? "neu" : roomId)
-                : name.trim();
-    }
-
     private static LocalConnection movedConnection(LocalConnection connection, Point2i delta) {
         if (connection == null || delta == null || connection.door() == null) {
             return connection;
@@ -611,15 +598,6 @@ public final class RoomCluster {
                 connection.clusterId(),
                 connection.door().movedBy(delta),
                 connection.endpoints());
-    }
-
-    private static boolean disjoint(Set<Point2i> left, Set<Point2i> right) {
-        for (Point2i point : left) {
-            if (right.contains(point)) {
-                return false;
-            }
-        }
-        return true;
     }
 
     private record OverlapIndex(Map<Point2i, Room> roomsByCell, boolean hasOverlaps) {

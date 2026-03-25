@@ -761,7 +761,7 @@ final class ClusterRewritePlanner {
         return Map.copyOf(result);
     }
 
-    private static boolean sameRoomId(Room left, Room right) {
+    static boolean sameRoomId(Room left, Room right) {
         return left != null
                 && right != null
                 && left.roomId() != null
@@ -777,7 +777,7 @@ final class ClusterRewritePlanner {
         return false;
     }
 
-    private static boolean disjoint(Set<Point2i> left, Set<Point2i> right) {
+    static boolean disjoint(Set<Point2i> left, Set<Point2i> right) {
         for (Point2i point : left) {
             if (right.contains(point)) {
                 return false;
@@ -786,7 +786,7 @@ final class ClusterRewritePlanner {
         return true;
     }
 
-    private static String normalizedRoomName(Long roomId, String name) {
+    static String normalizedRoomName(Long roomId, String name) {
         return name == null || name.isBlank()
                 ? "Raum " + (roomId == null ? "neu" : roomId)
                 : name.trim();
