@@ -1,0 +1,15 @@
+package features.world.dungeonmap.shell.editor.interaction;
+
+import features.world.dungeonmap.canvas.base.DungeonCanvasCamera;
+import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
+import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.state.EditorInteractionState;
+
+public record EditorToolContext(
+        DungeonCanvasPointerEvent event,
+        DungeonLayout projectedLayout,
+        DungeonGridHitTester hitTester,
+        DungeonCanvasCamera camera,
+        EditorInteractionState state
+) {
+}
