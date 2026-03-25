@@ -13,7 +13,6 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
 
     private final DungeonEditorControls controls = new DungeonEditorControls();
     private final DungeonEditorStatePane statePane = new DungeonEditorStatePane();
-    private final DungeonEditorSessionState sessionState = new DungeonEditorSessionState();
     private final DungeonEditorCoordinator coordinator;
 
     public DungeonEditorView(
