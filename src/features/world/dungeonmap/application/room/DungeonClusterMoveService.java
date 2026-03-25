@@ -4,7 +4,6 @@ import database.DatabaseManager;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.persistence.DungeonRoomGeometryWriteMapper;
@@ -12,8 +11,6 @@ import features.world.dungeonmap.persistence.DungeonRoomWriteRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Objects;
 
 public final class DungeonClusterMoveService {
@@ -47,8 +44,8 @@ public final class DungeonClusterMoveService {
                 roomWriteRepository.updateClusterGeometry(
                         conn,
                         clusterId,
-                        geometryWriteMapper.toClusterGeometry(shapesByLevel(cluster)),
-                        primaryLevel(cluster));
+                        geometryWriteMapper.toClusterGeometry(cluster.shapesByLevel()),
+                        cluster.primaryLevel());
                 for (Room room : cluster.rooms()) {
                     if (room == null || room.roomId() == null) {
                         continue;
@@ -69,38 +66,5 @@ public final class DungeonClusterMoveService {
             throw new SQLException("Cluster " + clusterId + " existiert nicht");
         }
         return cluster.movedBy(delta, levelDelta);
-    }
-
-    private static Map<Integer, TileShape> shapesByLevel(RoomCluster cluster) {
-        Map<Integer, java.util.Set<Point2i>> cellsByLevel = new LinkedHashMap<>();
-        if (cluster != null) {
-            for (Room room : cluster.rooms()) {
-                if (room == null) {
-                    continue;
-                }
-                for (Map.Entry<Integer, features.world.dungeonmap.model.objects.Floor> entry : room.floors().entrySet()) {
-                    if (entry == null || entry.getKey() == null || entry.getValue() == null) {
-                        continue;
-                    }
-                    cellsByLevel.computeIfAbsent(entry.getKey(), ignored -> new java.util.LinkedHashSet<>())
-                            .addAll(entry.getValue().shape().absoluteCells());
-                }
-            }
-        }
-        if (cellsByLevel.isEmpty()) {
-            return Map.of(0, TileShape.empty());
-        }
-        Map<Integer, TileShape> result = new LinkedHashMap<>();
-        for (Map.Entry<Integer, java.util.Set<Point2i>> entry : cellsByLevel.entrySet()) {
-            result.put(entry.getKey(), TileShape.fromAbsoluteCells(entry.getValue()));
-        }
-        return Map.copyOf(result);
-    }
-
-    private static int primaryLevel(RoomCluster cluster) {
-        return shapesByLevel(cluster).keySet().stream()
-                .mapToInt(Integer::intValue)
-                .min()
-                .orElse(0);
     }
 }

@@ -199,6 +199,37 @@ public final class RoomCluster {
         return cells;
     }
 
+    public Map<Integer, TileShape> shapesByLevel() {
+        Map<Integer, Set<Point2i>> cellsByLevel = new LinkedHashMap<>();
+        for (Room room : rooms) {
+            if (room == null) {
+                continue;
+            }
+            for (Map.Entry<Integer, TileShape> entry : room.shapesByLevel().entrySet()) {
+                if (entry == null || entry.getKey() == null || entry.getValue() == null) {
+                    continue;
+                }
+                cellsByLevel.computeIfAbsent(entry.getKey(), ignored -> new LinkedHashSet<>())
+                        .addAll(entry.getValue().absoluteCells());
+            }
+        }
+        if (cellsByLevel.isEmpty()) {
+            return Map.of(0, TileShape.empty());
+        }
+        Map<Integer, TileShape> result = new LinkedHashMap<>();
+        for (Map.Entry<Integer, Set<Point2i>> entry : cellsByLevel.entrySet()) {
+            result.put(entry.getKey(), TileShape.fromAbsoluteCells(entry.getValue()));
+        }
+        return Map.copyOf(result);
+    }
+
+    public int primaryLevel() {
+        return shapesByLevel().keySet().stream()
+                .mapToInt(Integer::intValue)
+                .min()
+                .orElse(0);
+    }
+
     public TileShape shape() {
         return shape;
     }
