@@ -17,13 +17,10 @@ import features.world.dungeonmap.shell.editor.interaction.CorridorTool;
 import features.world.dungeonmap.shell.editor.interaction.DungeonGridHitTester;
 import features.world.dungeonmap.shell.editor.interaction.EditorInteraction;
 import features.world.dungeonmap.shell.editor.interaction.EditorTool;
-import features.world.dungeonmap.shell.editor.interaction.EditorToolHandler;
-import features.world.dungeonmap.shell.editor.interaction.LegacyEditorToolAdapter;
 import features.world.dungeonmap.shell.editor.interaction.PaintTool;
 import features.world.dungeonmap.shell.editor.interaction.SelectionTool;
 import features.world.dungeonmap.shell.editor.interaction.StairTool;
-import features.world.dungeonmap.shell.editor.interaction.TransitionToolHandler;
-import features.world.dungeonmap.shell.editor.interaction.TransitionInteractionController;
+import features.world.dungeonmap.shell.editor.interaction.TransitionTool;
 import features.world.dungeonmap.state.EditorInteractionState;
 import features.world.dungeonmap.state.EditorLayoutPreviewState;
 import features.world.dungeonmap.state.EditorPreview;
@@ -77,21 +74,7 @@ final class DungeonEditorCoordinator {
         this.sessionState = Objects.requireNonNull(sessionState, "sessionState");
         DungeonStairDraftState stairDraftState = new DungeonStairDraftState();
         DungeonTransitionDraftState transitionDraftState = new DungeonTransitionDraftState();
-        TransitionInteractionController transitionInteractionController = new TransitionInteractionController(
-                mapState,
-                loadingService,
-                sessionState,
-                selectionState,
-                transitionDraftState,
-                Objects.requireNonNull(transitionEditService, "transitionEditService"));
         DungeonTransitionTargetCatalogService transitionTargetCatalogService = new DungeonTransitionTargetCatalogService();
-        List<EditorToolHandler> legacyToolHandlers = List.of(
-                new TransitionToolHandler(
-                        transitionInteractionController,
-                        transitionDraftState,
-                        transitionTargetCatalogService,
-                        mapState,
-                        selectionState));
         List<EditorTool> tools = List.of(
                 new SelectionTool(
                         mapState,
@@ -125,7 +108,14 @@ final class DungeonEditorCoordinator {
                         Objects.requireNonNull(stairEditService, "stairEditService"),
                         stairDraftState,
                         interactionState),
-                new LegacyEditorToolAdapter(legacyToolHandlers.get(0)));
+                new TransitionTool(
+                        mapState,
+                        loadingService,
+                        sessionState,
+                        Objects.requireNonNull(transitionEditService, "transitionEditService"),
+                        transitionTargetCatalogService,
+                        transitionDraftState,
+                        interactionState));
         this.interactionController = new EditorInteraction(
                 mapState,
                 sessionState,
