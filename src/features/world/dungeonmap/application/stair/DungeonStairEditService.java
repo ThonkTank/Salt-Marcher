@@ -44,21 +44,17 @@ public final class DungeonStairEditService {
             List<Integer> exitLevels
     ) throws SQLException {
         requireLayout(layout);
-        List<Integer> sortedExitLevels = validateAndSortExitLevels(exitLevels);
-        StairShape validatedShape = requireShape(shape);
-        CardinalDirection validatedDirection = requireDirection(direction);
-        validateDimensions(validatedShape, dimension1, dimension2);
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
                 create(
                         conn,
                         layout,
                         anchorCell,
-                        validatedShape,
-                        validatedDirection,
+                        shape,
+                        direction,
                         dimension1,
                         dimension2,
-                        sortedExitLevels);
+                        exitLevels);
                 return null;
             });
         }
