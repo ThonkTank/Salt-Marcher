@@ -5,6 +5,7 @@ import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 
 import java.util.ArrayDeque;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -142,7 +143,7 @@ record SteinerTree(
                 Set.copyOf(updatedCells),
                 Set.copyOf(updatedDoors),
                 Map.copyOf(updatedAttachments),
-                SteinerTreeBuilder.scoreCells(updatedCells));
+                scoreCells(updatedCells));
     }
 
     SteinerTree withReplacedSubtree(
@@ -181,7 +182,36 @@ record SteinerTree(
                 Set.copyOf(updatedCells),
                 Set.copyOf(updatedDoors),
                 Map.copyOf(updatedAttachments),
-                SteinerTreeBuilder.scoreCells(updatedCells));
+                scoreCells(updatedCells));
+    }
+
+    static RouteCost scoreCells(Collection<CubePoint> cells) {
+        Set<CubePoint> unique = cells == null ? Set.of() : Set.copyOf(cells);
+        int corners = 0;
+        int levelChanges = 0;
+        for (CubePoint cell : unique) {
+            boolean hasX = false;
+            boolean hasY = false;
+            boolean hasZ = false;
+            for (CubePoint step : CostField.STEPS) {
+                if (unique.contains(cell.add(step))) {
+                    if (step.x() != 0) {
+                        hasX = true;
+                    } else if (step.y() != 0) {
+                        hasY = true;
+                    } else {
+                        hasZ = true;
+                    }
+                }
+            }
+            if (unique.contains(cell.add(new CubePoint(0, 0, 1)))) {
+                levelChanges++;
+            }
+            if ((hasX ? 1 : 0) + (hasY ? 1 : 0) + (hasZ ? 1 : 0) >= 2) {
+                corners++;
+            }
+        }
+        return new RouteCost(unique.size(), corners, levelChanges);
     }
 
     Set<Point2i> cellsAtLevel(int z) {

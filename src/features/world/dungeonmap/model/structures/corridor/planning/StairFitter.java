@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 final class StairFitter {
@@ -26,7 +27,17 @@ final class StairFitter {
         if (tree == null || context == null || tree.corridorCells().isEmpty()) {
             return List.of();
         }
-        List<Set<CubePoint>> columns = groupVerticalColumns(tree.zTransitions());
+        Set<CubePoint> transitionCells = new LinkedHashSet<>(tree.zTransitions());
+        for (Map.Entry<Long, Set<CubePoint>> entry : tree.attachmentCellsByRoomId().entrySet()) {
+            Long roomId = entry.getKey();
+            int roomZ = context.roomLevel(roomId);
+            for (CubePoint cell : entry.getValue()) {
+                if (cell.z() != roomZ) {
+                    transitionCells.add(cell);
+                }
+            }
+        }
+        List<Set<CubePoint>> columns = groupVerticalColumns(transitionCells);
         if (columns.isEmpty()) {
             return List.of();
         }
@@ -96,16 +107,14 @@ final class StairFitter {
             return null;
         }
         Point2i anchor = lowestCell.projectedCell();
-        int minZ = lowestCell.z();
-        int maxZ = highestCell.z();
+        ZRange zRange = resolveZRange(column, lowestCell, highestCell, context);
         CardinalDirection direction = determineDirection(lowestCell, tree.corridorCells());
-        ShapeSelection selection = selectShape(anchor, direction, minZ, maxZ, column, tree.corridorCells(), context.searchVolume());
+        ShapeSelection selection = selectShape(anchor, direction, zRange.minZ(), zRange.maxZ(), column, tree.corridorCells(), context.searchVolume());
         Set<CubePoint> bridgeCells = computeBridgeCells(selection, highestCell);
-        List<Integer> exitLevels = column.stream()
-                .map(CubePoint::z)
-                .sorted()
-                .distinct()
-                .toList();
+        List<Integer> exitLevels = new ArrayList<>();
+        for (int z = zRange.minZ(); z <= zRange.maxZ(); z++) {
+            exitLevels.add(z);
+        }
         return new StairFitResult(
                 anchor,
                 selection.shape(),
@@ -237,6 +246,24 @@ final class StairFitter {
                 .map(CubePoint::projectedCell)
                 .min(Point2i.POINT_ORDER)
                 .orElse(new Point2i(Integer.MAX_VALUE, Integer.MAX_VALUE));
+    }
+
+    private static ZRange resolveZRange(Set<CubePoint> column, CubePoint lowestCell, CubePoint highestCell, PlannerContext context) {
+        int minZ = lowestCell.z();
+        int maxZ = highestCell.z();
+        for (CubePoint cell : column) {
+            Long roomId = context.roomIdAtEntryCell(cell);
+            if (roomId == null) {
+                continue;
+            }
+            int roomZ = context.roomLevel(roomId);
+            minZ = Math.min(minZ, roomZ);
+            maxZ = Math.max(maxZ, roomZ);
+        }
+        return new ZRange(minZ, maxZ);
+    }
+
+    private record ZRange(int minZ, int maxZ) {
     }
 
     private record ShapeSelection(

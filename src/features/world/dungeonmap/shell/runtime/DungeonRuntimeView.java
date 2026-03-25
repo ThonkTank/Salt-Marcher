@@ -48,6 +48,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
     private final Label mapLabel = new Label();
     private final Label levelLabel = new Label();
     private final DungeonLevelOverlayControls overlayControls = new DungeonLevelOverlayControls(DungeonRuntimeView::sectionLabel);
+    private final Runnable mapStateListener = this::onMapStateChanged;
     private long runtimeRequestSequence;
     private Long runtimeMapId;
     private DetailsNavigator.EntryKey lastPublishedSurfaceKey;
@@ -82,7 +83,6 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         workspace().setOnLevelScrollRequested(delta ->
                 state.setReachableProjectionLevel(state.activeProjectionLevel() + delta));
         workspace().setOnStateChanged(this::refreshLabels);
-        state.addListener(this::onMapStateChanged);
         runtimeState.addListener(this::refreshRuntimeUi);
         Button upLevelButton = new Button("Ebene +");
         Button downLevelButton = new Button("Ebene -");
@@ -98,6 +98,18 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         this.controls = new VBox(10, zoomLabel, mapLabel, levelRow);
         this.controls.setPadding(new Insets(12));
         refreshRuntimeUi();
+    }
+
+    @Override
+    public void onShow() {
+        super.onShow();
+        state().addListener(mapStateListener);
+        onMapStateChanged();
+    }
+
+    @Override
+    public void onHide() {
+        state().removeListener(mapStateListener);
     }
 
     @Override

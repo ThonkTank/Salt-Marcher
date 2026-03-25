@@ -50,17 +50,7 @@ public final class DungeonCorridorEditService {
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
                 long corridorId = corridorWriteRepository.insertCorridor(conn, layout.mapId(), roomIds);
-                for (StairFitResult fit : stairFits) {
-                    stairEditService.create(
-                            conn,
-                            layout,
-                            fit.anchor(),
-                            fit.shape(),
-                            fit.direction(),
-                            fit.dimension1(),
-                            fit.dimension2(),
-                            fit.exitLevels());
-                }
+                persistStairFits(conn, layout, stairFits);
                 return null;
             });
         }
@@ -153,23 +143,27 @@ public final class DungeonCorridorEditService {
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                for (StairFitResult fit : stairFits) {
-                    stairEditService.create(
-                            conn,
-                            layout,
-                            fit.anchor(),
-                            fit.shape(),
-                            fit.direction(),
-                            fit.dimension1(),
-                            fit.dimension2(),
-                            fit.exitLevels());
-                }
+                persistStairFits(conn, layout, stairFits);
                 corridorPersistenceService.persistCorridor(conn, updated);
                 if (deletedCorridorId != null) {
                     corridorWriteRepository.deleteCorridor(conn, deletedCorridorId);
                 }
                 return null;
             });
+        }
+    }
+
+    private void persistStairFits(Connection conn, DungeonLayout layout, List<StairFitResult> stairFits) throws SQLException {
+        for (StairFitResult fit : stairFits) {
+            stairEditService.create(
+                    conn,
+                    layout,
+                    fit.anchor(),
+                    fit.shape(),
+                    fit.direction(),
+                    fit.dimension1(),
+                    fit.dimension2(),
+                    fit.exitLevels());
         }
     }
 

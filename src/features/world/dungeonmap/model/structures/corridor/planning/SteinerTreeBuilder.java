@@ -107,7 +107,7 @@ final class SteinerTreeBuilder {
                 Set.copyOf(treeCells),
                 Set.copyOf(openings),
                 Map.copyOf(attachmentCellsByRoomId),
-                scoreCells(treeCells));
+                SteinerTree.scoreCells(treeCells));
     }
 
     private static SteinerTree ripUpAndReroute(SteinerTree tree, PlannerContext context) {
@@ -144,7 +144,7 @@ final class SteinerTreeBuilder {
                 if (newPath.isEmpty()) {
                     continue;
                 }
-                if (scoreCells(newPath).compareTo(scoreCells(branch)) < 0) {
+                if (SteinerTree.scoreCells(newPath).compareTo(SteinerTree.scoreCells(branch)) < 0) {
                     current = current.withReplacedBranch(
                             room.roomId(),
                             branch,
@@ -263,7 +263,7 @@ final class SteinerTreeBuilder {
         replacementCells.addAll(junction.secondPath());
         replacementCells.addAll(junction.thirdPath());
         replacementCells.addAll(junction.boundaryPath());
-        if (scoreCells(replacementCells).compareTo(scoreCells(currentSubtree)) >= 0) {
+        if (SteinerTree.scoreCells(replacementCells).compareTo(SteinerTree.scoreCells(currentSubtree)) >= 0) {
             return null;
         }
 
@@ -481,34 +481,6 @@ final class SteinerTreeBuilder {
         }
     }
 
-    static RouteCost scoreCells(Collection<CubePoint> cells) {
-        Set<CubePoint> unique = cells == null ? Set.of() : Set.copyOf(cells);
-        int corners = 0;
-        int levelChanges = 0;
-        for (CubePoint cell : unique) {
-            boolean hasX = false;
-            boolean hasY = false;
-            boolean hasZ = false;
-            for (CubePoint step : CostField.STEPS) {
-                if (unique.contains(cell.add(step))) {
-                    if (step.x() != 0) {
-                        hasX = true;
-                    } else if (step.y() != 0) {
-                        hasY = true;
-                    } else {
-                        hasZ = true;
-                    }
-                }
-            }
-            if (unique.contains(cell.add(new CubePoint(0, 0, 1)))) {
-                levelChanges++;
-            }
-            if ((hasX ? 1 : 0) + (hasY ? 1 : 0) + (hasZ ? 1 : 0) >= 2) {
-                corners++;
-            }
-        }
-        return new RouteCost(unique.size(), corners, levelChanges);
-    }
 }
 
 record ReachedRoom(Room room, CubePoint entryCell, RouteCost cost) {

@@ -14,6 +14,8 @@ import features.world.dungeonmap.state.EditorPreview;
 import javafx.geometry.Insets;
 import javafx.geometry.Point2D;
 import javafx.scene.canvas.Canvas;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
@@ -80,6 +82,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
         viewport.setPadding(new Insets(0));
         setCenter(viewport);
 
+        canvas.setFocusTraversable(true);
         viewport.widthProperty().addListener((obs, oldValue, newValue) -> {
             canvas.setWidth(newValue.doubleValue());
             redraw();
@@ -92,6 +95,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
         canvas.addEventHandler(MouseEvent.MOUSE_DRAGGED, this::handleDrag);
         canvas.addEventHandler(MouseEvent.MOUSE_RELEASED, this::handleRelease);
         canvas.addEventHandler(ScrollEvent.SCROLL, this::handleScroll);
+        canvas.addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPress);
     }
 
     public void setViewMode(DungeonViewMode viewMode) {
@@ -234,6 +238,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
     }
 
     private void handlePress(MouseEvent event) {
+        canvas.requestFocus();
         if (isInteractionPress(event) && interactionHandler.handlePressed(pointerEvent(event), camera)) {
             activePointerCapture = PointerCapture.INTERACTION;
             lastPointer = null;
@@ -299,12 +304,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
                 : -event.getDeltaX();
         if (isLevelScrollGesture(event) && axisDelta != 0.0d) {
             int levelDelta = axisDelta > 0 ? 1 : -1;
-            if (levelScrollHandler != null) {
-                levelScrollHandler.accept(levelDelta);
-            } else {
-                mapState.setActiveProjectionLevel(mapState.activeProjectionLevel() + levelDelta);
-            }
-            interactionHandler.levelScrolled(levelDelta);
+            applyLevelChange(levelDelta);
             event.consume();
             return;
         }
@@ -315,8 +315,27 @@ public final class DungeonCanvasWorkspace extends BorderPane {
         event.consume();
     }
 
+    private void handleKeyPress(KeyEvent event) {
+        if (event.getCode() == KeyCode.SHIFT) {
+            applyLevelChange(-1);
+            event.consume();
+        } else if (event.getCode() == KeyCode.CAPS) {
+            applyLevelChange(1);
+            event.consume();
+        }
+    }
+
+    private void applyLevelChange(int levelDelta) {
+        if (levelScrollHandler != null) {
+            levelScrollHandler.accept(levelDelta);
+        } else {
+            mapState.setActiveProjectionLevel(mapState.activeProjectionLevel() + levelDelta);
+        }
+        interactionHandler.levelScrolled(levelDelta);
+    }
+
     private boolean isLevelScrollGesture(ScrollEvent event) {
-        return activePointerCapture == PointerCapture.INTERACTION || event.isShiftDown();
+        return activePointerCapture == PointerCapture.INTERACTION || event.isControlDown();
     }
 
     private void redraw() {

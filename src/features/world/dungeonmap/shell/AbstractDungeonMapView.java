@@ -27,7 +27,7 @@ public abstract class AbstractDungeonMapView implements AppView {
     }
 
     @Override
-    public final void onShow() {
+    public void onShow() {
         loadingService.ensureLoaded();
     }
 
