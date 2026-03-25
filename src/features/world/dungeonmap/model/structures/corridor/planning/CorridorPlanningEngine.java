@@ -13,6 +13,7 @@ import features.world.dungeonmap.model.structures.corridor.ResolvedCorridorDoorB
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.CorridorConnection;
 import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.model.structures.stair.DungeonStair;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -44,7 +45,7 @@ public final class CorridorPlanningEngine {
                 return new CorridorPlan(CorridorPath.unroutable(route), List.of(), List.of());
             }
 
-            Set<CubePoint> allObstacles = buildObstacles(input.roomsById());
+            Set<CubePoint> allObstacles = buildObstacles(input.roomsById(), input.stairs());
             PlannerContext context = new PlannerContext(
                     rooms,
                     allObstacles,
@@ -75,16 +76,23 @@ public final class CorridorPlanningEngine {
         return new GridRoute(anchors);
     }
 
-    private static Set<CubePoint> buildObstacles(Map<Long, Room> roomsById) {
+    private static Set<CubePoint> buildObstacles(Map<Long, Room> roomsById, List<DungeonStair> stairs) {
         Set<CubePoint> result = new LinkedHashSet<>();
-        if (roomsById == null || roomsById.isEmpty()) {
-            return Set.of();
-        }
-        for (Room room : roomsById.values()) {
-            if (room == null || room.roomId() == null) {
-                continue;
+        if (roomsById != null && !roomsById.isEmpty()) {
+            for (Room room : roomsById.values()) {
+                if (room == null || room.roomId() == null) {
+                    continue;
+                }
+                result.addAll(room.cubePoints());
             }
-            result.addAll(room.cubePoints());
+        }
+        for (DungeonStair stair : stairs == null ? List.<DungeonStair>of() : stairs) {
+            if (stair != null) {
+                result.addAll(stair.occupiedPositions());
+            }
+        }
+        if (result.isEmpty()) {
+            return Set.of();
         }
         return Set.copyOf(result);
     }
