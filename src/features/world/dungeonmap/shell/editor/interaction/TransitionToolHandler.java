@@ -8,6 +8,7 @@ import features.world.dungeonmap.application.transition.DungeonTransitionTargetS
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapCatalogEntry;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
+import features.world.dungeonmap.shell.editor.EditorCards;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.DungeonTransitionDraftState;
@@ -45,7 +46,7 @@ public final class TransitionToolHandler implements EditorToolHandler {
     private final FlowPane preparedTransitionButtons = new FlowPane();
     private final Label transitionSummaryLabel = new Label("Kein Übergang gewählt");
     private final Label transitionStatusLabel = new Label();
-    private final VBox transitionCard = createCard(
+    private final VBox transitionCard = EditorCards.card(
             "Übergänge",
             transitionSummaryLabel,
             transitionDescriptionArea,
@@ -442,16 +443,6 @@ public final class TransitionToolHandler implements EditorToolHandler {
     private void invalidateTargetCache() {
         targetTransitions = List.of();
         loadedTargetTransitionMapId = null;
-    }
-
-    private static VBox createCard(String title, Node... content) {
-        Label titleLabel = new Label(title);
-        titleLabel.getStyleClass().add("editor-panel-title");
-        VBox box = new VBox(6);
-        box.getStyleClass().add("editor-card");
-        box.getChildren().add(titleLabel);
-        box.getChildren().addAll(content);
-        return box;
     }
 
     private static String blankToEmpty(String text) {

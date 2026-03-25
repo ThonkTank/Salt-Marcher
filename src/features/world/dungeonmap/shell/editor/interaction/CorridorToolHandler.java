@@ -2,6 +2,7 @@ package features.world.dungeonmap.shell.editor.interaction;
 
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
+import features.world.dungeonmap.shell.editor.EditorCards;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonCorridorDraftState;
 import features.world.dungeonmap.state.EditorSelectionState;
@@ -18,7 +19,7 @@ public final class CorridorToolHandler implements EditorToolHandler {
     private final EditorSelectionState selectionState;
     private final DungeonCorridorDraftState corridorDraftState;
     private final Label statusLabel = new Label("Kein Korridor gewählt");
-    private final VBox statusCard = createCard("Korridor", statusLabel);
+    private final VBox statusCard = EditorCards.card("Korridor", statusLabel);
 
     private DungeonEditorTool activeTool;
     private Runnable refreshCallback = () -> { };
@@ -31,6 +32,7 @@ public final class CorridorToolHandler implements EditorToolHandler {
         this.controller = Objects.requireNonNull(controller, "controller");
         this.selectionState = Objects.requireNonNull(selectionState, "selectionState");
         this.corridorDraftState = Objects.requireNonNull(corridorDraftState, "corridorDraftState");
+        this.statusLabel.setWrapText(true);
         this.selectionState.addListener(this::refreshStatePane);
         this.corridorDraftState.addListener(this::refreshStatePane);
     }
@@ -104,14 +106,5 @@ public final class CorridorToolHandler implements EditorToolHandler {
             return "Gewählt: " + (corridorId == null ? "Korridor" : "Korridor " + corridorId);
         }
         return null;
-    }
-
-    private static VBox createCard(String title, Label contentLabel) {
-        Label titleLabel = new Label(title);
-        titleLabel.getStyleClass().add("editor-panel-title");
-        contentLabel.setWrapText(true);
-        VBox card = new VBox(6, titleLabel, contentLabel);
-        card.getStyleClass().add("editor-card");
-        return card;
     }
 }

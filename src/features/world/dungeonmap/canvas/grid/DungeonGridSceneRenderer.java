@@ -34,6 +34,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
@@ -146,14 +147,14 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         Set<Connection> selectedRoomDoorConnections = new LinkedHashSet<>();
         for (RoomCluster cluster : mapModel.clusters()) {
             InteractiveLabelHandle handle = cluster.labelHandle();
-            boolean selectedCluster = handle != null && java.util.Objects.equals(handle.key(), pass.selectedTargetKey());
+            boolean selectedCluster = handle != null && Objects.equals(handle.key(), pass.selectedTargetKey());
             for (Room room : cluster.rooms()) {
                 Floor levelFloor = room.floorAtLevel(pass.projectionLevel());
                 if (levelFloor == null || levelFloor.shape() == null || levelFloor.shape().size() == 0) {
                     continue;
                 }
                 boolean selectedRoom = Room.isTargetKey(pass.selectedTargetKey())
-                        && java.util.Objects.equals(room.roomId(), Room.roomIdFromKey(pass.selectedTargetKey()));
+                        && Objects.equals(room.roomId(), Room.roomIdFromKey(pass.selectedTargetKey()));
                 Set<Tile> tiles = levelFloor.shape().tiles();
                 fillRoomTiles(gc, pass.camera(), pass.gridSize(), tiles);
                 strokeRoomTiles(gc, pass.camera(), pass.gridSize(), tiles, pass.palette().roomStroke(), 1.0);
@@ -360,7 +361,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         for (RoomCluster cluster : pass.projected().clusters()) {
             InteractiveLabelHandle handle = cluster.labelHandle();
             javafx.geometry.Rectangle2D bounds = DungeonGridInteractiveLabels.bounds(handle, pass.camera(), pass.gridSize());
-            boolean selected = handle != null && java.util.Objects.equals(handle.key(), pass.selectedTargetKey());
+            boolean selected = handle != null && Objects.equals(handle.key(), pass.selectedTargetKey());
             gc.setFill(selected ? DungeonCanvasTheme.GRAPH_NODE_FILL : DungeonCanvasTheme.LABEL_FILL);
             gc.fillRoundRect(bounds.getMinX(), bounds.getMinY(), bounds.getWidth(), bounds.getHeight(), 14, 14);
             gc.setStroke(selected ? DungeonCanvasTheme.ROOM_SELECTED_WALL_STROKE : DungeonCanvasTheme.LABEL_BORDER);
@@ -379,7 +380,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             if (corridor == null || corridor.path() == null) {
                 continue;
             }
-            boolean selected = java.util.Objects.equals(corridor.targetKey(), pass.selectedTargetKey());
+            boolean selected = Objects.equals(corridor.targetKey(), pass.selectedTargetKey());
             Set<Tile> corridorTiles = corridor.path().floorAtLevel(pass.projectionLevel()).shape().tiles();
             Set<VertexEdge> levelConnectionEdges = corridor.corridorId() == null
                     ? Set.of()
@@ -425,7 +426,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             if (stair == null) {
                 continue;
             }
-            boolean selected = java.util.Objects.equals(stair.targetKey(), pass.selectedTargetKey());
+            boolean selected = Objects.equals(stair.targetKey(), pass.selectedTargetKey());
             gc.setFill(selected ? pass.palette().corridorSelectedFill() : pass.palette().stairFill());
             gc.setStroke(selected ? pass.palette().corridorSelectedStroke() : pass.palette().stairStroke());
             gc.setLineWidth(selected ? 2.5 : 1.8);
@@ -624,7 +625,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             double centerX = pass.camera().panX() + (transition.anchor().x() + 0.5) * pass.gridSize();
             double centerY = pass.camera().panY() + (transition.anchor().y() + 0.5) * pass.gridSize();
             double radius = Math.max(8.0, pass.gridSize() * 0.24);
-            boolean selected = java.util.Objects.equals(transition.targetKey(), pass.selectedTargetKey());
+            boolean selected = Objects.equals(transition.targetKey(), pass.selectedTargetKey());
             gc.setFill(selected ? pass.palette().selectedWallStroke() : pass.palette().transitionFill());
             gc.fillRoundRect(centerX - radius, centerY - radius, radius * 2, radius * 2, 8, 8);
             gc.setStroke(selected ? pass.palette().corridorSelectedStroke() : pass.palette().transitionStroke());

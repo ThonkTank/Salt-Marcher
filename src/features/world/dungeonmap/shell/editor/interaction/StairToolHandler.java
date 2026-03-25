@@ -4,6 +4,7 @@ import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.stair.StairShape;
+import features.world.dungeonmap.shell.editor.EditorCards;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.DungeonStairDraftState;
@@ -58,7 +59,7 @@ public final class StairToolHandler implements EditorToolHandler {
             stairDimension2Row,
             stairInputRow,
             stairExitTokens);
-    private final VBox stairCard = createCard("Treppen-Ausgänge", stairSummaryLabel, stairEditorContent, stairStatusLabel);
+    private final VBox stairCard = EditorCards.card("Treppen-Ausgänge", stairSummaryLabel, stairEditorContent, stairStatusLabel);
 
     private DungeonEditorTool activeTool;
     private Runnable refreshCallback = () -> { };
@@ -368,15 +369,5 @@ public final class StairToolHandler implements EditorToolHandler {
     private static String stairLabel(String targetKey) {
         Long stairId = DungeonStair.stairIdFromKey(targetKey);
         return stairId == null ? "Treppe" : "Treppe " + stairId;
-    }
-
-    private static VBox createCard(String title, Node... content) {
-        Label titleLabel = new Label(title);
-        titleLabel.getStyleClass().add("editor-panel-title");
-        VBox box = new VBox(6);
-        box.getStyleClass().add("editor-card");
-        box.getChildren().add(titleLabel);
-        box.getChildren().addAll(content);
-        return box;
     }
 }

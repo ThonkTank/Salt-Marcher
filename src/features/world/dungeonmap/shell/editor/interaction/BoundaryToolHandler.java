@@ -1,6 +1,7 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
+import features.world.dungeonmap.shell.editor.EditorCards;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonBoundaryDraftState;
 import javafx.scene.Node;
@@ -15,7 +16,7 @@ public final class BoundaryToolHandler implements EditorToolHandler {
     private final BoundaryInteractionController controller;
     private final DungeonBoundaryDraftState boundaryDraftState;
     private final Label statusLabel = new Label("Kein Wandpfad aktiv");
-    private final VBox statusCard = createCard("Wandpfad", statusLabel);
+    private final VBox statusCard = EditorCards.card("Wandpfad", statusLabel);
 
     private DungeonEditorTool activeTool;
     private Runnable refreshCallback = () -> { };
@@ -26,6 +27,7 @@ public final class BoundaryToolHandler implements EditorToolHandler {
     ) {
         this.controller = Objects.requireNonNull(controller, "controller");
         this.boundaryDraftState = Objects.requireNonNull(boundaryDraftState, "boundaryDraftState");
+        this.statusLabel.setWrapText(true);
         this.boundaryDraftState.addListener(this::refreshStatePane);
     }
 
@@ -101,14 +103,5 @@ public final class BoundaryToolHandler implements EditorToolHandler {
             return "Eckpunkte auf bestehender Innenwand anklicken, Rechtsklick schließt ab";
         }
         return null;
-    }
-
-    private static VBox createCard(String title, Label contentLabel) {
-        Label titleLabel = new Label(title);
-        titleLabel.getStyleClass().add("editor-panel-title");
-        contentLabel.setWrapText(true);
-        VBox card = new VBox(6, titleLabel, contentLabel);
-        card.getStyleClass().add("editor-card");
-        return card;
     }
 }

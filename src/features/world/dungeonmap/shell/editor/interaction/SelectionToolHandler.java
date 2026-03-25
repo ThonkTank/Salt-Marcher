@@ -9,6 +9,7 @@ import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
+import features.world.dungeonmap.shell.editor.EditorCards;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.EditorSelectionState;
@@ -36,7 +37,7 @@ public final class SelectionToolHandler implements EditorToolHandler {
     private final DungeonRoomNarrationService roomNarrationService;
     private final DungeonMapLoadingService loadingService;
     private final VBox narrationContent = new VBox(8);
-    private final VBox narrationCard = createCard("Raumbeschreibung", narrationContent);
+    private final VBox narrationCard = EditorCards.card("Raumbeschreibung", narrationContent);
     private final Map<Long, Button> narrationSaveButtons = new LinkedHashMap<>();
     private final Map<Long, Label> narrationStatusLabels = new LinkedHashMap<>();
 
@@ -189,7 +190,7 @@ public final class SelectionToolHandler implements EditorToolHandler {
         narrationStatusLabels.put(card.roomId(), statusLabel);
         saveButton.setOnAction(event -> saveRoomNarration(card, visualArea, exitAreas));
         roomBox.getChildren().addAll(statusLabel, saveButton);
-        return createCard(card.roomName(), roomBox);
+        return EditorCards.card(card.roomName(), roomBox);
     }
 
     private void saveRoomNarration(RoomNarrationCard card, TextArea visualArea, List<TextArea> exitAreas) {
@@ -240,16 +241,6 @@ public final class SelectionToolHandler implements EditorToolHandler {
             return null;
         }
         return mapState.activeMap().findRoom(Room.roomIdFromKey(targetKey));
-    }
-
-    private static VBox createCard(String title, Node... content) {
-        Label titleLabel = new Label(title);
-        titleLabel.getStyleClass().add("editor-panel-title");
-        VBox box = new VBox(6);
-        box.getStyleClass().add("editor-card");
-        box.getChildren().add(titleLabel);
-        box.getChildren().addAll(content);
-        return box;
     }
 
     private static TextArea createTextArea(String text) {
