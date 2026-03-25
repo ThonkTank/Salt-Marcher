@@ -349,12 +349,12 @@ public final class Corridor {
     }
 
     public CorridorPlan plan(CorridorPlanningInput input) {
+        // Drag previews and committed moves both flow through DungeonLayout.withTranslatedCluster().
+        // Planning must therefore preserve the same end topology for both call sites.
         return CorridorPlanningEngine.plan(this, input);
     }
 
     public Corridor replanned(CorridorPlanningInput input) {
-        // Drag previews and committed moves both flow through DungeonLayout.withTranslatedCluster().
-        // Replanning must therefore preserve the same end topology for both.
         return applyPlan(plan(input));
     }
 
