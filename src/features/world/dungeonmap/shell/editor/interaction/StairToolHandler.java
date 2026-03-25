@@ -120,6 +120,9 @@ public final class StairToolHandler implements EditorToolHandler {
 
     @Override
     public Node statePaneContent() {
+        if (activeTool == null) {
+            return null;
+        }
         refreshCard();
         if (activeTool != DungeonEditorTool.STAIR_CREATE
                 && activeTool != DungeonEditorTool.STAIR_DELETE

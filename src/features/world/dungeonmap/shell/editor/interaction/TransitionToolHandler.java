@@ -128,6 +128,9 @@ public final class TransitionToolHandler implements EditorToolHandler {
 
     @Override
     public Node statePaneContent() {
+        if (activeTool == null) {
+            return null;
+        }
         refreshCard();
         return activeTool == DungeonEditorTool.TRANSITION_CREATE || activeTool == DungeonEditorTool.TRANSITION_DELETE
                 ? transitionCard

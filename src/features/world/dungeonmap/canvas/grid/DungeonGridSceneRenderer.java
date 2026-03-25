@@ -81,7 +81,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                     renderState.previewBoundaryCurrentVertex(),
                     renderState.previewBoundaryDeleteMode());
         }
-        drawSelectedRoomBoundaries(renderPass, selectedRoomBoundaryEdges, renderPass.palette().selectedWallStroke());
+        drawSelectedRoomBoundaries(renderPass, selectedRoomBoundaryEdges, renderPass.palette().highlightAccent());
         if (editorMode) {
             drawInteractiveLabels(renderPass);
         }
@@ -202,7 +202,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 pass.gridSize(),
                 selectedRoomDoorConnections,
                 roomDoorEdges(selectedRoomDoorConnections, mapModel),
-                pass.palette().selectedWallStroke(),
+                pass.palette().highlightAccent(),
                 3.0);
         return selectedRoomBoundaryEdges;
     }
@@ -388,7 +388,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             if (corridorTiles.isEmpty() && levelConnectionEdges.isEmpty()) {
                 continue;
             }
-            gc.setFill(selected ? pass.palette().corridorSelectedFill() : pass.palette().corridorFill());
+            gc.setFill(selected ? pass.palette().highlightFill() : pass.palette().corridorFill());
             fillRoomTiles(gc, pass.camera(), pass.gridSize(), corridorTiles);
             strokeRoomTiles(gc, pass.camera(), pass.gridSize(), corridorTiles, pass.palette().roomStroke(), 1.0);
 
@@ -401,7 +401,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                     pass.gridSize(),
                     corridor.corridorId() == null ? List.of() : mapModel.connectionsForCorridor(corridor.corridorId()),
                     levelConnectionEdges,
-                    selected ? pass.palette().corridorSelectedStroke() : pass.palette().corridorStroke(),
+                    selected ? pass.palette().highlightStroke() : pass.palette().corridorStroke(),
                     selected ? 3.0 : 2.0);
         }
     }
@@ -410,7 +410,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         if (edges.isEmpty()) {
             return;
         }
-        pass.gc().setStroke(selected ? pass.palette().corridorSelectedStroke() : pass.palette().wallStroke());
+        pass.gc().setStroke(selected ? pass.palette().highlightStroke() : pass.palette().wallStroke());
         pass.gc().setLineWidth(selected ? 2.5 : 2.0);
         for (VertexEdge edge : edges) {
             strokeEdge(pass.gc(), pass.camera(), pass.gridSize(), edge);
@@ -427,8 +427,8 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 continue;
             }
             boolean selected = Objects.equals(stair.targetKey(), pass.selectedTargetKey());
-            gc.setFill(selected ? pass.palette().corridorSelectedFill() : pass.palette().stairFill());
-            gc.setStroke(selected ? pass.palette().corridorSelectedStroke() : pass.palette().stairStroke());
+            gc.setFill(selected ? pass.palette().highlightFill() : pass.palette().stairFill());
+            gc.setStroke(selected ? pass.palette().highlightStroke() : pass.palette().stairStroke());
             gc.setLineWidth(selected ? 2.5 : 1.8);
             for (var node : stair.path()) {
                 if (node.z() != pass.projectionLevel()) {
@@ -446,7 +446,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 double centerX = pass.camera().panX() + (exit.position().x() + 0.5) * pass.gridSize();
                 double centerY = pass.camera().panY() + (exit.position().y() + 0.5) * pass.gridSize();
                 double radius = Math.max(6.0, pass.gridSize() * 0.18);
-                gc.setFill(selected ? pass.palette().selectedWallStroke() : pass.palette().stairExitFill());
+                gc.setFill(selected ? pass.palette().highlightAccent() : pass.palette().stairExitFill());
                 gc.fillOval(centerX - radius, centerY - radius, radius * 2, radius * 2);
                 if (pass.editorMode() && !pass.overlayPass()) {
                     gc.setFill(pass.palette().roomText());
@@ -508,7 +508,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 palette,
                 true);
         Set<VertexEdge> selectedRoomBoundaryEdges = drawStructures(overlayPass);
-        drawSelectedRoomBoundaries(overlayPass, selectedRoomBoundaryEdges, palette.selectedWallStroke());
+        drawSelectedRoomBoundaries(overlayPass, selectedRoomBoundaryEdges, palette.highlightAccent());
         gc.restore();
     }
 
@@ -626,9 +626,9 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             double centerY = pass.camera().panY() + (transition.anchor().y() + 0.5) * pass.gridSize();
             double radius = Math.max(8.0, pass.gridSize() * 0.24);
             boolean selected = Objects.equals(transition.targetKey(), pass.selectedTargetKey());
-            gc.setFill(selected ? pass.palette().selectedWallStroke() : pass.palette().transitionFill());
+            gc.setFill(selected ? pass.palette().highlightAccent() : pass.palette().transitionFill());
             gc.fillRoundRect(centerX - radius, centerY - radius, radius * 2, radius * 2, 8, 8);
-            gc.setStroke(selected ? pass.palette().corridorSelectedStroke() : pass.palette().transitionStroke());
+            gc.setStroke(selected ? pass.palette().highlightStroke() : pass.palette().transitionStroke());
             gc.setLineWidth(selected ? 2.2 : 1.5);
             gc.strokeRoundRect(centerX - radius, centerY - radius, radius * 2, radius * 2, 8, 8);
             gc.setFill(DungeonCanvasTheme.LABEL_TEXT);
@@ -828,11 +828,11 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             Color roomFill,
             Color roomStroke,
             Color wallStroke,
-            Color selectedWallStroke,
+            Color highlightAccent,
             Color corridorFill,
-            Color corridorSelectedFill,
+            Color highlightFill,
             Color corridorStroke,
-            Color corridorSelectedStroke,
+            Color highlightStroke,
             Color stairFill,
             Color stairStroke,
             Color stairExitFill,
