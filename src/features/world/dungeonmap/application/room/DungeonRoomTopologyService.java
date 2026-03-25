@@ -389,8 +389,7 @@ public final class DungeonRoomTopologyService {
         return layout.overlappingClusters(shape).stream()
                 .filter(cluster -> cluster != null && cluster.rooms().stream()
                         .anyMatch(room -> room != null
-                                && (room.levels().contains(levelZ)
-                                || room.cells().stream().anyMatch(shape::contains))))
+                                && room.levels().contains(levelZ)))
                 .toList();
     }
 

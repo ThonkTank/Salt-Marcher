@@ -322,7 +322,7 @@ final class ClusterRewritePlanner {
         if (cluster == null || cluster.shape().size() == 0 || cluster.rooms().isEmpty()) {
             return List.of();
         }
-        Set<Point2i> remainingCells = new LinkedHashSet<>(cluster.cells());
+        Map<Integer, Set<Point2i>> remainingCellsByLevel = mutableClusterCellsByLevel(cluster);
         List<VertexPath> barriers = barriersForBoundaryKinds(boundaryKinds);
         List<Room> rewrittenRooms = new ArrayList<>();
         Set<Long> retainedRoomIds = new LinkedHashSet<>();
@@ -330,35 +330,41 @@ final class ClusterRewritePlanner {
             if (room == null || room.roomId() == null) {
                 continue;
             }
-            Point2i anchor = room.floor().shape().anchor();
-            if (!remainingCells.contains(anchor)) {
+            Map<Integer, TileShape> roomShapesByLevel = rewrittenRoomShapesByLevel(room, remainingCellsByLevel, barriers);
+            if (roomShapesByLevel.isEmpty()) {
                 continue;
             }
-            Set<Point2i> roomCells = reachableCells(anchor, remainingCells, barriers);
-            if (roomCells.isEmpty()) {
-                continue;
-            }
-            remainingCells.removeAll(roomCells);
-            List<Room> sourceRooms = roomsForCells(cluster, roomCells);
+            List<Room> sourceRooms = roomsForCells(cluster, flattenShapes(roomShapesByLevel));
             Room retainedRoom = retainedRoom(sourceRooms, retainedRoomIds);
-            rewrittenRooms.add(resolveRoomForCells(cluster, retainedRoom, roomCells, boundaryKinds, sourceRooms));
+            rewrittenRooms.add(resolveRoomForShapes(cluster, retainedRoom, roomShapesByLevel, boundaryKinds, sourceRooms));
         }
-        while (!remainingCells.isEmpty()) {
-            Point2i anchor = remainingCells.stream()
-                    .min(Point2i.POINT_ORDER)
-                    .orElse(null);
+        while (hasRemainingCells(remainingCellsByLevel)) {
+            LevelSeed seed = firstRemainingSeed(remainingCellsByLevel);
+            Point2i anchor = seed == null ? null : seed.cell();
             if (anchor == null) {
                 break;
             }
-            Set<Point2i> roomCells = reachableCells(anchor, remainingCells, barriers);
+            Set<Point2i> levelCells = remainingCellsByLevel.getOrDefault(seed.level(), Set.of());
+            Set<Point2i> roomCells = reachableCells(anchor, levelCells, barriers);
             if (roomCells.isEmpty()) {
-                remainingCells.remove(anchor);
+                remainingCellsByLevel.computeIfPresent(seed.level(), (ignored, cells) -> {
+                    cells.remove(anchor);
+                    return cells;
+                });
                 continue;
             }
-            remainingCells.removeAll(roomCells);
+            levelCells.removeAll(roomCells);
+            if (levelCells.isEmpty()) {
+                remainingCellsByLevel.remove(seed.level());
+            }
             List<Room> sourceRooms = roomsForCells(cluster, roomCells);
             Room retainedRoom = retainedRoom(sourceRooms, retainedRoomIds);
-            rewrittenRooms.add(resolveRoomForCells(cluster, retainedRoom, roomCells, boundaryKinds, sourceRooms));
+            rewrittenRooms.add(resolveRoomForShapes(
+                    cluster,
+                    retainedRoom,
+                    Map.of(seed.level(), TileShape.fromAbsoluteCells(roomCells)),
+                    boundaryKinds,
+                    sourceRooms));
         }
         return List.copyOf(rewrittenRooms);
     }
@@ -483,14 +489,13 @@ final class ClusterRewritePlanner {
         return null;
     }
 
-    static Room resolveRoomForCells(
+    static Room resolveRoomForShapes(
             RoomCluster cluster,
             Room retainedRoom,
-            Set<Point2i> roomCells,
+            Map<Integer, TileShape> roomShapesByLevel,
             Map<VertexEdge, InternalBoundaryType> boundaryKinds,
             List<Room> sourceRooms
     ) {
-        TileShape roomShape = TileShape.fromAbsoluteCells(roomCells);
         Long roomId = retainedRoom == null ? null : retainedRoom.roomId();
         String roomName = retainedRoom == null ? derivedSplitRoomName(sourceRooms) : retainedRoom.name();
         RoomNarration narration = retainedRoom == null
@@ -498,7 +503,7 @@ final class ClusterRewritePlanner {
                 : retainedRoom.narration();
         return resolvedRoom(
                 cluster,
-                Map.of(retainedRoom == null ? 0 : retainedRoom.primaryLevel(), roomShape),
+                roomShapesByLevel,
                 cluster.cells(),
                 boundaryKinds,
                 roomId,
@@ -524,7 +529,7 @@ final class ClusterRewritePlanner {
             if (rewrittenRoom == null) {
                 continue;
             }
-            List<Room> sourceRooms = roomsForCells(cluster, rewrittenRoom.floor().shape().absoluteCells());
+            List<Room> sourceRooms = roomsForCells(cluster, rewrittenRoom.cells());
             if (sourceRooms.size() <= 1) {
                 continue;
             }
@@ -931,11 +936,85 @@ final class ClusterRewritePlanner {
         return Map.copyOf(result);
     }
 
+    private static Map<Integer, Set<Point2i>> mutableClusterCellsByLevel(RoomCluster cluster) {
+        Map<Integer, Set<Point2i>> result = new LinkedHashMap<>();
+        for (Map.Entry<Integer, Set<Point2i>> entry : clusterCellsByLevel(cluster).entrySet()) {
+            result.put(entry.getKey(), new LinkedHashSet<>(entry.getValue()));
+        }
+        return result;
+    }
+
+    private static Map<Integer, TileShape> rewrittenRoomShapesByLevel(
+            Room room,
+            Map<Integer, Set<Point2i>> remainingCellsByLevel,
+            List<VertexPath> barriers
+    ) {
+        Map<Integer, TileShape> result = new LinkedHashMap<>();
+        if (room == null || remainingCellsByLevel == null || remainingCellsByLevel.isEmpty()) {
+            return Map.of();
+        }
+        for (Map.Entry<Integer, Point2i> entry : room.anchorsByLevel().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .toList()) {
+            Integer level = entry.getKey();
+            Point2i anchor = entry.getValue();
+            if (level == null || anchor == null) {
+                continue;
+            }
+            Set<Point2i> remainingCells = remainingCellsByLevel.get(level);
+            if (remainingCells == null || !remainingCells.contains(anchor)) {
+                continue;
+            }
+            Set<Point2i> roomCells = reachableCells(anchor, remainingCells, barriers);
+            if (roomCells.isEmpty()) {
+                continue;
+            }
+            remainingCells.removeAll(roomCells);
+            if (remainingCells.isEmpty()) {
+                remainingCellsByLevel.remove(level);
+            }
+            result.put(level, TileShape.fromAbsoluteCells(roomCells));
+        }
+        return result.isEmpty() ? Map.of() : Map.copyOf(result);
+    }
+
+    private static boolean hasRemainingCells(Map<Integer, Set<Point2i>> remainingCellsByLevel) {
+        return firstRemainingSeed(remainingCellsByLevel) != null;
+    }
+
+    private static LevelSeed firstRemainingSeed(Map<Integer, Set<Point2i>> remainingCellsByLevel) {
+        if (remainingCellsByLevel == null || remainingCellsByLevel.isEmpty()) {
+            return null;
+        }
+        return remainingCellsByLevel.entrySet().stream()
+                .filter(entry -> entry.getValue() != null && !entry.getValue().isEmpty())
+                .sorted(Map.Entry.comparingByKey())
+                .map(entry -> new LevelSeed(
+                        entry.getKey(),
+                        entry.getValue().stream().min(Point2i.POINT_ORDER).orElse(null)))
+                .filter(seed -> seed.cell() != null)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private static Set<Point2i> flattenShapes(Map<Integer, TileShape> shapesByLevel) {
+        Set<Point2i> result = new LinkedHashSet<>();
+        for (TileShape shape : shapesByLevel.values()) {
+            if (shape != null) {
+                result.addAll(shape.absoluteCells());
+            }
+        }
+        return Set.copyOf(result);
+    }
+
     private static Set<Point2i> flattenCells(Map<Integer, Set<Point2i>> cellsByLevel) {
         Set<Point2i> result = new LinkedHashSet<>();
         for (Set<Point2i> cells : cellsByLevel.values()) {
             result.addAll(cells);
         }
         return Set.copyOf(result);
+    }
+
+    private record LevelSeed(int level, Point2i cell) {
     }
 }
