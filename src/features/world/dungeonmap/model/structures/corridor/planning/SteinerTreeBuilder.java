@@ -5,6 +5,7 @@ import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.structures.room.Room;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -61,12 +62,14 @@ final class SteinerTreeBuilder {
         Set<CubePoint> treeCells = new LinkedHashSet<>();
         Set<DoorEdge> openings = new LinkedHashSet<>();
         Map<Long, Set<CubePoint>> attachmentCellsByRoomId = new LinkedHashMap<>();
+        List<StairPlacement> allStairPlacements = new ArrayList<>();
         connected.add(root.roomId());
         Set<CubePoint> rootEntryCells = context.entryCells(root.roomId());
         WaypointRouteResult waypointRoute = routeThroughWaypoints(treeCells, rootEntryCells, context);
         if (!waypointRoute.success()) {
             return null;
         }
+        allStairPlacements.addAll(waypointRoute.stairPlacements());
         CubePoint rootDoorEntry = waypointRoute.rootEntryCell();
         while (connected.size() < context.targetRooms().size()) {
             Set<CubePoint> targets = context.allTargetEntryCells(connected);
@@ -86,7 +89,8 @@ final class SteinerTreeBuilder {
             if (nearest == null) {
                 break;
             }
-            List<CubePoint> path = CostField.extractPath(flood, nearest.entryCell());
+            ExtractedPath extracted = CostField.extractPathWithStairs(flood, nearest.entryCell());
+            List<CubePoint> path = extracted.cells();
             if (path.isEmpty()) {
                 break;
             }
@@ -95,6 +99,7 @@ final class SteinerTreeBuilder {
             }
             DoorEdge door = deriveDoorEdge(nearest.entryCell(), nearest.room(), context);
             treeCells.addAll(path);
+            allStairPlacements.addAll(extracted.stairPlacements());
             if (door != null) {
                 openings.add(door);
             }
@@ -111,7 +116,7 @@ final class SteinerTreeBuilder {
                 Set.copyOf(openings),
                 Map.copyOf(attachmentCellsByRoomId),
                 SteinerTree.scoreCells(treeCells),
-                List.of());
+                List.copyOf(allStairPlacements));
     }
 
     private static SteinerTree ripUpAndReroute(SteinerTree tree, PlannerContext context) {
@@ -144,7 +149,8 @@ final class SteinerTreeBuilder {
                 if (bestEntry == null) {
                     continue;
                 }
-                List<CubePoint> newPath = CostField.extractPath(flood, bestEntry);
+                ExtractedPath extracted = CostField.extractPathWithStairs(flood, bestEntry);
+                List<CubePoint> newPath = extracted.cells();
                 if (newPath.isEmpty()) {
                     continue;
                 }
@@ -153,7 +159,11 @@ final class SteinerTreeBuilder {
                             room.roomId(),
                             branch,
                             newPath,
-                            deriveDoorEdge(bestEntry, room, context));
+                            deriveDoorEdge(bestEntry, room, context),
+                            replaceStairPlacements(
+                                    current.stairPlacements(),
+                                    branch,
+                                    extracted.stairPlacements()));
                     improved = true;
                 }
             }
@@ -242,14 +252,27 @@ final class SteinerTreeBuilder {
             return null;
         }
 
-        List<CubePoint> firstPath = CostField.extractPath(floodFirst, junction);
-        List<CubePoint> secondPath = CostField.extractPath(floodSecond, junction);
-        List<CubePoint> thirdPath = CostField.extractPath(floodThird, junction);
-        if (firstPath.isEmpty() || secondPath.isEmpty() || thirdPath.isEmpty()) {
+        ExtractedPath firstPath = CostField.extractPathWithStairs(floodFirst, junction);
+        ExtractedPath secondPath = CostField.extractPathWithStairs(floodSecond, junction);
+        ExtractedPath thirdPath = CostField.extractPathWithStairs(floodThird, junction);
+        if (firstPath.cells().isEmpty() || secondPath.cells().isEmpty() || thirdPath.cells().isEmpty()) {
             return null;
         }
-        List<CubePoint> boundaryPath = floodBoundary == null ? List.of() : CostField.extractPath(floodBoundary, junction);
-        return new TripleJunctionResult(junction, firstPath, secondPath, thirdPath, boundaryPath);
+        ExtractedPath boundaryPath = floodBoundary == null
+                ? ExtractedPath.empty()
+                : CostField.extractPathWithStairs(floodBoundary, junction);
+        List<StairPlacement> stairPlacements = new ArrayList<>();
+        stairPlacements.addAll(firstPath.stairPlacements());
+        stairPlacements.addAll(secondPath.stairPlacements());
+        stairPlacements.addAll(thirdPath.stairPlacements());
+        stairPlacements.addAll(boundaryPath.stairPlacements());
+        return new TripleJunctionResult(
+                junction,
+                firstPath.cells(),
+                secondPath.cells(),
+                thirdPath.cells(),
+                boundaryPath.cells(),
+                List.copyOf(stairPlacements));
     }
 
     private static SteinerTree buildTripleReplacement(
@@ -286,7 +309,11 @@ final class SteinerTreeBuilder {
                 currentSubtree,
                 replacementCells,
                 replacementAttachments,
-                replacementDoors);
+                replacementDoors,
+                replaceStairPlacements(
+                        tree.stairPlacements(),
+                        currentSubtree,
+                        junction.stairPlacements()));
     }
 
     private static WaypointRouteResult routeThroughWaypoints(
@@ -295,9 +322,10 @@ final class SteinerTreeBuilder {
             PlannerContext context
     ) {
         CubePoint rootEntryCell = null;
+        List<StairPlacement> stairPlacements = new ArrayList<>();
         for (CubePoint waypoint : context.waypointCells()) {
             if (waypoint == null || !context.searchVolume().isPassable(waypoint)) {
-                return new WaypointRouteResult(false, null);
+                return new WaypointRouteResult(false, null, List.of());
             }
             Map<PathState, RouteCost> floodSources = treeCells.isEmpty()
                     ? zeroSources(rootEntryCells)
@@ -310,15 +338,39 @@ final class SteinerTreeBuilder {
                     context.instrumentation());
             CubePoint reachedWaypoint = bestReachedEntry(flood, Set.of(waypoint));
             if (reachedWaypoint == null) {
-                return new WaypointRouteResult(false, null);
+                return new WaypointRouteResult(false, null, List.of());
             }
-            List<CubePoint> path = CostField.extractPath(flood, reachedWaypoint);
+            ExtractedPath extracted = CostField.extractPathWithStairs(flood, reachedWaypoint);
+            List<CubePoint> path = extracted.cells();
             if (rootEntryCell == null && treeCells.isEmpty() && !path.isEmpty()) {
                 rootEntryCell = path.getFirst();
             }
             treeCells.addAll(path);
+            stairPlacements.addAll(extracted.stairPlacements());
         }
-        return new WaypointRouteResult(true, rootEntryCell);
+        return new WaypointRouteResult(true, rootEntryCell, List.copyOf(stairPlacements));
+    }
+
+    private static List<StairPlacement> replaceStairPlacements(
+            List<StairPlacement> existingPlacements,
+            Set<CubePoint> replacedCells,
+            List<StairPlacement> newPlacements
+    ) {
+        List<StairPlacement> updated = new ArrayList<>();
+        if (existingPlacements != null) {
+            for (StairPlacement placement : existingPlacements) {
+                if (placement == null
+                        || replacedCells == null
+                        || placement.footprint().isEmpty()
+                        || !replacedCells.containsAll(placement.footprint())) {
+                    updated.add(placement);
+                }
+            }
+        }
+        if (newPlacements != null) {
+            updated.addAll(newPlacements);
+        }
+        return List.copyOf(updated);
     }
 
     private static ReachedRoom findNearestReached(FloodResult flood, PlannerContext context, Set<Long> connected) {
@@ -496,12 +548,14 @@ record TripleJunctionResult(
         List<CubePoint> firstPath,
         List<CubePoint> secondPath,
         List<CubePoint> thirdPath,
-        List<CubePoint> boundaryPath
+        List<CubePoint> boundaryPath,
+        List<StairPlacement> stairPlacements
 ) {
 }
 
 record WaypointRouteResult(
         boolean success,
-        CubePoint rootEntryCell
+        CubePoint rootEntryCell,
+        List<StairPlacement> stairPlacements
 ) {
 }

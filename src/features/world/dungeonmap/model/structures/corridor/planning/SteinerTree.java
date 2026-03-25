@@ -119,7 +119,8 @@ record SteinerTree(
             long roomId,
             Set<CubePoint> oldBranch,
             List<CubePoint> newPath,
-            DoorEdge newDoorEdge
+            DoorEdge newDoorEdge,
+            List<StairPlacement> replacementPlacements
     ) {
         Set<CubePoint> updatedCells = new LinkedHashSet<>(corridorCells);
         if (oldBranch != null) {
@@ -149,7 +150,7 @@ record SteinerTree(
                 Set.copyOf(updatedDoors),
                 Map.copyOf(updatedAttachments),
                 scoreCells(updatedCells),
-                this.stairPlacements);
+                replacementPlacements);
     }
 
     SteinerTree withReplacedSubtree(
@@ -157,7 +158,8 @@ record SteinerTree(
             Set<CubePoint> oldSubtree,
             Set<CubePoint> newSubtree,
             Map<Long, Set<CubePoint>> replacementAttachments,
-            Set<DoorEdge> replacementDoorEdges
+            Set<DoorEdge> replacementDoorEdges,
+            List<StairPlacement> replacementPlacements
     ) {
         Set<Long> replacedRoomIds = roomIds == null ? Set.of() : Set.copyOf(roomIds);
         Set<CubePoint> updatedCells = new LinkedHashSet<>(corridorCells);
@@ -189,7 +191,7 @@ record SteinerTree(
                 Set.copyOf(updatedDoors),
                 Map.copyOf(updatedAttachments),
                 scoreCells(updatedCells),
-                this.stairPlacements);
+                replacementPlacements);
     }
 
     static RouteCost scoreCells(Collection<CubePoint> cells) {
