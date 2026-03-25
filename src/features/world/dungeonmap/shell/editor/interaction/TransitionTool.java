@@ -357,7 +357,8 @@ public final class TransitionTool implements EditorTool {
                 dungeonTarget && !bidirectional,
                 destinationType == DungeonTransitionEditRequest.DestinationType.OVERWORLD_TILE);
         renderPreparedTransitionButtons(preparedTransitionCards(), preparedTransitionId);
-        transitionStatusLabel.setText(displayStatus() == null ? "" : displayStatus());
+        String status = displayStatus();
+        transitionStatusLabel.setText(status == null ? "" : status);
     }
 
     private void syncFields() {

@@ -309,7 +309,8 @@ public final class StairTool implements EditorTool {
         stairSummaryLabel.setText("Aktuelle Ebene als Ausgang hinzufügen");
         stairEditorContent.setManaged(true);
         stairEditorContent.setVisible(true);
-        stairStatusLabel.setText(displayStatus() == null ? "" : displayStatus());
+        String status = displayStatus();
+        stairStatusLabel.setText(status == null ? "" : status);
         stairLevelDownButton.setDisable(false);
         stairLevelUpButton.setDisable(false);
         stairInputField.setDisable(false);
