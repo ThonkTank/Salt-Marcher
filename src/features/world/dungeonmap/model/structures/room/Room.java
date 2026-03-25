@@ -257,12 +257,18 @@ public record Room(
     }
 
     public Room movedBy(Point2i delta) {
-        if (delta == null || (delta.x() == 0 && delta.y() == 0)) {
+        return movedBy(delta, 0);
+    }
+
+    public Room movedBy(Point2i delta, int levelDelta) {
+        boolean translate = delta != null && (delta.x() != 0 || delta.y() != 0);
+        if (!translate && levelDelta == 0) {
             return this;
         }
+        Point2i resolvedDelta = delta == null ? new Point2i(0, 0) : delta;
         Map<Integer, Floor> movedFloors = new LinkedHashMap<>();
         for (Map.Entry<Integer, Floor> entry : floors.entrySet()) {
-            movedFloors.put(entry.getKey(), entry.getValue().movedBy(delta));
+            movedFloors.put(entry.getKey() + levelDelta, entry.getValue().movedBy(resolvedDelta));
         }
         return new Room(
                 roomId,
@@ -270,8 +276,16 @@ public record Room(
                 clusterId,
                 name,
                 movedFloors,
-                walls.stream().map(wall -> wall.movedBy(delta)).toList(),
+                walls.stream().map(wall -> wall.movedBy(resolvedDelta)).toList(),
                 narration);
+    }
+
+    public Room movedToLevel(int targetPrimaryLevel) {
+        return movedBy(new Point2i(0, 0), targetPrimaryLevel - primaryLevel());
+    }
+
+    public Room movedByLevel(int levelDelta) {
+        return movedBy(new Point2i(0, 0), levelDelta);
     }
 
     private static Map<Integer, Floor> normalizedFloors(Map<Integer, Floor> floors) {

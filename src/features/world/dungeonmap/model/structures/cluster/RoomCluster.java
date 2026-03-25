@@ -174,18 +174,24 @@ public final class RoomCluster {
     }
 
     public RoomCluster movedBy(Point2i delta) {
-        if (delta == null || (delta.x() == 0 && delta.y() == 0)) {
+        return movedBy(delta, 0);
+    }
+
+    public RoomCluster movedBy(Point2i delta, int levelDelta) {
+        boolean translate = delta != null && (delta.x() != 0 || delta.y() != 0);
+        if (!translate && levelDelta == 0) {
             return this;
         }
+        Point2i resolvedDelta = delta == null ? new Point2i(0, 0) : delta;
         return new RoomCluster(
                 clusterId,
                 mapId,
-                center.add(delta),
+                center.add(resolvedDelta),
                 rooms.stream()
-                        .map(room -> room == null ? null : room.movedBy(delta))
+                        .map(room -> room == null ? null : room.movedBy(resolvedDelta, levelDelta))
                         .toList(),
                 localConnections.stream()
-                        .map(connection -> movedConnection(connection, delta))
+                        .map(connection -> movedConnection(connection, resolvedDelta))
                         .toList());
     }
 
