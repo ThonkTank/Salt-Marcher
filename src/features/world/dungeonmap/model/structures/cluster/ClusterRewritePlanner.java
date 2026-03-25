@@ -393,7 +393,7 @@ final class ClusterRewritePlanner {
                 narration);
     }
 
-    static BoundarySets boundarySetsForRoom(
+    private static BoundarySets boundarySetsForRoom(
             TileShape roomShape,
             Set<Point2i> clusterCells,
             Map<VertexEdge, InternalBoundaryType> boundaryKinds
@@ -427,7 +427,7 @@ final class ClusterRewritePlanner {
         return new BoundarySets(Set.copyOf(wallEdges), Set.copyOf(connectionEdges));
     }
 
-    static List<VertexPath> barriersForBoundaryKinds(Map<VertexEdge, InternalBoundaryType> boundaryKinds) {
+    private static List<VertexPath> barriersForBoundaryKinds(Map<VertexEdge, InternalBoundaryType> boundaryKinds) {
         List<VertexPath> barriers = new ArrayList<>();
         for (Map.Entry<VertexEdge, InternalBoundaryType> entry : boundaryKinds.entrySet()) {
             if (entry.getKey() == null || entry.getValue() == null) {
@@ -442,7 +442,7 @@ final class ClusterRewritePlanner {
         return List.copyOf(barriers);
     }
 
-    static Set<Point2i> reachableCells(Point2i startAnchor, Set<Point2i> traversableCells, List<VertexPath> barriers) {
+    private static Set<Point2i> reachableCells(Point2i startAnchor, Set<Point2i> traversableCells, List<VertexPath> barriers) {
         Set<Point2i> visited = new LinkedHashSet<>();
         Set<Point2i> frontier = new LinkedHashSet<>(traversableCells);
         ArrayDeque<Point2i> queue = new ArrayDeque<>();
@@ -463,7 +463,7 @@ final class ClusterRewritePlanner {
         return Set.copyOf(visited);
     }
 
-    static List<Room> roomsForCells(RoomCluster cluster, Set<Point2i> roomCells) {
+    private static List<Room> roomsForCells(RoomCluster cluster, Set<Point2i> roomCells) {
         if (cluster == null) {
             return List.of();
         }
@@ -473,7 +473,7 @@ final class ClusterRewritePlanner {
                 .toList();
     }
 
-    static Room retainedRoom(List<Room> sourceRooms, Set<Long> retainedRoomIds) {
+    private static Room retainedRoom(List<Room> sourceRooms, Set<Long> retainedRoomIds) {
         if (sourceRooms == null || sourceRooms.isEmpty()) {
             return null;
         }
@@ -488,7 +488,7 @@ final class ClusterRewritePlanner {
         return null;
     }
 
-    static Room resolveRoomForShapes(
+    private static Room resolveRoomForShapes(
             RoomCluster cluster,
             Room retainedRoom,
             Map<Integer, TileShape> roomShapesByLevel,
@@ -648,7 +648,7 @@ final class ClusterRewritePlanner {
         return Map.copyOf(result);
     }
 
-    static List<RoomCluster> normalizedClusters(List<RoomCluster> clusters) {
+    private static List<RoomCluster> normalizedClusters(List<RoomCluster> clusters) {
         if (clusters == null || clusters.isEmpty()) {
             return List.of();
         }
@@ -661,7 +661,7 @@ final class ClusterRewritePlanner {
         return List.copyOf(result.values());
     }
 
-    static ClusterRewrite unchangedRewrite(RoomCluster cluster) {
+    private static ClusterRewrite unchangedRewrite(RoomCluster cluster) {
         if (cluster == null) {
             return null;
         }
@@ -674,7 +674,7 @@ final class ClusterRewritePlanner {
                 persistedBoundaries(cluster.shape(), cluster.rooms(), cluster.internalBoundaryKinds()));
     }
 
-    static InternalBoundaryEdge toInternalBoundaryEdge(VertexEdge edge, InternalBoundaryType type) {
+    private static InternalBoundaryEdge toInternalBoundaryEdge(VertexEdge edge, InternalBoundaryType type) {
         if (edge == null) {
             return null;
         }
@@ -689,12 +689,12 @@ final class ClusterRewritePlanner {
         return direction == null ? null : new InternalBoundaryEdge(baseCell, direction, type);
     }
 
-    static boolean isInternalEdge(Set<Point2i> clusterCells, VertexEdge edge) {
+    private static boolean isInternalEdge(Set<Point2i> clusterCells, VertexEdge edge) {
         Set<Point2i> touchingCells = edge.touchingCells();
         return touchingCells.size() == 2 && clusterCells.containsAll(touchingCells);
     }
 
-    static String nextGeneratedRoomName(Supplier<String> roomNameSupplier, String fallbackName) {
+    private static String nextGeneratedRoomName(Supplier<String> roomNameSupplier, String fallbackName) {
         if (roomNameSupplier == null) {
             return fallbackName;
         }
