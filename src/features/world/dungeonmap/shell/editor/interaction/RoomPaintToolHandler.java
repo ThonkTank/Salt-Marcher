@@ -2,7 +2,6 @@ package features.world.dungeonmap.shell.editor.interaction;
 
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
-import features.world.dungeonmap.state.EditorPaintPreviewState;
 import javafx.scene.Node;
 
 import java.util.Objects;
@@ -12,12 +11,8 @@ public final class RoomPaintToolHandler implements EditorToolHandler {
 
     private final RoomPaintInteractionController controller;
 
-    public RoomPaintToolHandler(
-            RoomPaintInteractionController controller,
-            EditorPaintPreviewState paintPreviewState
-    ) {
+    public RoomPaintToolHandler(RoomPaintInteractionController controller) {
         this.controller = Objects.requireNonNull(controller, "controller");
-        Objects.requireNonNull(paintPreviewState, "paintPreviewState");
     }
 
     @Override

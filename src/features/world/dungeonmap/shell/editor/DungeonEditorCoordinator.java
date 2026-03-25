@@ -129,7 +129,7 @@ final class DungeonEditorCoordinator {
                         selectionState,
                         Objects.requireNonNull(roomNarrationService, "roomNarrationService"),
                         loadingService),
-                new RoomPaintToolHandler(roomPaintInteractionController, paintPreviewState),
+                new RoomPaintToolHandler(roomPaintInteractionController),
                 new CorridorToolHandler(corridorInteractionController, selectionState, corridorDraftState),
                 new BoundaryToolHandler(boundaryInteractionController, boundaryDraftState),
                 new StairToolHandler(stairInteractionController, mapState, stairDraftState, selectionState),
