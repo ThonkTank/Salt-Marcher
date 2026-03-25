@@ -21,7 +21,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 final class ClusterRewritePlanner {
@@ -625,35 +624,6 @@ final class ClusterRewritePlanner {
         return computeInternalBoundaries(clusterShape, rooms, boundaryKinds(localConnections));
     }
 
-    static void forEachInternalBoundary(
-            TileShape clusterShape,
-            List<Room> rooms,
-            Map<VertexEdge, InternalBoundaryType> boundaryKinds,
-            BiConsumer<VertexEdge, InternalBoundaryType> consumer
-    ) {
-        if (clusterShape == null || clusterShape.size() == 0 || consumer == null) {
-            return;
-        }
-        Set<Point2i> clusterCells = clusterShape.absoluteCells();
-        for (Room room : rooms == null ? List.<Room>of() : rooms) {
-            if (room == null) {
-                continue;
-            }
-            for (Wall wall : room.walls()) {
-                for (VertexEdge edge : wall.edges()) {
-                    if (isInternalEdge(clusterCells, edge)) {
-                        consumer.accept(edge, InternalBoundaryType.WALL);
-                    }
-                }
-            }
-        }
-        for (Map.Entry<VertexEdge, InternalBoundaryType> entry : (boundaryKinds == null ? Map.<VertexEdge, InternalBoundaryType>of() : boundaryKinds).entrySet()) {
-            if (isInternalEdge(clusterCells, entry.getKey()) && entry.getValue() == InternalBoundaryType.DOOR) {
-                consumer.accept(entry.getKey(), InternalBoundaryType.DOOR);
-            }
-        }
-    }
-
     static Map<Long, List<Room>> resolvedFragmentsBySourceRoomId(
             Map<Long, List<RoomRewriteCandidate>> candidatesBySourceRoomId,
             List<ReconciledRoom> reconciledRooms
@@ -751,13 +721,24 @@ final class ClusterRewritePlanner {
             return Map.of();
         }
         Map<VertexEdge, InternalBoundaryType> result = new LinkedHashMap<>();
-        forEachInternalBoundary(clusterShape, rooms, boundaryKinds, (edge, type) -> {
-            if (type == InternalBoundaryType.DOOR) {
-                result.put(edge, type);
-            } else {
-                result.putIfAbsent(edge, type);
+        Set<Point2i> clusterCells = clusterShape.absoluteCells();
+        for (Room room : rooms == null ? List.<Room>of() : rooms) {
+            if (room == null) {
+                continue;
             }
-        });
+            for (Wall wall : room.walls()) {
+                for (VertexEdge edge : wall.edges()) {
+                    if (isInternalEdge(clusterCells, edge)) {
+                        result.putIfAbsent(edge, InternalBoundaryType.WALL);
+                    }
+                }
+            }
+        }
+        for (Map.Entry<VertexEdge, InternalBoundaryType> entry : (boundaryKinds == null ? Map.<VertexEdge, InternalBoundaryType>of() : boundaryKinds).entrySet()) {
+            if (isInternalEdge(clusterCells, entry.getKey()) && entry.getValue() == InternalBoundaryType.DOOR) {
+                result.put(entry.getKey(), InternalBoundaryType.DOOR);
+            }
+        }
         return Map.copyOf(result);
     }
 
