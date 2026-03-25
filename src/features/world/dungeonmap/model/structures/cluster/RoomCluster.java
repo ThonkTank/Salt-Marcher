@@ -520,7 +520,7 @@ public final class RoomCluster {
 
     private List<Set<Long>> componentsLazy() {
         if (components == null) {
-            components = immutableComponents(components(roomsById.keySet(), adjacency()));
+            components = components(roomsById.keySet(), adjacency());
         }
         return components;
     }
@@ -530,12 +530,6 @@ public final class RoomCluster {
             componentByRoomId = indexComponentByRoomId(componentsLazy());
         }
         return componentByRoomId;
-    }
-
-    private static List<Set<Long>> immutableComponents(List<Set<Long>> components) {
-        return components.stream()
-                .map(Set::copyOf)
-                .toList();
     }
 
     private Room roomForCluster(Room room) {
