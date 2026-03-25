@@ -147,15 +147,11 @@ public final class SelectionTool implements EditorTool {
         }
         Point2i delta = event.gridCell().subtract(dragSession.pressCell());
         int levelDelta = dragSession.currentLevel() - dragSession.startLevel();
-        DungeonLayout committed = dragSession.baseMap().withTranslatedCluster(dragSession.clusterId(), delta, levelDelta);
         Long mapId = dragSession.baseMap().mapId() > 0 ? dragSession.baseMap().mapId() : null;
         Long clusterId = dragSession.clusterId();
         state.selectTarget(dragSession.targetKey());
         state.clearPreview();
         dragSession = null;
-        if (committed != null && committed != mapState.activeMap()) {
-            mapState.showEditedMap(committed);
-        }
         if (mapId != null && clusterId != null && (delta.x() != 0 || delta.y() != 0 || levelDelta != 0)) {
             UiAsyncTasks.submitVoid(
                     () -> clusterMoveService.move(mapId, clusterId, delta, levelDelta),

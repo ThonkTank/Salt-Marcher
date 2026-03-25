@@ -83,14 +83,6 @@ public final class DungeonMapState {
         notifyListeners();
     }
 
-    public void showEditedMap(DungeonLayout activeMap) {
-        this.activeMap = activeMap == null ? DungeonLayout.empty() : activeMap;
-        this.activeMapId = this.activeMap.mapId() <= 0 ? null : this.activeMap.mapId();
-        this.loading = false;
-        this.errorMessage = null;
-        notifyListeners();
-    }
-
     public void setActiveProjectionLevel(int levelZ) {
         if (activeProjectionLevel == levelZ) {
             return;
