@@ -8,6 +8,7 @@ import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationSer
 import features.world.dungeonmap.application.runtime.DungeonRuntimeStateRepairService;
 import features.world.dungeonmap.application.stair.DungeonStairEditService;
 import features.world.dungeonmap.application.transition.DungeonTransitionEditService;
+import features.world.dungeonmap.application.transition.DungeonTransitionTargetCatalogService;
 import features.world.dungeonmap.application.room.DungeonClusterMoveService;
 import features.world.dungeonmap.application.room.DungeonBoundaryEditService;
 import features.world.dungeonmap.application.room.DungeonRoomNarrationService;
@@ -21,11 +22,25 @@ import features.world.dungeonmap.persistence.DungeonTransitionWriteRepository;
 import features.world.dungeonmap.persistence.DungeonRoomGeometryWriteMapper;
 import features.world.dungeonmap.persistence.DungeonRoomWriteRepository;
 import features.world.dungeonmap.shell.editor.DungeonEditorView;
+import features.world.dungeonmap.shell.editor.interaction.BoundaryTool;
+import features.world.dungeonmap.shell.editor.interaction.CorridorTool;
+import features.world.dungeonmap.shell.editor.interaction.DungeonGridHitTester;
+import features.world.dungeonmap.shell.editor.interaction.EditorInteraction;
+import features.world.dungeonmap.shell.editor.interaction.EditorTool;
+import features.world.dungeonmap.shell.editor.interaction.PaintTool;
+import features.world.dungeonmap.shell.editor.interaction.SelectionTool;
+import features.world.dungeonmap.shell.editor.interaction.StairTool;
+import features.world.dungeonmap.shell.editor.interaction.TransitionTool;
 import features.world.dungeonmap.shell.runtime.DungeonRuntimeView;
+import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
+import features.world.dungeonmap.state.DungeonStairDraftState;
+import features.world.dungeonmap.state.DungeonTransitionDraftState;
+import features.world.dungeonmap.state.EditorInteractionState;
 import ui.shell.AppView;
 import ui.shell.DetailsNavigator;
 
+import java.util.List;
 import java.util.Objects;
 
 public final class DungeonMapModule {
@@ -65,6 +80,57 @@ public final class DungeonMapModule {
         DungeonMapLoadingService loadingService = new DungeonMapLoadingService(
                 mapLoader,
                 state);
+        DungeonEditorSessionState editorSessionState = new DungeonEditorSessionState();
+        EditorInteractionState editorInteractionState = new EditorInteractionState();
+        DungeonStairDraftState stairDraftState = new DungeonStairDraftState();
+        DungeonTransitionDraftState transitionDraftState = new DungeonTransitionDraftState();
+        DungeonTransitionTargetCatalogService transitionTargetCatalogService = new DungeonTransitionTargetCatalogService();
+        List<EditorTool> editorTools = List.of(
+                new SelectionTool(
+                        state,
+                        loadingService,
+                        clusterMoveService,
+                        roomNarrationService,
+                        new DungeonGridHitTester(),
+                        editorInteractionState),
+                new PaintTool(
+                        state,
+                        loadingService,
+                        editorSessionState,
+                        roomTopologyService,
+                        editorInteractionState),
+                new BoundaryTool(
+                        state,
+                        loadingService,
+                        editorSessionState,
+                        boundaryEditService,
+                        editorInteractionState),
+                new CorridorTool(
+                        state,
+                        loadingService,
+                        editorSessionState,
+                        corridorEditService,
+                        editorInteractionState),
+                new StairTool(
+                        state,
+                        loadingService,
+                        editorSessionState,
+                        stairEditService,
+                        stairDraftState,
+                        editorInteractionState),
+                new TransitionTool(
+                        state,
+                        loadingService,
+                        editorSessionState,
+                        transitionEditService,
+                        transitionTargetCatalogService,
+                        transitionDraftState,
+                        editorInteractionState));
+        EditorInteraction editorInteraction = new EditorInteraction(
+                state,
+                editorSessionState,
+                editorInteractionState,
+                editorTools);
         this.dungeonView = new DungeonRuntimeView(
                 "Dungeon",
                 false,
@@ -77,13 +143,8 @@ public final class DungeonMapModule {
                 loadingService,
                 state,
                 mapCatalogService,
-                roomTopologyService,
-                boundaryEditService,
-                roomNarrationService,
-                clusterMoveService,
-                corridorEditService,
-                stairEditService,
-                transitionEditService);
+                editorSessionState,
+                editorInteraction);
     }
 
     public AppView dungeonView() {

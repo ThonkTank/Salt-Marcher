@@ -1,39 +1,16 @@
 package features.world.dungeonmap.shell.editor;
 
-import features.world.dungeonmap.application.corridor.DungeonCorridorEditService;
-import features.world.dungeonmap.application.stair.DungeonStairEditService;
-import features.world.dungeonmap.application.transition.DungeonTransitionEditService;
-import features.world.dungeonmap.application.transition.DungeonTransitionTargetCatalogService;
-import features.world.dungeonmap.application.room.DungeonBoundaryEditService;
-import features.world.dungeonmap.application.room.DungeonClusterMoveService;
-import features.world.dungeonmap.application.room.DungeonRoomNarrationService;
-import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasWorkspace;
 import features.world.dungeonmap.canvas.base.DungeonViewMode;
-import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
-import features.world.dungeonmap.shell.editor.interaction.BoundaryTool;
-import features.world.dungeonmap.shell.editor.interaction.CorridorTool;
-import features.world.dungeonmap.shell.editor.interaction.DungeonGridHitTester;
 import features.world.dungeonmap.shell.editor.interaction.EditorInteraction;
-import features.world.dungeonmap.shell.editor.interaction.EditorTool;
-import features.world.dungeonmap.shell.editor.interaction.PaintTool;
-import features.world.dungeonmap.shell.editor.interaction.SelectionTool;
-import features.world.dungeonmap.shell.editor.interaction.StairTool;
-import features.world.dungeonmap.shell.editor.interaction.TransitionTool;
-import features.world.dungeonmap.state.EditorInteractionState;
-import features.world.dungeonmap.state.EditorLayoutPreviewState;
 import features.world.dungeonmap.state.EditorPreview;
-import features.world.dungeonmap.state.EditorPaintPreviewState;
-import features.world.dungeonmap.state.EditorSelectionState;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
-import features.world.dungeonmap.state.DungeonStairDraftState;
-import features.world.dungeonmap.state.DungeonTransitionDraftState;
-import javafx.scene.Node;
+import features.world.dungeonmap.model.geometry.Point2i;
 
-import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 final class DungeonEditorCoordinator {
 
@@ -43,11 +20,7 @@ final class DungeonEditorCoordinator {
     private final DungeonMapLoadingService loadingService;
     private final DungeonMapState mapState;
     private final DungeonEditorSessionState sessionState;
-    private final EditorInteractionState interactionState = new EditorInteractionState();
-    private final EditorSelectionState selectionState = new EditorSelectionState();
-    private final EditorLayoutPreviewState layoutPreviewState = new EditorLayoutPreviewState();
-    private final EditorPaintPreviewState paintPreviewState = new EditorPaintPreviewState();
-    private final EditorInteraction interactionController;
+    private final EditorInteraction editorInteraction;
     private Long previousMapId;
 
     DungeonEditorCoordinator(
@@ -57,14 +30,7 @@ final class DungeonEditorCoordinator {
             DungeonMapLoadingService loadingService,
             DungeonMapState mapState,
             DungeonEditorSessionState sessionState,
-            DungeonMapCatalogService mapCatalogService,
-            DungeonRoomTopologyService roomTopologyService,
-            DungeonBoundaryEditService boundaryEditService,
-            DungeonRoomNarrationService roomNarrationService,
-            DungeonClusterMoveService clusterMoveService,
-            DungeonCorridorEditService corridorEditService,
-            DungeonStairEditService stairEditService,
-            DungeonTransitionEditService transitionEditService
+            EditorInteraction editorInteraction
     ) {
         this.controls = Objects.requireNonNull(controls, "controls");
         this.statePane = Objects.requireNonNull(statePane, "statePane");
@@ -72,80 +38,15 @@ final class DungeonEditorCoordinator {
         this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.sessionState = Objects.requireNonNull(sessionState, "sessionState");
-        DungeonStairDraftState stairDraftState = new DungeonStairDraftState();
-        DungeonTransitionDraftState transitionDraftState = new DungeonTransitionDraftState();
-        DungeonTransitionTargetCatalogService transitionTargetCatalogService = new DungeonTransitionTargetCatalogService();
-        List<EditorTool> tools = List.of(
-                new SelectionTool(
-                        mapState,
-                        loadingService,
-                        Objects.requireNonNull(clusterMoveService, "clusterMoveService"),
-                        Objects.requireNonNull(roomNarrationService, "roomNarrationService"),
-                        new DungeonGridHitTester(),
-                        interactionState),
-                new PaintTool(
-                        mapState,
-                        loadingService,
-                        sessionState,
-                        Objects.requireNonNull(roomTopologyService, "roomTopologyService"),
-                        interactionState),
-                new BoundaryTool(
-                        mapState,
-                        loadingService,
-                        sessionState,
-                        Objects.requireNonNull(boundaryEditService, "boundaryEditService"),
-                        interactionState),
-                new CorridorTool(
-                        mapState,
-                        loadingService,
-                        sessionState,
-                        Objects.requireNonNull(corridorEditService, "corridorEditService"),
-                        interactionState),
-                new StairTool(
-                        mapState,
-                        loadingService,
-                        sessionState,
-                        Objects.requireNonNull(stairEditService, "stairEditService"),
-                        stairDraftState,
-                        interactionState),
-                new TransitionTool(
-                        mapState,
-                        loadingService,
-                        sessionState,
-                        Objects.requireNonNull(transitionEditService, "transitionEditService"),
-                        transitionTargetCatalogService,
-                        transitionDraftState,
-                        interactionState));
-        this.interactionController = new EditorInteraction(
-                mapState,
-                sessionState,
-                interactionState,
-                tools);
-        tools.forEach(tool -> tool.setRefreshCallback(this::refreshToolStatePane));
-        DungeonMapDropdownController mapDropdownController = new DungeonMapDropdownController(
-                Objects.requireNonNull(mapCatalogService, "mapCatalogService"),
-                new DungeonMapDropdownController.ReloadHandle() {
-                    @Override
-                    public void reload(Long preferredMapId) {
-                        loadingService.reload(preferredMapId);
-                    }
-
-                    @Override
-                    public Long sessionMapId() {
-                        return mapState.activeMapId();
-                    }
-                });
-        installBindings(mapDropdownController);
+        this.editorInteraction = Objects.requireNonNull(editorInteraction, "editorInteraction");
+        this.editorInteraction.setOnToolStateChanged(
+                () -> statePane.refresh(this.sessionState.selectedTool(), this.editorInteraction.activeToolPane()));
+        installBindings();
+        this.workspace.setInteractionHandler(editorInteraction);
         sessionState.addListener(this::refreshFromSessionState);
-        interactionState.addListener(this::refreshInteractionState);
-        selectionState.addListener(this::refreshSelectionState);
-        layoutPreviewState.addListener(this::refreshLayoutPreviewState);
-        paintPreviewState.addListener(this::refreshPaintPreviewState);
+        editorInteraction.state().addListener(this::refreshFromInteractionState);
         refreshFromSessionState();
-        refreshInteractionState();
-        refreshSelectionState();
-        refreshLayoutPreviewState();
-        refreshPaintPreviewState();
+        refreshFromInteractionState();
     }
 
     void refreshFromMapState() {
@@ -159,21 +60,18 @@ final class DungeonEditorCoordinator {
         controls.showOverlaySettings(mapState.levelOverlaySettings(), mapState.loading());
         workspace.setProjectionLevel(mapState.activeProjectionLevel());
         if (mapChanged) {
-            interactionController.activateTool(sessionState.selectedTool());
+            editorInteraction.activateTool(sessionState.selectedTool());
         }
-        refreshToolStatePane();
+        statePane.refresh(sessionState.selectedTool(), editorInteraction.activeToolPane());
         previousMapId = mapState.activeMapId();
     }
 
-    private void installBindings(DungeonMapDropdownController mapDropdownController) {
+    private void installBindings() {
         controls.setOnMapSelected(entry -> {
             if (entry != null) {
                 loadingService.loadMap(entry.mapId());
             }
         });
-        controls.setOnNewMapRequested(mapDropdownController::showCreate);
-        controls.setOnEditMapRequested(request ->
-                mapDropdownController.showEdit(new DungeonMapDropdownController.EditRequest(request.map(), request.anchor())));
         controls.setOnPreviousLevelRequested(() -> mapState.setActiveProjectionLevel(mapState.activeProjectionLevel() - 1));
         controls.setOnNextLevelRequested(() -> mapState.setActiveProjectionLevel(mapState.activeProjectionLevel() + 1));
         controls.setOnOverlayModeChanged(mapState::setLevelOverlayMode);
@@ -182,7 +80,6 @@ final class DungeonEditorCoordinator {
         controls.setOnSelectedOverlayLevelsChanged(mapState::setSelectedOverlayLevels);
         controls.setOnViewModeChanged(sessionState::selectViewMode);
         controls.setOnToolChanged(sessionState::selectTool);
-        workspace.setInteractionHandler(interactionController);
     }
 
     private void refreshFromSessionState() {
@@ -191,51 +88,35 @@ final class DungeonEditorCoordinator {
         controls.selectViewMode(selectedViewMode);
         controls.showDisplayedTool(selectedTool);
         workspace.setViewMode(selectedViewMode);
-        interactionController.activateTool(selectedTool);
-        refreshToolStatePane();
+        editorInteraction.activateTool(selectedTool);
+        statePane.refresh(selectedTool, editorInteraction.activeToolPane());
     }
 
-    private void refreshLayoutPreviewState() {
-        workspace.setPreviewMapModel(layoutPreviewState.previewMap());
-    }
-
-    private void refreshPaintPreviewState() {
-        workspace.setPreviewPaintShape(paintPreviewState.previewShape(), paintPreviewState.deleteMode());
-    }
-
-    private void refreshSelectionState() {
-        interactionState.selectTarget(selectionState.selectedTargetKey());
-        workspace.setSelectedTargetKey(selectionState.selectedTargetKey());
-    }
-
-    private void refreshInteractionState() {
-        selectionState.selectTarget(interactionState.selectedTargetKey());
-        EditorPreview preview = interactionState.activePreview();
+    private void refreshFromInteractionState() {
+        workspace.setSelectedTargetKey(editorInteraction.state().selectedTargetKey());
+        EditorPreview preview = editorInteraction.state().activePreview();
         if (preview instanceof EditorPreview.LayoutPreview layoutPreview) {
-            layoutPreviewState.showPreview(layoutPreview.layout());
-        } else {
-            layoutPreviewState.clearPreview();
-        }
-        if (preview instanceof EditorPreview.PaintPreview paintPreview) {
-            paintPreviewState.showPreview(paintPreview.shape(), paintPreview.deleteMode());
-        } else {
-            paintPreviewState.clearPreview();
-        }
-        if (preview instanceof EditorPreview.BoundaryPreview boundaryPreview) {
+            workspace.setPreviewMapModel(layoutPreview.layout());
+            workspace.setPreviewPaintShape(null, false);
+            workspace.setPreviewBoundaryEdges(Set.of(), Set.of(), null, null, false);
+        } else if (preview instanceof EditorPreview.PaintPreview paintPreview) {
+            workspace.setPreviewMapModel(null);
+            workspace.setPreviewPaintShape(paintPreview.shape(), paintPreview.deleteMode());
+            workspace.setPreviewBoundaryEdges(Set.of(), Set.of(), null, null, false);
+        } else if (preview instanceof EditorPreview.BoundaryPreview boundaryPreview) {
+            workspace.setPreviewMapModel(null);
+            workspace.setPreviewPaintShape(null, false);
             workspace.setPreviewBoundaryEdges(
                     boundaryPreview.edges(),
                     boundaryPreview.skippedConnectionEdges(),
-                    (features.world.dungeonmap.model.geometry.Point2i) boundaryPreview.startVertex(),
-                    (features.world.dungeonmap.model.geometry.Point2i) boundaryPreview.currentVertex(),
+                    (Point2i) boundaryPreview.startVertex(),
+                    (Point2i) boundaryPreview.currentVertex(),
                     boundaryPreview.deleteMode());
         } else {
-            workspace.setPreviewBoundaryEdges(java.util.Set.of(), java.util.Set.of(), null, null, false);
+            workspace.setPreviewMapModel(null);
+            workspace.setPreviewPaintShape(null, false);
+            workspace.setPreviewBoundaryEdges(Set.of(), Set.of(), null, null, false);
         }
-        refreshToolStatePane();
-    }
-
-    private void refreshToolStatePane() {
-        Node toolContent = interactionController.activeToolPane();
-        statePane.refresh(sessionState.selectedTool(), toolContent);
+        statePane.refresh(sessionState.selectedTool(), editorInteraction.activeToolPane());
     }
 }

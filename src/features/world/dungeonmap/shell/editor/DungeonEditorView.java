@@ -1,15 +1,9 @@
 package features.world.dungeonmap.shell.editor;
 
-import features.world.dungeonmap.application.corridor.DungeonCorridorEditService;
-import features.world.dungeonmap.application.stair.DungeonStairEditService;
-import features.world.dungeonmap.application.transition.DungeonTransitionEditService;
-import features.world.dungeonmap.application.room.DungeonBoundaryEditService;
-import features.world.dungeonmap.application.room.DungeonClusterMoveService;
-import features.world.dungeonmap.application.room.DungeonRoomNarrationService;
-import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
-import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
+import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.shell.AbstractDungeonMapView;
+import features.world.dungeonmap.shell.editor.interaction.EditorInteraction;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
 import javafx.scene.Node;
@@ -26,15 +20,26 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
             DungeonMapLoadingService loadingService,
             DungeonMapState state,
             DungeonMapCatalogService mapCatalogService,
-            DungeonRoomTopologyService roomTopologyService,
-            DungeonBoundaryEditService boundaryEditService,
-            DungeonRoomNarrationService roomNarrationService,
-            DungeonClusterMoveService clusterMoveService,
-            DungeonCorridorEditService corridorEditService,
-            DungeonStairEditService stairEditService,
-            DungeonTransitionEditService transitionEditService
+            DungeonEditorSessionState sessionState,
+            EditorInteraction editorInteraction
     ) {
         super(true, loadingService, state);
+        DungeonMapDropdownController mapDropdownController = new DungeonMapDropdownController(
+                mapCatalogService,
+                new DungeonMapDropdownController.ReloadHandle() {
+                    @Override
+                    public void reload(Long preferredMapId) {
+                        loadingService.reload(preferredMapId);
+                    }
+
+                    @Override
+                    public Long sessionMapId() {
+                        return state.activeMapId();
+                    }
+                });
+        controls.setOnNewMapRequested(mapDropdownController::showCreate);
+        controls.setOnEditMapRequested(request ->
+                mapDropdownController.showEdit(new DungeonMapDropdownController.EditRequest(request.map(), request.anchor())));
         coordinator = new DungeonEditorCoordinator(
                 controls,
                 statePane,
@@ -42,14 +47,7 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
                 loadingService,
                 state,
                 sessionState,
-                mapCatalogService,
-                roomTopologyService,
-                boundaryEditService,
-                roomNarrationService,
-                clusterMoveService,
-                corridorEditService,
-                stairEditService,
-                transitionEditService);
+                editorInteraction);
     }
 
     @Override

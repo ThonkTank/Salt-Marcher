@@ -21,9 +21,11 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
     private final DungeonMapState mapState;
     private final DungeonEditorSessionState sessionState;
     private final EditorInteractionState state;
+    private final List<EditorTool> tools;
     private final Map<DungeonEditorTool, EditorTool> toolsByEnum;
     private final DungeonGridHitTester hitTester = new DungeonGridHitTester();
     private EditorTool activeTool;
+    private Runnable toolStateChanged = () -> { };
 
     public EditorInteraction(
             DungeonMapState mapState,
@@ -34,7 +36,9 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.sessionState = Objects.requireNonNull(sessionState, "sessionState");
         this.state = Objects.requireNonNull(state, "state");
-        this.toolsByEnum = buildToolMap(Objects.requireNonNull(tools, "tools"));
+        this.tools = List.copyOf(Objects.requireNonNull(tools, "tools"));
+        this.toolsByEnum = buildToolMap(this.tools);
+        this.tools.forEach(tool -> tool.setRefreshCallback(() -> toolStateChanged.run()));
     }
 
     @Override
@@ -91,6 +95,10 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
 
     public Node activeToolPane() {
         return activeTool == null ? null : activeTool.statePaneContent();
+    }
+
+    public void setOnToolStateChanged(Runnable callback) {
+        toolStateChanged = callback == null ? () -> { } : callback;
     }
 
     private boolean interactionEnabled() {
