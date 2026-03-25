@@ -6,7 +6,6 @@ import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.planning.CorridorPlan;
-import features.world.dungeonmap.model.structures.corridor.planning.CorridorPlanningEngine;
 import features.world.dungeonmap.model.structures.corridor.planning.StairFitResult;
 import features.world.dungeonmap.persistence.DungeonCorridorWriteRepository;
 
@@ -128,7 +127,7 @@ public final class DungeonCorridorEditService {
         Corridor updated;
         List<StairFitResult> stairFits;
         if (corridor.isPersistable()) {
-            CorridorPlan plan = CorridorPlanningEngine.plan(corridor, layout.corridorPlanningInput());
+            CorridorPlan plan = corridor.plan(layout.corridorPlanningInput());
             updated = corridor.applyPlan(plan);
             stairFits = plan.stairFits();
         } else {
