@@ -337,12 +337,10 @@ final class ClusterRewritePlanner {
             Room retainedRoom = retainedRoom(sourceRooms, retainedRoomIds);
             rewrittenRooms.add(resolveRoomForShapes(cluster, retainedRoom, roomShapesByLevel, boundaryKinds, sourceRooms));
         }
-        while (hasRemainingCells(remainingCellsByLevel)) {
-            LevelSeed seed = firstRemainingSeed(remainingCellsByLevel);
-            Point2i anchor = seed == null ? null : seed.cell();
-            if (anchor == null) {
-                break;
-            }
+        for (LevelSeed seed = firstRemainingSeed(remainingCellsByLevel);
+                seed != null;
+                seed = firstRemainingSeed(remainingCellsByLevel)) {
+            Point2i anchor = seed.cell();
             Set<Point2i> levelCells = remainingCellsByLevel.getOrDefault(seed.level(), Set.of());
             Set<Point2i> roomCells = reachableCells(anchor, levelCells, barriers);
             if (roomCells.isEmpty()) {
@@ -955,10 +953,6 @@ final class ClusterRewritePlanner {
             result.put(level, TileShape.fromAbsoluteCells(roomCells));
         }
         return result.isEmpty() ? Map.of() : Map.copyOf(result);
-    }
-
-    private static boolean hasRemainingCells(Map<Integer, Set<Point2i>> remainingCellsByLevel) {
-        return firstRemainingSeed(remainingCellsByLevel) != null;
     }
 
     private static LevelSeed firstRemainingSeed(Map<Integer, Set<Point2i>> remainingCellsByLevel) {
