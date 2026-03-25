@@ -33,7 +33,7 @@ public final class CorridorPlanningEngine {
         long startedAt = instrumentation.startTimer();
         try {
             if (corridor == null || input == null) {
-                return new CorridorPlan(CorridorPath.unroutable(new GridRoute(List.of())), List.of());
+                return new CorridorPlan(CorridorPath.unroutable(new GridRoute(List.of())), List.of(), List.of());
             }
             List<Room> rooms = corridor.resolvedRooms(input);
             List<Point2i> waypointCells2d = corridor.resolvedWaypointCells(input);
@@ -41,7 +41,7 @@ public final class CorridorPlanningEngine {
             Map<Long, ResolvedCorridorDoorBinding> doorBindings = corridor.resolvedDoorBindings(input);
             GridRoute route = buildRoute(rooms, waypointCells2d);
             if (rooms.size() < 2) {
-                return new CorridorPlan(CorridorPath.unroutable(route), List.of());
+                return new CorridorPlan(CorridorPath.unroutable(route), List.of(), List.of());
             }
 
             Set<CubePoint> allObstacles = buildObstacles(input.roomsById());
@@ -53,7 +53,7 @@ public final class CorridorPlanningEngine {
                     instrumentation);
             SteinerTree tree = SteinerTreeBuilder.bestTree(context);
             CorridorPath path = toCorridorPath(route, tree, rooms);
-            return new CorridorPlan(path, corridorConnections(corridor, tree));
+            return new CorridorPlan(path, corridorConnections(corridor, tree), List.of());
         } finally {
             instrumentation.logSummary(startedAt);
         }

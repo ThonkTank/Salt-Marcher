@@ -7,10 +7,12 @@ import java.util.List;
 
 public record CorridorPlan(
         CorridorPath path,
-        List<CorridorConnection> connections
+        List<CorridorConnection> connections,
+        List<StairFitResult> stairFits
 ) {
     public CorridorPlan {
         path = path == null ? CorridorPath.empty() : path;
         connections = connections == null ? List.of() : List.copyOf(connections);
+        stairFits = stairFits == null ? List.of() : List.copyOf(stairFits);
     }
 }
