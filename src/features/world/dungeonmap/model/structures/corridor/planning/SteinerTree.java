@@ -19,10 +19,15 @@ record SteinerTree(
         Set<CubePoint> corridorCells,
         Set<DoorEdge> openings,
         Map<Long, Set<CubePoint>> attachmentCellsByRoomId,
-        RouteCost totalCost
+        RouteCost totalCost,
+        List<StairPlacement> stairPlacements
 ) {
+    SteinerTree {
+        stairPlacements = stairPlacements == null ? List.of() : List.copyOf(stairPlacements);
+    }
+
     static SteinerTree empty() {
-        return new SteinerTree(Set.of(), Set.of(), Set.of(), Map.of(), new RouteCost(0, 0, 0));
+        return new SteinerTree(Set.of(), Set.of(), Set.of(), Map.of(), new RouteCost(0, 0, 0), List.of());
     }
 
     boolean isRoutable() {
@@ -143,7 +148,8 @@ record SteinerTree(
                 Set.copyOf(updatedCells),
                 Set.copyOf(updatedDoors),
                 Map.copyOf(updatedAttachments),
-                scoreCells(updatedCells));
+                scoreCells(updatedCells),
+                this.stairPlacements);
     }
 
     SteinerTree withReplacedSubtree(
@@ -182,7 +188,8 @@ record SteinerTree(
                 Set.copyOf(updatedCells),
                 Set.copyOf(updatedDoors),
                 Map.copyOf(updatedAttachments),
-                scoreCells(updatedCells));
+                scoreCells(updatedCells),
+                this.stairPlacements);
     }
 
     static RouteCost scoreCells(Collection<CubePoint> cells) {

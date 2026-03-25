@@ -110,7 +110,8 @@ final class SteinerTreeBuilder {
                 Set.copyOf(treeCells),
                 Set.copyOf(openings),
                 Map.copyOf(attachmentCellsByRoomId),
-                SteinerTree.scoreCells(treeCells));
+                SteinerTree.scoreCells(treeCells),
+                List.of());
     }
 
     private static SteinerTree ripUpAndReroute(SteinerTree tree, PlannerContext context) {
@@ -461,7 +462,8 @@ final class SteinerTreeBuilder {
                         Set.of(),
                         Set.of(firstDoor, secondDoor),
                         Map.of(),
-                        new RouteCost(0, 0, 0));
+                        new RouteCost(0, 0, 0),
+                        List.of());
             }
         }
         return null;
