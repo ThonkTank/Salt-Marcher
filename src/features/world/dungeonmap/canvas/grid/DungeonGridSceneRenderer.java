@@ -55,27 +55,19 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         if (editorMode) {
             drawPaintPreview(gc, camera, renderState.previewPaintShape(), renderState.previewPaintDeleteMode());
         }
-        LayerPalette currentPalette = LayerPalette.current(editorMode);
-        Set<VertexEdge> selectedRoomBoundaryEdges = drawRooms(
-                gc,
-                projectedMap,
-                camera,
-                editorMode,
-                renderState.selectedTargetKey(),
-                currentPalette,
-                renderState.projectionLevel(),
-                !editorMode);
-        drawCorridors(gc, projectedMap, camera, renderState.selectedTargetKey(), renderState.projectionLevel(), currentPalette);
-        drawStairs(
+        StructureRenderPass renderPass = new StructureRenderPass(
                 gc,
                 projectedMap,
                 camera,
                 editorMode,
                 renderState.selectedTargetKey(),
                 renderState.projectionLevel(),
-                currentPalette,
+                LayerPalette.current(editorMode),
                 false);
-        drawTransitions(gc, projectedMap, camera, renderState.selectedTargetKey(), currentPalette);
+        Set<VertexEdge> selectedRoomBoundaryEdges = drawRooms(renderPass, !editorMode);
+        drawCorridors(renderPass);
+        drawStairs(renderPass);
+        drawTransitions(renderPass);
         drawPartyToken(gc, mapModel, camera, renderState.activeLocation(), renderState.heading(), renderState.projectionLevel());
         if (!editorMode) {
             drawDoorNumbers(gc, projectedMap, camera, renderState.activeLocation(), renderState.heading());
@@ -91,12 +83,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                     renderState.previewBoundaryCurrentVertex(),
                     renderState.previewBoundaryDeleteMode());
         }
-        drawSelectedRoomBoundaries(
-                gc,
-                camera,
-                DungeonCanvasTheme.BASE_GRID * camera.zoom(),
-                selectedRoomBoundaryEdges,
-                currentPalette.selectedWallStroke());
+        drawSelectedRoomBoundaries(renderPass, selectedRoomBoundaryEdges, renderPass.palette().selectedWallStroke());
         if (editorMode) {
             drawInteractiveLabels(gc, projectedMap, camera, renderState.selectedTargetKey());
         }
@@ -152,35 +139,27 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         }
     }
 
-    private static Set<VertexEdge> drawRooms(
-            GraphicsContext gc,
-            DungeonLayout mapModel,
-            DungeonCanvasCamera camera,
-            boolean editorMode,
-            String selectedTargetKey,
-            LayerPalette palette,
-            int projectionLevel,
-            boolean showRuntimeLabels
-    ) {
-        double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
-        gc.setFill(palette.roomFill());
+    private static Set<VertexEdge> drawRooms(StructureRenderPass pass, boolean showRuntimeLabels) {
+        GraphicsContext gc = pass.gc();
+        DungeonLayout mapModel = pass.projected();
+        gc.setFill(pass.palette().roomFill());
         Set<VertexEdge> roomBoundaryEdges = new LinkedHashSet<>();
         Set<VertexEdge> selectedRoomBoundaryEdges = new LinkedHashSet<>();
         Set<Connection> roomDoorConnections = new LinkedHashSet<>();
         Set<Connection> selectedRoomDoorConnections = new LinkedHashSet<>();
         for (RoomCluster cluster : mapModel.clusters()) {
             InteractiveLabelHandle handle = cluster.labelHandle();
-            boolean selectedCluster = handle != null && java.util.Objects.equals(handle.key(), selectedTargetKey);
+            boolean selectedCluster = handle != null && java.util.Objects.equals(handle.key(), pass.selectedTargetKey());
             for (Room room : cluster.rooms()) {
-                Floor levelFloor = room.floorAtLevel(projectionLevel);
+                Floor levelFloor = room.floorAtLevel(pass.projectionLevel());
                 if (levelFloor == null || levelFloor.shape() == null || levelFloor.shape().size() == 0) {
                     continue;
                 }
-                boolean selectedRoom = Room.isTargetKey(selectedTargetKey)
-                        && java.util.Objects.equals(room.roomId(), Room.roomIdFromKey(selectedTargetKey));
+                boolean selectedRoom = Room.isTargetKey(pass.selectedTargetKey())
+                        && java.util.Objects.equals(room.roomId(), Room.roomIdFromKey(pass.selectedTargetKey()));
                 Set<Tile> tiles = levelFloor.shape().tiles();
-                fillRoomTiles(gc, camera, gridSize, tiles);
-                strokeRoomTiles(gc, camera, gridSize, tiles, palette.roomStroke(), 1.0);
+                fillRoomTiles(gc, pass.camera(), pass.gridSize(), tiles);
+                strokeRoomTiles(gc, pass.camera(), pass.gridSize(), tiles, pass.palette().roomStroke(), 1.0);
                 Set<VertexEdge> levelBoundaryEdges = levelFloor.shape().boundaryEdges();
                 List<Connection> roomConnections = room.roomId() == null
                         ? List.of()
@@ -198,10 +177,10 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                     }
                 });
                 if (showRuntimeLabels) {
-                    gc.setFill(palette.roomText());
+                    gc.setFill(pass.palette().roomText());
                     gc.setFont(DungeonCanvasTheme.ROOM_LABEL_FONT);
-                    drawRoomLabel(gc, room.name(), camera, gridSize, levelFloor);
-                    gc.setFill(palette.roomFill());
+                    drawRoomLabel(gc, room.name(), pass.camera(), pass.gridSize(), levelFloor);
+                    gc.setFill(pass.palette().roomFill());
                 }
                 if (selectedCluster || selectedRoom) {
                     selectedRoomDoorConnections.addAll(roomConnections);
@@ -210,9 +189,23 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 }
             }
         }
-        drawRoomBoundaries(gc, camera, gridSize, roomBoundaryEdges, palette.wallStroke());
-        drawConnections(gc, camera, gridSize, roomDoorConnections, roomDoorEdges(roomDoorConnections, projectionLevel, mapModel), palette.wallStroke(), 2.0);
-        drawConnections(gc, camera, gridSize, selectedRoomDoorConnections, roomDoorEdges(selectedRoomDoorConnections, projectionLevel, mapModel), palette.selectedWallStroke(), 3.0);
+        drawRoomBoundaries(pass, roomBoundaryEdges, pass.palette().wallStroke());
+        drawConnections(
+                gc,
+                pass.camera(),
+                pass.gridSize(),
+                roomDoorConnections,
+                roomDoorEdges(roomDoorConnections, pass.projectionLevel(), mapModel),
+                pass.palette().wallStroke(),
+                2.0);
+        drawConnections(
+                gc,
+                pass.camera(),
+                pass.gridSize(),
+                selectedRoomDoorConnections,
+                roomDoorEdges(selectedRoomDoorConnections, pass.projectionLevel(), mapModel),
+                pass.palette().selectedWallStroke(),
+                3.0);
         return selectedRoomBoundaryEdges;
     }
 
@@ -246,37 +239,25 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         }
     }
 
-    private static void drawRoomBoundaries(
-            GraphicsContext gc,
-            DungeonCanvasCamera camera,
-            double gridSize,
-            Set<VertexEdge> edges,
-            Color stroke
-    ) {
+    private static void drawRoomBoundaries(StructureRenderPass pass, Set<VertexEdge> edges, Color stroke) {
         if (edges.isEmpty()) {
             return;
         }
-        gc.setStroke(stroke);
-        gc.setLineWidth(2.0);
+        pass.gc().setStroke(stroke);
+        pass.gc().setLineWidth(2.0);
         for (VertexEdge edge : edges) {
-            strokeEdge(gc, camera, gridSize, edge);
+            strokeEdge(pass.gc(), pass.camera(), pass.gridSize(), edge);
         }
     }
 
-    private static void drawSelectedRoomBoundaries(
-            GraphicsContext gc,
-            DungeonCanvasCamera camera,
-            double gridSize,
-            Set<VertexEdge> edges,
-            Color stroke
-    ) {
+    private static void drawSelectedRoomBoundaries(StructureRenderPass pass, Set<VertexEdge> edges, Color stroke) {
         if (edges.isEmpty()) {
             return;
         }
-        gc.setStroke(stroke);
-        gc.setLineWidth(2.6);
+        pass.gc().setStroke(stroke);
+        pass.gc().setLineWidth(2.6);
         for (VertexEdge edge : edges) {
-            strokeEdge(gc, camera, gridSize, edge);
+            strokeEdge(pass.gc(), pass.camera(), pass.gridSize(), edge);
         }
     }
 
@@ -399,105 +380,84 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         gc.setTextAlign(TextAlignment.LEFT);
     }
 
-    private static void drawCorridors(
-            GraphicsContext gc,
-            DungeonLayout mapModel,
-            DungeonCanvasCamera camera,
-            String selectedTargetKey,
-            int projectionLevel,
-            LayerPalette palette
-    ) {
-        double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
+    private static void drawCorridors(StructureRenderPass pass) {
+        GraphicsContext gc = pass.gc();
+        DungeonLayout mapModel = pass.projected();
         for (Corridor corridor : mapModel.corridors()) {
             if (corridor == null || corridor.path() == null) {
                 continue;
             }
-            boolean selected = java.util.Objects.equals(corridor.targetKey(), selectedTargetKey);
-            Set<Tile> corridorTiles = corridor.path().floorAtLevel(projectionLevel).shape().tiles();
+            boolean selected = java.util.Objects.equals(corridor.targetKey(), pass.selectedTargetKey());
+            Set<Tile> corridorTiles = corridor.path().floorAtLevel(pass.projectionLevel()).shape().tiles();
             Set<VertexEdge> levelConnectionEdges = corridor.corridorId() == null
                     ? Set.of()
-                    : mapModel.connectionEdgesForCorridorAtLevel(corridor.corridorId(), projectionLevel);
+                    : mapModel.connectionEdgesForCorridorAtLevel(corridor.corridorId(), pass.projectionLevel());
             if (corridorTiles.isEmpty() && levelConnectionEdges.isEmpty()) {
                 continue;
             }
-            gc.setFill(selected ? palette.corridorSelectedFill() : palette.corridorFill());
-            fillRoomTiles(gc, camera, gridSize, corridorTiles);
-            strokeRoomTiles(gc, camera, gridSize, corridorTiles, palette.roomStroke(), 1.0);
+            gc.setFill(selected ? pass.palette().corridorSelectedFill() : pass.palette().corridorFill());
+            fillRoomTiles(gc, pass.camera(), pass.gridSize(), corridorTiles);
+            strokeRoomTiles(gc, pass.camera(), pass.gridSize(), corridorTiles, pass.palette().roomStroke(), 1.0);
 
-            Set<VertexEdge> wallEdges = new LinkedHashSet<>(corridor.path().floorAtLevel(projectionLevel).shape().boundaryEdges());
+            Set<VertexEdge> wallEdges = new LinkedHashSet<>(corridor.path().floorAtLevel(pass.projectionLevel()).shape().boundaryEdges());
             wallEdges.removeAll(levelConnectionEdges);
-            drawCorridorBoundaries(gc, camera, gridSize, wallEdges, selected, palette);
+            drawCorridorBoundaries(pass, wallEdges, selected);
             drawConnections(
                     gc,
-                    camera,
-                    gridSize,
+                    pass.camera(),
+                    pass.gridSize(),
                     corridor.corridorId() == null ? List.of() : mapModel.connectionsForCorridor(corridor.corridorId()),
                     levelConnectionEdges,
-                    selected ? palette.corridorSelectedStroke() : palette.corridorStroke(),
+                    selected ? pass.palette().corridorSelectedStroke() : pass.palette().corridorStroke(),
                     selected ? 3.0 : 2.0);
         }
     }
 
-    private static void drawCorridorBoundaries(
-            GraphicsContext gc,
-            DungeonCanvasCamera camera,
-            double gridSize,
-            Set<VertexEdge> edges,
-            boolean selected,
-            LayerPalette palette
-    ) {
+    private static void drawCorridorBoundaries(StructureRenderPass pass, Set<VertexEdge> edges, boolean selected) {
         if (edges.isEmpty()) {
             return;
         }
-        gc.setStroke(selected ? palette.corridorSelectedStroke() : palette.wallStroke());
-        gc.setLineWidth(selected ? 2.5 : 2.0);
+        pass.gc().setStroke(selected ? pass.palette().corridorSelectedStroke() : pass.palette().wallStroke());
+        pass.gc().setLineWidth(selected ? 2.5 : 2.0);
         for (VertexEdge edge : edges) {
-            strokeEdge(gc, camera, gridSize, edge);
+            strokeEdge(pass.gc(), pass.camera(), pass.gridSize(), edge);
         }
     }
 
-    private static void drawStairs(
-            GraphicsContext gc,
-            DungeonLayout mapModel,
-            DungeonCanvasCamera camera,
-            boolean editorMode,
-            String selectedTargetKey,
-            int projectionLevel,
-            LayerPalette palette,
-            boolean overlayPass
-    ) {
-        double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
+    private static void drawStairs(StructureRenderPass pass) {
+        GraphicsContext gc = pass.gc();
+        DungeonLayout mapModel = pass.projected();
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setFont(DungeonCanvasTheme.ROOM_LABEL_FONT);
         for (DungeonStair stair : mapModel.stairs()) {
             if (stair == null) {
                 continue;
             }
-            boolean selected = java.util.Objects.equals(stair.targetKey(), selectedTargetKey);
-            gc.setFill(selected ? palette.corridorSelectedFill() : palette.stairFill());
-            gc.setStroke(selected ? palette.corridorSelectedStroke() : palette.stairStroke());
+            boolean selected = java.util.Objects.equals(stair.targetKey(), pass.selectedTargetKey());
+            gc.setFill(selected ? pass.palette().corridorSelectedFill() : pass.palette().stairFill());
+            gc.setStroke(selected ? pass.palette().corridorSelectedStroke() : pass.palette().stairStroke());
             gc.setLineWidth(selected ? 2.5 : 1.8);
             for (var node : stair.path()) {
-                if (node.z() != projectionLevel) {
+                if (node.z() != pass.projectionLevel()) {
                     continue;
                 }
-                double x = camera.panX() + node.x() * gridSize;
-                double y = camera.panY() + node.y() * gridSize;
-                gc.fillRoundRect(x + gridSize * 0.18, y + gridSize * 0.18, gridSize * 0.64, gridSize * 0.64, 10, 10);
-                gc.strokeRoundRect(x + gridSize * 0.18, y + gridSize * 0.18, gridSize * 0.64, gridSize * 0.64, 10, 10);
+                double x = pass.camera().panX() + node.x() * pass.gridSize();
+                double y = pass.camera().panY() + node.y() * pass.gridSize();
+                gc.fillRoundRect(x + pass.gridSize() * 0.18, y + pass.gridSize() * 0.18, pass.gridSize() * 0.64, pass.gridSize() * 0.64, 10, 10);
+                gc.strokeRoundRect(x + pass.gridSize() * 0.18, y + pass.gridSize() * 0.18, pass.gridSize() * 0.64, pass.gridSize() * 0.64, 10, 10);
             }
             for (var exit : stair.exits()) {
-                if (exit.position().z() != projectionLevel) {
+                if (exit.position().z() != pass.projectionLevel()) {
                     continue;
                 }
-                double centerX = camera.panX() + (exit.position().x() + 0.5) * gridSize;
-                double centerY = camera.panY() + (exit.position().y() + 0.5) * gridSize;
-                double radius = Math.max(6.0, gridSize * 0.18);
-                gc.setFill(selected ? palette.selectedWallStroke() : palette.stairExitFill());
+                double centerX = pass.camera().panX() + (exit.position().x() + 0.5) * pass.gridSize();
+                double centerY = pass.camera().panY() + (exit.position().y() + 0.5) * pass.gridSize();
+                double radius = Math.max(6.0, pass.gridSize() * 0.18);
+                gc.setFill(selected ? pass.palette().selectedWallStroke() : pass.palette().stairExitFill());
                 gc.fillOval(centerX - radius, centerY - radius, radius * 2, radius * 2);
-                if (editorMode && !overlayPass) {
-                    gc.setFill(palette.roomText());
-                    gc.fillText(Integer.toString(exit.position().z()), centerX, centerY - gridSize * 0.38);
+                if (pass.editorMode() && !pass.overlayPass()) {
+                    gc.setFill(pass.palette().roomText());
+                    gc.fillText(Integer.toString(exit.position().z()), centerX, centerY - pass.gridSize() * 0.38);
                 }
             }
         }
@@ -534,24 +494,20 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         }
         gc.save();
         gc.setGlobalAlpha(overlay.opacity());
-        Set<VertexEdge> selectedRoomBoundaryEdges = drawRooms(
+        StructureRenderPass overlayPass = new StructureRenderPass(
                 gc,
                 projected,
                 camera,
                 editorMode,
                 renderState.selectedTargetKey(),
-                palette,
                 overlay.level(),
-                false);
-        drawCorridors(gc, projected, camera, renderState.selectedTargetKey(), overlay.level(), palette);
-        drawStairs(gc, projected, camera, editorMode, renderState.selectedTargetKey(), overlay.level(), palette, true);
-        drawTransitions(gc, projected, camera, renderState.selectedTargetKey(), palette);
-        drawSelectedRoomBoundaries(
-                gc,
-                camera,
-                DungeonCanvasTheme.BASE_GRID * camera.zoom(),
-                selectedRoomBoundaryEdges,
-                palette.selectedWallStroke());
+                palette,
+                true);
+        Set<VertexEdge> selectedRoomBoundaryEdges = drawRooms(overlayPass, false);
+        drawCorridors(overlayPass);
+        drawStairs(overlayPass);
+        drawTransitions(overlayPass);
+        drawSelectedRoomBoundaries(overlayPass, selectedRoomBoundaryEdges, palette.selectedWallStroke());
         gc.restore();
     }
 
@@ -657,27 +613,21 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         gc.fillOval(centerX - innerRadius, centerY - innerRadius, innerRadius * 2, innerRadius * 2);
     }
 
-    private static void drawTransitions(
-            GraphicsContext gc,
-            DungeonLayout mapModel,
-            DungeonCanvasCamera camera,
-            String selectedTargetKey,
-            LayerPalette palette
-    ) {
-        double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
+    private static void drawTransitions(StructureRenderPass pass) {
+        GraphicsContext gc = pass.gc();
         gc.setTextAlign(TextAlignment.CENTER);
-        gc.setFont(Font.font(Math.max(10.0, gridSize * 0.35)));
-        for (DungeonTransition transition : mapModel.transitions()) {
+        gc.setFont(Font.font(Math.max(10.0, pass.gridSize() * 0.35)));
+        for (DungeonTransition transition : pass.projected().transitions()) {
             if (transition == null || !transition.isPlaced()) {
                 continue;
             }
-            double centerX = camera.panX() + (transition.anchor().x() + 0.5) * gridSize;
-            double centerY = camera.panY() + (transition.anchor().y() + 0.5) * gridSize;
-            double radius = Math.max(8.0, gridSize * 0.24);
-            boolean selected = java.util.Objects.equals(transition.targetKey(), selectedTargetKey);
-            gc.setFill(selected ? palette.selectedWallStroke() : palette.stairExitFill());
+            double centerX = pass.camera().panX() + (transition.anchor().x() + 0.5) * pass.gridSize();
+            double centerY = pass.camera().panY() + (transition.anchor().y() + 0.5) * pass.gridSize();
+            double radius = Math.max(8.0, pass.gridSize() * 0.24);
+            boolean selected = java.util.Objects.equals(transition.targetKey(), pass.selectedTargetKey());
+            gc.setFill(selected ? pass.palette().selectedWallStroke() : pass.palette().stairExitFill());
             gc.fillRoundRect(centerX - radius, centerY - radius, radius * 2, radius * 2, 8, 8);
-            gc.setStroke(selected ? palette.corridorSelectedStroke() : palette.stairStroke());
+            gc.setStroke(selected ? pass.palette().corridorSelectedStroke() : pass.palette().stairStroke());
             gc.setLineWidth(selected ? 2.2 : 1.5);
             gc.strokeRoundRect(centerX - radius, centerY - radius, radius * 2, radius * 2, 8, 8);
             gc.setFill(DungeonCanvasTheme.LABEL_TEXT);
@@ -835,6 +785,40 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
     }
 
     private record OverlayLevel(int level, double opacity) {
+    }
+
+    private record StructureRenderPass(
+            GraphicsContext gc,
+            DungeonLayout projected,
+            DungeonCanvasCamera camera,
+            double gridSize,
+            boolean editorMode,
+            String selectedTargetKey,
+            int projectionLevel,
+            LayerPalette palette,
+            boolean overlayPass
+    ) {
+        private StructureRenderPass(
+                GraphicsContext gc,
+                DungeonLayout projected,
+                DungeonCanvasCamera camera,
+                boolean editorMode,
+                String selectedTargetKey,
+                int projectionLevel,
+                LayerPalette palette,
+                boolean overlayPass
+        ) {
+            this(
+                    gc,
+                    projected,
+                    camera,
+                    DungeonCanvasTheme.BASE_GRID * camera.zoom(),
+                    editorMode,
+                    selectedTargetKey,
+                    projectionLevel,
+                    palette,
+                    overlayPass);
+        }
     }
 
     private record LayerPalette(

@@ -35,10 +35,6 @@ public final class DungeonEditorStatePane {
 
     private final VBox content = new VBox();
     private final Label activeToolLabel = new Label(DungeonEditorTool.SELECT.label());
-    private final Label boundaryLabel = new Label("Kein Wandpfad aktiv");
-    private final VBox boundaryCard = card("Wandpfad", boundaryLabel);
-    private final Label corridorLabel = new Label("Kein Korridor gewählt");
-    private final VBox corridorCard = card("Korridor", corridorLabel);
     private final Label stairSummaryLabel = new Label("Keine Treppe gewählt");
     private final ComboBox<StairShape> stairShapeBox = new ComboBox<>();
     private final FlowPane stairDirectionButtons = new FlowPane();
@@ -112,6 +108,7 @@ public final class DungeonEditorStatePane {
     private boolean syncingStairShape;
     private boolean syncingStairDimensions;
     private boolean syncingTransitionFields;
+    private Node toolStateContent;
 
     public DungeonEditorStatePane() {
         content.getStyleClass().add("dungeon-editor-sidebar");
@@ -243,8 +240,6 @@ public final class DungeonEditorStatePane {
         preparedTransitionButtons.setHgap(6);
         preparedTransitionButtons.setVgap(6);
         transitionStatusLabel.setWrapText(true);
-        showCorridorStatus(null);
-        showBoundaryDraft(null);
         showStairDraft(null);
         showTransitionDraft(null);
         showRoomNarrationEditors(List.of(), null);
@@ -255,31 +250,18 @@ public final class DungeonEditorStatePane {
     }
 
     public void refresh(DungeonEditorTool activeTool) {
+        refresh(activeTool, null);
+    }
+
+    public void refresh(DungeonEditorTool activeTool, Node extraContent) {
         DungeonEditorTool shownTool = activeTool == null ? DungeonEditorTool.SELECT : activeTool;
         activeToolLabel.setText(shownTool.label());
-    }
-
-    public void showCorridorStatus(String text) {
-        if (text == null || text.isBlank()) {
-            content.getChildren().remove(corridorCard);
-            corridorLabel.setText("Kein Korridor gewählt");
-            return;
+        if (toolStateContent != null) {
+            content.getChildren().remove(toolStateContent);
         }
-        corridorLabel.setText(text);
-        if (!content.getChildren().contains(corridorCard)) {
-            content.getChildren().add(1, corridorCard);
-        }
-    }
-
-    public void showBoundaryDraft(String text) {
-        if (text == null || text.isBlank()) {
-            content.getChildren().remove(boundaryCard);
-            boundaryLabel.setText("Kein Wandpfad aktiv");
-            return;
-        }
-        boundaryLabel.setText(text);
-        if (!content.getChildren().contains(boundaryCard)) {
-            content.getChildren().add(1, boundaryCard);
+        toolStateContent = extraContent;
+        if (toolStateContent != null && !content.getChildren().contains(toolStateContent)) {
+            content.getChildren().add(1, toolStateContent);
         }
     }
 

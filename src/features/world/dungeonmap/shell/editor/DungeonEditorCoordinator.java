@@ -17,7 +17,6 @@ import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
 import features.world.dungeonmap.loading.DungeonMapCatalogEntry;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
-import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
@@ -154,7 +153,7 @@ final class DungeonEditorCoordinator {
         List<EditorToolHandler> toolHandlers = List.of(
                 new SelectionToolHandler(clusterSelectionDragController),
                 new RoomPaintToolHandler(roomPaintInteractionController, paintPreviewState),
-                new CorridorToolHandler(corridorInteractionController, corridorDraftState),
+                new CorridorToolHandler(corridorInteractionController, selectionState, corridorDraftState),
                 new BoundaryToolHandler(boundaryInteractionController, boundaryDraftState),
                 new StairToolHandler(this.stairInteractionController, mapState, stairDraftState),
                 new TransitionToolHandler(this.transitionInteractionController, transitionDraftState));
@@ -168,16 +167,12 @@ final class DungeonEditorCoordinator {
         installBindings();
         sessionState.addListener(this::refreshFromSessionState);
         selectionState.addListener(this::refreshSelectionState);
-        selectionState.addListener(this::refreshCorridorStatePane);
-        selectionState.addListener(this::refreshBoundaryStatePane);
         selectionState.addListener(this::refreshStairStatePane);
         selectionState.addListener(this::refreshRoomNarrationStatePane);
         selectionState.addListener(this::refreshTransitionStatePane);
         layoutPreviewState.addListener(this::refreshLayoutPreviewState);
         paintPreviewState.addListener(this::refreshPaintPreviewState);
         boundaryDraftState.addListener(this::refreshBoundaryPreviewState);
-        boundaryDraftState.addListener(this::refreshBoundaryStatePane);
-        corridorDraftState.addListener(this::refreshCorridorStatePane);
         stairDraftState.addListener(this::refreshStairStatePane);
         transitionDraftState.addListener(this::refreshTransitionStatePane);
         transitionDraftState.addListener(this::refreshTransitionTargetOptions);
@@ -186,8 +181,6 @@ final class DungeonEditorCoordinator {
         refreshLayoutPreviewState();
         refreshPaintPreviewState();
         refreshBoundaryPreviewState();
-        refreshCorridorStatePane();
-        refreshBoundaryStatePane();
         refreshStairStatePane();
         refreshTransitionStatePane();
         refreshTransitionTargetOptions();
@@ -263,8 +256,12 @@ final class DungeonEditorCoordinator {
         if (sessionChanged) {
             interactionController.activateTool(selectedTool);
         }
-        statePane.refresh(selectedTool);
-        refreshCorridorStatePane();
+        EditorToolHandler handler = interactionController.activeHandler();
+        if (handler != null) {
+            handler.setRefreshCallback(() ->
+                    statePane.refresh(sessionState.selectedTool(), handler.statePaneContent()));
+        }
+        statePane.refresh(selectedTool, handler == null ? null : handler.statePaneContent());
         refreshStairStatePane();
         refreshTransitionStatePane();
         refreshTransitionTargetOptions();
@@ -292,39 +289,6 @@ final class DungeonEditorCoordinator {
 
     private void refreshSelectionState() {
         workspace.setSelectedTargetKey(selectionState.selectedTargetKey());
-    }
-
-    private void refreshCorridorStatePane() {
-        if (corridorDraftState.hasPendingStart()) {
-            String startLabel = corridorDraftState.pendingStartDisplayLabel();
-            statePane.showCorridorStatus((startLabel == null || startLabel.isBlank() ? "Start gewählt" : "Start: " + startLabel)
-                    + " auf z=" + corridorDraftState.pendingStartLevel()
-                    + ", Zielraum oder Korridor anklicken");
-            return;
-        }
-        String selectedTargetKey = selectionState.selectedTargetKey();
-        if (Corridor.isTargetKey(selectedTargetKey)) {
-            statePane.showCorridorStatus("Gewählt: " + DungeonEditorSelectionLabels.corridorLabel(selectedTargetKey));
-            return;
-        }
-        statePane.showCorridorStatus(null);
-    }
-
-    private void refreshBoundaryStatePane() {
-        DungeonBoundaryDraftState.Draft draft = boundaryDraftState.draft();
-        if (draft != null) {
-            statePane.showBoundaryDraft(draft.statusMessage());
-            return;
-        }
-        if (sessionState.selectedTool() == DungeonEditorTool.CLUSTER_WALL) {
-            statePane.showBoundaryDraft("Eckpunkte anklicken, Rechtsklick schließt ab");
-            return;
-        }
-        if (sessionState.selectedTool() == DungeonEditorTool.CLUSTER_WALL_DELETE) {
-            statePane.showBoundaryDraft("Eckpunkte auf bestehender Innenwand anklicken, Rechtsklick schließt ab");
-            return;
-        }
-        statePane.showBoundaryDraft(null);
     }
 
     private void refreshStairStatePane() {
