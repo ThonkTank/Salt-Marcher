@@ -42,8 +42,7 @@ The feature ships two `AppView` implementations: `DungeonEditorView` (EDITOR) an
   - `EditorInteractionState` — shared editor interaction state: selected target key, active `EditorPreview`, active `EditorDraft`
   - `EditorPreview` — sealed preview payloads for dragged cluster layouts, room paint/delete shapes, and boundary path overlays
   - `EditorDraft` — sealed shared drafts for corridor start selection and boundary-path status
-  - `DungeonStairDraftState` — pending stair exit levels for creation (requires ≥2 levels, duplicate guard)
-  - `DungeonTransitionDraftState` — transition creation workflow: destination type, bidirectional flag, target map/transition, prepared transition ID, placement error. `displayStatus()` guides the user through the multi-step flow
+  - Stair and transition draft state is tool-local: `StairTool` owns pending exit levels, shape, dimensions, and placement validation; `TransitionTool` owns destination selection, prepared-transition placement, and placement errors. Do not reintroduce parallel shared listener channels for these tool-private drafts
   - `DungeonLevelOverlaySettings` — overlay mode (`DungeonLevelOverlayMode`: OFF | NEARBY±range | SELECTED levels), opacity, level range
   - `DungeonRuntimeState` — active location + heading, loading/dragging/moving mode flags, error state
 
@@ -67,8 +66,8 @@ The feature ships two `AppView` implementations: `DungeonEditorView` (EDITOR) an
 - **ROOM_PAINT / ROOM_DELETE** → `PaintTool` — manages `RoomPaintSession`, clears selection on paint start, updates `EditorPreview.PaintPreview` during drag, calls `DungeonRoomTopologyService.paint()`/`.delete()` on release
 - **CLUSTER_WALL / CLUSTER_WALL_DELETE / CLUSTER_DOOR / CLUSTER_DOOR_DELETE** → `BoundaryTool` — owns the wall-path draft locally, publishes overlay edges through `EditorPreview.BoundaryPreview`, and stores only lightweight status/selection in shared state
 - **CORRIDOR_CREATE / CORRIDOR_DELETE** → `CorridorTool` — two-click flow via `EditorDraft.CorridorDraft` (first click stores pending endpoint, second click finalizes)
-- **STAIR_CREATE / STAIR_DELETE** → `StairTool` — create requires valid `DungeonStairDraftState` (≥2 exit levels); click places stair with auto-generated vertical path and exits. Delete click-targets stair at cell
-- **TRANSITION_CREATE / TRANSITION_DELETE** → `TransitionTool` — create either places a prepared transition or creates+places atomically from `DungeonTransitionDraftState`. Delete click-targets transition at cell
+- **STAIR_CREATE / STAIR_DELETE** → `StairTool` — create requires a valid tool-local stair draft (≥2 exit levels); click places stair with auto-generated vertical path and exits. Delete click-targets stair at cell
+- **TRANSITION_CREATE / TRANSITION_DELETE** → `TransitionTool` — create either places a prepared transition or creates+places atomically from the tool-local transition draft. Delete click-targets transition at cell
 
 Canvas pointer events flow through `DungeonCanvasInteractionHandler` → `handlePressed`/`handleDragged`/`handleReleased` → state update → redraw. Hit testing: `DungeonGridHitTester` returns `DungeonEditorHitTarget` / `DungeonEditorLabelHitTarget` for cluster/room/corridor at canvas point.
 

@@ -34,8 +34,6 @@ import features.world.dungeonmap.shell.editor.interaction.TransitionTool;
 import features.world.dungeonmap.shell.runtime.DungeonRuntimeView;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
-import features.world.dungeonmap.state.DungeonStairDraftState;
-import features.world.dungeonmap.state.DungeonTransitionDraftState;
 import features.world.dungeonmap.state.EditorInteractionState;
 import ui.shell.AppView;
 import ui.shell.DetailsNavigator;
@@ -82,8 +80,6 @@ public final class DungeonMapModule {
                 state);
         DungeonEditorSessionState editorSessionState = new DungeonEditorSessionState();
         EditorInteractionState editorInteractionState = new EditorInteractionState();
-        DungeonStairDraftState stairDraftState = new DungeonStairDraftState();
-        DungeonTransitionDraftState transitionDraftState = new DungeonTransitionDraftState();
         DungeonTransitionTargetCatalogService transitionTargetCatalogService = new DungeonTransitionTargetCatalogService();
         List<EditorTool> editorTools = List.of(
                 new SelectionTool(
@@ -116,7 +112,6 @@ public final class DungeonMapModule {
                         loadingService,
                         editorSessionState,
                         stairEditService,
-                        stairDraftState,
                         editorInteractionState),
                 new TransitionTool(
                         state,
@@ -124,7 +119,6 @@ public final class DungeonMapModule {
                         editorSessionState,
                         transitionEditService,
                         transitionTargetCatalogService,
-                        transitionDraftState,
                         editorInteractionState));
         EditorInteraction editorInteraction = new EditorInteraction(
                 state,

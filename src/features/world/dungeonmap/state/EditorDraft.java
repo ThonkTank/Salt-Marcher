@@ -1,55 +1,11 @@
 package features.world.dungeonmap.state;
 
-import features.world.dungeonmap.application.transition.DungeonTransitionEditRequest;
-import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.structures.stair.StairShape;
-
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 
-public sealed interface EditorDraft permits EditorDraft.CorridorDraft, EditorDraft.StairDraft, EditorDraft.TransitionDraft, EditorDraft.BoundaryDraft {
+public sealed interface EditorDraft permits EditorDraft.CorridorDraft, EditorDraft.BoundaryDraft {
 
     record CorridorDraft(PendingStart pendingStart) implements EditorDraft {
-    }
-
-    record StairDraft(
-            int inputLevel,
-            StairShape shape,
-            CardinalDirection direction,
-            int dimension1,
-            int dimension2,
-            List<Integer> exitLevels,
-            String statusMessage,
-            String placementError
-    ) implements EditorDraft {
-        public StairDraft {
-            shape = shape == null ? StairShape.LADDER : shape;
-            direction = direction == null ? CardinalDirection.defaultDirection() : direction;
-            exitLevels = exitLevels == null ? List.of() : List.copyOf(exitLevels);
-            statusMessage = statusMessage == null ? "" : statusMessage;
-            placementError = placementError == null || placementError.isBlank() ? null : placementError.trim();
-        }
-    }
-
-    record TransitionDraft(
-            String description,
-            DungeonTransitionEditRequest.DestinationType destinationType,
-            boolean bidirectional,
-            Long targetDungeonMapId,
-            Long targetTransitionId,
-            Long targetOverworldMapId,
-            Long targetOverworldTileId,
-            Long preparedTransitionId,
-            String placementError
-    ) implements EditorDraft {
-        public TransitionDraft {
-            description = description == null ? "" : description.trim();
-            destinationType = destinationType == null
-                    ? DungeonTransitionEditRequest.DestinationType.OVERWORLD_TILE
-                    : destinationType;
-            placementError = placementError == null || placementError.isBlank() ? null : placementError.trim();
-        }
     }
 
     record BoundaryDraft(

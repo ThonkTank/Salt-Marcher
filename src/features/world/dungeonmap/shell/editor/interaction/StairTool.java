@@ -11,7 +11,6 @@ import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.shell.editor.EditorCards;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
-import features.world.dungeonmap.state.DungeonStairDraftState;
 import features.world.dungeonmap.state.EditorInteractionState;
 import javafx.collections.FXCollections;
 import javafx.geometry.Pos;
@@ -34,11 +33,14 @@ import java.util.Set;
 
 public final class StairTool implements EditorTool {
 
+    private static final String READY_MESSAGE = "Zum Platzieren Feld anklicken";
+    private static final String MIN_LEVELS_MESSAGE = "Mindestens zwei verschiedene Ebenen";
+    private static final String DUPLICATE_MESSAGE = "Ausgänge dürfen nicht doppelt sein";
+
     private final DungeonMapState mapState;
     private final DungeonMapLoadingService loadingService;
     private final DungeonEditorSessionState sessionState;
     private final DungeonStairEditService stairEditService;
-    private final DungeonStairDraftState stairDraftState;
     private final EditorInteractionState state;
     private final Label stairSummaryLabel = new Label("Keine Treppe gewählt");
     private final ComboBox<StairShape> stairShapeBox = new ComboBox<>();
@@ -75,23 +77,28 @@ public final class StairTool implements EditorTool {
     private boolean syncingStairInput;
     private boolean syncingStairShape;
     private boolean syncingStairDimensions;
+    private int inputLevel;
+    private StairShape shape = StairShape.LADDER;
+    private CardinalDirection direction = CardinalDirection.defaultDirection();
+    private int dimension1 = 1;
+    private int dimension2 = 1;
+    private List<Integer> exitLevels = List.of();
+    private String statusMessage = MIN_LEVELS_MESSAGE;
+    private String placementError;
 
     public StairTool(
             DungeonMapState mapState,
             DungeonMapLoadingService loadingService,
             DungeonEditorSessionState sessionState,
             DungeonStairEditService stairEditService,
-            DungeonStairDraftState stairDraftState,
             EditorInteractionState state
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
         this.sessionState = Objects.requireNonNull(sessionState, "sessionState");
         this.stairEditService = Objects.requireNonNull(stairEditService, "stairEditService");
-        this.stairDraftState = Objects.requireNonNull(stairDraftState, "stairDraftState");
         this.state = Objects.requireNonNull(state, "state");
         initializeStatePane();
-        this.stairDraftState.addListener(this::refreshStatePane);
     }
 
     @Override
@@ -103,7 +110,7 @@ public final class StairTool implements EditorTool {
     public void activate(DungeonEditorTool tool) {
         activeTool = tool;
         if (tool == DungeonEditorTool.STAIR_CREATE) {
-            stairDraftState.resetForLevel(mapState.activeProjectionLevel());
+            resetForLevel(mapState.activeProjectionLevel());
         }
         refreshStatePane();
     }
@@ -159,26 +166,26 @@ public final class StairTool implements EditorTool {
 
     private boolean handleCreatePressed(Point2i gridCell) {
         Long mapId = mapState.activeMapId();
-        if (mapId == null || gridCell == null || !stairDraftState.canPlace()) {
+        if (mapId == null || gridCell == null || !canPlace()) {
             return false;
         }
         state.clearSelection();
-        stairDraftState.clearPlacementError();
+        clearPlacementError();
         UiAsyncTasks.submitVoid(
                 () -> stairEditService.create(
                         mapState.activeMap(),
                         gridCell,
-                        stairDraftState.shape(),
-                        stairDraftState.direction(),
-                        stairDraftState.dimension1(),
-                        stairDraftState.dimension2(),
-                        stairDraftState.exitLevels()),
+                        shape,
+                        direction,
+                        dimension1,
+                        dimension2,
+                        exitLevels),
                 () -> {
-                    stairDraftState.clearPlacementError();
+                    clearPlacementError();
                     loadingService.reload(mapId);
                 },
                 throwable -> {
-                    stairDraftState.showPlacementError(throwable == null ? "Treppe konnte nicht platziert werden" : throwable.getMessage());
+                    showPlacementError(throwable == null ? "Treppe konnte nicht platziert werden" : throwable.getMessage());
                     UiErrorReporter.reportBackgroundFailure("StairTool.handleCreatePressed()", throwable);
                 });
         return true;
@@ -207,7 +214,7 @@ public final class StairTool implements EditorTool {
 
     private void clear() {
         if (activeTool != DungeonEditorTool.STAIR_CREATE) {
-            stairDraftState.clear();
+            clearDraft();
         }
     }
 
@@ -240,20 +247,20 @@ public final class StairTool implements EditorTool {
         });
         stairShapeBox.valueProperty().addListener((obs, oldValue, newValue) -> {
             if (!syncingStairShape) {
-                stairDraftState.setShape(newValue);
+                setShape(newValue);
             }
         });
         stairInputField.textProperty().addListener((obs, oldValue, newValue) -> handleStairInputChanged(newValue));
         stairDimension1Field.textProperty().addListener((obs, oldValue, newValue) ->
-                handleStairDimensionChanged(newValue, stairDraftState::setDimension1));
+                handleStairDimensionChanged(newValue, this::setDimension1));
         stairDimension2Field.textProperty().addListener((obs, oldValue, newValue) ->
-                handleStairDimensionChanged(newValue, stairDraftState::setDimension2));
-        stairInputField.setOnAction(event -> stairDraftState.addExitLevel());
-        stairDimension1Field.setOnAction(event -> handleStairDimensionChanged(stairDimension1Field.getText(), stairDraftState::setDimension1));
-        stairDimension2Field.setOnAction(event -> handleStairDimensionChanged(stairDimension2Field.getText(), stairDraftState::setDimension2));
-        stairLevelDownButton.setOnAction(event -> stairDraftState.adjustInputLevel(-1));
-        stairLevelUpButton.setOnAction(event -> stairDraftState.adjustInputLevel(1));
-        stairAddButton.setOnAction(event -> stairDraftState.addExitLevel());
+                handleStairDimensionChanged(newValue, this::setDimension2));
+        stairInputField.setOnAction(event -> addExitLevel());
+        stairDimension1Field.setOnAction(event -> handleStairDimensionChanged(stairDimension1Field.getText(), this::setDimension1));
+        stairDimension2Field.setOnAction(event -> handleStairDimensionChanged(stairDimension2Field.getText(), this::setDimension2));
+        stairLevelDownButton.setOnAction(event -> adjustInputLevel(-1));
+        stairLevelUpButton.setOnAction(event -> adjustInputLevel(1));
+        stairAddButton.setOnAction(event -> addExitLevel());
         stairInputRow.setAlignment(Pos.CENTER_LEFT);
         stairDimension1Row.setAlignment(Pos.CENTER_LEFT);
         stairDimension2Row.setAlignment(Pos.CENTER_LEFT);
@@ -302,17 +309,17 @@ public final class StairTool implements EditorTool {
         stairSummaryLabel.setText("Aktuelle Ebene als Ausgang hinzufügen");
         stairEditorContent.setManaged(true);
         stairEditorContent.setVisible(true);
-        stairStatusLabel.setText(stairDraftState.displayStatus() == null ? "" : stairDraftState.displayStatus());
+        stairStatusLabel.setText(displayStatus() == null ? "" : displayStatus());
         stairLevelDownButton.setDisable(false);
         stairLevelUpButton.setDisable(false);
         stairInputField.setDisable(false);
         stairAddButton.setDisable(false);
         stairShapeBox.setDisable(false);
-        syncStairShape(stairDraftState.shape(), stairDraftState.direction());
-        syncStairDimensions(stairDraftState.dimension1(), stairDraftState.dimension2());
-        updateStairShapeVisibility(stairDraftState.shape(), true);
-        syncStairInput(stairDraftState.inputLevel());
-        renderStairTokens(stairDraftState.exitLevels());
+        syncStairShape(shape, direction);
+        syncStairDimensions(dimension1, dimension2);
+        updateStairShapeVisibility(shape, true);
+        syncStairInput(inputLevel);
+        renderStairTokens(exitLevels);
     }
 
     private void handleStairInputChanged(String value) {
@@ -323,7 +330,7 @@ public final class StairTool implements EditorTool {
             return;
         }
         try {
-            stairDraftState.setInputLevel(Integer.parseInt(value.trim()));
+            setInputLevel(Integer.parseInt(value.trim()));
         } catch (NumberFormatException ignored) {
         }
     }
@@ -365,7 +372,7 @@ public final class StairTool implements EditorTool {
         button.getStyleClass().add("compact");
         button.setOnAction(event -> {
             if (!syncingStairShape) {
-                stairDraftState.setDirection(direction);
+                setDirection(direction);
             }
         });
     }
@@ -430,11 +437,195 @@ public final class StairTool implements EditorTool {
         Label label = new Label("z=" + level);
         Button removeButton = new Button("x");
         removeButton.getStyleClass().add("chip-remove-btn");
-        removeButton.setOnAction(event -> stairDraftState.removeExitLevel(level));
+        removeButton.setOnAction(event -> removeExitLevel(level));
         HBox token = new HBox(4, label, removeButton);
         token.setAlignment(Pos.CENTER_LEFT);
         token.getStyleClass().addAll("chip", "chip-cr");
         return token;
+    }
+
+    private String displayStatus() {
+        return placementError == null || placementError.isBlank() ? statusMessage : placementError;
+    }
+
+    private boolean canPlace() {
+        return exitLevels.size() >= 2 && validationMessage() == null;
+    }
+
+    private void resetForLevel(int level) {
+        List<Integer> nextExitLevels = List.of(level);
+        String nextStatusMessage = statusFor(shape, dimension1, dimension2, nextExitLevels);
+        if (inputLevel == level
+                && exitLevels.equals(nextExitLevels)
+                && Objects.equals(statusMessage, nextStatusMessage)) {
+            return;
+        }
+        inputLevel = level;
+        exitLevels = nextExitLevels;
+        statusMessage = nextStatusMessage;
+        placementError = null;
+        refreshStatePane();
+    }
+
+    private void setInputLevel(int level) {
+        if (inputLevel == level && !Objects.equals(statusMessage, DUPLICATE_MESSAGE)) {
+            return;
+        }
+        inputLevel = level;
+        if (Objects.equals(statusMessage, DUPLICATE_MESSAGE)) {
+            statusMessage = statusFor(shape, dimension1, dimension2, exitLevels);
+        }
+        placementError = null;
+        refreshStatePane();
+    }
+
+    private void adjustInputLevel(int delta) {
+        if (delta != 0) {
+            setInputLevel(inputLevel + delta);
+        }
+    }
+
+    private void addExitLevel() {
+        if (exitLevels.contains(inputLevel)) {
+            if (!Objects.equals(statusMessage, DUPLICATE_MESSAGE)) {
+                statusMessage = DUPLICATE_MESSAGE;
+                refreshStatePane();
+            }
+            return;
+        }
+        java.util.ArrayList<Integer> updated = new java.util.ArrayList<>(exitLevels);
+        updated.add(inputLevel);
+        exitLevels = List.copyOf(updated);
+        statusMessage = statusFor(shape, dimension1, dimension2, exitLevels);
+        placementError = null;
+        refreshStatePane();
+    }
+
+    private void setShape(StairShape shape) {
+        StairShape nextShape = shape == null ? StairShape.LADDER : shape;
+        int nextDimension1 = normalizeDimension1(nextShape, dimension1);
+        int nextDimension2 = normalizeDimension2(nextShape, dimension2);
+        if (this.shape == nextShape
+                && dimension1 == nextDimension1
+                && dimension2 == nextDimension2
+                && !needsStatusRefresh()) {
+            return;
+        }
+        this.shape = nextShape;
+        this.dimension1 = nextDimension1;
+        this.dimension2 = nextDimension2;
+        refreshStatusAndNotify();
+    }
+
+    private void setDirection(CardinalDirection direction) {
+        CardinalDirection nextDirection = direction == null ? CardinalDirection.defaultDirection() : direction;
+        if (this.direction == nextDirection) {
+            return;
+        }
+        this.direction = nextDirection;
+        refreshStatusAndNotify();
+    }
+
+    private void setDimension1(int dimension1) {
+        if (this.dimension1 == dimension1) {
+            return;
+        }
+        this.dimension1 = dimension1;
+        refreshStatusAndNotify();
+    }
+
+    private void setDimension2(int dimension2) {
+        if (this.dimension2 == dimension2) {
+            return;
+        }
+        this.dimension2 = dimension2;
+        refreshStatusAndNotify();
+    }
+
+    private void removeExitLevel(int level) {
+        if (!exitLevels.contains(level)) {
+            return;
+        }
+        java.util.ArrayList<Integer> updated = new java.util.ArrayList<>(exitLevels);
+        updated.remove(Integer.valueOf(level));
+        exitLevels = List.copyOf(updated);
+        statusMessage = statusFor(shape, dimension1, dimension2, exitLevels);
+        placementError = null;
+        refreshStatePane();
+    }
+
+    private void showPlacementError(String message) {
+        String nextMessage = message == null || message.isBlank() ? null : message.trim();
+        if (Objects.equals(placementError, nextMessage)) {
+            return;
+        }
+        placementError = nextMessage;
+        refreshStatePane();
+    }
+
+    private void clearPlacementError() {
+        if (placementError == null) {
+            return;
+        }
+        placementError = null;
+        refreshStatePane();
+    }
+
+    private void clearDraft() {
+        if (inputLevel == 0
+                && shape == StairShape.LADDER
+                && direction == CardinalDirection.defaultDirection()
+                && dimension1 == 1
+                && dimension2 == 1
+                && exitLevels.isEmpty()
+                && Objects.equals(statusMessage, MIN_LEVELS_MESSAGE)
+                && placementError == null) {
+            return;
+        }
+        inputLevel = 0;
+        shape = StairShape.LADDER;
+        direction = CardinalDirection.defaultDirection();
+        dimension1 = 1;
+        dimension2 = 1;
+        exitLevels = List.of();
+        statusMessage = MIN_LEVELS_MESSAGE;
+        placementError = null;
+        refreshStatePane();
+    }
+
+    private static String statusFor(StairShape shape, int dimension1, int dimension2, List<Integer> levels) {
+        if (levels.size() < 2) {
+            return MIN_LEVELS_MESSAGE;
+        }
+        return shape.validateDimensions(dimension1, dimension2).orElse(READY_MESSAGE);
+    }
+
+    private String validationMessage() {
+        return shape.validateDimensions(dimension1, dimension2).orElse(null);
+    }
+
+    private static int normalizeDimension1(StairShape shape, int currentValue) {
+        return shape != null && shape != StairShape.LADDER && currentValue <= 0 ? 1 : currentValue;
+    }
+
+    private static int normalizeDimension2(StairShape shape, int currentValue) {
+        return shape == StairShape.RECTANGULAR && currentValue <= 0 ? 1 : currentValue;
+    }
+
+    private boolean needsStatusRefresh() {
+        return !Objects.equals(statusMessage, statusFor(shape, dimension1, dimension2, exitLevels));
+    }
+
+    private void refreshStatusAndNotify() {
+        String nextStatusMessage = statusFor(shape, dimension1, dimension2, exitLevels);
+        if (Objects.equals(statusMessage, nextStatusMessage)) {
+            placementError = null;
+            refreshStatePane();
+            return;
+        }
+        statusMessage = nextStatusMessage;
+        placementError = null;
+        refreshStatePane();
     }
 
     private static String stairLabel(String targetKey) {
