@@ -79,6 +79,10 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
                 },
                 this::previewPartyTile,
                 this::movePartyToTile));
+        workspace().setOnLevelScrollRequested(delta ->
+                state.setReachableProjectionLevel(state.activeProjectionLevel() + delta));
+        workspace().setOnStateChanged(this::refreshLabels);
+        state.addListener(this::onMapStateChanged);
         runtimeState.addListener(this::refreshRuntimeUi);
         Button upLevelButton = new Button("Ebene +");
         Button downLevelButton = new Button("Ebene -");
@@ -111,14 +115,8 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         return controls;
     }
 
-    @Override
-    protected void onStateRefreshed() {
+    private void onMapStateChanged() {
         refreshRuntimeState();
-        refreshLabels();
-    }
-
-    @Override
-    protected void onWorkspaceStateChanged() {
         refreshLabels();
     }
 

@@ -65,15 +65,10 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
     }
 
     @Override
-    public boolean handleLevelScroll(int levelDelta) {
-        if (!interactionEnabled()) {
-            return false;
-        }
-        mapState.setActiveProjectionLevel(mapState.activeProjectionLevel() + levelDelta);
+    public void levelScrolled(int levelDelta) {
         if (activeTool != null) {
-            activeTool.levelScrolled(contextFor(null, null), levelDelta);
+            activeTool.levelScrolled(levelDelta);
         }
-        return true;
     }
 
     public void activateTool(DungeonEditorTool tool) {

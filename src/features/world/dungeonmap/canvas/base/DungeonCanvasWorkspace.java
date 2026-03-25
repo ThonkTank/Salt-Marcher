@@ -9,6 +9,8 @@ import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.state.DungeonLevelOverlaySettings;
+import features.world.dungeonmap.state.DungeonMapState;
+import features.world.dungeonmap.state.EditorPreview;
 import javafx.geometry.Insets;
 import javafx.geometry.Point2D;
 import javafx.scene.canvas.Canvas;
@@ -20,11 +22,30 @@ import javafx.scene.layout.StackPane;
 
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.IntConsumer;
 
 public final class DungeonCanvasWorkspace extends BorderPane {
 
+    private static final DungeonCanvasInteractionHandler NOOP_HANDLER = new DungeonCanvasInteractionHandler() {
+        @Override
+        public boolean handlePressed(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
+            return false;
+        }
+
+        @Override
+        public boolean handleDragged(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
+            return false;
+        }
+
+        @Override
+        public boolean handleReleased(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
+            return false;
+        }
+    };
+
     private final Canvas canvas = new Canvas();
     private final boolean editorMode;
+    private final DungeonMapState mapState;
     private final DungeonCanvasCamera camera = new DungeonCanvasCamera();
     private final DungeonSceneRenderer gridRenderer = new DungeonGridSceneRenderer();
     private final DungeonSceneRenderer graphRenderer = new DungeonGraphSceneRenderer();
@@ -44,29 +65,17 @@ public final class DungeonCanvasWorkspace extends BorderPane {
     private boolean previewBoundaryDeleteMode;
     private DungeonRuntimeLocation activeLocation;
     private CardinalDirection heading = CardinalDirection.defaultDirection();
-    private DungeonCanvasInteractionHandler interactionHandler = new DungeonCanvasInteractionHandler() {
-        @Override
-        public boolean handlePressed(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
-            return false;
-        }
-
-        @Override
-        public boolean handleDragged(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
-            return false;
-        }
-
-        @Override
-        public boolean handleReleased(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
-            return false;
-        }
-    };
+    private DungeonCanvasInteractionHandler interactionHandler = NOOP_HANDLER;
     private Point2D lastPointer;
     private PointerCapture activePointerCapture = PointerCapture.NONE;
     private Runnable stateListener = () -> {};
+    private IntConsumer levelScrollHandler;
 
-    public DungeonCanvasWorkspace(boolean editorMode, DungeonLayout mapModel) {
+    public DungeonCanvasWorkspace(boolean editorMode, DungeonMapState mapState) {
         this.editorMode = editorMode;
-        this.mapModel = mapModel == null ? DungeonLayout.empty() : mapModel;
+        this.mapState = Objects.requireNonNull(mapState, "mapState");
+        this.mapModel = mapState.activeMap() == null ? DungeonLayout.empty() : mapState.activeMap();
+        mapState.addListener(this::syncFromMapState);
         StackPane viewport = new StackPane(canvas);
         viewport.setPadding(new Insets(0));
         setCenter(viewport);
@@ -85,48 +94,12 @@ public final class DungeonCanvasWorkspace extends BorderPane {
         canvas.addEventHandler(ScrollEvent.SCROLL, this::handleScroll);
     }
 
-    public void setMapModel(DungeonLayout mapModel) {
-        DungeonLayout nextMapModel = mapModel == null ? DungeonLayout.empty() : mapModel;
-        if (this.mapModel == nextMapModel) {
-            return;
-        }
-        this.mapModel = nextMapModel;
-        notifyViewChanged();
-    }
-
     public void setViewMode(DungeonViewMode viewMode) {
         DungeonViewMode nextViewMode = viewMode == null ? DungeonViewMode.GRID : viewMode;
         if (this.viewMode == nextViewMode) {
             return;
         }
         this.viewMode = nextViewMode;
-        notifyViewChanged();
-    }
-
-    public void setProjectionLevel(int projectionLevel) {
-        if (this.projectionLevel == projectionLevel) {
-            return;
-        }
-        this.projectionLevel = projectionLevel;
-        notifyViewChanged();
-    }
-
-    public void setPreviewMapModel(DungeonLayout previewMapModel) {
-        if (this.previewMapModel == previewMapModel) {
-            return;
-        }
-        this.previewMapModel = previewMapModel;
-        notifyViewChanged();
-    }
-
-    public void setLevelOverlaySettings(DungeonLevelOverlaySettings levelOverlaySettings) {
-        DungeonLevelOverlaySettings nextSettings = levelOverlaySettings == null
-                ? DungeonLevelOverlaySettings.defaults()
-                : levelOverlaySettings;
-        if (Objects.equals(this.levelOverlaySettings, nextSettings)) {
-            return;
-        }
-        this.levelOverlaySettings = nextSettings;
         notifyViewChanged();
     }
 
@@ -138,38 +111,53 @@ public final class DungeonCanvasWorkspace extends BorderPane {
         notifyViewChanged();
     }
 
-    public void setPreviewPaintShape(TileShape previewPaintShape, boolean deleteMode) {
-        TileShape nextPreviewPaintShape = previewPaintShape == null ? TileShape.empty() : previewPaintShape;
-        if (this.previewPaintShape.equals(nextPreviewPaintShape) && this.previewPaintDeleteMode == deleteMode) {
-            return;
+    public void showPreview(EditorPreview preview) {
+        if (preview instanceof EditorPreview.LayoutPreview layoutPreview) {
+            this.previewMapModel = layoutPreview.layout();
+            this.previewPaintShape = TileShape.empty();
+            this.previewPaintDeleteMode = false;
+            clearBoundaryPreviewFields();
+        } else if (preview instanceof EditorPreview.PaintPreview paintPreview) {
+            this.previewMapModel = null;
+            this.previewPaintShape = paintPreview.shape() == null ? TileShape.empty() : paintPreview.shape();
+            this.previewPaintDeleteMode = paintPreview.deleteMode();
+            clearBoundaryPreviewFields();
+        } else if (preview instanceof EditorPreview.BoundaryPreview boundaryPreview) {
+            this.previewMapModel = null;
+            this.previewPaintShape = TileShape.empty();
+            this.previewPaintDeleteMode = false;
+            this.previewBoundaryEdges = boundaryPreview.edges() == null ? Set.of() : Set.copyOf(boundaryPreview.edges());
+            this.previewBoundarySkippedEdges = boundaryPreview.skippedConnectionEdges() == null ? Set.of() : Set.copyOf(boundaryPreview.skippedConnectionEdges());
+            this.previewBoundaryStartVertex = boundaryPreview.startVertex();
+            this.previewBoundaryCurrentVertex = boundaryPreview.currentVertex();
+            this.previewBoundaryDeleteMode = boundaryPreview.deleteMode();
+        } else {
+            this.previewMapModel = null;
+            this.previewPaintShape = TileShape.empty();
+            this.previewPaintDeleteMode = false;
+            clearBoundaryPreviewFields();
         }
-        this.previewPaintShape = nextPreviewPaintShape;
-        this.previewPaintDeleteMode = deleteMode;
         notifyViewChanged();
     }
 
-    public void setPreviewBoundaryEdges(
-            Set<VertexEdge> previewBoundaryEdges,
-            Set<VertexEdge> previewBoundarySkippedEdges,
-            Point2i previewBoundaryStartVertex,
-            Point2i previewBoundaryCurrentVertex,
-            boolean deleteMode
-    ) {
-        Set<VertexEdge> nextPreviewEdges = previewBoundaryEdges == null ? Set.of() : Set.copyOf(previewBoundaryEdges);
-        Set<VertexEdge> nextSkippedEdges = previewBoundarySkippedEdges == null ? Set.of() : Set.copyOf(previewBoundarySkippedEdges);
-        if (Objects.equals(this.previewBoundaryEdges, nextPreviewEdges)
-                && Objects.equals(this.previewBoundarySkippedEdges, nextSkippedEdges)
-                && Objects.equals(this.previewBoundaryStartVertex, previewBoundaryStartVertex)
-                && Objects.equals(this.previewBoundaryCurrentVertex, previewBoundaryCurrentVertex)
-                && this.previewBoundaryDeleteMode == deleteMode) {
-            return;
-        }
-        this.previewBoundaryEdges = nextPreviewEdges;
-        this.previewBoundarySkippedEdges = nextSkippedEdges;
-        this.previewBoundaryStartVertex = previewBoundaryStartVertex;
-        this.previewBoundaryCurrentVertex = previewBoundaryCurrentVertex;
-        this.previewBoundaryDeleteMode = deleteMode;
+    public void clearPreview() {
+        this.previewMapModel = null;
+        this.previewPaintShape = TileShape.empty();
+        this.previewPaintDeleteMode = false;
+        clearBoundaryPreviewFields();
         notifyViewChanged();
+    }
+
+    private void clearBoundaryPreviewFields() {
+        this.previewBoundaryEdges = Set.of();
+        this.previewBoundarySkippedEdges = Set.of();
+        this.previewBoundaryStartVertex = null;
+        this.previewBoundaryCurrentVertex = null;
+        this.previewBoundaryDeleteMode = false;
+    }
+
+    public void setOnLevelScrollRequested(IntConsumer handler) {
+        this.levelScrollHandler = handler;
     }
 
     public void setActiveLocation(DungeonRuntimeLocation activeLocation) {
@@ -190,7 +178,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
     }
 
     public void setInteractionHandler(DungeonCanvasInteractionHandler interactionHandler) {
-        this.interactionHandler = interactionHandler == null ? this.interactionHandler : interactionHandler;
+        this.interactionHandler = interactionHandler == null ? NOOP_HANDLER : interactionHandler;
     }
 
     public void setOnStateChanged(Runnable stateListener) {
@@ -209,6 +197,40 @@ public final class DungeonCanvasWorkspace extends BorderPane {
 
     public DungeonViewMode viewMode() {
         return viewMode;
+    }
+
+    private void syncFromMapState() {
+        setMapModel(mapState.activeMap());
+        setProjectionLevel(mapState.activeProjectionLevel());
+        setLevelOverlaySettings(mapState.levelOverlaySettings());
+    }
+
+    private void setMapModel(DungeonLayout mapModel) {
+        DungeonLayout nextMapModel = mapModel == null ? DungeonLayout.empty() : mapModel;
+        if (this.mapModel == nextMapModel) {
+            return;
+        }
+        this.mapModel = nextMapModel;
+        notifyViewChanged();
+    }
+
+    private void setProjectionLevel(int projectionLevel) {
+        if (this.projectionLevel == projectionLevel) {
+            return;
+        }
+        this.projectionLevel = projectionLevel;
+        notifyViewChanged();
+    }
+
+    private void setLevelOverlaySettings(DungeonLevelOverlaySettings levelOverlaySettings) {
+        DungeonLevelOverlaySettings nextSettings = levelOverlaySettings == null
+                ? DungeonLevelOverlaySettings.defaults()
+                : levelOverlaySettings;
+        if (Objects.equals(this.levelOverlaySettings, nextSettings)) {
+            return;
+        }
+        this.levelOverlaySettings = nextSettings;
+        notifyViewChanged();
     }
 
     private void handlePress(MouseEvent event) {
@@ -275,10 +297,14 @@ public final class DungeonCanvasWorkspace extends BorderPane {
         double axisDelta = Math.abs(event.getDeltaY()) >= Math.abs(event.getDeltaX())
                 ? event.getDeltaY()
                 : -event.getDeltaX();
-        if ((activePointerCapture == PointerCapture.INTERACTION || event.isShiftDown())
-                && axisDelta != 0.0d) {
+        if (isLevelScrollGesture(event) && axisDelta != 0.0d) {
             int levelDelta = axisDelta > 0 ? 1 : -1;
-            interactionHandler.handleLevelScroll(levelDelta);
+            if (levelScrollHandler != null) {
+                levelScrollHandler.accept(levelDelta);
+            } else {
+                mapState.setActiveProjectionLevel(mapState.activeProjectionLevel() + levelDelta);
+            }
+            interactionHandler.levelScrolled(levelDelta);
             event.consume();
             return;
         }
@@ -287,6 +313,10 @@ public final class DungeonCanvasWorkspace extends BorderPane {
         redraw();
         stateListener.run();
         event.consume();
+    }
+
+    private boolean isLevelScrollGesture(ScrollEvent event) {
+        return activePointerCapture == PointerCapture.INTERACTION || event.isShiftDown();
     }
 
     private void redraw() {

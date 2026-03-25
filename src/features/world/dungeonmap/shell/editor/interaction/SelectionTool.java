@@ -166,14 +166,13 @@ public final class SelectionTool implements EditorTool {
     }
 
     @Override
-    public boolean levelScrolled(EditorToolContext ctx, int delta) {
+    public void levelScrolled(int delta) {
         if (dragSession == null || delta == 0) {
-            return false;
+            return;
         }
         int nextLevel = dragSession.currentLevel() + delta;
         dragSession = dragSession.withCurrentLevel(nextLevel);
         state.showPreview(new EditorPreview.LayoutPreview(previewMap()));
-        return true;
     }
 
     @Override

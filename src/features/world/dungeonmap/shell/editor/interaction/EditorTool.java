@@ -21,8 +21,7 @@ public sealed interface EditorTool
 
     boolean released(EditorToolContext ctx);
 
-    default boolean levelScrolled(EditorToolContext ctx, int delta) {
-        return false;
+    default void levelScrolled(int delta) {
     }
 
     Node statePaneContent();

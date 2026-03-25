@@ -10,7 +10,6 @@ public abstract class AbstractDungeonMapView implements AppView {
     private final DungeonCanvasWorkspace workspace;
     private final DungeonMapLoadingService loadingService;
     private final DungeonMapState state;
-    private boolean initialized;
 
     protected AbstractDungeonMapView(
             boolean editorMode,
@@ -19,18 +18,16 @@ public abstract class AbstractDungeonMapView implements AppView {
     ) {
         this.loadingService = loadingService;
         this.state = state;
-        this.workspace = new DungeonCanvasWorkspace(editorMode, state.activeMap());
+        this.workspace = new DungeonCanvasWorkspace(editorMode, state);
     }
 
     @Override
     public final DungeonCanvasWorkspace getMainContent() {
-        ensureInitialized();
         return workspace;
     }
 
     @Override
     public final void onShow() {
-        ensureInitialized();
         loadingService.ensureLoaded();
     }
 
@@ -44,28 +41,5 @@ public abstract class AbstractDungeonMapView implements AppView {
 
     protected final DungeonMapState state() {
         return state;
-    }
-
-    protected void onStateRefreshed() {
-    }
-
-    protected void onWorkspaceStateChanged() {
-    }
-
-    private void ensureInitialized() {
-        if (initialized) {
-            return;
-        }
-        initialized = true;
-        state.addListener(this::refreshFromState);
-        workspace.setOnStateChanged(this::onWorkspaceStateChanged);
-        refreshFromState();
-    }
-
-    private void refreshFromState() {
-        workspace.setMapModel(state.activeMap());
-        workspace.setProjectionLevel(state.activeProjectionLevel());
-        workspace.setLevelOverlaySettings(state.levelOverlaySettings());
-        onStateRefreshed();
     }
 }

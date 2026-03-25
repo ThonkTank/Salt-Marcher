@@ -27,11 +27,11 @@ The feature ships two `AppView` implementations: `DungeonEditorView` (EDITOR) an
 - `persistence/` — write-side repositories (`DungeonRoomWriteRepository`, `DungeonRoomGeometryWriteMapper`, `DungeonCorridorWriteRepository`, `DungeonStairWriteRepository`, `DungeonTransitionWriteRepository`). Schema helpers (`DungeonSchemaSupport`, `DungeonTransitionSchemaSupport`) for idempotent table creation. Read-side lives in `loading/`
 - `catalog/` — map CRUD (create/rename/delete) with its own `application/` + `persistence/` sub-packages
 - `canvas/` — JavaFX Canvas rendering, organized into sub-packages:
-  - `canvas/base/` — `DungeonCanvasWorkspace` dispatches to a `DungeonSceneRenderer` based on `DungeonViewMode` (GRID vs GRAPH). All state setters route through `notifyViewChanged()` with equality guard clauses for idempotent change propagation. `DungeonRenderState` carries shared render inputs. `DungeonCanvasCamera` handles pan (right-drag) and zoom (scroll, 0.2–5.0×). `DungeonCanvasInteractionHandler` translates pointer events to `DungeonCanvasPointerEvent` with cell coordinates. `DungeonCanvasTheme` provides drawing constants
+  - `canvas/base/` — `DungeonCanvasWorkspace` observes `DungeonMapState` directly for map/level/overlay changes, dispatches rendering to a `DungeonSceneRenderer` based on `DungeonViewMode` (GRID vs GRAPH), and owns level-scroll routing (scroll → `mapState.setActiveProjectionLevel()` or custom `IntConsumer` handler, then notifies interaction handler via `levelScrolled(int)`). `showPreview(EditorPreview)` accepts the sealed preview type directly. All internal state setters route through `notifyViewChanged()` with equality guard clauses for idempotent change propagation. `DungeonRenderState` carries shared render inputs. `DungeonCanvasCamera` handles pan (right-drag) and zoom (scroll, 0.2–5.0×). `DungeonCanvasInteractionHandler` routes pointer events to `DungeonCanvasPointerEvent` with cell coordinates; `levelScrolled(int)` is a void notification (workspace owns the level change). `DungeonCanvasTheme` provides drawing constants
   - `canvas/grid/` — `DungeonGridSceneRenderer` (tile-based view: background, grid, room fills/outlines, walls, doors, corridor cells/doors, interactive labels, axes), `DungeonGridInteractiveLabels`
   - `canvas/graph/` — `DungeonGraphSceneRenderer` (node-graph view)
 - `shell/` — view and UI coordinator layer:
-  - `shell/editor/` — `DungeonEditorView`, `DungeonEditorCoordinator` (central wiring hub: binds controls, tools, and state listeners with separate listener methods per state concern), `DungeonEditorControls`, `DungeonEditorStatePane`
+  - `shell/editor/` — `DungeonEditorView` (owns all state listener wiring: map state → controls, session state → tool activation, interaction state → workspace preview/selection), `DungeonEditorControls`, `DungeonEditorStatePane`
   - `shell/editor/controls/` — left-panel UI: `MapControls` (map selector/CRUD), `ToolControls` (tool palette), `ViewModeControls` (grid/graph toggle), `ToolFamilyDropdownController`, `GuardState`
   - `shell/editor/interaction/` — `EditorInteraction` dispatches canvas events to `EditorTool` implementations (`SelectionTool`, `PaintTool`, `BoundaryTool`, `CorridorTool`, `StairTool`, `TransitionTool`). Tool-local transient state stays inside the tool unless it must be shared via `state/`
   - `shell/controls/` — shared controls: `DungeonLevelOverlayControls` (configures multi-level overlay rendering)
@@ -69,7 +69,7 @@ The feature ships two `AppView` implementations: `DungeonEditorView` (EDITOR) an
 - **STAIR_CREATE / STAIR_DELETE** → `StairTool` — create requires a valid tool-local stair draft (≥2 exit levels); click places stair with auto-generated vertical path and exits. Delete click-targets stair at cell
 - **TRANSITION_CREATE / TRANSITION_DELETE** → `TransitionTool` — create either places a prepared transition or creates+places atomically from the tool-local transition draft. Delete click-targets transition at cell
 
-Canvas pointer events flow through `DungeonCanvasInteractionHandler` → `handlePressed`/`handleDragged`/`handleReleased` → state update → redraw. Hit testing: `DungeonGridHitTester` returns `DungeonEditorHitTarget` / `DungeonEditorLabelHitTarget` for cluster/room/corridor at canvas point.
+Canvas pointer events flow through `DungeonCanvasInteractionHandler` → `handlePressed`/`handleDragged`/`handleReleased` → state update → redraw. Level scrolls are workspace-owned: workspace changes `mapState.activeProjectionLevel` directly, then notifies the handler via `levelScrolled(int)` so tools can react (e.g. `SelectionTool` updates `dragSession.currentLevel`). Hit testing: `DungeonGridHitTester` returns `DungeonEditorHitTarget` / `DungeonEditorLabelHitTarget` for cluster/room/corridor at canvas point.
 
 ### Runtime Navigation Model
 
@@ -87,15 +87,15 @@ After each move, the runtime view resolves the new location into a presentable s
 
 Room/corridor narration is model-owned (`RoomNarration`, `RoomExitNarration`). Surface resolution and label generation are static utilities in `application/runtime/`. Do not introduce a separate runtime details panel — surfaces are published through the shared `DetailsNavigator`.
 
-### Coordinator Wiring (DungeonEditorCoordinator)
+### State Wiring
 
-The coordinator is the glue layer that connects state, canvas, and interaction:
-- `sessionState` changes → `workspace.setViewMode()` (renderer switch), active tool activation, state pane refresh
-- `EditorInteractionState.selectedTargetKey()` changes → `workspace.setSelectedTargetKey()` (highlight re-render)
-- `EditorInteractionState.activePreview()` changes → `workspace.setPreviewMapModel()` / `setPreviewPaintShape()` / `setPreviewBoundaryEdges()` depending on preview type
-- map load and projection changes → control refresh, active tool reactivation on map switch, state pane refresh
-
-The coordinator keeps the workspace synchronized from the shared interaction state instead of subscribing to separate selection/preview state objects.
+Each component observes the state objects it needs directly — no coordinator middleman:
+- `DungeonCanvasWorkspace` observes `DungeonMapState` directly for map/level/overlay → `syncFromMapState()` → `redraw()`
+- `DungeonEditorView` wires listeners in its constructor:
+  - `EditorInteractionState` → `workspace.setSelectedTargetKey()` + `workspace.showPreview()`
+  - `DungeonEditorSessionState` → `workspace.setViewMode()`, tool activation, controls refresh
+  - `DungeonMapState` → controls refresh, tool reactivation on map switch
+- Level scroll is workspace-owned: scroll event → `mapState.setActiveProjectionLevel()` (or custom handler via `setOnLevelScrollRequested()`) → tool notified via `levelScrolled(int)`. Runtime view uses the custom handler for reachable-level clamping.
 
 ### Room Topology Edit → Corridor Rewrite Flow
 

@@ -80,15 +80,6 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
         return true;
     }
 
-    @Override
-    public boolean handleLevelScroll(int levelDelta) {
-        if (!interactionEnabled() || levelDelta == 0) {
-            return false;
-        }
-        mapState.setReachableProjectionLevel(mapState.activeProjectionLevel() + levelDelta);
-        return true;
-    }
-
     private Point2i activeTile() {
         DungeonRuntimeLocation location = runtimeState.activeLocation();
         return location instanceof DungeonRuntimeLocation.Tile tile ? tile.tile().projectedCell() : null;

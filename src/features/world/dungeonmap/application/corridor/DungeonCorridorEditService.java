@@ -41,9 +41,26 @@ public final class DungeonCorridorEditService {
             return;
         }
         rejectSameClusterOnlyCorridor(layout, requestedRoomIds);
+        Corridor corridor = Corridor.resolved(null, layout.mapId(), roomIds,
+                null, null, null);
+        CorridorPlan plan = corridor.isPersistable()
+                ? corridor.plan(layout.corridorPlanningInput())
+                : null;
+        List<StairFitResult> stairFits = plan != null ? plan.stairFits() : List.of();
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                corridorWriteRepository.insertCorridor(conn, layout.mapId(), roomIds);
+                long corridorId = corridorWriteRepository.insertCorridor(conn, layout.mapId(), roomIds);
+                for (StairFitResult fit : stairFits) {
+                    stairEditService.create(
+                            conn,
+                            layout,
+                            fit.anchor(),
+                            fit.shape(),
+                            fit.direction(),
+                            fit.dimension1(),
+                            fit.dimension2(),
+                            fit.exitLevels());
+                }
                 return null;
             });
         }
