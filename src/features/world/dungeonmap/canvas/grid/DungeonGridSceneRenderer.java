@@ -494,7 +494,10 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             LayerPalette palette
     ) {
         DungeonLayout projected = mapModel.projectedToLevel(overlay.level());
-        if (projected.rooms().isEmpty() && projected.corridors().isEmpty() && projected.stairs().isEmpty()) {
+        if (projected.clusters().isEmpty()
+                && projected.corridors().isEmpty()
+                && projected.stairs().isEmpty()
+                && projected.transitions().isEmpty()) {
             return;
         }
         gc.save();
@@ -627,9 +630,9 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             double centerY = pass.camera().panY() + (transition.anchor().y() + 0.5) * pass.gridSize();
             double radius = Math.max(8.0, pass.gridSize() * 0.24);
             boolean selected = java.util.Objects.equals(transition.targetKey(), pass.selectedTargetKey());
-            gc.setFill(selected ? pass.palette().selectedWallStroke() : pass.palette().stairExitFill());
+            gc.setFill(selected ? pass.palette().selectedWallStroke() : pass.palette().transitionFill());
             gc.fillRoundRect(centerX - radius, centerY - radius, radius * 2, radius * 2, 8, 8);
-            gc.setStroke(selected ? pass.palette().corridorSelectedStroke() : pass.palette().stairStroke());
+            gc.setStroke(selected ? pass.palette().corridorSelectedStroke() : pass.palette().transitionStroke());
             gc.setLineWidth(selected ? 2.2 : 1.5);
             gc.strokeRoundRect(centerX - radius, centerY - radius, radius * 2, radius * 2, 8, 8);
             gc.setFill(DungeonCanvasTheme.LABEL_TEXT);
@@ -839,6 +842,8 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             Color stairFill,
             Color stairStroke,
             Color stairExitFill,
+            Color transitionFill,
+            Color transitionStroke,
             Color roomText
     ) {
         private static LayerPalette current(boolean editorMode) {
@@ -854,6 +859,8 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                     DungeonCanvasTheme.CORRIDOR_FILL,
                     DungeonCanvasTheme.CORRIDOR_STROKE,
                     DungeonCanvasTheme.ROOM_SELECTED_WALL_STROKE,
+                    DungeonCanvasTheme.ROOM_SELECTED_WALL_STROKE,
+                    DungeonCanvasTheme.CORRIDOR_STROKE,
                     DungeonCanvasTheme.text(editorMode));
         }
 
@@ -878,6 +885,8 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                     blend(DungeonCanvasTheme.CORRIDOR_FILL, tint, 0.45),
                     blend(DungeonCanvasTheme.CORRIDOR_STROKE, tint, 0.55),
                     blend(DungeonCanvasTheme.ROOM_SELECTED_WALL_STROKE, tint, 0.5),
+                    blend(DungeonCanvasTheme.ROOM_SELECTED_WALL_STROKE, tint, 0.5),
+                    blend(DungeonCanvasTheme.CORRIDOR_STROKE, tint, 0.55),
                     blend(DungeonCanvasTheme.text(editorMode), tint, 0.24));
         }
     }
