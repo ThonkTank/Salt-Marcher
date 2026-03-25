@@ -102,6 +102,9 @@ final class SteinerTreeBuilder {
             connected.add(nearest.room().roomId());
         }
         addDoorEdge(openings, connected.size() > 1 ? deriveDoorEdge(rootDoorEntry, root, context) : null);
+        if (rootDoorEntry != null) {
+            attachmentCellsByRoomId.put(root.roomId(), Set.of(rootDoorEntry));
+        }
         return new SteinerTree(
                 Set.copyOf(connected),
                 Set.copyOf(treeCells),

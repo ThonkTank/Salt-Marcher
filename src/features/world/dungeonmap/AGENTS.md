@@ -50,6 +50,64 @@ The feature ships two `AppView` implementations: `DungeonEditorView` (EDITOR) an
 
 `features/world/quarantine/dungeonmap/` is retained only as legacy code outside the clean feature. `features/world/dungeonmap/` must not import from `features.world.quarantine.dungeonmap`; migrate any needed behavior into the clean package structure instead of reintroducing cross-package bridges.
 
+## Concern Ownership
+
+The domain-model ownership rules below apply to the full interaction pipeline, not only to `model/`. Treat each mutable concern as having exactly one authoritative owner from input capture through persisted outcome.
+
+- Give each concern exactly one authoritative owner. A concern is any mutable fact or workflow with a central truth: selection, active gesture, preview, draft, loaded map state, persisted edit result, runtime position, corridor bindings, cluster topology.
+- Place ownership at the lowest layer that actually interprets, edits, validates, or completes that concern.
+- Higher layers may trigger, observe, or render a concern, but must not mirror, cache, reconstruct, or locally finalize it.
+- If two classes can both answer "what is the current truth of this concern?", the architecture has already drifted.
+
+### Layered Concern Boundaries
+
+- UI shell and canvas code own raw input capture, focus, pointer routing, and rendering only. They must not define domain meaning or locally complete edits.
+- Interaction/tool code owns gesture lifecycle and UI-to-domain intent translation. Tool-local gesture state stays on the active tool unless multiple collaborators truly need a shared draft.
+- Shared state containers in `state/` own only cross-class coordination state. They are not a dumping ground for every transient variable and must not become hidden workflow engines.
+- Domain/model objects own domain meaning and structural truth. If a capability is edited, described, constrained, or replanned as part of the domain, the owning model object must answer for it directly.
+- Application services own orchestration, transaction boundaries, persistence sequencing, and async completion wiring. They must not maintain a second domain interpretation of the same edit.
+- Persistence owns stored truth. Loading/rehydration owns reconstruction of the current working projection from stored truth. Neither may be bypassed by silent UI-side "final" state.
+
+### No Shadow State
+
+- Do not duplicate mutable concern state across view, interaction, application, loading, and persistence layers.
+- Projections are disposable views of owner state, not second truths.
+- Preview is never commit state.
+- Selection is never model state.
+- Loaded working state is never a second domain model with its own independent edit truth.
+- Render state is never workflow state.
+- If recovery depends on "reload will probably fix it", ownership is too diffuse.
+
+### Single Canonical Flow
+
+- Every mutable concern must follow one canonical path from input to persisted outcome.
+- UI captures input.
+- Interaction interprets intent.
+- Domain/application executes the operation.
+- Persistence records the result.
+- Loading/rehydration restores the authoritative working state.
+- No other layer may run a parallel "almost the same" commit pipeline for the same concern.
+- Preview paths may reuse canonical model logic, but they must remain explicitly speculative and must not silently become authoritative state.
+
+### Completion And Failure Semantics
+
+- A concern is complete only where its owner completes it. Async scheduling or optimistic rendering does not transfer ownership.
+- Every async mutating workflow must define pending, success, and failure behavior explicitly.
+- On success, temporary interaction artifacts must be cleared and the working state must converge on the authoritative persisted result.
+- On failure, non-owner projections must be discarded or rebuilt from the authoritative owner. Showing an error while leaving speculative state in place is architectural drift.
+
+### Traceability Rules
+
+- For every mutable concern, a maintainer must be able to answer:
+  1. Who owns it?
+  2. Which layer may change it?
+  3. Which layers may only observe or render it?
+  4. Where does it become persisted truth?
+  5. How is it rebuilt after reload?
+- If answering those questions requires synchronizing multiple partial owners, the design is wrong.
+- Prefer asking the owner over re-deriving truth from neighboring objects.
+- Prefer one deeper owner with a clear API over multiple shallow helpers that each know part of the truth.
+
 ### Data Flow
 
 1. `DungeonMapLoadingService.ensureLoaded()` → `CompletableFuture` → `DungeonMapLoader` (JDBC) → `DungeonMapLoadResult`
