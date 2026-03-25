@@ -63,7 +63,7 @@ public final class DungeonMapState {
         notifyListeners();
     }
 
-    public void showLoaded(List<DungeonMapCatalogEntry> maps, DungeonLayout activeMap) {
+    public void showLoaded(List<DungeonMapCatalogEntry> maps, DungeonLayout activeMap, String errorMessage) {
         Long previousMapId = activeMapId;
         this.maps = maps == null ? List.of() : List.copyOf(maps);
         this.activeMap = activeMap == null ? DungeonLayout.empty() : activeMap;
@@ -72,7 +72,7 @@ public final class DungeonMapState {
                 ? activeProjectionLevel
                 : defaultProjectionLevel(this.activeMap);
         this.loading = false;
-        this.errorMessage = null;
+        this.errorMessage = errorMessage == null || errorMessage.isBlank() ? null : errorMessage;
         notifyListeners();
     }
 

@@ -187,7 +187,7 @@ final class DungeonEditorCoordinator {
 
     void refreshFromMapState() {
         boolean mapChanged = !Objects.equals(previousMapId, mapState.activeMapId());
-        controls.showMaps(mapState.maps(), mapState.activeMapId(), mapState.loading());
+        controls.showMaps(mapState.maps(), mapState.activeMapId(), mapState.loading(), mapState.errorMessage());
         controls.showLevels(
                 mapState.activeMap().reachableLevels(),
                 mapState.activeProjectionLevel(),

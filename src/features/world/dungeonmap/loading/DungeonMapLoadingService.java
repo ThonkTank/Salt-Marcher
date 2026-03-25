@@ -108,10 +108,10 @@ public final class DungeonMapLoadingService {
             return;
         }
         if (result == null || result.activeMap() == null) {
-            state.showLoaded(result == null ? List.of() : result.maps(), null);
+            state.showLoaded(result == null ? List.of() : result.maps(), null, result == null ? null : result.errorMessage());
             return;
         }
-        state.showLoaded(result.maps(), result.activeMap());
+        state.showLoaded(result.maps(), result.activeMap(), result.errorMessage());
     }
 
     private boolean initialRequestSucceeded(long requestId, DungeonMapLoadResult result, Throwable failure) {

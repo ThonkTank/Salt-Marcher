@@ -359,25 +359,20 @@ public final class DungeonRoomTopologyService {
     }
 
     private static Map<Integer, TileShape> shapesByLevel(List<Room> rooms) {
-        Map<Integer, java.util.Set<Point2i>> cellsByLevel = new LinkedHashMap<>();
+        Map<Integer, TileShape> result = new LinkedHashMap<>();
         for (Room room : rooms == null ? List.<Room>of() : rooms) {
             if (room == null) {
                 continue;
             }
-            for (Map.Entry<Integer, features.world.dungeonmap.model.objects.Floor> entry : room.floors().entrySet()) {
+            for (Map.Entry<Integer, TileShape> entry : room.shapesByLevel().entrySet()) {
                 if (entry == null || entry.getKey() == null || entry.getValue() == null) {
                     continue;
                 }
-                cellsByLevel.computeIfAbsent(entry.getKey(), ignored -> new java.util.LinkedHashSet<>())
-                        .addAll(entry.getValue().shape().absoluteCells());
+                result.merge(entry.getKey(), entry.getValue(), TileShape::union);
             }
         }
-        if (cellsByLevel.isEmpty()) {
+        if (result.isEmpty()) {
             return Map.of(0, TileShape.empty());
-        }
-        Map<Integer, TileShape> result = new LinkedHashMap<>();
-        for (Map.Entry<Integer, java.util.Set<Point2i>> entry : cellsByLevel.entrySet()) {
-            result.put(entry.getKey(), TileShape.fromAbsoluteCells(entry.getValue()));
         }
         return Map.copyOf(result);
     }

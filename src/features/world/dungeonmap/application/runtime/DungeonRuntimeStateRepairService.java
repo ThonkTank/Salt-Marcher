@@ -3,7 +3,6 @@ package features.world.dungeonmap.application.runtime;
 import features.campaignstate.api.CampaignStateApi;
 import features.campaignstate.api.CampaignStateReadApi;
 import features.campaignstate.api.DungeonPositionSummary;
-import features.world.dungeonmap.catalog.persistence.DungeonMapCatalogPersistence;
 import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
@@ -26,12 +25,7 @@ public final class DungeonRuntimeStateRepairService {
                 ? mapLoader.loadLayout(conn, preferredMapId.orElseThrow())
                 : null;
         if (layout == null) {
-            Optional<Long> firstMapId = DungeonMapCatalogPersistence.firstMapId(conn);
-            if (firstMapId.isEmpty()) {
-                CampaignStateApi.clearDungeonPosition(conn);
-                return;
-            }
-            layout = mapLoader.loadLayout(conn, firstMapId.orElseThrow());
+            layout = mapLoader.loadFirstUsableLayout(conn);
         }
         if (layout == null) {
             CampaignStateApi.clearDungeonPosition(conn);

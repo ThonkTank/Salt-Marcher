@@ -910,12 +910,12 @@ final class ClusterRewritePlanner {
             if (room == null) {
                 continue;
             }
-            for (Map.Entry<Integer, Floor> entry : room.floors().entrySet()) {
+            for (Map.Entry<Integer, TileShape> entry : room.shapesByLevel().entrySet()) {
                 if (entry == null || entry.getKey() == null || entry.getValue() == null) {
                     continue;
                 }
                 result.computeIfAbsent(entry.getKey(), ignored -> new LinkedHashSet<>())
-                        .addAll(entry.getValue().shape().absoluteCells());
+                        .addAll(entry.getValue().absoluteCells());
             }
         }
         return result;

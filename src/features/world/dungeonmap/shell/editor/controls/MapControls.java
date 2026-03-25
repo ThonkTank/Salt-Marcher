@@ -27,6 +27,7 @@ public final class MapControls {
     private final ComboBox<DungeonMapCatalogEntry> selector = new ComboBox<>();
     private final Button newMapButton = new Button("Neuen Dungeon");
     private final Button editMapButton = new Button("Dungeon bearbeiten");
+    private final Label statusLabel = new Label();
     private final Label levelLabel = new Label("Ebene z=0");
     private final Button previousLevelButton = new Button("Ebene -");
     private final Button nextLevelButton = new Button("Ebene +");
@@ -59,6 +60,8 @@ public final class MapControls {
         });
         selector.setPrefWidth(220);
         selector.setMaxWidth(Double.MAX_VALUE);
+        statusLabel.setWrapText(true);
+        statusLabel.getStyleClass().add("text-muted");
         editMapButton.setDisable(true);
         newMapButton.setMinWidth(Region.USE_PREF_SIZE);
         editMapButton.setMinWidth(Region.USE_PREF_SIZE);
@@ -78,7 +81,7 @@ public final class MapControls {
         HBox.setHgrow(levelSpacer, Priority.ALWAYS);
         HBox levelRow = new HBox(8, levelLabel, previousLevelButton, nextLevelButton, levelSpacer, overlayControls.trigger());
         levelRow.setAlignment(Pos.CENTER_LEFT);
-        content = new VBox(6, sectionLabelFactory.apply("Dungeon"), row, levelRow);
+        content = new VBox(6, sectionLabelFactory.apply("Dungeon"), row, statusLabel, levelRow);
         content.setMaxWidth(Double.MAX_VALUE);
         content.getStyleClass().add("editor-toolbar-group");
     }
@@ -143,13 +146,14 @@ public final class MapControls {
         overlayControls.setOnSelectedLevelsChanged(action);
     }
 
-    public void showMaps(List<DungeonMapCatalogEntry> maps, Long activeMapId, boolean loading) {
+    public void showMaps(List<DungeonMapCatalogEntry> maps, Long activeMapId, boolean loading, String errorMessage) {
         syncingSelection = true;
         List<DungeonMapCatalogEntry> visibleMaps = maps == null ? List.of() : List.copyOf(maps);
         selector.getItems().setAll(visibleMaps);
         selector.setDisable(loading || visibleMaps.isEmpty());
         newMapButton.setDisable(loading);
         editMapButton.setDisable(loading || selector.getSelectionModel().getSelectedItem() == null);
+        statusLabel.setText(loading ? "" : (errorMessage == null ? "" : errorMessage));
         if (activeMapId != null) {
             for (DungeonMapCatalogEntry entry : visibleMaps) {
                 if (entry != null && entry.mapId() == activeMapId) {

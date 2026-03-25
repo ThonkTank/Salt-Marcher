@@ -87,8 +87,8 @@ public final class DungeonEditorControls extends VBox {
         mapControls.setOnSelectedOverlayLevelsChanged(action);
     }
 
-    public void showMaps(List<DungeonMapCatalogEntry> maps, Long activeMapId, boolean loading) {
-        mapControls.showMaps(maps, activeMapId, loading);
+    public void showMaps(List<DungeonMapCatalogEntry> maps, Long activeMapId, boolean loading, String errorMessage) {
+        mapControls.showMaps(maps, activeMapId, loading, errorMessage);
     }
 
     public void showLevels(List<Integer> levels, int activeLevel, boolean loading, boolean navigationEnabled) {
