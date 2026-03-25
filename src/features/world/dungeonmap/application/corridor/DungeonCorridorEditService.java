@@ -1,9 +1,13 @@
 package features.world.dungeonmap.application.corridor;
 
 import database.DatabaseManager;
+import features.world.dungeonmap.application.stair.DungeonStairEditService;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
+import features.world.dungeonmap.model.structures.corridor.planning.CorridorPlan;
+import features.world.dungeonmap.model.structures.corridor.planning.CorridorPlanningEngine;
+import features.world.dungeonmap.model.structures.corridor.planning.StairFitResult;
 import features.world.dungeonmap.persistence.DungeonCorridorWriteRepository;
 
 import java.sql.Connection;
@@ -17,13 +21,16 @@ public final class DungeonCorridorEditService {
 
     private final DungeonCorridorWriteRepository corridorWriteRepository;
     private final DungeonCorridorPersistenceService corridorPersistenceService;
+    private final DungeonStairEditService stairEditService;
 
     public DungeonCorridorEditService(
             DungeonCorridorWriteRepository corridorWriteRepository,
-            DungeonCorridorPersistenceService corridorPersistenceService
+            DungeonCorridorPersistenceService corridorPersistenceService,
+            DungeonStairEditService stairEditService
     ) {
         this.corridorWriteRepository = Objects.requireNonNull(corridorWriteRepository, "corridorWriteRepository");
         this.corridorPersistenceService = Objects.requireNonNull(corridorPersistenceService, "corridorPersistenceService");
+        this.stairEditService = Objects.requireNonNull(stairEditService, "stairEditService");
     }
 
     public void create(DungeonLayout layout, List<Long> roomIds) throws SQLException {
@@ -118,11 +125,29 @@ public final class DungeonCorridorEditService {
     }
 
     private void persistCorridor(DungeonLayout layout, Corridor corridor, Long deletedCorridorId) throws SQLException {
-        Corridor updated = corridor.isPersistable()
-                ? corridor.replanned(layout.corridorPlanningInput())
-                : corridor;
+        Corridor updated;
+        List<StairFitResult> stairFits;
+        if (corridor.isPersistable()) {
+            CorridorPlan plan = CorridorPlanningEngine.plan(corridor, layout.corridorPlanningInput());
+            updated = corridor.applyPlan(plan);
+            stairFits = plan.stairFits();
+        } else {
+            updated = corridor;
+            stairFits = List.of();
+        }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
+                for (StairFitResult fit : stairFits) {
+                    stairEditService.create(
+                            conn,
+                            layout,
+                            fit.anchor(),
+                            fit.shape(),
+                            fit.direction(),
+                            fit.dimension1(),
+                            fit.dimension2(),
+                            fit.exitLevels());
+                }
                 corridorPersistenceService.persistCorridor(conn, updated);
                 if (deletedCorridorId != null) {
                     corridorWriteRepository.deleteCorridor(conn, deletedCorridorId);

@@ -8,7 +8,7 @@ import features.world.dungeonmap.model.structures.stair.StairShape;
 import java.util.List;
 import java.util.Set;
 
-record StairFitResult(
+public record StairFitResult(
         Point2i anchor,
         StairShape shape,
         CardinalDirection direction,
@@ -18,7 +18,7 @@ record StairFitResult(
         Set<CubePoint> corridorCellsToRemove,
         Set<CubePoint> corridorCellsToAdd
 ) {
-    StairFitResult {
+    public StairFitResult {
         exitLevels = exitLevels == null ? List.of() : List.copyOf(exitLevels);
         corridorCellsToRemove = corridorCellsToRemove == null ? Set.of() : Set.copyOf(corridorCellsToRemove);
         corridorCellsToAdd = corridorCellsToAdd == null ? Set.of() : Set.copyOf(corridorCellsToAdd);

@@ -73,7 +73,10 @@ public final class DungeonMapModule {
                 mapLoader,
                 roomWriteRepository,
                 geometryWriteMapper);
-        DungeonCorridorEditService corridorEditService = new DungeonCorridorEditService(corridorWriteRepository, corridorPersistenceService);
+        DungeonCorridorEditService corridorEditService = new DungeonCorridorEditService(
+                corridorWriteRepository,
+                corridorPersistenceService,
+                stairEditService);
         DungeonMapState state = new DungeonMapState();
         DungeonMapLoadingService loadingService = new DungeonMapLoadingService(
                 mapLoader,

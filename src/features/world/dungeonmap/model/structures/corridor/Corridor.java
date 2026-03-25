@@ -352,6 +352,13 @@ public final class Corridor {
         // Drag previews and committed moves both flow through DungeonLayout.withTranslatedCluster().
         // Replanning must therefore preserve the same end topology for both.
         CorridorPlan plan = CorridorPlanningEngine.plan(this, input);
+        return applyPlan(plan);
+    }
+
+    public Corridor applyPlan(CorridorPlan plan) {
+        if (plan == null) {
+            return this;
+        }
         return withPath(plan.path()).withConnections(plan.connections());
     }
 

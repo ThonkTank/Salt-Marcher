@@ -48,6 +48,38 @@ public final class DungeonStairEditService {
         StairShape validatedShape = requireShape(shape);
         CardinalDirection validatedDirection = requireDirection(direction);
         validateDimensions(validatedShape, dimension1, dimension2);
+        try (Connection conn = DatabaseManager.getConnection()) {
+            DungeonTransactionRunner.inTransaction(conn, () -> {
+                create(
+                        conn,
+                        layout,
+                        anchorCell,
+                        validatedShape,
+                        validatedDirection,
+                        dimension1,
+                        dimension2,
+                        sortedExitLevels);
+                return null;
+            });
+        }
+    }
+
+    public void create(
+            Connection conn,
+            DungeonLayout layout,
+            Point2i anchorCell,
+            StairShape shape,
+            CardinalDirection direction,
+            int dimension1,
+            int dimension2,
+            List<Integer> exitLevels
+    ) throws SQLException {
+        requireLayout(layout);
+        Objects.requireNonNull(conn, "conn");
+        List<Integer> sortedExitLevels = validateAndSortExitLevels(exitLevels);
+        StairShape validatedShape = requireShape(shape);
+        CardinalDirection validatedDirection = requireDirection(direction);
+        validateDimensions(validatedShape, dimension1, dimension2);
         List<CubePoint> pathNodes = StairPathGenerator.generatePath(
                 validatedShape,
                 anchorCell,
@@ -57,23 +89,18 @@ public final class DungeonStairEditService {
                 dimension1,
                 dimension2);
         List<DungeonStairExit> exits = buildExits(pathNodes, sortedExitLevels);
-        try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonTransactionRunner.inTransaction(conn, () -> {
-                DungeonSchemaSupport.ensureCompatibility(conn);
-                ensureTraversableExitCells(conn, layout.mapId(), exits);
-                long stairId = stairWriteRepository.insertStair(
-                        conn,
-                        layout.mapId(),
-                        null,
-                        validatedShape,
-                        validatedDirection,
-                        dimension1,
-                        dimension2);
-                stairWriteRepository.replacePathNodes(conn, stairId, pathNodes);
-                stairWriteRepository.replaceExits(conn, stairId, exits);
-                return null;
-            });
-        }
+        DungeonSchemaSupport.ensureCompatibility(conn);
+        ensureTraversableExitCells(conn, layout.mapId(), exits);
+        long stairId = stairWriteRepository.insertStair(
+                conn,
+                layout.mapId(),
+                null,
+                validatedShape,
+                validatedDirection,
+                dimension1,
+                dimension2);
+        stairWriteRepository.replacePathNodes(conn, stairId, pathNodes);
+        stairWriteRepository.replaceExits(conn, stairId, exits);
     }
 
     public void delete(long stairId) throws SQLException {
