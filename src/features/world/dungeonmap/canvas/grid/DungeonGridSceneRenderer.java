@@ -192,7 +192,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 pass.camera(),
                 pass.gridSize(),
                 roomDoorConnections,
-                roomDoorEdges(roomDoorConnections, pass.projectionLevel(), mapModel),
+                roomDoorEdges(roomDoorConnections, mapModel),
                 pass.palette().wallStroke(),
                 2.0);
         drawConnections(
@@ -200,7 +200,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 pass.camera(),
                 pass.gridSize(),
                 selectedRoomDoorConnections,
-                roomDoorEdges(selectedRoomDoorConnections, pass.projectionLevel(), mapModel),
+                roomDoorEdges(selectedRoomDoorConnections, mapModel),
                 pass.palette().selectedWallStroke(),
                 3.0);
         return selectedRoomBoundaryEdges;
@@ -735,26 +735,24 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
 
     private static Set<VertexEdge> roomDoorEdges(
             Collection<? extends Connection> connections,
-            int projectionLevel,
-            DungeonLayout mapModel
+            DungeonLayout projectedMap
     ) {
         Set<VertexEdge> result = new LinkedHashSet<>();
-        if (connections == null || mapModel == null) {
+        if (connections == null || projectedMap == null) {
             return result;
         }
-        DungeonLayout projected = mapModel.projectedToLevel(projectionLevel);
-        for (Room room : projected.rooms()) {
+        for (Room room : projectedMap.rooms()) {
             if (room == null || room.roomId() == null) {
                 continue;
             }
-            List<Connection> roomConnections = projected.connectionsForRoom(room.roomId());
+            List<Connection> roomConnections = projectedMap.connectionsForRoom(room.roomId());
             if (roomConnections.isEmpty()) {
                 continue;
             }
             if (!new LinkedHashSet<>(roomConnections).removeAll(new LinkedHashSet<>(connections))) {
                 continue;
             }
-            Floor floor = room.floorAtLevel(projectionLevel);
+            Floor floor = room.floor();
             if (floor == null || floor.shape() == null) {
                 continue;
             }
