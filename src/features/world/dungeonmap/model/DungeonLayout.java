@@ -667,8 +667,8 @@ public final class DungeonLayout {
 
     public DungeonLayout projectedToLevel(int levelZ) {
         List<RoomCluster> projectedClusters = clusters.stream()
-                .filter(cluster -> cluster != null && cluster.rooms().stream()
-                        .anyMatch(room -> room != null && room.levels().contains(levelZ)))
+                .map(cluster -> cluster == null ? null : cluster.projectedToLevel(levelZ))
+                .filter(cluster -> cluster != null)
                 .toList();
         List<Corridor> projectedCorridors = corridors.stream()
                 .filter(corridor -> corridor != null && corridorReachesLevel(corridor, levelZ))

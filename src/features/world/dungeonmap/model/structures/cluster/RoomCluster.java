@@ -123,6 +123,17 @@ public final class RoomCluster {
         return new RoomCluster(clusterId, mapId, center, rooms, localConnections);
     }
 
+    public RoomCluster projectedToLevel(int levelZ) {
+        List<Room> projectedRooms = rooms.stream()
+                .map(room -> projectRoomToLevel(room, levelZ))
+                .filter(room -> room != null)
+                .toList();
+        if (projectedRooms.isEmpty()) {
+            return null;
+        }
+        return new RoomCluster(clusterId, mapId, center, projectedRooms, localConnections);
+    }
+
     public ClusterRewrite editBoundary(VertexEdge edge, InternalBoundaryType type, boolean deleteBoundary) {
         return editBoundary(edge == null ? List.<VertexEdge>of() : List.of(edge), type, deleteBoundary);
     }
@@ -381,6 +392,21 @@ public final class RoomCluster {
             }
         }
         return Map.copyOf(result);
+    }
+
+    private static Room projectRoomToLevel(Room room, int levelZ) {
+        if (room == null || !room.levels().contains(levelZ)) {
+            return null;
+        }
+        Floor floor = room.floorAtLevel(levelZ);
+        return Room.resolved(
+                room.roomId(),
+                room.mapId(),
+                room.clusterId(),
+                room.name(),
+                Map.of(levelZ, floor == null ? new Floor(null) : floor),
+                room.walls(),
+                room.narration());
     }
 
     private static OverlapIndex indexRoomsByCell(List<Room> rooms) {

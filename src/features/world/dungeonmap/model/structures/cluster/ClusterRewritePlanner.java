@@ -110,7 +110,7 @@ final class ClusterRewritePlanner {
         if (cluster == null || deletedShape == null || deletedShape.size() == 0) {
             return unchangedRewrite(cluster);
         }
-        Map<Integer, Set<Point2i>> remainingCellsByLevel = clusterCellsByLevel(cluster);
+        Map<Integer, Set<Point2i>> remainingCellsByLevel = mutableClusterCellsByLevel(cluster);
         Set<Point2i> remainingDeleteLevelCells = new LinkedHashSet<>(remainingCellsByLevel.getOrDefault(deleteLevel, Set.of()));
         if (!remainingDeleteLevelCells.removeAll(deletedShape.absoluteCells())) {
             return unchangedRewrite(cluster);
@@ -897,10 +897,16 @@ final class ClusterRewritePlanner {
         return result.isEmpty() ? Map.of(0, new Floor(null)) : Map.copyOf(result);
     }
 
-    private static Map<Integer, Set<Point2i>> clusterCellsByLevel(RoomCluster cluster) {
+    private static Map<Integer, Set<Point2i>> mutableClusterCellsByLevel(RoomCluster cluster) {
         Map<Integer, Set<Point2i>> result = new LinkedHashMap<>();
+        result.putAll(buildClusterCellsByLevel(cluster));
+        return result;
+    }
+
+    private static Map<Integer, LinkedHashSet<Point2i>> buildClusterCellsByLevel(RoomCluster cluster) {
+        Map<Integer, LinkedHashSet<Point2i>> result = new LinkedHashMap<>();
         if (cluster == null) {
-            return Map.of();
+            return result;
         }
         for (Room room : cluster.rooms()) {
             if (room == null) {
@@ -913,14 +919,6 @@ final class ClusterRewritePlanner {
                 result.computeIfAbsent(entry.getKey(), ignored -> new LinkedHashSet<>())
                         .addAll(entry.getValue().shape().absoluteCells());
             }
-        }
-        return Map.copyOf(result);
-    }
-
-    private static Map<Integer, Set<Point2i>> mutableClusterCellsByLevel(RoomCluster cluster) {
-        Map<Integer, Set<Point2i>> result = new LinkedHashMap<>();
-        for (Map.Entry<Integer, Set<Point2i>> entry : clusterCellsByLevel(cluster).entrySet()) {
-            result.put(entry.getKey(), new LinkedHashSet<>(entry.getValue()));
         }
         return result;
     }
