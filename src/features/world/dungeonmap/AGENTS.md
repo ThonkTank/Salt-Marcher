@@ -31,18 +31,17 @@ The feature ships two `AppView` implementations: `DungeonEditorView` (EDITOR) an
   - `canvas/grid/` — `DungeonGridSceneRenderer` (tile-based view: background, grid, room fills/outlines, walls, doors, corridor cells/doors, interactive labels, axes), `DungeonGridInteractiveLabels`
   - `canvas/graph/` — `DungeonGraphSceneRenderer` (node-graph view)
 - `shell/` — view and UI coordinator layer:
-  - `shell/editor/` — `DungeonEditorView`, `DungeonEditorCoordinator` (central wiring hub: binds controls, tools, interaction controllers, and state listeners with separate listener methods per state concern), `DungeonEditorControls`, `DungeonEditorStatePane`
+  - `shell/editor/` — `DungeonEditorView`, `DungeonEditorCoordinator` (central wiring hub: binds controls, tools, and state listeners with separate listener methods per state concern), `DungeonEditorControls`, `DungeonEditorStatePane`
   - `shell/editor/controls/` — left-panel UI: `MapControls` (map selector/CRUD), `ToolControls` (tool palette), `ViewModeControls` (grid/graph toggle), `ToolFamilyDropdownController`, `GuardState`
-  - `shell/editor/interaction/` — event dispatch and per-tool controllers (see **Editor Interaction Model** below). Includes `StairInteractionController` and `TransitionInteractionController` for vertical/inter-map structure tools
+  - `shell/editor/interaction/` — `EditorInteraction` dispatches canvas events to `EditorTool` implementations (`SelectionTool`, `PaintTool`, `BoundaryTool`, `CorridorTool`, `StairTool`, `TransitionTool`). Tool-local transient state stays inside the tool unless it must be shared via `state/`
   - `shell/controls/` — shared controls: `DungeonLevelOverlayControls` (configures multi-level overlay rendering)
   - `shell/runtime/` — `DungeonRuntimeView` (publishes surfaces to `DetailsNavigator`, wires drag-to-move interaction), `DungeonRuntimeInteractionController` (drag-to-move: press on party tile → drag preview → release commits move)
 - `state/` — observable transient state containers with `CopyOnWriteArrayList` listener lists. These are the single source of truth for cross-class coordination:
   - `DungeonMapState` — loaded map data (catalog entries, active `DungeonLayout`, loading/error state)
   - `DungeonEditorSessionState` — current tool + view mode
-  - `EditorSelectionState` — selected target key (e.g. `"cluster:123"`, `"corridor:456"`)
-  - `EditorLayoutPreviewState` — dragged cluster preview (`DungeonLayout` with translated cluster)
-  - `EditorPaintPreviewState` — paint/delete preview shape + mode
-  - `DungeonCorridorDraftState` — pending corridor endpoint for two-click creation flow
+  - `EditorInteractionState` — shared editor interaction state: selected target key, active `EditorPreview`, active `EditorDraft`
+  - `EditorPreview` — sealed preview payloads for dragged cluster layouts, room paint/delete shapes, and boundary path overlays
+  - `EditorDraft` — sealed shared drafts for corridor start selection and boundary-path status
   - `DungeonStairDraftState` — pending stair exit levels for creation (requires ≥2 levels, duplicate guard)
   - `DungeonTransitionDraftState` — transition creation workflow: destination type, bidirectional flag, target map/transition, prepared transition ID, placement error. `displayStatus()` guides the user through the multi-step flow
   - `DungeonLevelOverlaySettings` — overlay mode (`DungeonLevelOverlayMode`: OFF | NEARBY±range | SELECTED levels), opacity, level range
@@ -57,18 +56,19 @@ The feature ships two `AppView` implementations: `DungeonEditorView` (EDITOR) an
 1. `DungeonMapLoadingService.ensureLoaded()` → `CompletableFuture` → `DungeonMapLoader` (JDBC) → `DungeonMapLoadResult`
 2. Result delivered to `DungeonMapState.showLoaded()` on FX thread via `Platform.runLater`
 3. State listeners fire → `DungeonCanvasWorkspace.setMapModel()` → `notifyViewChanged()` → `redraw()`
-4. Edit flow: interaction controller → edit service → topology/corridor services + write repositories persist in one transaction → reload
+4. Edit flow: `EditorInteraction`/active `EditorTool` → edit service → topology/corridor services + write repositories persist in one transaction → reload
 
 ### Editor Interaction Model
 
 `DungeonEditorTool` enum defines tool modes (SELECT, ROOM_PAINT, ROOM_DELETE, CLUSTER_WALL/DOOR, CORRIDOR_CREATE/DELETE, STAIR_CREATE/DELETE, TRANSITION_CREATE/DELETE). Tools are grouped into `ToolFamily` for the dropdown toolbar. Helper predicates: `isStairTool()`, `isTransitionTool()`. `DungeonEditorSessionState` holds current tool + view mode.
 
-`DungeonEditorGridInteractionController` dispatches events by tool:
-- **SELECT** → `ClusterSelectionDragController` — click selects cluster (via `EditorSelectionState`), drag shows translated cluster preview (via `EditorLayoutPreviewState`)
-- **ROOM_PAINT / ROOM_DELETE** → `RoomPaintInteractionController` — manages `RoomPaintSession` (startCell, endCell, deleteMode), updates `EditorPaintPreviewState` during drag, calls `DungeonRoomTopologyService.paint()`/`.delete()` on release
-- **CORRIDOR_CREATE / CORRIDOR_DELETE** → `CorridorInteractionController` — two-click flow via `DungeonCorridorDraftState` (first click stores pending endpoint, second click finalizes), sealed `CorridorEndpoint` (Room | Corridor)
-- **STAIR_CREATE / STAIR_DELETE** → `StairInteractionController` — create requires valid `DungeonStairDraftState` (≥2 exit levels); click places stair with auto-generated vertical path and exits. Delete click-targets stair at cell. Draft state resets on tool exit (except re-entering STAIR_CREATE)
-- **TRANSITION_CREATE / TRANSITION_DELETE** → `TransitionInteractionController` — create either places a prepared transition or creates+places atomically from `DungeonTransitionDraftState`. Delete click-targets transition at cell, selects then deletes
+`EditorInteraction` dispatches events by active `EditorTool`:
+- **SELECT** → `SelectionTool` — click selects clusters/rooms/stairs/transitions via `EditorInteractionState`, drag shows translated cluster preview via `EditorPreview.LayoutPreview`, and the state pane exposes room narration editing
+- **ROOM_PAINT / ROOM_DELETE** → `PaintTool` — manages `RoomPaintSession`, clears selection on paint start, updates `EditorPreview.PaintPreview` during drag, calls `DungeonRoomTopologyService.paint()`/`.delete()` on release
+- **CLUSTER_WALL / CLUSTER_WALL_DELETE / CLUSTER_DOOR / CLUSTER_DOOR_DELETE** → `BoundaryTool` — owns the wall-path draft locally, publishes overlay edges through `EditorPreview.BoundaryPreview`, and stores only lightweight status/selection in shared state
+- **CORRIDOR_CREATE / CORRIDOR_DELETE** → `CorridorTool` — two-click flow via `EditorDraft.CorridorDraft` (first click stores pending endpoint, second click finalizes)
+- **STAIR_CREATE / STAIR_DELETE** → `StairTool` — create requires valid `DungeonStairDraftState` (≥2 exit levels); click places stair with auto-generated vertical path and exits. Delete click-targets stair at cell
+- **TRANSITION_CREATE / TRANSITION_DELETE** → `TransitionTool` — create either places a prepared transition or creates+places atomically from `DungeonTransitionDraftState`. Delete click-targets transition at cell
 
 Canvas pointer events flow through `DungeonCanvasInteractionHandler` → `handlePressed`/`handleDragged`/`handleReleased` → state update → redraw. Hit testing: `DungeonGridHitTester` returns `DungeonEditorHitTarget` / `DungeonEditorLabelHitTarget` for cluster/room/corridor at canvas point.
 
@@ -90,16 +90,13 @@ Room/corridor narration is model-owned (`RoomNarration`, `RoomExitNarration`). S
 
 ### Coordinator Wiring (DungeonEditorCoordinator)
 
-The coordinator is the glue layer that connects state, canvas, and interaction controllers:
-- `sessionState` changes → `workspace.setViewMode()` (renderer switch)
-- `selectionState` changes → `workspace.setSelectedTargetKey()` (highlight re-render)
-- `paintPreviewState` changes → `workspace.setPreviewPaintShape()` (paint overlay)
-- `layoutPreviewState` changes → `workspace.setPreviewMapModel()` (moved cluster overlay)
-- `corridorDraftState` changes → state pane hint update
-- `stairDraftState` changes → state pane stair section update
-- `transitionDraftState` changes → state pane transition section update
+The coordinator is the glue layer that connects state, canvas, and interaction:
+- `sessionState` changes → `workspace.setViewMode()` (renderer switch), active tool activation, state pane refresh
+- `EditorInteractionState.selectedTargetKey()` changes → `workspace.setSelectedTargetKey()` (highlight re-render)
+- `EditorInteractionState.activePreview()` changes → `workspace.setPreviewMapModel()` / `setPreviewPaintShape()` / `setPreviewBoundaryEdges()` depending on preview type
+- map load and projection changes → control refresh, active tool reactivation on map switch, state pane refresh
 
-Each state concern has a dedicated listener method — no monolithic refresh.
+The coordinator keeps the workspace synchronized from the shared interaction state instead of subscribing to separate selection/preview state objects.
 
 ### Room Topology Edit → Corridor Rewrite Flow
 
