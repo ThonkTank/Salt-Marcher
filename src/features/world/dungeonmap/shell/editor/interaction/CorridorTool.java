@@ -111,7 +111,7 @@ public final class CorridorTool implements EditorTool {
     }
 
     private boolean handleCreatePressed(EditorToolContext ctx, DungeonCanvasPointerEvent event) {
-        DungeonLayout projected = projectedLayout(ctx);
+        DungeonLayout projected = ctx.projectedLayout();
         DungeonEditorHitTarget hit = hitTester.hitTest(projected, event.canvasPoint(), event.camera());
         EditorDraft.PendingTarget target = resolveTarget(hit, event.gridCell(), projected);
         if (target == null) {
@@ -153,7 +153,7 @@ public final class CorridorTool implements EditorTool {
         if (mapId == null || event.gridCell() == null) {
             return false;
         }
-        DungeonLayout projected = projectedLayout(ctx);
+        DungeonLayout projected = ctx.projectedLayout();
         Corridor corridor = projected.corridorsAtCell(event.gridCell()).stream()
                 .filter(candidate -> candidate != null && candidate.corridorId() != null)
                 .findFirst()
@@ -243,17 +243,6 @@ public final class CorridorTool implements EditorTool {
         }
         RoomCluster cluster = layout.findCluster(hit.clusterId());
         return cluster == null || cluster.singleRoom() == null ? null : cluster.singleRoom().roomId();
-    }
-
-    private DungeonLayout projectedLayout(EditorToolContext ctx) {
-        if (ctx != null && ctx.projectedLayout() != null) {
-            return ctx.projectedLayout();
-        }
-        DungeonLayout layout = mapState.activeMap();
-        if (layout == null) {
-            return DungeonLayout.empty();
-        }
-        return layout.projectedToLevel(mapState.activeProjectionLevel());
     }
 
     private EditorDraft.CorridorDraft corridorDraft() {

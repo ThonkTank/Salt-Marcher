@@ -354,12 +354,12 @@ public final class TransitionTool implements EditorTool {
                 dungeonTarget && !transitionDraftState.bidirectional(),
                 transitionDraftState.destinationType() == DungeonTransitionEditRequest.DestinationType.OVERWORLD_TILE);
         renderPreparedTransitionButtons(preparedTransitionCards(), transitionDraftState.preparedTransitionId());
-        transitionStatusLabel.setText(blankToEmpty(transitionDraftState.displayStatus()));
+        transitionStatusLabel.setText(transitionDraftState.displayStatus() == null ? "" : transitionDraftState.displayStatus());
     }
 
     private void syncFields() {
         syncingTransitionFields = true;
-        transitionDescriptionArea.setText(blankToEmpty(transitionDraftState.description()));
+        transitionDescriptionArea.setText(transitionDraftState.description() == null ? "" : transitionDraftState.description());
         transitionDestinationTypeBox.setValue(transitionDraftState.destinationType());
         transitionBidirectionalBox.setSelected(transitionDraftState.bidirectional());
         List<DungeonMapCatalogEntry> maps = targetMapChoices();
@@ -521,10 +521,6 @@ public final class TransitionTool implements EditorTool {
     private void invalidateTargetCache() {
         targetTransitions = List.of();
         loadedTargetTransitionMapId = null;
-    }
-
-    private static String blankToEmpty(String text) {
-        return text == null ? "" : text;
     }
 
     private static String transitionLabel(String targetKey) {

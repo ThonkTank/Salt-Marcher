@@ -12,4 +12,7 @@ public record EditorToolContext(
         DungeonCanvasCamera camera,
         EditorInteractionState state
 ) {
+    public EditorToolContext {
+        projectedLayout = projectedLayout == null ? DungeonLayout.empty() : projectedLayout;
+    }
 }

@@ -302,7 +302,7 @@ public final class StairTool implements EditorTool {
         stairSummaryLabel.setText("Aktuelle Ebene als Ausgang hinzufügen");
         stairEditorContent.setManaged(true);
         stairEditorContent.setVisible(true);
-        stairStatusLabel.setText(blankToEmpty(stairDraftState.displayStatus()));
+        stairStatusLabel.setText(stairDraftState.displayStatus() == null ? "" : stairDraftState.displayStatus());
         stairLevelDownButton.setDisable(false);
         stairLevelUpButton.setDisable(false);
         stairInputField.setDisable(false);
@@ -435,10 +435,6 @@ public final class StairTool implements EditorTool {
         token.setAlignment(Pos.CENTER_LEFT);
         token.getStyleClass().addAll("chip", "chip-cr");
         return token;
-    }
-
-    private static String blankToEmpty(String text) {
-        return text == null ? "" : text;
     }
 
     private static String stairLabel(String targetKey) {

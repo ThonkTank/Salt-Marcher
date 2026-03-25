@@ -131,7 +131,7 @@ public final class BoundaryTool implements EditorTool {
         if (!event.isPrimaryButton()) {
             return false;
         }
-        DungeonLayout layout = activeProjectedLayout(ctx);
+        DungeonLayout layout = ctx.projectedLayout();
         DungeonEditorBoundaryHitTarget hit = boundaryHitTester.hitBoundary(layout, event.canvasPoint(), event.camera());
         if (!isEditableDoorBoundary(hit, layout)) {
             state.clearSelection();
@@ -152,7 +152,7 @@ public final class BoundaryTool implements EditorTool {
     }
 
     private boolean handleWallPressed(EditorToolContext ctx, DungeonCanvasPointerEvent event, boolean deleteMode) {
-        DungeonLayout layout = activeProjectedLayout(ctx);
+        DungeonLayout layout = ctx.projectedLayout();
         Point2i vertex = vertexHitTester.hitTest(event.canvasPoint(), event.camera());
         if (layout == null || vertex == null) {
             if (draft == null) {
@@ -280,14 +280,6 @@ public final class BoundaryTool implements EditorTool {
                         .thenComparing(RoomCluster::clusterId, java.util.Comparator.nullsLast(Long::compareTo)))
                 .findFirst()
                 .orElse(null);
-    }
-
-    private DungeonLayout activeProjectedLayout(EditorToolContext ctx) {
-        if (ctx != null && ctx.projectedLayout() != null) {
-            return ctx.projectedLayout();
-        }
-        DungeonLayout layout = mapState.activeMap();
-        return layout == null ? null : layout.projectedToLevel(mapState.activeProjectionLevel());
     }
 
     private RoomCluster selectedCluster(DungeonLayout layout) {

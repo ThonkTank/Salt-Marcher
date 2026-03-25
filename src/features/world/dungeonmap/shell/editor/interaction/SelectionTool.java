@@ -94,7 +94,7 @@ public final class SelectionTool implements EditorTool {
             clear();
             return false;
         }
-        DungeonEditorHitTarget hit = hitTester.hitTest(projectedLayout(ctx), event.canvasPoint(), event.camera());
+        DungeonEditorHitTarget hit = hitTester.hitTest(ctx.projectedLayout(), event.canvasPoint(), event.camera());
         clear();
         if (isClusterLabelHit(hit)) {
             state.selectTarget(hit.targetKey());
@@ -324,17 +324,6 @@ public final class SelectionTool implements EditorTool {
     private void clear() {
         dragSession = null;
         state.clearPreview();
-    }
-
-    private DungeonLayout projectedLayout(EditorToolContext ctx) {
-        if (ctx != null && ctx.projectedLayout() != null) {
-            return ctx.projectedLayout();
-        }
-        DungeonLayout layout = mapState.activeMap();
-        if (layout == null) {
-            return DungeonLayout.empty();
-        }
-        return layout.projectedToLevel(mapState.activeProjectionLevel());
     }
 
     private static boolean isClusterLabelHit(DungeonEditorHitTarget target) {
