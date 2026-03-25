@@ -3,21 +3,18 @@ package features.world.dungeonmap.application.room;
 import database.DatabaseManager;
 import features.world.dungeonmap.application.corridor.DungeonCorridorPersistenceService;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
+import features.world.dungeonmap.model.DungeonClusterTranslation;
 import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
-import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.persistence.DungeonRoomGeometryWriteMapper;
 import features.world.dungeonmap.persistence.DungeonRoomWriteRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 public final class DungeonClusterMoveService {
 
@@ -50,9 +47,8 @@ public final class DungeonClusterMoveService {
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
                 DungeonLayout layout = requireLayout(conn, mapId);
-                RoomCluster originalCluster = requireCluster(layout, clusterId);
-                DungeonLayout translatedLayout = layout.withTranslatedCluster(clusterId, delta, levelDelta);
-                RoomCluster cluster = requireCluster(translatedLayout, clusterId);
+                DungeonClusterTranslation translation = layout.translateCluster(clusterId, delta, levelDelta);
+                RoomCluster cluster = requireCluster(translation.layout(), clusterId);
                 roomWriteRepository.updateClusterGeometry(
                         conn,
                         clusterId,
@@ -64,9 +60,7 @@ public final class DungeonClusterMoveService {
                     }
                     roomWriteRepository.updateRoomPosition(conn, room.roomId(), room.anchorsByLevel(), room.primaryLevel());
                 }
-                corridorPersistenceService.persistCorridors(
-                        conn,
-                        affectedCorridors(layout, translatedLayout, originalCluster));
+                corridorPersistenceService.persistCorridors(conn, translation.affectedCorridors());
                 return null;
             });
         }
@@ -86,29 +80,5 @@ public final class DungeonClusterMoveService {
             throw new SQLException("Cluster " + clusterId + " existiert nicht");
         }
         return cluster;
-    }
-
-    private static Map<Long, Corridor> affectedCorridors(
-            DungeonLayout originalLayout,
-            DungeonLayout translatedLayout,
-            RoomCluster originalCluster
-    ) {
-        Set<Long> affectedCorridorIds = originalLayout.corridorIdsAffectedBy(
-                originalCluster.roomIds(),
-                Set.of(originalCluster.clusterId()));
-        if (affectedCorridorIds.isEmpty()) {
-            return Map.of();
-        }
-        Map<Long, Corridor> affectedCorridors = new LinkedHashMap<>();
-        for (Long corridorId : affectedCorridorIds) {
-            if (corridorId == null) {
-                continue;
-            }
-            Corridor corridor = translatedLayout.findCorridor(corridorId);
-            if (corridor != null) {
-                affectedCorridors.put(corridorId, corridor);
-            }
-        }
-        return Map.copyOf(affectedCorridors);
     }
 }

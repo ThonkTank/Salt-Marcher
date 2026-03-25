@@ -590,17 +590,25 @@ public final class DungeonLayout {
     }
 
     public DungeonLayout withTranslatedCluster(Long clusterId, Point2i delta) {
-        return withTranslatedCluster(clusterId, delta, 0);
+        return translateCluster(clusterId, delta, 0).layout();
     }
 
     public DungeonLayout withTranslatedCluster(Long clusterId, Point2i delta, int levelDelta) {
+        return translateCluster(clusterId, delta, levelDelta).layout();
+    }
+
+    public DungeonClusterTranslation translateCluster(Long clusterId, Point2i delta) {
+        return translateCluster(clusterId, delta, 0);
+    }
+
+    public DungeonClusterTranslation translateCluster(Long clusterId, Point2i delta, int levelDelta) {
         boolean translate = delta != null && (delta.x() != 0 || delta.y() != 0);
         if (clusterId == null || (!translate && levelDelta == 0)) {
-            return this;
+            return new DungeonClusterTranslation(this, findCluster(clusterId), Map.of());
         }
         RoomCluster cluster = findCluster(clusterId);
         if (cluster == null) {
-            return this;
+            return new DungeonClusterTranslation(this, null, Map.of());
         }
         RoomCluster movedCluster = cluster.movedBy(delta, levelDelta);
         List<RoomCluster> updatedClusters = clusters.stream()
@@ -613,12 +621,30 @@ public final class DungeonLayout {
                 planningInput,
                 corridorIdsAffectedBy(movedCluster.roomIds(), Set.of(clusterId)),
                 Set.of());
+        Map<Long, Corridor> updatedAffectedCorridors = new LinkedHashMap<>();
         List<Corridor> updatedCorridors = corridors.stream()
-                .map(corridor -> corridor == null ? null : corridor.reanchoredFor(rewriteContext).replannedFor(rewriteContext))
+                .map(corridor -> {
+                    if (corridor == null) {
+                        return null;
+                    }
+                    Corridor updatedCorridor = corridor.reanchoredFor(rewriteContext).replannedFor(rewriteContext);
+                    if (rewriteContext.affects(updatedCorridor.corridorId())) {
+                        updatedAffectedCorridors.put(updatedCorridor.corridorId(), updatedCorridor);
+                    }
+                    return updatedCorridor;
+                })
                 .toList();
         Map<Long, Integer> updatedClusterLevels = new LinkedHashMap<>(clusterLevelsById);
         updatedClusterLevels.put(clusterId, levelForCluster(clusterId) + levelDelta);
-        return new DungeonLayout(mapId, name, updatedCorridors, updatedClusters, stairs, transitions, updatedClusterLevels);
+        DungeonLayout translatedLayout = new DungeonLayout(
+                mapId,
+                name,
+                updatedCorridors,
+                updatedClusters,
+                stairs,
+                transitions,
+                updatedClusterLevels);
+        return new DungeonClusterTranslation(translatedLayout, movedCluster, updatedAffectedCorridors);
     }
 
     public DungeonLayout applying(ClusterRewrite rewrite) {

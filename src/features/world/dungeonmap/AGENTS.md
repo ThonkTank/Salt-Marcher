@@ -67,6 +67,8 @@ The domain-model ownership rules below apply to the full interaction pipeline, n
 - Domain/model objects own domain meaning and structural truth. If a capability is edited, described, constrained, or replanned as part of the domain, the owning model object must answer for it directly.
 - Application services own orchestration, transaction boundaries, persistence sequencing, and async completion wiring. They must not maintain a second domain interpretation of the same edit.
 - Persistence owns stored truth. Loading/rehydration owns reconstruction of the current working projection from stored truth. Neither may be bypassed by silent UI-side "final" state.
+- Layering is a coordination tool, not a license to split one domain operation into separate preview logic, separate commit logic, and separate reload-repair logic. If preview and commit both need the same domain semantics, they must reuse the same canonical operation rather than carry near-duplicate implementations in different layers.
+- Do not treat reload as a normal way to reconcile partial writes or semantic drift between layers. Reload is the authoritative rebuild step after a complete write, not a substitute for an incomplete commit pipeline.
 
 ### No Shadow State
 
@@ -88,6 +90,8 @@ The domain-model ownership rules below apply to the full interaction pipeline, n
 - Loading/rehydration restores the authoritative working state.
 - No other layer may run a parallel "almost the same" commit pipeline for the same concern.
 - Preview paths may reuse canonical model logic, but they must remain explicitly speculative and must not silently become authoritative state.
+- This layering is the preferred standard for the feature only when the domain semantics are defined exactly once. A flow is not a good reference model if the UI preview, application service, and persistence path each carry their own version of what the operation means.
+- When evaluating or designing a workflow, prefer fewer semantic owners over thinner layers. A slightly deeper domain/application operation is better than multiple shallow layers that each reconstruct part of the same mutation.
 
 ### Completion And Failure Semantics
 

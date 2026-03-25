@@ -345,10 +345,10 @@ public final class SelectionTool implements EditorTool {
         if (dragSession == null) {
             return null;
         }
-        return dragSession.baseMap().withTranslatedCluster(
+        return dragSession.baseMap().translateCluster(
                 dragSession.clusterId(),
                 dragSession.currentDelta(),
-                dragSession.currentLevel() - dragSession.startLevel());
+                dragSession.currentLevel() - dragSession.startLevel()).layout();
     }
 
     private static TextArea createTextArea(String text) {
