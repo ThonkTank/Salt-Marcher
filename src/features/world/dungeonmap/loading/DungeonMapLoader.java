@@ -62,7 +62,7 @@ public final class DungeonMapLoader {
             }
             DungeonMapCatalogEntry firstUsableMap = loadedCatalog.usableMaps().getFirst();
             return new DungeonMapLoadResult(
-                    loadedCatalog.usableMaps(),
+                    loadedCatalog.allMaps(),
                     loadedCatalog.layoutsById().get(firstUsableMap.mapId()),
                     loadedCatalog.failureMessage());
         }
@@ -87,7 +87,7 @@ public final class DungeonMapLoader {
                         "Dungeon " + requestedMap.name() + " konnte nicht geladen werden");
             }
             return new DungeonMapLoadResult(
-                    loadedCatalog.usableMaps(),
+                    loadedCatalog.allMaps(),
                     requestedLayout,
                     loadedCatalog.failureMessage());
         }
@@ -161,6 +161,7 @@ public final class DungeonMapLoader {
             }
         }
         return new LoadedCatalog(
+                List.copyOf(maps),
                 List.copyOf(usableMaps),
                 Map.copyOf(layoutsById),
                 Map.copyOf(failuresByMap));
@@ -175,11 +176,11 @@ public final class DungeonMapLoader {
         if (!loadedCatalog.usableMaps().isEmpty()) {
             DungeonMapCatalogEntry fallbackMap = fallbackSelection(loadedCatalog.usableMaps(), fallbackMaps);
             return new DungeonMapLoadResult(
-                    loadedCatalog.usableMaps(),
+                    loadedCatalog.allMaps(),
                     loadedCatalog.layoutsById().get(fallbackMap.mapId()),
                     message);
         }
-        return new DungeonMapLoadResult(List.of(), null, message);
+        return new DungeonMapLoadResult(loadedCatalog.allMaps(), null, message);
     }
 
     private static DungeonMapCatalogEntry fallbackSelection(
@@ -1025,18 +1026,25 @@ public final class DungeonMapLoader {
     }
 
     private static final class LoadedCatalog {
+        private final List<DungeonMapCatalogEntry> allMaps;
         private final List<DungeonMapCatalogEntry> usableMaps;
         private final Map<Long, DungeonLayout> layoutsById;
         private final Map<DungeonMapCatalogEntry, String> failuresByMap;
 
         private LoadedCatalog(
+                List<DungeonMapCatalogEntry> allMaps,
                 List<DungeonMapCatalogEntry> usableMaps,
                 Map<Long, DungeonLayout> layoutsById,
                 Map<DungeonMapCatalogEntry, String> failuresByMap
         ) {
+            this.allMaps = allMaps == null ? List.of() : List.copyOf(allMaps);
             this.usableMaps = usableMaps == null ? List.of() : List.copyOf(usableMaps);
             this.layoutsById = layoutsById == null ? Map.of() : Map.copyOf(layoutsById);
             this.failuresByMap = failuresByMap == null ? Map.of() : Map.copyOf(failuresByMap);
+        }
+
+        private List<DungeonMapCatalogEntry> allMaps() {
+            return allMaps;
         }
 
         private List<DungeonMapCatalogEntry> usableMaps() {

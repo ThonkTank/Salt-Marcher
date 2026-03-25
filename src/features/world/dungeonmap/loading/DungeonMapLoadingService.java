@@ -103,12 +103,12 @@ public final class DungeonMapLoadingService {
             state.showLoadFailure(state.maps(), "Dungeon konnte nicht geladen werden");
             return;
         }
-        if (result != null && result.errorMessage() != null) {
-            state.showLoadFailure(result.maps(), result.errorMessage());
-            return;
-        }
         if (result == null || result.activeMap() == null) {
-            state.showLoaded(result == null ? List.of() : result.maps(), null, result == null ? null : result.errorMessage());
+            if (result != null && result.errorMessage() != null) {
+                state.showLoadFailure(result.maps(), result.errorMessage());
+                return;
+            }
+            state.showLoaded(result == null ? List.of() : result.maps(), null, null);
             return;
         }
         state.showLoaded(result.maps(), result.activeMap(), result.errorMessage());

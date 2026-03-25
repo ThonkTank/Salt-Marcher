@@ -8,15 +8,11 @@ import features.world.dungeonmap.application.room.DungeonBoundaryEditService;
 import features.world.dungeonmap.application.room.DungeonClusterMoveService;
 import features.world.dungeonmap.application.room.DungeonRoomNarrationService;
 import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
-import features.world.dungeonmap.application.room.RoomExitCatalog;
 import features.world.dungeonmap.canvas.base.DungeonCanvasWorkspace;
 import features.world.dungeonmap.canvas.base.DungeonViewMode;
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
 import features.world.dungeonmap.loading.DungeonMapCatalogEntry;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
-import features.world.dungeonmap.model.structures.cluster.RoomCluster;
-import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.model.structures.room.RoomNarration;
 import features.world.dungeonmap.shell.editor.interaction.CorridorInteractionController;
 import features.world.dungeonmap.shell.editor.interaction.BoundaryInteractionController;
 import features.world.dungeonmap.shell.editor.interaction.ClusterSelectionDragController;
@@ -40,10 +36,7 @@ import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.DungeonStairDraftState;
 import features.world.dungeonmap.state.DungeonTransitionDraftState;
-import ui.async.UiAsyncTasks;
-import ui.async.UiErrorReporter;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
@@ -55,7 +48,6 @@ final class DungeonEditorCoordinator {
     private final DungeonMapLoadingService loadingService;
     private final DungeonMapState mapState;
     private final DungeonEditorSessionState sessionState;
-    private final DungeonRoomNarrationService roomNarrationService;
     private final DungeonMapDropdownController mapDropdownController;
     private final DungeonTransitionTargetCatalogService transitionTargetCatalogService = new DungeonTransitionTargetCatalogService();
     private final EditorSelectionState selectionState = new EditorSelectionState();
@@ -95,7 +87,6 @@ final class DungeonEditorCoordinator {
         this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.sessionState = Objects.requireNonNull(sessionState, "sessionState");
-        this.roomNarrationService = Objects.requireNonNull(roomNarrationService, "roomNarrationService");
         this.stairEditService = Objects.requireNonNull(stairEditService, "stairEditService");
         ClusterSelectionDragController clusterSelectionDragController = new ClusterSelectionDragController(
                 mapState,
@@ -139,7 +130,12 @@ final class DungeonEditorCoordinator {
                 transitionDraftState,
                 Objects.requireNonNull(transitionEditService, "transitionEditService"));
         List<EditorToolHandler> toolHandlers = List.of(
-                new SelectionToolHandler(clusterSelectionDragController),
+                new SelectionToolHandler(
+                        clusterSelectionDragController,
+                        mapState,
+                        selectionState,
+                        Objects.requireNonNull(roomNarrationService, "roomNarrationService"),
+                        loadingService),
                 new RoomPaintToolHandler(roomPaintInteractionController, paintPreviewState),
                 new CorridorToolHandler(corridorInteractionController, selectionState, corridorDraftState),
                 new BoundaryToolHandler(boundaryInteractionController, boundaryDraftState),
@@ -160,7 +156,6 @@ final class DungeonEditorCoordinator {
         installBindings();
         sessionState.addListener(this::refreshFromSessionState);
         selectionState.addListener(this::refreshSelectionState);
-        selectionState.addListener(this::refreshRoomNarrationStatePane);
         layoutPreviewState.addListener(this::refreshLayoutPreviewState);
         paintPreviewState.addListener(this::refreshPaintPreviewState);
         boundaryDraftState.addListener(this::refreshBoundaryPreviewState);
@@ -169,7 +164,6 @@ final class DungeonEditorCoordinator {
         refreshLayoutPreviewState();
         refreshPaintPreviewState();
         refreshBoundaryPreviewState();
-        refreshRoomNarrationStatePane();
     }
 
     void refreshFromMapState() {
@@ -186,7 +180,6 @@ final class DungeonEditorCoordinator {
             interactionController.activateTool(sessionState.selectedTool());
         }
         refreshFromSessionState();
-        refreshRoomNarrationStatePane();
         previousMapId = mapState.activeMapId();
     }
 
@@ -248,73 +241,6 @@ final class DungeonEditorCoordinator {
 
     private void refreshSelectionState() {
         workspace.setSelectedTargetKey(selectionState.selectedTargetKey());
-    }
-
-    private void refreshRoomNarrationStatePane() {
-        Room selectedRoom = selectedRoom();
-        if (selectedRoom != null) {
-            statePane.showRoomNarrationEditors(List.of(roomNarrationCard(selectedRoom)), this::saveRoomNarration);
-            return;
-        }
-        RoomCluster cluster = selectedCluster();
-        if (cluster == null) {
-            statePane.showRoomNarrationEditors(List.of(), this::saveRoomNarration);
-            return;
-        }
-        statePane.showRoomNarrationEditors(cluster.rooms().stream()
-                .filter(Objects::nonNull)
-                .sorted(Comparator
-                        .comparing(Room::name, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
-                        .thenComparing(Room::roomId, Comparator.nullsLast(Long::compareTo)))
-                .map(this::roomNarrationCard)
-                .toList(), this::saveRoomNarration);
-    }
-
-    private DungeonEditorStatePane.RoomNarrationCard roomNarrationCard(Room room) {
-        return new DungeonEditorStatePane.RoomNarrationCard(
-                room.roomId() == null ? 0L : room.roomId(),
-                room.name(),
-                room.narration().visualDescription(),
-                RoomExitCatalog.describe(mapState.activeMap(), room).stream()
-                        .map(exit -> new DungeonEditorStatePane.RoomExitCard(
-                                exit.label(),
-                                exit.roomCell(),
-                                exit.direction(),
-                                room.narration().exitDescription(exit.roomCell(), exit.direction())))
-                        .toList());
-    }
-
-    private void saveRoomNarration(long roomId, RoomNarration narration) {
-        if (roomId <= 0) {
-            return;
-        }
-        statePane.setRoomNarrationSaveState(roomId, true, "Speichert...");
-        UiAsyncTasks.submitVoid(
-                () -> roomNarrationService.saveNarration(roomId, narration),
-                () -> {
-                    statePane.setRoomNarrationSaveState(roomId, false, "Gespeichert");
-                    loadingService.reload(mapState.activeMapId());
-                },
-                throwable -> {
-                    UiErrorReporter.reportBackgroundFailure("DungeonEditorCoordinator.saveRoomNarration()", throwable);
-                    statePane.setRoomNarrationSaveState(roomId, false, "Raumbeschreibung konnte nicht gespeichert werden.");
-                });
-    }
-
-    private RoomCluster selectedCluster() {
-        String targetKey = selectionState.selectedTargetKey();
-        if (!RoomCluster.isTargetKey(targetKey)) {
-            return null;
-        }
-        return mapState.activeMap().findCluster(RoomCluster.clusterIdFromKey(targetKey));
-    }
-
-    private Room selectedRoom() {
-        String targetKey = selectionState.selectedTargetKey();
-        if (!Room.isTargetKey(targetKey)) {
-            return null;
-        }
-        return mapState.activeMap().findRoom(Room.roomIdFromKey(targetKey));
     }
 
     private void loadSelectedMap(DungeonMapCatalogEntry entry) {
