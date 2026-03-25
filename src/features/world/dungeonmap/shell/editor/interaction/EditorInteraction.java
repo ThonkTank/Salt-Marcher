@@ -1,0 +1,122 @@
+package features.world.dungeonmap.shell.editor.interaction;
+
+import features.world.dungeonmap.canvas.base.DungeonCanvasCamera;
+import features.world.dungeonmap.canvas.base.DungeonCanvasInteractionHandler;
+import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
+import features.world.dungeonmap.canvas.base.DungeonViewMode;
+import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.shell.editor.DungeonEditorTool;
+import features.world.dungeonmap.state.DungeonEditorSessionState;
+import features.world.dungeonmap.state.DungeonMapState;
+import features.world.dungeonmap.state.EditorInteractionState;
+import javafx.scene.Node;
+
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+public final class EditorInteraction implements DungeonCanvasInteractionHandler {
+
+    private final DungeonMapState mapState;
+    private final DungeonEditorSessionState sessionState;
+    private final EditorInteractionState state;
+    private final Map<DungeonEditorTool, EditorTool> toolsByEnum;
+    private final DungeonGridHitTester hitTester = new DungeonGridHitTester();
+    private EditorTool activeTool;
+
+    public EditorInteraction(
+            DungeonMapState mapState,
+            DungeonEditorSessionState sessionState,
+            EditorInteractionState state,
+            List<EditorTool> tools
+    ) {
+        this.mapState = Objects.requireNonNull(mapState, "mapState");
+        this.sessionState = Objects.requireNonNull(sessionState, "sessionState");
+        this.state = Objects.requireNonNull(state, "state");
+        this.toolsByEnum = buildToolMap(Objects.requireNonNull(tools, "tools"));
+    }
+
+    @Override
+    public boolean handlePressed(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
+        if (!interactionEnabled()) {
+            return false;
+        }
+        return activeTool != null && activeTool.pressed(contextFor(event, camera));
+    }
+
+    @Override
+    public boolean handleDragged(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
+        if (!interactionEnabled()) {
+            return false;
+        }
+        return activeTool != null && activeTool.dragged(contextFor(event, camera));
+    }
+
+    @Override
+    public boolean handleReleased(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
+        if (!interactionEnabled()) {
+            return false;
+        }
+        return activeTool != null && activeTool.released(contextFor(event, camera));
+    }
+
+    @Override
+    public boolean handleLevelScroll(int levelDelta) {
+        if (!interactionEnabled()) {
+            return false;
+        }
+        mapState.setActiveProjectionLevel(mapState.activeProjectionLevel() + levelDelta);
+        if (activeTool != null) {
+            activeTool.levelScrolled(contextFor(null, null), levelDelta);
+        }
+        return true;
+    }
+
+    public void activateTool(DungeonEditorTool tool) {
+        EditorTool next = toolsByEnum.get(tool);
+        if (activeTool != null && activeTool != next) {
+            activeTool.deactivate();
+            state.clearPreview();
+        }
+        activeTool = next;
+        if (activeTool != null) {
+            activeTool.activate(tool);
+        }
+    }
+
+    public EditorInteractionState state() {
+        return state;
+    }
+
+    public Node activeToolPane() {
+        return activeTool == null ? null : activeTool.statePaneContent();
+    }
+
+    private boolean interactionEnabled() {
+        return sessionState.viewMode() == DungeonViewMode.GRID && !mapState.loading();
+    }
+
+    private EditorToolContext contextFor(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
+        return new EditorToolContext(event, projectedLayout(), hitTester, camera, state);
+    }
+
+    private DungeonLayout projectedLayout() {
+        DungeonLayout layout = mapState.activeMap();
+        return layout == null ? DungeonLayout.empty() : layout.projectedToLevel(mapState.activeProjectionLevel());
+    }
+
+    private static Map<DungeonEditorTool, EditorTool> buildToolMap(List<EditorTool> tools) {
+        Map<DungeonEditorTool, EditorTool> toolsByEnum = new EnumMap<>(DungeonEditorTool.class);
+        for (EditorTool tool : tools) {
+            Objects.requireNonNull(tool, "tool");
+            for (DungeonEditorTool supportedTool : tool.supportedTools()) {
+                EditorTool previous = toolsByEnum.put(supportedTool, tool);
+                if (previous != null) {
+                    throw new IllegalArgumentException("Duplicate editor tool for " + supportedTool);
+                }
+            }
+        }
+        return Map.copyOf(toolsByEnum);
+    }
+}

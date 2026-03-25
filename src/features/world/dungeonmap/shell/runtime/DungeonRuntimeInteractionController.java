@@ -1,6 +1,7 @@
 package features.world.dungeonmap.shell.runtime;
 
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
+import features.world.dungeonmap.canvas.base.DungeonCanvasCamera;
 import features.world.dungeonmap.canvas.base.DungeonCanvasInteractionHandler;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.model.geometry.Point2i;
@@ -36,7 +37,7 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
     }
 
     @Override
-    public boolean handlePressed(DungeonCanvasPointerEvent event) {
+    public boolean handlePressed(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
         if (!interactionEnabled() || event == null) {
             dragging = false;
             return false;
@@ -52,7 +53,7 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
     }
 
     @Override
-    public boolean handleDragged(DungeonCanvasPointerEvent event) {
+    public boolean handleDragged(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
         if (!dragging || event == null) {
             return false;
         }
@@ -65,7 +66,7 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
     }
 
     @Override
-    public boolean handleReleased(DungeonCanvasPointerEvent event) {
+    public boolean handleReleased(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
         if (!dragging || event == null) {
             return false;
         }

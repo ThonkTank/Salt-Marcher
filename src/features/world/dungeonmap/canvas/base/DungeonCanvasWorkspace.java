@@ -47,17 +47,17 @@ public final class DungeonCanvasWorkspace extends BorderPane {
     private CardinalDirection heading = CardinalDirection.defaultDirection();
     private DungeonCanvasInteractionHandler interactionHandler = new DungeonCanvasInteractionHandler() {
         @Override
-        public boolean handlePressed(DungeonCanvasPointerEvent event) {
+        public boolean handlePressed(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
             return false;
         }
 
         @Override
-        public boolean handleDragged(DungeonCanvasPointerEvent event) {
+        public boolean handleDragged(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
             return false;
         }
 
         @Override
-        public boolean handleReleased(DungeonCanvasPointerEvent event) {
+        public boolean handleReleased(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
             return false;
         }
     };
@@ -218,7 +218,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
     }
 
     private void handlePress(MouseEvent event) {
-        if (isInteractionPress(event) && interactionHandler.handlePressed(pointerEvent(event))) {
+        if (isInteractionPress(event) && interactionHandler.handlePressed(pointerEvent(event), camera)) {
             activePointerCapture = PointerCapture.INTERACTION;
             lastPointer = null;
             redraw();
@@ -238,7 +238,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
 
     private void handleDrag(MouseEvent event) {
         if (activePointerCapture == PointerCapture.INTERACTION) {
-            if (interactionHandler.handleDragged(pointerEvent(event))) {
+            if (interactionHandler.handleDragged(pointerEvent(event), camera)) {
                 stateListener.run();
             }
             event.consume();
@@ -259,7 +259,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
 
     private void handleRelease(MouseEvent event) {
         if (activePointerCapture == PointerCapture.INTERACTION) {
-            interactionHandler.handleReleased(pointerEvent(event));
+            interactionHandler.handleReleased(pointerEvent(event), camera);
             activePointerCapture = PointerCapture.NONE;
             lastPointer = null;
             redraw();

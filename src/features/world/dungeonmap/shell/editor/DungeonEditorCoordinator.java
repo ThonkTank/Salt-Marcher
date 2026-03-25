@@ -14,21 +14,25 @@ import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.shell.editor.interaction.CorridorInteractionController;
 import features.world.dungeonmap.shell.editor.interaction.BoundaryInteractionController;
-import features.world.dungeonmap.shell.editor.interaction.ClusterSelectionDragController;
 import features.world.dungeonmap.shell.editor.interaction.DungeonEditorGridInteractionController;
+import features.world.dungeonmap.shell.editor.interaction.DungeonGridHitTester;
+import features.world.dungeonmap.shell.editor.interaction.EditorTool;
 import features.world.dungeonmap.shell.editor.interaction.EditorToolHandler;
+import features.world.dungeonmap.shell.editor.interaction.LegacyEditorToolAdapter;
 import features.world.dungeonmap.shell.editor.interaction.RoomPaintToolHandler;
-import features.world.dungeonmap.shell.editor.interaction.SelectionToolHandler;
 import features.world.dungeonmap.shell.editor.interaction.CorridorToolHandler;
 import features.world.dungeonmap.shell.editor.interaction.BoundaryToolHandler;
 import features.world.dungeonmap.shell.editor.interaction.RoomPaintInteractionController;
+import features.world.dungeonmap.shell.editor.interaction.SelectionTool;
 import features.world.dungeonmap.shell.editor.interaction.StairToolHandler;
 import features.world.dungeonmap.shell.editor.interaction.StairInteractionController;
 import features.world.dungeonmap.shell.editor.interaction.TransitionToolHandler;
 import features.world.dungeonmap.shell.editor.interaction.TransitionInteractionController;
 import features.world.dungeonmap.state.DungeonCorridorDraftState;
 import features.world.dungeonmap.state.DungeonBoundaryDraftState;
+import features.world.dungeonmap.state.EditorInteractionState;
 import features.world.dungeonmap.state.EditorLayoutPreviewState;
+import features.world.dungeonmap.state.EditorPreview;
 import features.world.dungeonmap.state.EditorPaintPreviewState;
 import features.world.dungeonmap.state.EditorSelectionState;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
@@ -48,6 +52,7 @@ final class DungeonEditorCoordinator {
     private final DungeonMapLoadingService loadingService;
     private final DungeonMapState mapState;
     private final DungeonEditorSessionState sessionState;
+    private final EditorInteractionState interactionState = new EditorInteractionState();
     private final EditorSelectionState selectionState = new EditorSelectionState();
     private final EditorLayoutPreviewState layoutPreviewState = new EditorLayoutPreviewState();
     private final EditorPaintPreviewState paintPreviewState = new EditorPaintPreviewState();
@@ -77,12 +82,6 @@ final class DungeonEditorCoordinator {
         this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.sessionState = Objects.requireNonNull(sessionState, "sessionState");
-        ClusterSelectionDragController clusterSelectionDragController = new ClusterSelectionDragController(
-                mapState,
-                loadingService,
-                selectionState,
-                layoutPreviewState,
-                Objects.requireNonNull(clusterMoveService, "clusterMoveService"));
         RoomPaintInteractionController roomPaintInteractionController = new RoomPaintInteractionController(
                 mapState,
                 loadingService,
@@ -122,13 +121,7 @@ final class DungeonEditorCoordinator {
                 transitionDraftState,
                 Objects.requireNonNull(transitionEditService, "transitionEditService"));
         DungeonTransitionTargetCatalogService transitionTargetCatalogService = new DungeonTransitionTargetCatalogService();
-        List<EditorToolHandler> toolHandlers = List.of(
-                new SelectionToolHandler(
-                        clusterSelectionDragController,
-                        mapState,
-                        selectionState,
-                        Objects.requireNonNull(roomNarrationService, "roomNarrationService"),
-                        loadingService),
+        List<EditorToolHandler> legacyToolHandlers = List.of(
                 new RoomPaintToolHandler(roomPaintInteractionController),
                 new CorridorToolHandler(corridorInteractionController, selectionState, corridorDraftState),
                 new BoundaryToolHandler(boundaryInteractionController, boundaryDraftState),
@@ -139,11 +132,24 @@ final class DungeonEditorCoordinator {
                         transitionTargetCatalogService,
                         mapState,
                         selectionState));
+        List<EditorTool> tools = List.of(
+                new SelectionTool(
+                        mapState,
+                        loadingService,
+                        Objects.requireNonNull(clusterMoveService, "clusterMoveService"),
+                        Objects.requireNonNull(roomNarrationService, "roomNarrationService"),
+                        new DungeonGridHitTester(),
+                        interactionState),
+                new LegacyEditorToolAdapter(legacyToolHandlers.get(0)),
+                new LegacyEditorToolAdapter(legacyToolHandlers.get(1)),
+                new LegacyEditorToolAdapter(legacyToolHandlers.get(2)),
+                new LegacyEditorToolAdapter(legacyToolHandlers.get(3)),
+                new LegacyEditorToolAdapter(legacyToolHandlers.get(4)));
         this.interactionController = new DungeonEditorGridInteractionController(
                 mapState,
                 sessionState,
-                toolHandlers);
-        toolHandlers.forEach(handler -> handler.setRefreshCallback(this::refreshToolStatePane));
+                tools);
+        tools.forEach(tool -> tool.setRefreshCallback(this::refreshToolStatePane));
         DungeonMapDropdownController mapDropdownController = new DungeonMapDropdownController(
                 Objects.requireNonNull(mapCatalogService, "mapCatalogService"),
                 new DungeonMapDropdownController.ReloadHandle() {
@@ -159,11 +165,13 @@ final class DungeonEditorCoordinator {
                 });
         installBindings(mapDropdownController);
         sessionState.addListener(this::refreshFromSessionState);
+        interactionState.addListener(this::refreshInteractionState);
         selectionState.addListener(this::refreshSelectionState);
         layoutPreviewState.addListener(this::refreshLayoutPreviewState);
         paintPreviewState.addListener(this::refreshPaintPreviewState);
         boundaryDraftState.addListener(this::refreshBoundaryPreviewState);
         refreshFromSessionState();
+        refreshInteractionState();
         refreshSelectionState();
         refreshLayoutPreviewState();
         refreshPaintPreviewState();
