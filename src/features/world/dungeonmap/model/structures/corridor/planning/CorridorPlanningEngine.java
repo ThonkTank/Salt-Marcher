@@ -51,9 +51,8 @@ public final class CorridorPlanningEngine {
                     doorBindings,
                     instrumentation);
             SteinerTree tree = SteinerTreeBuilder.bestTree(context);
-            List<StairFitResult> stairFits = StairFitter.fit(tree, context);
-            CorridorPath path = toCorridorPath(route, tree, rooms, stairFits);
-            return new CorridorPlan(path, corridorConnections(corridor, tree), stairFits);
+            CorridorPath path = toCorridorPath(route, tree, rooms);
+            return new CorridorPlan(path, corridorConnections(corridor, tree), tree == null ? List.of() : tree.stairPlacements());
         } finally {
             instrumentation.logSummary(startedAt);
         }
@@ -98,22 +97,19 @@ public final class CorridorPlanningEngine {
     private static CorridorPath toCorridorPath(
             GridRoute route,
             SteinerTree tree,
-            List<Room> rooms,
-            List<StairFitResult> stairFits
+            List<Room> rooms
     ) {
         if (tree == null || !tree.isRoutable()) {
             return CorridorPath.unroutable(route);
         }
         Set<CubePoint> corridorCells = filterCorridorCells(tree, rooms);
-        if (stairFits != null && !stairFits.isEmpty()) {
-            for (StairFitResult stairFit : stairFits) {
-                if (stairFit == null) {
-                    continue;
-                }
-                corridorCells.removeAll(stairFit.corridorCellsToRemove());
-                corridorCells.addAll(stairFit.corridorCellsToAdd());
+        Set<CubePoint> stairFootprintCells = new LinkedHashSet<>();
+        for (StairPlacement placement : tree.stairPlacements()) {
+            if (placement != null) {
+                stairFootprintCells.addAll(placement.footprint());
             }
         }
+        corridorCells.removeAll(stairFootprintCells);
         boolean directlyAdjacent = corridorCells.isEmpty() && tree != null && !tree.openings().isEmpty();
         boolean routable = tree.connectedRoomIds().size() >= rooms.size()
                 && (!corridorCells.isEmpty() || !tree.openings().isEmpty());

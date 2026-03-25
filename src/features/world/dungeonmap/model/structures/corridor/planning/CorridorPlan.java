@@ -8,11 +8,11 @@ import java.util.List;
 public record CorridorPlan(
         CorridorPath path,
         List<CorridorConnection> connections,
-        List<StairFitResult> stairFits
+        List<StairPlacement> stairPlacements
 ) {
     public CorridorPlan {
         path = path == null ? CorridorPath.empty() : path;
         connections = connections == null ? List.of() : List.copyOf(connections);
-        stairFits = stairFits == null ? List.of() : List.copyOf(stairFits);
+        stairPlacements = stairPlacements == null ? List.of() : List.copyOf(stairPlacements);
     }
 }

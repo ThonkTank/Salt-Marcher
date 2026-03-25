@@ -6,7 +6,7 @@ import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.planning.CorridorPlan;
-import features.world.dungeonmap.model.structures.corridor.planning.StairFitResult;
+import features.world.dungeonmap.model.structures.corridor.planning.StairPlacement;
 import features.world.dungeonmap.persistence.DungeonCorridorWriteRepository;
 
 import java.sql.Connection;
@@ -46,11 +46,11 @@ public final class DungeonCorridorEditService {
         CorridorPlan plan = corridor.isPersistable()
                 ? corridor.plan(layout.corridorPlanningInput())
                 : null;
-        List<StairFitResult> stairFits = plan != null ? plan.stairFits() : List.of();
+        List<StairPlacement> stairPlacements = plan != null ? plan.stairPlacements() : List.of();
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
                 long corridorId = corridorWriteRepository.insertCorridor(conn, layout.mapId(), roomIds);
-                persistStairFits(conn, layout, stairFits);
+                persistStairPlacements(conn, layout, stairPlacements);
                 return null;
             });
         }
@@ -132,18 +132,18 @@ public final class DungeonCorridorEditService {
 
     private void persistCorridor(DungeonLayout layout, Corridor corridor, Long deletedCorridorId) throws SQLException {
         Corridor updated;
-        List<StairFitResult> stairFits;
+        List<StairPlacement> stairPlacements;
         if (corridor.isPersistable()) {
             CorridorPlan plan = corridor.plan(layout.corridorPlanningInput());
             updated = corridor.applyPlan(plan);
-            stairFits = plan.stairFits();
+            stairPlacements = plan.stairPlacements();
         } else {
             updated = corridor;
-            stairFits = List.of();
+            stairPlacements = List.of();
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                persistStairFits(conn, layout, stairFits);
+                persistStairPlacements(conn, layout, stairPlacements);
                 corridorPersistenceService.persistCorridor(conn, updated);
                 if (deletedCorridorId != null) {
                     corridorWriteRepository.deleteCorridor(conn, deletedCorridorId);
@@ -153,17 +153,17 @@ public final class DungeonCorridorEditService {
         }
     }
 
-    private void persistStairFits(Connection conn, DungeonLayout layout, List<StairFitResult> stairFits) throws SQLException {
-        for (StairFitResult fit : stairFits) {
+    private void persistStairPlacements(Connection conn, DungeonLayout layout, List<StairPlacement> stairPlacements) throws SQLException {
+        for (StairPlacement placement : stairPlacements) {
             stairEditService.create(
                     conn,
                     layout,
-                    fit.anchor(),
-                    fit.shape(),
-                    fit.direction(),
-                    fit.dimension1(),
-                    fit.dimension2(),
-                    fit.exitLevels());
+                    placement.anchor(),
+                    placement.shape(),
+                    placement.direction(),
+                    placement.dimension1(),
+                    placement.dimension2(),
+                    placement.exitLevels());
         }
     }
 
