@@ -223,7 +223,11 @@ public final class DungeonRoomTopologyService {
     }
 
     private void createCluster(Connection conn, long mapId, int levelZ, TileShape shape, String roomName) throws SQLException {
-        long clusterId = roomWriteRepository.insertCluster(conn, mapId, geometryWriteMapper.toClusterGeometry(shape), levelZ);
+        long clusterId = roomWriteRepository.insertCluster(
+                conn,
+                mapId,
+                geometryWriteMapper.toClusterGeometry(Map.of(levelZ, shape)),
+                levelZ);
         roomWriteRepository.replaceClusterEdges(conn, clusterId, shape.centerCell(), Map.of(levelZ, List.of()));
         roomWriteRepository.insertRoom(conn, mapId, clusterId, roomName, shape.centerCell(), levelZ);
     }
