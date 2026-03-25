@@ -57,12 +57,12 @@ final class CostField {
         }
         try {
             if (sources == null || sources.isEmpty() || volume == null) {
-                return new FloodResult(Map.of(), Map.of(), Set.of(), Map.of());
+                return new FloodResult(Map.of(), Map.of(), Set.of(), Map.of(), Map.of());
             }
             Set<CubePoint> targets = targetEntryCells == null ? Set.of() : targetEntryCells;
             Map<CubePoint, Long> roomsByEntry = targetRoomByEntryCell == null ? Map.of() : targetRoomByEntryCell;
             if (stopWhenTargetsReached && targets.isEmpty()) {
-                return new FloodResult(Map.of(), Map.of(), Set.of(), Map.of());
+                return new FloodResult(Map.of(), Map.of(), Set.of(), Map.of(), Map.of());
             }
             PriorityQueue<PathNode> open = new PriorityQueue<>(Comparator.comparing(PathNode::score));
             Map<PathState, RouteCost> best = new HashMap<>();
@@ -128,7 +128,8 @@ final class CostField {
                     best,
                     predecessors,
                     reached,
-                    bestStateByPoint);
+                    bestStateByPoint,
+                    Map.of());
         } finally {
             if (instrumentation != null) {
                 instrumentation.recordFloodNanos(System.nanoTime() - startedAt);
@@ -183,7 +184,8 @@ record FloodResult(
         Map<PathState, RouteCost> costs,
         Map<PathState, PathState> predecessors,
         Set<CubePoint> reachedTargets,
-        Map<CubePoint, PathState> bestStateByPoint
+        Map<CubePoint, PathState> bestStateByPoint,
+        Map<PathState, StairNeighbor> stairSteps
 ) {
     RouteCost bestCostAt(CubePoint point) {
         PathState state = bestStateAt(point);
