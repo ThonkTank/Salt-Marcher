@@ -64,7 +64,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 renderState.projectionLevel(),
                 LayerPalette.current(editorMode),
                 false);
-        Set<VertexEdge> selectedRoomBoundaryEdges = drawRooms(renderPass, !editorMode);
+        Set<VertexEdge> selectedRoomBoundaryEdges = drawRooms(renderPass);
         drawCorridors(renderPass);
         drawStairs(renderPass);
         drawTransitions(renderPass);
@@ -139,7 +139,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         }
     }
 
-    private static Set<VertexEdge> drawRooms(StructureRenderPass pass, boolean showRuntimeLabels) {
+    private static Set<VertexEdge> drawRooms(StructureRenderPass pass) {
         GraphicsContext gc = pass.gc();
         DungeonLayout mapModel = pass.projected();
         gc.setFill(pass.palette().roomFill());
@@ -176,7 +176,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                         roomBoundaryEdges.addAll(wallEdges);
                     }
                 });
-                if (showRuntimeLabels) {
+                if (pass.showRuntimeLabels()) {
                     gc.setFill(pass.palette().roomText());
                     gc.setFont(DungeonCanvasTheme.ROOM_LABEL_FONT);
                     drawRoomLabel(gc, room.name(), pass.camera(), pass.gridSize(), levelFloor);
@@ -503,7 +503,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 overlay.level(),
                 palette,
                 true);
-        Set<VertexEdge> selectedRoomBoundaryEdges = drawRooms(overlayPass, false);
+        Set<VertexEdge> selectedRoomBoundaryEdges = drawRooms(overlayPass);
         drawCorridors(overlayPass);
         drawStairs(overlayPass);
         drawTransitions(overlayPass);
@@ -818,6 +818,10 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                     projectionLevel,
                     palette,
                     overlayPass);
+        }
+
+        private boolean showRuntimeLabels() {
+            return !editorMode && !overlayPass;
         }
     }
 

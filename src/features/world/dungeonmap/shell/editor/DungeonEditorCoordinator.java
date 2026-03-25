@@ -19,7 +19,6 @@ import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
-import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.shell.editor.interaction.CorridorInteractionController;
 import features.world.dungeonmap.shell.editor.interaction.BoundaryInteractionController;
@@ -155,7 +154,7 @@ final class DungeonEditorCoordinator {
                 new RoomPaintToolHandler(roomPaintInteractionController, paintPreviewState),
                 new CorridorToolHandler(corridorInteractionController, selectionState, corridorDraftState),
                 new BoundaryToolHandler(boundaryInteractionController, boundaryDraftState),
-                new StairToolHandler(this.stairInteractionController, mapState, stairDraftState),
+                new StairToolHandler(this.stairInteractionController, mapState, stairDraftState, selectionState),
                 new TransitionToolHandler(this.transitionInteractionController, transitionDraftState));
         this.interactionController = new DungeonEditorGridInteractionController(
                 mapState,
@@ -167,13 +166,11 @@ final class DungeonEditorCoordinator {
         installBindings();
         sessionState.addListener(this::refreshFromSessionState);
         selectionState.addListener(this::refreshSelectionState);
-        selectionState.addListener(this::refreshStairStatePane);
         selectionState.addListener(this::refreshRoomNarrationStatePane);
         selectionState.addListener(this::refreshTransitionStatePane);
         layoutPreviewState.addListener(this::refreshLayoutPreviewState);
         paintPreviewState.addListener(this::refreshPaintPreviewState);
         boundaryDraftState.addListener(this::refreshBoundaryPreviewState);
-        stairDraftState.addListener(this::refreshStairStatePane);
         transitionDraftState.addListener(this::refreshTransitionStatePane);
         transitionDraftState.addListener(this::refreshTransitionTargetOptions);
         refreshFromSessionState();
@@ -181,7 +178,6 @@ final class DungeonEditorCoordinator {
         refreshLayoutPreviewState();
         refreshPaintPreviewState();
         refreshBoundaryPreviewState();
-        refreshStairStatePane();
         refreshTransitionStatePane();
         refreshTransitionTargetOptions();
         refreshRoomNarrationStatePane();
@@ -222,15 +218,6 @@ final class DungeonEditorCoordinator {
         controls.setOnSelectedOverlayLevelsChanged(mapState::setSelectedOverlayLevels);
         controls.setOnViewModeChanged(sessionState::selectViewMode);
         controls.setOnToolChanged(sessionState::selectTool);
-        statePane.setOnStairInputLevelChanged(stairDraftState::setInputLevel);
-        statePane.setOnStairLevelDecrementRequested(() -> stairDraftState.adjustInputLevel(-1));
-        statePane.setOnStairLevelIncrementRequested(() -> stairDraftState.adjustInputLevel(1));
-        statePane.setOnStairAddRequested(stairDraftState::addExitLevel);
-        statePane.setOnStairExitRemoveRequested(stairDraftState::removeExitLevel);
-        statePane.setOnStairShapeChanged(stairDraftState::setShape);
-        statePane.setOnStairDirectionChanged(stairDraftState::setDirection);
-        statePane.setOnStairDimension1Changed(stairDraftState::setDimension1);
-        statePane.setOnStairDimension2Changed(stairDraftState::setDimension2);
         statePane.setOnTransitionDescriptionChanged(transitionDraftState::setDescription);
         statePane.setOnTransitionDestinationTypeChanged(transitionDraftState::setDestinationType);
         statePane.setOnTransitionBidirectionalChanged(transitionDraftState::setBidirectional);
@@ -262,7 +249,6 @@ final class DungeonEditorCoordinator {
                     statePane.refresh(sessionState.selectedTool(), handler.statePaneContent()));
         }
         statePane.refresh(selectedTool, handler == null ? null : handler.statePaneContent());
-        refreshStairStatePane();
         refreshTransitionStatePane();
         refreshTransitionTargetOptions();
         previousTool = selectedTool;
@@ -289,42 +275,6 @@ final class DungeonEditorCoordinator {
 
     private void refreshSelectionState() {
         workspace.setSelectedTargetKey(selectionState.selectedTargetKey());
-    }
-
-    private void refreshStairStatePane() {
-        if (sessionState.selectedTool() != DungeonEditorTool.STAIR_CREATE
-                && sessionState.selectedTool() != DungeonEditorTool.STAIR_DELETE
-                && !DungeonStair.isTargetKey(selectionState.selectedTargetKey())) {
-            statePane.showStairDraft(null);
-            return;
-        }
-        if (sessionState.selectedTool() == DungeonEditorTool.STAIR_DELETE) {
-            String selectedTargetKey = selectionState.selectedTargetKey();
-            String summary = DungeonStair.isTargetKey(selectedTargetKey)
-                    ? "Gewählt: " + DungeonEditorSelectionLabels.stairLabel(selectedTargetKey)
-                    : "Treppenfeld anklicken, um zu löschen";
-            statePane.showStairDraft(
-                    new DungeonEditorStatePane.StairDraftCard(
-                            null,
-                            null,
-                            null,
-                            null,
-                            null,
-                            List.of(),
-                            summary,
-                            false));
-            return;
-        }
-        statePane.showStairDraft(
-                new DungeonEditorStatePane.StairDraftCard(
-                        stairDraftState.inputLevel(),
-                        stairDraftState.shape(),
-                        stairDraftState.direction(),
-                        stairDraftState.dimension1(),
-                        stairDraftState.dimension2(),
-                        stairDraftState.exitLevels(),
-                        stairDraftState.displayStatus(),
-                        true));
     }
 
     private void refreshTransitionStatePane() {
