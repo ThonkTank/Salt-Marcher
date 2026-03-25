@@ -2,7 +2,9 @@ package features.world.dungeonmap.model.structures.corridor;
 
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.model.structures.stair.DungeonStair;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -15,16 +17,18 @@ import java.util.Set;
 public record CorridorPlanningInput(
         Map<Long, Room> roomsById,
         Map<Long, Point2i> clusterCenters,
-        Map<Long, Set<Integer>> roomLevels
+        Map<Long, Set<Integer>> roomLevels,
+        List<DungeonStair> stairs
 ) {
     public static CorridorPlanningInput empty() {
-        return new CorridorPlanningInput(Map.of(), Map.of(), Map.of());
+        return new CorridorPlanningInput(Map.of(), Map.of(), Map.of(), List.of());
     }
 
     public CorridorPlanningInput {
         roomsById = roomsById == null ? Map.of() : Map.copyOf(roomsById);
         clusterCenters = clusterCenters == null ? Map.of() : Map.copyOf(clusterCenters);
         roomLevels = roomLevels == null ? Map.of() : Map.copyOf(roomLevels);
+        stairs = stairs == null ? List.of() : List.copyOf(stairs);
     }
 
     public Room room(Long roomId) {

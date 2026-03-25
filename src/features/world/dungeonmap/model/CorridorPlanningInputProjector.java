@@ -4,6 +4,7 @@ import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInput;
 import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.model.structures.stair.DungeonStair;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -29,6 +30,7 @@ public final class CorridorPlanningInputProjector {
         Map<Long, Room> roomsById = new LinkedHashMap<>();
         Map<Long, Point2i> clusterCenters = new LinkedHashMap<>();
         Map<Long, Set<Integer>> roomLevels = new LinkedHashMap<>();
+        List<DungeonStair> stairs = layout.stairs();
         for (RoomCluster cluster : layout.clusters()) {
             if (cluster == null || cluster.clusterId() == null) {
                 continue;
@@ -43,7 +45,7 @@ public final class CorridorPlanningInputProjector {
                 }
             }
         }
-        return new CorridorPlanningInput(roomsById, clusterCenters, roomLevels);
+        return new CorridorPlanningInput(roomsById, clusterCenters, roomLevels, stairs);
     }
 
     public static CorridorPlanningInput project(List<RoomCluster> clusters) {
@@ -64,6 +66,6 @@ public final class CorridorPlanningInputProjector {
                 }
             }
         }
-        return new CorridorPlanningInput(roomsById, clusterCenters, roomLevels);
+        return new CorridorPlanningInput(roomsById, clusterCenters, roomLevels, List.of());
     }
 }
