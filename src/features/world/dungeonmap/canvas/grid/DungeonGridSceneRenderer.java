@@ -738,28 +738,12 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             Collection<? extends Connection> connections,
             DungeonLayout projectedMap
     ) {
-        Set<VertexEdge> result = new LinkedHashSet<>();
-        if (connections == null || projectedMap == null) {
-            return result;
+        if (connections == null || connections.isEmpty() || projectedMap == null) {
+            return Set.of();
         }
-        for (Room room : projectedMap.rooms()) {
-            if (room == null || room.roomId() == null) {
-                continue;
-            }
-            List<Connection> roomConnections = projectedMap.connectionsForRoom(room.roomId());
-            if (roomConnections.isEmpty()) {
-                continue;
-            }
-            if (!new LinkedHashSet<>(roomConnections).removeAll(new LinkedHashSet<>(connections))) {
-                continue;
-            }
-            Floor floor = room.floor();
-            if (floor == null || floor.shape() == null) {
-                continue;
-            }
-            result.addAll(visibleEdges(boundaryEdges(roomConnections), floor.shape().boundaryEdges()));
-        }
-        return result;
+        // Room connections must render consistently whether the door lies on the room outline or on an internal
+        // boundary between two rooms inside the same cluster.
+        return boundaryEdges(connections);
     }
 
     private static void drawPaintPreview(
