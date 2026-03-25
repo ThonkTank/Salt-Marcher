@@ -1,62 +1,59 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
+import features.world.dungeonmap.canvas.base.DungeonCanvasCamera;
 import features.world.dungeonmap.canvas.base.DungeonCanvasInteractionHandler;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.canvas.base.DungeonViewMode;
-import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
-import javafx.scene.Node;
 
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 public final class DungeonEditorGridInteractionController implements DungeonCanvasInteractionHandler {
 
     private final DungeonMapState mapState;
     private final DungeonEditorSessionState sessionState;
-    private final DungeonGridHitTester hitTester = new DungeonGridHitTester();
-    private final Map<DungeonEditorTool, EditorTool> toolsByTool;
-    private EditorTool activeToolInstance;
+    private final Map<DungeonEditorTool, EditorToolHandler> handlersByTool;
+    private EditorToolHandler activeHandler;
     private DungeonEditorTool activeTool;
 
     public DungeonEditorGridInteractionController(
             DungeonMapState mapState,
             DungeonEditorSessionState sessionState,
-            List<EditorTool> tools
+            List<EditorToolHandler> handlers
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.sessionState = Objects.requireNonNull(sessionState, "sessionState");
-        this.toolsByTool = buildToolMap(Objects.requireNonNull(tools, "tools"));
+        this.handlersByTool = buildHandlerMap(Objects.requireNonNull(handlers, "handlers"));
     }
 
     @Override
-    public boolean handlePressed(DungeonCanvasPointerEvent event) {
+    public boolean handlePressed(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
         if (!interactionEnabled()) {
-            clearActiveTool();
+            clearActiveHandler();
             return false;
         }
-        return activeToolInstance != null && activeToolInstance.pressed(context(event));
+        return activeHandler != null && activeHandler.handlePressed(event);
     }
 
     @Override
-    public boolean handleDragged(DungeonCanvasPointerEvent event) {
+    public boolean handleDragged(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
         if (!interactionEnabled()) {
             return false;
         }
-        return activeToolInstance != null && activeToolInstance.dragged(context(event));
+        return activeHandler != null && activeHandler.handleDragged(event);
     }
 
     @Override
-    public boolean handleReleased(DungeonCanvasPointerEvent event) {
+    public boolean handleReleased(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
         if (!interactionEnabled()) {
             return false;
         }
-        return activeToolInstance != null && activeToolInstance.released(context(event));
+        return activeHandler != null && activeHandler.handleReleased(event);
     }
 
     @Override
@@ -64,125 +61,54 @@ public final class DungeonEditorGridInteractionController implements DungeonCanv
         if (!interactionEnabled()) {
             return false;
         }
-        return activeToolInstance != null && activeToolInstance.levelScrolled(context(null), levelDelta);
+        return activeHandler != null && activeHandler.handleLevelScroll(levelDelta);
     }
 
     public void activateTool(DungeonEditorTool tool) {
-        EditorTool nextTool = toolsByTool.get(tool);
-        if (nextTool == null) {
-            clearActiveTool();
+        EditorToolHandler nextHandler = handlersByTool.get(tool);
+        if (nextHandler == null) {
+            clearActiveHandler();
             return;
         }
-        if (activeToolInstance == nextTool && Objects.equals(activeTool, tool)) {
+        if (activeHandler == nextHandler && Objects.equals(activeTool, tool)) {
             return;
         }
-        if (activeToolInstance != null && activeToolInstance != nextTool) {
-            activeToolInstance.deactivate();
+        if (activeHandler != null && activeHandler != nextHandler) {
+            activeHandler.deactivate();
         }
-        activeToolInstance = nextTool;
+        activeHandler = nextHandler;
         activeTool = tool;
-        activeToolInstance.activate(tool);
+        activeHandler.activate(tool);
     }
 
-    public void clearActiveTool() {
-        if (activeToolInstance == null) {
+    public void clearActiveHandler() {
+        if (activeHandler == null) {
             return;
         }
-        activeToolInstance.deactivate();
-        activeToolInstance = null;
+        activeHandler.deactivate();
+        activeHandler = null;
         activeTool = null;
     }
 
-    public EditorTool activeTool() {
-        return activeToolInstance;
+    public EditorToolHandler activeHandler() {
+        return activeHandler;
     }
 
     private boolean interactionEnabled() {
         return sessionState.viewMode() == DungeonViewMode.GRID && !mapState.loading();
     }
 
-    private EditorToolContext context(DungeonCanvasPointerEvent event) {
-        return new EditorToolContext(
-                event,
-                projectedLayout(),
-                hitTester,
-                event == null ? null : event.camera(),
-                null);
-    }
-
-    private DungeonLayout projectedLayout() {
-        DungeonLayout layout = mapState.activeMap();
-        if (layout == null) {
-            return DungeonLayout.empty();
-        }
-        return layout.projectedToLevel(mapState.activeProjectionLevel());
-    }
-
-    private static Map<DungeonEditorTool, EditorTool> buildToolMap(List<EditorTool> tools) {
-        Map<DungeonEditorTool, EditorTool> toolsByTool = new EnumMap<>(DungeonEditorTool.class);
-        for (EditorTool editorTool : tools) {
-            Objects.requireNonNull(editorTool, "editorTool");
-            for (DungeonEditorTool tool : editorTool.supportedTools()) {
-                EditorTool previous = toolsByTool.put(tool, editorTool);
+    private static Map<DungeonEditorTool, EditorToolHandler> buildHandlerMap(List<EditorToolHandler> handlers) {
+        Map<DungeonEditorTool, EditorToolHandler> handlersByTool = new EnumMap<>(DungeonEditorTool.class);
+        for (EditorToolHandler handler : handlers) {
+            Objects.requireNonNull(handler, "handler");
+            for (DungeonEditorTool tool : handler.supportedTools()) {
+                EditorToolHandler previous = handlersByTool.put(tool, handler);
                 if (previous != null) {
-                    throw new IllegalArgumentException("Duplicate editor tool for " + tool);
+                    throw new IllegalArgumentException("Duplicate editor tool handler for " + tool);
                 }
             }
         }
-        return Map.copyOf(toolsByTool);
-    }
-}
-
-final class LegacyEditorToolAdapter implements EditorTool {
-
-    private final EditorToolHandler handler;
-
-    LegacyEditorToolAdapter(EditorToolHandler handler) {
-        this.handler = Objects.requireNonNull(handler, "handler");
-    }
-
-    @Override
-    public Set<DungeonEditorTool> supportedTools() {
-        return handler.supportedTools();
-    }
-
-    @Override
-    public void activate(DungeonEditorTool tool) {
-        handler.activate(tool);
-    }
-
-    @Override
-    public void deactivate() {
-        handler.deactivate();
-    }
-
-    @Override
-    public boolean pressed(EditorToolContext ctx) {
-        return handler.handlePressed(ctx == null ? null : ctx.event());
-    }
-
-    @Override
-    public boolean dragged(EditorToolContext ctx) {
-        return handler.handleDragged(ctx == null ? null : ctx.event());
-    }
-
-    @Override
-    public boolean released(EditorToolContext ctx) {
-        return handler.handleReleased(ctx == null ? null : ctx.event());
-    }
-
-    @Override
-    public boolean levelScrolled(EditorToolContext ctx, int delta) {
-        return handler.handleLevelScroll(delta);
-    }
-
-    @Override
-    public Node statePaneContent() {
-        return handler.statePaneContent();
-    }
-
-    @Override
-    public void setRefreshCallback(Runnable callback) {
-        handler.setRefreshCallback(callback);
+        return Map.copyOf(handlersByTool);
     }
 }

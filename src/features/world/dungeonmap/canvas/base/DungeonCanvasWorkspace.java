@@ -20,7 +20,6 @@ import javafx.scene.layout.StackPane;
 
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.IntConsumer;
 
 public final class DungeonCanvasWorkspace extends BorderPane {
 
@@ -64,7 +63,6 @@ public final class DungeonCanvasWorkspace extends BorderPane {
     private Point2D lastPointer;
     private PointerCapture activePointerCapture = PointerCapture.NONE;
     private Runnable stateListener = () -> {};
-    private IntConsumer levelScrollListener = ignored -> {};
 
     public DungeonCanvasWorkspace(boolean editorMode, DungeonLayout mapModel) {
         this.editorMode = editorMode;
@@ -200,10 +198,6 @@ public final class DungeonCanvasWorkspace extends BorderPane {
         this.stateListener.run();
     }
 
-    public void setOnLevelScrollRequested(IntConsumer levelScrollListener) {
-        this.levelScrollListener = levelScrollListener == null ? ignored -> {} : levelScrollListener;
-    }
-
     public void resetView() {
         camera.reset();
         notifyViewChanged();
@@ -281,20 +275,10 @@ public final class DungeonCanvasWorkspace extends BorderPane {
         double axisDelta = Math.abs(event.getDeltaY()) >= Math.abs(event.getDeltaX())
                 ? event.getDeltaY()
                 : -event.getDeltaX();
-        if (activePointerCapture == PointerCapture.INTERACTION && axisDelta != 0.0d) {
+        if ((activePointerCapture == PointerCapture.INTERACTION || event.isShiftDown())
+                && axisDelta != 0.0d) {
             int levelDelta = axisDelta > 0 ? 1 : -1;
-            if (interactionHandler.handleLevelScroll(levelDelta)) {
-                event.consume();
-                return;
-            }
-        }
-        if (event.isShiftDown()) {
-            if (axisDelta == 0.0d) {
-                event.consume();
-                return;
-            }
-            int levelDelta = axisDelta > 0 ? 1 : -1;
-            levelScrollListener.accept(levelDelta);
+            interactionHandler.handleLevelScroll(levelDelta);
             event.consume();
             return;
         }

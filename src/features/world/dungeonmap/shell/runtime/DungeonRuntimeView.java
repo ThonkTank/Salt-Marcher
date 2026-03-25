@@ -68,8 +68,6 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         this.detailsNavigator = Objects.requireNonNull(detailsNavigator, "detailsNavigator");
         this.travelSurface = travelSurface;
         workspace().setViewMode(DungeonViewMode.GRID);
-        workspace().setOnLevelScrollRequested(levelDelta ->
-                state.setReachableProjectionLevel(state.activeProjectionLevel() + levelDelta));
         workspace().setInteractionHandler(new DungeonRuntimeInteractionController(
                 state,
                 runtimeState,
