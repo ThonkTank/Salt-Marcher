@@ -72,7 +72,8 @@ public final class DungeonMapModule {
         DungeonClusterMoveService clusterMoveService = new DungeonClusterMoveService(
                 mapLoader,
                 roomWriteRepository,
-                geometryWriteMapper);
+                geometryWriteMapper,
+                corridorPersistenceService);
         DungeonCorridorEditService corridorEditService = new DungeonCorridorEditService(
                 corridorWriteRepository,
                 corridorPersistenceService,
