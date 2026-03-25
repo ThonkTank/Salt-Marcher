@@ -3,6 +3,7 @@ package features.world.dungeonmap.model.structures.corridor.planning;
 import features.world.dungeonmap.model.geometry.CubePoint;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -13,6 +14,11 @@ import java.util.Set;
 
 final class CostField {
 
+    static final List<CubePoint> HORIZONTAL_STEPS = List.of(
+            new CubePoint(0, -1, 0),
+            new CubePoint(1, 0, 0),
+            new CubePoint(0, 1, 0),
+            new CubePoint(-1, 0, 0));
     static final List<CubePoint> STEPS = List.of(
             new CubePoint(0, -1, 0),
             new CubePoint(1, 0, 0),
@@ -20,7 +26,7 @@ final class CostField {
             new CubePoint(-1, 0, 0),
             new CubePoint(0, 0, 1),
             new CubePoint(0, 0, -1));
-    static final int VIA_COST = 4;
+    static final int STAIR_DIRECTION_INDEX = -2;
 
     private CostField() {
     }
@@ -68,6 +74,7 @@ final class CostField {
             Map<PathState, RouteCost> best = new HashMap<>();
             Map<PathState, PathState> predecessors = new HashMap<>();
             Map<CubePoint, PathState> bestStateByPoint = new HashMap<>();
+            Map<PathState, StairNeighbor> stairSteps = new HashMap<>();
             Set<Long> reachedRoomIds = new LinkedHashSet<>();
             int expectedRoomCount = targetRoomCount(roomsByEntry);
             for (Map.Entry<PathState, RouteCost> entry : sources.entrySet()) {
@@ -99,17 +106,16 @@ final class CostField {
                     }
                     continue;
                 }
-                for (int directionIndex = 0; directionIndex < STEPS.size(); directionIndex++) {
-                    CubePoint next = cell.add(STEPS.get(directionIndex));
+                for (int directionIndex = 0; directionIndex < HORIZONTAL_STEPS.size(); directionIndex++) {
+                    CubePoint next = cell.add(HORIZONTAL_STEPS.get(directionIndex));
                     if (!volume.isPassable(next) && !targets.contains(next)) {
                         continue;
                     }
-                    boolean vertical = directionIndex >= 4;
-                    int nextDistance = node.score().distance() + (vertical ? VIA_COST : 1);
+                    int nextDistance = node.score().distance() + 1;
                     int nextCorners = node.score().corners();
-                    int nextLevelChanges = node.score().levelChanges() + (vertical ? 1 : 0);
+                    int nextLevelChanges = node.score().levelChanges();
                     int previousDirection = node.state().directionIndex();
-                    if (!vertical && previousDirection >= 0 && previousDirection < 4 && previousDirection != directionIndex) {
+                    if (previousDirection >= 0 && previousDirection < 4 && previousDirection != directionIndex) {
                         nextCorners++;
                     }
                     PathState nextState = new PathState(next, directionIndex);
@@ -123,13 +129,33 @@ final class CostField {
                     predecessors.put(nextState, node.state());
                     open.add(new PathNode(nextState, nextCost));
                 }
+                for (StairNeighbor stairNeighbor : StairExpansion.expand(cell, volume, Set.of())) {
+                    CubePoint exitCell = stairNeighbor.exitCell();
+                    if (!volume.isPassable(exitCell) && !targets.contains(exitCell)) {
+                        continue;
+                    }
+                    int nextDistance = node.score().distance() + stairNeighbor.cost();
+                    int nextCorners = node.score().corners();
+                    int nextLevelChanges = node.score().levelChanges() + 1;
+                    PathState nextState = new PathState(exitCell, STAIR_DIRECTION_INDEX);
+                    RouteCost nextCost = new RouteCost(nextDistance, nextCorners, nextLevelChanges);
+                    RouteCost known = best.get(nextState);
+                    if (known != null && known.compareTo(nextCost) <= 0) {
+                        continue;
+                    }
+                    best.put(nextState, nextCost);
+                    updateBestStateByPoint(bestStateByPoint, best, nextState, nextCost);
+                    predecessors.put(nextState, node.state());
+                    stairSteps.put(nextState, stairNeighbor);
+                    open.add(new PathNode(nextState, nextCost));
+                }
             }
             return new FloodResult(
                     best,
                     predecessors,
                     reached,
                     bestStateByPoint,
-                    Map.of());
+                    Map.copyOf(stairSteps));
         } finally {
             if (instrumentation != null) {
                 instrumentation.recordFloodNanos(System.nanoTime() - startedAt);
@@ -153,6 +179,45 @@ final class CostField {
             path.addFirst(current.point());
         }
         return List.copyOf(path);
+    }
+
+    static ExtractedPath extractPathWithStairs(FloodResult result, CubePoint target) {
+        if (result == null || target == null) {
+            return ExtractedPath.empty();
+        }
+        PathState bestTargetState = result.bestStateAt(target);
+        if (bestTargetState == null) {
+            return ExtractedPath.empty();
+        }
+        ArrayDeque<CubePoint> pathCells = new ArrayDeque<>();
+        List<StairPlacement> placements = new ArrayList<>();
+        PathState current = bestTargetState;
+        pathCells.addFirst(current.point());
+        while (result.predecessors().containsKey(current)) {
+            StairNeighbor stair = result.stairSteps().get(current);
+            if (stair != null) {
+                for (CubePoint footprintCell : stair.footprint()) {
+                    if (!footprintCell.equals(current.point())) {
+                        pathCells.addFirst(footprintCell);
+                    }
+                }
+                List<Integer> exitLevels = new ArrayList<>();
+                for (int z = stair.minZ(); z <= stair.maxZ(); z++) {
+                    exitLevels.add(z);
+                }
+                placements.add(new StairPlacement(
+                        stair.anchor(),
+                        stair.shape(),
+                        stair.direction(),
+                        stair.dimension1(),
+                        stair.dimension2(),
+                        exitLevels,
+                        Set.copyOf(stair.footprint())));
+            }
+            current = result.predecessors().get(current);
+            pathCells.addFirst(current.point());
+        }
+        return new ExtractedPath(List.copyOf(pathCells), List.copyOf(placements));
     }
 
     private static void updateBestStateByPoint(
