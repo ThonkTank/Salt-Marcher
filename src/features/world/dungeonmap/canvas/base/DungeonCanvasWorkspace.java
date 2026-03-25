@@ -278,10 +278,17 @@ public final class DungeonCanvasWorkspace extends BorderPane {
     }
 
     private void handleScroll(ScrollEvent event) {
+        double axisDelta = Math.abs(event.getDeltaY()) >= Math.abs(event.getDeltaX())
+                ? event.getDeltaY()
+                : -event.getDeltaX();
+        if (activePointerCapture == PointerCapture.INTERACTION && axisDelta != 0.0d) {
+            int levelDelta = axisDelta > 0 ? 1 : -1;
+            if (interactionHandler.handleLevelScroll(levelDelta)) {
+                event.consume();
+                return;
+            }
+        }
         if (event.isShiftDown()) {
-            double axisDelta = Math.abs(event.getDeltaY()) >= Math.abs(event.getDeltaX())
-                    ? event.getDeltaY()
-                    : -event.getDeltaX();
             if (axisDelta == 0.0d) {
                 event.consume();
                 return;

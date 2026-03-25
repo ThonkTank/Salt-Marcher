@@ -54,7 +54,12 @@ public final class ClusterSelectionDragController {
         clear();
         if (isClusterLabelHit(hit)) {
             selectionState.selectTarget(hit.targetKey());
-            dragSession = new ClusterDragSession(hit.clusterId(), hit.targetKey(), mapState.activeMap(), event.gridCell());
+            dragSession = ClusterDragSession.start(
+                    hit.clusterId(),
+                    hit.targetKey(),
+                    mapState.activeMap(),
+                    event.gridCell(),
+                    mapState.activeProjectionLevel());
             return true;
         }
         DungeonStair stair = stairAt(event.gridCell());
@@ -84,7 +89,7 @@ public final class ClusterSelectionDragController {
             return true;
         }
         dragSession = dragSession.withCurrentDelta(delta);
-        layoutPreviewState.showPreview(dragSession.baseMap().withTranslatedCluster(dragSession.clusterId(), delta));
+        layoutPreviewState.showPreview(previewMap());
         return true;
     }
 
@@ -93,7 +98,8 @@ public final class ClusterSelectionDragController {
             return false;
         }
         Point2i delta = event.gridCell().subtract(dragSession.pressCell());
-        DungeonLayout committed = dragSession.baseMap().withTranslatedCluster(dragSession.clusterId(), delta);
+        int levelDelta = dragSession.currentLevel() - dragSession.startLevel();
+        DungeonLayout committed = dragSession.baseMap().withTranslatedCluster(dragSession.clusterId(), delta, levelDelta);
         Long mapId = dragSession.baseMap().mapId() > 0 ? dragSession.baseMap().mapId() : null;
         Long clusterId = dragSession.clusterId();
         selectionState.selectTarget(dragSession.targetKey());
@@ -102,12 +108,26 @@ public final class ClusterSelectionDragController {
         if (committed != null && committed != mapState.activeMap()) {
             mapState.showEditedMap(committed);
         }
-        if (mapId != null && clusterId != null && (delta.x() != 0 || delta.y() != 0)) {
+        if (mapId != null && clusterId != null && (delta.x() != 0 || delta.y() != 0 || levelDelta != 0)) {
             UiAsyncTasks.submitVoid(
-                    () -> clusterMoveService.move(mapId, clusterId, delta),
+                    () -> clusterMoveService.move(mapId, clusterId, delta, levelDelta),
                     () -> loadingService.reload(mapId),
                     throwable -> UiErrorReporter.reportBackgroundFailure("ClusterSelectionDragController.handleReleased()", throwable));
         }
+        return true;
+    }
+
+    public boolean handleLevelScroll(int levelDelta) {
+        if (dragSession == null || levelDelta == 0) {
+            return false;
+        }
+        int nextLevel = dragSession.currentLevel() + levelDelta;
+        if (nextLevel == dragSession.currentLevel()) {
+            return true;
+        }
+        dragSession = dragSession.withCurrentLevel(nextLevel);
+        mapState.setActiveProjectionLevel(nextLevel);
+        layoutPreviewState.showPreview(previewMap());
         return true;
     }
 
@@ -144,19 +164,45 @@ public final class ClusterSelectionDragController {
                 .orElse(null);
     }
 
+    private DungeonLayout previewMap() {
+        if (dragSession == null) {
+            return null;
+        }
+        return dragSession.baseMap().withTranslatedCluster(
+                dragSession.clusterId(),
+                dragSession.currentDelta(),
+                dragSession.currentLevel() - dragSession.startLevel());
+    }
+
     private record ClusterDragSession(
             Long clusterId,
             String targetKey,
             DungeonLayout baseMap,
             Point2i pressCell,
-            Point2i currentDelta
+            Point2i currentDelta,
+            int startLevel,
+            int currentLevel
     ) {
         private ClusterDragSession(Long clusterId, String targetKey, DungeonLayout baseMap, Point2i pressCell) {
-            this(clusterId, targetKey, baseMap, pressCell, new Point2i(0, 0));
+            this(clusterId, targetKey, baseMap, pressCell, new Point2i(0, 0), 0, 0);
         }
 
         private ClusterDragSession withCurrentDelta(Point2i delta) {
-            return new ClusterDragSession(clusterId, targetKey, baseMap, pressCell, delta);
+            return new ClusterDragSession(clusterId, targetKey, baseMap, pressCell, delta, startLevel, currentLevel);
+        }
+
+        private ClusterDragSession withCurrentLevel(int nextLevel) {
+            return new ClusterDragSession(clusterId, targetKey, baseMap, pressCell, currentDelta, startLevel, nextLevel);
+        }
+
+        private static ClusterDragSession start(
+                Long clusterId,
+                String targetKey,
+                DungeonLayout baseMap,
+                Point2i pressCell,
+                int startLevel
+        ) {
+            return new ClusterDragSession(clusterId, targetKey, baseMap, pressCell, new Point2i(0, 0), startLevel, startLevel);
         }
     }
 }

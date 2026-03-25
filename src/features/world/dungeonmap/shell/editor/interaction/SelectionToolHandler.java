@@ -93,6 +93,11 @@ public final class SelectionToolHandler implements EditorToolHandler {
     }
 
     @Override
+    public boolean handleLevelScroll(int levelDelta) {
+        return controller.handleLevelScroll(levelDelta);
+    }
+
+    @Override
     public Node statePaneContent() {
         if (activeTool != DungeonEditorTool.SELECT) {
             return null;

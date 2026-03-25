@@ -22,6 +22,10 @@ public sealed interface EditorToolHandler
 
     boolean handleReleased(DungeonCanvasPointerEvent event);
 
+    default boolean handleLevelScroll(int levelDelta) {
+        return false;
+    }
+
     Node statePaneContent();
 
     void setRefreshCallback(Runnable callback);

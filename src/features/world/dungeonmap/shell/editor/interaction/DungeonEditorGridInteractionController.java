@@ -54,6 +54,14 @@ public final class DungeonEditorGridInteractionController implements DungeonCanv
         return activeHandler != null && activeHandler.handleReleased(event);
     }
 
+    @Override
+    public boolean handleLevelScroll(int levelDelta) {
+        if (!interactionEnabled()) {
+            return false;
+        }
+        return activeHandler != null && activeHandler.handleLevelScroll(levelDelta);
+    }
+
     public void activateTool(DungeonEditorTool tool) {
         EditorToolHandler nextHandler = handlersByTool.get(tool);
         if (nextHandler == null) {

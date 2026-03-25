@@ -7,4 +7,8 @@ public interface DungeonCanvasInteractionHandler {
     boolean handleDragged(DungeonCanvasPointerEvent event);
 
     boolean handleReleased(DungeonCanvasPointerEvent event);
+
+    default boolean handleLevelScroll(int levelDelta) {
+        return false;
+    }
 }

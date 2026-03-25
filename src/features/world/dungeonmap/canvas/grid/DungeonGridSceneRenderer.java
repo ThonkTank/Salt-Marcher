@@ -82,7 +82,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         }
         drawSelectedRoomBoundaries(renderPass, selectedRoomBoundaryEdges, renderPass.palette().selectedWallStroke());
         if (editorMode) {
-            drawInteractiveLabels(gc, projectedMap, camera, renderState.selectedTargetKey());
+            drawInteractiveLabels(renderPass);
         }
         drawAxes(gc, width, height, camera, editorMode);
         drawGridReference(gc, width, height, camera);
@@ -353,19 +353,14 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         gc.fillText(roomName, centerX, centerY);
     }
 
-    private static void drawInteractiveLabels(
-            GraphicsContext gc,
-            DungeonLayout mapModel,
-            DungeonCanvasCamera camera,
-            String selectedTargetKey
-    ) {
-        double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
+    private static void drawInteractiveLabels(StructureRenderPass pass) {
+        GraphicsContext gc = pass.gc();
         gc.setFont(DungeonCanvasTheme.HUD_FONT);
         gc.setTextAlign(TextAlignment.CENTER);
-        for (RoomCluster cluster : mapModel.clusters()) {
+        for (RoomCluster cluster : pass.projected().clusters()) {
             InteractiveLabelHandle handle = cluster.labelHandle();
-            javafx.geometry.Rectangle2D bounds = DungeonGridInteractiveLabels.bounds(handle, camera, gridSize);
-            boolean selected = handle != null && java.util.Objects.equals(handle.key(), selectedTargetKey);
+            javafx.geometry.Rectangle2D bounds = DungeonGridInteractiveLabels.bounds(handle, pass.camera(), pass.gridSize());
+            boolean selected = handle != null && java.util.Objects.equals(handle.key(), pass.selectedTargetKey());
             gc.setFill(selected ? DungeonCanvasTheme.GRAPH_NODE_FILL : DungeonCanvasTheme.LABEL_FILL);
             gc.fillRoundRect(bounds.getMinX(), bounds.getMinY(), bounds.getWidth(), bounds.getHeight(), 14, 14);
             gc.setStroke(selected ? DungeonCanvasTheme.ROOM_SELECTED_WALL_STROKE : DungeonCanvasTheme.LABEL_BORDER);
