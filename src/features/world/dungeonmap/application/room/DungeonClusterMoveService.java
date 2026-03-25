@@ -33,12 +33,17 @@ public final class DungeonClusterMoveService {
     }
 
     public void move(long mapId, long clusterId, Point2i delta) throws SQLException {
-        if (delta == null || (delta.x() == 0 && delta.y() == 0)) {
+        move(mapId, clusterId, delta, 0);
+    }
+
+    public void move(long mapId, long clusterId, Point2i delta, int levelDelta) throws SQLException {
+        boolean translate = delta != null && (delta.x() != 0 || delta.y() != 0);
+        if (!translate && levelDelta == 0) {
             return;
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                RoomCluster cluster = requireMovedCluster(conn, mapId, clusterId, delta);
+                RoomCluster cluster = requireMovedCluster(conn, mapId, clusterId, delta, levelDelta);
                 roomWriteRepository.updateClusterGeometry(
                         conn,
                         clusterId,
@@ -54,7 +59,7 @@ public final class DungeonClusterMoveService {
         }
     }
 
-    private RoomCluster requireMovedCluster(Connection conn, long mapId, long clusterId, Point2i delta) throws SQLException {
+    private RoomCluster requireMovedCluster(Connection conn, long mapId, long clusterId, Point2i delta, int levelDelta) throws SQLException {
         var layout = mapLoader.loadLayout(conn, mapId);
         if (layout == null) {
             throw new SQLException("Dungeon " + mapId + " konnte nicht geladen werden");
@@ -63,7 +68,7 @@ public final class DungeonClusterMoveService {
         if (cluster == null) {
             throw new SQLException("Cluster " + clusterId + " existiert nicht");
         }
-        return cluster.movedBy(delta);
+        return cluster.movedBy(delta, levelDelta);
     }
 
     private static Map<Integer, TileShape> shapesByLevel(RoomCluster cluster) {

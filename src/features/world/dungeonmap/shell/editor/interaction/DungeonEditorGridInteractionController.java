@@ -18,6 +18,7 @@ public final class DungeonEditorGridInteractionController implements DungeonCanv
     private final DungeonEditorSessionState sessionState;
     private final Map<DungeonEditorTool, EditorToolHandler> handlersByTool;
     private EditorToolHandler activeHandler;
+    private DungeonEditorTool activeTool;
 
     public DungeonEditorGridInteractionController(
             DungeonMapState mapState,
@@ -68,10 +69,14 @@ public final class DungeonEditorGridInteractionController implements DungeonCanv
             clearActiveHandler();
             return;
         }
+        if (activeHandler == nextHandler && Objects.equals(activeTool, tool)) {
+            return;
+        }
         if (activeHandler != null && activeHandler != nextHandler) {
             activeHandler.deactivate();
         }
         activeHandler = nextHandler;
+        activeTool = tool;
         activeHandler.activate(tool);
     }
 
@@ -81,6 +86,7 @@ public final class DungeonEditorGridInteractionController implements DungeonCanv
         }
         activeHandler.deactivate();
         activeHandler = null;
+        activeTool = null;
     }
 
     public EditorToolHandler activeHandler() {
