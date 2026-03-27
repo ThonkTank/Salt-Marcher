@@ -106,49 +106,8 @@ final class CostField {
                     }
                     continue;
                 }
-                for (int directionIndex = 0; directionIndex < HORIZONTAL_STEPS.size(); directionIndex++) {
-                    CubePoint next = cell.add(HORIZONTAL_STEPS.get(directionIndex));
-                    if (!volume.isPassable(next) && !targets.contains(next)) {
-                        continue;
-                    }
-                    int nextDistance = node.score().distance() + 1;
-                    int nextCorners = node.score().corners();
-                    int nextLevelChanges = node.score().levelChanges();
-                    int previousDirection = node.state().directionIndex();
-                    if (previousDirection >= 0 && previousDirection < 4 && previousDirection != directionIndex) {
-                        nextCorners++;
-                    }
-                    PathState nextState = new PathState(next, directionIndex);
-                    RouteCost nextCost = new RouteCost(nextDistance, nextCorners, nextLevelChanges);
-                    RouteCost known = best.get(nextState);
-                    if (known != null && known.compareTo(nextCost) <= 0) {
-                        continue;
-                    }
-                    best.put(nextState, nextCost);
-                    updateBestStateByPoint(bestStateByPoint, best, nextState, nextCost);
-                    predecessors.put(nextState, node.state());
-                    open.add(new PathNode(nextState, nextCost));
-                }
-                for (StairNeighbor stairNeighbor : StairExpansion.expand(cell, volume, Set.of())) {
-                    CubePoint exitCell = stairNeighbor.exitCell();
-                    if (!volume.isPassable(exitCell) && !targets.contains(exitCell)) {
-                        continue;
-                    }
-                    int nextDistance = node.score().distance() + stairNeighbor.cost();
-                    int nextCorners = node.score().corners();
-                    int nextLevelChanges = node.score().levelChanges() + 1;
-                    PathState nextState = new PathState(exitCell, STAIR_DIRECTION_INDEX);
-                    RouteCost nextCost = new RouteCost(nextDistance, nextCorners, nextLevelChanges);
-                    RouteCost known = best.get(nextState);
-                    if (known != null && known.compareTo(nextCost) <= 0) {
-                        continue;
-                    }
-                    best.put(nextState, nextCost);
-                    updateBestStateByPoint(bestStateByPoint, best, nextState, nextCost);
-                    predecessors.put(nextState, node.state());
-                    stairSteps.put(nextState, stairNeighbor);
-                    open.add(new PathNode(nextState, nextCost));
-                }
+                expandHorizontalNeighbors(node, volume, targets, best, predecessors, bestStateByPoint, open);
+                expandStairNeighbors(node, volume, targets, best, predecessors, bestStateByPoint, stairSteps, open);
             }
             return new FloodResult(
                     best,
@@ -161,6 +120,102 @@ final class CostField {
                 instrumentation.recordFloodNanos(System.nanoTime() - startedAt);
             }
         }
+    }
+
+    private static void expandHorizontalNeighbors(
+            PathNode node,
+            SearchVolume volume,
+            Set<CubePoint> targets,
+            Map<PathState, RouteCost> best,
+            Map<PathState, PathState> predecessors,
+            Map<CubePoint, PathState> bestStateByPoint,
+            PriorityQueue<PathNode> open
+    ) {
+        CubePoint cell = node.state().point();
+        for (int directionIndex = 0; directionIndex < HORIZONTAL_STEPS.size(); directionIndex++) {
+            CubePoint next = cell.add(HORIZONTAL_STEPS.get(directionIndex));
+            if (!volume.isPassable(next) && !targets.contains(next)) {
+                continue;
+            }
+            int nextCorners = node.score().corners();
+            int previousDirection = node.state().directionIndex();
+            if (previousDirection >= 0 && previousDirection < 4 && previousDirection != directionIndex) {
+                nextCorners++;
+            }
+            PathState nextState = new PathState(next, directionIndex);
+            RouteCost nextCost = new RouteCost(
+                    node.score().distance() + 1,
+                    nextCorners,
+                    node.score().levelChanges());
+            relaxState(
+                    node.state(),
+                    nextState,
+                    nextCost,
+                    null,
+                    best,
+                    predecessors,
+                    bestStateByPoint,
+                    null,
+                    open);
+        }
+    }
+
+    private static void expandStairNeighbors(
+            PathNode node,
+            SearchVolume volume,
+            Set<CubePoint> targets,
+            Map<PathState, RouteCost> best,
+            Map<PathState, PathState> predecessors,
+            Map<CubePoint, PathState> bestStateByPoint,
+            Map<PathState, StairNeighbor> stairSteps,
+            PriorityQueue<PathNode> open
+    ) {
+        CubePoint cell = node.state().point();
+        for (StairNeighbor stairNeighbor : StairExpansion.expand(cell, volume, Set.of())) {
+            CubePoint exitCell = stairNeighbor.exitCell();
+            if (!volume.isPassable(exitCell) && !targets.contains(exitCell)) {
+                continue;
+            }
+            PathState nextState = new PathState(exitCell, STAIR_DIRECTION_INDEX);
+            RouteCost nextCost = new RouteCost(
+                    node.score().distance() + stairNeighbor.cost(),
+                    node.score().corners(),
+                    node.score().levelChanges() + 1);
+            relaxState(
+                    node.state(),
+                    nextState,
+                    nextCost,
+                    stairNeighbor,
+                    best,
+                    predecessors,
+                    bestStateByPoint,
+                    stairSteps,
+                    open);
+        }
+    }
+
+    private static void relaxState(
+            PathState previousState,
+            PathState nextState,
+            RouteCost nextCost,
+            StairNeighbor stairNeighbor,
+            Map<PathState, RouteCost> best,
+            Map<PathState, PathState> predecessors,
+            Map<CubePoint, PathState> bestStateByPoint,
+            Map<PathState, StairNeighbor> stairSteps,
+            PriorityQueue<PathNode> open
+    ) {
+        RouteCost known = best.get(nextState);
+        if (known != null && known.compareTo(nextCost) <= 0) {
+            return;
+        }
+        best.put(nextState, nextCost);
+        updateBestStateByPoint(bestStateByPoint, best, nextState, nextCost);
+        predecessors.put(nextState, previousState);
+        if (stairNeighbor != null && stairSteps != null) {
+            stairSteps.put(nextState, stairNeighbor);
+        }
+        open.add(new PathNode(nextState, nextCost));
     }
 
     static List<CubePoint> extractPath(FloodResult result, CubePoint target) {
