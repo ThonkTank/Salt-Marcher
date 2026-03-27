@@ -9,6 +9,7 @@ import features.world.dungeonmap.model.structures.corridor.planning.CorridorPlan
 import features.world.dungeonmap.model.structures.corridor.planning.CorridorPlanningEngine;
 import features.world.dungeonmap.model.structures.corridor.planning.StairPlacement;
 import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.model.structures.traversal.planning.TraversalRewriteEngine;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -173,32 +174,7 @@ public final class Corridor {
             Map<Long, Corridor> corridorsById,
             CorridorRewriteContext context
     ) {
-        if (corridorsById == null || corridorsById.isEmpty()) {
-            return new RewriteResult(Map.of(), Set.of(), Map.of());
-        }
-        if (context == null || context.affectedCorridorIds().isEmpty()) {
-            return new RewriteResult(Map.copyOf(corridorsById), Set.of(), Map.of());
-        }
-        Map<Long, Corridor> result = new LinkedHashMap<>();
-        Map<Long, List<StairPlacement>> stairPlacementsByCorridorId = new LinkedHashMap<>();
-        for (Map.Entry<Long, Corridor> entry : corridorsById.entrySet()) {
-            Corridor corridor = entry.getValue();
-            if (corridor == null) {
-                result.put(entry.getKey(), null);
-                continue;
-            }
-            Corridor reanchored = corridor.reanchoredFor(context);
-            if (context.affects(corridor.corridorId()) && reanchored.isPersistable()) {
-                CorridorPlan plan = reanchored.plan(context.rewrittenPlanningInput());
-                result.put(entry.getKey(), reanchored.applyPlan(plan));
-                if (!plan.stairPlacements().isEmpty() && corridor.corridorId() != null) {
-                    stairPlacementsByCorridorId.put(corridor.corridorId(), plan.stairPlacements());
-                }
-            } else {
-                result.put(entry.getKey(), reanchored.replannedFor(context));
-            }
-        }
-        return new RewriteResult(Map.copyOf(result), context.affectedCorridorIds(), Map.copyOf(stairPlacementsByCorridorId));
+        return TraversalRewriteEngine.rewriteAll(corridorsById, context);
     }
 
     public Corridor withAddedRoom(Long roomId) {
