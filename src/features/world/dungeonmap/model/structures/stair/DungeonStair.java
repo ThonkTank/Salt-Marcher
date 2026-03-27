@@ -20,7 +20,8 @@ public record DungeonStair(
         int dimension1,
         int dimension2,
         List<CubePoint> path,
-        List<DungeonStairExit> exits
+        List<DungeonStairExit> exits,
+        Long corridorId
 ) {
 
     private static final String TARGET_KEY_PREFIX = "stair:";

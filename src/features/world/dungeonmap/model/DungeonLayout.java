@@ -14,6 +14,8 @@ import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
 import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInput;
+import features.world.dungeonmap.model.structures.corridor.planning.CorridorPlan;
+import features.world.dungeonmap.model.structures.corridor.planning.StairPlacement;
 import features.world.dungeonmap.model.structures.corridor.CorridorRewriteContext;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
@@ -622,12 +624,23 @@ public final class DungeonLayout {
                 corridorIdsAffectedBy(movedCluster.roomIds(), Set.of(clusterId)),
                 Set.of());
         Map<Long, Corridor> updatedAffectedCorridors = new LinkedHashMap<>();
+        Map<Long, List<StairPlacement>> stairPlacementsByCorridorId = new LinkedHashMap<>();
         List<Corridor> updatedCorridors = corridors.stream()
                 .map(corridor -> {
                     if (corridor == null) {
                         return null;
                     }
-                    Corridor updatedCorridor = corridor.reanchoredFor(rewriteContext).replannedFor(rewriteContext);
+                    Corridor reanchored = corridor.reanchoredFor(rewriteContext);
+                    Corridor updatedCorridor;
+                    if (rewriteContext.affects(corridor.corridorId()) && reanchored.isPersistable()) {
+                        CorridorPlan plan = reanchored.plan(rewriteContext.rewrittenPlanningInput());
+                        updatedCorridor = reanchored.applyPlan(plan);
+                        if (!plan.stairPlacements().isEmpty() && corridor.corridorId() != null) {
+                            stairPlacementsByCorridorId.put(corridor.corridorId(), plan.stairPlacements());
+                        }
+                    } else {
+                        updatedCorridor = reanchored.replannedFor(rewriteContext);
+                    }
                     if (rewriteContext.affects(updatedCorridor.corridorId())) {
                         updatedAffectedCorridors.put(updatedCorridor.corridorId(), updatedCorridor);
                     }
@@ -636,15 +649,16 @@ public final class DungeonLayout {
                 .toList();
         Map<Long, Integer> updatedClusterLevels = new LinkedHashMap<>(clusterLevelsById);
         updatedClusterLevels.put(clusterId, levelForCluster(clusterId) + levelDelta);
+        List<DungeonStair> updatedStairs = replaceCorridorStairs(stairs, stairPlacementsByCorridorId, mapId);
         DungeonLayout translatedLayout = new DungeonLayout(
                 mapId,
                 name,
                 updatedCorridors,
                 updatedClusters,
-                stairs,
+                updatedStairs,
                 transitions,
                 updatedClusterLevels);
-        return new DungeonClusterTranslation(translatedLayout, movedCluster, updatedAffectedCorridors);
+        return new DungeonClusterTranslation(translatedLayout, movedCluster, updatedAffectedCorridors, stairPlacementsByCorridorId);
     }
 
     public DungeonLayout applying(ClusterRewrite rewrite) {
@@ -1069,5 +1083,31 @@ public final class DungeonLayout {
             result.put(entry.getKey(), List.copyOf(entry.getValue()));
         }
         return Map.copyOf(result);
+    }
+
+    private static List<DungeonStair> replaceCorridorStairs(
+            List<DungeonStair> existingStairs,
+            Map<Long, List<StairPlacement>> stairPlacementsByCorridorId,
+            long mapId
+    ) {
+        if (stairPlacementsByCorridorId == null || stairPlacementsByCorridorId.isEmpty()) {
+            return existingStairs;
+        }
+        Set<Long> affectedCorridorIds = stairPlacementsByCorridorId.keySet();
+        List<DungeonStair> result = new ArrayList<>();
+        for (DungeonStair stair : existingStairs) {
+            if (stair.corridorId() == null || !affectedCorridorIds.contains(stair.corridorId())) {
+                result.add(stair);
+            }
+        }
+        for (Map.Entry<Long, List<StairPlacement>> entry : stairPlacementsByCorridorId.entrySet()) {
+            for (StairPlacement placement : entry.getValue()) {
+                DungeonStair preview = placement.toPreviewStair(mapId, entry.getKey());
+                if (preview != null) {
+                    result.add(preview);
+                }
+            }
+        }
+        return List.copyOf(result);
     }
 }

@@ -102,7 +102,8 @@ public final class DungeonSchemaSupport {
                 + "shape            TEXT NOT NULL DEFAULT 'LADDER',"
                 + "direction        INTEGER NOT NULL DEFAULT 0,"
                 + "dimension1       INTEGER NOT NULL DEFAULT 0,"
-                + "dimension2       INTEGER NOT NULL DEFAULT 0"
+                + "dimension2       INTEGER NOT NULL DEFAULT 0,"
+                + "corridor_id      INTEGER REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE"
                 + ")");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_stair_path_nodes ("
                 + "stair_id         INTEGER NOT NULL REFERENCES dungeon_stairs(stair_id) ON DELETE CASCADE,"
@@ -129,6 +130,7 @@ public final class DungeonSchemaSupport {
             addColumnIfMissing(stmt, "dungeon_stairs", "direction INTEGER NOT NULL DEFAULT 0");
             addColumnIfMissing(stmt, "dungeon_stairs", "dimension1 INTEGER NOT NULL DEFAULT 0");
             addColumnIfMissing(stmt, "dungeon_stairs", "dimension2 INTEGER NOT NULL DEFAULT 0");
+            addColumnIfMissing(stmt, "dungeon_stairs", "corridor_id INTEGER REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE");
         }
     }
 

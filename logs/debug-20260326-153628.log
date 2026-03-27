@@ -1,0 +1,38 @@
+> Task :compileJava UP-TO-DATE
+> Task :processResources UP-TO-DATE
+> Task :classes UP-TO-DATE
+
+> Task :run
+März 26, 2026 3:36:29 PM database.DatabaseManager prepareDatabasePath
+INFORMATION: Using SQLite database at /home/awuster/.local/share/salt-marcher/game.db
+März 26, 2026 3:36:30 PM ui.bootstrap.SaltMarcherApp logDatabaseState
+INFORMATION: Database is empty. Run ./scripts/crawl.sh to populate monster data.
+RoomTopologyService.persistRewriteStairPlacements(): skipped stairEditService=true placements=0
+März 27, 2026 8:17:11 AM features.world.dungeonmap.model.structures.corridor.planning.CorridorPlanningEngine logStairPlan
+INFORMATION: 
+=== CORRIDOR STAIR PLAN (caller=plan) ===
+Room 2 'Raum 1' levels=[-1] cells=[CubePoint[x=9, y=0, z=-1], CubePoint[x=10, y=1, z=-1], CubePoint[x=11, y=2, z=-1], CubePoint[x=8, y=-1, z=-1], CubePoint[x=9, y=1, z=-1], CubePoint[x=10, y=2, z=-1], CubePoint[x=8, y=0, z=-1], CubePoint[x=9, y=2, z=-1], CubePoint[x=8, y=1, z=-1], CubePoint[x=8, y=2, z=-1], CubePoint[x=11, y=-1, z=-1], CubePoint[x=10, y=-1, z=-1], CubePoint[x=11, y=0, z=-1], CubePoint[x=9, y=-1, z=-1], CubePoint[x=10, y=0, z=-1], CubePoint[x=11, y=1, z=-1]]
+Room 1 'Eingang' levels=[0] cells=[CubePoint[x=-1, y=-3, z=0], CubePoint[x=1, y=0, z=0], CubePoint[x=-3, y=2, z=0], CubePoint[x=-2, y=-2, z=0], CubePoint[x=0, y=1, z=0], CubePoint[x=1, y=-3, z=0], CubePoint[x=-3, y=-1, z=0], CubePoint[x=-1, y=2, z=0], CubePoint[x=0, y=-2, z=0], CubePoint[x=2, y=1, z=0], CubePoint[x=-2, y=3, z=0], CubePoint[x=-1, y=-1, z=0], CubePoint[x=1, y=2, z=0], CubePoint[x=2, y=-2, z=0], CubePoint[x=-2, y=0, z=0], CubePoint[x=0, y=3, z=0], CubePoint[x=1, y=-1, z=0], CubePoint[x=-3, y=1, z=0], CubePoint[x=-2, y=-3, z=0], CubePoint[x=0, y=0, z=0], CubePoint[x=2, y=3, z=0], CubePoint[x=-3, y=-2, z=0], CubePoint[x=-1, y=1, z=0], CubePoint[x=0, y=-3, z=0], CubePoint[x=2, y=0, z=0], CubePoint[x=-2, y=2, z=0], CubePoint[x=-1, y=-2, z=0], CubePoint[x=1, y=1, z=0], CubePoint[x=-3, y=3, z=0], CubePoint[x=2, y=-3, z=0], CubePoint[x=-2, y=-1, z=0], CubePoint[x=0, y=2, z=0], CubePoint[x=1, y=-2, z=0], CubePoint[x=-3, y=0, z=0], CubePoint[x=-1, y=3, z=0], CubePoint[x=0, y=-1, z=0], CubePoint[x=2, y=2, z=0], CubePoint[x=-3, y=-3, z=0], CubePoint[x=-1, y=0, z=0], CubePoint[x=1, y=3, z=0], CubePoint[x=2, y=-1, z=0], CubePoint[x=-2, y=1, z=0]]
+Corridor cells (5): [CubePoint[x=3, y=-1, z=0], CubePoint[x=4, y=-1, z=-1], CubePoint[x=7, y=-1, z=-1], CubePoint[x=6, y=-1, z=-1], CubePoint[x=5, y=-1, z=-1]]
+Openings: [DoorEdge[roomId=1, edge=VertexEdge[start=Point2i[x=3, y=-1], end=Point2i[x=3, y=0]], levelZ=0], DoorEdge[roomId=2, edge=VertexEdge[start=Point2i[x=8, y=-1], end=Point2i[x=8, y=0]], levelZ=-1]]
+Connections: 2
+StairPlacement: anchor=Point2i[x=4, y=-1] shape=STRAIGHT dir=WEST exits=[-1, 0] footprint=[CubePoint[x=4, y=-1, z=-1], CubePoint[x=3, y=-1, z=0]]
+  CubePoint[x=4, y=-1, z=-1] inCorridor=true adjCorridor=true adjRoom=false insideRoom=false
+  CubePoint[x=3, y=-1, z=0] inCorridor=true adjCorridor=false adjRoom=true insideRoom=false
+=== END ===
+CorridorEditService.create(): corridorId=1 stairPlacements=1
+März 27, 2026 8:17:11 AM features.world.dungeonmap.model.structures.corridor.planning.CorridorPlanningEngine logStairPlan
+INFORMATION: 
+=== CORRIDOR STAIR PLAN (caller=plan) ===
+Room 2 'Raum 1' levels=[-1] cells=[CubePoint[x=9, y=0, z=-1], CubePoint[x=10, y=1, z=-1], CubePoint[x=11, y=2, z=-1], CubePoint[x=8, y=-1, z=-1], CubePoint[x=9, y=1, z=-1], CubePoint[x=10, y=2, z=-1], CubePoint[x=8, y=0, z=-1], CubePoint[x=9, y=2, z=-1], CubePoint[x=8, y=1, z=-1], CubePoint[x=8, y=2, z=-1], CubePoint[x=11, y=-1, z=-1], CubePoint[x=10, y=-1, z=-1], CubePoint[x=11, y=0, z=-1], CubePoint[x=9, y=-1, z=-1], CubePoint[x=10, y=0, z=-1], CubePoint[x=11, y=1, z=-1]]
+Room 1 'Eingang' levels=[0] cells=[CubePoint[x=-1, y=-3, z=0], CubePoint[x=1, y=0, z=0], CubePoint[x=-3, y=2, z=0], CubePoint[x=-2, y=-2, z=0], CubePoint[x=0, y=1, z=0], CubePoint[x=1, y=-3, z=0], CubePoint[x=-3, y=-1, z=0], CubePoint[x=-1, y=2, z=0], CubePoint[x=0, y=-2, z=0], CubePoint[x=2, y=1, z=0], CubePoint[x=-2, y=3, z=0], CubePoint[x=-1, y=-1, z=0], CubePoint[x=1, y=2, z=0], CubePoint[x=2, y=-2, z=0], CubePoint[x=-2, y=0, z=0], CubePoint[x=0, y=3, z=0], CubePoint[x=1, y=-1, z=0], CubePoint[x=-3, y=1, z=0], CubePoint[x=-2, y=-3, z=0], CubePoint[x=0, y=0, z=0], CubePoint[x=2, y=3, z=0], CubePoint[x=-3, y=-2, z=0], CubePoint[x=-1, y=1, z=0], CubePoint[x=0, y=-3, z=0], CubePoint[x=2, y=0, z=0], CubePoint[x=-2, y=2, z=0], CubePoint[x=-1, y=-2, z=0], CubePoint[x=1, y=1, z=0], CubePoint[x=-3, y=3, z=0], CubePoint[x=2, y=-3, z=0], CubePoint[x=-2, y=-1, z=0], CubePoint[x=0, y=2, z=0], CubePoint[x=1, y=-2, z=0], CubePoint[x=-3, y=0, z=0], CubePoint[x=-1, y=3, z=0], CubePoint[x=0, y=-1, z=0], CubePoint[x=2, y=2, z=0], CubePoint[x=-3, y=-3, z=0], CubePoint[x=-1, y=0, z=0], CubePoint[x=1, y=3, z=0], CubePoint[x=2, y=-1, z=0], CubePoint[x=-2, y=1, z=0]]
+Corridor cells (5): [CubePoint[x=3, y=-1, z=0], CubePoint[x=4, y=-1, z=-1], CubePoint[x=7, y=-1, z=-1], CubePoint[x=6, y=-1, z=-1], CubePoint[x=5, y=-1, z=-1]]
+Openings: [DoorEdge[roomId=1, edge=VertexEdge[start=Point2i[x=3, y=-1], end=Point2i[x=3, y=0]], levelZ=0], DoorEdge[roomId=2, edge=VertexEdge[start=Point2i[x=8, y=-1], end=Point2i[x=8, y=0]], levelZ=-1]]
+Connections: 2
+StairPlacement: anchor=Point2i[x=4, y=-1] shape=STRAIGHT dir=WEST exits=[-1, 0] footprint=[CubePoint[x=4, y=-1, z=-1], CubePoint[x=3, y=-1, z=0]]
+  CubePoint[x=4, y=-1, z=-1] inCorridor=true adjCorridor=true adjRoom=false insideRoom=false
+  CubePoint[x=3, y=-1, z=0] inCorridor=true adjCorridor=false adjRoom=true insideRoom=false
+=== END ===
+
+BUILD SUCCESSFUL in 16h 40m 45s
+3 actionable tasks: 1 executed, 2 up-to-date

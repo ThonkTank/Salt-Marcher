@@ -1,0 +1,12 @@
+> Task :compileJava UP-TO-DATE
+> Task :processResources UP-TO-DATE
+> Task :classes UP-TO-DATE
+
+> Task :run
+März 26, 2026 8:51:54 AM database.DatabaseManager prepareDatabasePath
+INFORMATION: Using SQLite database at /home/awuster/.local/share/salt-marcher/game.db
+März 26, 2026 8:51:54 AM ui.bootstrap.SaltMarcherApp logDatabaseState
+INFORMATION: Database is empty. Run ./scripts/crawl.sh to populate monster data.
+
+BUILD SUCCESSFUL in 2m 39s
+3 actionable tasks: 1 executed, 2 up-to-date

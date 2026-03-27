@@ -2,19 +2,24 @@ package features.world.dungeonmap.application.room;
 
 import database.DatabaseManager;
 import features.world.dungeonmap.application.corridor.DungeonCorridorPersistenceService;
+import features.world.dungeonmap.application.stair.DungeonStairEditService;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.DungeonClusterTranslation;
 import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
+import features.world.dungeonmap.model.structures.corridor.planning.StairPlacement;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.persistence.DungeonRoomGeometryWriteMapper;
 import features.world.dungeonmap.persistence.DungeonRoomWriteRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 public final class DungeonClusterMoveService {
 
@@ -22,6 +27,7 @@ public final class DungeonClusterMoveService {
     private final DungeonRoomWriteRepository roomWriteRepository;
     private final DungeonRoomGeometryWriteMapper geometryWriteMapper;
     private final DungeonCorridorPersistenceService corridorPersistenceService;
+    private DungeonStairEditService stairEditService;
 
     public DungeonClusterMoveService(
             DungeonMapLoader mapLoader,
@@ -33,6 +39,10 @@ public final class DungeonClusterMoveService {
         this.roomWriteRepository = Objects.requireNonNull(roomWriteRepository, "roomWriteRepository");
         this.geometryWriteMapper = Objects.requireNonNull(geometryWriteMapper, "geometryWriteMapper");
         this.corridorPersistenceService = Objects.requireNonNull(corridorPersistenceService, "corridorPersistenceService");
+    }
+
+    public void setStairEditService(DungeonStairEditService stairEditService) {
+        this.stairEditService = Objects.requireNonNull(stairEditService, "stairEditService");
     }
 
     public void move(long mapId, long clusterId, Point2i delta) throws SQLException {
@@ -61,6 +71,9 @@ public final class DungeonClusterMoveService {
                     roomWriteRepository.updateRoomPosition(conn, room.roomId(), room.anchorsByLevel(), room.primaryLevel());
                 }
                 corridorPersistenceService.persistCorridors(conn, translation.affectedCorridors());
+                persistTranslationStairs(conn, layout,
+                        translation.affectedCorridors().keySet(),
+                        translation.stairPlacementsByCorridorId());
                 return null;
             });
         }
@@ -72,6 +85,30 @@ public final class DungeonClusterMoveService {
             throw new SQLException("Dungeon " + mapId + " konnte nicht geladen werden");
         }
         return layout;
+    }
+
+    private void persistTranslationStairs(
+            Connection conn,
+            DungeonLayout layout,
+            Set<Long> affectedCorridorIds,
+            Map<Long, List<StairPlacement>> stairPlacementsByCorridorId
+    ) throws SQLException {
+        if (stairEditService == null) {
+            return;
+        }
+        for (Long corridorId : affectedCorridorIds) {
+            stairEditService.deleteCorridorStairs(conn, corridorId);
+        }
+        if (stairPlacementsByCorridorId != null) {
+            for (Map.Entry<Long, List<StairPlacement>> entry : stairPlacementsByCorridorId.entrySet()) {
+                for (StairPlacement placement : entry.getValue()) {
+                    stairEditService.createFromCorridorPlanner(
+                            conn, layout, entry.getKey(),
+                            placement.anchor(), placement.shape(), placement.direction(),
+                            placement.dimension1(), placement.dimension2(), placement.exitLevels());
+                }
+            }
+        }
     }
 
     private static RoomCluster requireCluster(DungeonLayout layout, long clusterId) throws SQLException {

@@ -20,9 +20,13 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public final class CorridorPlanningEngine {
+
+    private static final Logger LOGGER = Logger.getLogger(CorridorPlanningEngine.class.getName());
+    private static final boolean STAIR_DEBUG = true; // TODO: gate behind system property once stair planning is stable
 
     private CorridorPlanningEngine() {
         throw new AssertionError("No instances");
@@ -43,7 +47,7 @@ public final class CorridorPlanningEngine {
                 return new CorridorPlan(CorridorPath.unroutable(route), List.of(), List.of());
             }
 
-            Set<CubePoint> allObstacles = buildObstacles(input.roomsById(), input.stairs());
+            Set<CubePoint> allObstacles = buildObstacles(input.roomsById(), input.stairs(), corridor.corridorId());
             PlannerContext context = new PlannerContext(
                     rooms,
                     allObstacles,
@@ -52,7 +56,9 @@ public final class CorridorPlanningEngine {
                     instrumentation);
             SteinerTree tree = SteinerTreeBuilder.bestTree(context);
             CorridorPath path = toCorridorPath(route, tree, rooms);
-            return new CorridorPlan(path, corridorConnections(corridor, tree), tree == null ? List.of() : tree.stairPlacements());
+            CorridorPlan plan = new CorridorPlan(path, corridorConnections(corridor, tree), tree == null ? List.of() : tree.stairPlacements());
+            logStairPlan(rooms, tree, path, plan);
+            return plan;
         } finally {
             instrumentation.logSummary(startedAt);
         }
@@ -73,7 +79,7 @@ public final class CorridorPlanningEngine {
         return new GridRoute(anchors);
     }
 
-    private static Set<CubePoint> buildObstacles(Map<Long, Room> roomsById, List<DungeonStair> stairs) {
+    private static Set<CubePoint> buildObstacles(Map<Long, Room> roomsById, List<DungeonStair> stairs, Long corridorId) {
         Set<CubePoint> result = new LinkedHashSet<>();
         if (roomsById != null && !roomsById.isEmpty()) {
             for (Room room : roomsById.values()) {
@@ -84,7 +90,7 @@ public final class CorridorPlanningEngine {
             }
         }
         for (DungeonStair stair : stairs == null ? List.<DungeonStair>of() : stairs) {
-            if (stair != null) {
+            if (stair != null && !java.util.Objects.equals(stair.corridorId(), corridorId)) {
                 result.addAll(stair.occupiedPositions());
             }
         }
@@ -103,13 +109,6 @@ public final class CorridorPlanningEngine {
             return CorridorPath.unroutable(route);
         }
         Set<CubePoint> corridorCells = filterCorridorCells(tree, rooms);
-        Set<CubePoint> stairFootprintCells = new LinkedHashSet<>();
-        for (StairPlacement placement : tree.stairPlacements()) {
-            if (placement != null) {
-                stairFootprintCells.addAll(placement.footprint());
-            }
-        }
-        corridorCells.removeAll(stairFootprintCells);
         boolean directlyAdjacent = corridorCells.isEmpty() && tree != null && !tree.openings().isEmpty();
         boolean routable = tree.connectedRoomIds().size() >= rooms.size()
                 && (!corridorCells.isEmpty() || !tree.openings().isEmpty());
@@ -171,5 +170,45 @@ public final class CorridorPlanningEngine {
         }
         Set<Point2i> occupiedCells = occupiedRoomCellsByLevel.get(cell.z());
         return occupiedCells != null && occupiedCells.contains(cell.projectedCell());
+    }
+
+    private static void logStairPlan(List<Room> rooms, SteinerTree tree, CorridorPath path, CorridorPlan plan) {
+        if (!STAIR_DEBUG || plan.stairPlacements().isEmpty()) {
+            return;
+        }
+        String caller = Thread.currentThread().getStackTrace().length > 4
+                ? Thread.currentThread().getStackTrace()[3].getMethodName() : "unknown";
+        StringBuilder sb = new StringBuilder();
+        sb.append("\n=== CORRIDOR STAIR PLAN (caller=").append(caller).append(") ===\n");
+        for (Room room : rooms) {
+            sb.append("Room ").append(room.roomId()).append(" '").append(room.name())
+                    .append("' levels=").append(room.levels())
+                    .append(" cells=").append(room.cubePoints()).append("\n");
+        }
+        sb.append("Corridor cells (").append(path.cells().size()).append("): ").append(path.cells()).append("\n");
+        sb.append("Openings: ").append(tree == null ? "null" : tree.openings()).append("\n");
+        sb.append("Connections: ").append(plan.connections().size()).append("\n");
+        for (StairPlacement stair : plan.stairPlacements()) {
+            sb.append("StairPlacement: anchor=").append(stair.anchor())
+                    .append(" shape=").append(stair.shape())
+                    .append(" dir=").append(stair.direction())
+                    .append(" exits=").append(stair.exitLevels())
+                    .append(" footprint=").append(stair.footprint()).append("\n");
+            for (CubePoint fp : stair.footprint()) {
+                boolean inCorridor = path.cells().contains(fp);
+                boolean adjCorridor = path.cells().stream().anyMatch(cc ->
+                        Math.abs(fp.x() - cc.x()) + Math.abs(fp.y() - cc.y()) + Math.abs(fp.z() - cc.z()) == 1);
+                boolean adjRoom = rooms.stream().anyMatch(room -> room.cubePoints().stream().anyMatch(rc ->
+                        Math.abs(fp.x() - rc.x()) + Math.abs(fp.y() - rc.y()) + Math.abs(fp.z() - rc.z()) == 1));
+                boolean insideRoom = rooms.stream().anyMatch(room -> room.cubePoints().contains(fp));
+                sb.append("  ").append(fp)
+                        .append(" inCorridor=").append(inCorridor)
+                        .append(" adjCorridor=").append(adjCorridor)
+                        .append(" adjRoom=").append(adjRoom)
+                        .append(" insideRoom=").append(insideRoom).append("\n");
+            }
+        }
+        sb.append("=== END ===");
+        LOGGER.info(sb.toString());
     }
 }

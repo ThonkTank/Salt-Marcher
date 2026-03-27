@@ -7,6 +7,7 @@ import features.world.dungeonmap.model.structures.connection.CorridorConnection;
 import features.world.dungeonmap.model.structures.TargetKey;
 import features.world.dungeonmap.model.structures.corridor.planning.CorridorPlan;
 import features.world.dungeonmap.model.structures.corridor.planning.CorridorPlanningEngine;
+import features.world.dungeonmap.model.structures.corridor.planning.StairPlacement;
 import features.world.dungeonmap.model.structures.room.Room;
 
 import java.util.ArrayList;
@@ -156,26 +157,48 @@ public final class Corridor {
         return !isDegenerate();
     }
 
-    public static Map<Long, Corridor> rewriteAll(
+    public record RewriteResult(
+            Map<Long, Corridor> corridorsById,
+            Set<Long> affectedCorridorIds,
+            Map<Long, List<StairPlacement>> stairPlacementsByCorridorId
+    ) {
+        public RewriteResult {
+            corridorsById = corridorsById == null ? Map.of() : Map.copyOf(corridorsById);
+            affectedCorridorIds = affectedCorridorIds == null ? Set.of() : Set.copyOf(affectedCorridorIds);
+            stairPlacementsByCorridorId = stairPlacementsByCorridorId == null ? Map.of() : Map.copyOf(stairPlacementsByCorridorId);
+        }
+    }
+
+    public static RewriteResult rewriteAll(
             Map<Long, Corridor> corridorsById,
             CorridorRewriteContext context
     ) {
         if (corridorsById == null || corridorsById.isEmpty()) {
-            return Map.of();
+            return new RewriteResult(Map.of(), Set.of(), Map.of());
         }
         if (context == null || context.affectedCorridorIds().isEmpty()) {
-            return Map.copyOf(corridorsById);
+            return new RewriteResult(Map.copyOf(corridorsById), Set.of(), Map.of());
         }
         Map<Long, Corridor> result = new LinkedHashMap<>();
+        Map<Long, List<StairPlacement>> stairPlacementsByCorridorId = new LinkedHashMap<>();
         for (Map.Entry<Long, Corridor> entry : corridorsById.entrySet()) {
             Corridor corridor = entry.getValue();
             if (corridor == null) {
                 result.put(entry.getKey(), null);
                 continue;
             }
-            result.put(entry.getKey(), corridor.reanchoredFor(context).replannedFor(context));
+            Corridor reanchored = corridor.reanchoredFor(context);
+            if (context.affects(corridor.corridorId()) && reanchored.isPersistable()) {
+                CorridorPlan plan = reanchored.plan(context.rewrittenPlanningInput());
+                result.put(entry.getKey(), reanchored.applyPlan(plan));
+                if (!plan.stairPlacements().isEmpty() && corridor.corridorId() != null) {
+                    stairPlacementsByCorridorId.put(corridor.corridorId(), plan.stairPlacements());
+                }
+            } else {
+                result.put(entry.getKey(), reanchored.replannedFor(context));
+            }
         }
-        return Map.copyOf(result);
+        return new RewriteResult(Map.copyOf(result), context.affectedCorridorIds(), Map.copyOf(stairPlacementsByCorridorId));
     }
 
     public Corridor withAddedRoom(Long roomId) {

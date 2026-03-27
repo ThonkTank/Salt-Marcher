@@ -1,0 +1,42 @@
+> Task :compileJava UP-TO-DATE
+> Task :processResources UP-TO-DATE
+> Task :classes UP-TO-DATE
+
+> Task :run
+März 26, 2026 3:03:50 PM database.DatabaseManager prepareDatabasePath
+INFORMATION: Using SQLite database at /home/awuster/.local/share/salt-marcher/game.db
+März 26, 2026 3:03:50 PM ui.bootstrap.SaltMarcherApp logDatabaseState
+INFORMATION: Database is empty. Run ./scripts/crawl.sh to populate monster data.
+März 26, 2026 3:05:04 PM features.world.dungeonmap.model.structures.corridor.planning.CorridorPlanningEngine logStairPlan
+INFORMATION: 
+=== CORRIDOR STAIR PLAN (caller=plan) ===
+Room 12 'Raum 1' levels=[-6] cells=[CubePoint[x=13, y=6, z=-6], CubePoint[x=14, y=6, z=-6], CubePoint[x=15, y=6, z=-6], CubePoint[x=16, y=6, z=-6], CubePoint[x=17, y=6, z=-6], CubePoint[x=13, y=5, z=-6], CubePoint[x=14, y=5, z=-6], CubePoint[x=15, y=5, z=-6], CubePoint[x=16, y=5, z=-6], CubePoint[x=17, y=5, z=-6], CubePoint[x=13, y=8, z=-6], CubePoint[x=14, y=8, z=-6], CubePoint[x=15, y=8, z=-6], CubePoint[x=16, y=8, z=-6], CubePoint[x=17, y=8, z=-6], CubePoint[x=13, y=7, z=-6], CubePoint[x=14, y=7, z=-6], CubePoint[x=15, y=7, z=-6], CubePoint[x=16, y=7, z=-6], CubePoint[x=17, y=7, z=-6]]
+Room 11 'Eingang' levels=[1] cells=[CubePoint[x=0, y=5, z=1], CubePoint[x=-6, y=3, z=1], CubePoint[x=-6, y=10, z=1], CubePoint[x=1, y=9, z=1], CubePoint[x=2, y=6, z=1], CubePoint[x=-5, y=7, z=1], CubePoint[x=-4, y=4, z=1], CubePoint[x=3, y=10, z=1], CubePoint[x=3, y=3, z=1], CubePoint[x=-4, y=11, z=1], CubePoint[x=-3, y=8, z=1], CubePoint[x=4, y=7, z=1], CubePoint[x=5, y=4, z=1], CubePoint[x=5, y=11, z=1], CubePoint[x=-2, y=5, z=1], CubePoint[x=-1, y=9, z=1], CubePoint[x=0, y=6, z=1], CubePoint[x=-6, y=4, z=1], CubePoint[x=1, y=3, z=1], CubePoint[x=-6, y=11, z=1], CubePoint[x=1, y=10, z=1], CubePoint[x=2, y=7, z=1], CubePoint[x=-5, y=8, z=1], CubePoint[x=-4, y=5, z=1], CubePoint[x=3, y=11, z=1], CubePoint[x=3, y=4, z=1], CubePoint[x=-3, y=9, z=1], CubePoint[x=4, y=8, z=1], CubePoint[x=5, y=5, z=1], CubePoint[x=-2, y=6, z=1], CubePoint[x=-1, y=3, z=1], CubePoint[x=-1, y=10, z=1], CubePoint[x=0, y=7, z=1], CubePoint[x=1, y=4, z=1], CubePoint[x=1, y=11, z=1], CubePoint[x=-6, y=5, z=1], CubePoint[x=2, y=8, z=1], CubePoint[x=-5, y=9, z=1], CubePoint[x=-4, y=6, z=1], CubePoint[x=3, y=5, z=1], CubePoint[x=-3, y=3, z=1], CubePoint[x=-3, y=10, z=1], CubePoint[x=4, y=9, z=1], CubePoint[x=5, y=6, z=1], CubePoint[x=-2, y=7, z=1], CubePoint[x=-1, y=4, z=1], CubePoint[x=-1, y=11, z=1], CubePoint[x=0, y=8, z=1], CubePoint[x=1, y=5, z=1], CubePoint[x=-6, y=6, z=1], CubePoint[x=-5, y=3, z=1], CubePoint[x=-5, y=10, z=1], CubePoint[x=2, y=9, z=1], CubePoint[x=-4, y=7, z=1], CubePoint[x=3, y=6, z=1], CubePoint[x=4, y=3, z=1], CubePoint[x=4, y=10, z=1], CubePoint[x=-3, y=4, z=1], CubePoint[x=-3, y=11, z=1], CubePoint[x=-2, y=8, z=1], CubePoint[x=5, y=7, z=1], CubePoint[x=-1, y=5, z=1], CubePoint[x=0, y=9, z=1], CubePoint[x=1, y=6, z=1], CubePoint[x=-6, y=7, z=1], CubePoint[x=-5, y=4, z=1], CubePoint[x=-5, y=11, z=1], CubePoint[x=2, y=10, z=1], CubePoint[x=2, y=3, z=1], CubePoint[x=-4, y=8, z=1], CubePoint[x=3, y=7, z=1], CubePoint[x=4, y=4, z=1], CubePoint[x=4, y=11, z=1], CubePoint[x=-3, y=5, z=1], CubePoint[x=-2, y=9, z=1], CubePoint[x=5, y=8, z=1], CubePoint[x=-1, y=6, z=1], CubePoint[x=0, y=3, z=1], CubePoint[x=0, y=10, z=1], CubePoint[x=-6, y=8, z=1], CubePoint[x=1, y=7, z=1], CubePoint[x=-5, y=5, z=1], CubePoint[x=2, y=11, z=1], CubePoint[x=2, y=4, z=1], CubePoint[x=3, y=8, z=1], CubePoint[x=-4, y=9, z=1], CubePoint[x=-3, y=6, z=1], CubePoint[x=4, y=5, z=1], CubePoint[x=-2, y=3, z=1], CubePoint[x=-2, y=10, z=1], CubePoint[x=5, y=9, z=1], CubePoint[x=-1, y=7, z=1], CubePoint[x=0, y=4, z=1], CubePoint[x=0, y=11, z=1], CubePoint[x=-6, y=9, z=1], CubePoint[x=1, y=8, z=1], CubePoint[x=-5, y=6, z=1], CubePoint[x=2, y=5, z=1], CubePoint[x=-4, y=3, z=1], CubePoint[x=3, y=9, z=1], CubePoint[x=-4, y=10, z=1], CubePoint[x=-3, y=7, z=1], CubePoint[x=4, y=6, z=1], CubePoint[x=-2, y=4, z=1], CubePoint[x=5, y=3, z=1], CubePoint[x=-2, y=11, z=1], CubePoint[x=5, y=10, z=1], CubePoint[x=-1, y=8, z=1]]
+Corridor cells (8): [CubePoint[x=12, y=6, z=-6], CubePoint[x=11, y=6, z=-5], CubePoint[x=10, y=6, z=-4], CubePoint[x=9, y=6, z=-3], CubePoint[x=8, y=6, z=-2], CubePoint[x=7, y=6, z=-1], CubePoint[x=6, y=6, z=0], CubePoint[x=6, y=5, z=1]]
+Openings: [DoorEdge[roomId=11, edge=VertexEdge[start=Point2i[x=6, y=5], end=Point2i[x=6, y=6]], levelZ=1], DoorEdge[roomId=12, edge=VertexEdge[start=Point2i[x=13, y=6], end=Point2i[x=13, y=7]], levelZ=-6]]
+Connections: 2
+StairPlacement: anchor=Point2i[x=6, y=6] shape=STRAIGHT dir=NORTH exits=[0, 1] footprint=[CubePoint[x=6, y=5, z=1], CubePoint[x=6, y=6, z=0]]
+  CubePoint[x=6, y=5, z=1] inCorridor=true adjCorridor=false adjRoom=true insideRoom=false
+  CubePoint[x=6, y=6, z=0] inCorridor=true adjCorridor=false adjRoom=false insideRoom=false
+StairPlacement: anchor=Point2i[x=7, y=6] shape=STRAIGHT dir=WEST exits=[-1, 0] footprint=[CubePoint[x=6, y=6, z=0], CubePoint[x=7, y=6, z=-1]]
+  CubePoint[x=6, y=6, z=0] inCorridor=true adjCorridor=false adjRoom=false insideRoom=false
+  CubePoint[x=7, y=6, z=-1] inCorridor=true adjCorridor=false adjRoom=false insideRoom=false
+StairPlacement: anchor=Point2i[x=8, y=6] shape=STRAIGHT dir=WEST exits=[-2, -1] footprint=[CubePoint[x=7, y=6, z=-1], CubePoint[x=8, y=6, z=-2]]
+  CubePoint[x=7, y=6, z=-1] inCorridor=true adjCorridor=false adjRoom=false insideRoom=false
+  CubePoint[x=8, y=6, z=-2] inCorridor=true adjCorridor=false adjRoom=false insideRoom=false
+StairPlacement: anchor=Point2i[x=9, y=6] shape=STRAIGHT dir=WEST exits=[-3, -2] footprint=[CubePoint[x=8, y=6, z=-2], CubePoint[x=9, y=6, z=-3]]
+  CubePoint[x=8, y=6, z=-2] inCorridor=true adjCorridor=false adjRoom=false insideRoom=false
+  CubePoint[x=9, y=6, z=-3] inCorridor=true adjCorridor=false adjRoom=false insideRoom=false
+StairPlacement: anchor=Point2i[x=10, y=6] shape=STRAIGHT dir=WEST exits=[-4, -3] footprint=[CubePoint[x=9, y=6, z=-3], CubePoint[x=10, y=6, z=-4]]
+  CubePoint[x=9, y=6, z=-3] inCorridor=true adjCorridor=false adjRoom=false insideRoom=false
+  CubePoint[x=10, y=6, z=-4] inCorridor=true adjCorridor=false adjRoom=false insideRoom=false
+StairPlacement: anchor=Point2i[x=11, y=6] shape=STRAIGHT dir=WEST exits=[-5, -4] footprint=[CubePoint[x=10, y=6, z=-4], CubePoint[x=11, y=6, z=-5]]
+  CubePoint[x=10, y=6, z=-4] inCorridor=true adjCorridor=false adjRoom=false insideRoom=false
+  CubePoint[x=11, y=6, z=-5] inCorridor=true adjCorridor=false adjRoom=false insideRoom=false
+StairPlacement: anchor=Point2i[x=12, y=6] shape=STRAIGHT dir=WEST exits=[-6, -5] footprint=[CubePoint[x=11, y=6, z=-5], CubePoint[x=12, y=6, z=-6]]
+  CubePoint[x=11, y=6, z=-5] inCorridor=true adjCorridor=false adjRoom=false insideRoom=false
+  CubePoint[x=12, y=6, z=-6] inCorridor=true adjCorridor=false adjRoom=true insideRoom=false
+=== END ===
+
+BUILD SUCCESSFUL in 1m 37s
+3 actionable tasks: 1 executed, 2 up-to-date

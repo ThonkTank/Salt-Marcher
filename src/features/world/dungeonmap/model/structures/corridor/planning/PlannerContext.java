@@ -122,7 +122,6 @@ final class PlannerContext {
             PlannerInstrumentation instrumentation
     ) {
         Map<Long, Set<CubePoint>> result = new LinkedHashMap<>();
-        boolean allowVerticalEntries = searchVolume.minZ() < searchVolume.maxZ();
         for (Room room : targetRooms == null ? List.<Room>of() : targetRooms) {
             if (room == null || room.roomId() == null) {
                 continue;
@@ -149,16 +148,6 @@ final class PlannerContext {
                             CubePoint candidate = CubePoint.at(outsideCell, roomLevel);
                             if (isValidEntry(candidate, searchVolume)) {
                                 entryCells.add(candidate);
-                            }
-                        }
-                        if (allowVerticalEntries) {
-                            CubePoint above = CubePoint.at(roomCell, roomLevel + 1);
-                            CubePoint below = CubePoint.at(roomCell, roomLevel - 1);
-                            if (isValidEntry(above, searchVolume)) {
-                                entryCells.add(above);
-                            }
-                            if (isValidEntry(below, searchVolume)) {
-                                entryCells.add(below);
                             }
                         }
                     }

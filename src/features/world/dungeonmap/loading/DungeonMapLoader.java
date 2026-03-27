@@ -393,13 +393,15 @@ public final class DungeonMapLoader {
                         new CubePoint(rs.getInt("cell_x"), rs.getInt("cell_y"), rs.getInt("cell_z")),
                         rs.getString("label")));
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT stair_id, dungeon_map_id, name, shape, direction, dimension1, dimension2"
+                "SELECT stair_id, dungeon_map_id, name, shape, direction, dimension1, dimension2, corridor_id"
                         + " FROM dungeon_stairs WHERE dungeon_map_id=? ORDER BY stair_id")) {
             ps.setLong(1, mapId);
             try (ResultSet rs = ps.executeQuery()) {
                 List<DungeonStair> result = new ArrayList<>();
                 while (rs.next()) {
                     long stairId = rs.getLong("stair_id");
+                    long rawCorridorId = rs.getLong("corridor_id");
+                    Long corridorId = rs.wasNull() ? null : rawCorridorId;
                     result.add(new DungeonStair(
                             stairId,
                             rs.getLong("dungeon_map_id"),
@@ -409,7 +411,8 @@ public final class DungeonMapLoader {
                             rs.getInt("dimension1"),
                             rs.getInt("dimension2"),
                             pathNodesByStairId.getOrDefault(stairId, List.of()),
-                            exitsByStairId.getOrDefault(stairId, List.of())));
+                            exitsByStairId.getOrDefault(stairId, List.of()),
+                            corridorId));
                 }
                 return List.copyOf(result);
             }

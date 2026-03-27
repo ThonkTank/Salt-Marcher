@@ -64,6 +64,7 @@ public final class DungeonMapModule {
                 corridorPersistenceService,
                 corridorRoomRewriteService);
         DungeonStairEditService stairEditService = new DungeonStairEditService(roomTopologyService, stairWriteRepository);
+        roomTopologyService.setStairEditService(stairEditService);
         DungeonTransitionEditService transitionEditService = new DungeonTransitionEditService(roomTopologyService, transitionWriteRepository);
         DungeonMapCatalogService mapCatalogService = new DungeonMapCatalogService(
                 roomTopologyService,
@@ -74,6 +75,7 @@ public final class DungeonMapModule {
                 roomWriteRepository,
                 geometryWriteMapper,
                 corridorPersistenceService);
+        clusterMoveService.setStairEditService(stairEditService);
         DungeonCorridorEditService corridorEditService = new DungeonCorridorEditService(
                 corridorWriteRepository,
                 corridorPersistenceService,

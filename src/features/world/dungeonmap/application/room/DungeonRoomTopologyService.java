@@ -3,6 +3,7 @@ package features.world.dungeonmap.application.room;
 import database.DatabaseManager;
 import features.world.dungeonmap.application.corridor.DungeonCorridorPersistenceService;
 import features.world.dungeonmap.application.corridor.DungeonCorridorRoomRewriteService;
+import features.world.dungeonmap.application.stair.DungeonStairEditService;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.model.DungeonLayout;
@@ -17,6 +18,7 @@ import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorRewriteContext;
+import features.world.dungeonmap.model.structures.corridor.planning.StairPlacement;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.persistence.ClusterBoundaryWrite;
 import features.world.dungeonmap.persistence.DungeonRoomGeometryWriteMapper;
@@ -40,6 +42,7 @@ public final class DungeonRoomTopologyService {
     private final DungeonRoomGeometryWriteMapper geometryWriteMapper;
     private final DungeonCorridorPersistenceService corridorPersistenceService;
     private final DungeonCorridorRoomRewriteService corridorRoomRewriteService;
+    private DungeonStairEditService stairEditService;
 
     public DungeonRoomTopologyService(
             DungeonMapLoader mapLoader,
@@ -53,6 +56,10 @@ public final class DungeonRoomTopologyService {
         this.geometryWriteMapper = Objects.requireNonNull(geometryWriteMapper, "geometryWriteMapper");
         this.corridorPersistenceService = Objects.requireNonNull(corridorPersistenceService, "corridorPersistenceService");
         this.corridorRoomRewriteService = Objects.requireNonNull(corridorRoomRewriteService, "corridorRoomRewriteService");
+    }
+
+    public void setStairEditService(DungeonStairEditService stairEditService) {
+        this.stairEditService = Objects.requireNonNull(stairEditService, "stairEditService");
     }
 
     public void paint(long mapId, int levelZ, TileShape shape) throws SQLException {
@@ -86,11 +93,12 @@ public final class DungeonRoomTopologyService {
         }
 
         ClusterRewrite persistedRewrite = persistClusterRewrite(conn, mapId, rewrite, levelZ);
-        Map<Long, Corridor> corridorsById = applyCorridorCascade(
+        Corridor.RewriteResult rewriteResult = applyCorridorCascade(
                 layout,
                 new LinkedHashMap<>(layout.corridorsById()),
                 persistedRewrite);
-        corridorPersistenceService.persistCorridors(conn, corridorsById);
+        corridorPersistenceService.persistCorridors(conn, rewriteResult.corridorsById());
+        persistRewriteStairPlacements(conn, layout, rewriteResult.affectedCorridorIds(), rewriteResult.stairPlacementsByCorridorId());
     }
 
     public void delete(long mapId, int levelZ, TileShape shape) throws SQLException {
@@ -138,7 +146,9 @@ public final class DungeonRoomTopologyService {
                     mapId,
                     rewrite,
                     workingLayout.levelForCluster(rewrite.targetClusterId()));
-            corridorsById = applyCorridorCascade(workingLayout, corridorsById, persistedRewrite);
+            Corridor.RewriteResult rewriteResult = applyCorridorCascade(workingLayout, corridorsById, persistedRewrite);
+            corridorsById = new LinkedHashMap<>(rewriteResult.corridorsById());
+            persistRewriteStairPlacements(conn, workingLayout, rewriteResult.affectedCorridorIds(), rewriteResult.stairPlacementsByCorridorId());
             workingLayout = workingLayout.applying(persistedRewrite);
         }
         corridorPersistenceService.persistCorridors(conn, corridorsById);
@@ -198,20 +208,20 @@ public final class DungeonRoomTopologyService {
         }
 
         ClusterRewrite persistedRewrite = persistClusterRewrite(conn, mapId, rewrite, layout.levelForCluster(rewrite.targetClusterId()));
-        Map<Long, Corridor> corridorsById = applyCorridorCascade(
+        Corridor.RewriteResult rewriteResult = applyCorridorCascade(
                 layout,
                 new LinkedHashMap<>(layout.corridorsById()),
                 persistedRewrite);
-        corridorPersistenceService.persistCorridors(conn, corridorsById);
+        corridorPersistenceService.persistCorridors(conn, rewriteResult.corridorsById());
+        persistRewriteStairPlacements(conn, layout, rewriteResult.affectedCorridorIds(), rewriteResult.stairPlacementsByCorridorId());
     }
 
-    private Map<Long, Corridor> applyCorridorCascade(
+    private Corridor.RewriteResult applyCorridorCascade(
             DungeonLayout beforeLayout,
             Map<Long, Corridor> corridorsById,
             ClusterRewrite rewrite
     ) {
         Set<Long> affectedCorridorIds = beforeLayout.corridorIdsAffectedBy(rewrite);
-        // Services orchestrate affected scope and ordering; corridor-local membership rules stay on Corridor.
         corridorsById = corridorRoomRewriteService.applyRoomRewrite(beforeLayout, corridorsById, rewrite);
         DungeonLayout afterLayout = beforeLayout.applying(rewrite);
         CorridorRewriteContext rewriteContext = new CorridorRewriteContext(
@@ -220,6 +230,30 @@ public final class DungeonRoomTopologyService {
                 affectedCorridorIds,
                 rewrite.deletedClusterIds());
         return Corridor.rewriteAll(corridorsById, rewriteContext);
+    }
+
+    private void persistRewriteStairPlacements(
+            Connection conn,
+            DungeonLayout layout,
+            Set<Long> affectedCorridorIds,
+            Map<Long, List<StairPlacement>> stairPlacementsByCorridorId
+    ) throws SQLException {
+        if (stairEditService == null) {
+            return;
+        }
+        for (Long corridorId : affectedCorridorIds) {
+            stairEditService.deleteCorridorStairs(conn, corridorId);
+        }
+        if (stairPlacementsByCorridorId != null) {
+            for (Map.Entry<Long, List<StairPlacement>> entry : stairPlacementsByCorridorId.entrySet()) {
+                for (StairPlacement placement : entry.getValue()) {
+                    stairEditService.createFromCorridorPlanner(
+                            conn, layout, entry.getKey(),
+                            placement.anchor(), placement.shape(), placement.direction(),
+                            placement.dimension1(), placement.dimension2(), placement.exitLevels());
+                }
+            }
+        }
     }
 
     private void createCluster(Connection conn, long mapId, int levelZ, TileShape shape, String roomName) throws SQLException {

@@ -50,7 +50,9 @@ public final class DungeonCorridorEditService {
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
                 long corridorId = corridorWriteRepository.insertCorridor(conn, layout.mapId(), roomIds);
-                persistStairPlacements(conn, layout, stairPlacements);
+                System.err.println("CorridorEditService.create(): corridorId=" + corridorId
+                        + " stairPlacements=" + stairPlacements.size());
+                persistStairPlacements(conn, layout, corridorId, stairPlacements);
                 return null;
             });
         }
@@ -143,7 +145,10 @@ public final class DungeonCorridorEditService {
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                persistStairPlacements(conn, layout, stairPlacements);
+                if (updated.corridorId() != null) {
+                    stairEditService.deleteCorridorStairs(conn, updated.corridorId());
+                }
+                persistStairPlacements(conn, layout, updated.corridorId(), stairPlacements);
                 corridorPersistenceService.persistCorridor(conn, updated);
                 if (deletedCorridorId != null) {
                     corridorWriteRepository.deleteCorridor(conn, deletedCorridorId);
@@ -153,11 +158,15 @@ public final class DungeonCorridorEditService {
         }
     }
 
-    private void persistStairPlacements(Connection conn, DungeonLayout layout, List<StairPlacement> stairPlacements) throws SQLException {
+    private void persistStairPlacements(Connection conn, DungeonLayout layout, Long corridorId, List<StairPlacement> stairPlacements) throws SQLException {
+        if (corridorId == null) {
+            return;
+        }
         for (StairPlacement placement : stairPlacements) {
-            stairEditService.create(
+            stairEditService.createFromCorridorPlanner(
                     conn,
                     layout,
+                    corridorId,
                     placement.anchor(),
                     placement.shape(),
                     placement.direction(),

@@ -70,6 +70,41 @@ public final class DungeonStairEditService {
             int dimension2,
             List<Integer> exitLevels
     ) throws SQLException {
+        create(conn, layout, anchorCell, shape, direction, dimension1, dimension2, exitLevels, false, null);
+    }
+
+    public void createFromCorridorPlanner(
+            Connection conn,
+            DungeonLayout layout,
+            long corridorId,
+            Point2i anchorCell,
+            StairShape shape,
+            CardinalDirection direction,
+            int dimension1,
+            int dimension2,
+            List<Integer> exitLevels
+    ) throws SQLException {
+        create(conn, layout, anchorCell, shape, direction, dimension1, dimension2, exitLevels,
+                true, corridorId);
+    }
+
+    public void deleteCorridorStairs(Connection conn, long corridorId) throws SQLException {
+        DungeonSchemaSupport.ensureCompatibility(conn);
+        stairWriteRepository.deleteByCorridorId(conn, corridorId);
+    }
+
+    private void create(
+            Connection conn,
+            DungeonLayout layout,
+            Point2i anchorCell,
+            StairShape shape,
+            CardinalDirection direction,
+            int dimension1,
+            int dimension2,
+            List<Integer> exitLevels,
+            boolean skipTraversabilityCheck,
+            Long corridorId
+    ) throws SQLException {
         requireLayout(layout);
         Objects.requireNonNull(conn, "conn");
         List<Integer> sortedExitLevels = validateAndSortExitLevels(exitLevels);
@@ -86,7 +121,9 @@ public final class DungeonStairEditService {
                 dimension2);
         List<DungeonStairExit> exits = buildExits(pathNodes, sortedExitLevels);
         DungeonSchemaSupport.ensureCompatibility(conn);
-        ensureTraversableExitCells(conn, layout.mapId(), exits);
+        if (!skipTraversabilityCheck) {
+            ensureTraversableExitCells(conn, layout.mapId(), exits);
+        }
         long stairId = stairWriteRepository.insertStair(
                 conn,
                 layout.mapId(),
@@ -94,7 +131,8 @@ public final class DungeonStairEditService {
                 validatedShape,
                 validatedDirection,
                 dimension1,
-                dimension2);
+                dimension2,
+                corridorId);
         stairWriteRepository.replacePathNodes(conn, stairId, pathNodes);
         stairWriteRepository.replaceExits(conn, stairId, exits);
     }
