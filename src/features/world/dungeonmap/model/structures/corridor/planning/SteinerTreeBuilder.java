@@ -77,7 +77,7 @@ final class SteinerTreeBuilder {
                 break;
             }
             Map<PathState, RouteCost> floodSources = treeCells.isEmpty()
-                    ? zeroSources(rootEntryCells)
+                    ? zeroSources(rootEntryCells, context)
                     : zeroSources(treeCells);
             FloodResult flood = CostField.flood(
                     floodSources,
@@ -249,7 +249,7 @@ final class SteinerTreeBuilder {
             roomFloods.put(
                     room.roomId(),
                     CostField.floodFull(
-                            zeroSources(context.entryCells(room.roomId())),
+                            zeroSources(context.entryCells(room.roomId()), context),
                             context.searchVolume(),
                             context.instrumentation()));
         }
@@ -348,7 +348,7 @@ final class SteinerTreeBuilder {
                 return new WaypointRouteResult(false, null, List.of());
             }
             Map<PathState, RouteCost> floodSources = treeCells.isEmpty()
-                    ? zeroSources(rootEntryCells)
+                    ? zeroSources(rootEntryCells, context)
                     : zeroSources(treeCells);
             FloodResult flood = CostField.flood(
                     floodSources,
@@ -547,6 +547,12 @@ final class SteinerTreeBuilder {
         return sources;
     }
 
+    private static Map<PathState, RouteCost> zeroSources(Collection<CubePoint> cells, PlannerContext context) {
+        Map<PathState, RouteCost> sources = new HashMap<>();
+        addZeroSources(sources, cells, context);
+        return sources;
+    }
+
     private static void addZeroSources(Map<PathState, RouteCost> sources, Collection<CubePoint> cells) {
         if (sources == null || cells == null) {
             return;
@@ -554,6 +560,18 @@ final class SteinerTreeBuilder {
         for (CubePoint cell : cells) {
             if (cell != null) {
                 sources.put(new PathState(cell, -1, -1), new RouteCost(0, 0, 0));
+            }
+        }
+    }
+
+    private static void addZeroSources(Map<PathState, RouteCost> sources, Collection<CubePoint> cells, PlannerContext context) {
+        if (sources == null || cells == null) {
+            return;
+        }
+        for (CubePoint cell : cells) {
+            if (cell != null) {
+                int directionIndex = context == null ? -1 : context.entryDirectionIndex(cell);
+                sources.put(new PathState(cell, directionIndex, -1), new RouteCost(0, 0, 0));
             }
         }
     }

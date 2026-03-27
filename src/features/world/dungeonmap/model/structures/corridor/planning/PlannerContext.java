@@ -1,6 +1,7 @@
 package features.world.dungeonmap.model.structures.corridor.planning;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.corridor.ResolvedCorridorDoorBinding;
 import features.world.dungeonmap.model.structures.room.Room;
@@ -21,6 +22,7 @@ final class PlannerContext {
     private final PlannerInstrumentation instrumentation;
     private final Map<Long, Set<CubePoint>> entryCellsByRoomId;
     private final Map<CubePoint, Long> roomIdByEntryCell;
+    private final Map<CubePoint, Integer> directionIndexByEntryCell;
 
     PlannerContext(
             List<Room> targetRooms,
@@ -41,6 +43,10 @@ final class PlannerContext {
                 searchVolume,
                 instrumentation);
         this.roomIdByEntryCell = indexRoomIdByEntryCell(entryCellsByRoomId);
+        this.directionIndexByEntryCell = computeDirectionIndexByEntryCell(
+                this.targetRooms,
+                this.doorBindings,
+                searchVolume);
     }
 
     List<Room> targetRooms() {
@@ -103,6 +109,10 @@ final class PlannerContext {
             }
         }
         return Map.copyOf(result);
+    }
+
+    int entryDirectionIndex(CubePoint entryCell) {
+        return entryCell == null ? -1 : directionIndexByEntryCell.getOrDefault(entryCell, -1);
     }
 
     private static Map<Long, Room> indexRoomsById(List<Room> rooms) {
@@ -173,5 +183,60 @@ final class PlannerContext {
             }
         }
         return Map.copyOf(result);
+    }
+
+    private static Map<CubePoint, Integer> computeDirectionIndexByEntryCell(
+            List<Room> targetRooms,
+            Map<Long, ResolvedCorridorDoorBinding> doorBindings,
+            SearchVolume searchVolume
+    ) {
+        Map<CubePoint, Integer> result = new LinkedHashMap<>();
+        for (Room room : targetRooms == null ? List.<Room>of() : targetRooms) {
+            if (room == null || room.roomId() == null) {
+                continue;
+            }
+            Set<Integer> levels = room.levels();
+            ResolvedCorridorDoorBinding binding = doorBindings == null ? null : doorBindings.get(room.roomId());
+            if (binding != null && binding.absoluteCell() != null && binding.direction() != null) {
+                int directionIndex = directionIndex(binding.direction());
+                for (int roomLevel : levels) {
+                    CubePoint boundEntry = CubePoint.at(binding.absoluteCell().add(binding.direction()), roomLevel);
+                    if (isValidEntry(boundEntry, searchVolume) && directionIndex >= 0) {
+                        result.putIfAbsent(boundEntry, directionIndex);
+                    }
+                }
+                continue;
+            }
+            for (int roomLevel : levels) {
+                Set<Point2i> roomCells = room.cellsAtLevel(roomLevel);
+                for (Point2i roomCell : roomCells) {
+                    for (Point2i step : Point2i.CARDINAL_STEPS) {
+                        Point2i outsideCell = roomCell.add(step);
+                        if (roomCells.contains(outsideCell)) {
+                            continue;
+                        }
+                        CubePoint candidate = CubePoint.at(outsideCell, roomLevel);
+                        int directionIndex = directionIndex(step);
+                        if (isValidEntry(candidate, searchVolume) && directionIndex >= 0) {
+                            result.putIfAbsent(candidate, directionIndex);
+                        }
+                    }
+                }
+            }
+        }
+        return Map.copyOf(result);
+    }
+
+    private static int directionIndex(Point2i step) {
+        CardinalDirection direction = CardinalDirection.fromDirection(step);
+        if (direction == null) {
+            return -1;
+        }
+        return switch (direction) {
+            case NORTH -> 0;
+            case EAST -> 1;
+            case SOUTH -> 2;
+            case WEST -> 3;
+        };
     }
 }
