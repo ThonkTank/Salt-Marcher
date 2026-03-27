@@ -52,7 +52,7 @@ public final class DungeonCorridorEditService {
                 long corridorId = corridorWriteRepository.insertCorridor(conn, layout.mapId(), roomIds);
                 System.err.println("CorridorEditService.create(): corridorId=" + corridorId
                         + " stairPlacements=" + stairPlacements.size());
-                persistStairPlacements(conn, layout, corridorId, stairPlacements);
+                stairEditService.replaceCorridorTraversalStairs(conn, layout, corridorId, stairPlacements);
                 return null;
             });
         }
@@ -146,33 +146,18 @@ public final class DungeonCorridorEditService {
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
                 if (updated.corridorId() != null) {
-                    stairEditService.deleteCorridorStairs(conn, updated.corridorId());
+                    stairEditService.replaceCorridorTraversalStairs(
+                            conn,
+                            layout,
+                            updated.corridorId(),
+                            stairPlacements);
                 }
-                persistStairPlacements(conn, layout, updated.corridorId(), stairPlacements);
                 corridorPersistenceService.persistCorridor(conn, updated);
                 if (deletedCorridorId != null) {
                     corridorWriteRepository.deleteCorridor(conn, deletedCorridorId);
                 }
                 return null;
             });
-        }
-    }
-
-    private void persistStairPlacements(Connection conn, DungeonLayout layout, Long corridorId, List<StairPlacement> stairPlacements) throws SQLException {
-        if (corridorId == null) {
-            return;
-        }
-        for (StairPlacement placement : stairPlacements) {
-            stairEditService.createFromCorridorPlanner(
-                    conn,
-                    layout,
-                    corridorId,
-                    placement.anchor(),
-                    placement.shape(),
-                    placement.direction(),
-                    placement.dimension1(),
-                    placement.dimension2(),
-                    placement.exitLevels());
         }
     }
 

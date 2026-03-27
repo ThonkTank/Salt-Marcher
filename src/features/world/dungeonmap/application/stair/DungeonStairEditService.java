@@ -6,6 +6,7 @@ import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.structures.corridor.planning.StairPlacement;
 import features.world.dungeonmap.model.structures.stair.DungeonStairExit;
 import features.world.dungeonmap.model.structures.stair.StairGeometry;
 import features.world.dungeonmap.model.structures.stair.StairShape;
@@ -88,6 +89,32 @@ public final class DungeonStairEditService {
     public void deleteCorridorStairs(Connection conn, long corridorId) throws SQLException {
         DungeonSchemaSupport.ensureCompatibility(conn);
         stairWriteRepository.deleteByCorridorId(conn, corridorId);
+    }
+
+    public void replaceCorridorTraversalStairs(
+            Connection conn,
+            DungeonLayout layout,
+            long corridorId,
+            List<StairPlacement> placements
+    ) throws SQLException {
+        requireLayout(layout);
+        Objects.requireNonNull(conn, "conn");
+        deleteCorridorStairs(conn, corridorId);
+        for (StairPlacement placement : placements == null ? List.<StairPlacement>of() : placements) {
+            if (placement == null) {
+                continue;
+            }
+            createFromCorridorPlanner(
+                    conn,
+                    layout,
+                    corridorId,
+                    placement.anchor(),
+                    placement.shape(),
+                    placement.direction(),
+                    placement.dimension1(),
+                    placement.dimension2(),
+                    placement.exitLevels());
+        }
     }
 
     private void create(

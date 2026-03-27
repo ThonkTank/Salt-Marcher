@@ -97,17 +97,13 @@ public final class DungeonClusterMoveService {
             return;
         }
         for (Long corridorId : affectedCorridorIds) {
-            stairEditService.deleteCorridorStairs(conn, corridorId);
-        }
-        if (stairPlacementsByCorridorId != null) {
-            for (Map.Entry<Long, List<StairPlacement>> entry : stairPlacementsByCorridorId.entrySet()) {
-                for (StairPlacement placement : entry.getValue()) {
-                    stairEditService.createFromCorridorPlanner(
-                            conn, layout, entry.getKey(),
-                            placement.anchor(), placement.shape(), placement.direction(),
-                            placement.dimension1(), placement.dimension2(), placement.exitLevels());
-                }
+            if (corridorId == null) {
+                continue;
             }
+            List<StairPlacement> placements = stairPlacementsByCorridorId == null
+                    ? List.of()
+                    : stairPlacementsByCorridorId.getOrDefault(corridorId, List.of());
+            stairEditService.replaceCorridorTraversalStairs(conn, layout, corridorId, placements);
         }
     }
 
