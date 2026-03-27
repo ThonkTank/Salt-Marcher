@@ -176,10 +176,8 @@ public final class CorridorPlanningEngine {
         if (!STAIR_DEBUG || plan.stairPlacements().isEmpty()) {
             return;
         }
-        String caller = Thread.currentThread().getStackTrace().length > 4
-                ? Thread.currentThread().getStackTrace()[3].getMethodName() : "unknown";
         StringBuilder sb = new StringBuilder();
-        sb.append("\n=== CORRIDOR STAIR PLAN (caller=").append(caller).append(") ===\n");
+        sb.append("\n=== CORRIDOR STAIR PLAN ===\n");
         for (Room room : rooms) {
             sb.append("Room ").append(room.roomId()).append(" '").append(room.name())
                     .append("' levels=").append(room.levels())
