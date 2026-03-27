@@ -5,10 +5,9 @@ import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.stair.DungeonStairExit;
-import features.world.dungeonmap.model.structures.stair.StairPathGenerator;
+import features.world.dungeonmap.model.structures.stair.StairGeometry;
 import features.world.dungeonmap.model.structures.stair.StairShape;
 import features.world.dungeonmap.persistence.DungeonSchemaSupport;
 import features.world.dungeonmap.persistence.DungeonStairWriteRepository;
@@ -16,9 +15,7 @@ import features.world.dungeonmap.persistence.DungeonStairWriteRepository;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 public final class DungeonStairEditService {
@@ -111,18 +108,16 @@ public final class DungeonStairEditService {
         StairShape validatedShape = requireShape(shape);
         CardinalDirection validatedDirection = requireDirection(direction);
         validateDimensions(validatedShape, dimension1, dimension2);
-        List<CubePoint> pathNodes = StairPathGenerator.generatePath(
+        StairGeometry geometry = StairGeometry.fromExitLevels(
                 validatedShape,
                 anchorCell,
                 validatedDirection,
-                sortedExitLevels.getFirst(),
-                sortedExitLevels.getLast(),
                 dimension1,
-                dimension2);
-        List<DungeonStairExit> exits = buildExits(pathNodes, sortedExitLevels);
+                dimension2,
+                sortedExitLevels);
         DungeonSchemaSupport.ensureCompatibility(conn);
         if (!skipTraversabilityCheck) {
-            ensureTraversableExitCells(conn, layout.mapId(), exits);
+            ensureTraversableExitCells(conn, layout.mapId(), geometry.exits());
         }
         long stairId = stairWriteRepository.insertStair(
                 conn,
@@ -133,8 +128,8 @@ public final class DungeonStairEditService {
                 dimension1,
                 dimension2,
                 corridorId);
-        stairWriteRepository.replacePathNodes(conn, stairId, pathNodes);
-        stairWriteRepository.replaceExits(conn, stairId, exits);
+        stairWriteRepository.replacePathNodes(conn, stairId, geometry.pathNodes());
+        stairWriteRepository.replaceExits(conn, stairId, geometry.exits());
     }
 
     public void delete(long stairId) throws SQLException {
@@ -189,25 +184,6 @@ public final class DungeonStairEditService {
         if (validationMessage != null) {
             throw new IllegalArgumentException(validationMessage);
         }
-    }
-
-    private static List<DungeonStairExit> buildExits(List<CubePoint> pathNodes, List<Integer> sortedExitLevels) {
-        if (pathNodes == null || pathNodes.isEmpty() || sortedExitLevels.isEmpty()) {
-            return List.of();
-        }
-        Map<Integer, CubePoint> pathPointByLevel = new LinkedHashMap<>();
-        for (CubePoint node : pathNodes) {
-            pathPointByLevel.put(node.z(), node);
-        }
-        ArrayList<DungeonStairExit> result = new ArrayList<>();
-        for (Integer level : sortedExitLevels) {
-            CubePoint exitPoint = pathPointByLevel.get(level);
-            if (exitPoint == null) {
-                throw new IllegalArgumentException("Treppenpfad deckt Ebene z=" + level + " nicht ab");
-            }
-            result.add(new DungeonStairExit(0L, exitPoint, "Ebene z=" + level));
-        }
-        return List.copyOf(result);
     }
 
     private void ensureTraversableExitCells(Connection conn, long mapId, List<DungeonStairExit> exits) throws SQLException {

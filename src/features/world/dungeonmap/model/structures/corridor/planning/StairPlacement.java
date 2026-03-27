@@ -4,11 +4,11 @@ import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
-import features.world.dungeonmap.model.structures.stair.DungeonStairExit;
-import features.world.dungeonmap.model.structures.stair.StairPathGenerator;
+import features.world.dungeonmap.model.structures.stair.StairGeometry;
 import features.world.dungeonmap.model.structures.stair.StairShape;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -31,25 +31,104 @@ public record StairPlacement(
         if (exitLevels.size() < 2) {
             return null;
         }
-        int minZ = exitLevels.getFirst();
-        int maxZ = exitLevels.getLast();
-        List<CubePoint> pathNodes;
         try {
-            pathNodes = StairPathGenerator.generatePath(shape, anchor, direction, minZ, maxZ, dimension1, dimension2);
+            StairGeometry geometry = StairGeometry.fromExitLevels(
+                    shape,
+                    anchor,
+                    direction,
+                    dimension1,
+                    dimension2,
+                    exitLevels);
+            return new DungeonStair(
+                    null,
+                    mapId,
+                    null,
+                    shape,
+                    direction,
+                    dimension1,
+                    dimension2,
+                    geometry.pathNodes(),
+                    geometry.exits(),
+                    corridorId);
         } catch (IllegalArgumentException ignored) {
             return null;
         }
-        List<DungeonStairExit> exits = new ArrayList<>();
-        java.util.Map<Integer, CubePoint> pathByZ = new java.util.LinkedHashMap<>();
-        for (CubePoint node : pathNodes) {
-            pathByZ.put(node.z(), node);
+    }
+
+    static List<StairPlacement> canonicalize(List<StairPlacement> placements) {
+        if (placements == null || placements.isEmpty()) {
+            return List.of();
         }
-        for (int level : exitLevels) {
-            CubePoint exitPoint = pathByZ.get(level);
-            if (exitPoint != null) {
-                exits.add(new DungeonStairExit(0L, exitPoint, "Ebene z=" + level));
+        ArrayList<StairPlacement> result = new ArrayList<>();
+        for (StairPlacement placement : placements) {
+            if (placement == null) {
+                continue;
             }
+            if (result.isEmpty()) {
+                result.add(placement);
+                continue;
+            }
+            StairPlacement merged = tryMerge(result.getLast(), placement);
+            if (merged != null) {
+                result.set(result.size() - 1, merged);
+                continue;
+            }
+            result.add(placement);
         }
-        return new DungeonStair(null, mapId, null, shape, direction, dimension1, dimension2, pathNodes, exits, corridorId);
+        return List.copyOf(result);
+    }
+
+    private static StairPlacement tryMerge(StairPlacement first, StairPlacement second) {
+        if (first == null || second == null
+                || first.shape() != second.shape()
+                || first.direction() != second.direction()
+                || first.dimension1() != second.dimension1()
+                || first.dimension2() != second.dimension2()) {
+            return null;
+        }
+        LinkedHashSet<Integer> mergedLevels = new LinkedHashSet<>(first.exitLevels());
+        mergedLevels.addAll(second.exitLevels());
+        LinkedHashSet<CubePoint> mergedFootprint = new LinkedHashSet<>(first.footprint());
+        mergedFootprint.addAll(second.footprint());
+        Point2i anchor = inferAnchor(mergedFootprint);
+        if (anchor == null) {
+            return null;
+        }
+        StairGeometry mergedGeometry;
+        try {
+            mergedGeometry = StairGeometry.fromExitLevels(
+                    first.shape(),
+                    anchor,
+                    first.direction(),
+                    first.dimension1(),
+                    first.dimension2(),
+                    List.copyOf(mergedLevels));
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
+        if (!mergedGeometry.occupiedPositions().equals(Set.copyOf(mergedFootprint))) {
+            return null;
+        }
+        return new StairPlacement(
+                anchor,
+                first.shape(),
+                first.direction(),
+                first.dimension1(),
+                first.dimension2(),
+                mergedGeometry.exits().stream()
+                        .map(exit -> exit.position().z())
+                        .toList(),
+                mergedGeometry.occupiedPositions());
+    }
+
+    private static Point2i inferAnchor(Set<CubePoint> footprint) {
+        if (footprint == null || footprint.isEmpty()) {
+            return null;
+        }
+        CubePoint anchorPoint = footprint.stream()
+                .filter(point -> point != null)
+                .min(CubePoint.POINT_ORDER)
+                .orElse(null);
+        return anchorPoint == null ? null : anchorPoint.projectedCell();
     }
 }

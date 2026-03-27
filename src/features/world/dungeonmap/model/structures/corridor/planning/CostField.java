@@ -4,6 +4,7 @@ import features.world.dungeonmap.model.geometry.CubePoint;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -272,7 +273,8 @@ final class CostField {
             current = result.predecessors().get(current);
             pathCells.addFirst(current.point());
         }
-        return new ExtractedPath(List.copyOf(pathCells), List.copyOf(placements));
+        Collections.reverse(placements);
+        return new ExtractedPath(List.copyOf(pathCells), StairPlacement.canonicalize(placements));
     }
 
     private static void updateBestStateByPoint(

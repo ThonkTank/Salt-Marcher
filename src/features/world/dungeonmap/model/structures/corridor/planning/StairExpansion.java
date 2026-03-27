@@ -2,6 +2,7 @@ package features.world.dungeonmap.model.structures.corridor.planning;
 
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.stair.StairPathGenerator;
 import features.world.dungeonmap.model.structures.stair.StairShape;
 
@@ -63,9 +64,10 @@ final class StairExpansion {
 
                 List<CubePoint> path;
                 try {
+                    Point2i anchor = resolveAnchor(cell, direction, shape, height, dimension1, dimension2, ascending);
                     path = StairPathGenerator.generatePath(
                             shape,
-                            cell.projectedCell(),
+                            anchor,
                             direction,
                             minZ,
                             maxZ,
@@ -75,10 +77,13 @@ final class StairExpansion {
                     break;
                 }
                 if (path.isEmpty()) {
-                    break;
+                    continue;
+                }
+                if (!containsTraversalEndpoint(path, cell, ascending)) {
+                    continue;
                 }
                 if (!volume.isFootprintPassable(path) || collidesWithTree(path, treeCells, cell)) {
-                    break;
+                    continue;
                 }
                 CubePoint exitCell = ascending ? path.getLast() : path.getFirst();
                 int costPerLevel = shape == StairShape.STRAIGHT
@@ -94,7 +99,6 @@ final class StairExpansion {
                         minZ,
                         maxZ,
                         height * costPerLevel));
-                break;
             }
         }
     }
@@ -106,26 +110,76 @@ final class StairExpansion {
             Set<CubePoint> treeCells,
             List<StairNeighbor> results
     ) {
-        int targetZ = ascending ? cell.z() + 1 : cell.z() - 1;
-        CubePoint target = CubePoint.at(cell.projectedCell(), targetZ);
-        if (!volume.isPassable(target) || (treeCells != null && treeCells.contains(target))) {
+        int maxDelta = ascending
+                ? volume.maxZ() - cell.z()
+                : cell.z() - volume.minZ();
+        if (maxDelta < 1) {
             return;
         }
-        int minZ = Math.min(cell.z(), targetZ);
-        int maxZ = Math.max(cell.z(), targetZ);
-        List<CubePoint> path = List.of(
-                CubePoint.at(cell.projectedCell(), minZ),
-                CubePoint.at(cell.projectedCell(), maxZ));
-        results.add(new StairNeighbor(
-                target,
-                path,
-                StairShape.LADDER,
-                CardinalDirection.defaultDirection(),
+        for (int delta = 1; delta <= maxDelta; delta++) {
+            int minZ = ascending ? cell.z() : cell.z() - delta;
+            int maxZ = ascending ? cell.z() + delta : cell.z();
+            int height = maxZ - minZ + 1;
+            List<CubePoint> path = StairPathGenerator.generatePath(
+                    StairShape.LADDER,
+                    cell.projectedCell(),
+                    CardinalDirection.defaultDirection(),
+                    minZ,
+                    maxZ,
+                    0,
+                    0);
+            if (!containsTraversalEndpoint(path, cell, ascending)) {
+                continue;
+            }
+            if (!volume.isFootprintPassable(path) || collidesWithTree(path, treeCells, cell)) {
+                continue;
+            }
+            CubePoint exitCell = ascending ? path.getLast() : path.getFirst();
+            results.add(new StairNeighbor(
+                    exitCell,
+                    path,
+                    StairShape.LADDER,
+                    CardinalDirection.defaultDirection(),
+                    0,
+                    0,
+                    minZ,
+                    maxZ,
+                    height * LADDER_COST_PER_LEVEL));
+        }
+    }
+
+    private static Point2i resolveAnchor(
+            CubePoint cell,
+            CardinalDirection direction,
+            StairShape shape,
+            int height,
+            int dimension1,
+            int dimension2,
+            boolean ascending
+    ) {
+        if (ascending || shape == StairShape.LADDER) {
+            return cell.projectedCell();
+        }
+        List<CubePoint> template = StairPathGenerator.generatePath(
+                shape,
+                new Point2i(0, 0),
+                direction,
                 0,
-                0,
-                minZ,
-                maxZ,
-                LADDER_COST_PER_LEVEL * 2));
+                height - 1,
+                dimension1,
+                dimension2);
+        if (template.isEmpty()) {
+            return cell.projectedCell();
+        }
+        Point2i templateTerminal = template.getLast().projectedCell();
+        return cell.projectedCell().subtract(templateTerminal);
+    }
+
+    private static boolean containsTraversalEndpoint(List<CubePoint> path, CubePoint cell, boolean ascending) {
+        if (path == null || path.isEmpty() || cell == null) {
+            return false;
+        }
+        return ascending ? cell.equals(path.getFirst()) : cell.equals(path.getLast());
     }
 
     private static boolean collidesWithTree(List<CubePoint> path, Set<CubePoint> treeCells, CubePoint origin) {
