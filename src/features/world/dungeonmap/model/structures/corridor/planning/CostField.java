@@ -134,6 +134,9 @@ final class CostField {
     ) {
         CubePoint cell = node.state().point();
         for (int directionIndex = 0; directionIndex < HORIZONTAL_STEPS.size(); directionIndex++) {
+            if (directionIndex == node.state().blockedOppositeDirectionIndex()) {
+                continue;
+            }
             CubePoint next = cell.add(HORIZONTAL_STEPS.get(directionIndex));
             if (!volume.isPassable(next) && !targets.contains(next)) {
                 continue;
@@ -143,7 +146,7 @@ final class CostField {
             if (previousDirection >= 0 && previousDirection < 4 && previousDirection != directionIndex) {
                 nextCorners++;
             }
-            PathState nextState = new PathState(next, directionIndex);
+            PathState nextState = new PathState(next, directionIndex, -1);
             RouteCost nextCost = new RouteCost(
                     node.score().distance() + 1,
                     nextCorners,
@@ -173,11 +176,18 @@ final class CostField {
     ) {
         CubePoint cell = node.state().point();
         for (StairNeighbor stairNeighbor : StairExpansion.expand(cell, volume, Set.of())) {
+            if (isOppositeDirection(node.state().directionIndex(), stairNeighbor.entryDirectionIndex())) {
+                continue;
+            }
             CubePoint exitCell = stairNeighbor.exitCell();
             if (!volume.isPassable(exitCell) && !targets.contains(exitCell)) {
                 continue;
             }
-            PathState nextState = new PathState(exitCell, STAIR_DIRECTION_INDEX);
+            int exitDirectionIndex = stairNeighbor.exitDirectionIndex();
+            PathState nextState = new PathState(
+                    exitCell,
+                    exitDirectionIndex >= 0 ? exitDirectionIndex : STAIR_DIRECTION_INDEX,
+                    oppositeDirectionIndex(exitDirectionIndex));
             RouteCost nextCost = new RouteCost(
                     node.score().distance() + stairNeighbor.cost(),
                     node.score().corners(),
@@ -275,6 +285,21 @@ final class CostField {
         }
         Collections.reverse(placements);
         return new ExtractedPath(List.copyOf(pathCells), StairPlacement.canonicalize(placements));
+    }
+
+    private static boolean isOppositeDirection(int firstDirectionIndex, int secondDirectionIndex) {
+        return firstDirectionIndex >= 0
+                && firstDirectionIndex < 4
+                && secondDirectionIndex >= 0
+                && secondDirectionIndex < 4
+                && oppositeDirectionIndex(firstDirectionIndex) == secondDirectionIndex;
+    }
+
+    private static int oppositeDirectionIndex(int directionIndex) {
+        if (directionIndex < 0 || directionIndex >= 4) {
+            return -1;
+        }
+        return (directionIndex + 2) % 4;
     }
 
     private static void updateBestStateByPoint(

@@ -20,6 +20,8 @@ record StairNeighbor(
         int dimension2,
         int minZ,
         int maxZ,
+        int entryDirectionIndex,
+        int exitDirectionIndex,
         int cost
 ) {
     StairNeighbor {

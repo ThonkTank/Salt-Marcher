@@ -65,7 +65,7 @@ record RouteCost(int distance, int corners, int levelChanges) implements Compara
     }
 }
 
-record PathState(CubePoint point, int directionIndex) {
+record PathState(CubePoint point, int directionIndex, int blockedOppositeDirectionIndex) {
 }
 
 record PathNode(PathState state, RouteCost score) {

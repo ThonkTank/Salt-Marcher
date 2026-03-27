@@ -89,6 +89,7 @@ final class StairExpansion {
                 int costPerLevel = shape == StairShape.STRAIGHT
                         ? STRAIGHT_COST_PER_LEVEL
                         : SQUARE_COST_PER_LEVEL;
+                List<CubePoint> traversalPath = traversalPath(path, ascending);
                 results.add(new StairNeighbor(
                         exitCell,
                         path,
@@ -98,6 +99,8 @@ final class StairExpansion {
                         dimension2,
                         minZ,
                         maxZ,
+                        firstHorizontalDirectionIndex(traversalPath),
+                        lastHorizontalDirectionIndex(traversalPath),
                         height * costPerLevel));
             }
         }
@@ -135,6 +138,7 @@ final class StairExpansion {
                 continue;
             }
             CubePoint exitCell = ascending ? path.getLast() : path.getFirst();
+            List<CubePoint> traversalPath = traversalPath(path, ascending);
             results.add(new StairNeighbor(
                     exitCell,
                     path,
@@ -144,6 +148,8 @@ final class StairExpansion {
                     0,
                     minZ,
                     maxZ,
+                    firstHorizontalDirectionIndex(traversalPath),
+                    lastHorizontalDirectionIndex(traversalPath),
                     height * LADDER_COST_PER_LEVEL));
         }
     }
@@ -180,6 +186,56 @@ final class StairExpansion {
             return false;
         }
         return ascending ? cell.equals(path.getFirst()) : cell.equals(path.getLast());
+    }
+
+    private static List<CubePoint> traversalPath(List<CubePoint> path, boolean ascending) {
+        if (path == null || path.isEmpty() || ascending) {
+            return path == null ? List.of() : List.copyOf(path);
+        }
+        ArrayList<CubePoint> reversed = new ArrayList<>(path);
+        java.util.Collections.reverse(reversed);
+        return List.copyOf(reversed);
+    }
+
+    private static int firstHorizontalDirectionIndex(List<CubePoint> traversalPath) {
+        if (traversalPath == null) {
+            return -1;
+        }
+        for (int index = 1; index < traversalPath.size(); index++) {
+            int directionIndex = horizontalDirectionIndex(traversalPath.get(index - 1), traversalPath.get(index));
+            if (directionIndex >= 0) {
+                return directionIndex;
+            }
+        }
+        return -1;
+    }
+
+    private static int lastHorizontalDirectionIndex(List<CubePoint> traversalPath) {
+        if (traversalPath == null) {
+            return -1;
+        }
+        for (int index = traversalPath.size() - 1; index >= 1; index--) {
+            int directionIndex = horizontalDirectionIndex(traversalPath.get(index - 1), traversalPath.get(index));
+            if (directionIndex >= 0) {
+                return directionIndex;
+            }
+        }
+        return -1;
+    }
+
+    private static int horizontalDirectionIndex(CubePoint previous, CubePoint next) {
+        if (previous == null || next == null || previous.z() == next.z()) {
+            return -1;
+        }
+        int deltaX = next.x() - previous.x();
+        int deltaY = next.y() - previous.y();
+        for (int index = 0; index < CostField.HORIZONTAL_STEPS.size(); index++) {
+            CubePoint step = CostField.HORIZONTAL_STEPS.get(index);
+            if (step.x() == deltaX && step.y() == deltaY) {
+                return index;
+            }
+        }
+        return -1;
     }
 
     private static boolean collidesWithTree(List<CubePoint> path, Set<CubePoint> treeCells, CubePoint origin) {

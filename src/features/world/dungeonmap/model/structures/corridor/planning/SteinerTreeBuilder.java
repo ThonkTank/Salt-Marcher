@@ -553,7 +553,7 @@ final class SteinerTreeBuilder {
         }
         for (CubePoint cell : cells) {
             if (cell != null) {
-                sources.put(new PathState(cell, -1), new RouteCost(0, 0, 0));
+                sources.put(new PathState(cell, -1, -1), new RouteCost(0, 0, 0));
             }
         }
     }
