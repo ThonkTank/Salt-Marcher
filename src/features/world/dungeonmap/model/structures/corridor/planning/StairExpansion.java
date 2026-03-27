@@ -7,6 +7,7 @@ import features.world.dungeonmap.model.structures.stair.StairPathGenerator;
 import features.world.dungeonmap.model.structures.stair.StairShape;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -26,8 +27,6 @@ final class StairExpansion {
             expandDirected(cell, direction, true, volume, treeCells, results);
             expandDirected(cell, direction, false, volume, treeCells, results);
         }
-        expandLadder(cell, true, volume, treeCells, results);
-        expandLadder(cell, false, volume, treeCells, results);
         return List.copyOf(results);
     }
 
@@ -96,56 +95,8 @@ final class StairExpansion {
                         maxZ,
                         firstHorizontalDirectionIndex(traversalPath),
                         lastHorizontalDirectionIndex(traversalPath),
-                        height * STAIR_COST_PER_LEVEL));
+                        stairTraversalCost(height, path)));
             }
-        }
-    }
-
-    private static void expandLadder(
-            CubePoint cell,
-            boolean ascending,
-            SearchVolume volume,
-            Set<CubePoint> treeCells,
-            List<StairNeighbor> results
-    ) {
-        int maxDelta = ascending
-                ? volume.maxZ() - cell.z()
-                : cell.z() - volume.minZ();
-        if (maxDelta < 1) {
-            return;
-        }
-        for (int delta = 1; delta <= maxDelta; delta++) {
-            int minZ = ascending ? cell.z() : cell.z() - delta;
-            int maxZ = ascending ? cell.z() + delta : cell.z();
-            int height = maxZ - minZ + 1;
-            List<CubePoint> path = StairPathGenerator.generatePath(
-                    StairShape.LADDER,
-                    cell.projectedCell(),
-                    CardinalDirection.defaultDirection(),
-                    minZ,
-                    maxZ,
-                    0,
-                    0);
-            if (!containsTraversalEndpoint(path, cell, ascending)) {
-                continue;
-            }
-            if (!volume.isFootprintPassable(path) || collidesWithTree(path, treeCells, cell)) {
-                continue;
-            }
-            CubePoint exitCell = ascending ? path.getLast() : path.getFirst();
-            List<CubePoint> traversalPath = traversalPath(path, ascending);
-            results.add(new StairNeighbor(
-                    exitCell,
-                    path,
-                    StairShape.LADDER,
-                    CardinalDirection.defaultDirection(),
-                    0,
-                    0,
-                    minZ,
-                    maxZ,
-                    firstHorizontalDirectionIndex(traversalPath),
-                    lastHorizontalDirectionIndex(traversalPath),
-                    height * STAIR_COST_PER_LEVEL));
         }
     }
 
@@ -181,6 +132,23 @@ final class StairExpansion {
             return false;
         }
         return ascending ? cell.equals(path.getFirst()) : cell.equals(path.getLast());
+    }
+
+    private static int stairTraversalCost(int height, List<CubePoint> path) {
+        return height * STAIR_COST_PER_LEVEL + projectedFootprintSize(path);
+    }
+
+    private static int projectedFootprintSize(List<CubePoint> path) {
+        if (path == null || path.isEmpty()) {
+            return 0;
+        }
+        Set<Point2i> footprint = new LinkedHashSet<>();
+        for (CubePoint point : path) {
+            if (point != null) {
+                footprint.add(point.projectedCell());
+            }
+        }
+        return footprint.size();
     }
 
     private static List<CubePoint> traversalPath(List<CubePoint> path, boolean ascending) {
