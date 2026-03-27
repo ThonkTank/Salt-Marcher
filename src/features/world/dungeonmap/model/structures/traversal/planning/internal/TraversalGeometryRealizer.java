@@ -1,23 +1,23 @@
 package features.world.dungeonmap.model.structures.traversal.planning.internal;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.GridAnchor;
+import features.world.dungeonmap.model.geometry.GridRoute;
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.geometry.TileShape;
-import features.world.dungeonmap.model.objects.Floor;
-import features.world.dungeonmap.model.structures.corridor.ResolvedCorridorDoorBinding;
-import features.world.dungeonmap.model.structures.corridor.planning.CorridorPlan;
-import features.world.dungeonmap.model.structures.corridor.planning.ResolvedCorridorPlanner;
-import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.model.geometry.VertexEdge;
+import features.world.dungeonmap.model.objects.CorridorPath;
+import features.world.dungeonmap.model.objects.Door;
+import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
+import features.world.dungeonmap.model.structures.connection.CorridorConnection;
+import features.world.dungeonmap.model.structures.corridor.planning.StairPlacement;
 import features.world.dungeonmap.model.structures.traversal.CorridorTraversalSlice;
 import features.world.dungeonmap.model.structures.traversal.TraversalPlan;
-import features.world.dungeonmap.model.structures.traversal.TraversalRoomAnchor;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public final class TraversalGeometryRealizer {
 
@@ -30,130 +30,393 @@ public final class TraversalGeometryRealizer {
                 ? TraversalStructurePlanner.StructurePlan.empty()
                 : structurePlan;
         TraversalTopology topology = resolvedPlan.topology();
-        List<TraversalTopology.RoomPortal> participatingPortals = participatingPortals(resolvedPlan);
-        List<Room> rooms = materializeRooms(participatingPortals, topology.mapId());
-        Map<Long, Point2i> anchorCellsByRoomId = indexAnchorCells(participatingPortals);
-        List<CubePoint> waypointCells = waypointCells(resolvedPlan.guideNodes());
-        Map<Long, ResolvedCorridorDoorBinding> doorBindings = indexDoorBindings(participatingPortals);
-        CorridorPlan corridorPlan = ResolvedCorridorPlanner.planResolved(
+        GridRoute route = buildRoute(resolvedPlan);
+        if (topology.roomPortals().size() < 2) {
+            return planOf(topology.corridorId(), CorridorPath.unroutable(route), List.of(), List.of());
+        }
+        TraversalPlan directAdjacencyPlan = directAdjacencyPlan(resolvedPlan, topology, route);
+        if (directAdjacencyPlan != null) {
+            return directAdjacencyPlan;
+        }
+        RealizationState state = new RealizationState(topology, route);
+        if (!realizeGuideSegments(resolvedPlan, topology, state)) {
+            return state.unroutablePlan();
+        }
+        if (!realizeAttachedPortals(resolvedPlan, topology, state)) {
+            return state.unroutablePlan();
+        }
+        return state.toPlan();
+    }
+
+    private static boolean realizeGuideSegments(
+            TraversalStructurePlanner.StructurePlan structurePlan,
+            TraversalTopology topology,
+            RealizationState state
+    ) {
+        for (TraversalStructurePlanner.GuideSegment guideSegment : structurePlan.guideSegments()) {
+            if (guideSegment == null) {
+                continue;
+            }
+            TraversalStructurePlanner.GuideNode start = guideSegment.start();
+            TraversalStructurePlanner.GuideNode end = guideSegment.end();
+            LocalSegmentResult segmentResult = LocalTraversalRoutePlanner.route(new LocalSegmentRequest(
+                    terminalFor(start, topology, state),
+                    terminalFor(end, topology, state),
+                    topology.obstacles()));
+            if (!segmentResult.routable()) {
+                return false;
+            }
+            state.recordGuideNode(start.nodeId(), segmentResult.sourceCell());
+            state.recordGuideNode(end.nodeId(), segmentResult.targetCell());
+            state.recordGuideRoom(start, topology, segmentResult.sourceCell());
+            state.recordGuideRoom(end, topology, segmentResult.targetCell());
+            state.addSegment(segmentResult);
+        }
+        return true;
+    }
+
+    private static boolean realizeAttachedPortals(
+            TraversalStructurePlanner.StructurePlan structurePlan,
+            TraversalTopology topology,
+            RealizationState state
+    ) {
+        for (Integer portalIndex : structurePlan.attachedPortalIndices()) {
+            if (portalIndex == null || portalIndex < 0 || portalIndex >= topology.roomPortals().size()) {
+                continue;
+            }
+            String portalKey = portalKey(portalIndex);
+            if (state.hasAttachedPortal(portalKey)) {
+                continue;
+            }
+            TraversalTopology.RoomPortal roomPortal = topology.roomPortals().get(portalIndex);
+            LinkedHashSet<CubePoint> attachmentTargets = state.attachmentTargets(structurePlan);
+            if (roomPortal == null || attachmentTargets.isEmpty()) {
+                return false;
+            }
+            LocalSegmentResult segmentResult = LocalTraversalRoutePlanner.route(new LocalSegmentRequest(
+                    new LocalSegmentRequest.RoomPortalTerminal(roomPortal),
+                    LocalSegmentRequest.FixedCellsTerminal.of(attachmentTargets),
+                    topology.obstacles()));
+            if (!segmentResult.routable()) {
+                return false;
+            }
+            state.recordAttachedPortal(portalKey, segmentResult.sourceCell());
+            state.addSegment(segmentResult);
+        }
+        return true;
+    }
+
+    private static LocalSegmentRequest.LocalTerminal terminalFor(
+            TraversalStructurePlanner.GuideNode guideNode,
+            TraversalTopology topology,
+            RealizationState state
+    ) {
+        if (guideNode == null) {
+            return LocalSegmentRequest.FixedCellsTerminal.of(List.of());
+        }
+        CubePoint realizedCell = state.realizedGuideNodeCell(guideNode.nodeId());
+        if (realizedCell != null) {
+            return LocalSegmentRequest.FixedCellsTerminal.of(List.of(realizedCell));
+        }
+        if (guideNode.kind() == TraversalStructurePlanner.GuideNodeKind.WAYPOINT) {
+            return LocalSegmentRequest.FixedCellsTerminal.of(List.of(CubePoint.at(
+                    guideNode.guideCell(),
+                    guideNode.levelZ() == null ? 0 : guideNode.levelZ())));
+        }
+        TraversalTopology.RoomPortal roomPortal = roomPortalFor(guideNode, topology);
+        return roomPortal == null
+                ? LocalSegmentRequest.FixedCellsTerminal.of(List.of())
+                : new LocalSegmentRequest.RoomPortalTerminal(roomPortal);
+    }
+
+    private static TraversalTopology.RoomPortal roomPortalFor(
+            TraversalStructurePlanner.GuideNode guideNode,
+            TraversalTopology topology
+    ) {
+        if (guideNode == null || topology == null || guideNode.kind() != TraversalStructurePlanner.GuideNodeKind.ROOM_PORTAL) {
+            return null;
+        }
+        String nodeId = guideNode.nodeId();
+        if (nodeId == null || !nodeId.startsWith("portal:")) {
+            return null;
+        }
+        try {
+            int index = Integer.parseInt(nodeId.substring("portal:".length()));
+            if (index < 0 || index >= topology.roomPortals().size()) {
+                return null;
+            }
+            return topology.roomPortals().get(index);
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
+    private static GridRoute buildRoute(TraversalStructurePlanner.StructurePlan structurePlan) {
+        if (structurePlan == null || structurePlan.guideNodes().isEmpty()) {
+            return GridRoute.empty();
+        }
+        ArrayList<GridAnchor> anchors = new ArrayList<>();
+        for (TraversalStructurePlanner.GuideNode guideNode : structurePlan.guideNodes()) {
+            if (guideNode != null && guideNode.guideCell() != null) {
+                anchors.add(GridAnchor.atTile(guideNode.guideCell()));
+            }
+        }
+        return anchors.isEmpty() ? GridRoute.empty() : new GridRoute(anchors);
+    }
+
+    private static TraversalPlan directAdjacencyPlan(
+            TraversalStructurePlanner.StructurePlan structurePlan,
+            TraversalTopology topology,
+            GridRoute route
+    ) {
+        if (structurePlan == null
+                || topology == null
+                || topology.hasWaypoints()
+                || topology.roomPortals().size() != 2
+                || structurePlan.guideSegments().size() != 1) {
+            return null;
+        }
+        TraversalTopology.RoomPortal first = topology.roomPortals().getFirst();
+        TraversalTopology.RoomPortal second = topology.roomPortals().getLast();
+        AdjacentRoomPair adjacentRoomPair = findAdjacentRoomPair(first, second);
+        if (adjacentRoomPair == null) {
+            return null;
+        }
+        ArrayList<CorridorConnection> connections = new ArrayList<>();
+        CorridorConnection firstConnection = directAdjacencyConnection(
                 topology.corridorId(),
                 topology.mapId(),
-                rooms,
-                anchorCellsByRoomId,
-                waypointCells,
-                doorBindings,
-                topology.obstacles());
-        CorridorTraversalSlice slice = new CorridorTraversalSlice(
+                first,
+                adjacentRoomPair.firstRoomCell(),
+                adjacentRoomPair.stepToSecond());
+        if (firstConnection != null) {
+            connections.add(firstConnection);
+        }
+        Point2i reverseStep = new Point2i(-adjacentRoomPair.stepToSecond().x(), -adjacentRoomPair.stepToSecond().y());
+        CorridorConnection secondConnection = directAdjacencyConnection(
                 topology.corridorId(),
-                corridorPlan.path(),
-                corridorPlan.connections());
-        return new TraversalPlan(List.of(slice), corridorPlan.stairPlacements());
+                topology.mapId(),
+                second,
+                adjacentRoomPair.secondRoomCell(),
+                reverseStep);
+        if (secondConnection != null) {
+            connections.add(secondConnection);
+        }
+        if (connections.size() < 2) {
+            return null;
+        }
+        return planOf(
+                topology.corridorId(),
+                new CorridorPath(route, java.util.Set.of(), true, true),
+                List.copyOf(connections),
+                List.of());
     }
 
-    private static List<TraversalTopology.RoomPortal> participatingPortals(TraversalStructurePlanner.StructurePlan structurePlan) {
-        TraversalTopology topology = structurePlan == null ? TraversalTopology.empty() : structurePlan.topology();
-        if (topology.roomPortals().isEmpty()) {
-            return List.of();
+    private static AdjacentRoomPair findAdjacentRoomPair(
+            TraversalTopology.RoomPortal first,
+            TraversalTopology.RoomPortal second
+    ) {
+        if (first == null || second == null) {
+            return null;
         }
-        if (structurePlan == null || structurePlan.attachedPortalIndices().isEmpty()) {
-            return topology.roomPortals();
-        }
-        ArrayList<TraversalTopology.RoomPortal> result = new ArrayList<>();
-        for (Integer index : structurePlan.attachedPortalIndices()) {
-            if (index == null || index < 0 || index >= topology.roomPortals().size()) {
+        java.util.Set<CubePoint> secondCells = second.occupiedCells();
+        for (CubePoint firstCell : first.occupiedCells()) {
+            if (firstCell == null) {
                 continue;
             }
-            TraversalTopology.RoomPortal roomPortal = topology.roomPortals().get(index);
-            if (roomPortal != null) {
-                result.add(roomPortal);
+            for (Point2i step : Point2i.CARDINAL_STEPS) {
+                CubePoint secondCell = CubePoint.at(firstCell.projectedCell().add(step), firstCell.z());
+                if (secondCells.contains(secondCell)) {
+                    return new AdjacentRoomPair(firstCell, secondCell, step);
+                }
             }
         }
-        return result.isEmpty() ? topology.roomPortals() : List.copyOf(result);
+        return null;
     }
 
-    private static List<Room> materializeRooms(List<TraversalTopology.RoomPortal> roomPortals, long mapId) {
-        if (roomPortals == null || roomPortals.isEmpty()) {
-            return List.of();
+    private static CorridorConnection directAdjacencyConnection(
+            Long corridorId,
+            long mapId,
+            TraversalTopology.RoomPortal portal,
+            CubePoint roomCell,
+            Point2i stepToCorridor
+    ) {
+        if (portal == null || portal.roomId() == null || roomCell == null || stepToCorridor == null) {
+            return null;
         }
-        ArrayList<Room> result = new ArrayList<>();
-        for (TraversalTopology.RoomPortal roomPortal : roomPortals) {
-            if (roomPortal == null || roomPortal.roomAnchor() == null) {
+        VertexEdge edge = VertexEdge.betweenCellAndStep(roomCell.projectedCell(), stepToCorridor);
+        return new CorridorConnection(
+                corridorId,
+                mapId,
+                new Door(List.of(edge), Door.TraversalState.CLOSED),
+                List.of(ConnectionEndpoint.room(portal.roomId()), ConnectionEndpoint.corridor(corridorId)),
+                roomCell.z());
+    }
+
+    private static CorridorConnection corridorConnection(
+            Long corridorId,
+            long mapId,
+            TraversalTopology.RoomPortal portal,
+            CubePoint entryCell
+    ) {
+        if (portal == null || portal.roomId() == null || entryCell == null) {
+            return null;
+        }
+        VertexEdge boundaryEdge = boundaryEdge(portal, entryCell);
+        if (boundaryEdge == null) {
+            return null;
+        }
+        return new CorridorConnection(
+                corridorId,
+                mapId,
+                new Door(List.of(boundaryEdge), Door.TraversalState.CLOSED),
+                List.of(ConnectionEndpoint.room(portal.roomId()), ConnectionEndpoint.corridor(corridorId)),
+                entryCell.z());
+    }
+
+    private static VertexEdge boundaryEdge(TraversalTopology.RoomPortal portal, CubePoint entryCell) {
+        if (portal == null || portal.roomAnchor() == null || entryCell == null) {
+            return null;
+        }
+        for (CubePoint occupiedCell : portal.roomAnchor().occupiedCells()) {
+            if (occupiedCell == null || occupiedCell.z() != entryCell.z()) {
                 continue;
             }
-            TraversalRoomAnchor roomAnchor = roomPortal.roomAnchor();
-            result.add(Room.create(
-                    roomAnchor.roomId(),
-                    mapId,
-                    roomAnchor.clusterId() == null ? 0L : roomAnchor.clusterId(),
-                    "Raum " + (roomAnchor.roomId() == null ? "neu" : roomAnchor.roomId()),
-                    floorsByLevel(roomAnchor)));
-        }
-        return result.isEmpty() ? List.of() : List.copyOf(result);
-    }
-
-    private static Map<Long, Point2i> indexAnchorCells(List<TraversalTopology.RoomPortal> roomPortals) {
-        if (roomPortals == null || roomPortals.isEmpty()) {
-            return Map.of();
-        }
-        LinkedHashMap<Long, Point2i> result = new LinkedHashMap<>();
-        for (TraversalTopology.RoomPortal roomPortal : roomPortals) {
-            if (roomPortal != null && roomPortal.roomId() != null && roomPortal.guideCell() != null) {
-                result.put(roomPortal.roomId(), roomPortal.guideCell());
+            int deltaX = entryCell.x() - occupiedCell.x();
+            int deltaY = entryCell.y() - occupiedCell.y();
+            if (Math.abs(deltaX) + Math.abs(deltaY) == 1) {
+                return VertexEdge.betweenCellAndStep(occupiedCell.projectedCell(), new Point2i(deltaX, deltaY));
             }
         }
-        return result.isEmpty() ? Map.of() : Map.copyOf(result);
+        return null;
     }
 
-    private static List<CubePoint> waypointCells(List<TraversalStructurePlanner.GuideNode> guideNodes) {
-        if (guideNodes == null || guideNodes.isEmpty()) {
-            return List.of();
-        }
-        ArrayList<CubePoint> result = new ArrayList<>();
-        for (TraversalStructurePlanner.GuideNode guideNode : guideNodes) {
-            if (guideNode == null
-                    || guideNode.kind() != TraversalStructurePlanner.GuideNodeKind.WAYPOINT
-                    || guideNode.guideCell() == null) {
-                continue;
-            }
-            result.add(CubePoint.at(guideNode.guideCell(), guideNode.levelZ() == null ? 0 : guideNode.levelZ()));
-        }
-        return result.isEmpty() ? List.of() : List.copyOf(result);
+    private static TraversalPlan planOf(
+            Long corridorId,
+            CorridorPath path,
+            List<CorridorConnection> connections,
+            List<StairPlacement> stairPlacements
+    ) {
+        return new TraversalPlan(
+                List.of(new CorridorTraversalSlice(corridorId, path, connections)),
+                stairPlacements);
     }
 
-    private static Map<Long, ResolvedCorridorDoorBinding> indexDoorBindings(List<TraversalTopology.RoomPortal> roomPortals) {
-        if (roomPortals == null || roomPortals.isEmpty()) {
-            return Map.of();
-        }
-        LinkedHashMap<Long, ResolvedCorridorDoorBinding> result = new LinkedHashMap<>();
-        for (TraversalTopology.RoomPortal roomPortal : roomPortals) {
-            if (roomPortal == null || roomPortal.roomId() == null || !roomPortal.hasFixedDoorBinding()) {
-                continue;
-            }
-            result.put(roomPortal.roomId(), roomPortal.fixedDoorBinding());
-        }
-        return result.isEmpty() ? Map.of() : Map.copyOf(result);
+    private static String portalKey(int index) {
+        return "portal:" + index;
     }
 
-    private static Map<Integer, Floor> floorsByLevel(TraversalRoomAnchor roomAnchor) {
-        LinkedHashMap<Integer, Set<Point2i>> cellsByLevel = new LinkedHashMap<>();
-        for (CubePoint occupiedCell : roomAnchor.occupiedCells()) {
-            cellsByLevel.computeIfAbsent(occupiedCell.z(), ignored -> new LinkedHashSet<>())
-                    .add(occupiedCell.projectedCell());
+    private record AdjacentRoomPair(
+            CubePoint firstRoomCell,
+            CubePoint secondRoomCell,
+            Point2i stepToSecond
+    ) {
+    }
+
+    private static final class RealizationState {
+
+        private final TraversalTopology topology;
+        private final GridRoute route;
+        private final LinkedHashSet<CubePoint> corridorCells = new LinkedHashSet<>();
+        private final LinkedHashSet<StairPlacement> stairPlacements = new LinkedHashSet<>();
+        private final Map<String, CubePoint> realizedGuideNodeCellsById = new LinkedHashMap<>();
+        private final Map<String, CubePoint> attachedPortalEntryCellsByKey = new LinkedHashMap<>();
+
+        private RealizationState(TraversalTopology topology, GridRoute route) {
+            this.topology = topology == null ? TraversalTopology.empty() : topology;
+            this.route = route == null ? GridRoute.empty() : route;
         }
-        LinkedHashMap<Integer, Floor> result = new LinkedHashMap<>();
-        Set<Integer> levels = roomAnchor.levels().isEmpty()
-                ? Set.of(roomAnchor.primaryLevel())
-                : roomAnchor.levels();
-        for (Integer level : levels) {
-            if (level == null) {
-                continue;
+
+        private CubePoint realizedGuideNodeCell(String nodeId) {
+            return nodeId == null ? null : realizedGuideNodeCellsById.get(nodeId);
+        }
+
+        private void recordGuideNode(String nodeId, CubePoint cell) {
+            if (nodeId != null && cell != null) {
+                realizedGuideNodeCellsById.putIfAbsent(nodeId, cell);
             }
-            Set<Point2i> cells = cellsByLevel.get(level);
-            Floor floor = cells == null || cells.isEmpty()
-                    ? new Floor(null)
-                    : new Floor(TileShape.fromAbsoluteCells(roomAnchor.anchorCell(), cells));
-            result.put(level, floor);
         }
-        return result.isEmpty() ? Map.of(roomAnchor.primaryLevel(), new Floor(null)) : Map.copyOf(result);
+
+        private void recordGuideRoom(
+                TraversalStructurePlanner.GuideNode guideNode,
+                TraversalTopology topology,
+                CubePoint entryCell
+        ) {
+            TraversalTopology.RoomPortal roomPortal = roomPortalFor(guideNode, topology);
+            if (roomPortal == null) {
+                return;
+            }
+            recordAttachedPortal(guideNode.nodeId(), entryCell);
+        }
+
+        private void recordAttachedPortal(String portalKey, CubePoint entryCell) {
+            if (portalKey != null && entryCell != null) {
+                attachedPortalEntryCellsByKey.putIfAbsent(portalKey, entryCell);
+            }
+        }
+
+        private boolean hasAttachedPortal(String portalKey) {
+            return portalKey != null && attachedPortalEntryCellsByKey.containsKey(portalKey);
+        }
+
+        private void addSegment(LocalSegmentResult segmentResult) {
+            if (segmentResult == null) {
+                return;
+            }
+            corridorCells.addAll(segmentResult.corridorCells());
+            stairPlacements.addAll(segmentResult.stairPlacements());
+        }
+
+        private LinkedHashSet<CubePoint> attachmentTargets(TraversalStructurePlanner.StructurePlan structurePlan) {
+            LinkedHashSet<CubePoint> result = new LinkedHashSet<>();
+            if (!corridorCells.isEmpty()) {
+                result.addAll(corridorCells);
+                return result;
+            }
+            for (TraversalStructurePlanner.GuideNode guideNode : structurePlan.guideNodes()) {
+                if (guideNode == null || guideNode.kind() == TraversalStructurePlanner.GuideNodeKind.ROOM_PORTAL) {
+                    continue;
+                }
+                CubePoint realizedCell = realizedGuideNodeCell(guideNode.nodeId());
+                if (realizedCell != null) {
+                    result.add(realizedCell);
+                    continue;
+                }
+                if (guideNode.guideCell() != null) {
+                    result.add(CubePoint.at(guideNode.guideCell(), guideNode.levelZ() == null ? 0 : guideNode.levelZ()));
+                }
+            }
+            return result;
+        }
+
+        private TraversalPlan unroutablePlan() {
+            return planOf(topology.corridorId(), CorridorPath.unroutable(route), List.of(), List.of());
+        }
+
+        private TraversalPlan toPlan() {
+            List<CorridorConnection> connections = corridorConnections();
+            boolean routable = attachedPortalEntryCellsByKey.size() >= topology.roomPortals().size()
+                    && (!corridorCells.isEmpty() || !connections.isEmpty());
+            CorridorPath path = routable
+                    ? new CorridorPath(route, java.util.Set.copyOf(corridorCells), false, true)
+                    : CorridorPath.unroutable(route);
+            return planOf(topology.corridorId(), path, connections, List.copyOf(stairPlacements));
+        }
+
+        private List<CorridorConnection> corridorConnections() {
+            ArrayList<CorridorConnection> result = new ArrayList<>();
+            for (int index = 0; index < topology.roomPortals().size(); index++) {
+                TraversalTopology.RoomPortal roomPortal = topology.roomPortals().get(index);
+                CorridorConnection connection = corridorConnection(
+                        topology.corridorId(),
+                        topology.mapId(),
+                        roomPortal,
+                        attachedPortalEntryCellsByKey.get(portalKey(index)));
+                if (connection != null) {
+                    result.add(connection);
+                }
+            }
+            return result.isEmpty() ? List.of() : List.copyOf(result);
+        }
     }
 }

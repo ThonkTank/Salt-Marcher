@@ -1,11 +1,9 @@
-package features.world.dungeonmap.model.structures.corridor.planning;
+package features.world.dungeonmap.model.structures.traversal.planning.internal;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.structures.room.Room;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 
 final class SearchVolume {
@@ -33,24 +31,13 @@ final class SearchVolume {
 
     static SearchVolume enclosing(
             Set<CubePoint> obstacles,
-            List<Room> targetRooms,
-            List<CubePoint> waypointCells
+            Collection<CubePoint> sourceBounds,
+            Collection<CubePoint> targetBounds
     ) {
-        Set<CubePoint> boundsPoints = new LinkedHashSet<>();
-        if (obstacles != null) {
-            boundsPoints.addAll(obstacles);
-        }
-        for (Room room : targetRooms == null ? List.<Room>of() : targetRooms) {
-            if (room == null || room.roomId() == null) {
-                continue;
-            }
-            boundsPoints.addAll(room.cubePoints());
-        }
-        for (CubePoint waypoint : waypointCells == null ? List.<CubePoint>of() : waypointCells) {
-            if (waypoint != null) {
-                boundsPoints.add(waypoint);
-            }
-        }
+        LinkedHashSet<CubePoint> boundsPoints = new LinkedHashSet<>();
+        addPoints(boundsPoints, obstacles);
+        addPoints(boundsPoints, sourceBounds);
+        addPoints(boundsPoints, targetBounds);
         if (boundsPoints.isEmpty()) {
             boundsPoints.add(new CubePoint(0, 0, 0));
         }
@@ -123,5 +110,16 @@ final class SearchVolume {
 
     int maxZ() {
         return maxZ;
+    }
+
+    private static void addPoints(Set<CubePoint> target, Collection<CubePoint> points) {
+        if (target == null || points == null) {
+            return;
+        }
+        for (CubePoint point : points) {
+            if (point != null) {
+                target.add(point);
+            }
+        }
     }
 }

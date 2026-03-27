@@ -1,4 +1,4 @@
-package features.world.dungeonmap.model.structures.corridor.planning;
+package features.world.dungeonmap.model.structures.traversal.planning.internal;
 
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
@@ -16,16 +16,17 @@ final class StairExpansion {
     private static final int STAIR_COST_PER_LEVEL = 2;
 
     private StairExpansion() {
+        throw new AssertionError("No instances");
     }
 
-    static List<StairNeighbor> expand(CubePoint cell, SearchVolume volume, Set<CubePoint> treeCells) {
+    static List<StairNeighbor> expand(CubePoint cell, SearchVolume volume) {
         if (cell == null || volume == null) {
             return List.of();
         }
         List<StairNeighbor> results = new ArrayList<>();
         for (CardinalDirection direction : CardinalDirection.values()) {
-            expandDirected(cell, direction, true, volume, treeCells, results);
-            expandDirected(cell, direction, false, volume, treeCells, results);
+            expandDirected(cell, direction, true, volume, results);
+            expandDirected(cell, direction, false, volume, results);
         }
         return List.copyOf(results);
     }
@@ -35,7 +36,6 @@ final class StairExpansion {
             CardinalDirection direction,
             boolean ascending,
             SearchVolume volume,
-            Set<CubePoint> treeCells,
             List<StairNeighbor> results
     ) {
         int maxDelta = ascending
@@ -73,13 +73,9 @@ final class StairExpansion {
                 } catch (IllegalArgumentException ignored) {
                     break;
                 }
-                if (path.isEmpty()) {
-                    continue;
-                }
-                if (!containsTraversalEndpoint(path, cell, ascending)) {
-                    continue;
-                }
-                if (!volume.isFootprintPassable(path) || collidesWithTree(path, treeCells, cell)) {
+                if (path.isEmpty()
+                        || !containsTraversalEndpoint(path, cell, ascending)
+                        || !volume.isFootprintPassable(path)) {
                     continue;
                 }
                 CubePoint exitCell = ascending ? path.getLast() : path.getFirst();
@@ -201,15 +197,25 @@ final class StairExpansion {
         return -1;
     }
 
-    private static boolean collidesWithTree(List<CubePoint> path, Set<CubePoint> treeCells, CubePoint origin) {
-        if (treeCells == null || treeCells.isEmpty()) {
-            return false;
+    record StairNeighbor(
+            CubePoint exitCell,
+            List<CubePoint> footprint,
+            StairShape shape,
+            CardinalDirection direction,
+            int dimension1,
+            int dimension2,
+            int minZ,
+            int maxZ,
+            int entryDirectionIndex,
+            int exitDirectionIndex,
+            int cost
+    ) {
+        StairNeighbor {
+            footprint = footprint == null ? List.of() : List.copyOf(footprint);
         }
-        for (CubePoint cell : path) {
-            if (!cell.equals(origin) && treeCells.contains(cell)) {
-                return true;
-            }
+
+        Point2i anchor() {
+            return footprint.isEmpty() ? exitCell.projectedCell() : footprint.getFirst().projectedCell();
         }
-        return false;
     }
 }
