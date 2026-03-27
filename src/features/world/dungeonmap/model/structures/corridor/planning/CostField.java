@@ -256,35 +256,34 @@ final class CostField {
             return ExtractedPath.empty();
         }
         ArrayDeque<CubePoint> pathCells = new ArrayDeque<>();
-        List<StairPlacement> placements = new ArrayList<>();
+        List<StairTraversal> stairTraversals = new ArrayList<>();
         PathState current = bestTargetState;
         pathCells.addFirst(current.point());
         while (result.predecessors().containsKey(current)) {
+            PathState previous = result.predecessors().get(current);
             StairNeighbor stair = result.stairSteps().get(current);
-            if (stair != null) {
-                for (CubePoint footprintCell : stair.footprint()) {
-                    if (!footprintCell.equals(current.point())) {
-                        pathCells.addFirst(footprintCell);
-                    }
-                }
+            if (stair != null && previous != null) {
                 List<Integer> exitLevels = new ArrayList<>();
                 for (int z = stair.minZ(); z <= stair.maxZ(); z++) {
                     exitLevels.add(z);
                 }
-                placements.add(new StairPlacement(
-                        stair.anchor(),
-                        stair.shape(),
-                        stair.direction(),
-                        stair.dimension1(),
-                        stair.dimension2(),
-                        exitLevels,
-                        Set.copyOf(stair.footprint())));
+                stairTraversals.add(new StairTraversal(
+                        previous.point(),
+                        current.point(),
+                        new StairPlacement(
+                                stair.anchor(),
+                                stair.shape(),
+                                stair.direction(),
+                                stair.dimension1(),
+                                stair.dimension2(),
+                                exitLevels,
+                                Set.copyOf(stair.footprint()))));
             }
-            current = result.predecessors().get(current);
+            current = previous;
             pathCells.addFirst(current.point());
         }
-        Collections.reverse(placements);
-        return new ExtractedPath(List.copyOf(pathCells), StairPlacement.canonicalize(placements));
+        Collections.reverse(stairTraversals);
+        return new ExtractedPath(List.copyOf(pathCells), List.copyOf(stairTraversals));
     }
 
     private static boolean isOppositeDirection(int firstDirectionIndex, int secondDirectionIndex) {

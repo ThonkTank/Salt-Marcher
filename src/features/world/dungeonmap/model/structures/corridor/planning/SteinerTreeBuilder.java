@@ -62,14 +62,14 @@ final class SteinerTreeBuilder {
         Set<CubePoint> treeCells = new LinkedHashSet<>();
         Set<DoorEdge> openings = new LinkedHashSet<>();
         Map<Long, Set<CubePoint>> attachmentCellsByRoomId = new LinkedHashMap<>();
-        List<StairPlacement> allStairPlacements = new ArrayList<>();
+        List<StairTraversal> allStairTraversals = new ArrayList<>();
         connected.add(root.roomId());
         Set<CubePoint> rootEntryCells = context.entryCells(root.roomId());
         WaypointRouteResult waypointRoute = routeThroughWaypoints(treeCells, rootEntryCells, context);
         if (!waypointRoute.success()) {
             return null;
         }
-        allStairPlacements.addAll(waypointRoute.stairPlacements());
+        allStairTraversals.addAll(waypointRoute.stairTraversals());
         CubePoint rootDoorEntry = waypointRoute.rootEntryCell();
         while (connected.size() < context.targetRooms().size()) {
             Set<CubePoint> targets = context.allTargetEntryCells(connected);
@@ -99,7 +99,7 @@ final class SteinerTreeBuilder {
             }
             DoorEdge door = deriveDoorEdge(nearest.entryCell(), nearest.room(), context);
             treeCells.addAll(path);
-            allStairPlacements.addAll(extracted.stairPlacements());
+            allStairTraversals.addAll(extracted.stairTraversals());
             if (door != null) {
                 openings.add(door);
             }
@@ -115,8 +115,8 @@ final class SteinerTreeBuilder {
                 Set.copyOf(treeCells),
                 Set.copyOf(openings),
                 Map.copyOf(attachmentCellsByRoomId),
-                SteinerTree.scoreCells(treeCells, allStairPlacements),
-                List.copyOf(allStairPlacements));
+                SteinerTree.scoreTraversedCells(treeCells, allStairTraversals),
+                List.copyOf(allStairTraversals));
     }
 
     private static SteinerTree ripUpAndReroute(SteinerTree tree, PlannerContext context) {
@@ -129,12 +129,12 @@ final class SteinerTreeBuilder {
                 if (room == null || room.roomId() == null) {
                     continue;
                 }
-                Set<CubePoint> branch = current.branchCells(room.roomId());
-                if (branch.isEmpty()) {
+                TreeSlice branch = current.branch(room.roomId());
+                if (branch.isEmpty() || branch.corridorCells().isEmpty()) {
                     continue;
                 }
                 context.instrumentation().recordRipUpCycle();
-                Set<CubePoint> remaining = current.cellsWithout(branch);
+                Set<CubePoint> remaining = current.cellsWithout(branch.corridorCells());
                 Map<PathState, RouteCost> sources = zeroSources(remaining);
                 if (sources.isEmpty()) {
                     continue;
@@ -154,17 +154,17 @@ final class SteinerTreeBuilder {
                 if (newPath.isEmpty()) {
                     continue;
                 }
-                if (SteinerTree.scoreCells(newPath, extracted.stairPlacements())
-                        .compareTo(SteinerTree.scoreCells(branch, stairPlacementsWithin(branch, current.stairPlacements()))) < 0) {
+                if (SteinerTree.scoreTraversedCells(newPath, extracted.stairTraversals())
+                        .compareTo(SteinerTree.scoreTraversedCells(branch.corridorCells(), branch.stairTraversals())) < 0) {
                     current = current.withReplacedBranch(
                             room.roomId(),
-                            branch,
+                            branch.corridorCells(),
                             newPath,
                             deriveDoorEdge(bestEntry, room, context),
-                            replaceStairPlacements(
-                                    current.stairPlacements(),
-                                    branch,
-                                    extracted.stairPlacements()));
+                            replaceStairTraversals(
+                                    current.stairTraversals(),
+                                    branch.corridorCells(),
+                                    extracted.stairTraversals()));
                     improved = true;
                 }
             }
@@ -221,11 +221,11 @@ final class SteinerTreeBuilder {
             return null;
         }
         Set<Long> tripleRoomIds = Set.of(first.roomId(), second.roomId(), third.roomId());
-        Set<CubePoint> currentSubtree = tree.connectingSubtreeCells(tripleRoomIds);
-        if (currentSubtree.isEmpty()) {
+        TreeSlice currentSubtree = tree.connectingSubtree(tripleRoomIds);
+        if (currentSubtree.isEmpty() || currentSubtree.corridorCells().isEmpty()) {
             return null;
         }
-        Set<CubePoint> boundaryCells = tree.boundaryCells(currentSubtree);
+        Set<CubePoint> boundaryCells = tree.boundaryCells(currentSubtree.corridorCells());
         if (boundaryCells.size() > 1) {
             return null;
         }
@@ -282,24 +282,24 @@ final class SteinerTreeBuilder {
         ExtractedPath boundaryPath = floodBoundary == null
                 ? ExtractedPath.empty()
                 : CostField.extractPathWithStairs(floodBoundary, junction);
-        List<StairPlacement> stairPlacements = new ArrayList<>();
-        stairPlacements.addAll(firstPath.stairPlacements());
-        stairPlacements.addAll(secondPath.stairPlacements());
-        stairPlacements.addAll(thirdPath.stairPlacements());
-        stairPlacements.addAll(boundaryPath.stairPlacements());
+        List<StairTraversal> stairTraversals = new ArrayList<>();
+        stairTraversals.addAll(firstPath.stairTraversals());
+        stairTraversals.addAll(secondPath.stairTraversals());
+        stairTraversals.addAll(thirdPath.stairTraversals());
+        stairTraversals.addAll(boundaryPath.stairTraversals());
         return new TripleJunctionResult(
                 junction,
                 firstPath.cells(),
                 secondPath.cells(),
                 thirdPath.cells(),
                 boundaryPath.cells(),
-                List.copyOf(stairPlacements));
+                List.copyOf(stairTraversals));
     }
 
     private static SteinerTree buildTripleReplacement(
             SteinerTree tree,
             Set<Long> tripleRoomIds,
-            Set<CubePoint> currentSubtree,
+            TreeSlice currentSubtree,
             TripleJunctionResult junction,
             Room first,
             Room second,
@@ -311,8 +311,8 @@ final class SteinerTreeBuilder {
         replacementCells.addAll(junction.secondPath());
         replacementCells.addAll(junction.thirdPath());
         replacementCells.addAll(junction.boundaryPath());
-        if (SteinerTree.scoreCells(replacementCells, junction.stairPlacements())
-                .compareTo(SteinerTree.scoreCells(currentSubtree, stairPlacementsWithin(currentSubtree, tree.stairPlacements()))) >= 0) {
+        if (SteinerTree.scoreTraversedCells(replacementCells, junction.stairTraversals())
+                .compareTo(SteinerTree.scoreTraversedCells(currentSubtree.corridorCells(), currentSubtree.stairTraversals())) >= 0) {
             return null;
         }
 
@@ -328,14 +328,14 @@ final class SteinerTreeBuilder {
 
         return tree.withReplacedSubtree(
                 tripleRoomIds,
-                currentSubtree,
+                currentSubtree.corridorCells(),
                 replacementCells,
                 replacementAttachments,
                 replacementDoors,
-                replaceStairPlacements(
-                        tree.stairPlacements(),
-                        currentSubtree,
-                        junction.stairPlacements()));
+                replaceStairTraversals(
+                        tree.stairTraversals(),
+                        currentSubtree.corridorCells(),
+                        junction.stairTraversals()));
     }
 
     private static WaypointRouteResult routeThroughWaypoints(
@@ -344,7 +344,7 @@ final class SteinerTreeBuilder {
             PlannerContext context
     ) {
         CubePoint rootEntryCell = null;
-        List<StairPlacement> stairPlacements = new ArrayList<>();
+        List<StairTraversal> stairTraversals = new ArrayList<>();
         for (CubePoint waypoint : context.waypointCells()) {
             if (waypoint == null || !context.searchVolume().isPassable(waypoint)) {
                 return new WaypointRouteResult(false, null, List.of());
@@ -368,49 +368,30 @@ final class SteinerTreeBuilder {
                 rootEntryCell = path.getFirst();
             }
             treeCells.addAll(path);
-            stairPlacements.addAll(extracted.stairPlacements());
+            stairTraversals.addAll(extracted.stairTraversals());
         }
-        return new WaypointRouteResult(true, rootEntryCell, List.copyOf(stairPlacements));
+        return new WaypointRouteResult(true, rootEntryCell, List.copyOf(stairTraversals));
     }
 
-    private static List<StairPlacement> replaceStairPlacements(
-            List<StairPlacement> existingPlacements,
+    private static List<StairTraversal> replaceStairTraversals(
+            List<StairTraversal> existingTraversals,
             Set<CubePoint> replacedCells,
-            List<StairPlacement> newPlacements
+            List<StairTraversal> newTraversals
     ) {
-        List<StairPlacement> updated = new ArrayList<>();
-        if (existingPlacements != null) {
-            for (StairPlacement placement : existingPlacements) {
-                if (placement == null
+        List<StairTraversal> updated = new ArrayList<>();
+        if (existingTraversals != null) {
+            for (StairTraversal traversal : existingTraversals) {
+                if (traversal == null
                         || replacedCells == null
-                        || placement.footprint().isEmpty()
-                        || !replacedCells.containsAll(placement.footprint())) {
-                    updated.add(placement);
+                        || !traversal.touches(replacedCells)) {
+                    updated.add(traversal);
                 }
             }
         }
-        if (newPlacements != null) {
-            updated.addAll(newPlacements);
+        if (newTraversals != null) {
+            updated.addAll(newTraversals);
         }
         return List.copyOf(updated);
-    }
-
-    private static List<StairPlacement> stairPlacementsWithin(
-            Set<CubePoint> cells,
-            List<StairPlacement> placements
-    ) {
-        if (cells == null || cells.isEmpty() || placements == null || placements.isEmpty()) {
-            return List.of();
-        }
-        List<StairPlacement> result = new ArrayList<>();
-        for (StairPlacement placement : placements) {
-            if (placement != null
-                    && !placement.footprint().isEmpty()
-                    && cells.containsAll(placement.footprint())) {
-                result.add(placement);
-            }
-        }
-        return List.copyOf(result);
     }
 
     private static ReachedRoom findNearestReached(FloodResult flood, PlannerContext context, Set<Long> connected) {
@@ -607,13 +588,13 @@ record TripleJunctionResult(
         List<CubePoint> secondPath,
         List<CubePoint> thirdPath,
         List<CubePoint> boundaryPath,
-        List<StairPlacement> stairPlacements
+        List<StairTraversal> stairTraversals
 ) {
 }
 
 record WaypointRouteResult(
         boolean success,
         CubePoint rootEntryCell,
-        List<StairPlacement> stairPlacements
+        List<StairTraversal> stairTraversals
 ) {
 }

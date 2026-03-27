@@ -20,49 +20,58 @@ record SteinerTree(
         Set<DoorEdge> openings,
         Map<Long, Set<CubePoint>> attachmentCellsByRoomId,
         RouteCost totalCost,
-        List<StairPlacement> stairPlacements
+        List<StairTraversal> stairTraversals
 ) {
     SteinerTree {
-        stairPlacements = stairPlacements == null ? List.of() : List.copyOf(stairPlacements);
+        stairTraversals = stairTraversals == null ? List.of() : List.copyOf(stairTraversals);
     }
 
     static SteinerTree empty() {
         return new SteinerTree(Set.of(), Set.of(), Set.of(), Map.of(), new RouteCost(0, 0, 0), List.of());
     }
 
+    List<StairPlacement> stairPlacements() {
+        return StairTraversal.toPlacements(stairTraversals);
+    }
+
     boolean isRoutable() {
         return !connectedRoomIds.isEmpty() && (!corridorCells.isEmpty() || !openings.isEmpty());
     }
 
-    Set<CubePoint> branchCells(long roomId) {
+    TreeSlice branch(long roomId) {
         Set<CubePoint> starts = attachmentCellsByRoomId.get(roomId);
         if (starts == null || starts.isEmpty() || corridorCells.isEmpty()) {
-            return Set.of();
+            return TreeSlice.empty();
         }
-        Set<CubePoint> branch = new LinkedHashSet<>();
+        Set<CubePoint> branchCells = new LinkedHashSet<>();
+        Set<StairTraversal> branchTraversals = new LinkedHashSet<>();
         for (CubePoint start : starts) {
             if (start == null || !corridorCells.contains(start)) {
                 continue;
             }
             CubePoint current = start;
             CubePoint previous = null;
-            while (current != null && branch.add(current)) {
+            while (current != null && branchCells.add(current)) {
                 CubePoint previousCell = previous;
-                List<CubePoint> nextCandidates = neighbors(current).stream()
-                        .filter(candidate -> !candidate.equals(previousCell))
+                List<NeighborLink> nextCandidates = neighborLinks(current).stream()
+                        .filter(candidate -> !candidate.target().equals(previousCell))
                         .toList();
                 if (nextCandidates.size() > 1) {
-                    branch.remove(current);
+                    branchCells.remove(current);
                     break;
                 }
                 if (nextCandidates.isEmpty()) {
                     break;
                 }
+                NeighborLink next = nextCandidates.getFirst();
+                if (next.stairTraversal() != null) {
+                    branchTraversals.add(next.stairTraversal());
+                }
                 previous = current;
-                current = nextCandidates.getFirst();
+                current = next.target();
             }
         }
-        return Set.copyOf(branch);
+        return new TreeSlice(Set.copyOf(branchCells), List.copyOf(branchTraversals));
     }
 
     Set<CubePoint> cellsWithout(Set<CubePoint> removed) {
@@ -73,9 +82,9 @@ record SteinerTree(
         return Set.copyOf(result);
     }
 
-    Set<CubePoint> connectingSubtreeCells(Set<Long> roomIds) {
+    TreeSlice connectingSubtree(Set<Long> roomIds) {
         if (roomIds == null || roomIds.isEmpty() || corridorCells.isEmpty()) {
-            return Set.of();
+            return TreeSlice.empty();
         }
         List<CubePoint> anchors = roomIds.stream()
                 .map(attachmentCellsByRoomId::get)
@@ -84,19 +93,21 @@ record SteinerTree(
                 .distinct()
                 .toList();
         if (anchors.size() < 2) {
-            return Set.of();
+            return TreeSlice.empty();
         }
-        Set<CubePoint> result = new LinkedHashSet<>();
+        Set<CubePoint> resultCells = new LinkedHashSet<>();
+        Set<StairTraversal> resultTraversals = new LinkedHashSet<>();
         CubePoint root = anchors.getFirst();
-        result.add(root);
+        resultCells.add(root);
         for (int index = 1; index < anchors.size(); index++) {
-            List<CubePoint> path = findPath(root, anchors.get(index));
+            TreeSlice path = findPath(root, anchors.get(index));
             if (path.isEmpty()) {
-                return Set.of();
+                return TreeSlice.empty();
             }
-            result.addAll(path);
+            resultCells.addAll(path.corridorCells());
+            resultTraversals.addAll(path.stairTraversals());
         }
-        return Set.copyOf(result);
+        return new TreeSlice(Set.copyOf(resultCells), List.copyOf(resultTraversals));
     }
 
     Set<CubePoint> boundaryCells(Set<CubePoint> subtreeCells) {
@@ -105,9 +116,9 @@ record SteinerTree(
         }
         Set<CubePoint> boundaries = new LinkedHashSet<>();
         for (CubePoint cell : subtreeCells) {
-            boolean touchesOutside = CostField.STEPS.stream()
-                    .map(cell::add)
-                    .anyMatch(neighbor -> corridorCells.contains(neighbor) && !subtreeCells.contains(neighbor));
+            boolean touchesOutside = neighborLinks(cell).stream()
+                    .map(NeighborLink::target)
+                    .anyMatch(neighbor -> !subtreeCells.contains(neighbor));
             if (touchesOutside) {
                 boundaries.add(cell);
             }
@@ -120,7 +131,7 @@ record SteinerTree(
             Set<CubePoint> oldBranch,
             List<CubePoint> newPath,
             DoorEdge newDoorEdge,
-            List<StairPlacement> replacementPlacements
+            List<StairTraversal> replacementTraversals
     ) {
         Set<CubePoint> updatedCells = new LinkedHashSet<>(corridorCells);
         if (oldBranch != null) {
@@ -149,8 +160,8 @@ record SteinerTree(
                 Set.copyOf(updatedCells),
                 Set.copyOf(updatedDoors),
                 Map.copyOf(updatedAttachments),
-                scoreCells(updatedCells, replacementPlacements),
-                replacementPlacements);
+                scoreTraversedCells(updatedCells, replacementTraversals),
+                replacementTraversals);
     }
 
     SteinerTree withReplacedSubtree(
@@ -159,7 +170,7 @@ record SteinerTree(
             Set<CubePoint> newSubtree,
             Map<Long, Set<CubePoint>> replacementAttachments,
             Set<DoorEdge> replacementDoorEdges,
-            List<StairPlacement> replacementPlacements
+            List<StairTraversal> replacementTraversals
     ) {
         Set<Long> replacedRoomIds = roomIds == null ? Set.of() : Set.copyOf(roomIds);
         Set<CubePoint> updatedCells = new LinkedHashSet<>(corridorCells);
@@ -190,22 +201,28 @@ record SteinerTree(
                 Set.copyOf(updatedCells),
                 Set.copyOf(updatedDoors),
                 Map.copyOf(updatedAttachments),
-                scoreCells(updatedCells, replacementPlacements),
-                replacementPlacements);
+                scoreTraversedCells(updatedCells, replacementTraversals),
+                replacementTraversals);
     }
 
     static RouteCost scoreCells(Collection<CubePoint> cells) {
         return scoreCells(cells, List.of());
     }
 
+    static RouteCost scoreTraversedCells(Collection<CubePoint> cells, Collection<StairTraversal> stairTraversals) {
+        return scoreCells(cells, StairTraversal.toPlacements(stairTraversals));
+    }
+
     static RouteCost scoreCells(Collection<CubePoint> cells, Collection<StairPlacement> stairPlacements) {
-        Set<CubePoint> unique = cells == null ? Set.of() : Set.copyOf(cells);
+        Set<CubePoint> corridorCells = cells == null ? Set.of() : Set.copyOf(cells);
         Set<CubePoint> stairCells = stairCells(stairPlacements);
+        Set<CubePoint> scoredCells = new LinkedHashSet<>(corridorCells);
+        scoredCells.addAll(stairCells);
         int corners = 0;
         int levelChanges = 0;
-        for (CubePoint cell : unique) {
+        for (CubePoint cell : scoredCells) {
             if (stairCells.contains(cell)) {
-                if (unique.contains(cell.add(new CubePoint(0, 0, 1)))) {
+                if (scoredCells.contains(cell.add(new CubePoint(0, 0, 1)))) {
                     levelChanges++;
                 }
                 continue;
@@ -218,7 +235,7 @@ record SteinerTree(
                 if (stairCells.contains(neighbor)) {
                     continue;
                 }
-                if (unique.contains(neighbor)) {
+                if (scoredCells.contains(neighbor)) {
                     if (step.x() != 0) {
                         xNeighbor = true;
                     } else if (step.y() != 0) {
@@ -228,14 +245,14 @@ record SteinerTree(
                     }
                 }
             }
-            if (unique.contains(cell.add(new CubePoint(0, 0, 1)))) {
+            if (scoredCells.contains(cell.add(new CubePoint(0, 0, 1)))) {
                 levelChanges++;
             }
             if ((xNeighbor ? 1 : 0) + (yNeighbor ? 1 : 0) + (zNeighbor ? 1 : 0) >= 2) {
                 corners++;
             }
         }
-        return new RouteCost(unique.size(), corners, levelChanges);
+        return new RouteCost(scoredCells.size(), corners, levelChanges);
     }
 
     private static Set<CubePoint> stairCells(Collection<StairPlacement> stairPlacements) {
@@ -267,58 +284,112 @@ record SteinerTree(
     Set<CubePoint> zTransitions() {
         Set<CubePoint> result = new LinkedHashSet<>();
         for (CubePoint cell : corridorCells) {
-            if (corridorCells.contains(cell.add(new CubePoint(0, 0, 1)))
-                    || corridorCells.contains(cell.add(new CubePoint(0, 0, -1)))) {
+            boolean directVertical = corridorCells.contains(cell.add(new CubePoint(0, 0, 1)))
+                    || corridorCells.contains(cell.add(new CubePoint(0, 0, -1)));
+            boolean stairVertical = stairTraversals.stream()
+                    .map(traversal -> traversal.oppositeEndpoint(cell))
+                    .filter(Objects::nonNull)
+                    .anyMatch(target -> target.z() != cell.z());
+            if (directVertical || stairVertical) {
                 result.add(cell);
             }
         }
         return Set.copyOf(result);
     }
 
-    private List<CubePoint> neighbors(CubePoint cell) {
-        return CostField.STEPS.stream()
-                .map(cell::add)
-                .filter(corridorCells::contains)
-                .toList();
+    private List<NeighborLink> neighborLinks(CubePoint cell) {
+        LinkedHashMap<CubePoint, NeighborLink> result = new LinkedHashMap<>();
+        for (CubePoint step : CostField.STEPS) {
+            CubePoint neighbor = cell.add(step);
+            if (corridorCells.contains(neighbor)) {
+                result.putIfAbsent(neighbor, new NeighborLink(neighbor, null));
+            }
+        }
+        for (StairTraversal traversal : stairTraversals) {
+            if (traversal == null) {
+                continue;
+            }
+            CubePoint neighbor = traversal.oppositeEndpoint(cell);
+            if (neighbor != null && corridorCells.contains(neighbor)) {
+                result.putIfAbsent(neighbor, new NeighborLink(neighbor, traversal));
+            }
+        }
+        return List.copyOf(result.values());
     }
 
-    private List<CubePoint> findPath(CubePoint start, CubePoint target) {
+    private TreeSlice findPath(CubePoint start, CubePoint target) {
         if (start == null || target == null || !corridorCells.contains(start) || !corridorCells.contains(target)) {
-            return List.of();
+            return TreeSlice.empty();
         }
         if (start.equals(target)) {
-            return List.of(start);
+            return new TreeSlice(Set.of(start), List.of());
         }
         ArrayDeque<CubePoint> queue = new ArrayDeque<>();
         Map<CubePoint, CubePoint> previousByCell = new LinkedHashMap<>();
+        Map<CubePoint, StairTraversal> incomingTraversalByCell = new LinkedHashMap<>();
         Set<CubePoint> visited = new LinkedHashSet<>();
         queue.add(start);
         visited.add(start);
         while (!queue.isEmpty()) {
             CubePoint current = queue.removeFirst();
-            for (CubePoint neighbor : neighbors(current)) {
+            for (NeighborLink link : neighborLinks(current)) {
+                CubePoint neighbor = link.target();
                 if (!visited.add(neighbor)) {
                     continue;
                 }
                 previousByCell.put(neighbor, current);
+                if (link.stairTraversal() != null) {
+                    incomingTraversalByCell.put(neighbor, link.stairTraversal());
+                }
                 if (neighbor.equals(target)) {
-                    return reconstructPath(previousByCell, target);
+                    return reconstructPath(previousByCell, incomingTraversalByCell, target);
                 }
                 queue.addLast(neighbor);
             }
         }
-        return List.of();
+        return TreeSlice.empty();
     }
 
-    private static List<CubePoint> reconstructPath(Map<CubePoint, CubePoint> previousByCell, CubePoint target) {
+    private static TreeSlice reconstructPath(
+            Map<CubePoint, CubePoint> previousByCell,
+            Map<CubePoint, StairTraversal> incomingTraversalByCell,
+            CubePoint target
+    ) {
         ArrayDeque<CubePoint> path = new ArrayDeque<>();
+        Set<StairTraversal> traversals = new LinkedHashSet<>();
         CubePoint current = target;
         path.addFirst(current);
         while (previousByCell.containsKey(current)) {
+            StairTraversal traversal = incomingTraversalByCell.get(current);
+            if (traversal != null) {
+                traversals.add(traversal);
+            }
             current = previousByCell.get(current);
             path.addFirst(current);
         }
-        return List.copyOf(path);
+        return new TreeSlice(Set.copyOf(path), List.copyOf(traversals));
+    }
+}
+
+record TreeSlice(
+        Set<CubePoint> corridorCells,
+        List<StairTraversal> stairTraversals
+) {
+    TreeSlice {
+        corridorCells = corridorCells == null ? Set.of() : Set.copyOf(corridorCells);
+        stairTraversals = stairTraversals == null ? List.of() : List.copyOf(stairTraversals);
+    }
+
+    static TreeSlice empty() {
+        return new TreeSlice(Set.of(), List.of());
+    }
+
+    boolean isEmpty() {
+        return corridorCells.isEmpty() && stairTraversals.isEmpty();
+    }
+
+    List<StairPlacement> stairPlacements() {
+        return StairTraversal.toPlacements(stairTraversals);
     }
 }
 
@@ -330,4 +401,7 @@ record DoorEdge(long roomId, VertexEdge edge, int levelZ) {
     boolean isVertical() {
         return edge == null;
     }
+}
+
+record NeighborLink(CubePoint target, StairTraversal stairTraversal) {
 }
