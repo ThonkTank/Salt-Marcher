@@ -199,24 +199,24 @@ record SteinerTree(
         int corners = 0;
         int levelChanges = 0;
         for (CubePoint cell : unique) {
-            boolean hasX = false;
-            boolean hasY = false;
-            boolean hasZ = false;
+            boolean xNeighbor = false;
+            boolean yNeighbor = false;
+            boolean zNeighbor = false;
             for (CubePoint step : CostField.STEPS) {
                 if (unique.contains(cell.add(step))) {
                     if (step.x() != 0) {
-                        hasX = true;
+                        xNeighbor = true;
                     } else if (step.y() != 0) {
-                        hasY = true;
+                        yNeighbor = true;
                     } else {
-                        hasZ = true;
+                        zNeighbor = true;
                     }
                 }
             }
             if (unique.contains(cell.add(new CubePoint(0, 0, 1)))) {
                 levelChanges++;
             }
-            if ((hasX ? 1 : 0) + (hasY ? 1 : 0) + (hasZ ? 1 : 0) >= 2) {
+            if ((xNeighbor ? 1 : 0) + (yNeighbor ? 1 : 0) + (zNeighbor ? 1 : 0) >= 2) {
                 corners++;
             }
         }
