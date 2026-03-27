@@ -1,9 +1,7 @@
 package features.world.dungeonmap.model.structures.traversal.planning;
 
-import features.world.dungeonmap.model.objects.CorridorPath;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorRewriteContext;
-import features.world.dungeonmap.model.structures.corridor.planning.CorridorPlan;
 import features.world.dungeonmap.model.structures.corridor.planning.StairPlacement;
 import features.world.dungeonmap.model.structures.traversal.CorridorTraversalSlice;
 import features.world.dungeonmap.model.structures.traversal.TraversalPlan;
@@ -42,11 +40,7 @@ public final class TraversalRewriteEngine {
                 TraversalPlan traversalPlan = TraversalPlanningEngine.plan(
                         TraversalPlanRequestProjector.project(reanchored, context.rewrittenPlanningInput()));
                 CorridorTraversalSlice slice = traversalPlan.corridorSlice(reanchored.corridorId());
-                CorridorPlan corridorPlan = new CorridorPlan(
-                        slice == null ? CorridorPath.empty() : slice.path(),
-                        slice == null ? List.of() : slice.connections(),
-                        traversalPlan.stairPlacements());
-                result.put(entry.getKey(), reanchored.applyPlan(corridorPlan));
+                result.put(entry.getKey(), reanchored.applyTraversalSlice(slice));
                 if (!traversalPlan.stairPlacements().isEmpty() && reanchored.corridorId() != null) {
                     stairPlacementsByCorridorId.put(reanchored.corridorId(), traversalPlan.stairPlacements());
                 }

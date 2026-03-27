@@ -9,6 +9,7 @@ import features.world.dungeonmap.model.structures.corridor.planning.CorridorPlan
 import features.world.dungeonmap.model.structures.corridor.planning.CorridorPlanningEngine;
 import features.world.dungeonmap.model.structures.corridor.planning.StairPlacement;
 import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.model.structures.traversal.CorridorTraversalSlice;
 import features.world.dungeonmap.model.structures.traversal.planning.TraversalRewriteEngine;
 
 import java.util.ArrayList;
@@ -349,20 +350,25 @@ public final class Corridor {
     }
 
     public CorridorPlan plan(CorridorPlanningInput input) {
-        // Drag previews and committed moves both flow through DungeonLayout.translateCluster().
-        // Planning must therefore preserve the same end topology for both call sites.
         return CorridorPlanningEngine.plan(this, input);
     }
 
     public Corridor replanned(CorridorPlanningInput input) {
-        return applyPlan(plan(input));
+        return applyTraversalSlice(CorridorPlanningEngine.planTraversalSlice(this, input));
     }
 
     public Corridor applyPlan(CorridorPlan plan) {
         if (plan == null) {
             return this;
         }
-        return withPath(plan.path()).withConnections(plan.connections());
+        return applyTraversalSlice(plan.asTraversalSlice(corridorId));
+    }
+
+    public Corridor applyTraversalSlice(CorridorTraversalSlice slice) {
+        if (slice == null || !acceptsTraversalSlice(slice)) {
+            return this;
+        }
+        return withPath(slice.path()).withConnections(slice.connections());
     }
 
     public List<Room> resolvedRooms(CorridorPlanningInput input) {
@@ -423,6 +429,14 @@ public final class Corridor {
 
     private Corridor withConnections(List<CorridorConnection> connections) {
         return resolved(corridorId, mapId, roomIds, bindings, path, connections);
+    }
+
+    private boolean acceptsTraversalSlice(CorridorTraversalSlice slice) {
+        if (slice == null) {
+            return false;
+        }
+        Long sliceCorridorId = slice.corridorId();
+        return corridorId == null || sliceCorridorId == null || Objects.equals(corridorId, sliceCorridorId);
     }
 
     private Long fallbackWaypointClusterId(CorridorPlanningInput input) {
