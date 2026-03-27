@@ -12,9 +12,7 @@ import java.util.Set;
 
 final class StairExpansion {
 
-    private static final int STRAIGHT_COST_PER_LEVEL = 2;
-    private static final int SQUARE_COST_PER_LEVEL = 3;
-    private static final int LADDER_COST_PER_LEVEL = 4;
+    private static final int STAIR_COST_PER_LEVEL = 2;
 
     private StairExpansion() {
     }
@@ -86,9 +84,6 @@ final class StairExpansion {
                     continue;
                 }
                 CubePoint exitCell = ascending ? path.getLast() : path.getFirst();
-                int costPerLevel = shape == StairShape.STRAIGHT
-                        ? STRAIGHT_COST_PER_LEVEL
-                        : SQUARE_COST_PER_LEVEL;
                 List<CubePoint> traversalPath = traversalPath(path, ascending);
                 results.add(new StairNeighbor(
                         exitCell,
@@ -101,7 +96,7 @@ final class StairExpansion {
                         maxZ,
                         firstHorizontalDirectionIndex(traversalPath),
                         lastHorizontalDirectionIndex(traversalPath),
-                        height * costPerLevel));
+                        height * STAIR_COST_PER_LEVEL));
             }
         }
     }
@@ -150,7 +145,7 @@ final class StairExpansion {
                     maxZ,
                     firstHorizontalDirectionIndex(traversalPath),
                     lastHorizontalDirectionIndex(traversalPath),
-                    height * LADDER_COST_PER_LEVEL));
+                    height * STAIR_COST_PER_LEVEL));
         }
     }
 

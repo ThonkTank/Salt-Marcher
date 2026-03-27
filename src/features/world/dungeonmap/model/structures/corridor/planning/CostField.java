@@ -186,7 +186,7 @@ final class CostField {
             int exitDirectionIndex = stairNeighbor.exitDirectionIndex();
             PathState nextState = new PathState(
                     exitCell,
-                    exitDirectionIndex >= 0 ? exitDirectionIndex : STAIR_DIRECTION_INDEX,
+                    STAIR_DIRECTION_INDEX,
                     oppositeDirectionIndex(exitDirectionIndex));
             RouteCost nextCost = new RouteCost(
                     node.score().distance() + stairNeighbor.cost(),

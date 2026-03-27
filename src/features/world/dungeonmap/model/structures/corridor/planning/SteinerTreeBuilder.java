@@ -115,7 +115,7 @@ final class SteinerTreeBuilder {
                 Set.copyOf(treeCells),
                 Set.copyOf(openings),
                 Map.copyOf(attachmentCellsByRoomId),
-                SteinerTree.scoreCells(treeCells),
+                SteinerTree.scoreCells(treeCells, allStairPlacements),
                 List.copyOf(allStairPlacements));
     }
 
@@ -154,7 +154,8 @@ final class SteinerTreeBuilder {
                 if (newPath.isEmpty()) {
                     continue;
                 }
-                if (SteinerTree.scoreCells(newPath).compareTo(SteinerTree.scoreCells(branch)) < 0) {
+                if (SteinerTree.scoreCells(newPath, extracted.stairPlacements())
+                        .compareTo(SteinerTree.scoreCells(branch, stairPlacementsWithin(branch, current.stairPlacements()))) < 0) {
                     current = current.withReplacedBranch(
                             room.roomId(),
                             branch,
@@ -310,7 +311,8 @@ final class SteinerTreeBuilder {
         replacementCells.addAll(junction.secondPath());
         replacementCells.addAll(junction.thirdPath());
         replacementCells.addAll(junction.boundaryPath());
-        if (SteinerTree.scoreCells(replacementCells).compareTo(SteinerTree.scoreCells(currentSubtree)) >= 0) {
+        if (SteinerTree.scoreCells(replacementCells, junction.stairPlacements())
+                .compareTo(SteinerTree.scoreCells(currentSubtree, stairPlacementsWithin(currentSubtree, tree.stairPlacements()))) >= 0) {
             return null;
         }
 
@@ -391,6 +393,24 @@ final class SteinerTreeBuilder {
             updated.addAll(newPlacements);
         }
         return List.copyOf(updated);
+    }
+
+    private static List<StairPlacement> stairPlacementsWithin(
+            Set<CubePoint> cells,
+            List<StairPlacement> placements
+    ) {
+        if (cells == null || cells.isEmpty() || placements == null || placements.isEmpty()) {
+            return List.of();
+        }
+        List<StairPlacement> result = new ArrayList<>();
+        for (StairPlacement placement : placements) {
+            if (placement != null
+                    && !placement.footprint().isEmpty()
+                    && cells.containsAll(placement.footprint())) {
+                result.add(placement);
+            }
+        }
+        return List.copyOf(result);
     }
 
     private static ReachedRoom findNearestReached(FloodResult flood, PlannerContext context, Set<Long> connected) {

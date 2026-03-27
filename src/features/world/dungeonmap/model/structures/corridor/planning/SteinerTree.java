@@ -149,7 +149,7 @@ record SteinerTree(
                 Set.copyOf(updatedCells),
                 Set.copyOf(updatedDoors),
                 Map.copyOf(updatedAttachments),
-                scoreCells(updatedCells),
+                scoreCells(updatedCells, replacementPlacements),
                 replacementPlacements);
     }
 
@@ -190,20 +190,35 @@ record SteinerTree(
                 Set.copyOf(updatedCells),
                 Set.copyOf(updatedDoors),
                 Map.copyOf(updatedAttachments),
-                scoreCells(updatedCells),
+                scoreCells(updatedCells, replacementPlacements),
                 replacementPlacements);
     }
 
     static RouteCost scoreCells(Collection<CubePoint> cells) {
+        return scoreCells(cells, List.of());
+    }
+
+    static RouteCost scoreCells(Collection<CubePoint> cells, Collection<StairPlacement> stairPlacements) {
         Set<CubePoint> unique = cells == null ? Set.of() : Set.copyOf(cells);
+        Set<CubePoint> stairCells = stairCells(stairPlacements);
         int corners = 0;
         int levelChanges = 0;
         for (CubePoint cell : unique) {
+            if (stairCells.contains(cell)) {
+                if (unique.contains(cell.add(new CubePoint(0, 0, 1)))) {
+                    levelChanges++;
+                }
+                continue;
+            }
             boolean xNeighbor = false;
             boolean yNeighbor = false;
             boolean zNeighbor = false;
             for (CubePoint step : CostField.STEPS) {
-                if (unique.contains(cell.add(step))) {
+                CubePoint neighbor = cell.add(step);
+                if (stairCells.contains(neighbor)) {
+                    continue;
+                }
+                if (unique.contains(neighbor)) {
                     if (step.x() != 0) {
                         xNeighbor = true;
                     } else if (step.y() != 0) {
@@ -221,6 +236,19 @@ record SteinerTree(
             }
         }
         return new RouteCost(unique.size(), corners, levelChanges);
+    }
+
+    private static Set<CubePoint> stairCells(Collection<StairPlacement> stairPlacements) {
+        if (stairPlacements == null || stairPlacements.isEmpty()) {
+            return Set.of();
+        }
+        Set<CubePoint> result = new LinkedHashSet<>();
+        for (StairPlacement placement : stairPlacements) {
+            if (placement != null) {
+                result.addAll(placement.footprint());
+            }
+        }
+        return Set.copyOf(result);
     }
 
     Set<Point2i> cellsAtLevel(int z) {
