@@ -177,14 +177,21 @@ final class SteinerTreeBuilder {
         boolean improved = true;
         while (improved) {
             improved = false;
+            Map<Long, FloodResult> roomFloods = buildRoomFloods(rooms, context);
             for (int first = 0; first < rooms.size(); first++) {
                 for (int second = first + 1; second < rooms.size(); second++) {
                     for (int third = second + 1; third < rooms.size(); third++) {
+                        Room firstRoom = rooms.get(first);
+                        Room secondRoom = rooms.get(second);
+                        Room thirdRoom = rooms.get(third);
                         SteinerTree candidate = tryTripleImprovement(
                                 current,
-                                rooms.get(first),
-                                rooms.get(second),
-                                rooms.get(third),
+                                firstRoom,
+                                secondRoom,
+                                thirdRoom,
+                                roomFloods.get(firstRoom == null ? null : firstRoom.roomId()),
+                                roomFloods.get(secondRoom == null ? null : secondRoom.roomId()),
+                                roomFloods.get(thirdRoom == null ? null : thirdRoom.roomId()),
                                 context);
                         if (candidate != null && candidate.totalCost().compareTo(current.totalCost()) < 0) {
                             current = candidate;
@@ -202,10 +209,14 @@ final class SteinerTreeBuilder {
             Room first,
             Room second,
             Room third,
+            FloodResult floodFirst,
+            FloodResult floodSecond,
+            FloodResult floodThird,
             PlannerContext context
     ) {
         if (tree == null || first == null || second == null || third == null
-                || first.roomId() == null || second.roomId() == null || third.roomId() == null) {
+                || first.roomId() == null || second.roomId() == null || third.roomId() == null
+                || floodFirst == null || floodSecond == null || floodThird == null) {
             return null;
         }
         Set<Long> tripleRoomIds = Set.of(first.roomId(), second.roomId(), third.roomId());
@@ -217,32 +228,41 @@ final class SteinerTreeBuilder {
         if (boundaryCells.size() > 1) {
             return null;
         }
-        TripleJunctionResult junction = findTripleJunction(first, second, third, boundaryCells, context);
+        TripleJunctionResult junction = findTripleJunction(
+                floodFirst,
+                floodSecond,
+                floodThird,
+                boundaryCells,
+                context);
         if (junction == null) {
             return null;
         }
         return buildTripleReplacement(tree, tripleRoomIds, currentSubtree, junction, first, second, third, context);
     }
 
+    private static Map<Long, FloodResult> buildRoomFloods(List<Room> rooms, PlannerContext context) {
+        Map<Long, FloodResult> roomFloods = new LinkedHashMap<>();
+        for (Room room : rooms) {
+            if (room == null || room.roomId() == null || roomFloods.containsKey(room.roomId())) {
+                continue;
+            }
+            roomFloods.put(
+                    room.roomId(),
+                    CostField.floodFull(
+                            zeroSources(context.entryCells(room.roomId())),
+                            context.searchVolume(),
+                            context.instrumentation()));
+        }
+        return Map.copyOf(roomFloods);
+    }
+
     private static TripleJunctionResult findTripleJunction(
-            Room first,
-            Room second,
-            Room third,
+            FloodResult floodFirst,
+            FloodResult floodSecond,
+            FloodResult floodThird,
             Set<CubePoint> boundaryCells,
             PlannerContext context
     ) {
-        FloodResult floodFirst = CostField.floodFull(
-                zeroSources(context.entryCells(first.roomId())),
-                context.searchVolume(),
-                context.instrumentation());
-        FloodResult floodSecond = CostField.floodFull(
-                zeroSources(context.entryCells(second.roomId())),
-                context.searchVolume(),
-                context.instrumentation());
-        FloodResult floodThird = CostField.floodFull(
-                zeroSources(context.entryCells(third.roomId())),
-                context.searchVolume(),
-                context.instrumentation());
         FloodResult floodBoundary = boundaryCells.isEmpty()
                 ? null
                 : CostField.floodFull(zeroSources(boundaryCells), context.searchVolume(), context.instrumentation());
