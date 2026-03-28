@@ -4,7 +4,6 @@ import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.corridor.ResolvedCorridorDoorBinding;
-import features.world.dungeonmap.model.structures.traversal.TraversalRoomAnchor;
 
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -85,19 +84,18 @@ final class PlannerContext {
     }
 
     private static TerminalResolution resolveRoomPortal(
-            TraversalTopology.RoomPortal portal,
+            TraversalNode portal,
             SearchVolume searchVolume
     ) {
-        if (portal == null || portal.roomAnchor() == null) {
+        if (portal == null || portal.kind() != TraversalNode.TraversalNodeKind.ROOM_PORTAL) {
             return TerminalResolution.empty();
         }
         LinkedHashSet<CubePoint> result = new LinkedHashSet<>();
         LinkedHashMap<CubePoint, Integer> directionIndices = new LinkedHashMap<>();
-        TraversalRoomAnchor roomAnchor = portal.roomAnchor();
         ResolvedCorridorDoorBinding binding = portal.fixedDoorBinding();
         if (portal.hasFixedDoorBinding() && binding != null) {
             int directionIndex = directionIndex(binding.direction());
-            for (Integer level : roomLevels(roomAnchor)) {
+            for (Integer level : portal.levels()) {
                 CubePoint boundEntry = CubePoint.at(binding.absoluteCell().add(binding.direction()), level);
                 if (searchVolume.isPassable(boundEntry)) {
                     result.add(boundEntry);
@@ -111,13 +109,13 @@ final class PlannerContext {
                     : new TerminalResolution(Set.copyOf(result), Map.copyOf(directionIndices));
         }
 
-        for (CubePoint occupiedCell : roomAnchor.occupiedCells()) {
+        for (CubePoint occupiedCell : portal.occupiedCells()) {
             if (occupiedCell == null) {
                 continue;
             }
             for (Point2i step : Point2i.CARDINAL_STEPS) {
                 CubePoint candidate = CubePoint.at(occupiedCell.projectedCell().add(step), occupiedCell.z());
-                if (roomAnchor.occupiedCells().contains(candidate) || !searchVolume.isPassable(candidate)) {
+                if (portal.occupiedCells().contains(candidate) || !searchVolume.isPassable(candidate)) {
                     continue;
                 }
                 result.add(candidate);
@@ -130,16 +128,6 @@ final class PlannerContext {
         return result.isEmpty()
                 ? TerminalResolution.empty()
                 : new TerminalResolution(Set.copyOf(result), Map.copyOf(directionIndices));
-    }
-
-    private static Set<Integer> roomLevels(TraversalRoomAnchor roomAnchor) {
-        if (roomAnchor == null) {
-            return Set.of();
-        }
-        if (!roomAnchor.levels().isEmpty()) {
-            return roomAnchor.levels();
-        }
-        return Set.of(roomAnchor.primaryLevel());
     }
 
     private static int directionIndex(Point2i step) {

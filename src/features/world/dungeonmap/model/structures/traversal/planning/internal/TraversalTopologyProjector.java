@@ -19,22 +19,24 @@ public final class TraversalTopologyProjector {
         if (request == null) {
             return TraversalTopology.empty();
         }
+        List<TraversalNode> roomPortalNodes = projectRoomPortalNodes(request.roomAnchors(), request.doorBindings());
+        List<TraversalNode> waypointNodes = projectWaypointNodes(request.waypointCells());
         return new TraversalTopology(
                 request.corridorId(),
                 request.mapId(),
-                projectRoomPortals(request.roomAnchors(), request.doorBindings()),
-                projectWaypointNodes(request.waypointCells()),
+                mergeNodes(roomPortalNodes, waypointNodes),
+                projectBackboneEdges(roomPortalNodes, waypointNodes),
                 request.obstacles());
     }
 
-    private static List<TraversalTopology.RoomPortal> projectRoomPortals(
+    private static List<TraversalNode> projectRoomPortalNodes(
             List<TraversalRoomAnchor> roomAnchors,
             Map<Long, ResolvedCorridorDoorBinding> doorBindings
     ) {
         if (roomAnchors == null || roomAnchors.isEmpty()) {
             return List.of();
         }
-        ArrayList<TraversalTopology.RoomPortal> result = new ArrayList<>();
+        ArrayList<TraversalNode> result = new ArrayList<>();
         for (TraversalRoomAnchor roomAnchor : roomAnchors) {
             if (roomAnchor == null) {
                 continue;
@@ -42,21 +44,54 @@ public final class TraversalTopologyProjector {
             ResolvedCorridorDoorBinding fixedDoorBinding = roomAnchor.roomId() == null
                     ? null
                     : doorBindings.get(roomAnchor.roomId());
-            result.add(new TraversalTopology.RoomPortal(roomAnchor, fixedDoorBinding));
+            result.add(TraversalNode.roomPortal(TraversalNodeId.roomPortal(result.size()), roomAnchor, fixedDoorBinding));
         }
         return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
-    private static List<TraversalTopology.WaypointNode> projectWaypointNodes(List<CubePoint> waypointCells) {
+    private static List<TraversalNode> projectWaypointNodes(List<CubePoint> waypointCells) {
         if (waypointCells == null || waypointCells.isEmpty()) {
             return List.of();
         }
-        ArrayList<TraversalTopology.WaypointNode> result = new ArrayList<>();
+        ArrayList<TraversalNode> result = new ArrayList<>();
         for (CubePoint waypointCell : waypointCells) {
             if (waypointCell == null) {
                 continue;
             }
-            result.add(new TraversalTopology.WaypointNode(result.size(), waypointCell));
+            result.add(TraversalNode.waypoint(TraversalNodeId.waypoint(result.size()), waypointCell));
+        }
+        return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
+    private static List<TraversalNode> mergeNodes(
+            List<TraversalNode> roomPortalNodes,
+            List<TraversalNode> waypointNodes
+    ) {
+        ArrayList<TraversalNode> result = new ArrayList<>();
+        if (roomPortalNodes != null) {
+            result.addAll(roomPortalNodes);
+        }
+        if (waypointNodes != null) {
+            result.addAll(waypointNodes);
+        }
+        return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
+    private static List<TraversalEdge> projectBackboneEdges(
+            List<TraversalNode> roomPortalNodes,
+            List<TraversalNode> waypointNodes
+    ) {
+        List<TraversalNode> backboneNodes = waypointNodes == null || waypointNodes.isEmpty()
+                ? (roomPortalNodes == null ? List.of() : roomPortalNodes)
+                : waypointNodes;
+        if (backboneNodes.size() < 2) {
+            return List.of();
+        }
+        ArrayList<TraversalEdge> result = new ArrayList<>();
+        for (int index = 1; index < backboneNodes.size(); index++) {
+            result.add(new TraversalEdge(
+                    backboneNodes.get(index - 1).nodeId(),
+                    backboneNodes.get(index).nodeId()));
         }
         return result.isEmpty() ? List.of() : List.copyOf(result);
     }

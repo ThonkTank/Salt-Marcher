@@ -23,7 +23,7 @@ record LocalSegmentRequest(
     }
 
     record RoomPortalTerminal(
-            TraversalTopology.RoomPortal portal
+            TraversalNode portal
     ) implements LocalTerminal {
         RoomPortalTerminal {
             Objects.requireNonNull(portal, "portal");
@@ -31,10 +31,10 @@ record LocalSegmentRequest(
 
         @Override
         public Set<CubePoint> boundsPoints() {
-            if (portal.roomAnchor().occupiedCells().isEmpty()) {
-                return Set.of(CubePoint.at(portal.guideCell(), portal.primaryLevel()));
+            if (portal.occupiedCells().isEmpty()) {
+                return Set.of(portal.anchor());
             }
-            return portal.roomAnchor().occupiedCells();
+            return portal.occupiedCells();
         }
     }
 
