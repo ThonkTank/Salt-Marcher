@@ -31,10 +31,11 @@ record LocalSegmentRequest(
 
         @Override
         public Set<CubePoint> boundsPoints() {
-            if (portal.occupiedCells().isEmpty()) {
-                return Set.of(portal.anchor());
+            LinkedHashSet<CubePoint> result = new LinkedHashSet<>(portal.occupiedCells());
+            if (portal.anchor() != null) {
+                result.add(portal.anchor());
             }
-            return portal.occupiedCells();
+            return result.isEmpty() ? Set.of() : Set.copyOf(result);
         }
     }
 

@@ -95,13 +95,11 @@ final class PlannerContext {
         ResolvedCorridorDoorBinding binding = portal.fixedDoorBinding();
         if (portal.hasFixedDoorBinding() && binding != null) {
             int directionIndex = directionIndex(binding.direction());
-            for (Integer level : portal.levels()) {
-                CubePoint boundEntry = CubePoint.at(binding.absoluteCell().add(binding.direction()), level);
-                if (searchVolume.isPassable(boundEntry)) {
-                    result.add(boundEntry);
-                    if (directionIndex >= 0) {
-                        directionIndices.putIfAbsent(boundEntry, directionIndex);
-                    }
+            CubePoint boundEntry = portal.boundEntryCell();
+            if (searchVolume.isPassable(boundEntry)) {
+                result.add(boundEntry);
+                if (directionIndex >= 0) {
+                    directionIndices.putIfAbsent(boundEntry, directionIndex);
                 }
             }
             return result.isEmpty()

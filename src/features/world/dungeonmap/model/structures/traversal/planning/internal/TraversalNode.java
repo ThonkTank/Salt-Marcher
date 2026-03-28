@@ -13,6 +13,7 @@ public record TraversalNode(
         TraversalNodeKind kind,
         CubePoint anchor,
         Set<CubePoint> anchorCells,
+        int levelZ,
         TraversalRoomAnchor roomAnchor,
         ResolvedCorridorDoorBinding fixedDoorBinding
 ) {
@@ -25,27 +26,31 @@ public record TraversalNode(
             roomAnchor = null;
             fixedDoorBinding = null;
         }
-        anchor = normalizeAnchor(anchor, roomAnchor, anchorCells);
+        anchor = normalizeAnchor(anchor, levelZ, roomAnchor, anchorCells, fixedDoorBinding);
         Objects.requireNonNull(anchor, "anchor");
-        anchorCells = normalizeAnchorCells(anchorCells, roomAnchor, anchor);
+        levelZ = anchor.z();
+        anchorCells = normalizeAnchorCells(anchorCells, anchor);
     }
 
     public static TraversalNode roomPortal(
             TraversalNodeId nodeId,
             TraversalRoomAnchor roomAnchor,
+            int levelZ,
+            Set<CubePoint> occupiedCells,
             ResolvedCorridorDoorBinding fixedDoorBinding
     ) {
         return new TraversalNode(
                 nodeId,
                 TraversalNodeKind.ROOM_PORTAL,
                 null,
-                roomAnchor == null ? Set.of() : roomAnchor.occupiedCells(),
+                occupiedCells,
+                levelZ,
                 roomAnchor,
                 fixedDoorBinding);
     }
 
     public static TraversalNode waypoint(TraversalNodeId nodeId, CubePoint anchor) {
-        return new TraversalNode(nodeId, TraversalNodeKind.WAYPOINT, anchor, Set.of(anchor), null, null);
+        return new TraversalNode(nodeId, TraversalNodeKind.WAYPOINT, anchor, Set.of(anchor), anchor == null ? 0 : anchor.z(), null, null);
     }
 
     public Long roomId() {
@@ -53,20 +58,14 @@ public record TraversalNode(
     }
 
     public Set<CubePoint> occupiedCells() {
-        if (kind != TraversalNodeKind.ROOM_PORTAL) {
-            return anchorCells;
-        }
-        if (roomAnchor != null && !roomAnchor.occupiedCells().isEmpty()) {
-            return roomAnchor.occupiedCells();
-        }
         return anchorCells;
     }
 
-    public Set<Integer> levels() {
-        if (roomAnchor != null && !roomAnchor.levels().isEmpty()) {
-            return roomAnchor.levels();
+    public CubePoint boundEntryCell() {
+        if (!hasFixedDoorBinding()) {
+            return null;
         }
-        return Set.of(anchor.z());
+        return CubePoint.at(fixedDoorBinding.absoluteCell().add(fixedDoorBinding.direction()), levelZ);
     }
 
     public boolean hasFixedDoorBinding() {
@@ -77,32 +76,46 @@ public record TraversalNode(
 
     private static CubePoint normalizeAnchor(
             CubePoint anchor,
+            int levelZ,
             TraversalRoomAnchor roomAnchor,
-            Set<CubePoint> anchorCells
+            Set<CubePoint> anchorCells,
+            ResolvedCorridorDoorBinding fixedDoorBinding
     ) {
         if (anchor != null) {
             return anchor;
         }
+        CubePoint boundEntryCell = boundEntryCell(fixedDoorBinding, levelZ);
+        if (boundEntryCell != null) {
+            return boundEntryCell;
+        }
         if (roomAnchor != null && roomAnchor.anchorCell() != null) {
-            return CubePoint.at(roomAnchor.anchorCell(), roomAnchor.primaryLevel());
+            return CubePoint.at(roomAnchor.anchorCell(), levelZ);
         }
         return firstAnchorCell(anchorCells);
     }
 
     private static Set<CubePoint> normalizeAnchorCells(
             Set<CubePoint> anchorCells,
-            TraversalRoomAnchor roomAnchor,
             CubePoint anchor
     ) {
         LinkedHashSet<CubePoint> result = new LinkedHashSet<>();
         addAll(result, anchorCells);
-        if (result.isEmpty() && roomAnchor != null) {
-            addAll(result, roomAnchor.occupiedCells());
-        }
         if (result.isEmpty() && anchor != null) {
             result.add(anchor);
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
+    private static CubePoint boundEntryCell(
+            ResolvedCorridorDoorBinding fixedDoorBinding,
+            int levelZ
+    ) {
+        if (fixedDoorBinding == null
+                || fixedDoorBinding.absoluteCell() == null
+                || fixedDoorBinding.direction() == null) {
+            return null;
+        }
+        return CubePoint.at(fixedDoorBinding.absoluteCell().add(fixedDoorBinding.direction()), levelZ);
     }
 
     private static CubePoint firstAnchorCell(Set<CubePoint> anchorCells) {

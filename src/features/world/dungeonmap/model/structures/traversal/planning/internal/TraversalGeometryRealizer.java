@@ -31,7 +31,7 @@ public final class TraversalGeometryRealizer {
                 : structurePlan;
         TraversalTopology topology = resolvedPlan.topology();
         GridRoute route = buildRoute(resolvedPlan);
-        if (topology.roomPortalNodes().size() < 2) {
+        if (topology.requiredRoomPortalNodes().size() < 2) {
             return planOf(topology.corridorId(), CorridorPath.unroutable(route), List.of(), List.of());
         }
         TraversalPlan directAdjacencyPlan = directAdjacencyPlan(resolvedPlan, topology, route);
@@ -164,12 +164,12 @@ public final class TraversalGeometryRealizer {
         if (structurePlan == null
                 || topology == null
                 || topology.hasWaypoints()
-                || topology.roomPortalNodes().size() != 2
+                || topology.requiredRoomPortalNodes().size() != 2
                 || structurePlan.guideEdges().size() != 1) {
             return null;
         }
-        TraversalNode first = topology.roomPortalNodes().getFirst();
-        TraversalNode second = topology.roomPortalNodes().getLast();
+        TraversalNode first = topology.requiredRoomPortalNodes().getFirst();
+        TraversalNode second = topology.requiredRoomPortalNodes().getLast();
         AdjacentRoomPair adjacentRoomPair = findAdjacentRoomPair(first, second);
         if (adjacentRoomPair == null) {
             return null;
@@ -381,7 +381,7 @@ public final class TraversalGeometryRealizer {
 
         private TraversalPlan toPlan() {
             List<CorridorConnection> connections = corridorConnections();
-            boolean routable = attachedPortalEntryCellsByNodeId.size() >= topology.roomPortalNodes().size()
+            boolean routable = attachedPortalEntryCellsByNodeId.size() >= topology.requiredRoomPortalNodes().size()
                     && (!corridorCells.isEmpty() || !connections.isEmpty());
             CorridorPath path = routable
                     ? new CorridorPath(route, java.util.Set.copyOf(corridorCells), false, true)
@@ -391,7 +391,7 @@ public final class TraversalGeometryRealizer {
 
         private List<CorridorConnection> corridorConnections() {
             ArrayList<CorridorConnection> result = new ArrayList<>();
-            for (TraversalNode roomPortal : topology.roomPortalNodes()) {
+            for (TraversalNode roomPortal : topology.requiredRoomPortalNodes()) {
                 CorridorConnection connection = corridorConnection(
                         topology.corridorId(),
                         topology.mapId(),

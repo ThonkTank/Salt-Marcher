@@ -14,20 +14,22 @@ public record TraversalTopology(
         long mapId,
         List<TraversalNode> nodes,
         List<TraversalEdge> edges,
+        List<TraversalNodeId> requiredNodeIds,
         Set<CubePoint> obstacles
 ) {
     public TraversalTopology {
         nodes = normalizeNodes(nodes);
         edges = normalizeEdges(edges, nodes);
+        requiredNodeIds = normalizeRequiredNodeIds(requiredNodeIds, nodes);
         obstacles = normalizeObstacles(obstacles);
     }
 
     public static TraversalTopology empty() {
-        return new TraversalTopology(null, 0L, List.of(), List.of(), Set.of());
+        return new TraversalTopology(null, 0L, List.of(), List.of(), List.of(), Set.of());
     }
 
     public boolean hasWaypoints() {
-        return !waypointNodes().isEmpty();
+        return !requiredWaypointNodes().isEmpty();
     }
 
     public TraversalNode node(TraversalNodeId nodeId) {
@@ -50,8 +52,30 @@ public record TraversalTopology(
         return nodesOfKind(TraversalNode.TraversalNodeKind.WAYPOINT);
     }
 
+    public List<TraversalNode> requiredNodes() {
+        if (requiredNodeIds.isEmpty()) {
+            return List.of();
+        }
+        ArrayList<TraversalNode> result = new ArrayList<>();
+        for (TraversalNodeId requiredNodeId : requiredNodeIds) {
+            TraversalNode node = node(requiredNodeId);
+            if (node != null) {
+                result.add(node);
+            }
+        }
+        return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
+    public List<TraversalNode> requiredRoomPortalNodes() {
+        return requiredNodesOfKind(TraversalNode.TraversalNodeKind.ROOM_PORTAL);
+    }
+
+    public List<TraversalNode> requiredWaypointNodes() {
+        return requiredNodesOfKind(TraversalNode.TraversalNodeKind.WAYPOINT);
+    }
+
     public List<TraversalNode> backboneNodes() {
-        return hasWaypoints() ? waypointNodes() : roomPortalNodes();
+        return hasWaypoints() ? requiredWaypointNodes() : requiredRoomPortalNodes();
     }
 
     public List<TraversalNodeId> attachedPortalNodeIds() {
@@ -59,7 +83,7 @@ public record TraversalTopology(
             return List.of();
         }
         ArrayList<TraversalNodeId> result = new ArrayList<>();
-        for (TraversalNode roomPortalNode : roomPortalNodes()) {
+        for (TraversalNode roomPortalNode : requiredRoomPortalNodes()) {
             if (roomPortalNode != null && roomPortalNode.nodeId() != null) {
                 result.add(roomPortalNode.nodeId());
             }
@@ -73,6 +97,20 @@ public record TraversalTopology(
         }
         ArrayList<TraversalNode> result = new ArrayList<>();
         for (TraversalNode node : nodes) {
+            if (node != null && node.kind() == kind) {
+                result.add(node);
+            }
+        }
+        return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
+    private List<TraversalNode> requiredNodesOfKind(TraversalNode.TraversalNodeKind kind) {
+        if (requiredNodeIds.isEmpty()) {
+            return List.of();
+        }
+        ArrayList<TraversalNode> result = new ArrayList<>();
+        for (TraversalNodeId requiredNodeId : requiredNodeIds) {
+            TraversalNode node = node(requiredNodeId);
             if (node != null && node.kind() == kind) {
                 result.add(node);
             }
@@ -113,6 +151,28 @@ public record TraversalTopology(
                 continue;
             }
             result.add(edge);
+        }
+        return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
+    private static List<TraversalNodeId> normalizeRequiredNodeIds(
+            List<TraversalNodeId> requiredNodeIds,
+            List<TraversalNode> nodes
+    ) {
+        if (requiredNodeIds == null || requiredNodeIds.isEmpty()) {
+            return List.of();
+        }
+        Map<TraversalNodeId, TraversalNode> nodesById = new LinkedHashMap<>();
+        for (TraversalNode node : nodes == null ? List.<TraversalNode>of() : nodes) {
+            if (node != null && node.nodeId() != null) {
+                nodesById.putIfAbsent(node.nodeId(), node);
+            }
+        }
+        LinkedHashSet<TraversalNodeId> result = new LinkedHashSet<>();
+        for (TraversalNodeId requiredNodeId : requiredNodeIds) {
+            if (requiredNodeId != null && nodesById.containsKey(requiredNodeId)) {
+                result.add(requiredNodeId);
+            }
         }
         return result.isEmpty() ? List.of() : List.copyOf(result);
     }

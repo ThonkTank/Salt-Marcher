@@ -12,8 +12,11 @@ public record TraversalNodeId(String value) {
         }
     }
 
-    public static TraversalNodeId roomPortal(int index) {
-        return new TraversalNodeId("portal:" + Math.max(index, 0));
+    public static TraversalNodeId roomPortal(Long roomId, int levelZ, int roomIndex) {
+        if (roomId != null) {
+            return new TraversalNodeId("portal:room:" + roomId + ":z:" + levelZ);
+        }
+        return new TraversalNodeId("portal:index:" + Math.max(roomIndex, 0) + ":z:" + levelZ);
     }
 
     public static TraversalNodeId waypoint(int index) {
