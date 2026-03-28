@@ -19,11 +19,12 @@ final class TraversalCandidateGraphBuilder {
 
     static CandidateGraph build(TraversalTopology topology) {
         TraversalTopology resolvedTopology = topology == null ? TraversalTopology.empty() : topology;
-        LinkedHashMap<NodePair, TraversalEdge> edgesByPair = new LinkedHashMap<>();
-        addHorizontalCandidates(edgesByPair, resolvedTopology);
-        List<TraversalEdge> waypointSpineEdges = addWaypointSpineCandidates(edgesByPair, resolvedTopology);
-        addVerticalCandidates(edgesByPair, resolvedTopology);
-        return new CandidateGraph(List.copyOf(edgesByPair.values()), waypointSpineEdges);
+        LinkedHashMap<TraversalEdgeId, TraversalEdge> edgesById = new LinkedHashMap<>();
+        addHorizontalCandidates(edgesById, resolvedTopology);
+        List<TraversalEdgeId> waypointSpineEdgeIds = addWaypointSpineCandidates(edgesById, resolvedTopology);
+        addRequiredPortalAttachmentCandidates(edgesById, resolvedTopology);
+        addVerticalCandidates(edgesById, resolvedTopology);
+        return new CandidateGraph(List.copyOf(edgesById.values()), waypointSpineEdgeIds);
     }
 
     static TraversalEdge edgeBetween(
@@ -49,7 +50,7 @@ final class TraversalCandidateGraphBuilder {
     }
 
     private static void addHorizontalCandidates(
-            Map<NodePair, TraversalEdge> edgesByPair,
+            Map<TraversalEdgeId, TraversalEdge> edgesById,
             TraversalTopology topology
     ) {
         Map<Integer, List<TraversalNode>> nodesByLevel = new LinkedHashMap<>();
@@ -60,13 +61,13 @@ final class TraversalCandidateGraphBuilder {
         }
         for (List<TraversalNode> levelNodes : nodesByLevel.values()) {
             for (TraversalNode node : levelNodes) {
-                addHorizontalNeighbors(edgesByPair, topology, node, levelNodes);
+                addHorizontalNeighbors(edgesById, topology, node, levelNodes);
             }
         }
     }
 
     private static void addHorizontalNeighbors(
-            Map<NodePair, TraversalEdge> edgesByPair,
+            Map<TraversalEdgeId, TraversalEdge> edgesById,
             TraversalTopology topology,
             TraversalNode node,
             List<TraversalNode> levelNodes
@@ -88,32 +89,46 @@ final class TraversalCandidateGraphBuilder {
             if (added >= MAX_HORIZONTAL_NEIGHBORS) {
                 return;
             }
-            if (addCandidateEdge(edgesByPair, edgeBetween(topology, node, candidate))) {
+            if (addCandidateEdge(edgesById, edgeBetween(topology, node, candidate))) {
                 added++;
             }
         }
     }
 
-    private static List<TraversalEdge> addWaypointSpineCandidates(
-            Map<NodePair, TraversalEdge> edgesByPair,
+    private static List<TraversalEdgeId> addWaypointSpineCandidates(
+            Map<TraversalEdgeId, TraversalEdge> edgesById,
             TraversalTopology topology
     ) {
-        ArrayList<TraversalEdge> result = new ArrayList<>();
+        ArrayList<TraversalEdgeId> result = new ArrayList<>();
         List<TraversalNode> waypointNodes = topology == null ? List.of() : topology.requiredWaypointNodes();
         for (int index = 1; index < waypointNodes.size(); index++) {
             TraversalNode start = waypointNodes.get(index - 1);
             TraversalNode end = waypointNodes.get(index);
-            addCandidateEdge(edgesByPair, edgeBetween(topology, start, end));
-            TraversalEdge selectedEdge = edgesByPair.get(NodePair.of(start.nodeId(), end.nodeId()));
-            if (selectedEdge != null) {
-                result.add(selectedEdge);
+            TraversalEdge candidateEdge = edgeBetween(topology, start, end);
+            addCandidateEdge(edgesById, candidateEdge);
+            if (candidateEdge != null && candidateEdge.edgeId() != null && edgesById.containsKey(candidateEdge.edgeId())) {
+                result.add(candidateEdge.edgeId());
             }
         }
         return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
+    private static void addRequiredPortalAttachmentCandidates(
+            Map<TraversalEdgeId, TraversalEdge> edgesById,
+            TraversalTopology topology
+    ) {
+        if (topology == null || !topology.hasWaypoints()) {
+            return;
+        }
+        for (TraversalNode roomPortalNode : topology.requiredRoomPortalNodes()) {
+            for (TraversalNode waypointNode : topology.requiredWaypointNodes()) {
+                addCandidateEdge(edgesById, edgeBetween(topology, roomPortalNode, waypointNode));
+            }
+        }
+    }
+
     private static void addVerticalCandidates(
-            Map<NodePair, TraversalEdge> edgesByPair,
+            Map<TraversalEdgeId, TraversalEdge> edgesById,
             TraversalTopology topology
     ) {
         List<TraversalNode> nodes = topology == null ? List.of() : topology.nodes();
@@ -127,25 +142,25 @@ final class TraversalCandidateGraphBuilder {
                 if (second == null || first.levelZ() == second.levelZ()) {
                     continue;
                 }
-                addCandidateEdge(edgesByPair, edgeBetween(topology, first, second));
+                addCandidateEdge(edgesById, edgeBetween(topology, first, second));
             }
         }
     }
 
     private static boolean addCandidateEdge(
-            Map<NodePair, TraversalEdge> edgesByPair,
+            Map<TraversalEdgeId, TraversalEdge> edgesById,
             TraversalEdge edge
     ) {
-        if (edgesByPair == null || edge == null || edge.costHint() == Long.MAX_VALUE) {
+        if (edgesById == null || edge == null || edge.costHint() == Long.MAX_VALUE) {
             return false;
         }
-        NodePair pair = NodePair.of(edge.startNodeId(), edge.endNodeId());
-        if (pair == null) {
+        TraversalEdgeId edgeId = edge.edgeId();
+        if (edgeId == null) {
             return false;
         }
-        TraversalEdge existing = edgesByPair.get(pair);
+        TraversalEdge existing = edgesById.get(edgeId);
         if (existing == null || edge.costHint() < existing.costHint()) {
-            edgesByPair.put(pair, edge);
+            edgesById.put(edgeId, edge);
             return true;
         }
         return false;
@@ -192,25 +207,29 @@ final class TraversalCandidateGraphBuilder {
 
         private final List<TraversalEdge> edges;
         private final Map<TraversalNodeId, List<TraversalEdge>> edgesByNodeId;
-        private final Map<NodePair, TraversalEdge> edgesByPair;
-        private final List<TraversalEdge> waypointSpineEdges;
+        private final Map<TraversalEdgeId, TraversalEdge> edgesById;
+        private final List<TraversalEdgeId> waypointSpineEdgeIds;
 
         CandidateGraph(
                 List<TraversalEdge> edges,
-                List<TraversalEdge> waypointSpineEdges
+                List<TraversalEdgeId> waypointSpineEdgeIds
         ) {
             this.edges = normalizeEdges(edges);
             this.edgesByNodeId = indexEdgesByNodeId(this.edges);
-            this.edgesByPair = indexEdgesByPair(this.edges);
-            this.waypointSpineEdges = normalizeEdges(waypointSpineEdges);
+            this.edgesById = indexEdgesById(this.edges);
+            this.waypointSpineEdgeIds = normalizeEdgeIds(waypointSpineEdgeIds);
+        }
+
+        static CandidateGraph empty() {
+            return new CandidateGraph(List.of(), List.of());
         }
 
         List<TraversalEdge> edges() {
             return edges;
         }
 
-        List<TraversalEdge> waypointSpineEdges() {
-            return waypointSpineEdges;
+        List<TraversalEdgeId> waypointSpineEdgeIds() {
+            return waypointSpineEdgeIds;
         }
 
         List<TraversalEdge> edgesFrom(TraversalNodeId nodeId) {
@@ -221,8 +240,11 @@ final class TraversalCandidateGraphBuilder {
         }
 
         TraversalEdge edgeBetween(TraversalNodeId firstNodeId, TraversalNodeId secondNodeId) {
-            NodePair pair = NodePair.of(firstNodeId, secondNodeId);
-            return pair == null ? null : edgesByPair.get(pair);
+            return edge(TraversalEdgeId.of(firstNodeId, secondNodeId));
+        }
+
+        TraversalEdge edge(TraversalEdgeId edgeId) {
+            return edgeId == null ? null : edgesById.get(edgeId);
         }
 
         private static List<TraversalEdge> normalizeEdges(List<TraversalEdge> edges) {
@@ -233,6 +255,19 @@ final class TraversalCandidateGraphBuilder {
             for (TraversalEdge edge : edges) {
                 if (edge != null) {
                     result.add(edge);
+                }
+            }
+            return result.isEmpty() ? List.of() : List.copyOf(result);
+        }
+
+        private static List<TraversalEdgeId> normalizeEdgeIds(List<TraversalEdgeId> edgeIds) {
+            if (edgeIds == null || edgeIds.isEmpty()) {
+                return List.of();
+            }
+            LinkedHashSet<TraversalEdgeId> result = new LinkedHashSet<>();
+            for (TraversalEdgeId edgeId : edgeIds) {
+                if (edgeId != null) {
+                    result.add(edgeId);
                 }
             }
             return result.isEmpty() ? List.of() : List.copyOf(result);
@@ -260,40 +295,18 @@ final class TraversalCandidateGraphBuilder {
             return Map.copyOf(copy);
         }
 
-        private static Map<NodePair, TraversalEdge> indexEdgesByPair(List<TraversalEdge> edges) {
+        private static Map<TraversalEdgeId, TraversalEdge> indexEdgesById(List<TraversalEdge> edges) {
             if (edges == null || edges.isEmpty()) {
                 return Map.of();
             }
-            LinkedHashMap<NodePair, TraversalEdge> result = new LinkedHashMap<>();
+            LinkedHashMap<TraversalEdgeId, TraversalEdge> result = new LinkedHashMap<>();
             for (TraversalEdge edge : edges) {
-                if (edge == null) {
+                if (edge == null || edge.edgeId() == null) {
                     continue;
                 }
-                NodePair pair = NodePair.of(edge.startNodeId(), edge.endNodeId());
-                if (pair != null) {
-                    result.putIfAbsent(pair, edge);
-                }
+                result.putIfAbsent(edge.edgeId(), edge);
             }
             return result.isEmpty() ? Map.of() : Map.copyOf(result);
-        }
-    }
-
-    private record NodePair(
-            TraversalNodeId firstNodeId,
-            TraversalNodeId secondNodeId
-    ) {
-        private static NodePair of(
-                TraversalNodeId firstNodeId,
-                TraversalNodeId secondNodeId
-        ) {
-            if (firstNodeId == null
-                    || secondNodeId == null
-                    || firstNodeId.equals(secondNodeId)) {
-                return null;
-            }
-            return firstNodeId.value().compareTo(secondNodeId.value()) <= 0
-                    ? new NodePair(firstNodeId, secondNodeId)
-                    : new NodePair(secondNodeId, firstNodeId);
         }
     }
 }

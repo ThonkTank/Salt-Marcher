@@ -30,152 +30,98 @@ public final class TraversalGeometryRealizer {
                 ? TraversalStructurePlanner.StructurePlan.empty()
                 : structurePlan;
         TraversalTopology topology = resolvedPlan.topology();
-        GridRoute route = buildRoute(resolvedPlan);
+        GridRoute route = buildRoute(topology);
         if (topology.requiredRoomPortalNodes().size() < 2) {
             return planOf(topology.corridorId(), CorridorPath.unroutable(route), List.of(), List.of());
         }
-        TraversalPlan directAdjacencyPlan = directAdjacencyPlan(resolvedPlan, topology, route);
+        List<TraversalEdge> selectedEdges = resolveSelectedEdges(resolvedPlan);
+        if (selectedEdges == null) {
+            return planOf(topology.corridorId(), CorridorPath.unroutable(route), List.of(), List.of());
+        }
+        TraversalPlan directAdjacencyPlan = directAdjacencyPlan(topology, route, selectedEdges);
         if (directAdjacencyPlan != null) {
             return directAdjacencyPlan;
         }
         RealizationState state = new RealizationState(topology, route);
-        if (!realizeGuideSegments(resolvedPlan, topology, state)) {
-            return state.unroutablePlan();
-        }
-        if (!realizeAttachedPortals(resolvedPlan, topology, state)) {
+        if (!realizeSelectedEdges(topology, state, selectedEdges)) {
             return state.unroutablePlan();
         }
         return state.toPlan();
     }
 
-    private static boolean realizeGuideSegments(
-            TraversalStructurePlanner.StructurePlan structurePlan,
-            TraversalTopology topology,
-            RealizationState state
+    private static List<TraversalEdge> resolveSelectedEdges(
+            TraversalStructurePlanner.StructurePlan structurePlan
     ) {
-        for (TraversalEdge guideEdge : structurePlan.guideEdges()) {
-            if (guideEdge == null) {
+        if (structurePlan == null || structurePlan.selectedEdgeIds().isEmpty()) {
+            return List.of();
+        }
+        ArrayList<TraversalEdge> result = new ArrayList<>();
+        for (TraversalEdgeId edgeId : structurePlan.selectedEdgeIds()) {
+            TraversalEdge selectedEdge = structurePlan.candidateGraph().edge(edgeId);
+            if (selectedEdge == null) {
+                return null;
+            }
+            result.add(selectedEdge);
+        }
+        return List.copyOf(result);
+    }
+
+    private static boolean realizeSelectedEdges(
+            TraversalTopology topology,
+            RealizationState state,
+            List<TraversalEdge> selectedEdges
+    ) {
+        for (TraversalEdge selectedEdge : selectedEdges == null ? List.<TraversalEdge>of() : selectedEdges) {
+            if (selectedEdge == null) {
                 continue;
             }
-            TraversalNode start = topology.node(guideEdge.startNodeId());
-            TraversalNode end = topology.node(guideEdge.endNodeId());
+            TraversalNode start = topology.node(selectedEdge.startNodeId());
+            TraversalNode end = topology.node(selectedEdge.endNodeId());
             if (start == null || end == null) {
                 return false;
             }
             LocalSegmentResult segmentResult = LocalTraversalRoutePlanner.route(new LocalSegmentRequest(
-                    terminalFor(start, topology, state),
-                    terminalFor(end, topology, state),
+                    terminalFor(start, state),
+                    terminalFor(end, state),
                     topology.obstacles(),
-                    stairCandidates(guideEdge)));
+                    stairCandidates(selectedEdge)));
             if (!segmentResult.routable()) {
                 return false;
             }
-            state.recordGuideNode(start.nodeId(), segmentResult.sourceCell());
-            state.recordGuideNode(end.nodeId(), segmentResult.targetCell());
-            state.recordGuideRoom(start, topology, segmentResult.sourceCell());
-            state.recordGuideRoom(end, topology, segmentResult.targetCell());
-            state.addSegment(segmentResult);
-        }
-        return true;
-    }
-
-    private static boolean realizeAttachedPortals(
-            TraversalStructurePlanner.StructurePlan structurePlan,
-            TraversalTopology topology,
-            RealizationState state
-    ) {
-        for (TraversalStructurePlanner.PortalAttachment portalAttachment : structurePlan.portalAttachments()) {
-            if (portalAttachment == null || portalAttachment.portalNodeId() == null) {
-                continue;
-            }
-            TraversalNodeId portalNodeId = portalAttachment.portalNodeId();
-            if (state.hasAttachedPortal(portalNodeId)) {
-                continue;
-            }
-            TraversalNode roomPortal = topology.node(portalNodeId);
-            LocalSegmentRequest.LocalTerminal attachmentTarget = attachmentTarget(
-                    structurePlan,
-                    topology,
-                    state,
-                    portalAttachment);
-            if (roomPortal == null
-                    || roomPortal.kind() != TraversalNode.TraversalNodeKind.ROOM_PORTAL
-                    || attachmentTarget == null) {
-                return false;
-            }
-            LocalSegmentResult segmentResult = LocalTraversalRoutePlanner.route(new LocalSegmentRequest(
-                    new LocalSegmentRequest.RoomPortalTerminal(roomPortal),
-                    attachmentTarget,
-                    topology.obstacles(),
-                    stairCandidates(portalAttachment.edge())));
-            if (!segmentResult.routable()) {
-                return false;
-            }
-            state.recordAttachedPortal(portalNodeId, segmentResult.sourceCell());
+            state.recordNode(start.nodeId(), segmentResult.sourceCell());
+            state.recordNode(end.nodeId(), segmentResult.targetCell());
+            state.recordPortal(start, segmentResult.sourceCell());
+            state.recordPortal(end, segmentResult.targetCell());
             state.addSegment(segmentResult);
         }
         return true;
     }
 
     private static LocalSegmentRequest.LocalTerminal terminalFor(
-            TraversalNode guideNode,
-            TraversalTopology topology,
+            TraversalNode node,
             RealizationState state
     ) {
-        if (guideNode == null) {
+        if (node == null) {
             return LocalSegmentRequest.FixedCellsTerminal.of(List.of());
         }
-        CubePoint realizedCell = state.realizedGuideNodeCell(guideNode.nodeId());
+        CubePoint realizedCell = state.realizedNodeCell(node.nodeId());
         if (realizedCell != null) {
             return LocalSegmentRequest.FixedCellsTerminal.of(List.of(realizedCell));
         }
-        if (guideNode.kind() == TraversalNode.TraversalNodeKind.WAYPOINT) {
-            return LocalSegmentRequest.FixedCellsTerminal.of(guideNode.anchorCells());
+        if (node.kind() == TraversalNode.TraversalNodeKind.WAYPOINT) {
+            return LocalSegmentRequest.FixedCellsTerminal.of(node.anchorCells());
         }
-        TraversalNode roomPortal = roomPortalFor(guideNode, topology);
-        return roomPortal == null
-                ? LocalSegmentRequest.FixedCellsTerminal.of(List.of())
-                : new LocalSegmentRequest.RoomPortalTerminal(roomPortal);
+        return new LocalSegmentRequest.RoomPortalTerminal(node);
     }
 
-    private static LocalSegmentRequest.LocalTerminal attachmentTarget(
-            TraversalStructurePlanner.StructurePlan structurePlan,
-            TraversalTopology topology,
-            RealizationState state,
-            TraversalStructurePlanner.PortalAttachment portalAttachment
-    ) {
-        if (portalAttachment != null && portalAttachment.targetNodeId() != null) {
-            TraversalNode targetNode = topology == null ? null : topology.node(portalAttachment.targetNodeId());
-            if (targetNode != null) {
-                return terminalFor(targetNode, topology, state);
-            }
-        }
-        LinkedHashSet<CubePoint> attachmentTargets = state.attachmentTargets(structurePlan);
-        return attachmentTargets.isEmpty()
-                ? null
-                : LocalSegmentRequest.FixedCellsTerminal.of(attachmentTargets);
-    }
-
-    private static TraversalNode roomPortalFor(
-            TraversalNode guideNode,
-            TraversalTopology topology
-    ) {
-        if (guideNode == null
-                || topology == null
-                || guideNode.kind() != TraversalNode.TraversalNodeKind.ROOM_PORTAL) {
-            return null;
-        }
-        return topology.node(guideNode.nodeId());
-    }
-
-    private static GridRoute buildRoute(TraversalStructurePlanner.StructurePlan structurePlan) {
-        if (structurePlan == null || structurePlan.guideNodes().isEmpty()) {
+    private static GridRoute buildRoute(TraversalTopology topology) {
+        if (topology == null || topology.backboneNodes().isEmpty()) {
             return GridRoute.empty();
         }
         ArrayList<GridAnchor> anchors = new ArrayList<>();
-        for (TraversalNode guideNode : structurePlan.guideNodes()) {
-            if (guideNode != null && guideNode.anchor() != null) {
-                anchors.add(GridAnchor.atTile(guideNode.anchor().projectedCell()));
+        for (TraversalNode backboneNode : topology.backboneNodes()) {
+            if (backboneNode != null && backboneNode.anchor() != null) {
+                anchors.add(GridAnchor.atTile(backboneNode.anchor().projectedCell()));
             }
         }
         return anchors.isEmpty() ? GridRoute.empty() : new GridRoute(anchors);
@@ -189,16 +135,15 @@ public final class TraversalGeometryRealizer {
     }
 
     private static TraversalPlan directAdjacencyPlan(
-            TraversalStructurePlanner.StructurePlan structurePlan,
             TraversalTopology topology,
-            GridRoute route
+            GridRoute route,
+            List<TraversalEdge> selectedEdges
     ) {
-        if (structurePlan == null
-                || topology == null
+        if (topology == null
                 || topology.hasWaypoints()
                 || topology.requiredRoomPortalNodes().size() != 2
-                || structurePlan.guideEdges().size() != 1
-                || !(structurePlan.guideEdges().getFirst() instanceof HorizontalTraversalEdge)) {
+                || selectedEdges.size() != 1
+                || !(selectedEdges.getFirst() instanceof HorizontalTraversalEdge)) {
             return null;
         }
         TraversalNode first = topology.requiredRoomPortalNodes().getFirst();
@@ -340,44 +285,39 @@ public final class TraversalGeometryRealizer {
         private final GridRoute route;
         private final LinkedHashSet<CubePoint> corridorCells = new LinkedHashSet<>();
         private final LinkedHashSet<StairPlacement> stairPlacements = new LinkedHashSet<>();
-        private final Map<TraversalNodeId, CubePoint> realizedGuideNodeCellsById = new LinkedHashMap<>();
-        private final Map<TraversalNodeId, CubePoint> attachedPortalEntryCellsByNodeId = new LinkedHashMap<>();
+        private final Map<TraversalNodeId, CubePoint> realizedNodeCellsById = new LinkedHashMap<>();
+        private final Map<TraversalNodeId, CubePoint> portalEntryCellsByNodeId = new LinkedHashMap<>();
 
         private RealizationState(TraversalTopology topology, GridRoute route) {
             this.topology = topology == null ? TraversalTopology.empty() : topology;
             this.route = route == null ? GridRoute.empty() : route;
         }
 
-        private CubePoint realizedGuideNodeCell(TraversalNodeId nodeId) {
-            return nodeId == null ? null : realizedGuideNodeCellsById.get(nodeId);
+        private CubePoint realizedNodeCell(TraversalNodeId nodeId) {
+            return nodeId == null ? null : realizedNodeCellsById.get(nodeId);
         }
 
-        private void recordGuideNode(TraversalNodeId nodeId, CubePoint cell) {
+        private void recordNode(TraversalNodeId nodeId, CubePoint cell) {
             if (nodeId != null && cell != null) {
-                realizedGuideNodeCellsById.putIfAbsent(nodeId, cell);
+                realizedNodeCellsById.putIfAbsent(nodeId, cell);
             }
         }
 
-        private void recordGuideRoom(
-                TraversalNode guideNode,
-                TraversalTopology topology,
-                CubePoint entryCell
-        ) {
-            TraversalNode roomPortal = roomPortalFor(guideNode, topology);
-            if (roomPortal == null) {
+        private void recordPortal(TraversalNode node, CubePoint entryCell) {
+            if (node == null || node.kind() != TraversalNode.TraversalNodeKind.ROOM_PORTAL) {
                 return;
             }
-            recordAttachedPortal(guideNode.nodeId(), entryCell);
+            recordPortalEntry(node.nodeId(), entryCell);
         }
 
-        private void recordAttachedPortal(TraversalNodeId portalNodeId, CubePoint entryCell) {
+        private void recordPortalEntry(TraversalNodeId portalNodeId, CubePoint entryCell) {
             if (portalNodeId != null && entryCell != null) {
-                attachedPortalEntryCellsByNodeId.putIfAbsent(portalNodeId, entryCell);
+                portalEntryCellsByNodeId.putIfAbsent(portalNodeId, entryCell);
             }
         }
 
-        private boolean hasAttachedPortal(TraversalNodeId portalNodeId) {
-            return portalNodeId != null && attachedPortalEntryCellsByNodeId.containsKey(portalNodeId);
+        private TraversalPlan unroutablePlan() {
+            return planOf(topology.corridorId(), CorridorPath.unroutable(route), List.of(), List.of());
         }
 
         private void addSegment(LocalSegmentResult segmentResult) {
@@ -388,33 +328,9 @@ public final class TraversalGeometryRealizer {
             stairPlacements.addAll(segmentResult.stairPlacements());
         }
 
-        private LinkedHashSet<CubePoint> attachmentTargets(TraversalStructurePlanner.StructurePlan structurePlan) {
-            LinkedHashSet<CubePoint> result = new LinkedHashSet<>();
-            if (!corridorCells.isEmpty()) {
-                result.addAll(corridorCells);
-                return result;
-            }
-            for (TraversalNode guideNode : structurePlan.guideNodes()) {
-                if (guideNode == null || guideNode.kind() == TraversalNode.TraversalNodeKind.ROOM_PORTAL) {
-                    continue;
-                }
-                CubePoint realizedCell = realizedGuideNodeCell(guideNode.nodeId());
-                if (realizedCell != null) {
-                    result.add(realizedCell);
-                    continue;
-                }
-                result.addAll(guideNode.anchorCells());
-            }
-            return result;
-        }
-
-        private TraversalPlan unroutablePlan() {
-            return planOf(topology.corridorId(), CorridorPath.unroutable(route), List.of(), List.of());
-        }
-
         private TraversalPlan toPlan() {
             List<CorridorConnection> connections = corridorConnections();
-            boolean routable = attachedPortalEntryCellsByNodeId.size() >= topology.requiredRoomPortalNodes().size()
+            boolean routable = portalEntryCellsByNodeId.size() >= topology.requiredRoomPortalNodes().size()
                     && (!corridorCells.isEmpty() || !connections.isEmpty());
             CorridorPath path = routable
                     ? new CorridorPath(route, java.util.Set.copyOf(corridorCells), false, true)
@@ -429,7 +345,7 @@ public final class TraversalGeometryRealizer {
                         topology.corridorId(),
                         topology.mapId(),
                         roomPortal,
-                        attachedPortalEntryCellsByNodeId.get(roomPortal.nodeId()));
+                        portalEntryCellsByNodeId.get(roomPortal.nodeId()));
                 if (connection != null) {
                     result.add(connection);
                 }

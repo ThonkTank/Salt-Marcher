@@ -6,6 +6,10 @@ public sealed interface TraversalEdge permits HorizontalTraversalEdge, VerticalC
 
     TraversalNodeId endNodeId();
 
+    default TraversalEdgeId edgeId() {
+        return TraversalEdgeId.of(startNodeId(), endNodeId());
+    }
+
     long costHint();
 
     TraversalEdgeKind kind();

@@ -1,12 +1,8 @@
 package features.world.dungeonmap.model.structures.traversal.planning.internal;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 
 public final class TraversalStructurePlanner {
 
@@ -30,13 +26,11 @@ public final class TraversalStructurePlanner {
         if (requiredNodes.isEmpty()) {
             return StructurePlan.empty();
         }
-        ArrayList<TraversalNode> guideNodes = new ArrayList<>();
-        ArrayList<TraversalEdge> guideEdges = new ArrayList<>();
+        ArrayList<TraversalEdgeId> selectedEdgeIds = new ArrayList<>();
         LinkedHashSet<TraversalNodeId> connectedNodeIds = new LinkedHashSet<>();
         LinkedHashSet<TraversalNodeId> requiredNodeIds = requiredNodeIds(requiredNodes);
         TraversalNode seedNode = requiredNodes.getFirst();
         connectedNodeIds.add(seedNode.nodeId());
-        guideNodes.add(seedNode);
         while (connectedNodeIds.size() < requiredNodeIds.size()) {
             TraversalEdge nextEdge = null;
             TraversalNodeId nextNodeId = null;
@@ -56,14 +50,10 @@ public final class TraversalStructurePlanner {
             if (nextEdge == null || nextNodeId == null) {
                 break;
             }
-            guideEdges.add(nextEdge);
+            selectedEdgeIds.add(nextEdge.edgeId());
             connectedNodeIds.add(nextNodeId);
-            TraversalNode guideNode = topology.node(nextNodeId);
-            if (guideNode != null) {
-                guideNodes.add(guideNode);
-            }
         }
-        return new StructurePlan(topology, guideNodes, guideEdges, List.of());
+        return new StructurePlan(topology, candidateGraph, selectedEdgeIds);
     }
 
     private static StructurePlan planWaypointBackbone(
@@ -74,22 +64,21 @@ public final class TraversalStructurePlanner {
         if (waypointNodes.isEmpty()) {
             return StructurePlan.empty();
         }
-        List<TraversalEdge> guideEdges = candidateGraph.waypointSpineEdges();
-        if (guideEdges.size() != Math.max(waypointNodes.size() - 1, 0)) {
-            return new StructurePlan(topology, waypointNodes, guideEdges, List.of());
+        ArrayList<TraversalEdgeId> selectedEdgeIds = new ArrayList<>(candidateGraph.waypointSpineEdgeIds());
+        if (waypointNodes.size() > 1 && selectedEdgeIds.size() != waypointNodes.size() - 1) {
+            return new StructurePlan(topology, candidateGraph, selectedEdgeIds);
         }
-        ArrayList<PortalAttachment> portalAttachments = new ArrayList<>();
         for (TraversalNode roomPortalNode : topology.requiredRoomPortalNodes()) {
-            PortalAttachment portalAttachment = selectBestPortalAttachment(topology, roomPortalNode, waypointNodes);
-            if (portalAttachment != null) {
-                portalAttachments.add(portalAttachment);
+            TraversalEdgeId attachmentEdgeId = selectBestPortalAttachmentEdgeId(candidateGraph, roomPortalNode, waypointNodes);
+            if (attachmentEdgeId != null) {
+                selectedEdgeIds.add(attachmentEdgeId);
             }
         }
-        return new StructurePlan(topology, waypointNodes, guideEdges, portalAttachments);
+        return new StructurePlan(topology, candidateGraph, selectedEdgeIds);
     }
 
-    private static PortalAttachment selectBestPortalAttachment(
-            TraversalTopology topology,
+    private static TraversalEdgeId selectBestPortalAttachmentEdgeId(
+            TraversalCandidateGraphBuilder.CandidateGraph candidateGraph,
             TraversalNode roomPortalNode,
             List<TraversalNode> spineNodes
     ) {
@@ -99,16 +88,18 @@ public final class TraversalStructurePlanner {
         TraversalNode bestTarget = null;
         TraversalEdge bestEdge = null;
         for (TraversalNode spineNode : spineNodes) {
-            TraversalEdge candidateEdge = TraversalCandidateGraphBuilder.edgeBetween(topology, roomPortalNode, spineNode);
+            TraversalEdge candidateEdge = candidateGraph.edgeBetween(
+                    roomPortalNode.nodeId(),
+                    spineNode == null ? null : spineNode.nodeId());
             if (candidateEdge == null || !isBetterEdge(candidateEdge, bestEdge, spineNode.nodeId(), bestTarget == null ? null : bestTarget.nodeId())) {
                 continue;
             }
             bestTarget = spineNode;
             bestEdge = candidateEdge;
         }
-        return bestTarget == null || bestEdge == null
+        return bestTarget == null || bestEdge == null || bestEdge.edgeId() == null
                 ? null
-                : new PortalAttachment(roomPortalNode.nodeId(), bestTarget.nodeId(), bestEdge);
+                : bestEdge.edgeId();
     }
 
     private static LinkedHashSet<TraversalNodeId> requiredNodeIds(List<TraversalNode> requiredNodes) {
@@ -125,16 +116,7 @@ public final class TraversalStructurePlanner {
             TraversalEdge edge,
             TraversalNodeId nodeId
     ) {
-        if (edge == null || nodeId == null) {
-            return null;
-        }
-        if (nodeId.equals(edge.startNodeId())) {
-            return edge.endNodeId();
-        }
-        if (nodeId.equals(edge.endNodeId())) {
-            return edge.startNodeId();
-        }
-        return null;
+        return edge == null || edge.edgeId() == null ? null : edge.edgeId().otherNodeId(nodeId);
     }
 
     private static boolean isBetterEdge(
@@ -159,94 +141,34 @@ public final class TraversalStructurePlanner {
 
     public record StructurePlan(
             TraversalTopology topology,
-            List<TraversalNode> guideNodes,
-            List<TraversalEdge> guideEdges,
-            List<PortalAttachment> portalAttachments
+            TraversalCandidateGraphBuilder.CandidateGraph candidateGraph,
+            List<TraversalEdgeId> selectedEdgeIds
     ) {
         public StructurePlan {
             topology = topology == null ? TraversalTopology.empty() : topology;
-            guideNodes = guideNodes == null ? List.of() : List.copyOf(guideNodes);
-            guideEdges = guideEdges == null ? List.of() : List.copyOf(guideEdges);
-            portalAttachments = normalizePortalAttachments(portalAttachments);
+            candidateGraph = candidateGraph == null ? TraversalCandidateGraphBuilder.CandidateGraph.empty() : candidateGraph;
+            selectedEdgeIds = normalizeSelectedEdgeIds(selectedEdgeIds);
         }
 
         public static StructurePlan empty() {
-            return new StructurePlan(TraversalTopology.empty(), List.of(), List.of(), List.of());
+            return new StructurePlan(
+                    TraversalTopology.empty(),
+                    TraversalCandidateGraphBuilder.CandidateGraph.empty(),
+                    List.of());
         }
 
-        public boolean hasWaypointBackbone() {
-            for (TraversalNode guideNode : guideNodes) {
-                if (guideNode != null && guideNode.kind() == TraversalNode.TraversalNodeKind.WAYPOINT) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public List<TraversalNodeId> attachedPortalNodeIds() {
-            if (portalAttachments.isEmpty()) {
+        private static List<TraversalEdgeId> normalizeSelectedEdgeIds(List<TraversalEdgeId> selectedEdgeIds) {
+            if (selectedEdgeIds == null || selectedEdgeIds.isEmpty()) {
                 return List.of();
             }
-            ArrayList<TraversalNodeId> result = new ArrayList<>();
-            for (PortalAttachment portalAttachment : portalAttachments) {
-                if (portalAttachment != null && portalAttachment.portalNodeId() != null) {
-                    result.add(portalAttachment.portalNodeId());
-                }
-            }
-            return result.isEmpty() ? List.of() : List.copyOf(result);
-        }
-
-        public PortalAttachment portalAttachment(TraversalNodeId portalNodeId) {
-            if (portalNodeId == null) {
-                return null;
-            }
-            for (PortalAttachment portalAttachment : portalAttachments) {
-                if (portalAttachment != null && portalNodeId.equals(portalAttachment.portalNodeId())) {
-                    return portalAttachment;
-                }
-            }
-            return null;
-        }
-
-        private static List<PortalAttachment> normalizePortalAttachments(List<PortalAttachment> portalAttachments) {
-            if (portalAttachments == null || portalAttachments.isEmpty()) {
-                return List.of();
-            }
-            LinkedHashMap<TraversalNodeId, PortalAttachment> result = new LinkedHashMap<>();
-            for (PortalAttachment portalAttachment : portalAttachments) {
-                if (portalAttachment == null || portalAttachment.portalNodeId() == null) {
+            LinkedHashSet<TraversalEdgeId> result = new LinkedHashSet<>();
+            for (TraversalEdgeId edgeId : selectedEdgeIds) {
+                if (edgeId == null) {
                     continue;
                 }
-                result.putIfAbsent(portalAttachment.portalNodeId(), portalAttachment);
+                result.add(edgeId);
             }
-            return result.isEmpty() ? List.of() : List.copyOf(result.values());
-        }
-    }
-
-    public record PortalAttachment(
-            TraversalNodeId portalNodeId,
-            TraversalNodeId targetNodeId,
-            TraversalEdge edge
-    ) {
-        public PortalAttachment {
-            Objects.requireNonNull(portalNodeId, "portalNodeId");
-            Objects.requireNonNull(targetNodeId, "targetNodeId");
-            Objects.requireNonNull(edge, "edge");
-            if (!connects(edge, portalNodeId, targetNodeId)) {
-                throw new IllegalArgumentException("attachment edge must connect portal and target");
-            }
-        }
-
-        private static boolean connects(
-                TraversalEdge edge,
-                TraversalNodeId portalNodeId,
-                TraversalNodeId targetNodeId
-        ) {
-            if (edge == null || portalNodeId == null || targetNodeId == null) {
-                return false;
-            }
-            Set<TraversalNodeId> nodeIds = Set.of(edge.startNodeId(), edge.endNodeId());
-            return nodeIds.contains(portalNodeId) && nodeIds.contains(targetNodeId);
+            return result.isEmpty() ? List.of() : List.copyOf(result);
         }
     }
 }
