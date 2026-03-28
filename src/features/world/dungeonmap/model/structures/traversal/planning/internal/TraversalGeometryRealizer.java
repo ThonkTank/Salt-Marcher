@@ -84,25 +84,30 @@ public final class TraversalGeometryRealizer {
             TraversalTopology topology,
             RealizationState state
     ) {
-        for (TraversalNodeId portalNodeId : structurePlan.attachedPortalNodeIds()) {
-            if (portalNodeId == null) {
+        for (TraversalStructurePlanner.PortalAttachment portalAttachment : structurePlan.portalAttachments()) {
+            if (portalAttachment == null || portalAttachment.portalNodeId() == null) {
                 continue;
             }
+            TraversalNodeId portalNodeId = portalAttachment.portalNodeId();
             if (state.hasAttachedPortal(portalNodeId)) {
                 continue;
             }
             TraversalNode roomPortal = topology.node(portalNodeId);
-            LinkedHashSet<CubePoint> attachmentTargets = state.attachmentTargets(structurePlan);
+            LocalSegmentRequest.LocalTerminal attachmentTarget = attachmentTarget(
+                    structurePlan,
+                    topology,
+                    state,
+                    portalAttachment);
             if (roomPortal == null
                     || roomPortal.kind() != TraversalNode.TraversalNodeKind.ROOM_PORTAL
-                    || attachmentTargets.isEmpty()) {
+                    || attachmentTarget == null) {
                 return false;
             }
             LocalSegmentResult segmentResult = LocalTraversalRoutePlanner.route(new LocalSegmentRequest(
                     new LocalSegmentRequest.RoomPortalTerminal(roomPortal),
-                    LocalSegmentRequest.FixedCellsTerminal.of(attachmentTargets),
+                    attachmentTarget,
                     topology.obstacles(),
-                    List.of()));
+                    stairCandidates(portalAttachment.edge())));
             if (!segmentResult.routable()) {
                 return false;
             }
@@ -131,6 +136,24 @@ public final class TraversalGeometryRealizer {
         return roomPortal == null
                 ? LocalSegmentRequest.FixedCellsTerminal.of(List.of())
                 : new LocalSegmentRequest.RoomPortalTerminal(roomPortal);
+    }
+
+    private static LocalSegmentRequest.LocalTerminal attachmentTarget(
+            TraversalStructurePlanner.StructurePlan structurePlan,
+            TraversalTopology topology,
+            RealizationState state,
+            TraversalStructurePlanner.PortalAttachment portalAttachment
+    ) {
+        if (portalAttachment != null && portalAttachment.targetNodeId() != null) {
+            TraversalNode targetNode = topology == null ? null : topology.node(portalAttachment.targetNodeId());
+            if (targetNode != null) {
+                return terminalFor(targetNode, topology, state);
+            }
+        }
+        LinkedHashSet<CubePoint> attachmentTargets = state.attachmentTargets(structurePlan);
+        return attachmentTargets.isEmpty()
+                ? null
+                : LocalSegmentRequest.FixedCellsTerminal.of(attachmentTargets);
     }
 
     private static TraversalNode roomPortalFor(

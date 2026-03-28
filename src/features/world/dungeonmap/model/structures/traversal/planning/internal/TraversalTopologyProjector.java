@@ -32,7 +32,7 @@ public final class TraversalTopologyProjector {
                 request.corridorId(),
                 request.mapId(),
                 mergeNodes(projectedRoomPortals.nodes(), waypointNodes),
-                projectBackboneEdges(requiredRoomPortalNodes, waypointNodes, request.obstacles()),
+                List.of(),
                 mergeRequiredNodeIds(requiredRoomPortalNodes, waypointNodes),
                 request.obstacles());
     }
@@ -117,44 +117,6 @@ public final class TraversalTopologyProjector {
             }
         }
         return result.isEmpty() ? List.of() : List.copyOf(result);
-    }
-
-    private static List<TraversalEdge> projectBackboneEdges(
-            List<TraversalNode> requiredRoomPortalNodes,
-            List<TraversalNode> waypointNodes,
-            Set<CubePoint> obstacles
-    ) {
-        List<TraversalNode> backboneNodes = waypointNodes == null || waypointNodes.isEmpty()
-                ? (requiredRoomPortalNodes == null ? List.of() : requiredRoomPortalNodes)
-                : waypointNodes;
-        if (backboneNodes.size() < 2) {
-            return List.of();
-        }
-        ArrayList<TraversalEdge> result = new ArrayList<>();
-        for (int index = 1; index < backboneNodes.size(); index++) {
-            TraversalEdge edge = projectBackboneEdge(
-                    backboneNodes.get(index - 1),
-                    backboneNodes.get(index),
-                    obstacles);
-            if (edge != null) {
-                result.add(edge);
-            }
-        }
-        return result.isEmpty() ? List.of() : List.copyOf(result);
-    }
-
-    private static TraversalEdge projectBackboneEdge(
-            TraversalNode start,
-            TraversalNode end,
-            Set<CubePoint> obstacles
-    ) {
-        if (start == null || end == null) {
-            return null;
-        }
-        if (start.levelZ() == end.levelZ()) {
-            return new HorizontalTraversalEdge(start.nodeId(), end.nodeId());
-        }
-        return VerticalCandidateGenerator.project(start, end, obstacles);
     }
 
     private static List<TraversalNode> projectUnboundRoomPortalNodes(

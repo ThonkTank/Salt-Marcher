@@ -4,7 +4,8 @@ import java.util.Objects;
 
 public record HorizontalTraversalEdge(
         TraversalNodeId startNodeId,
-        TraversalNodeId endNodeId
+        TraversalNodeId endNodeId,
+        long costHint
 ) implements TraversalEdge {
 
     public HorizontalTraversalEdge {
@@ -12,6 +13,9 @@ public record HorizontalTraversalEdge(
         Objects.requireNonNull(endNodeId, "endNodeId");
         if (startNodeId.equals(endNodeId)) {
             throw new IllegalArgumentException("edge must connect distinct nodes");
+        }
+        if (costHint < 0L) {
+            throw new IllegalArgumentException("costHint must not be negative");
         }
     }
 

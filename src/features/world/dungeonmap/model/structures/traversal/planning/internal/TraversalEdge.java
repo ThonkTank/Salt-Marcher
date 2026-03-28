@@ -6,6 +6,8 @@ public sealed interface TraversalEdge permits HorizontalTraversalEdge, VerticalC
 
     TraversalNodeId endNodeId();
 
+    long costHint();
+
     TraversalEdgeKind kind();
 
     enum TraversalEdgeKind {
