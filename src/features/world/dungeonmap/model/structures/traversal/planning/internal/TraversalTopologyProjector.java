@@ -32,7 +32,7 @@ public final class TraversalTopologyProjector {
                 request.corridorId(),
                 request.mapId(),
                 mergeNodes(projectedRoomPortals.nodes(), waypointNodes),
-                projectBackboneEdges(requiredRoomPortalNodes, waypointNodes),
+                projectBackboneEdges(requiredRoomPortalNodes, waypointNodes, request.obstacles()),
                 mergeRequiredNodeIds(requiredRoomPortalNodes, waypointNodes),
                 request.obstacles());
     }
@@ -121,7 +121,8 @@ public final class TraversalTopologyProjector {
 
     private static List<TraversalEdge> projectBackboneEdges(
             List<TraversalNode> requiredRoomPortalNodes,
-            List<TraversalNode> waypointNodes
+            List<TraversalNode> waypointNodes,
+            Set<CubePoint> obstacles
     ) {
         List<TraversalNode> backboneNodes = waypointNodes == null || waypointNodes.isEmpty()
                 ? (requiredRoomPortalNodes == null ? List.of() : requiredRoomPortalNodes)
@@ -131,11 +132,29 @@ public final class TraversalTopologyProjector {
         }
         ArrayList<TraversalEdge> result = new ArrayList<>();
         for (int index = 1; index < backboneNodes.size(); index++) {
-            result.add(new TraversalEdge(
-                    backboneNodes.get(index - 1).nodeId(),
-                    backboneNodes.get(index).nodeId()));
+            TraversalEdge edge = projectBackboneEdge(
+                    backboneNodes.get(index - 1),
+                    backboneNodes.get(index),
+                    obstacles);
+            if (edge != null) {
+                result.add(edge);
+            }
         }
         return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
+    private static TraversalEdge projectBackboneEdge(
+            TraversalNode start,
+            TraversalNode end,
+            Set<CubePoint> obstacles
+    ) {
+        if (start == null || end == null) {
+            return null;
+        }
+        if (start.levelZ() == end.levelZ()) {
+            return new HorizontalTraversalEdge(start.nodeId(), end.nodeId());
+        }
+        return VerticalCandidateGenerator.project(start, end, obstacles);
     }
 
     private static List<TraversalNode> projectUnboundRoomPortalNodes(

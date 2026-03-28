@@ -4,18 +4,21 @@ import features.world.dungeonmap.model.geometry.CubePoint;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
 record LocalSegmentRequest(
         LocalTerminal source,
         LocalTerminal target,
-        Set<CubePoint> obstacles
+        Set<CubePoint> obstacles,
+        List<StairCandidate> stairCandidates
 ) {
     LocalSegmentRequest {
         Objects.requireNonNull(source, "source");
         Objects.requireNonNull(target, "target");
         obstacles = normalizePoints(obstacles);
+        stairCandidates = normalizeCandidates(stairCandidates);
     }
 
     sealed interface LocalTerminal permits RoomPortalTerminal, FixedCellsTerminal {
@@ -67,5 +70,18 @@ record LocalSegmentRequest(
             }
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
+    private static List<StairCandidate> normalizeCandidates(List<StairCandidate> stairCandidates) {
+        if (stairCandidates == null || stairCandidates.isEmpty()) {
+            return List.of();
+        }
+        LinkedHashSet<StairCandidate> result = new LinkedHashSet<>();
+        for (StairCandidate stairCandidate : stairCandidates) {
+            if (stairCandidate != null) {
+                result.add(stairCandidate);
+            }
+        }
+        return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 }

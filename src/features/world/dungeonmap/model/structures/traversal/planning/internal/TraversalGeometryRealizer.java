@@ -65,7 +65,8 @@ public final class TraversalGeometryRealizer {
             LocalSegmentResult segmentResult = LocalTraversalRoutePlanner.route(new LocalSegmentRequest(
                     terminalFor(start, topology, state),
                     terminalFor(end, topology, state),
-                    topology.obstacles()));
+                    topology.obstacles(),
+                    stairCandidates(guideEdge)));
             if (!segmentResult.routable()) {
                 return false;
             }
@@ -100,7 +101,8 @@ public final class TraversalGeometryRealizer {
             LocalSegmentResult segmentResult = LocalTraversalRoutePlanner.route(new LocalSegmentRequest(
                     new LocalSegmentRequest.RoomPortalTerminal(roomPortal),
                     LocalSegmentRequest.FixedCellsTerminal.of(attachmentTargets),
-                    topology.obstacles()));
+                    topology.obstacles(),
+                    List.of()));
             if (!segmentResult.routable()) {
                 return false;
             }
@@ -156,6 +158,13 @@ public final class TraversalGeometryRealizer {
         return anchors.isEmpty() ? GridRoute.empty() : new GridRoute(anchors);
     }
 
+    private static List<StairCandidate> stairCandidates(TraversalEdge guideEdge) {
+        if (guideEdge instanceof VerticalCandidateEdge verticalCandidateEdge) {
+            return verticalCandidateEdge.stairCandidates();
+        }
+        return List.of();
+    }
+
     private static TraversalPlan directAdjacencyPlan(
             TraversalStructurePlanner.StructurePlan structurePlan,
             TraversalTopology topology,
@@ -165,7 +174,8 @@ public final class TraversalGeometryRealizer {
                 || topology == null
                 || topology.hasWaypoints()
                 || topology.requiredRoomPortalNodes().size() != 2
-                || structurePlan.guideEdges().size() != 1) {
+                || structurePlan.guideEdges().size() != 1
+                || !(structurePlan.guideEdges().getFirst() instanceof HorizontalTraversalEdge)) {
             return null;
         }
         TraversalNode first = topology.requiredRoomPortalNodes().getFirst();
