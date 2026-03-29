@@ -30,6 +30,7 @@ public final class Corridor {
 
     private static final String TARGET_KEY_PREFIX = "corridor:";
 
+    private final String segmentKey;
     private final Long corridorId;
     private final Long traversalId;
     private final long mapId;
@@ -39,6 +40,7 @@ public final class Corridor {
     private final List<CorridorConnection> connections;
 
     public static Corridor resolved(
+            String segmentKey,
             Long corridorId,
             long mapId,
             List<Long> roomIds,
@@ -46,22 +48,35 @@ public final class Corridor {
             CorridorPath path,
             List<CorridorConnection> connections
     ) {
-        return resolved(corridorId, null, mapId, roomIds, bindings, path, connections);
+        return resolved(segmentKey, corridorId, null, mapId, roomIds, bindings, path, connections);
+    }
+
+    public static Corridor resolved(
+            String segmentKey,
+            Long corridorId,
+            Long traversalId,
+            long mapId,
+            List<Long> roomIds,
+            CorridorBindings bindings,
+            CorridorPath path,
+            List<CorridorConnection> connections
+    ) {
+        return new Corridor(segmentKey, corridorId, traversalId, mapId, roomIds, bindings, path, connections);
     }
 
     public static Corridor resolved(
             Long corridorId,
-            Long traversalId,
             long mapId,
             List<Long> roomIds,
             CorridorBindings bindings,
             CorridorPath path,
             List<CorridorConnection> connections
     ) {
-        return new Corridor(corridorId, traversalId, mapId, roomIds, bindings, path, connections);
+        return resolved("legacy-corridor", corridorId, null, mapId, roomIds, bindings, path, connections);
     }
 
     private Corridor(
+            String segmentKey,
             Long corridorId,
             Long traversalId,
             long mapId,
@@ -70,6 +85,7 @@ public final class Corridor {
             CorridorPath path,
             List<CorridorConnection> connections
     ) {
+        this.segmentKey = segmentKey == null || segmentKey.isBlank() ? "legacy-corridor" : segmentKey;
         this.corridorId = corridorId;
         this.traversalId = traversalId;
         this.mapId = mapId;
@@ -81,6 +97,10 @@ public final class Corridor {
 
     public Long corridorId() {
         return corridorId;
+    }
+
+    public String segmentKey() {
+        return segmentKey;
     }
 
     public Long traversalId() {
@@ -235,7 +255,7 @@ public final class Corridor {
         }
         List<Long> updated = new ArrayList<>(roomIds);
         updated.add(roomId);
-        return resolved(corridorId, traversalId, mapId, updated, bindings, path, connections);
+        return resolved(segmentKey, corridorId, traversalId, mapId, updated, bindings, path, connections);
     }
 
     public Corridor withRemovedRoom(Long roomId) {
@@ -245,7 +265,7 @@ public final class Corridor {
         List<Long> updated = roomIds.stream()
                 .filter(existing -> !Objects.equals(existing, roomId))
                 .toList();
-        Corridor updatedCorridor = resolved(corridorId, traversalId, mapId, updated, bindings.withoutDoorBinding(roomId), path, connections);
+        Corridor updatedCorridor = resolved(segmentKey, corridorId, traversalId, mapId, updated, bindings.withoutDoorBinding(roomId), path, connections);
         return updatedCorridor.isPersistable() ? updatedCorridor : updatedCorridor.withPath(CorridorPath.empty());
     }
 
@@ -263,7 +283,7 @@ public final class Corridor {
                 updatedBindings = updatedBindings.withoutDoorBinding(mergedRoomId);
             }
         }
-        return resolved(corridorId, traversalId, mapId, updated, updatedBindings, path, connections);
+        return resolved(segmentKey, corridorId, traversalId, mapId, updated, updatedBindings, path, connections);
     }
 
     public Corridor withReplacedRoom(Long oldRoomId, Long newRoomId) {
@@ -275,7 +295,7 @@ public final class Corridor {
                 .distinct()
                 .toList();
         CorridorBindings updatedBindings = bindings.withoutDoorBinding(oldRoomId);
-        return resolved(corridorId, traversalId, mapId, updated, updatedBindings, path, connections);
+        return resolved(segmentKey, corridorId, traversalId, mapId, updated, updatedBindings, path, connections);
     }
 
 
@@ -329,6 +349,7 @@ public final class Corridor {
         // Merging is intentionally asymmetric: the kept corridor stays the editable route owner, so its
         // waypoint and door choices survive while the merged-away corridor contributes only room membership.
         Corridor mergedCorridor = resolved(
+                segmentKey,
                 corridorId,
                 traversalId,
                 mapId,
@@ -407,7 +428,7 @@ public final class Corridor {
         if (slice == null || !acceptsTraversalSlice(slice)) {
             return this;
         }
-        return withPath(slice.path()).withConnections(slice.connections());
+        return withPath(slice.path()).withConnections(rebindConnections(slice.connections(), corridorId));
     }
 
     public List<Room> resolvedRooms(CorridorPlanningInput input) {
@@ -459,15 +480,15 @@ public final class Corridor {
     }
 
     private Corridor withBindings(CorridorBindings bindings) {
-        return resolved(corridorId, traversalId, mapId, roomIds, bindings, path, connections);
+        return resolved(segmentKey, corridorId, traversalId, mapId, roomIds, bindings, path, connections);
     }
 
     private Corridor withPath(CorridorPath path) {
-        return resolved(corridorId, traversalId, mapId, roomIds, bindings, path, connections);
+        return resolved(segmentKey, corridorId, traversalId, mapId, roomIds, bindings, path, connections);
     }
 
     private Corridor withConnections(List<CorridorConnection> connections) {
-        return resolved(corridorId, traversalId, mapId, roomIds, bindings, path, connections);
+        return resolved(segmentKey, corridorId, traversalId, mapId, roomIds, bindings, path, connections);
     }
 
     private boolean acceptsTraversalSlice(CorridorTraversalSlice slice) {
@@ -475,7 +496,34 @@ public final class Corridor {
             return false;
         }
         Long sliceCorridorId = slice.corridorId();
-        return corridorId == null || sliceCorridorId == null || Objects.equals(corridorId, sliceCorridorId);
+        return Objects.equals(segmentKey, slice.segmentKey())
+                || corridorId == null
+                || sliceCorridorId == null
+                || Objects.equals(corridorId, sliceCorridorId);
+    }
+
+    private static List<CorridorConnection> rebindConnections(List<CorridorConnection> connections, Long corridorId) {
+        if (connections == null || connections.isEmpty()) {
+            return List.of();
+        }
+        ArrayList<CorridorConnection> rebound = new ArrayList<>();
+        for (CorridorConnection connection : connections) {
+            if (connection == null) {
+                continue;
+            }
+            rebound.add(new CorridorConnection(
+                    corridorId,
+                    connection.mapId(),
+                    connection.door(),
+                    connection.endpoints().stream()
+                            .map(endpoint -> endpoint != null
+                                    && endpoint.type() == features.world.dungeonmap.model.structures.connection.ConnectionEndpointType.CORRIDOR
+                                    ? features.world.dungeonmap.model.structures.connection.ConnectionEndpoint.corridor(corridorId)
+                                    : endpoint)
+                            .toList(),
+                    connection.levelZ()));
+        }
+        return rebound.isEmpty() ? List.of() : List.copyOf(rebound);
     }
 
     private Long fallbackWaypointClusterId(CorridorPlanningInput input) {

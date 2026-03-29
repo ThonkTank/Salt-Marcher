@@ -21,10 +21,20 @@ import java.util.Set;
 public final class Traversal {
 
     private final Long traversalId;
-    private final Long corridorId;
     private final long mapId;
     private final List<Long> roomIds;
     private final CorridorBindings bindings;
+    private final TraversalMaterialization materialization;
+
+    public static Traversal resolved(
+            Long traversalId,
+            long mapId,
+            List<Long> roomIds,
+            CorridorBindings bindings,
+            TraversalMaterialization materialization
+    ) {
+        return new Traversal(traversalId, mapId, roomIds, bindings, materialization);
+    }
 
     public static Traversal resolved(
             Long traversalId,
@@ -33,21 +43,21 @@ public final class Traversal {
             List<Long> roomIds,
             CorridorBindings bindings
     ) {
-        return new Traversal(traversalId, corridorId, mapId, roomIds, bindings);
+        return resolved(traversalId, mapId, roomIds, bindings, TraversalMaterialization.singleCorridor(corridorId));
     }
 
     private Traversal(
             Long traversalId,
-            Long corridorId,
             long mapId,
             List<Long> roomIds,
-            CorridorBindings bindings
+            CorridorBindings bindings,
+            TraversalMaterialization materialization
     ) {
         this.traversalId = traversalId;
-        this.corridorId = corridorId;
         this.mapId = mapId;
         this.roomIds = normalizeRoomIds(roomIds);
         this.bindings = bindings == null ? CorridorBindings.empty() : bindings;
+        this.materialization = materialization == null ? TraversalMaterialization.empty() : materialization;
     }
 
     public Long traversalId() {
@@ -55,7 +65,10 @@ public final class Traversal {
     }
 
     public Long corridorId() {
-        return corridorId;
+        TraversalCorridorSegment segment = materialization.corridorSegments().isEmpty()
+                ? null
+                : materialization.corridorSegments().getFirst();
+        return segment == null ? null : segment.corridorId();
     }
 
     public long mapId() {
@@ -68,6 +81,26 @@ public final class Traversal {
 
     public CorridorBindings bindings() {
         return bindings;
+    }
+
+    public TraversalMaterialization materialization() {
+        return materialization;
+    }
+
+    public List<TraversalCorridorSegment> corridorSegments() {
+        return materialization.corridorSegments();
+    }
+
+    public List<TraversalStairSegment> stairSegments() {
+        return materialization.stairSegments();
+    }
+
+    public boolean ownsCorridorSegment(Long corridorId) {
+        return materialization.corridorSegmentById(corridorId) != null;
+    }
+
+    public boolean ownsStairSegment(Long stairId) {
+        return materialization.stairSegmentById(stairId) != null;
     }
 
     public boolean connectsRoom(Long roomId) {
@@ -126,11 +159,13 @@ public final class Traversal {
     public record RewriteResult(
             Map<Long, Traversal> traversalsById,
             Set<Long> affectedTraversalIds,
+            Map<Long, TraversalPlan> traversalPlansByTraversalId,
             Map<Long, List<StairPlacement>> stairPlacementsByTraversalId
     ) {
         public RewriteResult {
             traversalsById = traversalsById == null ? Map.of() : Map.copyOf(traversalsById);
             affectedTraversalIds = affectedTraversalIds == null ? Set.of() : Set.copyOf(affectedTraversalIds);
+            traversalPlansByTraversalId = traversalPlansByTraversalId == null ? Map.of() : Map.copyOf(traversalPlansByTraversalId);
             stairPlacementsByTraversalId = stairPlacementsByTraversalId == null ? Map.of() : Map.copyOf(stairPlacementsByTraversalId);
         }
     }
@@ -140,12 +175,13 @@ public final class Traversal {
             TraversalRewriteContext context
     ) {
         if (traversalsById == null || traversalsById.isEmpty()) {
-            return new RewriteResult(Map.of(), Set.of(), Map.of());
+            return new RewriteResult(Map.of(), Set.of(), Map.of(), Map.of());
         }
         if (context == null || context.affectedTraversalIds().isEmpty()) {
-            return new RewriteResult(Map.copyOf(traversalsById), Set.of(), Map.of());
+            return new RewriteResult(Map.copyOf(traversalsById), Set.of(), Map.of(), Map.of());
         }
         Map<Long, Traversal> result = new LinkedHashMap<>();
+        Map<Long, TraversalPlan> traversalPlansByTraversalId = new LinkedHashMap<>();
         Map<Long, List<StairPlacement>> stairPlacementsByTraversalId = new LinkedHashMap<>();
         for (Map.Entry<Long, Traversal> entry : traversalsById.entrySet()) {
             Traversal traversal = entry.getValue();
@@ -156,6 +192,9 @@ public final class Traversal {
             Traversal reanchored = traversal.reanchoredFor(context);
             if (context.affects(traversal.traversalId()) && reanchored.isPersistable()) {
                 TraversalPlan traversalPlan = TraversalPlanningEngine.plan(reanchored, context.rewrittenPlanningInput());
+                if (reanchored.traversalId() != null) {
+                    traversalPlansByTraversalId.put(reanchored.traversalId(), traversalPlan);
+                }
                 if (!traversalPlan.stairPlacements().isEmpty() && reanchored.traversalId() != null) {
                     stairPlacementsByTraversalId.put(reanchored.traversalId(), traversalPlan.stairPlacements());
                 }
@@ -165,6 +204,7 @@ public final class Traversal {
         return new RewriteResult(
                 Map.copyOf(result),
                 context.affectedTraversalIds(),
+                Map.copyOf(traversalPlansByTraversalId),
                 Map.copyOf(stairPlacementsByTraversalId));
     }
 
@@ -174,7 +214,7 @@ public final class Traversal {
         }
         List<Long> updated = new ArrayList<>(roomIds);
         updated.add(roomId);
-        return resolved(traversalId, corridorId, mapId, updated, bindings);
+        return resolved(traversalId, mapId, updated, bindings, materialization);
     }
 
     public Traversal withRemovedRoom(Long roomId) {
@@ -184,7 +224,7 @@ public final class Traversal {
         List<Long> updated = roomIds.stream()
                 .filter(existing -> !Objects.equals(existing, roomId))
                 .toList();
-        return resolved(traversalId, corridorId, mapId, updated, bindings.withoutDoorBinding(roomId));
+        return resolved(traversalId, mapId, updated, bindings.withoutDoorBinding(roomId), materialization);
     }
 
     public Traversal withMergedRooms(Set<Long> mergedRoomIds, Long replacementRoomId) {
@@ -201,7 +241,7 @@ public final class Traversal {
                 updatedBindings = updatedBindings.withoutDoorBinding(mergedRoomId);
             }
         }
-        return resolved(traversalId, corridorId, mapId, updated, updatedBindings);
+        return resolved(traversalId, mapId, updated, updatedBindings, materialization);
     }
 
     public Traversal withReplacedRoom(Long oldRoomId, Long newRoomId) {
@@ -213,7 +253,7 @@ public final class Traversal {
                 .distinct()
                 .toList();
         CorridorBindings updatedBindings = bindings.withoutDoorBinding(oldRoomId);
-        return resolved(traversalId, corridorId, mapId, updated, updatedBindings);
+        return resolved(traversalId, mapId, updated, updatedBindings, materialization);
     }
 
     public Traversal withInsertedWaypoint(int index, CorridorWaypointBinding waypoint) {
@@ -250,10 +290,10 @@ public final class Traversal {
         List<Long> mergedRoomIds = mergedRoomIds(other);
         return resolved(
                 traversalId,
-                corridorId,
                 mapId,
                 mergedRoomIds,
-                sanitizedBindings(mergedRoomIds, bindings));
+                sanitizedBindings(mergedRoomIds, bindings),
+                materialization);
     }
 
     public Traversal reanchoredFor(TraversalRewriteContext context) {
@@ -367,7 +407,11 @@ public final class Traversal {
     }
 
     private Traversal withBindings(CorridorBindings bindings) {
-        return resolved(traversalId, corridorId, mapId, roomIds, bindings);
+        return resolved(traversalId, mapId, roomIds, bindings, materialization);
+    }
+
+    public Traversal withMaterialization(TraversalMaterialization materialization) {
+        return resolved(traversalId, mapId, roomIds, bindings, materialization);
     }
 
     private Long fallbackWaypointClusterId(TraversalPlanningInput input) {

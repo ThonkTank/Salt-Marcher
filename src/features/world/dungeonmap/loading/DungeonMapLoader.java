@@ -27,7 +27,11 @@ import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.stair.DungeonStairExit;
 import features.world.dungeonmap.model.structures.stair.StairShape;
+import features.world.dungeonmap.model.structures.traversal.TraversalCorridorSegment;
+import features.world.dungeonmap.model.structures.traversal.TraversalMaterialization;
+import features.world.dungeonmap.model.structures.traversal.CorridorTraversalSlice;
 import features.world.dungeonmap.model.structures.traversal.TraversalPlan;
+import features.world.dungeonmap.model.structures.traversal.TraversalStairSegment;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
 import features.world.dungeonmap.model.structures.traversal.TraversalPlanningInput;
 import features.world.dungeonmap.model.structures.traversal.planning.TraversalPlanningEngine;
@@ -138,8 +142,9 @@ public final class DungeonMapLoader {
         List<RoomCluster> clusters = loadClusters(conn, map.mapId(), rooms);
         Map<Long, Integer> clusterLevels = loadClusterLevels(conn, map.mapId());
         List<Traversal> traversals = loadTraversals(conn, map.mapId());
-        List<Corridor> corridors = loadCorridors(conn, map.mapId(), traversals, clusters);
         List<DungeonStair> stairs = loadStairs(conn, map.mapId());
+        traversals = attachStairSegments(traversals, stairs);
+        List<Corridor> corridors = loadCorridors(conn, map.mapId(), traversals, clusters);
         return new DungeonLayout(
                 map.mapId(),
                 map.name(),
@@ -316,22 +321,16 @@ public final class DungeonMapLoader {
     private static List<Traversal> loadTraversals(Connection conn, long mapId) throws SQLException {
         Map<Long, List<Long>> roomIdsByTraversal = new LinkedHashMap<>();
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT t.traversal_id, c.corridor_id, m.room_id"
+                "SELECT t.traversal_id, m.room_id"
                         + " FROM dungeon_traversals t"
-                        + " LEFT JOIN dungeon_corridors c ON c.traversal_id=t.traversal_id"
                         + " LEFT JOIN dungeon_traversal_members m ON m.traversal_id=t.traversal_id"
                         + " WHERE t.dungeon_map_id=?"
                         + " ORDER BY t.traversal_id, m.member_order, m.room_id")) {
             ps.setLong(1, mapId);
             try (ResultSet rs = ps.executeQuery()) {
-                Map<Long, Long> corridorIdsByTraversal = new LinkedHashMap<>();
                 while (rs.next()) {
                     long traversalId = rs.getLong("traversal_id");
                     roomIdsByTraversal.computeIfAbsent(traversalId, ignored -> new ArrayList<>());
-                    long rawCorridorId = rs.getLong("corridor_id");
-                    if (!rs.wasNull()) {
-                        corridorIdsByTraversal.putIfAbsent(traversalId, rawCorridorId);
-                    }
                     long roomId = rs.getLong("room_id");
                     if (!rs.wasNull()) {
                         roomIdsByTraversal.get(traversalId).add(roomId);
@@ -360,16 +359,28 @@ public final class DungeonMapLoader {
                                 row.getLong("cluster_id"),
                                 new Point2i(row.getInt("relative_cell_x"), row.getInt("relative_cell_y")),
                                 edgeDirectionDelta(row.getString("edge_direction"))));
+                Map<Long, List<TraversalCorridorSegment>> corridorSegmentsByTraversal = loadGrouped(conn,
+                        "SELECT traversal_id, corridor_id, segment_key"
+                                + " FROM dungeon_corridors"
+                                + " WHERE traversal_id IN (SELECT traversal_id FROM dungeon_traversals WHERE dungeon_map_id=?)"
+                                + " ORDER BY traversal_id, corridor_id",
+                        mapId,
+                        row -> row.getLong("traversal_id"),
+                        row -> new TraversalCorridorSegment(
+                                normalizedSegmentKey(row.getString("segment_key"), "legacy-corridor"),
+                                row.getLong("corridor_id")));
                 List<Traversal> result = new ArrayList<>();
                 for (Map.Entry<Long, List<Long>> entry : roomIdsByTraversal.entrySet()) {
                     result.add(Traversal.resolved(
                             entry.getKey(),
-                            corridorIdsByTraversal.get(entry.getKey()),
                             mapId,
                             entry.getValue(),
                             new CorridorBindings(
                                     waypointBindingsByTraversal.getOrDefault(entry.getKey(), List.of()),
-                                    doorBindingsByTraversal.getOrDefault(entry.getKey(), List.of()))));
+                                    doorBindingsByTraversal.getOrDefault(entry.getKey(), List.of())),
+                            new TraversalMaterialization(
+                                    corridorSegmentsByTraversal.getOrDefault(entry.getKey(), List.of()),
+                                    List.of())));
                 }
                 return List.copyOf(result);
             }
@@ -383,21 +394,30 @@ public final class DungeonMapLoader {
             List<RoomCluster> clusters
     ) throws SQLException {
         TraversalPlanningInput planningInput = TraversalPlanningInputProjector.project(clusters);
-        return traversals.stream()
-                .filter(traversal -> traversal != null && traversal.corridorId() != null)
-                .map(traversal -> {
-                    TraversalPlan traversalPlan = TraversalPlanningEngine.plan(traversal, planningInput);
-                    var slice = traversalPlan.corridorSlice(traversal.corridorId());
-                    return Corridor.resolved(
-                            traversal.corridorId(),
-                            traversal.traversalId(),
-                            mapId,
-                            traversal.roomIds(),
-                            traversal.bindings(),
-                            slice == null ? CorridorPath.empty() : slice.path(),
-                            slice == null ? List.of() : slice.connections());
-                })
-                .toList();
+        ArrayList<Corridor> result = new ArrayList<>();
+        for (Traversal traversal : traversals) {
+            if (traversal == null || traversal.corridorSegments().isEmpty()) {
+                continue;
+            }
+            TraversalPlan traversalPlan = TraversalPlanningEngine.plan(traversal, planningInput)
+                    .withCorridorIds(traversal.materialization().corridorIdsBySegmentKey());
+            for (TraversalCorridorSegment corridorSegment : traversal.corridorSegments()) {
+                if (corridorSegment == null || corridorSegment.corridorId() == null) {
+                    continue;
+                }
+                CorridorTraversalSlice slice = traversalPlan.corridorSliceBySegmentKey(corridorSegment.segmentKey());
+                result.add(Corridor.resolved(
+                        corridorSegment.segmentKey(),
+                        corridorSegment.corridorId(),
+                        traversal.traversalId(),
+                        mapId,
+                        traversal.roomIds(),
+                        traversal.bindings(),
+                        slice == null ? CorridorPath.empty() : slice.path(),
+                        slice == null ? List.of() : slice.connections()));
+            }
+        }
+        return List.copyOf(result);
     }
 
     private static List<DungeonStair> loadStairs(Connection conn, long mapId) throws SQLException {
@@ -422,7 +442,7 @@ public final class DungeonMapLoader {
                         new CubePoint(rs.getInt("cell_x"), rs.getInt("cell_y"), rs.getInt("cell_z")),
                         rs.getString("label")));
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT stair_id, traversal_id, dungeon_map_id, name, shape, direction, dimension1, dimension2"
+                "SELECT stair_id, traversal_id, segment_key, dungeon_map_id, name, shape, direction, dimension1, dimension2"
                         + " FROM dungeon_stairs WHERE dungeon_map_id=? ORDER BY stair_id")) {
             ps.setLong(1, mapId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -434,6 +454,7 @@ public final class DungeonMapLoader {
                     result.add(new DungeonStair(
                             stairId,
                             traversalId,
+                            rs.getString("segment_key"),
                             rs.getLong("dungeon_map_id"),
                             rs.getString("name"),
                             StairShape.parse(rs.getString("shape")),
@@ -446,6 +467,37 @@ public final class DungeonMapLoader {
                 return List.copyOf(result);
             }
         }
+    }
+
+    private static List<Traversal> attachStairSegments(List<Traversal> traversals, List<DungeonStair> stairs) {
+        if (traversals == null || traversals.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, List<TraversalStairSegment>> stairSegmentsByTraversal = new LinkedHashMap<>();
+        for (DungeonStair stair : stairs == null ? List.<DungeonStair>of() : stairs) {
+            if (stair == null || stair.traversalId() == null) {
+                continue;
+            }
+            stairSegmentsByTraversal.computeIfAbsent(stair.traversalId(), ignored -> new ArrayList<>())
+                    .add(new TraversalStairSegment(stair.segmentKey(), stair.stairId()));
+        }
+        ArrayList<Traversal> updated = new ArrayList<>();
+        for (Traversal traversal : traversals) {
+            if (traversal == null || traversal.traversalId() == null) {
+                updated.add(traversal);
+                continue;
+            }
+            updated.add(traversal.withMaterialization(traversal.materialization().withStairSegments(
+                    stairSegmentsByTraversal.getOrDefault(traversal.traversalId(), List.of()))));
+        }
+        return List.copyOf(updated);
+    }
+
+    private static String normalizedSegmentKey(String rawSegmentKey, String fallbackPrefix) {
+        if (rawSegmentKey != null && !rawSegmentKey.isBlank()) {
+            return rawSegmentKey;
+        }
+        return fallbackPrefix;
     }
 
     private static List<DungeonTransition> loadTransitions(Connection conn, long mapId) throws SQLException {

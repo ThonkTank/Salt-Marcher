@@ -36,6 +36,7 @@ public final class DungeonSchemaSupport {
                 + "corridor_id      INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + "dungeon_map_id   INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
                 + "traversal_id     INTEGER REFERENCES dungeon_traversals(traversal_id) ON DELETE CASCADE,"
+                + "segment_key      TEXT,"
                 + "level_z          INTEGER NOT NULL DEFAULT 0"
                 + ")");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_traversals ("
@@ -129,6 +130,7 @@ public final class DungeonSchemaSupport {
                 + "stair_id         INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + "dungeon_map_id   INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
                 + "traversal_id     INTEGER REFERENCES dungeon_traversals(traversal_id) ON DELETE CASCADE,"
+                + "segment_key      TEXT,"
                 + "name             TEXT,"
                 + "shape            TEXT NOT NULL DEFAULT 'LADDER',"
                 + "direction        INTEGER NOT NULL DEFAULT 0,"
@@ -162,7 +164,9 @@ public final class DungeonSchemaSupport {
             addColumnIfMissing(stmt, "dungeon_stairs", "dimension1 INTEGER NOT NULL DEFAULT 0");
             addColumnIfMissing(stmt, "dungeon_stairs", "dimension2 INTEGER NOT NULL DEFAULT 0");
             addColumnIfMissing(stmt, "dungeon_corridors", "traversal_id INTEGER REFERENCES dungeon_traversals(traversal_id) ON DELETE CASCADE");
+            addColumnIfMissing(stmt, "dungeon_corridors", "segment_key TEXT");
             addColumnIfMissing(stmt, "dungeon_stairs", "traversal_id INTEGER REFERENCES dungeon_traversals(traversal_id) ON DELETE CASCADE");
+            addColumnIfMissing(stmt, "dungeon_stairs", "segment_key TEXT");
             addColumnIfMissing(stmt, "dungeon_stairs", "corridor_id INTEGER REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE");
         }
     }

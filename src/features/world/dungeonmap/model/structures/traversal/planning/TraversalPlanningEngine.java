@@ -8,6 +8,8 @@ import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.traversal.TraversalPlan;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
+import features.world.dungeonmap.model.structures.traversal.TraversalCorridorSegment;
+import features.world.dungeonmap.model.structures.traversal.TraversalMaterialization;
 import features.world.dungeonmap.model.structures.traversal.TraversalPlanningInput;
 import features.world.dungeonmap.model.structures.traversal.planning.internal.TraversalGeometryRealizer;
 import features.world.dungeonmap.model.structures.traversal.planning.internal.TraversalStructurePlanner;
@@ -29,9 +31,17 @@ public final class TraversalPlanningEngine {
         if (corridor == null || input == null) {
             return TraversalPlan.empty();
         }
-        return plan(
-                Traversal.resolved(null, corridor.corridorId(), corridor.mapId(), corridor.roomIds(), corridor.bindings()),
+        TraversalPlan plan = plan(
+                Traversal.resolved(
+                        null,
+                        corridor.mapId(),
+                        corridor.roomIds(),
+                        corridor.bindings(),
+                        new TraversalMaterialization(
+                                List.of(new TraversalCorridorSegment("legacy-corridor", corridor.corridorId())),
+                                List.of())),
                 new TraversalPlanningInput(input.roomsById(), input.clusterCenters(), input.roomLevels(), input.stairs()));
+        return plan.withCorridorIds(Map.of("legacy-corridor", corridor.corridorId()));
     }
 
     public static TraversalPlan plan(Traversal traversal, TraversalPlanningInput input) {
@@ -43,7 +53,6 @@ public final class TraversalPlanningEngine {
         Map<Long, ResolvedCorridorDoorBinding> doorBindings = traversal.resolvedDoorBindings(input);
         Set<CubePoint> obstacles = buildObstacles(input.roomsById(), input.stairs(), traversal.traversalId());
         TraversalTopology topology = TraversalTopologyProjector.project(
-                traversal.corridorId(),
                 traversal.mapId(),
                 rooms,
                 waypointCells,

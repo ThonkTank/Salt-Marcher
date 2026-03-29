@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.Set;
 
 public record TraversalTopology(
-        Long corridorId,
         long mapId,
         List<TraversalNode> nodes,
         List<TraversalNodeId> requiredNodeIds,
@@ -23,7 +22,7 @@ public record TraversalTopology(
     }
 
     public static TraversalTopology empty() {
-        return new TraversalTopology(null, 0L, List.of(), List.of(), Set.of());
+        return new TraversalTopology(0L, List.of(), List.of(), Set.of());
     }
 
     public boolean hasWaypoints() {

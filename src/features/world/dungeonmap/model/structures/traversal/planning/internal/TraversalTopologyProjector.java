@@ -19,7 +19,6 @@ public final class TraversalTopologyProjector {
     }
 
     public static TraversalTopology project(
-            Long corridorId,
             long mapId,
             List<Room> rooms,
             List<CubePoint> waypointCells,
@@ -32,7 +31,6 @@ public final class TraversalTopologyProjector {
         List<TraversalNode> waypointNodes = projectWaypointNodes(waypointCells);
         List<TraversalNode> requiredRoomPortalNodes = selectRequiredRoomPortalNodes(projectedRoomPortals.groups(), waypointNodes);
         return new TraversalTopology(
-                corridorId,
                 mapId,
                 mergeNodes(projectedRoomPortals.nodes(), waypointNodes),
                 mergeRequiredNodeIds(requiredRoomPortalNodes, waypointNodes),

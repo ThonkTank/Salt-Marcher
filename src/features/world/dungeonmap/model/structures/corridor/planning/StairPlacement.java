@@ -42,6 +42,7 @@ public record StairPlacement(
             return new DungeonStair(
                     null,
                     traversalId,
+                    "preview-stair",
                     mapId,
                     null,
                     shape,

@@ -49,10 +49,13 @@ public final class DungeonMapModule {
         Objects.requireNonNull(detailsNavigator, "detailsNavigator");
         DungeonMapLoader mapLoader = new DungeonMapLoader();
         DungeonCorridorWriteRepository corridorWriteRepository = new DungeonCorridorWriteRepository();
-        DungeonTraversalWriteRepository traversalWriteRepository = new DungeonTraversalWriteRepository();
-        DungeonTraversalPersistenceService traversalPersistenceService = new DungeonTraversalPersistenceService(traversalWriteRepository);
-        DungeonRoomWriteRepository roomWriteRepository = new DungeonRoomWriteRepository();
         DungeonStairWriteRepository stairWriteRepository = new DungeonStairWriteRepository();
+        DungeonTraversalWriteRepository traversalWriteRepository = new DungeonTraversalWriteRepository();
+        DungeonTraversalPersistenceService traversalPersistenceService = new DungeonTraversalPersistenceService(
+                traversalWriteRepository,
+                corridorWriteRepository,
+                stairWriteRepository);
+        DungeonRoomWriteRepository roomWriteRepository = new DungeonRoomWriteRepository();
         DungeonTransitionWriteRepository transitionWriteRepository = new DungeonTransitionWriteRepository();
         DungeonRoomNarrationService roomNarrationService = new DungeonRoomNarrationService(roomWriteRepository);
         DungeonRoomGeometryWriteMapper geometryWriteMapper = new DungeonRoomGeometryWriteMapper();
@@ -65,10 +68,7 @@ public final class DungeonMapModule {
                 traversalRoomRewriteService);
         DungeonTraversalEditService traversalEditService = new DungeonTraversalEditService(
                 traversalWriteRepository,
-                traversalPersistenceService,
-                corridorWriteRepository,
-                stairWriteRepository);
-        roomTopologyService.setTraversalEditService(traversalEditService);
+                traversalPersistenceService);
         DungeonTransitionEditService transitionEditService = new DungeonTransitionEditService(roomTopologyService, transitionWriteRepository);
         DungeonMapCatalogService mapCatalogService = new DungeonMapCatalogService(
                 roomTopologyService,
@@ -79,7 +79,6 @@ public final class DungeonMapModule {
                 roomWriteRepository,
                 geometryWriteMapper,
                 traversalPersistenceService);
-        clusterMoveService.setTraversalEditService(traversalEditService);
         DungeonMapState state = new DungeonMapState();
         DungeonMapLoadingService loadingService = new DungeonMapLoadingService(
                 mapLoader,

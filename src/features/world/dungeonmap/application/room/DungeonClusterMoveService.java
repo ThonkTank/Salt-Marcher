@@ -2,7 +2,6 @@ package features.world.dungeonmap.application.room;
 
 import database.DatabaseManager;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
-import features.world.dungeonmap.application.traversal.DungeonTraversalEditService;
 import features.world.dungeonmap.application.traversal.DungeonTraversalPersistenceService;
 import features.world.dungeonmap.model.DungeonClusterTranslation;
 import features.world.dungeonmap.loading.DungeonMapLoader;
@@ -10,7 +9,6 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.TraversalPlanningInputProjector;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
-import features.world.dungeonmap.model.structures.corridor.planning.StairPlacement;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
 import features.world.dungeonmap.model.structures.traversal.TraversalRewriteContext;
@@ -19,8 +17,6 @@ import features.world.dungeonmap.persistence.DungeonRoomWriteRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -30,7 +26,6 @@ public final class DungeonClusterMoveService {
     private final DungeonRoomWriteRepository roomWriteRepository;
     private final DungeonRoomGeometryWriteMapper geometryWriteMapper;
     private final DungeonTraversalPersistenceService traversalPersistenceService;
-    private DungeonTraversalEditService traversalEditService;
 
     public DungeonClusterMoveService(
             DungeonMapLoader mapLoader,
@@ -42,10 +37,6 @@ public final class DungeonClusterMoveService {
         this.roomWriteRepository = Objects.requireNonNull(roomWriteRepository, "roomWriteRepository");
         this.geometryWriteMapper = Objects.requireNonNull(geometryWriteMapper, "geometryWriteMapper");
         this.traversalPersistenceService = Objects.requireNonNull(traversalPersistenceService, "traversalPersistenceService");
-    }
-
-    public void setTraversalEditService(DungeonTraversalEditService traversalEditService) {
-        this.traversalEditService = Objects.requireNonNull(traversalEditService, "traversalEditService");
     }
 
     public void move(long mapId, long clusterId, Point2i delta) throws SQLException {
@@ -80,10 +71,7 @@ public final class DungeonClusterMoveService {
                                 TraversalPlanningInputProjector.project(translation.layout()),
                                 layout.traversalIdsAffectedBy(cluster.roomIds(), Set.of(clusterId)),
                                 Set.of()));
-                traversalPersistenceService.persistTraversals(conn, rewriteResult.traversalsById());
-                persistTranslationStairs(conn, rewriteResult.traversalsById(),
-                        rewriteResult.affectedTraversalIds(),
-                        rewriteResult.stairPlacementsByTraversalId());
+                traversalPersistenceService.persistTraversals(conn, rewriteResult.traversalsById(), rewriteResult.traversalPlansByTraversalId());
                 return null;
             });
         }
@@ -95,30 +83,6 @@ public final class DungeonClusterMoveService {
             throw new SQLException("Dungeon " + mapId + " konnte nicht geladen werden");
         }
         return layout;
-    }
-
-    private void persistTranslationStairs(
-            Connection conn,
-            Map<Long, Traversal> traversalsById,
-            Set<Long> affectedTraversalIds,
-            Map<Long, List<StairPlacement>> stairPlacementsByTraversalId
-    ) throws SQLException {
-        if (traversalEditService == null) {
-            return;
-        }
-        for (Long traversalId : affectedTraversalIds) {
-            if (traversalId == null) {
-                continue;
-            }
-            Traversal traversal = traversalsById.get(traversalId);
-            if (traversal == null) {
-                continue;
-            }
-            List<StairPlacement> placements = stairPlacementsByTraversalId == null
-                    ? List.of()
-                    : stairPlacementsByTraversalId.getOrDefault(traversalId, List.of());
-            traversalEditService.replaceTraversalStairs(conn, traversal, placements);
-        }
     }
 
     private static RoomCluster requireCluster(DungeonLayout layout, long clusterId) throws SQLException {

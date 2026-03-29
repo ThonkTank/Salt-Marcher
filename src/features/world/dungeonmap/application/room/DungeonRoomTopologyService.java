@@ -2,7 +2,6 @@ package features.world.dungeonmap.application.room;
 
 import database.DatabaseManager;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
-import features.world.dungeonmap.application.traversal.DungeonTraversalEditService;
 import features.world.dungeonmap.application.traversal.DungeonTraversalPersistenceService;
 import features.world.dungeonmap.application.traversal.DungeonTraversalRoomRewriteService;
 import features.world.dungeonmap.loading.DungeonMapLoader;
@@ -17,7 +16,6 @@ import features.world.dungeonmap.model.structures.cluster.ClusterRewriteSplit;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryEdge;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
-import features.world.dungeonmap.model.structures.corridor.planning.StairPlacement;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
 import features.world.dungeonmap.model.structures.traversal.TraversalRewriteContext;
@@ -43,7 +41,6 @@ public final class DungeonRoomTopologyService {
     private final DungeonRoomGeometryWriteMapper geometryWriteMapper;
     private final DungeonTraversalPersistenceService traversalPersistenceService;
     private final DungeonTraversalRoomRewriteService traversalRoomRewriteService;
-    private DungeonTraversalEditService traversalEditService;
 
     public DungeonRoomTopologyService(
             DungeonMapLoader mapLoader,
@@ -57,10 +54,6 @@ public final class DungeonRoomTopologyService {
         this.geometryWriteMapper = Objects.requireNonNull(geometryWriteMapper, "geometryWriteMapper");
         this.traversalPersistenceService = Objects.requireNonNull(traversalPersistenceService, "traversalPersistenceService");
         this.traversalRoomRewriteService = Objects.requireNonNull(traversalRoomRewriteService, "traversalRoomRewriteService");
-    }
-
-    public void setTraversalEditService(DungeonTraversalEditService traversalEditService) {
-        this.traversalEditService = Objects.requireNonNull(traversalEditService, "traversalEditService");
     }
 
     public void paint(long mapId, int levelZ, TileShape shape) throws SQLException {
@@ -98,8 +91,7 @@ public final class DungeonRoomTopologyService {
                 layout,
                 new LinkedHashMap<>(layout.traversalsById()),
                 persistedRewrite);
-        traversalPersistenceService.persistTraversals(conn, rewriteResult.traversalsById());
-        persistRewriteStairPlacements(conn, rewriteResult.traversalsById(), rewriteResult.affectedTraversalIds(), rewriteResult.stairPlacementsByTraversalId());
+        traversalPersistenceService.persistTraversals(conn, rewriteResult.traversalsById(), rewriteResult.traversalPlansByTraversalId());
     }
 
     public void delete(long mapId, int levelZ, TileShape shape) throws SQLException {
@@ -149,7 +141,7 @@ public final class DungeonRoomTopologyService {
                     workingLayout.levelForCluster(rewrite.targetClusterId()));
             Traversal.RewriteResult rewriteResult = applyTraversalCascade(workingLayout, traversalsById, persistedRewrite);
             traversalsById = new LinkedHashMap<>(rewriteResult.traversalsById());
-            persistRewriteStairPlacements(conn, rewriteResult.traversalsById(), rewriteResult.affectedTraversalIds(), rewriteResult.stairPlacementsByTraversalId());
+            traversalPersistenceService.persistTraversals(conn, rewriteResult.traversalsById(), rewriteResult.traversalPlansByTraversalId());
             workingLayout = workingLayout.applying(persistedRewrite);
         }
         traversalPersistenceService.persistTraversals(conn, traversalsById);
@@ -213,8 +205,7 @@ public final class DungeonRoomTopologyService {
                 layout,
                 new LinkedHashMap<>(layout.traversalsById()),
                 persistedRewrite);
-        traversalPersistenceService.persistTraversals(conn, rewriteResult.traversalsById());
-        persistRewriteStairPlacements(conn, rewriteResult.traversalsById(), rewriteResult.affectedTraversalIds(), rewriteResult.stairPlacementsByTraversalId());
+        traversalPersistenceService.persistTraversals(conn, rewriteResult.traversalsById(), rewriteResult.traversalPlansByTraversalId());
     }
 
     private Traversal.RewriteResult applyTraversalCascade(
@@ -231,30 +222,6 @@ public final class DungeonRoomTopologyService {
                 affectedTraversalIds,
                 rewrite.deletedClusterIds());
         return Traversal.rewriteAll(traversalsById, rewriteContext);
-    }
-
-    private void persistRewriteStairPlacements(
-            Connection conn,
-            Map<Long, Traversal> traversalsById,
-            Set<Long> affectedTraversalIds,
-            Map<Long, List<StairPlacement>> stairPlacementsByTraversalId
-    ) throws SQLException {
-        if (traversalEditService == null) {
-            return;
-        }
-        for (Long traversalId : affectedTraversalIds) {
-            if (traversalId == null) {
-                continue;
-            }
-            Traversal traversal = traversalsById.get(traversalId);
-            if (traversal == null) {
-                continue;
-            }
-            List<StairPlacement> placements = stairPlacementsByTraversalId == null
-                    ? List.of()
-                    : stairPlacementsByTraversalId.getOrDefault(traversalId, List.of());
-            traversalEditService.replaceTraversalStairs(conn, traversal, placements);
-        }
     }
 
     private void createCluster(Connection conn, long mapId, int levelZ, TileShape shape, String roomName) throws SQLException {

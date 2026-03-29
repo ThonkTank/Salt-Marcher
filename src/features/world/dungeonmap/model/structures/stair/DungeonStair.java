@@ -14,6 +14,7 @@ import java.util.Set;
 public record DungeonStair(
         Long stairId,
         Long traversalId,
+        String segmentKey,
         long mapId,
         String name,
         StairShape shape,
@@ -27,6 +28,7 @@ public record DungeonStair(
     private static final String TARGET_KEY_PREFIX = "stair:";
 
     public DungeonStair {
+        segmentKey = segmentKey == null || segmentKey.isBlank() ? "legacy-stair" : segmentKey;
         name = name == null || name.isBlank()
                 ? "Treppe " + (stairId == null ? "neu" : stairId)
                 : name.trim();
@@ -46,6 +48,10 @@ public record DungeonStair(
 
     public String targetKey() {
         return TargetKey.of(TARGET_KEY_PREFIX, stairId).value();
+    }
+
+    public String segmentKey() {
+        return segmentKey;
     }
 
     public static boolean isTargetKey(String targetKey) {

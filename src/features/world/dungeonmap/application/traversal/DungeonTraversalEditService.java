@@ -4,15 +4,10 @@ import database.DatabaseManager;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.TraversalPlanningInputProjector;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.structures.corridor.planning.StairPlacement;
-import features.world.dungeonmap.model.structures.stair.StairGeometry;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
+import features.world.dungeonmap.model.structures.traversal.TraversalMaterialization;
 import features.world.dungeonmap.model.structures.traversal.TraversalPlan;
 import features.world.dungeonmap.model.structures.traversal.planning.TraversalPlanningEngine;
-import features.world.dungeonmap.persistence.DungeonCorridorWriteRepository;
-import features.world.dungeonmap.persistence.DungeonSchemaSupport;
-import features.world.dungeonmap.persistence.DungeonStairWriteRepository;
 import features.world.dungeonmap.persistence.DungeonTraversalWriteRepository;
 
 import java.sql.Connection;
@@ -26,19 +21,13 @@ public final class DungeonTraversalEditService {
 
     private final DungeonTraversalWriteRepository traversalWriteRepository;
     private final DungeonTraversalPersistenceService traversalPersistenceService;
-    private final DungeonCorridorWriteRepository corridorWriteRepository;
-    private final DungeonStairWriteRepository stairWriteRepository;
 
     public DungeonTraversalEditService(
             DungeonTraversalWriteRepository traversalWriteRepository,
-            DungeonTraversalPersistenceService traversalPersistenceService,
-            DungeonCorridorWriteRepository corridorWriteRepository,
-            DungeonStairWriteRepository stairWriteRepository
+            DungeonTraversalPersistenceService traversalPersistenceService
     ) {
         this.traversalWriteRepository = Objects.requireNonNull(traversalWriteRepository, "traversalWriteRepository");
         this.traversalPersistenceService = Objects.requireNonNull(traversalPersistenceService, "traversalPersistenceService");
-        this.corridorWriteRepository = Objects.requireNonNull(corridorWriteRepository, "corridorWriteRepository");
-        this.stairWriteRepository = Objects.requireNonNull(stairWriteRepository, "stairWriteRepository");
     }
 
     public void create(DungeonLayout layout, TraversalTarget start, TraversalTarget end) throws SQLException {
@@ -113,8 +102,12 @@ public final class DungeonTraversalEditService {
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
                 long traversalId = traversalWriteRepository.insertTraversal(conn, layout.mapId());
-                long corridorId = corridorWriteRepository.insertTraversalCorridor(conn, layout.mapId(), traversalId);
-                Traversal traversal = Traversal.resolved(traversalId, corridorId, layout.mapId(), roomIds, null);
+                Traversal traversal = Traversal.resolved(
+                        traversalId,
+                        layout.mapId(),
+                        roomIds,
+                        null,
+                        TraversalMaterialization.empty());
                 persistTraversal(conn, layout, traversal, null);
                 return null;
             });
@@ -139,45 +132,9 @@ public final class DungeonTraversalEditService {
         TraversalPlan traversalPlan = traversal.isPersistable()
                 ? TraversalPlanningEngine.plan(traversal, TraversalPlanningInputProjector.project(layout))
                 : TraversalPlan.empty();
-        replaceTraversalStairs(conn, traversal, traversalPlan.stairPlacements());
-        traversalPersistenceService.persistTraversal(conn, traversal);
+        traversalPersistenceService.persistTraversal(conn, traversal, traversalPlan);
         if (deletedTraversalId != null) {
             traversalWriteRepository.deleteTraversal(conn, deletedTraversalId);
-        }
-    }
-
-    public void replaceTraversalStairs(
-            Connection conn,
-            Traversal traversal,
-            List<StairPlacement> placements
-    ) throws SQLException {
-        if (traversal == null || traversal.traversalId() == null) {
-            return;
-        }
-        DungeonSchemaSupport.ensureCompatibility(conn);
-        stairWriteRepository.deleteByTraversalId(conn, traversal.traversalId());
-        for (StairPlacement placement : placements == null ? List.<StairPlacement>of() : placements) {
-            if (placement == null) {
-                continue;
-            }
-            StairGeometry geometry = StairGeometry.fromExitLevels(
-                    placement.shape(),
-                    placement.anchor(),
-                    placement.direction() == null ? CardinalDirection.defaultDirection() : placement.direction(),
-                    placement.dimension1(),
-                    placement.dimension2(),
-                    placement.exitLevels());
-            long stairId = stairWriteRepository.insertStair(
-                    conn,
-                    traversal.mapId(),
-                    traversal.traversalId(),
-                    null,
-                    placement.shape(),
-                    placement.direction(),
-                    placement.dimension1(),
-                    placement.dimension2());
-            stairWriteRepository.replacePathNodes(conn, stairId, geometry.pathNodes());
-            stairWriteRepository.replaceExits(conn, stairId, geometry.exits());
         }
     }
 
