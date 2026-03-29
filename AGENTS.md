@@ -94,7 +94,8 @@ Additional structure belongs only in the nearest feature-local `AGENTS.md`, or a
 - Objects and types may gain capabilities through composition, inheritance, or references, but ownership of the capability stays with the central owner instead of being mirrored in consumers.
 - Treat package layers as ownership boundaries. A capability belongs to the layer that subordinates it to its owner, not to the first caller that happens to use it.
 - Treat filename roles as ownership markers. A role name tells the reader what kind of capability a file encapsulates and whether it is the owner or support code around that owner.
-- Treat the role families below as function patterns, not as a mandatory suffix list. Use the family that matches the file's job, then choose the narrowest clear domain name for the concrete type.
+- Treat the canonical roles below as a suffix allowlist. When a canonical role fits, use that exact suffix.
+- Role name always equals suffix. Do not invent a separate family label that differs from the filename suffix.
 - In `model/`, the central owner will usually be a precise domain type, not a generic role suffix. Prefer the domain name when the type itself is the canonical owner.
 - When a canonical role name exists for a function pattern, converge touched code toward that name. Do not keep parallel legacy and canonical names for the same role in the same layer.
 - If several sibling files in one directory share the same role name, treat that as a smell: either the capability is duplicated or the directory needs a narrower subpackage with clearer ownership.
@@ -129,14 +130,12 @@ If a feature defines a nearer `AGENTS.md`, that file is required context before 
 - Owns canonical business and editor truth.
 - Carries behavior on the lowest stable owner that actually enforces the invariant.
 - Stays framework- and storage-agnostic.
-- `model/` contains an owner ecosystem, not just owner types.
-- `Owner` — canonical domain or editor truth. Usually named as the precise domain type instead of a generic suffix.
-- `Primitive` — fundamental value, geometry, vocabulary, or identity type reused by owners and operators.
-- `Relation` — reference, binding, endpoint, or link type that connects owners without becoming the owner of either side.
-- `Derivative` — model-internal derived form such as a plan, rewrite, network, or projection built from owner truth.
-- `OperationData` — model-local input, context, request, or intermediate result carrier for one operator family.
-- `Operator` — model-local planning, matching, generation, or transformation logic that stays framework-free and answers to owner truth instead of workflow orchestration.
-- `ComputationModel` — internal search, graph, topology, or solver structure used by an operator and not exposed as canonical domain truth.
+- `model/` contains canonical owners plus a small set of supporting suffix roles.
+- Canonical owners in `model/` are usually precise domain names without a role suffix. Do not rename them into generic owner wrappers just to satisfy a suffix list.
+- `*Ref` — compact reference to an owned model entity or identity without taking ownership of the target.
+- `*Binding` — model-level relation that couples owners or constraints them together as one stable concept.
+- `*Plan` — model-internal intended structure or change plan derived from owner truth.
+- `*Projection` — model-internal derived read form or derived structure whose shape itself matters to consumers.
 - `*Policy` — decision-focused operator family for allowed options or rule selection.
 - `*Session` — only when the session itself is pure in-memory canonical runtime truth rather than workflow orchestration.
 
@@ -145,18 +144,17 @@ If a feature defines a nearer `AGENTS.md`, that file is required context before 
 - Owns use-case orchestration.
 - Sequences workflows, async work, transactions, reload-after-write behavior, and cross-feature coordination.
 - Coordinates repositories, state containers, and feature APIs without becoming canonical domain truth.
-- `application/` contains a workflow ecosystem, not just workflow entrypoints.
-- `Workflow` — use-case owner that accepts intent, coordinates the operation, and defines when the result is complete. Canonical name: `*ApplicationService`.
-- `Lookup` — read-only selection, target, label, availability, or index surface that supports a workflow. Canonical name: `*Lookup`.
-- `Resolver` — chooses a concrete application meaning, destination, location, or surface from workflow context plus model truth. Canonical name: `*Resolver`.
-- `Projection` — derived application-side data shape or preview/result shape for one workflow or consumer surface. Canonical name: `*Projection`.
-- `OperationData` — application-local request, target, descriptor, summary, snapshot, or intermediate carrier for one workflow family.
-- `Committer` — owns write ordering across repositories for one workflow or aggregate mutation. Canonical name: `*Committer`.
-- `Reconciler` — aligns an existing persisted or loaded structure set with the desired workflow result. Canonical name: `*Reconciler`. Valid, but always a smell-driven crutch: its need means ownership, storage shape, or workflow boundaries have already drifted apart.
-- `Maintenance` — repairs, refreshes, or revalidates derived application truth after owner or persistence changes. Canonical name: `*Maintenance`. Valid, but always a smell-driven crutch: its need means derived application truth is not converging cleanly on owner truth.
+- `application/` contains a workflow ecosystem named directly by suffix.
+- `*ApplicationService` — user-visible use-case owner that accepts intent, coordinates the operation, and defines when the result is complete.
+- `*Lookup` — read-only selection, target, label, availability, or index surface that supports a workflow.
+- `*Resolver` — chooses a concrete application meaning, destination, location, or surface from workflow context plus model truth.
+- `*Projection` — derived application-side data shape or preview/result shape for one workflow or consumer surface.
+- `*Committer` — owns write ordering across repositories for one workflow or aggregate mutation.
+- `*Reconciler` — aligns an existing persisted or loaded structure set with the desired workflow result. Valid, but always a smell-driven crutch: its need means ownership, storage shape, or workflow boundaries have already drifted apart.
+- `*Maintenance` — repairs, refreshes, or revalidates derived application truth after owner or persistence changes. Valid, but always a smell-driven crutch: its need means derived application truth is not converging cleanly on owner truth.
 - `*Session` — long-lived mutable runtime workflow context with explicit lifecycle.
 - `*Port` — internal capability contract when the seam belongs to one application slice instead of the public API.
-- Small transaction or conversion helpers may exist in `application/`, but they are support code around the workflow ecosystem rather than primary application roles.
+- Workflow-local data carriers should use precise data suffixes such as `*Request`, `*Result`, `*Summary`, `*Target`, `*Snapshot`, or `*Descriptor` directly; they do not create separate application owner roles.
 - Prefer removing the drift that requires `*Reconciler` or `*Maintenance` over introducing new ones. Treat them as last-resort escape hatches, not as default design targets.
 
 #### `repository/`
@@ -164,12 +162,11 @@ If a feature defines a nearer `AGENTS.md`, that file is required context before 
 - Owns direct storage access.
 - Carries SQL, row mapping, query construction, persistence ordering, and storage-specific lookups.
 - Remains stateless; callers provide the `Connection`.
-- `repository/` contains a storage ecosystem, not just table adapters.
+- `repository/` contains a storage ecosystem named directly by suffix.
 - `*Repository` — direct relational storage adapter. Read-only, write-only, search-focused, lookup-focused, or cache-focused storage surfaces remain in this family; qualifiers such as `*WriteRepository`, `*SearchRepository`, `*LookupRepository`, or `*CacheRepository` narrow the storage concern, not the architecture role.
 - `*Store` — persistence surface for non-relational blobs, backups, snapshots, or file-oriented payloads.
 - `*Schema` — storage-structure owner for DDL, compatibility, and schema-shape maintenance in one persistence area.
 - `*Hydrator` — repository-local relation loader or result enricher that completes partially mapped storage results from additional queries or tables.
-- `*Persistence` — narrow storage-slice facade or coordinator that composes repository calls entirely inside the persistence layer without becoming application workflow orchestration.
 - `*Write` — persistence-local write payload or normalized storage shape consumed by repositories, schemas, or mappers.
 - `*Mapper` — storage-facing translation between rows, records, and owned domain representations.
 - `*Codec` — bidirectional encoding/decoding for stored representations and persistence formats.
@@ -179,7 +176,7 @@ If a feature defines a nearer `AGENTS.md`, that file is required context before 
 - Owns shared transient UI, editor, and workflow state.
 - Carries selection, drafts, previews, modes, and other runtime interaction truth.
 - Supports the workflow around canonical truth without replacing it.
-- `state/` contains a runtime-truth ecosystem, not just generic mutable containers.
+- `state/` contains a runtime-truth ecosystem named directly by suffix.
 - `*State` — shared transient mutable runtime truth. Session-, interaction-, map-, and runtime-scoped containers remain in this family; qualifiers narrow the concern, not the architecture role.
 - `*Draft` — in-progress editable state that is not yet committed.
 - `*Preview` — ephemeral possible result shown before commit.
@@ -191,7 +188,7 @@ If a feature defines a nearer `AGENTS.md`, that file is required context before 
 - Owns feature-local presentation and interaction code.
 - Contains views, panes, dropdowns, canvases, controls, and UI controllers.
 - Talks to application services and state containers, not directly to persistence policy.
-- `ui/` contains a presentation ecosystem, not just leaf widgets.
+- `ui/` contains a presentation ecosystem named directly by suffix.
 - `*Shell` — top-level layout owner that hosts views, persistent panels, and navigation structure for one UI surface family.
 - `*View` — top-level application surface for the shell and navigation model.
 - `*Workspace` — composite host surface that coordinates or swaps multiple sub-surfaces inside one work area without becoming domain or workflow state.
@@ -203,16 +200,16 @@ If a feature defines a nearer `AGENTS.md`, that file is required context before 
 - `*Navigator` — history, focus, or directional traversal owner for one content surface.
 - `*Registry` — shell-owned registration surface that grants later UI updates or activation through returned handles.
 - `*RenderState` — derived display-only state for one renderer or pane; never canonical workflow truth.
-- `*Callbacks` — injected callback bundle that binds one view or UI workflow surface to its host shell or feature boundary.
 - `*Tool` — user-selectable editor interaction mode or narrow operator-facing action surface.
 - UI-local `*Handle` types may live next to the UI surface that returns them.
+- Injected callback bundles should stay precise local names or become narrow `*Port`s; they are not a separate repo-wide UI role.
 
 #### `api/`
 
 - Is the cross-feature entrypoint.
 - Contains deliberate boundary contracts, boundary data, and explicitly exported public feature surfaces only.
 - Root-level `api/` holds the public role families exposed to other features.
-- `api/` contains a boundary ecosystem, not just DTOs.
+- `api/` contains a boundary ecosystem named directly by suffix.
 - `*Api` — deliberate cross-feature boundary surface.
 - `*Port` — public capability contract across package or feature boundaries.
 - `*Module` — public feature entrypoint or exported composition root when the module itself is the boundary surface.
@@ -222,14 +219,14 @@ If a feature defines a nearer `AGENTS.md`, that file is required context before 
 - `*Ref` — compact boundary identity token that points at an external entity without carrying its full state.
 - `*Handle` — public capability token for later interaction, cleanup, or content replacement.
 - `*Lookup` — public read-only lookup seam when the boundary is narrower than a full `*Api` and the lookup itself is the exported capability.
-- When `api/` intentionally exports a reusable UI or workflow surface, keep the underlying canonical role name (`*Pane`, `*View`, `*Dropdown`, `*Lookup`, `*ApplicationService`, `*Maintenance`) instead of inventing an api-only suffix.
+- When `api/` intentionally exports another canonical role, keep that exact suffix instead of inventing an api-only wrapper name.
 - Boundary-facing `*Mapper` and `*Codec` types may live here when they serve the public API seam rather than persistence.
 
 #### `bootstrap/`
 
 - Owns internal composition roots and assembly-only wiring.
 - Wires collaborators and exposes feature entrypoints.
-- `bootstrap/` contains an assembly ecosystem, not just feature modules.
+- `bootstrap/` contains an assembly ecosystem named directly by suffix.
 - `*App` — process-level bootstrap owner for startup lifecycle, shell creation, and cross-feature wiring.
 - `*Preloader` — startup-lifecycle surface shown before the main application is ready.
 - `SaltMarcherApp` remains the cross-feature top-level composition root.
@@ -242,19 +239,18 @@ Legacy names may remain in untouched code, but touched code should converge towa
 - bare `*Service` only when it is truly an `*ApplicationService`
 - `*Catalog` -> `*Lookup`
 - broad application `*Service` -> `*ApplicationService`, `*Lookup`, `*Resolver`, `*Committer`, `*Reconciler`, or `*Maintenance` based on the actual job
+- public read or mutation facades in `api/` -> `*Api`, `*Lookup`, `*Port`, `*Maintenance`, or the exact exported canonical role instead of another `*Service`
 - `*SchemaSupport` -> `*Schema`
+- storage-local `*Persistence` -> `*Repository`
 - state-local config bundles -> `*Settings`
 - state-local finite switch enums -> `*Mode`
 - root layout owners -> `*Shell`
 - composite host surfaces -> `*Workspace`
-- injected UI callback bundles -> `*Callbacks`
-- public read facades -> `*Api`
 - boundary identity tokens -> `*Ref`
 - `*Provider` -> `*Port`
 - `*Popup` -> `*Dropdown` or `*Pane`
 - `*Scoring` -> `*Policy` or a precise domain helper name
 - `*Presenter` -> `*Pane`, `*Projection`, `*Resolver`, or `*Controller`
-- storage-local repository facades -> `*Persistence` only when they coordinate repositories entirely inside the persistence layer; otherwise keep or converge to `*Repository`
 - prefer a precise owner or target role over `*Manager`, `*Helper`, `*Util`, `*Processor`, `*Support`, or `*Surface`
 
 ## Key Conventions
