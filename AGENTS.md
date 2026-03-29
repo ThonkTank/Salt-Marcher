@@ -96,9 +96,10 @@ Additional structure belongs only in the nearest feature-local `AGENTS.md`, or a
 - Treat filename roles as ownership markers. A role name tells the reader what kind of capability a file encapsulates and whether it is the owner or support code around that owner.
 - Treat the role families below as function patterns, not as a mandatory suffix list. Use the family that matches the file's job, then choose the narrowest clear domain name for the concrete type.
 - In `model/`, the central owner will usually be a precise domain type, not a generic role suffix. Prefer the domain name when the type itself is the canonical owner.
+- When a canonical role name exists for a function pattern, converge touched code toward that name. Do not keep parallel legacy and canonical names for the same role in the same layer.
 - If several sibling files in one directory share the same role name, treat that as a smell: either the capability is duplicated or the directory needs a narrower subpackage with clearer ownership.
 - Use only the canonical roles defined below when one fits cleanly. If none fits, use a precise domain name instead of stretching a near-match.
-- Passive domain nouns such as `*Snapshot`, `*Descriptor`, `*Entry`, `*Criteria`, `*Option`, `*Profile`, `*Resolution`, `*Lookup`, `*Parser`, and `*Renderer` may remain precise domain names without becoming new global architecture roles.
+- Passive domain nouns such as `*Snapshot`, `*Descriptor`, `*Entry`, `*Criteria`, `*Option`, `*Profile`, `*Resolution`, `*Parser`, and `*Renderer` may remain precise domain names without becoming new global architecture roles.
 - Operation-shape names such as `*Factory`, `*Generator`, `*Calculator`, `*Classifier`, `*Normalizer`, `*Assembler`, `*Coordinator`, `*Context`, `*Planner`, `*Matcher`, `*Engine`, and `*Realizer` may remain precise helper names, but they are not repository-wide architecture roles.
 - New code must follow the target architecture immediately.
 - Touched code should move toward the target architecture at the nearest safe seam without widening scope.
@@ -144,13 +145,18 @@ If a feature defines a nearer `AGENTS.md`, that file is required context before 
 - Owns use-case orchestration.
 - Sequences workflows, async work, transactions, reload-after-write behavior, and cross-feature coordination.
 - Coordinates repositories, state containers, and feature APIs without becoming canonical domain truth.
-- `*ApplicationService` — user-visible workflow entrypoint for one use case or workflow slice.
-- `*Loader` — one-shot loading or materialization into domain or UI-ready structures.
-- `*Catalog` — read-only selection, lookup, or index surface that supports workflow decisions.
-- `*Projector` — derivation of read, preview, or presentation-oriented structures from authoritative state.
-- `*Projection` — derived internal data shape produced from authoritative truth for one workflow, planner, or consumer surface.
+- `application/` contains a workflow ecosystem, not just workflow entrypoints.
+- `Workflow` — use-case owner that accepts intent, coordinates the operation, and defines when the result is complete. Canonical name: `*ApplicationService`.
+- `Lookup` — read-only selection, target, label, availability, or index surface that supports a workflow. Canonical name: `*Lookup`.
+- `Resolver` — chooses a concrete application meaning, destination, location, or surface from workflow context plus model truth. Canonical name: `*Resolver`.
+- `Projection` — derived application-side data shape or preview/result shape for one workflow or consumer surface. Canonical name: `*Projection`.
+- `OperationData` — application-local request, target, descriptor, summary, snapshot, or intermediate carrier for one workflow family.
+- `Committer` — owns write ordering across repositories for one workflow or aggregate mutation. Canonical name: `*Committer`.
+- `Reconciler` — aligns an existing persisted or loaded structure set with the desired workflow result. Canonical name: `*Reconciler`.
+- `Maintenance` — repairs, refreshes, or revalidates derived application truth after owner or persistence changes. Canonical name: `*Maintenance`.
 - `*Session` — long-lived mutable runtime workflow context with explicit lifecycle.
 - `*Port` — internal capability contract when the seam belongs to one application slice instead of the public API.
+- Small transaction or conversion helpers may exist in `application/`, but they are support code around the workflow ecosystem rather than primary application roles.
 
 #### `repository/`
 
@@ -212,10 +218,12 @@ If a feature defines a nearer `AGENTS.md`, that file is required context before 
 New code uses the canonical families above.
 Legacy names may remain in untouched code, but touched code should converge toward the allowlist:
 - bare `*Service` only when it is truly an `*ApplicationService`
+- `*Catalog` -> `*Lookup`
+- broad application `*Service` -> `*ApplicationService`, `*Lookup`, `*Resolver`, `*Committer`, `*Reconciler`, or `*Maintenance` based on the actual job
 - `*Provider` -> `*Port`
 - `*Popup` -> `*Dropdown` or `*Pane`
 - `*Scoring` -> `*Policy` or a precise domain helper name
-- `*Presenter` -> `*Pane`, `*Projector`, or `*Controller`
+- `*Presenter` -> `*Pane`, `*Projection`, `*Resolver`, or `*Controller`
 - prefer a precise owner or target role over `*Manager`, `*Helper`, `*Util`, `*Processor`, `*Support`, or `*Surface`
 
 ## Key Conventions
