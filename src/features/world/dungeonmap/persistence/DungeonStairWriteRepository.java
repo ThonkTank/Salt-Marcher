@@ -17,20 +17,16 @@ public final class DungeonStairWriteRepository {
     public long insertStair(
             Connection conn,
             long mapId,
-            long traversalId,
-            String segmentKey,
             DungeonStair stair
     ) throws SQLException {
         DungeonStair resolvedStair = Objects.requireNonNull(stair, "stair");
         try (PreparedStatement ps = conn.prepareStatement(
                 "INSERT INTO dungeon_stairs("
-                        + "dungeon_map_id, traversal_id, segment_key, name, anchor_x, anchor_y, shape, direction, dimension1, dimension2"
-                        + ") VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        + "dungeon_map_id, name, anchor_x, anchor_y, shape, direction, dimension1, dimension2"
+                        + ") VALUES(?, ?, ?, ?, ?, ?, ?, ?)",
                 Statement.RETURN_GENERATED_KEYS)) {
             ps.setLong(1, mapId);
-            ps.setLong(2, traversalId);
-            ps.setString(3, segmentKey);
-            bindStairSpecification(ps, 4, resolvedStair);
+            bindStairSpecification(ps, 2, resolvedStair);
             ps.executeUpdate();
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (!rs.next()) {
@@ -41,20 +37,18 @@ public final class DungeonStairWriteRepository {
         }
     }
 
-    public void updateTraversalStair(
+    public void updateStair(
             Connection conn,
             long stairId,
-            String segmentKey,
             DungeonStair stair
     ) throws SQLException {
         DungeonStair resolvedStair = Objects.requireNonNull(stair, "stair");
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE dungeon_stairs"
-                        + " SET segment_key=?, name=?, anchor_x=?, anchor_y=?, shape=?, direction=?, dimension1=?, dimension2=?"
+                        + " SET name=?, anchor_x=?, anchor_y=?, shape=?, direction=?, dimension1=?, dimension2=?"
                         + " WHERE stair_id=?")) {
-            ps.setString(1, segmentKey);
-            bindStairSpecification(ps, 2, resolvedStair);
-            ps.setLong(9, stairId);
+            bindStairSpecification(ps, 1, resolvedStair);
+            ps.setLong(8, stairId);
             ps.executeUpdate();
         }
     }
