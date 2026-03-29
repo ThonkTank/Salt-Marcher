@@ -179,9 +179,12 @@ If a feature defines a nearer `AGENTS.md`, that file is required context before 
 - Owns shared transient UI, editor, and workflow state.
 - Carries selection, drafts, previews, modes, and other runtime interaction truth.
 - Supports the workflow around canonical truth without replacing it.
-- `*State` — shared transient mutable runtime truth.
+- `state/` contains a runtime-truth ecosystem, not just generic mutable containers.
+- `*State` — shared transient mutable runtime truth. Session-, interaction-, map-, and runtime-scoped containers remain in this family; qualifiers narrow the concern, not the architecture role.
 - `*Draft` — in-progress editable state that is not yet committed.
 - `*Preview` — ephemeral possible result shown before commit.
+- `*Settings` — runtime configuration bundle that parameterizes rendering, interaction, or workflow behavior without becoming canonical domain truth.
+- `*Mode` — closed runtime state vocabulary or behavior switch owned by a state family, usually as an enum or similarly finite value set.
 
 #### `ui/`
 
@@ -226,6 +229,8 @@ Legacy names may remain in untouched code, but touched code should converge towa
 - `*Catalog` -> `*Lookup`
 - broad application `*Service` -> `*ApplicationService`, `*Lookup`, `*Resolver`, `*Committer`, `*Reconciler`, or `*Maintenance` based on the actual job
 - `*SchemaSupport` -> `*Schema`
+- state-local config bundles -> `*Settings`
+- state-local finite switch enums -> `*Mode`
 - `*Provider` -> `*Port`
 - `*Popup` -> `*Dropdown` or `*Pane`
 - `*Scoring` -> `*Policy` or a precise domain helper name
