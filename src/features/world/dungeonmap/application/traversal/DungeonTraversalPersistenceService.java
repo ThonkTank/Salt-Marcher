@@ -41,13 +41,18 @@ public final class DungeonTraversalPersistenceService {
             return;
         }
         if (!traversal.isPersistable()) {
-            traversalWriteRepository.deleteTraversal(conn, traversal.traversalId());
+            deleteTraversal(conn, traversal.traversalId());
             return;
         }
         traversalWriteRepository.replaceTraversalRooms(conn, traversal.traversalId(), traversal.roomIds());
         traversalWriteRepository.replaceTraversalWaypoints(conn, traversal.traversalId(), traversal.bindings().waypoints());
         traversalWriteRepository.replaceTraversalDoorBindings(conn, traversal.traversalId(), traversal.bindings().doorBindings());
         segmentPersistence.persistSegments(conn, previousLayout, traversal, traversalPlan);
+    }
+
+    public void deleteTraversal(Connection conn, long traversalId) throws SQLException {
+        segmentPersistence.deleteSegmentsForTraversal(conn, traversalId);
+        traversalWriteRepository.deleteTraversal(conn, traversalId);
     }
 
     public void persistTraversals(Connection conn, Map<Long, Traversal> traversalsById) throws SQLException {

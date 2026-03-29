@@ -86,7 +86,7 @@ public final class DungeonTraversalEditService {
         Traversal traversal = requireTraversal(layout, segment);
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                traversalWriteRepository.deleteTraversal(conn, traversal.traversalId());
+                traversalPersistenceService.deleteTraversal(conn, traversal.traversalId());
                 return null;
             });
         }
@@ -135,7 +135,7 @@ public final class DungeonTraversalEditService {
                 : TraversalPlan.empty();
         traversalPersistenceService.persistTraversal(conn, layout, traversal, traversalPlan);
         if (deletedTraversalId != null) {
-            traversalWriteRepository.deleteTraversal(conn, deletedTraversalId);
+            traversalPersistenceService.deleteTraversal(conn, deletedTraversalId);
         }
     }
 

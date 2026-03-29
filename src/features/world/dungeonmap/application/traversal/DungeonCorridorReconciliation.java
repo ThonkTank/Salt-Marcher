@@ -3,23 +3,27 @@ package features.world.dungeonmap.application.traversal;
 import features.world.dungeonmap.model.structures.traversal.CorridorTraversalSlice;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
 import features.world.dungeonmap.model.structures.traversal.TraversalSegmentRefs;
+import features.world.dungeonmap.persistence.DungeonTraversalCorridorSegmentWriteRepository;
 import features.world.dungeonmap.persistence.DungeonCorridorWriteRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 public final class DungeonCorridorReconciliation {
 
     private final DungeonCorridorWriteRepository corridorWriteRepository;
+    private final DungeonTraversalCorridorSegmentWriteRepository traversalSegmentWriteRepository;
 
-    public DungeonCorridorReconciliation(DungeonCorridorWriteRepository corridorWriteRepository) {
+    public DungeonCorridorReconciliation(
+            DungeonCorridorWriteRepository corridorWriteRepository,
+            DungeonTraversalCorridorSegmentWriteRepository traversalSegmentWriteRepository
+    ) {
         this.corridorWriteRepository = Objects.requireNonNull(corridorWriteRepository, "corridorWriteRepository");
+        this.traversalSegmentWriteRepository = Objects.requireNonNull(traversalSegmentWriteRepository, "traversalSegmentWriteRepository");
     }
 
     public void reconcile(
@@ -32,25 +36,38 @@ public final class DungeonCorridorReconciliation {
             return;
         }
         Map<Long, String> existingById = existingCorridorIds(existingRefs);
-        Set<Long> desiredIds = new LinkedHashSet<>();
+        LinkedHashMap<String, Long> desiredSegmentRefs = new LinkedHashMap<>();
         for (CorridorTraversalSlice corridorSlice : corridorSlices == null ? List.<CorridorTraversalSlice>of() : corridorSlices) {
             if (corridorSlice == null) {
                 continue;
             }
-            Long corridorId = corridorSlice.corridorId();
-            if (corridorId == null || !existingById.containsKey(corridorId)) {
-                corridorWriteRepository.insertTraversalCorridor(
-                        conn,
-                        traversal.mapId(),
-                        traversal.traversalId(),
-                        corridorSlice.segmentKey());
+            var corridor = features.world.dungeonmap.model.structures.corridor.Corridor.fromTraversalSlice(
+                    corridorSlice,
+                    traversal.traversalId(),
+                    traversal.mapId(),
+                    traversal.roomIds());
+            if (corridor == null) {
                 continue;
             }
-            desiredIds.add(corridorId);
-            corridorWriteRepository.updateTraversalCorridorSegmentKey(conn, corridorId, corridorSlice.segmentKey());
+            Long corridorId = corridorSlice.corridorId();
+            if (corridorId == null || !existingById.containsKey(corridorId)) {
+                corridorId = corridorWriteRepository.insertCorridor(
+                        conn,
+                        traversal.mapId(),
+                        corridor);
+            } else {
+                corridorWriteRepository.updateCorridor(conn, corridorId, corridor);
+            }
+            corridorWriteRepository.replacePathNodes(conn, corridorId, corridor.path());
+            corridorWriteRepository.replaceConnections(conn, corridorId, corridor.connections());
+            desiredSegmentRefs.put(corridorSlice.segmentKey(), corridorId);
         }
-        for (Long corridorId : existingById.keySet()) {
-            if (corridorId != null && !desiredIds.contains(corridorId)) {
+        List<Long> removedCorridorIds = traversalSegmentWriteRepository.replaceTraversalSegments(
+                conn,
+                traversal.traversalId(),
+                desiredSegmentRefs);
+        for (Long corridorId : removedCorridorIds) {
+            if (corridorId != null) {
                 corridorWriteRepository.deleteCorridor(conn, corridorId);
             }
         }
