@@ -106,17 +106,18 @@ Additional structure belongs only in the nearest feature-local `AGENTS.md`, or a
 
 ### Layers
 
-Read the project in this order:
-- UI behavior lives in `ui/`
-- use-case and workflow logic lives in `application/`
+Reason about ownership in this order:
 - domain and editor truth live in `model/`
+- use-case and workflow logic live in `application/`
 - persistence access lives in `repository/`
 - shared transient runtime state lives in `state/`
+- feature-local presentation and interaction live in `ui/`
 - public feature boundaries live in `api/`
 - internal wiring lives in `bootstrap/`
 
 The default dependency direction is `ui -> application -> repository -> model`.
 `state/` may be observed by `ui/` and coordinated by `application/`, while `model/` remains the canonical truth.
+Typical read flow still starts at `ui/` and follows dependencies inward.
 If a feature defines a nearer `AGENTS.md`, that file is required context before any change in that subtree.
 
 #### `model/`
