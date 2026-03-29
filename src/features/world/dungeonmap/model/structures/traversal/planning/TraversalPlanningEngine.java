@@ -7,13 +7,11 @@ import features.world.dungeonmap.model.structures.corridor.ResolvedCorridorDoorB
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.traversal.TraversalPlan;
-import features.world.dungeonmap.model.structures.traversal.TraversalRoomAnchor;
 import features.world.dungeonmap.model.structures.traversal.planning.internal.TraversalGeometryRealizer;
 import features.world.dungeonmap.model.structures.traversal.planning.internal.TraversalStructurePlanner;
 import features.world.dungeonmap.model.structures.traversal.planning.internal.TraversalTopology;
 import features.world.dungeonmap.model.structures.traversal.planning.internal.TraversalTopologyProjector;
 
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -29,33 +27,19 @@ public final class TraversalPlanningEngine {
         if (corridor == null || input == null) {
             return TraversalPlan.empty();
         }
-        List<TraversalRoomAnchor> roomAnchors = projectRoomAnchors(corridor.resolvedRooms(input));
+        List<Room> rooms = corridor.resolvedRooms(input);
         List<CubePoint> waypointCells = corridor.resolvedWaypointCells(input);
         Map<Long, ResolvedCorridorDoorBinding> doorBindings = corridor.resolvedDoorBindings(input);
         Set<CubePoint> obstacles = buildObstacles(input.roomsById(), input.stairs(), corridor.corridorId());
         TraversalTopology topology = TraversalTopologyProjector.project(
                 corridor.corridorId(),
                 corridor.mapId(),
-                roomAnchors,
+                rooms,
                 waypointCells,
                 doorBindings,
                 obstacles);
         TraversalStructurePlanner.StructurePlan structurePlan = TraversalStructurePlanner.plan(topology);
         return TraversalGeometryRealizer.realize(structurePlan);
-    }
-
-    private static List<TraversalRoomAnchor> projectRoomAnchors(List<Room> rooms) {
-        if (rooms == null || rooms.isEmpty()) {
-            return List.of();
-        }
-        ArrayList<TraversalRoomAnchor> result = new ArrayList<>();
-        for (Room room : rooms) {
-            TraversalRoomAnchor roomAnchor = TraversalRoomAnchor.from(room);
-            if (roomAnchor != null) {
-                result.add(roomAnchor);
-            }
-        }
-        return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
     private static Set<CubePoint> buildObstacles(

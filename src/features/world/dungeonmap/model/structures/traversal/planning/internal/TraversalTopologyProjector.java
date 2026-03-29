@@ -2,7 +2,7 @@ package features.world.dungeonmap.model.structures.traversal.planning.internal;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.structures.corridor.ResolvedCorridorDoorBinding;
-import features.world.dungeonmap.model.structures.traversal.TraversalRoomAnchor;
+import features.world.dungeonmap.model.structures.room.Room;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -21,13 +21,13 @@ public final class TraversalTopologyProjector {
     public static TraversalTopology project(
             Long corridorId,
             long mapId,
-            List<TraversalRoomAnchor> roomAnchors,
+            List<Room> rooms,
             List<CubePoint> waypointCells,
             Map<Long, ResolvedCorridorDoorBinding> doorBindings,
             Set<CubePoint> obstacles
     ) {
         ProjectedRoomPortals projectedRoomPortals = projectRoomPortalNodes(
-                roomAnchors,
+                rooms,
                 doorBindings == null ? Map.of() : doorBindings);
         List<TraversalNode> waypointNodes = projectWaypointNodes(waypointCells);
         List<TraversalNode> requiredRoomPortalNodes = selectRequiredRoomPortalNodes(projectedRoomPortals.groups(), waypointNodes);
@@ -41,27 +41,27 @@ public final class TraversalTopologyProjector {
     }
 
     private static ProjectedRoomPortals projectRoomPortalNodes(
-            List<TraversalRoomAnchor> roomAnchors,
+            List<Room> rooms,
             Map<Long, ResolvedCorridorDoorBinding> doorBindings
     ) {
-        if (roomAnchors == null || roomAnchors.isEmpty()) {
+        if (rooms == null || rooms.isEmpty()) {
             return ProjectedRoomPortals.empty();
         }
         ArrayList<TraversalNode> nodes = new ArrayList<>();
         ArrayList<RoomPortalGroup> groups = new ArrayList<>();
         int roomIndex = 0;
-        for (TraversalRoomAnchor roomAnchor : roomAnchors) {
-            if (roomAnchor == null) {
+        for (Room room : rooms) {
+            if (room == null) {
                 continue;
             }
-            ResolvedCorridorDoorBinding fixedDoorBinding = roomAnchor.roomId() == null
+            ResolvedCorridorDoorBinding fixedDoorBinding = room.roomId() == null
                     ? null
-                    : doorBindings.get(roomAnchor.roomId());
+                    : doorBindings.get(room.roomId());
             List<TraversalNode> projectedNodes = fixedDoorBinding == null
-                    ? projectUnboundRoomPortalNodes(roomAnchor, roomIndex)
-                    : projectPinnedRoomPortalNodes(roomAnchor, fixedDoorBinding, roomIndex);
+                    ? projectUnboundRoomPortalNodes(room, roomIndex)
+                    : projectPinnedRoomPortalNodes(room, fixedDoorBinding, roomIndex);
             if (projectedNodes.isEmpty()) {
-                projectedNodes = projectUnboundRoomPortalNodes(roomAnchor, roomIndex);
+                projectedNodes = projectUnboundRoomPortalNodes(room, roomIndex);
             }
             if (projectedNodes.isEmpty()) {
                 roomIndex++;
@@ -123,15 +123,15 @@ public final class TraversalTopologyProjector {
     }
 
     private static List<TraversalNode> projectUnboundRoomPortalNodes(
-            TraversalRoomAnchor roomAnchor,
+            Room room,
             int roomIndex
     ) {
-        Map<Integer, Set<CubePoint>> occupiedCellsByLevel = occupiedCellsByLevel(roomAnchor);
+        Map<Integer, Set<CubePoint>> occupiedCellsByLevel = occupiedCellsByLevel(room);
         ArrayList<TraversalNode> result = new ArrayList<>();
-        for (Integer levelZ : sortedRoomLevels(roomAnchor, occupiedCellsByLevel)) {
+        for (Integer levelZ : sortedRoomLevels(room, occupiedCellsByLevel)) {
             result.add(TraversalNode.roomPortal(
-                    TraversalNodeId.roomPortal(roomAnchor.roomId(), levelZ, roomIndex),
-                    roomAnchor,
+                    TraversalNodeId.roomPortal(room.roomId(), levelZ, roomIndex),
+                    room,
                     levelZ,
                     occupiedCellsByLevel.getOrDefault(levelZ, Set.of()),
                     null));
@@ -140,20 +140,20 @@ public final class TraversalTopologyProjector {
     }
 
     private static List<TraversalNode> projectPinnedRoomPortalNodes(
-            TraversalRoomAnchor roomAnchor,
+            Room room,
             ResolvedCorridorDoorBinding fixedDoorBinding,
             int roomIndex
     ) {
-        Map<Integer, Set<CubePoint>> occupiedCellsByLevel = occupiedCellsByLevel(roomAnchor);
+        Map<Integer, Set<CubePoint>> occupiedCellsByLevel = occupiedCellsByLevel(room);
         ArrayList<TraversalNode> result = new ArrayList<>();
-        for (Integer levelZ : sortedRoomLevels(roomAnchor, occupiedCellsByLevel)) {
+        for (Integer levelZ : sortedRoomLevels(room, occupiedCellsByLevel)) {
             Set<CubePoint> occupiedCells = occupiedCellsByLevel.getOrDefault(levelZ, Set.of());
             if (!supportsFixedDoorBindingAtLevel(occupiedCells, fixedDoorBinding, levelZ)) {
                 continue;
             }
             result.add(TraversalNode.roomPortal(
-                    TraversalNodeId.roomPortal(roomAnchor.roomId(), levelZ, roomIndex),
-                    roomAnchor,
+                    TraversalNodeId.roomPortal(room.roomId(), levelZ, roomIndex),
+                    room,
                     levelZ,
                     occupiedCells,
                     fixedDoorBinding));
@@ -161,12 +161,12 @@ public final class TraversalTopologyProjector {
         return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
-    private static Map<Integer, Set<CubePoint>> occupiedCellsByLevel(TraversalRoomAnchor roomAnchor) {
+    private static Map<Integer, Set<CubePoint>> occupiedCellsByLevel(Room room) {
         LinkedHashMap<Integer, LinkedHashSet<CubePoint>> byLevel = new LinkedHashMap<>();
-        if (roomAnchor == null || roomAnchor.occupiedCells().isEmpty()) {
+        if (room == null || room.cubePoints().isEmpty()) {
             return Map.of();
         }
-        for (CubePoint occupiedCell : roomAnchor.occupiedCells()) {
+        for (CubePoint occupiedCell : room.cubePoints()) {
             if (occupiedCell == null) {
                 continue;
             }
@@ -183,16 +183,16 @@ public final class TraversalTopologyProjector {
     }
 
     private static List<Integer> sortedRoomLevels(
-            TraversalRoomAnchor roomAnchor,
+            Room room,
             Map<Integer, Set<CubePoint>> occupiedCellsByLevel
     ) {
         LinkedHashSet<Integer> levels = new LinkedHashSet<>();
-        levels.addAll(sortedLevels(roomAnchor == null ? Set.of() : roomAnchor.levels()));
+        levels.addAll(sortedLevels(room == null ? Set.of() : room.levels()));
         if (levels.isEmpty()) {
             levels.addAll(sortedLevels(occupiedCellsByLevel.keySet()));
         }
-        if (levels.isEmpty() && roomAnchor != null) {
-            levels.add(roomAnchor.primaryLevel());
+        if (levels.isEmpty() && room != null) {
+            levels.add(room.primaryLevel());
         }
         return levels.isEmpty() ? List.of() : List.copyOf(levels);
     }
