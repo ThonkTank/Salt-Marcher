@@ -3,7 +3,6 @@ package features.world.dungeonmap.model.structures.traversal;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.model.structures.traversal.planning.TraversalPlanningEngine;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -121,18 +120,18 @@ public final class Traversal {
     public record RewriteResult(
             Map<Long, Traversal> traversalsById,
             Set<Long> affectedTraversalIds,
-            Map<Long, TraversalPlan> traversalPlansByTraversalId
+            Map<Long, TraversalRoute> traversalRoutesByTraversalId
     ) {
         public RewriteResult {
             traversalsById = traversalsById == null ? Map.of() : Map.copyOf(traversalsById);
             affectedTraversalIds = affectedTraversalIds == null ? Set.of() : Set.copyOf(affectedTraversalIds);
-            traversalPlansByTraversalId = traversalPlansByTraversalId == null ? Map.of() : Map.copyOf(traversalPlansByTraversalId);
+            traversalRoutesByTraversalId = traversalRoutesByTraversalId == null ? Map.of() : Map.copyOf(traversalRoutesByTraversalId);
         }
     }
 
     public static RewriteResult rewriteAll(
             Map<Long, Traversal> traversalsById,
-            TraversalRewriteContext context
+            TraversalRoutingContext context
     ) {
         if (traversalsById == null || traversalsById.isEmpty()) {
             return new RewriteResult(Map.of(), Set.of(), Map.of());
@@ -141,18 +140,18 @@ public final class Traversal {
             return new RewriteResult(Map.copyOf(traversalsById), Set.of(), Map.of());
         }
         Map<Long, Traversal> result = new LinkedHashMap<>();
-        Map<Long, TraversalPlan> traversalPlansByTraversalId = new LinkedHashMap<>();
+        Map<Long, TraversalRoute> traversalRoutesByTraversalId = new LinkedHashMap<>();
         for (Map.Entry<Long, Traversal> entry : traversalsById.entrySet()) {
             Traversal traversal = entry.getValue();
             if (traversal == null) {
                 result.put(entry.getKey(), null);
                 continue;
             }
-            Traversal reanchored = traversal.reanchoredFor(context);
+            Traversal reanchored = traversal.reanchoredTo(context);
             if (context.affects(traversal.traversalId()) && reanchored.isPersistable()) {
-                TraversalPlan traversalPlan = TraversalPlanningEngine.plan(reanchored, context.rewrittenPlanningInput());
+                TraversalRoute traversalRoute = reanchored.route(context.rewrittenSnapshot());
                 if (reanchored.traversalId() != null) {
-                    traversalPlansByTraversalId.put(reanchored.traversalId(), traversalPlan);
+                    traversalRoutesByTraversalId.put(reanchored.traversalId(), traversalRoute);
                 }
             }
             result.put(entry.getKey(), reanchored);
@@ -160,7 +159,7 @@ public final class Traversal {
         return new RewriteResult(
                 Map.copyOf(result),
                 context.affectedTraversalIds(),
-                Map.copyOf(traversalPlansByTraversalId));
+                Map.copyOf(traversalRoutesByTraversalId));
     }
 
     public Traversal withAddedRoom(Long roomId) {
@@ -256,12 +255,12 @@ public final class Traversal {
                 segmentRefs.withMerged(other.segmentRefs()));
     }
 
-    public Traversal reanchoredFor(TraversalRewriteContext context) {
+    public Traversal reanchoredTo(TraversalRoutingContext context) {
         if (context == null || !context.affects(traversalId)) {
             return this;
         }
-        TraversalPlanningInput previousInput = context.previousPlanningInput();
-        TraversalPlanningInput rewrittenInput = context.rewrittenPlanningInput();
+        TraversalRoutingSnapshot previousInput = context.previousSnapshot();
+        TraversalRoutingSnapshot rewrittenInput = context.rewrittenSnapshot();
         Set<Long> deletedClusterIds = context.deletedClusterIds();
         Long fallbackClusterId = fallbackWaypointClusterId(rewrittenInput);
         List<TraversalWaypointBinding> updatedWaypoints = new ArrayList<>();
@@ -307,6 +306,10 @@ public final class Traversal {
         return withBindings(new TraversalBindings(updatedWaypoints, updatedDoorBindings));
     }
 
+    public TraversalRoute route(TraversalRoutingSnapshot snapshot) {
+        return TraversalRoutingEngine.route(this, snapshot);
+    }
+
     public Traversal rewrittenForSplit(TraversalSplitRewriteInput input) {
         if (input == null || !input.isUsableFor(this)) {
             return this;
@@ -318,7 +321,7 @@ public final class Traversal {
         return withReplacedRoom(input.originalRoomId(), replacement.roomId());
     }
 
-    public List<Room> resolvedRooms(TraversalPlanningInput input) {
+    public List<Room> resolvedRooms(TraversalRoutingSnapshot input) {
         List<Room> result = new ArrayList<>();
         Set<Long> seen = new LinkedHashSet<>();
         if (input == null) {
@@ -336,7 +339,7 @@ public final class Traversal {
         return List.copyOf(result);
     }
 
-    public List<CubePoint> resolvedWaypointCells(TraversalPlanningInput input) {
+    public List<CubePoint> resolvedWaypointCells(TraversalRoutingSnapshot input) {
         if (input == null || bindings.waypoints().isEmpty()) {
             return List.of();
         }
@@ -350,7 +353,7 @@ public final class Traversal {
         return List.copyOf(result);
     }
 
-    public Map<Long, ResolvedTraversalDoorBinding> resolvedDoorBindings(TraversalPlanningInput input) {
+    public Map<Long, ResolvedTraversalDoorBinding> resolvedDoorBindings(TraversalRoutingSnapshot input) {
         if (input == null || bindings.doorBindings().isEmpty()) {
             return Map.of();
         }
@@ -370,7 +373,7 @@ public final class Traversal {
         return resolved(traversalId, mapId, roomIds, bindings, segmentRefs);
     }
 
-    private Long fallbackWaypointClusterId(TraversalPlanningInput input) {
+    private Long fallbackWaypointClusterId(TraversalRoutingSnapshot input) {
         for (Long roomId : roomIds) {
             Room room = input.room(roomId);
             if (room != null) {
@@ -382,8 +385,8 @@ public final class Traversal {
 
     private static Long targetClusterId(
             long clusterId,
-            TraversalPlanningInput previousInput,
-            TraversalPlanningInput rewrittenInput,
+            TraversalRoutingSnapshot previousInput,
+            TraversalRoutingSnapshot rewrittenInput,
             Set<Long> deletedClusterIds,
             Long fallbackClusterId
     ) {

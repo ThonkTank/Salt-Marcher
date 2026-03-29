@@ -2,8 +2,8 @@ package features.world.dungeonmap.application.traversal;
 
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
+import features.world.dungeonmap.model.structures.traversal.TraversalRoute;
 import features.world.dungeonmap.model.structures.traversal.TraversalSegmentRefs;
-import features.world.dungeonmap.model.structures.traversal.TraversalStairSlice;
 import features.world.dungeonmap.persistence.DungeonStairWriteRepository;
 import features.world.dungeonmap.persistence.DungeonTraversalStairSegmentWriteRepository;
 
@@ -30,7 +30,7 @@ public final class DungeonStairReconciliation {
     public void reconcile(
             Connection conn,
             Traversal traversal,
-            List<TraversalStairSlice> stairSlices,
+            List<TraversalRoute.StairSegment> stairSegments,
             TraversalSegmentRefs existingRefs
     ) throws SQLException {
         if (traversal == null || traversal.traversalId() == null) {
@@ -38,24 +38,26 @@ public final class DungeonStairReconciliation {
         }
         Map<Long, String> existingById = existingStairIds(existingRefs);
         LinkedHashMap<String, Long> desiredSegmentRefs = new LinkedHashMap<>();
-        for (TraversalStairSlice stairSlice : stairSlices == null ? List.<TraversalStairSlice>of() : stairSlices) {
-            if (stairSlice == null || stairSlice.stair() == null) {
+        for (TraversalRoute.StairSegment stairSegment : stairSegments == null
+                ? List.<TraversalRoute.StairSegment>of()
+                : stairSegments) {
+            if (stairSegment == null || stairSegment.stair() == null) {
                 continue;
             }
-            DungeonStair stair = stairSlice.stair();
+            DungeonStair stair = stairSegment.stair();
             long stairId;
-            if (stairSlice.stairId() == null || !existingById.containsKey(stairSlice.stairId())) {
+            if (stair.stairId() == null || !existingById.containsKey(stair.stairId())) {
                 stairId = stairWriteRepository.insertStair(
                         conn,
                         traversal.mapId(),
                         stair);
             } else {
-                stairId = stairSlice.stairId();
+                stairId = stair.stairId();
                 stairWriteRepository.updateStair(conn, stairId, stair);
             }
             stairWriteRepository.replacePathNodes(conn, stairId, stair.path());
             stairWriteRepository.replaceExits(conn, stairId, stair.exits());
-            desiredSegmentRefs.put(stairSlice.segmentKey(), stairId);
+            desiredSegmentRefs.put(stairSegment.segmentKey(), stairId);
         }
         List<Long> removedStairIds = traversalSegmentWriteRepository.replaceTraversalSegments(
                 conn,

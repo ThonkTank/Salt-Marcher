@@ -24,25 +24,25 @@ public final class TraversalSegmentIdentityMatcher {
         throw new AssertionError("No instances");
     }
 
-    public static TraversalPlan preserveSegmentIds(
+    public static TraversalRoute preserveSegmentIds(
             Traversal traversal,
-            TraversalPlan traversalPlan,
+            TraversalRoute traversalRoute,
             DungeonLayout previousLayout
     ) {
-        if (traversal == null || traversalPlan == null) {
-            return TraversalPlan.empty();
+        if (traversal == null || traversalRoute == null) {
+            return TraversalRoute.empty();
         }
         TraversalSegmentRefs existingRefs = existingRefs(traversal, previousLayout);
         LinkedHashMap<String, Long> corridorIdsBySegmentKey = new LinkedHashMap<>(existingRefs.corridorIdsBySegmentKey());
         LinkedHashMap<String, Long> stairIdsBySegmentKey = new LinkedHashMap<>(existingRefs.stairIdsBySegmentKey());
         if (previousLayout == null || traversal.traversalId() == null) {
-            return traversalPlan
+            return traversalRoute
                     .withCorridorIds(corridorIdsBySegmentKey)
                     .withStairIds(stairIdsBySegmentKey);
         }
-        matchCorridorIds(traversal, traversalPlan, previousLayout, corridorIdsBySegmentKey);
-        matchStairIds(traversal, traversalPlan, previousLayout, stairIdsBySegmentKey);
-        return traversalPlan
+        matchCorridorIds(traversal, traversalRoute, previousLayout, corridorIdsBySegmentKey);
+        matchStairIds(traversal, traversalRoute, previousLayout, stairIdsBySegmentKey);
+        return traversalRoute
                 .withCorridorIds(corridorIdsBySegmentKey)
                 .withStairIds(stairIdsBySegmentKey);
     }
@@ -58,16 +58,18 @@ public final class TraversalSegmentIdentityMatcher {
             return TraversalSegmentRefs.empty();
         }
         Traversal previousTraversal = previousLayout.findTraversal(traversal.traversalId());
-        if (previousTraversal != null && !previousTraversal.segmentRefs().refsBySegmentKey().isEmpty()) {
-            return previousTraversal.segmentRefs();
-        }
         LinkedHashMap<String, TraversalSegmentRef> refsBySegmentKey = new LinkedHashMap<>();
+        if (previousTraversal != null && !previousTraversal.segmentRefs().refsBySegmentKey().isEmpty()) {
+            refsBySegmentKey.putAll(previousTraversal.segmentRefs().refsBySegmentKey());
+        }
         for (Corridor corridor : previousLayout.corridors()) {
             if (corridor != null
                     && corridor.segmentKey() != null
                     && corridor.corridorId() != null
                     && Objects.equals(corridor.traversalId(), traversal.traversalId())) {
-                refsBySegmentKey.put(corridor.segmentKey(), new TraversalSegmentRef.CorridorSegment(corridor.corridorId()));
+                refsBySegmentKey.putIfAbsent(
+                        corridor.segmentKey(),
+                        new TraversalSegmentRef.CorridorSegment(corridor.corridorId()));
             }
         }
         return refsBySegmentKey.isEmpty() ? TraversalSegmentRefs.empty() : new TraversalSegmentRefs(refsBySegmentKey);
@@ -75,11 +77,11 @@ public final class TraversalSegmentIdentityMatcher {
 
     private static void matchCorridorIds(
             Traversal traversal,
-            TraversalPlan traversalPlan,
+            TraversalRoute traversalRoute,
             DungeonLayout previousLayout,
             Map<String, Long> corridorIdsBySegmentKey
     ) {
-        if (traversalPlan.corridorSlices().isEmpty()) {
+        if (traversalRoute.corridorSegments().isEmpty()) {
             return;
         }
         Map<Long, Corridor> unmatchedExistingById = new LinkedHashMap<>();
@@ -92,28 +94,25 @@ public final class TraversalSegmentIdentityMatcher {
             unmatchedExistingById.put(corridor.corridorId(), corridor);
         }
         unmatchedExistingById.keySet().removeAll(corridorIdsBySegmentKey.values());
-        for (CorridorTraversalSlice corridorSlice : traversalPlan.corridorSlices()) {
-            if (corridorSlice == null || corridorIdsBySegmentKey.containsKey(corridorSlice.segmentKey())) {
+        for (TraversalRoute.CorridorSegment corridorSegment : traversalRoute.corridorSegments()) {
+            if (corridorSegment == null
+                    || corridorSegment.corridor() == null
+                    || corridorIdsBySegmentKey.containsKey(corridorSegment.segmentKey())) {
                 continue;
             }
-            Corridor matched = bestCorridorMatch(corridorSlice, unmatchedExistingById.values());
+            Corridor matched = bestCorridorMatch(corridorSegment.corridor(), unmatchedExistingById.values());
             if (matched == null || matched.corridorId() == null) {
                 continue;
             }
-            corridorIdsBySegmentKey.put(corridorSlice.segmentKey(), matched.corridorId());
+            corridorIdsBySegmentKey.put(corridorSegment.segmentKey(), matched.corridorId());
             unmatchedExistingById.remove(matched.corridorId());
         }
     }
 
     private static Corridor bestCorridorMatch(
-            CorridorTraversalSlice desired,
+            Corridor desiredCorridor,
             java.util.Collection<Corridor> candidates
     ) {
-        Corridor desiredCorridor = Corridor.fromTraversalSlice(
-                desired,
-                null,
-                desired.connections().isEmpty() ? 0L : desired.connections().getFirst().mapId(),
-                List.of());
         CorridorSignature desiredSignature = corridorSignature(desiredCorridor);
         ArrayList<CorridorCandidateScore> matches = new ArrayList<>();
         for (Corridor candidate : candidates == null ? List.<Corridor>of() : candidates) {
@@ -143,11 +142,11 @@ public final class TraversalSegmentIdentityMatcher {
 
     private static void matchStairIds(
             Traversal traversal,
-            TraversalPlan traversalPlan,
+            TraversalRoute traversalRoute,
             DungeonLayout previousLayout,
             Map<String, Long> stairIdsBySegmentKey
     ) {
-        if (traversalPlan.stairSlices().isEmpty()) {
+        if (traversalRoute.stairSegments().isEmpty()) {
             return;
         }
         Map<Long, DungeonStair> unmatchedExistingById = new LinkedHashMap<>();
@@ -160,19 +159,19 @@ public final class TraversalSegmentIdentityMatcher {
             unmatchedExistingById.put(stair.stairId(), stair);
         }
         unmatchedExistingById.keySet().removeAll(stairIdsBySegmentKey.values());
-        for (TraversalStairSlice stairSlice : traversalPlan.stairSlices()) {
-            if (stairSlice == null
-                    || stairSlice.stair() == null
-                    || stairIdsBySegmentKey.containsKey(stairSlice.segmentKey())) {
+        for (TraversalRoute.StairSegment stairSegment : traversalRoute.stairSegments()) {
+            if (stairSegment == null
+                    || stairSegment.stair() == null
+                    || stairIdsBySegmentKey.containsKey(stairSegment.segmentKey())) {
                 continue;
             }
             DungeonStair matched = DungeonStairIdentityMatcher.bestMatch(
-                    stairSlice.stair(),
+                    stairSegment.stair(),
                     unmatchedExistingById.values());
             if (matched == null || matched.stairId() == null) {
                 continue;
             }
-            stairIdsBySegmentKey.put(stairSlice.segmentKey(), matched.stairId());
+            stairIdsBySegmentKey.put(stairSegment.segmentKey(), matched.stairId());
             unmatchedExistingById.remove(matched.stairId());
         }
     }

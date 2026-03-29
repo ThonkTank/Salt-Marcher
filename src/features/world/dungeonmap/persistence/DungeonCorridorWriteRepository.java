@@ -19,6 +19,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -222,11 +223,15 @@ public final class DungeonCorridorWriteRepository {
         CubePoint current = start;
         while (current != null && remaining.remove(current)) {
             ordered.add(current);
-            CubePoint next = adjacency.getOrDefault(current, Set.of()).stream()
-                    .filter(candidate -> !Objects.equals(candidate, previous))
-                    .filter(remaining::contains)
-                    .min(CubePoint.POINT_ORDER)
-                    .orElse(null);
+            CubePoint next = null;
+            for (CubePoint candidate : adjacency.getOrDefault(current, Set.of())) {
+                if (Objects.equals(candidate, previous) || !remaining.contains(candidate)) {
+                    continue;
+                }
+                if (next == null || CubePoint.POINT_ORDER.compare(candidate, next) < 0) {
+                    next = candidate;
+                }
+            }
             previous = current;
             current = next;
         }

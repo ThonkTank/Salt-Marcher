@@ -76,6 +76,10 @@ public final class Corridor {
         this.connections = connections == null ? List.of() : List.copyOf(connections);
     }
 
+    public Corridor withIdentity(Long corridorId, Long traversalId, long mapId) {
+        return new Corridor(segmentKey, corridorId, traversalId, mapId, roomIds, path, connections);
+    }
+
     public Long corridorId() {
         return corridorId;
     }

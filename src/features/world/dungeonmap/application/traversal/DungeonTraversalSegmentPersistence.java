@@ -1,8 +1,9 @@
 package features.world.dungeonmap.application.traversal;
 
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
-import features.world.dungeonmap.model.structures.traversal.TraversalPlan;
+import features.world.dungeonmap.model.structures.traversal.TraversalRoute;
 import features.world.dungeonmap.model.structures.traversal.TraversalSegmentIdentityMatcher;
 import features.world.dungeonmap.model.structures.traversal.TraversalSegmentRef;
 import features.world.dungeonmap.model.structures.traversal.TraversalSegmentRefs;
@@ -46,18 +47,18 @@ public final class DungeonTraversalSegmentPersistence {
             Connection conn,
             DungeonLayout previousLayout,
             Traversal traversal,
-            TraversalPlan traversalPlan
+            TraversalRoute traversalRoute
     ) throws SQLException {
         if (traversal == null || traversal.traversalId() == null) {
             return;
         }
         TraversalSegmentRefs existingRefs = existingRefs(previousLayout, traversal);
-        TraversalPlan resolvedPlan = TraversalSegmentIdentityMatcher.preserveSegmentIds(
+        TraversalRoute resolvedRoute = TraversalSegmentIdentityMatcher.preserveSegmentIds(
                 traversal,
-                traversalPlan,
+                traversalRoute,
                 previousLayout);
-        corridorReconciliation.reconcile(conn, traversal, resolvedPlan.corridorSlices(), existingRefs);
-        stairReconciliation.reconcile(conn, traversal, resolvedPlan.stairSlices(), existingRefs);
+        corridorReconciliation.reconcile(conn, traversal, resolvedRoute.corridorSegments(), existingRefs);
+        stairReconciliation.reconcile(conn, traversal, resolvedRoute.stairSegments(), existingRefs);
     }
 
     public void deleteSegmentsForTraversal(Connection conn, long traversalId) throws SQLException {
@@ -97,7 +98,7 @@ public final class DungeonTraversalSegmentPersistence {
             DungeonLayout previousLayout,
             Traversal traversal
     ) {
-        for (var corridor : previousLayout == null ? List.of() : previousLayout.corridors()) {
+        for (Corridor corridor : previousLayout == null ? List.<Corridor>of() : previousLayout.corridors()) {
             if (corridor != null
                     && corridor.segmentKey() != null
                     && corridor.corridorId() != null

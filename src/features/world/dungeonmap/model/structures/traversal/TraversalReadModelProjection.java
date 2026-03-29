@@ -20,25 +20,25 @@ public record TraversalReadModelProjection(
     public static List<Corridor> projectCorridors(
             long mapId,
             List<Traversal> traversals,
-            TraversalPlanningInput planningInput
+            TraversalRoutingSnapshot routingSnapshot
     ) {
-        return project(mapId, traversals, planningInput, Map.of(), null).corridors();
+        return project(mapId, traversals, routingSnapshot, Map.of(), null).corridors();
     }
 
     public static TraversalReadModelProjection project(
             long mapId,
             List<Traversal> traversals,
-            TraversalPlanningInput planningInput,
-            Map<Long, TraversalPlan> traversalPlansByTraversalId
+            TraversalRoutingSnapshot routingSnapshot,
+            Map<Long, TraversalRoute> traversalRoutesByTraversalId
     ) {
-        return project(mapId, traversals, planningInput, traversalPlansByTraversalId, null);
+        return project(mapId, traversals, routingSnapshot, traversalRoutesByTraversalId, null);
     }
 
     public static TraversalReadModelProjection project(
             long mapId,
             List<Traversal> traversals,
-            TraversalPlanningInput planningInput,
-            Map<Long, TraversalPlan> traversalPlansByTraversalId,
+            TraversalRoutingSnapshot routingSnapshot,
+            Map<Long, TraversalRoute> traversalRoutesByTraversalId,
             DungeonLayout previousLayout
     ) {
         ArrayList<Corridor> projectedCorridors = new ArrayList<>();
@@ -47,26 +47,18 @@ public record TraversalReadModelProjection(
             if (traversal == null) {
                 continue;
             }
-            TraversalPlan resolvedPlan = TraversalSegmentIdentityMatcher.preserveSegmentIds(
+            TraversalRoute resolvedRoute = TraversalSegmentIdentityMatcher.preserveSegmentIds(
                     traversal,
-                    traversalPlan(traversal, planningInput, traversalPlansByTraversalId),
+                    traversalRoute(traversal, routingSnapshot, traversalRoutesByTraversalId),
                     previousLayout);
-            for (CorridorTraversalSlice corridorSlice : resolvedPlan.corridorSlices()) {
-                Corridor corridor = Corridor.fromTraversalSlice(
-                        corridorSlice,
-                        traversal.traversalId(),
-                        mapId,
-                        traversal.roomIds());
+            for (TraversalRoute.CorridorSegment corridorSegment : resolvedRoute.corridorSegments()) {
+                Corridor corridor = corridorSegment == null ? null : corridorSegment.corridor();
                 if (corridor != null) {
                     projectedCorridors.add(corridor);
                 }
             }
-            for (TraversalStairSlice stairSlice : resolvedPlan.stairSlices()) {
-                DungeonStair stair = DungeonStair.materialized(
-                        stairSlice == null ? null : stairSlice.stair(),
-                        stairSlice == null ? null : stairSlice.stairId(),
-                        traversal.traversalId(),
-                        mapId);
+            for (TraversalRoute.StairSegment stairSegment : resolvedRoute.stairSegments()) {
+                DungeonStair stair = stairSegment == null ? null : stairSegment.stair();
                 if (stair != null) {
                     projectedStairs.add(stair);
                 }
@@ -75,20 +67,20 @@ public record TraversalReadModelProjection(
         return new TraversalReadModelProjection(List.copyOf(projectedCorridors), List.copyOf(projectedStairs));
     }
 
-    private static TraversalPlan traversalPlan(
+    private static TraversalRoute traversalRoute(
             Traversal traversal,
-            TraversalPlanningInput planningInput,
-            Map<Long, TraversalPlan> traversalPlansByTraversalId
+            TraversalRoutingSnapshot routingSnapshot,
+            Map<Long, TraversalRoute> traversalRoutesByTraversalId
     ) {
         if (traversal != null
                 && traversal.traversalId() != null
-                && traversalPlansByTraversalId != null
-                && traversalPlansByTraversalId.containsKey(traversal.traversalId())) {
-            return traversalPlansByTraversalId.get(traversal.traversalId());
+                && traversalRoutesByTraversalId != null
+                && traversalRoutesByTraversalId.containsKey(traversal.traversalId())) {
+            return traversalRoutesByTraversalId.get(traversal.traversalId());
         }
-        if (planningInput == null) {
-            return TraversalPlan.empty();
+        if (routingSnapshot == null) {
+            return TraversalRoute.empty();
         }
-        return features.world.dungeonmap.model.structures.traversal.planning.TraversalPlanningEngine.plan(traversal, planningInput);
+        return traversal.route(routingSnapshot);
     }
 }

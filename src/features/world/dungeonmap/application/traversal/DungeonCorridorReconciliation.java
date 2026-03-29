@@ -1,7 +1,7 @@
 package features.world.dungeonmap.application.traversal;
 
-import features.world.dungeonmap.model.structures.traversal.CorridorTraversalSlice;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
+import features.world.dungeonmap.model.structures.traversal.TraversalRoute;
 import features.world.dungeonmap.model.structures.traversal.TraversalSegmentRefs;
 import features.world.dungeonmap.persistence.DungeonTraversalCorridorSegmentWriteRepository;
 import features.world.dungeonmap.persistence.DungeonCorridorWriteRepository;
@@ -29,7 +29,7 @@ public final class DungeonCorridorReconciliation {
     public void reconcile(
             Connection conn,
             Traversal traversal,
-            List<CorridorTraversalSlice> corridorSlices,
+            List<TraversalRoute.CorridorSegment> corridorSegments,
             TraversalSegmentRefs existingRefs
     ) throws SQLException {
         if (traversal == null || traversal.traversalId() == null) {
@@ -37,19 +37,14 @@ public final class DungeonCorridorReconciliation {
         }
         Map<Long, String> existingById = existingCorridorIds(existingRefs);
         LinkedHashMap<String, Long> desiredSegmentRefs = new LinkedHashMap<>();
-        for (CorridorTraversalSlice corridorSlice : corridorSlices == null ? List.<CorridorTraversalSlice>of() : corridorSlices) {
-            if (corridorSlice == null) {
+        for (TraversalRoute.CorridorSegment corridorSegment : corridorSegments == null
+                ? List.<TraversalRoute.CorridorSegment>of()
+                : corridorSegments) {
+            if (corridorSegment == null || corridorSegment.corridor() == null) {
                 continue;
             }
-            var corridor = features.world.dungeonmap.model.structures.corridor.Corridor.fromTraversalSlice(
-                    corridorSlice,
-                    traversal.traversalId(),
-                    traversal.mapId(),
-                    traversal.roomIds());
-            if (corridor == null) {
-                continue;
-            }
-            Long corridorId = corridorSlice.corridorId();
+            var corridor = corridorSegment.corridor();
+            Long corridorId = corridor.corridorId();
             if (corridorId == null || !existingById.containsKey(corridorId)) {
                 corridorId = corridorWriteRepository.insertCorridor(
                         conn,
@@ -60,7 +55,7 @@ public final class DungeonCorridorReconciliation {
             }
             corridorWriteRepository.replacePathNodes(conn, corridorId, corridor.path());
             corridorWriteRepository.replaceConnections(conn, corridorId, corridor.connections());
-            desiredSegmentRefs.put(corridorSlice.segmentKey(), corridorId);
+            desiredSegmentRefs.put(corridorSegment.segmentKey(), corridorId);
         }
         List<Long> removedCorridorIds = traversalSegmentWriteRepository.replaceTraversalSegments(
                 conn,

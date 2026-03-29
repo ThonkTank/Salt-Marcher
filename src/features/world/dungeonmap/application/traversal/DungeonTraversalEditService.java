@@ -2,13 +2,12 @@ package features.world.dungeonmap.application.traversal;
 
 import database.DatabaseManager;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
-import features.world.dungeonmap.model.TraversalPlanningInputProjector;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
-import features.world.dungeonmap.model.structures.traversal.TraversalPlan;
+import features.world.dungeonmap.model.structures.traversal.TraversalRoute;
+import features.world.dungeonmap.model.structures.traversal.TraversalRoutingSnapshot;
 import features.world.dungeonmap.model.structures.traversal.TraversalSegmentRef;
 import features.world.dungeonmap.model.structures.traversal.TraversalSegmentRefs;
-import features.world.dungeonmap.model.structures.traversal.planning.TraversalPlanningEngine;
 import features.world.dungeonmap.persistence.DungeonTraversalWriteRepository;
 
 import java.sql.Connection;
@@ -130,10 +129,10 @@ public final class DungeonTraversalEditService {
             Traversal traversal,
             Long deletedTraversalId
     ) throws SQLException {
-        TraversalPlan traversalPlan = traversal.isPersistable()
-                ? TraversalPlanningEngine.plan(traversal, TraversalPlanningInputProjector.project(layout))
-                : TraversalPlan.empty();
-        traversalPersistenceService.persistTraversal(conn, layout, traversal, traversalPlan);
+        TraversalRoute traversalRoute = traversal.isPersistable()
+                ? traversal.route(TraversalRoutingSnapshot.fromLayout(layout))
+                : TraversalRoute.empty();
+        traversalPersistenceService.persistTraversal(conn, layout, traversal, traversalRoute);
         if (deletedTraversalId != null) {
             traversalPersistenceService.deleteTraversal(conn, deletedTraversalId);
         }

@@ -6,7 +6,6 @@ import features.world.dungeonmap.application.traversal.DungeonTraversalPersisten
 import features.world.dungeonmap.application.traversal.DungeonTraversalRoomRewriteService;
 import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.TraversalPlanningInputProjector;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
@@ -18,7 +17,8 @@ import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
-import features.world.dungeonmap.model.structures.traversal.TraversalRewriteContext;
+import features.world.dungeonmap.model.structures.traversal.TraversalRoutingContext;
+import features.world.dungeonmap.model.structures.traversal.TraversalRoutingSnapshot;
 import features.world.dungeonmap.persistence.ClusterBoundaryWrite;
 import features.world.dungeonmap.persistence.DungeonRoomGeometryWriteMapper;
 import features.world.dungeonmap.persistence.DungeonRoomWriteRepository;
@@ -91,7 +91,7 @@ public final class DungeonRoomTopologyService {
                 layout,
                 new LinkedHashMap<>(layout.traversalsById()),
                 persistedRewrite);
-        traversalPersistenceService.persistTraversals(conn, layout, rewriteResult.traversalsById(), rewriteResult.traversalPlansByTraversalId());
+        traversalPersistenceService.persistTraversals(conn, layout, rewriteResult.traversalsById(), rewriteResult.traversalRoutesByTraversalId());
     }
 
     public void delete(long mapId, int levelZ, TileShape shape) throws SQLException {
@@ -141,7 +141,7 @@ public final class DungeonRoomTopologyService {
                     workingLayout.levelForCluster(rewrite.targetClusterId()));
             Traversal.RewriteResult rewriteResult = applyTraversalCascade(workingLayout, traversalsById, persistedRewrite);
             traversalsById = new LinkedHashMap<>(rewriteResult.traversalsById());
-            traversalPersistenceService.persistTraversals(conn, workingLayout, rewriteResult.traversalsById(), rewriteResult.traversalPlansByTraversalId());
+            traversalPersistenceService.persistTraversals(conn, workingLayout, rewriteResult.traversalsById(), rewriteResult.traversalRoutesByTraversalId());
             workingLayout = workingLayout.applying(persistedRewrite);
         }
         traversalPersistenceService.persistTraversals(conn, workingLayout, traversalsById, Map.of());
@@ -205,7 +205,7 @@ public final class DungeonRoomTopologyService {
                 layout,
                 new LinkedHashMap<>(layout.traversalsById()),
                 persistedRewrite);
-        traversalPersistenceService.persistTraversals(conn, layout, rewriteResult.traversalsById(), rewriteResult.traversalPlansByTraversalId());
+        traversalPersistenceService.persistTraversals(conn, layout, rewriteResult.traversalsById(), rewriteResult.traversalRoutesByTraversalId());
     }
 
     private Traversal.RewriteResult applyTraversalCascade(
@@ -216,9 +216,9 @@ public final class DungeonRoomTopologyService {
         Set<Long> affectedTraversalIds = beforeLayout.traversalIdsAffectedBy(rewrite);
         traversalsById = traversalRoomRewriteService.applyRoomRewrite(beforeLayout, traversalsById, rewrite);
         DungeonLayout afterLayout = beforeLayout.applying(rewrite);
-        TraversalRewriteContext rewriteContext = new TraversalRewriteContext(
-                TraversalPlanningInputProjector.project(beforeLayout),
-                TraversalPlanningInputProjector.project(afterLayout),
+        TraversalRoutingContext rewriteContext = new TraversalRoutingContext(
+                TraversalRoutingSnapshot.fromLayout(beforeLayout),
+                TraversalRoutingSnapshot.fromLayout(afterLayout),
                 affectedTraversalIds,
                 rewrite.deletedClusterIds());
         return Traversal.rewriteAll(traversalsById, rewriteContext);

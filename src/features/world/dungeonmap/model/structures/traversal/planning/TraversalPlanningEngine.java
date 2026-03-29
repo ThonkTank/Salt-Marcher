@@ -5,8 +5,8 @@ import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.traversal.ResolvedTraversalDoorBinding;
 import features.world.dungeonmap.model.structures.traversal.TraversalPlan;
+import features.world.dungeonmap.model.structures.traversal.TraversalRoutingSnapshot;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
-import features.world.dungeonmap.model.structures.traversal.TraversalPlanningInput;
 import features.world.dungeonmap.model.structures.traversal.planning.internal.TraversalGeometryRealizer;
 import features.world.dungeonmap.model.structures.traversal.planning.internal.TraversalStructurePlanner;
 import features.world.dungeonmap.model.structures.traversal.planning.internal.TraversalTopology;
@@ -23,14 +23,14 @@ public final class TraversalPlanningEngine {
         throw new AssertionError("No instances");
     }
 
-    public static TraversalPlan plan(Traversal traversal, TraversalPlanningInput input) {
-        if (traversal == null || input == null) {
+    public static TraversalPlan plan(Traversal traversal, TraversalRoutingSnapshot snapshot) {
+        if (traversal == null || snapshot == null) {
             return TraversalPlan.empty();
         }
-        List<Room> rooms = traversal.resolvedRooms(input);
-        List<CubePoint> waypointCells = traversal.resolvedWaypointCells(input);
-        Map<Long, ResolvedTraversalDoorBinding> doorBindings = traversal.resolvedDoorBindings(input);
-        Set<CubePoint> obstacles = buildObstacles(input.roomsById(), input.stairs(), traversal.traversalId());
+        List<Room> rooms = traversal.resolvedRooms(snapshot);
+        List<CubePoint> waypointCells = traversal.resolvedWaypointCells(snapshot);
+        Map<Long, ResolvedTraversalDoorBinding> doorBindings = traversal.resolvedDoorBindings(snapshot);
+        Set<CubePoint> obstacles = buildObstacles(snapshot.roomsById(), snapshot.stairs(), traversal.traversalId());
         TraversalTopology topology = TraversalTopologyProjector.project(
                 traversal.mapId(),
                 rooms,

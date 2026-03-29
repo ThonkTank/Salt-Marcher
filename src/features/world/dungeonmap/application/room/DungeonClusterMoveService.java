@@ -66,7 +66,7 @@ public final class DungeonClusterMoveService {
                         conn,
                         layout,
                         projection.traversalsById(),
-                        projection.traversalPlansByTraversalId());
+                        projection.traversalRoutesByTraversalId());
                 return null;
             });
         }

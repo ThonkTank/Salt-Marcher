@@ -1,14 +1,14 @@
 package features.world.dungeonmap.application.room;
 
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.TraversalPlanningInputProjector;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
 import features.world.dungeonmap.model.structures.traversal.TraversalReadModelProjection;
-import features.world.dungeonmap.model.structures.traversal.TraversalRewriteContext;
+import features.world.dungeonmap.model.structures.traversal.TraversalRoutingContext;
+import features.world.dungeonmap.model.structures.traversal.TraversalRoutingSnapshot;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -47,13 +47,15 @@ public final class DungeonClusterMoveProjectionApplicationService {
                 baseLayout.stairs(),
                 baseLayout.transitions(),
                 updatedClusterLevels);
+        TraversalRoutingSnapshot baseSnapshot = TraversalRoutingSnapshot.fromLayout(baseLayout);
+        TraversalRoutingSnapshot provisionalSnapshot = TraversalRoutingSnapshot.fromLayout(provisionalLayout);
 
         Set<Long> affectedTraversalIds = baseLayout.traversalIdsAffectedBy(movedCluster.roomIds(), Set.of(clusterId));
         Traversal.RewriteResult rewriteResult = Traversal.rewriteAll(
                 new LinkedHashMap<>(baseLayout.traversalsById()),
-                new TraversalRewriteContext(
-                        TraversalPlanningInputProjector.project(baseLayout),
-                        TraversalPlanningInputProjector.project(provisionalLayout),
+                new TraversalRoutingContext(
+                        baseSnapshot,
+                        provisionalSnapshot,
                         affectedTraversalIds,
                         Set.of()));
         List<Traversal> updatedTraversals = updatedTraversals(baseLayout, rewriteResult.traversalsById());
@@ -64,8 +66,8 @@ public final class DungeonClusterMoveProjectionApplicationService {
                                 && traversal.traversalId() != null
                                 && affectedTraversalIds.contains(traversal.traversalId()))
                         .toList(),
-                TraversalPlanningInputProjector.project(provisionalLayout),
-                rewriteResult.traversalPlansByTraversalId(),
+                provisionalSnapshot,
+                rewriteResult.traversalRoutesByTraversalId(),
                 baseLayout);
         DungeonLayout projectedLayout = new DungeonLayout(
                 baseLayout.mapId(),
@@ -80,7 +82,7 @@ public final class DungeonClusterMoveProjectionApplicationService {
                 projectedLayout,
                 projectedLayout.findCluster(clusterId),
                 rewriteResult.traversalsById(),
-                rewriteResult.traversalPlansByTraversalId());
+                rewriteResult.traversalRoutesByTraversalId());
     }
 
     private static Map<Long, Integer> updatedClusterLevels(DungeonLayout layout, Long clusterId, int levelDelta) {

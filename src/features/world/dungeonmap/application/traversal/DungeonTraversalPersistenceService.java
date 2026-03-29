@@ -1,8 +1,8 @@
 package features.world.dungeonmap.application.traversal;
 
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.structures.traversal.TraversalPlan;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
+import features.world.dungeonmap.model.structures.traversal.TraversalRoute;
 import features.world.dungeonmap.persistence.DungeonTraversalWriteRepository;
 
 import java.sql.Connection;
@@ -24,18 +24,18 @@ public final class DungeonTraversalPersistenceService {
     }
 
     public void persistTraversal(Connection conn, Traversal traversal) throws SQLException {
-        persistTraversal(conn, null, traversal, TraversalPlan.empty());
+        persistTraversal(conn, null, traversal, TraversalRoute.empty());
     }
 
-    public void persistTraversal(Connection conn, Traversal traversal, TraversalPlan traversalPlan) throws SQLException {
-        persistTraversal(conn, null, traversal, traversalPlan);
+    public void persistTraversal(Connection conn, Traversal traversal, TraversalRoute traversalRoute) throws SQLException {
+        persistTraversal(conn, null, traversal, traversalRoute);
     }
 
     public void persistTraversal(
             Connection conn,
             DungeonLayout previousLayout,
             Traversal traversal,
-            TraversalPlan traversalPlan
+            TraversalRoute traversalRoute
     ) throws SQLException {
         if (traversal == null || traversal.traversalId() == null) {
             return;
@@ -47,7 +47,7 @@ public final class DungeonTraversalPersistenceService {
         traversalWriteRepository.replaceTraversalRooms(conn, traversal.traversalId(), traversal.roomIds());
         traversalWriteRepository.replaceTraversalWaypoints(conn, traversal.traversalId(), traversal.bindings().waypoints());
         traversalWriteRepository.replaceTraversalDoorBindings(conn, traversal.traversalId(), traversal.bindings().doorBindings());
-        segmentPersistence.persistSegments(conn, previousLayout, traversal, traversalPlan);
+        segmentPersistence.persistSegments(conn, previousLayout, traversal, traversalRoute);
     }
 
     public void deleteTraversal(Connection conn, long traversalId) throws SQLException {
@@ -62,25 +62,25 @@ public final class DungeonTraversalPersistenceService {
     public void persistTraversals(
             Connection conn,
             Map<Long, Traversal> traversalsById,
-            Map<Long, TraversalPlan> traversalPlansByTraversalId
+            Map<Long, TraversalRoute> traversalRoutesByTraversalId
     ) throws SQLException {
-        persistTraversals(conn, null, traversalsById, traversalPlansByTraversalId);
+        persistTraversals(conn, null, traversalsById, traversalRoutesByTraversalId);
     }
 
     public void persistTraversals(
             Connection conn,
             DungeonLayout previousLayout,
             Map<Long, Traversal> traversalsById,
-            Map<Long, TraversalPlan> traversalPlansByTraversalId
+            Map<Long, TraversalRoute> traversalRoutesByTraversalId
     ) throws SQLException {
         if (traversalsById == null || traversalsById.isEmpty()) {
             return;
         }
         for (Traversal traversal : traversalsById.values()) {
-            TraversalPlan traversalPlan = traversal == null || traversal.traversalId() == null
-                    ? TraversalPlan.empty()
-                    : traversalPlansByTraversalId.getOrDefault(traversal.traversalId(), TraversalPlan.empty());
-            persistTraversal(conn, previousLayout, traversal, traversalPlan);
+            TraversalRoute traversalRoute = traversal == null || traversal.traversalId() == null
+                    ? TraversalRoute.empty()
+                    : traversalRoutesByTraversalId.getOrDefault(traversal.traversalId(), TraversalRoute.empty());
+            persistTraversal(conn, previousLayout, traversal, traversalRoute);
         }
     }
 }
