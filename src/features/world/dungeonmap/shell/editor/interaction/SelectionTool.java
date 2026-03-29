@@ -1,6 +1,7 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
 import features.world.dungeonmap.application.room.DungeonClusterMoveService;
+import features.world.dungeonmap.application.room.DungeonClusterMoveProjectionApplicationService;
 import features.world.dungeonmap.application.room.DungeonRoomNarrationService;
 import features.world.dungeonmap.application.room.RoomExitCatalog;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
@@ -39,6 +40,7 @@ public final class SelectionTool implements EditorTool {
     private final DungeonMapState mapState;
     private final DungeonMapLoadingService loadingService;
     private final DungeonClusterMoveService clusterMoveService;
+    private final DungeonClusterMoveProjectionApplicationService clusterMoveProjectionApplicationService;
     private final DungeonRoomNarrationService roomNarrationService;
     private final DungeonGridHitTester hitTester;
     private final EditorInteractionState state;
@@ -55,6 +57,7 @@ public final class SelectionTool implements EditorTool {
             DungeonMapState mapState,
             DungeonMapLoadingService loadingService,
             DungeonClusterMoveService clusterMoveService,
+            DungeonClusterMoveProjectionApplicationService clusterMoveProjectionApplicationService,
             DungeonRoomNarrationService roomNarrationService,
             DungeonGridHitTester hitTester,
             EditorInteractionState state
@@ -62,6 +65,9 @@ public final class SelectionTool implements EditorTool {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
         this.clusterMoveService = Objects.requireNonNull(clusterMoveService, "clusterMoveService");
+        this.clusterMoveProjectionApplicationService = Objects.requireNonNull(
+                clusterMoveProjectionApplicationService,
+                "clusterMoveProjectionApplicationService");
         this.roomNarrationService = Objects.requireNonNull(roomNarrationService, "roomNarrationService");
         this.hitTester = Objects.requireNonNull(hitTester, "hitTester");
         this.state = Objects.requireNonNull(state, "state");
@@ -346,7 +352,8 @@ public final class SelectionTool implements EditorTool {
         if (dragSession == null) {
             return null;
         }
-        return dragSession.baseMap().translateCluster(
+        return clusterMoveProjectionApplicationService.project(
+                dragSession.baseMap(),
                 dragSession.clusterId(),
                 dragSession.currentDelta(),
                 dragSession.currentLevel() - dragSession.startLevel()).layout();

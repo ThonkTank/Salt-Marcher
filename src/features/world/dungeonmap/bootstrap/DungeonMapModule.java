@@ -5,6 +5,7 @@ import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationSer
 import features.world.dungeonmap.application.runtime.DungeonRuntimeStateRepairService;
 import features.world.dungeonmap.application.transition.DungeonTransitionEditService;
 import features.world.dungeonmap.application.transition.DungeonTransitionTargetCatalogService;
+import features.world.dungeonmap.application.room.DungeonClusterMoveProjectionApplicationService;
 import features.world.dungeonmap.application.room.DungeonClusterMoveService;
 import features.world.dungeonmap.application.room.DungeonBoundaryEditService;
 import features.world.dungeonmap.application.room.DungeonRoomNarrationService;
@@ -74,11 +75,14 @@ public final class DungeonMapModule {
                 roomTopologyService,
                 new DungeonRuntimeStateRepairService(mapLoader));
         DungeonBoundaryEditService boundaryEditService = new DungeonBoundaryEditService(roomTopologyService);
+        DungeonClusterMoveProjectionApplicationService clusterMoveProjectionApplicationService =
+                new DungeonClusterMoveProjectionApplicationService();
         DungeonClusterMoveService clusterMoveService = new DungeonClusterMoveService(
                 mapLoader,
                 roomWriteRepository,
                 geometryWriteMapper,
-                traversalPersistenceService);
+                traversalPersistenceService,
+                clusterMoveProjectionApplicationService);
         DungeonMapState state = new DungeonMapState();
         DungeonMapLoadingService loadingService = new DungeonMapLoadingService(
                 mapLoader,
@@ -91,6 +95,7 @@ public final class DungeonMapModule {
                         state,
                         loadingService,
                         clusterMoveService,
+                        clusterMoveProjectionApplicationService,
                         roomNarrationService,
                         new DungeonGridHitTester(),
                         editorInteractionState),

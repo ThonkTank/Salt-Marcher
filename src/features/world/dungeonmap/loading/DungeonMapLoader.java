@@ -28,13 +28,11 @@ import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.stair.DungeonStairExit;
 import features.world.dungeonmap.model.structures.stair.StairShape;
 import features.world.dungeonmap.model.structures.traversal.TraversalCorridorSegment;
+import features.world.dungeonmap.model.structures.traversal.TraversalReadModelProjector;
 import features.world.dungeonmap.model.structures.traversal.TraversalMaterialization;
-import features.world.dungeonmap.model.structures.traversal.CorridorTraversalSlice;
-import features.world.dungeonmap.model.structures.traversal.TraversalPlan;
 import features.world.dungeonmap.model.structures.traversal.TraversalStairSegment;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
 import features.world.dungeonmap.model.structures.traversal.TraversalPlanningInput;
-import features.world.dungeonmap.model.structures.traversal.planning.TraversalPlanningEngine;
 import features.world.dungeonmap.persistence.DungeonSchemaSupport;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
@@ -394,30 +392,7 @@ public final class DungeonMapLoader {
             List<RoomCluster> clusters
     ) throws SQLException {
         TraversalPlanningInput planningInput = TraversalPlanningInputProjector.project(clusters);
-        ArrayList<Corridor> result = new ArrayList<>();
-        for (Traversal traversal : traversals) {
-            if (traversal == null || traversal.corridorSegments().isEmpty()) {
-                continue;
-            }
-            TraversalPlan traversalPlan = TraversalPlanningEngine.plan(traversal, planningInput)
-                    .withCorridorIds(traversal.materialization().corridorIdsBySegmentKey());
-            for (TraversalCorridorSegment corridorSegment : traversal.corridorSegments()) {
-                if (corridorSegment == null || corridorSegment.corridorId() == null) {
-                    continue;
-                }
-                CorridorTraversalSlice slice = traversalPlan.corridorSliceBySegmentKey(corridorSegment.segmentKey());
-                result.add(Corridor.resolved(
-                        corridorSegment.segmentKey(),
-                        corridorSegment.corridorId(),
-                        traversal.traversalId(),
-                        mapId,
-                        traversal.roomIds(),
-                        traversal.bindings(),
-                        slice == null ? CorridorPath.empty() : slice.path(),
-                        slice == null ? List.of() : slice.connections()));
-            }
-        }
-        return List.copyOf(result);
+        return TraversalReadModelProjector.projectCorridors(mapId, traversals, planningInput);
     }
 
     private static List<DungeonStair> loadStairs(Connection conn, long mapId) throws SQLException {

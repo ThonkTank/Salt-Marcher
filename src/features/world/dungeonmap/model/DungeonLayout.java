@@ -15,13 +15,9 @@ import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
 import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInput;
 import features.world.dungeonmap.model.structures.corridor.planning.StairPlacement;
-import features.world.dungeonmap.model.structures.corridor.CorridorRewriteContext;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
-import features.world.dungeonmap.model.structures.traversal.TraversalPlan;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
-import features.world.dungeonmap.model.structures.traversal.TraversalRewriteContext;
-import features.world.dungeonmap.model.structures.traversal.planning.TraversalPlanningEngine;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 
 import java.util.ArrayList;
@@ -663,82 +659,6 @@ public final class DungeonLayout {
                 .map(existing -> cluster.clusterId().equals(existing.clusterId()) ? cluster : existing)
                 .toList();
         return new DungeonLayout(mapId, name, traversals, corridors, updatedClusters, stairs, transitions, clusterLevelsById);
-    }
-
-    public DungeonLayout withTranslatedCluster(Long clusterId, Point2i delta) {
-        return translateCluster(clusterId, delta, 0).layout();
-    }
-
-    public DungeonLayout withTranslatedCluster(Long clusterId, Point2i delta, int levelDelta) {
-        return translateCluster(clusterId, delta, levelDelta).layout();
-    }
-
-    public DungeonClusterTranslation translateCluster(Long clusterId, Point2i delta) {
-        return translateCluster(clusterId, delta, 0);
-    }
-
-    public DungeonClusterTranslation translateCluster(Long clusterId, Point2i delta, int levelDelta) {
-        boolean translate = delta != null && (delta.x() != 0 || delta.y() != 0);
-        if (clusterId == null || (!translate && levelDelta == 0)) {
-            return new DungeonClusterTranslation(this, findCluster(clusterId), Map.of());
-        }
-        RoomCluster cluster = findCluster(clusterId);
-        if (cluster == null) {
-            return new DungeonClusterTranslation(this, null, Map.of());
-        }
-        RoomCluster movedCluster = cluster.movedBy(delta, levelDelta);
-        List<RoomCluster> updatedClusters = clusters.stream()
-                .map(existing -> clusterId.equals(existing.clusterId()) ? movedCluster : existing)
-                .toList();
-        // All callers must see the same replanned topology. Performance work here must preserve that invariant.
-        CorridorPlanningInput planningInput = CorridorPlanningInputProjector.project(updatedClusters);
-        CorridorRewriteContext rewriteContext = new CorridorRewriteContext(
-                corridorPlanningInput(),
-                planningInput,
-                corridorIdsAffectedBy(movedCluster.roomIds(), Set.of(clusterId)),
-                Set.of());
-        Map<Long, Corridor> updatedAffectedCorridors = new LinkedHashMap<>();
-        Map<Long, List<StairPlacement>> stairPlacementsByCorridorId = new LinkedHashMap<>();
-        List<Corridor> updatedCorridors = corridors.stream()
-                .map(corridor -> {
-                    if (corridor == null) {
-                        return null;
-                    }
-                    Corridor reanchored = corridor.reanchoredFor(rewriteContext);
-                    Corridor updatedCorridor;
-                    if (rewriteContext.affects(corridor.corridorId()) && reanchored.isPersistable()) {
-                        TraversalPlan traversalPlan = TraversalPlanningEngine.plan(
-                                reanchored,
-                                rewriteContext.rewrittenPlanningInput());
-                        List<StairPlacement> stairPlacements = traversalPlan.stairPlacements();
-                        Corridor updated = reanchored.applyTraversalSlice(
-                                traversalPlan.corridorSlice(reanchored.corridorId()));
-                        updatedCorridor = updated;
-                        if (reanchored.corridorId() != null) {
-                            stairPlacementsByCorridorId.put(reanchored.corridorId(), stairPlacements);
-                        }
-                    } else {
-                        updatedCorridor = reanchored.replannedFor(rewriteContext);
-                    }
-                    if (rewriteContext.affects(updatedCorridor.corridorId())) {
-                        updatedAffectedCorridors.put(updatedCorridor.corridorId(), updatedCorridor);
-                    }
-                    return updatedCorridor;
-                })
-                .toList();
-        Map<Long, Integer> updatedClusterLevels = new LinkedHashMap<>(clusterLevelsById);
-        updatedClusterLevels.put(clusterId, levelForCluster(clusterId) + levelDelta);
-        List<DungeonStair> updatedStairs = replaceCorridorStairs(stairs, stairPlacementsByCorridorId, mapId);
-        DungeonLayout translatedLayout = new DungeonLayout(
-                mapId,
-                name,
-                traversals,
-                updatedCorridors,
-                updatedClusters,
-                updatedStairs,
-                transitions,
-                updatedClusterLevels);
-        return new DungeonClusterTranslation(translatedLayout, movedCluster, updatedAffectedCorridors, stairPlacementsByCorridorId);
     }
 
     public DungeonLayout applying(ClusterRewrite rewrite) {
