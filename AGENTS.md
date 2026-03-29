@@ -152,11 +152,12 @@ If a feature defines a nearer `AGENTS.md`, that file is required context before 
 - `Projection` — derived application-side data shape or preview/result shape for one workflow or consumer surface. Canonical name: `*Projection`.
 - `OperationData` — application-local request, target, descriptor, summary, snapshot, or intermediate carrier for one workflow family.
 - `Committer` — owns write ordering across repositories for one workflow or aggregate mutation. Canonical name: `*Committer`.
-- `Reconciler` — aligns an existing persisted or loaded structure set with the desired workflow result. Canonical name: `*Reconciler`.
-- `Maintenance` — repairs, refreshes, or revalidates derived application truth after owner or persistence changes. Canonical name: `*Maintenance`.
+- `Reconciler` — aligns an existing persisted or loaded structure set with the desired workflow result. Canonical name: `*Reconciler`. Valid, but always a smell-driven crutch: its need means ownership, storage shape, or workflow boundaries have already drifted apart.
+- `Maintenance` — repairs, refreshes, or revalidates derived application truth after owner or persistence changes. Canonical name: `*Maintenance`. Valid, but always a smell-driven crutch: its need means derived application truth is not converging cleanly on owner truth.
 - `*Session` — long-lived mutable runtime workflow context with explicit lifecycle.
 - `*Port` — internal capability contract when the seam belongs to one application slice instead of the public API.
 - Small transaction or conversion helpers may exist in `application/`, but they are support code around the workflow ecosystem rather than primary application roles.
+- Prefer removing the drift that requires `*Reconciler` or `*Maintenance` over introducing new ones. Treat them as last-resort escape hatches, not as default design targets.
 
 #### `repository/`
 
