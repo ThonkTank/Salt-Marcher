@@ -94,9 +94,11 @@ Additional structure belongs only in the nearest feature-local `AGENTS.md`, or a
 - Objects and types may gain capabilities through composition, inheritance, or references, but ownership of the capability stays with the central owner instead of being mirrored in consumers.
 - Treat package layers as ownership boundaries. A capability belongs to the layer that subordinates it to its owner, not to the first caller that happens to use it.
 - Treat filename roles as ownership markers. A role name tells the reader what kind of capability a file encapsulates and whether it is the owner or support code around that owner.
+- In `model/`, the central owner will usually be a precise domain type, not a generic role suffix. Prefer the domain name when the type itself is the canonical owner.
 - If several sibling files in one directory share the same role name, treat that as a smell: either the capability is duplicated or the directory needs a narrower subpackage with clearer ownership.
 - Use only the canonical roles defined below when one fits cleanly. If none fits, use a precise domain name instead of stretching a near-match.
 - Passive domain nouns such as `*Snapshot`, `*Descriptor`, `*Entry`, `*Criteria`, `*Option`, `*Profile`, `*Resolution`, `*Lookup`, `*Parser`, and `*Renderer` may remain precise domain names without becoming new global architecture roles.
+- Operation-shape names such as `*Factory`, `*Generator`, `*Calculator`, `*Classifier`, `*Normalizer`, `*Assembler`, `*Coordinator`, `*Context`, `*Planner`, `*Matcher`, `*Engine`, and `*Realizer` may remain precise helper names, but they are not repository-wide architecture roles.
 - New code must follow the target architecture immediately.
 - Touched code should move toward the target architecture at the nearest safe seam without widening scope.
 - Preserve behavior, storage assumptions, user workflows, and explicit invariants unless the task explicitly requires changing them.
@@ -125,13 +127,8 @@ If a feature defines a nearer `AGENTS.md`, that file is required context before 
 - Owns canonical business and editor truth.
 - Carries behavior on the lowest stable owner that actually enforces the invariant.
 - Stays framework- and storage-agnostic.
-- `*Rules` — shared static domain rules, thresholds, and invariants owned by the model layer.
+- Central owners in `model/` usually use precise domain names instead of generic role suffixes.
 - `*Policy` — pure or near-pure domain decisions over allowed options.
-- `*Generator` — creator of canonical domain results when generation itself is part of domain truth.
-- `*Calculator` — deterministic numeric or derived-value logic that belongs to the model owner of the calculation.
-- `*Classifier` — category or label assignment owned by model truth.
-- `*Normalizer` — canonicalizer that stabilizes a model-owned value family.
-- `*Factory` — richer construction helper next to the model-owned family it assembles.
 - `*Session` — only when the session itself is pure in-memory canonical runtime truth rather than workflow orchestration.
 
 #### `application/`
@@ -140,13 +137,11 @@ If a feature defines a nearer `AGENTS.md`, that file is required context before 
 - Sequences workflows, async work, transactions, reload-after-write behavior, and cross-feature coordination.
 - Coordinates repositories, state containers, and feature APIs without becoming canonical domain truth.
 - `*ApplicationService` — user-visible workflow entrypoint for one use case or workflow slice.
-- `*Coordinator` — local orchestrator across peer collaborators inside one workflow slice.
 - `*Loader` — one-shot loading or materialization into domain or UI-ready structures.
 - `*Catalog` — read-only selection, lookup, or index surface that supports workflow decisions.
 - `*Projector` — derivation of read, preview, or presentation-oriented structures from authoritative state.
-- `*Assembler` — combiner that produces one compound workflow or boundary result from several collaborators.
+- `*Projection` — derived internal data shape produced from authoritative truth for one workflow, planner, or consumer surface.
 - `*Session` — long-lived mutable runtime workflow context with explicit lifecycle.
-- `*Context` — immutable operation-scoped bundle shared by one workflow or algorithm family.
 - `*Port` — internal capability contract when the seam belongs to one application slice instead of the public API.
 
 #### `repository/`
@@ -156,6 +151,7 @@ If a feature defines a nearer `AGENTS.md`, that file is required context before 
 - Remains stateless; callers provide the `Connection`.
 - `*Repository` — direct relational storage adapter.
 - `*Store` — persistence surface for non-relational blobs, backups, snapshots, or file-oriented payloads.
+- `*Schema` — storage-structure owner for DDL, compatibility, and schema-shape maintenance in one persistence area.
 - `*Mapper` — storage-facing translation between rows, records, and owned domain representations.
 - `*Codec` — bidirectional encoding/decoding for stored representations and persistence formats.
 
@@ -208,10 +204,11 @@ If a feature defines a nearer `AGENTS.md`, that file is required context before 
 New code uses the canonical families above.
 Legacy names may remain in untouched code, but touched code should converge toward the allowlist:
 - bare `*Service` only when it is truly an `*ApplicationService`
+- `*Provider` -> `*Port`
 - `*Popup` -> `*Dropdown` or `*Pane`
-- `*Scoring` -> `*Calculator` or `*Policy`
+- `*Scoring` -> `*Policy` or a precise domain helper name
 - `*Presenter` -> `*Pane`, `*Projector`, or `*Controller`
-- prefer a precise owner over `*Manager`, `*Helper`, `*Util`, `*Processor`, or `*Provider`
+- prefer a precise owner or target role over `*Manager`, `*Helper`, `*Util`, `*Processor`, `*Support`, or `*Surface`
 
 ## Key Conventions
 
@@ -227,7 +224,7 @@ The rules in this section are decision filters, not soft preferences. When multi
 ### Repository & Application Conventions
 - Repositories are stateless (`Connection` passed in). Let repositories propagate `SQLException`; fallback behavior, retries, and user-facing degradation belong in application workflows
 - Application workflows may propagate `SQLException` from repositories and transaction boundaries, but business validation must use domain/argument exceptions (`IllegalArgumentException` or a feature-specific edit exception), not `SQLException`
-- Utility owner-support types such as `*Calculator`, `*Classifier`, `*Generator`, and comparable pure helpers are static-only with private constructor unless they need explicit state
+- Precise helper types such as `*Factory`, `*Generator`, `*Calculator`, `*Classifier`, `*Normalizer`, `*Assembler`, `*Coordinator`, `*Planner`, `*Matcher`, and comparable pure helpers are static-only with private constructor unless they need explicit state
 - Stateful workflow entrypoints (`*ApplicationService`, `*Session`) are instance-based
 - Legacy `service/` packages may remain in untouched code, but new code uses `application/`. When touching legacy `service/` code, keep public workflow entrypoints at the package root and move close collaborators into focused subpackages instead of widening visibility
 - Cross-feature read DTOs belong in `src/features/<feature>/api/`, not in `model/`. Use the `*Summary` naming pattern for lightweight selector DTOs. Keep `model/` focused on domain/editor state, not transport shapes for other features
