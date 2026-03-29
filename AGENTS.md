@@ -93,21 +93,21 @@ Additional structure belongs only in the nearest feature-local `AGENTS.md`, or a
 - Place each capability on the lowest common owner that is actually edited, described, or constrained by it.
 - Objects and types may gain capabilities through composition, inheritance, or references, but ownership of the capability stays with the central owner instead of being mirrored in consumers.
 - Treat package layers as ownership boundaries. A capability belongs to the layer that subordinates it to its owner, not to the first caller that happens to use it.
-- Treat filename roles as ownership markers. A role name tells the reader what kind of capability a file encapsulates and whether it is the owner or support code around that owner.
-- Treat the canonical roles below as a suffix allowlist. When a canonical role fits, use that exact suffix.
-- Role name always equals suffix. Do not invent a separate family label that differs from the filename suffix.
+- Decide layer and owner before naming. The package answer is primary; the suffix only clarifies that answer afterward.
+- Treat filename roles as secondary cues. A name should help a reader tell owner from helper, but the name must not replace the ownership decision itself.
+- The repository-wide hard owner and boundary suffixes are `*ApplicationService`, `*Repository`, `*State`, `*View`, `*Api`, and `*Module`.
+- Use one of those exact suffixes only when it clearly matches the file's central owner or boundary. Do not invent near-synonyms for the same job.
+- If none of the hard roles fits cleanly, use a precise domain name or helper name instead of stretching a role.
+- Helper suffixes such as `*Projection`, `*Lookup`, `*Port`, `*Session`, `*Mapper`, `*Codec`, `*Policy`, `*Factory`, `*Descriptor`, `*Snapshot`, and similar names are descriptive only. They may clarify shape, focus, or data flow, but they do not by themselves declare architectural ownership.
+- Names such as `*Reconciler`, `*Maintenance`, and `*Hydrator` remain explicit smell markers. They are valid when accurate, but they should stay rare support code rather than become default owners.
 - In `model/`, the central owner will usually be a precise domain type, not a generic role suffix. Prefer the domain name when the type itself is the canonical owner.
-- When a canonical role name exists for a function pattern, converge touched code toward that name. Do not keep parallel legacy and canonical names for the same role in the same layer.
-- If several sibling files in one directory share the same role name, treat that as a smell: either the capability is duplicated or the directory needs a narrower subpackage with clearer ownership.
-- Use only the canonical roles defined below when one fits cleanly. If none fits, use a precise domain name instead of stretching a near-match.
-- `*Reconciler`, `*Maintenance`, and `*Hydrator` are explicit escape-hatch roles. They are valid, but their need is itself a smell and should trigger pressure to fix the underlying ownership, storage, or loading shape instead.
-- Passive domain nouns such as `*Snapshot`, `*Descriptor`, `*Entry`, `*Criteria`, `*Option`, `*Profile`, `*Resolution`, `*Parser`, and `*Renderer` may remain precise domain names without becoming new global architecture roles.
-- Operation-shape names such as `*Factory`, `*Generator`, `*Calculator`, `*Classifier`, `*Normalizer`, `*Assembler`, `*Coordinator`, `*Context`, `*Planner`, `*Matcher`, `*Engine`, and `*Realizer` may remain precise helper names, but they are not repository-wide architecture roles.
+- If several sibling files in one directory share the same descriptive helper suffix, treat that as a smell: either the package focus is too broad or ownership is duplicated.
 - New code must follow the target architecture immediately.
 - Touched code should move toward the target architecture at the nearest safe seam without widening scope.
 - Preserve behavior, storage assumptions, user workflows, and explicit invariants unless the task explicitly requires changing them.
 - Avoid wrappers, adapters, or intermediate packages whose only purpose is to rename existing complexity.
 - Legacy code may remain until touched, but legacy shapes do not create new precedent.
+- Do not do rename-only churn just to satisfy the naming system. Rename when it clarifies ownership, removes a misleading role signal, or accompanies a real boundary change.
 - When goals compete, use this order: preserve correctness and satisfy the user request; preserve explicit repository invariants and local `AGENTS.md` rules; keep the change small enough to verify safely; then move the touched code toward the target architecture.
 
 ### Layers
@@ -131,129 +131,79 @@ If a feature defines a nearer `AGENTS.md`, that file is required context before 
 - Owns canonical business and editor truth.
 - Carries behavior on the lowest stable owner that actually enforces the invariant.
 - Stays framework- and storage-agnostic.
-- `model/` contains canonical owners plus a small set of supporting suffix roles.
-- Canonical owners in `model/` are usually precise domain names without a role suffix. Do not rename them into generic owner wrappers just to satisfy a suffix list.
-- `*Ref` — compact reference to an owned model entity or identity without taking ownership of the target.
-- `*Binding` — model-level relation that couples owners or constraints them together as one stable concept.
-- `*Plan` — model-internal intended structure or change plan derived from owner truth.
-- `*Projection` — model-internal derived read form or derived structure whose shape itself matters to consumers.
-- `*Policy` — decision-focused operator family for allowed options or rule selection.
-- `*Session` — only when the session itself is pure in-memory canonical runtime truth rather than workflow orchestration.
+- Canonical owners in `model/` are usually precise domain names without a role suffix. Do not rename them into generic owner wrappers just to satisfy a naming system.
+- Model-local helper names such as `*Ref`, `*Binding`, `*Plan`, `*Projection`, `*Policy`, or `*Session` may be used when they accurately describe a support shape, relation, or derived view.
+- Those helper names are descriptive only. They do not create a second global role system inside `model/`.
 
 #### `application/`
 
 - Owns use-case orchestration.
 - Sequences workflows, async work, transactions, reload-after-write behavior, and cross-feature coordination.
 - Coordinates repositories, state containers, and feature APIs without becoming canonical domain truth.
-- `application/` contains a workflow ecosystem named directly by suffix.
-- `*ApplicationService` — user-visible use-case owner that accepts intent, coordinates the operation, and defines when the result is complete.
-- `*Lookup` — read-only selection, target, label, availability, or index surface that supports a workflow.
-- `*Resolver` — chooses a concrete application meaning, destination, location, or surface from workflow context plus model truth.
-- `*Projection` — derived application-side data shape or preview/result shape for one workflow or consumer surface.
-- `*Committer` — owns write ordering across repositories for one workflow or aggregate mutation.
-- `*Reconciler` — aligns an existing persisted or loaded structure set with the desired workflow result. Valid, but always a smell-driven crutch: its need means ownership, storage shape, or workflow boundaries have already drifted apart.
-- `*Maintenance` — repairs, refreshes, or revalidates derived application truth after owner or persistence changes. Valid, but always a smell-driven crutch: its need means derived application truth is not converging cleanly on owner truth.
-- `*Session` — long-lived mutable runtime workflow context with explicit lifecycle.
-- `*Port` — internal capability contract when the seam belongs to one application slice instead of the public API.
-- Workflow-local data carriers should use precise data suffixes such as `*Request`, `*Result`, `*Summary`, `*Target`, `*Snapshot`, or `*Descriptor` directly; they do not create separate application owner roles.
-- Prefer removing the drift that requires `*Reconciler` or `*Maintenance` over introducing new ones. Treat them as last-resort escape hatches, not as default design targets.
+- Use `*ApplicationService` for the central, user-visible workflow owner in this layer.
+- Other names in `application/` should be precise workflow helper or data names such as `*Request`, `*Result`, `*Summary`, `*Target`, `*Snapshot`, `*Descriptor`, `*Lookup`, `*Resolver`, `*Projection`, `*Committer`, `*Session`, or `*Port` when those names help a reader understand the support role.
+- Those names are descriptive helpers, not repository-wide architecture roles. Choose them for clarity, not to satisfy a role quota.
+- Prefer removing the drift that requires `*Reconciler` or `*Maintenance` over introducing new ones. Treat those names as last-resort support helpers, not as default design targets.
 
 #### `repository/`
 
 - Owns direct storage access.
 - Carries SQL, row mapping, query construction, persistence ordering, and storage-specific lookups.
 - Remains stateless; callers provide the `Connection`.
-- `repository/` contains a storage ecosystem named directly by suffix.
-- `*Repository` — direct relational storage adapter. Read-only, write-only, search-focused, lookup-focused, or cache-focused storage surfaces remain in this family; qualifiers such as `*WriteRepository`, `*SearchRepository`, `*LookupRepository`, or `*CacheRepository` narrow the storage concern, not the architecture role.
-- `*Store` — persistence surface for non-relational blobs, backups, snapshots, or file-oriented payloads.
-- `*Schema` — storage-structure owner for DDL, compatibility, and schema-shape maintenance in one persistence area.
-- `*Hydrator` — repository-local relation loader or result enricher that completes partially mapped storage results from additional queries or tables. Valid, but usually a smell-driven crutch: its need means repository results are fragmented or the loading seam is too weakly owned.
-- `*Write` — persistence-local write payload or normalized storage shape consumed by repositories, schemas, or mappers.
-- `*Mapper` — storage-facing translation between rows, records, and owned domain representations.
-- `*Codec` — bidirectional encoding/decoding for stored representations and persistence formats.
-- Prefer folding `*Hydrator` work back into a clearer `*Repository` or `*Mapper` seam over introducing additional hydrators.
+- Use `*Repository` for the central storage owner in this layer. Read-only, write-only, search-focused, lookup-focused, or cache-focused variants still belong to the repository family.
+- Support types may use descriptive names such as `*Store`, `*Schema`, `*Write`, `*Mapper`, `*Codec`, or `*Hydrator` when those names accurately describe storage helpers, formats, or compatibility concerns.
+- Those support names do not create a second owner taxonomy for persistence. Prefer folding `*Hydrator` work back into a clearer repository or mapper seam over introducing additional hydrators.
 
 #### `state/`
 
 - Owns shared transient UI, editor, and workflow state.
 - Carries selection, drafts, previews, modes, and other runtime interaction truth.
 - Supports the workflow around canonical truth without replacing it.
-- `state/` contains a runtime-truth ecosystem named directly by suffix.
-- `*State` — shared transient mutable runtime truth. Session-, interaction-, map-, and runtime-scoped containers remain in this family; qualifiers narrow the concern, not the architecture role.
-- `*Draft` — in-progress editable state that is not yet committed.
-- `*Preview` — ephemeral possible result shown before commit.
-- `*Settings` — runtime configuration bundle that parameterizes rendering, interaction, or workflow behavior without becoming canonical domain truth.
-- `*Mode` — closed runtime state vocabulary or behavior switch owned by a state family, usually as an enum or similarly finite value set.
+- Use `*State` for shared transient mutable owners in this layer.
+- Names such as `*Draft`, `*Preview`, `*Settings`, and `*Mode` may describe subordinate state artifacts when they improve clarity.
+- Those names describe parts of a state family; they do not replace `*State` as the central owner marker.
 
 #### `ui/`
 
 - Owns feature-local presentation and interaction code.
 - Contains views, panes, dropdowns, canvases, controls, and UI controllers.
 - Talks to application services and state containers, not directly to persistence policy.
-- `ui/` contains a presentation ecosystem named directly by suffix.
-- `*Shell` — top-level layout owner that hosts views, persistent panels, and navigation structure for one UI surface family.
-- `*View` — top-level application surface for the shell and navigation model.
-- `*Workspace` — composite host surface that coordinates or swaps multiple sub-surfaces inside one work area without becoming domain or workflow state.
-- `*Pane` — composed UI region with its own layout and local behavior.
-- `*Controls` — dedicated controls region for one surface.
-- `*Canvas` — primary draw and direct-manipulation surface.
-- `*Dropdown` — anchored non-modal editor window or popup surface.
-- `*Controller` — interaction coordinator for one concrete surface.
-- `*Navigator` — history, focus, or directional traversal owner for one content surface.
-- `*Registry` — shell-owned registration surface that grants later UI updates or activation through returned handles.
-- `*RenderState` — derived display-only state for one renderer or pane; never canonical workflow truth.
-- `*Tool` — user-selectable editor interaction mode or narrow operator-facing action surface.
-- UI-local `*Handle` types may live next to the UI surface that returns them.
-- Injected callback bundles should stay precise local names or become narrow `*Port`s; they are not a separate repo-wide UI role.
+- Use `*View` for top-level application surfaces in the shell/navigation model.
+- UI names such as `*Shell`, `*Workspace`, `*Pane`, `*Controls`, `*Canvas`, `*Dropdown`, `*Controller`, `*Navigator`, `*Registry`, `*RenderState`, `*Tool`, and UI-local `*Handle` types are descriptive surface vocabulary.
+- Those UI names are local naming conventions, not repository-wide hard roles. Use them when they make the surface responsibility obvious.
+- Keep `*RenderState` display-only and keep injected callback bundles as precise local names or narrow `*Port`s when a contract helps.
 
 #### `api/`
 
 - Is the cross-feature entrypoint.
 - Contains deliberate boundary contracts, boundary data, and explicitly exported public feature surfaces only.
-- Root-level `api/` holds the public role families exposed to other features.
-- `api/` contains a boundary ecosystem named directly by suffix.
-- `*Api` — deliberate cross-feature boundary surface.
-- `*Port` — public capability contract across package or feature boundaries.
-- `*Module` — public feature entrypoint or exported composition root when the module itself is the boundary surface.
-- `*Summary` — lightweight read projection for selectors, lists, and inspectors.
-- `*Request` — named input payload for one use case or API call.
-- `*Result` — named output payload for one use case or API call.
-- `*Ref` — compact boundary identity token that points at an external entity without carrying its full state.
-- `*Handle` — public capability token for later interaction, cleanup, or content replacement.
-- `*Lookup` — public read-only lookup seam when the boundary is narrower than a full `*Api` and the lookup itself is the exported capability.
-- When `api/` intentionally exports another canonical role, keep that exact suffix instead of inventing an api-only wrapper name.
+- Use `*Api` for deliberate cross-feature boundary surfaces.
+- Use `*Module` in `api/` only when the module itself is the public feature entrypoint or exported composition root.
+- Other names such as `*Port`, `*Summary`, `*Request`, `*Result`, `*Ref`, `*Handle`, and `*Lookup` describe boundary shapes and may be used when they precisely match the exported concept.
+- Those names are descriptive boundary helpers, not additional global owner roles. When `api/` intentionally exports another central owner, keep that exact name instead of inventing an api-only wrapper.
 - Boundary-facing `*Mapper` and `*Codec` types may live here when they serve the public API seam rather than persistence.
 
 #### `bootstrap/`
 
 - Owns internal composition roots and assembly-only wiring.
 - Wires collaborators and exposes feature entrypoints.
-- `bootstrap/` contains an assembly ecosystem named directly by suffix.
-- `*App` — process-level bootstrap owner for startup lifecycle, shell creation, and cross-feature wiring.
-- `*Preloader` — startup-lifecycle surface shown before the main application is ready.
+- Use `*Module` for internal feature composition roots by default. Only place a `*Module` in `api/` when the module itself is the public feature entrypoint.
 - `SaltMarcherApp` remains the cross-feature top-level composition root.
-- `*Module` — composition root for one feature surface. Only place a `*Module` in `api/` when the module itself is the public feature entrypoint.
+- Startup-specific names such as `*App` and `*Preloader` are allowed when they accurately describe lifecycle responsibilities, but `bootstrap/` should stay wiring-only.
 
 ### Legacy Name Transition
 
-New code uses the canonical families above.
-Legacy names may remain in untouched code, but touched code should converge toward the allowlist:
-- bare `*Service` only when it is truly an `*ApplicationService`
-- `*Catalog` -> `*Lookup`
-- broad application `*Service` -> `*ApplicationService`, `*Lookup`, `*Resolver`, `*Committer`, `*Reconciler`, or `*Maintenance` based on the actual job
-- public read or mutation facades in `api/` -> `*Api`, `*Lookup`, `*Port`, `*Maintenance`, or the exact exported canonical role instead of another `*Service`
-- `*SchemaSupport` -> `*Schema`
-- storage-local `*Persistence` -> `*Repository`
-- state-local config bundles -> `*Settings`
-- state-local finite switch enums -> `*Mode`
-- root layout owners -> `*Shell`
-- composite host surfaces -> `*Workspace`
-- boundary identity tokens -> `*Ref`
-- `*Provider` -> `*Port`
-- `*Popup` -> `*Dropdown` or `*Pane`
-- `*Scoring` -> `*Policy` or a precise domain helper name
-- `*Presenter` -> `*Pane`, `*Projection`, `*Resolver`, or `*Controller`
-- prefer a precise owner or target role over `*Manager`, `*Helper`, `*Util`, `*Processor`, `*Support`, or `*Surface`
+New code should use the hard owner and boundary roles above when one clearly fits.
+Legacy names may remain in untouched code, and touched code does not need rename-only churn for taxonomy compliance.
+Rename when the current name actively obscures ownership, sends a misleading boundary signal, or changes together with the surrounding architecture.
+- New workflow owners should prefer `*ApplicationService`
+- New storage owners should prefer `*Repository`
+- New shared transient runtime owners should prefer `*State`
+- New top-level shell surfaces should prefer `*View`
+- New public cross-feature boundaries should prefer `*Api`
+- New feature composition roots should prefer `*Module`
+- Existing `*Service` names may remain when they are already established and not actively misleading
+- Prefer a precise domain or helper name over generic catch-all names such as `*Manager`, `*Helper`, `*Util`, `*Processor`, `*Support`, or `*Surface`
 
 ## Key Conventions
 
