@@ -159,43 +159,137 @@ If a feature defines a nearer `AGENTS.md`, that file is required context before 
 
 ## Canonical Type Names
 
-Names must make responsibility legible.
-Use the following names with their exact meanings when the role fits.
-Do not introduce vague class names where a precise role already exists.
+Names must make responsibility legible and must imply concrete implementation rules.
+Use a canonical name only when the file fully matches that name's purpose and constraints.
+If no canonical name fits, use a precise domain name rather than stretching a near-match.
+The list below is intended to cover the repository's recurring roles without overlap.
 
-### Composition And Boundary
+### Workflow, Storage, And Boundaries
 
-- `*Module` wires collaborators and exposes a feature surface; it lives in `api/` if public and `bootstrap/` if internal.
-- `*Api` is a stable public boundary facade in `api/`; it must not expose implementation-only collaborators or JavaFX-only concerns.
-- `*Port` is a narrow capability contract; it lives in `api/` if public and otherwise next to the owning application package.
-- `*Summary`, `*Request`, `*Result`, and `*Handle` are boundary transport names; they live in `api/` or another explicit boundary package, not in `model/` unless they are true domain records.
+- `*Repository`
+  - Purpose: direct storage adapter.
+  - May depend on: JDBC, SQL, `model/`, boundary read records.
+  - Must not depend on: JavaFX, `ui/`, `state/`.
+  - Must not own: workflow sequencing, retry/fallback policy, background task control, user-facing failure handling.
+  - Lives in: `repository/`.
 
-### Workflow And Storage
+- `*ApplicationService`
+  - Purpose: user-visible use-case orchestration.
+  - May depend on: `repository/`, `state/`, `api/`, `model/`, async/task utilities.
+  - Must not depend on: concrete JavaFX surface classes as collaborators of record, raw SQL as core implementation detail.
+  - Must not own: canonical domain truth, low-level storage mapping, reusable UI composition.
+  - Lives in: `application/`.
 
-- `*ApplicationService` is a use-case or workflow orchestrator in `application/`; if a class coordinates a user-visible workflow, tasks, transactions, reloads, or failure mapping, it is an `*ApplicationService`.
-- `*Session` is a long-lived mutable runtime object with explicit lifecycle; it belongs in `application/` when it owns IO, timers, or background work, and in `model/` when it is purely in-memory canonical runtime truth; passive data holders are not sessions.
-- `*Repository` is a direct storage adapter in `repository/`.
-- `*Catalog` is a read-only index or descriptor over already-available data; if it queries storage directly, it is not a catalog.
-- `*Mapper` translates between representations and owns structure transformation only.
+- `*Session`
+  - Purpose: long-lived mutable runtime context with explicit lifecycle.
+  - May depend on: `model/`, `application/` collaborators, narrowly scoped runtime utilities, IO/timers/background work when lifecycle requires them.
+  - Must not depend on: arbitrary JavaFX surface trees unless the session is explicitly UI-local and feature-local rules allow it.
+  - Must not own: passive transport data, generic utility logic, broad cross-feature wiring.
+  - Lives in: `application/` when it owns workflow, IO, timers, or background work; `model/` only when it is purely in-memory canonical runtime truth.
 
-### Pure Domain Logic
+- `*Api`
+  - Purpose: deliberate cross-feature boundary.
+  - May depend on: boundary records, `ApplicationService`, stable feature-facing collaborators.
+  - Must not depend on: JavaFX-only concerns, repository internals, feature wiring internals.
+  - Must not own: assembly logic, storage logic, feature-local UI behavior.
+  - Lives in: `api/`.
 
-- `*Generator`, `*Calculator`, `*Scoring`, `*Classifier`, `*Normalizer`, and `*Rules` are narrow names for pure or near-pure domain logic.
-- Use them when they describe the responsibility more precisely than a generic `*Service`.
-- Place them where the owning feature's architecture says they belong.
+- `*Module`
+  - Purpose: composition root that wires a feature surface.
+  - May depend on: constructors and wiring targets across that feature.
+  - Must not depend on: nothing is forbidden at assembly time, but every dependency must be there only for construction and exposure.
+  - Must not own: domain rules, workflow behavior, storage behavior, UI interaction behavior.
+  - Lives in: `bootstrap/` if internal, `api/` if it exposes the public feature surface.
 
-### UI And State
+### Shared Runtime State
 
-- `*Controller` coordinates interaction for one concrete view, pane, dropdown, canvas, or toolbar in `ui/`; if it mostly owns workflow sequencing, task orchestration, or storage side effects, it is not a controller.
-- `*View`, `*Pane`, `*Dropdown`, `*Popup`, `*Canvas`, and `*Controls` are UI surface names.
-- `*State`, `*Draft`, and `*Preview` are transient shared-state names: stable mutable runtime state, in-progress user-authored state, and ephemeral preview data respectively.
+- `*State`
+  - Purpose: shared transient runtime truth.
+  - May depend on: `model/`, `Draft`, `Preview`, observation/listener utilities.
+  - Must not depend on: JDBC, repositories, feature-external wiring.
+  - Must not own: persistence, transaction boundaries, canonical domain truth, long-running workflow orchestration.
+  - Lives in: `state/`.
 
-### Restricted Names
+- `*Draft`
+  - Purpose: in-progress user-authored state that is not yet committed.
+  - May depend on: `model/`, validation-oriented value types, editor-local transient data.
+  - Must not depend on: repositories, JavaFX surface classes, cross-feature APIs unless the draft itself is the explicit boundary payload.
+  - Must not own: persisted truth, workflow sequencing, preview-only visualization concerns.
+  - Lives in: `state/` or a feature-local editor model package when local rules make the draft part of editor truth.
 
-- `*Provider` is reserved for simple pull-based suppliers only; use `*Port` for capability contracts and `*Factory` for object creation.
-- Bare `*Service` is forbidden for new code. If the class coordinates user-visible workflow, it is an `*ApplicationService`; otherwise give it a more precise domain name.
-- `*Manager`, `*Helper`, `*Util`, and `*Processor` are forbidden for new code when a more precise responsibility name fits.
-- New code must not use `*Catalog` for storage-backed readers, `*Controller` for workflow orchestrators, or `*Session` for passive data holders.
+- `*Preview`
+  - Purpose: ephemeral preview of a possible result.
+  - May depend on: derived model data, geometry/layout intermediates, editor-local transient data.
+  - Must not depend on: repositories, transaction logic, JavaFX surface classes except where the preview type is intentionally UI-local.
+  - Must not own: commit authority, persisted truth, shared workflow sequencing.
+  - Lives in: `state/` or a feature-local editor model package when local rules make preview data part of editor truth.
+
+### UI Surfaces
+
+- `*View`
+  - Purpose: top-level application surface that plugs into the shell/navigation model.
+  - May depend on: `ApplicationService`, `State`, feature-local UI components.
+  - Must not depend on: JDBC, repositories, low-level storage code.
+  - Must not own: storage logic, transaction boundaries, cross-feature assembly.
+  - Lives in: `ui/`.
+
+- `*Pane`
+  - Purpose: concrete composed UI region.
+  - May depend on: `ApplicationService`, `State`, other UI components.
+  - Must not depend on: JDBC, repositories, low-level storage code.
+  - Must not own: cross-feature orchestration, persistence policy, long-lived background workflows.
+  - Lives in: `ui/`.
+
+- `*Controls`
+  - Purpose: UI region dedicated to filters, settings, tools, and actions for a specific surface.
+  - May depend on: `ApplicationService`, `State`, feature-local UI components.
+  - Must not depend on: repositories, low-level storage code.
+  - Must not own: inspector-style read surfaces, primary workspace rendering, persistence logic.
+  - Lives in: `ui/`.
+
+- `*Canvas`
+  - Purpose: rendering and direct interaction surface centered on drawing.
+  - May depend on: `State`, `ApplicationService`, render helpers, theme constants, feature-local interaction collaborators.
+  - Must not depend on: repositories, low-level storage code.
+  - Must not own: workflow orchestration, persistence logic, unrelated shell composition.
+  - Lives in: `ui/`.
+
+- `*Dropdown`
+  - Purpose: anchored non-modal editor window.
+  - May depend on: `ApplicationService`, `State`, feature-local UI components.
+  - Must not depend on: repositories, low-level storage code.
+  - Must not own: modal dialog workflows, cross-feature orchestration, persistence logic.
+  - Lives in: `ui/`.
+
+- `*Controller`
+  - Purpose: interaction coordinator for exactly one concrete UI surface such as a `View`, `Pane`, `Canvas`, `Dropdown`, or toolbar.
+  - May depend on: that surface's UI types, `ApplicationService`, `State`.
+  - Must not depend on: repositories, low-level storage code, unrelated peer surfaces as hidden backchannels.
+  - Must not own: feature-wide workflow orchestration, transaction boundaries, shared persistent truth.
+  - Lives in: `ui/`.
+
+### Boundary Data
+
+- `*Summary`
+  - Purpose: lightweight read-only boundary projection.
+  - May depend on: ids, labels, small read-only field sets, other boundary value types.
+  - Must not depend on: JavaFX, repositories, mutable runtime services.
+  - Must not own: behavior beyond trivial accessors/value semantics, authoritative domain invariants.
+  - Lives in: `api/` or another explicit boundary package.
+
+- `*Request`
+  - Purpose: named input payload for a use case or API call.
+  - May depend on: boundary value types and validation-oriented fields.
+  - Must not depend on: JavaFX, repositories, runtime services.
+  - Must not own: execution logic, persistence logic, workflow state.
+  - Lives in: `api/` or another explicit boundary package.
+
+- `*Result`
+  - Purpose: named output payload for a use case or API call.
+  - May depend on: boundary value types, status values, summaries, outcome data.
+  - Must not depend on: JavaFX, repositories, runtime services.
+  - Must not own: execution logic, persistence logic, hidden side effects.
+  - Lives in: `api/` or another explicit boundary package.
 
 ## Architecture Convergence Rules
 
