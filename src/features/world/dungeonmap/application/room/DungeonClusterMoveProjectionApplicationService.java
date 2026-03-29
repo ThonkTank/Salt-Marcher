@@ -6,9 +6,10 @@ import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
-import features.world.dungeonmap.model.structures.traversal.TraversalReadModelProjection;
+import features.world.dungeonmap.model.structures.traversal.TraversalRoute;
 import features.world.dungeonmap.model.structures.traversal.TraversalRoutingContext;
 import features.world.dungeonmap.model.structures.traversal.TraversalRoutingSnapshot;
+import features.world.dungeonmap.model.structures.traversal.TraversalSegmentIdentityMatcher;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -59,13 +60,9 @@ public final class DungeonClusterMoveProjectionApplicationService {
                         affectedTraversalIds,
                         Set.of()));
         List<Traversal> updatedTraversals = updatedTraversals(baseLayout, rewriteResult.traversalsById());
-        TraversalReadModelProjection affectedProjection = TraversalReadModelProjection.project(
-                baseLayout.mapId(),
-                updatedTraversals.stream()
-                        .filter(traversal -> traversal != null
-                                && traversal.traversalId() != null
-                                && affectedTraversalIds.contains(traversal.traversalId()))
-                        .toList(),
+        Map<Long, TraversalRoute> projectedRoutesByTraversalId = projectedRoutesByTraversalId(
+                updatedTraversals,
+                affectedTraversalIds,
                 provisionalSnapshot,
                 rewriteResult.traversalRoutesByTraversalId(),
                 baseLayout);
@@ -73,16 +70,16 @@ public final class DungeonClusterMoveProjectionApplicationService {
                 baseLayout.mapId(),
                 baseLayout.name(),
                 updatedTraversals,
-                mergeCorridors(baseLayout, updatedTraversals, affectedTraversalIds, affectedProjection.corridors()),
+                mergeCorridors(baseLayout, updatedTraversals, affectedTraversalIds, projectedRoutesByTraversalId),
                 updatedClusters,
-                mergeStairs(baseLayout, updatedTraversals, affectedTraversalIds, affectedProjection.stairs()),
+                mergeStairs(baseLayout, updatedTraversals, affectedTraversalIds, projectedRoutesByTraversalId),
                 baseLayout.transitions(),
                 updatedClusterLevels);
         return new DungeonClusterMoveProjection(
                 projectedLayout,
                 projectedLayout.findCluster(clusterId),
                 rewriteResult.traversalsById(),
-                rewriteResult.traversalRoutesByTraversalId());
+                projectedRoutesByTraversalId);
     }
 
     private static Map<Long, Integer> updatedClusterLevels(DungeonLayout layout, Long clusterId, int levelDelta) {
@@ -114,10 +111,9 @@ public final class DungeonClusterMoveProjectionApplicationService {
             DungeonLayout baseLayout,
             List<Traversal> updatedTraversals,
             Set<Long> affectedTraversalIds,
-            List<Corridor> affectedCorridors
+            Map<Long, TraversalRoute> projectedRoutesByTraversalId
     ) {
-        Map<Long, List<Corridor>> baseByTraversalId = groupCorridorsByTraversalId(baseLayout.corridors());
-        Map<Long, List<Corridor>> affectedByTraversalId = groupCorridorsByTraversalId(affectedCorridors);
+        Map<Long, List<Corridor>> baseByTraversalId = groupCorridorsByTraversalId(baseLayout.traversals(), baseLayout.corridors());
         ArrayList<Corridor> merged = new ArrayList<>();
         LinkedHashSet<Long> emittedTraversalIds = new LinkedHashSet<>();
         for (Traversal traversal : updatedTraversals) {
@@ -125,16 +121,12 @@ public final class DungeonClusterMoveProjectionApplicationService {
                 continue;
             }
             if (affectedTraversalIds.contains(traversal.traversalId())) {
-                merged.addAll(affectedByTraversalId.getOrDefault(traversal.traversalId(), List.of()));
+                merged.addAll(corridorsForRoute(projectedRoutesByTraversalId.get(traversal.traversalId())));
             } else {
                 merged.addAll(baseByTraversalId.getOrDefault(traversal.traversalId(), List.of()));
             }
         }
-        for (Corridor corridor : baseLayout.corridors()) {
-            if (corridor != null && corridor.traversalId() == null) {
-                merged.add(corridor);
-            }
-        }
+        merged.addAll(unownedCorridors(baseLayout.traversals(), baseLayout.corridors()));
         return List.copyOf(merged);
     }
 
@@ -142,10 +134,9 @@ public final class DungeonClusterMoveProjectionApplicationService {
             DungeonLayout baseLayout,
             List<Traversal> updatedTraversals,
             Set<Long> affectedTraversalIds,
-            List<DungeonStair> affectedStairs
+            Map<Long, TraversalRoute> projectedRoutesByTraversalId
     ) {
-        Map<Long, List<DungeonStair>> baseByTraversalId = groupStairsByTraversalId(baseLayout.stairs());
-        Map<Long, List<DungeonStair>> affectedByTraversalId = groupStairsByTraversalId(affectedStairs);
+        Map<Long, List<DungeonStair>> baseByTraversalId = groupStairsByTraversalId(baseLayout.traversals(), baseLayout.stairs());
         ArrayList<DungeonStair> merged = new ArrayList<>();
         LinkedHashSet<Long> emittedTraversalIds = new LinkedHashSet<>();
         for (Traversal traversal : updatedTraversals) {
@@ -153,38 +144,167 @@ public final class DungeonClusterMoveProjectionApplicationService {
                 continue;
             }
             if (affectedTraversalIds.contains(traversal.traversalId())) {
-                merged.addAll(affectedByTraversalId.getOrDefault(traversal.traversalId(), List.of()));
+                merged.addAll(stairsForRoute(projectedRoutesByTraversalId.get(traversal.traversalId())));
             } else {
                 merged.addAll(baseByTraversalId.getOrDefault(traversal.traversalId(), List.of()));
             }
         }
-        for (DungeonStair stair : baseLayout.stairs()) {
-            if (stair != null && stair.traversalId() == null) {
-                merged.add(stair);
-            }
-        }
+        merged.addAll(unownedStairs(baseLayout.traversals(), baseLayout.stairs()));
         return List.copyOf(merged);
     }
 
-    private static Map<Long, List<Corridor>> groupCorridorsByTraversalId(List<Corridor> corridors) {
-        LinkedHashMap<Long, List<Corridor>> grouped = new LinkedHashMap<>();
-        for (Corridor corridor : corridors == null ? List.<Corridor>of() : corridors) {
-            if (corridor == null || corridor.traversalId() == null) {
+    private static Map<Long, TraversalRoute> projectedRoutesByTraversalId(
+            List<Traversal> updatedTraversals,
+            Set<Long> affectedTraversalIds,
+            TraversalRoutingSnapshot provisionalSnapshot,
+            Map<Long, TraversalRoute> traversalRoutesByTraversalId,
+            DungeonLayout previousLayout
+    ) {
+        LinkedHashMap<Long, TraversalRoute> result = new LinkedHashMap<>();
+        for (Traversal traversal : updatedTraversals) {
+            if (traversal == null
+                    || traversal.traversalId() == null
+                    || !affectedTraversalIds.contains(traversal.traversalId())) {
                 continue;
             }
-            grouped.computeIfAbsent(corridor.traversalId(), ignored -> new ArrayList<>()).add(corridor);
+            TraversalRoute rawRoute = traversalRoutesByTraversalId.getOrDefault(
+                    traversal.traversalId(),
+                    provisionalSnapshot == null ? TraversalRoute.empty() : traversal.route(provisionalSnapshot));
+            result.put(traversal.traversalId(), TraversalSegmentIdentityMatcher.preserveSegmentIds(
+                    traversal,
+                    rawRoute,
+                    previousLayout));
+        }
+        return result.isEmpty() ? Map.of() : Map.copyOf(result);
+    }
+
+    private static Map<Long, List<Corridor>> groupCorridorsByTraversalId(
+            List<Traversal> traversals,
+            List<Corridor> corridors
+    ) {
+        Map<Long, Corridor> corridorsById = corridorsById(corridors);
+        LinkedHashMap<Long, List<Corridor>> grouped = new LinkedHashMap<>();
+        for (Traversal traversal : traversals == null ? List.<Traversal>of() : traversals) {
+            if (traversal == null || traversal.traversalId() == null) {
+                continue;
+            }
+            for (Long corridorId : traversal.segmentRefs().corridorIdsBySegmentKey().values()) {
+                Corridor corridor = corridorId == null ? null : corridorsById.get(corridorId);
+                if (corridor != null) {
+                    grouped.computeIfAbsent(traversal.traversalId(), ignored -> new ArrayList<>()).add(corridor);
+                }
+            }
         }
         return grouped;
     }
 
-    private static Map<Long, List<DungeonStair>> groupStairsByTraversalId(List<DungeonStair> stairs) {
+    private static Map<Long, List<DungeonStair>> groupStairsByTraversalId(
+            List<Traversal> traversals,
+            List<DungeonStair> stairs
+    ) {
+        Map<Long, DungeonStair> stairsById = stairsById(stairs);
         LinkedHashMap<Long, List<DungeonStair>> grouped = new LinkedHashMap<>();
-        for (DungeonStair stair : stairs == null ? List.<DungeonStair>of() : stairs) {
-            if (stair == null || stair.traversalId() == null) {
+        for (Traversal traversal : traversals == null ? List.<Traversal>of() : traversals) {
+            if (traversal == null || traversal.traversalId() == null) {
                 continue;
             }
-            grouped.computeIfAbsent(stair.traversalId(), ignored -> new ArrayList<>()).add(stair);
+            for (Long stairId : traversal.segmentRefs().stairIdsBySegmentKey().values()) {
+                DungeonStair stair = stairId == null ? null : stairsById.get(stairId);
+                if (stair != null) {
+                    grouped.computeIfAbsent(traversal.traversalId(), ignored -> new ArrayList<>()).add(stair);
+                }
+            }
         }
         return grouped;
+    }
+
+    private static List<Corridor> corridorsForRoute(TraversalRoute route) {
+        ArrayList<Corridor> result = new ArrayList<>();
+        for (TraversalRoute.CorridorSegment corridorSegment : route == null
+                ? List.<TraversalRoute.CorridorSegment>of()
+                : route.corridorSegments()) {
+            if (corridorSegment != null && corridorSegment.corridor() != null) {
+                result.add(corridorSegment.corridor());
+            }
+        }
+        return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
+    private static List<DungeonStair> stairsForRoute(TraversalRoute route) {
+        ArrayList<DungeonStair> result = new ArrayList<>();
+        for (TraversalRoute.StairSegment stairSegment : route == null
+                ? List.<TraversalRoute.StairSegment>of()
+                : route.stairSegments()) {
+            if (stairSegment != null && stairSegment.stair() != null) {
+                result.add(stairSegment.stair());
+            }
+        }
+        return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
+    private static List<Corridor> unownedCorridors(List<Traversal> traversals, List<Corridor> corridors) {
+        Set<Long> ownedCorridorIds = ownedCorridorIds(traversals);
+        ArrayList<Corridor> result = new ArrayList<>();
+        for (Corridor corridor : corridors == null ? List.<Corridor>of() : corridors) {
+            if (corridor != null
+                    && corridor.corridorId() != null
+                    && !ownedCorridorIds.contains(corridor.corridorId())) {
+                result.add(corridor);
+            }
+        }
+        return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
+    private static List<DungeonStair> unownedStairs(List<Traversal> traversals, List<DungeonStair> stairs) {
+        Set<Long> ownedStairIds = ownedStairIds(traversals);
+        ArrayList<DungeonStair> result = new ArrayList<>();
+        for (DungeonStair stair : stairs == null ? List.<DungeonStair>of() : stairs) {
+            if (stair != null
+                    && stair.stairId() != null
+                    && !ownedStairIds.contains(stair.stairId())) {
+                result.add(stair);
+            }
+        }
+        return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
+    private static Set<Long> ownedCorridorIds(List<Traversal> traversals) {
+        LinkedHashSet<Long> result = new LinkedHashSet<>();
+        for (Traversal traversal : traversals == null ? List.<Traversal>of() : traversals) {
+            if (traversal != null) {
+                result.addAll(traversal.segmentRefs().corridorIdsBySegmentKey().values());
+            }
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
+    private static Set<Long> ownedStairIds(List<Traversal> traversals) {
+        LinkedHashSet<Long> result = new LinkedHashSet<>();
+        for (Traversal traversal : traversals == null ? List.<Traversal>of() : traversals) {
+            if (traversal != null) {
+                result.addAll(traversal.segmentRefs().stairIdsBySegmentKey().values());
+            }
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
+    private static Map<Long, Corridor> corridorsById(List<Corridor> corridors) {
+        LinkedHashMap<Long, Corridor> result = new LinkedHashMap<>();
+        for (Corridor corridor : corridors == null ? List.<Corridor>of() : corridors) {
+            if (corridor != null && corridor.corridorId() != null) {
+                result.putIfAbsent(corridor.corridorId(), corridor);
+            }
+        }
+        return result;
+    }
+
+    private static Map<Long, DungeonStair> stairsById(List<DungeonStair> stairs) {
+        LinkedHashMap<Long, DungeonStair> result = new LinkedHashMap<>();
+        for (DungeonStair stair : stairs == null ? List.<DungeonStair>of() : stairs) {
+            if (stair != null && stair.stairId() != null) {
+                result.putIfAbsent(stair.stairId(), stair);
+            }
+        }
+        return result;
     }
 }

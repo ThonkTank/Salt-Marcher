@@ -40,8 +40,8 @@ public final class TraversalSegmentIdentityMatcher {
                     .withCorridorIds(corridorIdsBySegmentKey)
                     .withStairIds(stairIdsBySegmentKey);
         }
-        matchCorridorIds(traversal, traversalRoute, previousLayout, corridorIdsBySegmentKey);
-        matchStairIds(traversal, traversalRoute, previousLayout, stairIdsBySegmentKey);
+        matchCorridorIds(traversalRoute, previousLayout, existingRefs, corridorIdsBySegmentKey);
+        matchStairIds(traversalRoute, previousLayout, existingRefs, stairIdsBySegmentKey);
         return traversalRoute
                 .withCorridorIds(corridorIdsBySegmentKey)
                 .withStairIds(stairIdsBySegmentKey);
@@ -60,38 +60,30 @@ public final class TraversalSegmentIdentityMatcher {
         Traversal previousTraversal = previousLayout.findTraversal(traversal.traversalId());
         LinkedHashMap<String, TraversalSegmentRef> refsBySegmentKey = new LinkedHashMap<>();
         if (previousTraversal != null && !previousTraversal.segmentRefs().refsBySegmentKey().isEmpty()) {
-            refsBySegmentKey.putAll(previousTraversal.segmentRefs().refsBySegmentKey());
-        }
-        for (Corridor corridor : previousLayout.corridors()) {
-            if (corridor != null
-                    && corridor.segmentKey() != null
-                    && corridor.corridorId() != null
-                    && Objects.equals(corridor.traversalId(), traversal.traversalId())) {
-                refsBySegmentKey.putIfAbsent(
-                        corridor.segmentKey(),
-                        new TraversalSegmentRef.CorridorSegment(corridor.corridorId()));
+            for (Map.Entry<String, TraversalSegmentRef> entry : previousTraversal.segmentRefs().refsBySegmentKey().entrySet()) {
+                if (entry.getValue() != null && entry.getValue().structureId() != null) {
+                    refsBySegmentKey.putIfAbsent(entry.getKey(), entry.getValue());
+                }
             }
         }
         return refsBySegmentKey.isEmpty() ? TraversalSegmentRefs.empty() : new TraversalSegmentRefs(refsBySegmentKey);
     }
 
     private static void matchCorridorIds(
-            Traversal traversal,
             TraversalRoute traversalRoute,
             DungeonLayout previousLayout,
+            TraversalSegmentRefs existingRefs,
             Map<String, Long> corridorIdsBySegmentKey
     ) {
         if (traversalRoute.corridorSegments().isEmpty()) {
             return;
         }
         Map<Long, Corridor> unmatchedExistingById = new LinkedHashMap<>();
-        for (Corridor corridor : previousLayout.corridors()) {
-            if (corridor == null
-                    || corridor.corridorId() == null
-                    || !Objects.equals(corridor.traversalId(), traversal.traversalId())) {
-                continue;
+        for (Long corridorId : existingRefs.corridorIdsBySegmentKey().values()) {
+            Corridor corridor = previousLayout.findCorridor(corridorId);
+            if (corridor != null && corridor.corridorId() != null) {
+                unmatchedExistingById.put(corridor.corridorId(), corridor);
             }
-            unmatchedExistingById.put(corridor.corridorId(), corridor);
         }
         unmatchedExistingById.keySet().removeAll(corridorIdsBySegmentKey.values());
         for (TraversalRoute.CorridorSegment corridorSegment : traversalRoute.corridorSegments()) {
@@ -141,22 +133,20 @@ public final class TraversalSegmentIdentityMatcher {
     }
 
     private static void matchStairIds(
-            Traversal traversal,
             TraversalRoute traversalRoute,
             DungeonLayout previousLayout,
+            TraversalSegmentRefs existingRefs,
             Map<String, Long> stairIdsBySegmentKey
     ) {
         if (traversalRoute.stairSegments().isEmpty()) {
             return;
         }
         Map<Long, DungeonStair> unmatchedExistingById = new LinkedHashMap<>();
-        for (DungeonStair stair : previousLayout.stairs()) {
-            if (stair == null
-                    || stair.stairId() == null
-                    || !Objects.equals(stair.traversalId(), traversal.traversalId())) {
-                continue;
+        for (Long stairId : existingRefs.stairIdsBySegmentKey().values()) {
+            DungeonStair stair = previousLayout.findStair(stairId);
+            if (stair != null && stair.stairId() != null) {
+                unmatchedExistingById.put(stair.stairId(), stair);
             }
-            unmatchedExistingById.put(stair.stairId(), stair);
         }
         unmatchedExistingById.keySet().removeAll(stairIdsBySegmentKey.values());
         for (TraversalRoute.StairSegment stairSegment : traversalRoute.stairSegments()) {

@@ -15,7 +15,6 @@ import java.util.Set;
 
 public record DungeonStair(
         Long stairId,
-        Long traversalId,
         long mapId,
         String name,
         Point2i anchor,
@@ -45,21 +44,33 @@ public record DungeonStair(
             int dimension2,
             List<Integer> exitLevels
     ) {
-        return new DungeonStair(null, null, 0L, null, anchor, shape, direction, dimension1, dimension2, exitLevels);
+        return new DungeonStair(null, 0L, null, anchor, shape, direction, dimension1, dimension2, exitLevels);
+    }
+
+    public static DungeonStair resolved(
+            Long stairId,
+            long mapId,
+            String name,
+            Point2i anchor,
+            StairShape shape,
+            CardinalDirection direction,
+            int dimension1,
+            int dimension2,
+            List<Integer> exitLevels
+    ) {
+        return new DungeonStair(stairId, mapId, name, anchor, shape, direction, dimension1, dimension2, exitLevels);
     }
 
     public static DungeonStair fromMaterialized(
             Long stairId,
-            Long traversalId,
             long mapId,
             String name,
             List<CubePoint> path,
             List<DungeonStairExit> exits
     ) {
         StairGeometry.StairSpecification specification = StairGeometry.inferSpecification(path, exits);
-        return new DungeonStair(
+        return resolved(
                 stairId,
-                traversalId,
                 mapId,
                 name,
                 specification.anchor(),
@@ -73,21 +84,20 @@ public record DungeonStair(
     public static DungeonStair materialized(
             DungeonStair plannedStair,
             Long stairId,
-            Long traversalId,
             long mapId
     ) {
         if (plannedStair == null) {
             return null;
         }
         try {
-            return plannedStair.withIdentity(stairId, traversalId, mapId);
+            return plannedStair.withIdentity(stairId, mapId);
         } catch (IllegalArgumentException ignored) {
             return null;
         }
     }
 
-    public DungeonStair withIdentity(Long stairId, Long traversalId, long mapId) {
-        return new DungeonStair(stairId, traversalId, mapId, name, anchor, shape, direction, dimension1, dimension2, exitLevels);
+    public DungeonStair withIdentity(Long stairId, long mapId) {
+        return new DungeonStair(stairId, mapId, name, anchor, shape, direction, dimension1, dimension2, exitLevels);
     }
 
     public StairGeometry geometry() {

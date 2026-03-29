@@ -34,9 +34,7 @@ public record TraversalRoute(
             corridorSegments.add(new CorridorSegment(
                     corridorSlice.segmentKey(),
                     Corridor.resolved(
-                            corridorSlice.segmentKey(),
                             corridorSlice.corridorId(),
-                            traversal.traversalId(),
                             traversal.mapId(),
                             traversal.roomIds(),
                             corridorSlice.path(),
@@ -52,7 +50,6 @@ public record TraversalRoute(
                     DungeonStair.materialized(
                             stairSlice.stair(),
                             stairSlice.stairId(),
-                            traversal.traversalId(),
                             traversal.mapId())));
         }
         return new TraversalRoute(List.copyOf(corridorSegments), List.copyOf(stairSegments));
@@ -76,7 +73,6 @@ public record TraversalRoute(
                     corridorSegment.corridor().corridorId());
             updated.add(corridorSegment.withCorridor(corridorSegment.corridor().withIdentity(
                     corridorId,
-                    corridorSegment.corridor().traversalId(),
                     corridorSegment.corridor().mapId())));
         }
         return new TraversalRoute(List.copyOf(updated), stairSegments);
@@ -96,7 +92,6 @@ public record TraversalRoute(
                     stairSegment.stair().stairId());
             updated.add(stairSegment.withStair(stairSegment.stair().withIdentity(
                     stairId,
-                    stairSegment.stair().traversalId(),
                     stairSegment.stair().mapId())));
         }
         return new TraversalRoute(corridorSegments, List.copyOf(updated));

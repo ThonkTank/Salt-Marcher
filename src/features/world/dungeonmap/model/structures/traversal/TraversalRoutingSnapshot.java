@@ -15,10 +15,11 @@ public record TraversalRoutingSnapshot(
         Map<Long, Room> roomsById,
         Map<Long, Point2i> clusterCenters,
         Map<Long, Set<Integer>> roomLevels,
-        List<DungeonStair> stairs
+        List<DungeonStair> stairs,
+        Map<Long, Long> traversalIdByStairId
 ) {
     public static TraversalRoutingSnapshot empty() {
-        return new TraversalRoutingSnapshot(Map.of(), Map.of(), Map.of(), List.of());
+        return new TraversalRoutingSnapshot(Map.of(), Map.of(), Map.of(), List.of(), Map.of());
     }
 
     public static TraversalRoutingSnapshot fromLayout(DungeonLayout layout) {
@@ -29,6 +30,7 @@ public record TraversalRoutingSnapshot(
         Map<Long, Point2i> clusterCenters = new LinkedHashMap<>();
         Map<Long, Set<Integer>> roomLevels = new LinkedHashMap<>();
         List<DungeonStair> stairs = layout.stairs();
+        Map<Long, Long> traversalIdByStairId = new LinkedHashMap<>();
         for (RoomCluster cluster : layout.clusters()) {
             if (cluster == null || cluster.clusterId() == null) {
                 continue;
@@ -43,7 +45,15 @@ public record TraversalRoutingSnapshot(
                 }
             }
         }
-        return new TraversalRoutingSnapshot(roomsById, clusterCenters, roomLevels, stairs);
+        for (DungeonStair stair : stairs) {
+            if (stair != null && stair.stairId() != null) {
+                Long traversalId = layout.traversalIdForStair(stair.stairId());
+                if (traversalId != null) {
+                    traversalIdByStairId.put(stair.stairId(), traversalId);
+                }
+            }
+        }
+        return new TraversalRoutingSnapshot(roomsById, clusterCenters, roomLevels, stairs, traversalIdByStairId);
     }
 
     public static TraversalRoutingSnapshot fromClusters(List<RoomCluster> clusters) {
@@ -68,7 +78,7 @@ public record TraversalRoutingSnapshot(
                 }
             }
         }
-        return new TraversalRoutingSnapshot(roomsById, clusterCenters, roomLevels, stairs);
+        return new TraversalRoutingSnapshot(roomsById, clusterCenters, roomLevels, stairs, Map.of());
     }
 
     public TraversalRoutingSnapshot {
@@ -76,6 +86,7 @@ public record TraversalRoutingSnapshot(
         clusterCenters = clusterCenters == null ? Map.of() : Map.copyOf(clusterCenters);
         roomLevels = roomLevels == null ? Map.of() : Map.copyOf(roomLevels);
         stairs = stairs == null ? List.of() : List.copyOf(stairs);
+        traversalIdByStairId = traversalIdByStairId == null ? Map.of() : Map.copyOf(traversalIdByStairId);
     }
 
     public Room room(Long roomId) {
@@ -93,5 +104,9 @@ public record TraversalRoutingSnapshot(
     public int roomLevel(Long roomId) {
         Set<Integer> levels = roomLevels(roomId);
         return levels.isEmpty() ? 0 : levels.stream().mapToInt(Integer::intValue).min().orElse(0);
+    }
+
+    public Long traversalIdForStair(Long stairId) {
+        return stairId == null ? null : traversalIdByStairId.get(stairId);
     }
 }

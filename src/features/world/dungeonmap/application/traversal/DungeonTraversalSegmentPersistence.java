@@ -1,11 +1,9 @@
 package features.world.dungeonmap.application.traversal;
 
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
 import features.world.dungeonmap.model.structures.traversal.TraversalRoute;
 import features.world.dungeonmap.model.structures.traversal.TraversalSegmentIdentityMatcher;
-import features.world.dungeonmap.model.structures.traversal.TraversalSegmentRef;
 import features.world.dungeonmap.model.structures.traversal.TraversalSegmentRefs;
 import features.world.dungeonmap.persistence.DungeonCorridorWriteRepository;
 import features.world.dungeonmap.persistence.DungeonStairWriteRepository;
@@ -14,8 +12,6 @@ import features.world.dungeonmap.persistence.DungeonTraversalStairSegmentWriteRe
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Objects;
 
 public final class DungeonTraversalSegmentPersistence {
@@ -88,23 +84,6 @@ public final class DungeonTraversalSegmentPersistence {
         if (previousTraversal != null && !previousTraversal.segmentRefs().refsBySegmentKey().isEmpty()) {
             return previousTraversal.segmentRefs();
         }
-        LinkedHashMap<String, TraversalSegmentRef> refsBySegmentKey = new LinkedHashMap<>();
-        appendCorridorRefs(refsBySegmentKey, previousLayout, traversal);
-        return refsBySegmentKey.isEmpty() ? TraversalSegmentRefs.empty() : new TraversalSegmentRefs(refsBySegmentKey);
-    }
-
-    private static void appendCorridorRefs(
-            LinkedHashMap<String, TraversalSegmentRef> refsBySegmentKey,
-            DungeonLayout previousLayout,
-            Traversal traversal
-    ) {
-        for (Corridor corridor : previousLayout == null ? List.<Corridor>of() : previousLayout.corridors()) {
-            if (corridor != null
-                    && corridor.segmentKey() != null
-                    && corridor.corridorId() != null
-                    && Objects.equals(corridor.traversalId(), traversal.traversalId())) {
-                refsBySegmentKey.put(corridor.segmentKey(), new TraversalSegmentRef.CorridorSegment(corridor.corridorId()));
-            }
-        }
+        return TraversalSegmentRefs.empty();
     }
 }

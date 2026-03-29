@@ -30,7 +30,11 @@ public final class TraversalPlanningEngine {
         List<Room> rooms = traversal.resolvedRooms(snapshot);
         List<CubePoint> waypointCells = traversal.resolvedWaypointCells(snapshot);
         Map<Long, ResolvedTraversalDoorBinding> doorBindings = traversal.resolvedDoorBindings(snapshot);
-        Set<CubePoint> obstacles = buildObstacles(snapshot.roomsById(), snapshot.stairs(), traversal.traversalId());
+        Set<CubePoint> obstacles = buildObstacles(
+                snapshot.roomsById(),
+                snapshot.stairs(),
+                snapshot.traversalIdByStairId(),
+                traversal.traversalId());
         TraversalTopology topology = TraversalTopologyProjector.project(
                 traversal.mapId(),
                 rooms,
@@ -44,6 +48,7 @@ public final class TraversalPlanningEngine {
     private static Set<CubePoint> buildObstacles(
             Map<Long, Room> roomsById,
             List<DungeonStair> stairs,
+            Map<Long, Long> traversalIdByStairId,
             Long traversalId
     ) {
         LinkedHashSet<CubePoint> result = new LinkedHashSet<>();
@@ -55,7 +60,9 @@ public final class TraversalPlanningEngine {
             }
         }
         for (DungeonStair stair : stairs == null ? List.<DungeonStair>of() : stairs) {
-            if (stair != null && !java.util.Objects.equals(stair.traversalId(), traversalId)) {
+            if (stair != null && !java.util.Objects.equals(
+                    stair.stairId() == null || traversalIdByStairId == null ? null : traversalIdByStairId.get(stair.stairId()),
+                    traversalId)) {
                 result.addAll(stair.occupiedPositions());
             }
         }

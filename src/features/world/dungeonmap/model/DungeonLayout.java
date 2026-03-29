@@ -68,6 +68,8 @@ public final class DungeonLayout {
     private final Map<Long, RoomCluster> clustersById;
     private final Map<Long, DungeonStair> stairsById;
     private final Map<Long, DungeonTransition> transitionsById;
+    private final Map<Long, Long> traversalIdByCorridorId;
+    private final Map<Long, Long> traversalIdByStairId;
     private final Map<Long, Integer> clusterLevelsById;
     private final Map<Long, Set<Integer>> roomLevelsByRoomId;
     private final Map<String, CorridorNetwork> corridorNetworksById;
@@ -118,6 +120,8 @@ public final class DungeonLayout {
         this.clustersById = indexClusters(this.clusters);
         this.stairsById = indexStairs(this.stairs);
         this.transitionsById = indexTransitions(this.transitions);
+        this.traversalIdByCorridorId = indexTraversalIdsByCorridorId(this.traversals);
+        this.traversalIdByStairId = indexTraversalIdsByStairId(this.traversals);
         this.clusterLevelsById = indexLevels(clusterLevelsById);
         this.roomLevelsByRoomId = indexRoomLevels(this.roomsById);
         this.corridorNetworksById = indexCorridorNetworks(this.corridorNetworks);
@@ -386,14 +390,20 @@ public final class DungeonLayout {
                 .orElse(null);
     }
 
+    public Long traversalIdForCorridor(Long corridorId) {
+        return corridorId == null ? null : traversalIdByCorridorId.get(corridorId);
+    }
+
     public Traversal findTraversalForCorridor(Long corridorId) {
-        Corridor corridor = findCorridor(corridorId);
-        return corridor == null ? null : findTraversal(corridor.traversalId());
+        return findTraversal(traversalIdForCorridor(corridorId));
+    }
+
+    public Long traversalIdForStair(Long stairId) {
+        return stairId == null ? null : traversalIdByStairId.get(stairId);
     }
 
     public Traversal findTraversalForStair(Long stairId) {
-        DungeonStair stair = findStair(stairId);
-        return stair == null ? null : findTraversal(stair.traversalId());
+        return findTraversal(traversalIdForStair(stairId));
     }
 
     public RoomCluster findCluster(Long clusterId) {
@@ -701,6 +711,36 @@ public final class DungeonLayout {
             }
         }
         return Map.copyOf(result);
+    }
+
+    private static Map<Long, Long> indexTraversalIdsByCorridorId(List<Traversal> traversals) {
+        Map<Long, Long> result = new LinkedHashMap<>();
+        for (Traversal traversal : traversals == null ? List.<Traversal>of() : traversals) {
+            if (traversal == null || traversal.traversalId() == null) {
+                continue;
+            }
+            for (Long corridorId : traversal.segmentRefs().corridorIdsBySegmentKey().values()) {
+                if (corridorId != null) {
+                    result.putIfAbsent(corridorId, traversal.traversalId());
+                }
+            }
+        }
+        return result.isEmpty() ? Map.of() : Map.copyOf(result);
+    }
+
+    private static Map<Long, Long> indexTraversalIdsByStairId(List<Traversal> traversals) {
+        Map<Long, Long> result = new LinkedHashMap<>();
+        for (Traversal traversal : traversals == null ? List.<Traversal>of() : traversals) {
+            if (traversal == null || traversal.traversalId() == null) {
+                continue;
+            }
+            for (Long stairId : traversal.segmentRefs().stairIdsBySegmentKey().values()) {
+                if (stairId != null) {
+                    result.putIfAbsent(stairId, traversal.traversalId());
+                }
+            }
+        }
+        return result.isEmpty() ? Map.of() : Map.copyOf(result);
     }
 
     private static List<Connection> indexConnections(List<RoomCluster> clusters, List<Corridor> corridors) {
