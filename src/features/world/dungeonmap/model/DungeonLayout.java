@@ -637,10 +637,12 @@ public final class DungeonLayout {
                         TraversalPlan traversalPlan = TraversalPlanningEngine.plan(
                                 reanchored,
                                 rewriteContext.rewrittenPlanningInput());
-                        updatedCorridor = reanchored.applyTraversalSlice(
+                        List<StairPlacement> stairPlacements = traversalPlan.stairPlacements();
+                        Corridor updated = reanchored.applyTraversalSlice(
                                 traversalPlan.corridorSlice(reanchored.corridorId()));
+                        updatedCorridor = updated;
                         if (reanchored.corridorId() != null) {
-                            stairPlacementsByCorridorId.put(reanchored.corridorId(), traversalPlan.stairPlacements());
+                            stairPlacementsByCorridorId.put(reanchored.corridorId(), stairPlacements);
                         }
                     } else {
                         updatedCorridor = reanchored.replannedFor(rewriteContext);

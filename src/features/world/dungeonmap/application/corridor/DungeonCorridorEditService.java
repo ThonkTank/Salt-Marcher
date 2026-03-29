@@ -49,7 +49,9 @@ public final class DungeonCorridorEditService {
                 Corridor corridor = Corridor.resolved(corridorId, layout.mapId(), roomIds, null, null, null);
                 if (corridor.isPersistable()) {
                     TraversalPlan traversalPlan = TraversalPlanningEngine.plan(corridor, layout.corridorPlanningInput());
+                    Corridor updated = corridor.applyTraversalSlice(traversalPlan.corridorSlice(corridor.corridorId()));
                     stairPlacements = traversalPlan.stairPlacements();
+                    corridor = updated;
                 }
                 System.err.println("CorridorEditService.create(): corridorId=" + corridorId
                         + " stairPlacements=" + stairPlacements.size());

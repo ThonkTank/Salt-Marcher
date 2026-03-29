@@ -193,10 +193,12 @@ public final class Corridor {
                 TraversalPlan traversalPlan = TraversalPlanningEngine.plan(
                         reanchored,
                         context.rewrittenPlanningInput());
-                CorridorTraversalSlice slice = traversalPlan.corridorSlice(reanchored.corridorId());
-                result.put(entry.getKey(), reanchored.applyTraversalSlice(slice));
-                if (!traversalPlan.stairPlacements().isEmpty() && reanchored.corridorId() != null) {
-                    stairPlacementsByCorridorId.put(reanchored.corridorId(), traversalPlan.stairPlacements());
+                List<StairPlacement> stairPlacements = traversalPlan.stairPlacements();
+                Corridor updated = reanchored.applyTraversalSlice(
+                        traversalPlan.corridorSlice(reanchored.corridorId()));
+                result.put(entry.getKey(), updated);
+                if (!stairPlacements.isEmpty() && reanchored.corridorId() != null) {
+                    stairPlacementsByCorridorId.put(reanchored.corridorId(), stairPlacements);
                 }
             } else {
                 result.put(entry.getKey(), reanchored.replannedFor(context));
@@ -377,7 +379,8 @@ public final class Corridor {
             return this;
         }
         TraversalPlan traversalPlan = TraversalPlanningEngine.plan(this, context.rewrittenPlanningInput());
-        return applyTraversalSlice(traversalPlan.corridorSlice(corridorId));
+        Corridor updated = applyTraversalSlice(traversalPlan.corridorSlice(corridorId));
+        return updated;
     }
 
     public Corridor applyTraversalSlice(CorridorTraversalSlice slice) {
