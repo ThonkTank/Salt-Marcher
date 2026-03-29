@@ -4,7 +4,6 @@ import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInput;
 import features.world.dungeonmap.model.structures.traversal.CorridorTraversalSlice;
 import features.world.dungeonmap.model.structures.traversal.TraversalPlan;
-import features.world.dungeonmap.model.structures.traversal.planning.TraversalPlanRequestProjector;
 import features.world.dungeonmap.model.structures.traversal.planning.TraversalPlanningEngine;
 
 public final class CorridorPlanningEngine {
@@ -27,7 +26,7 @@ public final class CorridorPlanningEngine {
     }
 
     private static TraversalPlan planTraversal(Corridor corridor, CorridorPlanningInput input) {
-        return TraversalPlanningEngine.plan(TraversalPlanRequestProjector.project(corridor, input));
+        return TraversalPlanningEngine.plan(corridor, input);
     }
 
     private static CorridorTraversalSlice corridorSlice(Corridor corridor, TraversalPlan traversalPlan) {

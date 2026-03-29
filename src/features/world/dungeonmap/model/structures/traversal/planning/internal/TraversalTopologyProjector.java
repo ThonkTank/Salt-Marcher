@@ -3,7 +3,6 @@ package features.world.dungeonmap.model.structures.traversal.planning.internal;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.structures.corridor.ResolvedCorridorDoorBinding;
 import features.world.dungeonmap.model.structures.traversal.TraversalRoomAnchor;
-import features.world.dungeonmap.model.structures.traversal.planning.TraversalPlanRequest;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -19,20 +18,26 @@ public final class TraversalTopologyProjector {
         throw new AssertionError("No instances");
     }
 
-    public static TraversalTopology project(TraversalPlanRequest request) {
-        if (request == null) {
-            return TraversalTopology.empty();
-        }
-        ProjectedRoomPortals projectedRoomPortals = projectRoomPortalNodes(request.roomAnchors(), request.doorBindings());
-        List<TraversalNode> waypointNodes = projectWaypointNodes(request.waypointCells());
+    public static TraversalTopology project(
+            Long corridorId,
+            long mapId,
+            List<TraversalRoomAnchor> roomAnchors,
+            List<CubePoint> waypointCells,
+            Map<Long, ResolvedCorridorDoorBinding> doorBindings,
+            Set<CubePoint> obstacles
+    ) {
+        ProjectedRoomPortals projectedRoomPortals = projectRoomPortalNodes(
+                roomAnchors,
+                doorBindings == null ? Map.of() : doorBindings);
+        List<TraversalNode> waypointNodes = projectWaypointNodes(waypointCells);
         List<TraversalNode> requiredRoomPortalNodes = selectRequiredRoomPortalNodes(projectedRoomPortals.groups(), waypointNodes);
         return new TraversalTopology(
-                request.corridorId(),
-                request.mapId(),
+                corridorId,
+                mapId,
                 mergeNodes(projectedRoomPortals.nodes(), waypointNodes),
                 List.of(),
                 mergeRequiredNodeIds(requiredRoomPortalNodes, waypointNodes),
-                request.obstacles());
+                obstacles == null ? Set.of() : Set.copyOf(obstacles));
     }
 
     private static ProjectedRoomPortals projectRoomPortalNodes(

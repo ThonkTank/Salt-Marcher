@@ -37,8 +37,7 @@ public final class TraversalRewriteEngine {
             }
             Corridor reanchored = corridor.reanchoredFor(context);
             if (context.affects(corridor.corridorId()) && reanchored.isPersistable()) {
-                TraversalPlan traversalPlan = TraversalPlanningEngine.plan(
-                        TraversalPlanRequestProjector.project(reanchored, context.rewrittenPlanningInput()));
+                TraversalPlan traversalPlan = TraversalPlanningEngine.plan(reanchored, context.rewrittenPlanningInput());
                 CorridorTraversalSlice slice = traversalPlan.corridorSlice(reanchored.corridorId());
                 result.put(entry.getKey(), reanchored.applyTraversalSlice(slice));
                 if (!traversalPlan.stairPlacements().isEmpty() && reanchored.corridorId() != null) {

@@ -19,7 +19,6 @@ import features.world.dungeonmap.model.structures.corridor.CorridorRewriteContex
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.traversal.TraversalPlan;
-import features.world.dungeonmap.model.structures.traversal.planning.TraversalPlanRequestProjector;
 import features.world.dungeonmap.model.structures.traversal.planning.TraversalPlanningEngine;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 
@@ -636,7 +635,8 @@ public final class DungeonLayout {
                     Corridor updatedCorridor;
                     if (rewriteContext.affects(corridor.corridorId()) && reanchored.isPersistable()) {
                         TraversalPlan traversalPlan = TraversalPlanningEngine.plan(
-                                TraversalPlanRequestProjector.project(reanchored, rewriteContext.rewrittenPlanningInput()));
+                                reanchored,
+                                rewriteContext.rewrittenPlanningInput());
                         updatedCorridor = reanchored.applyTraversalSlice(
                                 traversalPlan.corridorSlice(reanchored.corridorId()));
                         if (reanchored.corridorId() != null) {
