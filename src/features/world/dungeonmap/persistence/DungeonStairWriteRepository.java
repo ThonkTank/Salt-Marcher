@@ -17,6 +17,41 @@ public final class DungeonStairWriteRepository {
     public long insertStair(
             Connection conn,
             long mapId,
+            Long traversalId,
+            String name,
+            StairShape shape,
+            CardinalDirection direction,
+            int dimension1,
+            int dimension2
+    ) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "INSERT INTO dungeon_stairs(dungeon_map_id, traversal_id, name, shape, direction, dimension1, dimension2)"
+                        + " VALUES(?, ?, ?, ?, ?, ?, ?)",
+                Statement.RETURN_GENERATED_KEYS)) {
+            ps.setLong(1, mapId);
+            if (traversalId == null) {
+                ps.setNull(2, java.sql.Types.INTEGER);
+            } else {
+                ps.setLong(2, traversalId);
+            }
+            ps.setString(3, name);
+            ps.setString(4, (shape == null ? StairShape.LADDER : shape).name());
+            ps.setInt(5, (direction == null ? CardinalDirection.defaultDirection() : direction).code());
+            ps.setInt(6, Math.max(0, dimension1));
+            ps.setInt(7, Math.max(0, dimension2));
+            ps.executeUpdate();
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (!rs.next()) {
+                    throw new SQLException("No key returned for dungeon_stairs insert");
+                }
+                return rs.getLong(1);
+            }
+        }
+    }
+
+    public long insertStair(
+            Connection conn,
+            long mapId,
             String name,
             StairShape shape,
             CardinalDirection direction,
@@ -102,6 +137,14 @@ public final class DungeonStairWriteRepository {
         try (PreparedStatement ps = conn.prepareStatement(
                 "DELETE FROM dungeon_stairs WHERE corridor_id=?")) {
             ps.setLong(1, corridorId);
+            ps.executeUpdate();
+        }
+    }
+
+    public void deleteByTraversalId(Connection conn, long traversalId) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "DELETE FROM dungeon_stairs WHERE traversal_id=?")) {
+            ps.setLong(1, traversalId);
             ps.executeUpdate();
         }
     }

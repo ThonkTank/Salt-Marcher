@@ -13,6 +13,7 @@ import java.util.Set;
 
 public record DungeonStair(
         Long stairId,
+        Long traversalId,
         long mapId,
         String name,
         StairShape shape,
@@ -20,8 +21,7 @@ public record DungeonStair(
         int dimension1,
         int dimension2,
         List<CubePoint> path,
-        List<DungeonStairExit> exits,
-        Long corridorId
+        List<DungeonStairExit> exits
 ) {
 
     private static final String TARGET_KEY_PREFIX = "stair:";

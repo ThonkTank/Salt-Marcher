@@ -1,16 +1,19 @@
 package features.world.dungeonmap.application.room;
 
 import database.DatabaseManager;
-import features.world.dungeonmap.application.corridor.DungeonCorridorPersistenceService;
-import features.world.dungeonmap.application.stair.DungeonStairEditService;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
+import features.world.dungeonmap.application.traversal.DungeonTraversalEditService;
+import features.world.dungeonmap.application.traversal.DungeonTraversalPersistenceService;
 import features.world.dungeonmap.model.DungeonClusterTranslation;
 import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.TraversalPlanningInputProjector;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.planning.StairPlacement;
 import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.model.structures.traversal.Traversal;
+import features.world.dungeonmap.model.structures.traversal.TraversalRewriteContext;
 import features.world.dungeonmap.persistence.DungeonRoomGeometryWriteMapper;
 import features.world.dungeonmap.persistence.DungeonRoomWriteRepository;
 
@@ -26,23 +29,23 @@ public final class DungeonClusterMoveService {
     private final DungeonMapLoader mapLoader;
     private final DungeonRoomWriteRepository roomWriteRepository;
     private final DungeonRoomGeometryWriteMapper geometryWriteMapper;
-    private final DungeonCorridorPersistenceService corridorPersistenceService;
-    private DungeonStairEditService stairEditService;
+    private final DungeonTraversalPersistenceService traversalPersistenceService;
+    private DungeonTraversalEditService traversalEditService;
 
     public DungeonClusterMoveService(
             DungeonMapLoader mapLoader,
             DungeonRoomWriteRepository roomWriteRepository,
             DungeonRoomGeometryWriteMapper geometryWriteMapper,
-            DungeonCorridorPersistenceService corridorPersistenceService
+            DungeonTraversalPersistenceService traversalPersistenceService
     ) {
         this.mapLoader = Objects.requireNonNull(mapLoader, "mapLoader");
         this.roomWriteRepository = Objects.requireNonNull(roomWriteRepository, "roomWriteRepository");
         this.geometryWriteMapper = Objects.requireNonNull(geometryWriteMapper, "geometryWriteMapper");
-        this.corridorPersistenceService = Objects.requireNonNull(corridorPersistenceService, "corridorPersistenceService");
+        this.traversalPersistenceService = Objects.requireNonNull(traversalPersistenceService, "traversalPersistenceService");
     }
 
-    public void setStairEditService(DungeonStairEditService stairEditService) {
-        this.stairEditService = Objects.requireNonNull(stairEditService, "stairEditService");
+    public void setTraversalEditService(DungeonTraversalEditService traversalEditService) {
+        this.traversalEditService = Objects.requireNonNull(traversalEditService, "traversalEditService");
     }
 
     public void move(long mapId, long clusterId, Point2i delta) throws SQLException {
@@ -70,10 +73,17 @@ public final class DungeonClusterMoveService {
                     }
                     roomWriteRepository.updateRoomPosition(conn, room.roomId(), room.anchorsByLevel(), room.primaryLevel());
                 }
-                corridorPersistenceService.persistCorridors(conn, translation.affectedCorridors());
-                persistTranslationStairs(conn, layout,
-                        translation.affectedCorridors().keySet(),
-                        translation.stairPlacementsByCorridorId());
+                Traversal.RewriteResult rewriteResult = Traversal.rewriteAll(
+                        new java.util.LinkedHashMap<>(layout.traversalsById()),
+                        new TraversalRewriteContext(
+                                TraversalPlanningInputProjector.project(layout),
+                                TraversalPlanningInputProjector.project(translation.layout()),
+                                layout.traversalIdsAffectedBy(cluster.roomIds(), Set.of(clusterId)),
+                                Set.of()));
+                traversalPersistenceService.persistTraversals(conn, rewriteResult.traversalsById());
+                persistTranslationStairs(conn, rewriteResult.traversalsById(),
+                        rewriteResult.affectedTraversalIds(),
+                        rewriteResult.stairPlacementsByTraversalId());
                 return null;
             });
         }
@@ -89,21 +99,25 @@ public final class DungeonClusterMoveService {
 
     private void persistTranslationStairs(
             Connection conn,
-            DungeonLayout layout,
-            Set<Long> affectedCorridorIds,
-            Map<Long, List<StairPlacement>> stairPlacementsByCorridorId
+            Map<Long, Traversal> traversalsById,
+            Set<Long> affectedTraversalIds,
+            Map<Long, List<StairPlacement>> stairPlacementsByTraversalId
     ) throws SQLException {
-        if (stairEditService == null) {
+        if (traversalEditService == null) {
             return;
         }
-        for (Long corridorId : affectedCorridorIds) {
-            if (corridorId == null) {
+        for (Long traversalId : affectedTraversalIds) {
+            if (traversalId == null) {
                 continue;
             }
-            List<StairPlacement> placements = stairPlacementsByCorridorId == null
+            Traversal traversal = traversalsById.get(traversalId);
+            if (traversal == null) {
+                continue;
+            }
+            List<StairPlacement> placements = stairPlacementsByTraversalId == null
                     ? List.of()
-                    : stairPlacementsByCorridorId.getOrDefault(corridorId, List.of());
-            stairEditService.replaceCorridorTraversalStairs(conn, layout, corridorId, placements);
+                    : stairPlacementsByTraversalId.getOrDefault(traversalId, List.of());
+            traversalEditService.replaceTraversalStairs(conn, traversal, placements);
         }
     }
 

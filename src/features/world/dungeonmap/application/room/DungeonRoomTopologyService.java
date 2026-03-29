@@ -1,12 +1,13 @@
 package features.world.dungeonmap.application.room;
 
 import database.DatabaseManager;
-import features.world.dungeonmap.application.corridor.DungeonCorridorPersistenceService;
-import features.world.dungeonmap.application.corridor.DungeonCorridorRoomRewriteService;
-import features.world.dungeonmap.application.stair.DungeonStairEditService;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
+import features.world.dungeonmap.application.traversal.DungeonTraversalEditService;
+import features.world.dungeonmap.application.traversal.DungeonTraversalPersistenceService;
+import features.world.dungeonmap.application.traversal.DungeonTraversalRoomRewriteService;
 import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.TraversalPlanningInputProjector;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
@@ -16,10 +17,10 @@ import features.world.dungeonmap.model.structures.cluster.ClusterRewriteSplit;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryEdge;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
-import features.world.dungeonmap.model.structures.corridor.Corridor;
-import features.world.dungeonmap.model.structures.corridor.CorridorRewriteContext;
 import features.world.dungeonmap.model.structures.corridor.planning.StairPlacement;
 import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.model.structures.traversal.Traversal;
+import features.world.dungeonmap.model.structures.traversal.TraversalRewriteContext;
 import features.world.dungeonmap.persistence.ClusterBoundaryWrite;
 import features.world.dungeonmap.persistence.DungeonRoomGeometryWriteMapper;
 import features.world.dungeonmap.persistence.DungeonRoomWriteRepository;
@@ -40,26 +41,26 @@ public final class DungeonRoomTopologyService {
     private final DungeonMapLoader mapLoader;
     private final DungeonRoomWriteRepository roomWriteRepository;
     private final DungeonRoomGeometryWriteMapper geometryWriteMapper;
-    private final DungeonCorridorPersistenceService corridorPersistenceService;
-    private final DungeonCorridorRoomRewriteService corridorRoomRewriteService;
-    private DungeonStairEditService stairEditService;
+    private final DungeonTraversalPersistenceService traversalPersistenceService;
+    private final DungeonTraversalRoomRewriteService traversalRoomRewriteService;
+    private DungeonTraversalEditService traversalEditService;
 
     public DungeonRoomTopologyService(
             DungeonMapLoader mapLoader,
             DungeonRoomWriteRepository roomWriteRepository,
             DungeonRoomGeometryWriteMapper geometryWriteMapper,
-            DungeonCorridorPersistenceService corridorPersistenceService,
-            DungeonCorridorRoomRewriteService corridorRoomRewriteService
+            DungeonTraversalPersistenceService traversalPersistenceService,
+            DungeonTraversalRoomRewriteService traversalRoomRewriteService
     ) {
         this.mapLoader = Objects.requireNonNull(mapLoader, "mapLoader");
         this.roomWriteRepository = Objects.requireNonNull(roomWriteRepository, "roomWriteRepository");
         this.geometryWriteMapper = Objects.requireNonNull(geometryWriteMapper, "geometryWriteMapper");
-        this.corridorPersistenceService = Objects.requireNonNull(corridorPersistenceService, "corridorPersistenceService");
-        this.corridorRoomRewriteService = Objects.requireNonNull(corridorRoomRewriteService, "corridorRoomRewriteService");
+        this.traversalPersistenceService = Objects.requireNonNull(traversalPersistenceService, "traversalPersistenceService");
+        this.traversalRoomRewriteService = Objects.requireNonNull(traversalRoomRewriteService, "traversalRoomRewriteService");
     }
 
-    public void setStairEditService(DungeonStairEditService stairEditService) {
-        this.stairEditService = Objects.requireNonNull(stairEditService, "stairEditService");
+    public void setTraversalEditService(DungeonTraversalEditService traversalEditService) {
+        this.traversalEditService = Objects.requireNonNull(traversalEditService, "traversalEditService");
     }
 
     public void paint(long mapId, int levelZ, TileShape shape) throws SQLException {
@@ -93,12 +94,12 @@ public final class DungeonRoomTopologyService {
         }
 
         ClusterRewrite persistedRewrite = persistClusterRewrite(conn, mapId, rewrite, levelZ);
-        Corridor.RewriteResult rewriteResult = applyCorridorCascade(
+        Traversal.RewriteResult rewriteResult = applyTraversalCascade(
                 layout,
-                new LinkedHashMap<>(layout.corridorsById()),
+                new LinkedHashMap<>(layout.traversalsById()),
                 persistedRewrite);
-        corridorPersistenceService.persistCorridors(conn, rewriteResult.corridorsById());
-        persistRewriteStairPlacements(conn, layout, rewriteResult.affectedCorridorIds(), rewriteResult.stairPlacementsByCorridorId());
+        traversalPersistenceService.persistTraversals(conn, rewriteResult.traversalsById());
+        persistRewriteStairPlacements(conn, rewriteResult.traversalsById(), rewriteResult.affectedTraversalIds(), rewriteResult.stairPlacementsByTraversalId());
     }
 
     public void delete(long mapId, int levelZ, TileShape shape) throws SQLException {
@@ -118,7 +119,7 @@ public final class DungeonRoomTopologyService {
             return;
         }
         DungeonLayout workingLayout = requireLayout(conn, mapId);
-        Map<Long, Corridor> corridorsById = new LinkedHashMap<>(workingLayout.corridorsById());
+        Map<Long, Traversal> traversalsById = new LinkedHashMap<>(workingLayout.traversalsById());
         Set<String> reservedNames = new LinkedHashSet<>();
         for (Room room : workingLayout.rooms()) {
             if (room != null && room.name() != null && !room.name().isBlank()) {
@@ -146,12 +147,12 @@ public final class DungeonRoomTopologyService {
                     mapId,
                     rewrite,
                     workingLayout.levelForCluster(rewrite.targetClusterId()));
-            Corridor.RewriteResult rewriteResult = applyCorridorCascade(workingLayout, corridorsById, persistedRewrite);
-            corridorsById = new LinkedHashMap<>(rewriteResult.corridorsById());
-            persistRewriteStairPlacements(conn, workingLayout, rewriteResult.affectedCorridorIds(), rewriteResult.stairPlacementsByCorridorId());
+            Traversal.RewriteResult rewriteResult = applyTraversalCascade(workingLayout, traversalsById, persistedRewrite);
+            traversalsById = new LinkedHashMap<>(rewriteResult.traversalsById());
+            persistRewriteStairPlacements(conn, rewriteResult.traversalsById(), rewriteResult.affectedTraversalIds(), rewriteResult.stairPlacementsByTraversalId());
             workingLayout = workingLayout.applying(persistedRewrite);
         }
-        corridorPersistenceService.persistCorridors(conn, corridorsById);
+        traversalPersistenceService.persistTraversals(conn, traversalsById);
     }
 
     public void createDefaultRoom(Connection conn, long mapId) throws SQLException {
@@ -208,47 +209,51 @@ public final class DungeonRoomTopologyService {
         }
 
         ClusterRewrite persistedRewrite = persistClusterRewrite(conn, mapId, rewrite, layout.levelForCluster(rewrite.targetClusterId()));
-        Corridor.RewriteResult rewriteResult = applyCorridorCascade(
+        Traversal.RewriteResult rewriteResult = applyTraversalCascade(
                 layout,
-                new LinkedHashMap<>(layout.corridorsById()),
+                new LinkedHashMap<>(layout.traversalsById()),
                 persistedRewrite);
-        corridorPersistenceService.persistCorridors(conn, rewriteResult.corridorsById());
-        persistRewriteStairPlacements(conn, layout, rewriteResult.affectedCorridorIds(), rewriteResult.stairPlacementsByCorridorId());
+        traversalPersistenceService.persistTraversals(conn, rewriteResult.traversalsById());
+        persistRewriteStairPlacements(conn, rewriteResult.traversalsById(), rewriteResult.affectedTraversalIds(), rewriteResult.stairPlacementsByTraversalId());
     }
 
-    private Corridor.RewriteResult applyCorridorCascade(
+    private Traversal.RewriteResult applyTraversalCascade(
             DungeonLayout beforeLayout,
-            Map<Long, Corridor> corridorsById,
+            Map<Long, Traversal> traversalsById,
             ClusterRewrite rewrite
     ) {
-        Set<Long> affectedCorridorIds = beforeLayout.corridorIdsAffectedBy(rewrite);
-        corridorsById = corridorRoomRewriteService.applyRoomRewrite(beforeLayout, corridorsById, rewrite);
+        Set<Long> affectedTraversalIds = beforeLayout.traversalIdsAffectedBy(rewrite);
+        traversalsById = traversalRoomRewriteService.applyRoomRewrite(beforeLayout, traversalsById, rewrite);
         DungeonLayout afterLayout = beforeLayout.applying(rewrite);
-        CorridorRewriteContext rewriteContext = new CorridorRewriteContext(
-                beforeLayout.corridorPlanningInput(),
-                afterLayout.corridorPlanningInput(),
-                affectedCorridorIds,
+        TraversalRewriteContext rewriteContext = new TraversalRewriteContext(
+                TraversalPlanningInputProjector.project(beforeLayout),
+                TraversalPlanningInputProjector.project(afterLayout),
+                affectedTraversalIds,
                 rewrite.deletedClusterIds());
-        return Corridor.rewriteAll(corridorsById, rewriteContext);
+        return Traversal.rewriteAll(traversalsById, rewriteContext);
     }
 
     private void persistRewriteStairPlacements(
             Connection conn,
-            DungeonLayout layout,
-            Set<Long> affectedCorridorIds,
-            Map<Long, List<StairPlacement>> stairPlacementsByCorridorId
+            Map<Long, Traversal> traversalsById,
+            Set<Long> affectedTraversalIds,
+            Map<Long, List<StairPlacement>> stairPlacementsByTraversalId
     ) throws SQLException {
-        if (stairEditService == null) {
+        if (traversalEditService == null) {
             return;
         }
-        for (Long corridorId : affectedCorridorIds) {
-            if (corridorId == null) {
+        for (Long traversalId : affectedTraversalIds) {
+            if (traversalId == null) {
                 continue;
             }
-            List<StairPlacement> placements = stairPlacementsByCorridorId == null
+            Traversal traversal = traversalsById.get(traversalId);
+            if (traversal == null) {
+                continue;
+            }
+            List<StairPlacement> placements = stairPlacementsByTraversalId == null
                     ? List.of()
-                    : stairPlacementsByCorridorId.getOrDefault(corridorId, List.of());
-            stairEditService.replaceCorridorTraversalStairs(conn, layout, corridorId, placements);
+                    : stairPlacementsByTraversalId.getOrDefault(traversalId, List.of());
+            traversalEditService.replaceTraversalStairs(conn, traversal, placements);
         }
     }
 

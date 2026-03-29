@@ -1,14 +1,13 @@
-package features.world.dungeonmap.model.structures.corridor;
+package features.world.dungeonmap.model.structures.traversal;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.objects.CorridorPath;
-import features.world.dungeonmap.model.structures.connection.CorridorConnection;
-import features.world.dungeonmap.model.structures.TargetKey;
+import features.world.dungeonmap.model.structures.corridor.CorridorBindings;
+import features.world.dungeonmap.model.structures.corridor.CorridorDoorBinding;
+import features.world.dungeonmap.model.structures.corridor.CorridorWaypointBinding;
+import features.world.dungeonmap.model.structures.corridor.ResolvedCorridorDoorBinding;
 import features.world.dungeonmap.model.structures.corridor.planning.StairPlacement;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.model.structures.traversal.CorridorTraversalSlice;
-import features.world.dungeonmap.model.structures.traversal.TraversalPlan;
 import features.world.dungeonmap.model.structures.traversal.planning.TraversalPlanningEngine;
 
 import java.util.ArrayList;
@@ -19,88 +18,44 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-/**
- * Self-managed corridor structure.
- *
- * <p>The corridor owns ordered room membership plus canonical relative bindings. Absolute path geometry is runtime
- * state on {@link CorridorPath} so corridor bindings can survive room and cluster movement without becoming a
- * second persisted truth.</p>
- */
-public final class Corridor {
+public final class Traversal {
 
-    private static final String TARGET_KEY_PREFIX = "corridor:";
-
-    private final Long corridorId;
     private final Long traversalId;
+    private final Long corridorId;
     private final long mapId;
     private final List<Long> roomIds;
     private final CorridorBindings bindings;
-    private final CorridorPath path;
-    private final List<CorridorConnection> connections;
 
-    public static Corridor resolved(
+    public static Traversal resolved(
+            Long traversalId,
             Long corridorId,
             long mapId,
             List<Long> roomIds,
-            CorridorBindings bindings,
-            CorridorPath path,
-            List<CorridorConnection> connections
+            CorridorBindings bindings
     ) {
-        return resolved(corridorId, null, mapId, roomIds, bindings, path, connections);
+        return new Traversal(traversalId, corridorId, mapId, roomIds, bindings);
     }
 
-    public static Corridor resolved(
-            Long corridorId,
+    private Traversal(
             Long traversalId,
+            Long corridorId,
             long mapId,
             List<Long> roomIds,
-            CorridorBindings bindings,
-            CorridorPath path,
-            List<CorridorConnection> connections
+            CorridorBindings bindings
     ) {
-        return new Corridor(corridorId, traversalId, mapId, roomIds, bindings, path, connections);
-    }
-
-    private Corridor(
-            Long corridorId,
-            Long traversalId,
-            long mapId,
-            List<Long> roomIds,
-            CorridorBindings bindings,
-            CorridorPath path,
-            List<CorridorConnection> connections
-    ) {
-        this.corridorId = corridorId;
         this.traversalId = traversalId;
+        this.corridorId = corridorId;
         this.mapId = mapId;
         this.roomIds = normalizeRoomIds(roomIds);
         this.bindings = bindings == null ? CorridorBindings.empty() : bindings;
-        this.path = path == null ? CorridorPath.empty() : path;
-        this.connections = connections == null ? List.of() : List.copyOf(connections);
-    }
-
-    public Long corridorId() {
-        return corridorId;
     }
 
     public Long traversalId() {
         return traversalId;
     }
 
-    public String targetKey() {
-        return targetKey(corridorId);
-    }
-
-    public static String targetKey(Long corridorId) {
-        return TargetKey.of(TARGET_KEY_PREFIX, corridorId).value();
-    }
-
-    public static boolean isTargetKey(String targetKey) {
-        return TargetKey.matches(targetKey, TARGET_KEY_PREFIX);
-    }
-
-    public static Long corridorIdFromKey(String targetKey) {
-        return TargetKey.parseId(targetKey, TARGET_KEY_PREFIX);
+    public Long corridorId() {
+        return corridorId;
     }
 
     public long mapId() {
@@ -113,14 +68,6 @@ public final class Corridor {
 
     public CorridorBindings bindings() {
         return bindings;
-    }
-
-    public CorridorPath path() {
-        return path;
-    }
-
-    public List<CorridorConnection> connections() {
-        return connections;
     }
 
     public boolean connectsRoom(Long roomId) {
@@ -168,7 +115,6 @@ public final class Corridor {
         return false;
     }
 
-
     public boolean isDegenerate() {
         return roomIds.size() < 2;
     }
@@ -178,78 +124,70 @@ public final class Corridor {
     }
 
     public record RewriteResult(
-            Map<Long, Corridor> corridorsById,
-            Set<Long> affectedCorridorIds,
-            Map<Long, List<StairPlacement>> stairPlacementsByCorridorId
+            Map<Long, Traversal> traversalsById,
+            Set<Long> affectedTraversalIds,
+            Map<Long, List<StairPlacement>> stairPlacementsByTraversalId
     ) {
         public RewriteResult {
-            corridorsById = corridorsById == null ? Map.of() : Map.copyOf(corridorsById);
-            affectedCorridorIds = affectedCorridorIds == null ? Set.of() : Set.copyOf(affectedCorridorIds);
-            stairPlacementsByCorridorId = stairPlacementsByCorridorId == null ? Map.of() : Map.copyOf(stairPlacementsByCorridorId);
+            traversalsById = traversalsById == null ? Map.of() : Map.copyOf(traversalsById);
+            affectedTraversalIds = affectedTraversalIds == null ? Set.of() : Set.copyOf(affectedTraversalIds);
+            stairPlacementsByTraversalId = stairPlacementsByTraversalId == null ? Map.of() : Map.copyOf(stairPlacementsByTraversalId);
         }
     }
 
     public static RewriteResult rewriteAll(
-            Map<Long, Corridor> corridorsById,
-            CorridorRewriteContext context
+            Map<Long, Traversal> traversalsById,
+            TraversalRewriteContext context
     ) {
-        if (corridorsById == null || corridorsById.isEmpty()) {
+        if (traversalsById == null || traversalsById.isEmpty()) {
             return new RewriteResult(Map.of(), Set.of(), Map.of());
         }
-        if (context == null || context.affectedCorridorIds().isEmpty()) {
-            return new RewriteResult(Map.copyOf(corridorsById), Set.of(), Map.of());
+        if (context == null || context.affectedTraversalIds().isEmpty()) {
+            return new RewriteResult(Map.copyOf(traversalsById), Set.of(), Map.of());
         }
-        Map<Long, Corridor> result = new LinkedHashMap<>();
-        Map<Long, List<StairPlacement>> stairPlacementsByCorridorId = new LinkedHashMap<>();
-        for (Map.Entry<Long, Corridor> entry : corridorsById.entrySet()) {
-            Corridor corridor = entry.getValue();
-            if (corridor == null) {
+        Map<Long, Traversal> result = new LinkedHashMap<>();
+        Map<Long, List<StairPlacement>> stairPlacementsByTraversalId = new LinkedHashMap<>();
+        for (Map.Entry<Long, Traversal> entry : traversalsById.entrySet()) {
+            Traversal traversal = entry.getValue();
+            if (traversal == null) {
                 result.put(entry.getKey(), null);
                 continue;
             }
-            Corridor reanchored = corridor.reanchoredFor(context);
-            if (context.affects(corridor.corridorId()) && reanchored.isPersistable()) {
-                TraversalPlan traversalPlan = TraversalPlanningEngine.plan(
-                        reanchored,
-                        context.rewrittenPlanningInput());
-                List<StairPlacement> stairPlacements = traversalPlan.stairPlacements();
-                Corridor updated = reanchored.applyTraversalSlice(
-                        traversalPlan.corridorSlice(reanchored.corridorId()));
-                result.put(entry.getKey(), updated);
-                if (!stairPlacements.isEmpty() && reanchored.corridorId() != null) {
-                    stairPlacementsByCorridorId.put(reanchored.corridorId(), stairPlacements);
+            Traversal reanchored = traversal.reanchoredFor(context);
+            if (context.affects(traversal.traversalId()) && reanchored.isPersistable()) {
+                TraversalPlan traversalPlan = TraversalPlanningEngine.plan(reanchored, context.rewrittenPlanningInput());
+                if (!traversalPlan.stairPlacements().isEmpty() && reanchored.traversalId() != null) {
+                    stairPlacementsByTraversalId.put(reanchored.traversalId(), traversalPlan.stairPlacements());
                 }
-            } else {
-                result.put(entry.getKey(), reanchored.replannedFor(context));
             }
+            result.put(entry.getKey(), reanchored);
         }
         return new RewriteResult(
                 Map.copyOf(result),
-                context.affectedCorridorIds(),
-                Map.copyOf(stairPlacementsByCorridorId));
+                context.affectedTraversalIds(),
+                Map.copyOf(stairPlacementsByTraversalId));
     }
 
-    public Corridor withAddedRoom(Long roomId) {
+    public Traversal withAddedRoom(Long roomId) {
         if (roomId == null || roomIds.contains(roomId)) {
             return this;
         }
         List<Long> updated = new ArrayList<>(roomIds);
         updated.add(roomId);
-        return resolved(corridorId, traversalId, mapId, updated, bindings, path, connections);
+        return resolved(traversalId, corridorId, mapId, updated, bindings);
     }
 
-    public Corridor withRemovedRoom(Long roomId) {
+    public Traversal withRemovedRoom(Long roomId) {
         if (roomId == null || !roomIds.contains(roomId)) {
             return this;
         }
         List<Long> updated = roomIds.stream()
                 .filter(existing -> !Objects.equals(existing, roomId))
                 .toList();
-        Corridor updatedCorridor = resolved(corridorId, traversalId, mapId, updated, bindings.withoutDoorBinding(roomId), path, connections);
-        return updatedCorridor.isPersistable() ? updatedCorridor : updatedCorridor.withPath(CorridorPath.empty());
+        return resolved(traversalId, corridorId, mapId, updated, bindings.withoutDoorBinding(roomId));
     }
 
-    public Corridor withMergedRooms(Set<Long> mergedRoomIds, Long replacementRoomId) {
+    public Traversal withMergedRooms(Set<Long> mergedRoomIds, Long replacementRoomId) {
         if (replacementRoomId == null || mergedRoomIds == null || mergedRoomIds.isEmpty()) {
             return this;
         }
@@ -263,10 +201,10 @@ public final class Corridor {
                 updatedBindings = updatedBindings.withoutDoorBinding(mergedRoomId);
             }
         }
-        return resolved(corridorId, traversalId, mapId, updated, updatedBindings, path, connections);
+        return resolved(traversalId, corridorId, mapId, updated, updatedBindings);
     }
 
-    public Corridor withReplacedRoom(Long oldRoomId, Long newRoomId) {
+    public Traversal withReplacedRoom(Long oldRoomId, Long newRoomId) {
         if (oldRoomId == null || newRoomId == null || Objects.equals(oldRoomId, newRoomId) || !roomIds.contains(oldRoomId)) {
             return this;
         }
@@ -275,80 +213,55 @@ public final class Corridor {
                 .distinct()
                 .toList();
         CorridorBindings updatedBindings = bindings.withoutDoorBinding(oldRoomId);
-        return resolved(corridorId, traversalId, mapId, updated, updatedBindings, path, connections);
+        return resolved(traversalId, corridorId, mapId, updated, updatedBindings);
     }
 
-
-    /**
-     * Rewrites a split source room using corridor-local decision facts only.
-     *
-     * <p>The caller prepares a {@link CorridorSplitRewriteInput} with the split source room, candidate fragments,
-     * and the relevant centers of the corridor's remaining connected rooms. The corridor then owns the fragment
-     * choice without reaching back into broader application or layout state.</p>
-     */
-    public Corridor rewrittenForSplit(CorridorSplitRewriteInput input) {
-        if (input == null || !input.isUsableFor(this)) {
-            return this;
-        }
-        // Corridor owns the fragment choice once the external world facts have been projected into corridor-local input.
-        Room replacement = chooseBestSplitFragment(input);
-        if (replacement == null || replacement.roomId() == null) {
-            return this;
-        }
-        return withReplacedRoom(input.originalRoomId(), replacement.roomId());
-    }
-
-    public Corridor withInsertedWaypoint(int index, CorridorWaypointBinding waypoint) {
+    public Traversal withInsertedWaypoint(int index, CorridorWaypointBinding waypoint) {
         return withBindings(bindings.withInsertedWaypoint(index, waypoint));
     }
 
-    public Corridor withMovedWaypoint(int index, CorridorWaypointBinding waypoint) {
+    public Traversal withMovedWaypoint(int index, CorridorWaypointBinding waypoint) {
         return withBindings(bindings.withMovedWaypoint(index, waypoint));
     }
 
-    public Corridor withRemovedWaypoint(int index) {
+    public Traversal withRemovedWaypoint(int index) {
         return withBindings(bindings.withRemovedWaypoint(index));
     }
 
-    public Corridor withDoorBinding(CorridorDoorBinding binding) {
+    public Traversal withDoorBinding(CorridorDoorBinding binding) {
         if (binding == null) {
             return this;
         }
-        Corridor updated = connectsRoom(binding.roomId()) ? this : withAddedRoom(binding.roomId());
+        Traversal updated = connectsRoom(binding.roomId()) ? this : withAddedRoom(binding.roomId());
         return updated.withBindings(updated.bindings.withDoorBinding(binding));
     }
 
-    public Corridor mergeWith(Corridor other) {
+    public Traversal withoutDoorBinding(Long roomId) {
+        return withBindings(bindings.withoutDoorBinding(roomId));
+    }
+
+    public Traversal mergedWith(Traversal other) {
         if (other == null || other == this) {
             return this;
         }
         if (mapId != other.mapId()) {
-            throw new IllegalArgumentException("Korridore aus unterschiedlichen Karten koennen nicht zusammengefuehrt werden");
+            throw new IllegalArgumentException("Traversals aus unterschiedlichen Karten koennen nicht zusammengefuehrt werden");
         }
         List<Long> mergedRoomIds = mergedRoomIds(other);
-        // Merging is intentionally asymmetric: the kept corridor stays the editable route owner, so its
-        // waypoint and door choices survive while the merged-away corridor contributes only room membership.
-        Corridor mergedCorridor = resolved(
-                corridorId,
+        return resolved(
                 traversalId,
+                corridorId,
                 mapId,
                 mergedRoomIds,
-                sanitizedBindings(mergedRoomIds, bindings),
-                path,
-                connections);
-        return mergedCorridor.isPersistable() ? mergedCorridor : mergedCorridor.withPath(CorridorPath.empty());
+                sanitizedBindings(mergedRoomIds, bindings));
     }
 
-    public Corridor withoutDoorBinding(Long roomId) {
-        return withBindings(bindings.withoutDoorBinding(roomId));
-    }
-
-    public Corridor reanchoredFor(CorridorRewriteContext context) {
-        if (context == null || !context.affects(corridorId)) {
+    public Traversal reanchoredFor(TraversalRewriteContext context) {
+        if (context == null || !context.affects(traversalId)) {
             return this;
         }
-        CorridorPlanningInput previousInput = context.previousPlanningInput();
-        CorridorPlanningInput rewrittenInput = context.rewrittenPlanningInput();
+        TraversalPlanningInput previousInput = context.previousPlanningInput();
+        TraversalPlanningInput rewrittenInput = context.rewrittenPlanningInput();
         Set<Long> deletedClusterIds = context.deletedClusterIds();
         Long fallbackClusterId = fallbackWaypointClusterId(rewrittenInput);
         List<CorridorWaypointBinding> updatedWaypoints = new ArrayList<>();
@@ -394,23 +307,18 @@ public final class Corridor {
         return withBindings(new CorridorBindings(updatedWaypoints, updatedDoorBindings));
     }
 
-    public Corridor replannedFor(CorridorRewriteContext context) {
-        if (context == null || !context.affects(corridorId) || !isPersistable()) {
+    public Traversal rewrittenForSplit(TraversalSplitRewriteInput input) {
+        if (input == null || !input.isUsableFor(this)) {
             return this;
         }
-        TraversalPlan traversalPlan = TraversalPlanningEngine.plan(this, context.rewrittenPlanningInput());
-        Corridor updated = applyTraversalSlice(traversalPlan.corridorSlice(corridorId));
-        return updated;
-    }
-
-    public Corridor applyTraversalSlice(CorridorTraversalSlice slice) {
-        if (slice == null || !acceptsTraversalSlice(slice)) {
+        Room replacement = chooseBestSplitFragment(input);
+        if (replacement == null || replacement.roomId() == null) {
             return this;
         }
-        return withPath(slice.path()).withConnections(slice.connections());
+        return withReplacedRoom(input.originalRoomId(), replacement.roomId());
     }
 
-    public List<Room> resolvedRooms(CorridorPlanningInput input) {
+    public List<Room> resolvedRooms(TraversalPlanningInput input) {
         List<Room> result = new ArrayList<>();
         Set<Long> seen = new LinkedHashSet<>();
         if (input == null) {
@@ -428,7 +336,7 @@ public final class Corridor {
         return List.copyOf(result);
     }
 
-    public List<CubePoint> resolvedWaypointCells(CorridorPlanningInput input) {
+    public List<CubePoint> resolvedWaypointCells(TraversalPlanningInput input) {
         if (input == null || bindings.waypoints().isEmpty()) {
             return List.of();
         }
@@ -442,7 +350,7 @@ public final class Corridor {
         return List.copyOf(result);
     }
 
-    public Map<Long, ResolvedCorridorDoorBinding> resolvedDoorBindings(CorridorPlanningInput input) {
+    public Map<Long, ResolvedCorridorDoorBinding> resolvedDoorBindings(TraversalPlanningInput input) {
         if (input == null || bindings.doorBindings().isEmpty()) {
             return Map.of();
         }
@@ -458,27 +366,11 @@ public final class Corridor {
         return Map.copyOf(result);
     }
 
-    private Corridor withBindings(CorridorBindings bindings) {
-        return resolved(corridorId, traversalId, mapId, roomIds, bindings, path, connections);
+    private Traversal withBindings(CorridorBindings bindings) {
+        return resolved(traversalId, corridorId, mapId, roomIds, bindings);
     }
 
-    private Corridor withPath(CorridorPath path) {
-        return resolved(corridorId, traversalId, mapId, roomIds, bindings, path, connections);
-    }
-
-    private Corridor withConnections(List<CorridorConnection> connections) {
-        return resolved(corridorId, traversalId, mapId, roomIds, bindings, path, connections);
-    }
-
-    private boolean acceptsTraversalSlice(CorridorTraversalSlice slice) {
-        if (slice == null) {
-            return false;
-        }
-        Long sliceCorridorId = slice.corridorId();
-        return corridorId == null || sliceCorridorId == null || Objects.equals(corridorId, sliceCorridorId);
-    }
-
-    private Long fallbackWaypointClusterId(CorridorPlanningInput input) {
+    private Long fallbackWaypointClusterId(TraversalPlanningInput input) {
         for (Long roomId : roomIds) {
             Room room = input.room(roomId);
             if (room != null) {
@@ -490,8 +382,8 @@ public final class Corridor {
 
     private static Long targetClusterId(
             long clusterId,
-            CorridorPlanningInput previousInput,
-            CorridorPlanningInput rewrittenInput,
+            TraversalPlanningInput previousInput,
+            TraversalPlanningInput rewrittenInput,
             Set<Long> deletedClusterIds,
             Long fallbackClusterId
     ) {
@@ -513,7 +405,7 @@ public final class Corridor {
         return previousInput.clusterCenter(clusterId) == null ? null : clusterId;
     }
 
-    private Room chooseBestSplitFragment(CorridorSplitRewriteInput input) {
+    private Room chooseBestSplitFragment(TraversalSplitRewriteInput input) {
         Room bestFragment = null;
         SplitFragmentScore bestScore = null;
         for (Room fragment : input.fragments()) {
@@ -543,55 +435,49 @@ public final class Corridor {
         return new SplitFragmentScore(nearestRoomDistance, groupDistance);
     }
 
-    private List<Long> mergedRoomIds(Corridor other) {
-        List<Long> mergedRoomIds = new ArrayList<>(roomIds);
+    private List<Long> mergedRoomIds(Traversal other) {
+        LinkedHashSet<Long> merged = new LinkedHashSet<>(roomIds);
         for (Long roomId : other.roomIds()) {
-            if (roomId != null && !mergedRoomIds.contains(roomId)) {
-                mergedRoomIds.add(roomId);
+            if (roomId != null) {
+                merged.add(roomId);
             }
         }
-        return List.copyOf(mergedRoomIds);
+        return List.copyOf(merged);
     }
 
     private static CorridorBindings sanitizedBindings(List<Long> roomIds, CorridorBindings bindings) {
         if (bindings == null) {
             return CorridorBindings.empty();
         }
-        Set<Long> connectedRoomIds = new LinkedHashSet<>(normalizeRoomIds(roomIds));
-        List<CorridorWaypointBinding> sanitizedWaypoints = bindings.waypoints().stream()
+        Set<Long> connectedRoomIds = roomIds == null ? Set.of() : Set.copyOf(roomIds);
+        List<CorridorDoorBinding> sanitizedDoorBindings = bindings.doorBindings().stream()
                 .filter(Objects::nonNull)
+                .filter(binding -> connectedRoomIds.contains(binding.roomId()))
                 .toList();
-        Set<Long> seenDoorBindingRoomIds = new LinkedHashSet<>();
-        List<CorridorDoorBinding> sanitizedDoorBindings = new ArrayList<>();
-        for (CorridorDoorBinding binding : bindings.doorBindings()) {
-            if (binding != null
-                    && connectedRoomIds.contains(binding.roomId())
-                    && seenDoorBindingRoomIds.add(binding.roomId())) {
-                sanitizedDoorBindings.add(binding);
-            }
-        }
-        return new CorridorBindings(sanitizedWaypoints, sanitizedDoorBindings);
+        return new CorridorBindings(bindings.waypoints(), sanitizedDoorBindings);
     }
 
     private static List<Long> normalizeRoomIds(List<Long> roomIds) {
-        Set<Long> result = new LinkedHashSet<>();
-        for (Long roomId : roomIds == null ? List.<Long>of() : roomIds) {
+        if (roomIds == null || roomIds.isEmpty()) {
+            return List.of();
+        }
+        LinkedHashSet<Long> result = new LinkedHashSet<>();
+        for (Long roomId : roomIds) {
             if (roomId != null) {
                 result.add(roomId);
             }
         }
-        return List.copyOf(result);
+        return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
     private record SplitFragmentScore(int nearestRoomDistance, int groupDistance) implements Comparable<SplitFragmentScore> {
         @Override
         public int compareTo(SplitFragmentScore other) {
-            int nearest = Integer.compare(nearestRoomDistance, other.nearestRoomDistance);
-            if (nearest != 0) {
-                return nearest;
+            int nearestCompare = Integer.compare(nearestRoomDistance, other.nearestRoomDistance);
+            if (nearestCompare != 0) {
+                return nearestCompare;
             }
             return Integer.compare(groupDistance, other.groupDistance);
         }
     }
-
 }

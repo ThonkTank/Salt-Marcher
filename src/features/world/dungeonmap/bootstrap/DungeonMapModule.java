@@ -1,36 +1,35 @@
 package features.world.dungeonmap.bootstrap;
 
 import features.world.api.WorldTravelSurface;
-import features.world.dungeonmap.application.corridor.DungeonCorridorEditService;
-import features.world.dungeonmap.application.corridor.DungeonCorridorPersistenceService;
-import features.world.dungeonmap.application.corridor.DungeonCorridorRoomRewriteService;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationService;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeStateRepairService;
-import features.world.dungeonmap.application.stair.DungeonStairEditService;
 import features.world.dungeonmap.application.transition.DungeonTransitionEditService;
 import features.world.dungeonmap.application.transition.DungeonTransitionTargetCatalogService;
 import features.world.dungeonmap.application.room.DungeonClusterMoveService;
 import features.world.dungeonmap.application.room.DungeonBoundaryEditService;
 import features.world.dungeonmap.application.room.DungeonRoomNarrationService;
 import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
+import features.world.dungeonmap.application.traversal.DungeonTraversalEditService;
+import features.world.dungeonmap.application.traversal.DungeonTraversalPersistenceService;
+import features.world.dungeonmap.application.traversal.DungeonTraversalRoomRewriteService;
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
 import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.persistence.DungeonCorridorWriteRepository;
 import features.world.dungeonmap.persistence.DungeonStairWriteRepository;
 import features.world.dungeonmap.persistence.DungeonTransitionWriteRepository;
+import features.world.dungeonmap.persistence.DungeonTraversalWriteRepository;
 import features.world.dungeonmap.persistence.DungeonRoomGeometryWriteMapper;
 import features.world.dungeonmap.persistence.DungeonRoomWriteRepository;
 import features.world.dungeonmap.shell.editor.DungeonEditorView;
 import features.world.dungeonmap.shell.editor.interaction.BoundaryTool;
-import features.world.dungeonmap.shell.editor.interaction.CorridorTool;
 import features.world.dungeonmap.shell.editor.interaction.DungeonGridHitTester;
 import features.world.dungeonmap.shell.editor.interaction.EditorInteraction;
 import features.world.dungeonmap.shell.editor.interaction.EditorTool;
 import features.world.dungeonmap.shell.editor.interaction.PaintTool;
 import features.world.dungeonmap.shell.editor.interaction.SelectionTool;
-import features.world.dungeonmap.shell.editor.interaction.StairTool;
 import features.world.dungeonmap.shell.editor.interaction.TransitionTool;
+import features.world.dungeonmap.shell.editor.interaction.TraversalTool;
 import features.world.dungeonmap.shell.runtime.DungeonRuntimeView;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
@@ -50,21 +49,26 @@ public final class DungeonMapModule {
         Objects.requireNonNull(detailsNavigator, "detailsNavigator");
         DungeonMapLoader mapLoader = new DungeonMapLoader();
         DungeonCorridorWriteRepository corridorWriteRepository = new DungeonCorridorWriteRepository();
-        DungeonCorridorPersistenceService corridorPersistenceService = new DungeonCorridorPersistenceService(corridorWriteRepository);
+        DungeonTraversalWriteRepository traversalWriteRepository = new DungeonTraversalWriteRepository();
+        DungeonTraversalPersistenceService traversalPersistenceService = new DungeonTraversalPersistenceService(traversalWriteRepository);
         DungeonRoomWriteRepository roomWriteRepository = new DungeonRoomWriteRepository();
         DungeonStairWriteRepository stairWriteRepository = new DungeonStairWriteRepository();
         DungeonTransitionWriteRepository transitionWriteRepository = new DungeonTransitionWriteRepository();
         DungeonRoomNarrationService roomNarrationService = new DungeonRoomNarrationService(roomWriteRepository);
         DungeonRoomGeometryWriteMapper geometryWriteMapper = new DungeonRoomGeometryWriteMapper();
-        DungeonCorridorRoomRewriteService corridorRoomRewriteService = new DungeonCorridorRoomRewriteService();
+        DungeonTraversalRoomRewriteService traversalRoomRewriteService = new DungeonTraversalRoomRewriteService();
         DungeonRoomTopologyService roomTopologyService = new DungeonRoomTopologyService(
                 mapLoader,
                 roomWriteRepository,
                 geometryWriteMapper,
-                corridorPersistenceService,
-                corridorRoomRewriteService);
-        DungeonStairEditService stairEditService = new DungeonStairEditService(roomTopologyService, stairWriteRepository);
-        roomTopologyService.setStairEditService(stairEditService);
+                traversalPersistenceService,
+                traversalRoomRewriteService);
+        DungeonTraversalEditService traversalEditService = new DungeonTraversalEditService(
+                traversalWriteRepository,
+                traversalPersistenceService,
+                corridorWriteRepository,
+                stairWriteRepository);
+        roomTopologyService.setTraversalEditService(traversalEditService);
         DungeonTransitionEditService transitionEditService = new DungeonTransitionEditService(roomTopologyService, transitionWriteRepository);
         DungeonMapCatalogService mapCatalogService = new DungeonMapCatalogService(
                 roomTopologyService,
@@ -74,12 +78,8 @@ public final class DungeonMapModule {
                 mapLoader,
                 roomWriteRepository,
                 geometryWriteMapper,
-                corridorPersistenceService);
-        clusterMoveService.setStairEditService(stairEditService);
-        DungeonCorridorEditService corridorEditService = new DungeonCorridorEditService(
-                corridorWriteRepository,
-                corridorPersistenceService,
-                stairEditService);
+                traversalPersistenceService);
+        clusterMoveService.setTraversalEditService(traversalEditService);
         DungeonMapState state = new DungeonMapState();
         DungeonMapLoadingService loadingService = new DungeonMapLoadingService(
                 mapLoader,
@@ -107,17 +107,11 @@ public final class DungeonMapModule {
                         editorSessionState,
                         boundaryEditService,
                         editorInteractionState),
-                new CorridorTool(
+                new TraversalTool(
                         state,
                         loadingService,
                         editorSessionState,
-                        corridorEditService,
-                        editorInteractionState),
-                new StairTool(
-                        state,
-                        loadingService,
-                        editorSessionState,
-                        stairEditService,
+                        traversalEditService,
                         editorInteractionState),
                 new TransitionTool(
                         state,

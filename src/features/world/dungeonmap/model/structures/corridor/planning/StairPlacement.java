@@ -27,7 +27,7 @@ public record StairPlacement(
         footprint = footprint == null ? Set.of() : Set.copyOf(footprint);
     }
 
-    public DungeonStair toPreviewStair(long mapId, Long corridorId) {
+    public DungeonStair toPreviewStair(long mapId, Long traversalId) {
         if (exitLevels.size() < 2) {
             return null;
         }
@@ -41,6 +41,7 @@ public record StairPlacement(
                     exitLevels);
             return new DungeonStair(
                     null,
+                    traversalId,
                     mapId,
                     null,
                     shape,
@@ -48,8 +49,7 @@ public record StairPlacement(
                     dimension1,
                     dimension2,
                     geometry.pathNodes(),
-                    geometry.exits(),
-                    corridorId);
+                    geometry.exits());
         } catch (IllegalArgumentException ignored) {
             return null;
         }

@@ -17,13 +17,16 @@ public sealed interface EditorDraft permits EditorDraft.CorridorDraft, EditorDra
         }
     }
 
-    sealed interface PendingTarget permits PendingTarget.Room, PendingTarget.Corridor {
+    sealed interface PendingTarget permits PendingTarget.Room, PendingTarget.Corridor, PendingTarget.Stair {
         String targetKey();
 
         record Room(Long roomId, String targetKey) implements PendingTarget {
         }
 
         record Corridor(Long corridorId, String targetKey) implements PendingTarget {
+        }
+
+        record Stair(Long stairId, String targetKey) implements PendingTarget {
         }
     }
 
@@ -44,6 +47,9 @@ public sealed interface EditorDraft permits EditorDraft.CorridorDraft, EditorDra
             }
             if (target instanceof PendingTarget.Corridor corridor && corridor.corridorId() != null) {
                 return "Korridor " + corridor.corridorId();
+            }
+            if (target instanceof PendingTarget.Stair stair && stair.stairId() != null) {
+                return "Treppe " + stair.stairId();
             }
             return "Ziel";
         }
