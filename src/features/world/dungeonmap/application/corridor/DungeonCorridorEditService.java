@@ -5,8 +5,10 @@ import features.world.dungeonmap.application.stair.DungeonStairEditService;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
-import features.world.dungeonmap.model.structures.corridor.planning.CorridorPlan;
 import features.world.dungeonmap.model.structures.corridor.planning.StairPlacement;
+import features.world.dungeonmap.model.structures.traversal.TraversalPlan;
+import features.world.dungeonmap.model.structures.traversal.planning.TraversalPlanRequestProjector;
+import features.world.dungeonmap.model.structures.traversal.planning.TraversalPlanningEngine;
 import features.world.dungeonmap.persistence.DungeonCorridorWriteRepository;
 
 import java.sql.Connection;
@@ -41,15 +43,16 @@ public final class DungeonCorridorEditService {
             return;
         }
         rejectSameClusterOnlyCorridor(layout, requestedRoomIds);
-        Corridor corridor = Corridor.resolved(null, layout.mapId(), roomIds,
-                null, null, null);
-        CorridorPlan plan = corridor.isPersistable()
-                ? corridor.plan(layout.corridorPlanningInput())
-                : null;
-        List<StairPlacement> stairPlacements = plan != null ? plan.stairPlacements() : List.of();
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
                 long corridorId = corridorWriteRepository.insertCorridor(conn, layout.mapId(), roomIds);
+                List<StairPlacement> stairPlacements = List.of();
+                Corridor corridor = Corridor.resolved(corridorId, layout.mapId(), roomIds, null, null, null);
+                if (corridor.isPersistable()) {
+                    TraversalPlan traversalPlan = TraversalPlanningEngine.plan(
+                            TraversalPlanRequestProjector.project(corridor, layout.corridorPlanningInput()));
+                    stairPlacements = traversalPlan.stairPlacements();
+                }
                 System.err.println("CorridorEditService.create(): corridorId=" + corridorId
                         + " stairPlacements=" + stairPlacements.size());
                 stairEditService.replaceCorridorTraversalStairs(conn, layout, corridorId, stairPlacements);
@@ -136,9 +139,10 @@ public final class DungeonCorridorEditService {
         Corridor updated;
         List<StairPlacement> stairPlacements;
         if (corridor.isPersistable()) {
-            CorridorPlan plan = corridor.plan(layout.corridorPlanningInput());
-            updated = corridor.applyPlan(plan);
-            stairPlacements = plan.stairPlacements();
+            TraversalPlan traversalPlan = TraversalPlanningEngine.plan(
+                    TraversalPlanRequestProjector.project(corridor, layout.corridorPlanningInput()));
+            updated = corridor.applyTraversalSlice(traversalPlan.corridorSlice(corridor.corridorId()));
+            stairPlacements = traversalPlan.stairPlacements();
         } else {
             updated = corridor;
             stairPlacements = List.of();

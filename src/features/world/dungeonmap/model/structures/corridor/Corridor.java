@@ -10,6 +10,9 @@ import features.world.dungeonmap.model.structures.corridor.planning.CorridorPlan
 import features.world.dungeonmap.model.structures.corridor.planning.StairPlacement;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.traversal.CorridorTraversalSlice;
+import features.world.dungeonmap.model.structures.traversal.TraversalPlan;
+import features.world.dungeonmap.model.structures.traversal.planning.TraversalPlanRequestProjector;
+import features.world.dungeonmap.model.structures.traversal.planning.TraversalPlanningEngine;
 import features.world.dungeonmap.model.structures.traversal.planning.TraversalRewriteEngine;
 
 import java.util.ArrayList;
@@ -354,7 +357,8 @@ public final class Corridor {
     }
 
     public Corridor replanned(CorridorPlanningInput input) {
-        return applyTraversalSlice(CorridorPlanningEngine.planTraversalSlice(this, input));
+        TraversalPlan traversalPlan = TraversalPlanningEngine.plan(TraversalPlanRequestProjector.project(this, input));
+        return applyTraversalSlice(traversalPlan.corridorSlice(corridorId));
     }
 
     public Corridor applyPlan(CorridorPlan plan) {

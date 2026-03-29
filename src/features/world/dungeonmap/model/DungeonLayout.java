@@ -14,11 +14,13 @@ import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
 import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInput;
-import features.world.dungeonmap.model.structures.corridor.planning.CorridorPlan;
 import features.world.dungeonmap.model.structures.corridor.planning.StairPlacement;
 import features.world.dungeonmap.model.structures.corridor.CorridorRewriteContext;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
+import features.world.dungeonmap.model.structures.traversal.TraversalPlan;
+import features.world.dungeonmap.model.structures.traversal.planning.TraversalPlanRequestProjector;
+import features.world.dungeonmap.model.structures.traversal.planning.TraversalPlanningEngine;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 
 import java.util.ArrayList;
@@ -633,10 +635,12 @@ public final class DungeonLayout {
                     Corridor reanchored = corridor.reanchoredFor(rewriteContext);
                     Corridor updatedCorridor;
                     if (rewriteContext.affects(corridor.corridorId()) && reanchored.isPersistable()) {
-                        CorridorPlan plan = reanchored.plan(rewriteContext.rewrittenPlanningInput());
-                        updatedCorridor = reanchored.applyPlan(plan);
-                        if (!plan.stairPlacements().isEmpty() && corridor.corridorId() != null) {
-                            stairPlacementsByCorridorId.put(corridor.corridorId(), plan.stairPlacements());
+                        TraversalPlan traversalPlan = TraversalPlanningEngine.plan(
+                                TraversalPlanRequestProjector.project(reanchored, rewriteContext.rewrittenPlanningInput()));
+                        updatedCorridor = reanchored.applyTraversalSlice(
+                                traversalPlan.corridorSlice(reanchored.corridorId()));
+                        if (reanchored.corridorId() != null) {
+                            stairPlacementsByCorridorId.put(reanchored.corridorId(), traversalPlan.stairPlacements());
                         }
                     } else {
                         updatedCorridor = reanchored.replannedFor(rewriteContext);
