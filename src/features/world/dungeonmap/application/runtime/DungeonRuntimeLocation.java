@@ -10,7 +10,11 @@ public sealed interface DungeonRuntimeLocation
     }
 
     static DungeonRuntimeLocation corridor(long corridorId) {
-        return new Corridor(corridorId);
+        return new Corridor(corridorId, null);
+    }
+
+    static DungeonRuntimeLocation corridor(long corridorId, CubePoint anchorTile) {
+        return new Corridor(corridorId, anchorTile);
     }
 
     static DungeonRuntimeLocation corridorComponent(String componentId) {
@@ -32,7 +36,10 @@ public sealed interface DungeonRuntimeLocation
     record Room(long roomId) implements DungeonRuntimeLocation {
     }
 
-    record Corridor(long corridorId) implements DungeonRuntimeLocation {
+    record Corridor(long corridorId, CubePoint anchorTile) implements DungeonRuntimeLocation {
+        public Corridor {
+            anchorTile = anchorTile == null ? null : anchorTile;
+        }
     }
 
     record CorridorComponent(String componentId) implements DungeonRuntimeLocation {

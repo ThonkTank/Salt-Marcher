@@ -64,6 +64,7 @@ public final class DungeonClusterMoveService {
                 }
                 traversalPersistenceService.persistTraversals(
                         conn,
+                        layout,
                         projection.traversalsById(),
                         projection.traversalPlansByTraversalId());
                 return null;

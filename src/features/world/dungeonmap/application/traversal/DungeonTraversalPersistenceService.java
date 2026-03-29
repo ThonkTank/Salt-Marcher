@@ -1,9 +1,11 @@
 package features.world.dungeonmap.application.traversal;
 
+import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.structures.stair.StairGeometry;
 import features.world.dungeonmap.model.structures.traversal.TraversalCorridorSegment;
 import features.world.dungeonmap.model.structures.traversal.TraversalPlan;
+import features.world.dungeonmap.model.structures.traversal.TraversalReadModelProjector;
 import features.world.dungeonmap.model.structures.traversal.TraversalStairSegment;
 import features.world.dungeonmap.model.structures.traversal.TraversalStairSlice;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
@@ -37,10 +39,19 @@ public final class DungeonTraversalPersistenceService {
     }
 
     public void persistTraversal(Connection conn, Traversal traversal) throws SQLException {
-        persistTraversal(conn, traversal, TraversalPlan.empty());
+        persistTraversal(conn, null, traversal, TraversalPlan.empty());
     }
 
     public void persistTraversal(Connection conn, Traversal traversal, TraversalPlan traversalPlan) throws SQLException {
+        persistTraversal(conn, null, traversal, traversalPlan);
+    }
+
+    public void persistTraversal(
+            Connection conn,
+            DungeonLayout previousLayout,
+            Traversal traversal,
+            TraversalPlan traversalPlan
+    ) throws SQLException {
         if (traversal == null || traversal.traversalId() == null) {
             return;
         }
@@ -51,16 +62,26 @@ public final class DungeonTraversalPersistenceService {
         traversalWriteRepository.replaceTraversalRooms(conn, traversal.traversalId(), traversal.roomIds());
         traversalWriteRepository.replaceTraversalWaypoints(conn, traversal.traversalId(), traversal.bindings().waypoints());
         traversalWriteRepository.replaceTraversalDoorBindings(conn, traversal.traversalId(), traversal.bindings().doorBindings());
-        reconcileCorridorSegments(conn, traversal, traversalPlan);
-        reconcileStairSegments(conn, traversal, traversalPlan);
+        TraversalPlan resolvedPlan = TraversalReadModelProjector.preserveSegmentIds(traversal, traversalPlan, previousLayout);
+        reconcileCorridorSegments(conn, traversal, resolvedPlan);
+        reconcileStairSegments(conn, traversal, resolvedPlan);
     }
 
     public void persistTraversals(Connection conn, Map<Long, Traversal> traversalsById) throws SQLException {
-        persistTraversals(conn, traversalsById, Map.of());
+        persistTraversals(conn, null, traversalsById, Map.of());
     }
 
     public void persistTraversals(
             Connection conn,
+            Map<Long, Traversal> traversalsById,
+            Map<Long, TraversalPlan> traversalPlansByTraversalId
+    ) throws SQLException {
+        persistTraversals(conn, null, traversalsById, traversalPlansByTraversalId);
+    }
+
+    public void persistTraversals(
+            Connection conn,
+            DungeonLayout previousLayout,
             Map<Long, Traversal> traversalsById,
             Map<Long, TraversalPlan> traversalPlansByTraversalId
     ) throws SQLException {
@@ -71,56 +92,55 @@ public final class DungeonTraversalPersistenceService {
             TraversalPlan traversalPlan = traversal == null || traversal.traversalId() == null
                     ? TraversalPlan.empty()
                     : traversalPlansByTraversalId.getOrDefault(traversal.traversalId(), TraversalPlan.empty());
-            persistTraversal(conn, traversal, traversalPlan);
+            persistTraversal(conn, previousLayout, traversal, traversalPlan);
         }
     }
 
     private void reconcileCorridorSegments(Connection conn, Traversal traversal, TraversalPlan traversalPlan) throws SQLException {
-        Map<String, TraversalCorridorSegment> existingByKey = new LinkedHashMap<>();
+        Map<Long, TraversalCorridorSegment> existingById = new LinkedHashMap<>();
         for (TraversalCorridorSegment corridorSegment : traversal.corridorSegments()) {
-            if (corridorSegment != null) {
-                existingByKey.put(corridorSegment.segmentKey(), corridorSegment);
+            if (corridorSegment != null && corridorSegment.corridorId() != null) {
+                existingById.put(corridorSegment.corridorId(), corridorSegment);
             }
         }
-        Set<String> desiredKeys = new LinkedHashSet<>();
+        Set<Long> desiredIds = new LinkedHashSet<>();
         for (var corridorSlice : traversalPlan.corridorSlices()) {
             if (corridorSlice == null) {
                 continue;
             }
-            desiredKeys.add(corridorSlice.segmentKey());
-            TraversalCorridorSegment existing = existingByKey.get(corridorSlice.segmentKey());
-            if (existing == null || existing.corridorId() == null) {
+            Long corridorId = corridorSlice.corridorId();
+            if (corridorId == null || !existingById.containsKey(corridorId)) {
                 corridorWriteRepository.insertTraversalCorridor(
                         conn,
                         traversal.mapId(),
                         traversal.traversalId(),
                         corridorSlice.segmentKey());
             } else {
-                corridorWriteRepository.updateTraversalCorridorSegmentKey(conn, existing.corridorId(), corridorSlice.segmentKey());
+                desiredIds.add(corridorId);
+                corridorWriteRepository.updateTraversalCorridorSegmentKey(conn, corridorId, corridorSlice.segmentKey());
             }
         }
         for (TraversalCorridorSegment corridorSegment : traversal.corridorSegments()) {
             if (corridorSegment != null
                     && corridorSegment.corridorId() != null
-                    && !desiredKeys.contains(corridorSegment.segmentKey())) {
+                    && !desiredIds.contains(corridorSegment.corridorId())) {
                 corridorWriteRepository.deleteCorridor(conn, corridorSegment.corridorId());
             }
         }
     }
 
     private void reconcileStairSegments(Connection conn, Traversal traversal, TraversalPlan traversalPlan) throws SQLException {
-        Map<String, TraversalStairSegment> existingByKey = new LinkedHashMap<>();
+        Map<Long, TraversalStairSegment> existingById = new LinkedHashMap<>();
         for (TraversalStairSegment stairSegment : traversal.stairSegments()) {
-            if (stairSegment != null) {
-                existingByKey.put(stairSegment.segmentKey(), stairSegment);
+            if (stairSegment != null && stairSegment.stairId() != null) {
+                existingById.put(stairSegment.stairId(), stairSegment);
             }
         }
-        Set<String> desiredKeys = new LinkedHashSet<>();
+        Set<Long> desiredIds = new LinkedHashSet<>();
         for (TraversalStairSlice stairSlice : traversalPlan.stairSlices()) {
             if (stairSlice == null || stairSlice.placement() == null) {
                 continue;
             }
-            desiredKeys.add(stairSlice.segmentKey());
             StairGeometry geometry = StairGeometry.fromExitLevels(
                     stairSlice.placement().shape(),
                     stairSlice.placement().anchor(),
@@ -130,9 +150,8 @@ public final class DungeonTraversalPersistenceService {
                     stairSlice.placement().dimension1(),
                     stairSlice.placement().dimension2(),
                     stairSlice.placement().exitLevels());
-            TraversalStairSegment existing = existingByKey.get(stairSlice.segmentKey());
             long stairId;
-            if (existing == null || existing.stairId() == null) {
+            if (stairSlice.stairId() == null || !existingById.containsKey(stairSlice.stairId())) {
                 stairId = stairWriteRepository.insertStair(
                         conn,
                         traversal.mapId(),
@@ -144,7 +163,8 @@ public final class DungeonTraversalPersistenceService {
                         stairSlice.placement().dimension1(),
                         stairSlice.placement().dimension2());
             } else {
-                stairId = existing.stairId();
+                stairId = stairSlice.stairId();
+                desiredIds.add(stairId);
                 stairWriteRepository.updateTraversalStair(
                         conn,
                         stairId,
@@ -161,7 +181,7 @@ public final class DungeonTraversalPersistenceService {
         for (TraversalStairSegment stairSegment : traversal.stairSegments()) {
             if (stairSegment != null
                     && stairSegment.stairId() != null
-                    && !desiredKeys.contains(stairSegment.segmentKey())) {
+                    && !desiredIds.contains(stairSegment.stairId())) {
                 stairWriteRepository.deleteStair(conn, stairSegment.stairId());
             }
         }

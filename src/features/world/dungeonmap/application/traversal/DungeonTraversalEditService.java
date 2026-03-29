@@ -132,7 +132,7 @@ public final class DungeonTraversalEditService {
         TraversalPlan traversalPlan = traversal.isPersistable()
                 ? TraversalPlanningEngine.plan(traversal, TraversalPlanningInputProjector.project(layout))
                 : TraversalPlan.empty();
-        traversalPersistenceService.persistTraversal(conn, traversal, traversalPlan);
+        traversalPersistenceService.persistTraversal(conn, layout, traversal, traversalPlan);
         if (deletedTraversalId != null) {
             traversalWriteRepository.deleteTraversal(conn, deletedTraversalId);
         }

@@ -127,7 +127,6 @@ public final class CampaignStateRepository {
             setNullableLong(ps, 5, position != null && position.locationType() == CampaignDungeonLocationType.CORRIDOR ? position.corridorId() : null);
             ps.setString(6, position == null
                     || position.locationType() == CampaignDungeonLocationType.ROOM
-                    || position.locationType() == CampaignDungeonLocationType.CORRIDOR
                     ? null
                     : position.locationKey());
             ps.setString(7, position == null ? null : position.heading());

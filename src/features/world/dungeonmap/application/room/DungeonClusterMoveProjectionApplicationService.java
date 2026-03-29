@@ -67,7 +67,8 @@ public final class DungeonClusterMoveProjectionApplicationService {
                         .toList(),
                 TraversalPlanningInputProjector.project(provisionalLayout),
                 rewriteResult.traversalPlansByTraversalId(),
-                stairNamesBySegmentKey(baseLayout.stairs()));
+                stairNamesBySegmentKey(baseLayout.stairs()),
+                baseLayout);
         DungeonLayout projectedLayout = new DungeonLayout(
                 baseLayout.mapId(),
                 baseLayout.name(),

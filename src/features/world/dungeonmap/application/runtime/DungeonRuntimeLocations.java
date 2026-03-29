@@ -16,6 +16,7 @@ import features.world.dungeonmap.model.structures.stair.DungeonStairExit;
 final class DungeonRuntimeLocations {
 
     private static final String TILE_PREFIX = "tile:";
+    private static final String CORRIDOR_PREFIX = "corridor:";
 
     private DungeonRuntimeLocations() {
     }
@@ -41,7 +42,7 @@ final class DungeonRuntimeLocations {
             return DungeonRuntimeLocation.corridorComponent(position.locationKey());
         }
         if (position.locationType() == CampaignDungeonLocationType.CORRIDOR && position.corridorId() != null) {
-            return DungeonRuntimeLocation.corridor(position.corridorId());
+            return DungeonRuntimeLocation.corridor(position.corridorId(), parseCorridorTile(position.locationKey()));
         }
         if (position.roomId() != null) {
             return DungeonRuntimeLocation.room(position.roomId());
@@ -63,7 +64,7 @@ final class DungeonRuntimeLocations {
         } else if (location instanceof DungeonRuntimeLocation.Room roomLocation) {
             resolvedTile = roomAnchor(layout, roomLocation.roomId());
         } else if (location instanceof DungeonRuntimeLocation.Corridor corridorLocation) {
-            resolvedTile = corridorAnchor(layout, layout.findCorridor(corridorLocation.corridorId()));
+            resolvedTile = corridorAnchor(layout, layout.findCorridor(corridorLocation.corridorId()), corridorLocation.anchorTile());
         } else if (location instanceof DungeonRuntimeLocation.CorridorComponent componentLocation) {
             resolvedTile = corridorNetworkAnchor(layout, componentLocation.componentId());
         }
@@ -96,7 +97,7 @@ final class DungeonRuntimeLocations {
             return layout.findCorridorNetwork(component.componentId()) != null;
         }
         if (location instanceof DungeonRuntimeLocation.Corridor corridor) {
-            return layout.findCorridor(corridor.corridorId()) != null;
+            return corridorAnchor(layout, layout.findCorridor(corridor.corridorId()), corridor.anchorTile()) != null;
         }
         if (location instanceof DungeonRuntimeLocation.Room room) {
             return layout.findRoom(room.roomId()) != null;
@@ -126,7 +127,14 @@ final class DungeonRuntimeLocations {
             return new DungeonPositionRef(mapId, 0, CampaignDungeonLocationType.CORRIDOR_COMPONENT, null, null, corridorComponent.componentId(), headingValue);
         }
         if (location instanceof DungeonRuntimeLocation.Corridor corridor) {
-            return new DungeonPositionRef(mapId, 0, CampaignDungeonLocationType.CORRIDOR, null, corridor.corridorId(), null, headingValue);
+            return new DungeonPositionRef(
+                    mapId,
+                    0,
+                    CampaignDungeonLocationType.CORRIDOR,
+                    null,
+                    corridor.corridorId(),
+                    formatCorridor(corridor.corridorId(), corridor.anchorTile()),
+                    headingValue);
         }
         if (location instanceof DungeonRuntimeLocation.Room room) {
             return new DungeonPositionRef(mapId, 0, CampaignDungeonLocationType.ROOM, room.roomId(), null, null, headingValue);
@@ -140,6 +148,13 @@ final class DungeonRuntimeLocations {
 
     private static String formatStairExit(long stairId, CubePoint tile) {
         return "stair:" + stairId + ":" + tile.x() + "," + tile.y() + "," + tile.z();
+    }
+
+    private static String formatCorridor(long corridorId, CubePoint tile) {
+        if (tile == null) {
+            return null;
+        }
+        return CORRIDOR_PREFIX + corridorId + ":" + tile.x() + "," + tile.y() + "," + tile.z();
     }
 
     private static CubePoint parseTile(String value) {
@@ -199,6 +214,28 @@ final class DungeonRuntimeLocations {
         }
     }
 
+    private static CubePoint parseCorridorTile(String value) {
+        if (value == null || !value.startsWith(CORRIDOR_PREFIX)) {
+            return null;
+        }
+        int separator = value.indexOf(':', CORRIDOR_PREFIX.length());
+        if (separator <= CORRIDOR_PREFIX.length() || separator >= value.length() - 1) {
+            return null;
+        }
+        String[] parts = value.substring(separator + 1).split(",");
+        if (parts.length != 3) {
+            return null;
+        }
+        try {
+            return new CubePoint(
+                    Integer.parseInt(parts[0]),
+                    Integer.parseInt(parts[1]),
+                    Integer.parseInt(parts[2]));
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
     private static String formatTransition(long transitionId) {
         return "transition:" + transitionId;
     }
@@ -224,8 +261,18 @@ final class DungeonRuntimeLocations {
         return layout.isTraversableCell(preferred) ? preferred : layout.nearestTraversableCell(preferred);
     }
 
-    private static CubePoint corridorAnchor(DungeonLayout layout, Corridor corridor) {
-        return DungeonRuntimeCorridorGeometry.canonicalAnchor(layout, corridor);
+    private static CubePoint corridorAnchor(DungeonLayout layout, Corridor corridor, CubePoint preferred) {
+        if (corridor != null) {
+            return DungeonRuntimeCorridorGeometry.canonicalAnchor(layout, corridor);
+        }
+        if (layout == null || preferred == null) {
+            return null;
+        }
+        Corridor fallback = layout.corridorsAtCell(preferred.projectedCell(), preferred.z()).stream()
+                .filter(candidate -> candidate != null)
+                .min(java.util.Comparator.comparing(Corridor::corridorId, java.util.Comparator.nullsLast(Long::compareTo)))
+                .orElse(null);
+        return fallback == null ? null : DungeonRuntimeCorridorGeometry.canonicalAnchor(layout, fallback);
     }
 
     private static CubePoint corridorNetworkAnchor(DungeonLayout layout, String networkId) {
@@ -245,20 +292,27 @@ final class DungeonRuntimeLocations {
                 .filter(candidate -> candidate != null && candidate.stairId() != null && candidate.stairId() == stairId)
                 .findFirst()
                 .orElse(null);
+        if (stair == null && preferred != null) {
+            stair = layout.stairsAtCell(preferred.projectedCell(), preferred.z()).stream()
+                    .filter(candidate -> candidate != null)
+                    .min(java.util.Comparator.comparing(DungeonStair::stairId, java.util.Comparator.nullsLast(Long::compareTo)))
+                    .orElse(null);
+        }
         if (stair == null) {
             return null;
         }
+        DungeonStair resolvedStair = stair;
         if (preferred != null) {
-            for (DungeonStairExit exit : stair.exits()) {
+            for (DungeonStairExit exit : resolvedStair.exits()) {
                 if (preferred.equals(exit.position())) {
                     return exit.position();
                 }
             }
         }
-        return stair.exits().stream()
+        return resolvedStair.exits().stream()
                 .map(DungeonStairExit::position)
                 .findFirst()
-                .orElseGet(() -> stair.path().stream().findFirst().orElse(null));
+                .orElseGet(() -> resolvedStair.path().stream().findFirst().orElse(null));
     }
 
     private static CubePoint transitionAnchor(DungeonLayout layout, long transitionId) {

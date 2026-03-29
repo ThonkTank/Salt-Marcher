@@ -91,7 +91,7 @@ public final class DungeonRoomTopologyService {
                 layout,
                 new LinkedHashMap<>(layout.traversalsById()),
                 persistedRewrite);
-        traversalPersistenceService.persistTraversals(conn, rewriteResult.traversalsById(), rewriteResult.traversalPlansByTraversalId());
+        traversalPersistenceService.persistTraversals(conn, layout, rewriteResult.traversalsById(), rewriteResult.traversalPlansByTraversalId());
     }
 
     public void delete(long mapId, int levelZ, TileShape shape) throws SQLException {
@@ -141,10 +141,10 @@ public final class DungeonRoomTopologyService {
                     workingLayout.levelForCluster(rewrite.targetClusterId()));
             Traversal.RewriteResult rewriteResult = applyTraversalCascade(workingLayout, traversalsById, persistedRewrite);
             traversalsById = new LinkedHashMap<>(rewriteResult.traversalsById());
-            traversalPersistenceService.persistTraversals(conn, rewriteResult.traversalsById(), rewriteResult.traversalPlansByTraversalId());
+            traversalPersistenceService.persistTraversals(conn, workingLayout, rewriteResult.traversalsById(), rewriteResult.traversalPlansByTraversalId());
             workingLayout = workingLayout.applying(persistedRewrite);
         }
-        traversalPersistenceService.persistTraversals(conn, traversalsById);
+        traversalPersistenceService.persistTraversals(conn, workingLayout, traversalsById, Map.of());
     }
 
     public void createDefaultRoom(Connection conn, long mapId) throws SQLException {
@@ -205,7 +205,7 @@ public final class DungeonRoomTopologyService {
                 layout,
                 new LinkedHashMap<>(layout.traversalsById()),
                 persistedRewrite);
-        traversalPersistenceService.persistTraversals(conn, rewriteResult.traversalsById(), rewriteResult.traversalPlansByTraversalId());
+        traversalPersistenceService.persistTraversals(conn, layout, rewriteResult.traversalsById(), rewriteResult.traversalPlansByTraversalId());
     }
 
     private Traversal.RewriteResult applyTraversalCascade(
