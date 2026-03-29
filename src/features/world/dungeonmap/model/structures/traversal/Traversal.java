@@ -19,30 +19,26 @@ public final class Traversal {
     private final long mapId;
     private final List<Long> roomIds;
     private final TraversalBindings bindings;
-    private final TraversalMaterialization materialization;
 
     public static Traversal resolved(
             Long traversalId,
             long mapId,
             List<Long> roomIds,
-            TraversalBindings bindings,
-            TraversalMaterialization materialization
+            TraversalBindings bindings
     ) {
-        return new Traversal(traversalId, mapId, roomIds, bindings, materialization);
+        return new Traversal(traversalId, mapId, roomIds, bindings);
     }
 
     private Traversal(
             Long traversalId,
             long mapId,
             List<Long> roomIds,
-            TraversalBindings bindings,
-            TraversalMaterialization materialization
+            TraversalBindings bindings
     ) {
         this.traversalId = traversalId;
         this.mapId = mapId;
         this.roomIds = normalizeRoomIds(roomIds);
         this.bindings = bindings == null ? TraversalBindings.empty() : bindings;
-        this.materialization = materialization == null ? TraversalMaterialization.empty() : materialization;
     }
 
     public Long traversalId() {
@@ -59,26 +55,6 @@ public final class Traversal {
 
     public TraversalBindings bindings() {
         return bindings;
-    }
-
-    public TraversalMaterialization materialization() {
-        return materialization;
-    }
-
-    public List<TraversalCorridorSegment> corridorSegments() {
-        return materialization.corridorSegments();
-    }
-
-    public List<TraversalStairSegment> stairSegments() {
-        return materialization.stairSegments();
-    }
-
-    public boolean ownsCorridorSegment(Long corridorId) {
-        return materialization.corridorSegmentById(corridorId) != null;
-    }
-
-    public boolean ownsStairSegment(Long stairId) {
-        return materialization.stairSegmentById(stairId) != null;
     }
 
     public boolean connectsRoom(Long roomId) {
@@ -185,7 +161,7 @@ public final class Traversal {
         }
         List<Long> updated = new ArrayList<>(roomIds);
         updated.add(roomId);
-        return resolved(traversalId, mapId, updated, bindings, materialization);
+        return resolved(traversalId, mapId, updated, bindings);
     }
 
     public Traversal withRemovedRoom(Long roomId) {
@@ -195,7 +171,7 @@ public final class Traversal {
         List<Long> updated = roomIds.stream()
                 .filter(existing -> !Objects.equals(existing, roomId))
                 .toList();
-        return resolved(traversalId, mapId, updated, bindings.withoutDoorBinding(roomId), materialization);
+        return resolved(traversalId, mapId, updated, bindings.withoutDoorBinding(roomId));
     }
 
     public Traversal withMergedRooms(Set<Long> mergedRoomIds, Long replacementRoomId) {
@@ -212,7 +188,7 @@ public final class Traversal {
                 updatedBindings = updatedBindings.withoutDoorBinding(mergedRoomId);
             }
         }
-        return resolved(traversalId, mapId, updated, updatedBindings, materialization);
+        return resolved(traversalId, mapId, updated, updatedBindings);
     }
 
     public Traversal withReplacedRoom(Long oldRoomId, Long newRoomId) {
@@ -224,7 +200,7 @@ public final class Traversal {
                 .distinct()
                 .toList();
         TraversalBindings updatedBindings = bindings.withoutDoorBinding(oldRoomId);
-        return resolved(traversalId, mapId, updated, updatedBindings, materialization);
+        return resolved(traversalId, mapId, updated, updatedBindings);
     }
 
     public Traversal withInsertedWaypoint(int index, TraversalWaypointBinding waypoint) {
@@ -263,8 +239,7 @@ public final class Traversal {
                 traversalId,
                 mapId,
                 mergedRoomIds,
-                sanitizedBindings(mergedRoomIds, bindings),
-                materialization);
+                sanitizedBindings(mergedRoomIds, bindings));
     }
 
     public Traversal reanchoredFor(TraversalRewriteContext context) {
@@ -378,11 +353,7 @@ public final class Traversal {
     }
 
     private Traversal withBindings(TraversalBindings bindings) {
-        return resolved(traversalId, mapId, roomIds, bindings, materialization);
-    }
-
-    public Traversal withMaterialization(TraversalMaterialization materialization) {
-        return resolved(traversalId, mapId, roomIds, bindings, materialization);
+        return resolved(traversalId, mapId, roomIds, bindings);
     }
 
     private Long fallbackWaypointClusterId(TraversalPlanningInput input) {

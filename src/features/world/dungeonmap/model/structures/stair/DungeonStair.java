@@ -1,7 +1,6 @@
 package features.world.dungeonmap.model.structures.stair;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.GridAnchor;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 import features.world.dungeonmap.model.structures.TargetKey;
@@ -17,7 +16,6 @@ public record DungeonStair(
         Long traversalId,
         String segmentKey,
         long mapId,
-        String name,
         List<CubePoint> path,
         List<DungeonStairExit> exits
 ) {
@@ -26,9 +24,6 @@ public record DungeonStair(
 
     public DungeonStair {
         segmentKey = requireSegmentKey(segmentKey);
-        name = name == null || name.isBlank()
-                ? "Treppe " + (stairId == null ? "neu" : stairId)
-                : name.trim();
         path = path == null ? List.of() : path.stream()
                 .filter(java.util.Objects::nonNull)
                 .sorted(CubePoint.POINT_ORDER)
@@ -45,6 +40,10 @@ public record DungeonStair(
 
     public String segmentKey() {
         return segmentKey;
+    }
+
+    public String label() {
+        return stairId == null ? "Treppe neu" : "Treppe " + stairId;
     }
 
     public static boolean isTargetKey(String targetKey) {
@@ -98,7 +97,7 @@ public record DungeonStair(
         }
         return new InteractiveLabelHandle(
                 targetKey(),
-                name,
+                label(),
                 GridAnchor.atTile(anchorPoint.projectedCell()));
     }
 

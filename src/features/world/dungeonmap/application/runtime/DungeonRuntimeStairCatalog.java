@@ -91,7 +91,7 @@ public final class DungeonRuntimeStairCatalog {
                         .map(DungeonStairExit::position)
                         .map(CubePoint::projectedCell)
                         .anyMatch(resolvedCells::contains))
-                .sorted(Comparator.comparing(DungeonStair::name, String.CASE_INSENSITIVE_ORDER)
+                .sorted(Comparator.comparing(DungeonStair::label, String.CASE_INSENSITIVE_ORDER)
                         .thenComparing(DungeonStair::stairId))
                 .map(stair -> toDescriptor(stair, levelZ, resolvedCells, activeTile))
                 .flatMap(List::stream)
@@ -121,7 +121,7 @@ public final class DungeonRuntimeStairCatalog {
                 .sorted(Comparator.comparingInt((DungeonStairExit exit) -> exit.position().z())
                         .thenComparing(exit -> exit.position(), CubePoint.POINT_ORDER))
                 .map(exit -> new DungeonRuntimeStairDescriptor(
-                        stair.name(),
+                        stair.label(),
                         exit.label(),
                         destinationLabel(exit),
                         description(stair, exit),
@@ -138,7 +138,7 @@ public final class DungeonRuntimeStairCatalog {
     }
 
     private static String description(DungeonStair stair, DungeonStairExit exit) {
-        String stairName = stair == null || stair.name() == null || stair.name().isBlank() ? "die Treppe" : stair.name();
+        String stairName = stair == null ? "die Treppe" : stair.label();
         String target = destinationLabel(exit);
         return "Über " + stairName + " gelangt ihr zu " + target + ".";
     }

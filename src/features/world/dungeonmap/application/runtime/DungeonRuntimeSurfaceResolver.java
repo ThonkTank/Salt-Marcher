@@ -137,7 +137,7 @@ public final class DungeonRuntimeSurfaceResolver {
             return null;
         }
         return new DungeonRuntimeSurface(
-                stair.name(),
+                stair.label(),
                 new DetailsNavigator.EntryKey("dungeon-stair", layout.mapId() + ":" + stair.stairId()),
                 "Eine Treppe verbindet mehrere erschlossene Höhenstufen.",
                 List.of(),

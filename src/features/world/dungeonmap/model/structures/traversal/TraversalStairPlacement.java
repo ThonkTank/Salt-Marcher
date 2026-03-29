@@ -27,24 +27,32 @@ public record TraversalStairPlacement(
         footprint = footprint == null ? Set.of() : Set.copyOf(footprint);
     }
 
-    public DungeonStair toPreviewStair(long mapId, Long traversalId) {
+    public StairGeometry geometry() {
         if (exitLevels.size() < 2) {
-            return null;
+            throw new IllegalArgumentException("Stair placement requires at least two exit levels");
         }
+        return StairGeometry.fromExitLevels(
+                shape,
+                anchor,
+                direction,
+                dimension1,
+                dimension2,
+                exitLevels);
+    }
+
+    public DungeonStair materialize(
+            Long stairId,
+            Long traversalId,
+            String segmentKey,
+            long mapId
+    ) {
         try {
-            StairGeometry geometry = StairGeometry.fromExitLevels(
-                    shape,
-                    anchor,
-                    direction,
-                    dimension1,
-                    dimension2,
-                    exitLevels);
+            StairGeometry geometry = geometry();
             return new DungeonStair(
-                    null,
+                    stairId,
                     traversalId,
-                    "preview-stair",
+                    segmentKey,
                     mapId,
-                    null,
                     geometry.pathNodes(),
                     geometry.exits());
         } catch (IllegalArgumentException ignored) {

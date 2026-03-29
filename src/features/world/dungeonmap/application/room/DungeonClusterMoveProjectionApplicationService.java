@@ -67,7 +67,7 @@ public final class DungeonClusterMoveProjectionApplicationService {
                         .toList(),
                 TraversalPlanningInputProjector.project(provisionalLayout),
                 rewriteResult.traversalPlansByTraversalId(),
-                stairNamesBySegmentKey(baseLayout.stairs()),
+                Map.of(),
                 baseLayout);
         DungeonLayout projectedLayout = new DungeonLayout(
                 baseLayout.mapId(),
@@ -108,16 +108,6 @@ public final class DungeonClusterMoveProjectionApplicationService {
             updated.add(traversalsById.getOrDefault(traversal.traversalId(), traversal));
         }
         return List.copyOf(updated);
-    }
-
-    private static Map<String, String> stairNamesBySegmentKey(List<DungeonStair> stairs) {
-        LinkedHashMap<String, String> stairNames = new LinkedHashMap<>();
-        for (DungeonStair stair : stairs == null ? List.<DungeonStair>of() : stairs) {
-            if (stair != null) {
-                stairNames.put(stair.segmentKey(), stair.name());
-            }
-        }
-        return stairNames.isEmpty() ? Map.of() : Map.copyOf(stairNames);
     }
 
     private static List<Corridor> mergeCorridors(

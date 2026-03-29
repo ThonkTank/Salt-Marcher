@@ -77,7 +77,7 @@ public final class DungeonRuntimeLabels {
         }
         DungeonStair stair = layout.stairsAtPoint(tile).stream().findFirst().orElse(null);
         if (stair != null) {
-            return stair.name();
+            return stair.label();
         }
         DungeonTransition transition = layout.transitionsAtPoint(tile).stream().findFirst().orElse(null);
         if (transition != null) {

@@ -105,12 +105,7 @@ public final class DungeonSchemaSupport {
                 + "stair_id         INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + "dungeon_map_id   INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
                 + "traversal_id     INTEGER NOT NULL REFERENCES dungeon_traversals(traversal_id) ON DELETE CASCADE,"
-                + "segment_key      TEXT,"
-                + "name             TEXT,"
-                + "shape            TEXT NOT NULL DEFAULT 'LADDER',"
-                + "direction        INTEGER NOT NULL DEFAULT 0,"
-                + "dimension1       INTEGER NOT NULL DEFAULT 0,"
-                + "dimension2       INTEGER NOT NULL DEFAULT 0"
+                + "segment_key      TEXT"
                 + ")");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_stair_path_nodes ("
                 + "stair_id         INTEGER NOT NULL REFERENCES dungeon_stairs(stair_id) ON DELETE CASCADE,"
@@ -133,10 +128,6 @@ public final class DungeonSchemaSupport {
     public static void ensureCompatibility(Connection conn) throws SQLException {
         try (Statement stmt = conn.createStatement()) {
             createSchema(stmt);
-            addColumnIfMissing(stmt, "dungeon_stairs", "shape TEXT NOT NULL DEFAULT 'LADDER'");
-            addColumnIfMissing(stmt, "dungeon_stairs", "direction INTEGER NOT NULL DEFAULT 0");
-            addColumnIfMissing(stmt, "dungeon_stairs", "dimension1 INTEGER NOT NULL DEFAULT 0");
-            addColumnIfMissing(stmt, "dungeon_stairs", "dimension2 INTEGER NOT NULL DEFAULT 0");
             addColumnIfMissing(stmt, "dungeon_corridors", "traversal_id INTEGER REFERENCES dungeon_traversals(traversal_id) ON DELETE CASCADE");
             addColumnIfMissing(stmt, "dungeon_corridors", "segment_key TEXT");
             addColumnIfMissing(stmt, "dungeon_stairs", "traversal_id INTEGER REFERENCES dungeon_traversals(traversal_id) ON DELETE CASCADE");

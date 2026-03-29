@@ -1,9 +1,7 @@
 package features.world.dungeonmap.persistence;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.structures.stair.DungeonStairExit;
-import features.world.dungeonmap.model.structures.stair.StairShape;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -18,25 +16,15 @@ public final class DungeonStairWriteRepository {
             Connection conn,
             long mapId,
             long traversalId,
-            String segmentKey,
-            String name,
-            StairShape shape,
-            CardinalDirection direction,
-            int dimension1,
-            int dimension2
+            String segmentKey
     ) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "INSERT INTO dungeon_stairs(dungeon_map_id, traversal_id, segment_key, name, shape, direction, dimension1, dimension2)"
-                        + " VALUES(?, ?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO dungeon_stairs(dungeon_map_id, traversal_id, segment_key)"
+                        + " VALUES(?, ?, ?)",
                 Statement.RETURN_GENERATED_KEYS)) {
             ps.setLong(1, mapId);
             ps.setLong(2, traversalId);
             ps.setString(3, segmentKey);
-            ps.setString(4, name);
-            ps.setString(5, (shape == null ? StairShape.LADDER : shape).name());
-            ps.setInt(6, (direction == null ? CardinalDirection.defaultDirection() : direction).code());
-            ps.setInt(7, Math.max(0, dimension1));
-            ps.setInt(8, Math.max(0, dimension2));
             ps.executeUpdate();
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (!rs.next()) {
@@ -50,24 +38,14 @@ public final class DungeonStairWriteRepository {
     public void updateTraversalStair(
             Connection conn,
             long stairId,
-            String segmentKey,
-            String name,
-            StairShape shape,
-            CardinalDirection direction,
-            int dimension1,
-            int dimension2
+            String segmentKey
     ) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE dungeon_stairs"
-                        + " SET segment_key=?, name=?, shape=?, direction=?, dimension1=?, dimension2=?"
+                        + " SET segment_key=?"
                         + " WHERE stair_id=?")) {
             ps.setString(1, segmentKey);
-            ps.setString(2, name);
-            ps.setString(3, (shape == null ? StairShape.LADDER : shape).name());
-            ps.setInt(4, (direction == null ? CardinalDirection.defaultDirection() : direction).code());
-            ps.setInt(5, Math.max(0, dimension1));
-            ps.setInt(6, Math.max(0, dimension2));
-            ps.setLong(7, stairId);
+            ps.setLong(2, stairId);
             ps.executeUpdate();
         }
     }

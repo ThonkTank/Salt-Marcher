@@ -1,14 +1,12 @@
 package features.world.dungeonmap.model.structures.traversal;
 
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpointType;
 import features.world.dungeonmap.model.structures.connection.CorridorConnection;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
-import features.world.dungeonmap.model.structures.stair.StairGeometry;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -28,9 +26,10 @@ public final class TraversalReadModelProjector {
     public static List<Corridor> projectCorridors(
             long mapId,
             List<Traversal> traversals,
-            TraversalPlanningInput planningInput
+            TraversalPlanningInput planningInput,
+            Map<Long, TraversalSegmentIds> segmentIdsByTraversalId
     ) {
-        return project(mapId, traversals, planningInput, Map.of(), Map.of(), null).corridors();
+        return project(mapId, traversals, planningInput, Map.of(), segmentIdsByTraversalId, null).corridors();
     }
 
     public static TraversalReadModelProjection project(
@@ -38,9 +37,9 @@ public final class TraversalReadModelProjector {
             List<Traversal> traversals,
             TraversalPlanningInput planningInput,
             Map<Long, TraversalPlan> traversalPlansByTraversalId,
-            Map<String, String> stairNamesBySegmentKey
+            Map<Long, TraversalSegmentIds> segmentIdsByTraversalId
     ) {
-        return project(mapId, traversals, planningInput, traversalPlansByTraversalId, stairNamesBySegmentKey, null);
+        return project(mapId, traversals, planningInput, traversalPlansByTraversalId, segmentIdsByTraversalId, null);
     }
 
     public static TraversalReadModelProjection project(
@@ -48,7 +47,7 @@ public final class TraversalReadModelProjector {
             List<Traversal> traversals,
             TraversalPlanningInput planningInput,
             Map<Long, TraversalPlan> traversalPlansByTraversalId,
-            Map<String, String> stairNamesBySegmentKey,
+            Map<Long, TraversalSegmentIds> segmentIdsByTraversalId,
             DungeonLayout previousLayout
     ) {
         ArrayList<Corridor> corridors = new ArrayList<>();
@@ -60,6 +59,9 @@ public final class TraversalReadModelProjector {
             TraversalPlan traversalPlan = preserveSegmentIds(
                     traversal,
                     traversalPlan(traversal, planningInput, traversalPlansByTraversalId),
+                    traversal == null || traversal.traversalId() == null
+                            ? TraversalSegmentIds.empty()
+                            : segmentIdsByTraversalId.getOrDefault(traversal.traversalId(), TraversalSegmentIds.empty()),
                     previousLayout);
             for (CorridorTraversalSlice corridorSlice : traversalPlan.corridorSlices()) {
                 corridors.add(Corridor.resolved(
@@ -75,8 +77,7 @@ public final class TraversalReadModelProjector {
                 DungeonStair stair = materializeStair(
                         stairSlice,
                         traversal.traversalId(),
-                        mapId,
-                        stairName(stairSlice, stairNamesBySegmentKey, previousLayout));
+                        mapId);
                 if (stair != null) {
                     stairs.add(stair);
                 }
@@ -88,13 +89,15 @@ public final class TraversalReadModelProjector {
     public static TraversalPlan preserveSegmentIds(
             Traversal traversal,
             TraversalPlan traversalPlan,
+            TraversalSegmentIds segmentIds,
             DungeonLayout previousLayout
     ) {
         if (traversal == null || traversalPlan == null) {
             return TraversalPlan.empty();
         }
-        LinkedHashMap<String, Long> corridorIdsBySegmentKey = new LinkedHashMap<>(traversal.materialization().corridorIdsBySegmentKey());
-        LinkedHashMap<String, Long> stairIdsBySegmentKey = new LinkedHashMap<>(traversal.materialization().stairIdsBySegmentKey());
+        TraversalSegmentIds existingIds = segmentIds == null ? TraversalSegmentIds.empty() : segmentIds;
+        LinkedHashMap<String, Long> corridorIdsBySegmentKey = new LinkedHashMap<>(existingIds.corridorIdsBySegmentKey());
+        LinkedHashMap<String, Long> stairIdsBySegmentKey = new LinkedHashMap<>(existingIds.stairIdsBySegmentKey());
         if (previousLayout == null || traversal.traversalId() == null) {
             return traversalPlan
                     .withCorridorIds(corridorIdsBySegmentKey)
@@ -127,47 +130,16 @@ public final class TraversalReadModelProjector {
     private static DungeonStair materializeStair(
             TraversalStairSlice stairSlice,
             Long traversalId,
-            long mapId,
-            String stairName
+            long mapId
     ) {
         if (stairSlice == null || stairSlice.placement() == null) {
             return null;
         }
-        try {
-            StairGeometry geometry = StairGeometry.fromExitLevels(
-                    stairSlice.placement().shape(),
-                    stairSlice.placement().anchor(),
-                    stairSlice.placement().direction(),
-                    stairSlice.placement().dimension1(),
-                    stairSlice.placement().dimension2(),
-                    stairSlice.placement().exitLevels());
-            return new DungeonStair(
-                    stairSlice.stairId(),
-                    traversalId,
-                    stairSlice.segmentKey(),
-                    mapId,
-                    stairName,
-                    geometry.pathNodes(),
-                    geometry.exits());
-        } catch (IllegalArgumentException ignored) {
-            return null;
-        }
-    }
-
-    private static String stairName(
-            TraversalStairSlice stairSlice,
-            Map<String, String> stairNamesBySegmentKey,
-            DungeonLayout previousLayout
-    ) {
-        if (stairSlice == null) {
-            return null;
-        }
-        String byKey = stairNamesBySegmentKey == null ? null : stairNamesBySegmentKey.get(stairSlice.segmentKey());
-        if (byKey != null || previousLayout == null || stairSlice.stairId() == null) {
-            return byKey;
-        }
-        DungeonStair previous = previousLayout.findStair(stairSlice.stairId());
-        return previous == null ? null : previous.name();
+        return stairSlice.placement().materialize(
+                stairSlice.stairId(),
+                traversalId,
+                stairSlice.segmentKey(),
+                mapId);
     }
 
     private static void matchCorridorIds(
@@ -339,13 +311,7 @@ public final class TraversalReadModelProjector {
             return null;
         }
         try {
-            StairGeometry geometry = StairGeometry.fromExitLevels(
-                    placement.shape(),
-                    placement.anchor(),
-                    placement.direction(),
-                    placement.dimension1(),
-                    placement.dimension2(),
-                    placement.exitLevels());
+            var geometry = placement.geometry();
             LinkedHashSet<CubePoint> exitPositions = new LinkedHashSet<>();
             for (var exit : geometry.exits()) {
                 if (exit != null && exit.position() != null) {

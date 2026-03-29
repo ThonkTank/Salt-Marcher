@@ -157,7 +157,7 @@ public final class DungeonRuntimeDoorCatalog {
         }
         if (destination.type() == ConnectionEndpointType.STAIR && destination.id() != null) {
             var stair = layout.findStair(destination.id());
-            return stair == null ? "Treppe" : stair.name();
+            return stair == null ? "Treppe" : stair.label();
         }
         if (destination.type() == ConnectionEndpointType.TRANSITION && destination.id() != null) {
             var transition = layout.findTransition(destination.id());
