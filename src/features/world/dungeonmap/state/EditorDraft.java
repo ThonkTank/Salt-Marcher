@@ -1,11 +1,8 @@
 package features.world.dungeonmap.state;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
+public sealed interface EditorDraft permits EditorDraft.TraversalDraft, EditorDraft.BoundaryDraft {
 
-public sealed interface EditorDraft permits EditorDraft.CorridorDraft, EditorDraft.BoundaryDraft {
-
-    record CorridorDraft(PendingStart pendingStart) implements EditorDraft {
+    record TraversalDraft(PendingStart pendingStart) implements EditorDraft {
     }
 
     record BoundaryDraft(
@@ -17,16 +14,16 @@ public sealed interface EditorDraft permits EditorDraft.CorridorDraft, EditorDra
         }
     }
 
-    sealed interface PendingTarget permits PendingTarget.Room, PendingTarget.Corridor, PendingTarget.Stair {
+    sealed interface PendingTarget permits PendingTarget.Room, PendingTarget.CorridorSegment, PendingTarget.StairSegment {
         String targetKey();
 
         record Room(Long roomId, String targetKey) implements PendingTarget {
         }
 
-        record Corridor(Long corridorId, String targetKey) implements PendingTarget {
+        record CorridorSegment(Long corridorId, String targetKey) implements PendingTarget {
         }
 
-        record Stair(Long stairId, String targetKey) implements PendingTarget {
+        record StairSegment(Long stairId, String targetKey) implements PendingTarget {
         }
     }
 
@@ -45,10 +42,10 @@ public sealed interface EditorDraft permits EditorDraft.CorridorDraft, EditorDra
             if (target instanceof PendingTarget.Room room && room.roomId() != null) {
                 return "Raum " + room.roomId();
             }
-            if (target instanceof PendingTarget.Corridor corridor && corridor.corridorId() != null) {
+            if (target instanceof PendingTarget.CorridorSegment corridor && corridor.corridorId() != null) {
                 return "Korridor " + corridor.corridorId();
             }
-            if (target instanceof PendingTarget.Stair stair && stair.stairId() != null) {
+            if (target instanceof PendingTarget.StairSegment stair && stair.stairId() != null) {
                 return "Treppe " + stair.stairId();
             }
             return "Ziel";

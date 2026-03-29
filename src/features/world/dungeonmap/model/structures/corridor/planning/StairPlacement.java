@@ -12,7 +12,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-// Eine Treppe, die der Pathfinder platziert hat. Public, da von DungeonCorridorEditService gelesen.
+// Eine Treppe, die der Pathfinder platziert hat. Public, da sie Traversal-Materialisierung verlässt.
 public record StairPlacement(
         Point2i anchor,
         StairShape shape,

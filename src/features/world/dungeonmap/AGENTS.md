@@ -40,8 +40,8 @@ The feature ships two `AppView` implementations: `DungeonEditorView` (EDITOR) an
   - `DungeonEditorSessionState` — current tool + view mode
   - `EditorInteractionState` — shared editor interaction state: selected target key, active `EditorPreview`, active `EditorDraft`
   - `EditorPreview` — sealed preview payloads for dragged cluster layouts, room paint/delete shapes, and boundary path overlays
-  - `EditorDraft` — sealed shared drafts for corridor start selection and boundary-path status
-  - Stair and transition draft state is tool-local: `StairTool` owns pending exit levels, shape, dimensions, and placement validation; `TransitionTool` owns destination selection, prepared-transition placement, and placement errors. Do not reintroduce parallel shared listener channels for these tool-private drafts
+  - `EditorDraft` — sealed shared drafts for traversal start selection and boundary-path status
+  - Transition placement state stays tool-local inside `TransitionTool`. Do not reintroduce parallel shared listener channels for transition-private draft state
   - `DungeonLevelOverlaySettings` — overlay mode (`DungeonLevelOverlayMode`: OFF | NEARBY±range | SELECTED levels), opacity, level range
   - `DungeonRuntimeState` — active location + heading, loading/dragging/moving mode flags, error state
 
@@ -126,7 +126,7 @@ The domain-model ownership rules below apply to the full interaction pipeline, n
 - **SELECT** → `SelectionTool` — click selects clusters/rooms/stairs/transitions via `EditorInteractionState`, drag shows translated cluster preview via `EditorPreview.LayoutPreview`, and the state pane exposes room narration editing
 - **ROOM_PAINT / ROOM_DELETE** → `PaintTool` — manages `RoomPaintSession`, clears selection on paint start, updates `EditorPreview.PaintPreview` during drag, calls `DungeonRoomTopologyService.paint()`/`.delete()` on release
 - **CLUSTER_WALL / CLUSTER_WALL_DELETE / CLUSTER_DOOR / CLUSTER_DOOR_DELETE** → `BoundaryTool` — owns the wall-path draft locally, publishes overlay edges through `EditorPreview.BoundaryPreview`, and stores only lightweight status/selection in shared state
-- **TRAVERSAL_CREATE / TRAVERSAL_DELETE** → `TraversalTool` — two-click flow via `EditorDraft.CorridorDraft`; targets may be room, corridor segment, or stair segment. Create resolves through `DungeonTraversalEditService`, delete removes the parent traversal via the clicked corridor/stair segment
+- **TRAVERSAL_CREATE / TRAVERSAL_DELETE** → `TraversalTool` — two-click flow via `EditorDraft.TraversalDraft`; targets may be room, corridor segment, or stair segment. Create resolves through `DungeonTraversalEditService`, delete removes the parent traversal via the clicked corridor/stair segment
 - **TRANSITION_CREATE / TRANSITION_DELETE** → `TransitionTool` — create either places a prepared transition or creates+places atomically from the tool-local transition draft. Delete click-targets transition at cell
 
 Canvas pointer events flow through `DungeonCanvasInteractionHandler` → `handlePressed`/`handleDragged`/`handleReleased` → state update → redraw. Level scrolls are workspace-owned: workspace changes `mapState.activeProjectionLevel` directly, then notifies the handler via `levelScrolled(int)` so tools can react (e.g. `SelectionTool` updates `dragSession.currentLevel`). Hit testing: `DungeonGridHitTester` returns `DungeonEditorHitTarget` / `DungeonEditorLabelHitTarget` for cluster/room/corridor at canvas point.

@@ -121,9 +121,9 @@ public final class TraversalTool implements EditorTool {
             return false;
         }
         state.selectTarget(target.targetKey());
-        EditorDraft.CorridorDraft draft = traversalDraft();
+        EditorDraft.TraversalDraft draft = traversalDraft();
         if (draft == null || draft.pendingStart() == null) {
-            state.showDraft(new EditorDraft.CorridorDraft(
+            state.showDraft(new EditorDraft.TraversalDraft(
                     new EditorDraft.PendingStart(
                             target,
                             mapState.activeProjectionLevel(),
@@ -204,10 +204,10 @@ public final class TraversalTool implements EditorTool {
         if (target instanceof EditorDraft.PendingTarget.Room room) {
             return new TraversalTarget.Room(room.roomId(), room.targetKey());
         }
-        if (target instanceof EditorDraft.PendingTarget.Corridor corridor) {
+        if (target instanceof EditorDraft.PendingTarget.CorridorSegment corridor) {
             return new TraversalTarget.CorridorSegment(corridor.corridorId(), corridor.targetKey());
         }
-        if (target instanceof EditorDraft.PendingTarget.Stair stair) {
+        if (target instanceof EditorDraft.PendingTarget.StairSegment stair) {
             return new TraversalTarget.StairSegment(stair.stairId(), stair.targetKey());
         }
         return null;
@@ -221,10 +221,10 @@ public final class TraversalTool implements EditorTool {
             }
             return roomTarget.roomId() == null ? "Raum" : "Raum " + roomTarget.roomId();
         }
-        if (target instanceof EditorDraft.PendingTarget.Corridor corridorTarget) {
+        if (target instanceof EditorDraft.PendingTarget.CorridorSegment corridorTarget) {
             return corridorTarget.corridorId() == null ? "Korridor" : "Korridor " + corridorTarget.corridorId();
         }
-        if (target instanceof EditorDraft.PendingTarget.Stair stairTarget) {
+        if (target instanceof EditorDraft.PendingTarget.StairSegment stairTarget) {
             return stairTarget.stairId() == null ? "Treppe" : "Treppe " + stairTarget.stairId();
         }
         return "Ziel";
@@ -248,13 +248,13 @@ public final class TraversalTool implements EditorTool {
                 .findFirst()
                 .orElse(null);
         if (stair != null) {
-            return new EditorDraft.PendingTarget.Stair(stair.stairId(), stair.targetKey());
+            return new EditorDraft.PendingTarget.StairSegment(stair.stairId(), stair.targetKey());
         }
         Corridor corridor = layout.corridorsAtCell(gridCell).stream()
                 .filter(candidate -> candidate != null && candidate.corridorId() != null)
                 .findFirst()
                 .orElse(null);
-        return corridor == null ? null : new EditorDraft.PendingTarget.Corridor(corridor.corridorId(), corridor.targetKey());
+        return corridor == null ? null : new EditorDraft.PendingTarget.CorridorSegment(corridor.corridorId(), corridor.targetKey());
     }
 
     private static Long singleRoomIdFor(DungeonEditorHitTarget hit, DungeonLayout layout) {
@@ -271,8 +271,8 @@ public final class TraversalTool implements EditorTool {
         return cluster == null || cluster.singleRoom() == null ? null : cluster.singleRoom().roomId();
     }
 
-    private EditorDraft.CorridorDraft traversalDraft() {
-        return state.activeDraft() instanceof EditorDraft.CorridorDraft draft ? draft : null;
+    private EditorDraft.TraversalDraft traversalDraft() {
+        return state.activeDraft() instanceof EditorDraft.TraversalDraft draft ? draft : null;
     }
 
     private void clear() {
@@ -287,7 +287,7 @@ public final class TraversalTool implements EditorTool {
     }
 
     private String traversalStatusText() {
-        EditorDraft.CorridorDraft draft = traversalDraft();
+        EditorDraft.TraversalDraft draft = traversalDraft();
         if (draft == null || draft.pendingStart() == null || draft.pendingStart().displayLabel() == null) {
             return null;
         }

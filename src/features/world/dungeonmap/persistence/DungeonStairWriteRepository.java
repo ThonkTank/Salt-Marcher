@@ -76,41 +76,6 @@ public final class DungeonStairWriteRepository {
         }
     }
 
-    public long insertStair(
-            Connection conn,
-            long mapId,
-            String name,
-            StairShape shape,
-            CardinalDirection direction,
-            int dimension1,
-            int dimension2,
-            Long corridorId
-    ) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement(
-                "INSERT INTO dungeon_stairs(dungeon_map_id, name, shape, direction, dimension1, dimension2, corridor_id)"
-                        + " VALUES(?, ?, ?, ?, ?, ?, ?)",
-                Statement.RETURN_GENERATED_KEYS)) {
-            ps.setLong(1, mapId);
-            ps.setString(2, name);
-            ps.setString(3, (shape == null ? StairShape.LADDER : shape).name());
-            ps.setInt(4, (direction == null ? CardinalDirection.defaultDirection() : direction).code());
-            ps.setInt(5, Math.max(0, dimension1));
-            ps.setInt(6, Math.max(0, dimension2));
-            if (corridorId != null) {
-                ps.setLong(7, corridorId);
-            } else {
-                ps.setNull(7, java.sql.Types.INTEGER);
-            }
-            ps.executeUpdate();
-            try (ResultSet rs = ps.getGeneratedKeys()) {
-                if (!rs.next()) {
-                    throw new SQLException("No key returned for dungeon_stairs insert");
-                }
-                return rs.getLong(1);
-            }
-        }
-    }
-
     public void replacePathNodes(Connection conn, long stairId, List<CubePoint> pathNodes) throws SQLException {
         try (PreparedStatement delete = conn.prepareStatement(
                 "DELETE FROM dungeon_stair_path_nodes WHERE stair_id=?")) {
@@ -156,14 +121,6 @@ public final class DungeonStairWriteRepository {
         try (PreparedStatement ps = conn.prepareStatement(
                 "DELETE FROM dungeon_stairs WHERE stair_id=?")) {
             ps.setLong(1, stairId);
-            ps.executeUpdate();
-        }
-    }
-
-    public void deleteByCorridorId(Connection conn, long corridorId) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement(
-                "DELETE FROM dungeon_stairs WHERE corridor_id=?")) {
-            ps.setLong(1, corridorId);
             ps.executeUpdate();
         }
     }

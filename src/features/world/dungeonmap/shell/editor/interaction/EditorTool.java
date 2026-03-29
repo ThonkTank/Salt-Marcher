@@ -7,7 +7,7 @@ import java.util.Set;
 
 public sealed interface EditorTool
         permits SelectionTool, PaintTool, BoundaryTool,
-                StairTool, TransitionTool, TraversalTool {
+                TransitionTool, TraversalTool {
 
     Set<DungeonEditorTool> supportedTools();
 
