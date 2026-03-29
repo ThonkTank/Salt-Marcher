@@ -129,8 +129,9 @@ public final class DungeonTraversalEditService {
             Traversal traversal,
             Long deletedTraversalId
     ) throws SQLException {
+        TraversalRoutingSnapshot routingSnapshot = TraversalRoutingSnapshot.fromLayout(layout);
         TraversalRoute traversalRoute = traversal.isPersistable()
-                ? traversal.route(TraversalRoutingSnapshot.fromLayout(layout))
+                ? traversal.route(routingSnapshot)
                 : TraversalRoute.empty();
         traversalPersistenceService.persistTraversal(conn, layout, traversal, traversalRoute);
         if (deletedTraversalId != null) {

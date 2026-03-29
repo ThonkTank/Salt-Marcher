@@ -47,10 +47,9 @@ public record TraversalReadModelProjection(
             if (traversal == null) {
                 continue;
             }
-            TraversalRoute resolvedRoute = TraversalSegmentIdentityMatcher.preserveSegmentIds(
+            TraversalRoute resolvedRoute = applySegmentRefs(
                     traversal,
-                    traversalRoute(traversal, routingSnapshot, traversalRoutesByTraversalId),
-                    previousLayout);
+                    traversalRoute(traversal, routingSnapshot, traversalRoutesByTraversalId));
             for (TraversalRoute.CorridorSegment corridorSegment : resolvedRoute.corridorSegments()) {
                 Corridor corridor = corridorSegment == null ? null : corridorSegment.corridor();
                 if (corridor != null) {
@@ -82,5 +81,14 @@ public record TraversalReadModelProjection(
             return TraversalRoute.empty();
         }
         return traversal.route(routingSnapshot);
+    }
+
+    private static TraversalRoute applySegmentRefs(Traversal traversal, TraversalRoute traversalRoute) {
+        if (traversal == null || traversalRoute == null) {
+            return traversalRoute == null ? TraversalRoute.empty() : traversalRoute;
+        }
+        return traversalRoute
+                .withCorridorIds(traversal.segmentRefs().corridorIdsBySegmentKey())
+                .withStairIds(traversal.segmentRefs().stairIdsBySegmentKey());
     }
 }

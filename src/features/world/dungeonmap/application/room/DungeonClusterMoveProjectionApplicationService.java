@@ -9,7 +9,6 @@ import features.world.dungeonmap.model.structures.traversal.Traversal;
 import features.world.dungeonmap.model.structures.traversal.TraversalRoute;
 import features.world.dungeonmap.model.structures.traversal.TraversalRoutingContext;
 import features.world.dungeonmap.model.structures.traversal.TraversalRoutingSnapshot;
-import features.world.dungeonmap.model.structures.traversal.TraversalSegmentIdentityMatcher;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -170,10 +169,7 @@ public final class DungeonClusterMoveProjectionApplicationService {
             TraversalRoute rawRoute = traversalRoutesByTraversalId.getOrDefault(
                     traversal.traversalId(),
                     provisionalSnapshot == null ? TraversalRoute.empty() : traversal.route(provisionalSnapshot));
-            result.put(traversal.traversalId(), TraversalSegmentIdentityMatcher.preserveSegmentIds(
-                    traversal,
-                    rawRoute,
-                    previousLayout));
+            result.put(traversal.traversalId(), applySegmentRefs(traversal, rawRoute));
         }
         return result.isEmpty() ? Map.of() : Map.copyOf(result);
     }
@@ -306,5 +302,14 @@ public final class DungeonClusterMoveProjectionApplicationService {
             }
         }
         return result;
+    }
+
+    private static TraversalRoute applySegmentRefs(Traversal traversal, TraversalRoute traversalRoute) {
+        if (traversalRoute == null || traversal == null) {
+            return traversalRoute == null ? TraversalRoute.empty() : traversalRoute;
+        }
+        return traversalRoute
+                .withCorridorIds(traversal.segmentRefs().corridorIdsBySegmentKey())
+                .withStairIds(traversal.segmentRefs().stairIdsBySegmentKey());
     }
 }

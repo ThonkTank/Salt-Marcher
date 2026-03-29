@@ -11,11 +11,9 @@ import features.world.dungeonmap.application.room.DungeonBoundaryEditService;
 import features.world.dungeonmap.application.room.DungeonRoomNarrationService;
 import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
 import features.world.dungeonmap.application.traversal.DungeonTraversalEditService;
-import features.world.dungeonmap.application.traversal.DungeonCorridorReconciliation;
-import features.world.dungeonmap.application.traversal.DungeonStairReconciliation;
-import features.world.dungeonmap.application.traversal.DungeonTraversalSegmentPersistence;
 import features.world.dungeonmap.application.traversal.DungeonTraversalPersistenceService;
 import features.world.dungeonmap.application.traversal.DungeonTraversalRoomRewriteService;
+import features.world.dungeonmap.application.traversal.DungeonTraversalStructureCommitter;
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
 import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
@@ -59,16 +57,14 @@ public final class DungeonMapModule {
         DungeonTraversalCorridorSegmentWriteRepository corridorSegmentWriteRepository = new DungeonTraversalCorridorSegmentWriteRepository();
         DungeonTraversalStairSegmentWriteRepository stairSegmentWriteRepository = new DungeonTraversalStairSegmentWriteRepository();
         DungeonTraversalWriteRepository traversalWriteRepository = new DungeonTraversalWriteRepository();
-        DungeonTraversalSegmentPersistence traversalSegmentPersistence = new DungeonTraversalSegmentPersistence(
-                new DungeonCorridorReconciliation(corridorWriteRepository, corridorSegmentWriteRepository),
-                new DungeonStairReconciliation(stairWriteRepository, stairSegmentWriteRepository),
+        DungeonTraversalStructureCommitter traversalStructureCommitter = new DungeonTraversalStructureCommitter(
                 corridorSegmentWriteRepository,
                 stairSegmentWriteRepository,
                 corridorWriteRepository,
                 stairWriteRepository);
         DungeonTraversalPersistenceService traversalPersistenceService = new DungeonTraversalPersistenceService(
                 traversalWriteRepository,
-                traversalSegmentPersistence);
+                traversalStructureCommitter);
         DungeonRoomWriteRepository roomWriteRepository = new DungeonRoomWriteRepository();
         DungeonTransitionWriteRepository transitionWriteRepository = new DungeonTransitionWriteRepository();
         DungeonRoomNarrationService roomNarrationService = new DungeonRoomNarrationService(roomWriteRepository);
