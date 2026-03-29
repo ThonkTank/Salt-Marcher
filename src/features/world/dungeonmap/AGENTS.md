@@ -17,7 +17,7 @@ The feature ships two `AppView` implementations: `DungeonEditorView` (EDITOR) an
 - `model/` — immutable domain model in three strict layers (see **Model Layering** below)
 - `application/` — stateful edit services that plan and persist topology changes. Organized by domain concern:
   - `application/room/` — room paint topology: `DungeonRoomTopologyService` is the single room topology orchestrator for paint/delete/boundary edits; thin facades may wrap transaction entrypoints but must not re-plan topology outside the model. Exit catalogs: `DoorExitCatalog` groups adjacent connection boundary edges into logical openings via BFS, `RoomExitCatalog` wraps it per-room, `RoomExitDescriptor` carries the result
-  - `application/traversal/` — traversal lifecycle: `DungeonTraversalEditService` (create/extend/merge/delete by room or segment target), `DungeonTraversalPersistenceService` (parent + constraint persistence), `DungeonTraversalRoomRewriteService` (room-merge/delete/split membership rewrite). Traversal is the owner for room membership, waypoint/door constraints, and stair materialization
+  - `application/traversal/` — traversal lifecycle: `DungeonTraversalEditService` (create/extend/merge/delete by room or segment target), `DungeonTraversalPersistenceService` (parent + constraint persistence), `DungeonTraversalRoomRewriteService` (room-merge/delete/split membership rewrite). Traversal owns room membership, waypoint/door bindings, and segment refs. Disposable planning concepts such as plans, slices, projections, rewrite contexts, and planner inputs belong to `application/traversal/planning/`, not to `model/structures/traversal`
   - `application/transition/` — inter-map transition lifecycle: `DungeonTransitionEditService` (two-phase create: direct or prepared+place-later, bidirectional linking, delete with cascade), `DungeonTransitionEditRequest` (sealed creation parameters), `DungeonTransitionTargetCatalogService` (loads placed transitions on a target map for destination selection → `DungeonTransitionTargetSummary`)
   - `application/runtime/` — runtime navigation subsystem: `DungeonRuntimeNavigationService` (orchestrator: load position, resolve surface, move party), `DungeonRuntimeLocation` (sealed: Room | Corridor | CorridorComponent | Tile | StairExit | Transition), `CardinalDirection` (`model/geometry/`, shared 4-direction type with relative-label logic and persistence code), surface pipeline (`DungeonRuntimeSurfaceResolver` → `DungeonRuntimeSurface` → `DungeonRuntimeSurfacePresenter`), door pipeline (`DungeonRuntimeDoorCatalog` enriches exits with destination labels and narration → `DungeonRuntimeDoorDescriptor` adds heading-relative labels), stair pipeline (`DungeonRuntimeStairCatalog` → `DungeonRuntimeStairDescriptor`: filters exits reachable from current level, excludes active tile), transition pipeline (`DungeonRuntimeTransitionCatalog` → `DungeonRuntimeTransitionDescriptor`: resolves destination labels from overworld/dungeon targets), `DungeonRuntimeLabels` (static label generation), `DungeonRuntimeLocations` (location ↔ persistence serialization), `DungeonRuntimeStateRepairService` (consistency repair)
   - `application/support/` — `DungeonTransactionRunner`
@@ -163,21 +163,21 @@ When rooms are painted, deleted, or merged, affected traversals must be reanchor
 
 1. `DungeonRoomTopologyService` applies room topology changes directly through `RoomCluster` model operations
 2. Detects affected traversals via `DungeonLayout.traversalsAffectedBy(ClusterRewrite)`
-3. Creates `TraversalRewriteContext` (before/after `TraversalPlanningInput`, affected traversal IDs, deleted cluster IDs)
+3. Creates `TraversalRewriteContext` in `application/traversal/planning/` (before/after planner input, affected traversal IDs, deleted cluster IDs)
 4. `Traversal.rewriteAll()` — for each affected traversal:
    - `traversal.reanchoredFor(context)` — re-target waypoint/door bindings to new cluster centers
-   - `TraversalPlanningEngine` replans the traversal and re-materializes corridor/stair segments
+   - `TraversalPlanningEngine` in the planning slice replans segment refs and emits the corridor/stair structures to persist
 5. All changes (room topology + traversals + segments) persisted in one transaction
 
 ### Traversal Planning Algorithm
 
-Routes traversal structure across horizontal and vertical segments, respecting waypoints and door placements.
+The `application/traversal/planning/` slice routes traversal structure across horizontal and vertical segments while respecting waypoints and door placements. Its plan/slice/projection types are orchestration artifacts, not model-owned structure truth.
 
 1. Resolve rooms, waypoints, door bindings from `TraversalPlanningInput`
 2. Try each room as seed, build network incrementally
 3. For each unconnected room, find best connection (exit pair preselection limits pathfinding evaluations from O(n²) to ~10 per room pair)
 4. Two-tier candidate scoring: local tier (quick adjacency + path cost filter) → global tier (full network score, top 4 finalists only)
-5. Score networks; return corridor and stair materializations from the best-scoring structure
+5. Score networks; return the best-scoring corridor/stair structure plus traversal segment refs
 
 Instrumentation available via `saltmarcher.dungeonmap.corridorplanner.profile` system property.
 
@@ -199,9 +199,9 @@ geometry/  →  objects/  →  structures/
 
 - **`Room`** — record: roomId, mapId, clusterId, name, Floor, Walls, `RoomNarration` (visual description + per-exit `RoomExitNarration` entries). `resolved()` keeps room-owned wall boundaries canonical. Connectivity is queried through layout connections instead of mirrored room-local door state.
 - **`RoomCluster`** — groups rooms spatially, manages adjacency via overlap indexing, and owns cluster-local rewrite logic for paint/delete/boundary changes. `movedBy()` handles translation. Produces `InteractiveLabelHandle` for canvas rendering.
-- **`Traversal`** — internal owner aggregate: traversalId, mapId, ordered room membership, `TraversalBindings` as traversal-owned constraints, and materialized segment references. Handles membership rewrite, constraint re-anchoring, and planner input resolution
-- **`Corridor`** — materialized horizontal segment: corridorId, traversalId, mapId, projected roomIds for labels/graph view, `CorridorPath`, and corridor-local `Connection`s. It is selectable and renderable, but not an authoritative owner of membership, bindings, or rewrite behavior
-- **`DungeonStair`** — materialized vertical segment: stairId, traversalId, mapId, name, 3D path (`List<CubePoint>`), exits (`List<DungeonStairExit>`). Represents vertical connections across Z-levels. Target key: `stair:ID`. Queries: `reachableLevels()`, `occupiedPositions()`, `exitsAtLevel(z)`, `labelHandle(z)`
+- **`Traversal`** — internal owner aggregate: traversalId, mapId, ordered room membership, `TraversalBindings` as traversal-owned constraints, and traversal-owned segment refs. Handles membership rewrite, constraint re-anchoring, and resolving the planner inputs used by the application planning slice
+- **`Corridor`** — first-class horizontal structure: corridorId, mapId, projected roomIds for labels/graph view, `CorridorPath`, and corridor-local `Connection`s. Corridor has stable identity, path, connections, and corridor-local rules. It may participate in traversal-organized segment refs, but it is not traversal-owned read-model state
+- **`DungeonStair`** — first-class vertical structure: stairId, mapId, name, 3D path (`List<CubePoint>`), exits (`List<DungeonStairExit>`). DungeonStair has stable identity plus stair-local geometry and rules. Target key: `stair:ID`. Queries: `reachableLevels()`, `occupiedPositions()`, `exitsAtLevel(z)`, `labelHandle(z)`
 - **`DungeonTransition`** — record: transitionId, mapId, description, anchor (`CubePoint`, nullable for unprepared), destination (`DungeonTransitionDestination`: sealed — `OverworldTileDestination(mapId, tileId)` | `DungeonMapDestination(mapId, transitionId)`), linkedTransitionId (for bidirectional pairs). `isPlaced()` checks non-null anchor. Target key: `transition:ID`. Label: "Übergang N".
 
 ### Layer Rules
@@ -213,15 +213,16 @@ geometry/  →  objects/  →  structures/
 - Runtime state (open/closed/locked) belongs in the `DungeonLayout` door registry, not in geometry or duplicated structure projections. Doors are boundaries; connectivity belongs on `Connection`.
 - `Room` is the canonical owner of room-local topology. `RoomCluster` owns only multi-room facts (grouping, adjacency, partition). Application services must not derive room topology from raw geometry.
 - Selection/interactions keys are canonical semantic identity. If a structure or boundary owner exposes that identity (for example `RoomCluster.labelHandle().key()` or a corridor target-key API), renderers/coordinators/controllers may consume it but must not locally reconstruct or parse it.
-- Traversal bindings are canonical structure truth; absolute corridor geometry is runtime state derived from traversal-owned bindings plus current room/cluster layout.
-- `Traversal` is the canonical owner of connection edit truth. Membership changes, waypoint edits, door-binding edits, and binding re-anchoring belong on `Traversal`/`TraversalBindings`, not on `Corridor`. Corridor and stair objects are materialized read models
+- Traversal bindings are canonical structure truth; traversal-owned segment refs are the canonical association from traversal to corridor/stair structures.
+- `Traversal` is the canonical owner of connection edit truth. Membership changes, waypoint edits, door-binding edits, binding re-anchoring, and segment-ref rewrites belong on `Traversal`/`TraversalBindings`, not on `Corridor`
 - Clean `dungeonmap/` code must not depend on `features.world.quarantine.dungeonmap`. Shared helpers such as transactions, room-topology orchestration, corridor reconciliation, and runtime-state repair belong locally under `application/` when still needed.
 - Observable transient state belongs in `state/`, not scattered across shell/canvas packages.
-- `DungeonStair` owns only realized vertical geometry. Cross-segment lifecycle and stair regeneration belong to traversal services, not to an independent stair editing workflow.
+- `Corridor` is a first-class structure with stable identity, path, connections, and corridor-local rules. Traversal organizes corridor usage through segment refs; it does not own corridor structure truth.
+- `DungeonStair` is a first-class structure with stable identity and stair-local geometry/rules. Traversal organizes stair usage through segment refs; it does not own stair structure truth.
 - `DungeonTransition` is the canonical owner of transition identity and destination. Transitions may exist unprepared (anchor=null) — services must guard `isPlaced()` before spatial queries. Bidirectional linking is managed by the edit service, not the model.
 
 ### Persistence Model
 
-Cluster geometry is stored as relative vertex loops with a center anchor. Rooms store only their anchor cell and cluster membership — runtime floor shapes are hydrated via BFS flood-fill against cluster cells and boundary edges. Boundary persistence still stores `(cell, direction, type)` tuples; canonical `Door` boundary objects are rebuilt once in the `DungeonLayout` registry, while connectivity stays on `Connection`. Traversals persist member room IDs plus relative waypoint/door bindings. Corridors persist only materialized segment identity via `traversal_id`.
+Cluster geometry is stored as relative vertex loops with a center anchor. Rooms store only their anchor cell and cluster membership — runtime floor shapes are hydrated via BFS flood-fill against cluster cells and boundary edges. Boundary persistence still stores `(cell, direction, type)` tuples; canonical `Door` boundary objects are rebuilt once in the `DungeonLayout` registry, while connectivity stays on `Connection`. Traversals persist member room IDs plus relative waypoint/door bindings plus traversal-owned segment refs. Corridors and stairs persist their own stable structure identity and geometry; `traversal_id` on `dungeon_corridors` / `dungeon_stairs` is no longer the canonical link.
 
-Stairs use three tables: `dungeon_stairs` (identity + `traversal_id` + name), `dungeon_stair_path_nodes` (ordered 3D path), `dungeon_stair_exits` (exit points with labels). Transitions use `dungeon_transitions` with nullable placement coordinates (cell_x/y, level_z — null for unprepared), destination type discriminator (`OVERWORLD_TILE` | `DUNGEON_MAP`), target FKs per type, and optional `linked_transition_id` for bidirectional pairs.
+Stairs use three tables: `dungeon_stairs` (stable identity + name, with any `traversal_id` column treated as legacy/storage-side association rather than canonical ownership), `dungeon_stair_path_nodes` (ordered 3D path), `dungeon_stair_exits` (exit points with labels). Transitions use `dungeon_transitions` with nullable placement coordinates (cell_x/y, level_z — null for unprepared), destination type discriminator (`OVERWORLD_TILE` | `DUNGEON_MAP`), target FKs per type, and optional `linked_transition_id` for bidirectional pairs.
