@@ -5,8 +5,6 @@ import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.objects.CorridorPath;
 import features.world.dungeonmap.model.structures.connection.CorridorConnection;
 import features.world.dungeonmap.model.structures.TargetKey;
-import features.world.dungeonmap.model.structures.corridor.planning.CorridorPlan;
-import features.world.dungeonmap.model.structures.corridor.planning.CorridorPlanningEngine;
 import features.world.dungeonmap.model.structures.corridor.planning.StairPlacement;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.traversal.CorridorTraversalSlice;
@@ -348,23 +346,8 @@ public final class Corridor {
         if (context == null || !context.affects(corridorId) || !isPersistable()) {
             return this;
         }
-        return replanned(context.rewrittenPlanningInput());
-    }
-
-    public CorridorPlan plan(CorridorPlanningInput input) {
-        return CorridorPlanningEngine.plan(this, input);
-    }
-
-    public Corridor replanned(CorridorPlanningInput input) {
-        TraversalPlan traversalPlan = TraversalPlanningEngine.plan(this, input);
+        TraversalPlan traversalPlan = TraversalPlanningEngine.plan(this, context.rewrittenPlanningInput());
         return applyTraversalSlice(traversalPlan.corridorSlice(corridorId));
-    }
-
-    public Corridor applyPlan(CorridorPlan plan) {
-        if (plan == null) {
-            return this;
-        }
-        return applyTraversalSlice(plan.asTraversalSlice(corridorId));
     }
 
     public Corridor applyTraversalSlice(CorridorTraversalSlice slice) {

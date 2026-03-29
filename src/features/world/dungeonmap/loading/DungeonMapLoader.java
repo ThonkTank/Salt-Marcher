@@ -28,6 +28,8 @@ import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.stair.DungeonStairExit;
 import features.world.dungeonmap.model.structures.stair.StairShape;
+import features.world.dungeonmap.model.structures.traversal.TraversalPlan;
+import features.world.dungeonmap.model.structures.traversal.planning.TraversalPlanningEngine;
 import features.world.dungeonmap.persistence.DungeonSchemaSupport;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
@@ -367,7 +369,13 @@ public final class DungeonMapLoader {
         }
         CorridorPlanningInput planningInput = CorridorPlanningInputProjector.project(clusters);
         return result.stream()
-                .map(corridor -> corridor == null ? null : corridor.replanned(planningInput))
+                .map(corridor -> {
+                    if (corridor == null) {
+                        return null;
+                    }
+                    TraversalPlan traversalPlan = TraversalPlanningEngine.plan(corridor, planningInput);
+                    return corridor.applyTraversalSlice(traversalPlan.corridorSlice(corridor.corridorId()));
+                })
                 .toList();
     }
 
