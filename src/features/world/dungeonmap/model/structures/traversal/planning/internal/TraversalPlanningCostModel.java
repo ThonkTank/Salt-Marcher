@@ -28,7 +28,7 @@ final class TraversalPlanningCostModel {
         return baseDistance + (long) stairCount * stairPenaltyTiles(baseDistance);
     }
 
-    static int stairPenaltyTiles(long baseDistance) {
+    private static int stairPenaltyTiles(long baseDistance) {
         if (baseDistance < 0L) {
             return Integer.MAX_VALUE;
         }
