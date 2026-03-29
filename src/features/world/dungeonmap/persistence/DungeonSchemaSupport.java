@@ -35,9 +35,32 @@ public final class DungeonSchemaSupport {
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_corridors ("
                 + "corridor_id      INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + "dungeon_map_id   INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
-                + "traversal_id     INTEGER NOT NULL REFERENCES dungeon_traversals(traversal_id) ON DELETE CASCADE,"
-                + "segment_key      TEXT,"
-                + "level_z          INTEGER NOT NULL DEFAULT 0"
+                + "level_z          INTEGER NOT NULL DEFAULT 0,"
+                + "directly_adjacent INTEGER NOT NULL DEFAULT 0,"
+                + "routable         INTEGER NOT NULL DEFAULT 1"
+                + ")");
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_corridor_path_nodes ("
+                + "corridor_id      INTEGER NOT NULL REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE,"
+                + "sort_order       INTEGER NOT NULL,"
+                + "cell_x           INTEGER NOT NULL,"
+                + "cell_y           INTEGER NOT NULL,"
+                + "cell_z           INTEGER NOT NULL,"
+                + "PRIMARY KEY (corridor_id, sort_order)"
+                + ")");
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_corridor_connections ("
+                + "corridor_connection_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + "corridor_id      INTEGER NOT NULL REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE,"
+                + "sort_order       INTEGER NOT NULL,"
+                + "cell_x           INTEGER NOT NULL,"
+                + "cell_y           INTEGER NOT NULL,"
+                + "edge_direction   TEXT NOT NULL"
+                + ")");
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_corridor_connection_endpoints ("
+                + "corridor_connection_id INTEGER NOT NULL REFERENCES dungeon_corridor_connections(corridor_connection_id) ON DELETE CASCADE,"
+                + "endpoint_order   INTEGER NOT NULL,"
+                + "endpoint_type    TEXT NOT NULL,"
+                + "endpoint_id      INTEGER NOT NULL,"
+                + "PRIMARY KEY (corridor_connection_id, endpoint_order)"
                 + ")");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_traversals ("
                 + "traversal_id     INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -104,8 +127,6 @@ public final class DungeonSchemaSupport {
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_stairs ("
                 + "stair_id         INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + "dungeon_map_id   INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
-                + "traversal_id     INTEGER NOT NULL REFERENCES dungeon_traversals(traversal_id) ON DELETE CASCADE,"
-                + "segment_key      TEXT,"
                 + "name             TEXT,"
                 + "anchor_x         INTEGER NOT NULL DEFAULT 0,"
                 + "anchor_y         INTEGER NOT NULL DEFAULT 0,"
@@ -130,15 +151,30 @@ public final class DungeonSchemaSupport {
                 + "cell_z           INTEGER NOT NULL,"
                 + "label            TEXT"
                 + ")");
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_traversal_corridor_segments ("
+                + "traversal_id     INTEGER NOT NULL REFERENCES dungeon_traversals(traversal_id) ON DELETE CASCADE,"
+                + "segment_key      TEXT NOT NULL,"
+                + "corridor_id      INTEGER NOT NULL REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE,"
+                + "sort_order       INTEGER NOT NULL DEFAULT 0,"
+                + "PRIMARY KEY (traversal_id, segment_key),"
+                + "UNIQUE (corridor_id)"
+                + ")");
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_traversal_stair_segments ("
+                + "traversal_id     INTEGER NOT NULL REFERENCES dungeon_traversals(traversal_id) ON DELETE CASCADE,"
+                + "segment_key      TEXT NOT NULL,"
+                + "stair_id         INTEGER NOT NULL REFERENCES dungeon_stairs(stair_id) ON DELETE CASCADE,"
+                + "sort_order       INTEGER NOT NULL DEFAULT 0,"
+                + "PRIMARY KEY (traversal_id, segment_key),"
+                + "UNIQUE (stair_id)"
+                + ")");
     }
 
     public static void ensureCompatibility(Connection conn) throws SQLException {
         try (Statement stmt = conn.createStatement()) {
             createSchema(stmt);
-            addColumnIfMissing(stmt, "dungeon_corridors", "traversal_id INTEGER REFERENCES dungeon_traversals(traversal_id) ON DELETE CASCADE");
-            addColumnIfMissing(stmt, "dungeon_corridors", "segment_key TEXT");
-            addColumnIfMissing(stmt, "dungeon_stairs", "traversal_id INTEGER REFERENCES dungeon_traversals(traversal_id) ON DELETE CASCADE");
-            addColumnIfMissing(stmt, "dungeon_stairs", "segment_key TEXT");
+            addColumnIfMissing(stmt, "dungeon_corridors", "level_z INTEGER NOT NULL DEFAULT 0");
+            addColumnIfMissing(stmt, "dungeon_corridors", "directly_adjacent INTEGER NOT NULL DEFAULT 0");
+            addColumnIfMissing(stmt, "dungeon_corridors", "routable INTEGER NOT NULL DEFAULT 1");
             addColumnIfMissing(stmt, "dungeon_stairs", "name TEXT");
             addColumnIfMissing(stmt, "dungeon_stairs", "anchor_x INTEGER NOT NULL DEFAULT 0");
             addColumnIfMissing(stmt, "dungeon_stairs", "anchor_y INTEGER NOT NULL DEFAULT 0");
@@ -163,6 +199,11 @@ public final class DungeonSchemaSupport {
     public static void resetSchema(Connection conn) throws SQLException {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("PRAGMA foreign_keys = OFF");
+            stmt.execute("DROP TABLE IF EXISTS dungeon_traversal_corridor_segments");
+            stmt.execute("DROP TABLE IF EXISTS dungeon_traversal_stair_segments");
+            stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_connection_endpoints");
+            stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_connections");
+            stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_path_nodes");
             stmt.execute("DROP TABLE IF EXISTS dungeon_room_floors");
             stmt.execute("DROP TABLE IF EXISTS dungeon_room_cluster_edges");
             stmt.execute("DROP TABLE IF EXISTS dungeon_room_cluster_vertices");
