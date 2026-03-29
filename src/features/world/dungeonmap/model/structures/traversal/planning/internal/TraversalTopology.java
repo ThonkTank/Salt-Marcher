@@ -13,19 +13,17 @@ public record TraversalTopology(
         Long corridorId,
         long mapId,
         List<TraversalNode> nodes,
-        List<TraversalEdge> edges,
         List<TraversalNodeId> requiredNodeIds,
         Set<CubePoint> obstacles
 ) {
     public TraversalTopology {
         nodes = normalizeNodes(nodes);
-        edges = normalizeEdges(edges, nodes);
         requiredNodeIds = normalizeRequiredNodeIds(requiredNodeIds, nodes);
         obstacles = normalizeObstacles(obstacles);
     }
 
     public static TraversalTopology empty() {
-        return new TraversalTopology(null, 0L, List.of(), List.of(), List.of(), Set.of());
+        return new TraversalTopology(null, 0L, List.of(), List.of(), Set.of());
     }
 
     public boolean hasWaypoints() {
@@ -130,29 +128,6 @@ public record TraversalTopology(
             result.putIfAbsent(node.nodeId(), node);
         }
         return result.isEmpty() ? List.of() : List.copyOf(result.values());
-    }
-
-    private static List<TraversalEdge> normalizeEdges(List<TraversalEdge> edges, List<TraversalNode> nodes) {
-        if (edges == null || edges.isEmpty()) {
-            return List.of();
-        }
-        Map<TraversalNodeId, TraversalNode> nodesById = new LinkedHashMap<>();
-        for (TraversalNode node : nodes == null ? List.<TraversalNode>of() : nodes) {
-            if (node != null && node.nodeId() != null) {
-                nodesById.putIfAbsent(node.nodeId(), node);
-            }
-        }
-        LinkedHashSet<TraversalEdge> result = new LinkedHashSet<>();
-        for (TraversalEdge edge : edges) {
-            if (edge == null) {
-                continue;
-            }
-            if (!nodesById.containsKey(edge.startNodeId()) || !nodesById.containsKey(edge.endNodeId())) {
-                continue;
-            }
-            result.add(edge);
-        }
-        return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
     private static List<TraversalNodeId> normalizeRequiredNodeIds(

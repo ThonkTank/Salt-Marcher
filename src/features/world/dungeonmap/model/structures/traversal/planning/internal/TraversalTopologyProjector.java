@@ -35,7 +35,6 @@ public final class TraversalTopologyProjector {
                 corridorId,
                 mapId,
                 mergeNodes(projectedRoomPortals.nodes(), waypointNodes),
-                List.of(),
                 mergeRequiredNodeIds(requiredRoomPortalNodes, waypointNodes),
                 obstacles == null ? Set.of() : Set.copyOf(obstacles));
     }
