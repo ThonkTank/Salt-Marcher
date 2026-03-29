@@ -8,7 +8,6 @@ import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
 import features.world.dungeonmap.model.structures.traversal.TraversalReadModelProjection;
-import features.world.dungeonmap.model.structures.traversal.TraversalReadModelProjector;
 import features.world.dungeonmap.model.structures.traversal.TraversalRewriteContext;
 
 import java.util.ArrayList;
@@ -58,7 +57,7 @@ public final class DungeonClusterMoveProjectionApplicationService {
                         affectedTraversalIds,
                         Set.of()));
         List<Traversal> updatedTraversals = updatedTraversals(baseLayout, rewriteResult.traversalsById());
-        TraversalReadModelProjection affectedProjection = TraversalReadModelProjector.project(
+        TraversalReadModelProjection affectedProjection = TraversalReadModelProjection.project(
                 baseLayout.mapId(),
                 updatedTraversals.stream()
                         .filter(traversal -> traversal != null

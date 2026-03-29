@@ -24,10 +24,10 @@ import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.stair.DungeonStairExit;
 import features.world.dungeonmap.model.structures.traversal.TraversalBindings;
-import features.world.dungeonmap.model.structures.traversal.TraversalReadModelProjector;
 import features.world.dungeonmap.model.structures.traversal.TraversalDoorBinding;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
 import features.world.dungeonmap.model.structures.traversal.TraversalPlanningInput;
+import features.world.dungeonmap.model.structures.traversal.TraversalReadModelProjection;
 import features.world.dungeonmap.model.structures.traversal.TraversalSegmentIds;
 import features.world.dungeonmap.model.structures.traversal.TraversalWaypointBinding;
 import features.world.dungeonmap.persistence.DungeonSchemaSupport;
@@ -418,7 +418,7 @@ public final class DungeonMapLoader {
             Map<Long, TraversalSegmentIds> segmentIdsByTraversalId
     ) {
         TraversalPlanningInput planningInput = TraversalPlanningInputProjector.project(clusters, stairs);
-        return TraversalReadModelProjector.projectCorridors(mapId, traversals, planningInput, segmentIdsByTraversalId);
+        return TraversalReadModelProjection.projectCorridors(mapId, traversals, planningInput, segmentIdsByTraversalId);
     }
 
     private static Map<Long, List<DungeonStair>> loadTraversalStairs(Connection conn, long mapId) throws SQLException {

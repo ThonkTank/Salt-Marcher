@@ -1,9 +1,11 @@
 package features.world.dungeonmap.model.structures.traversal;
 
+import features.world.dungeonmap.model.structures.stair.DungeonStair;
+
 public record TraversalStairSlice(
         String segmentKey,
         Long stairId,
-        TraversalStairPlacement placement
+        DungeonStair stair
 ) {
     public TraversalStairSlice {
         segmentKey = segmentKey == null ? "" : segmentKey.trim();

@@ -78,15 +78,14 @@ Left column is a VBox (Controls takes natural height, Main fills rest — not re
 
 Salt Marcher is a feature-oriented monolith.
 Code is organized primarily under `src/features/<feature>/`.
-The root `AGENTS.md` defines the shared project grammar: the standard building blocks of the project, what those names mean, how the code should be read, and the central ownership rules.
+The root `AGENTS.md` is the allowlist for repository-wide architecture: it defines the shared building blocks, what those names mean, how the code should be read, and the central ownership rules.
 
 This root file is binding for the entire repository.
 Local `AGENTS.md` files refine these rules for a feature.
 Local `AGENTS.md` files may define additional local structure, but they must not weaken the global ownership and dependency rules.
 
-Do not introduce new global architectural building blocks.
-The root `AGENTS.md` allows only the standard roles defined below.
-Additional structure is allowed only inside a feature-local `AGENTS.md`.
+If a package role, type family, or global rule is not defined here, it is not part of the repository-wide architecture.
+Additional structure belongs only in the nearest feature-local `AGENTS.md`, or as a precise domain name that does not pretend to be a new global role.
 
 ## Canonical Package Roles
 
@@ -94,6 +93,7 @@ Organize feature code under `src/features/<feature>/`.
 Each feature uses only the roles it actually needs.
 Not every feature needs every role.
 If a role is used, it must match the meaning defined here exactly.
+Only the roles listed here are globally canonical.
 
 Read the project in this order:
 - UI behavior lives in `ui/`
@@ -105,136 +105,135 @@ Read the project in this order:
 - internal wiring lives in `bootstrap/`
 
 The default dependency direction is `ui -> application -> repository -> model`.
-`state/` may be observed by `ui/` and coordinated by `application/`, but it must not become a second domain model.
+`state/` may be observed by `ui/` and coordinated by `application/`, while `model/` remains the canonical truth.
 If a feature defines a nearer `AGENTS.md`, that file is required context before any change in that subtree.
 
 ### `model/`
 
-- Contains canonical business and editor truth.
-- Put state and behavior on the lowest-level owner that is the real source of truth.
-- If an operation preserves or transforms an object's own invariant, that behavior belongs on the model.
-- Must not depend on JavaFX, JDBC, repositories, shell classes, or transient UI state.
+- Owns canonical business and editor truth.
+- Carries behavior on the lowest stable owner that actually enforces the invariant.
+- Stays framework- and storage-agnostic.
 
 ### `application/`
 
-- Contains use-case orchestration.
-- Owns workflow sequencing, async orchestration, task submission, transaction boundaries, reload-after-write behavior, and cross-feature coordination.
-- Coordinates repositories, state containers, and other features through explicit boundaries.
-- Does not own canonical domain truth.
+- Owns use-case orchestration.
+- Sequences workflows, async work, transactions, reload-after-write behavior, and cross-feature coordination.
+- Coordinates repositories, state containers, and feature APIs without becoming canonical domain truth.
 
 ### `repository/`
 
-- Contains direct storage adapters.
-- Owns SQL, row mapping, query construction, persistence ordering, and storage-specific lookup methods.
-- Repositories are stateless and receive `Connection` from callers.
-- Must not own workflow state, background work, UI state, or cross-feature orchestration.
+- Owns direct storage access.
+- Carries SQL, row mapping, query construction, persistence ordering, and storage-specific lookups.
+- Remains stateless; callers provide the `Connection`.
 
 ### `state/`
 
-- Contains shared transient UI, editor, or workflow state.
-- Owns shared interaction truth such as selection, drafts, previews, modes, and other transient runtime state.
-- Must not perform persistence directly.
-- Must not duplicate canonical domain truth.
+- Owns shared transient UI, editor, and workflow state.
+- Carries selection, drafts, previews, modes, and other runtime interaction truth.
+- Supports the workflow around canonical truth without replacing it.
 
 ### `ui/`
 
-- Contains feature-local presentation and interaction code.
-- Views, panes, dropdowns, popups, canvases, controls, and UI controllers live here.
-- May call application services and state containers.
-- Must not own direct storage access, transaction boundaries, or cross-feature composition.
+- Owns feature-local presentation and interaction code.
+- Contains views, panes, dropdowns, canvases, controls, and UI controllers.
+- Talks to application services and state containers, not directly to persistence policy.
 
 ### `api/`
 
-- Is the only cross-feature entrypoint.
-- Contains only deliberate boundary types and contracts.
-- Root-level `api/` contains public boundary types such as `*Api`, `*Port`, `*Summary`, `*Request`, `*Result`, and `*Handle`.
-- Must not contain implementation-detail wrappers, storage facades, or accidental UI re-exports.
+- Is the cross-feature entrypoint.
+- Contains deliberate boundary contracts and boundary data only.
+- Root-level `api/` holds public families such as `*Api`, `*Port`, `*Summary`, `*Request`, `*Result`, and `*Handle`.
 
 ### `bootstrap/`
 
-- Contains internal composition roots and assembly-only wiring.
+- Owns internal composition roots and assembly-only wiring.
 - Wires collaborators and exposes feature entrypoints.
-- Must not contain domain logic.
-- `SaltMarcherApp` owns cross-feature top-level composition.
+- `SaltMarcherApp` remains the cross-feature top-level composition root.
 
 ## Canonical Type Names
 
 Package-role rules above still govern dependencies and ownership.
-This section defines naming only.
-Choose the narrowest canonical name that matches the real owner.
+This section defines what a name promises to a reader.
+Choose the narrowest canonical name that matches the real owner and behavior.
 If no canonical name fits cleanly, use a precise domain name instead of stretching a near-match.
+Only the families listed here are globally canonical.
+Not every repeated suffix is a canonical role: passive domain nouns such as `*Snapshot`, `*Descriptor`, `*Entry`, `*Criteria`, `*Option`, `*Profile`, `*Resolution`, `*Lookup`, `*Parser`, and `*Renderer` may remain precise domain names without becoming global architecture terms.
 
 ### Boundaries And Assembly
 
-- `*Module` wires a feature surface and exposes setup entrypoints. Construction only.
-- `*Api` is a deliberate cross-feature boundary surface. No JavaFX or assembly leakage.
-- `*Port` is a narrow capability contract used across package or feature boundaries.
-- `*Handle` is a small capability token returned for later interaction, registration, or content replacement.
-- `*Summary` is a lightweight read projection for selectors, lists, or inspectors.
-- `*Request` is a named input payload for a use case or API call.
-- `*Result` is a named output payload for a use case or API call.
+- `*Module` — composition root for one feature surface; lives in `bootstrap/`, or in `api/` when it is the public feature entrypoint.
+- `*Api` — deliberate cross-feature boundary surface; lives in `api/`.
+- `*Port` — narrow capability contract across package or feature boundaries; lives in `api/` when public, otherwise next to the owning `application/` slice.
+- `*Handle` — small capability token for later interaction, registration cleanup, or content replacement; lives next to the API or UI surface that returns it.
+- `*Summary` — lightweight read projection for selectors, lists, or inspectors; lives in `api/` or another explicit boundary package.
+- `*Request` — named input payload for one use case or API call; lives in `api/` or another explicit boundary package.
+- `*Result` — named output payload for one use case or API call; lives in `api/` or another explicit boundary package.
 
 ### Workflow And Persistence
 
-- `*ApplicationService` orchestrates a user-visible workflow, including tasks, transactions, reload-after-write, and failure mapping.
-- `*Session` owns long-lived mutable runtime lifecycle, timers, or background work.
-- `*Repository` is the direct relational storage adapter. SQL and row mapping live here.
-- `*Store` persists or retrieves non-relational blobs, backups, snapshots, or file-oriented payloads.
-- `*Catalog` is a read-only selection or index surface over already-available data or explicit read collaborators. It does not own writes.
-- `*Loader` performs one-shot loading or materialization into domain or UI-ready structures. It does not become shared mutable state.
-- `*Mapper` translates between representations and owns no workflow.
-- `*Factory` creates a richer object that needs assembly beyond a constructor but does not retain lifecycle ownership.
-- `*Coordinator` aligns several peer collaborators inside one local workflow slice when no single UI surface owns the orchestration.
+- `*ApplicationService` — user-visible workflow orchestrator for tasks, transactions, reload-after-write, and failure mapping; lives in `application/`.
+- `*Session` — long-lived mutable runtime context with explicit lifecycle; lives in `application/`, or in `model/` when it is pure in-memory canonical runtime truth.
+- `*Repository` — direct relational storage adapter; lives in `repository/`.
+- `*Store` — persistence surface for non-relational blobs, backups, snapshots, or file-oriented payloads; lives in `repository/` or a focused persistence subpackage.
+- `*Catalog` — read-only selection, lookup, or index surface over available data or explicit read collaborators; lives in `application/`, `api/`, or a focused read-side package.
+- `*Loader` — one-shot loading or materialization into domain or UI-ready structures; lives in `application/` or a focused loading subpackage.
+- `*Mapper` — translator between representations; lives next to the boundary it serves.
+- `*Factory` — richer creator when construction needs assembly beyond a constructor; lives next to the type family it creates.
+- `*Coordinator` — local orchestrator across peer collaborators inside one workflow slice; lives in the closest package that owns that interaction.
 
 ### Domain Logic
 
-- `*Generator` creates new domain results from rules and inputs.
-- `*Calculator`, `*Scoring`, `*Classifier`, `*Normalizer`, `*Codec`, `*Rules`, and `*Policy` are narrow pure or near-pure logic names.
-- `*Assembler` combines multiple inputs into one compound object or boundary result.
-- `*Projector` derives a read model, preview model, or presentation model from authoritative state.
-- `*Context` is an immutable operation-scoped bundle of inputs shared across collaborators, not a mutable bag of services.
+- `*Generator` — creator of new domain results from rules and inputs; lives in `model/` when it creates canonical domain truth, otherwise in a focused `application/` subpackage.
+- `*Calculator` — deterministic numeric or derived-value calculator; lives with the model or application slice that owns the calculation.
+- `*Classifier` — category or label assigner for existing inputs; lives with the owning model or application slice.
+- `*Normalizer` — canonicalizer into one stable representation; lives next to the value family it normalizes.
+- `*Codec` — bidirectional encoder/decoder between stable representations; lives next to the format boundary it serves.
+- `*Rules` — shared static domain rules, thresholds, or invariants; lives in `model/` or another domain-focused package.
+- `*Policy` — pure or near-pure decision policy over allowed options; lives in the model or application slice that owns the decision.
+- `*Assembler` — combiner of multiple inputs into one compound object or boundary result; lives next to the output type it assembles.
+- `*Projector` — derivation surface for read, preview, or presentation-oriented models from authoritative state; lives in `application/`, `state/`, or a focused read-side package.
+- `*Context` — immutable operation-scoped bundle of inputs shared across one workflow or algorithm family; lives next to the consumers.
 
 ### UI And Runtime State
 
-- `*View` plugs into the shell as a top-level application surface.
-- `*Pane` is a composed UI region with its own layout and local behavior.
-- `*Controls` is the dedicated controls region for one surface, not the main workspace or inspector.
-- `*Canvas` is the primary draw and direct-manipulation surface.
-- `*Dropdown` is an anchored non-modal popup editor window.
-- `*Popup` is legacy naming only. New code should prefer `*Dropdown` or `*Pane`.
-- `*Controller` coordinates interaction for exactly one concrete surface.
-- `*Navigator` owns history or directional traversal over a content surface.
-- `*Presenter` adapts model or runtime state into a specific surface model without owning storage or global workflow.
-- `*State` is shared transient mutable runtime truth.
-- `*Draft` is in-progress editable state that is not yet committed.
-- `*Preview` is an ephemeral possible result shown before commit.
-- `*Tool` is a user-selectable editor interaction mode or operator-invoked utility with a narrow command surface.
+- `*View` — top-level application surface for the shell and navigation model; lives in `ui/`.
+- `*Pane` — composed UI region with its own layout and local behavior; lives in `ui/`.
+- `*Controls` — dedicated controls region for one surface; lives in `ui/`.
+- `*Canvas` — primary draw and direct-manipulation surface; lives in `ui/`.
+- `*Dropdown` — anchored non-modal editor window or popup surface; lives in `ui/`.
+- `*Controller` — interaction coordinator for one concrete surface; lives in `ui/`.
+- `*Navigator` — history, focus, or directional traversal owner for one content surface; lives next to that surface.
+- `*State` — shared transient mutable runtime truth; lives in `state/`.
+- `*Draft` — in-progress editable state that is not yet committed; lives in `state/` or a feature-local editor model package.
+- `*Preview` — ephemeral possible result shown before commit; lives in `state/` or a feature-local editor model package.
+- `*Tool` — user-selectable editor interaction mode or narrow operator-facing action surface; lives in the package that owns that tool family.
 
-### Restricted Names
+### Legacy Name Transition
 
-- Bare `*Service` is forbidden for new code except `*ApplicationService`.
-- `*Manager`, `*Helper`, `*Util`, and `*Processor` are forbidden for new code when a more precise owner exists.
-- `*Controller` must not be used for cross-surface workflow orchestration; use `*ApplicationService`, `*Session`, `*Coordinator`, or a precise domain name.
-- `*Catalog` must not own writes, transactions, or generic SQL plumbing.
-- `*Loader` must not become a long-lived cache or shared mutable state container.
-- `*Context` must not be a mutable bag of services or hidden global state.
+New code uses the canonical families above.
+Legacy names may remain in untouched code, but touched code should converge toward the allowlist:
+- bare `*Service` only when it is truly an `*ApplicationService`
+- `*Popup` -> `*Dropdown` or `*Pane`
+- `*Scoring` -> `*Calculator` or `*Policy`
+- `*Presenter` -> `*Pane`, `*Projector`, or `*Controller`
+- prefer a precise owner over `*Manager`, `*Helper`, `*Util`, `*Processor`, or `*Provider`
 
 ## Architecture Convergence Rules
 
 Agents must treat the package roles and type names above as the default structure for all new code and as the direction of travel for touched code.
+Nothing outside that allowlist becomes repository-wide architecture by accident, adjacency, or repetition.
 
 ### Required Behavior
 
 - New code must follow the target architecture immediately.
 - New code must choose a canonical package role and a canonical type name when one fits.
-- Do not add new code in a legacy shape just because nearby code has not yet been migrated.
+- New code does not inherit new global precedent from nearby legacy shapes.
 - When modifying existing code, prefer the lowest-risk change that leaves the touched area closer to the target architecture than before.
 - Preserve behavior, storage assumptions, user workflows, and existing invariants unless the task explicitly requires changing them.
-- Do not widen scope merely to improve architectural purity.
-- No incidental cross-feature rewrites, speculative cleanup passes, or subsystem reshaping unless explicitly requested.
+- Keep the change local; do not widen scope merely to improve architectural purity.
 - If full alignment would require unrelated file edits, public API churn, schema or storage changes, or broad retesting, stop at the nearest safe seam and improve the local design only.
 - Prefer fewer, more clearly separated building blocks over a larger taxonomy with overlapping responsibilities.
-- Do not add wrappers, adapters, or intermediate packages whose only purpose is to rename existing complexity.
+- Avoid wrappers, adapters, or intermediate packages whose only purpose is to rename existing complexity.
 - Legacy code may remain until touched; legacy code is not precedent for new code.
 
 ### Decision Order
@@ -245,13 +244,6 @@ When goals compete, use this order:
 2. Preserve explicit repository invariants and local `AGENTS.md` rules
 3. Keep the change small enough to verify safely
 4. Within that safe scope, move the touched code toward the target architecture
-
-### Non-goals
-
-- Do not rewrite stable code solely for stylistic uniformity.
-- Do not force simple record-oriented features into richer abstractions unless the complexity genuinely requires it.
-- Do not flatten rich domain areas into generic service or repository CRUD just to make the codebase look more uniform.
-- Do not create new global package roles for concerns that are already covered by the standard set above.
 
 ## Key Conventions
 

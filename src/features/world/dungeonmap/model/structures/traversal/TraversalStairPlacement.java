@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-// Traversal carries stair placement metadata only; the stair spec itself lives on DungeonStair.
+// Traversal carries placement metadata only; canonical stair identity and materialization live on DungeonStair.
 public record TraversalStairPlacement(
         DungeonStair stair,
         Set<CubePoint> footprint
@@ -49,18 +49,6 @@ public record TraversalStairPlacement(
 
     public StairGeometry geometry() {
         return stair.geometry();
-    }
-
-    public DungeonStair materialize(
-            Long stairId,
-            Long traversalId,
-            long mapId
-    ) {
-        try {
-            return stair.withIdentity(stairId, traversalId, mapId);
-        } catch (IllegalArgumentException ignored) {
-            return null;
-        }
     }
 
     static List<TraversalStairPlacement> canonicalize(List<TraversalStairPlacement> placements) {

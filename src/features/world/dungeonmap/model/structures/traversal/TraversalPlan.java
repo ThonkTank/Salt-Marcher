@@ -76,7 +76,7 @@ public record TraversalPlan(
             updated.add(new TraversalStairSlice(
                     stairSlice.segmentKey(),
                     stairIdsBySegmentKey.get(stairSlice.segmentKey()),
-                    stairSlice.placement()));
+                    stairSlice.stair()));
         }
         return new TraversalPlan(corridorSlices, List.copyOf(updated));
     }

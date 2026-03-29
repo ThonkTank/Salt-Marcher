@@ -70,6 +70,22 @@ public record DungeonStair(
                 specification.exitLevels());
     }
 
+    public static DungeonStair materialized(
+            DungeonStair plannedStair,
+            Long stairId,
+            Long traversalId,
+            long mapId
+    ) {
+        if (plannedStair == null) {
+            return null;
+        }
+        try {
+            return plannedStair.withIdentity(stairId, traversalId, mapId);
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
+    }
+
     public DungeonStair withIdentity(Long stairId, Long traversalId, long mapId) {
         return new DungeonStair(stairId, traversalId, mapId, name, anchor, shape, direction, dimension1, dimension2, exitLevels);
     }

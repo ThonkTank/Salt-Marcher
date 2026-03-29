@@ -3,6 +3,7 @@ package features.world.dungeonmap.model.structures.corridor;
 import features.world.dungeonmap.model.objects.CorridorPath;
 import features.world.dungeonmap.model.structures.TargetKey;
 import features.world.dungeonmap.model.structures.connection.CorridorConnection;
+import features.world.dungeonmap.model.structures.traversal.CorridorTraversalSlice;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -36,6 +37,25 @@ public final class Corridor {
             List<CorridorConnection> connections
     ) {
         return new Corridor(segmentKey, corridorId, traversalId, mapId, roomIds, path, connections);
+    }
+
+    public static Corridor fromTraversalSlice(
+            CorridorTraversalSlice corridorSlice,
+            Long traversalId,
+            long mapId,
+            List<Long> roomIds
+    ) {
+        if (corridorSlice == null) {
+            return null;
+        }
+        return resolved(
+                corridorSlice.segmentKey(),
+                corridorSlice.corridorId(),
+                traversalId,
+                mapId,
+                roomIds,
+                corridorSlice.path(),
+                corridorSlice.connections());
     }
 
     private Corridor(

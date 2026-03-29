@@ -11,6 +11,9 @@ import features.world.dungeonmap.application.room.DungeonBoundaryEditService;
 import features.world.dungeonmap.application.room.DungeonRoomNarrationService;
 import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
 import features.world.dungeonmap.application.traversal.DungeonTraversalEditService;
+import features.world.dungeonmap.application.traversal.DungeonCorridorReconciliation;
+import features.world.dungeonmap.application.traversal.DungeonStairReconciliation;
+import features.world.dungeonmap.application.traversal.DungeonTraversalSegmentPersistence;
 import features.world.dungeonmap.application.traversal.DungeonTraversalPersistenceService;
 import features.world.dungeonmap.application.traversal.DungeonTraversalRoomRewriteService;
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
@@ -52,10 +55,12 @@ public final class DungeonMapModule {
         DungeonCorridorWriteRepository corridorWriteRepository = new DungeonCorridorWriteRepository();
         DungeonStairWriteRepository stairWriteRepository = new DungeonStairWriteRepository();
         DungeonTraversalWriteRepository traversalWriteRepository = new DungeonTraversalWriteRepository();
+        DungeonTraversalSegmentPersistence traversalSegmentPersistence = new DungeonTraversalSegmentPersistence(
+                new DungeonCorridorReconciliation(corridorWriteRepository),
+                new DungeonStairReconciliation(stairWriteRepository));
         DungeonTraversalPersistenceService traversalPersistenceService = new DungeonTraversalPersistenceService(
                 traversalWriteRepository,
-                corridorWriteRepository,
-                stairWriteRepository);
+                traversalSegmentPersistence);
         DungeonRoomWriteRepository roomWriteRepository = new DungeonRoomWriteRepository();
         DungeonTransitionWriteRepository transitionWriteRepository = new DungeonTransitionWriteRepository();
         DungeonRoomNarrationService roomNarrationService = new DungeonRoomNarrationService(roomWriteRepository);

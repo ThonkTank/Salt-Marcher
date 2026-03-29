@@ -467,7 +467,7 @@ public final class TraversalGeometryRealizer {
 
         private void addStairPlacement(String segmentKey, TraversalStairPlacement stairPlacement) {
             if (segmentKey != null && stairPlacement != null) {
-                stairSlices.add(new TraversalStairSlice(segmentKey, null, stairPlacement));
+                stairSlices.add(new TraversalStairSlice(segmentKey, null, stairPlacement.stair()));
             }
         }
 
