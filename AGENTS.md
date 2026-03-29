@@ -80,294 +80,119 @@ Salt Marcher has a defined target architecture. Agents must treat this target ar
 
 Architectural convergence is mandatory, but it is incremental. Do not plan or execute large architecture-only refactors unless the user explicitly asks for them.
 
-This section defines the repository's canonical architecture vocabulary, the target architecture, and the required behavior when changing code.
-
 ## Canonical Package Roles
 
 Use the following package roles with their exact meanings. Do not create new architectural package names when one of these roles already fits.
 
-### Feature Module
-
-- A feature module is the top-level boundary under `src/features/<feature>/`
+- Organize feature code under `src/features/<feature>/`
 - A feature may contain `api/`, `bootstrap/`, `model/`, `application/`, `service/`, `repository/`, `loading/`, `persistence/`, `state/`, `ui/`, and `shell/`
-- Everything inside a feature is internal by default unless explicitly exposed through `api/`
-
-### Specialized Subfeature Namespace
-
-- A specialized namespace such as `builder/`, `combat/`, `generation/`, `catalog/`, or `recovery/` is allowed only for a coherent bounded subsystem inside one feature
-- A specialized namespace is not an architectural role; it is a local feature slice
-- Inside that namespace, reuse the canonical package roles again instead of inventing ad-hoc buckets
-- Do not create namespaces that merely restate implementation technique or file size
-
-### Public Feature Boundary
-
-- `api/` is the only cross-feature entrypoint
+- `api/` is the only cross-feature entrypoint; internal packages are not public architecture even if Java visibility would allow access
 - Root-level `api/` contains only public boundary types: `*Api`, `*Module`, `*Port`, `*Summary`, `*Request`, `*Result`, `*Handle`, and public enums or records required by those contracts
 - `api/` must not contain implementation-detail wrappers, storage facades, or UI re-exports
-- If a feature intentionally exposes reusable UI as part of its public contract, place it under `api/ui/`; do not place UI aliases at the root of `api/`
+- Public UI reuse is opt-in and lives under `api/ui/`; do not place UI aliases at the root of `api/`
+- `bootstrap/` contains internal composition roots and assembly-only wiring; `SaltMarcherApp` owns cross-feature top-level composition
+- The default dependency direction is `ui -> application -> loading/repository/persistence -> model`; `service/` may be used wherever its logic stays pure
+- Specialized namespaces such as `builder/`, `combat/`, `generation/`, `catalog/`, or `recovery/` are allowed only for coherent bounded subsystems; they are local slices, not new architectural roles, and must reuse the same package roles internally
 
-### Composition Root
+### `model/`
 
-- `bootstrap/` contains internal composition roots and assembly-only wiring
-- Cross-feature top-level composition belongs in `SaltMarcherApp`
-- Feature-local composition belongs in one `*Module` entrypoint under `api/` if public, or under `bootstrap/` if internal
-- Views, repositories, state containers, and domain objects must not act as hidden composition roots
-
-### Domain Model
-
-- `model/` contains canonical business and editor truth
+- Contains canonical business and editor truth
 - Put state and behavior on the lowest-level owner that is the real source of truth
 - If an operation preserves or transforms an object's own invariant, that behavior belongs on the model
-- `model/` must not depend on JavaFX, repositories, shell classes, or persistence helpers
+- Must not depend on JavaFX, repositories, `loading/`, `persistence/`, or shell classes
 
-### Application Layer
+### `application/`
 
-- `application/` contains use-case orchestration
-- Application code may normalize requests, open transactions, coordinate repositories and loaders, call other features through ports, schedule background work, reload state, and map failures for callers
-- `application/` owns workflow sequencing, not canonical domain truth
-- Any class that owns async orchestration, task submission, reload-after-write behavior, transaction boundaries, or cross-feature coordination belongs in `application/`, not in `ui/`, `service/`, or `loading/`
+- Contains use-case orchestration
+- Owns workflow sequencing, async orchestration, task submission, transaction boundaries, reload-after-write behavior, and cross-feature coordination
+- May normalize requests, coordinate repositories and loaders, call other features through ports, and map failures for callers
+- Does not own canonical domain truth
 
-### Domain Logic Layer
+### `service/`
 
-- `service/` contains pure or near-pure domain logic
-- `service/` code may compute, classify, score, normalize, validate, or generate
-- `service/` must not own transactions, JDBC access, background threading, JavaFX nodes, or workflow sequencing
-- If a class needs storage, task orchestration, or reload logic, it is not a `service/` concern
+- Contains pure or near-pure domain logic
+- May compute, classify, score, normalize, validate, map, or generate
+- Must not own transactions, JDBC access, background threading, JavaFX nodes, or workflow sequencing
 
-### Repository Layer
+### `repository/`
 
-- `repository/` contains direct storage adapters
-- Repositories own SQL, row mapping, query construction, persistence ordering, and storage-specific lookup methods
+- Contains direct storage adapters
+- Owns SQL, row mapping, query construction, persistence ordering, and storage-specific lookup methods
 - Repositories are stateless and receive `Connection` from callers
-- Repositories must not own workflow state, background work, UI state, or cross-feature orchestration
+- Must not own workflow state, background work, UI state, or cross-feature orchestration
 
-### Loading Layer
+### `loading/`
 
-- `loading/` is read-side aggregate assembly
-- Loaders synchronously reconstruct rich aggregates or read models from one or more repository-level queries
-- `loading/` must not submit tasks, own JavaFX callbacks, mutate UI state, or hide workflow sequencing
+- Is synchronous read-side aggregate assembly
+- Reconstructs rich aggregates or read models from one or more repository-level queries
+- Must not submit tasks, own JavaFX callbacks, mutate UI state, or hide workflow sequencing
 - Ordinary one-query finders stay in `repository/`, not `loading/`
 
-### Persistence Layer
+### `persistence/`
 
-- `persistence/` is write-side aggregate persistence support
-- Use it for multi-table write orchestration helpers, write repositories, schema helpers, and persistence mappers
-- `persistence/` must not become a second generic repository layer
-- Do not add pass-through wrapper classes in `persistence/` that only rename a repository without adding aggregate persistence behavior
+- Is write-side aggregate persistence support
+- Use it for multi-table write orchestration helpers, `*WriteRepository`, schema helpers, and `*PersistenceMapper`
+- Must not become a second generic repository layer
+- Do not add pass-through wrappers that only rename a repository without adding aggregate persistence behavior
 
-### State Layer
+### `state/`
 
-- `state/` contains shared transient UI, editor, or workflow state
-- State containers are the canonical owner of transient interaction truth shared across multiple UI classes
-- `state/` must not perform persistence directly and must not duplicate canonical domain truth
+- Contains shared transient UI, editor, or workflow state
+- Is the canonical owner of transient interaction truth shared across multiple UI classes
+- Must not perform persistence directly and must not duplicate canonical domain truth
 
-### UI Layer
+### `ui/`
 
-- `ui/` contains feature-local presentation and interaction code
-- Views, panes, dropdowns, popups, canvases, and UI controllers live here
-- `ui/` may call application services and state containers but must not own storage access, transaction boundaries, or cross-feature composition
+- Contains feature-local presentation and interaction code
+- Views, panes, dropdowns, popups, canvases, controls, and UI controllers live here
+- May call application services and state containers but must not own storage access, transaction boundaries, or cross-feature composition
 
-### Shell Layer
+### `shell/`
 
-- `shell/` is reserved for adapters that bind a feature to the global app shell, shared inspector, shell-owned workspaces, or shell lifecycle
-- `shell/` is not a general-purpose second UI package
+- Is reserved for adapters that bind a feature to the global app shell, shared inspector, shell-owned workspaces, or shell lifecycle
+- Is not a second general-purpose UI package
 
 ## Canonical Type Names
 
 Use the following names with their exact meanings. New code must pick one of these names when the role fits. If none fits, the design is still underspecified.
 
-### `*Module`
+### Composition And Boundary
 
-- A composition root
-- Wires collaborators and exposes a feature surface
-- Lives in `api/` if public, `bootstrap/` if internal
+- `*Module` wires collaborators and exposes a feature surface; it lives in `api/` if public and `bootstrap/` if internal
+- `*Api` is a stable public boundary facade in `api/`; it must not expose implementation-only collaborators or JavaFX-only concerns
+- `*Port` is a narrow capability contract; it lives in `api/` if public and otherwise next to the owning application package
+- `*Summary`, `*Request`, `*Result`, and `*Handle` are boundary transport names; they live in `api/` or another explicit boundary package, not in `model/` unless they are true domain records
 
-### `*Api`
+### Workflow And Storage
 
-- A public boundary facade
-- Exposes a stable role-specific capability for other features
-- Lives in `api/`
-- Must not expose implementation-only collaborators or JavaFX-only concerns
+- `*ApplicationService` is a use-case or workflow orchestrator in `application/`; if a class coordinates a user-visible workflow, tasks, transactions, reloads, or failure mapping, it is an `*ApplicationService`
+- `*Session` is a long-lived mutable runtime object with explicit lifecycle; it belongs in `application/` when it owns IO, timers, or background work, and in `model/` when it is purely in-memory canonical runtime truth; passive data holders are not sessions
+- `*Repository` is a direct storage adapter in `repository/`; use `*WriteRepository` in `persistence/` for aggregate write support
+- `*Loader` is a synchronous read assembler in `loading/`; it must not create threads, submit JavaFX tasks, or mutate UI/state containers
+- `*Catalog` is a read-only index or descriptor over already-available data; if it queries storage directly, it is not a catalog
+- `*Mapper` translates between representations and owns structure transformation only; use `*PersistenceMapper` in `persistence/` for write-side encoding helpers
 
-### `*Port`
+### Pure Domain Logic
 
-- A narrow dependency contract between caller and collaborator
-- Use for role-specific capabilities, not broad subsystem access
-- Lives in `api/` if public, otherwise next to the owning application package
+- `*Generator` is a pure or near-pure constructor or search algorithm that produces new candidates, layouts, or outputs from inputs; it lives in `service/` or in a model subpackage when tightly coupled to invariants
+- `*Calculator`, `*Scoring`, `*Classifier`, `*Normalizer`, and `*Rules` are narrow pure-domain roles in `service/`; prefer the most specific suffix over a vague `*Service`
 
-### `*ApplicationService`
+### UI And State
 
-- A use-case or workflow orchestrator
-- Lives in `application/`
-- May own collaborators, callbacks, task submission, transactions, reload behavior, and failure mapping
-- If a class coordinates a user-visible workflow, it is an `*ApplicationService`
+- `*Controller` coordinates interaction for one concrete view, pane, dropdown, canvas, or toolbar in `ui/` or `shell/`; if it mostly owns workflow sequencing, task orchestration, or storage side effects, it is not a controller
+- `*View`, `*Pane`, `*Dropdown`, `*Popup`, `*Canvas`, and `*Controls` are UI surface names
+- `*State`, `*Draft`, and `*Preview` are transient shared-state names: stable mutable runtime state, in-progress user-authored state, and ephemeral preview data respectively
 
-### `*Session`
+### Restricted Names
 
-- A long-lived mutable runtime object with explicit lifecycle
-- Use only when the object is opened, advanced, reset, shut down, or otherwise managed over time
-- A session may expose command-like methods and hold evolving runtime truth
-- If it owns IO, timers, or background work, it belongs in `application/`
-- If it is purely in-memory canonical domain/runtime state, it belongs in `model/`
-- Passive data holders are not sessions; they are `*State`, `*Draft`, or domain objects
-
-### `*Repository`
-
-- A direct storage adapter
-- Lives in `repository/`, or in `persistence/` as `*WriteRepository` for aggregate write support
-- Talks to storage directly and returns rows, entities, or narrow read models
-
-### `*Loader`
-
-- A synchronous read assembler
-- Lives in `loading/`
-- Reads from storage or another external source and builds an aggregate or read model
-- Must not create threads, submit JavaFX tasks, or mutate UI/state containers
-- Async orchestration around a loader belongs in `application/`
-
-### `*Generator`
-
-- A pure or near-pure constructor/search algorithm that produces new candidates, layouts, or outputs from inputs
-- Lives in `service/` or a model subpackage when tightly coupled to domain invariants
-- Must not talk to storage, JavaFX, or task schedulers
-
-### `*Calculator`, `*Scoring`, `*Classifier`, `*Normalizer`, `*Rules`
-
-- Pure domain logic with a narrow responsibility
-- Lives in `service/`
-- Use the most specific suffix available instead of a vague `*Service`
-
-### `*Catalog`
-
-- A read-only index, lookup, or descriptor source over already-available data
-- Use only when the object does not mutate state and does not talk to storage directly
-- A catalog may organize, label, filter, or describe loaded domain data
-- If it must query storage, it is a `*Loader`, `*Repository`, or `*ApplicationService` instead
-
-### `*Mapper`
-
-- A translation component between representations
-- Owns structure transformation only, not workflow or persistence policy
-- Use `*PersistenceMapper` inside `persistence/` for write-side encoding helpers
-
-### `*Controller`
-
-- A UI interaction coordinator for one concrete view, pane, dropdown, canvas, or toolbar
-- Lives in `ui/` or `shell/`
-- Translates user interaction into calls to state containers and application services
-- If a class mostly owns workflow sequencing, task orchestration, or storage side effects, it is not a controller
-
-### `*View`, `*Pane`, `*Dropdown`, `*Popup`, `*Canvas`, `*Controls`
-
-- UI surface names
-- `*View` is a top-level shell-facing surface
-- `*Pane` is a reusable JavaFX region
-- `*Dropdown` and `*Popup` are anchored non-modal interaction surfaces
-- `*Canvas` is a drawing surface
-- `*Controls` is a grouped control surface
-
-### `*State`, `*Draft`, `*Preview`
-
-- Shared transient state names
-- `*State` is stable mutable interaction/runtime state
-- `*Draft` is in-progress user-authored state before commit
-- `*Preview` is ephemeral render or interaction preview data
-
-### `*Summary`, `*Request`, `*Result`, `*Handle`
-
-- Boundary and transport names
-- Use in `api/` or other explicit boundary packages
-- Do not place these transport types in `model/` unless they are true domain records
-
-### `*Provider`
-
-- Reserved for simple pull-based value suppliers only
-- If the dependency is a capability contract rather than a supplier role, use `*Port`
-- If the dependency creates objects, use `*Factory`
-
-### Forbidden Or Restricted Names
-
+- `*Provider` is reserved for simple pull-based suppliers only; use `*Port` for capability contracts and `*Factory` for object creation
 - Bare `*Service` is forbidden for new code; choose a precise suffix instead
-- Bare `*Manager`, `*Helper`, `*Util`, and `*Processor` are forbidden when a canonical name above fits
-- Bare `*Persistence` as a class name is forbidden for new code; use `*WriteRepository`, `*SchemaSupport`, or `*PersistenceMapper`
-
-## Target Architecture
-
-Salt Marcher is a feature-first modular monolith. The target architecture is not that every feature must look identical internally. The target architecture is: one public boundary, explicit ownership, minimal overlap between layers, and a naming scheme that reveals responsibility without guesswork.
-
-### Global Structure
-
-- Organize code by feature under `src/features/<feature>/`
-- A feature may expose exactly one public boundary rooted at `api/`
-- Feature-local assembly belongs in `bootstrap/`; cross-feature assembly belongs in `SaltMarcherApp`
-- Shared technical infrastructure belongs in `src/database/`, `src/ui/`, and narrowly scoped `src/shared/`
-- `src/shared/` is for reusable technical or rule logic, not as a fallback home for feature behavior that lacks an owner
-- If a feature contains a large bounded subsystem, create a specialized subfeature namespace and reapply the same package roles inside it
-
-### Boundary Rules
-
-- Other features may depend only on `api/`
-- `api/` must not re-export implementation UI, repositories, or internal helper types
-- Cross-feature UI reuse is opt-in and must live under `api/ui/`
-- Internal packages are not public architecture even if Java visibility would allow access
-
-### Dependency Direction
-
-- The default dependency direction is `ui -> application -> loading/repository/persistence -> model`
-- `service/` may be used by `model/`, `application/`, and `ui/` when it is pure domain logic
-- `model/` must not depend on `ui/`, `shell/`, `repository/`, `loading/`, or `persistence/`
-- `repository/`, `loading/`, and `persistence/` must not depend on JavaFX UI code
-- `ui/` and `shell/` must not depend on another feature's internal packages
-
-### Ownership Rules
-
-- Every business concept must have one canonical owner
-- Put state and behavior on the lowest-level owner that is actually edited, constrained, or queried as the source of truth
-- Do not mirror domain truth in UI state, helper services, caches, or repositories
-- Derived data should normally be computed from canonical state instead of stored as a second truth
-- Shared transient interaction state belongs in explicit `state/` containers
-
-### Layer Rules
-
-- `application/` owns workflows, async orchestration, transaction boundaries, reload-after-write behavior, and cross-feature coordination
-- `service/` owns pure or near-pure domain logic only
-- `repository/` owns direct storage access only
-- `loading/` owns synchronous read-side aggregate assembly only
-- `persistence/` owns write-side aggregate persistence support only
-- `ui/` owns rendering and local interaction only
-- `shell/` owns shell integration only
-- `state/` owns transient shared UI/editor/workflow state only
-
-## Placement Rules
-
-Use these rules when deciding where new code belongs.
-
-- If it is canonical business or editor truth, it belongs in `model/`
-- If it is transient shared UI or editor truth, it belongs in `state/`
-- If it orchestrates a use case, task flow, reload flow, or transaction, it belongs in `application/`
-- If it is pure domain logic with no workflow ownership, it belongs in `service/`
-- If it directly queries or writes storage, it belongs in `repository/`
-- If it synchronously reconstructs a rich aggregate from one or more storage reads, it belongs in `loading/`
-- If it supports aggregate writes across multiple storage concerns, it belongs in `persistence/`
-- If it is part of the cross-feature contract, it belongs in `api/`
-- If it wires collaborators together, it is a `*Module` in `api/` or `bootstrap/`
-- If it is a top-level shell-facing UI surface, it is a `*View`
-- If it is a reusable JavaFX region, it is a `*Pane`
-
-## Naming Discipline
-
-- New code must not introduce bare `*Service`
-- New code must not use `*Catalog` for storage-backed readers
-- New code must not use `*Loader` for async orchestration or UI task helpers
-- New code must not use `*Controller` for workflow orchestrators
-- New code must not use `*Session` for passive data holders
-- New code must not add pass-through `*Persistence` wrappers that only rename repositories
-- Do not introduce new package names for architectural roles unless the canonical package names are clearly insufficient
-- Prefer the most specific role name available over generic nouns
+- Bare `*Manager`, `*Helper`, `*Util`, `*Processor`, and `*Persistence` are forbidden when a canonical name above fits
+- New code must not use `*Catalog` for storage-backed readers, `*Loader` for async orchestration or UI task helpers, `*Controller` for workflow orchestrators, or `*Session` for passive data holders
 
 ## Architecture Convergence Rules
 
-Agents must treat the target architecture above as the default for all new code and as the direction of travel for all touched code.
+Agents must treat the package roles and type names above as the default for all new code and as the direction of travel for all touched code.
 
 ### Required Behavior
 
