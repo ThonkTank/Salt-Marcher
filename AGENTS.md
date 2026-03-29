@@ -164,9 +164,13 @@ If a feature defines a nearer `AGENTS.md`, that file is required context before 
 - Owns direct storage access.
 - Carries SQL, row mapping, query construction, persistence ordering, and storage-specific lookups.
 - Remains stateless; callers provide the `Connection`.
-- `*Repository` — direct relational storage adapter.
+- `repository/` contains a storage ecosystem, not just table adapters.
+- `*Repository` — direct relational storage adapter. Read-only, write-only, search-focused, lookup-focused, or cache-focused storage surfaces remain in this family; qualifiers such as `*WriteRepository`, `*SearchRepository`, `*LookupRepository`, or `*CacheRepository` narrow the storage concern, not the architecture role.
 - `*Store` — persistence surface for non-relational blobs, backups, snapshots, or file-oriented payloads.
 - `*Schema` — storage-structure owner for DDL, compatibility, and schema-shape maintenance in one persistence area.
+- `*Hydrator` — repository-local relation loader or result enricher that completes partially mapped storage results from additional queries or tables.
+- `*Persistence` — narrow storage-slice facade or coordinator that composes repository calls entirely inside the persistence layer without becoming application workflow orchestration.
+- `*Write` — persistence-local write payload or normalized storage shape consumed by repositories, schemas, or mappers.
 - `*Mapper` — storage-facing translation between rows, records, and owned domain representations.
 - `*Codec` — bidirectional encoding/decoding for stored representations and persistence formats.
 
@@ -221,10 +225,12 @@ Legacy names may remain in untouched code, but touched code should converge towa
 - bare `*Service` only when it is truly an `*ApplicationService`
 - `*Catalog` -> `*Lookup`
 - broad application `*Service` -> `*ApplicationService`, `*Lookup`, `*Resolver`, `*Committer`, `*Reconciler`, or `*Maintenance` based on the actual job
+- `*SchemaSupport` -> `*Schema`
 - `*Provider` -> `*Port`
 - `*Popup` -> `*Dropdown` or `*Pane`
 - `*Scoring` -> `*Policy` or a precise domain helper name
 - `*Presenter` -> `*Pane`, `*Projection`, `*Resolver`, or `*Controller`
+- storage-local repository facades -> `*Persistence` only when they coordinate repositories entirely inside the persistence layer; otherwise keep or converge to `*Repository`
 - prefer a precise owner or target role over `*Manager`, `*Helper`, `*Util`, `*Processor`, `*Support`, or `*Surface`
 
 ## Key Conventions
