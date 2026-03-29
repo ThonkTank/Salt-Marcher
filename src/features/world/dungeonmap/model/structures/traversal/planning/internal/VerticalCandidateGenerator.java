@@ -3,6 +3,7 @@ package features.world.dungeonmap.model.structures.traversal.planning.internal;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.structures.corridor.ResolvedCorridorDoorBinding;
 import features.world.dungeonmap.model.structures.stair.StairShape;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -36,8 +37,8 @@ final class VerticalCandidateGenerator {
                 obstacles == null ? Set.of() : obstacles,
                 terminalBounds(start),
                 terminalBounds(end));
-        TraversalTerminalResolver.TerminalResolution startResolution = resolveNode(start, searchVolume);
-        TraversalTerminalResolver.TerminalResolution endResolution = resolveNode(end, searchVolume);
+        TerminalResolution startResolution = resolveNode(start, searchVolume);
+        TerminalResolution endResolution = resolveNode(end, searchVolume);
         List<StairCandidate> candidates = generateCandidates(start, end, startResolution.cells(), endResolution.cells(), searchVolume);
         long costHint = candidates.stream()
                 .mapToLong(StairCandidate::costHint)
@@ -159,17 +160,16 @@ final class VerticalCandidateGenerator {
                 candidate);
     }
 
-    private static TraversalTerminalResolver.TerminalResolution resolveNode(
+    private static TerminalResolution resolveNode(
             TraversalNode node,
             SearchVolume searchVolume
     ) {
         if (node == null) {
-            return TraversalTerminalResolver.TerminalResolution.empty();
+            return TerminalResolution.empty();
         }
-        LocalSegmentRequest.LocalTerminal terminal = node.kind() == TraversalNode.TraversalNodeKind.ROOM_PORTAL
-                ? new LocalSegmentRequest.RoomPortalTerminal(node)
-                : LocalSegmentRequest.FixedCellsTerminal.of(node.anchorCells());
-        return TraversalTerminalResolver.resolve(terminal, searchVolume);
+        return node.kind() == TraversalNode.TraversalNodeKind.ROOM_PORTAL
+                ? resolveRoomPortal(node, searchVolume)
+                : resolveFixedCells(node.anchorCells(), searchVolume);
     }
 
     private static Set<CubePoint> terminalBounds(TraversalNode node) {
@@ -196,6 +196,82 @@ final class VerticalCandidateGenerator {
             best = Math.min(best, distance);
         }
         return best;
+    }
+
+    private static TerminalResolution resolveFixedCells(
+            Set<CubePoint> cells,
+            SearchVolume searchVolume
+    ) {
+        if (cells == null || cells.isEmpty()) {
+            return TerminalResolution.empty();
+        }
+        LinkedHashSet<CubePoint> result = new LinkedHashSet<>();
+        for (CubePoint cell : cells) {
+            if (cell != null && searchVolume.isPassable(cell)) {
+                result.add(cell);
+            }
+        }
+        return result.isEmpty()
+                ? TerminalResolution.empty()
+                : new TerminalResolution(Set.copyOf(result), Map.of());
+    }
+
+    private static TerminalResolution resolveRoomPortal(
+            TraversalNode portal,
+            SearchVolume searchVolume
+    ) {
+        if (portal == null || portal.kind() != TraversalNode.TraversalNodeKind.ROOM_PORTAL) {
+            return TerminalResolution.empty();
+        }
+        LinkedHashSet<CubePoint> result = new LinkedHashSet<>();
+        LinkedHashMap<CubePoint, Integer> directionIndices = new LinkedHashMap<>();
+        ResolvedCorridorDoorBinding binding = portal.fixedDoorBinding();
+        if (portal.hasFixedDoorBinding() && binding != null) {
+            int directionIndex = directionIndex(binding.direction());
+            CubePoint boundEntry = portal.boundEntryCell();
+            if (searchVolume.isPassable(boundEntry)) {
+                result.add(boundEntry);
+                if (directionIndex >= 0) {
+                    directionIndices.putIfAbsent(boundEntry, directionIndex);
+                }
+            }
+            return result.isEmpty()
+                    ? TerminalResolution.empty()
+                    : new TerminalResolution(Set.copyOf(result), Map.copyOf(directionIndices));
+        }
+
+        for (CubePoint occupiedCell : portal.occupiedCells()) {
+            if (occupiedCell == null) {
+                continue;
+            }
+            for (Point2i step : Point2i.CARDINAL_STEPS) {
+                CubePoint candidate = CubePoint.at(occupiedCell.projectedCell().add(step), occupiedCell.z());
+                if (portal.occupiedCells().contains(candidate) || !searchVolume.isPassable(candidate)) {
+                    continue;
+                }
+                result.add(candidate);
+                int directionIndex = directionIndex(step);
+                if (directionIndex >= 0) {
+                    directionIndices.putIfAbsent(candidate, directionIndex);
+                }
+            }
+        }
+        return result.isEmpty()
+                ? TerminalResolution.empty()
+                : new TerminalResolution(Set.copyOf(result), Map.copyOf(directionIndices));
+    }
+
+    private static int directionIndex(Point2i step) {
+        CardinalDirection direction = CardinalDirection.fromDirection(step);
+        if (direction == null) {
+            return -1;
+        }
+        return switch (direction) {
+            case NORTH -> 0;
+            case EAST -> 1;
+            case SOUTH -> 2;
+            case WEST -> 3;
+        };
     }
 
     private record StairPlacementKey(
@@ -264,6 +340,20 @@ final class VerticalCandidateGenerator {
                 result.addAll(second);
             }
             return result;
+        }
+    }
+
+    private record TerminalResolution(
+            Set<CubePoint> cells,
+            Map<CubePoint, Integer> directionIndices
+    ) {
+        private TerminalResolution {
+            cells = cells == null ? Set.of() : Set.copyOf(cells);
+            directionIndices = directionIndices == null ? Map.of() : Map.copyOf(directionIndices);
+        }
+
+        private static TerminalResolution empty() {
+            return new TerminalResolution(Set.of(), Map.of());
         }
     }
 }
