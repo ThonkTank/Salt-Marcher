@@ -17,8 +17,7 @@ final class PlannerContext {
                 ? new LocalSegmentRequest(
                 LocalSegmentRequest.FixedCellsTerminal.of(Set.of()),
                 LocalSegmentRequest.FixedCellsTerminal.of(Set.of()),
-                Set.of(),
-                java.util.List.of())
+                Set.of())
                 : request;
         this.searchVolume = SearchVolume.enclosing(
                 resolvedRequest.obstacles(),

@@ -80,20 +80,91 @@ public final class TraversalGeometryRealizer {
             if (start == null || end == null) {
                 return false;
             }
-            LocalSegmentResult segmentResult = LocalTraversalRoutePlanner.route(new LocalSegmentRequest(
+            if (selectedEdge instanceof VerticalCandidateEdge verticalCandidateEdge) {
+                if (!realizeVerticalEdge(topology, state, start, end, verticalCandidateEdge)) {
+                    return false;
+                }
+                continue;
+            }
+            LocalSegmentResult segmentResult = routeSegment(
                     terminalFor(start, state),
                     terminalFor(end, state),
-                    topology.obstacles(),
-                    stairCandidates(selectedEdge)));
-            if (!segmentResult.routable()) {
+                    topology.obstacles());
+            if (!recordSegment(state, start, end, segmentResult)) {
                 return false;
             }
-            state.recordNode(start.nodeId(), segmentResult.sourceCell());
-            state.recordNode(end.nodeId(), segmentResult.targetCell());
-            state.recordPortal(start, segmentResult.sourceCell());
-            state.recordPortal(end, segmentResult.targetCell());
-            state.addSegment(segmentResult);
         }
+        return true;
+    }
+
+    private static boolean realizeVerticalEdge(
+            TraversalTopology topology,
+            RealizationState state,
+            TraversalNode start,
+            TraversalNode end,
+            VerticalCandidateEdge verticalCandidateEdge
+    ) {
+        VerticalEdgeRealization bestRealization = null;
+        long bestScore = Long.MAX_VALUE;
+        for (StairCandidate stairCandidate : verticalCandidateEdge.stairCandidates()) {
+            if (stairCandidate == null) {
+                continue;
+            }
+            LocalSegmentResult prefix = routeSegment(
+                    terminalFor(start, state),
+                    LocalSegmentRequest.FixedCellsTerminal.of(List.of(stairCandidate.startCell())),
+                    topology.obstacles());
+            if (!prefix.routable()) {
+                continue;
+            }
+            LocalSegmentResult suffix = routeSegment(
+                    LocalSegmentRequest.FixedCellsTerminal.of(List.of(stairCandidate.endCell())),
+                    terminalFor(end, state),
+                    topology.obstacles());
+            if (!suffix.routable()) {
+                continue;
+            }
+            long score = (long) prefix.pathCells().size() + suffix.pathCells().size() + stairCandidate.costHint();
+            if (score < bestScore) {
+                bestScore = score;
+                bestRealization = new VerticalEdgeRealization(prefix, suffix, stairCandidate.toPlacement());
+            }
+        }
+        if (bestRealization == null) {
+            return false;
+        }
+        state.recordNode(start.nodeId(), bestRealization.prefix().sourceCell());
+        state.recordNode(end.nodeId(), bestRealization.suffix().targetCell());
+        state.recordPortal(start, bestRealization.prefix().sourceCell());
+        state.recordPortal(end, bestRealization.suffix().targetCell());
+        state.addSegment(bestRealization.prefix());
+        state.addSegment(bestRealization.suffix());
+        state.addStairPlacement(bestRealization.stairPlacement());
+        return true;
+    }
+
+    private static LocalSegmentResult routeSegment(
+            LocalSegmentRequest.LocalTerminal source,
+            LocalSegmentRequest.LocalTerminal target,
+            java.util.Set<CubePoint> obstacles
+    ) {
+        return LocalTraversalRoutePlanner.route(new LocalSegmentRequest(source, target, obstacles));
+    }
+
+    private static boolean recordSegment(
+            RealizationState state,
+            TraversalNode start,
+            TraversalNode end,
+            LocalSegmentResult segmentResult
+    ) {
+        if (segmentResult == null || !segmentResult.routable()) {
+            return false;
+        }
+        state.recordNode(start.nodeId(), segmentResult.sourceCell());
+        state.recordNode(end.nodeId(), segmentResult.targetCell());
+        state.recordPortal(start, segmentResult.sourceCell());
+        state.recordPortal(end, segmentResult.targetCell());
+        state.addSegment(segmentResult);
         return true;
     }
 
@@ -125,13 +196,6 @@ public final class TraversalGeometryRealizer {
             }
         }
         return anchors.isEmpty() ? GridRoute.empty() : new GridRoute(anchors);
-    }
-
-    private static List<StairCandidate> stairCandidates(TraversalEdge guideEdge) {
-        if (guideEdge instanceof VerticalCandidateEdge verticalCandidateEdge) {
-            return verticalCandidateEdge.stairCandidates();
-        }
-        return List.of();
     }
 
     private static TraversalPlan directAdjacencyPlan(
@@ -279,6 +343,13 @@ public final class TraversalGeometryRealizer {
     ) {
     }
 
+    private record VerticalEdgeRealization(
+            LocalSegmentResult prefix,
+            LocalSegmentResult suffix,
+            StairPlacement stairPlacement
+    ) {
+    }
+
     private static final class RealizationState {
 
         private final TraversalTopology topology;
@@ -325,7 +396,12 @@ public final class TraversalGeometryRealizer {
                 return;
             }
             corridorCells.addAll(segmentResult.corridorCells());
-            stairPlacements.addAll(segmentResult.stairPlacements());
+        }
+
+        private void addStairPlacement(StairPlacement stairPlacement) {
+            if (stairPlacement != null) {
+                stairPlacements.add(stairPlacement);
+            }
         }
 
         private TraversalPlan toPlan() {

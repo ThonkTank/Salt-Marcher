@@ -174,8 +174,7 @@ final class TraversalCandidateGraphBuilder {
         LocalSegmentResult segmentResult = LocalTraversalRoutePlanner.route(new LocalSegmentRequest(
                 terminalFor(start),
                 terminalFor(end),
-                topology == null ? Set.of() : topology.obstacles(),
-                List.of()));
+                topology == null ? Set.of() : topology.obstacles()));
         if (!segmentResult.routable()) {
             return null;
         }

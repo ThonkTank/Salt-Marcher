@@ -1,7 +1,6 @@
 package features.world.dungeonmap.model.structures.traversal.planning.internal;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.structures.corridor.planning.StairPlacement;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -10,16 +9,14 @@ import java.util.Set;
 record LocalSegmentResult(
         List<CubePoint> pathCells,
         CubePoint sourceCell,
-        CubePoint targetCell,
-        List<StairPlacement> stairPlacements
+        CubePoint targetCell
 ) {
     LocalSegmentResult {
         pathCells = pathCells == null ? List.of() : List.copyOf(pathCells);
-        stairPlacements = stairPlacements == null ? List.of() : List.copyOf(stairPlacements);
     }
 
     static LocalSegmentResult unroutable() {
-        return new LocalSegmentResult(List.of(), null, null, List.of());
+        return new LocalSegmentResult(List.of(), null, null);
     }
 
     boolean routable() {
