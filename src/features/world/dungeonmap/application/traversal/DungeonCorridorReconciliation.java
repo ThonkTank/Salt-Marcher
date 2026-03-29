@@ -2,7 +2,7 @@ package features.world.dungeonmap.application.traversal;
 
 import features.world.dungeonmap.model.structures.traversal.CorridorTraversalSlice;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
-import features.world.dungeonmap.model.structures.traversal.TraversalSegmentIds;
+import features.world.dungeonmap.model.structures.traversal.TraversalSegmentRefs;
 import features.world.dungeonmap.persistence.DungeonCorridorWriteRepository;
 
 import java.sql.Connection;
@@ -26,12 +26,12 @@ public final class DungeonCorridorReconciliation {
             Connection conn,
             Traversal traversal,
             List<CorridorTraversalSlice> corridorSlices,
-            TraversalSegmentIds existingIds
+            TraversalSegmentRefs existingRefs
     ) throws SQLException {
         if (traversal == null || traversal.traversalId() == null) {
             return;
         }
-        Map<Long, String> existingById = existingCorridorIds(existingIds);
+        Map<Long, String> existingById = existingCorridorIds(existingRefs);
         Set<Long> desiredIds = new LinkedHashSet<>();
         for (CorridorTraversalSlice corridorSlice : corridorSlices == null ? List.<CorridorTraversalSlice>of() : corridorSlices) {
             if (corridorSlice == null) {
@@ -56,9 +56,9 @@ public final class DungeonCorridorReconciliation {
         }
     }
 
-    private static Map<Long, String> existingCorridorIds(TraversalSegmentIds existingIds) {
+    private static Map<Long, String> existingCorridorIds(TraversalSegmentRefs existingRefs) {
         LinkedHashMap<Long, String> result = new LinkedHashMap<>();
-        TraversalSegmentIds resolvedIds = existingIds == null ? TraversalSegmentIds.empty() : existingIds;
+        TraversalSegmentRefs resolvedIds = existingRefs == null ? TraversalSegmentRefs.empty() : existingRefs;
         for (Map.Entry<String, Long> entry : resolvedIds.corridorIdsBySegmentKey().entrySet()) {
             if (entry.getValue() != null) {
                 result.put(entry.getValue(), entry.getKey());

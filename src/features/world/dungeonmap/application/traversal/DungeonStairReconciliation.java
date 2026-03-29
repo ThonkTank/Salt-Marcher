@@ -2,7 +2,7 @@ package features.world.dungeonmap.application.traversal;
 
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
-import features.world.dungeonmap.model.structures.traversal.TraversalSegmentIds;
+import features.world.dungeonmap.model.structures.traversal.TraversalSegmentRefs;
 import features.world.dungeonmap.model.structures.traversal.TraversalStairSlice;
 import features.world.dungeonmap.persistence.DungeonStairWriteRepository;
 
@@ -27,12 +27,12 @@ public final class DungeonStairReconciliation {
             Connection conn,
             Traversal traversal,
             List<TraversalStairSlice> stairSlices,
-            TraversalSegmentIds existingIds
+            TraversalSegmentRefs existingRefs
     ) throws SQLException {
         if (traversal == null || traversal.traversalId() == null) {
             return;
         }
-        Map<Long, String> existingById = existingStairIds(existingIds);
+        Map<Long, String> existingById = existingStairIds(existingRefs);
         Set<Long> desiredIds = new LinkedHashSet<>();
         for (TraversalStairSlice stairSlice : stairSlices == null ? List.<TraversalStairSlice>of() : stairSlices) {
             if (stairSlice == null || stairSlice.stair() == null) {
@@ -62,9 +62,9 @@ public final class DungeonStairReconciliation {
         }
     }
 
-    private static Map<Long, String> existingStairIds(TraversalSegmentIds existingIds) {
+    private static Map<Long, String> existingStairIds(TraversalSegmentRefs existingRefs) {
         LinkedHashMap<Long, String> result = new LinkedHashMap<>();
-        TraversalSegmentIds resolvedIds = existingIds == null ? TraversalSegmentIds.empty() : existingIds;
+        TraversalSegmentRefs resolvedIds = existingRefs == null ? TraversalSegmentRefs.empty() : existingRefs;
         for (Map.Entry<String, Long> entry : resolvedIds.stairIdsBySegmentKey().entrySet()) {
             if (entry.getValue() != null) {
                 result.put(entry.getValue(), entry.getKey());

@@ -6,6 +6,8 @@ import features.world.dungeonmap.model.TraversalPlanningInputProjector;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
 import features.world.dungeonmap.model.structures.traversal.TraversalPlan;
+import features.world.dungeonmap.model.structures.traversal.TraversalSegmentRef;
+import features.world.dungeonmap.model.structures.traversal.TraversalSegmentRefs;
 import features.world.dungeonmap.model.structures.traversal.planning.TraversalPlanningEngine;
 import features.world.dungeonmap.persistence.DungeonTraversalWriteRepository;
 
@@ -105,7 +107,8 @@ public final class DungeonTraversalEditService {
                         traversalId,
                         layout.mapId(),
                         roomIds,
-                        null);
+                        null,
+                        TraversalSegmentRefs.empty());
                 persistTraversal(conn, layout, traversal, null);
                 return null;
             });

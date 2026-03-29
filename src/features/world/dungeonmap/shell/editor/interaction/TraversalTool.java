@@ -1,7 +1,6 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
 import features.world.dungeonmap.application.traversal.DungeonTraversalEditService;
-import features.world.dungeonmap.application.traversal.TraversalSegmentRef;
 import features.world.dungeonmap.application.traversal.TraversalTarget;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
@@ -10,6 +9,7 @@ import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
+import features.world.dungeonmap.model.structures.traversal.TraversalSegmentRef;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.shell.editor.EditorCards;
 import features.world.dungeonmap.state.DungeonEditorSessionState;

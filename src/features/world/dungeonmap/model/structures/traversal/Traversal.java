@@ -19,26 +19,30 @@ public final class Traversal {
     private final long mapId;
     private final List<Long> roomIds;
     private final TraversalBindings bindings;
+    private final TraversalSegmentRefs segmentRefs;
 
     public static Traversal resolved(
             Long traversalId,
             long mapId,
             List<Long> roomIds,
-            TraversalBindings bindings
+            TraversalBindings bindings,
+            TraversalSegmentRefs segmentRefs
     ) {
-        return new Traversal(traversalId, mapId, roomIds, bindings);
+        return new Traversal(traversalId, mapId, roomIds, bindings, segmentRefs);
     }
 
     private Traversal(
             Long traversalId,
             long mapId,
             List<Long> roomIds,
-            TraversalBindings bindings
+            TraversalBindings bindings,
+            TraversalSegmentRefs segmentRefs
     ) {
         this.traversalId = traversalId;
         this.mapId = mapId;
         this.roomIds = normalizeRoomIds(roomIds);
         this.bindings = bindings == null ? TraversalBindings.empty() : bindings;
+        this.segmentRefs = segmentRefs == null ? TraversalSegmentRefs.empty() : segmentRefs;
     }
 
     public Long traversalId() {
@@ -55,6 +59,10 @@ public final class Traversal {
 
     public TraversalBindings bindings() {
         return bindings;
+    }
+
+    public TraversalSegmentRefs segmentRefs() {
+        return segmentRefs;
     }
 
     public boolean connectsRoom(Long roomId) {
@@ -161,7 +169,7 @@ public final class Traversal {
         }
         List<Long> updated = new ArrayList<>(roomIds);
         updated.add(roomId);
-        return resolved(traversalId, mapId, updated, bindings);
+        return resolved(traversalId, mapId, updated, bindings, segmentRefs);
     }
 
     public Traversal withRemovedRoom(Long roomId) {
@@ -171,7 +179,7 @@ public final class Traversal {
         List<Long> updated = roomIds.stream()
                 .filter(existing -> !Objects.equals(existing, roomId))
                 .toList();
-        return resolved(traversalId, mapId, updated, bindings.withoutDoorBinding(roomId));
+        return resolved(traversalId, mapId, updated, bindings.withoutDoorBinding(roomId), segmentRefs);
     }
 
     public Traversal withMergedRooms(Set<Long> mergedRoomIds, Long replacementRoomId) {
@@ -188,7 +196,7 @@ public final class Traversal {
                 updatedBindings = updatedBindings.withoutDoorBinding(mergedRoomId);
             }
         }
-        return resolved(traversalId, mapId, updated, updatedBindings);
+        return resolved(traversalId, mapId, updated, updatedBindings, segmentRefs);
     }
 
     public Traversal withReplacedRoom(Long oldRoomId, Long newRoomId) {
@@ -200,7 +208,7 @@ public final class Traversal {
                 .distinct()
                 .toList();
         TraversalBindings updatedBindings = bindings.withoutDoorBinding(oldRoomId);
-        return resolved(traversalId, mapId, updated, updatedBindings);
+        return resolved(traversalId, mapId, updated, updatedBindings, segmentRefs);
     }
 
     public Traversal withInsertedWaypoint(int index, TraversalWaypointBinding waypoint) {
@@ -227,6 +235,11 @@ public final class Traversal {
         return withBindings(bindings.withoutDoorBinding(roomId));
     }
 
+    public Traversal withSegmentRefs(TraversalSegmentRefs refs) {
+        TraversalSegmentRefs updatedRefs = refs == null ? TraversalSegmentRefs.empty() : refs;
+        return updatedRefs.equals(segmentRefs) ? this : resolved(traversalId, mapId, roomIds, bindings, updatedRefs);
+    }
+
     public Traversal mergedWith(Traversal other) {
         if (other == null || other == this) {
             return this;
@@ -239,7 +252,8 @@ public final class Traversal {
                 traversalId,
                 mapId,
                 mergedRoomIds,
-                sanitizedBindings(mergedRoomIds, bindings));
+                sanitizedBindings(mergedRoomIds, bindings),
+                segmentRefs.withMerged(other.segmentRefs()));
     }
 
     public Traversal reanchoredFor(TraversalRewriteContext context) {
@@ -353,7 +367,7 @@ public final class Traversal {
     }
 
     private Traversal withBindings(TraversalBindings bindings) {
-        return resolved(traversalId, mapId, roomIds, bindings);
+        return resolved(traversalId, mapId, roomIds, bindings, segmentRefs);
     }
 
     private Long fallbackWaypointClusterId(TraversalPlanningInput input) {

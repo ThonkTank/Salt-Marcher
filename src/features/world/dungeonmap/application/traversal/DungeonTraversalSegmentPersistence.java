@@ -3,13 +3,13 @@ package features.world.dungeonmap.application.traversal;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
 import features.world.dungeonmap.model.structures.traversal.TraversalPlan;
-import features.world.dungeonmap.model.structures.traversal.TraversalSegmentIds;
 import features.world.dungeonmap.model.structures.traversal.TraversalSegmentIdentityMatcher;
+import features.world.dungeonmap.model.structures.traversal.TraversalSegmentRef;
+import features.world.dungeonmap.model.structures.traversal.TraversalSegmentRefs;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Objects;
 
 public final class DungeonTraversalSegmentPersistence {
@@ -34,30 +34,38 @@ public final class DungeonTraversalSegmentPersistence {
         if (traversal == null || traversal.traversalId() == null) {
             return;
         }
-        TraversalSegmentIds existingIds = segmentIds(previousLayout, traversal.traversalId());
+        TraversalSegmentRefs existingRefs = existingRefs(previousLayout, traversal);
         TraversalPlan resolvedPlan = TraversalSegmentIdentityMatcher.preserveSegmentIds(
                 traversal,
                 traversalPlan,
-                existingIds,
                 previousLayout);
-        corridorReconciliation.reconcile(conn, traversal, resolvedPlan.corridorSlices(), existingIds);
-        stairReconciliation.reconcile(conn, traversal, resolvedPlan.stairSlices(), existingIds);
+        corridorReconciliation.reconcile(conn, traversal, resolvedPlan.corridorSlices(), existingRefs);
+        stairReconciliation.reconcile(conn, traversal, resolvedPlan.stairSlices(), existingRefs);
     }
 
-    private static TraversalSegmentIds segmentIds(DungeonLayout previousLayout, Long traversalId) {
-        if (previousLayout == null || traversalId == null) {
-            return TraversalSegmentIds.empty();
+    private static TraversalSegmentRefs existingRefs(DungeonLayout previousLayout, Traversal traversal) {
+        if (traversal == null) {
+            return TraversalSegmentRefs.empty();
         }
-        TraversalSegmentIds existingIds = previousLayout.traversalSegmentIds(traversalId);
-        if (!existingIds.corridorIdsBySegmentKey().isEmpty() || !existingIds.stairIdsBySegmentKey().isEmpty()) {
-            return existingIds;
+        if (!traversal.segmentRefs().refsBySegmentKey().isEmpty()) {
+            return traversal.segmentRefs();
         }
-        LinkedHashMap<String, Long> corridorIds = new LinkedHashMap<>();
+        if (previousLayout == null || traversal.traversalId() == null) {
+            return TraversalSegmentRefs.empty();
+        }
+        Traversal previousTraversal = previousLayout.findTraversal(traversal.traversalId());
+        if (previousTraversal != null && !previousTraversal.segmentRefs().refsBySegmentKey().isEmpty()) {
+            return previousTraversal.segmentRefs();
+        }
+        LinkedHashMap<String, TraversalSegmentRef> refsBySegmentKey = new LinkedHashMap<>();
         for (var corridor : previousLayout.corridors()) {
-            if (corridor != null && Objects.equals(corridor.traversalId(), traversalId)) {
-                corridorIds.put(corridor.segmentKey(), corridor.corridorId());
+            if (corridor != null
+                    && corridor.segmentKey() != null
+                    && corridor.corridorId() != null
+                    && Objects.equals(corridor.traversalId(), traversal.traversalId())) {
+                refsBySegmentKey.put(corridor.segmentKey(), new TraversalSegmentRef.CorridorSegment(corridor.corridorId()));
             }
         }
-        return new TraversalSegmentIds(corridorIds, Map.of());
+        return refsBySegmentKey.isEmpty() ? TraversalSegmentRefs.empty() : new TraversalSegmentRefs(refsBySegmentKey);
     }
 }

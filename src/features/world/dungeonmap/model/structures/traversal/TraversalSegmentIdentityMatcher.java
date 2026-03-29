@@ -27,15 +27,14 @@ public final class TraversalSegmentIdentityMatcher {
     public static TraversalPlan preserveSegmentIds(
             Traversal traversal,
             TraversalPlan traversalPlan,
-            TraversalSegmentIds segmentIds,
             DungeonLayout previousLayout
     ) {
         if (traversal == null || traversalPlan == null) {
             return TraversalPlan.empty();
         }
-        TraversalSegmentIds existingIds = segmentIds == null ? TraversalSegmentIds.empty() : segmentIds;
-        LinkedHashMap<String, Long> corridorIdsBySegmentKey = new LinkedHashMap<>(existingIds.corridorIdsBySegmentKey());
-        LinkedHashMap<String, Long> stairIdsBySegmentKey = new LinkedHashMap<>(existingIds.stairIdsBySegmentKey());
+        TraversalSegmentRefs existingRefs = existingRefs(traversal, previousLayout);
+        LinkedHashMap<String, Long> corridorIdsBySegmentKey = new LinkedHashMap<>(existingRefs.corridorIdsBySegmentKey());
+        LinkedHashMap<String, Long> stairIdsBySegmentKey = new LinkedHashMap<>(existingRefs.stairIdsBySegmentKey());
         if (previousLayout == null || traversal.traversalId() == null) {
             return traversalPlan
                     .withCorridorIds(corridorIdsBySegmentKey)
@@ -46,6 +45,32 @@ public final class TraversalSegmentIdentityMatcher {
         return traversalPlan
                 .withCorridorIds(corridorIdsBySegmentKey)
                 .withStairIds(stairIdsBySegmentKey);
+    }
+
+    private static TraversalSegmentRefs existingRefs(Traversal traversal, DungeonLayout previousLayout) {
+        if (traversal == null) {
+            return TraversalSegmentRefs.empty();
+        }
+        if (!traversal.segmentRefs().refsBySegmentKey().isEmpty()) {
+            return traversal.segmentRefs();
+        }
+        if (previousLayout == null || traversal.traversalId() == null) {
+            return TraversalSegmentRefs.empty();
+        }
+        Traversal previousTraversal = previousLayout.findTraversal(traversal.traversalId());
+        if (previousTraversal != null && !previousTraversal.segmentRefs().refsBySegmentKey().isEmpty()) {
+            return previousTraversal.segmentRefs();
+        }
+        LinkedHashMap<String, TraversalSegmentRef> refsBySegmentKey = new LinkedHashMap<>();
+        for (Corridor corridor : previousLayout.corridors()) {
+            if (corridor != null
+                    && corridor.segmentKey() != null
+                    && corridor.corridorId() != null
+                    && Objects.equals(corridor.traversalId(), traversal.traversalId())) {
+                refsBySegmentKey.put(corridor.segmentKey(), new TraversalSegmentRef.CorridorSegment(corridor.corridorId()));
+            }
+        }
+        return refsBySegmentKey.isEmpty() ? TraversalSegmentRefs.empty() : new TraversalSegmentRefs(refsBySegmentKey);
     }
 
     private static void matchCorridorIds(

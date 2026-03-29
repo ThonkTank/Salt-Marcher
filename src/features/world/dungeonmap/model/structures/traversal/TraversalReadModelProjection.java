@@ -20,10 +20,18 @@ public record TraversalReadModelProjection(
     public static List<Corridor> projectCorridors(
             long mapId,
             List<Traversal> traversals,
-            TraversalPlanningInput planningInput,
-            Map<Long, TraversalSegmentIds> segmentIdsByTraversalId
+            TraversalPlanningInput planningInput
     ) {
-        return project(mapId, traversals, planningInput, Map.of(), segmentIdsByTraversalId, null).corridors();
+        return project(mapId, traversals, planningInput, Map.of(), null).corridors();
+    }
+
+    public static TraversalReadModelProjection project(
+            long mapId,
+            List<Traversal> traversals,
+            TraversalPlanningInput planningInput,
+            Map<Long, TraversalPlan> traversalPlansByTraversalId
+    ) {
+        return project(mapId, traversals, planningInput, traversalPlansByTraversalId, null);
     }
 
     public static TraversalReadModelProjection project(
@@ -31,17 +39,6 @@ public record TraversalReadModelProjection(
             List<Traversal> traversals,
             TraversalPlanningInput planningInput,
             Map<Long, TraversalPlan> traversalPlansByTraversalId,
-            Map<Long, TraversalSegmentIds> segmentIdsByTraversalId
-    ) {
-        return project(mapId, traversals, planningInput, traversalPlansByTraversalId, segmentIdsByTraversalId, null);
-    }
-
-    public static TraversalReadModelProjection project(
-            long mapId,
-            List<Traversal> traversals,
-            TraversalPlanningInput planningInput,
-            Map<Long, TraversalPlan> traversalPlansByTraversalId,
-            Map<Long, TraversalSegmentIds> segmentIdsByTraversalId,
             DungeonLayout previousLayout
     ) {
         ArrayList<Corridor> projectedCorridors = new ArrayList<>();
@@ -53,9 +50,6 @@ public record TraversalReadModelProjection(
             TraversalPlan resolvedPlan = TraversalSegmentIdentityMatcher.preserveSegmentIds(
                     traversal,
                     traversalPlan(traversal, planningInput, traversalPlansByTraversalId),
-                    traversal.traversalId() == null
-                            ? TraversalSegmentIds.empty()
-                            : segmentIdsByTraversalId.getOrDefault(traversal.traversalId(), TraversalSegmentIds.empty()),
                     previousLayout);
             for (CorridorTraversalSlice corridorSlice : resolvedPlan.corridorSlices()) {
                 Corridor corridor = Corridor.fromTraversalSlice(
