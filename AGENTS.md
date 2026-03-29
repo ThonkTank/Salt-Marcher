@@ -191,33 +191,47 @@ If a feature defines a nearer `AGENTS.md`, that file is required context before 
 - Owns feature-local presentation and interaction code.
 - Contains views, panes, dropdowns, canvases, controls, and UI controllers.
 - Talks to application services and state containers, not directly to persistence policy.
+- `ui/` contains a presentation ecosystem, not just leaf widgets.
+- `*Shell` — top-level layout owner that hosts views, persistent panels, and navigation structure for one UI surface family.
 - `*View` — top-level application surface for the shell and navigation model.
+- `*Workspace` — composite host surface that coordinates or swaps multiple sub-surfaces inside one work area without becoming domain or workflow state.
 - `*Pane` — composed UI region with its own layout and local behavior.
 - `*Controls` — dedicated controls region for one surface.
 - `*Canvas` — primary draw and direct-manipulation surface.
 - `*Dropdown` — anchored non-modal editor window or popup surface.
 - `*Controller` — interaction coordinator for one concrete surface.
 - `*Navigator` — history, focus, or directional traversal owner for one content surface.
+- `*Registry` — shell-owned registration surface that grants later UI updates or activation through returned handles.
+- `*RenderState` — derived display-only state for one renderer or pane; never canonical workflow truth.
+- `*Callbacks` — injected callback bundle that binds one view or UI workflow surface to its host shell or feature boundary.
 - `*Tool` — user-selectable editor interaction mode or narrow operator-facing action surface.
 - UI-local `*Handle` types may live next to the UI surface that returns them.
 
 #### `api/`
 
 - Is the cross-feature entrypoint.
-- Contains deliberate boundary contracts and boundary data only.
+- Contains deliberate boundary contracts, boundary data, and explicitly exported public feature surfaces only.
 - Root-level `api/` holds the public role families exposed to other features.
+- `api/` contains a boundary ecosystem, not just DTOs.
 - `*Api` — deliberate cross-feature boundary surface.
 - `*Port` — public capability contract across package or feature boundaries.
+- `*Module` — public feature entrypoint or exported composition root when the module itself is the boundary surface.
 - `*Summary` — lightweight read projection for selectors, lists, and inspectors.
 - `*Request` — named input payload for one use case or API call.
 - `*Result` — named output payload for one use case or API call.
+- `*Ref` — compact boundary identity token that points at an external entity without carrying its full state.
 - `*Handle` — public capability token for later interaction, cleanup, or content replacement.
+- `*Lookup` — public read-only lookup seam when the boundary is narrower than a full `*Api` and the lookup itself is the exported capability.
+- When `api/` intentionally exports a reusable UI or workflow surface, keep the underlying canonical role name (`*Pane`, `*View`, `*Dropdown`, `*Lookup`, `*ApplicationService`, `*Maintenance`) instead of inventing an api-only suffix.
 - Boundary-facing `*Mapper` and `*Codec` types may live here when they serve the public API seam rather than persistence.
 
 #### `bootstrap/`
 
 - Owns internal composition roots and assembly-only wiring.
 - Wires collaborators and exposes feature entrypoints.
+- `bootstrap/` contains an assembly ecosystem, not just feature modules.
+- `*App` — process-level bootstrap owner for startup lifecycle, shell creation, and cross-feature wiring.
+- `*Preloader` — startup-lifecycle surface shown before the main application is ready.
 - `SaltMarcherApp` remains the cross-feature top-level composition root.
 - `*Module` — composition root for one feature surface. Only place a `*Module` in `api/` when the module itself is the public feature entrypoint.
 
@@ -231,6 +245,11 @@ Legacy names may remain in untouched code, but touched code should converge towa
 - `*SchemaSupport` -> `*Schema`
 - state-local config bundles -> `*Settings`
 - state-local finite switch enums -> `*Mode`
+- root layout owners -> `*Shell`
+- composite host surfaces -> `*Workspace`
+- injected UI callback bundles -> `*Callbacks`
+- public read facades -> `*Api`
+- boundary identity tokens -> `*Ref`
 - `*Provider` -> `*Port`
 - `*Popup` -> `*Dropdown` or `*Pane`
 - `*Scoring` -> `*Policy` or a precise domain helper name
