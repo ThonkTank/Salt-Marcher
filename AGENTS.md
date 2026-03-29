@@ -94,6 +94,7 @@ Additional structure belongs only in the nearest feature-local `AGENTS.md`, or a
 - Objects and types may gain capabilities through composition, inheritance, or references, but ownership of the capability stays with the central owner instead of being mirrored in consumers.
 - Treat package layers as ownership boundaries. A capability belongs to the layer that subordinates it to its owner, not to the first caller that happens to use it.
 - Treat filename roles as ownership markers. A role name tells the reader what kind of capability a file encapsulates and whether it is the owner or support code around that owner.
+- Treat the role families below as function patterns, not as a mandatory suffix list. Use the family that matches the file's job, then choose the narrowest clear domain name for the concrete type.
 - In `model/`, the central owner will usually be a precise domain type, not a generic role suffix. Prefer the domain name when the type itself is the canonical owner.
 - If several sibling files in one directory share the same role name, treat that as a smell: either the capability is duplicated or the directory needs a narrower subpackage with clearer ownership.
 - Use only the canonical roles defined below when one fits cleanly. If none fits, use a precise domain name instead of stretching a near-match.
@@ -127,8 +128,15 @@ If a feature defines a nearer `AGENTS.md`, that file is required context before 
 - Owns canonical business and editor truth.
 - Carries behavior on the lowest stable owner that actually enforces the invariant.
 - Stays framework- and storage-agnostic.
-- Central owners in `model/` usually use precise domain names instead of generic role suffixes.
-- `*Policy` — pure or near-pure domain decisions over allowed options.
+- `model/` contains an owner ecosystem, not just owner types.
+- `Owner` — canonical domain or editor truth. Usually named as the precise domain type instead of a generic suffix.
+- `Primitive` — fundamental value, geometry, vocabulary, or identity type reused by owners and operators.
+- `Relation` — reference, binding, endpoint, or link type that connects owners without becoming the owner of either side.
+- `Derivative` — model-internal derived form such as a plan, rewrite, network, or projection built from owner truth.
+- `OperationData` — model-local input, context, request, or intermediate result carrier for one operator family.
+- `Operator` — model-local planning, matching, generation, or transformation logic that stays framework-free and answers to owner truth instead of workflow orchestration.
+- `ComputationModel` — internal search, graph, topology, or solver structure used by an operator and not exposed as canonical domain truth.
+- `*Policy` — decision-focused operator family for allowed options or rule selection.
 - `*Session` — only when the session itself is pure in-memory canonical runtime truth rather than workflow orchestration.
 
 #### `application/`
