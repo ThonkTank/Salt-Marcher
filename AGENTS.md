@@ -100,6 +100,7 @@ Additional structure belongs only in the nearest feature-local `AGENTS.md`, or a
 - When a canonical role name exists for a function pattern, converge touched code toward that name. Do not keep parallel legacy and canonical names for the same role in the same layer.
 - If several sibling files in one directory share the same role name, treat that as a smell: either the capability is duplicated or the directory needs a narrower subpackage with clearer ownership.
 - Use only the canonical roles defined below when one fits cleanly. If none fits, use a precise domain name instead of stretching a near-match.
+- `*Reconciler`, `*Maintenance`, and `*Hydrator` are explicit escape-hatch roles. They are valid, but their need is itself a smell and should trigger pressure to fix the underlying ownership, storage, or loading shape instead.
 - Passive domain nouns such as `*Snapshot`, `*Descriptor`, `*Entry`, `*Criteria`, `*Option`, `*Profile`, `*Resolution`, `*Parser`, and `*Renderer` may remain precise domain names without becoming new global architecture roles.
 - Operation-shape names such as `*Factory`, `*Generator`, `*Calculator`, `*Classifier`, `*Normalizer`, `*Assembler`, `*Coordinator`, `*Context`, `*Planner`, `*Matcher`, `*Engine`, and `*Realizer` may remain precise helper names, but they are not repository-wide architecture roles.
 - New code must follow the target architecture immediately.
@@ -166,10 +167,11 @@ If a feature defines a nearer `AGENTS.md`, that file is required context before 
 - `*Repository` — direct relational storage adapter. Read-only, write-only, search-focused, lookup-focused, or cache-focused storage surfaces remain in this family; qualifiers such as `*WriteRepository`, `*SearchRepository`, `*LookupRepository`, or `*CacheRepository` narrow the storage concern, not the architecture role.
 - `*Store` — persistence surface for non-relational blobs, backups, snapshots, or file-oriented payloads.
 - `*Schema` — storage-structure owner for DDL, compatibility, and schema-shape maintenance in one persistence area.
-- `*Hydrator` — repository-local relation loader or result enricher that completes partially mapped storage results from additional queries or tables.
+- `*Hydrator` — repository-local relation loader or result enricher that completes partially mapped storage results from additional queries or tables. Valid, but usually a smell-driven crutch: its need means repository results are fragmented or the loading seam is too weakly owned.
 - `*Write` — persistence-local write payload or normalized storage shape consumed by repositories, schemas, or mappers.
 - `*Mapper` — storage-facing translation between rows, records, and owned domain representations.
 - `*Codec` — bidirectional encoding/decoding for stored representations and persistence formats.
+- Prefer folding `*Hydrator` work back into a clearer `*Repository` or `*Mapper` seam over introducing additional hydrators.
 
 #### `state/`
 
