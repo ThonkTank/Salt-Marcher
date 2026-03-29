@@ -34,10 +34,7 @@ public final class TraversalGeometryRealizer {
         if (topology.requiredRoomPortalNodes().size() < 2) {
             return planOf(topology.corridorId(), CorridorPath.unroutable(route), List.of(), List.of());
         }
-        List<TraversalEdge> selectedEdges = resolveSelectedEdges(resolvedPlan);
-        if (selectedEdges == null) {
-            return planOf(topology.corridorId(), CorridorPath.unroutable(route), List.of(), List.of());
-        }
+        List<TraversalEdge> selectedEdges = resolvedPlan.selectedEdges();
         TraversalPlan directAdjacencyPlan = directAdjacencyPlan(topology, route, selectedEdges);
         if (directAdjacencyPlan != null) {
             return directAdjacencyPlan;
@@ -47,23 +44,6 @@ public final class TraversalGeometryRealizer {
             return state.unroutablePlan();
         }
         return state.toPlan();
-    }
-
-    private static List<TraversalEdge> resolveSelectedEdges(
-            TraversalStructurePlanner.StructurePlan structurePlan
-    ) {
-        if (structurePlan == null || structurePlan.selectedEdgeIds().isEmpty()) {
-            return List.of();
-        }
-        ArrayList<TraversalEdge> result = new ArrayList<>();
-        for (TraversalEdgeId edgeId : structurePlan.selectedEdgeIds()) {
-            TraversalEdge selectedEdge = structurePlan.candidateGraph().edge(edgeId);
-            if (selectedEdge == null) {
-                return null;
-            }
-            result.add(selectedEdge);
-        }
-        return List.copyOf(result);
     }
 
     private static boolean realizeSelectedEdges(
