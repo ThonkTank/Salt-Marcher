@@ -138,7 +138,6 @@ public final class TraversalReadModelProjector {
         return stairSlice.placement().materialize(
                 stairSlice.stairId(),
                 traversalId,
-                stairSlice.segmentKey(),
                 mapId);
     }
 

@@ -10,51 +10,54 @@ import features.world.dungeonmap.model.structures.stair.StairShape;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
-// Eine Treppe, die der Traversal-Planer platziert hat. Public, da sie Traversal-Materialisierung verlässt.
+// Traversal carries stair placement metadata only; the stair spec itself lives on DungeonStair.
 public record TraversalStairPlacement(
-        Point2i anchor,
-        StairShape shape,
-        CardinalDirection direction,
-        int dimension1,
-        int dimension2,
-        List<Integer> exitLevels,
+        DungeonStair stair,
         Set<CubePoint> footprint
 ) {
     public TraversalStairPlacement {
-        exitLevels = exitLevels == null ? List.of() : List.copyOf(exitLevels);
+        stair = Objects.requireNonNull(stair, "stair");
         footprint = footprint == null ? Set.of() : Set.copyOf(footprint);
     }
 
+    public Point2i anchor() {
+        return stair.anchor();
+    }
+
+    public StairShape shape() {
+        return stair.shape();
+    }
+
+    public CardinalDirection direction() {
+        return stair.direction();
+    }
+
+    public int dimension1() {
+        return stair.dimension1();
+    }
+
+    public int dimension2() {
+        return stair.dimension2();
+    }
+
+    public List<Integer> exitLevels() {
+        return stair.exitLevels();
+    }
+
     public StairGeometry geometry() {
-        if (exitLevels.size() < 2) {
-            throw new IllegalArgumentException("Stair placement requires at least two exit levels");
-        }
-        return StairGeometry.fromExitLevels(
-                shape,
-                anchor,
-                direction,
-                dimension1,
-                dimension2,
-                exitLevels);
+        return stair.geometry();
     }
 
     public DungeonStair materialize(
             Long stairId,
             Long traversalId,
-            String segmentKey,
             long mapId
     ) {
         try {
-            StairGeometry geometry = geometry();
-            return new DungeonStair(
-                    stairId,
-                    traversalId,
-                    segmentKey,
-                    mapId,
-                    geometry.pathNodes(),
-                    geometry.exits());
+            return stair.withIdentity(stairId, traversalId, mapId);
         } catch (IllegalArgumentException ignored) {
             return null;
         }
@@ -95,15 +98,14 @@ public record TraversalStairPlacement(
         mergedLevels.addAll(second.exitLevels());
         LinkedHashSet<CubePoint> mergedFootprint = new LinkedHashSet<>(first.footprint());
         mergedFootprint.addAll(second.footprint());
-        Point2i anchor = inferAnchor(mergedFootprint);
-        if (anchor == null) {
+        if (!Objects.equals(first.anchor(), second.anchor())) {
             return null;
         }
         StairGeometry mergedGeometry;
         try {
             mergedGeometry = StairGeometry.fromExitLevels(
                     first.shape(),
-                    anchor,
+                    first.anchor(),
                     first.direction(),
                     first.dimension1(),
                     first.dimension2(),
@@ -115,25 +117,15 @@ public record TraversalStairPlacement(
             return null;
         }
         return new TraversalStairPlacement(
-                anchor,
-                first.shape(),
-                first.direction(),
-                first.dimension1(),
-                first.dimension2(),
-                mergedGeometry.exits().stream()
-                        .map(exit -> exit.position().z())
-                        .toList(),
+                DungeonStair.planned(
+                        first.anchor(),
+                        first.shape(),
+                        first.direction(),
+                        first.dimension1(),
+                        first.dimension2(),
+                        mergedGeometry.exits().stream()
+                                .map(exit -> exit.position().z())
+                                .toList()),
                 mergedGeometry.occupiedPositions());
-    }
-
-    private static Point2i inferAnchor(Set<CubePoint> footprint) {
-        if (footprint == null || footprint.isEmpty()) {
-            return null;
-        }
-        CubePoint anchorPoint = footprint.stream()
-                .filter(point -> point != null)
-                .min(CubePoint.POINT_ORDER)
-                .orElse(null);
-        return anchorPoint == null ? null : anchorPoint.projectedCell();
     }
 }

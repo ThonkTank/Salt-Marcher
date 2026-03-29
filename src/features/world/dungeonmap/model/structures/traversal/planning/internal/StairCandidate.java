@@ -3,6 +3,7 @@ package features.world.dungeonmap.model.structures.traversal.planning.internal;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.stair.StairShape;
 import features.world.dungeonmap.model.structures.traversal.TraversalStairPlacement;
 
@@ -45,12 +46,13 @@ record StairCandidate(
 
     TraversalStairPlacement toPlacement() {
         return new TraversalStairPlacement(
-                anchor,
-                shape,
-                direction,
-                dimension1,
-                dimension2,
-                exitLevels,
+                DungeonStair.planned(
+                        anchor,
+                        shape,
+                        direction,
+                        dimension1,
+                        dimension2,
+                        exitLevels),
                 footprint);
     }
 

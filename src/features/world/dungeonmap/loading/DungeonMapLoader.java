@@ -149,6 +149,7 @@ public final class DungeonMapLoader {
                 clusters,
                 stairs,
                 loadTransitions(conn, map.mapId()),
+                segmentIdsByTraversalId,
                 clusterLevels);
     }
 
@@ -453,11 +454,11 @@ public final class DungeonMapLoader {
                     if (rs.wasNull()) {
                         throw new SQLException("Dungeon-Treppe " + stairId + " hat keinen traversal_id-Owner");
                     }
-                    result.computeIfAbsent(traversalId, ignored -> new ArrayList<>()).add(new DungeonStair(
+                    result.computeIfAbsent(traversalId, ignored -> new ArrayList<>()).add(DungeonStair.fromMaterialized(
                             stairId,
                             traversalId,
-                            normalizedSegmentKey(rs.getString("segment_key"), "legacy-stair"),
                             rs.getLong("dungeon_map_id"),
+                            null,
                             pathNodesByStairId.getOrDefault(stairId, List.of()),
                             exitsByStairId.getOrDefault(stairId, List.of())));
                 }

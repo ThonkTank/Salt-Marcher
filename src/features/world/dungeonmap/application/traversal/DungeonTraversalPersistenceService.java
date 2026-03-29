@@ -141,7 +141,6 @@ public final class DungeonTraversalPersistenceService {
             DungeonStair materialized = stairSlice.placement().materialize(
                     stairSlice.stairId(),
                     traversal.traversalId(),
-                    stairSlice.segmentKey(),
                     traversal.mapId());
             if (materialized == null) {
                 continue;
@@ -175,19 +174,17 @@ public final class DungeonTraversalPersistenceService {
         if (previousLayout == null || traversalId == null) {
             return TraversalSegmentIds.empty();
         }
+        TraversalSegmentIds existingIds = previousLayout.traversalSegmentIds(traversalId);
+        if (!existingIds.corridorIdsBySegmentKey().isEmpty() || !existingIds.stairIdsBySegmentKey().isEmpty()) {
+            return existingIds;
+        }
         LinkedHashMap<String, Long> corridorIds = new LinkedHashMap<>();
         for (var corridor : previousLayout.corridors()) {
             if (corridor != null && Objects.equals(corridor.traversalId(), traversalId)) {
                 corridorIds.put(corridor.segmentKey(), corridor.corridorId());
             }
         }
-        LinkedHashMap<String, Long> stairIds = new LinkedHashMap<>();
-        for (var stair : previousLayout.stairs()) {
-            if (stair != null && Objects.equals(stair.traversalId(), traversalId)) {
-                stairIds.put(stair.segmentKey(), stair.stairId());
-            }
-        }
-        return new TraversalSegmentIds(corridorIds, stairIds);
+        return new TraversalSegmentIds(corridorIds, Map.of());
     }
 
     private static Map<Long, String> existingCorridorIds(TraversalSegmentIds existingIds) {
