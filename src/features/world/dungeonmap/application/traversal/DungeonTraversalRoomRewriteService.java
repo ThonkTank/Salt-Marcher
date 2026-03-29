@@ -5,7 +5,6 @@ import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.ClusterRewrite;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
-import features.world.dungeonmap.model.structures.traversal.TraversalSplitRewriteInput;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -76,22 +75,50 @@ public final class DungeonTraversalRoomRewriteService {
                 if (traversal == null) {
                     continue;
                 }
-                traversalsById.put(traversalId, traversal.rewrittenForSplit(
-                        splitRewriteInput(traversal, layout, originalRoomId, entry.getValue())));
+                Long replacementRoomId = splitReplacementRoomId(traversal, layout, originalRoomId, entry.getValue());
+                if (replacementRoomId != null) {
+                    traversalsById.put(traversalId, traversal.withReplacedRoom(originalRoomId, replacementRoomId));
+                }
             }
         }
     }
 
-    private TraversalSplitRewriteInput splitRewriteInput(
+    private Long splitReplacementRoomId(
             Traversal traversal,
             DungeonLayout layout,
             Long originalRoomId,
             List<Room> fragments
     ) {
-        if (traversal == null || layout == null || originalRoomId == null || fragments == null || fragments.isEmpty()) {
-            return new TraversalSplitRewriteInput(originalRoomId, fragments, List.of());
+        if (traversal == null
+                || layout == null
+                || originalRoomId == null
+                || fragments == null
+                || fragments.isEmpty()
+                || !traversal.connectsRoom(originalRoomId)) {
+            return null;
         }
-        List<Point2i> connectedRoomCenters = new ArrayList<>();
+        List<Point2i> connectedRoomCenters = connectedRoomCenters(traversal, layout, originalRoomId);
+        Room bestFragment = null;
+        SplitFragmentScore bestScore = null;
+        for (Room fragment : fragments) {
+            if (fragment == null || fragment.roomId() == null) {
+                continue;
+            }
+            SplitFragmentScore score = splitFragmentScore(fragment, connectedRoomCenters);
+            if (bestScore == null || score.compareTo(bestScore) < 0) {
+                bestFragment = fragment;
+                bestScore = score;
+            }
+        }
+        return bestFragment == null ? null : bestFragment.roomId();
+    }
+
+    private static List<Point2i> connectedRoomCenters(
+            Traversal traversal,
+            DungeonLayout layout,
+            Long originalRoomId
+    ) {
+        ArrayList<Point2i> connectedRoomCenters = new ArrayList<>();
         for (Long roomId : traversal.roomIds()) {
             if (Objects.equals(roomId, originalRoomId)) {
                 continue;
@@ -101,7 +128,21 @@ public final class DungeonTraversalRoomRewriteService {
                 connectedRoomCenters.add(room.floor().shape().centerCell());
             }
         }
-        return new TraversalSplitRewriteInput(originalRoomId, fragments, connectedRoomCenters);
+        return connectedRoomCenters.isEmpty() ? List.of() : List.copyOf(connectedRoomCenters);
+    }
+
+    private static SplitFragmentScore splitFragmentScore(Room fragment, List<Point2i> connectedRoomCenters) {
+        Point2i fragmentCenter = fragment.floor().shape().centerCell();
+        int nearestRoomDistance = connectedRoomCenters.stream()
+                .filter(Objects::nonNull)
+                .mapToInt(fragmentCenter::distanceTo)
+                .min()
+                .orElse(Integer.MAX_VALUE);
+        int groupDistance = connectedRoomCenters.stream()
+                .filter(Objects::nonNull)
+                .mapToInt(fragmentCenter::distanceTo)
+                .sum();
+        return new SplitFragmentScore(nearestRoomDistance, groupDistance);
     }
 
     private static Long mergedReplacementRoomId(ClusterRewrite rewrite) {
@@ -111,5 +152,16 @@ public final class DungeonTraversalRoomRewriteService {
                 .filter(Objects::nonNull)
                 .collect(LinkedHashSet::new, Set::add, Set::addAll);
         return replacementIds.size() == 1 ? replacementIds.iterator().next() : null;
+    }
+
+    private record SplitFragmentScore(int nearestRoomDistance, int groupDistance) implements Comparable<SplitFragmentScore> {
+        @Override
+        public int compareTo(SplitFragmentScore other) {
+            int nearestCompare = Integer.compare(nearestRoomDistance, other.nearestRoomDistance);
+            if (nearestCompare != 0) {
+                return nearestCompare;
+            }
+            return Integer.compare(groupDistance, other.groupDistance);
+        }
     }
 }

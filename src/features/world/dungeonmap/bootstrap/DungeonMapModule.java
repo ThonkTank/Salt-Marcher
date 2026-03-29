@@ -13,6 +13,7 @@ import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
 import features.world.dungeonmap.application.traversal.DungeonTraversalEditService;
 import features.world.dungeonmap.application.traversal.DungeonTraversalPersistenceService;
 import features.world.dungeonmap.application.traversal.DungeonTraversalRoomRewriteService;
+import features.world.dungeonmap.application.traversal.DungeonTraversalRewriteService;
 import features.world.dungeonmap.application.traversal.DungeonTraversalStructureCommitter;
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
 import features.world.dungeonmap.loading.DungeonMapLoader;
@@ -70,12 +71,13 @@ public final class DungeonMapModule {
         DungeonRoomNarrationService roomNarrationService = new DungeonRoomNarrationService(roomWriteRepository);
         DungeonRoomGeometryWriteMapper geometryWriteMapper = new DungeonRoomGeometryWriteMapper();
         DungeonTraversalRoomRewriteService traversalRoomRewriteService = new DungeonTraversalRoomRewriteService();
+        DungeonTraversalRewriteService traversalRewriteService = new DungeonTraversalRewriteService(traversalRoomRewriteService);
         DungeonRoomTopologyService roomTopologyService = new DungeonRoomTopologyService(
                 mapLoader,
                 roomWriteRepository,
                 geometryWriteMapper,
                 traversalPersistenceService,
-                traversalRoomRewriteService);
+                traversalRewriteService);
         DungeonTraversalEditService traversalEditService = new DungeonTraversalEditService(
                 traversalWriteRepository,
                 traversalPersistenceService);
@@ -85,7 +87,7 @@ public final class DungeonMapModule {
                 new DungeonRuntimeStateRepairService(mapLoader));
         DungeonBoundaryEditService boundaryEditService = new DungeonBoundaryEditService(roomTopologyService);
         DungeonClusterMoveProjectionApplicationService clusterMoveProjectionApplicationService =
-                new DungeonClusterMoveProjectionApplicationService();
+                new DungeonClusterMoveProjectionApplicationService(traversalRewriteService);
         DungeonClusterMoveService clusterMoveService = new DungeonClusterMoveService(
                 mapLoader,
                 roomWriteRepository,

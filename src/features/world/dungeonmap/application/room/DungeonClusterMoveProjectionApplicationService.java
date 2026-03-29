@@ -1,5 +1,7 @@
 package features.world.dungeonmap.application.room;
 
+import features.world.dungeonmap.application.traversal.DungeonTraversalRewriteResult;
+import features.world.dungeonmap.application.traversal.DungeonTraversalRewriteService;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
@@ -7,8 +9,6 @@ import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
 import features.world.dungeonmap.model.structures.traversal.TraversalRoute;
-import features.world.dungeonmap.model.structures.traversal.TraversalRoutingContext;
-import features.world.dungeonmap.model.structures.traversal.TraversalRoutingSnapshot;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -19,6 +19,12 @@ import java.util.Objects;
 import java.util.Set;
 
 public final class DungeonClusterMoveProjectionApplicationService {
+
+    private final DungeonTraversalRewriteService traversalRewriteService;
+
+    public DungeonClusterMoveProjectionApplicationService(DungeonTraversalRewriteService traversalRewriteService) {
+        this.traversalRewriteService = Objects.requireNonNull(traversalRewriteService, "traversalRewriteService");
+    }
 
     public DungeonClusterMoveProjection project(
             DungeonLayout layout,
@@ -47,38 +53,36 @@ public final class DungeonClusterMoveProjectionApplicationService {
                 baseLayout.stairs(),
                 baseLayout.transitions(),
                 updatedClusterLevels);
-        TraversalRoutingSnapshot baseSnapshot = TraversalRoutingSnapshot.fromLayout(baseLayout);
-        TraversalRoutingSnapshot provisionalSnapshot = TraversalRoutingSnapshot.fromLayout(provisionalLayout);
-
-        Set<Long> affectedTraversalIds = baseLayout.traversalIdsAffectedBy(movedCluster.roomIds(), Set.of(clusterId));
-        Traversal.RewriteResult rewriteResult = Traversal.rewriteAll(
-                new LinkedHashMap<>(baseLayout.traversalsById()),
-                new TraversalRoutingContext(
-                        baseSnapshot,
-                        provisionalSnapshot,
-                        affectedTraversalIds,
-                        Set.of()));
+        DungeonTraversalRewriteResult rewriteResult = traversalRewriteService.rewriteForLayoutChange(
+                baseLayout,
+                provisionalLayout,
+                baseLayout.traversalsById(),
+                movedCluster.roomIds(),
+                Set.of(clusterId),
+                Set.of());
         List<Traversal> updatedTraversals = updatedTraversals(baseLayout, rewriteResult.traversalsById());
-        Map<Long, TraversalRoute> projectedRoutesByTraversalId = projectedRoutesByTraversalId(
-                updatedTraversals,
-                affectedTraversalIds,
-                provisionalSnapshot,
-                rewriteResult.traversalRoutesByTraversalId(),
-                baseLayout);
         DungeonLayout projectedLayout = new DungeonLayout(
                 baseLayout.mapId(),
                 baseLayout.name(),
                 updatedTraversals,
-                mergeCorridors(baseLayout, updatedTraversals, affectedTraversalIds, projectedRoutesByTraversalId),
+                mergeCorridors(
+                        baseLayout,
+                        updatedTraversals,
+                        rewriteResult.affectedTraversalIds(),
+                        rewriteResult.traversalRoutesByTraversalId()),
                 updatedClusters,
-                mergeStairs(baseLayout, updatedTraversals, affectedTraversalIds, projectedRoutesByTraversalId),
+                mergeStairs(
+                        baseLayout,
+                        updatedTraversals,
+                        rewriteResult.affectedTraversalIds(),
+                        rewriteResult.traversalRoutesByTraversalId()),
                 baseLayout.transitions(),
                 updatedClusterLevels);
         return new DungeonClusterMoveProjection(
                 projectedLayout,
                 projectedLayout.findCluster(clusterId),
                 rewriteResult.traversalsById(),
-                projectedRoutesByTraversalId);
+                rewriteResult.traversalRoutesByTraversalId());
     }
 
     private static Map<Long, Integer> updatedClusterLevels(DungeonLayout layout, Long clusterId, int levelDelta) {
@@ -150,28 +154,6 @@ public final class DungeonClusterMoveProjectionApplicationService {
         }
         merged.addAll(unownedStairs(baseLayout.traversals(), baseLayout.stairs()));
         return List.copyOf(merged);
-    }
-
-    private static Map<Long, TraversalRoute> projectedRoutesByTraversalId(
-            List<Traversal> updatedTraversals,
-            Set<Long> affectedTraversalIds,
-            TraversalRoutingSnapshot provisionalSnapshot,
-            Map<Long, TraversalRoute> traversalRoutesByTraversalId,
-            DungeonLayout previousLayout
-    ) {
-        LinkedHashMap<Long, TraversalRoute> result = new LinkedHashMap<>();
-        for (Traversal traversal : updatedTraversals) {
-            if (traversal == null
-                    || traversal.traversalId() == null
-                    || !affectedTraversalIds.contains(traversal.traversalId())) {
-                continue;
-            }
-            TraversalRoute rawRoute = traversalRoutesByTraversalId.getOrDefault(
-                    traversal.traversalId(),
-                    provisionalSnapshot == null ? TraversalRoute.empty() : traversal.route(provisionalSnapshot));
-            result.put(traversal.traversalId(), applySegmentRefs(traversal, rawRoute));
-        }
-        return result.isEmpty() ? Map.of() : Map.copyOf(result);
     }
 
     private static Map<Long, List<Corridor>> groupCorridorsByTraversalId(
@@ -304,12 +286,4 @@ public final class DungeonClusterMoveProjectionApplicationService {
         return result;
     }
 
-    private static TraversalRoute applySegmentRefs(Traversal traversal, TraversalRoute traversalRoute) {
-        if (traversalRoute == null || traversal == null) {
-            return traversalRoute == null ? TraversalRoute.empty() : traversalRoute;
-        }
-        return traversalRoute
-                .withCorridorIds(traversal.segmentRefs().corridorIdsBySegmentKey())
-                .withStairIds(traversal.segmentRefs().stairIdsBySegmentKey());
-    }
 }

@@ -117,51 +117,6 @@ public final class Traversal {
         return !isDegenerate();
     }
 
-    public record RewriteResult(
-            Map<Long, Traversal> traversalsById,
-            Set<Long> affectedTraversalIds,
-            Map<Long, TraversalRoute> traversalRoutesByTraversalId
-    ) {
-        public RewriteResult {
-            traversalsById = traversalsById == null ? Map.of() : Map.copyOf(traversalsById);
-            affectedTraversalIds = affectedTraversalIds == null ? Set.of() : Set.copyOf(affectedTraversalIds);
-            traversalRoutesByTraversalId = traversalRoutesByTraversalId == null ? Map.of() : Map.copyOf(traversalRoutesByTraversalId);
-        }
-    }
-
-    public static RewriteResult rewriteAll(
-            Map<Long, Traversal> traversalsById,
-            TraversalRoutingContext context
-    ) {
-        if (traversalsById == null || traversalsById.isEmpty()) {
-            return new RewriteResult(Map.of(), Set.of(), Map.of());
-        }
-        if (context == null || context.affectedTraversalIds().isEmpty()) {
-            return new RewriteResult(Map.copyOf(traversalsById), Set.of(), Map.of());
-        }
-        Map<Long, Traversal> result = new LinkedHashMap<>();
-        Map<Long, TraversalRoute> traversalRoutesByTraversalId = new LinkedHashMap<>();
-        for (Map.Entry<Long, Traversal> entry : traversalsById.entrySet()) {
-            Traversal traversal = entry.getValue();
-            if (traversal == null) {
-                result.put(entry.getKey(), null);
-                continue;
-            }
-            Traversal reanchored = traversal.reanchoredTo(context);
-            if (context.affects(traversal.traversalId()) && reanchored.isPersistable()) {
-                TraversalRoute traversalRoute = reanchored.route(context.rewrittenSnapshot());
-                if (reanchored.traversalId() != null) {
-                    traversalRoutesByTraversalId.put(reanchored.traversalId(), traversalRoute);
-                }
-            }
-            result.put(entry.getKey(), reanchored);
-        }
-        return new RewriteResult(
-                Map.copyOf(result),
-                context.affectedTraversalIds(),
-                Map.copyOf(traversalRoutesByTraversalId));
-    }
-
     public Traversal withAddedRoom(Long roomId) {
         if (roomId == null || roomIds.contains(roomId)) {
             return this;
@@ -310,17 +265,6 @@ public final class Traversal {
         return TraversalRoutingEngine.route(this, snapshot);
     }
 
-    public Traversal rewrittenForSplit(TraversalSplitRewriteInput input) {
-        if (input == null || !input.isUsableFor(this)) {
-            return this;
-        }
-        Room replacement = chooseBestSplitFragment(input);
-        if (replacement == null || replacement.roomId() == null) {
-            return this;
-        }
-        return withReplacedRoom(input.originalRoomId(), replacement.roomId());
-    }
-
     public List<Room> resolvedRooms(TraversalRoutingSnapshot input) {
         List<Room> result = new ArrayList<>();
         Set<Long> seen = new LinkedHashSet<>();
@@ -408,36 +352,6 @@ public final class Traversal {
         return previousInput.clusterCenter(clusterId) == null ? null : clusterId;
     }
 
-    private Room chooseBestSplitFragment(TraversalSplitRewriteInput input) {
-        Room bestFragment = null;
-        SplitFragmentScore bestScore = null;
-        for (Room fragment : input.fragments()) {
-            if (fragment == null || fragment.roomId() == null) {
-                continue;
-            }
-            SplitFragmentScore score = splitFragmentScore(fragment, input.connectedRoomCenters());
-            if (bestScore == null || score.compareTo(bestScore) < 0) {
-                bestFragment = fragment;
-                bestScore = score;
-            }
-        }
-        return bestFragment;
-    }
-
-    private SplitFragmentScore splitFragmentScore(Room fragment, List<Point2i> connectedRoomCenters) {
-        Point2i fragmentCenter = fragment.floor().shape().centerCell();
-        int nearestRoomDistance = connectedRoomCenters.stream()
-                .filter(Objects::nonNull)
-                .mapToInt(fragmentCenter::distanceTo)
-                .min()
-                .orElse(Integer.MAX_VALUE);
-        int groupDistance = connectedRoomCenters.stream()
-                .filter(Objects::nonNull)
-                .mapToInt(fragmentCenter::distanceTo)
-                .sum();
-        return new SplitFragmentScore(nearestRoomDistance, groupDistance);
-    }
-
     private List<Long> mergedRoomIds(Traversal other) {
         LinkedHashSet<Long> merged = new LinkedHashSet<>(roomIds);
         for (Long roomId : other.roomIds()) {
@@ -471,16 +385,5 @@ public final class Traversal {
             }
         }
         return result.isEmpty() ? List.of() : List.copyOf(result);
-    }
-
-    private record SplitFragmentScore(int nearestRoomDistance, int groupDistance) implements Comparable<SplitFragmentScore> {
-        @Override
-        public int compareTo(SplitFragmentScore other) {
-            int nearestCompare = Integer.compare(nearestRoomDistance, other.nearestRoomDistance);
-            if (nearestCompare != 0) {
-                return nearestCompare;
-            }
-            return Integer.compare(groupDistance, other.groupDistance);
-        }
     }
 }
