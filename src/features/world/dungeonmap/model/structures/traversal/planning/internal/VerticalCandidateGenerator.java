@@ -3,9 +3,7 @@ package features.world.dungeonmap.model.structures.traversal.planning.internal;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.structures.stair.StairPathGenerator;
 import features.world.dungeonmap.model.structures.stair.StairShape;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -16,7 +14,6 @@ import java.util.Set;
 
 final class VerticalCandidateGenerator {
 
-    private static final List<StairShape> ALLOWED_SHAPES = List.of(StairShape.STRAIGHT, StairShape.SQUARE);
     private static final int HORIZONTAL_PADDING = 3;
 
     private VerticalCandidateGenerator() {
@@ -65,51 +62,35 @@ final class VerticalCandidateGenerator {
         Set<CubePoint> upperTerminals = lowerNode == start ? endTerminals : startTerminals;
         int minZ = lowerNode.levelZ();
         int maxZ = upperNode.levelZ();
-        int height = maxZ - minZ + 1;
         CandidateBounds bounds = CandidateBounds.enclosing(terminalBounds(start), terminalBounds(end));
         LinkedHashMap<StairPlacementKey, StairCandidate> candidates = new LinkedHashMap<>();
-        for (StairShape shape : ALLOWED_SHAPES) {
-            StairDimensions dimensions = dimensionsFor(shape, height);
-            if (dimensions == null) {
-                continue;
-            }
-            for (CardinalDirection direction : CardinalDirection.values()) {
+        for (CardinalDirection direction : CardinalDirection.values()) {
+            List<AutomaticStairVariantCatalog.StairVariant> variants = AutomaticStairVariantCatalog.variantsFor(
+                    direction,
+                    minZ,
+                    maxZ);
+            for (AutomaticStairVariantCatalog.StairVariant variant : variants) {
                 for (CubePoint lowerTerminal : lowerTerminals) {
                     addCandidate(
                             candidates,
                             start,
                             end,
-                            lowerTerminal.projectedCell(),
-                            shape,
-                            direction,
-                            dimensions,
+                            variant.placementAnchorForLowerTerminal(lowerTerminal.projectedCell()),
+                            variant,
                             lowerTerminals,
                             upperTerminals,
-                            minZ,
-                            maxZ,
                             bounds,
                             searchVolume);
                 }
                 for (CubePoint upperTerminal : upperTerminals) {
-                    Point2i anchor = anchorForUpperTerminal(
-                            upperTerminal.projectedCell(),
-                            shape,
-                            direction,
-                            minZ,
-                            maxZ,
-                            dimensions);
                     addCandidate(
                             candidates,
                             start,
                             end,
-                            anchor,
-                            shape,
-                            direction,
-                            dimensions,
+                            variant.placementAnchorForUpperTerminal(upperTerminal.projectedCell()),
+                            variant,
                             lowerTerminals,
                             upperTerminals,
-                            minZ,
-                            maxZ,
                             bounds,
                             searchVolume);
                 }
@@ -128,29 +109,16 @@ final class VerticalCandidateGenerator {
             TraversalNode start,
             TraversalNode end,
             Point2i anchor,
-            StairShape shape,
-            CardinalDirection direction,
-            StairDimensions dimensions,
+            AutomaticStairVariantCatalog.StairVariant variant,
             Set<CubePoint> lowerTerminals,
             Set<CubePoint> upperTerminals,
-            int minZ,
-            int maxZ,
             CandidateBounds bounds,
             SearchVolume searchVolume
     ) {
-        List<CubePoint> path;
-        try {
-            path = StairPathGenerator.generatePath(
-                    shape,
-                    anchor,
-                    direction,
-                    minZ,
-                    maxZ,
-                    dimensions.dimension1(),
-                    dimensions.dimension2());
-        } catch (IllegalArgumentException ignored) {
+        if (anchor == null || variant == null) {
             return;
         }
+        List<CubePoint> path = variant.placeAt(anchor);
         if (path.isEmpty() || !bounds.containsAll(path) || !searchVolume.isFootprintPassable(path)) {
             return;
         }
@@ -162,18 +130,19 @@ final class VerticalCandidateGenerator {
             return;
         }
         LinkedHashSet<Integer> exitLevels = new LinkedHashSet<>();
-        for (int level = minZ; level <= maxZ; level++) {
+        for (int level = lowerCell.z(); level <= upperCell.z(); level++) {
             exitLevels.add(level);
         }
         CubePoint startCell = start.levelZ() <= end.levelZ() ? lowerCell : upperCell;
         CubePoint endCell = start.levelZ() <= end.levelZ() ? upperCell : lowerCell;
-        long costHint = stairTraversalCost(path, exitLevels.size(), lowerAttachCost, upperAttachCost);
+        long baseDistance = variant.stairPathLength() + lowerAttachCost + upperAttachCost;
+        long costHint = TraversalPlanningCostModel.penalizeStairs(baseDistance, 1);
         StairCandidate candidate = new StairCandidate(
                 anchor,
-                shape,
-                direction,
-                dimensions.dimension1(),
-                dimensions.dimension2(),
+                variant.shape(),
+                variant.direction(),
+                variant.dimension1(),
+                variant.dimension2(),
                 List.copyOf(exitLevels),
                 Set.copyOf(path),
                 startCell,
@@ -213,42 +182,6 @@ final class VerticalCandidateGenerator {
         return terminal.boundsPoints();
     }
 
-    private static StairDimensions dimensionsFor(StairShape shape, int height) {
-        if (shape == StairShape.STRAIGHT) {
-            return new StairDimensions(0, 0);
-        }
-        if (shape == StairShape.SQUARE) {
-            if (height < 4) {
-                return null;
-            }
-            return new StairDimensions((int) Math.ceil(Math.sqrt(height)), 0);
-        }
-        return null;
-    }
-
-    private static Point2i anchorForUpperTerminal(
-            Point2i upperTerminal,
-            StairShape shape,
-            CardinalDirection direction,
-            int minZ,
-            int maxZ,
-            StairDimensions dimensions
-    ) {
-        List<CubePoint> template = StairPathGenerator.generatePath(
-                shape,
-                new Point2i(0, 0),
-                direction,
-                minZ,
-                maxZ,
-                dimensions.dimension1(),
-                dimensions.dimension2());
-        if (template.isEmpty()) {
-            return upperTerminal;
-        }
-        Point2i templateEnd = template.getLast().projectedCell();
-        return upperTerminal.subtract(templateEnd);
-    }
-
     private static long attachCost(CubePoint stairTerminal, Set<CubePoint> terminalCells) {
         if (stairTerminal == null || terminalCells == null || terminalCells.isEmpty()) {
             return Long.MAX_VALUE;
@@ -263,34 +196,6 @@ final class VerticalCandidateGenerator {
             best = Math.min(best, distance);
         }
         return best;
-    }
-
-    private static long stairTraversalCost(
-            List<CubePoint> path,
-            int exitLevelCount,
-            long lowerAttachCost,
-            long upperAttachCost
-    ) {
-        return projectedFootprintSize(path)
-                + Math.max(exitLevelCount - 1, 0) * 2L
-                + lowerAttachCost
-                + upperAttachCost;
-    }
-
-    private static int projectedFootprintSize(List<CubePoint> path) {
-        LinkedHashSet<Point2i> footprint = new LinkedHashSet<>();
-        for (CubePoint point : path == null ? List.<CubePoint>of() : path) {
-            if (point != null) {
-                footprint.add(point.projectedCell());
-            }
-        }
-        return footprint.size();
-    }
-
-    private record StairDimensions(
-            int dimension1,
-            int dimension2
-    ) {
     }
 
     private record StairPlacementKey(

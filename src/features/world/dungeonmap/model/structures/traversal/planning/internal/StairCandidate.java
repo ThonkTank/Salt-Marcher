@@ -54,6 +54,40 @@ record StairCandidate(
                 footprint);
     }
 
+    int stairPathLength() {
+        return exitLevels.size();
+    }
+
+    int profileSize() {
+        LinkedHashSet<Point2i> projectedFootprint = new LinkedHashSet<>();
+        for (CubePoint cell : footprint) {
+            if (cell != null) {
+                projectedFootprint.add(cell.projectedCell());
+            }
+        }
+        return projectedFootprint.size();
+    }
+
+    int profileArea() {
+        int minX = Integer.MAX_VALUE;
+        int minY = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE;
+        int maxY = Integer.MIN_VALUE;
+        for (CubePoint cell : footprint) {
+            if (cell == null) {
+                continue;
+            }
+            minX = Math.min(minX, cell.x());
+            minY = Math.min(minY, cell.y());
+            maxX = Math.max(maxX, cell.x());
+            maxY = Math.max(maxY, cell.y());
+        }
+        if (minX == Integer.MAX_VALUE) {
+            return 0;
+        }
+        return (maxX - minX + 1) * (maxY - minY + 1);
+    }
+
     private static List<Integer> normalizeExitLevels(List<Integer> exitLevels) {
         if (exitLevels == null || exitLevels.isEmpty()) {
             return List.of();

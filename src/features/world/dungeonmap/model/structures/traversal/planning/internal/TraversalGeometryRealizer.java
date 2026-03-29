@@ -105,7 +105,7 @@ public final class TraversalGeometryRealizer {
             VerticalCandidateEdge verticalCandidateEdge
     ) {
         VerticalEdgeRealization bestRealization = null;
-        long bestScore = Long.MAX_VALUE;
+        VerticalRealizationScore bestScore = null;
         for (StairCandidate stairCandidate : verticalCandidateEdge.stairCandidates()) {
             if (stairCandidate == null) {
                 continue;
@@ -124,8 +124,8 @@ public final class TraversalGeometryRealizer {
             if (!suffix.routable()) {
                 continue;
             }
-            long score = (long) prefix.pathCells().size() + suffix.pathCells().size() + stairCandidate.costHint();
-            if (score < bestScore) {
+            VerticalRealizationScore score = VerticalRealizationScore.of(prefix, suffix, stairCandidate);
+            if (bestScore == null || score.compareTo(bestScore) < 0) {
                 bestScore = score;
                 bestRealization = new VerticalEdgeRealization(prefix, suffix, stairCandidate.toPlacement());
             }
@@ -348,6 +348,76 @@ public final class TraversalGeometryRealizer {
             LocalSegmentResult suffix,
             StairPlacement stairPlacement
     ) {
+    }
+
+    private record VerticalRealizationScore(
+            long totalDistance,
+            int profileSize,
+            int profileArea,
+            int shapePriority,
+            int dimension1,
+            int dimension2,
+            int directionPriority,
+            Point2i anchor
+    ) implements Comparable<VerticalRealizationScore> {
+        private static VerticalRealizationScore of(
+                LocalSegmentResult prefix,
+                LocalSegmentResult suffix,
+                StairCandidate stairCandidate
+        ) {
+            return new VerticalRealizationScore(
+                    (long) prefix.pathCells().size() + stairCandidate.stairPathLength() + suffix.pathCells().size(),
+                    stairCandidate.profileSize(),
+                    stairCandidate.profileArea(),
+                    shapePriority(stairCandidate.shape()),
+                    stairCandidate.dimension1(),
+                    stairCandidate.dimension2(),
+                    stairCandidate.direction().ordinal(),
+                    stairCandidate.anchor());
+        }
+
+        @Override
+        public int compareTo(VerticalRealizationScore other) {
+            int totalDistanceComparison = Long.compare(totalDistance, other.totalDistance);
+            if (totalDistanceComparison != 0) {
+                return totalDistanceComparison;
+            }
+            int profileSizeComparison = Integer.compare(profileSize, other.profileSize);
+            if (profileSizeComparison != 0) {
+                return profileSizeComparison;
+            }
+            int profileAreaComparison = Integer.compare(profileArea, other.profileArea);
+            if (profileAreaComparison != 0) {
+                return profileAreaComparison;
+            }
+            int shapeComparison = Integer.compare(shapePriority, other.shapePriority);
+            if (shapeComparison != 0) {
+                return shapeComparison;
+            }
+            int dimension1Comparison = Integer.compare(dimension1, other.dimension1);
+            if (dimension1Comparison != 0) {
+                return dimension1Comparison;
+            }
+            int dimension2Comparison = Integer.compare(dimension2, other.dimension2);
+            if (dimension2Comparison != 0) {
+                return dimension2Comparison;
+            }
+            int directionComparison = Integer.compare(directionPriority, other.directionPriority);
+            if (directionComparison != 0) {
+                return directionComparison;
+            }
+            return Point2i.POINT_ORDER.compare(anchor, other.anchor);
+        }
+
+        private static int shapePriority(features.world.dungeonmap.model.structures.stair.StairShape shape) {
+            return switch (shape) {
+                case STRAIGHT -> 0;
+                case SQUARE -> 1;
+                case RECTANGULAR -> 2;
+                case CIRCULAR -> 3;
+                case LADDER -> 4;
+            };
+        }
     }
 
     private static final class RealizationState {

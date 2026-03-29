@@ -3,17 +3,12 @@ package features.world.dungeonmap.model.structures.traversal.planning.internal;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.structures.stair.StairPathGenerator;
 import features.world.dungeonmap.model.structures.stair.StairShape;
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 
 final class StairExpansion {
-
-    private static final int STAIR_COST_PER_LEVEL = 2;
 
     private StairExpansion() {
         throw new AssertionError("No instances");
@@ -44,35 +39,13 @@ final class StairExpansion {
         if (maxDelta < 1) {
             return;
         }
-        for (StairShape shape : List.of(StairShape.STRAIGHT, StairShape.SQUARE)) {
-            for (int delta = 1; delta <= maxDelta; delta++) {
-                int minZ = ascending ? cell.z() : cell.z() - delta;
-                int maxZ = ascending ? cell.z() + delta : cell.z();
-                int height = maxZ - minZ + 1;
-
-                int dimension1 = 0;
-                int dimension2 = 0;
-                if (shape == StairShape.SQUARE) {
-                    if (height < 4) {
-                        break;
-                    }
-                    dimension1 = (int) Math.ceil(Math.sqrt(height));
-                }
-
-                List<CubePoint> path;
-                try {
-                    Point2i anchor = resolveAnchor(cell, direction, shape, height, dimension1, dimension2, ascending);
-                    path = StairPathGenerator.generatePath(
-                            shape,
-                            anchor,
-                            direction,
-                            minZ,
-                            maxZ,
-                            dimension1,
-                            dimension2);
-                } catch (IllegalArgumentException ignored) {
-                    break;
-                }
+        for (int delta = 1; delta <= maxDelta; delta++) {
+            int minZ = ascending ? cell.z() : cell.z() - delta;
+            int maxZ = ascending ? cell.z() + delta : cell.z();
+            for (AutomaticStairVariantCatalog.StairVariant variant
+                    : AutomaticStairVariantCatalog.variantsFor(direction, minZ, maxZ)) {
+                Point2i anchor = resolveAnchor(cell, variant, ascending);
+                List<CubePoint> path = variant.placeAt(anchor);
                 if (path.isEmpty()
                         || !containsTraversalEndpoint(path, cell, ascending)
                         || !volume.isFootprintPassable(path)) {
@@ -83,44 +56,30 @@ final class StairExpansion {
                 results.add(new StairNeighbor(
                         exitCell,
                         path,
-                        shape,
-                        direction,
-                        dimension1,
-                        dimension2,
+                        variant.shape(),
+                        variant.direction(),
+                        variant.dimension1(),
+                        variant.dimension2(),
                         minZ,
                         maxZ,
                         firstHorizontalDirectionIndex(traversalPath),
                         lastHorizontalDirectionIndex(traversalPath),
-                        stairTraversalCost(height, path)));
+                        stairTraversalCost(variant.stairPathLength())));
             }
         }
     }
 
     private static Point2i resolveAnchor(
             CubePoint cell,
-            CardinalDirection direction,
-            StairShape shape,
-            int height,
-            int dimension1,
-            int dimension2,
+            AutomaticStairVariantCatalog.StairVariant variant,
             boolean ascending
     ) {
-        if (ascending || shape == StairShape.LADDER) {
-            return cell.projectedCell();
+        if (cell == null || variant == null) {
+            return null;
         }
-        List<CubePoint> template = StairPathGenerator.generatePath(
-                shape,
-                new Point2i(0, 0),
-                direction,
-                0,
-                height - 1,
-                dimension1,
-                dimension2);
-        if (template.isEmpty()) {
-            return cell.projectedCell();
-        }
-        Point2i templateTerminal = template.getLast().projectedCell();
-        return cell.projectedCell().subtract(templateTerminal);
+        return ascending
+                ? variant.placementAnchorForLowerTerminal(cell.projectedCell())
+                : variant.placementAnchorForUpperTerminal(cell.projectedCell());
     }
 
     private static boolean containsTraversalEndpoint(List<CubePoint> path, CubePoint cell, boolean ascending) {
@@ -130,21 +89,9 @@ final class StairExpansion {
         return ascending ? cell.equals(path.getFirst()) : cell.equals(path.getLast());
     }
 
-    private static int stairTraversalCost(int height, List<CubePoint> path) {
-        return height * STAIR_COST_PER_LEVEL + projectedFootprintSize(path);
-    }
-
-    private static int projectedFootprintSize(List<CubePoint> path) {
-        if (path == null || path.isEmpty()) {
-            return 0;
-        }
-        Set<Point2i> footprint = new LinkedHashSet<>();
-        for (CubePoint point : path) {
-            if (point != null) {
-                footprint.add(point.projectedCell());
-            }
-        }
-        return footprint.size();
+    private static int stairTraversalCost(int stairPathLength) {
+        long penalizedCost = TraversalPlanningCostModel.penalizeStairs(stairPathLength, 1);
+        return penalizedCost >= Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) penalizedCost;
     }
 
     private static List<CubePoint> traversalPath(List<CubePoint> path, boolean ascending) {

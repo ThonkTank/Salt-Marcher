@@ -15,8 +15,6 @@ import java.util.Set;
 
 public final class TraversalTopologyProjector {
 
-    private static final long VERTICAL_SCORE_WEIGHT = 1_000L;
-
     private TraversalTopologyProjector() {
         throw new AssertionError("No instances");
     }
@@ -355,7 +353,7 @@ public final class TraversalTopologyProjector {
         long verticalDistance = Math.abs(first.levelZ() - second.levelZ());
         long horizontalDistance = Math.abs((long) first.anchor().x() - second.anchor().x())
                 + Math.abs((long) first.anchor().y() - second.anchor().y());
-        return verticalDistance * VERTICAL_SCORE_WEIGHT + horizontalDistance;
+        return TraversalPlanningCostModel.approximateConnectionScore(horizontalDistance, verticalDistance);
     }
 
     private record ProjectedRoomPortals(
