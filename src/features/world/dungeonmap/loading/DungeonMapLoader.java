@@ -22,7 +22,7 @@ import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
-import features.world.dungeonmap.model.structures.stair.DungeonStairExit;
+import features.world.dungeonmap.model.structures.stair.StairShape;
 import features.world.dungeonmap.model.structures.traversal.TraversalBindings;
 import features.world.dungeonmap.model.structures.traversal.TraversalDoorBinding;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
@@ -423,27 +423,16 @@ public final class DungeonMapLoader {
 
     private static Map<Long, List<DungeonStair>> loadTraversalStairs(Connection conn, long mapId) throws SQLException {
         DungeonSchemaSupport.ensureCompatibility(conn);
-        Map<Long, List<CubePoint>> pathNodesByStairId = loadGrouped(conn,
-                "SELECT stair_id, cell_x, cell_y, cell_z"
-                        + " FROM dungeon_stair_path_nodes"
-                        + " WHERE stair_id IN (SELECT stair_id FROM dungeon_stairs WHERE dungeon_map_id=?)"
-                        + " ORDER BY stair_id, sort_order",
-                mapId,
-                rs -> rs.getLong("stair_id"),
-                rs -> new CubePoint(rs.getInt("cell_x"), rs.getInt("cell_y"), rs.getInt("cell_z")));
-        Map<Long, List<DungeonStairExit>> exitsByStairId = loadGrouped(conn,
-                "SELECT stair_id, stair_exit_id, cell_x, cell_y, cell_z, label"
+        Map<Long, List<Integer>> exitLevelsByStairId = loadGrouped(conn,
+                "SELECT stair_id, cell_z"
                         + " FROM dungeon_stair_exits"
                         + " WHERE stair_id IN (SELECT stair_id FROM dungeon_stairs WHERE dungeon_map_id=?)"
-                        + " ORDER BY stair_id, stair_exit_id",
+                        + " ORDER BY stair_id, cell_z, stair_exit_id",
                 mapId,
                 rs -> rs.getLong("stair_id"),
-                rs -> new DungeonStairExit(
-                        rs.getLong("stair_exit_id"),
-                        new CubePoint(rs.getInt("cell_x"), rs.getInt("cell_y"), rs.getInt("cell_z")),
-                        rs.getString("label")));
+                rs -> rs.getInt("cell_z"));
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT stair_id, traversal_id, segment_key, dungeon_map_id"
+                "SELECT stair_id, traversal_id, dungeon_map_id, name, anchor_x, anchor_y, shape, direction, dimension1, dimension2"
                         + " FROM dungeon_stairs WHERE dungeon_map_id=? ORDER BY stair_id")) {
             ps.setLong(1, mapId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -454,13 +443,17 @@ public final class DungeonMapLoader {
                     if (rs.wasNull()) {
                         throw new SQLException("Dungeon-Treppe " + stairId + " hat keinen traversal_id-Owner");
                     }
-                    result.computeIfAbsent(traversalId, ignored -> new ArrayList<>()).add(DungeonStair.fromMaterialized(
+                    result.computeIfAbsent(traversalId, ignored -> new ArrayList<>()).add(new DungeonStair(
                             stairId,
                             traversalId,
                             rs.getLong("dungeon_map_id"),
-                            null,
-                            pathNodesByStairId.getOrDefault(stairId, List.of()),
-                            exitsByStairId.getOrDefault(stairId, List.of())));
+                            rs.getString("name"),
+                            new Point2i(requiredInt(rs, stairId, "anchor_x"), requiredInt(rs, stairId, "anchor_y")),
+                            requiredStairShape(rs, stairId),
+                            requiredDirection(rs, stairId),
+                            requiredInt(rs, stairId, "dimension1"),
+                            requiredInt(rs, stairId, "dimension2"),
+                            exitLevelsByStairId.getOrDefault(stairId, List.of())));
                 }
                 LinkedHashMap<Long, List<DungeonStair>> immutable = new LinkedHashMap<>();
                 for (Map.Entry<Long, List<DungeonStair>> entry : result.entrySet()) {
@@ -497,6 +490,38 @@ public final class DungeonMapLoader {
             return rawSegmentKey;
         }
         return fallbackPrefix;
+    }
+
+    private static int requiredInt(ResultSet rs, long stairId, String column) throws SQLException {
+        Integer value = rs.getObject(column, Integer.class);
+        if (value == null) {
+            throw new SQLException("Dungeon-Treppe " + stairId + " fehlt Pflichtspalte " + column);
+        }
+        return value;
+    }
+
+    private static StairShape requiredStairShape(ResultSet rs, long stairId) throws SQLException {
+        String rawShape = rs.getString("shape");
+        if (rawShape == null || rawShape.isBlank()) {
+            throw new SQLException("Dungeon-Treppe " + stairId + " fehlt shape");
+        }
+        try {
+            return StairShape.valueOf(rawShape.trim().toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            throw new SQLException("Dungeon-Treppe " + stairId + " hat ungueltige shape " + rawShape, exception);
+        }
+    }
+
+    private static CardinalDirection requiredDirection(ResultSet rs, long stairId) throws SQLException {
+        String rawDirection = rs.getString("direction");
+        if (rawDirection == null || rawDirection.isBlank()) {
+            throw new SQLException("Dungeon-Treppe " + stairId + " fehlt direction");
+        }
+        try {
+            return CardinalDirection.valueOf(rawDirection.trim().toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            throw new SQLException("Dungeon-Treppe " + stairId + " hat ungueltige direction " + rawDirection, exception);
+        }
     }
 
     private static List<DungeonTransition> loadTransitions(Connection conn, long mapId) throws SQLException {

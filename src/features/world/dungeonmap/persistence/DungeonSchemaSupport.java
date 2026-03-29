@@ -105,7 +105,14 @@ public final class DungeonSchemaSupport {
                 + "stair_id         INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + "dungeon_map_id   INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
                 + "traversal_id     INTEGER NOT NULL REFERENCES dungeon_traversals(traversal_id) ON DELETE CASCADE,"
-                + "segment_key      TEXT"
+                + "segment_key      TEXT,"
+                + "name             TEXT,"
+                + "anchor_x         INTEGER NOT NULL DEFAULT 0,"
+                + "anchor_y         INTEGER NOT NULL DEFAULT 0,"
+                + "shape            TEXT NOT NULL DEFAULT 'LADDER',"
+                + "direction        TEXT NOT NULL DEFAULT 'NORTH',"
+                + "dimension1       INTEGER NOT NULL DEFAULT 0,"
+                + "dimension2       INTEGER NOT NULL DEFAULT 0"
                 + ")");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_stair_path_nodes ("
                 + "stair_id         INTEGER NOT NULL REFERENCES dungeon_stairs(stair_id) ON DELETE CASCADE,"
@@ -132,6 +139,13 @@ public final class DungeonSchemaSupport {
             addColumnIfMissing(stmt, "dungeon_corridors", "segment_key TEXT");
             addColumnIfMissing(stmt, "dungeon_stairs", "traversal_id INTEGER REFERENCES dungeon_traversals(traversal_id) ON DELETE CASCADE");
             addColumnIfMissing(stmt, "dungeon_stairs", "segment_key TEXT");
+            addColumnIfMissing(stmt, "dungeon_stairs", "name TEXT");
+            addColumnIfMissing(stmt, "dungeon_stairs", "anchor_x INTEGER NOT NULL DEFAULT 0");
+            addColumnIfMissing(stmt, "dungeon_stairs", "anchor_y INTEGER NOT NULL DEFAULT 0");
+            addColumnIfMissing(stmt, "dungeon_stairs", "shape TEXT NOT NULL DEFAULT 'LADDER'");
+            addColumnIfMissing(stmt, "dungeon_stairs", "direction TEXT NOT NULL DEFAULT 'NORTH'");
+            addColumnIfMissing(stmt, "dungeon_stairs", "dimension1 INTEGER NOT NULL DEFAULT 0");
+            addColumnIfMissing(stmt, "dungeon_stairs", "dimension2 INTEGER NOT NULL DEFAULT 0");
         }
     }
 

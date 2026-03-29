@@ -45,12 +45,13 @@ public final class DungeonStairReconciliation {
                         conn,
                         traversal.mapId(),
                         traversal.traversalId(),
-                        stairSlice.segmentKey());
+                        stairSlice.segmentKey(),
+                        stair);
             } else {
                 stairId = stairSlice.stairId();
-                desiredIds.add(stairId);
-                stairWriteRepository.updateTraversalStair(conn, stairId, stairSlice.segmentKey());
+                stairWriteRepository.updateTraversalStair(conn, stairId, stairSlice.segmentKey(), stair);
             }
+            desiredIds.add(stairId);
             stairWriteRepository.replacePathNodes(conn, stairId, stair.path());
             stairWriteRepository.replaceExits(conn, stairId, stair.exits());
         }
