@@ -9,6 +9,7 @@ import features.world.dungeonmap.model.structures.TargetKey;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 public record DungeonStair(
@@ -17,10 +18,6 @@ public record DungeonStair(
         String segmentKey,
         long mapId,
         String name,
-        StairShape shape,
-        CardinalDirection direction,
-        int dimension1,
-        int dimension2,
         List<CubePoint> path,
         List<DungeonStairExit> exits
 ) {
@@ -28,14 +25,10 @@ public record DungeonStair(
     private static final String TARGET_KEY_PREFIX = "stair:";
 
     public DungeonStair {
-        segmentKey = segmentKey == null || segmentKey.isBlank() ? "legacy-stair" : segmentKey;
+        segmentKey = requireSegmentKey(segmentKey);
         name = name == null || name.isBlank()
                 ? "Treppe " + (stairId == null ? "neu" : stairId)
                 : name.trim();
-        shape = shape == null ? StairShape.LADDER : shape;
-        direction = direction == null ? CardinalDirection.defaultDirection() : direction;
-        dimension1 = Math.max(0, dimension1);
-        dimension2 = Math.max(0, dimension2);
         path = path == null ? List.of() : path.stream()
                 .filter(java.util.Objects::nonNull)
                 .sorted(CubePoint.POINT_ORDER)
@@ -107,5 +100,13 @@ public record DungeonStair(
                 targetKey(),
                 name,
                 GridAnchor.atTile(anchorPoint.projectedCell()));
+    }
+
+    private static String requireSegmentKey(String segmentKey) {
+        String normalized = Objects.requireNonNull(segmentKey, "segmentKey").trim();
+        if (normalized.isEmpty()) {
+            throw new IllegalArgumentException("segmentKey must not be blank");
+        }
+        return normalized;
     }
 }

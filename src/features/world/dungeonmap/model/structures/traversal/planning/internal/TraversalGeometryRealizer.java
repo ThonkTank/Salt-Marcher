@@ -9,9 +9,9 @@ import features.world.dungeonmap.model.objects.CorridorPath;
 import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.CorridorConnection;
-import features.world.dungeonmap.model.structures.corridor.planning.StairPlacement;
 import features.world.dungeonmap.model.structures.traversal.CorridorTraversalSlice;
 import features.world.dungeonmap.model.structures.traversal.TraversalPlan;
+import features.world.dungeonmap.model.structures.traversal.TraversalStairPlacement;
 import features.world.dungeonmap.model.structures.traversal.TraversalStairSlice;
 
 import java.util.ArrayList;
@@ -339,7 +339,7 @@ public final class TraversalGeometryRealizer {
     private record VerticalEdgeRealization(
             LocalSegmentResult prefix,
             LocalSegmentResult suffix,
-            StairPlacement stairPlacement
+            TraversalStairPlacement stairPlacement
     ) {
     }
 
@@ -465,7 +465,7 @@ public final class TraversalGeometryRealizer {
                     connections));
         }
 
-        private void addStairPlacement(String segmentKey, StairPlacement stairPlacement) {
+        private void addStairPlacement(String segmentKey, TraversalStairPlacement stairPlacement) {
             if (segmentKey != null && stairPlacement != null) {
                 stairSlices.add(new TraversalStairSlice(segmentKey, null, stairPlacement));
             }

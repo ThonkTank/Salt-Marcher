@@ -1,9 +1,9 @@
 package features.world.dungeonmap.model.structures.traversal.planning;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.structures.corridor.ResolvedCorridorDoorBinding;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
+import features.world.dungeonmap.model.structures.traversal.ResolvedTraversalDoorBinding;
 import features.world.dungeonmap.model.structures.traversal.TraversalPlan;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
 import features.world.dungeonmap.model.structures.traversal.TraversalPlanningInput;
@@ -29,7 +29,7 @@ public final class TraversalPlanningEngine {
         }
         List<Room> rooms = traversal.resolvedRooms(input);
         List<CubePoint> waypointCells = traversal.resolvedWaypointCells(input);
-        Map<Long, ResolvedCorridorDoorBinding> doorBindings = traversal.resolvedDoorBindings(input);
+        Map<Long, ResolvedTraversalDoorBinding> doorBindings = traversal.resolvedDoorBindings(input);
         Set<CubePoint> obstacles = buildObstacles(input.roomsById(), input.stairs(), traversal.traversalId());
         TraversalTopology topology = TraversalTopologyProjector.project(
                 traversal.mapId(),

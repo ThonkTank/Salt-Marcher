@@ -1,4 +1,4 @@
-package features.world.dungeonmap.model.structures.corridor.planning;
+package features.world.dungeonmap.model.structures.traversal;
 
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
@@ -12,8 +12,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-// Eine Treppe, die der Pathfinder platziert hat. Public, da sie Traversal-Materialisierung verlässt.
-public record StairPlacement(
+// Eine Treppe, die der Traversal-Planer platziert hat. Public, da sie Traversal-Materialisierung verlässt.
+public record TraversalStairPlacement(
         Point2i anchor,
         StairShape shape,
         CardinalDirection direction,
@@ -22,7 +22,7 @@ public record StairPlacement(
         List<Integer> exitLevels,
         Set<CubePoint> footprint
 ) {
-    public StairPlacement {
+    public TraversalStairPlacement {
         exitLevels = exitLevels == null ? List.of() : List.copyOf(exitLevels);
         footprint = footprint == null ? Set.of() : Set.copyOf(footprint);
     }
@@ -45,10 +45,6 @@ public record StairPlacement(
                     "preview-stair",
                     mapId,
                     null,
-                    shape,
-                    direction,
-                    dimension1,
-                    dimension2,
                     geometry.pathNodes(),
                     geometry.exits());
         } catch (IllegalArgumentException ignored) {
@@ -56,12 +52,12 @@ public record StairPlacement(
         }
     }
 
-    static List<StairPlacement> canonicalize(List<StairPlacement> placements) {
+    static List<TraversalStairPlacement> canonicalize(List<TraversalStairPlacement> placements) {
         if (placements == null || placements.isEmpty()) {
             return List.of();
         }
-        ArrayList<StairPlacement> result = new ArrayList<>();
-        for (StairPlacement placement : placements) {
+        ArrayList<TraversalStairPlacement> result = new ArrayList<>();
+        for (TraversalStairPlacement placement : placements) {
             if (placement == null) {
                 continue;
             }
@@ -69,7 +65,7 @@ public record StairPlacement(
                 result.add(placement);
                 continue;
             }
-            StairPlacement merged = tryMerge(result.getLast(), placement);
+            TraversalStairPlacement merged = tryMerge(result.getLast(), placement);
             if (merged != null) {
                 result.set(result.size() - 1, merged);
                 continue;
@@ -79,7 +75,7 @@ public record StairPlacement(
         return List.copyOf(result);
     }
 
-    private static StairPlacement tryMerge(StairPlacement first, StairPlacement second) {
+    private static TraversalStairPlacement tryMerge(TraversalStairPlacement first, TraversalStairPlacement second) {
         if (first == null || second == null
                 || first.shape() != second.shape()
                 || first.direction() != second.direction()
@@ -110,7 +106,7 @@ public record StairPlacement(
         if (!mergedGeometry.occupiedPositions().equals(Set.copyOf(mergedFootprint))) {
             return null;
         }
-        return new StairPlacement(
+        return new TraversalStairPlacement(
                 anchor,
                 first.shape(),
                 first.direction(),

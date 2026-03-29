@@ -42,6 +42,10 @@ public final class TraversalPlanningInputProjector {
     }
 
     public static TraversalPlanningInput project(List<RoomCluster> clusters) {
+        return project(clusters, List.of());
+    }
+
+    public static TraversalPlanningInput project(List<RoomCluster> clusters, List<DungeonStair> stairs) {
         Map<Long, Room> roomsById = new LinkedHashMap<>();
         Map<Long, Point2i> clusterCenters = new LinkedHashMap<>();
         Map<Long, Set<Integer>> roomLevels = new LinkedHashMap<>();
@@ -59,6 +63,6 @@ public final class TraversalPlanningInputProjector {
                 }
             }
         }
-        return new TraversalPlanningInput(roomsById, clusterCenters, roomLevels, List.of());
+        return new TraversalPlanningInput(roomsById, clusterCenters, roomLevels, stairs);
     }
 }

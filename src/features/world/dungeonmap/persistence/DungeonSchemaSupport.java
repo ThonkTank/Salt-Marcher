@@ -35,7 +35,7 @@ public final class DungeonSchemaSupport {
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_corridors ("
                 + "corridor_id      INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + "dungeon_map_id   INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
-                + "traversal_id     INTEGER REFERENCES dungeon_traversals(traversal_id) ON DELETE CASCADE,"
+                + "traversal_id     INTEGER NOT NULL REFERENCES dungeon_traversals(traversal_id) ON DELETE CASCADE,"
                 + "segment_key      TEXT,"
                 + "level_z          INTEGER NOT NULL DEFAULT 0"
                 + ")");
@@ -104,7 +104,7 @@ public final class DungeonSchemaSupport {
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_stairs ("
                 + "stair_id         INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + "dungeon_map_id   INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
-                + "traversal_id     INTEGER REFERENCES dungeon_traversals(traversal_id) ON DELETE CASCADE,"
+                + "traversal_id     INTEGER NOT NULL REFERENCES dungeon_traversals(traversal_id) ON DELETE CASCADE,"
                 + "segment_key      TEXT,"
                 + "name             TEXT,"
                 + "shape            TEXT NOT NULL DEFAULT 'LADDER',"

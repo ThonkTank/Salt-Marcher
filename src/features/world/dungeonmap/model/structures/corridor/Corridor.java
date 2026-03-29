@@ -6,6 +6,7 @@ import features.world.dungeonmap.model.structures.connection.CorridorConnection;
 
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Materialized horizontal traversal segment.
@@ -46,7 +47,7 @@ public final class Corridor {
             CorridorPath path,
             List<CorridorConnection> connections
     ) {
-        this.segmentKey = segmentKey == null || segmentKey.isBlank() ? "legacy-corridor" : segmentKey;
+        this.segmentKey = requireSegmentKey(segmentKey);
         this.corridorId = corridorId;
         this.traversalId = traversalId;
         this.mapId = mapId;
@@ -114,5 +115,13 @@ public final class Corridor {
             }
         }
         return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
+    private static String requireSegmentKey(String segmentKey) {
+        String normalized = Objects.requireNonNull(segmentKey, "segmentKey").trim();
+        if (normalized.isEmpty()) {
+            throw new IllegalArgumentException("segmentKey must not be blank");
+        }
+        return normalized;
     }
 }

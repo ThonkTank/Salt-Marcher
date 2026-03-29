@@ -1,19 +1,19 @@
-package features.world.dungeonmap.model.structures.corridor;
+package features.world.dungeonmap.model.structures.traversal;
 
 import features.world.dungeonmap.model.geometry.Point2i;
 
 import java.util.Objects;
 
 /**
- * Relative corridor door binding pinned to one room edge.
+ * Relative traversal door binding pinned to one room edge.
  */
-public record CorridorDoorBinding(
+public record TraversalDoorBinding(
         long roomId,
         long clusterId,
         Point2i relativeCell,
         Point2i direction
 ) {
-    public CorridorDoorBinding {
+    public TraversalDoorBinding {
         Objects.requireNonNull(relativeCell, "relativeCell");
         Objects.requireNonNull(direction, "direction");
     }
@@ -22,7 +22,7 @@ public record CorridorDoorBinding(
         return clusterCenter == null ? relativeCell : clusterCenter.add(relativeCell);
     }
 
-    public static CorridorDoorBinding atAbsoluteCell(
+    public static TraversalDoorBinding atAbsoluteCell(
             long roomId,
             long clusterId,
             Point2i absoluteCell,
@@ -31,10 +31,10 @@ public record CorridorDoorBinding(
     ) {
         Point2i resolvedAbsoluteCell = Objects.requireNonNull(absoluteCell, "absoluteCell");
         Point2i resolvedCenter = clusterCenter == null ? new Point2i(0, 0) : clusterCenter;
-        return new CorridorDoorBinding(roomId, clusterId, resolvedAbsoluteCell.subtract(resolvedCenter), direction);
+        return new TraversalDoorBinding(roomId, clusterId, resolvedAbsoluteCell.subtract(resolvedCenter), direction);
     }
 
-    public CorridorDoorBinding rebind(long clusterId, Point2i relativeCell) {
-        return new CorridorDoorBinding(roomId, clusterId, relativeCell, direction);
+    public TraversalDoorBinding rebind(long clusterId, Point2i relativeCell) {
+        return new TraversalDoorBinding(roomId, clusterId, relativeCell, direction);
     }
 }

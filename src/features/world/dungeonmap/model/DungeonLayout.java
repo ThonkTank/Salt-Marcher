@@ -13,7 +13,6 @@ import features.world.dungeonmap.model.structures.connection.CorridorConnection;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
-import features.world.dungeonmap.model.structures.corridor.planning.StairPlacement;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
@@ -1031,13 +1030,5 @@ public final class DungeonLayout {
             result.put(entry.getKey(), List.copyOf(entry.getValue()));
         }
         return Map.copyOf(result);
-    }
-
-    private static List<DungeonStair> replaceCorridorStairs(
-            List<DungeonStair> existingStairs,
-            Map<Long, List<StairPlacement>> stairPlacementsByCorridorId,
-            long mapId
-    ) {
-        return existingStairs == null ? List.of() : List.copyOf(existingStairs);
     }
 }

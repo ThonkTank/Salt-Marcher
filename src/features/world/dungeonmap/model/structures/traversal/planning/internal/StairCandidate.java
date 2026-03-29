@@ -3,8 +3,8 @@ package features.world.dungeonmap.model.structures.traversal.planning.internal;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.structures.corridor.planning.StairPlacement;
 import features.world.dungeonmap.model.structures.stair.StairShape;
+import features.world.dungeonmap.model.structures.traversal.TraversalStairPlacement;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -43,8 +43,8 @@ record StairCandidate(
         }
     }
 
-    StairPlacement toPlacement() {
-        return new StairPlacement(
+    TraversalStairPlacement toPlacement() {
+        return new TraversalStairPlacement(
                 anchor,
                 shape,
                 direction,

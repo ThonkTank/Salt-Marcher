@@ -1,7 +1,7 @@
 package features.world.dungeonmap.model.structures.traversal.planning.internal;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.structures.corridor.ResolvedCorridorDoorBinding;
+import features.world.dungeonmap.model.structures.traversal.ResolvedTraversalDoorBinding;
 import features.world.dungeonmap.model.structures.room.Room;
 
 import java.util.LinkedHashSet;
@@ -15,7 +15,7 @@ public record TraversalNode(
         Set<CubePoint> anchorCells,
         int levelZ,
         Room room,
-        ResolvedCorridorDoorBinding fixedDoorBinding
+        ResolvedTraversalDoorBinding fixedDoorBinding
 ) {
     public TraversalNode {
         Objects.requireNonNull(nodeId, "nodeId");
@@ -37,7 +37,7 @@ public record TraversalNode(
             Room room,
             int levelZ,
             Set<CubePoint> occupiedCells,
-            ResolvedCorridorDoorBinding fixedDoorBinding
+            ResolvedTraversalDoorBinding fixedDoorBinding
     ) {
         return new TraversalNode(
                 nodeId,
@@ -81,7 +81,7 @@ public record TraversalNode(
             int levelZ,
             Room room,
             Set<CubePoint> anchorCells,
-            ResolvedCorridorDoorBinding fixedDoorBinding
+            ResolvedTraversalDoorBinding fixedDoorBinding
     ) {
         if (anchor != null) {
             return anchor;
@@ -119,7 +119,7 @@ public record TraversalNode(
     }
 
     private static CubePoint boundEntryCell(
-            ResolvedCorridorDoorBinding fixedDoorBinding,
+            ResolvedTraversalDoorBinding fixedDoorBinding,
             int levelZ
     ) {
         if (fixedDoorBinding == null

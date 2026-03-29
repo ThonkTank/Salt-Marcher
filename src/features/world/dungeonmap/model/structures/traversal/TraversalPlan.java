@@ -1,7 +1,5 @@
 package features.world.dungeonmap.model.structures.traversal;
 
-import features.world.dungeonmap.model.structures.corridor.planning.StairPlacement;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -46,19 +44,6 @@ public record TraversalPlan(
             }
         }
         return null;
-    }
-
-    public List<StairPlacement> stairPlacements() {
-        if (stairSlices.isEmpty()) {
-            return List.of();
-        }
-        ArrayList<StairPlacement> result = new ArrayList<>();
-        for (TraversalStairSlice stairSlice : stairSlices) {
-            if (stairSlice != null && stairSlice.placement() != null) {
-                result.add(stairSlice.placement());
-            }
-        }
-        return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
     public TraversalPlan withCorridorIds(Map<String, Long> corridorIdsBySegmentKey) {

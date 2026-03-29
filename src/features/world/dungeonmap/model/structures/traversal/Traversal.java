@@ -2,11 +2,6 @@ package features.world.dungeonmap.model.structures.traversal;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.structures.corridor.CorridorBindings;
-import features.world.dungeonmap.model.structures.corridor.CorridorDoorBinding;
-import features.world.dungeonmap.model.structures.corridor.CorridorWaypointBinding;
-import features.world.dungeonmap.model.structures.corridor.ResolvedCorridorDoorBinding;
-import features.world.dungeonmap.model.structures.corridor.planning.StairPlacement;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.traversal.planning.TraversalPlanningEngine;
 
@@ -23,14 +18,14 @@ public final class Traversal {
     private final Long traversalId;
     private final long mapId;
     private final List<Long> roomIds;
-    private final CorridorBindings bindings;
+    private final TraversalBindings bindings;
     private final TraversalMaterialization materialization;
 
     public static Traversal resolved(
             Long traversalId,
             long mapId,
             List<Long> roomIds,
-            CorridorBindings bindings,
+            TraversalBindings bindings,
             TraversalMaterialization materialization
     ) {
         return new Traversal(traversalId, mapId, roomIds, bindings, materialization);
@@ -40,13 +35,13 @@ public final class Traversal {
             Long traversalId,
             long mapId,
             List<Long> roomIds,
-            CorridorBindings bindings,
+            TraversalBindings bindings,
             TraversalMaterialization materialization
     ) {
         this.traversalId = traversalId;
         this.mapId = mapId;
         this.roomIds = normalizeRoomIds(roomIds);
-        this.bindings = bindings == null ? CorridorBindings.empty() : bindings;
+        this.bindings = bindings == null ? TraversalBindings.empty() : bindings;
         this.materialization = materialization == null ? TraversalMaterialization.empty() : materialization;
     }
 
@@ -62,7 +57,7 @@ public final class Traversal {
         return roomIds;
     }
 
-    public CorridorBindings bindings() {
+    public TraversalBindings bindings() {
         return bindings;
     }
 
@@ -94,12 +89,12 @@ public final class Traversal {
         if (clusterId == null) {
             return false;
         }
-        for (CorridorWaypointBinding waypoint : bindings.waypoints()) {
+        for (TraversalWaypointBinding waypoint : bindings.waypoints()) {
             if (clusterId.equals(waypoint.clusterId())) {
                 return true;
             }
         }
-        for (CorridorDoorBinding binding : bindings.doorBindings()) {
+        for (TraversalDoorBinding binding : bindings.doorBindings()) {
             if (clusterId.equals(binding.clusterId())) {
                 return true;
             }
@@ -142,14 +137,12 @@ public final class Traversal {
     public record RewriteResult(
             Map<Long, Traversal> traversalsById,
             Set<Long> affectedTraversalIds,
-            Map<Long, TraversalPlan> traversalPlansByTraversalId,
-            Map<Long, List<StairPlacement>> stairPlacementsByTraversalId
+            Map<Long, TraversalPlan> traversalPlansByTraversalId
     ) {
         public RewriteResult {
             traversalsById = traversalsById == null ? Map.of() : Map.copyOf(traversalsById);
             affectedTraversalIds = affectedTraversalIds == null ? Set.of() : Set.copyOf(affectedTraversalIds);
             traversalPlansByTraversalId = traversalPlansByTraversalId == null ? Map.of() : Map.copyOf(traversalPlansByTraversalId);
-            stairPlacementsByTraversalId = stairPlacementsByTraversalId == null ? Map.of() : Map.copyOf(stairPlacementsByTraversalId);
         }
     }
 
@@ -158,14 +151,13 @@ public final class Traversal {
             TraversalRewriteContext context
     ) {
         if (traversalsById == null || traversalsById.isEmpty()) {
-            return new RewriteResult(Map.of(), Set.of(), Map.of(), Map.of());
+            return new RewriteResult(Map.of(), Set.of(), Map.of());
         }
         if (context == null || context.affectedTraversalIds().isEmpty()) {
-            return new RewriteResult(Map.copyOf(traversalsById), Set.of(), Map.of(), Map.of());
+            return new RewriteResult(Map.copyOf(traversalsById), Set.of(), Map.of());
         }
         Map<Long, Traversal> result = new LinkedHashMap<>();
         Map<Long, TraversalPlan> traversalPlansByTraversalId = new LinkedHashMap<>();
-        Map<Long, List<StairPlacement>> stairPlacementsByTraversalId = new LinkedHashMap<>();
         for (Map.Entry<Long, Traversal> entry : traversalsById.entrySet()) {
             Traversal traversal = entry.getValue();
             if (traversal == null) {
@@ -178,17 +170,13 @@ public final class Traversal {
                 if (reanchored.traversalId() != null) {
                     traversalPlansByTraversalId.put(reanchored.traversalId(), traversalPlan);
                 }
-                if (!traversalPlan.stairPlacements().isEmpty() && reanchored.traversalId() != null) {
-                    stairPlacementsByTraversalId.put(reanchored.traversalId(), traversalPlan.stairPlacements());
-                }
             }
             result.put(entry.getKey(), reanchored);
         }
         return new RewriteResult(
                 Map.copyOf(result),
                 context.affectedTraversalIds(),
-                Map.copyOf(traversalPlansByTraversalId),
-                Map.copyOf(stairPlacementsByTraversalId));
+                Map.copyOf(traversalPlansByTraversalId));
     }
 
     public Traversal withAddedRoom(Long roomId) {
@@ -218,7 +206,7 @@ public final class Traversal {
                 .map(roomId -> mergedRoomIds.contains(roomId) ? replacementRoomId : roomId)
                 .distinct()
                 .toList();
-        CorridorBindings updatedBindings = bindings;
+        TraversalBindings updatedBindings = bindings;
         for (Long mergedRoomId : mergedRoomIds) {
             if (!Objects.equals(mergedRoomId, replacementRoomId)) {
                 updatedBindings = updatedBindings.withoutDoorBinding(mergedRoomId);
@@ -235,15 +223,15 @@ public final class Traversal {
                 .map(roomId -> Objects.equals(roomId, oldRoomId) ? newRoomId : roomId)
                 .distinct()
                 .toList();
-        CorridorBindings updatedBindings = bindings.withoutDoorBinding(oldRoomId);
+        TraversalBindings updatedBindings = bindings.withoutDoorBinding(oldRoomId);
         return resolved(traversalId, mapId, updated, updatedBindings, materialization);
     }
 
-    public Traversal withInsertedWaypoint(int index, CorridorWaypointBinding waypoint) {
+    public Traversal withInsertedWaypoint(int index, TraversalWaypointBinding waypoint) {
         return withBindings(bindings.withInsertedWaypoint(index, waypoint));
     }
 
-    public Traversal withMovedWaypoint(int index, CorridorWaypointBinding waypoint) {
+    public Traversal withMovedWaypoint(int index, TraversalWaypointBinding waypoint) {
         return withBindings(bindings.withMovedWaypoint(index, waypoint));
     }
 
@@ -251,7 +239,7 @@ public final class Traversal {
         return withBindings(bindings.withRemovedWaypoint(index));
     }
 
-    public Traversal withDoorBinding(CorridorDoorBinding binding) {
+    public Traversal withDoorBinding(TraversalDoorBinding binding) {
         if (binding == null) {
             return this;
         }
@@ -287,8 +275,8 @@ public final class Traversal {
         TraversalPlanningInput rewrittenInput = context.rewrittenPlanningInput();
         Set<Long> deletedClusterIds = context.deletedClusterIds();
         Long fallbackClusterId = fallbackWaypointClusterId(rewrittenInput);
-        List<CorridorWaypointBinding> updatedWaypoints = new ArrayList<>();
-        for (CorridorWaypointBinding waypoint : bindings.waypoints()) {
+        List<TraversalWaypointBinding> updatedWaypoints = new ArrayList<>();
+        for (TraversalWaypointBinding waypoint : bindings.waypoints()) {
             Long targetClusterId = targetClusterId(
                     waypoint.clusterId(),
                     previousInput,
@@ -301,14 +289,14 @@ public final class Traversal {
                 continue;
             }
             Point2i absoluteCell = waypoint.absoluteCell(previousCenter);
-            updatedWaypoints.add(CorridorWaypointBinding.atAbsoluteCell(
+            updatedWaypoints.add(TraversalWaypointBinding.atAbsoluteCell(
                     targetClusterId,
                     absoluteCell,
                     targetCenter,
                     waypoint.levelZ()));
         }
-        List<CorridorDoorBinding> updatedDoorBindings = new ArrayList<>();
-        for (CorridorDoorBinding binding : bindings.doorBindings()) {
+        List<TraversalDoorBinding> updatedDoorBindings = new ArrayList<>();
+        for (TraversalDoorBinding binding : bindings.doorBindings()) {
             Room room = previousInput.room(binding.roomId());
             if (room == null) {
                 continue;
@@ -325,9 +313,9 @@ public final class Traversal {
             }
             Point2i absoluteCell = binding.absoluteCell(previousCenter);
             updatedDoorBindings.add(
-                    CorridorDoorBinding.atAbsoluteCell(binding.roomId(), targetClusterId, absoluteCell, targetCenter, binding.direction()));
+                    TraversalDoorBinding.atAbsoluteCell(binding.roomId(), targetClusterId, absoluteCell, targetCenter, binding.direction()));
         }
-        return withBindings(new CorridorBindings(updatedWaypoints, updatedDoorBindings));
+        return withBindings(new TraversalBindings(updatedWaypoints, updatedDoorBindings));
     }
 
     public Traversal rewrittenForSplit(TraversalSplitRewriteInput input) {
@@ -364,7 +352,7 @@ public final class Traversal {
             return List.of();
         }
         List<CubePoint> result = new ArrayList<>();
-        for (CorridorWaypointBinding waypoint : bindings.waypoints()) {
+        for (TraversalWaypointBinding waypoint : bindings.waypoints()) {
             Point2i clusterCenter = input.clusterCenter(waypoint.clusterId());
             if (clusterCenter != null) {
                 result.add(CubePoint.at(waypoint.absoluteCell(clusterCenter), waypoint.levelZ()));
@@ -373,15 +361,15 @@ public final class Traversal {
         return List.copyOf(result);
     }
 
-    public Map<Long, ResolvedCorridorDoorBinding> resolvedDoorBindings(TraversalPlanningInput input) {
+    public Map<Long, ResolvedTraversalDoorBinding> resolvedDoorBindings(TraversalPlanningInput input) {
         if (input == null || bindings.doorBindings().isEmpty()) {
             return Map.of();
         }
-        Map<Long, ResolvedCorridorDoorBinding> result = new LinkedHashMap<>();
-        for (CorridorDoorBinding binding : bindings.doorBindings()) {
+        Map<Long, ResolvedTraversalDoorBinding> result = new LinkedHashMap<>();
+        for (TraversalDoorBinding binding : bindings.doorBindings()) {
             Point2i clusterCenter = input.clusterCenter(binding.clusterId());
             if (clusterCenter != null) {
-                result.put(binding.roomId(), new ResolvedCorridorDoorBinding(
+                result.put(binding.roomId(), new ResolvedTraversalDoorBinding(
                         binding.absoluteCell(clusterCenter),
                         binding.direction()));
             }
@@ -389,7 +377,7 @@ public final class Traversal {
         return Map.copyOf(result);
     }
 
-    private Traversal withBindings(CorridorBindings bindings) {
+    private Traversal withBindings(TraversalBindings bindings) {
         return resolved(traversalId, mapId, roomIds, bindings, materialization);
     }
 
@@ -472,16 +460,16 @@ public final class Traversal {
         return List.copyOf(merged);
     }
 
-    private static CorridorBindings sanitizedBindings(List<Long> roomIds, CorridorBindings bindings) {
+    private static TraversalBindings sanitizedBindings(List<Long> roomIds, TraversalBindings bindings) {
         if (bindings == null) {
-            return CorridorBindings.empty();
+            return TraversalBindings.empty();
         }
         Set<Long> connectedRoomIds = roomIds == null ? Set.of() : Set.copyOf(roomIds);
-        List<CorridorDoorBinding> sanitizedDoorBindings = bindings.doorBindings().stream()
+        List<TraversalDoorBinding> sanitizedDoorBindings = bindings.doorBindings().stream()
                 .filter(Objects::nonNull)
                 .filter(binding -> connectedRoomIds.contains(binding.roomId()))
                 .toList();
-        return new CorridorBindings(bindings.waypoints(), sanitizedDoorBindings);
+        return new TraversalBindings(bindings.waypoints(), sanitizedDoorBindings);
     }
 
     private static List<Long> normalizeRoomIds(List<Long> roomIds) {

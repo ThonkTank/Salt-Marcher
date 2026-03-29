@@ -7,7 +7,6 @@ import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpointType;
 import features.world.dungeonmap.model.structures.connection.CorridorConnection;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
-import features.world.dungeonmap.model.structures.corridor.planning.StairPlacement;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.stair.StairGeometry;
 
@@ -148,12 +147,6 @@ public final class TraversalReadModelProjector {
                     stairSlice.segmentKey(),
                     mapId,
                     stairName,
-                    stairSlice.placement().shape(),
-                    stairSlice.placement().direction() == null
-                            ? CardinalDirection.defaultDirection()
-                            : stairSlice.placement().direction(),
-                    stairSlice.placement().dimension1(),
-                    stairSlice.placement().dimension2(),
                     geometry.pathNodes(),
                     geometry.exits());
         } catch (IllegalArgumentException ignored) {
@@ -291,10 +284,6 @@ public final class TraversalReadModelProjector {
         for (DungeonStair candidate : candidates == null ? List.<DungeonStair>of() : candidates) {
             StairSignature candidateSignature = stairSignature(candidate);
             if (candidateSignature == null
-                    || !Objects.equals(desiredSignature.shape(), candidateSignature.shape())
-                    || !Objects.equals(desiredSignature.direction(), candidateSignature.direction())
-                    || desiredSignature.dimension1() != candidateSignature.dimension1()
-                    || desiredSignature.dimension2() != candidateSignature.dimension2()
                     || !desiredSignature.exitLevels().equals(candidateSignature.exitLevels())) {
                 continue;
             }
@@ -345,7 +334,7 @@ public final class TraversalReadModelProjector {
                 cells);
     }
 
-    private static StairSignature stairSignature(StairPlacement placement) {
+    private static StairSignature stairSignature(TraversalStairPlacement placement) {
         if (placement == null) {
             return null;
         }
@@ -364,10 +353,6 @@ public final class TraversalReadModelProjector {
                 }
             }
             return new StairSignature(
-                    placement.shape(),
-                    placement.direction() == null ? CardinalDirection.defaultDirection() : placement.direction(),
-                    placement.dimension1(),
-                    placement.dimension2(),
                     List.copyOf(placement.exitLevels()),
                     placement.anchor() == null ? null : CubePoint.at(placement.anchor(), placement.exitLevels().isEmpty() ? 0 : placement.exitLevels().getFirst()),
                     Set.copyOf(geometry.occupiedPositions()),
@@ -391,10 +376,6 @@ public final class TraversalReadModelProjector {
             exitPositions.add(exit.position());
         }
         return new StairSignature(
-                stair.shape(),
-                stair.direction(),
-                stair.dimension1(),
-                stair.dimension2(),
                 List.copyOf(exitLevels),
                 anchorOf(stair.occupiedPositions()),
                 stair.occupiedPositions(),
@@ -465,10 +446,6 @@ public final class TraversalReadModelProjector {
     }
 
     private record StairSignature(
-            features.world.dungeonmap.model.structures.stair.StairShape shape,
-            CardinalDirection direction,
-            int dimension1,
-            int dimension2,
             List<Integer> exitLevels,
             CubePoint anchor,
             Set<CubePoint> footprint,

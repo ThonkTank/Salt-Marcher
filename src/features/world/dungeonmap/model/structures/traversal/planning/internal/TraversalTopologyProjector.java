@@ -1,7 +1,7 @@
 package features.world.dungeonmap.model.structures.traversal.planning.internal;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.structures.corridor.ResolvedCorridorDoorBinding;
+import features.world.dungeonmap.model.structures.traversal.ResolvedTraversalDoorBinding;
 import features.world.dungeonmap.model.structures.room.Room;
 
 import java.util.ArrayList;
@@ -22,7 +22,7 @@ public final class TraversalTopologyProjector {
             long mapId,
             List<Room> rooms,
             List<CubePoint> waypointCells,
-            Map<Long, ResolvedCorridorDoorBinding> doorBindings,
+            Map<Long, ResolvedTraversalDoorBinding> doorBindings,
             Set<CubePoint> obstacles
     ) {
         ProjectedRoomPortals projectedRoomPortals = projectRoomPortalNodes(
@@ -39,7 +39,7 @@ public final class TraversalTopologyProjector {
 
     private static ProjectedRoomPortals projectRoomPortalNodes(
             List<Room> rooms,
-            Map<Long, ResolvedCorridorDoorBinding> doorBindings
+            Map<Long, ResolvedTraversalDoorBinding> doorBindings
     ) {
         if (rooms == null || rooms.isEmpty()) {
             return ProjectedRoomPortals.empty();
@@ -51,7 +51,7 @@ public final class TraversalTopologyProjector {
             if (room == null) {
                 continue;
             }
-            ResolvedCorridorDoorBinding fixedDoorBinding = room.roomId() == null
+            ResolvedTraversalDoorBinding fixedDoorBinding = room.roomId() == null
                     ? null
                     : doorBindings.get(room.roomId());
             List<TraversalNode> projectedNodes = fixedDoorBinding == null
@@ -138,7 +138,7 @@ public final class TraversalTopologyProjector {
 
     private static List<TraversalNode> projectPinnedRoomPortalNodes(
             Room room,
-            ResolvedCorridorDoorBinding fixedDoorBinding,
+            ResolvedTraversalDoorBinding fixedDoorBinding,
             int roomIndex
     ) {
         Map<Integer, Set<CubePoint>> occupiedCellsByLevel = occupiedCellsByLevel(room);
@@ -210,7 +210,7 @@ public final class TraversalTopologyProjector {
 
     private static boolean supportsFixedDoorBindingAtLevel(
             Set<CubePoint> occupiedCells,
-            ResolvedCorridorDoorBinding fixedDoorBinding,
+            ResolvedTraversalDoorBinding fixedDoorBinding,
             int levelZ
     ) {
         if (occupiedCells == null

@@ -38,14 +38,6 @@ public final class DungeonCorridorWriteRepository {
         }
     }
 
-    public void deleteByTraversalId(Connection conn, long traversalId) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement(
-                "DELETE FROM dungeon_corridors WHERE traversal_id=?")) {
-            ps.setLong(1, traversalId);
-            ps.executeUpdate();
-        }
-    }
-
     public void deleteCorridor(Connection conn, long corridorId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "DELETE FROM dungeon_corridors WHERE corridor_id=?")) {

@@ -1,7 +1,7 @@
 package features.world.dungeonmap.persistence;
 
-import features.world.dungeonmap.model.structures.corridor.CorridorDoorBinding;
-import features.world.dungeonmap.model.structures.corridor.CorridorWaypointBinding;
+import features.world.dungeonmap.model.structures.traversal.TraversalDoorBinding;
+import features.world.dungeonmap.model.structures.traversal.TraversalWaypointBinding;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -51,8 +51,8 @@ public final class DungeonTraversalWriteRepository {
         }
     }
 
-    public void replaceTraversalWaypoints(Connection conn, long traversalId, List<CorridorWaypointBinding> waypoints) throws SQLException {
-        List<CorridorWaypointBinding> sanitized = waypoints == null ? List.of() : waypoints.stream()
+    public void replaceTraversalWaypoints(Connection conn, long traversalId, List<TraversalWaypointBinding> waypoints) throws SQLException {
+        List<TraversalWaypointBinding> sanitized = waypoints == null ? List.of() : waypoints.stream()
                 .filter(java.util.Objects::nonNull)
                 .toList();
         try (PreparedStatement delete = conn.prepareStatement(
@@ -63,7 +63,7 @@ public final class DungeonTraversalWriteRepository {
         try (PreparedStatement insert = conn.prepareStatement(
                 "INSERT INTO dungeon_traversal_waypoints(traversal_id, sort_order, cluster_id, relative_x, relative_y, relative_z) VALUES(?,?,?,?,?,?)")) {
             for (int index = 0; index < sanitized.size(); index++) {
-                CorridorWaypointBinding waypoint = sanitized.get(index);
+                TraversalWaypointBinding waypoint = sanitized.get(index);
                 insert.setLong(1, traversalId);
                 insert.setInt(2, index);
                 insert.setLong(3, waypoint.clusterId());
@@ -76,8 +76,8 @@ public final class DungeonTraversalWriteRepository {
         }
     }
 
-    public void replaceTraversalDoorBindings(Connection conn, long traversalId, List<CorridorDoorBinding> doorBindings) throws SQLException {
-        List<CorridorDoorBinding> sanitized = doorBindings == null ? List.of() : doorBindings.stream()
+    public void replaceTraversalDoorBindings(Connection conn, long traversalId, List<TraversalDoorBinding> doorBindings) throws SQLException {
+        List<TraversalDoorBinding> sanitized = doorBindings == null ? List.of() : doorBindings.stream()
                 .filter(java.util.Objects::nonNull)
                 .toList();
         try (PreparedStatement delete = conn.prepareStatement(
@@ -88,7 +88,7 @@ public final class DungeonTraversalWriteRepository {
         try (PreparedStatement insert = conn.prepareStatement(
                 "INSERT INTO dungeon_traversal_door_bindings(traversal_id, room_id, cluster_id, relative_cell_x, relative_cell_y, edge_direction, sort_order) VALUES(?,?,?,?,?,?,?)")) {
             for (int index = 0; index < sanitized.size(); index++) {
-                CorridorDoorBinding binding = sanitized.get(index);
+                TraversalDoorBinding binding = sanitized.get(index);
                 insert.setLong(1, traversalId);
                 insert.setLong(2, binding.roomId());
                 insert.setLong(3, binding.clusterId());

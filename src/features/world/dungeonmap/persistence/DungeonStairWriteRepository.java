@@ -17,7 +17,7 @@ public final class DungeonStairWriteRepository {
     public long insertStair(
             Connection conn,
             long mapId,
-            Long traversalId,
+            long traversalId,
             String segmentKey,
             String name,
             StairShape shape,
@@ -30,11 +30,7 @@ public final class DungeonStairWriteRepository {
                         + " VALUES(?, ?, ?, ?, ?, ?, ?, ?)",
                 Statement.RETURN_GENERATED_KEYS)) {
             ps.setLong(1, mapId);
-            if (traversalId == null) {
-                ps.setNull(2, java.sql.Types.INTEGER);
-            } else {
-                ps.setLong(2, traversalId);
-            }
+            ps.setLong(2, traversalId);
             ps.setString(3, segmentKey);
             ps.setString(4, name);
             ps.setString(5, (shape == null ? StairShape.LADDER : shape).name());
@@ -125,11 +121,4 @@ public final class DungeonStairWriteRepository {
         }
     }
 
-    public void deleteByTraversalId(Connection conn, long traversalId) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement(
-                "DELETE FROM dungeon_stairs WHERE traversal_id=?")) {
-            ps.setLong(1, traversalId);
-            ps.executeUpdate();
-        }
-    }
 }

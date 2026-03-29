@@ -3,7 +3,7 @@ package features.world.dungeonmap.model.structures.traversal.planning.internal;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.structures.corridor.ResolvedCorridorDoorBinding;
+import features.world.dungeonmap.model.structures.traversal.ResolvedTraversalDoorBinding;
 
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -99,7 +99,7 @@ final class PlannerContext {
         }
         LinkedHashSet<CubePoint> result = new LinkedHashSet<>();
         LinkedHashMap<CubePoint, Integer> directionIndices = new LinkedHashMap<>();
-        ResolvedCorridorDoorBinding binding = portal.fixedDoorBinding();
+        ResolvedTraversalDoorBinding binding = portal.fixedDoorBinding();
         if (portal.hasFixedDoorBinding() && binding != null) {
             int directionIndex = directionIndex(binding.direction());
             CubePoint boundEntry = portal.boundEntryCell();
