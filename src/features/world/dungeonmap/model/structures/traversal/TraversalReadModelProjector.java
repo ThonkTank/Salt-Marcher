@@ -69,7 +69,6 @@ public final class TraversalReadModelProjector {
                         traversal.traversalId(),
                         mapId,
                         traversal.roomIds(),
-                        traversal.bindings(),
                         corridorSlice.path(),
                         corridorSlice.connections()));
             }
@@ -220,7 +219,6 @@ public final class TraversalReadModelProjector {
                 null,
                 desired.connections().isEmpty() ? 0L : desired.connections().getFirst().mapId(),
                 List.of(),
-                features.world.dungeonmap.model.structures.corridor.CorridorBindings.empty(),
                 desired.path(),
                 desired.connections());
         CorridorSignature desiredSignature = corridorSignature(desiredCorridor);

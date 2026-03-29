@@ -36,16 +36,6 @@ public final class Traversal {
         return new Traversal(traversalId, mapId, roomIds, bindings, materialization);
     }
 
-    public static Traversal resolved(
-            Long traversalId,
-            Long corridorId,
-            long mapId,
-            List<Long> roomIds,
-            CorridorBindings bindings
-    ) {
-        return resolved(traversalId, mapId, roomIds, bindings, TraversalMaterialization.singleCorridor(corridorId));
-    }
-
     private Traversal(
             Long traversalId,
             long mapId,
@@ -62,13 +52,6 @@ public final class Traversal {
 
     public Long traversalId() {
         return traversalId;
-    }
-
-    public Long corridorId() {
-        TraversalCorridorSegment segment = materialization.corridorSegments().isEmpty()
-                ? null
-                : materialization.corridorSegments().getFirst();
-        return segment == null ? null : segment.corridorId();
     }
 
     public long mapId() {

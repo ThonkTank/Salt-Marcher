@@ -13,7 +13,6 @@ import features.world.dungeonmap.model.structures.connection.CorridorConnection;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
-import features.world.dungeonmap.model.structures.corridor.CorridorPlanningInput;
 import features.world.dungeonmap.model.structures.corridor.planning.StairPlacement;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
@@ -377,17 +376,6 @@ public final class DungeonLayout {
                 .toList();
     }
 
-    public Corridor findCorridorContainingAllRooms(Set<Long> roomIds) {
-        if (roomIds == null || roomIds.size() < 2) {
-            return null;
-        }
-        return corridors.stream()
-                .filter(corridor -> corridor != null && corridor.corridorId() != null)
-                .filter(corridor -> corridor.roomIds().containsAll(roomIds))
-                .findFirst()
-                .orElse(null);
-    }
-
     public Traversal findTraversalContainingAllRooms(Set<Long> roomIds) {
         if (roomIds == null || roomIds.size() < 2) {
             return null;
@@ -568,46 +556,6 @@ public final class DungeonLayout {
                 .orElse(null);
     }
 
-    public boolean hasDependentCorridors(RoomCluster cluster) {
-        if (cluster == null || cluster.clusterId() == null) {
-            return false;
-        }
-        return !corridorIdsAffectedBy(cluster.roomIds(), Set.of(cluster.clusterId())).isEmpty();
-    }
-
-    public Set<Long> corridorIdsAffectedBy(ClusterRewrite rewrite) {
-        if (rewrite == null) {
-            return Set.of();
-        }
-        return corridorIdsAffectedBy(rewrite.affectedRoomIds(), rewrite.affectedClusterIds());
-    }
-
-    public List<Corridor> corridorsAffectedBy(ClusterRewrite rewrite) {
-        if (rewrite == null) {
-            return List.of();
-        }
-        return corridorsAffectedBy(rewrite.affectedRoomIds(), rewrite.affectedClusterIds());
-    }
-
-    public Set<Long> corridorIdsAffectedBy(Set<Long> roomIds, Set<Long> clusterIds) {
-        return corridorsAffectedBy(roomIds, clusterIds).stream()
-                .map(Corridor::corridorId)
-                .collect(Collectors.toUnmodifiableSet());
-    }
-
-    public List<Corridor> corridorsAffectedBy(Set<Long> roomIds, Set<Long> clusterIds) {
-        if ((roomIds == null || roomIds.isEmpty()) && (clusterIds == null || clusterIds.isEmpty())) {
-            return List.of();
-        }
-        Set<Long> affectedRoomIds = roomIds == null ? Set.of() : Set.copyOf(roomIds);
-        Set<Long> affectedClusterIds = clusterIds == null ? Set.of() : Set.copyOf(clusterIds);
-        return corridors.stream()
-                .filter(corridor -> corridor != null && corridor.corridorId() != null)
-                .filter(corridor -> corridor.dependsOnAnyRoom(affectedRoomIds)
-                        || corridor.isAffectedByClusterRewrite(affectedClusterIds))
-                .toList();
-    }
-
     public Set<Long> traversalIdsAffectedBy(ClusterRewrite rewrite) {
         if (rewrite == null) {
             return Set.of();
@@ -639,16 +587,6 @@ public final class DungeonLayout {
                 .filter(traversal -> traversal.dependsOnAnyRoom(affectedRoomIds)
                         || traversal.isAffectedByClusterRewrite(affectedClusterIds))
                 .toList();
-    }
-
-    /**
-     * Convenience facade for the canonical corridor-planning projection of this layout.
-     *
-     * <p>The projection logic lives exclusively on {@link CorridorPlanningInputProjector}; keeping this method on
-     * the layout preserves readable call sites without reintroducing a second implementation.</p>
-     */
-    public CorridorPlanningInput corridorPlanningInput() {
-        return CorridorPlanningInputProjector.project(this);
     }
 
     public DungeonLayout withReplacedCluster(RoomCluster cluster) {

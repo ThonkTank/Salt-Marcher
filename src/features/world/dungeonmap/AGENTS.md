@@ -157,27 +157,27 @@ Each component observes the state objects it needs directly — no coordinator m
   - `DungeonMapState` → controls refresh, tool reactivation on map switch
 - Level scroll is workspace-owned: scroll event → `mapState.setActiveProjectionLevel()` (or custom handler via `setOnLevelScrollRequested()`) → tool notified via `levelScrolled(int)`. Runtime view uses the custom handler for reachable-level clamping.
 
-### Room Topology Edit → Corridor Rewrite Flow
+### Room Topology Edit → Traversal Rewrite Flow
 
-When rooms are painted, deleted, or merged, affected corridors must be reanchored and replanned:
+When rooms are painted, deleted, or merged, affected traversals must be reanchored and replanned:
 
 1. `DungeonRoomTopologyService` applies room topology changes directly through `RoomCluster` model operations
-2. Detects affected corridors via `DungeonLayout.corridorsAffectedBy(ClusterRewrite)`
-3. Creates `CorridorRewriteContext` (before/after `CorridorPlanningInput`, affected corridor IDs, deleted cluster IDs)
-4. `Corridor.rewriteAll()` — for each affected corridor:
-   - `corridor.reanchoredFor(context)` — re-target waypoint/door bindings to new cluster centers (relative offsets survive cluster movement)
-   - `corridor.replannedFor(context)` — recompute corridor path via the corridor planning engine
-5. All changes (room topology + corridors) persisted in one transaction
+2. Detects affected traversals via `DungeonLayout.traversalsAffectedBy(ClusterRewrite)`
+3. Creates `TraversalRewriteContext` (before/after `TraversalPlanningInput`, affected traversal IDs, deleted cluster IDs)
+4. `Traversal.rewriteAll()` — for each affected traversal:
+   - `traversal.reanchoredFor(context)` — re-target waypoint/door bindings to new cluster centers
+   - `TraversalPlanningEngine` replans the traversal and re-materializes corridor/stair segments
+5. All changes (room topology + traversals + segments) persisted in one transaction
 
-### Corridor Planning Algorithm
+### Traversal Planning Algorithm
 
-Routes corridor cells connecting rooms, respecting waypoints and door placements.
+Routes traversal structure across horizontal and vertical segments, respecting waypoints and door placements.
 
-1. Resolve rooms, waypoints, door bindings from `CorridorPlanningInput`
+1. Resolve rooms, waypoints, door bindings from `TraversalPlanningInput`
 2. Try each room as seed, build network incrementally
 3. For each unconnected room, find best connection (exit pair preselection limits pathfinding evaluations from O(n²) to ~10 per room pair)
 4. Two-tier candidate scoring: local tier (quick adjacency + path cost filter) → global tier (full network score, top 4 finalists only)
-5. Score networks; return cells + doors from best-scoring network
+5. Score networks; return corridor and stair materializations from the best-scoring structure
 
 Instrumentation available via `saltmarcher.dungeonmap.corridorplanner.profile` system property.
 
@@ -193,14 +193,14 @@ geometry/  →  objects/  →  structures/
 - **`objects/`** — Thin domain objects over geometry: `Floor`, `Wall`, `Door`, `CorridorPath`. `Door` is the boundary object and runtime/registry carrier for traversal state; connectivity lives on `Connection`, and `CorridorPath` is only the routed structure resolved from corridor bindings.
 - **`structures/`** — Self-managed compositions: `Room`, `RoomCluster`, `Corridor`, `CorridorNetwork`, `DungeonStair`, `DungeonTransition`. Compose objects and own structure-level behavior.
 
-`DungeonLayout` is the immutable global lookup layer over structures. Mutations return new instances. Pre-computes corridor networks dynamically via `CorridorNetwork.buildNetworks()`. Key aggregate queries: `corridorsAffectedBy(ClusterRewrite)`, `overlappingClusters(TileShape)`, `corridorPlanningInput()`. Spatial indexes for stairs and transitions: `stairsAtCell(cell, z)`, `stairsAtLevel(z)`, `transitionsAtCell(cell, z)`, `transitionsAtLevel(z)`, `findStair(id)`, `findTransition(id)`. Stair exit positions are included in traversable cells.
+`DungeonLayout` is the immutable global lookup layer over structures. Mutations return new instances. Pre-computes corridor networks dynamically via `CorridorNetwork.buildNetworks()`. Key aggregate queries: `traversalsAffectedBy(ClusterRewrite)`, `overlappingClusters(TileShape)`, `findTraversalForCorridor(...)`, `findTraversalForStair(...)`. Spatial indexes for stairs and transitions: `stairsAtCell(cell, z)`, `stairsAtLevel(z)`, `transitionsAtCell(cell, z)`, `transitionsAtLevel(z)`, `findStair(id)`, `findTransition(id)`. Stair exit positions are included in traversable cells.
 
 ### Key Structures
 
 - **`Room`** — record: roomId, mapId, clusterId, name, Floor, Walls, `RoomNarration` (visual description + per-exit `RoomExitNarration` entries). `resolved()` keeps room-owned wall boundaries canonical. Connectivity is queried through layout connections instead of mirrored room-local door state.
 - **`RoomCluster`** — groups rooms spatially, manages adjacency via overlap indexing, and owns cluster-local rewrite logic for paint/delete/boundary changes. `movedBy()` handles translation. Produces `InteractiveLabelHandle` for canvas rendering.
-- **`Traversal`** — internal owner aggregate: traversalId, corridorId, mapId, ordered room membership, `CorridorBindings` as traversal-owned constraints. Handles membership rewrite, constraint re-anchoring, and planner input resolution
-- **`Corridor`** — materialized horizontal segment: corridorId, traversalId, mapId, projected roomIds for labels/graph view, `CorridorPath`, and corridor-local `Connection`s. It is selectable and renderable, but no longer the authoritative owner of membership or bindings
+- **`Traversal`** — internal owner aggregate: traversalId, mapId, ordered room membership, `CorridorBindings` as traversal-owned constraints, and materialized segment references. Handles membership rewrite, constraint re-anchoring, and planner input resolution
+- **`Corridor`** — materialized horizontal segment: corridorId, traversalId, mapId, projected roomIds for labels/graph view, `CorridorPath`, and corridor-local `Connection`s. It is selectable and renderable, but not an authoritative owner of membership, bindings, or rewrite behavior
 - **`DungeonStair`** — materialized vertical segment: stairId, traversalId, mapId, name, 3D path (`List<CubePoint>`), exits (`List<DungeonStairExit>`). Represents vertical connections across Z-levels. Target key: `stair:ID`. Queries: `reachableLevels()`, `occupiedPositions()`, `exitsAtLevel(z)`, `labelHandle(z)`
 - **`DungeonTransition`** — record: transitionId, mapId, description, anchor (`CubePoint`, nullable for unprepared), destination (`DungeonTransitionDestination`: sealed — `OverworldTileDestination(mapId, tileId)` | `DungeonMapDestination(mapId, transitionId)`), linkedTransitionId (for bidirectional pairs). `isPlaced()` checks non-null anchor. Target key: `transition:ID`. Label: "Übergang N".
 

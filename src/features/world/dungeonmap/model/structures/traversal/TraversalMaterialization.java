@@ -19,15 +19,6 @@ public record TraversalMaterialization(
         return new TraversalMaterialization(List.of(), List.of());
     }
 
-    public static TraversalMaterialization singleCorridor(Long corridorId) {
-        if (corridorId == null) {
-            return empty();
-        }
-        return new TraversalMaterialization(
-                List.of(new TraversalCorridorSegment("legacy-corridor", corridorId)),
-                List.of());
-    }
-
     public TraversalMaterialization withCorridorSegments(List<TraversalCorridorSegment> corridorSegments) {
         return new TraversalMaterialization(corridorSegments, stairSegments);
     }
