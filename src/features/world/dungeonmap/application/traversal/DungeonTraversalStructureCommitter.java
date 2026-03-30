@@ -13,8 +13,7 @@ import features.world.dungeonmap.model.structures.traversal.TraversalRoute;
 import features.world.dungeonmap.model.structures.traversal.TraversalSegmentRefs;
 import features.world.dungeonmap.persistence.DungeonCorridorWriteRepository;
 import features.world.dungeonmap.persistence.DungeonStairWriteRepository;
-import features.world.dungeonmap.persistence.DungeonTraversalCorridorSegmentWriteRepository;
-import features.world.dungeonmap.persistence.DungeonTraversalStairSegmentWriteRepository;
+import features.world.dungeonmap.persistence.DungeonTraversalWriteRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -30,21 +29,27 @@ import java.util.Set;
 
 public final class DungeonTraversalStructureCommitter {
 
-    private final DungeonTraversalCorridorSegmentWriteRepository corridorSegmentWriteRepository;
-    private final DungeonTraversalStairSegmentWriteRepository stairSegmentWriteRepository;
+    private final DungeonTraversalWriteRepository traversalWriteRepository;
     private final DungeonCorridorWriteRepository corridorWriteRepository;
     private final DungeonStairWriteRepository stairWriteRepository;
 
     public DungeonTraversalStructureCommitter(
-            DungeonTraversalCorridorSegmentWriteRepository corridorSegmentWriteRepository,
-            DungeonTraversalStairSegmentWriteRepository stairSegmentWriteRepository,
+            DungeonTraversalWriteRepository traversalWriteRepository,
             DungeonCorridorWriteRepository corridorWriteRepository,
             DungeonStairWriteRepository stairWriteRepository
     ) {
-        this.corridorSegmentWriteRepository = Objects.requireNonNull(corridorSegmentWriteRepository, "corridorSegmentWriteRepository");
-        this.stairSegmentWriteRepository = Objects.requireNonNull(stairSegmentWriteRepository, "stairSegmentWriteRepository");
+        this.traversalWriteRepository = Objects.requireNonNull(traversalWriteRepository, "traversalWriteRepository");
         this.corridorWriteRepository = Objects.requireNonNull(corridorWriteRepository, "corridorWriteRepository");
         this.stairWriteRepository = Objects.requireNonNull(stairWriteRepository, "stairWriteRepository");
+    }
+
+    public TraversalRoute resolveRoute(
+            DungeonLayout previousLayout,
+            Traversal traversal,
+            TraversalRoute traversalRoute
+    ) {
+        TraversalSegmentRefs existingRefs = existingRefs(previousLayout, traversal);
+        return resolveRoute(traversal, traversalRoute, previousLayout, existingRefs);
     }
 
     public TraversalSegmentRefs persistStructures(
@@ -56,20 +61,20 @@ public final class DungeonTraversalStructureCommitter {
         if (traversal == null || traversal.traversalId() == null) {
             return TraversalSegmentRefs.empty();
         }
+        TraversalRoute resolvedRoute = resolveRoute(previousLayout, traversal, traversalRoute);
         TraversalSegmentRefs existingRefs = existingRefs(previousLayout, traversal);
-        TraversalRoute resolvedRoute = resolveRoute(traversal, traversalRoute, previousLayout, existingRefs);
         Map<String, Long> corridorIdsBySegmentKey = persistCorridorSegments(conn, traversal, resolvedRoute, existingRefs);
         Map<String, Long> stairIdsBySegmentKey = persistStairSegments(conn, traversal, resolvedRoute, existingRefs);
         return TraversalSegmentRefs.ofCorridorAndStairIds(corridorIdsBySegmentKey, stairIdsBySegmentKey);
     }
 
     public void deleteStructuresForTraversal(Connection conn, long traversalId) throws SQLException {
-        for (Long corridorId : corridorSegmentWriteRepository.deleteTraversalSegments(conn, traversalId)) {
+        for (Long corridorId : traversalWriteRepository.deleteTraversalCorridorSegments(conn, traversalId)) {
             if (corridorId != null) {
                 corridorWriteRepository.deleteCorridor(conn, corridorId);
             }
         }
-        for (Long stairId : stairSegmentWriteRepository.deleteTraversalSegments(conn, traversalId)) {
+        for (Long stairId : traversalWriteRepository.deleteTraversalStairSegments(conn, traversalId)) {
             if (stairId != null) {
                 stairWriteRepository.deleteStair(conn, stairId);
             }
@@ -99,7 +104,7 @@ public final class DungeonTraversalStructureCommitter {
             corridorWriteRepository.replaceConnections(conn, corridorId, corridor.connections());
             desiredSegmentRefs.put(corridorSegment.segmentKey(), corridorId);
         }
-        List<Long> removedCorridorIds = corridorSegmentWriteRepository.replaceTraversalSegments(
+        List<Long> removedCorridorIds = traversalWriteRepository.replaceTraversalCorridorSegments(
                 conn,
                 traversal.traversalId(),
                 desiredSegmentRefs);
@@ -134,7 +139,7 @@ public final class DungeonTraversalStructureCommitter {
             stairWriteRepository.replaceExits(conn, stairId, stair.exits());
             desiredSegmentRefs.put(stairSegment.segmentKey(), stairId);
         }
-        List<Long> removedStairIds = stairSegmentWriteRepository.replaceTraversalSegments(
+        List<Long> removedStairIds = traversalWriteRepository.replaceTraversalStairSegments(
                 conn,
                 traversal.traversalId(),
                 desiredSegmentRefs);
@@ -162,8 +167,7 @@ public final class DungeonTraversalStructureCommitter {
             matchCorridorContinuations(resolvedRoute, previousLayout, existingRefs, corridorIdsBySegmentKey);
             matchStairContinuations(resolvedRoute, previousLayout, existingRefs, stairIdsBySegmentKey);
         }
-        return resolvedRoute.withAppliedSegmentIds(
-                TraversalSegmentRefs.ofCorridorAndStairIds(corridorIdsBySegmentKey, stairIdsBySegmentKey));
+        return applySegmentIds(resolvedRoute, corridorIdsBySegmentKey, stairIdsBySegmentKey);
     }
 
     private static TraversalSegmentRefs existingRefs(DungeonLayout previousLayout, Traversal traversal) {
@@ -241,6 +245,65 @@ public final class DungeonTraversalStructureCommitter {
             return null;
         }
         return matches.getFirst().corridor();
+    }
+
+    private static TraversalRoute applySegmentIds(
+            TraversalRoute traversalRoute,
+            Map<String, Long> corridorIdsBySegmentKey,
+            Map<String, Long> stairIdsBySegmentKey
+    ) {
+        TraversalRoute sourceRoute = traversalRoute == null ? TraversalRoute.empty() : traversalRoute;
+        if (sourceRoute.isEmpty()) {
+            return sourceRoute;
+        }
+        Map<String, Long> resolvedCorridorIds = corridorIdsBySegmentKey == null ? Map.of() : Map.copyOf(corridorIdsBySegmentKey);
+        Map<String, Long> resolvedStairIds = stairIdsBySegmentKey == null ? Map.of() : Map.copyOf(stairIdsBySegmentKey);
+        if (resolvedCorridorIds.isEmpty() && resolvedStairIds.isEmpty()) {
+            return sourceRoute;
+        }
+        return new TraversalRoute(
+                bindCorridorSegments(sourceRoute.corridorSegments(), resolvedCorridorIds),
+                bindStairSegments(sourceRoute.stairSegments(), resolvedStairIds));
+    }
+
+    private static List<TraversalRoute.CorridorSegment> bindCorridorSegments(
+            List<TraversalRoute.CorridorSegment> corridorSegments,
+            Map<String, Long> corridorIdsBySegmentKey
+    ) {
+        if (corridorSegments == null || corridorSegments.isEmpty()) {
+            return List.of();
+        }
+        ArrayList<TraversalRoute.CorridorSegment> rebound = new ArrayList<>();
+        for (TraversalRoute.CorridorSegment corridorSegment : corridorSegments) {
+            if (corridorSegment == null || corridorSegment.corridor() == null) {
+                continue;
+            }
+            Corridor corridor = corridorSegment.corridor();
+            Long corridorId = corridorIdsBySegmentKey.get(corridorSegment.segmentKey());
+            Corridor resolvedCorridor = corridorId == null ? corridor : corridor.withIdentity(corridorId, corridor.mapId());
+            rebound.add(new TraversalRoute.CorridorSegment(corridorSegment.segmentKey(), resolvedCorridor));
+        }
+        return rebound.isEmpty() ? List.of() : List.copyOf(rebound);
+    }
+
+    private static List<TraversalRoute.StairSegment> bindStairSegments(
+            List<TraversalRoute.StairSegment> stairSegments,
+            Map<String, Long> stairIdsBySegmentKey
+    ) {
+        if (stairSegments == null || stairSegments.isEmpty()) {
+            return List.of();
+        }
+        ArrayList<TraversalRoute.StairSegment> rebound = new ArrayList<>();
+        for (TraversalRoute.StairSegment stairSegment : stairSegments) {
+            if (stairSegment == null || stairSegment.stair() == null) {
+                continue;
+            }
+            DungeonStair stair = stairSegment.stair();
+            Long stairId = stairIdsBySegmentKey.get(stairSegment.segmentKey());
+            DungeonStair resolvedStair = stairId == null ? stair : stair.withIdentity(stairId, stair.mapId());
+            rebound.add(new TraversalRoute.StairSegment(stairSegment.segmentKey(), resolvedStair));
+        }
+        return rebound.isEmpty() ? List.of() : List.copyOf(rebound);
     }
 
     private static void matchStairContinuations(

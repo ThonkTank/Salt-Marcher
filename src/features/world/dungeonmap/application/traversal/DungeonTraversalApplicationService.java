@@ -232,7 +232,7 @@ public final class DungeonTraversalApplicationService {
         traversalWriteRepository.deleteTraversal(conn, traversalId);
     }
 
-    private static RewriteResult rewrite(
+    private RewriteResult rewrite(
             DungeonLayout beforeLayout,
             DungeonLayout rewrittenLayout,
             Map<Long, Traversal> traversalsById,
@@ -265,7 +265,10 @@ public final class DungeonTraversalApplicationService {
             if (affected && reanchoredTraversal.isPersistable()) {
                 traversalRoutesByTraversalId.put(
                         reanchoredTraversal.traversalId(),
-                        reanchoredTraversal.route(rewrittenSnapshot).withAppliedSegmentIds(reanchoredTraversal.segmentRefs()));
+                        structureCommitter.resolveRoute(
+                                beforeLayout,
+                                reanchoredTraversal,
+                                reanchoredTraversal.route(rewrittenSnapshot)));
             }
         }
         return new RewriteResult(

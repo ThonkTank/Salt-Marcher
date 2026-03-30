@@ -18,8 +18,6 @@ import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.persistence.DungeonCorridorWriteRepository;
 import features.world.dungeonmap.persistence.DungeonStairWriteRepository;
 import features.world.dungeonmap.persistence.DungeonTransitionWriteRepository;
-import features.world.dungeonmap.persistence.DungeonTraversalCorridorSegmentWriteRepository;
-import features.world.dungeonmap.persistence.DungeonTraversalStairSegmentWriteRepository;
 import features.world.dungeonmap.persistence.DungeonTraversalWriteRepository;
 import features.world.dungeonmap.persistence.DungeonRoomGeometryWriteMapper;
 import features.world.dungeonmap.persistence.DungeonRoomWriteRepository;
@@ -52,12 +50,9 @@ public final class DungeonMapModule {
         DungeonMapLoader mapLoader = new DungeonMapLoader();
         DungeonCorridorWriteRepository corridorWriteRepository = new DungeonCorridorWriteRepository();
         DungeonStairWriteRepository stairWriteRepository = new DungeonStairWriteRepository();
-        DungeonTraversalCorridorSegmentWriteRepository corridorSegmentWriteRepository = new DungeonTraversalCorridorSegmentWriteRepository();
-        DungeonTraversalStairSegmentWriteRepository stairSegmentWriteRepository = new DungeonTraversalStairSegmentWriteRepository();
         DungeonTraversalWriteRepository traversalWriteRepository = new DungeonTraversalWriteRepository();
         DungeonTraversalStructureCommitter traversalStructureCommitter = new DungeonTraversalStructureCommitter(
-                corridorSegmentWriteRepository,
-                stairSegmentWriteRepository,
+                traversalWriteRepository,
                 corridorWriteRepository,
                 stairWriteRepository);
         DungeonTraversalApplicationService traversalApplicationService = new DungeonTraversalApplicationService(
