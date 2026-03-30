@@ -7,6 +7,7 @@ import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.objects.Floor;
 import features.world.dungeonmap.model.structures.TargetKey;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
+import features.world.dungeonmap.model.structures.connection.ConnectionEndpointType;
 import features.world.dungeonmap.model.structures.connection.CorridorConnection;
 
 import java.util.ArrayList;
@@ -40,6 +41,7 @@ public final class Corridor {
 
     public static Corridor plannedFromPathCells(
             long mapId,
+            List<Long> roomIds,
             List<CubePoint> pathCells,
             List<CorridorEndpointPlan> endpointPlans
     ) {
@@ -50,7 +52,7 @@ public final class Corridor {
         List<CorridorEndpointBinding> bindings = bindingsForPlans(endpointPlans);
         return planned(
                 mapId,
-                List.of(),
+                roomIds,
                 levelForPathCells(pathCells),
                 points,
                 bindings);
@@ -58,6 +60,7 @@ public final class Corridor {
 
     public static Corridor plannedDirectAdjacency(
             long mapId,
+            List<Long> roomIds,
             CorridorEndpointPlan startPlan,
             CorridorEndpointPlan endPlan
     ) {
@@ -66,7 +69,7 @@ public final class Corridor {
         VertexEdge sharedEdge = sharedBoundaryEdge(startBinding, endBinding);
         return planned(
                 mapId,
-                List.of(),
+                roomIds,
                 startPlan.roomCell().z(),
                 List.of(
                         GridAnchor.atVertex(sharedEdge.start()),
@@ -99,7 +102,8 @@ public final class Corridor {
         GridRoute route = validatePoints(points);
         this.points = route.anchors();
         this.endpointBindings = normalizeBindings(endpointBindings);
-        this.roomIds = normalizeRoomIds(roomIds, this.endpointBindings);
+        this.roomIds = normalizeRoomIds(roomIds);
+        validateBindingRoomIds(this.roomIds, this.endpointBindings);
         this.path = CorridorPath.fromPoints(levelZ, this.points);
         this.connections = materializeConnections(corridorId, mapId, levelZ, this.endpointBindings);
     }
@@ -302,23 +306,39 @@ public final class Corridor {
         return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
-    private static List<Long> normalizeRoomIds(List<Long> roomIds, List<CorridorEndpointBinding> endpointBindings) {
+    private static List<Long> normalizeRoomIds(List<Long> roomIds) {
         LinkedHashSet<Long> result = new LinkedHashSet<>();
-        if (roomIds != null) {
-            for (Long roomId : roomIds) {
-                if (roomId != null) {
-                    result.add(roomId);
-                }
-            }
-        }
-        if (result.isEmpty()) {
-            for (CorridorEndpointBinding endpointBinding : endpointBindings == null ? List.<CorridorEndpointBinding>of() : endpointBindings) {
-                if (endpointBinding == null) {
-                    continue;
-                }
-                result.addAll(endpointBinding.roomIds());
+        for (Long roomId : roomIds == null ? List.<Long>of() : roomIds) {
+            if (roomId != null) {
+                result.add(roomId);
             }
         }
         return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
+    private static void validateBindingRoomIds(
+            List<Long> roomIds,
+            List<CorridorEndpointBinding> endpointBindings
+    ) {
+        if (endpointBindings == null || endpointBindings.isEmpty()) {
+            return;
+        }
+        Set<Long> canonicalRoomIds = roomIds == null ? Set.of() : Set.copyOf(roomIds);
+        for (CorridorEndpointBinding endpointBinding : endpointBindings) {
+            if (endpointBinding == null) {
+                continue;
+            }
+            for (ConnectionEndpoint endpoint : endpointBinding.endpoints()) {
+                if (endpoint == null
+                        || endpoint.type() != ConnectionEndpointType.ROOM
+                        || endpoint.id() == null) {
+                    continue;
+                }
+                if (!canonicalRoomIds.contains(endpoint.id())) {
+                    throw new IllegalArgumentException(
+                            "Corridor endpoint room " + endpoint.id() + " is not part of canonical roomIds");
+                }
+            }
+        }
     }
 }

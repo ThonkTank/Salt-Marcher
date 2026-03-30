@@ -32,18 +32,6 @@ public record CorridorEndpointBinding(
                 levelZ);
     }
 
-    public List<Long> roomIds() {
-        ArrayList<Long> roomIds = new ArrayList<>();
-        for (ConnectionEndpoint endpoint : endpoints) {
-            if (endpoint != null
-                    && endpoint.type() == features.world.dungeonmap.model.structures.connection.ConnectionEndpointType.ROOM
-                    && endpoint.id() != null) {
-                roomIds.add(endpoint.id());
-            }
-        }
-        return roomIds.isEmpty() ? List.of() : List.copyOf(roomIds);
-    }
-
     private static List<ConnectionEndpoint> normalizeEndpoints(List<ConnectionEndpoint> endpoints) {
         if (endpoints == null || endpoints.isEmpty()) {
             return List.of();

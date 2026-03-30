@@ -207,7 +207,11 @@ public final class TraversalGeometryRealizer {
         return new TraversalRoute(
                 List.of(new TraversalRoute.CorridorSegment(
                         corridorSegmentKey(edgeKey, 0),
-                        Corridor.plannedDirectAdjacency(traversal.mapId(), firstPlan, secondPlan))),
+                        Corridor.plannedDirectAdjacency(
+                                traversal.mapId(),
+                                corridorRoomIds(first, second),
+                                firstPlan,
+                                secondPlan))),
                 List.of());
     }
 
@@ -231,6 +235,17 @@ public final class TraversalGeometryRealizer {
             }
         }
         return null;
+    }
+
+    private static List<Long> corridorRoomIds(TraversalNode start, TraversalNode end) {
+        LinkedHashSet<Long> roomIds = new LinkedHashSet<>();
+        if (start != null && start.roomId() != null) {
+            roomIds.add(start.roomId());
+        }
+        if (end != null && end.roomId() != null) {
+            roomIds.add(end.roomId());
+        }
+        return roomIds.isEmpty() ? List.of() : List.copyOf(roomIds);
     }
 
     private record AdjacentRoomPair(
@@ -383,7 +398,11 @@ public final class TraversalGeometryRealizer {
             if (endPlan != null) {
                 endpointPlans.add(endPlan);
             }
-            Corridor corridor = Corridor.plannedFromPathCells(traversal.mapId(), segmentResult.pathCells(), endpointPlans);
+            Corridor corridor = Corridor.plannedFromPathCells(
+                    traversal.mapId(),
+                    corridorRoomIds(start, end),
+                    segmentResult.pathCells(),
+                    endpointPlans);
             if (corridor == null) {
                 return;
             }
