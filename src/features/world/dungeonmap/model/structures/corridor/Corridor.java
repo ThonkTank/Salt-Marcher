@@ -37,23 +37,6 @@ public final class Corridor {
         return new Corridor(null, mapId, levelZ, points, endpointBindings);
     }
 
-    public static Corridor plannedFromPathCells(
-            long mapId,
-            List<CubePoint> pathCells,
-            List<CorridorEndpointPlan> endpointPlans
-    ) {
-        List<GridAnchor> points = pointsForPathCells(pathCells);
-        if (points.size() < 2) {
-            return null;
-        }
-        List<CorridorEndpointBinding> bindings = bindingsForPlans(endpointPlans);
-        return planned(
-                mapId,
-                levelForPathCells(pathCells),
-                points,
-                bindings);
-    }
-
     public static Corridor plannedDirectAdjacency(
             long mapId,
             CorridorEndpointPlan startPlan,
@@ -62,13 +45,27 @@ public final class Corridor {
         CorridorEndpointBinding startBinding = bindingForPlan(startPlan);
         CorridorEndpointBinding endBinding = bindingForPlan(endPlan);
         VertexEdge sharedEdge = sharedBoundaryEdge(startBinding, endBinding);
-        return planned(
+        return plannedFromPoints(
                 mapId,
                 startPlan.roomCell().z(),
                 List.of(
                         GridAnchor.atVertex(sharedEdge.start()),
                         GridAnchor.atVertex(sharedEdge.end())),
-                List.of(startBinding, endBinding));
+                List.of(startPlan, endPlan));
+    }
+
+    public static Corridor plannedFromPoints(
+            long mapId,
+            int levelZ,
+            List<? extends GridAnchor> points,
+            List<CorridorEndpointPlan> endpointPlans
+    ) {
+        GridRoute route = validatePoints(points);
+        return planned(
+                mapId,
+                levelZ,
+                route.anchors(),
+                bindingsForPlans(endpointPlans));
     }
 
     public static Corridor resolved(
@@ -214,31 +211,6 @@ public final class Corridor {
             }
         }
         return route;
-    }
-
-    private static int levelForPathCells(List<CubePoint> pathCells) {
-        if (pathCells == null || pathCells.isEmpty()) {
-            throw new IllegalArgumentException("Corridor path cells must not be empty");
-        }
-        for (CubePoint pathCell : pathCells) {
-            if (pathCell != null) {
-                return pathCell.z();
-            }
-        }
-        throw new IllegalArgumentException("Corridor path cells must not be empty");
-    }
-
-    private static List<GridAnchor> pointsForPathCells(List<CubePoint> pathCells) {
-        if (pathCells == null || pathCells.isEmpty()) {
-            return List.of();
-        }
-        ArrayList<GridAnchor> result = new ArrayList<>();
-        for (CubePoint pathCell : pathCells) {
-            if (pathCell != null) {
-                result.add(GridAnchor.atTile(pathCell.projectedCell()));
-            }
-        }
-        return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
     private static List<CorridorEndpointBinding> bindingsForPlans(List<CorridorEndpointPlan> endpointPlans) {
