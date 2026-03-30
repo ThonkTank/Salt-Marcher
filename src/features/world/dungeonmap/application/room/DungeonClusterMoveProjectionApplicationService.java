@@ -1,7 +1,7 @@
 package features.world.dungeonmap.application.room;
 
-import features.world.dungeonmap.application.traversal.DungeonTraversalRewriteResult;
-import features.world.dungeonmap.application.traversal.DungeonTraversalRewriteService;
+import features.world.dungeonmap.application.traversal.DungeonTraversalApplicationService;
+import features.world.dungeonmap.application.traversal.DungeonTraversalApplicationService.RewriteResult;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
@@ -20,10 +20,10 @@ import java.util.Set;
 
 public final class DungeonClusterMoveProjectionApplicationService {
 
-    private final DungeonTraversalRewriteService traversalRewriteService;
+    private final DungeonTraversalApplicationService traversalApplicationService;
 
-    public DungeonClusterMoveProjectionApplicationService(DungeonTraversalRewriteService traversalRewriteService) {
-        this.traversalRewriteService = Objects.requireNonNull(traversalRewriteService, "traversalRewriteService");
+    public DungeonClusterMoveProjectionApplicationService(DungeonTraversalApplicationService traversalApplicationService) {
+        this.traversalApplicationService = Objects.requireNonNull(traversalApplicationService, "traversalApplicationService");
     }
 
     public DungeonClusterMoveProjection project(
@@ -53,7 +53,7 @@ public final class DungeonClusterMoveProjectionApplicationService {
                 baseLayout.stairs(),
                 baseLayout.transitions(),
                 updatedClusterLevels);
-        DungeonTraversalRewriteResult rewriteResult = traversalRewriteService.rewriteForLayoutChange(
+        RewriteResult rewriteResult = traversalApplicationService.rewriteForLayoutChange(
                 baseLayout,
                 provisionalLayout,
                 baseLayout.traversalsById(),

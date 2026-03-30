@@ -2,7 +2,7 @@ package features.world.dungeonmap.application.room;
 
 import database.DatabaseManager;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
-import features.world.dungeonmap.application.traversal.DungeonTraversalPersistenceService;
+import features.world.dungeonmap.application.traversal.DungeonTraversalApplicationService;
 import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.Point2i;
@@ -23,20 +23,20 @@ public final class DungeonClusterMoveService {
     private final DungeonMapLoader mapLoader;
     private final DungeonRoomWriteRepository roomWriteRepository;
     private final DungeonRoomGeometryWriteMapper geometryWriteMapper;
-    private final DungeonTraversalPersistenceService traversalPersistenceService;
+    private final DungeonTraversalApplicationService traversalApplicationService;
     private final DungeonClusterMoveProjectionApplicationService projectionApplicationService;
 
     public DungeonClusterMoveService(
             DungeonMapLoader mapLoader,
             DungeonRoomWriteRepository roomWriteRepository,
             DungeonRoomGeometryWriteMapper geometryWriteMapper,
-            DungeonTraversalPersistenceService traversalPersistenceService,
+            DungeonTraversalApplicationService traversalApplicationService,
             DungeonClusterMoveProjectionApplicationService projectionApplicationService
     ) {
         this.mapLoader = Objects.requireNonNull(mapLoader, "mapLoader");
         this.roomWriteRepository = Objects.requireNonNull(roomWriteRepository, "roomWriteRepository");
         this.geometryWriteMapper = Objects.requireNonNull(geometryWriteMapper, "geometryWriteMapper");
-        this.traversalPersistenceService = Objects.requireNonNull(traversalPersistenceService, "traversalPersistenceService");
+        this.traversalApplicationService = Objects.requireNonNull(traversalApplicationService, "traversalApplicationService");
         this.projectionApplicationService = Objects.requireNonNull(projectionApplicationService, "projectionApplicationService");
     }
 
@@ -66,7 +66,7 @@ public final class DungeonClusterMoveService {
                     roomWriteRepository.updateRoomPosition(conn, room.roomId(), room.anchorsByLevel(), room.primaryLevel());
                 }
                 Map<Long, Traversal> affectedTraversalsById = affectedTraversalsById(projection);
-                traversalPersistenceService.persistTraversals(
+                traversalApplicationService.persistTraversals(
                         conn,
                         layout,
                         affectedTraversalsById,

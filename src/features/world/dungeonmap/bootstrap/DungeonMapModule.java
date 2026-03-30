@@ -10,10 +10,7 @@ import features.world.dungeonmap.application.room.DungeonClusterMoveService;
 import features.world.dungeonmap.application.room.DungeonBoundaryEditService;
 import features.world.dungeonmap.application.room.DungeonRoomNarrationService;
 import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
-import features.world.dungeonmap.application.traversal.DungeonTraversalEditService;
-import features.world.dungeonmap.application.traversal.DungeonTraversalPersistenceService;
-import features.world.dungeonmap.application.traversal.DungeonTraversalRoomRewriteService;
-import features.world.dungeonmap.application.traversal.DungeonTraversalRewriteService;
+import features.world.dungeonmap.application.traversal.DungeonTraversalApplicationService;
 import features.world.dungeonmap.application.traversal.DungeonTraversalStructureCommitter;
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
 import features.world.dungeonmap.loading.DungeonMapLoader;
@@ -63,36 +60,30 @@ public final class DungeonMapModule {
                 stairSegmentWriteRepository,
                 corridorWriteRepository,
                 stairWriteRepository);
-        DungeonTraversalPersistenceService traversalPersistenceService = new DungeonTraversalPersistenceService(
+        DungeonTraversalApplicationService traversalApplicationService = new DungeonTraversalApplicationService(
                 traversalWriteRepository,
                 traversalStructureCommitter);
         DungeonRoomWriteRepository roomWriteRepository = new DungeonRoomWriteRepository();
         DungeonTransitionWriteRepository transitionWriteRepository = new DungeonTransitionWriteRepository();
         DungeonRoomNarrationService roomNarrationService = new DungeonRoomNarrationService(roomWriteRepository);
         DungeonRoomGeometryWriteMapper geometryWriteMapper = new DungeonRoomGeometryWriteMapper();
-        DungeonTraversalRoomRewriteService traversalRoomRewriteService = new DungeonTraversalRoomRewriteService();
-        DungeonTraversalRewriteService traversalRewriteService = new DungeonTraversalRewriteService(traversalRoomRewriteService);
         DungeonRoomTopologyService roomTopologyService = new DungeonRoomTopologyService(
                 mapLoader,
                 roomWriteRepository,
                 geometryWriteMapper,
-                traversalPersistenceService,
-                traversalRewriteService);
-        DungeonTraversalEditService traversalEditService = new DungeonTraversalEditService(
-                traversalWriteRepository,
-                traversalPersistenceService);
+                traversalApplicationService);
         DungeonTransitionEditService transitionEditService = new DungeonTransitionEditService(roomTopologyService, transitionWriteRepository);
         DungeonMapCatalogService mapCatalogService = new DungeonMapCatalogService(
                 roomTopologyService,
                 new DungeonRuntimeStateRepairService(mapLoader));
         DungeonBoundaryEditService boundaryEditService = new DungeonBoundaryEditService(roomTopologyService);
         DungeonClusterMoveProjectionApplicationService clusterMoveProjectionApplicationService =
-                new DungeonClusterMoveProjectionApplicationService(traversalRewriteService);
+                new DungeonClusterMoveProjectionApplicationService(traversalApplicationService);
         DungeonClusterMoveService clusterMoveService = new DungeonClusterMoveService(
                 mapLoader,
                 roomWriteRepository,
                 geometryWriteMapper,
-                traversalPersistenceService,
+                traversalApplicationService,
                 clusterMoveProjectionApplicationService);
         DungeonMapState state = new DungeonMapState();
         DungeonMapLoadingService loadingService = new DungeonMapLoadingService(
@@ -126,7 +117,7 @@ public final class DungeonMapModule {
                         state,
                         loadingService,
                         editorSessionState,
-                        traversalEditService,
+                        traversalApplicationService,
                         editorInteractionState),
                 new TransitionTool(
                         state,

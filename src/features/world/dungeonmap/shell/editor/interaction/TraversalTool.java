@@ -1,6 +1,6 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
-import features.world.dungeonmap.application.traversal.DungeonTraversalEditService;
+import features.world.dungeonmap.application.traversal.DungeonTraversalApplicationService;
 import features.world.dungeonmap.application.traversal.TraversalTarget;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
@@ -29,7 +29,7 @@ public final class TraversalTool implements EditorTool {
     private final DungeonMapState mapState;
     private final DungeonMapLoadingService loadingService;
     private final DungeonEditorSessionState sessionState;
-    private final DungeonTraversalEditService traversalEditService;
+    private final DungeonTraversalApplicationService traversalApplicationService;
     private final EditorInteractionState state;
     private final DungeonGridHitTester hitTester = new DungeonGridHitTester();
     private final Label statusLabel = new Label("Keine Verbindung gewählt");
@@ -42,13 +42,13 @@ public final class TraversalTool implements EditorTool {
             DungeonMapState mapState,
             DungeonMapLoadingService loadingService,
             DungeonEditorSessionState sessionState,
-            DungeonTraversalEditService traversalEditService,
+            DungeonTraversalApplicationService traversalApplicationService,
             EditorInteractionState state
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
         this.sessionState = Objects.requireNonNull(sessionState, "sessionState");
-        this.traversalEditService = Objects.requireNonNull(traversalEditService, "traversalEditService");
+        this.traversalApplicationService = Objects.requireNonNull(traversalApplicationService, "traversalApplicationService");
         this.state = Objects.requireNonNull(state, "state");
         this.statusLabel.setWrapText(true);
     }
@@ -164,7 +164,7 @@ public final class TraversalTool implements EditorTool {
             state.selectTarget(stair.targetKey());
             clear();
             loadingService.submitReloadingWrite(
-                    () -> traversalEditService.deleteBySegment(projected, new TraversalSegmentRef.StairSegment(stair.stairId())),
+                    () -> traversalApplicationService.deleteBySegment(projected, new TraversalSegmentRef.StairSegment(stair.stairId())),
                     mapId,
                     null,
                     throwable -> UiErrorReporter.reportBackgroundFailure("TraversalTool.handleDeletePressed()", throwable));
@@ -181,7 +181,7 @@ public final class TraversalTool implements EditorTool {
         state.selectTarget(corridor.targetKey());
         clear();
         loadingService.submitReloadingWrite(
-                () -> traversalEditService.deleteBySegment(projected, new TraversalSegmentRef.CorridorSegment(corridor.corridorId())),
+                () -> traversalApplicationService.deleteBySegment(projected, new TraversalSegmentRef.CorridorSegment(corridor.corridorId())),
                 mapId,
                 null,
                 throwable -> UiErrorReporter.reportBackgroundFailure("TraversalTool.handleDeletePressed()", throwable));
@@ -197,7 +197,7 @@ public final class TraversalTool implements EditorTool {
         if (layout == null || layout.mapId() != mapId) {
             return;
         }
-        traversalEditService.create(layout, toTraversalTarget(start), toTraversalTarget(target));
+        traversalApplicationService.create(layout, toTraversalTarget(start), toTraversalTarget(target));
     }
 
     private static TraversalTarget toTraversalTarget(EditorDraft.PendingTarget target) {
