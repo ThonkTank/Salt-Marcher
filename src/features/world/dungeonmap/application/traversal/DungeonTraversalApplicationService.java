@@ -10,7 +10,6 @@ import features.world.dungeonmap.model.structures.traversal.Traversal;
 import features.world.dungeonmap.model.structures.traversal.TraversalRoute;
 import features.world.dungeonmap.model.structures.traversal.TraversalRoutingContext;
 import features.world.dungeonmap.model.structures.traversal.TraversalRoutingSnapshot;
-import features.world.dungeonmap.model.structures.traversal.TraversalSegmentRef;
 import features.world.dungeonmap.model.structures.traversal.TraversalSegmentRefs;
 import features.world.dungeonmap.persistence.DungeonTraversalWriteRepository;
 
@@ -37,47 +36,28 @@ public final class DungeonTraversalApplicationService {
         this.structureCommitter = Objects.requireNonNull(structureCommitter, "structureCommitter");
     }
 
-    public void create(DungeonLayout layout, TraversalTarget start, TraversalTarget end) throws SQLException {
+    public void createBetweenRooms(DungeonLayout layout, long firstRoomId, long secondRoomId) throws SQLException {
         requireLayout(layout);
-        if (start == null || end == null || Objects.equals(start.targetKey(), end.targetKey())) {
-            return;
-        }
-        if (start instanceof TraversalTarget.Room startRoom && end instanceof TraversalTarget.Room endRoom) {
-            createBetweenRooms(layout, List.of(startRoom.roomId(), endRoom.roomId()));
-            return;
-        }
-        if (start instanceof TraversalTarget.Room startRoom && end instanceof TraversalTarget.CorridorSegment corridorSegment) {
-            extend(layout, new TraversalSegmentRef.CorridorSegment(corridorSegment.corridorId()), startRoom.roomId());
-            return;
-        }
-        if (start instanceof TraversalTarget.Room startRoom && end instanceof TraversalTarget.StairSegment stairSegment) {
-            extend(layout, new TraversalSegmentRef.StairSegment(stairSegment.stairId()), startRoom.roomId());
-            return;
-        }
-        if (start instanceof TraversalTarget.CorridorSegment corridorSegment && end instanceof TraversalTarget.Room endRoom) {
-            extend(layout, new TraversalSegmentRef.CorridorSegment(corridorSegment.corridorId()), endRoom.roomId());
-            return;
-        }
-        if (start instanceof TraversalTarget.StairSegment stairSegment && end instanceof TraversalTarget.Room endRoom) {
-            extend(layout, new TraversalSegmentRef.StairSegment(stairSegment.stairId()), endRoom.roomId());
-            return;
-        }
-        merge(layout, toSegmentRef(start), toSegmentRef(end));
+        createBetweenRooms(layout, List.of(firstRoomId, secondRoomId));
     }
 
-    public void extend(DungeonLayout layout, TraversalSegmentRef segment, long roomId) throws SQLException {
+    public void merge(
+            DungeonLayout layout,
+            long keptTraversalId,
+            Long mergedTraversalId,
+            Long addedRoomId
+    ) throws SQLException {
         requireLayout(layout);
-        Traversal traversal = requireTraversal(layout, segment);
-        Set<Long> mergedRoomIds = new LinkedHashSet<>(traversal.roomIds());
-        mergedRoomIds.add(roomId);
-        rejectSameClusterOnlyTraversal(layout, mergedRoomIds);
-        persistTraversalChange(layout, traversal.withAddedRoom(roomId), null);
-    }
-
-    public void merge(DungeonLayout layout, TraversalSegmentRef left, TraversalSegmentRef right) throws SQLException {
-        requireLayout(layout);
-        Traversal kept = requireTraversal(layout, left);
-        Traversal merged = requireTraversal(layout, right);
+        requireMergeArguments(mergedTraversalId, addedRoomId);
+        Traversal kept = requireTraversal(layout, keptTraversalId);
+        if (addedRoomId != null) {
+            Set<Long> mergedRoomIds = new LinkedHashSet<>(kept.roomIds());
+            mergedRoomIds.add(addedRoomId);
+            rejectSameClusterOnlyTraversal(layout, mergedRoomIds);
+            persistTraversalChange(layout, kept.withAddedRoom(addedRoomId), null);
+            return;
+        }
+        Traversal merged = requireTraversal(layout, mergedTraversalId);
         if (Objects.equals(kept.traversalId(), merged.traversalId())) {
             return;
         }
@@ -87,12 +67,23 @@ public final class DungeonTraversalApplicationService {
         persistTraversalChange(layout, kept.mergedWith(merged), merged.traversalId());
     }
 
-    public void deleteBySegment(DungeonLayout layout, TraversalSegmentRef segment) throws SQLException {
+    public void deleteByCorridorId(DungeonLayout layout, long corridorId) throws SQLException {
         requireLayout(layout);
-        Traversal traversal = requireTraversal(layout, segment);
+        Traversal traversal = requireTraversalForCorridor(layout, corridorId);
+        deleteTraversal(layout, traversal.traversalId());
+    }
+
+    public void deleteByStairId(DungeonLayout layout, long stairId) throws SQLException {
+        requireLayout(layout);
+        Traversal traversal = requireTraversalForStair(layout, stairId);
+        deleteTraversal(layout, traversal.traversalId());
+    }
+
+    private void deleteTraversal(DungeonLayout layout, long traversalId) throws SQLException {
+        requireLayout(layout);
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                deleteTraversal(conn, traversal.traversalId());
+                deleteTraversal(conn, traversalId);
                 return null;
             });
         }
@@ -431,23 +422,24 @@ public final class DungeonTraversalApplicationService {
         return replacementIds.size() == 1 ? replacementIds.iterator().next() : null;
     }
 
-    private static TraversalSegmentRef toSegmentRef(TraversalTarget target) {
-        if (target instanceof TraversalTarget.CorridorSegment corridorSegment) {
-            return new TraversalSegmentRef.CorridorSegment(corridorSegment.corridorId());
+    private static Traversal requireTraversal(DungeonLayout layout, Long traversalId) {
+        Traversal traversal = layout == null ? null : layout.findTraversal(traversalId);
+        if (traversal == null) {
+            throw new IllegalArgumentException("Unbekannte Traversal-Verbindung");
         }
-        if (target instanceof TraversalTarget.StairSegment stairSegment) {
-            return new TraversalSegmentRef.StairSegment(stairSegment.stairId());
-        }
-        return null;
+        return traversal;
     }
 
-    private static Traversal requireTraversal(DungeonLayout layout, TraversalSegmentRef segment) {
-        Traversal traversal = null;
-        if (segment instanceof TraversalSegmentRef.CorridorSegment corridorSegment) {
-            traversal = layout.findTraversalForCorridor(corridorSegment.corridorId());
-        } else if (segment instanceof TraversalSegmentRef.StairSegment stairSegment) {
-            traversal = layout.findTraversalForStair(stairSegment.stairId());
+    private static Traversal requireTraversalForCorridor(DungeonLayout layout, long corridorId) {
+        Traversal traversal = layout == null ? null : layout.findTraversalForCorridor(corridorId);
+        if (traversal == null) {
+            throw new IllegalArgumentException("Unbekannte Traversal-Verbindung");
         }
+        return traversal;
+    }
+
+    private static Traversal requireTraversalForStair(DungeonLayout layout, long stairId) {
+        Traversal traversal = layout == null ? null : layout.findTraversalForStair(stairId);
         if (traversal == null) {
             throw new IllegalArgumentException("Unbekannte Traversal-Verbindung");
         }
@@ -457,6 +449,14 @@ public final class DungeonTraversalApplicationService {
     private static void requireLayout(DungeonLayout layout) throws SQLException {
         if (layout == null) {
             throw new SQLException("Dungeon konnte nicht geladen werden");
+        }
+    }
+
+    private static void requireMergeArguments(Long mergedTraversalId, Long addedRoomId) {
+        boolean hasMergedTraversalId = mergedTraversalId != null;
+        boolean hasAddedRoomId = addedRoomId != null;
+        if (hasMergedTraversalId == hasAddedRoomId) {
+            throw new IllegalArgumentException("Traversal-Merge benötigt genau einen Merge-Typ");
         }
     }
 

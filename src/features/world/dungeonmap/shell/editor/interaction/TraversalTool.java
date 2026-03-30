@@ -1,7 +1,6 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
 import features.world.dungeonmap.application.traversal.DungeonTraversalApplicationService;
-import features.world.dungeonmap.application.traversal.TraversalTarget;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
@@ -9,7 +8,6 @@ import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
-import features.world.dungeonmap.model.structures.traversal.TraversalSegmentRef;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.shell.editor.EditorCards;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
@@ -164,7 +162,7 @@ public final class TraversalTool implements EditorTool {
             state.selectTarget(stair.targetKey());
             clear();
             loadingService.submitReloadingWrite(
-                    () -> traversalApplicationService.deleteBySegment(projected, new TraversalSegmentRef.StairSegment(stair.stairId())),
+                    () -> traversalApplicationService.deleteByStairId(projected, stair.stairId()),
                     mapId,
                     null,
                     throwable -> UiErrorReporter.reportBackgroundFailure("TraversalTool.handleDeletePressed()", throwable));
@@ -181,7 +179,7 @@ public final class TraversalTool implements EditorTool {
         state.selectTarget(corridor.targetKey());
         clear();
         loadingService.submitReloadingWrite(
-                () -> traversalApplicationService.deleteBySegment(projected, new TraversalSegmentRef.CorridorSegment(corridor.corridorId())),
+                () -> traversalApplicationService.deleteByCorridorId(projected, corridor.corridorId()),
                 mapId,
                 null,
                 throwable -> UiErrorReporter.reportBackgroundFailure("TraversalTool.handleDeletePressed()", throwable));
@@ -194,21 +192,60 @@ public final class TraversalTool implements EditorTool {
             EditorDraft.PendingTarget target
     ) throws Exception {
         DungeonLayout layout = mapState.activeMap();
-        if (layout == null || layout.mapId() != mapId) {
+        if (layout == null || layout.mapId() != mapId || start == null || target == null) {
             return;
         }
-        traversalApplicationService.create(layout, toTraversalTarget(start), toTraversalTarget(target));
+        if (start instanceof EditorDraft.PendingTarget.Room startRoom && target instanceof EditorDraft.PendingTarget.Room endRoom) {
+            if (startRoom.roomId() != null && endRoom.roomId() != null) {
+                traversalApplicationService.createBetweenRooms(layout, startRoom.roomId(), endRoom.roomId());
+            }
+            return;
+        }
+        if (start instanceof EditorDraft.PendingTarget.Room roomTarget) {
+            mergeRoomIntoTraversal(layout, roomTarget.roomId(), target);
+            return;
+        }
+        if (target instanceof EditorDraft.PendingTarget.Room roomTarget) {
+            mergeRoomIntoTraversal(layout, roomTarget.roomId(), start);
+            return;
+        }
+        mergeTraversals(layout, start, target);
     }
 
-    private static TraversalTarget toTraversalTarget(EditorDraft.PendingTarget target) {
-        if (target instanceof EditorDraft.PendingTarget.Room room) {
-            return new TraversalTarget.Room(room.roomId(), room.targetKey());
+    private void mergeRoomIntoTraversal(
+            DungeonLayout layout,
+            Long roomId,
+            EditorDraft.PendingTarget traversalTarget
+    ) throws Exception {
+        Long keptTraversalId = traversalIdFor(layout, traversalTarget);
+        if (roomId == null || keptTraversalId == null) {
+            return;
+        }
+        traversalApplicationService.merge(layout, keptTraversalId, null, roomId);
+    }
+
+    private void mergeTraversals(
+            DungeonLayout layout,
+            EditorDraft.PendingTarget keptTarget,
+            EditorDraft.PendingTarget mergedTarget
+    ) throws Exception {
+        Long keptTraversalId = traversalIdFor(layout, keptTarget);
+        Long mergedTraversalId = traversalIdFor(layout, mergedTarget);
+        if (keptTraversalId == null || mergedTraversalId == null) {
+            return;
+        }
+        traversalApplicationService.merge(layout, keptTraversalId, mergedTraversalId, null);
+    }
+
+    private static Long traversalIdFor(DungeonLayout layout, EditorDraft.PendingTarget target) {
+        if (layout == null || target == null) {
+            return null;
         }
         if (target instanceof EditorDraft.PendingTarget.CorridorSegment corridor) {
-            return new TraversalTarget.CorridorSegment(corridor.corridorId(), corridor.targetKey());
+            return layout.traversalIdForCorridor(corridor.corridorId());
         }
         if (target instanceof EditorDraft.PendingTarget.StairSegment stair) {
-            return new TraversalTarget.StairSegment(stair.stairId(), stair.targetKey());
+            return layout.traversalIdForStair(stair.stairId());
         }
         return null;
     }
