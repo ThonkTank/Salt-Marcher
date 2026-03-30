@@ -1,14 +1,12 @@
 package features.world.dungeonmap.model.structures.traversal;
 
-import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.structures.traversal.routing.TraversalRoutingKernel;
 import features.world.dungeonmap.model.structures.room.Room;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -262,55 +260,7 @@ public final class Traversal {
     }
 
     public TraversalRoute route(TraversalRoutingSnapshot snapshot) {
-        return TraversalRoutingEngine.route(this, snapshot);
-    }
-
-    public List<Room> resolvedRooms(TraversalRoutingSnapshot input) {
-        List<Room> result = new ArrayList<>();
-        Set<Long> seen = new LinkedHashSet<>();
-        if (input == null) {
-            return List.of();
-        }
-        for (Long roomId : roomIds) {
-            if (roomId == null || !seen.add(roomId)) {
-                continue;
-            }
-            Room room = input.room(roomId);
-            if (room != null) {
-                result.add(room);
-            }
-        }
-        return List.copyOf(result);
-    }
-
-    public List<CubePoint> resolvedWaypointCells(TraversalRoutingSnapshot input) {
-        if (input == null || bindings.waypoints().isEmpty()) {
-            return List.of();
-        }
-        List<CubePoint> result = new ArrayList<>();
-        for (TraversalWaypointBinding waypoint : bindings.waypoints()) {
-            Point2i clusterCenter = input.clusterCenter(waypoint.clusterId());
-            if (clusterCenter != null) {
-                result.add(CubePoint.at(waypoint.absoluteCell(clusterCenter), waypoint.levelZ()));
-            }
-        }
-        return List.copyOf(result);
-    }
-
-    public Map<Long, ResolvedTraversalDoorBinding> resolvedDoorBindings(TraversalRoutingSnapshot input) {
-        if (input == null || bindings.doorBindings().isEmpty()) {
-            return Map.of();
-        }
-        Map<Long, ResolvedTraversalDoorBinding> result = new LinkedHashMap<>();
-        for (TraversalDoorBinding binding : bindings.doorBindings()) {
-            Point2i clusterCenter = input.clusterCenter(binding.clusterId());
-            if (clusterCenter != null) {
-                result.put(binding.roomId(), new ResolvedTraversalDoorBinding(
-                        binding.absoluteCell(clusterCenter),
-                        binding.direction()));
-            }
-        }
-        return Map.copyOf(result);
+        return TraversalRoutingKernel.route(this, snapshot);
     }
 
     private Traversal withBindings(TraversalBindings bindings) {
