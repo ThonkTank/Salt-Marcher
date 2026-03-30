@@ -1,4 +1,4 @@
-package features.world.dungeonmap.model.structures.traversal.planning.internal;
+package features.world.dungeonmap.model.structures.traversal.routing.internal;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.structures.traversal.ResolvedTraversalDoorBinding;
@@ -355,7 +355,7 @@ public final class TraversalTopologyProjector {
         long verticalDistance = Math.abs(first.levelZ() - second.levelZ());
         long horizontalDistance = Math.abs((long) first.anchor().x() - second.anchor().x())
                 + Math.abs((long) first.anchor().y() - second.anchor().y());
-        return TraversalPlanningCostModel.approximateConnectionScore(horizontalDistance, verticalDistance);
+        return TraversalRoutingCostModel.approximateConnectionScore(horizontalDistance, verticalDistance);
     }
 
     private record ProjectedRoomPortals(

@@ -10,8 +10,6 @@ final class TraversalRoutingEngine {
         if (traversal == null || snapshot == null) {
             return TraversalRoute.empty();
         }
-        return TraversalRoute.fromPlan(
-                traversal,
-                features.world.dungeonmap.model.structures.traversal.planning.TraversalPlanningEngine.plan(traversal, snapshot));
+        return features.world.dungeonmap.model.structures.traversal.routing.TraversalRoutingKernel.route(traversal, snapshot);
     }
 }

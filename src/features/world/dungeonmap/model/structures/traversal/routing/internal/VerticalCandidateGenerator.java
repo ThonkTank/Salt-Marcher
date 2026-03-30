@@ -1,4 +1,4 @@
-package features.world.dungeonmap.model.structures.traversal.planning.internal;
+package features.world.dungeonmap.model.structures.traversal.routing.internal;
 
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
@@ -137,7 +137,7 @@ final class VerticalCandidateGenerator {
         CubePoint startCell = start.levelZ() <= end.levelZ() ? lowerCell : upperCell;
         CubePoint endCell = start.levelZ() <= end.levelZ() ? upperCell : lowerCell;
         long baseDistance = variant.stairPathLength() + lowerAttachCost + upperAttachCost;
-        long costHint = TraversalPlanningCostModel.penalizeStairs(baseDistance, 1);
+        long costHint = TraversalRoutingCostModel.penalizeStairs(baseDistance, 1);
         StairCandidate candidate = new StairCandidate(
                 anchor,
                 variant.shape(),

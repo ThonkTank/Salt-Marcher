@@ -1,4 +1,4 @@
-package features.world.dungeonmap.model.structures.traversal.planning.internal;
+package features.world.dungeonmap.model.structures.traversal.routing.internal;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridAnchor;
@@ -7,12 +7,13 @@ import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.objects.CorridorPath;
 import features.world.dungeonmap.model.objects.Door;
+import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.CorridorConnection;
-import features.world.dungeonmap.model.structures.traversal.CorridorTraversalSlice;
-import features.world.dungeonmap.model.structures.traversal.TraversalPlan;
+import features.world.dungeonmap.model.structures.stair.DungeonStair;
+import features.world.dungeonmap.model.structures.traversal.Traversal;
+import features.world.dungeonmap.model.structures.traversal.TraversalRoute;
 import features.world.dungeonmap.model.structures.traversal.TraversalStairPlacement;
-import features.world.dungeonmap.model.structures.traversal.TraversalStairSlice;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -26,25 +27,28 @@ public final class TraversalGeometryRealizer {
         throw new AssertionError("No instances");
     }
 
-    public static TraversalPlan realize(TraversalStructurePlanner.StructurePlan structurePlan) {
+    public static TraversalRoute realize(Traversal traversal, TraversalStructurePlanner.StructurePlan structurePlan) {
+        if (traversal == null) {
+            return TraversalRoute.empty();
+        }
         TraversalStructurePlanner.StructurePlan resolvedPlan = structurePlan == null
                 ? TraversalStructurePlanner.StructurePlan.empty()
                 : structurePlan;
         TraversalTopology topology = resolvedPlan.topology();
         GridRoute route = buildRoute(topology);
         if (topology.requiredRoomPortalNodes().size() < 2) {
-            return TraversalPlan.empty();
+            return TraversalRoute.empty();
         }
         List<TraversalEdge> selectedEdges = resolvedPlan.selectedEdges();
-        TraversalPlan directAdjacencyPlan = directAdjacencyPlan(topology, route, selectedEdges);
-        if (directAdjacencyPlan != null) {
-            return directAdjacencyPlan;
+        TraversalRoute directAdjacencyRoute = directAdjacencyRoute(traversal, topology, route, selectedEdges);
+        if (directAdjacencyRoute != null) {
+            return directAdjacencyRoute;
         }
-        RealizationState state = new RealizationState(topology, route);
+        RealizationState state = new RealizationState(traversal, topology, route);
         if (!realizeSelectedEdges(topology, state, selectedEdges)) {
-            return state.unroutablePlan();
+            return state.unroutableRoute();
         }
-        return state.toPlan();
+        return state.toRoute();
     }
 
     private static boolean realizeSelectedEdges(
@@ -199,7 +203,8 @@ public final class TraversalGeometryRealizer {
         return anchors.isEmpty() ? GridRoute.empty() : new GridRoute(anchors);
     }
 
-    private static TraversalPlan directAdjacencyPlan(
+    private static TraversalRoute directAdjacencyRoute(
+            Traversal traversal,
             TraversalTopology topology,
             GridRoute route,
             List<TraversalEdge> selectedEdges
@@ -241,12 +246,14 @@ public final class TraversalGeometryRealizer {
             return null;
         }
         String edgeKey = edgeKey(first, second);
-        return new TraversalPlan(
-                List.of(new CorridorTraversalSlice(
+        return new TraversalRoute(
+                List.of(new TraversalRoute.CorridorSegment(
                         corridorSegmentKey(edgeKey, 0),
-                        null,
-                        new CorridorPath(route, java.util.Set.of(), true, true),
-                        rebindConnections(List.copyOf(connections), null))),
+                        Corridor.planned(
+                                traversal.mapId(),
+                                traversal.roomIds(),
+                                new CorridorPath(route, java.util.Set.of(), true, true),
+                                rebindConnections(List.copyOf(connections), null)))),
                 List.of());
     }
 
@@ -415,14 +422,16 @@ public final class TraversalGeometryRealizer {
 
     private static final class RealizationState {
 
+        private final Traversal traversal;
         private final TraversalTopology topology;
         private final GridRoute route;
-        private final List<CorridorTraversalSlice> corridorSlices = new ArrayList<>();
-        private final List<TraversalStairSlice> stairSlices = new ArrayList<>();
+        private final List<TraversalRoute.CorridorSegment> corridorSegments = new ArrayList<>();
+        private final List<TraversalRoute.StairSegment> stairSegments = new ArrayList<>();
         private final Map<TraversalNodeId, CubePoint> realizedNodeCellsById = new LinkedHashMap<>();
         private final Map<TraversalNodeId, CubePoint> portalEntryCellsByNodeId = new LinkedHashMap<>();
 
-        private RealizationState(TraversalTopology topology, GridRoute route) {
+        private RealizationState(Traversal traversal, TraversalTopology topology, GridRoute route) {
+            this.traversal = traversal;
             this.topology = topology == null ? TraversalTopology.empty() : topology;
             this.route = route == null ? GridRoute.empty() : route;
         }
@@ -450,33 +459,37 @@ public final class TraversalGeometryRealizer {
             }
         }
 
-        private TraversalPlan unroutablePlan() {
-            return TraversalPlan.empty();
+        private TraversalRoute unroutableRoute() {
+            return TraversalRoute.empty();
         }
 
         private void addSegment(LocalSegmentResult segmentResult, String segmentKey, List<CorridorConnection> connections) {
             if (segmentResult == null || segmentKey == null) {
                 return;
             }
-            corridorSlices.add(new CorridorTraversalSlice(
+            corridorSegments.add(new TraversalRoute.CorridorSegment(
                     segmentKey,
-                    null,
-                    new CorridorPath(route, java.util.Set.copyOf(segmentResult.corridorCells()), false, true),
-                    connections));
+                    Corridor.planned(
+                            traversal.mapId(),
+                            traversal.roomIds(),
+                            new CorridorPath(route, java.util.Set.copyOf(segmentResult.corridorCells()), false, true),
+                            connections)));
         }
 
         private void addStairPlacement(String segmentKey, TraversalStairPlacement stairPlacement) {
             if (segmentKey != null && stairPlacement != null) {
-                stairSlices.add(new TraversalStairSlice(segmentKey, null, stairPlacement.stair()));
+                stairSegments.add(new TraversalRoute.StairSegment(
+                        segmentKey,
+                        DungeonStair.materialized(stairPlacement.stair(), null, traversal.mapId())));
             }
         }
 
-        private TraversalPlan toPlan() {
+        private TraversalRoute toRoute() {
             boolean routable = portalEntryCellsByNodeId.size() >= topology.requiredRoomPortalNodes().size()
-                    && (!corridorSlices.isEmpty() || !stairSlices.isEmpty());
+                    && (!corridorSegments.isEmpty() || !stairSegments.isEmpty());
             return routable
-                    ? new TraversalPlan(List.copyOf(corridorSlices), List.copyOf(stairSlices))
-                    : TraversalPlan.empty();
+                    ? new TraversalRoute(List.copyOf(corridorSegments), List.copyOf(stairSegments))
+                    : TraversalRoute.empty();
         }
     }
 

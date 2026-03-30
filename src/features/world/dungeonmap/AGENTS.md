@@ -15,9 +15,9 @@ The feature ships two `AppView` implementations: `DungeonEditorView` (EDITOR) an
 ### Package Roles
 
 - `model/` — immutable domain model in three strict layers (see **Model Layering** below)
-- `application/` — stateful edit services that plan and persist topology changes. Organized by domain concern:
+- `application/` — stateful edit services that orchestrate workflows, transactions, and persistence around topology changes. Organized by domain concern:
   - `application/room/` — room paint topology: `DungeonRoomTopologyService` is the single room topology orchestrator for paint/delete/boundary edits; thin facades may wrap transaction entrypoints but must not re-plan topology outside the model. Exit catalogs: `DoorExitCatalog` groups adjacent connection boundary edges into logical openings via BFS, `RoomExitCatalog` wraps it per-room, `RoomExitDescriptor` carries the result
-  - `application/traversal/` — traversal lifecycle: `DungeonTraversalEditService` (create/extend/merge/delete by room or segment target), `DungeonTraversalPersistenceService` (parent + constraint persistence), `DungeonTraversalRoomRewriteService` (room-merge/delete/split membership rewrite). Traversal owns room membership, waypoint/door bindings, and segment refs. Disposable planning concepts such as plans, slices, projections, rewrite contexts, and planner inputs belong to `application/traversal/planning/`, not to `model/structures/traversal`
+  - `application/traversal/` — traversal lifecycle: `DungeonTraversalEditService` (create/extend/merge/delete by room or segment target), `DungeonTraversalPersistenceService` (parent + constraint persistence), `DungeonTraversalRoomRewriteService` (room-merge/delete/split membership rewrite), `DungeonTraversalRewriteService` (workflow owner for reroute-after-layout-change). Traversal owns room membership, waypoint/door bindings, segment refs, and routing semantics. Application may trigger reroutes and persist results, but it must not own or duplicate the routing meaning itself
   - `application/transition/` — inter-map transition lifecycle: `DungeonTransitionEditService` (two-phase create: direct or prepared+place-later, bidirectional linking, delete with cascade), `DungeonTransitionEditRequest` (sealed creation parameters), `DungeonTransitionTargetCatalogService` (loads placed transitions on a target map for destination selection → `DungeonTransitionTargetSummary`)
   - `application/runtime/` — runtime navigation subsystem: `DungeonRuntimeNavigationService` (orchestrator: load position, resolve surface, move party), `DungeonRuntimeLocation` (sealed: Room | Corridor | CorridorComponent | Tile | StairExit | Transition), `CardinalDirection` (`model/geometry/`, shared 4-direction type with relative-label logic and persistence code), surface pipeline (`DungeonRuntimeSurfaceResolver` → `DungeonRuntimeSurface` → `DungeonRuntimeSurfacePresenter`), door pipeline (`DungeonRuntimeDoorCatalog` enriches exits with destination labels and narration → `DungeonRuntimeDoorDescriptor` adds heading-relative labels), stair pipeline (`DungeonRuntimeStairCatalog` → `DungeonRuntimeStairDescriptor`: filters exits reachable from current level, excludes active tile), transition pipeline (`DungeonRuntimeTransitionCatalog` → `DungeonRuntimeTransitionDescriptor`: resolves destination labels from overworld/dungeon targets), `DungeonRuntimeLabels` (static label generation), `DungeonRuntimeLocations` (location ↔ persistence serialization), `DungeonRuntimeStateRepairService` (consistency repair)
   - `application/support/` — `DungeonTransactionRunner`
@@ -159,25 +159,23 @@ Each component observes the state objects it needs directly — no coordinator m
 
 ### Room Topology Edit → Traversal Rewrite Flow
 
-When rooms are painted, deleted, or merged, affected traversals must be reanchored and replanned:
+When rooms are painted, deleted, or merged, affected traversals must be reanchored and rerouted:
 
 1. `DungeonRoomTopologyService` applies room topology changes directly through `RoomCluster` model operations
-2. Detects affected traversals via `DungeonLayout.traversalsAffectedBy(ClusterRewrite)`
-3. Creates `TraversalRewriteContext` in `application/traversal/planning/` (before/after planner input, affected traversal IDs, deleted cluster IDs)
-4. `Traversal.rewriteAll()` — for each affected traversal:
-   - `traversal.reanchoredFor(context)` — re-target waypoint/door bindings to new cluster centers
-   - `TraversalPlanningEngine` in the planning slice replans segment refs and emits the corridor/stair structures to persist
-5. All changes (room topology + traversals + segments) persisted in one transaction
+2. `DungeonTraversalRewriteService` identifies affected traversals, applies room-membership rewrites, and builds before/after routing snapshots for the changed layout
+3. `Traversal.reanchoredTo(TraversalRoutingContext)` re-targets waypoint and door bindings to the rewritten cluster centers
+4. `Traversal.route(TraversalRoutingSnapshot)` delegates to the traversal-owned routing kernel in `model/structures/traversal/routing/`, which emits `TraversalRoute` segments for first-class `Corridor` and `DungeonStair` structures
+5. All changes (room topology + traversals + persisted segment refs + corridor/stair structures) are committed in one transaction
 
-### Traversal Planning Algorithm
+### Traversal Routing Algorithm
 
-The `application/traversal/planning/` slice routes traversal structure across horizontal and vertical segments while respecting waypoints and door placements. Its plan/slice/projection types are orchestration artifacts, not model-owned structure truth.
+The traversal-owned routing kernel in `model/structures/traversal/routing/` routes traversal structure across horizontal and vertical segments while respecting waypoints and door placements. Application services may request a reroute, but routing semantics stay in the model.
 
-1. Resolve rooms, waypoints, door bindings from `TraversalPlanningInput`
+1. Resolve rooms, waypoints, and door bindings from `TraversalRoutingSnapshot`
 2. Try each room as seed, build network incrementally
 3. For each unconnected room, find best connection (exit pair preselection limits pathfinding evaluations from O(n²) to ~10 per room pair)
 4. Two-tier candidate scoring: local tier (quick adjacency + path cost filter) → global tier (full network score, top 4 finalists only)
-5. Score networks; return the best-scoring corridor/stair structure plus traversal segment refs
+5. Score networks; return the best-scoring `TraversalRoute` with corridor/stair segments keyed for traversal-owned segment refs
 
 Instrumentation available via `saltmarcher.dungeonmap.corridorplanner.profile` system property.
 
@@ -199,7 +197,7 @@ geometry/  →  objects/  →  structures/
 
 - **`Room`** — record: roomId, mapId, clusterId, name, Floor, Walls, `RoomNarration` (visual description + per-exit `RoomExitNarration` entries). `resolved()` keeps room-owned wall boundaries canonical. Connectivity is queried through layout connections instead of mirrored room-local door state.
 - **`RoomCluster`** — groups rooms spatially, manages adjacency via overlap indexing, and owns cluster-local rewrite logic for paint/delete/boundary changes. `movedBy()` handles translation. Produces `InteractiveLabelHandle` for canvas rendering.
-- **`Traversal`** — internal owner aggregate: traversalId, mapId, ordered room membership, `TraversalBindings` as traversal-owned constraints, and traversal-owned segment refs. Handles membership rewrite, constraint re-anchoring, and resolving the planner inputs used by the application planning slice
+- **`Traversal`** — internal owner aggregate: traversalId, mapId, ordered room membership, `TraversalBindings` as traversal-owned constraints, and traversal-owned segment refs. Handles membership rewrite, constraint re-anchoring, and traversal-owned routing through `route(TraversalRoutingSnapshot)`
 - **`Corridor`** — first-class horizontal structure: corridorId, mapId, projected roomIds for labels/graph view, `CorridorPath`, and corridor-local `Connection`s. Corridor has stable identity, path, connections, and corridor-local rules. It may participate in traversal-organized segment refs, but it is not traversal-owned read-model state
 - **`DungeonStair`** — first-class vertical structure: stairId, mapId, name, 3D path (`List<CubePoint>`), exits (`List<DungeonStairExit>`). DungeonStair has stable identity plus stair-local geometry and rules. Target key: `stair:ID`. Queries: `reachableLevels()`, `occupiedPositions()`, `exitsAtLevel(z)`, `labelHandle(z)`
 - **`DungeonTransition`** — record: transitionId, mapId, description, anchor (`CubePoint`, nullable for unprepared), destination (`DungeonTransitionDestination`: sealed — `OverworldTileDestination(mapId, tileId)` | `DungeonMapDestination(mapId, transitionId)`), linkedTransitionId (for bidirectional pairs). `isPlaced()` checks non-null anchor. Target key: `transition:ID`. Label: "Übergang N".
@@ -215,6 +213,7 @@ geometry/  →  objects/  →  structures/
 - Selection/interactions keys are canonical semantic identity. If a structure or boundary owner exposes that identity (for example `RoomCluster.labelHandle().key()` or a corridor target-key API), renderers/coordinators/controllers may consume it but must not locally reconstruct or parse it.
 - Traversal bindings are canonical structure truth; traversal-owned segment refs are the canonical association from traversal to corridor/stair structures.
 - `Traversal` is the canonical owner of connection edit truth. Membership changes, waypoint edits, door-binding edits, binding re-anchoring, and segment-ref rewrites belong on `Traversal`/`TraversalBindings`, not on `Corridor`
+- Routing is traversal-owned model behavior. `application/traversal/` may coordinate reroute workflows and persistence, but it must not define or fork the routing semantics that belong to `Traversal` plus its routing kernel.
 - Clean `dungeonmap/` code must not depend on `features.world.quarantine.dungeonmap`. Shared helpers such as transactions, room-topology orchestration, corridor reconciliation, and runtime-state repair belong locally under `application/` when still needed.
 - Observable transient state belongs in `state/`, not scattered across shell/canvas packages.
 - `Corridor` is a first-class structure with stable identity, path, connections, and corridor-local rules. Traversal organizes corridor usage through segment refs; it does not own corridor structure truth.

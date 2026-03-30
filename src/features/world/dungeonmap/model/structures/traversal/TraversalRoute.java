@@ -22,39 +22,6 @@ public record TraversalRoute(
         return new TraversalRoute(List.of(), List.of());
     }
 
-    static TraversalRoute fromPlan(Traversal traversal, TraversalPlan plan) {
-        if (traversal == null || plan == null) {
-            return empty();
-        }
-        ArrayList<CorridorSegment> corridorSegments = new ArrayList<>();
-        for (CorridorTraversalSlice corridorSlice : plan.corridorSlices()) {
-            if (corridorSlice == null) {
-                continue;
-            }
-            corridorSegments.add(new CorridorSegment(
-                    corridorSlice.segmentKey(),
-                    Corridor.resolved(
-                            corridorSlice.corridorId(),
-                            traversal.mapId(),
-                            traversal.roomIds(),
-                            corridorSlice.path(),
-                            corridorSlice.connections())));
-        }
-        ArrayList<StairSegment> stairSegments = new ArrayList<>();
-        for (TraversalStairSlice stairSlice : plan.stairSlices()) {
-            if (stairSlice == null || stairSlice.stair() == null) {
-                continue;
-            }
-            stairSegments.add(new StairSegment(
-                    stairSlice.segmentKey(),
-                    DungeonStair.materialized(
-                            stairSlice.stair(),
-                            stairSlice.stairId(),
-                            traversal.mapId())));
-        }
-        return new TraversalRoute(List.copyOf(corridorSegments), List.copyOf(stairSegments));
-    }
-
     public boolean isEmpty() {
         return corridorSegments.isEmpty() && stairSegments.isEmpty();
     }

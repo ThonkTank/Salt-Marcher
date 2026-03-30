@@ -1,12 +1,12 @@
-package features.world.dungeonmap.model.structures.traversal.planning.internal;
+package features.world.dungeonmap.model.structures.traversal.routing.internal;
 
-final class TraversalPlanningCostModel {
+final class TraversalRoutingCostModel {
 
     private static final int BASE_STAIR_PENALTY_TILES = 18;
     private static final int MIN_STAIR_PENALTY_TILES = 4;
     private static final int STAIR_PENALTY_RELAX_INTERVAL = 10;
 
-    private TraversalPlanningCostModel() {
+    private TraversalRoutingCostModel() {
         throw new AssertionError("No instances");
     }
 

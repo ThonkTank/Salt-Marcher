@@ -1,4 +1,4 @@
-package features.world.dungeonmap.model.structures.traversal.planning.internal;
+package features.world.dungeonmap.model.structures.traversal.routing.internal;
 
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
@@ -90,7 +90,7 @@ final class StairExpansion {
     }
 
     private static int stairTraversalCost(int stairPathLength) {
-        long penalizedCost = TraversalPlanningCostModel.penalizeStairs(stairPathLength, 1);
+        long penalizedCost = TraversalRoutingCostModel.penalizeStairs(stairPathLength, 1);
         return penalizedCost >= Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) penalizedCost;
     }
 

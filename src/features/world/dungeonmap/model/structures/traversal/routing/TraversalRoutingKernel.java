@@ -1,31 +1,31 @@
-package features.world.dungeonmap.model.structures.traversal.planning;
+package features.world.dungeonmap.model.structures.traversal.routing;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.traversal.ResolvedTraversalDoorBinding;
-import features.world.dungeonmap.model.structures.traversal.TraversalPlan;
-import features.world.dungeonmap.model.structures.traversal.TraversalRoutingSnapshot;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
-import features.world.dungeonmap.model.structures.traversal.planning.internal.TraversalGeometryRealizer;
-import features.world.dungeonmap.model.structures.traversal.planning.internal.TraversalStructurePlanner;
-import features.world.dungeonmap.model.structures.traversal.planning.internal.TraversalTopology;
-import features.world.dungeonmap.model.structures.traversal.planning.internal.TraversalTopologyProjector;
+import features.world.dungeonmap.model.structures.traversal.TraversalRoute;
+import features.world.dungeonmap.model.structures.traversal.TraversalRoutingSnapshot;
+import features.world.dungeonmap.model.structures.traversal.routing.internal.TraversalGeometryRealizer;
+import features.world.dungeonmap.model.structures.traversal.routing.internal.TraversalStructurePlanner;
+import features.world.dungeonmap.model.structures.traversal.routing.internal.TraversalTopology;
+import features.world.dungeonmap.model.structures.traversal.routing.internal.TraversalTopologyProjector;
 
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public final class TraversalPlanningEngine {
+public final class TraversalRoutingKernel {
 
-    private TraversalPlanningEngine() {
+    private TraversalRoutingKernel() {
         throw new AssertionError("No instances");
     }
 
-    public static TraversalPlan plan(Traversal traversal, TraversalRoutingSnapshot snapshot) {
+    public static TraversalRoute route(Traversal traversal, TraversalRoutingSnapshot snapshot) {
         if (traversal == null || snapshot == null) {
-            return TraversalPlan.empty();
+            return TraversalRoute.empty();
         }
         List<Room> rooms = traversal.resolvedRooms(snapshot);
         List<CubePoint> waypointCells = traversal.resolvedWaypointCells(snapshot);
@@ -42,7 +42,7 @@ public final class TraversalPlanningEngine {
                 doorBindings,
                 obstacles);
         TraversalStructurePlanner.StructurePlan structurePlan = TraversalStructurePlanner.plan(topology);
-        return TraversalGeometryRealizer.realize(structurePlan);
+        return TraversalGeometryRealizer.realize(traversal, structurePlan);
     }
 
     private static Set<CubePoint> buildObstacles(
