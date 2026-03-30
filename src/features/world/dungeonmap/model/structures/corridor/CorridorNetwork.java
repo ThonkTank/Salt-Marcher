@@ -23,14 +23,12 @@ public final class CorridorNetwork {
     private final String networkId;
     private final long mapId;
     private final Set<Long> corridorIds;
-    private final Set<Long> roomIds;
     private final Floor floor;
 
-    public CorridorNetwork(String networkId, long mapId, Set<Long> corridorIds, Set<Long> roomIds, Floor floor) {
+    public CorridorNetwork(String networkId, long mapId, Set<Long> corridorIds, Floor floor) {
         this.networkId = networkId;
         this.mapId = mapId;
         this.corridorIds = corridorIds == null ? Set.of() : Set.copyOf(corridorIds);
-        this.roomIds = roomIds == null ? Set.of() : Set.copyOf(roomIds);
         this.floor = floor == null ? new Floor(TileShape.empty()) : floor;
     }
 
@@ -46,20 +44,12 @@ public final class CorridorNetwork {
         return corridorIds;
     }
 
-    public Set<Long> roomIds() {
-        return roomIds;
-    }
-
     public Floor floor() {
         return floor;
     }
 
     public boolean containsCorridor(Long corridorId) {
         return corridorId != null && corridorIds.contains(corridorId);
-    }
-
-    public boolean containsRoom(Long roomId) {
-        return roomId != null && roomIds.contains(roomId);
     }
 
     public static List<CorridorNetwork> buildNetworks(
@@ -94,21 +84,18 @@ public final class CorridorNetwork {
     }
 
     private static CorridorNetwork buildNetwork(long mapId, Set<Long> component, Map<Long, Corridor> corridorsById) {
-        Set<Long> roomIds = new LinkedHashSet<>();
         Set<Point2i> cells = new LinkedHashSet<>();
         for (Long corridorId : component) {
             Corridor corridor = corridorsById.get(corridorId);
             if (corridor == null) {
                 continue;
             }
-            roomIds.addAll(corridor.roomIds());
             cells.addAll(corridor.path().floor().shape().absoluteCells());
         }
         return new CorridorNetwork(
                 networkIdFor(component),
                 mapId,
                 component,
-                roomIds,
                 new Floor(TileShape.fromAbsoluteCells(cells)));
     }
 

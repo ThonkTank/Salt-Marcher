@@ -29,11 +29,11 @@ public final class DungeonRuntimeLabels {
         }
         if (location instanceof DungeonRuntimeLocation.Corridor corridorLocation) {
             Corridor corridor = layout.findCorridor(corridorLocation.corridorId());
-            return corridor == null ? "Korridor" : corridorLabel(layout, corridor.roomIds().stream());
+            return corridor == null ? "Korridor" : corridorLabel(layout, corridor.connectedRoomIds().stream());
         }
         if (location instanceof DungeonRuntimeLocation.CorridorComponent componentLocation) {
             CorridorNetwork network = layout.findCorridorNetwork(componentLocation.componentId());
-            return network == null ? "Korridor" : corridorLabel(layout, network.roomIds().stream());
+            return network == null ? "Korridor" : corridorLabel(layout, layout.connectedRoomIds(network).stream());
         }
         if (location instanceof DungeonRuntimeLocation.StairExit stairExit) {
             return structureLabelAtTile(layout, stairExit.tile());
@@ -118,14 +118,14 @@ public final class DungeonRuntimeLabels {
         if (corridor == null) {
             return "Korridor";
         }
-        return corridorLabel(layout, corridor.roomIds().stream());
+        return corridorLabel(layout, corridor.connectedRoomIds().stream());
     }
 
     public static String corridorNetworkLabel(DungeonLayout layout, CorridorNetwork network) {
         if (network == null) {
             return "Korridor";
         }
-        return corridorLabel(layout, network.roomIds().stream());
+        return corridorLabel(layout, layout.connectedRoomIds(network).stream());
     }
 
     private static Room roomForId(DungeonLayout layout, Long roomId) {

@@ -43,25 +43,6 @@ public final class DungeonCorridorWriteRepository {
         }
     }
 
-    public void replaceRoomMembers(Connection conn, long corridorId, List<Long> roomIds) throws SQLException {
-        try (PreparedStatement delete = conn.prepareStatement(
-                "DELETE FROM dungeon_corridor_room_members WHERE corridor_id=?")) {
-            delete.setLong(1, corridorId);
-            delete.executeUpdate();
-        }
-        try (PreparedStatement insert = conn.prepareStatement(
-                "INSERT INTO dungeon_corridor_room_members(corridor_id, sort_order, room_id) VALUES(?,?,?)")) {
-            int sortOrder = 0;
-            for (Long roomId : sanitizedRoomIds(roomIds)) {
-                insert.setLong(1, corridorId);
-                insert.setInt(2, sortOrder++);
-                insert.setLong(3, roomId);
-                insert.addBatch();
-            }
-            insert.executeBatch();
-        }
-    }
-
     public void replacePoints(Connection conn, long corridorId, List<? extends GridAnchor> points) throws SQLException {
         try (PreparedStatement delete = conn.prepareStatement(
                 "DELETE FROM dungeon_corridor_points WHERE corridor_id=?")) {
@@ -153,19 +134,6 @@ public final class DungeonCorridorWriteRepository {
             }
             return rs.getLong(1);
         }
-    }
-
-    private static List<Long> sanitizedRoomIds(List<Long> roomIds) {
-        if (roomIds == null || roomIds.isEmpty()) {
-            return List.of();
-        }
-        ArrayList<Long> result = new ArrayList<>();
-        for (Long roomId : roomIds) {
-            if (roomId != null) {
-                result.add(roomId);
-            }
-        }
-        return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
     private static List<GridAnchor> sanitizedPoints(List<? extends GridAnchor> points) {

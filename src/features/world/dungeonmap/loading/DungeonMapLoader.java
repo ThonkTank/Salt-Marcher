@@ -460,14 +460,6 @@ public final class DungeonMapLoader {
             long mapId
     ) throws SQLException {
         DungeonSchemaSupport.ensureCompatibility(conn);
-        Map<Long, List<Long>> roomIdsByCorridorId = loadGrouped(conn,
-                "SELECT corridor_id, room_id"
-                        + " FROM dungeon_corridor_room_members"
-                        + " WHERE corridor_id IN (SELECT corridor_id FROM dungeon_corridors WHERE dungeon_map_id=?)"
-                        + " ORDER BY corridor_id, sort_order",
-                mapId,
-                row -> row.getLong("corridor_id"),
-                row -> row.getLong("room_id"));
         Map<Long, List<GridAnchor>> pointsByCorridorId = loadGrouped(conn,
                 "SELECT corridor_id, anchor_kind, grid_x2, grid_y2"
                         + " FROM dungeon_corridor_points"
@@ -514,7 +506,6 @@ public final class DungeonMapLoader {
                     result.add(Corridor.resolved(
                             corridorId,
                             rs.getLong("dungeon_map_id"),
-                            roomIdsByCorridorId.getOrDefault(corridorId, List.of()),
                             rs.getInt("level_z"),
                             pointsByCorridorId.getOrDefault(corridorId, List.of()),
                             bindingsByCorridorId.getOrDefault(corridorId, List.of())));

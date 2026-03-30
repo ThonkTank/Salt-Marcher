@@ -22,7 +22,6 @@ public final class Corridor {
 
     private final Long corridorId;
     private final long mapId;
-    private final List<Long> roomIds;
     private final int levelZ;
     private final List<GridAnchor> points;
     private final List<CorridorEndpointBinding> endpointBindings;
@@ -31,17 +30,15 @@ public final class Corridor {
 
     public static Corridor planned(
             long mapId,
-            List<Long> roomIds,
             int levelZ,
             List<? extends GridAnchor> points,
             List<CorridorEndpointBinding> endpointBindings
     ) {
-        return new Corridor(null, mapId, roomIds, levelZ, points, endpointBindings);
+        return new Corridor(null, mapId, levelZ, points, endpointBindings);
     }
 
     public static Corridor plannedFromPathCells(
             long mapId,
-            List<Long> roomIds,
             List<CubePoint> pathCells,
             List<CorridorEndpointPlan> endpointPlans
     ) {
@@ -52,7 +49,6 @@ public final class Corridor {
         List<CorridorEndpointBinding> bindings = bindingsForPlans(endpointPlans);
         return planned(
                 mapId,
-                roomIds,
                 levelForPathCells(pathCells),
                 points,
                 bindings);
@@ -60,7 +56,6 @@ public final class Corridor {
 
     public static Corridor plannedDirectAdjacency(
             long mapId,
-            List<Long> roomIds,
             CorridorEndpointPlan startPlan,
             CorridorEndpointPlan endPlan
     ) {
@@ -69,7 +64,6 @@ public final class Corridor {
         VertexEdge sharedEdge = sharedBoundaryEdge(startBinding, endBinding);
         return planned(
                 mapId,
-                roomIds,
                 startPlan.roomCell().z(),
                 List.of(
                         GridAnchor.atVertex(sharedEdge.start()),
@@ -80,18 +74,16 @@ public final class Corridor {
     public static Corridor resolved(
             Long corridorId,
             long mapId,
-            List<Long> roomIds,
             int levelZ,
             List<? extends GridAnchor> points,
             List<CorridorEndpointBinding> endpointBindings
     ) {
-        return new Corridor(corridorId, mapId, roomIds, levelZ, points, endpointBindings);
+        return new Corridor(corridorId, mapId, levelZ, points, endpointBindings);
     }
 
     private Corridor(
             Long corridorId,
             long mapId,
-            List<Long> roomIds,
             int levelZ,
             List<? extends GridAnchor> points,
             List<CorridorEndpointBinding> endpointBindings
@@ -102,14 +94,12 @@ public final class Corridor {
         GridRoute route = validatePoints(points);
         this.points = route.anchors();
         this.endpointBindings = normalizeBindings(endpointBindings);
-        this.roomIds = normalizeRoomIds(roomIds);
-        validateBindingRoomIds(this.roomIds, this.endpointBindings);
         this.path = CorridorPath.fromPoints(levelZ, this.points);
         this.connections = materializeConnections(corridorId, mapId, levelZ, this.endpointBindings);
     }
 
     public Corridor withIdentity(Long corridorId, long mapId) {
-        return new Corridor(corridorId, mapId, roomIds, levelZ, points, endpointBindings);
+        return new Corridor(corridorId, mapId, levelZ, points, endpointBindings);
     }
 
     public Long corridorId() {
@@ -136,8 +126,25 @@ public final class Corridor {
         return mapId;
     }
 
-    public List<Long> roomIds() {
-        return roomIds;
+    public List<Long> connectedRoomIds() {
+        LinkedHashSet<Long> result = new LinkedHashSet<>();
+        for (CorridorEndpointBinding binding : endpointBindings) {
+            if (binding == null) {
+                continue;
+            }
+            for (ConnectionEndpoint endpoint : binding.endpoints()) {
+                if (endpoint != null
+                        && endpoint.type() == ConnectionEndpointType.ROOM
+                        && endpoint.id() != null) {
+                    result.add(endpoint.id());
+                }
+            }
+        }
+        return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
+    public Long representativeRoomId() {
+        return connectedRoomIds().stream().findFirst().orElse(null);
     }
 
     public int levelZ() {
@@ -177,7 +184,7 @@ public final class Corridor {
     }
 
     public boolean connectsRoom(Long roomId) {
-        return roomId != null && roomIds.contains(roomId);
+        return roomId != null && connectedRoomIds().contains(roomId);
     }
 
     private static GridRoute validatePoints(List<? extends GridAnchor> points) {
@@ -306,39 +313,4 @@ public final class Corridor {
         return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
-    private static List<Long> normalizeRoomIds(List<Long> roomIds) {
-        LinkedHashSet<Long> result = new LinkedHashSet<>();
-        for (Long roomId : roomIds == null ? List.<Long>of() : roomIds) {
-            if (roomId != null) {
-                result.add(roomId);
-            }
-        }
-        return result.isEmpty() ? List.of() : List.copyOf(result);
-    }
-
-    private static void validateBindingRoomIds(
-            List<Long> roomIds,
-            List<CorridorEndpointBinding> endpointBindings
-    ) {
-        if (endpointBindings == null || endpointBindings.isEmpty()) {
-            return;
-        }
-        Set<Long> canonicalRoomIds = roomIds == null ? Set.of() : Set.copyOf(roomIds);
-        for (CorridorEndpointBinding endpointBinding : endpointBindings) {
-            if (endpointBinding == null) {
-                continue;
-            }
-            for (ConnectionEndpoint endpoint : endpointBinding.endpoints()) {
-                if (endpoint == null
-                        || endpoint.type() != ConnectionEndpointType.ROOM
-                        || endpoint.id() == null) {
-                    continue;
-                }
-                if (!canonicalRoomIds.contains(endpoint.id())) {
-                    throw new IllegalArgumentException(
-                            "Corridor endpoint room " + endpoint.id() + " is not part of canonical roomIds");
-                }
-            }
-        }
-    }
 }

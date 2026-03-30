@@ -100,7 +100,6 @@ public final class DungeonTraversalStructureCommitter {
             } else {
                 corridorWriteRepository.updateCorridor(conn, corridorId, corridor);
             }
-            corridorWriteRepository.replaceRoomMembers(conn, corridorId, corridor.roomIds());
             corridorWriteRepository.replacePoints(conn, corridorId, corridor.points());
             corridorWriteRepository.replaceEndpointBindings(conn, corridorId, corridor.endpointBindings());
             desiredSegmentRefs.put(corridorSegment.segmentKey(), corridorId);

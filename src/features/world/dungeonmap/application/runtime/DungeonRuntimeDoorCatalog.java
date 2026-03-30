@@ -144,7 +144,7 @@ public final class DungeonRuntimeDoorCatalog {
             if (corridor == null) {
                 return "";
             }
-            return corridor.roomIds().stream()
+            return corridor.connectedRoomIds().stream()
                     .filter(roomId -> roomId != null && (activeEndpoint == null || !roomId.equals(activeEndpoint.id())))
                     .map(roomId -> DungeonRuntimeLabels.roomLabel(layout, roomId))
                     .filter(label -> label != null && !label.isBlank())

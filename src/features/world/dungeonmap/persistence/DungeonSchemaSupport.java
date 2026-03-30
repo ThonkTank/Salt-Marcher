@@ -37,12 +37,6 @@ public final class DungeonSchemaSupport {
                 + "dungeon_map_id   INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
                 + "level_z          INTEGER NOT NULL DEFAULT 0"
                 + ")");
-        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_corridor_room_members ("
-                + "corridor_id      INTEGER NOT NULL REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE,"
-                + "sort_order       INTEGER NOT NULL,"
-                + "room_id          INTEGER NOT NULL REFERENCES dungeon_rooms(room_id) ON DELETE CASCADE,"
-                + "PRIMARY KEY (corridor_id, room_id)"
-                + ")");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_corridor_points ("
                 + "corridor_id      INTEGER NOT NULL REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE,"
                 + "sort_order       INTEGER NOT NULL,"
@@ -207,7 +201,6 @@ public final class DungeonSchemaSupport {
             stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_endpoint_binding_targets");
             stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_endpoint_bindings");
             stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_points");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_room_members");
             stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_connection_endpoints");
             stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_connections");
             stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_path_nodes");

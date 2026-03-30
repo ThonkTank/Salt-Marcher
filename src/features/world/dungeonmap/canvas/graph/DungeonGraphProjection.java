@@ -17,7 +17,7 @@ final class DungeonGraphProjection {
             return List.of();
         }
         List<RoomLink> links = new ArrayList<>();
-        List<Long> roomIds = corridor.roomIds();
+        List<Long> roomIds = corridor.connectedRoomIds();
         for (int index = 1; index < roomIds.size(); index++) {
             Long fromRoomId = roomIds.get(index - 1);
             Long toRoomId = roomIds.get(index);
@@ -41,10 +41,10 @@ final class DungeonGraphProjection {
             }
             var network = projectedLayout.corridorNetworkAtCell(tile.tile().projectedCell());
             if (network != null) {
-                return network.roomIds().stream().sorted().findFirst().orElse(null);
+                return projectedLayout.connectedRoomIds(network).stream().sorted().findFirst().orElse(null);
             }
             return projectedLayout.corridorsAtCell(tile.tile().projectedCell()).stream()
-                    .flatMap(corridor -> corridor.roomIds().stream())
+                    .flatMap(corridor -> corridor.connectedRoomIds().stream())
                     .sorted()
                     .findFirst()
                     .orElse(null);
@@ -54,12 +54,13 @@ final class DungeonGraphProjection {
         }
         if (activeLocation instanceof DungeonRuntimeLocation.Corridor corridor) {
             Corridor resolvedCorridor = layout.findCorridor(corridor.corridorId());
-            return resolvedCorridor == null ? null : resolvedCorridor.roomIds().stream().findFirst().orElse(null);
+            return resolvedCorridor == null ? null : resolvedCorridor.representativeRoomId();
         }
         if (activeLocation instanceof DungeonRuntimeLocation.CorridorComponent component) {
             return layout.corridorNetworks().stream()
                     .filter(candidate -> component.componentId().equals(candidate.networkId()))
-                    .flatMap(candidate -> candidate.roomIds().stream())
+                    .map(layout::representativeRoomId)
+                    .filter(java.util.Objects::nonNull)
                     .sorted()
                     .findFirst()
                     .orElse(null);

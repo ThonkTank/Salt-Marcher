@@ -415,6 +415,24 @@ public final class DungeonLayout {
         return networkId == null ? null : corridorNetworksById.get(networkId);
     }
 
+    public List<Long> connectedRoomIds(CorridorNetwork network) {
+        if (network == null) {
+            return List.of();
+        }
+        LinkedHashSet<Long> result = new LinkedHashSet<>();
+        for (Long corridorId : network.corridorIds()) {
+            Corridor corridor = findCorridor(corridorId);
+            if (corridor != null) {
+                result.addAll(corridor.connectedRoomIds());
+            }
+        }
+        return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
+    public Long representativeRoomId(CorridorNetwork network) {
+        return connectedRoomIds(network).stream().findFirst().orElse(null);
+    }
+
     public RoomCluster clusterForRoom(Long roomId) {
         Room room = findRoom(roomId);
         return room == null ? null : findCluster(room.clusterId());
