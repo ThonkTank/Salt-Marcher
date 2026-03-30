@@ -1,7 +1,7 @@
 package features.world.dungeonmap.model.structures.traversal.routing.internal;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.structures.traversal.ResolvedTraversalDoorBinding;
+import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.room.Room;
 
 import java.util.LinkedHashSet;
@@ -9,16 +9,20 @@ import java.util.Objects;
 import java.util.Set;
 
 public record TraversalNode(
-        TraversalNodeId nodeId,
+        String nodeKey,
         TraversalNodeKind kind,
         CubePoint anchor,
         Set<CubePoint> anchorCells,
         int levelZ,
         Room room,
-        ResolvedTraversalDoorBinding fixedDoorBinding
+        FixedDoorBinding fixedDoorBinding
 ) {
     public TraversalNode {
-        Objects.requireNonNull(nodeId, "nodeId");
+        Objects.requireNonNull(nodeKey, "nodeKey");
+        nodeKey = nodeKey.trim();
+        if (nodeKey.isEmpty()) {
+            throw new IllegalArgumentException("nodeKey must not be blank");
+        }
         Objects.requireNonNull(kind, "kind");
         if (kind == TraversalNodeKind.ROOM_PORTAL) {
             Objects.requireNonNull(room, "room");
@@ -33,14 +37,14 @@ public record TraversalNode(
     }
 
     public static TraversalNode roomPortal(
-            TraversalNodeId nodeId,
+            String nodeKey,
             Room room,
             int levelZ,
             Set<CubePoint> occupiedCells,
-            ResolvedTraversalDoorBinding fixedDoorBinding
+            FixedDoorBinding fixedDoorBinding
     ) {
         return new TraversalNode(
-                nodeId,
+                nodeKey,
                 TraversalNodeKind.ROOM_PORTAL,
                 null,
                 occupiedCells,
@@ -49,8 +53,8 @@ public record TraversalNode(
                 fixedDoorBinding);
     }
 
-    public static TraversalNode waypoint(TraversalNodeId nodeId, CubePoint anchor) {
-        return new TraversalNode(nodeId, TraversalNodeKind.WAYPOINT, anchor, Set.of(anchor), anchor == null ? 0 : anchor.z(), null, null);
+    public static TraversalNode waypoint(String nodeKey, CubePoint anchor) {
+        return new TraversalNode(nodeKey, TraversalNodeKind.WAYPOINT, anchor, Set.of(anchor), anchor == null ? 0 : anchor.z(), null, null);
     }
 
     public Long roomId() {
@@ -81,7 +85,7 @@ public record TraversalNode(
             int levelZ,
             Room room,
             Set<CubePoint> anchorCells,
-            ResolvedTraversalDoorBinding fixedDoorBinding
+            FixedDoorBinding fixedDoorBinding
     ) {
         if (anchor != null) {
             return anchor;
@@ -119,7 +123,7 @@ public record TraversalNode(
     }
 
     private static CubePoint boundEntryCell(
-            ResolvedTraversalDoorBinding fixedDoorBinding,
+            FixedDoorBinding fixedDoorBinding,
             int levelZ
     ) {
         if (fixedDoorBinding == null
@@ -177,5 +181,8 @@ public record TraversalNode(
     public enum TraversalNodeKind {
         ROOM_PORTAL,
         WAYPOINT
+    }
+
+    public record FixedDoorBinding(Point2i absoluteCell, Point2i direction) {
     }
 }

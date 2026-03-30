@@ -12,12 +12,12 @@ import java.util.Set;
 public record TraversalTopology(
         long mapId,
         List<TraversalNode> nodes,
-        List<TraversalNodeId> requiredNodeIds,
+        List<String> requiredNodeKeys,
         Set<CubePoint> obstacles
 ) {
     public TraversalTopology {
         nodes = normalizeNodes(nodes);
-        requiredNodeIds = normalizeRequiredNodeIds(requiredNodeIds, nodes);
+        requiredNodeKeys = normalizeRequiredNodeKeys(requiredNodeKeys, nodes);
         obstacles = normalizeObstacles(obstacles);
     }
 
@@ -29,12 +29,12 @@ public record TraversalTopology(
         return !requiredWaypointNodes().isEmpty();
     }
 
-    public TraversalNode node(TraversalNodeId nodeId) {
-        if (nodeId == null) {
+    public TraversalNode node(String nodeKey) {
+        if (nodeKey == null || nodeKey.isBlank()) {
             return null;
         }
         for (TraversalNode node : nodes) {
-            if (node != null && nodeId.equals(node.nodeId())) {
+            if (node != null && nodeKey.equals(node.nodeKey())) {
                 return node;
             }
         }
@@ -50,12 +50,12 @@ public record TraversalTopology(
     }
 
     public List<TraversalNode> requiredNodes() {
-        if (requiredNodeIds.isEmpty()) {
+        if (requiredNodeKeys.isEmpty()) {
             return List.of();
         }
         ArrayList<TraversalNode> result = new ArrayList<>();
-        for (TraversalNodeId requiredNodeId : requiredNodeIds) {
-            TraversalNode node = node(requiredNodeId);
+        for (String requiredNodeKey : requiredNodeKeys) {
+            TraversalNode node = node(requiredNodeKey);
             if (node != null) {
                 result.add(node);
             }
@@ -75,19 +75,6 @@ public record TraversalTopology(
         return hasWaypoints() ? requiredWaypointNodes() : requiredRoomPortalNodes();
     }
 
-    public List<TraversalNodeId> attachedPortalNodeIds() {
-        if (!hasWaypoints()) {
-            return List.of();
-        }
-        ArrayList<TraversalNodeId> result = new ArrayList<>();
-        for (TraversalNode roomPortalNode : requiredRoomPortalNodes()) {
-            if (roomPortalNode != null && roomPortalNode.nodeId() != null) {
-                result.add(roomPortalNode.nodeId());
-            }
-        }
-        return result.isEmpty() ? List.of() : List.copyOf(result);
-    }
-
     private List<TraversalNode> nodesOfKind(TraversalNode.TraversalNodeKind kind) {
         if (nodes.isEmpty()) {
             return List.of();
@@ -102,12 +89,12 @@ public record TraversalTopology(
     }
 
     private List<TraversalNode> requiredNodesOfKind(TraversalNode.TraversalNodeKind kind) {
-        if (requiredNodeIds.isEmpty()) {
+        if (requiredNodeKeys.isEmpty()) {
             return List.of();
         }
         ArrayList<TraversalNode> result = new ArrayList<>();
-        for (TraversalNodeId requiredNodeId : requiredNodeIds) {
-            TraversalNode node = node(requiredNodeId);
+        for (String requiredNodeKey : requiredNodeKeys) {
+            TraversalNode node = node(requiredNodeKey);
             if (node != null && node.kind() == kind) {
                 result.add(node);
             }
@@ -119,33 +106,33 @@ public record TraversalTopology(
         if (nodes == null || nodes.isEmpty()) {
             return List.of();
         }
-        LinkedHashMap<TraversalNodeId, TraversalNode> result = new LinkedHashMap<>();
+        LinkedHashMap<String, TraversalNode> result = new LinkedHashMap<>();
         for (TraversalNode node : nodes) {
-            if (node == null || node.nodeId() == null) {
+            if (node == null || node.nodeKey() == null || node.nodeKey().isBlank()) {
                 continue;
             }
-            result.putIfAbsent(node.nodeId(), node);
+            result.putIfAbsent(node.nodeKey(), node);
         }
         return result.isEmpty() ? List.of() : List.copyOf(result.values());
     }
 
-    private static List<TraversalNodeId> normalizeRequiredNodeIds(
-            List<TraversalNodeId> requiredNodeIds,
+    private static List<String> normalizeRequiredNodeKeys(
+            List<String> requiredNodeKeys,
             List<TraversalNode> nodes
     ) {
-        if (requiredNodeIds == null || requiredNodeIds.isEmpty()) {
+        if (requiredNodeKeys == null || requiredNodeKeys.isEmpty()) {
             return List.of();
         }
-        Map<TraversalNodeId, TraversalNode> nodesById = new LinkedHashMap<>();
+        Map<String, TraversalNode> nodesByKey = new LinkedHashMap<>();
         for (TraversalNode node : nodes == null ? List.<TraversalNode>of() : nodes) {
-            if (node != null && node.nodeId() != null) {
-                nodesById.putIfAbsent(node.nodeId(), node);
+            if (node != null && node.nodeKey() != null && !node.nodeKey().isBlank()) {
+                nodesByKey.putIfAbsent(node.nodeKey(), node);
             }
         }
-        LinkedHashSet<TraversalNodeId> result = new LinkedHashSet<>();
-        for (TraversalNodeId requiredNodeId : requiredNodeIds) {
-            if (requiredNodeId != null && nodesById.containsKey(requiredNodeId)) {
-                result.add(requiredNodeId);
+        LinkedHashSet<String> result = new LinkedHashSet<>();
+        for (String requiredNodeKey : requiredNodeKeys) {
+            if (requiredNodeKey != null && !requiredNodeKey.isBlank() && nodesByKey.containsKey(requiredNodeKey)) {
+                result.add(requiredNodeKey);
             }
         }
         return result.isEmpty() ? List.of() : List.copyOf(result);

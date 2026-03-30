@@ -4,13 +4,13 @@ import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
-import features.world.dungeonmap.model.structures.traversal.ResolvedTraversalDoorBinding;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
 import features.world.dungeonmap.model.structures.traversal.TraversalDoorBinding;
 import features.world.dungeonmap.model.structures.traversal.TraversalRoute;
 import features.world.dungeonmap.model.structures.traversal.TraversalRoutingSnapshot;
 import features.world.dungeonmap.model.structures.traversal.TraversalWaypointBinding;
 import features.world.dungeonmap.model.structures.traversal.routing.internal.TraversalGeometryRealizer;
+import features.world.dungeonmap.model.structures.traversal.routing.internal.TraversalNode;
 import features.world.dungeonmap.model.structures.traversal.routing.internal.TraversalStructurePlanner;
 import features.world.dungeonmap.model.structures.traversal.routing.internal.TraversalTopology;
 import features.world.dungeonmap.model.structures.traversal.routing.internal.TraversalTopologyProjector;
@@ -34,7 +34,7 @@ public final class TraversalRoutingKernel {
         }
         List<Room> rooms = resolvedRooms(traversal, snapshot);
         List<CubePoint> waypointCells = resolvedWaypointCells(traversal, snapshot);
-        Map<Long, ResolvedTraversalDoorBinding> doorBindings = resolvedDoorBindings(traversal, snapshot);
+        Map<Long, TraversalNode.FixedDoorBinding> doorBindings = resolvedDoorBindings(traversal, snapshot);
         Set<CubePoint> obstacles = buildObstacles(
                 snapshot.roomsById(),
                 snapshot.stairs(),
@@ -79,18 +79,18 @@ public final class TraversalRoutingKernel {
         return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
-    private static Map<Long, ResolvedTraversalDoorBinding> resolvedDoorBindings(
+    private static Map<Long, TraversalNode.FixedDoorBinding> resolvedDoorBindings(
             Traversal traversal,
             TraversalRoutingSnapshot snapshot
     ) {
         if (traversal.bindings().doorBindings().isEmpty()) {
             return Map.of();
         }
-        Map<Long, ResolvedTraversalDoorBinding> result = new LinkedHashMap<>();
+        Map<Long, TraversalNode.FixedDoorBinding> result = new LinkedHashMap<>();
         for (TraversalDoorBinding binding : traversal.bindings().doorBindings()) {
             Point2i clusterCenter = snapshot.clusterCenter(binding.clusterId());
             if (clusterCenter != null) {
-                result.put(binding.roomId(), new ResolvedTraversalDoorBinding(
+                result.put(binding.roomId(), new TraversalNode.FixedDoorBinding(
                         binding.absoluteCell(clusterCenter),
                         binding.direction()));
             }

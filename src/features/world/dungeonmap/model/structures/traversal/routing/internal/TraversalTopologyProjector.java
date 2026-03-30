@@ -1,7 +1,6 @@
 package features.world.dungeonmap.model.structures.traversal.routing.internal;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.structures.traversal.ResolvedTraversalDoorBinding;
 import features.world.dungeonmap.model.structures.room.Room;
 
 import java.util.ArrayList;
@@ -22,7 +21,7 @@ public final class TraversalTopologyProjector {
             long mapId,
             List<Room> rooms,
             List<CubePoint> waypointCells,
-            Map<Long, ResolvedTraversalDoorBinding> doorBindings,
+            Map<Long, TraversalNode.FixedDoorBinding> doorBindings,
             Set<CubePoint> obstacles
     ) {
         ProjectedRoomPortals projectedRoomPortals = projectRoomPortalNodes(
@@ -33,13 +32,13 @@ public final class TraversalTopologyProjector {
         return new TraversalTopology(
                 mapId,
                 mergeNodes(projectedRoomPortals.nodes(), waypointNodes),
-                mergeRequiredNodeIds(requiredRoomPortalNodes, waypointNodes),
+                mergeRequiredNodeKeys(requiredRoomPortalNodes, waypointNodes),
                 obstacles == null ? Set.of() : Set.copyOf(obstacles));
     }
 
     private static ProjectedRoomPortals projectRoomPortalNodes(
             List<Room> rooms,
-            Map<Long, ResolvedTraversalDoorBinding> doorBindings
+            Map<Long, TraversalNode.FixedDoorBinding> doorBindings
     ) {
         if (rooms == null || rooms.isEmpty()) {
             return ProjectedRoomPortals.empty();
@@ -51,7 +50,7 @@ public final class TraversalTopologyProjector {
             if (room == null) {
                 continue;
             }
-            ResolvedTraversalDoorBinding fixedDoorBinding = room.roomId() == null
+            TraversalNode.FixedDoorBinding fixedDoorBinding = room.roomId() == null
                     ? null
                     : doorBindings.get(room.roomId());
             List<TraversalNode> projectedNodes = fixedDoorBinding == null
@@ -80,7 +79,7 @@ public final class TraversalTopologyProjector {
             if (waypointCell == null) {
                 continue;
             }
-            result.add(TraversalNode.waypoint(TraversalNodeId.waypoint(result.size()), waypointCell));
+            result.add(TraversalNode.waypoint(waypointNodeKey(result.size()), waypointCell));
         }
         return result.isEmpty() ? List.of() : List.copyOf(result);
     }
@@ -99,21 +98,21 @@ public final class TraversalTopologyProjector {
         return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
-    private static List<TraversalNodeId> mergeRequiredNodeIds(
+    private static List<String> mergeRequiredNodeKeys(
             List<TraversalNode> requiredRoomPortalNodes,
             List<TraversalNode> waypointNodes
     ) {
-        LinkedHashSet<TraversalNodeId> result = new LinkedHashSet<>();
+        LinkedHashSet<String> result = new LinkedHashSet<>();
         for (TraversalNode requiredRoomPortalNode : requiredRoomPortalNodes == null
                 ? List.<TraversalNode>of()
                 : requiredRoomPortalNodes) {
-            if (requiredRoomPortalNode != null && requiredRoomPortalNode.nodeId() != null) {
-                result.add(requiredRoomPortalNode.nodeId());
+            if (requiredRoomPortalNode != null && requiredRoomPortalNode.nodeKey() != null) {
+                result.add(requiredRoomPortalNode.nodeKey());
             }
         }
         for (TraversalNode waypointNode : waypointNodes == null ? List.<TraversalNode>of() : waypointNodes) {
-            if (waypointNode != null && waypointNode.nodeId() != null) {
-                result.add(waypointNode.nodeId());
+            if (waypointNode != null && waypointNode.nodeKey() != null) {
+                result.add(waypointNode.nodeKey());
             }
         }
         return result.isEmpty() ? List.of() : List.copyOf(result);
@@ -127,7 +126,7 @@ public final class TraversalTopologyProjector {
         ArrayList<TraversalNode> result = new ArrayList<>();
         for (Integer levelZ : sortedRoomLevels(room, occupiedCellsByLevel)) {
             result.add(TraversalNode.roomPortal(
-                    TraversalNodeId.roomPortal(room.roomId(), levelZ, roomIndex),
+                    roomPortalNodeKey(room.roomId(), levelZ, roomIndex),
                     room,
                     levelZ,
                     occupiedCellsByLevel.getOrDefault(levelZ, Set.of()),
@@ -138,7 +137,7 @@ public final class TraversalTopologyProjector {
 
     private static List<TraversalNode> projectPinnedRoomPortalNodes(
             Room room,
-            ResolvedTraversalDoorBinding fixedDoorBinding,
+            TraversalNode.FixedDoorBinding fixedDoorBinding,
             int roomIndex
     ) {
         Map<Integer, Set<CubePoint>> occupiedCellsByLevel = occupiedCellsByLevel(room);
@@ -149,7 +148,7 @@ public final class TraversalTopologyProjector {
                 continue;
             }
             result.add(TraversalNode.roomPortal(
-                    TraversalNodeId.roomPortal(room.roomId(), levelZ, roomIndex),
+                    roomPortalNodeKey(room.roomId(), levelZ, roomIndex),
                     room,
                     levelZ,
                     occupiedCells,
@@ -210,7 +209,7 @@ public final class TraversalTopologyProjector {
 
     private static boolean supportsFixedDoorBindingAtLevel(
             Set<CubePoint> occupiedCells,
-            ResolvedTraversalDoorBinding fixedDoorBinding,
+            TraversalNode.FixedDoorBinding fixedDoorBinding,
             int levelZ
     ) {
         if (occupiedCells == null
@@ -355,7 +354,18 @@ public final class TraversalTopologyProjector {
         long verticalDistance = Math.abs(first.levelZ() - second.levelZ());
         long horizontalDistance = Math.abs((long) first.anchor().x() - second.anchor().x())
                 + Math.abs((long) first.anchor().y() - second.anchor().y());
-        return TraversalRoutingCostModel.approximateConnectionScore(horizontalDistance, verticalDistance);
+        return TraversalStructurePlanner.TraversalRoutingCostModel.approximateConnectionScore(horizontalDistance, verticalDistance);
+    }
+
+    private static String roomPortalNodeKey(Long roomId, int levelZ, int roomIndex) {
+        if (roomId != null) {
+            return "portal:room:" + roomId + ":z:" + levelZ;
+        }
+        return "portal:index:" + Math.max(roomIndex, 0) + ":z:" + levelZ;
+    }
+
+    private static String waypointNodeKey(int index) {
+        return "waypoint:" + Math.max(index, 0);
     }
 
     private record ProjectedRoomPortals(
