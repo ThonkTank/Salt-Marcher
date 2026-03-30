@@ -31,6 +31,8 @@ import features.world.dungeonmap.model.structures.traversal.TraversalDoorBinding
 import features.world.dungeonmap.model.structures.traversal.Traversal;
 import features.world.dungeonmap.model.structures.traversal.TraversalSegmentRefs;
 import features.world.dungeonmap.model.structures.traversal.TraversalWaypointBinding;
+import features.world.dungeonmap.persistence.DungeonCorridorPersistenceCodec;
+import features.world.dungeonmap.persistence.DungeonPersistenceDirections;
 import features.world.dungeonmap.persistence.DungeonSchemaSupport;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
@@ -475,7 +477,10 @@ public final class DungeonMapLoader {
                         + " ORDER BY corridor_id, sort_order",
                 mapId,
                 row -> row.getLong("corridor_id"),
-                row -> gridAnchor(row.getString("anchor_kind"), row.getInt("grid_x2"), row.getInt("grid_y2")));
+                row -> DungeonCorridorPersistenceCodec.decodeGridAnchor(
+                        row.getString("anchor_kind"),
+                        row.getInt("grid_x2"),
+                        row.getInt("grid_y2")));
         Map<Long, List<ConnectionEndpoint>> endpointsByBindingId = loadGrouped(conn,
                 "SELECT corridor_endpoint_binding_id, endpoint_type, endpoint_id"
                         + " FROM dungeon_corridor_endpoint_binding_targets"
@@ -484,7 +489,7 @@ public final class DungeonMapLoader {
                         + " ORDER BY corridor_endpoint_binding_id, endpoint_order",
                 mapId,
                 row -> row.getLong("corridor_endpoint_binding_id"),
-                row -> endpoint(
+                row -> DungeonCorridorPersistenceCodec.decodeConnectionEndpoint(
                         row.getString("endpoint_type"),
                         nullableLong(row, "endpoint_id")));
         Map<Long, List<CorridorEndpointBinding>> bindingsByCorridorId = loadGrouped(conn,
@@ -494,8 +499,7 @@ public final class DungeonMapLoader {
                         + " ORDER BY corridor_id, sort_order, corridor_endpoint_binding_id",
                 mapId,
                 row -> row.getLong("corridor_id"),
-                row -> corridorBinding(
-                        row.getLong("corridor_endpoint_binding_id"),
+                row -> DungeonCorridorPersistenceCodec.decodeEndpointBinding(
                         row.getString("terminal_kind"),
                         row.getInt("cell_x"),
                         row.getInt("cell_y"),
@@ -681,91 +685,6 @@ public final class DungeonMapLoader {
             }
         }
         return List.copyOf(clusters);
-    }
-
-    private static ConnectionEndpoint endpoint(String endpointType, Long endpointId) {
-        if (endpointType == null || endpointId == null) {
-            return null;
-        }
-        try {
-            ConnectionEndpointType type = ConnectionEndpointType.valueOf(endpointType.trim().toUpperCase(java.util.Locale.ROOT));
-            return switch (type) {
-                case ROOM -> ConnectionEndpoint.room(endpointId);
-                case CLUSTER -> ConnectionEndpoint.cluster(endpointId);
-                case CORRIDOR -> ConnectionEndpoint.corridor(endpointId);
-                case STAIR -> ConnectionEndpoint.stair(endpointId);
-                case TRANSITION -> ConnectionEndpoint.transition(endpointId);
-            };
-        } catch (IllegalArgumentException exception) {
-            return null;
-        }
-    }
-
-    private static CorridorEndpointBinding corridorBinding(
-            long corridorEndpointBindingId,
-            String terminalKind,
-            int cellX,
-            int cellY,
-            String edgeDirection,
-            List<ConnectionEndpoint> endpoints
-    ) {
-        Point2i direction = edgeDirectionDelta(edgeDirection);
-        VertexEdge edge = VertexEdge.betweenCellAndStep(new Point2i(cellX, cellY), direction);
-        return new CorridorEndpointBinding(
-                corridorTerminal(terminalKind),
-                edge,
-                endpoints == null ? List.of() : List.copyOf(endpoints));
-    }
-
-    private static CorridorTerminal corridorTerminal(String rawTerminalKind) {
-        if (rawTerminalKind == null || rawTerminalKind.isBlank()) {
-            return CorridorTerminal.START;
-        }
-        try {
-            return CorridorTerminal.valueOf(rawTerminalKind.trim().toUpperCase(java.util.Locale.ROOT));
-        } catch (IllegalArgumentException exception) {
-            return CorridorTerminal.START;
-        }
-    }
-
-    private static GridAnchor gridAnchor(String rawKind, int gridX2, int gridY2) {
-        if (rawKind == null || rawKind.isBlank()) {
-            return null;
-        }
-        try {
-            GridAnchor.Kind kind = GridAnchor.Kind.valueOf(rawKind.trim().toUpperCase(java.util.Locale.ROOT));
-            return switch (kind) {
-                case TILE_CENTER -> {
-                    if ((gridX2 & 1) == 0 || (gridY2 & 1) == 0) {
-                        yield null;
-                    }
-                    yield GridAnchor.atTile(new Point2i((gridX2 - 1) / 2, (gridY2 - 1) / 2));
-                }
-                case VERTEX -> {
-                    if ((gridX2 & 1) != 0 || (gridY2 & 1) != 0) {
-                        yield null;
-                    }
-                    yield GridAnchor.atVertex(new Point2i(gridX2 / 2, gridY2 / 2));
-                }
-                case EDGE_CENTER -> edgeAnchor(gridX2, gridY2);
-            };
-        } catch (IllegalArgumentException exception) {
-            return null;
-        }
-    }
-
-    private static GridAnchor edgeAnchor(int gridX2, int gridY2) {
-        if ((gridX2 & 1) == (gridY2 & 1)) {
-            return null;
-        }
-        if ((gridX2 & 1) == 1) {
-            int cellX = (gridX2 - 1) / 2;
-            int vertexY = gridY2 / 2;
-            return GridAnchor.atEdge(new VertexEdge(new Point2i(cellX, vertexY), new Point2i(cellX + 1, vertexY)));
-        }
-        int vertexX = gridX2 / 2;
-        int cellY = (gridY2 - 1) / 2;
-        return GridAnchor.atEdge(new VertexEdge(new Point2i(vertexX, cellY), new Point2i(vertexX, cellY + 1)));
     }
 
     private static Map<Long, Map<Integer, List<Point2i>>> loadClusterVerticesByLevel(Connection conn, long mapId) throws SQLException {
@@ -1148,16 +1067,7 @@ public final class DungeonMapLoader {
     }
 
     private static Point2i edgeDirectionDelta(String direction) {
-        if (direction == null) {
-            return new Point2i(0, 0);
-        }
-        return switch (direction.trim().toUpperCase()) {
-            case "NORTH" -> new Point2i(0, -1);
-            case "EAST" -> new Point2i(1, 0);
-            case "SOUTH" -> new Point2i(0, 1);
-            case "WEST" -> new Point2i(-1, 0);
-            default -> throw new IllegalArgumentException("Unbekannte Korridor-Tuerrichtung: " + direction);
-        };
+        return DungeonPersistenceDirections.fromPersistedEdgeDirection(direction);
     }
 
     private static EdgeObject edgeObjectRelativeToCenter(Point2i relativeCell, Point2i center, String direction, String type) {
@@ -1167,13 +1077,7 @@ public final class DungeonMapLoader {
     }
 
     private static EdgeObject edgeObject(Point2i cell, String direction, String type) {
-        Point2i delta = switch (direction) {
-            case "NORTH" -> new Point2i(0, -1);
-            case "EAST" -> new Point2i(1, 0);
-            case "SOUTH" -> new Point2i(0, 1);
-            case "WEST" -> new Point2i(-1, 0);
-            default -> throw new IllegalArgumentException("Unbekannte Kantenrichtung: " + direction);
-        };
+        Point2i delta = DungeonPersistenceDirections.fromPersistedEdgeDirection(direction);
         VertexEdge edge = VertexEdge.betweenCellAndStep(cell, delta);
         return new EdgeObject(edge, "DOOR".equals(type) ? InternalBoundaryType.DOOR : InternalBoundaryType.WALL);
     }

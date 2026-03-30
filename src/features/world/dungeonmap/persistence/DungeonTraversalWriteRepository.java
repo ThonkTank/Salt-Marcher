@@ -102,7 +102,7 @@ public final class DungeonTraversalWriteRepository {
                 insert.setLong(3, binding.clusterId());
                 insert.setInt(4, binding.relativeCell().x());
                 insert.setInt(5, binding.relativeCell().y());
-                insert.setString(6, directionName(binding.direction()));
+                insert.setString(6, DungeonPersistenceDirections.toPersistedEdgeDirection(binding.direction()));
                 insert.setInt(7, index);
                 insert.addBatch();
             }
@@ -233,17 +233,6 @@ public final class DungeonTraversalWriteRepository {
         String trimmed = raw.trim();
         return trimmed.isEmpty() ? null : trimmed;
     }
-
-    private static String directionName(features.world.dungeonmap.model.geometry.Point2i direction) {
-        return switch (direction.x() + "," + direction.y()) {
-            case "0,-1" -> "NORTH";
-            case "1,0" -> "EAST";
-            case "0,1" -> "SOUTH";
-            case "-1,0" -> "WEST";
-            default -> throw new IllegalArgumentException("Unbekannte Traversal-Tuerrichtung: " + direction);
-        };
-    }
-
     private record TraversalSegmentTableSpec(
             String tableName,
             String idColumn

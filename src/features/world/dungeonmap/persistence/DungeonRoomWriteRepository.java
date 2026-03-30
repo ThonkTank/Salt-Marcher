@@ -96,7 +96,7 @@ public final class DungeonRoomWriteRepository {
                 insert.setInt(2, levelZ);
                 insert.setInt(3, relativeCell.x());
                 insert.setInt(4, relativeCell.y());
-                insert.setString(5, directionName(boundary.direction()));
+                insert.setString(5, DungeonPersistenceDirections.toPersistedEdgeDirection(boundary.direction()));
                 insert.setString(6, boundary.type().name());
                 insert.addBatch();
             }
@@ -259,7 +259,7 @@ public final class DungeonRoomWriteRepository {
                 insert.setLong(1, roomId);
                 insert.setInt(2, exitNarration.roomCell().x());
                 insert.setInt(3, exitNarration.roomCell().y());
-                insert.setString(4, directionName(exitNarration.direction()));
+                insert.setString(4, DungeonPersistenceDirections.toPersistedEdgeDirection(exitNarration.direction()));
                 insert.setString(5, exitNarration.description());
                 insert.setInt(6, sortOrder++);
                 insert.addBatch();
@@ -359,15 +359,5 @@ public final class DungeonRoomWriteRepository {
                 .mapToInt(Integer::intValue)
                 .min()
                 .orElse(fallbackLevel);
-    }
-
-    private static String directionName(Point2i direction) {
-        return switch (direction.x() + "," + direction.y()) {
-            case "0,-1" -> "NORTH";
-            case "1,0" -> "EAST";
-            case "0,1" -> "SOUTH";
-            case "-1,0" -> "WEST";
-            default -> throw new IllegalArgumentException("Unbekannte Kantenrichtung: " + direction);
-        };
     }
 }

@@ -1,8 +1,6 @@
 package features.world.dungeonmap.persistence;
 
 import features.world.dungeonmap.model.geometry.GridAnchor;
-import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorEndpointBinding;
@@ -74,12 +72,16 @@ public final class DungeonCorridorWriteRepository {
                 "INSERT INTO dungeon_corridor_points(corridor_id, sort_order, anchor_kind, grid_x2, grid_y2) VALUES(?,?,?,?,?)")) {
             int sortOrder = 0;
             for (GridAnchor point : sanitizedPoints(points)) {
-                Point2i doubledPoint = point.doubledGridPoint();
+                DungeonCorridorPersistenceCodec.PersistedGridAnchor persistedPoint =
+                        DungeonCorridorPersistenceCodec.encodeGridAnchor(point);
+                if (persistedPoint == null) {
+                    continue;
+                }
                 insert.setLong(1, corridorId);
                 insert.setInt(2, sortOrder++);
-                insert.setString(3, point.kind().name());
-                insert.setInt(4, doubledPoint.x());
-                insert.setInt(5, doubledPoint.y());
+                insert.setString(3, persistedPoint.anchorKind());
+                insert.setInt(4, persistedPoint.gridX2());
+                insert.setInt(5, persistedPoint.gridY2());
                 insert.addBatch();
             }
             insert.executeBatch();
@@ -105,29 +107,30 @@ public final class DungeonCorridorWriteRepository {
                      "INSERT INTO dungeon_corridor_endpoint_binding_targets(corridor_endpoint_binding_id, endpoint_order, endpoint_type, endpoint_id) VALUES(?,?,?,?)")) {
             int sortOrder = 0;
             for (CorridorEndpointBinding binding : sanitizedBindings(endpointBindings)) {
-                VertexEdge edge = binding.boundaryEdge();
-                Point2i anchorCell = anchorCell(edge);
-                Point2i direction = edge == null ? null : edge.directionFrom(anchorCell);
-                if (anchorCell == null || direction == null) {
+                DungeonCorridorPersistenceCodec.PersistedEndpointBinding persistedBinding =
+                        DungeonCorridorPersistenceCodec.encodeEndpointBinding(binding);
+                if (persistedBinding == null) {
                     continue;
                 }
                 insertBinding.setLong(1, corridorId);
                 insertBinding.setInt(2, sortOrder++);
-                insertBinding.setString(3, binding.terminal().name());
-                insertBinding.setInt(4, anchorCell.x());
-                insertBinding.setInt(5, anchorCell.y());
-                insertBinding.setString(6, directionName(direction));
+                insertBinding.setString(3, persistedBinding.terminalKind());
+                insertBinding.setInt(4, persistedBinding.cellX());
+                insertBinding.setInt(5, persistedBinding.cellY());
+                insertBinding.setString(6, persistedBinding.edgeDirection());
                 insertBinding.executeUpdate();
                 long bindingId = generatedId(insertBinding, "dungeon_corridor_endpoint_bindings");
                 int endpointOrder = 0;
                 for (ConnectionEndpoint endpoint : binding.endpoints()) {
-                    if (endpoint == null || endpoint.type() == null || endpoint.id() == null) {
+                    DungeonCorridorPersistenceCodec.PersistedConnectionEndpoint persistedEndpoint =
+                            DungeonCorridorPersistenceCodec.encodeConnectionEndpoint(endpoint);
+                    if (persistedEndpoint == null) {
                         continue;
                     }
                     insertTarget.setLong(1, bindingId);
                     insertTarget.setInt(2, endpointOrder++);
-                    insertTarget.setString(3, endpoint.type().name());
-                    insertTarget.setLong(4, endpoint.id());
+                    insertTarget.setString(3, persistedEndpoint.endpointType());
+                    insertTarget.setLong(4, persistedEndpoint.endpointId());
                     insertTarget.addBatch();
                 }
                 insertTarget.executeBatch();
@@ -189,24 +192,5 @@ public final class DungeonCorridorWriteRepository {
             }
         }
         return result.isEmpty() ? List.of() : List.copyOf(result);
-    }
-
-    private static Point2i anchorCell(VertexEdge edge) {
-        if (edge == null) {
-            return null;
-        }
-        return edge.touchingCells().stream()
-                .min(Point2i.POINT_ORDER)
-                .orElse(null);
-    }
-
-    private static String directionName(Point2i direction) {
-        return switch (direction.x() + "," + direction.y()) {
-            case "0,-1" -> "NORTH";
-            case "1,0" -> "EAST";
-            case "0,1" -> "SOUTH";
-            case "-1,0" -> "WEST";
-            default -> throw new IllegalArgumentException("Unbekannte Corridor-Kantenrichtung: " + direction);
-        };
     }
 }
