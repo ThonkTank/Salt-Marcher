@@ -8,11 +8,14 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.model.structures.traversal.Traversal;
 import features.world.dungeonmap.persistence.DungeonRoomGeometryWriteMapper;
 import features.world.dungeonmap.persistence.DungeonRoomWriteRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 
 public final class DungeonClusterMoveService {
@@ -62,10 +65,11 @@ public final class DungeonClusterMoveService {
                     }
                     roomWriteRepository.updateRoomPosition(conn, room.roomId(), room.anchorsByLevel(), room.primaryLevel());
                 }
+                Map<Long, Traversal> affectedTraversalsById = affectedTraversalsById(projection);
                 traversalPersistenceService.persistTraversals(
                         conn,
                         layout,
-                        projection.traversalsById(),
+                        affectedTraversalsById,
                         projection.traversalRoutesByTraversalId());
                 return null;
             });
@@ -86,5 +90,19 @@ public final class DungeonClusterMoveService {
             throw new SQLException("Cluster " + clusterId + " existiert nicht");
         }
         return cluster;
+    }
+
+    private static Map<Long, Traversal> affectedTraversalsById(DungeonClusterMoveProjection projection) {
+        if (projection == null || projection.traversalRoutesByTraversalId().isEmpty()) {
+            return Map.of();
+        }
+        LinkedHashMap<Long, Traversal> affectedTraversalsById = new LinkedHashMap<>();
+        for (Long traversalId : projection.traversalRoutesByTraversalId().keySet()) {
+            Traversal traversal = projection.traversalsById().get(traversalId);
+            if (traversal != null) {
+                affectedTraversalsById.put(traversalId, traversal);
+            }
+        }
+        return affectedTraversalsById.isEmpty() ? Map.of() : Map.copyOf(affectedTraversalsById);
     }
 }

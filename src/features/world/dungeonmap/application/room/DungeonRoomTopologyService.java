@@ -90,7 +90,7 @@ public final class DungeonRoomTopologyService {
                 layout,
                 new LinkedHashMap<>(layout.traversalsById()),
                 persistedRewrite);
-        traversalPersistenceService.persistTraversals(conn, layout, rewriteResult.traversalsById(), rewriteResult.traversalRoutesByTraversalId());
+        persistAffectedTraversals(conn, layout, rewriteResult);
     }
 
     public void delete(long mapId, int levelZ, TileShape shape) throws SQLException {
@@ -140,10 +140,9 @@ public final class DungeonRoomTopologyService {
                     workingLayout.levelForCluster(rewrite.targetClusterId()));
             DungeonTraversalRewriteResult rewriteResult = applyTraversalCascade(workingLayout, traversalsById, persistedRewrite);
             traversalsById = new LinkedHashMap<>(rewriteResult.traversalsById());
-            traversalPersistenceService.persistTraversals(conn, workingLayout, rewriteResult.traversalsById(), rewriteResult.traversalRoutesByTraversalId());
+            persistAffectedTraversals(conn, workingLayout, rewriteResult);
             workingLayout = workingLayout.applying(persistedRewrite);
         }
-        traversalPersistenceService.persistTraversals(conn, workingLayout, traversalsById, Map.of());
     }
 
     public void createDefaultRoom(Connection conn, long mapId) throws SQLException {
@@ -204,7 +203,7 @@ public final class DungeonRoomTopologyService {
                 layout,
                 new LinkedHashMap<>(layout.traversalsById()),
                 persistedRewrite);
-        traversalPersistenceService.persistTraversals(conn, layout, rewriteResult.traversalsById(), rewriteResult.traversalRoutesByTraversalId());
+        persistAffectedTraversals(conn, layout, rewriteResult);
     }
 
     private DungeonTraversalRewriteResult applyTraversalCascade(
@@ -213,6 +212,28 @@ public final class DungeonRoomTopologyService {
             ClusterRewrite rewrite
     ) {
         return traversalRewriteService.rewriteForClusterRewrite(beforeLayout, traversalsById, rewrite);
+    }
+
+    private void persistAffectedTraversals(
+            Connection conn,
+            DungeonLayout previousLayout,
+            DungeonTraversalRewriteResult rewriteResult
+    ) throws SQLException {
+        if (rewriteResult == null || rewriteResult.affectedTraversalIds().isEmpty()) {
+            return;
+        }
+        LinkedHashMap<Long, Traversal> affectedTraversalsById = new LinkedHashMap<>();
+        for (Long traversalId : rewriteResult.affectedTraversalIds()) {
+            Traversal traversal = rewriteResult.traversalsById().get(traversalId);
+            if (traversal != null) {
+                affectedTraversalsById.put(traversalId, traversal);
+            }
+        }
+        traversalPersistenceService.persistTraversals(
+                conn,
+                previousLayout,
+                affectedTraversalsById,
+                rewriteResult.traversalRoutesByTraversalId());
     }
 
     private void createCluster(Connection conn, long mapId, int levelZ, TileShape shape, String roomName) throws SQLException {
