@@ -71,7 +71,7 @@ public final class CorridorNetwork {
         Map<Long, Corridor> routableById = new LinkedHashMap<>();
         Map<Point2i, Set<Long>> corridorIdsByCell = new LinkedHashMap<>();
         for (Corridor corridor : corridors == null ? List.<Corridor>of() : corridors) {
-            if (corridor == null || corridor.corridorId() == null || corridor.path() == null || !corridor.path().routable()) {
+            if (corridor == null || corridor.corridorId() == null) {
                 continue;
             }
             routableById.put(corridor.corridorId(), corridor);

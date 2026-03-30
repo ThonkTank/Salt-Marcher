@@ -10,7 +10,6 @@ import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.geometry.VertexPath;
-import features.world.dungeonmap.model.objects.CorridorPath;
 import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.objects.Floor;
 import features.world.dungeonmap.model.objects.Wall;
@@ -18,9 +17,10 @@ import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpointType;
-import features.world.dungeonmap.model.structures.connection.CorridorConnection;
 import features.world.dungeonmap.model.structures.connection.LocalConnection;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
+import features.world.dungeonmap.model.structures.corridor.CorridorEndpointBinding;
+import features.world.dungeonmap.model.structures.corridor.CorridorTerminal;
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
 import features.world.dungeonmap.model.structures.room.Room;
@@ -140,7 +140,7 @@ public final class DungeonMapLoader {
         Map<Long, TraversalSegmentRefs> segmentRefsByTraversalId = loadTraversalSegmentRefs(conn, map.mapId());
         List<Traversal> traversals = loadTraversals(conn, map.mapId(), segmentRefsByTraversalId);
         List<DungeonStair> stairs = loadStairs(conn, map.mapId());
-        List<Corridor> corridors = loadCorridors(conn, map.mapId(), corridorRoomIdsByCorridorId(traversals));
+        List<Corridor> corridors = loadCorridors(conn, map.mapId());
         return new DungeonLayout(
                 map.mapId(),
                 map.name(),
@@ -457,70 +457,65 @@ public final class DungeonMapLoader {
 
     private static List<Corridor> loadCorridors(
             Connection conn,
-            long mapId,
-            Map<Long, List<Long>> roomIdsByCorridorId
+            long mapId
     ) throws SQLException {
         DungeonSchemaSupport.ensureCompatibility(conn);
-        Map<Long, List<CubePoint>> pathNodesByCorridorId = loadGrouped(conn,
-                "SELECT corridor_id, cell_x, cell_y, cell_z"
-                        + " FROM dungeon_corridor_path_nodes"
+        Map<Long, List<Long>> roomIdsByCorridorId = loadGrouped(conn,
+                "SELECT corridor_id, room_id"
+                        + " FROM dungeon_corridor_room_members"
                         + " WHERE corridor_id IN (SELECT corridor_id FROM dungeon_corridors WHERE dungeon_map_id=?)"
                         + " ORDER BY corridor_id, sort_order",
                 mapId,
                 row -> row.getLong("corridor_id"),
-                row -> new CubePoint(row.getInt("cell_x"), row.getInt("cell_y"), row.getInt("cell_z")));
-        Map<Long, List<ConnectionEndpoint>> endpointsByConnectionId = loadGrouped(conn,
-                "SELECT corridor_connection_id, endpoint_type, endpoint_id"
-                        + " FROM dungeon_corridor_connection_endpoints"
-                        + " WHERE corridor_connection_id IN (SELECT corridor_connection_id FROM dungeon_corridor_connections"
-                        + " WHERE corridor_id IN (SELECT corridor_id FROM dungeon_corridors WHERE dungeon_map_id=?))"
-                        + " ORDER BY corridor_connection_id, endpoint_order",
+                row -> row.getLong("room_id"));
+        Map<Long, List<GridAnchor>> pointsByCorridorId = loadGrouped(conn,
+                "SELECT corridor_id, anchor_kind, grid_x2, grid_y2"
+                        + " FROM dungeon_corridor_points"
+                        + " WHERE corridor_id IN (SELECT corridor_id FROM dungeon_corridors WHERE dungeon_map_id=?)"
+                        + " ORDER BY corridor_id, sort_order",
                 mapId,
-                row -> row.getLong("corridor_connection_id"),
+                row -> row.getLong("corridor_id"),
+                row -> gridAnchor(row.getString("anchor_kind"), row.getInt("grid_x2"), row.getInt("grid_y2")));
+        Map<Long, List<ConnectionEndpoint>> endpointsByBindingId = loadGrouped(conn,
+                "SELECT corridor_endpoint_binding_id, endpoint_type, endpoint_id"
+                        + " FROM dungeon_corridor_endpoint_binding_targets"
+                        + " WHERE corridor_endpoint_binding_id IN (SELECT corridor_endpoint_binding_id FROM dungeon_corridor_endpoint_bindings"
+                        + " WHERE corridor_id IN (SELECT corridor_id FROM dungeon_corridors WHERE dungeon_map_id=?))"
+                        + " ORDER BY corridor_endpoint_binding_id, endpoint_order",
+                mapId,
+                row -> row.getLong("corridor_endpoint_binding_id"),
                 row -> endpoint(
                         row.getString("endpoint_type"),
                         nullableLong(row, "endpoint_id")));
-        Map<Long, Integer> levelsByCorridorId = loadLevelMap(
-                conn,
-                "SELECT corridor_id AS entity_id, level_z FROM dungeon_corridors WHERE dungeon_map_id=?",
-                mapId);
-        Map<Long, List<CorridorConnection>> connectionsByCorridorId = loadGrouped(conn,
-                "SELECT corridor_connection_id, corridor_id, cell_x, cell_y, edge_direction"
-                        + " FROM dungeon_corridor_connections"
+        Map<Long, List<CorridorEndpointBinding>> bindingsByCorridorId = loadGrouped(conn,
+                "SELECT corridor_endpoint_binding_id, corridor_id, terminal_kind, cell_x, cell_y, edge_direction"
+                        + " FROM dungeon_corridor_endpoint_bindings"
                         + " WHERE corridor_id IN (SELECT corridor_id FROM dungeon_corridors WHERE dungeon_map_id=?)"
-                        + " ORDER BY corridor_id, sort_order, corridor_connection_id",
+                        + " ORDER BY corridor_id, sort_order, corridor_endpoint_binding_id",
                 mapId,
                 row -> row.getLong("corridor_id"),
-                row -> corridorConnection(
-                        row.getLong("corridor_connection_id"),
-                        row.getLong("corridor_id"),
-                        mapId,
-                        levelsByCorridorId.getOrDefault(row.getLong("corridor_id"), 0),
+                row -> corridorBinding(
+                        row.getLong("corridor_endpoint_binding_id"),
+                        row.getString("terminal_kind"),
                         row.getInt("cell_x"),
                         row.getInt("cell_y"),
                         row.getString("edge_direction"),
-                        endpointsByConnectionId.getOrDefault(row.getLong("corridor_connection_id"), List.of())));
+                        endpointsByBindingId.getOrDefault(row.getLong("corridor_endpoint_binding_id"), List.of())));
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT corridor_id, dungeon_map_id, level_z, directly_adjacent, routable"
+                "SELECT corridor_id, dungeon_map_id, level_z"
                         + " FROM dungeon_corridors WHERE dungeon_map_id=? ORDER BY corridor_id")) {
             ps.setLong(1, mapId);
             try (ResultSet rs = ps.executeQuery()) {
                 List<Corridor> result = new ArrayList<>();
                 while (rs.next()) {
                     long corridorId = rs.getLong("corridor_id");
-                    List<CubePoint> pathNodes = pathNodesByCorridorId.getOrDefault(corridorId, List.of());
-                    List<CorridorConnection> connections = connectionsByCorridorId.getOrDefault(corridorId, List.of());
-                    CorridorPath path = new CorridorPath(
-                            new GridRoute(pathNodes.stream().map(node -> GridAnchor.atTile(node.projectedCell())).toList()),
-                            Set.copyOf(pathNodes),
-                            rs.getInt("directly_adjacent") != 0,
-                            rs.getInt("routable") != 0);
                     result.add(Corridor.resolved(
                             corridorId,
                             rs.getLong("dungeon_map_id"),
-                            corridorRoomIds(corridorId, roomIdsByCorridorId, connections),
-                            path,
-                            connections));
+                            roomIdsByCorridorId.getOrDefault(corridorId, List.of()),
+                            rs.getInt("level_z"),
+                            pointsByCorridorId.getOrDefault(corridorId, List.of()),
+                            bindingsByCorridorId.getOrDefault(corridorId, List.of())));
                 }
                 return result.isEmpty() ? List.of() : List.copyOf(result);
             }
@@ -706,11 +701,9 @@ public final class DungeonMapLoader {
         }
     }
 
-    private static CorridorConnection corridorConnection(
-            long corridorConnectionId,
-            long corridorId,
-            long mapId,
-            int levelZ,
+    private static CorridorEndpointBinding corridorBinding(
+            long corridorEndpointBindingId,
+            String terminalKind,
             int cellX,
             int cellY,
             String edgeDirection,
@@ -718,55 +711,61 @@ public final class DungeonMapLoader {
     ) {
         Point2i direction = edgeDirectionDelta(edgeDirection);
         VertexEdge edge = VertexEdge.betweenCellAndStep(new Point2i(cellX, cellY), direction);
-        return new CorridorConnection(
-                corridorId,
-                mapId,
-                new Door(Set.of(edge)),
-                endpoints == null ? List.of() : List.copyOf(endpoints),
-                levelZ);
+        return new CorridorEndpointBinding(
+                corridorTerminal(terminalKind),
+                edge,
+                endpoints == null ? List.of() : List.copyOf(endpoints));
     }
 
-    private static Map<Long, List<Long>> corridorRoomIdsByCorridorId(List<Traversal> traversals) {
-        LinkedHashMap<Long, List<Long>> result = new LinkedHashMap<>();
-        for (Traversal traversal : traversals == null ? List.<Traversal>of() : traversals) {
-            if (traversal == null) {
-                continue;
-            }
-            List<Long> roomIds = traversal.roomIds().isEmpty() ? List.of() : List.copyOf(traversal.roomIds());
-            for (Long corridorId : traversal.segmentRefs().corridorIdsBySegmentKey().values()) {
-                if (corridorId != null) {
-                    result.putIfAbsent(corridorId, roomIds);
-                }
-            }
+    private static CorridorTerminal corridorTerminal(String rawTerminalKind) {
+        if (rawTerminalKind == null || rawTerminalKind.isBlank()) {
+            return CorridorTerminal.START;
         }
-        return result.isEmpty() ? Map.of() : Map.copyOf(result);
+        try {
+            return CorridorTerminal.valueOf(rawTerminalKind.trim().toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            return CorridorTerminal.START;
+        }
     }
 
-    private static List<Long> corridorRoomIds(
-            Long corridorId,
-            Map<Long, List<Long>> roomIdsByCorridorId,
-            List<CorridorConnection> connections
-    ) {
-        if (corridorId != null) {
-            List<Long> roomIds = roomIdsByCorridorId == null ? null : roomIdsByCorridorId.get(corridorId);
-            if (roomIds != null && !roomIds.isEmpty()) {
-                return roomIds;
-            }
+    private static GridAnchor gridAnchor(String rawKind, int gridX2, int gridY2) {
+        if (rawKind == null || rawKind.isBlank()) {
+            return null;
         }
-        LinkedHashSet<Long> roomIds = new LinkedHashSet<>();
-        for (CorridorConnection connection : connections == null ? List.<CorridorConnection>of() : connections) {
-            if (connection == null) {
-                continue;
-            }
-            for (ConnectionEndpoint endpoint : connection.endpoints()) {
-                if (endpoint != null
-                        && endpoint.type() == ConnectionEndpointType.ROOM
-                        && endpoint.id() != null) {
-                    roomIds.add(endpoint.id());
+        try {
+            GridAnchor.Kind kind = GridAnchor.Kind.valueOf(rawKind.trim().toUpperCase(java.util.Locale.ROOT));
+            return switch (kind) {
+                case TILE_CENTER -> {
+                    if ((gridX2 & 1) == 0 || (gridY2 & 1) == 0) {
+                        yield null;
+                    }
+                    yield GridAnchor.atTile(new Point2i((gridX2 - 1) / 2, (gridY2 - 1) / 2));
                 }
-            }
+                case VERTEX -> {
+                    if ((gridX2 & 1) != 0 || (gridY2 & 1) != 0) {
+                        yield null;
+                    }
+                    yield GridAnchor.atVertex(new Point2i(gridX2 / 2, gridY2 / 2));
+                }
+                case EDGE_CENTER -> edgeAnchor(gridX2, gridY2);
+            };
+        } catch (IllegalArgumentException exception) {
+            return null;
         }
-        return roomIds.isEmpty() ? List.of() : List.copyOf(roomIds);
+    }
+
+    private static GridAnchor edgeAnchor(int gridX2, int gridY2) {
+        if ((gridX2 & 1) == (gridY2 & 1)) {
+            return null;
+        }
+        if ((gridX2 & 1) == 1) {
+            int cellX = (gridX2 - 1) / 2;
+            int vertexY = gridY2 / 2;
+            return GridAnchor.atEdge(new VertexEdge(new Point2i(cellX, vertexY), new Point2i(cellX + 1, vertexY)));
+        }
+        int vertexX = gridX2 / 2;
+        int cellY = (gridY2 - 1) / 2;
+        return GridAnchor.atEdge(new VertexEdge(new Point2i(vertexX, cellY), new Point2i(vertexX, cellY + 1)));
     }
 
     private static Map<Long, Map<Integer, List<Point2i>>> loadClusterVerticesByLevel(Connection conn, long mapId) throws SQLException {

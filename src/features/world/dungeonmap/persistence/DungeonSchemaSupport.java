@@ -35,32 +35,37 @@ public final class DungeonSchemaSupport {
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_corridors ("
                 + "corridor_id      INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + "dungeon_map_id   INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
-                + "level_z          INTEGER NOT NULL DEFAULT 0,"
-                + "directly_adjacent INTEGER NOT NULL DEFAULT 0,"
-                + "routable         INTEGER NOT NULL DEFAULT 1"
+                + "level_z          INTEGER NOT NULL DEFAULT 0"
                 + ")");
-        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_corridor_path_nodes ("
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_corridor_room_members ("
                 + "corridor_id      INTEGER NOT NULL REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE,"
                 + "sort_order       INTEGER NOT NULL,"
-                + "cell_x           INTEGER NOT NULL,"
-                + "cell_y           INTEGER NOT NULL,"
-                + "cell_z           INTEGER NOT NULL,"
+                + "room_id          INTEGER NOT NULL REFERENCES dungeon_rooms(room_id) ON DELETE CASCADE,"
+                + "PRIMARY KEY (corridor_id, room_id)"
+                + ")");
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_corridor_points ("
+                + "corridor_id      INTEGER NOT NULL REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE,"
+                + "sort_order       INTEGER NOT NULL,"
+                + "anchor_kind      TEXT NOT NULL,"
+                + "grid_x2          INTEGER NOT NULL,"
+                + "grid_y2          INTEGER NOT NULL,"
                 + "PRIMARY KEY (corridor_id, sort_order)"
                 + ")");
-        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_corridor_connections ("
-                + "corridor_connection_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_corridor_endpoint_bindings ("
+                + "corridor_endpoint_binding_id INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + "corridor_id      INTEGER NOT NULL REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE,"
                 + "sort_order       INTEGER NOT NULL,"
+                + "terminal_kind    TEXT NOT NULL,"
                 + "cell_x           INTEGER NOT NULL,"
                 + "cell_y           INTEGER NOT NULL,"
                 + "edge_direction   TEXT NOT NULL"
                 + ")");
-        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_corridor_connection_endpoints ("
-                + "corridor_connection_id INTEGER NOT NULL REFERENCES dungeon_corridor_connections(corridor_connection_id) ON DELETE CASCADE,"
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_corridor_endpoint_binding_targets ("
+                + "corridor_endpoint_binding_id INTEGER NOT NULL REFERENCES dungeon_corridor_endpoint_bindings(corridor_endpoint_binding_id) ON DELETE CASCADE,"
                 + "endpoint_order   INTEGER NOT NULL,"
                 + "endpoint_type    TEXT NOT NULL,"
                 + "endpoint_id      INTEGER NOT NULL,"
-                + "PRIMARY KEY (corridor_connection_id, endpoint_order)"
+                + "PRIMARY KEY (corridor_endpoint_binding_id, endpoint_order)"
                 + ")");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_traversals ("
                 + "traversal_id     INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -173,8 +178,6 @@ public final class DungeonSchemaSupport {
         try (Statement stmt = conn.createStatement()) {
             createSchema(stmt);
             addColumnIfMissing(stmt, "dungeon_corridors", "level_z INTEGER NOT NULL DEFAULT 0");
-            addColumnIfMissing(stmt, "dungeon_corridors", "directly_adjacent INTEGER NOT NULL DEFAULT 0");
-            addColumnIfMissing(stmt, "dungeon_corridors", "routable INTEGER NOT NULL DEFAULT 1");
             addColumnIfMissing(stmt, "dungeon_stairs", "name TEXT");
             addColumnIfMissing(stmt, "dungeon_stairs", "anchor_x INTEGER NOT NULL DEFAULT 0");
             addColumnIfMissing(stmt, "dungeon_stairs", "anchor_y INTEGER NOT NULL DEFAULT 0");
@@ -201,6 +204,10 @@ public final class DungeonSchemaSupport {
             stmt.execute("PRAGMA foreign_keys = OFF");
             stmt.execute("DROP TABLE IF EXISTS dungeon_traversal_corridor_segments");
             stmt.execute("DROP TABLE IF EXISTS dungeon_traversal_stair_segments");
+            stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_endpoint_binding_targets");
+            stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_endpoint_bindings");
+            stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_points");
+            stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_room_members");
             stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_connection_endpoints");
             stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_connections");
             stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_path_nodes");

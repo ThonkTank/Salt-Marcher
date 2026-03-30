@@ -100,8 +100,9 @@ public final class DungeonTraversalStructureCommitter {
             } else {
                 corridorWriteRepository.updateCorridor(conn, corridorId, corridor);
             }
-            corridorWriteRepository.replacePathNodes(conn, corridorId, corridor.path());
-            corridorWriteRepository.replaceConnections(conn, corridorId, corridor.connections());
+            corridorWriteRepository.replaceRoomMembers(conn, corridorId, corridor.roomIds());
+            corridorWriteRepository.replacePoints(conn, corridorId, corridor.points());
+            corridorWriteRepository.replaceEndpointBindings(conn, corridorId, corridor.endpointBindings());
             desiredSegmentRefs.put(corridorSegment.segmentKey(), corridorId);
         }
         List<Long> removedCorridorIds = traversalWriteRepository.replaceTraversalCorridorSegments(
@@ -391,10 +392,10 @@ public final class DungeonTraversalStructureCommitter {
                 endpointKeys.add(endpoint.type().name() + ":" + endpoint.id());
             }
         }
-        Set<CubePoint> cells = corridor.path() == null ? Set.of() : corridor.path().cells();
+        Set<CubePoint> cells = corridor.occupiedCells();
         return new CorridorSignature(
                 List.copyOf(endpointKeys),
-                Set.copyOf(levels),
+                levels.isEmpty() ? Set.of(corridor.levelZ()) : Set.copyOf(levels),
                 corridor.connections().size(),
                 anchorOf(cells),
                 cells);
