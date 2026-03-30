@@ -3,8 +3,11 @@ package features.world.dungeonmap.model.structures.corridor;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridAnchor;
 import features.world.dungeonmap.model.geometry.GridRoute;
+import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.objects.Floor;
 import features.world.dungeonmap.model.structures.TargetKey;
+import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.CorridorConnection;
 
 import java.util.ArrayList;
@@ -34,6 +37,42 @@ public final class Corridor {
             List<CorridorEndpointBinding> endpointBindings
     ) {
         return new Corridor(null, mapId, roomIds, levelZ, points, endpointBindings);
+    }
+
+    public static Corridor plannedFromPathCells(
+            long mapId,
+            List<CubePoint> pathCells,
+            List<CorridorEndpointPlan> endpointPlans
+    ) {
+        List<GridAnchor> points = pointsForPathCells(pathCells);
+        if (points.size() < 2) {
+            return null;
+        }
+        List<CorridorEndpointBinding> bindings = bindingsForPlans(endpointPlans);
+        return planned(
+                mapId,
+                List.of(),
+                levelForPathCells(pathCells),
+                points,
+                bindings);
+    }
+
+    public static Corridor plannedDirectAdjacency(
+            long mapId,
+            CorridorEndpointPlan startPlan,
+            CorridorEndpointPlan endPlan
+    ) {
+        CorridorEndpointBinding startBinding = bindingForPlan(startPlan);
+        CorridorEndpointBinding endBinding = bindingForPlan(endPlan);
+        VertexEdge sharedEdge = sharedBoundaryEdge(startBinding, endBinding);
+        return planned(
+                mapId,
+                List.of(),
+                startPlan.roomCell().z(),
+                List.of(
+                        GridAnchor.atVertex(sharedEdge.start()),
+                        GridAnchor.atVertex(sharedEdge.end())),
+                List.of(startBinding, endBinding));
     }
 
     public static Corridor resolved(
@@ -165,6 +204,79 @@ public final class Corridor {
             }
         }
         return route;
+    }
+
+    private static int levelForPathCells(List<CubePoint> pathCells) {
+        if (pathCells == null || pathCells.isEmpty()) {
+            throw new IllegalArgumentException("Corridor path cells must not be empty");
+        }
+        for (CubePoint pathCell : pathCells) {
+            if (pathCell != null) {
+                return pathCell.z();
+            }
+        }
+        throw new IllegalArgumentException("Corridor path cells must not be empty");
+    }
+
+    private static List<GridAnchor> pointsForPathCells(List<CubePoint> pathCells) {
+        if (pathCells == null || pathCells.isEmpty()) {
+            return List.of();
+        }
+        ArrayList<GridAnchor> result = new ArrayList<>();
+        for (CubePoint pathCell : pathCells) {
+            if (pathCell != null) {
+                result.add(GridAnchor.atTile(pathCell.projectedCell()));
+            }
+        }
+        return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
+    private static List<CorridorEndpointBinding> bindingsForPlans(List<CorridorEndpointPlan> endpointPlans) {
+        if (endpointPlans == null || endpointPlans.isEmpty()) {
+            return List.of();
+        }
+        ArrayList<CorridorEndpointBinding> result = new ArrayList<>();
+        for (CorridorEndpointPlan endpointPlan : endpointPlans) {
+            if (endpointPlan != null) {
+                result.add(bindingForPlan(endpointPlan));
+            }
+        }
+        return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
+    private static CorridorEndpointBinding bindingForPlan(CorridorEndpointPlan endpointPlan) {
+        Objects.requireNonNull(endpointPlan, "endpointPlan");
+        return new CorridorEndpointBinding(
+                endpointPlan.terminal(),
+                boundaryEdge(endpointPlan.roomCell(), endpointPlan.adjacentCell()),
+                List.of(ConnectionEndpoint.room(endpointPlan.roomId())));
+    }
+
+    private static VertexEdge sharedBoundaryEdge(
+            CorridorEndpointBinding startBinding,
+            CorridorEndpointBinding endBinding
+    ) {
+        Objects.requireNonNull(startBinding, "startBinding");
+        Objects.requireNonNull(endBinding, "endBinding");
+        VertexEdge startEdge = startBinding.boundaryEdge();
+        VertexEdge endEdge = endBinding.boundaryEdge();
+        if (!Objects.equals(startEdge, endEdge)) {
+            throw new IllegalArgumentException("Direct adjacency corridor endpoints must share one boundary edge");
+        }
+        return startEdge;
+    }
+
+    private static VertexEdge boundaryEdge(CubePoint roomCell, CubePoint adjacentCell) {
+        Objects.requireNonNull(roomCell, "roomCell");
+        Objects.requireNonNull(adjacentCell, "adjacentCell");
+        if (roomCell.z() != adjacentCell.z()) {
+            throw new IllegalArgumentException("Corridor boundary cells must share the same level");
+        }
+        Point2i step = new Point2i(adjacentCell.x() - roomCell.x(), adjacentCell.y() - roomCell.y());
+        if (Math.abs(step.x()) + Math.abs(step.y()) != 1) {
+            throw new IllegalArgumentException("Corridor boundary cells must be cardinally adjacent");
+        }
+        return VertexEdge.betweenCellAndStep(roomCell.projectedCell(), step);
     }
 
     private static List<CorridorEndpointBinding> normalizeBindings(List<CorridorEndpointBinding> endpointBindings) {
