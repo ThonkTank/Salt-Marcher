@@ -163,21 +163,7 @@ public final class DungeonCorridorWriteRepository {
         if (path == null) {
             return List.of();
         }
-        List<CubePoint> routeNodes = path.route().anchors().stream()
-                .map(anchor -> anchor == null ? null : new CubePoint(
-                        (anchor.doubledGridPoint().x() - 1) / 2,
-                        (anchor.doubledGridPoint().y() - 1) / 2,
-                        inferLevel(path)))
-                .filter(Objects::nonNull)
-                .toList();
-        if (!routeNodes.isEmpty()) {
-            return routeNodes;
-        }
         return orderedCorridorCells(path.cells());
-    }
-
-    private static int inferLevel(CorridorPath path) {
-        return path == null ? 0 : path.levels().stream().min(Comparator.naturalOrder()).orElse(0);
     }
 
     private static List<CubePoint> orderedCorridorCells(Set<CubePoint> cells) {

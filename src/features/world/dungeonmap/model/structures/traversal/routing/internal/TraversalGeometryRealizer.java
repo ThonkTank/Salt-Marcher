@@ -15,11 +15,14 @@ import features.world.dungeonmap.model.structures.traversal.Traversal;
 import features.world.dungeonmap.model.structures.traversal.TraversalRoute;
 import features.world.dungeonmap.model.structures.traversal.TraversalStairPlacement;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public final class TraversalGeometryRealizer {
 
@@ -122,21 +125,9 @@ public final class TraversalGeometryRealizer {
         state.recordNode(end.nodeId(), bestRealization.suffix().targetCell());
         state.recordPortal(start, bestRealization.prefix().sourceCell());
         state.recordPortal(end, bestRealization.suffix().targetCell());
+        state.addCorridorCells(bestRealization.prefix());
+        state.addCorridorCells(bestRealization.suffix());
         String verticalEdgeKey = edgeKey(start, end);
-        state.addSegment(bestRealization.prefix(), corridorSegmentKey(verticalEdgeKey, 0), segmentConnections(
-                topology.mapId(),
-                corridorSegmentKey(verticalEdgeKey, 0),
-                start,
-                bestRealization.prefix().sourceCell(),
-                null,
-                null));
-        state.addSegment(bestRealization.suffix(), corridorSegmentKey(verticalEdgeKey, 1), segmentConnections(
-                topology.mapId(),
-                corridorSegmentKey(verticalEdgeKey, 1),
-                null,
-                null,
-                end,
-                bestRealization.suffix().targetCell()));
         state.addStairPlacement(stairSegmentKey(verticalEdgeKey), bestRealization.stairPlacement());
         return true;
     }
@@ -162,14 +153,7 @@ public final class TraversalGeometryRealizer {
         state.recordNode(end.nodeId(), segmentResult.targetCell());
         state.recordPortal(start, segmentResult.sourceCell());
         state.recordPortal(end, segmentResult.targetCell());
-        String edgeKey = edgeKey(start, end);
-        state.addSegment(segmentResult, corridorSegmentKey(edgeKey, 0), segmentConnections(
-                state.topology.mapId(),
-                corridorSegmentKey(edgeKey, 0),
-                start,
-                segmentResult.sourceCell(),
-                end,
-                segmentResult.targetCell()));
+        state.addCorridorCells(segmentResult);
         return true;
     }
 
@@ -425,7 +409,7 @@ public final class TraversalGeometryRealizer {
         private final Traversal traversal;
         private final TraversalTopology topology;
         private final GridRoute route;
-        private final List<TraversalRoute.CorridorSegment> corridorSegments = new ArrayList<>();
+        private final LinkedHashSet<CubePoint> corridorCells = new LinkedHashSet<>();
         private final List<TraversalRoute.StairSegment> stairSegments = new ArrayList<>();
         private final Map<TraversalNodeId, CubePoint> realizedNodeCellsById = new LinkedHashMap<>();
         private final Map<TraversalNodeId, CubePoint> portalEntryCellsByNodeId = new LinkedHashMap<>();
@@ -463,17 +447,11 @@ public final class TraversalGeometryRealizer {
             return TraversalRoute.empty();
         }
 
-        private void addSegment(LocalSegmentResult segmentResult, String segmentKey, List<CorridorConnection> connections) {
-            if (segmentResult == null || segmentKey == null) {
+        private void addCorridorCells(LocalSegmentResult segmentResult) {
+            if (segmentResult == null) {
                 return;
             }
-            corridorSegments.add(new TraversalRoute.CorridorSegment(
-                    segmentKey,
-                    Corridor.planned(
-                            traversal.mapId(),
-                            traversal.roomIds(),
-                            new CorridorPath(route, java.util.Set.copyOf(segmentResult.corridorCells()), false, true),
-                            connections)));
+            corridorCells.addAll(segmentResult.corridorCells());
         }
 
         private void addStairPlacement(String segmentKey, TraversalStairPlacement stairPlacement) {
@@ -486,31 +464,51 @@ public final class TraversalGeometryRealizer {
 
         private TraversalRoute toRoute() {
             boolean routable = portalEntryCellsByNodeId.size() >= topology.requiredRoomPortalNodes().size()
-                    && (!corridorSegments.isEmpty() || !stairSegments.isEmpty());
+                    && (!corridorCells.isEmpty() || !stairSegments.isEmpty());
             return routable
-                    ? new TraversalRoute(List.copyOf(corridorSegments), List.copyOf(stairSegments))
+                    ? new TraversalRoute(corridorSegments(), List.copyOf(stairSegments))
                     : TraversalRoute.empty();
         }
-    }
 
-    private static List<CorridorConnection> segmentConnections(
-            long mapId,
-            String segmentKey,
-            TraversalNode start,
-            CubePoint startCell,
-            TraversalNode end,
-            CubePoint endCell
-    ) {
-        ArrayList<CorridorConnection> result = new ArrayList<>();
-        CorridorConnection startConnection = corridorConnection(null, mapId, start, startCell);
-        if (startConnection != null) {
-            result.add(startConnection);
+        private List<TraversalRoute.CorridorSegment> corridorSegments() {
+            List<CorridorComponent> components = corridorComponents(corridorCells);
+            if (components.isEmpty()) {
+                return List.of();
+            }
+            ArrayList<TraversalRoute.CorridorSegment> result = new ArrayList<>();
+            for (int index = 0; index < components.size(); index++) {
+                CorridorComponent component = components.get(index);
+                result.add(new TraversalRoute.CorridorSegment(
+                        corridorComponentSegmentKey(index, component.anchor()),
+                        Corridor.planned(
+                                traversal.mapId(),
+                                traversal.roomIds(),
+                                new CorridorPath(route, component.cells(), false, true),
+                                corridorConnections(component.cells()))));
+            }
+            return result.isEmpty() ? List.of() : List.copyOf(result);
         }
-        CorridorConnection endConnection = corridorConnection(null, mapId, end, endCell);
-        if (endConnection != null) {
-            result.add(endConnection);
+
+        private List<CorridorConnection> corridorConnections(Set<CubePoint> componentCells) {
+            if (componentCells == null || componentCells.isEmpty()) {
+                return List.of();
+            }
+            ArrayList<CorridorConnection> result = new ArrayList<>();
+            for (TraversalNode roomPortal : topology.requiredRoomPortalNodes()) {
+                if (roomPortal == null || roomPortal.nodeId() == null) {
+                    continue;
+                }
+                CubePoint entryCell = portalEntryCellsByNodeId.get(roomPortal.nodeId());
+                if (entryCell == null || !componentCells.contains(entryCell)) {
+                    continue;
+                }
+                CorridorConnection connection = corridorConnection(null, topology.mapId(), roomPortal, entryCell);
+                if (connection != null) {
+                    result.add(connection);
+                }
+            }
+            return rebindConnections(result, null);
         }
-        return rebindConnections(result, null);
     }
 
     private static List<CorridorConnection> rebindConnections(List<CorridorConnection> connections, Long corridorId) {
@@ -556,6 +554,53 @@ public final class TraversalGeometryRealizer {
         return "V:" + edgeKey + "#0";
     }
 
+    private static String corridorComponentSegmentKey(int index, CubePoint anchor) {
+        String anchorValue = anchor == null
+                ? "origin"
+                : anchor.z() + ":" + anchor.y() + ":" + anchor.x();
+        return "H:component:" + anchorValue + "#" + Math.max(index, 0);
+    }
+
+    private static List<CorridorComponent> corridorComponents(Set<CubePoint> cells) {
+        if (cells == null || cells.isEmpty()) {
+            return List.of();
+        }
+        LinkedHashSet<CubePoint> remaining = new LinkedHashSet<>();
+        for (CubePoint cell : cells) {
+            if (cell != null) {
+                remaining.add(cell);
+            }
+        }
+        if (remaining.isEmpty()) {
+            return List.of();
+        }
+        ArrayList<CorridorComponent> result = new ArrayList<>();
+        while (!remaining.isEmpty()) {
+            CubePoint start = remaining.stream().min(CubePoint.POINT_ORDER).orElse(null);
+            if (start == null) {
+                break;
+            }
+            ArrayDeque<CubePoint> open = new ArrayDeque<>();
+            LinkedHashSet<CubePoint> component = new LinkedHashSet<>();
+            open.add(start);
+            remaining.remove(start);
+            while (!open.isEmpty()) {
+                CubePoint cell = open.removeFirst();
+                component.add(cell);
+                for (Point2i step : Point2i.CARDINAL_STEPS) {
+                    CubePoint neighbor = CubePoint.at(cell.projectedCell().add(step), cell.z());
+                    if (remaining.remove(neighbor)) {
+                        open.addLast(neighbor);
+                    }
+                }
+            }
+            CubePoint anchor = component.stream().min(CubePoint.POINT_ORDER).orElse(start);
+            result.add(new CorridorComponent(Set.copyOf(component), anchor));
+        }
+        result.sort(Comparator.comparing(CorridorComponent::anchor, CubePoint.POINT_ORDER));
+        return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
     private static String edgeKey(TraversalNode start, TraversalNode end) {
         return edgeKey(start == null ? null : start.nodeId(), end == null ? null : end.nodeId());
     }
@@ -564,5 +609,14 @@ public final class TraversalGeometryRealizer {
         String start = startNodeId == null ? "" : startNodeId.value();
         String end = endNodeId == null ? "" : endNodeId.value();
         return start.compareTo(end) <= 0 ? start + "->" + end : end + "->" + start;
+    }
+
+    private record CorridorComponent(
+            Set<CubePoint> cells,
+            CubePoint anchor
+    ) {
+        private CorridorComponent {
+            cells = cells == null ? Set.of() : Set.copyOf(cells);
+        }
     }
 }
