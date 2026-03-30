@@ -3,7 +3,6 @@ package features.world.dungeonmap.model.structures.corridor;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridAnchor;
 import features.world.dungeonmap.model.geometry.GridRoute;
-import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.objects.Floor;
 import features.world.dungeonmap.model.structures.TargetKey;
@@ -248,7 +247,7 @@ public final class Corridor {
         Objects.requireNonNull(endpointPlan, "endpointPlan");
         return new CorridorEndpointBinding(
                 endpointPlan.terminal(),
-                boundaryEdge(endpointPlan.roomCell(), endpointPlan.adjacentCell()),
+                endpointPlan.boundaryEdge(),
                 List.of(ConnectionEndpoint.room(endpointPlan.roomId())));
     }
 
@@ -264,19 +263,6 @@ public final class Corridor {
             throw new IllegalArgumentException("Direct adjacency corridor endpoints must share one boundary edge");
         }
         return startEdge;
-    }
-
-    private static VertexEdge boundaryEdge(CubePoint roomCell, CubePoint adjacentCell) {
-        Objects.requireNonNull(roomCell, "roomCell");
-        Objects.requireNonNull(adjacentCell, "adjacentCell");
-        if (roomCell.z() != adjacentCell.z()) {
-            throw new IllegalArgumentException("Corridor boundary cells must share the same level");
-        }
-        Point2i step = new Point2i(adjacentCell.x() - roomCell.x(), adjacentCell.y() - roomCell.y());
-        if (Math.abs(step.x()) + Math.abs(step.y()) != 1) {
-            throw new IllegalArgumentException("Corridor boundary cells must be cardinally adjacent");
-        }
-        return VertexEdge.betweenCellAndStep(roomCell.projectedCell(), step);
     }
 
     private static List<CorridorEndpointBinding> normalizeBindings(List<CorridorEndpointBinding> endpointBindings) {

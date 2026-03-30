@@ -190,15 +190,15 @@ public final class TraversalGeometryRealizer {
         if (adjacentRoomPair == null) {
             return null;
         }
-        CorridorEndpointPlan firstPlan = corridorEndpointPlan(
+        CorridorEndpointPlan firstPlan = CorridorEndpointPlan.fromOccupiedCells(
                 CorridorTerminal.START,
-                first,
-                adjacentRoomPair.firstRoomCell(),
+                first == null ? null : first.roomId(),
+                first == null ? Set.of() : first.occupiedCells(),
                 adjacentRoomPair.secondRoomCell());
-        CorridorEndpointPlan secondPlan = corridorEndpointPlan(
+        CorridorEndpointPlan secondPlan = CorridorEndpointPlan.fromOccupiedCells(
                 CorridorTerminal.END,
-                second,
-                adjacentRoomPair.secondRoomCell(),
+                second == null ? null : second.roomId(),
+                second == null ? Set.of() : second.occupiedCells(),
                 adjacentRoomPair.firstRoomCell());
         if (firstPlan == null || secondPlan == null) {
             return null;
@@ -228,39 +228,6 @@ public final class TraversalGeometryRealizer {
                 if (secondCells.contains(secondCell)) {
                     return new AdjacentRoomPair(firstCell, secondCell);
                 }
-            }
-        }
-        return null;
-    }
-
-    private static CorridorEndpointPlan corridorEndpointPlan(
-            CorridorTerminal terminal,
-            TraversalNode portal,
-            CubePoint roomCell,
-            CubePoint adjacentCell
-    ) {
-        if (portal == null || portal.roomId() == null || roomCell == null || adjacentCell == null) {
-            return null;
-        }
-        return new CorridorEndpointPlan(
-                terminal,
-                portal.roomId(),
-                roomCell,
-                adjacentCell);
-    }
-
-    private static CubePoint portalRoomCell(TraversalNode portal, CubePoint adjacentCell) {
-        if (portal == null || adjacentCell == null) {
-            return null;
-        }
-        for (CubePoint occupiedCell : portal.occupiedCells()) {
-            if (occupiedCell == null || occupiedCell.z() != adjacentCell.z()) {
-                continue;
-            }
-            int deltaX = adjacentCell.x() - occupiedCell.x();
-            int deltaY = adjacentCell.y() - occupiedCell.y();
-            if (Math.abs(deltaX) + Math.abs(deltaY) == 1) {
-                return occupiedCell;
             }
         }
         return null;
@@ -400,11 +367,19 @@ public final class TraversalGeometryRealizer {
                 return;
             }
             ArrayList<CorridorEndpointPlan> endpointPlans = new ArrayList<>();
-            CorridorEndpointPlan startPlan = corridorEndpointPlan(CorridorTerminal.START, start, portalRoomCell(start, segmentResult.sourceCell()), segmentResult.sourceCell());
+            CorridorEndpointPlan startPlan = CorridorEndpointPlan.fromOccupiedCells(
+                    CorridorTerminal.START,
+                    start == null ? null : start.roomId(),
+                    start == null ? Set.of() : start.occupiedCells(),
+                    segmentResult.sourceCell());
             if (startPlan != null) {
                 endpointPlans.add(startPlan);
             }
-            CorridorEndpointPlan endPlan = corridorEndpointPlan(CorridorTerminal.END, end, portalRoomCell(end, segmentResult.targetCell()), segmentResult.targetCell());
+            CorridorEndpointPlan endPlan = CorridorEndpointPlan.fromOccupiedCells(
+                    CorridorTerminal.END,
+                    end == null ? null : end.roomId(),
+                    end == null ? Set.of() : end.occupiedCells(),
+                    segmentResult.targetCell());
             if (endPlan != null) {
                 endpointPlans.add(endPlan);
             }
