@@ -16,11 +16,9 @@ import features.world.dungeonmap.model.objects.Wall;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
-import features.world.dungeonmap.model.structures.connection.ConnectionEndpointType;
 import features.world.dungeonmap.model.structures.connection.LocalConnection;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorEndpointBinding;
-import features.world.dungeonmap.model.structures.corridor.CorridorTerminal;
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
 import features.world.dungeonmap.model.structures.room.Room;
@@ -283,7 +281,7 @@ public final class DungeonMapLoader {
                 rs -> rs.getLong("room_id"),
                 rs -> new RoomExitNarration(
                         new Point2i(rs.getInt("cell_x"), rs.getInt("cell_y")),
-                        edgeDirectionDelta(rs.getString("edge_direction")),
+                        DungeonPersistenceDirections.fromPersistedEdgeDirection(rs.getString("edge_direction")),
                         rs.getString("description")));
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT room_id, dungeon_map_id, cluster_id, name, visual_description, component_x, component_y, level_z"
@@ -360,7 +358,7 @@ public final class DungeonMapLoader {
                                 row.getLong("room_id"),
                                 row.getLong("cluster_id"),
                                 new Point2i(row.getInt("relative_cell_x"), row.getInt("relative_cell_y")),
-                                edgeDirectionDelta(row.getString("edge_direction"))));
+                                DungeonPersistenceDirections.fromPersistedEdgeDirection(row.getString("edge_direction"))));
                 List<Traversal> result = new ArrayList<>();
                 for (Map.Entry<Long, List<Long>> entry : roomIdsByTraversal.entrySet()) {
                     result.add(Traversal.resolved(
@@ -1064,10 +1062,6 @@ public final class DungeonMapLoader {
 
     private static String normalizedRoomName(long roomId, String name) {
         return name == null || name.isBlank() ? "Raum " + roomId : name.trim();
-    }
-
-    private static Point2i edgeDirectionDelta(String direction) {
-        return DungeonPersistenceDirections.fromPersistedEdgeDirection(direction);
     }
 
     private static EdgeObject edgeObjectRelativeToCenter(Point2i relativeCell, Point2i center, String direction, String type) {

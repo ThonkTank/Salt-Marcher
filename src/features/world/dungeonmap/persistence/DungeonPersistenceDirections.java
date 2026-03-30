@@ -4,6 +4,11 @@ import features.world.dungeonmap.model.geometry.Point2i;
 
 public final class DungeonPersistenceDirections {
 
+    private static final Point2i NORTH = new Point2i(0, -1);
+    private static final Point2i EAST = new Point2i(1, 0);
+    private static final Point2i SOUTH = new Point2i(0, 1);
+    private static final Point2i WEST = new Point2i(-1, 0);
+
     private DungeonPersistenceDirections() {
     }
 
@@ -11,16 +16,16 @@ public final class DungeonPersistenceDirections {
         if (direction == null) {
             throw new IllegalArgumentException("Kantenrichtung darf nicht null sein");
         }
-        if (direction.equals(new Point2i(0, -1))) {
+        if (direction.equals(NORTH)) {
             return "NORTH";
         }
-        if (direction.equals(new Point2i(1, 0))) {
+        if (direction.equals(EAST)) {
             return "EAST";
         }
-        if (direction.equals(new Point2i(0, 1))) {
+        if (direction.equals(SOUTH)) {
             return "SOUTH";
         }
-        if (direction.equals(new Point2i(-1, 0))) {
+        if (direction.equals(WEST)) {
             return "WEST";
         }
         throw new IllegalArgumentException("Unbekannte persistierte Kantenrichtung: " + direction);
@@ -31,10 +36,10 @@ public final class DungeonPersistenceDirections {
             throw new IllegalArgumentException("Kantenrichtung fehlt");
         }
         return switch (persistedDirection.trim().toUpperCase(java.util.Locale.ROOT)) {
-            case "NORTH" -> new Point2i(0, -1);
-            case "EAST" -> new Point2i(1, 0);
-            case "SOUTH" -> new Point2i(0, 1);
-            case "WEST" -> new Point2i(-1, 0);
+            case "NORTH" -> NORTH;
+            case "EAST" -> EAST;
+            case "SOUTH" -> SOUTH;
+            case "WEST" -> WEST;
             default -> throw new IllegalArgumentException("Unbekannte persistierte Kantenrichtung: " + persistedDirection);
         };
     }
