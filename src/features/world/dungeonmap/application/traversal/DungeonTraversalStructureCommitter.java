@@ -10,7 +10,6 @@ import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.stair.DungeonStairExit;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
 import features.world.dungeonmap.model.structures.traversal.TraversalRoute;
-import features.world.dungeonmap.model.structures.traversal.TraversalSegmentRef;
 import features.world.dungeonmap.model.structures.traversal.TraversalSegmentRefs;
 import features.world.dungeonmap.persistence.DungeonCorridorWriteRepository;
 import features.world.dungeonmap.persistence.DungeonStairWriteRepository;
@@ -163,32 +162,22 @@ public final class DungeonTraversalStructureCommitter {
             matchCorridorContinuations(resolvedRoute, previousLayout, existingRefs, corridorIdsBySegmentKey);
             matchStairContinuations(resolvedRoute, previousLayout, existingRefs, stairIdsBySegmentKey);
         }
-        return TraversalStructureIdentityResolver.apply(
-                resolvedRoute,
-                corridorIdsBySegmentKey,
-                stairIdsBySegmentKey);
+        return resolvedRoute.withAppliedSegmentIds(
+                TraversalSegmentRefs.ofCorridorAndStairIds(corridorIdsBySegmentKey, stairIdsBySegmentKey));
     }
 
     private static TraversalSegmentRefs existingRefs(DungeonLayout previousLayout, Traversal traversal) {
         if (traversal == null) {
             return TraversalSegmentRefs.empty();
         }
-        if (!traversal.segmentRefs().refsBySegmentKey().isEmpty()) {
+        if (!traversal.segmentRefs().isEmpty()) {
             return traversal.segmentRefs();
         }
         if (previousLayout == null || traversal.traversalId() == null) {
             return TraversalSegmentRefs.empty();
         }
         Traversal previousTraversal = previousLayout.findTraversal(traversal.traversalId());
-        LinkedHashMap<String, TraversalSegmentRef> refsBySegmentKey = new LinkedHashMap<>();
-        if (previousTraversal != null && !previousTraversal.segmentRefs().refsBySegmentKey().isEmpty()) {
-            for (Map.Entry<String, TraversalSegmentRef> entry : previousTraversal.segmentRefs().refsBySegmentKey().entrySet()) {
-                if (entry.getValue() != null && entry.getValue().structureId() != null) {
-                    refsBySegmentKey.putIfAbsent(entry.getKey(), entry.getValue());
-                }
-            }
-        }
-        return refsBySegmentKey.isEmpty() ? TraversalSegmentRefs.empty() : new TraversalSegmentRefs(refsBySegmentKey);
+        return previousTraversal == null ? TraversalSegmentRefs.empty() : previousTraversal.segmentRefs();
     }
 
     private static void matchCorridorContinuations(

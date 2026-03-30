@@ -8,7 +8,6 @@ import features.world.dungeonmap.model.structures.cluster.ClusterRewrite;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.traversal.Traversal;
 import features.world.dungeonmap.model.structures.traversal.TraversalRoute;
-import features.world.dungeonmap.model.structures.traversal.TraversalRoutingContext;
 import features.world.dungeonmap.model.structures.traversal.TraversalRoutingSnapshot;
 import features.world.dungeonmap.model.structures.traversal.TraversalSegmentRefs;
 import features.world.dungeonmap.persistence.DungeonTraversalWriteRepository;
@@ -249,11 +248,8 @@ public final class DungeonTraversalApplicationService {
             return new RewriteResult(sourceTraversals, Set.of(), Map.of());
         }
 
-        TraversalRoutingContext routingContext = new TraversalRoutingContext(
-                TraversalRoutingSnapshot.fromLayout(beforeLayout),
-                TraversalRoutingSnapshot.fromLayout(rewrittenLayout),
-                normalizedAffectedTraversalIds,
-                deletedClusterIds);
+        TraversalRoutingSnapshot previousSnapshot = TraversalRoutingSnapshot.fromLayout(beforeLayout);
+        TraversalRoutingSnapshot rewrittenSnapshot = TraversalRoutingSnapshot.fromLayout(rewrittenLayout);
         LinkedHashMap<Long, Traversal> reanchoredTraversalsById = new LinkedHashMap<>();
         LinkedHashMap<Long, TraversalRoute> traversalRoutesByTraversalId = new LinkedHashMap<>();
         for (Map.Entry<Long, Traversal> entry : sourceTraversals.entrySet()) {
@@ -261,14 +257,15 @@ public final class DungeonTraversalApplicationService {
             if (traversal == null) {
                 continue;
             }
-            Traversal reanchoredTraversal = traversal.reanchoredTo(routingContext);
+            boolean affected = traversal.traversalId() != null && normalizedAffectedTraversalIds.contains(traversal.traversalId());
+            Traversal reanchoredTraversal = affected
+                    ? traversal.reanchoredTo(previousSnapshot, rewrittenSnapshot, deletedClusterIds)
+                    : traversal;
             reanchoredTraversalsById.put(entry.getKey(), reanchoredTraversal);
-            if (routingContext.affects(reanchoredTraversal.traversalId()) && reanchoredTraversal.isPersistable()) {
+            if (affected && reanchoredTraversal.isPersistable()) {
                 traversalRoutesByTraversalId.put(
                         reanchoredTraversal.traversalId(),
-                        TraversalStructureIdentityResolver.apply(
-                                reanchoredTraversal.route(routingContext.rewrittenSnapshot()),
-                                reanchoredTraversal.segmentRefs()));
+                        reanchoredTraversal.route(rewrittenSnapshot).withAppliedSegmentIds(reanchoredTraversal.segmentRefs()));
             }
         }
         return new RewriteResult(

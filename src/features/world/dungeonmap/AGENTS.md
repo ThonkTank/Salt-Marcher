@@ -163,8 +163,8 @@ When rooms are painted, deleted, or merged, affected traversals must be reanchor
 
 1. `DungeonRoomTopologyService` applies room topology changes directly through `RoomCluster` model operations
 2. `DungeonTraversalApplicationService` identifies affected traversals, applies room-membership rewrites, and builds before/after routing snapshots for the changed layout
-3. `Traversal.reanchoredTo(TraversalRoutingContext)` re-targets waypoint and door bindings to the rewritten cluster centers
-4. `Traversal.route(TraversalRoutingSnapshot)` delegates to the traversal-owned routing kernel in `model/structures/traversal/routing/`, which emits `TraversalRoute` segments for first-class `Corridor` and `DungeonStair` structures
+3. `Traversal.reanchoredTo(previousSnapshot, rewrittenSnapshot, deletedClusterIds)` re-targets waypoint and door bindings to the rewritten cluster centers
+4. `Traversal.route(TraversalRoutingSnapshot)` delegates to the traversal-owned routing kernel in `model/structures/traversal/routing/`, and `TraversalRoute` applies persisted segment IDs for first-class `Corridor` and `DungeonStair` structures
 5. All changes (room topology + traversals + persisted segment refs + corridor/stair structures) are committed in one transaction
 
 ### Traversal Routing Algorithm

@@ -131,7 +131,7 @@ public final class Traversal {
         List<Long> updated = roomIds.stream()
                 .filter(existing -> !Objects.equals(existing, roomId))
                 .toList();
-        return resolved(traversalId, mapId, updated, bindings.withoutDoorBinding(roomId), segmentRefs);
+        return resolved(traversalId, mapId, updated, withoutDoorBinding(bindings, roomId), segmentRefs);
     }
 
     public Traversal withMergedRooms(Set<Long> mergedRoomIds, Long replacementRoomId) {
@@ -145,7 +145,7 @@ public final class Traversal {
         TraversalBindings updatedBindings = bindings;
         for (Long mergedRoomId : mergedRoomIds) {
             if (!Objects.equals(mergedRoomId, replacementRoomId)) {
-                updatedBindings = updatedBindings.withoutDoorBinding(mergedRoomId);
+                updatedBindings = withoutDoorBinding(updatedBindings, mergedRoomId);
             }
         }
         return resolved(traversalId, mapId, updated, updatedBindings, segmentRefs);
@@ -159,37 +159,8 @@ public final class Traversal {
                 .map(roomId -> Objects.equals(roomId, oldRoomId) ? newRoomId : roomId)
                 .distinct()
                 .toList();
-        TraversalBindings updatedBindings = bindings.withoutDoorBinding(oldRoomId);
+        TraversalBindings updatedBindings = withoutDoorBinding(bindings, oldRoomId);
         return resolved(traversalId, mapId, updated, updatedBindings, segmentRefs);
-    }
-
-    public Traversal withInsertedWaypoint(int index, TraversalWaypointBinding waypoint) {
-        return withBindings(bindings.withInsertedWaypoint(index, waypoint));
-    }
-
-    public Traversal withMovedWaypoint(int index, TraversalWaypointBinding waypoint) {
-        return withBindings(bindings.withMovedWaypoint(index, waypoint));
-    }
-
-    public Traversal withRemovedWaypoint(int index) {
-        return withBindings(bindings.withRemovedWaypoint(index));
-    }
-
-    public Traversal withDoorBinding(TraversalDoorBinding binding) {
-        if (binding == null) {
-            return this;
-        }
-        Traversal updated = connectsRoom(binding.roomId()) ? this : withAddedRoom(binding.roomId());
-        return updated.withBindings(updated.bindings.withDoorBinding(binding));
-    }
-
-    public Traversal withoutDoorBinding(Long roomId) {
-        return withBindings(bindings.withoutDoorBinding(roomId));
-    }
-
-    public Traversal withSegmentRefs(TraversalSegmentRefs refs) {
-        TraversalSegmentRefs updatedRefs = refs == null ? TraversalSegmentRefs.empty() : refs;
-        return updatedRefs.equals(segmentRefs) ? this : resolved(traversalId, mapId, roomIds, bindings, updatedRefs);
     }
 
     public Traversal mergedWith(Traversal other) {
@@ -208,13 +179,15 @@ public final class Traversal {
                 segmentRefs.withMerged(other.segmentRefs()));
     }
 
-    public Traversal reanchoredTo(TraversalRoutingContext context) {
-        if (context == null || !context.affects(traversalId)) {
+    public Traversal reanchoredTo(
+            TraversalRoutingSnapshot previousInput,
+            TraversalRoutingSnapshot rewrittenInput,
+            Set<Long> deletedClusterIds
+    ) {
+        if (previousInput == null || rewrittenInput == null) {
             return this;
         }
-        TraversalRoutingSnapshot previousInput = context.previousSnapshot();
-        TraversalRoutingSnapshot rewrittenInput = context.rewrittenSnapshot();
-        Set<Long> deletedClusterIds = context.deletedClusterIds();
+        Set<Long> normalizedDeletedClusterIds = deletedClusterIds == null ? Set.of() : deletedClusterIds;
         Long fallbackClusterId = fallbackWaypointClusterId(rewrittenInput);
         List<TraversalWaypointBinding> updatedWaypoints = new ArrayList<>();
         for (TraversalWaypointBinding waypoint : bindings.waypoints()) {
@@ -222,7 +195,7 @@ public final class Traversal {
                     waypoint.clusterId(),
                     previousInput,
                     rewrittenInput,
-                    deletedClusterIds,
+                    normalizedDeletedClusterIds,
                     fallbackClusterId);
             Point2i targetCenter = rewrittenInput.clusterCenter(targetClusterId);
             Point2i previousCenter = previousInput.clusterCenter(waypoint.clusterId());
@@ -245,7 +218,7 @@ public final class Traversal {
             Room rewrittenRoom = rewrittenInput.room(binding.roomId());
             Long targetClusterId = rewrittenRoom == null ? null : rewrittenRoom.clusterId();
             Point2i targetCenter = rewrittenInput.clusterCenter(targetClusterId);
-            if (targetCenter == null || deletedClusterIds.contains(targetClusterId)) {
+            if (targetCenter == null || normalizedDeletedClusterIds.contains(targetClusterId)) {
                 continue;
             }
             Point2i previousCenter = previousInput.clusterCenter(binding.clusterId());
@@ -265,6 +238,21 @@ public final class Traversal {
 
     private Traversal withBindings(TraversalBindings bindings) {
         return resolved(traversalId, mapId, roomIds, bindings, segmentRefs);
+    }
+
+    private static TraversalBindings withoutDoorBinding(TraversalBindings bindings, Long roomId) {
+        if (bindings == null) {
+            return TraversalBindings.empty();
+        }
+        if (roomId == null || bindings.doorBindings().isEmpty()) {
+            return bindings;
+        }
+        List<TraversalDoorBinding> updatedDoorBindings = bindings.doorBindings().stream()
+                .filter(existing -> existing == null || !Objects.equals(existing.roomId(), roomId))
+                .toList();
+        return updatedDoorBindings.size() == bindings.doorBindings().size()
+                ? bindings
+                : new TraversalBindings(bindings.waypoints(), updatedDoorBindings);
     }
 
     private Long fallbackWaypointClusterId(TraversalRoutingSnapshot input) {

@@ -4,102 +4,45 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public record TraversalSegmentRefs(
-        Map<String, TraversalSegmentRef> refsBySegmentKey
+        Map<String, Long> corridorIdsBySegmentKey,
+        Map<String, Long> stairIdsBySegmentKey
 ) {
     public TraversalSegmentRefs {
-        refsBySegmentKey = normalize(refsBySegmentKey);
+        corridorIdsBySegmentKey = normalizeIds(corridorIdsBySegmentKey);
+        stairIdsBySegmentKey = normalizeIds(stairIdsBySegmentKey);
     }
 
     public static TraversalSegmentRefs empty() {
-        return new TraversalSegmentRefs(Map.of());
+        return new TraversalSegmentRefs(Map.of(), Map.of());
     }
 
-    public TraversalSegmentRef ref(String segmentKey) {
-        return segmentKey == null ? null : refsBySegmentKey.get(segmentKey);
-    }
-
-    public Long corridorId(String segmentKey) {
-        TraversalSegmentRef ref = ref(segmentKey);
-        return ref instanceof TraversalSegmentRef.CorridorSegment corridorSegment ? corridorSegment.corridorId() : null;
-    }
-
-    public Long stairId(String segmentKey) {
-        TraversalSegmentRef ref = ref(segmentKey);
-        return ref instanceof TraversalSegmentRef.StairSegment stairSegment ? stairSegment.stairId() : null;
-    }
-
-    public Map<String, Long> corridorIdsBySegmentKey() {
-        LinkedHashMap<String, Long> result = new LinkedHashMap<>();
-        for (Map.Entry<String, TraversalSegmentRef> entry : refsBySegmentKey.entrySet()) {
-            if (entry.getValue() instanceof TraversalSegmentRef.CorridorSegment corridorSegment
-                    && corridorSegment.corridorId() != null) {
-                result.put(entry.getKey(), corridorSegment.corridorId());
-            }
-        }
-        return result.isEmpty() ? Map.of() : Map.copyOf(result);
-    }
-
-    public Map<String, Long> stairIdsBySegmentKey() {
-        LinkedHashMap<String, Long> result = new LinkedHashMap<>();
-        for (Map.Entry<String, TraversalSegmentRef> entry : refsBySegmentKey.entrySet()) {
-            if (entry.getValue() instanceof TraversalSegmentRef.StairSegment stairSegment
-                    && stairSegment.stairId() != null) {
-                result.put(entry.getKey(), stairSegment.stairId());
-            }
-        }
-        return result.isEmpty() ? Map.of() : Map.copyOf(result);
+    public boolean isEmpty() {
+        return corridorIdsBySegmentKey.isEmpty() && stairIdsBySegmentKey.isEmpty();
     }
 
     public TraversalSegmentRefs withMerged(TraversalSegmentRefs other) {
-        if (other == null || other.refsBySegmentKey().isEmpty()) {
+        if (other == null || other.isEmpty()) {
             return this;
         }
-        if (refsBySegmentKey.isEmpty()) {
+        if (isEmpty()) {
             return other;
         }
-        LinkedHashMap<String, TraversalSegmentRef> merged = new LinkedHashMap<>(refsBySegmentKey);
-        for (Map.Entry<String, TraversalSegmentRef> entry : other.refsBySegmentKey().entrySet()) {
-            merged.putIfAbsent(entry.getKey(), entry.getValue());
+        LinkedHashMap<String, Long> mergedCorridorIds = new LinkedHashMap<>(corridorIdsBySegmentKey);
+        for (Map.Entry<String, Long> entry : other.corridorIdsBySegmentKey().entrySet()) {
+            mergedCorridorIds.putIfAbsent(entry.getKey(), entry.getValue());
         }
-        return new TraversalSegmentRefs(merged);
+        LinkedHashMap<String, Long> mergedStairIds = new LinkedHashMap<>(stairIdsBySegmentKey);
+        for (Map.Entry<String, Long> entry : other.stairIdsBySegmentKey().entrySet()) {
+            mergedStairIds.putIfAbsent(entry.getKey(), entry.getValue());
+        }
+        return new TraversalSegmentRefs(mergedCorridorIds, mergedStairIds);
     }
 
     public static TraversalSegmentRefs ofCorridorAndStairIds(
             Map<String, Long> corridorIdsBySegmentKey,
             Map<String, Long> stairIdsBySegmentKey
     ) {
-        LinkedHashMap<String, TraversalSegmentRef> refs = new LinkedHashMap<>();
-        appendTypedRefs(refs, corridorIdsBySegmentKey, true);
-        appendTypedRefs(refs, stairIdsBySegmentKey, false);
-        return refs.isEmpty() ? empty() : new TraversalSegmentRefs(refs);
-    }
-
-    private static void appendTypedRefs(
-            Map<String, TraversalSegmentRef> refs,
-            Map<String, Long> idsBySegmentKey,
-            boolean corridor
-    ) {
-        for (Map.Entry<String, Long> entry : normalizeIds(idsBySegmentKey).entrySet()) {
-            refs.put(entry.getKey(), corridor
-                    ? new TraversalSegmentRef.CorridorSegment(entry.getValue())
-                    : new TraversalSegmentRef.StairSegment(entry.getValue()));
-        }
-    }
-
-    private static Map<String, TraversalSegmentRef> normalize(Map<String, TraversalSegmentRef> raw) {
-        if (raw == null || raw.isEmpty()) {
-            return Map.of();
-        }
-        LinkedHashMap<String, TraversalSegmentRef> normalized = new LinkedHashMap<>();
-        for (Map.Entry<String, TraversalSegmentRef> entry : raw.entrySet()) {
-            String segmentKey = normalizeSegmentKey(entry.getKey());
-            TraversalSegmentRef ref = entry.getValue();
-            if (segmentKey == null || ref == null || ref.structureId() == null) {
-                continue;
-            }
-            normalized.put(segmentKey, ref);
-        }
-        return normalized.isEmpty() ? Map.of() : Map.copyOf(normalized);
+        return new TraversalSegmentRefs(corridorIdsBySegmentKey, stairIdsBySegmentKey);
     }
 
     private static Map<String, Long> normalizeIds(Map<String, Long> raw) {
