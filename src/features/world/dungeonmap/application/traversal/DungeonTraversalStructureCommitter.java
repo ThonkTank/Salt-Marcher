@@ -163,9 +163,10 @@ public final class DungeonTraversalStructureCommitter {
             matchCorridorContinuations(resolvedRoute, previousLayout, existingRefs, corridorIdsBySegmentKey);
             matchStairContinuations(resolvedRoute, previousLayout, existingRefs, stairIdsBySegmentKey);
         }
-        return resolvedRoute
-                .withCorridorIds(corridorIdsBySegmentKey)
-                .withStairIds(stairIdsBySegmentKey);
+        return TraversalStructureIdentityResolver.apply(
+                resolvedRoute,
+                corridorIdsBySegmentKey,
+                stairIdsBySegmentKey);
     }
 
     private static TraversalSegmentRefs existingRefs(DungeonLayout previousLayout, Traversal traversal) {

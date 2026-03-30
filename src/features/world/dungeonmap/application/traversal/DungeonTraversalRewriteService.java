@@ -90,9 +90,9 @@ public final class DungeonTraversalRewriteService {
             if (routingContext.affects(reanchoredTraversal.traversalId()) && reanchoredTraversal.isPersistable()) {
                 traversalRoutesByTraversalId.put(
                         reanchoredTraversal.traversalId(),
-                        applySegmentRefs(
-                                reanchoredTraversal,
-                                reanchoredTraversal.route(routingContext.rewrittenSnapshot())));
+                        TraversalStructureIdentityResolver.apply(
+                                reanchoredTraversal.route(routingContext.rewrittenSnapshot()),
+                                reanchoredTraversal.segmentRefs()));
             }
         }
         return new DungeonTraversalRewriteResult(
@@ -106,14 +106,5 @@ public final class DungeonTraversalRewriteService {
                 traversalsById == null ? Map.of() : Map.copyOf(traversalsById),
                 Set.of(),
                 Map.of());
-    }
-
-    private static TraversalRoute applySegmentRefs(Traversal traversal, TraversalRoute traversalRoute) {
-        if (traversal == null || traversalRoute == null) {
-            return traversalRoute == null ? TraversalRoute.empty() : traversalRoute;
-        }
-        return traversalRoute
-                .withCorridorIds(traversal.segmentRefs().corridorIdsBySegmentKey())
-                .withStairIds(traversal.segmentRefs().stairIdsBySegmentKey());
     }
 }

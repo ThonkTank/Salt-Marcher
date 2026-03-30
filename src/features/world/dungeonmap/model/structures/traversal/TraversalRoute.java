@@ -3,10 +3,8 @@ package features.world.dungeonmap.model.structures.traversal;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 public record TraversalRoute(
@@ -24,44 +22,6 @@ public record TraversalRoute(
 
     public boolean isEmpty() {
         return corridorSegments.isEmpty() && stairSegments.isEmpty();
-    }
-
-    public TraversalRoute withCorridorIds(Map<String, Long> corridorIdsBySegmentKey) {
-        if (corridorSegments.isEmpty() || corridorIdsBySegmentKey == null || corridorIdsBySegmentKey.isEmpty()) {
-            return this;
-        }
-        ArrayList<CorridorSegment> updated = new ArrayList<>();
-        for (CorridorSegment corridorSegment : corridorSegments) {
-            if (corridorSegment == null || corridorSegment.corridor() == null) {
-                continue;
-            }
-            Long corridorId = corridorIdsBySegmentKey.getOrDefault(
-                    corridorSegment.segmentKey(),
-                    corridorSegment.corridor().corridorId());
-            updated.add(corridorSegment.withCorridor(corridorSegment.corridor().withIdentity(
-                    corridorId,
-                    corridorSegment.corridor().mapId())));
-        }
-        return new TraversalRoute(List.copyOf(updated), stairSegments);
-    }
-
-    public TraversalRoute withStairIds(Map<String, Long> stairIdsBySegmentKey) {
-        if (stairSegments.isEmpty() || stairIdsBySegmentKey == null || stairIdsBySegmentKey.isEmpty()) {
-            return this;
-        }
-        ArrayList<StairSegment> updated = new ArrayList<>();
-        for (StairSegment stairSegment : stairSegments) {
-            if (stairSegment == null || stairSegment.stair() == null) {
-                continue;
-            }
-            Long stairId = stairIdsBySegmentKey.getOrDefault(
-                    stairSegment.segmentKey(),
-                    stairSegment.stair().stairId());
-            updated.add(stairSegment.withStair(stairSegment.stair().withIdentity(
-                    stairId,
-                    stairSegment.stair().mapId())));
-        }
-        return new TraversalRoute(corridorSegments, List.copyOf(updated));
     }
 
     private static List<CorridorSegment> normalizeCorridorSegments(List<CorridorSegment> corridorSegments) {
@@ -98,10 +58,6 @@ public record TraversalRoute(
             segmentKey = normalizeSegmentKey(segmentKey);
             corridor = Objects.requireNonNull(corridor, "corridor");
         }
-
-        public CorridorSegment withCorridor(Corridor corridor) {
-            return new CorridorSegment(segmentKey, corridor);
-        }
     }
 
     public record StairSegment(
@@ -111,10 +67,6 @@ public record TraversalRoute(
         public StairSegment {
             segmentKey = normalizeSegmentKey(segmentKey);
             stair = Objects.requireNonNull(stair, "stair");
-        }
-
-        public StairSegment withStair(DungeonStair stair) {
-            return new StairSegment(segmentKey, stair);
         }
     }
 
