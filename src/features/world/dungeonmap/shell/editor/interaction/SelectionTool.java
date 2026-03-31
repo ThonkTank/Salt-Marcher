@@ -15,11 +15,10 @@ import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
-import features.world.dungeonmap.model.structures.stair.DungeonStair;
-import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.shell.editor.EditorCards;
 import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
+import features.world.dungeonmap.shell.interaction.DungeonSelection;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.EditorInteractionState;
 import features.world.dungeonmap.state.EditorPreview;
@@ -105,12 +104,13 @@ public final class SelectionTool implements EditorTool {
             clear();
             return false;
         }
+        DungeonSelection selection = ctx == null ? null : ctx.selection();
         DungeonHitSubject hit = primarySubject(ctx);
         clear();
         if (hit instanceof DungeonHitSubject.CorridorNodeSubject corridorNodeHit
                 && corridorNodeHit.corridorId() != null
                 && corridorNodeHit.nodeId() != null) {
-            state.selectTarget(corridorNodeHit.targetKey());
+            state.applySelection(selection);
             corridorNodeDragSession = new CorridorNodeDragSession(
                     corridorNodeHit.corridorId(),
                     corridorNodeHit.nodeId(),
@@ -119,31 +119,24 @@ public final class SelectionTool implements EditorTool {
             return true;
         }
         if (hit instanceof DungeonHitSubject.ClusterLabelSubject clusterLabelHit) {
-            state.selectTarget(hit.targetKey());
+            state.applySelection(selection);
             dragSession = ClusterDragSession.start(
                     clusterLabelHit.clusterId(),
-                    hit.targetKey(),
                     mapState.activeMap(),
                     event.gridCell(),
                     mapState.activeProjectionLevel());
             return true;
         }
-        DungeonStair stair = hit instanceof DungeonHitSubject.StairSubject stairSubject
-                ? mapState.activeMap().findStair(stairSubject.stairId())
-                : null;
-        if (stair != null) {
-            state.selectTarget(stair.targetKey());
+        if (hit instanceof DungeonHitSubject.StairSubject) {
+            state.applySelection(selection);
             return true;
         }
-        DungeonTransition transition = hit instanceof DungeonHitSubject.TransitionSubject transitionSubject
-                ? mapState.activeMap().findTransition(transitionSubject.transitionId())
-                : null;
-        if (transition != null) {
-            state.selectTarget(transition.targetKey());
+        if (hit instanceof DungeonHitSubject.TransitionSubject) {
+            state.applySelection(selection);
             return true;
         }
         if (hit != null && !hit.targetKey().isBlank()) {
-            state.selectTarget(hit.targetKey());
+            state.applySelection(selection);
             return true;
         }
         state.clearSelection();
@@ -184,7 +177,6 @@ public final class SelectionTool implements EditorTool {
             CorridorNodeDragSession current = corridorNodeDragSession;
             corridorNodeDragSession = null;
             state.clearPreview();
-            state.selectTarget(Corridor.targetKey(current.corridorId()));
             if (!Objects.equals(current.startPoint(), current.currentPoint()) && mapState.activeMapId() != null) {
                 Corridor corridor = mapState.activeMap().findCorridor(current.corridorId());
                 if (corridor != null) {
@@ -209,7 +201,6 @@ public final class SelectionTool implements EditorTool {
         int levelDelta = dragSession.currentLevel() - dragSession.startLevel();
         Long mapId = dragSession.baseMap().mapId() > 0 ? dragSession.baseMap().mapId() : null;
         Long clusterId = dragSession.clusterId();
-        state.selectTarget(dragSession.targetKey());
         state.clearPreview();
         dragSession = null;
         if (mapId != null && clusterId != null && (delta.x() != 0 || delta.y() != 0 || levelDelta != 0)) {
@@ -362,19 +353,19 @@ public final class SelectionTool implements EditorTool {
     }
 
     private RoomCluster selectedCluster() {
-        String targetKey = state.selectedTargetKey();
-        if (!RoomCluster.isTargetKey(targetKey)) {
+        DungeonHitSubject subject = selectedSubject();
+        if (!(subject instanceof DungeonHitSubject.ClusterLabelSubject clusterLabelSubject)) {
             return null;
         }
-        return mapState.activeMap().findCluster(RoomCluster.clusterIdFromKey(targetKey));
+        return mapState.activeMap().findCluster(clusterLabelSubject.clusterId());
     }
 
     private Room selectedRoom() {
-        String targetKey = state.selectedTargetKey();
-        if (!Room.isTargetKey(targetKey)) {
+        DungeonHitSubject subject = selectedSubject();
+        if (!(subject instanceof DungeonHitSubject.RoomSubject roomSubject)) {
             return null;
         }
-        return mapState.activeMap().findRoom(Room.roomIdFromKey(targetKey));
+        return mapState.activeMap().findRoom(roomSubject.roomId());
     }
 
     private void clear() {
@@ -387,6 +378,13 @@ public final class SelectionTool implements EditorTool {
         return ctx == null || ctx.selection() == null || ctx.selection().primary() == null
                 ? null
                 : ctx.selection().primary().descriptor().subject();
+    }
+
+    private DungeonHitSubject selectedSubject() {
+        DungeonSelection selection = state.selectedSelection();
+        return selection == null || selection.primary() == null
+                ? null
+                : selection.primary().descriptor().subject();
     }
 
     private DungeonLayout previewMap() {
@@ -455,7 +453,6 @@ public final class SelectionTool implements EditorTool {
 
     private record ClusterDragSession(
             Long clusterId,
-            String targetKey,
             DungeonLayout baseMap,
             Point2i pressCell,
             Point2i currentDelta,
@@ -463,21 +460,20 @@ public final class SelectionTool implements EditorTool {
             int currentLevel
     ) {
         private ClusterDragSession withCurrentDelta(Point2i delta) {
-            return new ClusterDragSession(clusterId, targetKey, baseMap, pressCell, delta, startLevel, currentLevel);
+            return new ClusterDragSession(clusterId, baseMap, pressCell, delta, startLevel, currentLevel);
         }
 
         private ClusterDragSession withCurrentLevel(int nextLevel) {
-            return new ClusterDragSession(clusterId, targetKey, baseMap, pressCell, currentDelta, startLevel, nextLevel);
+            return new ClusterDragSession(clusterId, baseMap, pressCell, currentDelta, startLevel, nextLevel);
         }
 
         private static ClusterDragSession start(
                 Long clusterId,
-                String targetKey,
                 DungeonLayout baseMap,
                 Point2i pressCell,
                 int startLevel
         ) {
-            return new ClusterDragSession(clusterId, targetKey, baseMap, pressCell, new Point2i(0, 0), startLevel, startLevel);
+            return new ClusterDragSession(clusterId, baseMap, pressCell, new Point2i(0, 0), startLevel, startLevel);
         }
     }
 
