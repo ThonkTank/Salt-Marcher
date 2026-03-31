@@ -16,6 +16,7 @@ import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.shell.editor.EditorCards;
 import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
+import features.world.dungeonmap.shell.interaction.DungeonSelection;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.EditorInteractionState;
@@ -48,8 +49,6 @@ public final class ConnectionsTool implements EditorTool {
     private final VBox card = EditorCards.card("Connections", statusLabel, selectionLabel, connectedRoomsLabel, deleteNodeButton, deleteCorridorButton);
 
     private CorridorBuildDraft draft;
-    private Long selectedNodeId;
-    private Long selectedSegmentId;
     private DungeonEditorTool activeTool;
     private Runnable refreshCallback = () -> { };
 
@@ -72,6 +71,8 @@ public final class ConnectionsTool implements EditorTool {
         connectedRoomsLabel.setWrapText(true);
         deleteNodeButton.setOnAction(event -> deleteSelectedNode());
         deleteCorridorButton.setOnAction(event -> deleteSelectedCorridor());
+        this.state.addListener(this::refreshStatePane);
+        this.mapState.addListener(this::refreshStatePane);
     }
 
     @Override
@@ -89,7 +90,6 @@ public final class ConnectionsTool implements EditorTool {
     public void deactivate() {
         activeTool = null;
         clearDraft();
-        clearSubSelection();
         refreshStatePane();
     }
 
@@ -101,7 +101,7 @@ public final class ConnectionsTool implements EditorTool {
         }
         DungeonHitSubject hit = primarySubject(ctx);
         if (sessionState.selectedTool() == DungeonEditorTool.CONNECTIONS_DELETE) {
-            return handleDeletePressed(ctx.activeMap(), hit);
+            return handleDeletePressed(ctx, ctx.activeMap(), hit);
         }
         return handleConnectionsPressed(ctx, ctx.activeMap(), hit);
     }
@@ -122,6 +122,7 @@ public final class ConnectionsTool implements EditorTool {
             return null;
         }
         Corridor corridor = selectedCorridor();
+        Long selectedNodeId = selectedNodeId();
         statusLabel.setText(draft == null ? "Kein offener Corridor-Build" : draft.statusMessage());
         if (corridor == null) {
             selectionLabel.setText("Innenwand: Tür. Außenwand: Corridor-Start.");
@@ -146,16 +147,18 @@ public final class ConnectionsTool implements EditorTool {
         if (layout == null || hit == null) {
             return false;
         }
-        if (hit instanceof DungeonHitSubject.ClusterBoundarySubject boundaryHit
-                && isEditableDoorBoundary(boundaryHit, layout, ctx.probe().levelZ())) {
-            state.selectTarget(boundaryHit.targetKey());
-            applyDoorEdit(boundaryHit, false);
-            return true;
-        }
-        if (hit instanceof DungeonHitSubject.RoomBoundarySubject roomBoundaryHit && roomBoundaryHit.exterior()) {
+        if (hit instanceof DungeonHitSubject.RoomBoundarySubject roomBoundaryHit) {
+            if (isEditableDoorBoundary(roomBoundaryHit, layout, ctx.probe().levelZ())) {
+                applySelection(ctx.selection());
+                applyDoorEdit(roomBoundaryHit.clusterId(), roomBoundaryHit.edge(), false);
+                return true;
+            }
+            if (!roomBoundaryHit.exterior()) {
+                return false;
+            }
+            applySelection(ctx.selection());
             if (draft == null) {
                 startDraft(roomBoundaryHit, layout);
-                state.selectTarget(roomBoundaryHit.targetKey());
                 return true;
             }
             finishDraftWithRoom(roomBoundaryHit, layout);
@@ -166,73 +169,57 @@ public final class ConnectionsTool implements EditorTool {
             return true;
         }
         if (draft != null && hit instanceof DungeonHitSubject.CorridorNodeSubject corridorNodeHit) {
+            applySelection(ctx.selection());
             finishDraftWithCorridorNode(corridorNodeHit, layout);
             return true;
         }
         if (hit instanceof DungeonHitSubject.CorridorCornerSubject cornerHit) {
-            selectCorridorSubTarget(cornerHit.targetKey(), null, cornerHit.segmentId());
+            applySelection(ctx.selection());
             insertNode(cornerHit.corridorId(), cornerHit.segmentId(), cornerHit.doubledPoint());
             return true;
         }
         if (hit instanceof DungeonHitSubject.CorridorSegmentSubject segmentHit) {
-            selectCorridorSubTarget(segmentHit.targetKey(), null, segmentHit.segmentId());
+            applySelection(ctx.selection());
             insertNode(segmentHit.corridorId(), segmentHit.segmentId(), segmentHit.doubledPoint());
             return true;
         }
         if (hit instanceof DungeonHitSubject.CorridorNodeSubject nodeHit) {
-            selectCorridorSubTarget(nodeHit.targetKey(), nodeHit.nodeId(), null);
+            applySelection(ctx.selection());
             return true;
         }
         if (hit instanceof DungeonHitSubject.ConnectionSubject connectionHit) {
-            state.selectTarget(connectionHit.targetKey());
-            clearSubSelection();
+            applySelection(ctx.selection());
             return true;
         }
         if (hit instanceof DungeonHitSubject.RoomSubject roomHit) {
-            state.selectTarget(roomHit.targetKey());
-            clearSubSelection();
+            applySelection(ctx.selection());
             return true;
         }
         return false;
     }
 
-    private boolean handleDeletePressed(DungeonLayout layout, DungeonHitSubject hit) {
+    private boolean handleDeletePressed(EditorToolContext ctx, DungeonLayout layout, DungeonHitSubject hit) {
         if (layout == null || hit == null) {
             return false;
         }
         if (hit instanceof DungeonHitSubject.ConnectionSubject connectionHit
                 && connectionHit.connectionKind() == features.world.dungeonmap.model.structures.connection.ConnectionKind.LOCAL) {
-            List<Point2i> touchingCells = connectionHit.edge().touchingCells().stream()
-                    .sorted(Point2i.POINT_ORDER)
-                    .toList();
-            if (touchingCells.isEmpty()) {
-                return false;
-            }
-            Point2i baseCell = touchingCells.getFirst();
-            DungeonHitSubject.ClusterBoundarySubject boundaryHit = new DungeonHitSubject.ClusterBoundarySubject(
-                    connectionHit.clusterId(),
-                    connectionHit.edge(),
-                    InternalBoundaryType.DOOR,
-                    baseCell,
-                    connectionHit.edge().directionFrom(baseCell));
-            applyDoorEdit(boundaryHit, true);
+            applySelection(ctx == null ? null : ctx.selection());
+            applyDoorEdit(connectionHit.clusterId(), connectionHit.edge(), true);
             return true;
         }
         Long corridorId = corridorId(hit);
         if (corridorId != null) {
-            state.selectTarget(Corridor.targetKey(corridorId));
+            applySelection(ctx == null ? null : ctx.selection());
             Long mapId = mapState.activeMapId();
             if (mapId == null) {
                 return true;
             }
             loadingService.submitReloadingWrite(
-                    () -> corridorEditService.delete(mapId, corridorId),
-                    mapId,
-                    () -> {
-                        state.clearSelection();
-                        clearSubSelection();
-                    },
-                    throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.handleDeletePressed()", throwable));
+                () -> corridorEditService.delete(mapId, corridorId),
+                mapId,
+                state::clearSelection,
+                throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.handleDeletePressed()", throwable));
             return true;
         }
         return false;
@@ -351,6 +338,7 @@ public final class ConnectionsTool implements EditorTool {
     private void deleteSelectedNode() {
         Corridor corridor = selectedCorridor();
         Long mapId = mapState.activeMapId();
+        Long selectedNodeId = selectedNodeId();
         if (corridor == null || mapId == null || selectedNodeId == null) {
             return;
         }
@@ -358,10 +346,7 @@ public final class ConnectionsTool implements EditorTool {
         loadingService.submitReloadingWrite(
                 () -> corridorEditService.update(mapId, updated),
                 mapId,
-                () -> {
-                    state.selectTarget(updated.targetKey());
-                    clearSubSelection();
-                },
+                () -> state.selectTarget(updated.targetKey()),
                 throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.deleteSelectedNode()", throwable));
     }
 
@@ -374,35 +359,31 @@ public final class ConnectionsTool implements EditorTool {
         loadingService.submitReloadingWrite(
                 () -> corridorEditService.delete(mapId, corridor.corridorId()),
                 mapId,
-                () -> {
-                    state.clearSelection();
-                    clearSubSelection();
-                },
+                state::clearSelection,
                 throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.deleteSelectedCorridor()", throwable));
     }
 
-    private void applyDoorEdit(DungeonHitSubject.ClusterBoundarySubject hit, boolean deleteBoundary) {
+    private void applyDoorEdit(Long clusterId, features.world.dungeonmap.model.geometry.VertexEdge edge, boolean deleteBoundary) {
         Long mapId = mapState.activeMapId();
-        Long clusterId = hit.clusterId();
-        if (mapId == null || clusterId == null) {
+        if (mapId == null || clusterId == null || edge == null) {
             return;
         }
         loadingService.submitReloadingWrite(
-                () -> boundaryEditService.apply(mapId, clusterId, hit.edge(), InternalBoundaryType.DOOR, deleteBoundary),
+                () -> boundaryEditService.apply(mapId, clusterId, edge, InternalBoundaryType.DOOR, deleteBoundary),
                 mapId,
                 null,
                 throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.applyDoorEdit()", throwable));
     }
 
     private boolean isEditableDoorBoundary(
-            DungeonHitSubject.ClusterBoundarySubject hit,
+            DungeonHitSubject.RoomBoundarySubject hit,
             DungeonLayout layout,
             int levelZ
     ) {
         if (hit == null || layout == null || hit.clusterId() == null) {
             return false;
         }
-        if (hit.boundaryType() == InternalBoundaryType.DOOR) {
+        if (hit.exterior()) {
             return false;
         }
         var cluster = layout.findCluster(hit.clusterId());
@@ -410,19 +391,15 @@ public final class ConnectionsTool implements EditorTool {
         if (projectedCluster == null) {
             return false;
         }
-        List<Point2i> touchingCells = hit.edge().touchingCells().stream()
-                .sorted(Point2i.POINT_ORDER)
-                .toList();
-        if (touchingCells.size() != 2) {
+        Room sourceRoom = projectedCluster.roomAt(hit.roomCell());
+        Point2i oppositeCell = hit.roomCell().add(hit.outwardStep());
+        Room oppositeRoom = projectedCluster.roomAt(oppositeCell);
+        if (sourceRoom == null || oppositeRoom == null) {
             return false;
         }
-        Room leftRoom = projectedCluster.roomAt(touchingCells.getFirst());
-        Room rightRoom = projectedCluster.roomAt(touchingCells.getLast());
-        return leftRoom != null
-                && rightRoom != null
-                && leftRoom.roomId() != null
-                && rightRoom.roomId() != null
-                && !leftRoom.roomId().equals(rightRoom.roomId());
+        return sourceRoom.roomId() != null
+                && oppositeRoom.roomId() != null
+                && !sourceRoom.roomId().equals(oppositeRoom.roomId());
     }
 
     private CorridorNode roomBoundaryNode(Room room, DungeonHitSubject.RoomBoundarySubject hit, long nodeId) {
@@ -475,30 +452,16 @@ public final class ConnectionsTool implements EditorTool {
         refreshStatePane();
     }
 
-    private void clearSubSelection() {
-        selectedNodeId = null;
-        selectedSegmentId = null;
-        refreshStatePane();
-    }
-
-    private void selectCorridorSubTarget(String targetKey, Long nodeId, Long segmentId) {
-        state.selectTarget(targetKey);
-        selectedNodeId = nodeId;
-        selectedSegmentId = segmentId;
-        refreshStatePane();
-    }
-
     private Corridor selectedCorridor() {
-        String targetKey = state.selectedTargetKey();
-        if (!Corridor.isTargetKey(targetKey)) {
+        Long corridorId = selectedCorridorId();
+        if (corridorId == null) {
             return null;
         }
-        return mapState.activeMap().findCorridor(Corridor.corridorIdFromKey(targetKey));
+        return mapState.activeMap().findCorridor(corridorId);
     }
 
     private static Long corridorId(DungeonHitSubject hit) {
         return switch (hit) {
-            case DungeonHitSubject.CorridorSubject corridorSubject -> corridorSubject.corridorId();
             case DungeonHitSubject.CorridorNodeSubject corridorNodeSubject -> corridorNodeSubject.corridorId();
             case DungeonHitSubject.CorridorCornerSubject corridorCornerSubject -> corridorCornerSubject.corridorId();
             case DungeonHitSubject.CorridorSegmentSubject corridorSegmentSubject -> corridorSegmentSubject.corridorId();
@@ -516,10 +479,53 @@ public final class ConnectionsTool implements EditorTool {
                 : ctx.selection().primary().descriptor().subject();
     }
 
+    private void applySelection(DungeonSelection selection) {
+        if (selection != null) {
+            state.applySelection(selection);
+        }
+    }
+
+    private DungeonHitSubject selectedSubject() {
+        DungeonSelection selection = state.selectedSelection();
+        return selection == null || selection.primary() == null
+                ? null
+                : selection.primary().descriptor().subject();
+    }
+
+    private Long selectedCorridorId() {
+        Long corridorId = corridorId(selectedSubject());
+        if (corridorId != null) {
+            return corridorId;
+        }
+        String targetKey = state.selectedTargetKey();
+        if (!Corridor.isTargetKey(targetKey)) {
+            return null;
+        }
+        return Corridor.corridorIdFromKey(targetKey);
+    }
+
+    private Long selectedNodeId() {
+        DungeonHitSubject subject = selectedSubject();
+        return subject instanceof DungeonHitSubject.CorridorNodeSubject corridorNodeSubject
+                ? corridorNodeSubject.nodeId()
+                : null;
+    }
+
+    private Long selectedSegmentId() {
+        DungeonHitSubject subject = selectedSubject();
+        return switch (subject) {
+            case DungeonHitSubject.CorridorCornerSubject corridorCornerSubject -> corridorCornerSubject.segmentId();
+            case DungeonHitSubject.CorridorSegmentSubject corridorSegmentSubject -> corridorSegmentSubject.segmentId();
+            default -> null;
+        };
+    }
+
     private String selectionText(Corridor corridor) {
+        Long selectedNodeId = selectedNodeId();
         if (selectedNodeId != null) {
             return "Gewählter Node: " + selectedNodeId;
         }
+        Long selectedSegmentId = selectedSegmentId();
         if (selectedSegmentId != null) {
             return "Gewähltes Segment: " + selectedSegmentId;
         }
