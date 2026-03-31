@@ -3,7 +3,7 @@ package features.world.dungeonmap.model.geometry;
 import java.util.Comparator;
 
 /**
- * Canonical 3D cube-grid coordinate for dungeon traversal and vertical projection.
+ * Canonical 3D cube-grid coordinate for dungeon runtime identity and vertical projection.
  *
  * <p>The dungeon canvas still renders a 2D projection, but model/runtime identity lives on the full cube
  * coordinate so stairs and reachable layers can be expressed without parallel level state.</p>

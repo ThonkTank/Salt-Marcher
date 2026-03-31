@@ -8,44 +8,44 @@ import java.util.Collection;
 
 public final class Door extends VertexPath {
 
-    private final TraversalState traversalState;
+    private final DoorState doorState;
 
     public Door(Collection<VertexEdge> edges) {
-        this(edges, TraversalState.CLOSED);
+        this(edges, DoorState.CLOSED);
     }
 
-    public Door(Collection<VertexEdge> edges, TraversalState traversalState) {
+    public Door(Collection<VertexEdge> edges, DoorState doorState) {
         super(edges);
-        this.traversalState = traversalState == null ? TraversalState.CLOSED : traversalState;
+        this.doorState = doorState == null ? DoorState.CLOSED : doorState;
     }
 
     protected VertexPath recreate(Collection<VertexEdge> edges) {
-        return new Door(edges, traversalState);
+        return new Door(edges, doorState);
     }
 
     public Door movedBy(Point2i delta) {
         return (Door) translated(delta);
     }
 
-    public TraversalState traversalState() {
-        return traversalState;
+    public DoorState doorState() {
+        return doorState;
     }
 
-    public boolean blocksTraversal() {
-        return traversalState.blocksTraversal();
+    public boolean blocksPassage() {
+        return doorState.blocksPassage();
     }
 
-    public enum TraversalState {
+    public enum DoorState {
         CLOSED(true);
 
-        private final boolean blocksTraversal;
+        private final boolean blocksPassage;
 
-        TraversalState(boolean blocksTraversal) {
-            this.blocksTraversal = blocksTraversal;
+        DoorState(boolean blocksPassage) {
+            this.blocksPassage = blocksPassage;
         }
 
-        public boolean blocksTraversal() {
-            return blocksTraversal;
+        public boolean blocksPassage() {
+            return blocksPassage;
         }
     }
 }

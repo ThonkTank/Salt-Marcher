@@ -141,8 +141,6 @@ public final class DungeonSchemaSupport {
     public static void resetSchema(Connection conn) throws SQLException {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("PRAGMA foreign_keys = OFF");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_traversal_corridor_segments");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_traversal_stair_segments");
             stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_segments");
             stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_nodes");
             stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_endpoint_binding_targets");
@@ -158,10 +156,6 @@ public final class DungeonSchemaSupport {
             stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_waypoints");
             stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_door_overrides");
             stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_members");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_traversal_waypoints");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_traversal_door_bindings");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_traversal_members");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_traversals");
             stmt.execute("DROP TABLE IF EXISTS dungeon_corridors");
             stmt.execute("DROP TABLE IF EXISTS dungeon_rooms");
             stmt.execute("DROP TABLE IF EXISTS dungeon_room_clusters");

@@ -400,7 +400,7 @@ public final class Corridor {
             result.add(new CorridorConnection(
                     corridorId,
                     mapId,
-                    new Door(List.of(boundaryEdge), Door.TraversalState.CLOSED),
+                    new Door(List.of(boundaryEdge), Door.DoorState.CLOSED),
                     List.of(ConnectionEndpoint.room(node.roomId()), ConnectionEndpoint.corridor(corridorId)),
                     levelZ));
         }

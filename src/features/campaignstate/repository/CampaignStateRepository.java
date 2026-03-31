@@ -244,11 +244,11 @@ public final class CampaignStateRepository {
                 }
                 return locationKey.startsWith("tile:")
                         ? CampaignDungeonLocationType.TILE
-                        : CampaignDungeonLocationType.CORRIDOR_COMPONENT;
+                        : null;
             }
         }
         if (locationKey != null && !locationKey.isBlank()) {
-            return locationKey.startsWith("tile:") ? CampaignDungeonLocationType.TILE : CampaignDungeonLocationType.CORRIDOR_COMPONENT;
+            return locationKey.startsWith("tile:") ? CampaignDungeonLocationType.TILE : null;
         }
         if (corridorId != null) {
             return CampaignDungeonLocationType.CORRIDOR;

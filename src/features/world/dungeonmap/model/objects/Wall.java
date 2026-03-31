@@ -8,7 +8,7 @@ import java.util.Collection;
 
 public final class Wall extends VertexPath {
 
-    // A wall is a path-shaped object whose only added domain rule is that traversal is always blocked.
+    // A wall is a path-shaped object whose only added domain rule is that passage is always blocked.
     public Wall(Collection<VertexEdge> edges) {
         super(edges);
     }
@@ -25,7 +25,7 @@ public final class Wall extends VertexPath {
         return new Wall(java.util.Set.of(new VertexEdge(start, end)));
     }
 
-    public boolean blocksTraversal() {
+    public boolean blocksPassage() {
         return true;
     }
 }

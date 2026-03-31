@@ -23,7 +23,7 @@ public record LocalConnection(
 
     @Override
     public boolean isTraversable() {
-        return door != null && !door.blocksTraversal();
+        return door != null && !door.blocksPassage();
     }
 
     @Override

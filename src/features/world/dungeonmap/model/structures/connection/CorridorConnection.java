@@ -28,6 +28,6 @@ public record CorridorConnection(
 
     @Override
     public boolean isTraversable() {
-        return door != null && !door.blocksTraversal();
+        return door != null && !door.blocksPassage();
     }
 }

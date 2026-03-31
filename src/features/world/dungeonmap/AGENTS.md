@@ -12,14 +12,12 @@ The feature ships two `AppView` implementations: `DungeonEditorView` (EDITOR) an
 
 `DungeonMapModule` (`bootstrap/`) is the composition root — it wires all dependencies and exposes the two views to the app shell.
 
-### Current Interim State
+### Current Architecture
 
-Traversal has been removed as a backend owner before the corridor/stair rewrite lands. Any older traversal-specific references later in this file are historical and overridden by this section until the next architecture pass.
-
-- There is no `application/traversal/` package and no `model/structures/traversal/` package.
 - `DungeonLayout` owns only direct top-level structures: corridors, stairs, clusters, transitions.
-- The editor exposes no traversal create/delete tools.
-- Room topology edits and cluster moves do not reroute or rewrite corridors/stairs in this interim state; those structures remain unchanged until their direct ownership rewrite is implemented.
+- Corridors and stairs are first-class persisted owners; there is no second aggregate for connection geometry.
+- The editor exposes no corridor/stair create/delete tools yet.
+- Room topology edits and cluster moves do not reroute or rewrite corridors/stairs; those structures remain unchanged unless their own edit workflows persist a new version.
 
 ### Package Roles
 
@@ -176,7 +174,7 @@ geometry/  →  objects/  →  structures/
 ```
 
 - **`geometry/`** — Pure grid math primitives: `Point2i`, `CubePoint` (3D grid coordinate), `Tile`, `TileShape`, `VertexEdge`, `VertexPath`, `BoundaryNetwork`, `GridAnchor`, `GridRoute`. Domain-agnostic. No knowledge of walls, doors, rooms.
-- **`objects/`** — Thin domain objects over geometry: `Floor`, `Wall`, `Door`. `Door` is the boundary object and runtime/registry carrier for traversal state; connectivity lives on `Connection`.
+- **`objects/`** — Thin domain objects over geometry: `Floor`, `Wall`, `Door`. `Door` is the boundary object and runtime/registry carrier for passability state; connectivity lives on `Connection`.
 - **`structures/`** — Self-managed compositions: `Room`, `RoomCluster`, `Corridor`, `DungeonStair`, `DungeonTransition`. Compose objects and own structure-level behavior.
 
 `DungeonLayout` is the immutable global lookup layer over structures. Mutations return new instances. Key aggregate queries: `overlappingClusters(TileShape)`, spatial indexes for stairs and transitions (`stairsAtCell(cell, z)`, `stairsAtLevel(z)`, `transitionsAtCell(cell, z)`, `transitionsAtLevel(z)`, `findStair(id)`, `findTransition(id)`), and the canonical room/corridor connection registry. Stair exit positions are included in traversable cells.
@@ -185,7 +183,7 @@ geometry/  →  objects/  →  structures/
 
 - **`Room`** — record: roomId, mapId, clusterId, name, Floor, Walls, `RoomNarration` (visual description + per-exit `RoomExitNarration` entries). `resolved()` keeps room-owned wall boundaries canonical. Connectivity is queried through layout connections instead of mirrored room-local door state.
 - **`RoomCluster`** — groups rooms spatially, manages adjacency via overlap indexing, and owns cluster-local rewrite logic for paint/delete/boundary changes. `movedBy()` handles translation. Produces `InteractiveLabelHandle` for canvas rendering.
-- **`Corridor`** — first-class horizontal structure: corridorId, mapId, one `levelZ`, ordered corridor points, and corridor-local endpoint bindings. `Corridor` derives its own `CorridorPath`, occupied cells/floors, corridor-local `Connection`s, and endpoint-derived room queries for labels/graph/runtime. It may participate in traversal-organized segment refs, but it is not traversal-owned read-model state
+- **`Corridor`** — first-class horizontal structure: corridorId, mapId, one `levelZ`, stable corridor nodes, stable corridor segments, and corridor-local room bindings on nodes. `Corridor` derives its own `CorridorPath`, occupied cells/floors, corridor-local `Connection`s, and room queries for labels/graph/runtime directly from that graph
 - **`DungeonStair`** — first-class vertical structure: stairId, mapId, name, ordered 3D path (`List<CubePoint>`) as canonical geometry. `DungeonStairExit` values are read-only projections derived from the path nodes that lie on occupied Room-/Corridor-floor cells. Target key: `stair:ID`. Queries: `reachableLevels()`, `occupiedPositions()`, `exitsAtLevel(z)`, `labelHandle(z)`
 - **`DungeonTransition`** — record: transitionId, mapId, description, anchor (`CubePoint`, nullable for unprepared), destination (`DungeonTransitionDestination`: sealed — `OverworldTileDestination(mapId, tileId)` | `DungeonMapDestination(mapId, transitionId)`), linkedTransitionId (for bidirectional pairs). `isPlaced()` checks non-null anchor. Target key: `transition:ID`. Label: "Übergang N".
 

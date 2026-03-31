@@ -7,7 +7,7 @@ import java.util.Set;
 /**
  * Canonical combined boundary geometry over multiple boundary paths.
  *
- * <p>This type owns only geometric/topological truth for combined boundaries. It deliberately has no traversal
+ * <p>This type owns only geometric/topological truth for combined boundaries. It deliberately has no movement
  * semantics, room ownership, or cluster policy.</p>
  */
 public final class BoundaryNetwork extends VertexPath {

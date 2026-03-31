@@ -14,7 +14,7 @@ public abstract class VertexPath {
 
     // Foundation for edge-like objects: pure vertex-edge geometry plus path topology helpers.
     // Higher-level wall/door types should delegate normalization, connectivity, chain reconstruction,
-    // and cell-side geometry here. Traversal semantics do not belong in this layer.
+    // and cell-side geometry here. Movement semantics do not belong in this layer.
     private final Set<VertexEdge> edges;
     private final Map<Point2i, Set<VertexEdge>> adjacency;
 
