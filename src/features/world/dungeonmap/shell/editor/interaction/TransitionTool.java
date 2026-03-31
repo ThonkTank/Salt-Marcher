@@ -13,6 +13,7 @@ import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.shell.editor.EditorCards;
 import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
+import features.world.dungeonmap.shell.interaction.DungeonSelectionLookup;
 import features.world.dungeonmap.shell.interaction.DungeonSelection;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
@@ -346,7 +347,7 @@ public final class TransitionTool implements EditorTool {
     }
 
     private void renderDeleteCard() {
-        DungeonHitSubject.TransitionSubject selectedTransition = selectedTransitionSubject(state.selectedSubject());
+        DungeonTransition selectedTransition = DungeonSelectionLookup.transition(mapState.activeMap(), state.selectedKey());
         String summary = selectedTransition != null
                 ? "Gewählt: " + transitionLabel(selectedTransition.transitionId())
                 : "Übergangsfeld anklicken, um zu löschen";

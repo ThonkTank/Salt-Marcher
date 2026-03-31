@@ -32,6 +32,10 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
 
     String partKey();
 
+    default DungeonSelectionKey selectionKey() {
+        return new DungeonSelectionKey(kind(), targetKey(), partKey());
+    }
+
     record VertexSubject(Point2i vertex) implements DungeonHitSubject {
         public VertexSubject {
             vertex = Objects.requireNonNull(vertex, "vertex");

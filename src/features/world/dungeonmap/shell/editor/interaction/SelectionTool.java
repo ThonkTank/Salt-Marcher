@@ -17,7 +17,11 @@ import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.shell.editor.EditorCards;
+import features.world.dungeonmap.shell.interaction.DungeonHitConventions;
+import features.world.dungeonmap.shell.interaction.DungeonHitKind;
 import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
+import features.world.dungeonmap.shell.interaction.DungeonSelectionKey;
+import features.world.dungeonmap.shell.interaction.DungeonSelectionLookup;
 import features.world.dungeonmap.shell.interaction.DungeonSelection;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.EditorInteractionState;
@@ -188,7 +192,7 @@ public final class SelectionTool implements EditorTool {
                     loadingService.submitReloadingWrite(
                             () -> corridorEditService.update(mapState.activeMapId(), updated),
                             mapState.activeMapId(),
-                            null,
+                            () -> state.selectKey(corridorNodeKey(current.corridorId(), current.nodeId())),
                             throwable -> UiErrorReporter.reportBackgroundFailure("SelectionTool.released()", throwable));
                 }
             }
@@ -353,19 +357,14 @@ public final class SelectionTool implements EditorTool {
     }
 
     private RoomCluster selectedCluster() {
-        DungeonHitSubject subject = selectedSubject();
-        if (!(subject instanceof DungeonHitSubject.ClusterLabelSubject clusterLabelSubject)) {
-            return null;
-        }
-        return mapState.activeMap().findCluster(clusterLabelSubject.clusterId());
+        return DungeonSelectionLookup.clusterOnLevel(
+                mapState.activeMap(),
+                state.selectedKey(),
+                mapState.activeProjectionLevel());
     }
 
     private Room selectedRoom() {
-        DungeonHitSubject subject = selectedSubject();
-        if (!(subject instanceof DungeonHitSubject.RoomSubject roomSubject)) {
-            return null;
-        }
-        return mapState.activeMap().findRoom(roomSubject.roomId());
+        return DungeonSelectionLookup.room(mapState.activeMap(), state.selectedKey());
     }
 
     private void clear() {
@@ -380,8 +379,11 @@ public final class SelectionTool implements EditorTool {
                 : ctx.selection().primary().descriptor().subject();
     }
 
-    private DungeonHitSubject selectedSubject() {
-        return state.selectedSubject();
+    private static DungeonSelectionKey corridorNodeKey(long corridorId, Long nodeId) {
+        return new DungeonSelectionKey(
+                DungeonHitKind.CORRIDOR_NODE,
+                Corridor.targetKey(corridorId),
+                DungeonHitConventions.nodePartKey(nodeId));
     }
 
     private DungeonLayout previewMap() {

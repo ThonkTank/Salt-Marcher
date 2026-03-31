@@ -43,7 +43,7 @@ The feature ships two `AppView` implementations: `DungeonEditorView` (EDITOR) an
 - `state/` — observable transient state containers with `CopyOnWriteArrayList` listener lists. These are the single source of truth for cross-class coordination:
   - `DungeonMapState` — loaded map data (catalog entries, active `DungeonLayout`, loading/error state)
   - `DungeonEditorSessionState` — current tool + view mode
-  - `EditorInteractionState` — shared editor interaction state: selected `DungeonHitSubject`, active `EditorPreview`, active `EditorDraft`
+  - `EditorInteractionState` — shared editor interaction state: selected `DungeonSelectionKey`, active `EditorPreview`, active `EditorDraft`. `DungeonHitSubject` remains event-time hit metadata only
   - `EditorPreview` — sealed preview payloads for dragged cluster layouts, room paint/delete shapes, and boundary path overlays
   - `EditorDraft` — sealed shared drafts for boundary-path status
   - Transition placement state stays tool-local inside `TransitionTool`. Do not reintroduce parallel shared listener channels for transition-private draft state

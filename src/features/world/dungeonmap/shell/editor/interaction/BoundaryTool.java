@@ -13,7 +13,10 @@ import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.shell.editor.EditorCards;
 import features.world.dungeonmap.shell.interaction.DungeonHitCandidate;
+import features.world.dungeonmap.shell.interaction.DungeonHitKind;
 import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
+import features.world.dungeonmap.shell.interaction.DungeonSelectionKey;
+import features.world.dungeonmap.shell.interaction.DungeonSelectionLookup;
 import features.world.dungeonmap.shell.interaction.DungeonSelection;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
@@ -143,9 +146,10 @@ public final class BoundaryTool implements EditorTool {
             }
             return false;
         }
-        DungeonSelection nextSelection = selectionForResolvedCluster(ctx, layout, cluster.clusterId());
-        if (nextSelection != null) {
-            state.applySelection(nextSelection);
+        if (!Objects.equals(
+                DungeonSelectionLookup.clusterId(layout, state.selectedKey()),
+                cluster.clusterId())) {
+            state.selectKey(clusterOwnerKey(cluster.clusterId()));
         }
 
         if (draft == null || !Objects.equals(draft.clusterId(), cluster.clusterId())) {
@@ -238,7 +242,10 @@ public final class BoundaryTool implements EditorTool {
             }
         }
 
-        RoomCluster selectedCluster = clusterOnActiveLevel(clusterIdFromSubject(state.selectedSubject(), layout), layout);
+        RoomCluster selectedCluster = DungeonSelectionLookup.clusterOnLevel(
+                layout,
+                state.selectedKey(),
+                mapState.activeProjectionLevel());
         if (selectedCluster != null && pathPlanner.isEditableVertex(selectedCluster, vertex, deleteMode)) {
             return selectedCluster;
         }
@@ -262,22 +269,6 @@ public final class BoundaryTool implements EditorTool {
             return boundaryDraft.clusterId();
         }
         return null;
-    }
-
-    private DungeonSelection selectionForResolvedCluster(EditorToolContext ctx, DungeonLayout layout, Long clusterId) {
-        if (clusterId == null || ctx == null) {
-            return null;
-        }
-        if (Objects.equals(clusterIdFromSubject(state.selectedSubject(), layout), clusterId)) {
-            return null;
-        }
-        if (ctx.snapshot() == null) {
-            return null;
-        }
-        List<DungeonHitCandidate> boundaryCandidates = ctx.snapshot().candidates().stream()
-                .filter(candidate -> isBoundaryCandidateForCluster(candidate.descriptor().subject(), clusterId, layout))
-                .toList();
-        return boundaryCandidates.isEmpty() ? null : new DungeonSelection(ctx.snapshot(), boundaryCandidates);
     }
 
     private RoomCluster clusterOnActiveLevel(Long clusterId, DungeonLayout layout) {
@@ -348,24 +339,6 @@ public final class BoundaryTool implements EditorTool {
                 : ctx.selection().primary().descriptor().subject();
     }
 
-    private static Long clusterIdFromSelection(DungeonSelection selection, DungeonLayout layout) {
-        if (selection == null) {
-            return null;
-        }
-        for (DungeonHitCandidate candidate : selection.orderedCandidates()) {
-            Long clusterId = clusterIdFromSubject(candidate.descriptor().subject(), layout);
-            if (clusterId != null) {
-                return clusterId;
-            }
-        }
-        return null;
-    }
-
-    private static boolean isBoundaryCandidateForCluster(DungeonHitSubject subject, Long clusterId, DungeonLayout layout) {
-        return clusterId != null
-                && Objects.equals(clusterIdFromBoundarySubject(subject, layout), clusterId);
-    }
-
     private static Long clusterIdFromBoundarySubject(DungeonHitSubject subject, DungeonLayout layout) {
         return switch (subject) {
             case DungeonHitSubject.ClusterBoundarySubject clusterBoundarySubject -> clusterBoundarySubject.clusterId();
@@ -395,6 +368,16 @@ public final class BoundaryTool implements EditorTool {
         }
         Room room = layout.findRoom(roomId);
         return room == null ? null : room.clusterId();
+    }
+
+    private static DungeonSelectionKey clusterOwnerKey(Long clusterId) {
+        if (clusterId == null) {
+            return null;
+        }
+        return new DungeonSelectionKey(
+                DungeonHitKind.CLUSTER_LABEL,
+                RoomCluster.targetKey(clusterId),
+                "");
     }
 
     private void refreshStatePane() {
