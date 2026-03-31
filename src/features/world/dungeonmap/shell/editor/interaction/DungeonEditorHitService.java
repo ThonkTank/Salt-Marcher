@@ -12,6 +12,7 @@ import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.Connection;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
@@ -98,6 +99,24 @@ public final class DungeonEditorHitService {
                 .filter(candidate -> candidate != null && candidate.transitionId() != null)
                 .min(Comparator.comparing(DungeonTransition::transitionId))
                 .orElse(null);
+    }
+
+    public DungeonStair hitStair(DungeonLayout layout, Point2i cell, int level) {
+        if (layout == null || cell == null) {
+            return null;
+        }
+        return layout.stairsAtCell(cell, level).stream()
+                .filter(candidate -> candidate != null && candidate.stairId() != null)
+                .min(Comparator.comparing(DungeonStair::stairId))
+                .orElse(null);
+    }
+
+    public Room roomAtCell(DungeonLayout layout, Point2i cell) {
+        if (layout == null || cell == null) {
+            return null;
+        }
+        Room room = layout.roomAtCell(cell);
+        return room != null && room.roomId() != null ? room : null;
     }
 
     private DungeonEditorLabelHitTarget hitLabel(
