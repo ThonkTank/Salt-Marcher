@@ -102,7 +102,7 @@ public final class ConnectionsTool implements EditorTool {
         if (sessionState.selectedTool() == DungeonEditorTool.CONNECTIONS_DELETE) {
             return handleDeletePressed(ctx.projectedLayout(), hit);
         }
-        return handleConnectionsPressed(ctx.projectedLayout(), hit);
+        return handleConnectionsPressed(ctx, ctx.projectedLayout(), hit);
     }
 
     @Override
@@ -141,11 +141,12 @@ public final class ConnectionsTool implements EditorTool {
         refreshCallback = callback == null ? () -> { } : callback;
     }
 
-    private boolean handleConnectionsPressed(DungeonLayout layout, DungeonEditorHitTarget hit) {
+    private boolean handleConnectionsPressed(EditorToolContext ctx, DungeonLayout layout, DungeonEditorHitTarget hit) {
         if (layout == null || hit == null) {
             return false;
         }
-        if (hit instanceof DungeonEditorBoundaryHitTarget boundaryHit && isEditableDoorBoundary(boundaryHit, layout)) {
+        if (hit instanceof DungeonEditorBoundaryHitTarget boundaryHit
+                && isEditableDoorBoundary(boundaryHit, layout, ctx.hitService())) {
             state.selectTarget(boundaryHit.targetKey());
             applyDoorEdit(boundaryHit, false);
             return true;
@@ -370,7 +371,11 @@ public final class ConnectionsTool implements EditorTool {
                 throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.applyDoorEdit()", throwable));
     }
 
-    private boolean isEditableDoorBoundary(DungeonEditorBoundaryHitTarget hit, DungeonLayout layout) {
+    private boolean isEditableDoorBoundary(
+            DungeonEditorBoundaryHitTarget hit,
+            DungeonLayout layout,
+            DungeonEditorHitService hitService
+    ) {
         if (hit == null || layout == null || hit.clusterId() == null) {
             return false;
         }
@@ -383,8 +388,8 @@ public final class ConnectionsTool implements EditorTool {
         if (touchingCells.size() != 2) {
             return false;
         }
-        Room leftRoom = layout.roomAtCell(touchingCells.getFirst());
-        Room rightRoom = layout.roomAtCell(touchingCells.getLast());
+        Room leftRoom = hitService.roomAtCell(layout, touchingCells.getFirst());
+        Room rightRoom = hitService.roomAtCell(layout, touchingCells.getLast());
         return leftRoom != null
                 && rightRoom != null
                 && leftRoom.roomId() != null

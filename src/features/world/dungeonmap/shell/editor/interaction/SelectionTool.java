@@ -127,12 +127,12 @@ public final class SelectionTool implements EditorTool {
                     mapState.activeProjectionLevel());
             return true;
         }
-        DungeonStair stair = stairAt(event.gridCell());
+        DungeonStair stair = ctx.hitService().hitStair(ctx.projectedLayout(), event.gridCell(), mapState.activeProjectionLevel());
         if (stair != null) {
             state.selectTarget(stair.targetKey());
             return true;
         }
-        DungeonTransition transition = transitionAt(event.gridCell());
+        DungeonTransition transition = ctx.hitService().hitTransition(ctx.projectedLayout(), event.gridCell(), mapState.activeProjectionLevel());
         if (transition != null) {
             state.selectTarget(transition.targetKey());
             return true;
@@ -382,20 +382,6 @@ public final class SelectionTool implements EditorTool {
         return target != null
                 && target.clusterId() != null
                 && RoomCluster.isTargetKey(target.targetKey());
-    }
-
-    private DungeonStair stairAt(Point2i cell) {
-        return mapState.activeMap().stairsAtCell(cell, mapState.activeProjectionLevel()).stream()
-                .filter(candidate -> candidate != null && candidate.stairId() != null)
-                .findFirst()
-                .orElse(null);
-    }
-
-    private DungeonTransition transitionAt(Point2i cell) {
-        return mapState.activeMap().transitionsAtCell(cell, mapState.activeProjectionLevel()).stream()
-                .filter(candidate -> candidate != null && candidate.transitionId() != null)
-                .findFirst()
-                .orElse(null);
     }
 
     private DungeonLayout previewMap() {
