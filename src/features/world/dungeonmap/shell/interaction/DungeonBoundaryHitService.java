@@ -30,7 +30,7 @@ public final class DungeonBoundaryHitService {
             return null;
         }
         double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
-        double maxDistance = Math.max(7.0, gridSize * 0.22);
+        double maxDistance = DungeonHitConventions.edgeTolerancePx(gridSize);
         DungeonEditorBoundaryHitTarget bestTarget = null;
         double bestDistance = maxDistance;
         for (RoomCluster cluster : layout.clusters()) {
@@ -72,7 +72,7 @@ public final class DungeonBoundaryHitService {
             return null;
         }
         double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
-        double maxDistance = Math.max(7.0, gridSize * 0.22);
+        double maxDistance = DungeonHitConventions.edgeTolerancePx(gridSize);
         DungeonEditorConnectionHitTarget bestTarget = null;
         double bestDistance = maxDistance;
         for (Connection connection : layout.connections()) {
@@ -101,7 +101,7 @@ public final class DungeonBoundaryHitService {
             return null;
         }
         double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
-        double maxDistance = Math.max(7.0, gridSize * 0.22);
+        double maxDistance = DungeonHitConventions.edgeTolerancePx(gridSize);
         DungeonEditorRoomBoundaryHitTarget bestTarget = null;
         double bestDistance = maxDistance;
         for (Room room : layout.rooms()) {

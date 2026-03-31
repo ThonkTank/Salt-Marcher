@@ -13,24 +13,16 @@ import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.shell.interaction.DungeonBoundaryHitService;
+import features.world.dungeonmap.shell.interaction.DungeonHitConventions;
+import features.world.dungeonmap.shell.interaction.DungeonHitKind;
 import features.world.dungeonmap.shell.interaction.DungeonHitService;
 import features.world.dungeonmap.shell.interaction.DungeonVertexHitService;
 import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
 
-import java.util.Comparator;
 import java.util.Objects;
 
 public final class DungeonEditorHitService {
-
-    private static final long LABEL_PRIORITY = 100L;
-    private static final long CORRIDOR_NODE_PRIORITY = 80L;
-    private static final long CORRIDOR_CORNER_PRIORITY = 70L;
-    private static final long CORRIDOR_SEGMENT_PRIORITY = 60L;
-    private static final long CONNECTION_PRIORITY = 50L;
-    private static final long BOUNDARY_PRIORITY = 40L;
-    private static final long ROOM_TILE_PRIORITY = 20L;
-    private static final long FLOOR_CELL_PRIORITY = 10L;
 
     private final DungeonBoundaryHitService boundaryHitService;
     private final DungeonVertexHitService vertexHitService;
@@ -91,11 +83,19 @@ public final class DungeonEditorHitService {
     }
 
     public DungeonEditorBoundaryHitTarget hitBoundary(DungeonLayout layout, Point2D canvasPoint, DungeonCanvasCamera camera) {
-        return boundaryHitService.hitBoundary(layout, canvasPoint, camera, BOUNDARY_PRIORITY);
+        return boundaryHitService.hitBoundary(
+                layout,
+                canvasPoint,
+                camera,
+                DungeonHitConventions.basePriority(DungeonHitKind.CLUSTER_BOUNDARY));
     }
 
     public DungeonEditorRoomBoundaryHitTarget hitRoomBoundary(DungeonLayout layout, Point2D canvasPoint, DungeonCanvasCamera camera) {
-        return boundaryHitService.hitRoomBoundary(layout, canvasPoint, camera, BOUNDARY_PRIORITY);
+        return boundaryHitService.hitRoomBoundary(
+                layout,
+                canvasPoint,
+                camera,
+                DungeonHitConventions.basePriority(DungeonHitKind.ROOM_BOUNDARY));
     }
 
     public Point2i hitVertex(Point2D canvasPoint, DungeonCanvasCamera camera) {
@@ -103,7 +103,11 @@ public final class DungeonEditorHitService {
     }
 
     public DungeonEditorConnectionHitTarget hitConnection(DungeonLayout layout, Point2D canvasPoint, DungeonCanvasCamera camera) {
-        return boundaryHitService.hitConnection(layout, canvasPoint, camera, CONNECTION_PRIORITY);
+        return boundaryHitService.hitConnection(
+                layout,
+                canvasPoint,
+                camera,
+                DungeonHitConventions.basePriority(DungeonHitKind.CONNECTION));
     }
 
     public DungeonTransition hitTransition(DungeonLayout layout, Point2i cell, int level) {
@@ -135,9 +139,12 @@ public final class DungeonEditorHitService {
             if (!bounds.contains(canvasPoint)) {
                 continue;
             }
-            DungeonEditorLabelHitTarget target = new DungeonEditorLabelHitTarget(handle, cluster.clusterId(), LABEL_PRIORITY);
+            DungeonEditorLabelHitTarget target = new DungeonEditorLabelHitTarget(
+                    handle,
+                    cluster.clusterId(),
+                    DungeonHitConventions.basePriority(DungeonHitKind.CLUSTER_LABEL));
             Point2D anchorPoint = DungeonGridInteractiveLabels.anchorPoint(handle, camera, gridSize);
-            double distance = anchorPoint.distance(canvasPoint);
+            double distance = DungeonHitConventions.labelDistancePx(canvasPoint, anchorPoint);
             if (bestTarget == null || distance < bestDistance) {
                 bestTarget = target;
                 bestDistance = distance;
@@ -152,7 +159,7 @@ public final class DungeonEditorHitService {
             DungeonCanvasCamera camera,
             double gridSize
     ) {
-        double maxDistance = Math.max(8.0, gridSize * 0.22);
+        double maxDistance = DungeonHitConventions.pointTolerancePx(gridSize);
         DungeonEditorCorridorNodeHitTarget best = null;
         double bestDistance = maxDistance;
         for (Corridor corridor : layout.corridors()) {
@@ -165,7 +172,11 @@ public final class DungeonEditorHitService {
                 if (distance > bestDistance) {
                     continue;
                 }
-                best = new DungeonEditorCorridorNodeHitTarget(corridor, node, doubled, CORRIDOR_NODE_PRIORITY);
+                best = new DungeonEditorCorridorNodeHitTarget(
+                        corridor,
+                        node,
+                        doubled,
+                        DungeonHitConventions.basePriority(DungeonHitKind.CORRIDOR_NODE));
                 bestDistance = distance;
             }
         }
@@ -178,7 +189,7 @@ public final class DungeonEditorHitService {
             DungeonCanvasCamera camera,
             double gridSize
     ) {
-        double maxDistance = Math.max(7.0, gridSize * 0.18);
+        double maxDistance = DungeonHitConventions.pointTolerancePx(gridSize);
         DungeonEditorCorridorCornerHitTarget best = null;
         double bestDistance = maxDistance;
         for (Corridor corridor : layout.corridors()) {
@@ -191,7 +202,11 @@ public final class DungeonEditorHitService {
                     if (distance > bestDistance) {
                         continue;
                     }
-                    best = new DungeonEditorCorridorCornerHitTarget(corridor, route, corner, CORRIDOR_CORNER_PRIORITY);
+                    best = new DungeonEditorCorridorCornerHitTarget(
+                            corridor,
+                            route,
+                            corner,
+                            DungeonHitConventions.basePriority(DungeonHitKind.CORRIDOR_CORNER));
                     bestDistance = distance;
                 }
             }
@@ -205,7 +220,7 @@ public final class DungeonEditorHitService {
             DungeonCanvasCamera camera,
             double gridSize
     ) {
-        double maxDistance = Math.max(7.0, gridSize * 0.18);
+        double maxDistance = DungeonHitConventions.edgeTolerancePx(gridSize);
         DungeonEditorCorridorSegmentHitTarget best = null;
         double bestDistance = maxDistance;
         for (Corridor corridor : layout.corridors()) {
@@ -223,7 +238,11 @@ public final class DungeonEditorHitService {
                     bestPoint = nearestPointOnEdge(edge, canvasPoint, camera, gridSize);
                 }
                 if (bestPoint != null) {
-                    best = new DungeonEditorCorridorSegmentHitTarget(corridor, route, bestPoint, CORRIDOR_SEGMENT_PRIORITY);
+                    best = new DungeonEditorCorridorSegmentHitTarget(
+                            corridor,
+                            route,
+                            bestPoint,
+                            DungeonHitConventions.basePriority(DungeonHitKind.CORRIDOR_SEGMENT));
                 }
             }
         }
@@ -244,7 +263,7 @@ public final class DungeonEditorHitService {
         if (room == null || room.roomId() == null) {
             return null;
         }
-        return new DungeonEditorRoomHitTarget(room, ROOM_TILE_PRIORITY);
+        return new DungeonEditorRoomHitTarget(room, DungeonHitConventions.basePriority(DungeonHitKind.ROOM));
     }
 
     private DungeonEditorFloorCellHitTarget floorHit(
@@ -255,7 +274,9 @@ public final class DungeonEditorHitService {
         if (gridSize <= 0.0) {
             return null;
         }
-        return new DungeonEditorFloorCellHitTarget(gridCell(canvasPoint, camera, gridSize), FLOOR_CELL_PRIORITY);
+        return new DungeonEditorFloorCellHitTarget(
+                gridCell(canvasPoint, camera, gridSize),
+                DungeonHitConventions.basePriority(DungeonHitKind.FLOOR_CELL));
     }
 
     private static Point2i gridCell(Point2D canvasPoint, DungeonCanvasCamera camera, double gridSize) {

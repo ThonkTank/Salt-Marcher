@@ -49,7 +49,7 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
 
         @Override
         public String partKey() {
-            return vertexPartKey(vertex);
+            return DungeonHitConventions.vertexPartKey(vertex);
         }
     }
 
@@ -66,7 +66,7 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
 
         @Override
         public String partKey() {
-            return "label";
+            return DungeonHitConventions.labelPartKey();
         }
     }
 
@@ -96,7 +96,7 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
 
         @Override
         public String partKey() {
-            return edgePartKey(edge);
+            return DungeonHitConventions.edgePartKey(edge);
         }
     }
 
@@ -113,7 +113,7 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
 
         @Override
         public String partKey() {
-            return "";
+            return DungeonHitConventions.noPartKey();
         }
     }
 
@@ -143,7 +143,7 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
 
         @Override
         public String partKey() {
-            return edgePartKey(edge);
+            return DungeonHitConventions.edgePartKey(edge);
         }
     }
 
@@ -189,7 +189,7 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
 
         @Override
         public String partKey() {
-            return edgePartKey(edge);
+            return DungeonHitConventions.edgePartKey(edge);
         }
     }
 
@@ -206,7 +206,7 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
 
         @Override
         public String partKey() {
-            return "";
+            return DungeonHitConventions.noPartKey();
         }
     }
 
@@ -230,7 +230,7 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
 
         @Override
         public String partKey() {
-            return "node:" + nodeId;
+            return DungeonHitConventions.nodePartKey(nodeId);
         }
     }
 
@@ -251,7 +251,7 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
 
         @Override
         public String partKey() {
-            return "corner:" + doubledPoint.x() + ":" + doubledPoint.y();
+            return DungeonHitConventions.cornerPartKey(doubledPoint);
         }
     }
 
@@ -275,7 +275,7 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
 
         @Override
         public String partKey() {
-            return "segment:" + segmentId;
+            return DungeonHitConventions.segmentPartKey(segmentId);
         }
     }
 
@@ -292,7 +292,7 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
 
         @Override
         public String partKey() {
-            return "";
+            return DungeonHitConventions.noPartKey();
         }
     }
 
@@ -309,7 +309,7 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
 
         @Override
         public String partKey() {
-            return "";
+            return DungeonHitConventions.noPartKey();
         }
     }
 
@@ -330,17 +330,7 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
 
         @Override
         public String partKey() {
-            return "cell:" + cell.x() + ":" + cell.y() + ":" + levelZ;
+            return DungeonHitConventions.cellPartKey(cell, levelZ);
         }
-    }
-
-    private static String edgePartKey(VertexEdge edge) {
-        return "edge:"
-                + edge.start().x() + ":" + edge.start().y()
-                + ":" + edge.end().x() + ":" + edge.end().y();
-    }
-
-    private static String vertexPartKey(Point2i vertex) {
-        return "vertex:" + vertex.x() + ":" + vertex.y();
     }
 }

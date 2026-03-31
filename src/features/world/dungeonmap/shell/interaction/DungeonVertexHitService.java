@@ -21,7 +21,7 @@ public final class DungeonVertexHitService {
         int vertexY = (int) Math.round(gridY);
         double snapX = camera.panX() + vertexX * gridSize;
         double snapY = camera.panY() + vertexY * gridSize;
-        double maxDistance = Math.max(8.0, gridSize * 0.28);
+        double maxDistance = DungeonHitConventions.pointTolerancePx(gridSize);
         return canvasPoint.distance(snapX, snapY) <= maxDistance ? new Point2i(vertexX, vertexY) : null;
     }
 }
