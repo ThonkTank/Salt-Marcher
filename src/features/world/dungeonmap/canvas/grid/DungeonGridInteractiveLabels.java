@@ -20,17 +20,36 @@ public final class DungeonGridInteractiveLabels {
         if (handle == null || camera == null || gridSize <= 0.0) {
             return Rectangle2D.EMPTY;
         }
-        Point2D anchor = anchorPoint(handle, camera, gridSize);
+        Point2D anchor = anchorPoint(handle, camera.panX(), camera.panY(), gridSize);
         double width = labelWidth(handle.label());
         return new Rectangle2D(anchor.getX() - width / 2.0, anchor.getY() - HEIGHT / 2.0, width, HEIGHT);
     }
 
     public static Point2D anchorPoint(InteractiveLabelHandle handle, DungeonCanvasCamera camera, double gridSize) {
+        if (handle == null || camera == null) {
+            return new Point2D(0.0, 0.0);
+        }
+        return anchorPoint(handle, camera.panX(), camera.panY(), gridSize);
+    }
+
+    public static Rectangle2D bounds(InteractiveLabelHandle handle, double panX, double panY, double gridSize) {
+        if (handle == null || gridSize <= 0.0) {
+            return Rectangle2D.EMPTY;
+        }
+        Point2D anchor = anchorPoint(handle, panX, panY, gridSize);
+        double width = labelWidth(handle.label());
+        return new Rectangle2D(anchor.getX() - width / 2.0, anchor.getY() - HEIGHT / 2.0, width, HEIGHT);
+    }
+
+    public static Point2D anchorPoint(InteractiveLabelHandle handle, double panX, double panY, double gridSize) {
+        if (handle == null || gridSize <= 0.0) {
+            return new Point2D(0.0, 0.0);
+        }
         GridAnchor anchor = handle == null ? null : handle.anchor();
         Point2i doubled = anchor == null ? new Point2i(1, 1) : anchor.doubledGridPoint();
         return new Point2D(
-                camera.panX() + (doubled.x() / 2.0) * gridSize,
-                camera.panY() + (doubled.y() / 2.0) * gridSize);
+                panX + (doubled.x() / 2.0) * gridSize,
+                panY + (doubled.y() / 2.0) * gridSize);
     }
 
     public static double labelWidth(String label) {
