@@ -1,20 +1,21 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
-import features.world.dungeonmap.canvas.base.DungeonCanvasCamera;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.shell.interaction.DungeonHitResult;
+import features.world.dungeonmap.shell.interaction.DungeonHitProbe;
+import features.world.dungeonmap.shell.interaction.DungeonHitSnapshot;
+import features.world.dungeonmap.shell.interaction.DungeonSelection;
 import features.world.dungeonmap.state.EditorInteractionState;
 
 public record EditorToolContext(
         DungeonCanvasPointerEvent event,
-        DungeonLayout projectedLayout,
-        DungeonEditorHitService hitService,
-        DungeonCanvasCamera camera,
-        EditorInteractionState state,
-        DungeonHitResult hitResult
+        DungeonLayout activeMap,
+        DungeonHitProbe probe,
+        DungeonHitSnapshot snapshot,
+        DungeonSelection selection,
+        EditorInteractionState state
 ) {
     public EditorToolContext {
-        projectedLayout = projectedLayout == null ? DungeonLayout.empty() : projectedLayout;
+        activeMap = activeMap == null ? DungeonLayout.empty() : activeMap;
     }
 }

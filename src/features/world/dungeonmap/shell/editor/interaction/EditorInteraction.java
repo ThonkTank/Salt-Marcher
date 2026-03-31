@@ -3,16 +3,14 @@ package features.world.dungeonmap.shell.editor.interaction;
 import features.world.dungeonmap.canvas.base.DungeonCanvasCamera;
 import features.world.dungeonmap.canvas.base.DungeonCanvasInteractionHandler;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
+import features.world.dungeonmap.canvas.base.DungeonCanvasTheme;
 import features.world.dungeonmap.canvas.base.DungeonViewMode;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
-import features.world.dungeonmap.shell.interaction.DungeonBoundaryHitService;
-import features.world.dungeonmap.shell.interaction.DungeonDragService;
-import features.world.dungeonmap.shell.interaction.DungeonEditorInteractionPolicy;
-import features.world.dungeonmap.shell.interaction.DungeonHitResult;
-import features.world.dungeonmap.shell.interaction.DungeonHitService;
+import features.world.dungeonmap.shell.interaction.DungeonHitCollector;
+import features.world.dungeonmap.shell.interaction.DungeonHitProbe;
+import features.world.dungeonmap.shell.interaction.DungeonHitSnapshot;
 import features.world.dungeonmap.shell.interaction.DungeonPlacementValidator;
-import features.world.dungeonmap.shell.interaction.DungeonVertexHitService;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.EditorInteractionState;
@@ -29,18 +27,9 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
     private final DungeonEditorSessionState sessionState;
     private final EditorInteractionState state;
     private final Map<DungeonEditorTool, EditorTool> toolsByEnum;
-    private final DungeonHitService dungeonHitService = new DungeonHitService();
-    private final DungeonBoundaryHitService boundaryHitService = new DungeonBoundaryHitService();
-    private final DungeonVertexHitService vertexHitService = new DungeonVertexHitService();
-    private final DungeonEditorHitService hitService = new DungeonEditorHitService(
-            boundaryHitService,
-            vertexHitService,
-            dungeonHitService);
-    private final DungeonEditorInteractionPolicy interactionPolicy = new DungeonEditorInteractionPolicy(
-            dungeonHitService,
-            new DungeonDragService(),
-            new DungeonPlacementValidator(),
-            hitService);
+    private final DungeonHitCollector hitCollector = new DungeonHitCollector();
+    private final DungeonEditorSelectionPolicy selectionPolicy = new DungeonEditorSelectionPolicy(
+            new DungeonPlacementValidator());
     private EditorTool activeTool;
     private Runnable toolStateChanged = () -> { };
 
@@ -66,15 +55,20 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
         if (activeTool == null) {
             return false;
         }
-        DungeonEditorInteractionPolicy.EditorInteractionDecision decision = interactionPolicy.decidePress(
-                projectedLayout(),
+        EditorContextSnapshot snapshot = collect(event, camera);
+        if (snapshot == null) {
+            return false;
+        }
+        var decision = selectionPolicy.select(
+                DungeonEditorSelectionPolicy.EditorInteractionPhase.PRESS,
+                sessionState.selectedTool(),
+                snapshot.activeMap(),
                 event,
-                camera,
-                mapState.activeProjectionLevel());
+                snapshot.hitSnapshot());
         if (!decision.dispatchToTool()) {
             return false;
         }
-        return activeTool.pressed(contextFor(event, camera, decision.hitResult()));
+        return activeTool.pressed(contextFor(event, snapshot, decision.selection()));
     }
 
     @Override
@@ -85,10 +79,20 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
         if (activeTool == null) {
             return false;
         }
-        if (!interactionPolicy.decideDrag(projectedLayout(), event, camera, mapState.activeProjectionLevel())) {
+        EditorContextSnapshot snapshot = collect(event, camera);
+        if (snapshot == null) {
             return false;
         }
-        return activeTool.dragged(contextFor(event, camera, null));
+        var decision = selectionPolicy.select(
+                DungeonEditorSelectionPolicy.EditorInteractionPhase.DRAG,
+                sessionState.selectedTool(),
+                snapshot.activeMap(),
+                event,
+                snapshot.hitSnapshot());
+        if (!decision.dispatchToTool()) {
+            return false;
+        }
+        return activeTool.dragged(contextFor(event, snapshot, decision.selection()));
     }
 
     @Override
@@ -99,10 +103,20 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
         if (activeTool == null) {
             return false;
         }
-        if (!interactionPolicy.decideRelease(projectedLayout(), event, camera, mapState.activeProjectionLevel())) {
+        EditorContextSnapshot snapshot = collect(event, camera);
+        if (snapshot == null) {
             return false;
         }
-        return activeTool.released(contextFor(event, camera, null));
+        var decision = selectionPolicy.select(
+                DungeonEditorSelectionPolicy.EditorInteractionPhase.RELEASE,
+                sessionState.selectedTool(),
+                snapshot.activeMap(),
+                event,
+                snapshot.hitSnapshot());
+        if (!decision.dispatchToTool()) {
+            return false;
+        }
+        return activeTool.released(contextFor(event, snapshot, decision.selection()));
     }
 
     @Override
@@ -140,13 +154,35 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
         return sessionState.viewMode() == DungeonViewMode.GRID && !mapState.busy();
     }
 
-    private EditorToolContext contextFor(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera, DungeonHitResult hitResult) {
-        return new EditorToolContext(event, projectedLayout(), hitService, camera, state, hitResult);
+    private EditorToolContext contextFor(
+            DungeonCanvasPointerEvent event,
+            EditorContextSnapshot snapshot,
+            features.world.dungeonmap.shell.interaction.DungeonSelection selection
+    ) {
+        return new EditorToolContext(
+                event,
+                snapshot.activeMap(),
+                snapshot.probe(),
+                snapshot.hitSnapshot(),
+                selection,
+                state);
     }
 
-    private DungeonLayout projectedLayout() {
+    private EditorContextSnapshot collect(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
+        if (event == null || event.canvasPoint() == null || event.gridCell() == null || camera == null) {
+            return null;
+        }
         DungeonLayout layout = mapState.activeMap();
-        return layout == null ? DungeonLayout.empty() : layout.projectedToLevel(mapState.activeProjectionLevel());
+        DungeonLayout activeMap = layout == null ? DungeonLayout.empty() : layout;
+        DungeonHitProbe probe = new DungeonHitProbe(
+                event.canvasPoint(),
+                event.gridCell(),
+                mapState.activeProjectionLevel(),
+                camera.panX(),
+                camera.panY(),
+                DungeonCanvasTheme.BASE_GRID * camera.zoom());
+        DungeonHitSnapshot hitSnapshot = hitCollector.collect(activeMap, probe);
+        return new EditorContextSnapshot(activeMap, camera, probe, hitSnapshot);
     }
 
     private static Map<DungeonEditorTool, EditorTool> buildToolMap(List<EditorTool> tools) {
@@ -161,5 +197,13 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
             }
         }
         return Map.copyOf(toolsByEnum);
+    }
+
+    private record EditorContextSnapshot(
+            DungeonLayout activeMap,
+            DungeonCanvasCamera camera,
+            DungeonHitProbe probe,
+            DungeonHitSnapshot hitSnapshot
+    ) {
     }
 }

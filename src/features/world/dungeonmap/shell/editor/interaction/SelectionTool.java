@@ -19,8 +19,7 @@ import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.shell.editor.EditorCards;
-import features.world.dungeonmap.shell.interaction.DungeonHitResult;
-import features.world.dungeonmap.shell.interaction.DungeonHitService;
+import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.EditorInteractionState;
 import features.world.dungeonmap.state.EditorPreview;
@@ -106,44 +105,44 @@ public final class SelectionTool implements EditorTool {
             clear();
             return false;
         }
-        DungeonHitResult hitResult = ctx.hitResult();
-        DungeonEditorHitTarget hit = hitResult == null ? null : hitResult.editorTarget();
-        DungeonHitService.DungeonHitTarget coarseHit = hitResult == null ? null : hitResult.coarseTarget();
+        DungeonHitSubject hit = primarySubject(ctx);
         clear();
-        if (hit instanceof DungeonEditorCorridorNodeHitTarget corridorNodeHit
-                && corridorNodeHit.corridor().corridorId() != null
-                && corridorNodeHit.node().nodeId() != null) {
+        if (hit instanceof DungeonHitSubject.CorridorNodeSubject corridorNodeHit
+                && corridorNodeHit.corridorId() != null
+                && corridorNodeHit.nodeId() != null) {
             state.selectTarget(corridorNodeHit.targetKey());
             corridorNodeDragSession = new CorridorNodeDragSession(
-                    corridorNodeHit.corridor().corridorId(),
-                    corridorNodeHit.node().nodeId(),
-                    new Point2i(corridorNodeHit.node().gridX2(), corridorNodeHit.node().gridY2()),
-                    new Point2i(corridorNodeHit.node().gridX2(), corridorNodeHit.node().gridY2()));
+                    corridorNodeHit.corridorId(),
+                    corridorNodeHit.nodeId(),
+                    corridorNodeHit.doubledPoint(),
+                    corridorNodeHit.doubledPoint());
             return true;
         }
-        if (isClusterLabelHit(hit)) {
+        if (hit instanceof DungeonHitSubject.ClusterLabelSubject clusterLabelHit) {
             state.selectTarget(hit.targetKey());
             dragSession = ClusterDragSession.start(
-                    hit.clusterId(),
+                    clusterLabelHit.clusterId(),
                     hit.targetKey(),
                     mapState.activeMap(),
                     event.gridCell(),
                     mapState.activeProjectionLevel());
             return true;
         }
-        DungeonStair stair = coarseHit instanceof DungeonHitService.DungeonHitTarget.StairTarget stairTarget ? stairTarget.stair() : null;
+        DungeonStair stair = hit instanceof DungeonHitSubject.StairSubject stairSubject
+                ? mapState.activeMap().findStair(stairSubject.stairId())
+                : null;
         if (stair != null) {
             state.selectTarget(stair.targetKey());
             return true;
         }
-        DungeonTransition transition = coarseHit instanceof DungeonHitService.DungeonHitTarget.TransitionTarget transitionTarget
-                ? transitionTarget.transition()
+        DungeonTransition transition = hit instanceof DungeonHitSubject.TransitionSubject transitionSubject
+                ? mapState.activeMap().findTransition(transitionSubject.transitionId())
                 : null;
         if (transition != null) {
             state.selectTarget(transition.targetKey());
             return true;
         }
-        if (hit != null) {
+        if (hit != null && !hit.targetKey().isBlank()) {
             state.selectTarget(hit.targetKey());
             return true;
         }
@@ -384,10 +383,10 @@ public final class SelectionTool implements EditorTool {
         state.clearPreview();
     }
 
-    private static boolean isClusterLabelHit(DungeonEditorHitTarget target) {
-        return target != null
-                && target.clusterId() != null
-                && RoomCluster.isTargetKey(target.targetKey());
+    private static DungeonHitSubject primarySubject(EditorToolContext ctx) {
+        return ctx == null || ctx.selection() == null || ctx.selection().primary() == null
+                ? null
+                : ctx.selection().primary().descriptor().subject();
     }
 
     private DungeonLayout previewMap() {
