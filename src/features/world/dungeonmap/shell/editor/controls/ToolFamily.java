@@ -5,7 +5,7 @@ import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 enum ToolFamily {
     ROOM(DungeonEditorTool.ROOM_PAINT, DungeonEditorTool.ROOM_DELETE),
     WALL(DungeonEditorTool.CLUSTER_WALL, DungeonEditorTool.CLUSTER_WALL_DELETE),
-    DOOR(DungeonEditorTool.CLUSTER_DOOR, DungeonEditorTool.CLUSTER_DOOR_DELETE),
+    CONNECTIONS(DungeonEditorTool.CONNECTIONS, DungeonEditorTool.CONNECTIONS_DELETE),
     TRANSITION(DungeonEditorTool.TRANSITION_CREATE, DungeonEditorTool.TRANSITION_DELETE);
 
     private final DungeonEditorTool primaryTool;
@@ -20,7 +20,7 @@ enum ToolFamily {
         return switch (this) {
             case ROOM -> "Raum";
             case WALL -> "Wand";
-            case DOOR -> "Tür";
+            case CONNECTIONS -> "Connections";
             case TRANSITION -> "Übergang";
         };
     }
@@ -41,7 +41,7 @@ enum ToolFamily {
             case SELECT -> null;
             case ROOM_PAINT, ROOM_DELETE -> ROOM;
             case CLUSTER_WALL, CLUSTER_WALL_DELETE -> WALL;
-            case CLUSTER_DOOR, CLUSTER_DOOR_DELETE -> DOOR;
+            case CONNECTIONS, CONNECTIONS_DELETE -> CONNECTIONS;
             case TRANSITION_CREATE, TRANSITION_DELETE -> TRANSITION;
         };
     }

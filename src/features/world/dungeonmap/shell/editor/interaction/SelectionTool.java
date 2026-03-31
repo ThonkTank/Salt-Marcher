@@ -1,5 +1,7 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
+import features.world.dungeonmap.application.corridor.DungeonCorridorEditService;
+import features.world.dungeonmap.application.corridor.DungeonCorridorGraphEditor;
 import features.world.dungeonmap.application.room.DungeonClusterMoveService;
 import features.world.dungeonmap.application.room.DungeonClusterMoveProjectionApplicationService;
 import features.world.dungeonmap.application.room.DungeonRoomNarrationService;
@@ -9,6 +11,7 @@ import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
+import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
@@ -41,6 +44,7 @@ public final class SelectionTool implements EditorTool {
     private final DungeonMapLoadingService loadingService;
     private final DungeonClusterMoveService clusterMoveService;
     private final DungeonClusterMoveProjectionApplicationService clusterMoveProjectionApplicationService;
+    private final DungeonCorridorEditService corridorEditService;
     private final DungeonRoomNarrationService roomNarrationService;
     private final DungeonGridHitTester hitTester;
     private final EditorInteractionState state;
@@ -50,6 +54,7 @@ public final class SelectionTool implements EditorTool {
     private final Map<Long, Label> narrationStatusLabels = new LinkedHashMap<>();
 
     private ClusterDragSession dragSession;
+    private CorridorNodeDragSession corridorNodeDragSession;
     private DungeonEditorTool activeTool;
     private Runnable refreshCallback = () -> { };
 
@@ -58,6 +63,7 @@ public final class SelectionTool implements EditorTool {
             DungeonMapLoadingService loadingService,
             DungeonClusterMoveService clusterMoveService,
             DungeonClusterMoveProjectionApplicationService clusterMoveProjectionApplicationService,
+            DungeonCorridorEditService corridorEditService,
             DungeonRoomNarrationService roomNarrationService,
             DungeonGridHitTester hitTester,
             EditorInteractionState state
@@ -68,6 +74,7 @@ public final class SelectionTool implements EditorTool {
         this.clusterMoveProjectionApplicationService = Objects.requireNonNull(
                 clusterMoveProjectionApplicationService,
                 "clusterMoveProjectionApplicationService");
+        this.corridorEditService = Objects.requireNonNull(corridorEditService, "corridorEditService");
         this.roomNarrationService = Objects.requireNonNull(roomNarrationService, "roomNarrationService");
         this.hitTester = Objects.requireNonNull(hitTester, "hitTester");
         this.state = Objects.requireNonNull(state, "state");
@@ -102,6 +109,17 @@ public final class SelectionTool implements EditorTool {
         }
         DungeonEditorHitTarget hit = hitTester.hitTest(ctx.projectedLayout(), event.canvasPoint(), event.camera());
         clear();
+        if (hit instanceof DungeonEditorCorridorNodeHitTarget corridorNodeHit
+                && corridorNodeHit.corridor().corridorId() != null
+                && corridorNodeHit.node().nodeId() != null) {
+            state.selectTarget(corridorNodeHit.targetKey());
+            corridorNodeDragSession = new CorridorNodeDragSession(
+                    corridorNodeHit.corridor().corridorId(),
+                    corridorNodeHit.node().nodeId(),
+                    new Point2i(corridorNodeHit.node().gridX2(), corridorNodeHit.node().gridY2()),
+                    new Point2i(corridorNodeHit.node().gridX2(), corridorNodeHit.node().gridY2()));
+            return true;
+        }
         if (isClusterLabelHit(hit)) {
             state.selectTarget(hit.targetKey());
             dragSession = ClusterDragSession.start(
@@ -133,6 +151,18 @@ public final class SelectionTool implements EditorTool {
     @Override
     public boolean dragged(EditorToolContext ctx) {
         DungeonCanvasPointerEvent event = ctx == null ? null : ctx.event();
+        if (corridorNodeDragSession != null) {
+            if (event == null || !event.isPrimaryButtonDown()) {
+                return false;
+            }
+            Point2i doubledPoint = new Point2i(event.gridCell().x() * 2 + 1, event.gridCell().y() * 2 + 1);
+            if (Objects.equals(doubledPoint, corridorNodeDragSession.currentPoint())) {
+                return true;
+            }
+            corridorNodeDragSession = corridorNodeDragSession.withCurrentPoint(doubledPoint);
+            state.showPreview(new EditorPreview.LayoutPreview(previewCorridorMap()));
+            return true;
+        }
         if (dragSession == null || event == null || !event.isPrimaryButtonDown()) {
             return false;
         }
@@ -148,6 +178,28 @@ public final class SelectionTool implements EditorTool {
     @Override
     public boolean released(EditorToolContext ctx) {
         DungeonCanvasPointerEvent event = ctx == null ? null : ctx.event();
+        if (corridorNodeDragSession != null) {
+            CorridorNodeDragSession current = corridorNodeDragSession;
+            corridorNodeDragSession = null;
+            state.clearPreview();
+            state.selectTarget(Corridor.targetKey(current.corridorId()));
+            if (!Objects.equals(current.startPoint(), current.currentPoint()) && mapState.activeMapId() != null) {
+                Corridor corridor = mapState.activeMap().findCorridor(current.corridorId());
+                if (corridor != null) {
+                    Corridor updated = DungeonCorridorGraphEditor.withMovedNode(
+                            mapState.activeMap(),
+                            corridor,
+                            current.nodeId(),
+                            current.currentPoint());
+                    loadingService.submitReloadingWrite(
+                            () -> corridorEditService.update(mapState.activeMapId(), updated),
+                            mapState.activeMapId(),
+                            null,
+                            throwable -> UiErrorReporter.reportBackgroundFailure("SelectionTool.released()", throwable));
+                }
+            }
+            return true;
+        }
         if (dragSession == null || event == null) {
             return false;
         }
@@ -325,6 +377,7 @@ public final class SelectionTool implements EditorTool {
 
     private void clear() {
         dragSession = null;
+        corridorNodeDragSession = null;
         state.clearPreview();
     }
 
@@ -357,6 +410,36 @@ public final class SelectionTool implements EditorTool {
                 dragSession.clusterId(),
                 dragSession.currentDelta(),
                 dragSession.currentLevel() - dragSession.startLevel()).layout();
+    }
+
+    private DungeonLayout previewCorridorMap() {
+        if (corridorNodeDragSession == null) {
+            return null;
+        }
+        Corridor corridor = mapState.activeMap().findCorridor(corridorNodeDragSession.corridorId());
+        if (corridor == null) {
+            return null;
+        }
+        Corridor updated = DungeonCorridorGraphEditor.withMovedNode(
+                mapState.activeMap(),
+                corridor,
+                corridorNodeDragSession.nodeId(),
+                corridorNodeDragSession.currentPoint());
+        return new DungeonLayout(
+                mapState.activeMap().mapId(),
+                mapState.activeMap().name(),
+                mapState.activeMap().corridors().stream()
+                        .map(existing -> existing != null && Objects.equals(existing.corridorId(), updated.corridorId()) ? updated : existing)
+                        .toList(),
+                mapState.activeMap().clusters(),
+                mapState.activeMap().stairs(),
+                mapState.activeMap().transitions(),
+                mapState.activeMap().clusters().stream()
+                        .filter(cluster -> cluster != null && cluster.clusterId() != null)
+                        .collect(java.util.stream.Collectors.toMap(
+                                cluster -> cluster.clusterId(),
+                                cluster -> mapState.activeMap().levelForCluster(cluster.clusterId()))))
+                .projectedToLevel(mapState.activeProjectionLevel());
     }
 
     private static TextArea createTextArea(String text) {
@@ -407,6 +490,17 @@ public final class SelectionTool implements EditorTool {
                 int startLevel
         ) {
             return new ClusterDragSession(clusterId, targetKey, baseMap, pressCell, new Point2i(0, 0), startLevel, startLevel);
+        }
+    }
+
+    private record CorridorNodeDragSession(
+            long corridorId,
+            Long nodeId,
+            Point2i startPoint,
+            Point2i currentPoint
+    ) {
+        private CorridorNodeDragSession withCurrentPoint(Point2i currentPoint) {
+            return new CorridorNodeDragSession(corridorId, nodeId, startPoint, currentPoint);
         }
     }
 }

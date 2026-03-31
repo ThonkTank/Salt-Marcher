@@ -8,6 +8,7 @@ import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.Connection;
+import features.world.dungeonmap.model.structures.room.Room;
 import javafx.geometry.Point2D;
 
 import java.util.Map;
@@ -17,6 +18,7 @@ final class DungeonGridBoundaryHitTester {
 
     private static final long BOUNDARY_PRIORITY = 10L;
     private static final long CONNECTION_PRIORITY = 10L;
+    private static final long ROOM_BOUNDARY_PRIORITY = 10L;
 
     DungeonEditorBoundaryHitTarget hitBoundary(DungeonLayout layout, Point2D canvasPoint, DungeonCanvasCamera camera) {
         if (layout == null || canvasPoint == null || camera == null) {
@@ -79,6 +81,43 @@ final class DungeonGridBoundaryHitTester {
         return bestTarget;
     }
 
+    DungeonEditorRoomBoundaryHitTarget hitRoomBoundary(DungeonLayout layout, Point2D canvasPoint, DungeonCanvasCamera camera) {
+        if (layout == null || canvasPoint == null || camera == null) {
+            return null;
+        }
+        double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
+        double maxDistance = Math.max(7.0, gridSize * 0.22);
+        DungeonEditorRoomBoundaryHitTarget bestTarget = null;
+        double bestDistance = maxDistance;
+        for (Room room : layout.rooms()) {
+            if (room == null || room.roomId() == null) {
+                continue;
+            }
+            for (VertexEdge edge : room.boundaryEdges()) {
+                if (layout.connectionAt(edge) != null) {
+                    continue;
+                }
+                double distance = distanceToEdge(canvasPoint, edge, camera, gridSize);
+                if (distance > bestDistance) {
+                    continue;
+                }
+                RoomBoundaryGeometry geometry = roomBoundaryGeometry(layout, room, edge);
+                if (geometry == null) {
+                    continue;
+                }
+                bestTarget = new DungeonEditorRoomBoundaryHitTarget(
+                        room,
+                        edge,
+                        geometry.roomCell(),
+                        geometry.outwardStep(),
+                        geometry.exterior(),
+                        ROOM_BOUNDARY_PRIORITY);
+                bestDistance = distance;
+            }
+        }
+        return bestTarget;
+    }
+
     private static double distanceToEdge(Point2D canvasPoint, VertexEdge edge, DungeonCanvasCamera camera, double gridSize) {
         Point2D start = canvasPoint(edge.start(), camera, gridSize);
         Point2D end = canvasPoint(edge.end(), camera, gridSize);
@@ -99,5 +138,24 @@ final class DungeonGridBoundaryHitTester {
         return new Point2D(
                 camera.panX() + point.x() * gridSize,
                 camera.panY() + point.y() * gridSize);
+    }
+
+    private static RoomBoundaryGeometry roomBoundaryGeometry(DungeonLayout layout, Room room, VertexEdge edge) {
+        if (layout == null || room == null || edge == null) {
+            return null;
+        }
+        for (Point2i cell : edge.touchingCells().stream().sorted(Point2i.POINT_ORDER).toList()) {
+            if (!room.contains(cell)) {
+                continue;
+            }
+            Point2i outwardStep = edge.directionFrom(cell);
+            Point2i opposite = outwardStep == null ? null : cell.add(outwardStep);
+            boolean exterior = opposite == null || layout.roomAtCell(opposite) == null;
+            return new RoomBoundaryGeometry(cell, outwardStep, exterior);
+        }
+        return null;
+    }
+
+    private record RoomBoundaryGeometry(Point2i roomCell, Point2i outwardStep, boolean exterior) {
     }
 }

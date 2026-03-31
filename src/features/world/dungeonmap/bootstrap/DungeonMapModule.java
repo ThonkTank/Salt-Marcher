@@ -1,6 +1,7 @@
 package features.world.dungeonmap.bootstrap;
 
 import features.world.api.WorldTravelSurface;
+import features.world.dungeonmap.application.corridor.DungeonCorridorEditService;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationService;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeStateRepairService;
 import features.world.dungeonmap.application.transition.DungeonTransitionEditService;
@@ -13,11 +14,13 @@ import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
 import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
+import features.world.dungeonmap.persistence.DungeonCorridorWriteRepository;
 import features.world.dungeonmap.persistence.DungeonTransitionWriteRepository;
 import features.world.dungeonmap.persistence.DungeonRoomGeometryWriteMapper;
 import features.world.dungeonmap.persistence.DungeonRoomWriteRepository;
 import features.world.dungeonmap.shell.editor.DungeonEditorView;
 import features.world.dungeonmap.shell.editor.interaction.BoundaryTool;
+import features.world.dungeonmap.shell.editor.interaction.ConnectionsTool;
 import features.world.dungeonmap.shell.editor.interaction.DungeonGridHitTester;
 import features.world.dungeonmap.shell.editor.interaction.EditorInteraction;
 import features.world.dungeonmap.shell.editor.interaction.EditorTool;
@@ -43,6 +46,7 @@ public final class DungeonMapModule {
         Objects.requireNonNull(detailsNavigator, "detailsNavigator");
         DungeonMapLoader mapLoader = new DungeonMapLoader();
         DungeonRoomWriteRepository roomWriteRepository = new DungeonRoomWriteRepository();
+        DungeonCorridorWriteRepository corridorWriteRepository = new DungeonCorridorWriteRepository();
         DungeonTransitionWriteRepository transitionWriteRepository = new DungeonTransitionWriteRepository();
         DungeonRoomNarrationService roomNarrationService = new DungeonRoomNarrationService(roomWriteRepository);
         DungeonRoomGeometryWriteMapper geometryWriteMapper = new DungeonRoomGeometryWriteMapper();
@@ -55,6 +59,7 @@ public final class DungeonMapModule {
                 roomTopologyService,
                 new DungeonRuntimeStateRepairService(mapLoader));
         DungeonBoundaryEditService boundaryEditService = new DungeonBoundaryEditService(roomTopologyService);
+        DungeonCorridorEditService corridorEditService = new DungeonCorridorEditService(mapLoader, corridorWriteRepository);
         DungeonClusterMoveProjectionApplicationService clusterMoveProjectionApplicationService =
                 new DungeonClusterMoveProjectionApplicationService();
         DungeonClusterMoveService clusterMoveService = new DungeonClusterMoveService(
@@ -75,6 +80,7 @@ public final class DungeonMapModule {
                         loadingService,
                         clusterMoveService,
                         clusterMoveProjectionApplicationService,
+                        corridorEditService,
                         roomNarrationService,
                         new DungeonGridHitTester(),
                         editorInteractionState),
@@ -89,6 +95,13 @@ public final class DungeonMapModule {
                         loadingService,
                         editorSessionState,
                         boundaryEditService,
+                        editorInteractionState),
+                new ConnectionsTool(
+                        state,
+                        loadingService,
+                        editorSessionState,
+                        boundaryEditService,
+                        corridorEditService,
                         editorInteractionState),
                 new TransitionTool(
                         state,

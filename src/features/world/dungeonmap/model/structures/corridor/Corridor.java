@@ -42,6 +42,7 @@ public final class Corridor {
     private final List<CorridorNode> nodes;
     private final List<CorridorSegment> segments;
     private final CorridorPath path;
+    private final List<CorridorRoute> routes;
     private final List<CorridorConnection> connections;
 
     public static Corridor resolved(
@@ -80,6 +81,7 @@ public final class Corridor {
         this.segments = normalizeSegments(segments);
         DerivedProjection projection = deriveProjection(corridorId, mapId, levelZ, this.nodes, this.segments, roomsById);
         this.path = projection.path();
+        this.routes = projection.routes();
         this.connections = projection.connections();
     }
 
@@ -137,6 +139,10 @@ public final class Corridor {
         return path;
     }
 
+    public List<CorridorRoute> routes() {
+        return routes;
+    }
+
     public Set<CubePoint> occupiedCells() {
         return path.cells();
     }
@@ -155,6 +161,41 @@ public final class Corridor {
 
     public boolean connectsRoom(Long roomId) {
         return roomId != null && connectedRoomIds().contains(roomId);
+    }
+
+    public CorridorNode findNode(Long nodeId) {
+        if (nodeId == null) {
+            return null;
+        }
+        return nodes.stream()
+                .filter(node -> nodeId.equals(node.nodeId()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    public CorridorSegment findSegment(Long segmentId) {
+        if (segmentId == null) {
+            return null;
+        }
+        return segments.stream()
+                .filter(segment -> segmentId.equals(segment.segmentId()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    public List<CorridorSegment> segmentsForNode(Long nodeId) {
+        if (nodeId == null) {
+            return List.of();
+        }
+        return segments.stream()
+                .filter(segment -> nodeId.equals(segment.startNodeId()) || nodeId.equals(segment.endNodeId()))
+                .toList();
+    }
+
+    public List<CorridorNode> persistedManualNodes() {
+        return nodes.stream()
+                .filter(node -> node.nodeId() != null && !node.isRoomBound())
+                .toList();
     }
 
     private static List<CorridorNode> normalizeNodes(List<CorridorNode> nodes) {
@@ -225,16 +266,20 @@ public final class Corridor {
         Map<Long, Room> resolvedRooms = roomsById == null ? Map.of() : Map.copyOf(roomsById);
         Map<Long, CorridorNode> nodesById = indexNodes(nodes);
         LinkedHashSet<CubePoint> occupiedCells = new LinkedHashSet<>();
+        ArrayList<CorridorRoute> routes = new ArrayList<>();
         for (CorridorSegment segment : segments) {
             CorridorNode start = nodesById.get(segment.startNodeId());
             CorridorNode end = nodesById.get(segment.endNodeId());
             if (start == null || end == null) {
                 throw new IllegalArgumentException("Corridor segment references missing node");
             }
-            occupiedCells.addAll(routeCells(levelZ, start, end, nodes, resolvedRooms));
+            List<Point2i> doubledPath = findRoute(levelZ, start, end, nodes, resolvedRooms);
+            occupiedCells.addAll(cellsForDoubledPath(doubledPath, levelZ));
+            routes.add(new CorridorRoute(segment.segmentId(), segment.startNodeId(), segment.endNodeId(), doubledPath));
         }
         return new DerivedProjection(
                 CorridorPath.fromCells(occupiedCells),
+                routes.isEmpty() ? List.of() : List.copyOf(routes),
                 materializeConnections(corridorId, mapId, levelZ, nodes, resolvedRooms));
     }
 
@@ -248,7 +293,7 @@ public final class Corridor {
         return Map.copyOf(result);
     }
 
-    private static Collection<CubePoint> routeCells(
+    private static List<Point2i> findRoute(
             int levelZ,
             CorridorNode start,
             CorridorNode end,
@@ -258,8 +303,7 @@ public final class Corridor {
         Point2i startPoint = new Point2i(start.gridX2(), start.gridY2());
         Point2i endPoint = new Point2i(end.gridX2(), end.gridY2());
         Set<Point2i> blockedCenters = blockedRoomCenters(levelZ, allNodes, roomsById);
-        List<Point2i> doubledPath = findDoubledPath(startPoint, endPoint, blockedCenters);
-        return cellsForDoubledPath(doubledPath, levelZ);
+        return findDoubledPath(startPoint, endPoint, blockedCenters);
     }
 
     private static Set<Point2i> blockedRoomCenters(
@@ -424,7 +468,48 @@ public final class Corridor {
 
     private record DerivedProjection(
             CorridorPath path,
+            List<CorridorRoute> routes,
             List<CorridorConnection> connections
     ) {
+    }
+
+    public record CorridorRoute(
+            Long segmentId,
+            Long startNodeId,
+            Long endNodeId,
+            List<Point2i> doubledPath
+    ) {
+        public CorridorRoute {
+            doubledPath = doubledPath == null ? List.of() : List.copyOf(doubledPath);
+        }
+
+        public List<VertexEdge> doubledEdges() {
+            if (doubledPath.size() < 2) {
+                return List.of();
+            }
+            ArrayList<VertexEdge> result = new ArrayList<>();
+            for (int index = 1; index < doubledPath.size(); index++) {
+                result.add(new VertexEdge(doubledPath.get(index - 1), doubledPath.get(index)));
+            }
+            return List.copyOf(result);
+        }
+
+        public List<Point2i> cornerPoints() {
+            if (doubledPath.size() < 3) {
+                return List.of();
+            }
+            ArrayList<Point2i> result = new ArrayList<>();
+            for (int index = 1; index < doubledPath.size() - 1; index++) {
+                Point2i previous = doubledPath.get(index - 1);
+                Point2i current = doubledPath.get(index);
+                Point2i next = doubledPath.get(index + 1);
+                Point2i incoming = current.subtract(previous);
+                Point2i outgoing = next.subtract(current);
+                if (incoming.x() != outgoing.x() || incoming.y() != outgoing.y()) {
+                    result.add(current);
+                }
+            }
+            return List.copyOf(result);
+        }
     }
 }

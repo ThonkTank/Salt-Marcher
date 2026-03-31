@@ -21,6 +21,7 @@ import features.world.dungeonmap.model.objects.Floor;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.Connection;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
+import features.world.dungeonmap.model.structures.corridor.CorridorNode;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
@@ -403,7 +404,54 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                     levelConnectionEdges,
                     selected ? pass.palette().highlightStroke() : pass.palette().corridorStroke(),
                     selected ? 3.0 : 2.0);
+            if (selected && pass.editorMode()) {
+                drawCorridorHandles(pass, corridor);
+            }
         }
+    }
+
+    private static void drawCorridorHandles(StructureRenderPass pass, Corridor corridor) {
+        for (CorridorNode node : corridor.persistedManualNodes()) {
+            drawCorridorHandle(
+                    pass.gc(),
+                    pass.camera(),
+                    pass.gridSize(),
+                    new Point2i(node.gridX2(), node.gridY2()),
+                    pass.palette().highlightAccent(),
+                    pass.palette().highlightStroke(),
+                    Math.max(5.0, pass.gridSize() * 0.16));
+        }
+        for (Corridor.CorridorRoute route : corridor.routes()) {
+            for (Point2i corner : route.cornerPoints()) {
+                drawCorridorHandle(
+                        pass.gc(),
+                        pass.camera(),
+                        pass.gridSize(),
+                        corner,
+                        pass.palette().highlightFill(),
+                        pass.palette().highlightStroke(),
+                        Math.max(4.0, pass.gridSize() * 0.13));
+            }
+        }
+    }
+
+    private static void drawCorridorHandle(
+            GraphicsContext gc,
+            DungeonCanvasCamera camera,
+            double gridSize,
+            Point2i doubledPoint,
+            Color fill,
+            Color stroke,
+            double radius
+    ) {
+        double centerX = camera.panX() + (doubledPoint.x() * gridSize / 2.0);
+        double centerY = camera.panY() + (doubledPoint.y() * gridSize / 2.0);
+        double diameter = radius * 2.0;
+        gc.setFill(fill);
+        gc.fillOval(centerX - radius, centerY - radius, diameter, diameter);
+        gc.setStroke(stroke);
+        gc.setLineWidth(1.8);
+        gc.strokeOval(centerX - radius, centerY - radius, diameter, diameter);
     }
 
     private static void drawCorridorBoundaries(StructureRenderPass pass, Set<VertexEdge> edges, boolean selected) {

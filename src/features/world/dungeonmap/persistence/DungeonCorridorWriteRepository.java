@@ -17,6 +17,14 @@ import java.util.Objects;
 
 public final class DungeonCorridorWriteRepository {
 
+    public long nextNodeId(Connection conn) throws SQLException {
+        return nextId(conn, "dungeon_corridor_nodes", "corridor_node_id");
+    }
+
+    public long nextSegmentId(Connection conn) throws SQLException {
+        return nextId(conn, "dungeon_corridor_segments", "corridor_segment_id");
+    }
+
     public long insertCorridor(Connection conn, long mapId, Corridor corridor) throws SQLException {
         Corridor resolvedCorridor = Objects.requireNonNull(corridor, "corridor");
         try (PreparedStatement ps = conn.prepareStatement(
@@ -112,6 +120,17 @@ public final class DungeonCorridorWriteRepository {
             throw new IllegalArgumentException(label + " id is required for persistence");
         }
         return id;
+    }
+
+    private static long nextId(Connection conn, String table, String column) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT COALESCE(MAX(" + column + "), 0) + 1 FROM " + table);
+             ResultSet rs = ps.executeQuery()) {
+            if (!rs.next()) {
+                throw new SQLException("No next id returned for " + table);
+            }
+            return rs.getLong(1);
+        }
     }
 
     private static List<CorridorNode> sanitizedNodes(List<CorridorNode> nodes) {

@@ -23,7 +23,7 @@ public final class ToolControls {
     private final Map<ToolFamily, Button> familyButtons = new EnumMap<>(ToolFamily.class);
     private final Button roomButton = createButton("Raum");
     private final Button wallButton = createButton("Wand");
-    private final Button doorButton = createButton("Tür");
+    private final Button connectionsButton = createButton("Connections");
     private final Button transitionButton = createButton("Übergang");
     private final GuardState sync = new GuardState();
     private final ToolFamilyDropdownController dropdownController;
@@ -38,7 +38,7 @@ public final class ToolControls {
 
         familyButtons.put(ToolFamily.ROOM, roomButton);
         familyButtons.put(ToolFamily.WALL, wallButton);
-        familyButtons.put(ToolFamily.DOOR, doorButton);
+        familyButtons.put(ToolFamily.CONNECTIONS, connectionsButton);
         familyButtons.put(ToolFamily.TRANSITION, transitionButton);
 
         toolGroup.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
@@ -60,7 +60,7 @@ public final class ToolControls {
             familyButton.setOnAction(event -> activateFamily(family));
         }
 
-        HBox row = new HBox(6, selectButton, roomButton, wallButton, doorButton, transitionButton);
+        HBox row = new HBox(6, selectButton, roomButton, wallButton, connectionsButton, transitionButton);
         row.setAlignment(Pos.CENTER_LEFT);
         content = new VBox(6, sectionLabelFactory.apply("Werkzeug"), row);
         content.getStyleClass().add("editor-toolbar-group");

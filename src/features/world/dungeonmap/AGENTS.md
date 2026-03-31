@@ -16,7 +16,7 @@ The feature ships two `AppView` implementations: `DungeonEditorView` (EDITOR) an
 
 - `DungeonLayout` owns only direct top-level structures: corridors, stairs, clusters, transitions.
 - Corridors and stairs are first-class persisted owners; there is no second aggregate for connection geometry.
-- The editor exposes no corridor/stair create/delete tools yet.
+- The editor exposes `ConnectionsTool` for door/corridor authoring. Stair authoring remains deferred.
 - Room topology edits and cluster moves do not reroute or rewrite corridors/stairs; those structures remain unchanged unless their own edit workflows persist a new version.
 
 ### Package Roles
@@ -37,7 +37,7 @@ The feature ships two `AppView` implementations: `DungeonEditorView` (EDITOR) an
 - `shell/` — view and UI coordinator layer:
   - `shell/editor/` — `DungeonEditorView` (owns all state listener wiring: map state → controls, session state → tool activation, interaction state → workspace preview/selection), `DungeonEditorControls`, `DungeonEditorStatePane`
   - `shell/editor/controls/` — left-panel UI: `MapControls` (map selector/CRUD), `ToolControls` (tool palette), `ViewModeControls` (grid/graph toggle), `ToolFamilyDropdownController`, `GuardState`
-  - `shell/editor/interaction/` — `EditorInteraction` dispatches canvas events to `EditorTool` implementations (`SelectionTool`, `PaintTool`, `BoundaryTool`, `TransitionTool`). Tool-local transient state stays inside the tool unless it must be shared via `state/`
+  - `shell/editor/interaction/` — `EditorInteraction` dispatches canvas events to `EditorTool` implementations (`SelectionTool`, `PaintTool`, `BoundaryTool`, `ConnectionsTool`, `TransitionTool`). Tool-local transient state stays inside the tool unless it must be shared via `state/`
   - `shell/controls/` — shared controls: `DungeonLevelOverlayControls` (configures multi-level overlay rendering)
   - `shell/runtime/` — `DungeonRuntimeView` (publishes surfaces to `DetailsNavigator`, wires drag-to-move interaction), `DungeonRuntimeInteractionController` (drag-to-move: press on party tile → drag preview → release commits move)
 - `state/` — observable transient state containers with `CopyOnWriteArrayList` listener lists. These are the single source of truth for cross-class coordination:
@@ -130,7 +130,8 @@ The domain-model ownership rules below apply to the full interaction pipeline, n
 `EditorInteraction` dispatches events by active `EditorTool`:
 - **SELECT** → `SelectionTool` — click selects clusters/rooms/stairs/transitions via `EditorInteractionState`, drag shows translated cluster preview via `EditorPreview.LayoutPreview`, and the state pane exposes room narration editing
 - **ROOM_PAINT / ROOM_DELETE** → `PaintTool` — manages `RoomPaintSession`, clears selection on paint start, updates `EditorPreview.PaintPreview` during drag, calls `DungeonRoomTopologyService.paint()`/`.delete()` on release
-- **CLUSTER_WALL / CLUSTER_WALL_DELETE / CLUSTER_DOOR / CLUSTER_DOOR_DELETE** → `BoundaryTool` — owns the wall-path draft locally, publishes overlay edges through `EditorPreview.BoundaryPreview`, and stores only lightweight status/selection in shared state
+- **CLUSTER_WALL / CLUSTER_WALL_DELETE** → `BoundaryTool` — owns the wall-path draft locally, publishes overlay edges through `EditorPreview.BoundaryPreview`, and stores only lightweight status/selection in shared state
+- **CONNECTIONS / CONNECTIONS_DELETE** → `ConnectionsTool` — owns door/corridor authoring, direct corridor-graph edits, and corridor-first state-pane actions. Corridor previews must be derived from canonical `Corridor` graph truth instead of a second canvas-local geometry model
 - **TRANSITION_CREATE / TRANSITION_DELETE** → `TransitionTool` — create either places a prepared transition or creates+places atomically from the tool-local transition draft. Delete click-targets transition at cell
 
 Canvas pointer events flow through `DungeonCanvasInteractionHandler` → `handlePressed`/`handleDragged`/`handleReleased` → state update → redraw. Level scrolls are workspace-owned: workspace changes `mapState.activeProjectionLevel` directly, then notifies the handler via `levelScrolled(int)` so tools can react (e.g. `SelectionTool` updates `dragSession.currentLevel`). Hit testing: `DungeonGridHitTester` returns `DungeonEditorHitTarget` / `DungeonEditorLabelHitTarget` for cluster/room/corridor at canvas point.

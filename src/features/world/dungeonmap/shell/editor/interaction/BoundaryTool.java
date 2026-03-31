@@ -61,9 +61,7 @@ public final class BoundaryTool implements EditorTool {
     public Set<DungeonEditorTool> supportedTools() {
         return Set.of(
                 DungeonEditorTool.CLUSTER_WALL,
-                DungeonEditorTool.CLUSTER_WALL_DELETE,
-                DungeonEditorTool.CLUSTER_DOOR,
-                DungeonEditorTool.CLUSTER_DOOR_DELETE);
+                DungeonEditorTool.CLUSTER_WALL_DELETE);
     }
 
     @Override
@@ -85,12 +83,9 @@ public final class BoundaryTool implements EditorTool {
             return false;
         }
         DungeonEditorTool tool = sessionState.selectedTool();
-        if (!tool.isWallTool() && !tool.isDoorTool()) {
+        if (!tool.isWallTool()) {
             clear();
             return false;
-        }
-        if (tool.isDoorTool()) {
-            return handleDoorPressed(ctx, event);
         }
         if (event.isSecondaryButton()) {
             return finishDraft();
@@ -125,31 +120,6 @@ public final class BoundaryTool implements EditorTool {
     @Override
     public void setRefreshCallback(Runnable callback) {
         refreshCallback = callback == null ? () -> { } : callback;
-    }
-
-    private boolean handleDoorPressed(EditorToolContext ctx, DungeonCanvasPointerEvent event) {
-        if (!event.isPrimaryButton()) {
-            return false;
-        }
-        DungeonLayout layout = ctx.projectedLayout();
-        DungeonEditorBoundaryHitTarget hit = boundaryHitTester.hitBoundary(layout, event.canvasPoint(), event.camera());
-        if (!isEditableDoorBoundary(hit, layout)) {
-            state.clearSelection();
-            return false;
-        }
-        state.selectTarget(hit.targetKey());
-        Long mapId = mapState.activeMapId();
-        Long clusterId = hit.clusterId();
-        if (mapId == null || clusterId == null) {
-            return true;
-        }
-        boolean deleteBoundary = sessionState.selectedTool() == DungeonEditorTool.CLUSTER_DOOR_DELETE;
-        loadingService.submitReloadingWrite(
-                () -> boundaryEditService.apply(mapId, clusterId, hit.edge(), InternalBoundaryType.DOOR, deleteBoundary),
-                mapId,
-                null,
-                throwable -> UiErrorReporter.reportBackgroundFailure("BoundaryTool.handleDoorPressed()", throwable));
-        return true;
     }
 
     private boolean handleWallPressed(EditorToolContext ctx, DungeonCanvasPointerEvent event, boolean deleteMode) {
@@ -305,36 +275,6 @@ public final class BoundaryTool implements EditorTool {
             return null;
         }
         return cluster;
-    }
-
-    private boolean isEditableDoorBoundary(DungeonEditorBoundaryHitTarget hit, DungeonLayout layout) {
-        if (hit == null || layout == null || hit.clusterId() == null) {
-            return false;
-        }
-        RoomCluster cluster = clusterOnActiveLevel(hit.clusterId(), layout);
-        if (cluster == null) {
-            return false;
-        }
-        boolean deleteMode = sessionState.selectedTool() == DungeonEditorTool.CLUSTER_DOOR_DELETE;
-        if (deleteMode) {
-            return hit.boundaryType() == InternalBoundaryType.DOOR;
-        }
-        if (hit.boundaryType() == InternalBoundaryType.DOOR) {
-            return false;
-        }
-        java.util.List<Point2i> touchingCells = hit.edge().touchingCells().stream()
-                .sorted(Point2i.POINT_ORDER)
-                .toList();
-        if (touchingCells.size() != 2) {
-            return false;
-        }
-        Room leftRoom = cluster.roomAt(touchingCells.getFirst());
-        Room rightRoom = cluster.roomAt(touchingCells.getLast());
-        return leftRoom != null
-                && rightRoom != null
-                && leftRoom.roomId() != null
-                && rightRoom.roomId() != null
-                && !leftRoom.roomId().equals(rightRoom.roomId());
     }
 
     private void showDraft(Draft nextDraft) {
