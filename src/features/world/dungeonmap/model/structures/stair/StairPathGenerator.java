@@ -27,6 +27,8 @@ public final class StairPathGenerator {
             int dimension1,
             int dimension2
     ) {
+        // This helper may generate a whole-stair replacement path for editor/application workflows,
+        // but the generated path itself is the only domain truth that may be persisted.
         StairShape resolvedShape = Objects.requireNonNull(shape, "shape");
         CardinalDirection resolvedDirection = Objects.requireNonNull(direction, "direction");
         if (anchor == null) {

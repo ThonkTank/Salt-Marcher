@@ -11,6 +11,12 @@ import java.sql.Statement;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Persists only the canonical stair owner fields: top-level identity/name and the explicit ordered path.
+ *
+ * <p>Do not reintroduce generated spec fields or persisted exits here. Those are intentionally derived outside
+ * persistence from the path plus the loaded room/corridor layout.
+ */
 public final class DungeonStairWriteRepository {
 
     public long insertStair(
@@ -56,6 +62,7 @@ public final class DungeonStairWriteRepository {
         }
         try (PreparedStatement insert = conn.prepareStatement(
                 "INSERT INTO dungeon_stair_path_nodes(stair_id, sort_order, cell_x, cell_y, cell_z) VALUES(?,?,?,?,?)")) {
+            // Path order is the whole stair geometry contract.
             for (int index = 0; index < pathNodes.size(); index++) {
                 CubePoint node = pathNodes.get(index);
                 insert.setLong(1, stairId);

@@ -14,6 +14,16 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Canonical stair truth for dungeonmap.
+ *
+ * <p>A stair is exactly one continuous ordered 3D line with a fixed 1:1 climb between successive levels.
+ * It is not a graph, it does not branch, and exits are not persisted. Exits are disposable read projections
+ * derived from the path nodes that currently intersect occupied room/corridor floor cells.
+ *
+ * <p>If later editing wants templates, radius, direction, or other generation inputs, those belong in
+ * editor/application code. The persisted domain truth must stay this explicit path.
+ */
 public final class DungeonStair {
 
     private static final String TARGET_KEY_PREFIX = "stair:";
@@ -164,6 +174,7 @@ public final class DungeonStair {
         HashSet<Integer> seenLevels = new HashSet<>();
         CubePoint previous = null;
         for (CubePoint current : result) {
+            // The intended model is one stair node per reached z-level.
             if (!seenLevels.add(current.z())) {
                 throw new IllegalArgumentException("Treppenpfad darf jede Ebene nur einmal belegen");
             }
@@ -171,6 +182,7 @@ public final class DungeonStair {
                 if (current.z() != previous.z() + 1) {
                     throw new IllegalArgumentException("Treppenpfad muss Ebenen in 1er-Schritten verbinden");
                 }
+                // Horizontal movement may be 0 or 1 cells per climbed level, never more.
                 int planarDistance = Math.abs(current.x() - previous.x()) + Math.abs(current.y() - previous.y());
                 if (planarDistance > 1) {
                     throw new IllegalArgumentException("Treppenpfad verletzt die 1:1-Steigung");
@@ -188,6 +200,8 @@ public final class DungeonStair {
         Set<CubePoint> occupiedFloors = occupiedFloorPositions == null ? Set.of() : Set.copyOf(occupiedFloorPositions);
         LinkedHashSet<CubePoint> exitPositions = new LinkedHashSet<>();
         for (CubePoint node : path) {
+            // Exits are not authored separately. They exist only where the explicit stair path
+            // currently touches reachable room/corridor floor occupancy.
             if (occupiedFloors.contains(node)) {
                 exitPositions.add(node);
             }

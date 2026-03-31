@@ -101,6 +101,8 @@ public final class DungeonSchemaSupport {
                 + "dungeon_map_id   INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
                 + "name             TEXT"
                 + ")");
+        // Ordered path nodes are the canonical persisted stair geometry.
+        // Exits are intentionally absent from the schema and must be re-derived after load.
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_stair_path_nodes ("
                 + "stair_id         INTEGER NOT NULL REFERENCES dungeon_stairs(stair_id) ON DELETE CASCADE,"
                 + "sort_order       INTEGER NOT NULL,"

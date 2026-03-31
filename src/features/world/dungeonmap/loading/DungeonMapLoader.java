@@ -310,6 +310,8 @@ public final class DungeonMapLoader {
             List<Corridor> corridors
     ) throws SQLException {
         DungeonSchemaSupport.ensureCompatibility(conn);
+        // Stair exits are intentionally re-derived on every load from explicit path geometry plus
+        // current floor occupancy. There is no legacy/materialized exit source of truth anymore.
         Map<Long, List<CubePoint>> pathByStairId = loadGrouped(conn,
                 "SELECT stair_id, cell_x, cell_y, cell_z"
                         + " FROM dungeon_stair_path_nodes"
@@ -343,6 +345,7 @@ public final class DungeonMapLoader {
             List<RoomCluster> clusters,
             List<Corridor> corridors
     ) {
+        // This is the full floor occupancy that may materialize read-only stair exits.
         LinkedHashSet<CubePoint> result = new LinkedHashSet<>();
         for (RoomCluster cluster : clusters == null ? List.<RoomCluster>of() : clusters) {
             if (cluster == null) {
