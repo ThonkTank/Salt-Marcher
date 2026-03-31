@@ -17,6 +17,7 @@ import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.shell.editor.EditorCards;
 import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
 import features.world.dungeonmap.shell.interaction.DungeonSelection;
+import features.world.dungeonmap.shell.interaction.DungeonSelectionFactory;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.EditorInteractionState;
@@ -283,7 +284,7 @@ public final class ConnectionsTool implements EditorTool {
                 createdId -> mapId,
                 createdId -> {
                     clearDraft();
-                    state.selectTarget(Corridor.targetKey(createdId));
+                    selectCorridor(createdId);
                 },
                 throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.finishDraftWithRoom()", throwable));
     }
@@ -313,7 +314,7 @@ public final class ConnectionsTool implements EditorTool {
                 mapId,
                 () -> {
                     clearDraft();
-                    state.selectTarget(updated.targetKey());
+                    selectCorridor(updated.corridorId());
                 },
                 throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.finishDraftWithCorridorNode()", throwable));
     }
@@ -331,7 +332,7 @@ public final class ConnectionsTool implements EditorTool {
         loadingService.submitReloadingWrite(
                 () -> corridorEditService.update(mapId, updated),
                 mapId,
-                () -> state.selectTarget(updated.targetKey()),
+                () -> selectCorridor(updated.corridorId()),
                 throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.insertNode()", throwable));
     }
 
@@ -346,7 +347,7 @@ public final class ConnectionsTool implements EditorTool {
         loadingService.submitReloadingWrite(
                 () -> corridorEditService.update(mapId, updated),
                 mapId,
-                () -> state.selectTarget(updated.targetKey()),
+                () -> selectCorridor(updated.corridorId()),
                 throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.deleteSelectedNode()", throwable));
     }
 
@@ -462,6 +463,7 @@ public final class ConnectionsTool implements EditorTool {
 
     private static Long corridorId(DungeonHitSubject hit) {
         return switch (hit) {
+            case DungeonHitSubject.CorridorSubject corridorSubject -> corridorSubject.corridorId();
             case DungeonHitSubject.CorridorNodeSubject corridorNodeSubject -> corridorNodeSubject.corridorId();
             case DungeonHitSubject.CorridorCornerSubject corridorCornerSubject -> corridorCornerSubject.corridorId();
             case DungeonHitSubject.CorridorSegmentSubject corridorSegmentSubject -> corridorSegmentSubject.corridorId();
@@ -485,6 +487,15 @@ public final class ConnectionsTool implements EditorTool {
         }
     }
 
+    private void selectCorridor(Long corridorId) {
+        if (corridorId == null) {
+            state.clearSelection();
+            return;
+        }
+        state.applySelection(DungeonSelectionFactory.ownerSelection(
+                new DungeonHitSubject.CorridorSubject(corridorId, mapState.activeProjectionLevel())));
+    }
+
     private DungeonHitSubject selectedSubject() {
         DungeonSelection selection = state.selectedSelection();
         return selection == null || selection.primary() == null
@@ -493,15 +504,7 @@ public final class ConnectionsTool implements EditorTool {
     }
 
     private Long selectedCorridorId() {
-        Long corridorId = corridorId(selectedSubject());
-        if (corridorId != null) {
-            return corridorId;
-        }
-        String targetKey = state.selectedTargetKey();
-        if (!Corridor.isTargetKey(targetKey)) {
-            return null;
-        }
-        return Corridor.corridorIdFromKey(targetKey);
+        return corridorId(selectedSubject());
     }
 
     private Long selectedNodeId() {

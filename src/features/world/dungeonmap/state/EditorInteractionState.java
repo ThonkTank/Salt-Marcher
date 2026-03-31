@@ -1,8 +1,6 @@
 package features.world.dungeonmap.state;
 
 import features.world.dungeonmap.shell.interaction.DungeonSelection;
-import features.world.dungeonmap.shell.interaction.DungeonSelectionFactory;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -39,10 +37,6 @@ public final class EditorInteractionState {
         }
         selectedSelection = selection;
         notifyListeners();
-    }
-
-    public void selectTarget(String targetKey) {
-        applySelection(DungeonSelectionFactory.ownerSelection(targetKey));
     }
 
     public void clearSelection() {

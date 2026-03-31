@@ -134,7 +134,7 @@ The domain-model ownership rules below apply to the full interaction pipeline, n
 - **CONNECTIONS / CONNECTIONS_DELETE** → `ConnectionsTool` — owns door/corridor authoring, direct corridor-graph edits, and corridor-first state-pane actions. Corridor previews must be derived from canonical `Corridor` graph truth instead of a second canvas-local geometry model
 - **TRANSITION_CREATE / TRANSITION_DELETE** → `TransitionTool` — create either places a prepared transition or creates+places atomically from the tool-local transition draft. Delete click-targets transition at cell
 
-Canvas pointer events flow through `DungeonCanvasInteractionHandler` → `handlePressed`/`handleDragged`/`handleReleased` → state update → redraw. Level scrolls are workspace-owned: workspace changes `mapState.activeProjectionLevel` directly, then notifies the handler via `levelScrolled(int)` so tools can react (e.g. `SelectionTool` updates `dragSession.currentLevel`). Hit testing: `DungeonGridHitTester` returns `DungeonEditorHitTarget` / `DungeonEditorLabelHitTarget` for cluster/room/corridor at canvas point.
+Canvas pointer events flow through `DungeonCanvasInteractionHandler` → `handlePressed`/`handleDragged`/`handleReleased` → state update → redraw. Level scrolls are workspace-owned: workspace changes `mapState.activeProjectionLevel` directly, then notifies the handler via `levelScrolled(int)` so tools can react (e.g. `SelectionTool` updates `dragSession.currentLevel`). Hit testing runs through the shared pipeline: editor and runtime build a `DungeonHitProbe`, `DungeonHitCollector` produces a `DungeonHitSnapshot`, and selection/tools consume `DungeonSelection` subjects directly.
 
 ### Runtime Navigation Model
 
