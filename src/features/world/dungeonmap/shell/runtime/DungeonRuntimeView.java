@@ -18,6 +18,7 @@ import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.shell.AbstractDungeonMapView;
 import features.world.dungeonmap.shell.controls.DungeonLevelOverlayControls;
+import features.world.dungeonmap.shell.interaction.DungeonHitCollector;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.DungeonRuntimeState;
 import javafx.geometry.Insets;
@@ -60,7 +61,8 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
             DungeonMapState state,
             DungeonRuntimeNavigationService runtimeNavigationService,
             DetailsNavigator detailsNavigator,
-            WorldTravelSurface travelSurface
+            WorldTravelSurface travelSurface,
+            DungeonHitCollector hitCollector
     ) {
         super(editorMode, loadingService, state);
         this.title = title;
@@ -79,7 +81,8 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
                     return resolved == null ? null : resolved.projectedCell();
                 },
                 this::previewPartyTile,
-                this::movePartyToTile));
+                this::movePartyToTile,
+                hitCollector));
         workspace().setOnLevelScrollRequested(delta ->
                 state.setReachableProjectionLevel(state.activeProjectionLevel() + delta));
         workspace().setOnStateChanged(this::refreshLabels);

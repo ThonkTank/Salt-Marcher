@@ -27,7 +27,7 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
     private final Function<Point2i, Point2i> nearestTraversableTile;
     private final Consumer<Point2i> previewHandler;
     private final Consumer<Point2i> moveHandler;
-    private final DungeonHitCollector hitCollector = new DungeonHitCollector();
+    private final DungeonHitCollector hitCollector;
     private final DungeonRuntimeSelectionPolicy selectionPolicy = new DungeonRuntimeSelectionPolicy();
     private final DungeonDragService dragService = new DungeonDragService();
     private final DungeonPlacementValidator placementValidator = new DungeonPlacementValidator();
@@ -39,13 +39,15 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
             DungeonRuntimeState runtimeState,
             Function<Point2i, Point2i> nearestTraversableTile,
             Consumer<Point2i> previewHandler,
-            Consumer<Point2i> moveHandler
+            Consumer<Point2i> moveHandler,
+            DungeonHitCollector hitCollector
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.runtimeState = Objects.requireNonNull(runtimeState, "runtimeState");
         this.nearestTraversableTile = Objects.requireNonNull(nearestTraversableTile, "nearestTraversableTile");
         this.previewHandler = Objects.requireNonNull(previewHandler, "previewHandler");
         this.moveHandler = Objects.requireNonNull(moveHandler, "moveHandler");
+        this.hitCollector = Objects.requireNonNull(hitCollector, "hitCollector");
     }
 
     @Override

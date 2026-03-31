@@ -26,6 +26,7 @@ import features.world.dungeonmap.shell.editor.interaction.EditorTool;
 import features.world.dungeonmap.shell.editor.interaction.PaintTool;
 import features.world.dungeonmap.shell.editor.interaction.SelectionTool;
 import features.world.dungeonmap.shell.editor.interaction.TransitionTool;
+import features.world.dungeonmap.shell.interaction.DungeonHitCollector;
 import features.world.dungeonmap.shell.runtime.DungeonRuntimeView;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
@@ -72,6 +73,7 @@ public final class DungeonMapModule {
                 state);
         DungeonEditorSessionState editorSessionState = new DungeonEditorSessionState();
         EditorInteractionState editorInteractionState = new EditorInteractionState();
+        DungeonHitCollector hitCollector = new DungeonHitCollector();
         DungeonTransitionTargetCatalogService transitionTargetCatalogService = new DungeonTransitionTargetCatalogService();
         List<EditorTool> editorTools = List.of(
                 new SelectionTool(
@@ -112,6 +114,7 @@ public final class DungeonMapModule {
                 state,
                 editorSessionState,
                 editorInteractionState,
+                hitCollector,
                 editorTools);
         this.dungeonView = new DungeonRuntimeView(
                 "Dungeon",
@@ -120,7 +123,8 @@ public final class DungeonMapModule {
                 state,
                 new DungeonRuntimeNavigationService(),
                 detailsNavigator,
-                travelSurface);
+                travelSurface,
+                hitCollector);
         this.dungeonEditorView = new DungeonEditorView(
                 loadingService,
                 state,

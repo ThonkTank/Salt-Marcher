@@ -27,7 +27,7 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
     private final DungeonEditorSessionState sessionState;
     private final EditorInteractionState state;
     private final Map<DungeonEditorTool, EditorTool> toolsByEnum;
-    private final DungeonHitCollector hitCollector = new DungeonHitCollector();
+    private final DungeonHitCollector hitCollector;
     private final DungeonEditorSelectionPolicy selectionPolicy = new DungeonEditorSelectionPolicy(
             new DungeonPlacementValidator());
     private EditorTool activeTool;
@@ -37,11 +37,13 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
             DungeonMapState mapState,
             DungeonEditorSessionState sessionState,
             EditorInteractionState state,
+            DungeonHitCollector hitCollector,
             List<EditorTool> tools
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.sessionState = Objects.requireNonNull(sessionState, "sessionState");
         this.state = Objects.requireNonNull(state, "state");
+        this.hitCollector = Objects.requireNonNull(hitCollector, "hitCollector");
         List<EditorTool> toolList = List.copyOf(Objects.requireNonNull(tools, "tools"));
         this.toolsByEnum = buildToolMap(toolList);
         toolList.forEach(tool -> tool.setRefreshCallback(() -> toolStateChanged.run()));
