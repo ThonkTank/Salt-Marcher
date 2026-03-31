@@ -5,10 +5,10 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 /**
- * Canonical schema definition for the clean dungeonmap feature.
+ * The tables declared here define the active dungeon truth.
  *
- * <p>Schema changes are hard cuts here: no migration layer and no legacy corridor/traversal tables kept alive for
- * compatibility. The tables declared in this class are the only persisted truth.
+ * <p>When behavior changes, this schema should continue to point at the real owners instead of keeping parallel
+ * compatibility state alive.
  */
 public final class DungeonSchemaSupport {
 

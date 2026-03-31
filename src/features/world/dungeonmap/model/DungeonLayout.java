@@ -27,11 +27,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Immutable global lookup surface over direct dungeon structures.
+ * Layout is only the global lookup surface over direct structure owners.
  *
- * <p>The active model intentionally contains only rooms/clusters, corridors, stairs, and transitions. Traversal
- * owners and corridor-network aggregates are gone from active code paths; extend direct owners instead of adding a
- * second aggregate truth.
+ * <p>The behavior to preserve is that rooms/clusters, corridors, stairs, and transitions answer queries directly.
+ * Do not move active behavior back into a second aggregate layer.
  */
 public final class DungeonLayout {
 

@@ -3,10 +3,7 @@ package features.world.dungeonmap.application.runtime;
 import features.world.dungeonmap.model.geometry.CubePoint;
 
 /**
- * Runtime-facing location vocabulary after corridor-network removal.
- *
- * <p>The runtime can target a whole corridor or a concrete tile, but it no longer exposes traversal- or
- * corridor-component-derived substructures.
+ * Runtime state should point at direct playable locations, not at editor-only sub-aggregates.
  */
 public sealed interface DungeonRuntimeLocation
         permits DungeonRuntimeLocation.Room, DungeonRuntimeLocation.Corridor, DungeonRuntimeLocation.Tile, DungeonRuntimeLocation.StairExit, DungeonRuntimeLocation.Transition {

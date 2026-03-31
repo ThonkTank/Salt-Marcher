@@ -13,9 +13,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Read-only raster projection derived from the canonical corridor graph.
- *
- * <p>This remains for canvas/runtime compatibility, but it is no longer corridor persistence truth.
+ * Corridor readers should treat this as a compatibility view, not as the thing that owns corridor behavior.
  */
 public record CorridorPath(Set<CubePoint> cells) {
     public CorridorPath {

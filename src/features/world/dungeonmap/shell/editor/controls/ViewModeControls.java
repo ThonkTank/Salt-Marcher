@@ -9,10 +9,7 @@ import javafx.scene.layout.Region;
 import java.util.function.Consumer;
 
 /**
- * Grid-only view controls.
- *
- * <p>Keep this single-mode until a future graph view is intentionally redesigned against the direct corridor/stair
- * model.
+ * View controls should expose only modes that are fully supported by the active model semantics.
  */
 public final class ViewModeControls {
 

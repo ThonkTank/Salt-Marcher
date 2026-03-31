@@ -12,10 +12,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Resolves runtime surfaces strictly from direct room/corridor/stair/transition ownership.
+ * Runtime surfaces should read from the same direct owners that the rest of the feature uses.
  *
- * <p>If corridor behavior changes, change the corridor model and its derived readers rather than rebuilding a
- * corridor-network abstraction here.
+ * <p>If the runtime needs extra meaning, add it at the owner seam instead of inventing a runtime-only structure
+ * hierarchy here.
  */
 public final class DungeonRuntimeSurfaceResolver {
 

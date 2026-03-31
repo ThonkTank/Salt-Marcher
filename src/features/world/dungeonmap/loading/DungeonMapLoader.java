@@ -42,10 +42,10 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Read-side loader for the direct-owner dungeon schema.
+ * The loader must reconstruct the active dungeon only from direct structure owners.
  *
- * <p>Traversal is intentionally absent here. Corridors load from node/segment tables and let the corridor model
- * derive compatibility geometry. There is no legacy reconstruction path.
+ * <p>If loaded behavior depends on a hidden fallback or reconstruction layer, it belongs back on the owning model
+ * instead of in this loader.
  */
 public final class DungeonMapLoader {
 

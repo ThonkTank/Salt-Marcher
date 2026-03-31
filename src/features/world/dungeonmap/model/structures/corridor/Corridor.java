@@ -26,11 +26,10 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Canonical corridor owner after traversal removal.
+ * Corridors are edited and persisted as standalone structures.
  *
- * <p>Persisted truth is the corridor-local node/segment graph, never rasterized cells. {@link CorridorPath} stays
- * as a derived compatibility projection only. Room bindings are explicit door targets on a chosen wall edge, the
- * corridor owns its level, and invalid graphs must fail fast instead of reviving traversal/network reconstruction.
+ * <p>The behavior to preserve here is: the graph is canonical, {@link CorridorPath} is only a read projection, room
+ * attachments stay explicit, and callers must get the same corridor behavior without any second aggregate owner.
  */
 public final class Corridor {
 
