@@ -25,6 +25,10 @@ public record DungeonTransition(
     }
 
     public String targetKey() {
+        return targetKey(transitionId);
+    }
+
+    public static String targetKey(Long transitionId) {
         return TargetKey.of(TARGET_KEY_PREFIX, transitionId).value();
     }
 

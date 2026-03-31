@@ -83,6 +83,10 @@ public final class DungeonStair {
     }
 
     public String targetKey() {
+        return targetKey(stairId);
+    }
+
+    public static String targetKey(Long stairId) {
         return TargetKey.of(TARGET_KEY_PREFIX, stairId).value();
     }
 

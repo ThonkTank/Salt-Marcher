@@ -1,0 +1,346 @@
+package features.world.dungeonmap.shell.interaction;
+
+import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.geometry.VertexEdge;
+import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
+import features.world.dungeonmap.model.structures.cluster.RoomCluster;
+import features.world.dungeonmap.model.structures.connection.ConnectionKind;
+import features.world.dungeonmap.model.structures.corridor.Corridor;
+import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.model.structures.stair.DungeonStair;
+import features.world.dungeonmap.model.structures.transition.DungeonTransition;
+
+import java.util.Objects;
+
+public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubject,
+        DungeonHitSubject.ClusterLabelSubject,
+        DungeonHitSubject.ClusterBoundarySubject,
+        DungeonHitSubject.RoomSubject,
+        DungeonHitSubject.RoomBoundarySubject,
+        DungeonHitSubject.ConnectionSubject,
+        DungeonHitSubject.CorridorSubject,
+        DungeonHitSubject.CorridorNodeSubject,
+        DungeonHitSubject.CorridorCornerSubject,
+        DungeonHitSubject.CorridorSegmentSubject,
+        DungeonHitSubject.StairSubject,
+        DungeonHitSubject.TransitionSubject,
+        DungeonHitSubject.FloorCellSubject {
+
+    DungeonHitKind kind();
+
+    String targetKey();
+
+    String partKey();
+
+    record VertexSubject(Point2i vertex) implements DungeonHitSubject {
+        public VertexSubject {
+            vertex = Objects.requireNonNull(vertex, "vertex");
+        }
+
+        @Override
+        public DungeonHitKind kind() {
+            return DungeonHitKind.VERTEX;
+        }
+
+        @Override
+        public String targetKey() {
+            return "";
+        }
+
+        @Override
+        public String partKey() {
+            return vertexPartKey(vertex);
+        }
+    }
+
+    record ClusterLabelSubject(Long clusterId) implements DungeonHitSubject {
+        @Override
+        public DungeonHitKind kind() {
+            return DungeonHitKind.CLUSTER_LABEL;
+        }
+
+        @Override
+        public String targetKey() {
+            return RoomCluster.targetKey(clusterId);
+        }
+
+        @Override
+        public String partKey() {
+            return "label";
+        }
+    }
+
+    record ClusterBoundarySubject(
+            Long clusterId,
+            VertexEdge edge,
+            InternalBoundaryType boundaryType,
+            Point2i baseCell,
+            Point2i direction
+    ) implements DungeonHitSubject {
+        public ClusterBoundarySubject {
+            edge = Objects.requireNonNull(edge, "edge");
+            boundaryType = boundaryType == null ? InternalBoundaryType.WALL : boundaryType;
+            baseCell = Objects.requireNonNull(baseCell, "baseCell");
+            direction = Objects.requireNonNull(direction, "direction");
+        }
+
+        @Override
+        public DungeonHitKind kind() {
+            return DungeonHitKind.CLUSTER_BOUNDARY;
+        }
+
+        @Override
+        public String targetKey() {
+            return RoomCluster.targetKey(clusterId);
+        }
+
+        @Override
+        public String partKey() {
+            return edgePartKey(edge);
+        }
+    }
+
+    record RoomSubject(Long roomId, Long clusterId) implements DungeonHitSubject {
+        @Override
+        public DungeonHitKind kind() {
+            return DungeonHitKind.ROOM;
+        }
+
+        @Override
+        public String targetKey() {
+            return Room.targetKey(roomId);
+        }
+
+        @Override
+        public String partKey() {
+            return "";
+        }
+    }
+
+    record RoomBoundarySubject(
+            Long roomId,
+            Long clusterId,
+            VertexEdge edge,
+            Point2i roomCell,
+            Point2i outwardStep,
+            boolean exterior
+    ) implements DungeonHitSubject {
+        public RoomBoundarySubject {
+            edge = Objects.requireNonNull(edge, "edge");
+            roomCell = Objects.requireNonNull(roomCell, "roomCell");
+            outwardStep = Objects.requireNonNull(outwardStep, "outwardStep");
+        }
+
+        @Override
+        public DungeonHitKind kind() {
+            return DungeonHitKind.ROOM_BOUNDARY;
+        }
+
+        @Override
+        public String targetKey() {
+            return Room.targetKey(roomId);
+        }
+
+        @Override
+        public String partKey() {
+            return edgePartKey(edge);
+        }
+    }
+
+    record ConnectionSubject(
+            ConnectionKind connectionKind,
+            Long clusterId,
+            Long corridorId,
+            VertexEdge edge
+    ) implements DungeonHitSubject {
+        public ConnectionSubject {
+            connectionKind = Objects.requireNonNull(connectionKind, "connectionKind");
+            edge = Objects.requireNonNull(edge, "edge");
+            switch (connectionKind) {
+                case LOCAL -> {
+                    if (clusterId == null) {
+                        throw new IllegalArgumentException("LOCAL connection subjects require clusterId");
+                    }
+                }
+                case CORRIDOR -> {
+                    if (corridorId == null) {
+                        throw new IllegalArgumentException("CORRIDOR connection subjects require corridorId");
+                    }
+                }
+                case STAIR, TRANSITION -> throw new IllegalArgumentException(
+                        "ConnectionSubject supports only LOCAL and CORRIDOR connections");
+            }
+        }
+
+        @Override
+        public DungeonHitKind kind() {
+            return DungeonHitKind.CONNECTION;
+        }
+
+        @Override
+        public String targetKey() {
+            return switch (connectionKind) {
+                case LOCAL -> RoomCluster.targetKey(clusterId);
+                case CORRIDOR -> Corridor.targetKey(corridorId);
+                case STAIR, TRANSITION -> throw new IllegalStateException(
+                        "Unsupported connection kind for ConnectionSubject: " + connectionKind);
+            };
+        }
+
+        @Override
+        public String partKey() {
+            return edgePartKey(edge);
+        }
+    }
+
+    record CorridorSubject(Long corridorId, int levelZ) implements DungeonHitSubject {
+        @Override
+        public DungeonHitKind kind() {
+            return DungeonHitKind.CORRIDOR;
+        }
+
+        @Override
+        public String targetKey() {
+            return Corridor.targetKey(corridorId);
+        }
+
+        @Override
+        public String partKey() {
+            return "";
+        }
+    }
+
+    record CorridorNodeSubject(Long corridorId, Long nodeId, Point2i doubledPoint) implements DungeonHitSubject {
+        public CorridorNodeSubject {
+            if (nodeId == null) {
+                throw new IllegalArgumentException("Corridor node subjects require nodeId");
+            }
+            doubledPoint = Objects.requireNonNull(doubledPoint, "doubledPoint");
+        }
+
+        @Override
+        public DungeonHitKind kind() {
+            return DungeonHitKind.CORRIDOR_NODE;
+        }
+
+        @Override
+        public String targetKey() {
+            return Corridor.targetKey(corridorId);
+        }
+
+        @Override
+        public String partKey() {
+            return "node:" + nodeId;
+        }
+    }
+
+    record CorridorCornerSubject(Long corridorId, Long segmentId, Point2i doubledPoint) implements DungeonHitSubject {
+        public CorridorCornerSubject {
+            doubledPoint = Objects.requireNonNull(doubledPoint, "doubledPoint");
+        }
+
+        @Override
+        public DungeonHitKind kind() {
+            return DungeonHitKind.CORRIDOR_CORNER;
+        }
+
+        @Override
+        public String targetKey() {
+            return Corridor.targetKey(corridorId);
+        }
+
+        @Override
+        public String partKey() {
+            return "corner:" + doubledPoint.x() + ":" + doubledPoint.y();
+        }
+    }
+
+    record CorridorSegmentSubject(Long corridorId, Long segmentId, Point2i doubledPoint) implements DungeonHitSubject {
+        public CorridorSegmentSubject {
+            if (segmentId == null) {
+                throw new IllegalArgumentException("Corridor segment subjects require segmentId");
+            }
+            doubledPoint = Objects.requireNonNull(doubledPoint, "doubledPoint");
+        }
+
+        @Override
+        public DungeonHitKind kind() {
+            return DungeonHitKind.CORRIDOR_SEGMENT;
+        }
+
+        @Override
+        public String targetKey() {
+            return Corridor.targetKey(corridorId);
+        }
+
+        @Override
+        public String partKey() {
+            return "segment:" + segmentId;
+        }
+    }
+
+    record StairSubject(Long stairId) implements DungeonHitSubject {
+        @Override
+        public DungeonHitKind kind() {
+            return DungeonHitKind.STAIR;
+        }
+
+        @Override
+        public String targetKey() {
+            return DungeonStair.targetKey(stairId);
+        }
+
+        @Override
+        public String partKey() {
+            return "";
+        }
+    }
+
+    record TransitionSubject(Long transitionId) implements DungeonHitSubject {
+        @Override
+        public DungeonHitKind kind() {
+            return DungeonHitKind.TRANSITION;
+        }
+
+        @Override
+        public String targetKey() {
+            return DungeonTransition.targetKey(transitionId);
+        }
+
+        @Override
+        public String partKey() {
+            return "";
+        }
+    }
+
+    record FloorCellSubject(Point2i cell, int levelZ) implements DungeonHitSubject {
+        public FloorCellSubject {
+            cell = Objects.requireNonNull(cell, "cell");
+        }
+
+        @Override
+        public DungeonHitKind kind() {
+            return DungeonHitKind.FLOOR_CELL;
+        }
+
+        @Override
+        public String targetKey() {
+            return "";
+        }
+
+        @Override
+        public String partKey() {
+            return "cell:" + cell.x() + ":" + cell.y() + ":" + levelZ;
+        }
+    }
+
+    private static String edgePartKey(VertexEdge edge) {
+        return "edge:"
+                + edge.start().x() + ":" + edge.start().y()
+                + ":" + edge.end().x() + ":" + edge.end().y();
+    }
+
+    private static String vertexPartKey(Point2i vertex) {
+        return "vertex:" + vertex.x() + ":" + vertex.y();
+    }
+}
