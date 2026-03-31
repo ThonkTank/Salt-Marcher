@@ -1,5 +1,10 @@
 package features.world.dungeonmap.model.structures.corridor;
 
+/**
+ * Canonical undirected corridor graph edge.
+ *
+ * <p>Endpoint IDs are normalized to {@code min/max} so persistence and equality stay order-independent.
+ */
 public record CorridorSegment(
         Long segmentId,
         Long startNodeId,

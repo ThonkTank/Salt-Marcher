@@ -41,6 +41,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Read-side loader for the direct-owner dungeon schema.
+ *
+ * <p>Traversal is intentionally absent here. Corridors load from node/segment tables and let the corridor model
+ * derive compatibility geometry. There is no legacy reconstruction path.
+ */
 public final class DungeonMapLoader {
 
     private static final Point2i LOOP_SEPARATOR = new Point2i(Integer.MIN_VALUE, Integer.MIN_VALUE);
@@ -370,6 +376,7 @@ public final class DungeonMapLoader {
             long mapId,
             Map<Long, Room> roomsById
     ) throws SQLException {
+        // Load direct corridor graph truth only; the corridor model derives all compatibility geometry itself.
         DungeonSchemaSupport.ensureCompatibility(conn);
         Map<Long, List<CorridorNode>> nodesByCorridorId = loadGrouped(conn,
                 "SELECT corridor_id, corridor_node_id, grid_x2, grid_y2, room_id, room_relative_cell_x, room_relative_cell_y, room_edge_direction"

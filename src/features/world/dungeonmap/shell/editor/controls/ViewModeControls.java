@@ -8,6 +8,12 @@ import javafx.scene.layout.Region;
 
 import java.util.function.Consumer;
 
+/**
+ * Grid-only view controls.
+ *
+ * <p>Keep this single-mode until a future graph view is intentionally redesigned against the direct corridor/stair
+ * model.
+ */
 public final class ViewModeControls {
 
     private final ToggleGroup viewGroup = new ToggleGroup();

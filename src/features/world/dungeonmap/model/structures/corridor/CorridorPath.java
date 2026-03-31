@@ -12,6 +12,11 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Read-only raster projection derived from the canonical corridor graph.
+ *
+ * <p>This remains for canvas/runtime compatibility, but it is no longer corridor persistence truth.
+ */
 public record CorridorPath(Set<CubePoint> cells) {
     public CorridorPath {
         cells = copyCells(cells);

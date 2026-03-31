@@ -25,6 +25,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Canonical corridor owner after traversal removal.
+ *
+ * <p>Persisted truth is the corridor-local node/segment graph, never rasterized cells. {@link CorridorPath} stays
+ * as a derived compatibility projection only. Room bindings are explicit door targets on a chosen wall edge, the
+ * corridor owns its level, and invalid graphs must fail fast instead of reviving traversal/network reconstruction.
+ */
 public final class Corridor {
 
     private static final String TARGET_KEY_PREFIX = "corridor:";
@@ -215,6 +222,7 @@ public final class Corridor {
             List<CorridorSegment> segments,
             Map<Long, Room> roomsById
     ) {
+        // Keep routing/projection semantics centralized in the canonical corridor owner.
         Map<Long, Room> resolvedRooms = roomsById == null ? Map.of() : Map.copyOf(roomsById);
         Map<Long, CorridorNode> nodesById = indexNodes(nodes);
         LinkedHashSet<CubePoint> occupiedCells = new LinkedHashSet<>();

@@ -11,6 +11,12 @@ import ui.shell.DetailsNavigator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Resolves runtime surfaces strictly from direct room/corridor/stair/transition ownership.
+ *
+ * <p>If corridor behavior changes, change the corridor model and its derived readers rather than rebuilding a
+ * corridor-network abstraction here.
+ */
 public final class DungeonRuntimeSurfaceResolver {
 
     private DungeonRuntimeSurfaceResolver() {

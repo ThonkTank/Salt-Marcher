@@ -4,6 +4,12 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+/**
+ * Canonical schema definition for the clean dungeonmap feature.
+ *
+ * <p>Schema changes are hard cuts here: no migration layer and no legacy corridor/traversal tables kept alive for
+ * compatibility. The tables declared in this class are the only persisted truth.
+ */
 public final class DungeonSchemaSupport {
 
     private DungeonSchemaSupport() {

@@ -1,5 +1,11 @@
 package features.world.dungeonmap.canvas.base;
 
+/**
+ * The clean editor currently exposes only the grid projection.
+ *
+ * <p>The old graph mode was intentionally removed instead of being partially adapted to the new corridor graph
+ * semantics.
+ */
 public enum DungeonViewMode {
     GRID("Grid");
 
