@@ -41,6 +41,7 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
         // Workspace observes EditorInteractionState directly for preview/selection
         interactionState.addListener(() -> {
             workspace().setSelectedTargetKey(interactionState.selectedTargetKey());
+            workspace().setHoveredSelectionKey(interactionState.hoveredKey());
             workspace().showPreview(interactionState.activePreview());
         });
 

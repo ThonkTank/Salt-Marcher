@@ -7,6 +7,7 @@ import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.geometry.VertexEdge;
+import features.world.dungeonmap.shell.interaction.DungeonSelectionKey;
 import features.world.dungeonmap.state.DungeonLevelOverlaySettings;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.EditorPreview;
@@ -56,6 +57,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
     private int projectionLevel;
     private DungeonLevelOverlaySettings levelOverlaySettings = DungeonLevelOverlaySettings.defaults();
     private String selectedTargetKey;
+    private DungeonSelectionKey hoveredSelectionKey;
     private TileShape previewPaintShape = TileShape.empty();
     private boolean previewPaintDeleteMode;
     private Set<VertexEdge> previewBoundaryEdges = Set.of();
@@ -90,8 +92,10 @@ public final class DungeonCanvasWorkspace extends BorderPane {
             redraw();
         });
         canvas.addEventHandler(MouseEvent.MOUSE_PRESSED, this::handlePress);
+        canvas.addEventHandler(MouseEvent.MOUSE_MOVED, this::handleMove);
         canvas.addEventHandler(MouseEvent.MOUSE_DRAGGED, this::handleDrag);
         canvas.addEventHandler(MouseEvent.MOUSE_RELEASED, this::handleRelease);
+        canvas.addEventHandler(MouseEvent.MOUSE_EXITED, this::handleExit);
         canvas.addEventHandler(ScrollEvent.SCROLL, this::handleScroll);
         canvas.addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPress);
     }
@@ -110,6 +114,14 @@ public final class DungeonCanvasWorkspace extends BorderPane {
             return;
         }
         this.selectedTargetKey = selectedTargetKey;
+        notifyViewChanged();
+    }
+
+    public void setHoveredSelectionKey(DungeonSelectionKey hoveredSelectionKey) {
+        if (Objects.equals(this.hoveredSelectionKey, hoveredSelectionKey)) {
+            return;
+        }
+        this.hoveredSelectionKey = hoveredSelectionKey;
         notifyViewChanged();
     }
 
@@ -276,6 +288,14 @@ public final class DungeonCanvasWorkspace extends BorderPane {
         stateListener.run();
     }
 
+    private void handleMove(MouseEvent event) {
+        if (activePointerCapture != PointerCapture.NONE) {
+            return;
+        }
+        interactionHandler.handleMoved(pointerEvent(event), camera);
+        stateListener.run();
+    }
+
     private void handleRelease(MouseEvent event) {
         if (activePointerCapture == PointerCapture.INTERACTION) {
             interactionHandler.handleReleased(pointerEvent(event), camera);
@@ -294,6 +314,11 @@ public final class DungeonCanvasWorkspace extends BorderPane {
         }
         activePointerCapture = PointerCapture.NONE;
         lastPointer = null;
+    }
+
+    private void handleExit(MouseEvent event) {
+        interactionHandler.handleExited();
+        stateListener.run();
     }
 
     private void handleScroll(ScrollEvent event) {
@@ -352,6 +377,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
                 editorMode,
                 new DungeonRenderState(
                         selectedTargetKey,
+                        hoveredSelectionKey,
                         previewPaintShape,
                         previewPaintDeleteMode,
                         previewBoundaryEdges,

@@ -11,6 +11,7 @@ import java.util.Set;
 
 public record DungeonRenderState(
         String selectedTargetKey,
+        features.world.dungeonmap.shell.interaction.DungeonSelectionKey hoveredSelectionKey,
         TileShape previewPaintShape,
         boolean previewPaintDeleteMode,
         Set<VertexEdge> previewBoundaryEdges,
@@ -33,6 +34,7 @@ public record DungeonRenderState(
 
     public static DungeonRenderState empty() {
         return new DungeonRenderState(
+                null,
                 null,
                 TileShape.empty(),
                 false,

@@ -12,7 +12,6 @@ import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.CorridorConnection;
 import features.world.dungeonmap.model.structures.room.Room;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -23,6 +22,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.PriorityQueue;
 import java.util.Set;
 
 /**
@@ -34,7 +34,7 @@ import java.util.Set;
 public final class Corridor {
 
     private static final String TARGET_KEY_PREFIX = "corridor:";
-    private static final int ROUTE_MARGIN = 8;
+    private static final int ROUTE_MARGIN = 4;
 
     private final Long corridorId;
     private final long mapId;
@@ -300,24 +300,11 @@ public final class Corridor {
             List<CorridorNode> allNodes,
             Map<Long, Room> roomsById
     ) {
-        Point2i startPoint = new Point2i(start.gridX2(), start.gridY2());
-        Point2i endPoint = new Point2i(end.gridX2(), end.gridY2());
-        Set<Point2i> blockedCenters = blockedRoomCenters(levelZ, allNodes, roomsById);
-        return findDoubledPath(startPoint, endPoint, blockedCenters);
+        Set<Point2i> blockedCells = blockedRoomCells(levelZ, roomsById);
+        return findAnchoredRoute(levelZ, start, end, blockedCells, roomsById);
     }
 
-    private static Set<Point2i> blockedRoomCenters(
-            int levelZ,
-            List<CorridorNode> nodes,
-            Map<Long, Room> roomsById
-    ) {
-        Set<Point2i> allowedCells = new LinkedHashSet<>();
-        for (CorridorNode node : nodes) {
-            Point2i cell = absoluteRoomCell(node, levelZ, roomsById);
-            if (cell != null) {
-                allowedCells.add(cell);
-            }
-        }
+    private static Set<Point2i> blockedRoomCells(int levelZ, Map<Long, Room> roomsById) {
         Set<Point2i> blocked = new LinkedHashSet<>();
         for (Room room : roomsById.values()) {
             if (room == null) {
@@ -327,24 +314,94 @@ public final class Corridor {
             if (floor == null || floor.shape() == null) {
                 continue;
             }
-            for (Point2i cell : floor.shape().absoluteCells()) {
-                if (!allowedCells.contains(cell)) {
-                    blocked.add(new Point2i(cell.x() * 2 + 1, cell.y() * 2 + 1));
-                }
-            }
+            blocked.addAll(floor.shape().absoluteCells());
         }
         return Set.copyOf(blocked);
     }
 
-    private static List<Point2i> findDoubledPath(Point2i start, Point2i end, Set<Point2i> blockedCenters) {
+    private static List<Point2i> findAnchoredRoute(
+            int levelZ,
+            CorridorNode start,
+            CorridorNode end,
+            Set<Point2i> blockedCells,
+            Map<Long, Room> roomsById
+    ) {
+        List<AnchorAttachment> startAttachments = attachmentsForNode(start, levelZ, blockedCells, roomsById);
+        List<AnchorAttachment> endAttachments = attachmentsForNode(end, levelZ, blockedCells, roomsById);
+        RoutePlan bestPlan = null;
+        for (AnchorAttachment startAttachment : startAttachments) {
+            for (AnchorAttachment endAttachment : endAttachments) {
+                CellRoute cellRoute = findCellRoute(startAttachment.cell(), endAttachment.cell(), blockedCells);
+                if (cellRoute == null) {
+                    continue;
+                }
+                List<Point2i> doubledPath = assembleDoubledPath(
+                        startAttachment.anchorToCellPath(),
+                        cellRoute.cells(),
+                        endAttachment.anchorToCellPath());
+                double totalCost = cellRoute.cost()
+                        + startAttachment.adapterCost()
+                        + endAttachment.adapterCost();
+                if (bestPlan == null || totalCost < bestPlan.cost()) {
+                    bestPlan = new RoutePlan(doubledPath, totalCost);
+                }
+            }
+        }
+        if (bestPlan == null) {
+            throw new IllegalArgumentException("Corridor segment could not be routed");
+        }
+        return bestPlan.doubledPath();
+    }
+
+    private static List<AnchorAttachment> attachmentsForNode(
+            CorridorNode node,
+            int levelZ,
+            Set<Point2i> blockedCells,
+            Map<Long, Room> roomsById
+    ) {
+        if (node == null) {
+            return List.of();
+        }
+        Point2i anchorPoint = new Point2i(node.gridX2(), node.gridY2());
+        if (node.isRoomBound()) {
+            Point2i roomCell = absoluteRoomCell(node, levelZ, roomsById);
+            if (roomCell == null || node.roomBoundaryDirection() == null) {
+                throw new IllegalArgumentException("Corridor room-bound node could not be resolved");
+            }
+            Point2i exteriorCell = roomCell.add(node.roomBoundaryDirection().delta());
+            return List.of(new AnchorAttachment(
+                    exteriorCell,
+                    List.of(anchorPoint, doubledCellCenter(exteriorCell))));
+        }
+        if (isCellCenter(anchorPoint)) {
+            return List.of(new AnchorAttachment(cellFromCenter(anchorPoint), List.of(anchorPoint)));
+        }
+        List<Point2i> touchingCells = touchingCells(anchorPoint);
+        List<Point2i> preferredCells = touchingCells.stream()
+                .filter(cell -> !blockedCells.contains(cell))
+                .toList();
+        List<Point2i> candidateCells = preferredCells.isEmpty() ? touchingCells : preferredCells;
+        ArrayList<AnchorAttachment> attachments = new ArrayList<>();
+        for (Point2i cell : candidateCells) {
+            for (List<Point2i> adapterPath : adapterPaths(anchorPoint, cell)) {
+                attachments.add(new AnchorAttachment(cell, adapterPath));
+            }
+        }
+        return attachments.isEmpty() ? List.of() : List.copyOf(attachments);
+    }
+
+    private static CellRoute findCellRoute(Point2i start, Point2i end, Set<Point2i> blockedCells) {
+        if (start == null || end == null) {
+            return null;
+        }
         if (start.equals(end)) {
-            return List.of(start);
+            return new CellRoute(List.of(start), 0.0d);
         }
         int minX = Math.min(start.x(), end.x());
         int maxX = Math.max(start.x(), end.x());
         int minY = Math.min(start.y(), end.y());
         int maxY = Math.max(start.y(), end.y());
-        for (Point2i blocked : blockedCenters) {
+        for (Point2i blocked : blockedCells) {
             minX = Math.min(minX, blocked.x());
             maxX = Math.max(maxX, blocked.x());
             minY = Math.min(minY, blocked.y());
@@ -355,44 +412,154 @@ public final class Corridor {
         minY -= ROUTE_MARGIN;
         maxY += ROUTE_MARGIN;
 
-        ArrayDeque<Point2i> queue = new ArrayDeque<>();
-        Map<Point2i, Point2i> cameFrom = new HashMap<>();
-        Set<Point2i> visited = new LinkedHashSet<>();
-        queue.add(start);
-        visited.add(start);
-        while (!queue.isEmpty()) {
-            Point2i current = queue.removeFirst();
-            if (current.equals(end)) {
-                return reconstructPath(cameFrom, end);
+        double turnPenalty = turnPenalty(start, end);
+        Set<Point2i> effectiveBlocked = new LinkedHashSet<>(blockedCells);
+        effectiveBlocked.remove(start);
+        effectiveBlocked.remove(end);
+
+        SearchState startState = new SearchState(start, null);
+        PriorityQueue<QueueEntry> frontier = new PriorityQueue<>(Comparator.comparingDouble(QueueEntry::estimatedTotalCost));
+        Map<SearchState, Double> bestCosts = new HashMap<>();
+        Map<SearchState, SearchState> cameFrom = new HashMap<>();
+        frontier.add(new QueueEntry(startState, heuristic(start, end)));
+        bestCosts.put(startState, 0.0d);
+
+        while (!frontier.isEmpty()) {
+            QueueEntry currentEntry = frontier.poll();
+            SearchState current = currentEntry.state();
+            double currentCost = bestCosts.getOrDefault(current, Double.POSITIVE_INFINITY);
+            if (currentEntry.estimatedTotalCost() - heuristic(current.cell(), end) > currentCost + 1e-9) {
+                continue;
+            }
+            if (current.cell().equals(end)) {
+                return new CellRoute(reconstructCellPath(cameFrom, current), currentCost);
             }
             for (Point2i step : Point2i.CARDINAL_STEPS) {
-                Point2i neighbor = current.add(step);
+                Point2i neighbor = current.cell().add(step);
                 if (neighbor.x() < minX || neighbor.x() > maxX || neighbor.y() < minY || neighbor.y() > maxY) {
                     continue;
                 }
-                if (!neighbor.equals(end) && blockedCenters.contains(neighbor)) {
+                if (effectiveBlocked.contains(neighbor)) {
                     continue;
                 }
-                if (!visited.add(neighbor)) {
+                double nextCost = currentCost + 1.0d;
+                if (current.direction() != null && !current.direction().equals(step)) {
+                    nextCost += turnPenalty;
+                }
+                SearchState next = new SearchState(neighbor, step);
+                if (nextCost + 1e-9 >= bestCosts.getOrDefault(next, Double.POSITIVE_INFINITY)) {
                     continue;
                 }
-                cameFrom.put(neighbor, current);
-                queue.addLast(neighbor);
+                bestCosts.put(next, nextCost);
+                cameFrom.put(next, current);
+                frontier.add(new QueueEntry(next, nextCost + heuristic(neighbor, end)));
             }
         }
-        throw new IllegalArgumentException("Corridor segment could not be routed");
+        return null;
     }
 
-    private static List<Point2i> reconstructPath(Map<Point2i, Point2i> cameFrom, Point2i end) {
+    private static List<Point2i> reconstructCellPath(Map<SearchState, SearchState> cameFrom, SearchState endState) {
         ArrayList<Point2i> path = new ArrayList<>();
-        Point2i current = end;
-        path.add(current);
+        SearchState current = endState;
+        path.add(current.cell());
         while (cameFrom.containsKey(current)) {
             current = cameFrom.get(current);
-            path.add(current);
+            path.add(current.cell());
         }
         Collections.reverse(path);
         return List.copyOf(path);
+    }
+
+    private static List<Point2i> assembleDoubledPath(
+            List<Point2i> startAdapter,
+            List<Point2i> cellRoute,
+            List<Point2i> endAdapter
+    ) {
+        ArrayList<Point2i> result = new ArrayList<>();
+        appendUnique(result, startAdapter);
+        appendUnique(result, cellRoute == null ? List.of() : cellRoute.stream().map(Corridor::doubledCellCenter).toList());
+        ArrayList<Point2i> reversedEnd = new ArrayList<>(endAdapter == null ? List.of() : endAdapter);
+        Collections.reverse(reversedEnd);
+        appendUnique(result, reversedEnd);
+        return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
+    private static void appendUnique(List<Point2i> target, List<Point2i> points) {
+        if (target == null || points == null) {
+            return;
+        }
+        for (Point2i point : points) {
+            if (point == null) {
+                continue;
+            }
+            if (!target.isEmpty() && target.getLast().equals(point)) {
+                continue;
+            }
+            target.add(point);
+        }
+    }
+
+    private static Point2i doubledCellCenter(Point2i cell) {
+        return new Point2i(cell.x() * 2 + 1, cell.y() * 2 + 1);
+    }
+
+    private static Point2i cellFromCenter(Point2i doubledCenter) {
+        return new Point2i((doubledCenter.x() - 1) / 2, (doubledCenter.y() - 1) / 2);
+    }
+
+    private static boolean isCellCenter(Point2i point) {
+        return point != null && (point.x() & 1) == 1 && (point.y() & 1) == 1;
+    }
+
+    private static List<Point2i> touchingCells(Point2i anchor) {
+        if (anchor == null) {
+            return List.of();
+        }
+        int x2 = anchor.x();
+        int y2 = anchor.y();
+        if ((x2 & 1) == 1 && (y2 & 1) == 1) {
+            return List.of(cellFromCenter(anchor));
+        }
+        if ((x2 & 1) == 0 && (y2 & 1) == 1) {
+            int y = (y2 - 1) / 2;
+            return List.of(new Point2i(x2 / 2 - 1, y), new Point2i(x2 / 2, y));
+        }
+        if ((x2 & 1) == 1) {
+            int x = (x2 - 1) / 2;
+            return List.of(new Point2i(x, y2 / 2 - 1), new Point2i(x, y2 / 2));
+        }
+        return List.of(
+                new Point2i(x2 / 2 - 1, y2 / 2 - 1),
+                new Point2i(x2 / 2, y2 / 2 - 1),
+                new Point2i(x2 / 2 - 1, y2 / 2),
+                new Point2i(x2 / 2, y2 / 2));
+    }
+
+    private static List<List<Point2i>> adapterPaths(Point2i anchorPoint, Point2i cell) {
+        if (anchorPoint == null || cell == null) {
+            return List.of();
+        }
+        Point2i cellCenter = doubledCellCenter(cell);
+        if (anchorPoint.equals(cellCenter)) {
+            return List.of(List.of(anchorPoint));
+        }
+        if (anchorPoint.distanceTo(cellCenter) == 1) {
+            return List.of(List.of(anchorPoint, cellCenter));
+        }
+        Point2i firstMidpoint = new Point2i(anchorPoint.x(), cellCenter.y());
+        Point2i secondMidpoint = new Point2i(cellCenter.x(), anchorPoint.y());
+        return List.of(
+                List.of(anchorPoint, firstMidpoint, cellCenter),
+                List.of(anchorPoint, secondMidpoint, cellCenter));
+    }
+
+    private static double heuristic(Point2i current, Point2i end) {
+        return current == null || end == null ? 0.0d : current.distanceTo(end);
+    }
+
+    private static double turnPenalty(Point2i start, Point2i end) {
+        int cellDistance = Math.max(1, start.distanceTo(end));
+        return Math.max(0.15d, Math.min(0.75d, 0.75d / Math.sqrt(cellDistance)));
     }
 
     private static Collection<CubePoint> cellsForDoubledPath(List<Point2i> doubledPath, int levelZ) {
@@ -471,6 +638,41 @@ public final class Corridor {
             List<CorridorRoute> routes,
             List<CorridorConnection> connections
     ) {
+    }
+
+    private record AnchorAttachment(Point2i cell, List<Point2i> anchorToCellPath) {
+        private AnchorAttachment {
+            cell = Objects.requireNonNull(cell, "cell");
+            anchorToCellPath = anchorToCellPath == null ? List.of() : List.copyOf(anchorToCellPath);
+        }
+
+        private double adapterCost() {
+            return Math.max(0, anchorToCellPath.size() - 1);
+        }
+    }
+
+    private record SearchState(Point2i cell, Point2i direction) {
+        private SearchState {
+            cell = Objects.requireNonNull(cell, "cell");
+        }
+    }
+
+    private record QueueEntry(SearchState state, double estimatedTotalCost) {
+        private QueueEntry {
+            state = Objects.requireNonNull(state, "state");
+        }
+    }
+
+    private record CellRoute(List<Point2i> cells, double cost) {
+        private CellRoute {
+            cells = cells == null ? List.of() : List.copyOf(cells);
+        }
+    }
+
+    private record RoutePlan(List<Point2i> doubledPath, double cost) {
+        private RoutePlan {
+            doubledPath = doubledPath == null ? List.of() : List.copyOf(doubledPath);
+        }
     }
 
     public record CorridorRoute(

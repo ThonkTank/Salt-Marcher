@@ -10,6 +10,7 @@ import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.shell.interaction.DungeonHitCollector;
 import features.world.dungeonmap.shell.interaction.DungeonHitProbe;
 import features.world.dungeonmap.shell.interaction.DungeonHitSnapshot;
+import features.world.dungeonmap.shell.interaction.DungeonSelection;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.EditorInteractionState;
@@ -70,6 +71,21 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
     }
 
     @Override
+    public void handleMoved(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
+        if (!interactionEnabled() || activeTool == null) {
+            state.clearHover();
+            return;
+        }
+        EditorContextSnapshot snapshot = collect(event, camera);
+        if (snapshot == null) {
+            state.clearHover();
+            return;
+        }
+        DungeonSelection selection = selectionFor(snapshot.hitSnapshot());
+        state.hoverKey(activeTool.hoverSelectionKey(contextFor(event, snapshot, selection)));
+    }
+
+    @Override
     public boolean handleDragged(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
         if (!interactionEnabled()) {
             return false;
@@ -120,6 +136,11 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
         }
     }
 
+    @Override
+    public void handleExited() {
+        state.clearHover();
+    }
+
     public void activateTool(DungeonEditorTool tool) {
         EditorTool next = toolsByEnum.get(tool);
         if (activeTool != null && activeTool != next) {
@@ -127,6 +148,7 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
             state.clearPreview();
         }
         activeTool = next;
+        state.clearHover();
         if (activeTool != null) {
             activeTool.activate(tool);
         }
@@ -151,7 +173,7 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
     private EditorToolContext contextFor(
             DungeonCanvasPointerEvent event,
             EditorContextSnapshot snapshot,
-            features.world.dungeonmap.shell.interaction.DungeonSelection selection
+            DungeonSelection selection
     ) {
         return new EditorToolContext(
                 event,
@@ -177,6 +199,10 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
                 DungeonCanvasTheme.BASE_GRID * camera.zoom());
         DungeonHitSnapshot hitSnapshot = hitCollector.collect(activeMap, probe);
         return new EditorContextSnapshot(activeMap, camera, probe, hitSnapshot);
+    }
+
+    private static DungeonSelection selectionFor(DungeonHitSnapshot snapshot) {
+        return new DungeonSelection(snapshot, snapshot == null ? List.of() : snapshot.candidates());
     }
 
     private static Map<DungeonEditorTool, EditorTool> buildToolMap(List<EditorTool> tools) {

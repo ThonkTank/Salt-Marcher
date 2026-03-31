@@ -87,6 +87,13 @@ public final class DungeonSelectionLookup {
         return parseLongPart(key.partKey(), SEGMENT_PREFIX);
     }
 
+    public static Point2i corridorCornerPoint(DungeonSelectionKey key) {
+        if (key == null || key.kind() != DungeonHitKind.CORRIDOR_CORNER) {
+            return null;
+        }
+        return parsePoint(key.partKey(), "corner:");
+    }
+
     public static VertexEdge edge(DungeonSelectionKey key) {
         if (key == null) {
             return null;
