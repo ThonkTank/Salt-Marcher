@@ -1,5 +1,8 @@
 package features.world.dungeonmap.state;
 
+import features.world.dungeonmap.shell.interaction.DungeonSelection;
+import features.world.dungeonmap.shell.interaction.DungeonSelectionFactory;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -8,24 +11,42 @@ public final class EditorInteractionState {
 
     private final List<Runnable> listeners = new CopyOnWriteArrayList<>();
 
-    private String selectedTargetKey;
+    private DungeonSelection selectedSelection;
     private EditorPreview activePreview;
     private EditorDraft activeDraft;
 
-    public String selectedTargetKey() {
-        return selectedTargetKey;
+    public DungeonSelection selectedSelection() {
+        return selectedSelection;
     }
 
-    public void selectTarget(String targetKey) {
-        if (Objects.equals(selectedTargetKey, targetKey)) {
+    public String selectedTargetKey() {
+        if (selectedSelection == null || selectedSelection.primary() == null) {
+            return null;
+        }
+        return selectedSelection.primary().descriptor().subject().targetKey();
+    }
+
+    public String selectedPartKey() {
+        if (selectedSelection == null || selectedSelection.primary() == null) {
+            return null;
+        }
+        return selectedSelection.primary().descriptor().subject().partKey();
+    }
+
+    public void applySelection(DungeonSelection selection) {
+        if (Objects.equals(selectedSelection, selection)) {
             return;
         }
-        selectedTargetKey = targetKey;
+        selectedSelection = selection;
         notifyListeners();
     }
 
+    public void selectTarget(String targetKey) {
+        applySelection(DungeonSelectionFactory.ownerSelection(targetKey));
+    }
+
     public void clearSelection() {
-        selectTarget(null);
+        applySelection(null);
     }
 
     public EditorPreview activePreview() {
