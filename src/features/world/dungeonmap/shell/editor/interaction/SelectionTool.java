@@ -19,6 +19,8 @@ import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.shell.editor.EditorCards;
+import features.world.dungeonmap.shell.interaction.DungeonHitResult;
+import features.world.dungeonmap.shell.interaction.DungeonHitService;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.EditorInteractionState;
 import features.world.dungeonmap.state.EditorPreview;
@@ -104,7 +106,9 @@ public final class SelectionTool implements EditorTool {
             clear();
             return false;
         }
-        DungeonEditorHitTarget hit = ctx.hitService().hitAt(ctx.projectedLayout(), event.canvasPoint(), event.camera());
+        DungeonHitResult hitResult = ctx.hitResult();
+        DungeonEditorHitTarget hit = hitResult == null ? null : hitResult.editorTarget();
+        DungeonHitService.DungeonHitTarget coarseHit = hitResult == null ? null : hitResult.coarseTarget();
         clear();
         if (hit instanceof DungeonEditorCorridorNodeHitTarget corridorNodeHit
                 && corridorNodeHit.corridor().corridorId() != null
@@ -127,12 +131,14 @@ public final class SelectionTool implements EditorTool {
                     mapState.activeProjectionLevel());
             return true;
         }
-        DungeonStair stair = ctx.hitService().hitStair(ctx.projectedLayout(), event.gridCell(), mapState.activeProjectionLevel());
+        DungeonStair stair = coarseHit instanceof DungeonHitService.DungeonHitTarget.StairTarget stairTarget ? stairTarget.stair() : null;
         if (stair != null) {
             state.selectTarget(stair.targetKey());
             return true;
         }
-        DungeonTransition transition = ctx.hitService().hitTransition(ctx.projectedLayout(), event.gridCell(), mapState.activeProjectionLevel());
+        DungeonTransition transition = coarseHit instanceof DungeonHitService.DungeonHitTarget.TransitionTarget transitionTarget
+                ? transitionTarget.transition()
+                : null;
         if (transition != null) {
             state.selectTarget(transition.targetKey());
             return true;

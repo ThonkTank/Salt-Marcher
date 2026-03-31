@@ -1,8 +1,6 @@
 package features.world.dungeonmap.shell.interaction;
 
-import features.world.dungeonmap.canvas.base.DungeonCanvasCamera;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
-import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.Point2i;
 
 import java.util.Objects;
@@ -59,12 +57,10 @@ public final class DungeonDragService {
     }
 
     public DungeonDragResult begin(
-            DungeonLayout layout,
             DungeonCanvasPointerEvent event,
-            DungeonCanvasCamera camera,
             DungeonDragTarget target
     ) {
-        if (layout == null || event == null || camera == null || target == null) {
+        if (event == null || target == null) {
             return new DungeonDragResult.Idle();
         }
         if (!event.isPrimaryButton()) {
@@ -77,13 +73,11 @@ public final class DungeonDragService {
     }
 
     public DungeonDragResult update(
-            DungeonLayout layout,
             DungeonCanvasPointerEvent event,
-            DungeonCanvasCamera camera,
             DungeonDragSession session,
             Function<Point2i, Point2i> snapTarget
     ) {
-        if (layout == null || event == null || camera == null || session == null || snapTarget == null) {
+        if (event == null || session == null || snapTarget == null) {
             return new DungeonDragResult.Idle();
         }
         Point2i snapped = snapTarget.apply(event.gridCell());
@@ -94,13 +88,11 @@ public final class DungeonDragService {
     }
 
     public DungeonDragResult drop(
-            DungeonLayout layout,
             DungeonCanvasPointerEvent event,
-            DungeonCanvasCamera camera,
             DungeonDragSession session,
             Function<Point2i, Point2i> snapTarget
     ) {
-        if (layout == null || event == null || camera == null || session == null || snapTarget == null) {
+        if (event == null || session == null || snapTarget == null) {
             return new DungeonDragResult.Idle();
         }
         Point2i snapped = snapTarget.apply(event.gridCell());

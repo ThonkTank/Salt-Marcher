@@ -15,6 +15,7 @@ import features.world.dungeonmap.model.structures.corridor.CorridorSegment;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.shell.editor.EditorCards;
+import features.world.dungeonmap.shell.interaction.DungeonHitResult;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.EditorInteractionState;
@@ -98,7 +99,8 @@ public final class ConnectionsTool implements EditorTool {
         if (event == null || !event.isPrimaryButton()) {
             return false;
         }
-        DungeonEditorHitTarget hit = ctx.hitService().hitAt(ctx.projectedLayout(), event.canvasPoint(), ctx.camera());
+        DungeonHitResult hitResult = ctx.hitResult();
+        DungeonEditorHitTarget hit = hitResult == null ? null : hitResult.editorTarget();
         if (sessionState.selectedTool() == DungeonEditorTool.CONNECTIONS_DELETE) {
             return handleDeletePressed(ctx.projectedLayout(), hit);
         }

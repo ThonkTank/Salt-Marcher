@@ -71,9 +71,7 @@ public final class DungeonRuntimeInteractionPolicy {
             return new RuntimeDecision.Idle();
         }
         DungeonDragService.DungeonDragResult result = dragService.begin(
-                layout,
                 event,
-                camera,
                 new DungeonDragService.DungeonDragTarget.TileDragTarget(activeTile));
         if (result instanceof DungeonDragService.DungeonDragResult.Started started) {
             return new RuntimeDecision.DragStarted(started.session(), activeTile);
@@ -93,16 +91,14 @@ public final class DungeonRuntimeInteractionPolicy {
             return new RuntimeDecision.Idle();
         }
         DungeonDragService.DungeonDragResult result = dragService.update(
-                layout,
                 event,
-                camera,
                 session,
                 nearestTraversableTile);
         if (!(result instanceof DungeonDragService.DungeonDragResult.Updated updated)) {
             return new RuntimeDecision.Idle();
         }
         DungeonDragService.DungeonDragSession nextSession = updated.session();
-        if (placementValidator.validateTraversable(layout, nextSession.currentCell(), camera, level)
+        if (placementValidator.validateTraversable(layout, nextSession.currentCell(), level)
                 instanceof DungeonPlacementValidator.PlacementResult.Valid valid) {
             return new RuntimeDecision.DragUpdated(nextSession, valid.cell());
         }
@@ -121,16 +117,14 @@ public final class DungeonRuntimeInteractionPolicy {
             return new RuntimeDecision.Idle();
         }
         DungeonDragService.DungeonDragResult result = dragService.drop(
-                layout,
                 event,
-                camera,
                 session,
                 nearestTraversableTile);
         if (!(result instanceof DungeonDragService.DungeonDragResult.Dropped dropped)) {
             return new RuntimeDecision.Idle();
         }
         Point2i targetCell = dropped.session().currentCell();
-        if (placementValidator.validateTraversable(layout, targetCell, camera, level)
+        if (placementValidator.validateTraversable(layout, targetCell, level)
                 instanceof DungeonPlacementValidator.PlacementResult.Valid valid) {
             return new RuntimeDecision.MoveCommitted(valid.cell());
         }
