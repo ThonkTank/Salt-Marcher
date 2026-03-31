@@ -12,13 +12,11 @@ public final class ViewModeControls {
 
     private final ToggleGroup viewGroup = new ToggleGroup();
     private final ToggleButton gridButton = createToggleButton(DungeonViewMode.GRID.label());
-    private final ToggleButton graphButton = createToggleButton(DungeonViewMode.GRAPH.label());
     private final GuardState sync = new GuardState();
     private Consumer<DungeonViewMode> onViewModeChanged;
 
     public ViewModeControls() {
         gridButton.setToggleGroup(viewGroup);
-        graphButton.setToggleGroup(viewGroup);
         gridButton.setSelected(true);
         viewGroup.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
             if (sync.isActive()) {
@@ -26,7 +24,7 @@ public final class ViewModeControls {
             }
             if (newToggle != null) {
                 if (onViewModeChanged != null) {
-                    onViewModeChanged.accept(newToggle == graphButton ? DungeonViewMode.GRAPH : DungeonViewMode.GRID);
+                    onViewModeChanged.accept(DungeonViewMode.GRID);
                 }
                 return;
             }
@@ -39,21 +37,11 @@ public final class ViewModeControls {
     }
 
     public void selectViewMode(DungeonViewMode viewMode) {
-        sync.run(() -> {
-            if (viewMode == DungeonViewMode.GRAPH) {
-                graphButton.setSelected(true);
-            } else {
-                gridButton.setSelected(true);
-            }
-        });
+        sync.run(() -> gridButton.setSelected(true));
     }
 
     ToggleButton gridButton() {
         return gridButton;
-    }
-
-    ToggleButton graphButton() {
-        return graphButton;
     }
 
     private static ToggleButton createToggleButton(String text) {

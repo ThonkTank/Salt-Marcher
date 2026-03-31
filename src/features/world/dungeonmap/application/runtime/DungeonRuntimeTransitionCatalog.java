@@ -4,7 +4,6 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
-import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
@@ -32,22 +31,7 @@ public final class DungeonRuntimeTransitionCatalog {
         if (layout == null || corridor == null || corridor.corridorId() == null || corridor.path() == null) {
             return List.of();
         }
-        return describe(layout,
-                DungeonRuntimeCorridorGeometry.canonicalCells(layout, corridor),
-                layout.levelForCorridor(corridor.corridorId()));
-    }
-
-    public static List<DungeonRuntimeTransitionDescriptor> describe(DungeonLayout layout, CorridorNetwork network, CubePoint activeTile) {
-        if (layout == null || network == null || network.floor() == null) {
-            return List.of();
-        }
-        // Networks stay 2D; use the canonical corridor compatibility level for whole-surface lookups.
-        Integer levelZ = network.corridorIds().stream()
-                .filter(id -> id != null)
-                .map(layout::levelForCorridor)
-                .findFirst()
-                .orElse(null);
-        return levelZ == null ? List.of() : describe(layout, network.floor().shape().absoluteCells(), levelZ);
+        return describe(layout, DungeonRuntimeCorridorGeometry.canonicalCells(layout, corridor), corridor.levelZ());
     }
 
     public static List<DungeonRuntimeTransitionDescriptor> describeAtTile(DungeonLayout layout, CubePoint tile) {

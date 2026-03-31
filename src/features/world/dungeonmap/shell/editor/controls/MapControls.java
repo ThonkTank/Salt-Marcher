@@ -72,8 +72,7 @@ public final class MapControls {
                 selector,
                 newMapButton,
                 editMapButton,
-                viewModeControls.gridButton(),
-                viewModeControls.graphButton());
+                viewModeControls.gridButton());
         row.setAlignment(Pos.CENTER_LEFT);
         row.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(selector, Priority.ALWAYS);

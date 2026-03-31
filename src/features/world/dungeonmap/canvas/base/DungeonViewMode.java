@@ -1,8 +1,7 @@
 package features.world.dungeonmap.canvas.base;
 
 public enum DungeonViewMode {
-    GRID("Grid"),
-    GRAPH("Graph");
+    GRID("Grid");
 
     private final String label;
 

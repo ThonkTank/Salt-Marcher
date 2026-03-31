@@ -1,9 +1,9 @@
 package features.world.dungeonmap.persistence;
 
-import features.world.dungeonmap.model.geometry.GridAnchor;
-import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
+import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
-import features.world.dungeonmap.model.structures.corridor.CorridorEndpointBinding;
+import features.world.dungeonmap.model.structures.corridor.CorridorNode;
+import features.world.dungeonmap.model.structures.corridor.CorridorSegment;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -11,6 +11,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
@@ -43,79 +44,40 @@ public final class DungeonCorridorWriteRepository {
         }
     }
 
-    public void replacePoints(Connection conn, long corridorId, List<? extends GridAnchor> points) throws SQLException {
+    public void replaceNodes(Connection conn, long corridorId, List<CorridorNode> nodes) throws SQLException {
         try (PreparedStatement delete = conn.prepareStatement(
-                "DELETE FROM dungeon_corridor_points WHERE corridor_id=?")) {
+                "DELETE FROM dungeon_corridor_nodes WHERE corridor_id=?")) {
             delete.setLong(1, corridorId);
             delete.executeUpdate();
         }
         try (PreparedStatement insert = conn.prepareStatement(
-                "INSERT INTO dungeon_corridor_points(corridor_id, sort_order, anchor_kind, grid_x2, grid_y2) VALUES(?,?,?,?,?)")) {
-            int sortOrder = 0;
-            for (GridAnchor point : sanitizedPoints(points)) {
-                DungeonCorridorPersistenceCodec.PersistedGridAnchor persistedPoint =
-                        DungeonCorridorPersistenceCodec.encodeGridAnchor(point);
-                if (persistedPoint == null) {
-                    continue;
-                }
-                insert.setLong(1, corridorId);
-                insert.setInt(2, sortOrder++);
-                insert.setString(3, persistedPoint.anchorKind());
-                insert.setInt(4, persistedPoint.gridX2());
-                insert.setInt(5, persistedPoint.gridY2());
+                "INSERT INTO dungeon_corridor_nodes("
+                        + "corridor_node_id, corridor_id, grid_x2, grid_y2, room_id, room_relative_cell_x, room_relative_cell_y, room_edge_direction"
+                        + ") VALUES(?,?,?,?,?,?,?,?)")) {
+            for (CorridorNode node : sanitizedNodes(nodes)) {
+                bindNode(insert, corridorId, node);
                 insert.addBatch();
             }
             insert.executeBatch();
         }
     }
 
-    public void replaceEndpointBindings(Connection conn, long corridorId, List<CorridorEndpointBinding> endpointBindings) throws SQLException {
-        try (PreparedStatement deleteTargets = conn.prepareStatement(
-                "DELETE FROM dungeon_corridor_endpoint_binding_targets"
-                        + " WHERE corridor_endpoint_binding_id IN (SELECT corridor_endpoint_binding_id FROM dungeon_corridor_endpoint_bindings WHERE corridor_id=?)")) {
-            deleteTargets.setLong(1, corridorId);
-            deleteTargets.executeUpdate();
+    public void replaceSegments(Connection conn, long corridorId, List<CorridorSegment> segments) throws SQLException {
+        try (PreparedStatement delete = conn.prepareStatement(
+                "DELETE FROM dungeon_corridor_segments WHERE corridor_id=?")) {
+            delete.setLong(1, corridorId);
+            delete.executeUpdate();
         }
-        try (PreparedStatement deleteBindings = conn.prepareStatement(
-                "DELETE FROM dungeon_corridor_endpoint_bindings WHERE corridor_id=?")) {
-            deleteBindings.setLong(1, corridorId);
-            deleteBindings.executeUpdate();
-        }
-        try (PreparedStatement insertBinding = conn.prepareStatement(
-                "INSERT INTO dungeon_corridor_endpoint_bindings(corridor_id, sort_order, terminal_kind, cell_x, cell_y, edge_direction) VALUES(?,?,?,?,?,?)",
-                Statement.RETURN_GENERATED_KEYS);
-             PreparedStatement insertTarget = conn.prepareStatement(
-                     "INSERT INTO dungeon_corridor_endpoint_binding_targets(corridor_endpoint_binding_id, endpoint_order, endpoint_type, endpoint_id) VALUES(?,?,?,?)")) {
-            int sortOrder = 0;
-            for (CorridorEndpointBinding binding : sanitizedBindings(endpointBindings)) {
-                DungeonCorridorPersistenceCodec.PersistedEndpointBinding persistedBinding =
-                        DungeonCorridorPersistenceCodec.encodeEndpointBinding(binding);
-                if (persistedBinding == null) {
-                    continue;
-                }
-                insertBinding.setLong(1, corridorId);
-                insertBinding.setInt(2, sortOrder++);
-                insertBinding.setString(3, persistedBinding.terminalKind());
-                insertBinding.setInt(4, persistedBinding.cellX());
-                insertBinding.setInt(5, persistedBinding.cellY());
-                insertBinding.setString(6, persistedBinding.edgeDirection());
-                insertBinding.executeUpdate();
-                long bindingId = generatedId(insertBinding, "dungeon_corridor_endpoint_bindings");
-                int endpointOrder = 0;
-                for (ConnectionEndpoint endpoint : binding.endpoints()) {
-                    DungeonCorridorPersistenceCodec.PersistedConnectionEndpoint persistedEndpoint =
-                            DungeonCorridorPersistenceCodec.encodeConnectionEndpoint(endpoint);
-                    if (persistedEndpoint == null) {
-                        continue;
-                    }
-                    insertTarget.setLong(1, bindingId);
-                    insertTarget.setInt(2, endpointOrder++);
-                    insertTarget.setString(3, persistedEndpoint.endpointType());
-                    insertTarget.setLong(4, persistedEndpoint.endpointId());
-                    insertTarget.addBatch();
-                }
-                insertTarget.executeBatch();
+        try (PreparedStatement insert = conn.prepareStatement(
+                "INSERT INTO dungeon_corridor_segments(corridor_segment_id, corridor_id, start_node_id, end_node_id) VALUES(?,?,?,?)")) {
+            for (CorridorSegment segment : sanitizedSegments(segments)) {
+                insert.setLong(1, requiredId(segment.segmentId(), "corridor segment"));
+                insert.setLong(2, corridorId);
+                insert.setLong(3, segment.startNodeId());
+                insert.setLong(4, segment.endNodeId());
+                insert.addBatch();
             }
+            insert.executeBatch();
         }
     }
 
@@ -127,38 +89,62 @@ public final class DungeonCorridorWriteRepository {
         }
     }
 
-    private static long generatedId(PreparedStatement ps, String table) throws SQLException {
-        try (ResultSet rs = ps.getGeneratedKeys()) {
-            if (!rs.next()) {
-                throw new SQLException("No key returned for " + table + " insert");
-            }
-            return rs.getLong(1);
+    private static void bindNode(PreparedStatement ps, long corridorId, CorridorNode node) throws SQLException {
+        ps.setLong(1, requiredId(node.nodeId(), "corridor node"));
+        ps.setLong(2, corridorId);
+        ps.setInt(3, node.gridX2());
+        ps.setInt(4, node.gridY2());
+        if (node.roomId() == null) {
+            ps.setObject(5, null);
+            ps.setObject(6, null);
+            ps.setObject(7, null);
+            ps.setObject(8, null);
+        } else {
+            ps.setLong(5, node.roomId());
+            ps.setInt(6, node.roomRelativeCell().x());
+            ps.setInt(7, node.roomRelativeCell().y());
+            ps.setString(8, node.roomBoundaryDirection().name());
         }
     }
 
-    private static List<GridAnchor> sanitizedPoints(List<? extends GridAnchor> points) {
-        if (points == null || points.isEmpty()) {
+    private static long requiredId(Long id, String label) {
+        if (id == null) {
+            throw new IllegalArgumentException(label + " id is required for persistence");
+        }
+        return id;
+    }
+
+    private static List<CorridorNode> sanitizedNodes(List<CorridorNode> nodes) {
+        if (nodes == null || nodes.isEmpty()) {
             return List.of();
         }
-        ArrayList<GridAnchor> result = new ArrayList<>();
-        for (GridAnchor point : points) {
-            if (point != null) {
-                result.add(point);
+        ArrayList<CorridorNode> result = new ArrayList<>();
+        for (CorridorNode node : nodes) {
+            if (node != null) {
+                result.add(node);
             }
         }
+        result.sort(Comparator
+                .comparing((CorridorNode node) -> node.nodeId() == null ? Long.MAX_VALUE : node.nodeId())
+                .thenComparingInt(CorridorNode::gridY2)
+                .thenComparingInt(CorridorNode::gridX2));
         return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
-    private static List<CorridorEndpointBinding> sanitizedBindings(List<CorridorEndpointBinding> endpointBindings) {
-        if (endpointBindings == null || endpointBindings.isEmpty()) {
+    private static List<CorridorSegment> sanitizedSegments(List<CorridorSegment> segments) {
+        if (segments == null || segments.isEmpty()) {
             return List.of();
         }
-        ArrayList<CorridorEndpointBinding> result = new ArrayList<>();
-        for (CorridorEndpointBinding endpointBinding : endpointBindings) {
-            if (endpointBinding != null) {
-                result.add(endpointBinding);
+        ArrayList<CorridorSegment> result = new ArrayList<>();
+        for (CorridorSegment segment : segments) {
+            if (segment != null) {
+                result.add(segment);
             }
         }
+        result.sort(Comparator
+                .comparing((CorridorSegment segment) -> segment.segmentId() == null ? Long.MAX_VALUE : segment.segmentId())
+                .thenComparing(CorridorSegment::startNodeId)
+                .thenComparing(CorridorSegment::endNodeId));
         return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 }

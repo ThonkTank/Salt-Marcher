@@ -4,7 +4,6 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
-import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.stair.DungeonStairExit;
@@ -42,28 +41,7 @@ public final class DungeonRuntimeStairCatalog {
         if (layout == null || corridor == null || corridor.corridorId() == null || corridor.path() == null) {
             return List.of();
         }
-        int levelZ = layout.levelForCorridor(corridor.corridorId());
-        return describe(layout, DungeonRuntimeCorridorGeometry.canonicalCells(layout, corridor), levelZ, activeTile);
-    }
-
-    public static List<DungeonRuntimeStairDescriptor> describe(
-            DungeonLayout layout,
-            CorridorNetwork network,
-            CubePoint activeTile
-    ) {
-        if (layout == null || network == null || network.floor() == null) {
-            return List.of();
-        }
-        // Networks stay 2D; use the canonical corridor compatibility level for whole-surface lookups.
-        Integer levelZ = network.corridorIds().stream()
-                .filter(id -> id != null)
-                .map(layout::levelForCorridor)
-                .findFirst()
-                .orElse(null);
-        if (levelZ == null) {
-            return List.of();
-        }
-        return describe(layout, network.floor().shape().absoluteCells(), levelZ, activeTile);
+        return describe(layout, DungeonRuntimeCorridorGeometry.canonicalCells(layout, corridor), corridor.levelZ(), activeTile);
     }
 
     public static List<DungeonRuntimeStairDescriptor> describeAtCells(

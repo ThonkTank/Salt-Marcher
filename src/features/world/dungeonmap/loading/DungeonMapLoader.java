@@ -4,8 +4,6 @@ import database.DatabaseManager;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.GridAnchor;
-import features.world.dungeonmap.model.geometry.GridRoute;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.geometry.VertexEdge;
@@ -18,13 +16,13 @@ import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.LocalConnection;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
-import features.world.dungeonmap.model.structures.corridor.CorridorEndpointBinding;
+import features.world.dungeonmap.model.structures.corridor.CorridorNode;
+import features.world.dungeonmap.model.structures.corridor.CorridorSegment;
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.stair.StairShape;
-import features.world.dungeonmap.persistence.DungeonCorridorPersistenceCodec;
 import features.world.dungeonmap.persistence.DungeonPersistenceDirections;
 import features.world.dungeonmap.persistence.DungeonSchemaSupport;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
@@ -132,7 +130,7 @@ public final class DungeonMapLoader {
         List<Room> rooms = loadRooms(conn, map.mapId());
         List<RoomCluster> clusters = loadClusters(conn, map.mapId(), rooms);
         Map<Long, Integer> clusterLevels = loadClusterLevels(conn, map.mapId());
-        List<Corridor> corridors = loadCorridors(conn, map.mapId());
+        List<Corridor> corridors = loadCorridors(conn, map.mapId(), roomsById(clusters));
         List<DungeonStair> stairs = loadStairs(conn, map.mapId());
         return new DungeonLayout(
                 map.mapId(),
@@ -345,44 +343,39 @@ public final class DungeonMapLoader {
 
     private static List<Corridor> loadCorridors(
             Connection conn,
-            long mapId
+            long mapId,
+            Map<Long, Room> roomsById
     ) throws SQLException {
         DungeonSchemaSupport.ensureCompatibility(conn);
-        Map<Long, List<GridAnchor>> pointsByCorridorId = loadGrouped(conn,
-                "SELECT corridor_id, anchor_kind, grid_x2, grid_y2"
-                        + " FROM dungeon_corridor_points"
+        Map<Long, List<CorridorNode>> nodesByCorridorId = loadGrouped(conn,
+                "SELECT corridor_id, corridor_node_id, grid_x2, grid_y2, room_id, room_relative_cell_x, room_relative_cell_y, room_edge_direction"
+                        + " FROM dungeon_corridor_nodes"
                         + " WHERE corridor_id IN (SELECT corridor_id FROM dungeon_corridors WHERE dungeon_map_id=?)"
-                        + " ORDER BY corridor_id, sort_order",
+                        + " ORDER BY corridor_id, corridor_node_id",
                 mapId,
                 row -> row.getLong("corridor_id"),
-                row -> DungeonCorridorPersistenceCodec.decodeGridAnchor(
-                        row.getString("anchor_kind"),
+                row -> new CorridorNode(
+                        row.getLong("corridor_node_id"),
                         row.getInt("grid_x2"),
-                        row.getInt("grid_y2")));
-        Map<Long, List<ConnectionEndpoint>> endpointsByBindingId = loadGrouped(conn,
-                "SELECT corridor_endpoint_binding_id, endpoint_type, endpoint_id"
-                        + " FROM dungeon_corridor_endpoint_binding_targets"
-                        + " WHERE corridor_endpoint_binding_id IN (SELECT corridor_endpoint_binding_id FROM dungeon_corridor_endpoint_bindings"
-                        + " WHERE corridor_id IN (SELECT corridor_id FROM dungeon_corridors WHERE dungeon_map_id=?))"
-                        + " ORDER BY corridor_endpoint_binding_id, endpoint_order",
-                mapId,
-                row -> row.getLong("corridor_endpoint_binding_id"),
-                row -> DungeonCorridorPersistenceCodec.decodeConnectionEndpoint(
-                        row.getString("endpoint_type"),
-                        nullableLong(row, "endpoint_id")));
-        Map<Long, List<CorridorEndpointBinding>> bindingsByCorridorId = loadGrouped(conn,
-                "SELECT corridor_endpoint_binding_id, corridor_id, terminal_kind, cell_x, cell_y, edge_direction"
-                        + " FROM dungeon_corridor_endpoint_bindings"
+                        row.getInt("grid_y2"),
+                        nullableLong(row, "room_id"),
+                        row.getObject("room_relative_cell_x") == null
+                                ? null
+                                : new Point2i(row.getInt("room_relative_cell_x"), row.getInt("room_relative_cell_y")),
+                        row.getString("room_edge_direction") == null
+                                ? null
+                                : CardinalDirection.valueOf(row.getString("room_edge_direction").trim().toUpperCase(java.util.Locale.ROOT))));
+        Map<Long, List<CorridorSegment>> segmentsByCorridorId = loadGrouped(conn,
+                "SELECT corridor_id, corridor_segment_id, start_node_id, end_node_id"
+                        + " FROM dungeon_corridor_segments"
                         + " WHERE corridor_id IN (SELECT corridor_id FROM dungeon_corridors WHERE dungeon_map_id=?)"
-                        + " ORDER BY corridor_id, sort_order, corridor_endpoint_binding_id",
+                        + " ORDER BY corridor_id, corridor_segment_id",
                 mapId,
                 row -> row.getLong("corridor_id"),
-                row -> DungeonCorridorPersistenceCodec.decodeEndpointBinding(
-                        row.getString("terminal_kind"),
-                        row.getInt("cell_x"),
-                        row.getInt("cell_y"),
-                        row.getString("edge_direction"),
-                        endpointsByBindingId.getOrDefault(row.getLong("corridor_endpoint_binding_id"), List.of())));
+                row -> new CorridorSegment(
+                        row.getLong("corridor_segment_id"),
+                        row.getLong("start_node_id"),
+                        row.getLong("end_node_id")));
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT corridor_id, dungeon_map_id, level_z"
                         + " FROM dungeon_corridors WHERE dungeon_map_id=? ORDER BY corridor_id")) {
@@ -395,8 +388,9 @@ public final class DungeonMapLoader {
                             corridorId,
                             rs.getLong("dungeon_map_id"),
                             rs.getInt("level_z"),
-                            pointsByCorridorId.getOrDefault(corridorId, List.of()),
-                            bindingsByCorridorId.getOrDefault(corridorId, List.of())));
+                            nodesByCorridorId.getOrDefault(corridorId, List.of()),
+                            segmentsByCorridorId.getOrDefault(corridorId, List.of()),
+                            roomsById));
                 }
                 return result.isEmpty() ? List.of() : List.copyOf(result);
             }
@@ -601,6 +595,21 @@ public final class DungeonMapLoader {
         Map<Long, List<Room>> result = new LinkedHashMap<>();
         for (Room room : rooms) {
             result.computeIfAbsent(room.clusterId(), ignored -> new ArrayList<>()).add(room);
+        }
+        return Map.copyOf(result);
+    }
+
+    private static Map<Long, Room> roomsById(List<RoomCluster> clusters) {
+        Map<Long, Room> result = new LinkedHashMap<>();
+        for (RoomCluster cluster : clusters) {
+            if (cluster == null) {
+                continue;
+            }
+            for (Room room : cluster.rooms()) {
+                if (room != null && room.roomId() != null) {
+                    result.put(room.roomId(), room);
+                }
+            }
         }
         return Map.copyOf(result);
     }

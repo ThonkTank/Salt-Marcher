@@ -8,10 +8,11 @@ import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
-import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.stair.DungeonStairExit;
+
+import java.util.Objects;
 
 final class DungeonRuntimeLocations {
 
@@ -38,9 +39,6 @@ final class DungeonRuntimeLocations {
             Long transitionId = parseTransitionId(position.locationKey());
             return transitionId == null ? null : DungeonRuntimeLocation.transition(transitionId);
         }
-        if (position.locationType() == CampaignDungeonLocationType.CORRIDOR_COMPONENT && position.locationKey() != null) {
-            return DungeonRuntimeLocation.corridorComponent(position.locationKey());
-        }
         if (position.locationType() == CampaignDungeonLocationType.CORRIDOR && position.corridorId() != null) {
             return DungeonRuntimeLocation.corridor(position.corridorId(), parseCorridorTile(position.locationKey()));
         }
@@ -65,8 +63,6 @@ final class DungeonRuntimeLocations {
             resolvedTile = roomAnchor(layout, roomLocation.roomId());
         } else if (location instanceof DungeonRuntimeLocation.Corridor corridorLocation) {
             resolvedTile = corridorAnchor(layout, layout.findCorridor(corridorLocation.corridorId()), corridorLocation.anchorTile());
-        } else if (location instanceof DungeonRuntimeLocation.CorridorComponent componentLocation) {
-            resolvedTile = corridorNetworkAnchor(layout, componentLocation.componentId());
         }
         if (resolvedTile != null) {
             return DungeonRuntimeLocation.tile(resolvedTile);
@@ -74,7 +70,7 @@ final class DungeonRuntimeLocations {
         CubePoint fallbackTile = layout.rooms().stream()
                 .sorted(java.util.Comparator.comparing(room -> room.roomId() == null ? Long.MAX_VALUE : room.roomId()))
                 .map(room -> roomAnchor(layout, room.roomId()))
-                .filter(tile -> tile != null)
+                .filter(Objects::nonNull)
                 .findFirst()
                 .orElse(null);
         return fallbackTile == null ? null : DungeonRuntimeLocation.tile(fallbackTile);
@@ -92,9 +88,6 @@ final class DungeonRuntimeLocations {
         }
         if (location instanceof DungeonRuntimeLocation.Transition transition) {
             return transitionAnchor(layout, transition.transitionId()) != null;
-        }
-        if (location instanceof DungeonRuntimeLocation.CorridorComponent component) {
-            return layout.findCorridorNetwork(component.componentId()) != null;
         }
         if (location instanceof DungeonRuntimeLocation.Corridor corridor) {
             return corridorAnchor(layout, layout.findCorridor(corridor.corridorId()), corridor.anchorTile()) != null;
@@ -123,13 +116,10 @@ final class DungeonRuntimeLocations {
         if (location instanceof DungeonRuntimeLocation.Transition transition) {
             return new DungeonPositionRef(mapId, 0, CampaignDungeonLocationType.TRANSITION, null, null, formatTransition(transition.transitionId()), headingValue);
         }
-        if (location instanceof DungeonRuntimeLocation.CorridorComponent corridorComponent) {
-            return new DungeonPositionRef(mapId, 0, CampaignDungeonLocationType.CORRIDOR_COMPONENT, null, null, corridorComponent.componentId(), headingValue);
-        }
         if (location instanceof DungeonRuntimeLocation.Corridor corridor) {
             return new DungeonPositionRef(
                     mapId,
-                    0,
+                    corridor.anchorTile() == null ? 0 : corridor.anchorTile().z(),
                     CampaignDungeonLocationType.CORRIDOR,
                     null,
                     corridor.corridorId(),
@@ -269,22 +259,10 @@ final class DungeonRuntimeLocations {
             return null;
         }
         Corridor fallback = layout.corridorsAtCell(preferred.projectedCell(), preferred.z()).stream()
-                .filter(candidate -> candidate != null)
+                .filter(Objects::nonNull)
                 .min(java.util.Comparator.comparing(Corridor::corridorId, java.util.Comparator.nullsLast(Long::compareTo)))
                 .orElse(null);
         return fallback == null ? null : DungeonRuntimeCorridorGeometry.canonicalAnchor(layout, fallback);
-    }
-
-    private static CubePoint corridorNetworkAnchor(DungeonLayout layout, String networkId) {
-        CorridorNetwork network = layout.findCorridorNetwork(networkId);
-        if (network == null || network.floor() == null) {
-            return null;
-        }
-        Long corridorId = network.corridorIds().stream()
-                .filter(id -> id != null)
-                .findFirst()
-                .orElse(null);
-        return CubePoint.at(network.floor().shape().centerCell(), layout.levelForCorridor(corridorId));
     }
 
     private static CubePoint stairExitAnchor(DungeonLayout layout, long stairId, CubePoint preferred) {
@@ -294,7 +272,7 @@ final class DungeonRuntimeLocations {
                 .orElse(null);
         if (stair == null && preferred != null) {
             stair = layout.stairsAtCell(preferred.projectedCell(), preferred.z()).stream()
-                    .filter(candidate -> candidate != null)
+                    .filter(Objects::nonNull)
                     .min(java.util.Comparator.comparing(DungeonStair::stairId, java.util.Comparator.nullsLast(Long::compareTo)))
                     .orElse(null);
         }

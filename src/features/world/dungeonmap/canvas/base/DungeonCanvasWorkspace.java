@@ -1,7 +1,6 @@
 package features.world.dungeonmap.canvas.base;
 
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
-import features.world.dungeonmap.canvas.graph.DungeonGraphSceneRenderer;
 import features.world.dungeonmap.canvas.grid.DungeonGridSceneRenderer;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
@@ -50,7 +49,6 @@ public final class DungeonCanvasWorkspace extends BorderPane {
     private final DungeonMapState mapState;
     private final DungeonCanvasCamera camera = new DungeonCanvasCamera();
     private final DungeonSceneRenderer gridRenderer = new DungeonGridSceneRenderer();
-    private final DungeonSceneRenderer graphRenderer = new DungeonGraphSceneRenderer();
 
     private DungeonLayout mapModel = DungeonLayout.empty();
     private DungeonLayout previewMapModel;
@@ -345,8 +343,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
         if (canvas.getWidth() <= 0 || canvas.getHeight() <= 0) {
             return;
         }
-        DungeonSceneRenderer renderer = viewMode == DungeonViewMode.GRAPH ? graphRenderer : gridRenderer;
-        renderer.render(
+        gridRenderer.render(
                 canvas.getGraphicsContext2D(),
                 canvas.getWidth(),
                 canvas.getHeight(),
@@ -376,7 +373,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
     private DungeonLayout renderedMapModel() {
         DungeonLayout base = previewMapModel == null ? mapModel : previewMapModel;
         DungeonLayout resolved = base == null ? DungeonLayout.empty() : base;
-        return viewMode == DungeonViewMode.GRAPH ? resolved.projectedToLevel(projectionLevel) : resolved;
+        return resolved;
     }
 
     private DungeonCanvasPointerEvent pointerEvent(MouseEvent event) {

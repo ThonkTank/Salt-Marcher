@@ -4,7 +4,6 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
-import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import ui.shell.DetailsNavigator;
@@ -30,16 +29,8 @@ public final class DungeonRuntimeSurfaceResolver {
         if (location instanceof DungeonRuntimeLocation.Room roomLocation) {
             return roomSurface(layout, layout.findRoom(roomLocation.roomId()), heading, activeTile);
         }
-        if (location instanceof DungeonRuntimeLocation.CorridorComponent componentLocation) {
-            CorridorNetwork network = layout.findCorridorNetwork(componentLocation.componentId());
-            return corridorNetworkSurface(layout, network, heading, activeTile);
-        }
         if (location instanceof DungeonRuntimeLocation.Corridor corridorLocation) {
-            Corridor corridor = layout.findCorridor(corridorLocation.corridorId());
-            CorridorNetwork network = corridor == null ? null : layout.corridorNetworkForCorridor(corridor.corridorId());
-            return network != null
-                    ? corridorNetworkSurface(layout, network, heading, activeTile)
-                    : corridorSurface(layout, corridor, heading, activeTile);
+            return corridorSurface(layout, layout.findCorridor(corridorLocation.corridorId()), heading, activeTile);
         }
         if (location instanceof DungeonRuntimeLocation.Tile tileLocation) {
             return tileSurface(layout, tileLocation.tile(), heading);
@@ -58,9 +49,6 @@ public final class DungeonRuntimeSurfaceResolver {
         DungeonLayout.CellStructure structure = projectedLayout.structureAtCell(tile.projectedCell());
         if (structure instanceof DungeonLayout.CellStructure.RoomStructure roomStructure) {
             return roomSurface(layout, roomStructure.room(), heading, tile);
-        }
-        if (structure instanceof DungeonLayout.CellStructure.NetworkStructure networkStructure) {
-            return corridorNetworkSurface(layout, networkStructure.network(), heading, tile);
         }
         if (structure instanceof DungeonLayout.CellStructure.CorridorStructure corridorStructure) {
             return corridorSurface(layout, corridorStructure.corridor(), heading, tile);
@@ -90,24 +78,6 @@ public final class DungeonRuntimeSurfaceResolver {
                 DungeonRuntimeDoorCatalog.describe(layout, room, heading),
                 DungeonRuntimeStairCatalog.describe(layout, room, activeTile),
                 DungeonRuntimeTransitionCatalog.describe(layout, room, activeTile));
-    }
-
-    private static DungeonRuntimeSurface corridorNetworkSurface(
-            DungeonLayout layout,
-            CorridorNetwork network,
-            CardinalDirection heading,
-            CubePoint activeTile
-    ) {
-        if (layout == null || network == null || network.networkId() == null) {
-            return null;
-        }
-        return new DungeonRuntimeSurface(
-                DungeonRuntimeLabels.corridorNetworkLabel(layout, network),
-                new DetailsNavigator.EntryKey("dungeon-corridor-network", layout.mapId() + ":" + network.networkId()),
-                "",
-                DungeonRuntimeDoorCatalog.describe(layout, network, heading),
-                DungeonRuntimeStairCatalog.describe(layout, network, activeTile),
-                DungeonRuntimeTransitionCatalog.describe(layout, network, activeTile));
     }
 
     private static DungeonRuntimeSurface corridorSurface(

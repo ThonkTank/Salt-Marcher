@@ -3,11 +3,8 @@ package features.world.dungeonmap.application.runtime;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
-import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 
 import java.util.stream.Stream;
@@ -30,10 +27,6 @@ public final class DungeonRuntimeLabels {
         if (location instanceof DungeonRuntimeLocation.Corridor corridorLocation) {
             Corridor corridor = layout.findCorridor(corridorLocation.corridorId());
             return corridor == null ? "Korridor" : corridorLabel(layout, corridor.connectedRoomIds().stream());
-        }
-        if (location instanceof DungeonRuntimeLocation.CorridorComponent componentLocation) {
-            CorridorNetwork network = layout.findCorridorNetwork(componentLocation.componentId());
-            return network == null ? "Korridor" : corridorLabel(layout, layout.connectedRoomIds(network).stream());
         }
         if (location instanceof DungeonRuntimeLocation.StairExit stairExit) {
             return structureLabelAtTile(layout, stairExit.tile());
@@ -69,13 +62,10 @@ public final class DungeonRuntimeLabels {
         if (structure instanceof DungeonLayout.CellStructure.RoomStructure roomStructure) {
             return roomLabel(roomStructure.room());
         }
-        if (structure instanceof DungeonLayout.CellStructure.NetworkStructure networkStructure) {
-            return corridorNetworkLabel(layout, networkStructure.network());
-        }
         if (structure instanceof DungeonLayout.CellStructure.CorridorStructure corridorStructure) {
             return corridorLabel(layout, corridorStructure.corridor());
         }
-        DungeonStair stair = layout.stairsAtPoint(tile).stream().findFirst().orElse(null);
+        var stair = layout.stairsAtPoint(tile).stream().findFirst().orElse(null);
         if (stair != null) {
             return stair.label();
         }
@@ -119,13 +109,6 @@ public final class DungeonRuntimeLabels {
             return "Korridor";
         }
         return corridorLabel(layout, corridor.connectedRoomIds().stream());
-    }
-
-    public static String corridorNetworkLabel(DungeonLayout layout, CorridorNetwork network) {
-        if (network == null) {
-            return "Korridor";
-        }
-        return corridorLabel(layout, layout.connectedRoomIds(network).stream());
     }
 
     private static Room roomForId(DungeonLayout layout, Long roomId) {

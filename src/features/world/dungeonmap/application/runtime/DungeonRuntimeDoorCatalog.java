@@ -10,12 +10,9 @@ import features.world.dungeonmap.model.structures.connection.Connection;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpointType;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
-import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
 import features.world.dungeonmap.model.structures.room.Room;
 
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -46,29 +43,8 @@ public final class DungeonRuntimeDoorCatalog {
                 exit -> doorContext(layout, layout.connectionAt(exit.anchorEdge()), ConnectionEndpoint.corridor(corridor.corridorId())));
     }
 
-    public static List<DungeonRuntimeDoorDescriptor> describe(DungeonLayout layout, CorridorNetwork network, CardinalDirection heading) {
-        if (layout == null || network == null || network.floor() == null) {
-            return List.of();
-        }
-        Set<Connection> connections = new LinkedHashSet<>();
-        for (Long corridorId : network.corridorIds()) {
-            if (corridorId != null) {
-                connections.addAll(layout.connectionsForCorridor(corridorId));
-            }
-        }
-        return describe(
-                network.floor().shape().absoluteCells(),
-                List.copyOf(connections),
-                heading,
-                (cell, direction) -> "",
-                exit -> {
-                    Connection connection = layout.connectionAt(exit.anchorEdge());
-                    return doorContext(layout, connection, activeEndpoint(network, connection));
-                });
-    }
-
     private static List<DungeonRuntimeDoorDescriptor> describe(
-            Set<Point2i> cells,
+            java.util.Set<Point2i> cells,
             List<? extends Connection> connections,
             CardinalDirection heading,
             BiFunction<Point2i, Point2i, String> narrationLookup,
@@ -113,19 +89,6 @@ public final class DungeonRuntimeDoorCatalog {
                 ? null
                 : connection.oppositeOf(activeEndpoint);
         return new DoorContext(activeEndpoint, destination, endpointLabel(layout, destination, activeEndpoint));
-    }
-
-    private static ConnectionEndpoint activeEndpoint(CorridorNetwork network, Connection connection) {
-        if (network == null || connection == null) {
-            return null;
-        }
-        return connection.endpoints().stream()
-                .filter(endpoint -> endpoint != null
-                        && endpoint.type() == ConnectionEndpointType.CORRIDOR
-                        && endpoint.id() != null
-                        && network.containsCorridor(endpoint.id()))
-                .findFirst()
-                .orElse(null);
     }
 
     private static String endpointLabel(

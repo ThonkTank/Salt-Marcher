@@ -3,7 +3,7 @@ package features.world.dungeonmap.application.runtime;
 import features.world.dungeonmap.model.geometry.CubePoint;
 
 public sealed interface DungeonRuntimeLocation
-        permits DungeonRuntimeLocation.Room, DungeonRuntimeLocation.Corridor, DungeonRuntimeLocation.CorridorComponent, DungeonRuntimeLocation.Tile, DungeonRuntimeLocation.StairExit, DungeonRuntimeLocation.Transition {
+        permits DungeonRuntimeLocation.Room, DungeonRuntimeLocation.Corridor, DungeonRuntimeLocation.Tile, DungeonRuntimeLocation.StairExit, DungeonRuntimeLocation.Transition {
 
     static DungeonRuntimeLocation room(long roomId) {
         return new Room(roomId);
@@ -15,10 +15,6 @@ public sealed interface DungeonRuntimeLocation
 
     static DungeonRuntimeLocation corridor(long corridorId, CubePoint anchorTile) {
         return new Corridor(corridorId, anchorTile);
-    }
-
-    static DungeonRuntimeLocation corridorComponent(String componentId) {
-        return new CorridorComponent(componentId);
     }
 
     static DungeonRuntimeLocation tile(CubePoint tile) {
@@ -40,9 +36,6 @@ public sealed interface DungeonRuntimeLocation
         public Corridor {
             anchorTile = anchorTile == null ? null : anchorTile;
         }
-    }
-
-    record CorridorComponent(String componentId) implements DungeonRuntimeLocation {
     }
 
     record Tile(CubePoint tile) implements DungeonRuntimeLocation {

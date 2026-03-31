@@ -2,10 +2,9 @@ package features.world.dungeonmap.application.runtime;
 
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
-import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
 import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 
 public final class DungeonRuntimeLocationTileResolver {
 
@@ -39,17 +38,6 @@ public final class DungeonRuntimeLocationTileResolver {
                 return DungeonRuntimeCorridorGeometry.canonicalAnchor(layout, corridor);
             }
             return corridorLocation.anchorTile();
-        }
-        if (location instanceof DungeonRuntimeLocation.CorridorComponent componentLocation) {
-            CorridorNetwork network = layout.findCorridorNetwork(componentLocation.componentId());
-            if (network == null || network.floor() == null) {
-                return null;
-            }
-            Long corridorId = network.corridorIds().stream()
-                    .filter(id -> id != null)
-                    .findFirst()
-                    .orElse(null);
-            return CubePoint.at(network.floor().shape().centerCell(), layout.levelForCorridor(corridorId));
         }
         return null;
     }
