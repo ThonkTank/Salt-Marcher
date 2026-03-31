@@ -13,6 +13,7 @@ import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.shell.editor.EditorCards;
 import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
+import features.world.dungeonmap.shell.interaction.DungeonSelection;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.EditorInteractionState;
@@ -204,21 +205,22 @@ public final class TransitionTool implements EditorTool {
         if (mapId == null || event.gridCell() == null) {
             return false;
         }
-        DungeonHitSubject subject = ctx == null || ctx.selection() == null || ctx.selection().primary() == null
+        DungeonSelection selection = ctx == null ? null : ctx.selection();
+        DungeonHitSubject.TransitionSubject transitionSubject = selectedTransitionSubject(selection);
+        DungeonTransition transition = transitionSubject == null
                 ? null
-                : ctx.selection().primary().descriptor().subject();
-        DungeonTransition transition = subject instanceof DungeonHitSubject.TransitionSubject transitionSubject
-                ? mapState.activeMap().findTransition(transitionSubject.transitionId())
-                : null;
+                : mapState.activeMap().findTransition(transitionSubject.transitionId());
         if (transition == null || transition.transitionId() == null) {
             state.clearSelection();
             return false;
         }
-        state.selectTarget(transition.targetKey());
+        if (selection != null) {
+            state.applySelection(selection);
+        }
         loadingService.submitReloadingWrite(
                 () -> transitionEditService.delete(transition.transitionId()),
                 mapId,
-                null,
+                state::clearSelection,
                 throwable -> UiErrorReporter.reportBackgroundFailure("TransitionTool.handleDeletePressed()", throwable));
         return true;
     }
@@ -344,9 +346,9 @@ public final class TransitionTool implements EditorTool {
     }
 
     private void renderDeleteCard() {
-        String selectedTargetKey = state.selectedTargetKey();
-        String summary = DungeonTransition.isTargetKey(selectedTargetKey)
-                ? "Gewählt: " + transitionLabel(selectedTargetKey)
+        DungeonHitSubject.TransitionSubject selectedTransition = selectedTransitionSubject(state.selectedSelection());
+        String summary = selectedTransition != null
+                ? "Gewählt: " + transitionLabel(selectedTransition.transitionId())
                 : "Übergangsfeld anklicken, um zu löschen";
         transitionSummaryLabel.setText(summary);
         syncFields();
@@ -659,8 +661,16 @@ public final class TransitionTool implements EditorTool {
                 bidirectional);
     }
 
-    private static String transitionLabel(String targetKey) {
-        Long transitionId = DungeonTransition.transitionIdFromKey(targetKey);
+    private static DungeonHitSubject.TransitionSubject selectedTransitionSubject(DungeonSelection selection) {
+        if (selection == null || selection.primary() == null) {
+            return null;
+        }
+        return selection.primary().descriptor().subject() instanceof DungeonHitSubject.TransitionSubject transitionSubject
+                ? transitionSubject
+                : null;
+    }
+
+    private static String transitionLabel(Long transitionId) {
         return transitionId == null ? "Übergang" : "Übergang " + transitionId;
     }
 
