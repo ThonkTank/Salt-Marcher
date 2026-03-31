@@ -29,8 +29,12 @@ public record CorridorPath(
     }
 
     public static CorridorPath fromPoints(int levelZ, Collection<? extends GridAnchor> points) {
-        GridRoute route = points == null ? GridRoute.empty() : new GridRoute(points);
-        return new CorridorPath(route, cellsForRoute(route, levelZ));
+        return fromRoute(levelZ, points == null ? GridRoute.empty() : new GridRoute(points));
+    }
+
+    public static CorridorPath fromRoute(int levelZ, GridRoute route) {
+        GridRoute resolvedRoute = route == null ? GridRoute.empty() : route;
+        return new CorridorPath(resolvedRoute, cellsForRoute(resolvedRoute, levelZ));
     }
 
     public Map<Integer, Floor> floorsByLevel() {

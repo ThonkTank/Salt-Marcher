@@ -221,10 +221,11 @@ public final class DungeonTraversalApplicationService {
             return;
         }
         TraversalRoute routeToPersist = requireExplicitRoute(previousLayout, traversal, traversalRoute);
+        TraversalRoute resolvedRoute = TraversalRouteResolver.resolve(previousLayout, traversal, routeToPersist);
         traversalWriteRepository.replaceTraversalRooms(conn, traversal.traversalId(), traversal.roomIds());
         traversalWriteRepository.replaceTraversalWaypoints(conn, traversal.traversalId(), traversal.bindings().waypoints());
         traversalWriteRepository.replaceTraversalDoorBindings(conn, traversal.traversalId(), traversal.bindings().doorBindings());
-        structureCommitter.persistStructures(conn, previousLayout, traversal, routeToPersist);
+        structureCommitter.persistStructures(conn, traversal, resolvedRoute);
     }
 
     private void deleteTraversal(Connection conn, long traversalId) throws SQLException {
@@ -265,7 +266,7 @@ public final class DungeonTraversalApplicationService {
             if (affected && reanchoredTraversal.isPersistable()) {
                 traversalRoutesByTraversalId.put(
                         reanchoredTraversal.traversalId(),
-                        structureCommitter.resolveRoute(
+                        TraversalRouteResolver.resolve(
                                 beforeLayout,
                                 reanchoredTraversal,
                                 reanchoredTraversal.route(rewrittenSnapshot)));

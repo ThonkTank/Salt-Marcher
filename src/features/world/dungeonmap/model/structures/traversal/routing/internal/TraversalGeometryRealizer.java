@@ -1,7 +1,7 @@
 package features.world.dungeonmap.model.structures.traversal.routing.internal;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.GridAnchor;
+import features.world.dungeonmap.model.geometry.GridRoute;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorEndpointPlan;
@@ -384,14 +384,15 @@ public final class TraversalGeometryRealizer {
             if (endPlan != null) {
                 endpointPlans.add(endPlan);
             }
-            List<GridAnchor> corridorPoints = canonicalCorridorPoints(segmentResult.pathCells());
-            if (corridorPoints.size() < 2) {
+            GridRoute corridorRoute = GridRoute.fromOrderedTileCenters(segmentResult.pathCells())
+                    .simplifiedCollinear();
+            if (corridorRoute.anchorCount() < 2) {
                 return;
             }
-            Corridor corridor = Corridor.plannedFromPoints(
+            Corridor corridor = Corridor.plannedFromRoute(
                     traversal.mapId(),
                     segmentResult.sourceCell().z(),
-                    corridorPoints,
+                    corridorRoute,
                     endpointPlans);
             corridorSegments.add(new TraversalRoute.CorridorSegment(
                     segmentKey,
@@ -431,49 +432,6 @@ public final class TraversalGeometryRealizer {
         String start = startNodeKey == null ? "" : startNodeKey;
         String end = endNodeKey == null ? "" : endNodeKey;
         return start.compareTo(end) <= 0 ? start + "->" + end : end + "->" + start;
-    }
-
-    private static List<GridAnchor> canonicalCorridorPoints(List<CubePoint> pathCells) {
-        ArrayList<CubePoint> orderedCells = new ArrayList<>();
-        for (CubePoint pathCell : pathCells == null ? List.<CubePoint>of() : pathCells) {
-            if (pathCell != null) {
-                orderedCells.add(pathCell);
-            }
-        }
-        if (orderedCells.isEmpty()) {
-            return List.of();
-        }
-        ArrayList<GridAnchor> points = new ArrayList<>();
-        points.add(GridAnchor.atTile(orderedCells.getFirst().projectedCell()));
-        for (int index = 1; index < orderedCells.size() - 1; index++) {
-            CubePoint previous = orderedCells.get(index - 1);
-            CubePoint current = orderedCells.get(index);
-            CubePoint next = orderedCells.get(index + 1);
-            if (isCanonicalCorner(previous, current, next)) {
-                points.add(GridAnchor.atTile(current.projectedCell()));
-            }
-        }
-        if (orderedCells.size() > 1) {
-            points.add(GridAnchor.atTile(orderedCells.getLast().projectedCell()));
-        }
-        return List.copyOf(points);
-    }
-
-    private static boolean isCanonicalCorner(CubePoint previous, CubePoint current, CubePoint next) {
-        Point2i incoming = pathStep(previous, current);
-        Point2i outgoing = pathStep(current, next);
-        return incoming == null || outgoing == null || !incoming.equals(outgoing);
-    }
-
-    private static Point2i pathStep(CubePoint from, CubePoint to) {
-        if (from == null || to == null || from.z() != to.z()) {
-            return null;
-        }
-        int deltaX = to.x() - from.x();
-        int deltaY = to.y() - from.y();
-        return Math.abs(deltaX) + Math.abs(deltaY) == 1
-                ? new Point2i(deltaX, deltaY)
-                : null;
     }
 
     record LocalSegmentRequest(

@@ -42,30 +42,23 @@ public final class Corridor {
             CorridorEndpointPlan startPlan,
             CorridorEndpointPlan endPlan
     ) {
-        CorridorEndpointBinding startBinding = bindingForPlan(startPlan);
-        CorridorEndpointBinding endBinding = bindingForPlan(endPlan);
-        VertexEdge sharedEdge = sharedBoundaryEdge(startBinding, endBinding);
-        return plannedFromPoints(
+        VertexEdge sharedEdge = sharedBoundaryEdge(startPlan, endPlan);
+        return plannedFromRoute(
                 mapId,
                 startPlan.roomCell().z(),
-                List.of(
+                new GridRoute(List.of(
                         GridAnchor.atVertex(sharedEdge.start()),
-                        GridAnchor.atVertex(sharedEdge.end())),
+                        GridAnchor.atVertex(sharedEdge.end()))),
                 List.of(startPlan, endPlan));
     }
 
-    public static Corridor plannedFromPoints(
+    public static Corridor plannedFromRoute(
             long mapId,
             int levelZ,
-            List<? extends GridAnchor> points,
+            GridRoute route,
             List<CorridorEndpointPlan> endpointPlans
     ) {
-        GridRoute route = validatePoints(points);
-        return planned(
-                mapId,
-                levelZ,
-                route.anchors(),
-                bindingsForPlans(endpointPlans));
+        return new Corridor(null, mapId, levelZ, route, bindingsForPlans(endpointPlans));
     }
 
     public static Corridor resolved(
@@ -85,13 +78,23 @@ public final class Corridor {
             List<? extends GridAnchor> points,
             List<CorridorEndpointBinding> endpointBindings
     ) {
+        this(corridorId, mapId, levelZ, points == null ? GridRoute.empty() : new GridRoute(points), endpointBindings);
+    }
+
+    private Corridor(
+            Long corridorId,
+            long mapId,
+            int levelZ,
+            GridRoute route,
+            List<CorridorEndpointBinding> endpointBindings
+    ) {
         this.corridorId = corridorId;
         this.mapId = mapId;
         this.levelZ = levelZ;
-        GridRoute route = validatePoints(points);
-        this.points = route.anchors();
+        GridRoute validatedRoute = validateRoute(route);
+        this.points = validatedRoute.anchors();
         this.endpointBindings = normalizeBindings(endpointBindings);
-        this.path = CorridorPath.fromPoints(levelZ, this.points);
+        this.path = CorridorPath.fromRoute(levelZ, validatedRoute);
         this.connections = materializeConnections(corridorId, mapId, levelZ, this.endpointBindings);
     }
 
@@ -184,20 +187,9 @@ public final class Corridor {
         return roomId != null && connectedRoomIds().contains(roomId);
     }
 
-    private static GridRoute validatePoints(List<? extends GridAnchor> points) {
-        if (points == null || points.isEmpty()) {
+    private static GridRoute validateRoute(GridRoute route) {
+        if (route == null || route.isEmpty()) {
             throw new IllegalArgumentException("Corridor requires at least two ordered points");
-        }
-        ArrayList<GridAnchor> rawPoints = new ArrayList<>();
-        for (GridAnchor point : points) {
-            if (point == null) {
-                throw new IllegalArgumentException("Corridor points must not contain null entries");
-            }
-            rawPoints.add(point);
-        }
-        GridRoute route = new GridRoute(rawPoints);
-        if (route.anchorCount() != rawPoints.size()) {
-            throw new IllegalArgumentException("Corridor points must not contain repeated consecutive points");
         }
         if (route.anchorCount() < 2) {
             throw new IllegalArgumentException("Corridor requires at least two different points");
@@ -235,13 +227,13 @@ public final class Corridor {
     }
 
     private static VertexEdge sharedBoundaryEdge(
-            CorridorEndpointBinding startBinding,
-            CorridorEndpointBinding endBinding
+            CorridorEndpointPlan startPlan,
+            CorridorEndpointPlan endPlan
     ) {
-        Objects.requireNonNull(startBinding, "startBinding");
-        Objects.requireNonNull(endBinding, "endBinding");
-        VertexEdge startEdge = startBinding.boundaryEdge();
-        VertexEdge endEdge = endBinding.boundaryEdge();
+        Objects.requireNonNull(startPlan, "startPlan");
+        Objects.requireNonNull(endPlan, "endPlan");
+        VertexEdge startEdge = startPlan.boundaryEdge();
+        VertexEdge endEdge = endPlan.boundaryEdge();
         if (!Objects.equals(startEdge, endEdge)) {
             throw new IllegalArgumentException("Direct adjacency corridor endpoints must share one boundary edge");
         }

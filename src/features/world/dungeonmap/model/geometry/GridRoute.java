@@ -26,6 +26,19 @@ public final class GridRoute {
         return new GridRoute(List.of());
     }
 
+    public static GridRoute fromOrderedTileCenters(Collection<CubePoint> cells) {
+        if (cells == null || cells.isEmpty()) {
+            return empty();
+        }
+        List<GridAnchor> anchors = new ArrayList<>();
+        for (CubePoint cell : cells) {
+            if (cell != null) {
+                anchors.add(GridAnchor.atTile(cell.projectedCell()));
+            }
+        }
+        return anchors.isEmpty() ? empty() : new GridRoute(anchors);
+    }
+
     public List<GridAnchor> anchors() {
         return anchors;
     }
@@ -96,6 +109,24 @@ public final class GridRoute {
         return new GridRoute(reversed);
     }
 
+    public GridRoute simplifiedCollinear() {
+        if (anchors.size() <= 2) {
+            return this;
+        }
+        List<GridAnchor> simplified = new ArrayList<>();
+        simplified.add(anchors.getFirst());
+        for (int index = 1; index < anchors.size() - 1; index++) {
+            GridAnchor previous = simplified.getLast();
+            GridAnchor current = anchors.get(index);
+            GridAnchor next = anchors.get(index + 1);
+            if (!isRedundantCollinearAnchor(previous, current, next)) {
+                simplified.add(current);
+            }
+        }
+        simplified.add(anchors.getLast());
+        return simplified.size() == anchors.size() ? this : new GridRoute(simplified);
+    }
+
     public GridRoute withInsertedAnchor(int index, GridAnchor anchor) {
         List<GridAnchor> updated = new ArrayList<>(anchors);
         int insertionIndex = Math.max(0, Math.min(index, updated.size()));
@@ -138,6 +169,22 @@ public final class GridRoute {
             previous = anchor;
         }
         return List.copyOf(normalized);
+    }
+
+    private static boolean isRedundantCollinearAnchor(
+            GridAnchor previous,
+            GridAnchor current,
+            GridAnchor next
+    ) {
+        if (previous == null || current == null || next == null) {
+            return false;
+        }
+        Point2i previousPoint = previous.doubledGridPoint();
+        Point2i currentPoint = current.doubledGridPoint();
+        Point2i nextPoint = next.doubledGridPoint();
+        boolean sameVertical = previousPoint.x() == currentPoint.x() && currentPoint.x() == nextPoint.x();
+        boolean sameHorizontal = previousPoint.y() == currentPoint.y() && currentPoint.y() == nextPoint.y();
+        return sameVertical || sameHorizontal;
     }
 
     public record Segment(GridAnchor start, GridAnchor end) {
