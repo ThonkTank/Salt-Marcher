@@ -32,8 +32,6 @@ public final class BoundaryTool implements EditorTool {
     private final DungeonEditorSessionState sessionState;
     private final DungeonBoundaryEditService boundaryEditService;
     private final EditorInteractionState state;
-    private final DungeonGridBoundaryHitTester boundaryHitTester = new DungeonGridBoundaryHitTester();
-    private final DungeonGridVertexHitTester vertexHitTester = new DungeonGridVertexHitTester();
     private final DungeonBoundaryPathPlanner pathPlanner = new DungeonBoundaryPathPlanner();
     private final Label statusLabel = new Label("Kein Wandpfad aktiv");
     private final VBox statusCard = EditorCards.card("Wandpfad", statusLabel);
@@ -124,7 +122,7 @@ public final class BoundaryTool implements EditorTool {
 
     private boolean handleWallPressed(EditorToolContext ctx, DungeonCanvasPointerEvent event, boolean deleteMode) {
         DungeonLayout layout = ctx.projectedLayout();
-        Point2i vertex = vertexHitTester.hitTest(event.canvasPoint(), event.camera());
+        Point2i vertex = ctx.hitService().hitVertex(event.canvasPoint(), event.camera());
         if (layout == null || vertex == null) {
             if (draft == null) {
                 state.clearSelection();
@@ -132,7 +130,7 @@ public final class BoundaryTool implements EditorTool {
             return false;
         }
 
-        RoomCluster cluster = resolveCluster(event, vertex, deleteMode, layout);
+        RoomCluster cluster = resolveCluster(ctx, event, vertex, deleteMode, layout);
         if (cluster == null || cluster.clusterId() == null) {
             if (draft == null) {
                 state.clearSelection();
@@ -218,6 +216,7 @@ public final class BoundaryTool implements EditorTool {
     }
 
     private RoomCluster resolveCluster(
+            EditorToolContext ctx,
             DungeonCanvasPointerEvent event,
             Point2i vertex,
             boolean deleteMode,
@@ -235,7 +234,7 @@ public final class BoundaryTool implements EditorTool {
             return selectedCluster;
         }
 
-        DungeonEditorBoundaryHitTarget boundaryHit = boundaryHitTester.hitBoundary(layout, event.canvasPoint(), event.camera());
+        DungeonEditorBoundaryHitTarget boundaryHit = ctx.hitService().hitBoundary(layout, event.canvasPoint(), event.camera());
         if (boundaryHit != null && boundaryHit.clusterId() != null) {
             RoomCluster boundaryCluster = clusterOnActiveLevel(boundaryHit.clusterId(), layout);
             if (boundaryCluster != null && pathPlanner.isEditableVertex(boundaryCluster, vertex, deleteMode)) {

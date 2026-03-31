@@ -8,7 +8,7 @@ import features.world.dungeonmap.state.EditorInteractionState;
 public record EditorToolContext(
         DungeonCanvasPointerEvent event,
         DungeonLayout projectedLayout,
-        DungeonGridHitTester hitTester,
+        DungeonEditorHitService hitService,
         DungeonCanvasCamera camera,
         EditorInteractionState state
 ) {
