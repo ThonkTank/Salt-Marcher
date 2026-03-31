@@ -21,7 +21,6 @@ import features.world.dungeonmap.persistence.DungeonRoomWriteRepository;
 import features.world.dungeonmap.shell.editor.DungeonEditorView;
 import features.world.dungeonmap.shell.editor.interaction.BoundaryTool;
 import features.world.dungeonmap.shell.editor.interaction.ConnectionsTool;
-import features.world.dungeonmap.shell.editor.interaction.DungeonGridHitTester;
 import features.world.dungeonmap.shell.editor.interaction.EditorInteraction;
 import features.world.dungeonmap.shell.editor.interaction.EditorTool;
 import features.world.dungeonmap.shell.editor.interaction.PaintTool;
@@ -82,7 +81,6 @@ public final class DungeonMapModule {
                         clusterMoveProjectionApplicationService,
                         corridorEditService,
                         roomNarrationService,
-                        new DungeonGridHitTester(),
                         editorInteractionState),
                 new PaintTool(
                         state,

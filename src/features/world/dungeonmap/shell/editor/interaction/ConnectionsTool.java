@@ -98,7 +98,7 @@ public final class ConnectionsTool implements EditorTool {
         if (event == null || !event.isPrimaryButton()) {
             return false;
         }
-        DungeonEditorHitTarget hit = ctx.hitTester().hitTest(ctx.projectedLayout(), event.canvasPoint(), ctx.camera());
+        DungeonEditorHitTarget hit = ctx.hitService().hitAt(ctx.projectedLayout(), event.canvasPoint(), ctx.camera());
         if (sessionState.selectedTool() == DungeonEditorTool.CONNECTIONS_DELETE) {
             return handleDeletePressed(ctx.projectedLayout(), hit);
         }

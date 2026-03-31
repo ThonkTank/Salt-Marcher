@@ -46,7 +46,6 @@ public final class SelectionTool implements EditorTool {
     private final DungeonClusterMoveProjectionApplicationService clusterMoveProjectionApplicationService;
     private final DungeonCorridorEditService corridorEditService;
     private final DungeonRoomNarrationService roomNarrationService;
-    private final DungeonGridHitTester hitTester;
     private final EditorInteractionState state;
     private final VBox narrationContent = new VBox(8);
     private final VBox narrationCard = EditorCards.card("Raumbeschreibung", narrationContent);
@@ -65,7 +64,6 @@ public final class SelectionTool implements EditorTool {
             DungeonClusterMoveProjectionApplicationService clusterMoveProjectionApplicationService,
             DungeonCorridorEditService corridorEditService,
             DungeonRoomNarrationService roomNarrationService,
-            DungeonGridHitTester hitTester,
             EditorInteractionState state
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
@@ -76,7 +74,6 @@ public final class SelectionTool implements EditorTool {
                 "clusterMoveProjectionApplicationService");
         this.corridorEditService = Objects.requireNonNull(corridorEditService, "corridorEditService");
         this.roomNarrationService = Objects.requireNonNull(roomNarrationService, "roomNarrationService");
-        this.hitTester = Objects.requireNonNull(hitTester, "hitTester");
         this.state = Objects.requireNonNull(state, "state");
         this.state.addListener(this::refreshStatePane);
         this.mapState.addListener(this::refreshStatePane);
@@ -107,7 +104,7 @@ public final class SelectionTool implements EditorTool {
             clear();
             return false;
         }
-        DungeonEditorHitTarget hit = hitTester.hitTest(ctx.projectedLayout(), event.canvasPoint(), event.camera());
+        DungeonEditorHitTarget hit = ctx.hitService().hitAt(ctx.projectedLayout(), event.canvasPoint(), event.camera());
         clear();
         if (hit instanceof DungeonEditorCorridorNodeHitTarget corridorNodeHit
                 && corridorNodeHit.corridor().corridorId() != null

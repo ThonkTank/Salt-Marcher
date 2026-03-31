@@ -130,7 +130,7 @@ public final class TransitionTool implements EditorTool {
         }
         return switch (sessionState.selectedTool()) {
             case TRANSITION_CREATE -> handleCreatePressed(event);
-            case TRANSITION_DELETE -> handleDeletePressed(event);
+            case TRANSITION_DELETE -> handleDeletePressed(ctx);
             default -> false;
         };
     }
@@ -197,15 +197,13 @@ public final class TransitionTool implements EditorTool {
         return true;
     }
 
-    private boolean handleDeletePressed(DungeonCanvasPointerEvent event) {
+    private boolean handleDeletePressed(EditorToolContext ctx) {
+        DungeonCanvasPointerEvent event = ctx == null ? null : ctx.event();
         Long mapId = mapState.activeMapId();
         if (mapId == null || event.gridCell() == null) {
             return false;
         }
-        DungeonTransition transition = mapState.activeMap().transitionsAtCell(event.gridCell(), mapState.activeProjectionLevel()).stream()
-                .filter(candidate -> candidate != null && candidate.transitionId() != null)
-                .min(Comparator.comparing(DungeonTransition::transitionId))
-                .orElse(null);
+        DungeonTransition transition = ctx.hitService().hitTransition(ctx.projectedLayout(), event.gridCell(), mapState.activeProjectionLevel());
         if (transition == null || transition.transitionId() == null) {
             state.clearSelection();
             return false;

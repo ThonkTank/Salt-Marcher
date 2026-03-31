@@ -22,7 +22,7 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
     private final DungeonEditorSessionState sessionState;
     private final EditorInteractionState state;
     private final Map<DungeonEditorTool, EditorTool> toolsByEnum;
-    private final DungeonGridHitTester hitTester = new DungeonGridHitTester();
+    private final DungeonEditorHitService hitService = new DungeonEditorHitService();
     private EditorTool activeTool;
     private Runnable toolStateChanged = () -> { };
 
@@ -100,7 +100,7 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
     }
 
     private EditorToolContext contextFor(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
-        return new EditorToolContext(event, projectedLayout(), hitTester, camera, state);
+        return new EditorToolContext(event, projectedLayout(), hitService, camera, state);
     }
 
     private DungeonLayout projectedLayout() {
