@@ -6,7 +6,6 @@ enum ToolFamily {
     ROOM(DungeonEditorTool.ROOM_PAINT, DungeonEditorTool.ROOM_DELETE),
     WALL(DungeonEditorTool.CLUSTER_WALL, DungeonEditorTool.CLUSTER_WALL_DELETE),
     DOOR(DungeonEditorTool.CLUSTER_DOOR, DungeonEditorTool.CLUSTER_DOOR_DELETE),
-    TRAVERSAL(DungeonEditorTool.TRAVERSAL_CREATE, DungeonEditorTool.TRAVERSAL_DELETE),
     TRANSITION(DungeonEditorTool.TRANSITION_CREATE, DungeonEditorTool.TRANSITION_DELETE);
 
     private final DungeonEditorTool primaryTool;
@@ -22,7 +21,6 @@ enum ToolFamily {
             case ROOM -> "Raum";
             case WALL -> "Wand";
             case DOOR -> "Tür";
-            case TRAVERSAL -> "Verbindung";
             case TRANSITION -> "Übergang";
         };
     }
@@ -44,7 +42,6 @@ enum ToolFamily {
             case ROOM_PAINT, ROOM_DELETE -> ROOM;
             case CLUSTER_WALL, CLUSTER_WALL_DELETE -> WALL;
             case CLUSTER_DOOR, CLUSTER_DOOR_DELETE -> DOOR;
-            case TRAVERSAL_CREATE, TRAVERSAL_DELETE -> TRAVERSAL;
             case TRANSITION_CREATE, TRANSITION_DELETE -> TRANSITION;
         };
     }

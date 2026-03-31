@@ -15,7 +15,6 @@ import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNetwork;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
-import features.world.dungeonmap.model.structures.traversal.Traversal;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 
 import java.util.ArrayList;
@@ -47,11 +46,10 @@ public final class DungeonLayout {
         }
     }
 
-    private static final DungeonLayout EMPTY = new DungeonLayout(0L, "Kein Dungeon", List.of(), List.of(), List.of(), List.of(), List.of(), Map.of());
+    private static final DungeonLayout EMPTY = new DungeonLayout(0L, "Kein Dungeon", List.of(), List.of(), List.of(), List.of(), Map.of());
 
     private final long mapId;
     private final String name;
-    private final List<Traversal> traversals;
     private final List<Corridor> corridors;
     private final List<RoomCluster> clusters;
     private final List<DungeonStair> stairs;
@@ -63,13 +61,10 @@ public final class DungeonLayout {
     private final Map<Door, List<ConnectionEndpoint>> endpointsByDoor;
     private final List<CorridorNetwork> corridorNetworks;
     private final Map<Long, Room> roomsById;
-    private final Map<Long, Traversal> traversalsById;
     private final Map<Long, Corridor> corridorsById;
     private final Map<Long, RoomCluster> clustersById;
     private final Map<Long, DungeonStair> stairsById;
     private final Map<Long, DungeonTransition> transitionsById;
-    private final Map<Long, Long> traversalIdByCorridorId;
-    private final Map<Long, Long> traversalIdByStairId;
     private final Map<Long, Integer> clusterLevelsById;
     private final Map<Long, Set<Integer>> roomLevelsByRoomId;
     private final Map<String, CorridorNetwork> corridorNetworksById;
@@ -89,13 +84,12 @@ public final class DungeonLayout {
             List<Corridor> corridors,
             List<RoomCluster> clusters
     ) {
-        this(mapId, name, List.of(), corridors, clusters, List.of(), List.of(), Map.of());
+        this(mapId, name, corridors, clusters, List.of(), List.of(), Map.of());
     }
 
     public DungeonLayout(
             long mapId,
             String name,
-            List<Traversal> traversals,
             List<Corridor> corridors,
             List<RoomCluster> clusters,
             List<DungeonStair> stairs,
@@ -104,7 +98,6 @@ public final class DungeonLayout {
     ) {
         this.mapId = mapId;
         this.name = name == null || name.isBlank() ? "Dungeon " + mapId : name;
-        this.traversals = traversals == null ? List.of() : List.copyOf(traversals);
         this.corridors = corridors == null ? List.of() : List.copyOf(corridors);
         this.clusters = clusters == null ? List.of() : List.copyOf(clusters);
         this.stairs = stairs == null ? List.of() : List.copyOf(stairs);
@@ -115,13 +108,10 @@ public final class DungeonLayout {
         this.endpointsByDoor = indexEndpointsByDoor(this.connections);
         this.corridorNetworks = CorridorNetwork.buildNetworks(mapId, this.corridors, doors(), this.endpointsByDoor);
         this.roomsById = indexRooms(this.clusters);
-        this.traversalsById = indexTraversals(this.traversals);
         this.corridorsById = indexCorridors(this.corridors);
         this.clustersById = indexClusters(this.clusters);
         this.stairsById = indexStairs(this.stairs);
         this.transitionsById = indexTransitions(this.transitions);
-        this.traversalIdByCorridorId = indexTraversalIdsByCorridorId(this.traversals);
-        this.traversalIdByStairId = indexTraversalIdsByStairId(this.traversals);
         this.clusterLevelsById = indexLevels(clusterLevelsById);
         this.roomLevelsByRoomId = indexRoomLevels(this.roomsById);
         this.corridorNetworksById = indexCorridorNetworks(this.corridorNetworks);
@@ -154,10 +144,6 @@ public final class DungeonLayout {
                 .toList();
     }
 
-    public List<Traversal> traversals() {
-        return traversals;
-    }
-
     public List<Corridor> corridors() {
         return corridors;
     }
@@ -180,10 +166,6 @@ public final class DungeonLayout {
 
     public Map<Long, Corridor> corridorsById() {
         return corridorsById;
-    }
-
-    public Map<Long, Traversal> traversalsById() {
-        return traversalsById;
     }
 
     public List<RoomCluster> clusters() {
@@ -261,10 +243,6 @@ public final class DungeonLayout {
 
     public Room findRoom(Long roomId) {
         return roomId == null ? null : roomsById.get(roomId);
-    }
-
-    public Traversal findTraversal(Long traversalId) {
-        return traversalId == null ? null : traversalsById.get(traversalId);
     }
 
     public Corridor findCorridor(Long corridorId) {
@@ -377,33 +355,6 @@ public final class DungeonLayout {
         return corridors.stream()
                 .filter(corridor -> corridor != null && corridor.connectsRoom(roomId))
                 .toList();
-    }
-
-    public Traversal findTraversalContainingAllRooms(Set<Long> roomIds) {
-        if (roomIds == null || roomIds.size() < 2) {
-            return null;
-        }
-        return traversals.stream()
-                .filter(traversal -> traversal != null && traversal.traversalId() != null)
-                .filter(traversal -> traversal.roomIds().containsAll(roomIds))
-                .findFirst()
-                .orElse(null);
-    }
-
-    public Long traversalIdForCorridor(Long corridorId) {
-        return corridorId == null ? null : traversalIdByCorridorId.get(corridorId);
-    }
-
-    public Traversal findTraversalForCorridor(Long corridorId) {
-        return findTraversal(traversalIdForCorridor(corridorId));
-    }
-
-    public Long traversalIdForStair(Long stairId) {
-        return stairId == null ? null : traversalIdByStairId.get(stairId);
-    }
-
-    public Traversal findTraversalForStair(Long stairId) {
-        return findTraversal(traversalIdForStair(stairId));
     }
 
     public RoomCluster findCluster(Long clusterId) {
@@ -583,39 +534,6 @@ public final class DungeonLayout {
                 .orElse(null);
     }
 
-    public Set<Long> traversalIdsAffectedBy(ClusterRewrite rewrite) {
-        if (rewrite == null) {
-            return Set.of();
-        }
-        return traversalIdsAffectedBy(rewrite.affectedRoomIds(), rewrite.affectedClusterIds());
-    }
-
-    public List<Traversal> traversalsAffectedBy(ClusterRewrite rewrite) {
-        if (rewrite == null) {
-            return List.of();
-        }
-        return traversalsAffectedBy(rewrite.affectedRoomIds(), rewrite.affectedClusterIds());
-    }
-
-    public Set<Long> traversalIdsAffectedBy(Set<Long> roomIds, Set<Long> clusterIds) {
-        return traversalsAffectedBy(roomIds, clusterIds).stream()
-                .map(Traversal::traversalId)
-                .collect(Collectors.toUnmodifiableSet());
-    }
-
-    public List<Traversal> traversalsAffectedBy(Set<Long> roomIds, Set<Long> clusterIds) {
-        if ((roomIds == null || roomIds.isEmpty()) && (clusterIds == null || clusterIds.isEmpty())) {
-            return List.of();
-        }
-        Set<Long> affectedRoomIds = roomIds == null ? Set.of() : Set.copyOf(roomIds);
-        Set<Long> affectedClusterIds = clusterIds == null ? Set.of() : Set.copyOf(clusterIds);
-        return traversals.stream()
-                .filter(traversal -> traversal != null && traversal.traversalId() != null)
-                .filter(traversal -> traversal.dependsOnAnyRoom(affectedRoomIds)
-                        || traversal.isAffectedByClusterRewrite(affectedClusterIds))
-                .toList();
-    }
-
     public DungeonLayout withReplacedCluster(RoomCluster cluster) {
         if (cluster == null || cluster.clusterId() == null) {
             return this;
@@ -623,7 +541,7 @@ public final class DungeonLayout {
         List<RoomCluster> updatedClusters = clusters.stream()
                 .map(existing -> cluster.clusterId().equals(existing.clusterId()) ? cluster : existing)
                 .toList();
-        return new DungeonLayout(mapId, name, traversals, corridors, updatedClusters, stairs, transitions, clusterLevelsById);
+        return new DungeonLayout(mapId, name, corridors, updatedClusters, stairs, transitions, clusterLevelsById);
     }
 
     public DungeonLayout applying(ClusterRewrite rewrite) {
@@ -674,7 +592,7 @@ public final class DungeonLayout {
         for (ClusterRewriteSplit splitCluster : rewrite.splitClusters()) {
             updatedClusterLevels.put(splitCluster.clusterId(), targetLevel);
         }
-        return new DungeonLayout(mapId, name, traversals, corridors, updatedClusters, stairs, transitions, updatedClusterLevels);
+        return new DungeonLayout(mapId, name, corridors, updatedClusters, stairs, transitions, updatedClusterLevels);
     }
 
     public DungeonLayout projectedToLevel(int levelZ) {
@@ -691,7 +609,7 @@ public final class DungeonLayout {
         List<DungeonTransition> projectedTransitions = transitions.stream()
                 .filter(transition -> transition != null && transition.isPlaced() && transition.levelZ() == levelZ)
                 .toList();
-        return new DungeonLayout(mapId, name, traversals, projectedCorridors, projectedClusters, projectedStairs, projectedTransitions, clusterLevelsById);
+        return new DungeonLayout(mapId, name, projectedCorridors, projectedClusters, projectedStairs, projectedTransitions, clusterLevelsById);
     }
 
     public List<DungeonStair> stairsAtLevel(int levelZ) {
@@ -719,46 +637,6 @@ public final class DungeonLayout {
             }
         }
         return Map.copyOf(result);
-    }
-
-    private static Map<Long, Traversal> indexTraversals(List<Traversal> traversals) {
-        Map<Long, Traversal> result = new LinkedHashMap<>();
-        for (Traversal traversal : traversals) {
-            if (traversal != null && traversal.traversalId() != null) {
-                result.put(traversal.traversalId(), traversal);
-            }
-        }
-        return Map.copyOf(result);
-    }
-
-    private static Map<Long, Long> indexTraversalIdsByCorridorId(List<Traversal> traversals) {
-        Map<Long, Long> result = new LinkedHashMap<>();
-        for (Traversal traversal : traversals == null ? List.<Traversal>of() : traversals) {
-            if (traversal == null || traversal.traversalId() == null) {
-                continue;
-            }
-            for (Long corridorId : traversal.segmentRefs().corridorIdsBySegmentKey().values()) {
-                if (corridorId != null) {
-                    result.putIfAbsent(corridorId, traversal.traversalId());
-                }
-            }
-        }
-        return result.isEmpty() ? Map.of() : Map.copyOf(result);
-    }
-
-    private static Map<Long, Long> indexTraversalIdsByStairId(List<Traversal> traversals) {
-        Map<Long, Long> result = new LinkedHashMap<>();
-        for (Traversal traversal : traversals == null ? List.<Traversal>of() : traversals) {
-            if (traversal == null || traversal.traversalId() == null) {
-                continue;
-            }
-            for (Long stairId : traversal.segmentRefs().stairIdsBySegmentKey().values()) {
-                if (stairId != null) {
-                    result.putIfAbsent(stairId, traversal.traversalId());
-                }
-            }
-        }
-        return result.isEmpty() ? Map.of() : Map.copyOf(result);
     }
 
     private static List<Connection> indexConnections(List<RoomCluster> clusters, List<Corridor> corridors) {

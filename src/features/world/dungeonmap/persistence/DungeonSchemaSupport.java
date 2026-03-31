@@ -61,35 +61,6 @@ public final class DungeonSchemaSupport {
                 + "endpoint_id      INTEGER NOT NULL,"
                 + "PRIMARY KEY (corridor_endpoint_binding_id, endpoint_order)"
                 + ")");
-        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_traversals ("
-                + "traversal_id     INTEGER PRIMARY KEY AUTOINCREMENT,"
-                + "dungeon_map_id   INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE"
-                + ")");
-        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_traversal_members ("
-                + "traversal_id     INTEGER NOT NULL REFERENCES dungeon_traversals(traversal_id) ON DELETE CASCADE,"
-                + "room_id          INTEGER NOT NULL REFERENCES dungeon_rooms(room_id) ON DELETE CASCADE,"
-                + "member_order     INTEGER NOT NULL DEFAULT 0,"
-                + "PRIMARY KEY (traversal_id, room_id)"
-                + ")");
-        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_traversal_door_bindings ("
-                + "traversal_id      INTEGER NOT NULL REFERENCES dungeon_traversals(traversal_id) ON DELETE CASCADE,"
-                + "room_id           INTEGER NOT NULL REFERENCES dungeon_rooms(room_id) ON DELETE CASCADE,"
-                + "cluster_id        INTEGER NOT NULL REFERENCES dungeon_room_clusters(cluster_id) ON DELETE CASCADE,"
-                + "relative_cell_x   INTEGER NOT NULL,"
-                + "relative_cell_y   INTEGER NOT NULL,"
-                + "edge_direction    TEXT NOT NULL,"
-                + "sort_order        INTEGER NOT NULL DEFAULT 0,"
-                + "PRIMARY KEY (traversal_id, room_id)"
-                + ")");
-        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_traversal_waypoints ("
-                + "traversal_id      INTEGER NOT NULL REFERENCES dungeon_traversals(traversal_id) ON DELETE CASCADE,"
-                + "sort_order        INTEGER NOT NULL,"
-                + "cluster_id        INTEGER NOT NULL REFERENCES dungeon_room_clusters(cluster_id) ON DELETE CASCADE,"
-                + "relative_x        INTEGER NOT NULL,"
-                + "relative_y        INTEGER NOT NULL,"
-                + "relative_z        INTEGER NOT NULL DEFAULT 0,"
-                + "PRIMARY KEY (traversal_id, sort_order)"
-                + ")");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_room_cluster_vertices ("
                 + "cluster_id       INTEGER NOT NULL REFERENCES dungeon_room_clusters(cluster_id) ON DELETE CASCADE,"
                 + "level_z          INTEGER NOT NULL DEFAULT 0,"
@@ -149,22 +120,6 @@ public final class DungeonSchemaSupport {
                 + "cell_y           INTEGER NOT NULL,"
                 + "cell_z           INTEGER NOT NULL,"
                 + "label            TEXT"
-                + ")");
-        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_traversal_corridor_segments ("
-                + "traversal_id     INTEGER NOT NULL REFERENCES dungeon_traversals(traversal_id) ON DELETE CASCADE,"
-                + "segment_key      TEXT NOT NULL,"
-                + "corridor_id      INTEGER NOT NULL REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE,"
-                + "sort_order       INTEGER NOT NULL DEFAULT 0,"
-                + "PRIMARY KEY (traversal_id, segment_key),"
-                + "UNIQUE (corridor_id)"
-                + ")");
-        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_traversal_stair_segments ("
-                + "traversal_id     INTEGER NOT NULL REFERENCES dungeon_traversals(traversal_id) ON DELETE CASCADE,"
-                + "segment_key      TEXT NOT NULL,"
-                + "stair_id         INTEGER NOT NULL REFERENCES dungeon_stairs(stair_id) ON DELETE CASCADE,"
-                + "sort_order       INTEGER NOT NULL DEFAULT 0,"
-                + "PRIMARY KEY (traversal_id, segment_key),"
-                + "UNIQUE (stair_id)"
                 + ")");
     }
 

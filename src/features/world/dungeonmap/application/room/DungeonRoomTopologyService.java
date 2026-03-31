@@ -2,8 +2,6 @@ package features.world.dungeonmap.application.room;
 
 import database.DatabaseManager;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
-import features.world.dungeonmap.application.traversal.DungeonTraversalApplicationService;
-import features.world.dungeonmap.application.traversal.DungeonTraversalApplicationService.RewriteResult;
 import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CubePoint;
@@ -16,7 +14,6 @@ import features.world.dungeonmap.model.structures.cluster.InternalBoundaryEdge;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.model.structures.traversal.Traversal;
 import features.world.dungeonmap.persistence.ClusterBoundaryWrite;
 import features.world.dungeonmap.persistence.DungeonRoomGeometryWriteMapper;
 import features.world.dungeonmap.persistence.DungeonRoomWriteRepository;
@@ -37,18 +34,15 @@ public final class DungeonRoomTopologyService {
     private final DungeonMapLoader mapLoader;
     private final DungeonRoomWriteRepository roomWriteRepository;
     private final DungeonRoomGeometryWriteMapper geometryWriteMapper;
-    private final DungeonTraversalApplicationService traversalApplicationService;
 
     public DungeonRoomTopologyService(
             DungeonMapLoader mapLoader,
             DungeonRoomWriteRepository roomWriteRepository,
-            DungeonRoomGeometryWriteMapper geometryWriteMapper,
-            DungeonTraversalApplicationService traversalApplicationService
+            DungeonRoomGeometryWriteMapper geometryWriteMapper
     ) {
         this.mapLoader = Objects.requireNonNull(mapLoader, "mapLoader");
         this.roomWriteRepository = Objects.requireNonNull(roomWriteRepository, "roomWriteRepository");
         this.geometryWriteMapper = Objects.requireNonNull(geometryWriteMapper, "geometryWriteMapper");
-        this.traversalApplicationService = Objects.requireNonNull(traversalApplicationService, "traversalApplicationService");
     }
 
     public void paint(long mapId, int levelZ, TileShape shape) throws SQLException {
@@ -82,11 +76,6 @@ public final class DungeonRoomTopologyService {
         }
 
         ClusterRewrite persistedRewrite = persistClusterRewrite(conn, mapId, rewrite, levelZ);
-        RewriteResult rewriteResult = applyTraversalCascade(
-                layout,
-                new LinkedHashMap<>(layout.traversalsById()),
-                persistedRewrite);
-        persistAffectedTraversals(conn, layout, rewriteResult);
     }
 
     public void delete(long mapId, int levelZ, TileShape shape) throws SQLException {
@@ -106,7 +95,6 @@ public final class DungeonRoomTopologyService {
             return;
         }
         DungeonLayout workingLayout = requireLayout(conn, mapId);
-        Map<Long, Traversal> traversalsById = new LinkedHashMap<>(workingLayout.traversalsById());
         Set<String> reservedNames = new LinkedHashSet<>();
         for (Room room : workingLayout.rooms()) {
             if (room != null && room.name() != null && !room.name().isBlank()) {
@@ -134,9 +122,6 @@ public final class DungeonRoomTopologyService {
                     mapId,
                     rewrite,
                     workingLayout.levelForCluster(rewrite.targetClusterId()));
-            RewriteResult rewriteResult = applyTraversalCascade(workingLayout, traversalsById, persistedRewrite);
-            traversalsById = new LinkedHashMap<>(rewriteResult.traversalsById());
-            persistAffectedTraversals(conn, workingLayout, rewriteResult);
             workingLayout = workingLayout.applying(persistedRewrite);
         }
     }
@@ -188,48 +173,7 @@ public final class DungeonRoomTopologyService {
             return;
         }
 
-        boolean affectsCorridors = !rewrite.affectedRoomIds().isEmpty();
-        if (!affectsCorridors) {
-            persistClusterRewrite(conn, mapId, rewrite, layout.levelForCluster(rewrite.targetClusterId()));
-            return;
-        }
-
-        ClusterRewrite persistedRewrite = persistClusterRewrite(conn, mapId, rewrite, layout.levelForCluster(rewrite.targetClusterId()));
-        RewriteResult rewriteResult = applyTraversalCascade(
-                layout,
-                new LinkedHashMap<>(layout.traversalsById()),
-                persistedRewrite);
-        persistAffectedTraversals(conn, layout, rewriteResult);
-    }
-
-    private RewriteResult applyTraversalCascade(
-            DungeonLayout beforeLayout,
-            Map<Long, Traversal> traversalsById,
-            ClusterRewrite rewrite
-    ) {
-        return traversalApplicationService.rewriteForClusterRewrite(beforeLayout, traversalsById, rewrite);
-    }
-
-    private void persistAffectedTraversals(
-            Connection conn,
-            DungeonLayout previousLayout,
-            RewriteResult rewriteResult
-    ) throws SQLException {
-        if (rewriteResult == null || rewriteResult.affectedTraversalIds().isEmpty()) {
-            return;
-        }
-        LinkedHashMap<Long, Traversal> affectedTraversalsById = new LinkedHashMap<>();
-        for (Long traversalId : rewriteResult.affectedTraversalIds()) {
-            Traversal traversal = rewriteResult.traversalsById().get(traversalId);
-            if (traversal != null) {
-                affectedTraversalsById.put(traversalId, traversal);
-            }
-        }
-        traversalApplicationService.persistTraversals(
-                conn,
-                previousLayout,
-                affectedTraversalsById,
-                rewriteResult.traversalRoutesByTraversalId());
+        persistClusterRewrite(conn, mapId, rewrite, layout.levelForCluster(rewrite.targetClusterId()));
     }
 
     private void createCluster(Connection conn, long mapId, int levelZ, TileShape shape, String roomName) throws SQLException {

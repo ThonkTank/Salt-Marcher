@@ -6,8 +6,7 @@ import javafx.scene.Node;
 import java.util.Set;
 
 public sealed interface EditorTool
-        permits SelectionTool, PaintTool, BoundaryTool,
-                TransitionTool, TraversalTool {
+        permits SelectionTool, PaintTool, BoundaryTool, TransitionTool {
 
     Set<DungeonEditorTool> supportedTools();
 

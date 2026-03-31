@@ -8,8 +8,6 @@ public enum DungeonEditorTool {
     CLUSTER_WALL_DELETE("Wand löschen"),
     CLUSTER_DOOR("Tür setzen"),
     CLUSTER_DOOR_DELETE("Tür löschen"),
-    TRAVERSAL_CREATE("Verbindung erstellen"),
-    TRAVERSAL_DELETE("Verbindung löschen"),
     TRANSITION_CREATE("Übergang erstellen"),
     TRANSITION_DELETE("Übergang löschen");
 
@@ -25,10 +23,6 @@ public enum DungeonEditorTool {
 
     public boolean isRoomTool() {
         return this == ROOM_PAINT || this == ROOM_DELETE;
-    }
-
-    public boolean isTraversalTool() {
-        return this == TRAVERSAL_CREATE || this == TRAVERSAL_DELETE;
     }
 
     public boolean isTransitionTool() {
@@ -48,7 +42,6 @@ public enum DungeonEditorTool {
             case ROOM_PAINT, ROOM_DELETE -> ROOM_PAINT;
             case CLUSTER_WALL, CLUSTER_WALL_DELETE -> CLUSTER_WALL;
             case CLUSTER_DOOR, CLUSTER_DOOR_DELETE -> CLUSTER_DOOR;
-            case TRAVERSAL_CREATE, TRAVERSAL_DELETE -> TRAVERSAL_CREATE;
             case TRANSITION_CREATE, TRANSITION_DELETE -> TRANSITION_CREATE;
             case SELECT -> this;
         };
@@ -59,7 +52,6 @@ public enum DungeonEditorTool {
             case ROOM_PAINT, ROOM_DELETE -> ROOM_DELETE;
             case CLUSTER_WALL, CLUSTER_WALL_DELETE -> CLUSTER_WALL_DELETE;
             case CLUSTER_DOOR, CLUSTER_DOOR_DELETE -> CLUSTER_DOOR_DELETE;
-            case TRAVERSAL_CREATE, TRAVERSAL_DELETE -> TRAVERSAL_DELETE;
             case TRANSITION_CREATE, TRANSITION_DELETE -> TRANSITION_DELETE;
             case SELECT -> this;
         };

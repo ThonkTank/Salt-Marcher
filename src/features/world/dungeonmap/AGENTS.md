@@ -12,12 +12,20 @@ The feature ships two `AppView` implementations: `DungeonEditorView` (EDITOR) an
 
 `DungeonMapModule` (`bootstrap/`) is the composition root — it wires all dependencies and exposes the two views to the app shell.
 
+### Current Interim State
+
+Traversal has been removed as a backend owner before the corridor/stair rewrite lands. Any older traversal-specific references later in this file are historical and overridden by this section until the next architecture pass.
+
+- There is no `application/traversal/` package and no `model/structures/traversal/` package.
+- `DungeonLayout` owns only direct top-level structures: corridors, stairs, clusters, transitions.
+- The editor exposes no traversal create/delete tools.
+- Room topology edits and cluster moves do not reroute or rewrite corridors/stairs in this interim state; those structures remain unchanged until their direct ownership rewrite is implemented.
+
 ### Package Roles
 
 - `model/` — immutable domain model in three strict layers (see **Model Layering** below)
 - `application/` — stateful edit services that orchestrate workflows, transactions, and persistence around topology changes. Organized by domain concern:
   - `application/room/` — room paint topology: `DungeonRoomTopologyService` is the single room topology orchestrator for paint/delete/boundary edits; thin facades may wrap transaction entrypoints but must not re-plan topology outside the model. Exit catalogs: `DoorExitCatalog` groups adjacent connection boundary edges into logical openings via BFS, `RoomExitCatalog` wraps it per-room, `RoomExitDescriptor` carries the result
-  - `application/traversal/` — traversal lifecycle: `DungeonTraversalApplicationService` is the single workflow owner for create/extend/merge/delete, persistence, room-membership rewrite, and reroute-after-layout-change. `DungeonTraversalStructureCommitter` remains the deep persistence helper for corridor/stair structure commits. Traversal owns room membership, waypoint/door bindings, segment refs, and routing semantics. Application may trigger reroutes and persist results, but it must not own or duplicate the routing meaning itself
   - `application/transition/` — inter-map transition lifecycle: `DungeonTransitionEditService` (two-phase create: direct or prepared+place-later, bidirectional linking, delete with cascade), `DungeonTransitionEditRequest` (sealed creation parameters), `DungeonTransitionTargetCatalogService` (loads placed transitions on a target map for destination selection → `DungeonTransitionTargetSummary`)
   - `application/runtime/` — runtime navigation subsystem: `DungeonRuntimeNavigationService` (orchestrator: load position, resolve surface, move party), `DungeonRuntimeLocation` (sealed: Room | Corridor | CorridorComponent | Tile | StairExit | Transition), `CardinalDirection` (`model/geometry/`, shared 4-direction type with relative-label logic and persistence code), surface pipeline (`DungeonRuntimeSurfaceResolver` → `DungeonRuntimeSurface` → `DungeonRuntimeSurfacePresenter`), door pipeline (`DungeonRuntimeDoorCatalog` enriches exits with destination labels and narration → `DungeonRuntimeDoorDescriptor` adds heading-relative labels), stair pipeline (`DungeonRuntimeStairCatalog` → `DungeonRuntimeStairDescriptor`: filters exits reachable from current level, excludes active tile), transition pipeline (`DungeonRuntimeTransitionCatalog` → `DungeonRuntimeTransitionDescriptor`: resolves destination labels from overworld/dungeon targets), `DungeonRuntimeLabels` (static label generation), `DungeonRuntimeLocations` (location ↔ persistence serialization), `DungeonRuntimeStateRepairService` (consistency repair)
   - `application/support/` — `DungeonTransactionRunner`
@@ -32,7 +40,7 @@ The feature ships two `AppView` implementations: `DungeonEditorView` (EDITOR) an
 - `shell/` — view and UI coordinator layer:
   - `shell/editor/` — `DungeonEditorView` (owns all state listener wiring: map state → controls, session state → tool activation, interaction state → workspace preview/selection), `DungeonEditorControls`, `DungeonEditorStatePane`
   - `shell/editor/controls/` — left-panel UI: `MapControls` (map selector/CRUD), `ToolControls` (tool palette), `ViewModeControls` (grid/graph toggle), `ToolFamilyDropdownController`, `GuardState`
-  - `shell/editor/interaction/` — `EditorInteraction` dispatches canvas events to `EditorTool` implementations (`SelectionTool`, `PaintTool`, `BoundaryTool`, `TraversalTool`, `TransitionTool`). Tool-local transient state stays inside the tool unless it must be shared via `state/`
+  - `shell/editor/interaction/` — `EditorInteraction` dispatches canvas events to `EditorTool` implementations (`SelectionTool`, `PaintTool`, `BoundaryTool`, `TransitionTool`). Tool-local transient state stays inside the tool unless it must be shared via `state/`
   - `shell/controls/` — shared controls: `DungeonLevelOverlayControls` (configures multi-level overlay rendering)
   - `shell/runtime/` — `DungeonRuntimeView` (publishes surfaces to `DetailsNavigator`, wires drag-to-move interaction), `DungeonRuntimeInteractionController` (drag-to-move: press on party tile → drag preview → release commits move)
 - `state/` — observable transient state containers with `CopyOnWriteArrayList` listener lists. These are the single source of truth for cross-class coordination:
@@ -40,7 +48,7 @@ The feature ships two `AppView` implementations: `DungeonEditorView` (EDITOR) an
   - `DungeonEditorSessionState` — current tool + view mode
   - `EditorInteractionState` — shared editor interaction state: selected target key, active `EditorPreview`, active `EditorDraft`
   - `EditorPreview` — sealed preview payloads for dragged cluster layouts, room paint/delete shapes, and boundary path overlays
-  - `EditorDraft` — sealed shared drafts for traversal start selection and boundary-path status
+  - `EditorDraft` — sealed shared drafts for boundary-path status
   - Transition placement state stays tool-local inside `TransitionTool`. Do not reintroduce parallel shared listener channels for transition-private draft state
   - `DungeonLevelOverlaySettings` — overlay mode (`DungeonLevelOverlayMode`: OFF | NEARBY±range | SELECTED levels), opacity, level range
   - `DungeonRuntimeState` — active location + heading, loading/dragging/moving mode flags, error state
@@ -120,13 +128,12 @@ The domain-model ownership rules below apply to the full interaction pipeline, n
 
 ### Editor Interaction Model
 
-`DungeonEditorTool` enum defines tool modes (SELECT, ROOM_PAINT, ROOM_DELETE, CLUSTER_WALL/DOOR, TRAVERSAL_CREATE/DELETE, TRANSITION_CREATE/DELETE). Tools are grouped into `ToolFamily` for the dropdown toolbar. `DungeonEditorSessionState` holds current tool + view mode.
+`DungeonEditorTool` enum defines tool modes (SELECT, ROOM_PAINT, ROOM_DELETE, CLUSTER_WALL/DOOR, TRANSITION_CREATE/DELETE). Tools are grouped into `ToolFamily` for the dropdown toolbar. `DungeonEditorSessionState` holds current tool + view mode.
 
 `EditorInteraction` dispatches events by active `EditorTool`:
 - **SELECT** → `SelectionTool` — click selects clusters/rooms/stairs/transitions via `EditorInteractionState`, drag shows translated cluster preview via `EditorPreview.LayoutPreview`, and the state pane exposes room narration editing
 - **ROOM_PAINT / ROOM_DELETE** → `PaintTool` — manages `RoomPaintSession`, clears selection on paint start, updates `EditorPreview.PaintPreview` during drag, calls `DungeonRoomTopologyService.paint()`/`.delete()` on release
 - **CLUSTER_WALL / CLUSTER_WALL_DELETE / CLUSTER_DOOR / CLUSTER_DOOR_DELETE** → `BoundaryTool` — owns the wall-path draft locally, publishes overlay edges through `EditorPreview.BoundaryPreview`, and stores only lightweight status/selection in shared state
-- **TRAVERSAL_CREATE / TRAVERSAL_DELETE** → `TraversalTool` — two-click flow via `EditorDraft.TraversalDraft`; targets may be room, corridor segment, or stair segment. Create dispatches only to `createBetweenRooms(...)` or `merge(...)` on `DungeonTraversalApplicationService`; delete removes the parent traversal via clicked corridor/stair IDs
 - **TRANSITION_CREATE / TRANSITION_DELETE** → `TransitionTool` — create either places a prepared transition or creates+places atomically from the tool-local transition draft. Delete click-targets transition at cell
 
 Canvas pointer events flow through `DungeonCanvasInteractionHandler` → `handlePressed`/`handleDragged`/`handleReleased` → state update → redraw. Level scrolls are workspace-owned: workspace changes `mapState.activeProjectionLevel` directly, then notifies the handler via `levelScrolled(int)` so tools can react (e.g. `SelectionTool` updates `dragSession.currentLevel`). Hit testing: `DungeonGridHitTester` returns `DungeonEditorHitTarget` / `DungeonEditorLabelHitTarget` for cluster/room/corridor at canvas point.
