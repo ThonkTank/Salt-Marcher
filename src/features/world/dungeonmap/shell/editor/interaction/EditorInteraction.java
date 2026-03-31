@@ -6,6 +6,10 @@ import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.canvas.base.DungeonViewMode;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
+import features.world.dungeonmap.shell.interaction.DungeonDragService;
+import features.world.dungeonmap.shell.interaction.DungeonEditorInteractionPolicy;
+import features.world.dungeonmap.shell.interaction.DungeonHitService;
+import features.world.dungeonmap.shell.interaction.DungeonPlacementValidator;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.EditorInteractionState;
@@ -23,6 +27,11 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
     private final EditorInteractionState state;
     private final Map<DungeonEditorTool, EditorTool> toolsByEnum;
     private final DungeonEditorHitService hitService = new DungeonEditorHitService();
+    private final DungeonEditorInteractionPolicy interactionPolicy = new DungeonEditorInteractionPolicy(
+            new DungeonHitService(),
+            new DungeonDragService(),
+            new DungeonPlacementValidator(),
+            hitService);
     private EditorTool activeTool;
     private Runnable toolStateChanged = () -> { };
 
@@ -45,7 +54,18 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
         if (!interactionEnabled()) {
             return false;
         }
-        return activeTool != null && activeTool.pressed(contextFor(event, camera));
+        if (activeTool == null) {
+            return false;
+        }
+        DungeonEditorInteractionPolicy.EditorInteractionDecision decision = interactionPolicy.decidePress(
+                projectedLayout(),
+                event,
+                camera,
+                mapState.activeProjectionLevel());
+        if (!decision.dispatchToTool()) {
+            return false;
+        }
+        return activeTool.pressed(contextFor(event, camera));
     }
 
     @Override
@@ -53,7 +73,13 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
         if (!interactionEnabled()) {
             return false;
         }
-        return activeTool != null && activeTool.dragged(contextFor(event, camera));
+        if (activeTool == null) {
+            return false;
+        }
+        if (!interactionPolicy.decideDrag(projectedLayout(), event, camera, mapState.activeProjectionLevel())) {
+            return false;
+        }
+        return activeTool.dragged(contextFor(event, camera));
     }
 
     @Override
@@ -61,7 +87,13 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
         if (!interactionEnabled()) {
             return false;
         }
-        return activeTool != null && activeTool.released(contextFor(event, camera));
+        if (activeTool == null) {
+            return false;
+        }
+        if (!interactionPolicy.decideRelease(projectedLayout(), event, camera, mapState.activeProjectionLevel())) {
+            return false;
+        }
+        return activeTool.released(contextFor(event, camera));
     }
 
     @Override

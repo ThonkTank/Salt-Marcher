@@ -9,6 +9,7 @@ import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.shell.interaction.DungeonDragService;
 import features.world.dungeonmap.shell.interaction.DungeonHitService;
 import features.world.dungeonmap.shell.interaction.DungeonPlacementValidator;
+import features.world.dungeonmap.shell.interaction.DungeonRuntimeInteractionPolicy;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.DungeonRuntimeState;
 
@@ -23,9 +24,10 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
     private final Function<Point2i, Point2i> nearestTraversableTile;
     private final Consumer<Point2i> previewHandler;
     private final Consumer<Point2i> moveHandler;
-    private final DungeonHitService hitService = new DungeonHitService();
-    private final DungeonDragService dragService = new DungeonDragService();
-    private final DungeonPlacementValidator placementValidator = new DungeonPlacementValidator();
+    private final DungeonRuntimeInteractionPolicy interactionPolicy = new DungeonRuntimeInteractionPolicy(
+            new DungeonHitService(),
+            new DungeonDragService(),
+            new DungeonPlacementValidator());
 
     private DungeonDragService.DungeonDragSession dragSession;
 
@@ -49,27 +51,15 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
             dragSession = null;
             return false;
         }
-        Point2i activeTile = activeTile();
-        if (activeTile == null || !activeTile.equals(event.gridCell())) {
-            dragSession = null;
-            return false;
-        }
-        DungeonHitService.DungeonHitTarget target = hitService.hitAt(projectedLayout(), event, mapState.activeProjectionLevel());
-        if (!(target instanceof DungeonHitService.DungeonHitTarget.RoomTarget
-                || target instanceof DungeonHitService.DungeonHitTarget.CorridorTarget
-                || target instanceof DungeonHitService.DungeonHitTarget.StairTarget
-                || target instanceof DungeonHitService.DungeonHitTarget.TransitionTarget)) {
-            dragSession = null;
-            return false;
-        }
-        DungeonDragService.DungeonDragResult result = dragService.begin(
+        DungeonRuntimeInteractionPolicy.RuntimeDecision decision = interactionPolicy.decidePress(
                 projectedLayout(),
                 event,
                 camera,
-                new DungeonDragService.DungeonDragTarget.TileDragTarget(activeTile));
-        if (result instanceof DungeonDragService.DungeonDragResult.Started started) {
+                mapState.activeProjectionLevel(),
+                activeTile());
+        if (decision instanceof DungeonRuntimeInteractionPolicy.RuntimeDecision.DragStarted started) {
             dragSession = started.session();
-            previewHandler.accept(activeTile);
+            previewHandler.accept(started.previewCell());
             return true;
         }
         dragSession = null;
@@ -81,19 +71,16 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
         if (dragSession == null || event == null) {
             return false;
         }
-        DungeonDragService.DungeonDragResult result = dragService.update(
+        DungeonRuntimeInteractionPolicy.RuntimeDecision decision = interactionPolicy.decideDrag(
                 projectedLayout(),
                 event,
                 camera,
+                mapState.activeProjectionLevel(),
                 dragSession,
                 nearestTraversableTile);
-        if (!(result instanceof DungeonDragService.DungeonDragResult.Updated updated)) {
-            return false;
-        }
-        dragSession = updated.session();
-        if (placementValidator.validateTraversable(projectedLayout(), dragSession.currentCell(), camera, mapState.activeProjectionLevel())
-                instanceof DungeonPlacementValidator.PlacementResult.Valid valid) {
-            previewHandler.accept(valid.cell());
+        if (decision instanceof DungeonRuntimeInteractionPolicy.RuntimeDecision.DragUpdated updated) {
+            dragSession = updated.session();
+            previewHandler.accept(updated.previewCell());
             return true;
         }
         return false;
@@ -104,21 +91,16 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
         if (dragSession == null || event == null) {
             return false;
         }
-        DungeonDragService.DungeonDragResult result = dragService.drop(
+        DungeonRuntimeInteractionPolicy.RuntimeDecision decision = interactionPolicy.decideRelease(
                 projectedLayout(),
                 event,
                 camera,
+                mapState.activeProjectionLevel(),
                 dragSession,
                 nearestTraversableTile);
         dragSession = null;
-        if (!(result instanceof DungeonDragService.DungeonDragResult.Dropped dropped)) {
-            runtimeState.clearDragPreview();
-            return false;
-        }
-        Point2i targetCell = dropped.session().currentCell();
-        if (placementValidator.validateTraversable(projectedLayout(), targetCell, camera, mapState.activeProjectionLevel())
-                instanceof DungeonPlacementValidator.PlacementResult.Valid valid) {
-            moveHandler.accept(valid.cell());
+        if (decision instanceof DungeonRuntimeInteractionPolicy.RuntimeDecision.MoveCommitted moveCommitted) {
+            moveHandler.accept(moveCommitted.targetCell());
             return true;
         }
         runtimeState.clearDragPreview();
