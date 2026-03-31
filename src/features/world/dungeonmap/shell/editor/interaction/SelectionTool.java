@@ -381,10 +381,7 @@ public final class SelectionTool implements EditorTool {
     }
 
     private DungeonHitSubject selectedSubject() {
-        DungeonSelection selection = state.selectedSelection();
-        return selection == null || selection.primary() == null
-                ? null
-                : selection.primary().descriptor().subject();
+        return state.selectedSubject();
     }
 
     private DungeonLayout previewMap() {

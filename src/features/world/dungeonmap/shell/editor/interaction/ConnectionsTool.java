@@ -17,7 +17,6 @@ import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.shell.editor.EditorCards;
 import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
 import features.world.dungeonmap.shell.interaction.DungeonSelection;
-import features.world.dungeonmap.shell.interaction.DungeonSelectionFactory;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.EditorInteractionState;
@@ -492,15 +491,11 @@ public final class ConnectionsTool implements EditorTool {
             state.clearSelection();
             return;
         }
-        state.applySelection(DungeonSelectionFactory.ownerSelection(
-                new DungeonHitSubject.CorridorSubject(corridorId, mapState.activeProjectionLevel())));
+        state.selectSubject(new DungeonHitSubject.CorridorSubject(corridorId, mapState.activeProjectionLevel()));
     }
 
     private DungeonHitSubject selectedSubject() {
-        DungeonSelection selection = state.selectedSelection();
-        return selection == null || selection.primary() == null
-                ? null
-                : selection.primary().descriptor().subject();
+        return state.selectedSubject();
     }
 
     private Long selectedCorridorId() {

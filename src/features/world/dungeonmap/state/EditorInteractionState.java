@@ -1,6 +1,8 @@
 package features.world.dungeonmap.state;
 
+import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
 import features.world.dungeonmap.shell.interaction.DungeonSelection;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -9,38 +11,35 @@ public final class EditorInteractionState {
 
     private final List<Runnable> listeners = new CopyOnWriteArrayList<>();
 
-    private DungeonSelection selectedSelection;
+    private DungeonHitSubject selectedSubject;
     private EditorPreview activePreview;
     private EditorDraft activeDraft;
 
-    public DungeonSelection selectedSelection() {
-        return selectedSelection;
+    public DungeonHitSubject selectedSubject() {
+        return selectedSubject;
     }
 
     public String selectedTargetKey() {
-        if (selectedSelection == null || selectedSelection.primary() == null) {
+        if (selectedSubject == null) {
             return null;
         }
-        return selectedSelection.primary().descriptor().subject().targetKey();
-    }
-
-    public String selectedPartKey() {
-        if (selectedSelection == null || selectedSelection.primary() == null) {
-            return null;
-        }
-        return selectedSelection.primary().descriptor().subject().partKey();
+        return selectedSubject.targetKey();
     }
 
     public void applySelection(DungeonSelection selection) {
-        if (Objects.equals(selectedSelection, selection)) {
+        selectSubject(primarySubject(selection));
+    }
+
+    public void selectSubject(DungeonHitSubject subject) {
+        if (Objects.equals(selectedSubject, subject)) {
             return;
         }
-        selectedSelection = selection;
+        selectedSubject = subject;
         notifyListeners();
     }
 
     public void clearSelection() {
-        applySelection(null);
+        selectSubject(null);
     }
 
     public EditorPreview activePreview() {
@@ -87,5 +86,11 @@ public final class EditorInteractionState {
         for (Runnable listener : listeners) {
             listener.run();
         }
+    }
+
+    private static DungeonHitSubject primarySubject(DungeonSelection selection) {
+        return selection == null || selection.primary() == null
+                ? null
+                : selection.primary().descriptor().subject();
     }
 }

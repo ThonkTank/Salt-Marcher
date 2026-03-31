@@ -206,7 +206,7 @@ public final class TransitionTool implements EditorTool {
             return false;
         }
         DungeonSelection selection = ctx == null ? null : ctx.selection();
-        DungeonHitSubject.TransitionSubject transitionSubject = selectedTransitionSubject(selection);
+        DungeonHitSubject.TransitionSubject transitionSubject = selectedTransitionSubject(primarySubject(selection));
         DungeonTransition transition = transitionSubject == null
                 ? null
                 : mapState.activeMap().findTransition(transitionSubject.transitionId());
@@ -346,7 +346,7 @@ public final class TransitionTool implements EditorTool {
     }
 
     private void renderDeleteCard() {
-        DungeonHitSubject.TransitionSubject selectedTransition = selectedTransitionSubject(state.selectedSelection());
+        DungeonHitSubject.TransitionSubject selectedTransition = selectedTransitionSubject(state.selectedSubject());
         String summary = selectedTransition != null
                 ? "Gewählt: " + transitionLabel(selectedTransition.transitionId())
                 : "Übergangsfeld anklicken, um zu löschen";
@@ -661,13 +661,16 @@ public final class TransitionTool implements EditorTool {
                 bidirectional);
     }
 
-    private static DungeonHitSubject.TransitionSubject selectedTransitionSubject(DungeonSelection selection) {
-        if (selection == null || selection.primary() == null) {
-            return null;
-        }
-        return selection.primary().descriptor().subject() instanceof DungeonHitSubject.TransitionSubject transitionSubject
+    private static DungeonHitSubject.TransitionSubject selectedTransitionSubject(DungeonHitSubject subject) {
+        return subject instanceof DungeonHitSubject.TransitionSubject transitionSubject
                 ? transitionSubject
                 : null;
+    }
+
+    private static DungeonHitSubject primarySubject(DungeonSelection selection) {
+        return selection == null || selection.primary() == null
+                ? null
+                : selection.primary().descriptor().subject();
     }
 
     private static String transitionLabel(Long transitionId) {

@@ -238,7 +238,7 @@ public final class BoundaryTool implements EditorTool {
             }
         }
 
-        RoomCluster selectedCluster = clusterOnActiveLevel(clusterIdFromSelection(state.selectedSelection(), layout), layout);
+        RoomCluster selectedCluster = clusterOnActiveLevel(clusterIdFromSubject(state.selectedSubject(), layout), layout);
         if (selectedCluster != null && pathPlanner.isEditableVertex(selectedCluster, vertex, deleteMode)) {
             return selectedCluster;
         }
@@ -268,9 +268,8 @@ public final class BoundaryTool implements EditorTool {
         if (clusterId == null || ctx == null) {
             return null;
         }
-        DungeonSelection currentSelection = state.selectedSelection();
-        if (Objects.equals(clusterIdFromSelection(currentSelection, layout), clusterId)) {
-            return currentSelection;
+        if (Objects.equals(clusterIdFromSubject(state.selectedSubject(), layout), clusterId)) {
+            return null;
         }
         if (ctx.snapshot() == null) {
             return null;
