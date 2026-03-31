@@ -16,19 +16,9 @@ import java.util.Objects;
 
 public final class DungeonEditorInteractionPolicy {
 
-    public enum EditorInteractionScope {
-        BOUNDARY,
-        NODE,
-        SEGMENT,
-        LABEL,
-        TRANSITION,
-        TRAVERSABLE_TILE,
-        NONE
-    }
-
-    public record EditorInteractionDecision(EditorInteractionScope scope, boolean dispatchToTool) {
+    public record EditorInteractionDecision(boolean dispatchToTool, DungeonHitResult hitResult) {
         public EditorInteractionDecision {
-            Objects.requireNonNull(scope, "scope");
+            hitResult = hitResult == null ? new DungeonHitResult(null, null) : hitResult;
         }
     }
 
@@ -56,41 +46,39 @@ public final class DungeonEditorInteractionPolicy {
             int level
     ) {
         if (layout == null || event == null || camera == null || !event.isPrimaryButton()) {
-            return new EditorInteractionDecision(EditorInteractionScope.NONE, false);
+            return new EditorInteractionDecision(false, null);
         }
 
         DungeonDragService.DungeonDragResult dragResult = dragService.begin(
-                layout,
                 event,
-                camera,
                 new DungeonDragService.DungeonDragTarget.TileDragTarget(event.gridCell()));
         if (!(dragResult instanceof DungeonDragService.DungeonDragResult.Started)) {
-            return new EditorInteractionDecision(EditorInteractionScope.NONE, false);
+            return new EditorInteractionDecision(false, null);
         }
 
         DungeonEditorHitTarget editorTarget = editorHitService.hitAt(layout, event.canvasPoint(), camera);
+        DungeonHitService.DungeonHitTarget coarseHit = hitService.hitAt(layout, event, level);
+        DungeonHitResult hitResult = new DungeonHitResult(editorTarget, coarseHit);
         if (editorTarget instanceof DungeonEditorBoundaryHitTarget || editorTarget instanceof DungeonEditorRoomBoundaryHitTarget) {
-            return new EditorInteractionDecision(EditorInteractionScope.BOUNDARY, true);
+            return new EditorInteractionDecision(true, hitResult);
         }
         if (editorTarget instanceof DungeonEditorCorridorNodeHitTarget) {
-            return new EditorInteractionDecision(EditorInteractionScope.NODE, true);
+            return new EditorInteractionDecision(true, hitResult);
         }
         if (editorTarget instanceof DungeonEditorCorridorSegmentHitTarget || editorTarget instanceof DungeonEditorConnectionHitTarget) {
-            return new EditorInteractionDecision(EditorInteractionScope.SEGMENT, true);
+            return new EditorInteractionDecision(true, hitResult);
         }
         if (editorTarget instanceof DungeonEditorLabelHitTarget) {
-            return new EditorInteractionDecision(EditorInteractionScope.LABEL, true);
+            return new EditorInteractionDecision(true, hitResult);
         }
-
-        DungeonHitService.DungeonHitTarget coarseHit = hitService.hitAt(layout, event, level);
         if (coarseHit instanceof DungeonHitService.DungeonHitTarget.TransitionTarget) {
-            return new EditorInteractionDecision(EditorInteractionScope.TRANSITION, true);
+            return new EditorInteractionDecision(true, hitResult);
         }
-        if (placementValidator.validateTraversable(layout, event, camera, level)
+        if (placementValidator.validateTraversable(layout, event, level)
                 instanceof DungeonPlacementValidator.PlacementResult.Valid) {
-            return new EditorInteractionDecision(EditorInteractionScope.TRAVERSABLE_TILE, true);
+            return new EditorInteractionDecision(true, hitResult);
         }
-        return new EditorInteractionDecision(EditorInteractionScope.NONE, false);
+        return new EditorInteractionDecision(false, hitResult);
     }
 
     public boolean decideDrag(
@@ -105,7 +93,7 @@ public final class DungeonEditorInteractionPolicy {
         if (editorHitService.hitAt(layout, event.canvasPoint(), camera) != null) {
             return true;
         }
-        return placementValidator.validateTraversable(layout, event, camera, level)
+        return placementValidator.validateTraversable(layout, event, level)
                 instanceof DungeonPlacementValidator.PlacementResult.Valid;
     }
 
@@ -121,7 +109,7 @@ public final class DungeonEditorInteractionPolicy {
         if (editorHitService.hitAt(layout, event.canvasPoint(), camera) != null) {
             return true;
         }
-        return placementValidator.validateTraversable(layout, event, camera, level)
+        return placementValidator.validateTraversable(layout, event, level)
                 instanceof DungeonPlacementValidator.PlacementResult.Valid;
     }
 }

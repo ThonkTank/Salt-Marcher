@@ -9,6 +9,7 @@ import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.shell.interaction.DungeonBoundaryHitService;
 import features.world.dungeonmap.shell.interaction.DungeonDragService;
 import features.world.dungeonmap.shell.interaction.DungeonEditorInteractionPolicy;
+import features.world.dungeonmap.shell.interaction.DungeonHitResult;
 import features.world.dungeonmap.shell.interaction.DungeonHitService;
 import features.world.dungeonmap.shell.interaction.DungeonPlacementValidator;
 import features.world.dungeonmap.shell.interaction.DungeonVertexHitService;
@@ -73,7 +74,7 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
         if (!decision.dispatchToTool()) {
             return false;
         }
-        return activeTool.pressed(contextFor(event, camera));
+        return activeTool.pressed(contextFor(event, camera, decision.hitResult()));
     }
 
     @Override
@@ -87,7 +88,7 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
         if (!interactionPolicy.decideDrag(projectedLayout(), event, camera, mapState.activeProjectionLevel())) {
             return false;
         }
-        return activeTool.dragged(contextFor(event, camera));
+        return activeTool.dragged(contextFor(event, camera, null));
     }
 
     @Override
@@ -101,7 +102,7 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
         if (!interactionPolicy.decideRelease(projectedLayout(), event, camera, mapState.activeProjectionLevel())) {
             return false;
         }
-        return activeTool.released(contextFor(event, camera));
+        return activeTool.released(contextFor(event, camera, null));
     }
 
     @Override
@@ -139,8 +140,8 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
         return sessionState.viewMode() == DungeonViewMode.GRID && !mapState.busy();
     }
 
-    private EditorToolContext contextFor(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
-        return new EditorToolContext(event, projectedLayout(), hitService, camera, state);
+    private EditorToolContext contextFor(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera, DungeonHitResult hitResult) {
+        return new EditorToolContext(event, projectedLayout(), hitService, camera, state, hitResult);
     }
 
     private DungeonLayout projectedLayout() {
