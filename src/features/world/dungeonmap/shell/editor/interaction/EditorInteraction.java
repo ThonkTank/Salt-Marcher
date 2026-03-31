@@ -6,10 +6,12 @@ import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.canvas.base.DungeonViewMode;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
+import features.world.dungeonmap.shell.interaction.DungeonBoundaryHitService;
 import features.world.dungeonmap.shell.interaction.DungeonDragService;
 import features.world.dungeonmap.shell.interaction.DungeonEditorInteractionPolicy;
 import features.world.dungeonmap.shell.interaction.DungeonHitService;
 import features.world.dungeonmap.shell.interaction.DungeonPlacementValidator;
+import features.world.dungeonmap.shell.interaction.DungeonVertexHitService;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.EditorInteractionState;
@@ -26,9 +28,15 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
     private final DungeonEditorSessionState sessionState;
     private final EditorInteractionState state;
     private final Map<DungeonEditorTool, EditorTool> toolsByEnum;
-    private final DungeonEditorHitService hitService = new DungeonEditorHitService();
+    private final DungeonHitService dungeonHitService = new DungeonHitService();
+    private final DungeonBoundaryHitService boundaryHitService = new DungeonBoundaryHitService();
+    private final DungeonVertexHitService vertexHitService = new DungeonVertexHitService();
+    private final DungeonEditorHitService hitService = new DungeonEditorHitService(
+            boundaryHitService,
+            vertexHitService,
+            dungeonHitService);
     private final DungeonEditorInteractionPolicy interactionPolicy = new DungeonEditorInteractionPolicy(
-            new DungeonHitService(),
+            dungeonHitService,
             new DungeonDragService(),
             new DungeonPlacementValidator(),
             hitService);

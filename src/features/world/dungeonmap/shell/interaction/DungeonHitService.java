@@ -69,35 +69,64 @@ public final class DungeonHitService {
             return null;
         }
 
-        DungeonTransition transition = layout.transitionsAtCell(cell, level).stream()
-                .filter(candidate -> candidate != null && candidate.transitionId() != null)
-                .min(Comparator.comparing(DungeonTransition::transitionId))
-                .orElse(null);
+        DungeonTransition transition = transitionAtCell(layout, cell, level);
         if (transition != null) {
             return new DungeonHitTarget.TransitionTarget(cell, level, transition);
         }
 
-        DungeonStair stair = layout.stairsAtCell(cell, level).stream()
-                .filter(candidate -> candidate != null && candidate.stairId() != null)
-                .min(Comparator.comparing(DungeonStair::stairId))
-                .orElse(null);
+        DungeonStair stair = stairAtCell(layout, cell, level);
         if (stair != null) {
             return new DungeonHitTarget.StairTarget(cell, level, stair);
         }
 
-        Room room = layout.roomAtCell(cell);
-        if (room != null && room.roomId() != null) {
+        Room room = roomAtCell(layout, cell);
+        if (room != null) {
             return new DungeonHitTarget.RoomTarget(cell, room);
         }
 
-        Corridor corridor = layout.corridorsAtCell(cell, level).stream()
-                .filter(candidate -> candidate != null && candidate.corridorId() != null)
-                .min(Comparator.comparing(Corridor::corridorId))
-                .orElse(null);
+        Corridor corridor = corridorAtCell(layout, cell, level);
         if (corridor != null) {
             return new DungeonHitTarget.CorridorTarget(cell, level, corridor);
         }
 
         return new DungeonHitTarget.EmptyCellTarget(cell);
+    }
+
+    public DungeonTransition transitionAtCell(DungeonLayout layout, Point2i cell, int level) {
+        if (layout == null || cell == null) {
+            return null;
+        }
+        return layout.transitionsAtCell(cell, level).stream()
+                .filter(candidate -> candidate != null && candidate.transitionId() != null)
+                .min(Comparator.comparing(DungeonTransition::transitionId))
+                .orElse(null);
+    }
+
+    public DungeonStair stairAtCell(DungeonLayout layout, Point2i cell, int level) {
+        if (layout == null || cell == null) {
+            return null;
+        }
+        return layout.stairsAtCell(cell, level).stream()
+                .filter(candidate -> candidate != null && candidate.stairId() != null)
+                .min(Comparator.comparing(DungeonStair::stairId))
+                .orElse(null);
+    }
+
+    public Room roomAtCell(DungeonLayout layout, Point2i cell) {
+        if (layout == null || cell == null) {
+            return null;
+        }
+        Room room = layout.roomAtCell(cell);
+        return room != null && room.roomId() != null ? room : null;
+    }
+
+    public Corridor corridorAtCell(DungeonLayout layout, Point2i cell, int level) {
+        if (layout == null || cell == null) {
+            return null;
+        }
+        return layout.corridorsAtCell(cell, level).stream()
+                .filter(candidate -> candidate != null && candidate.corridorId() != null)
+                .min(Comparator.comparing(Corridor::corridorId))
+                .orElse(null);
     }
 }
