@@ -10,7 +10,6 @@ import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.shell.interaction.DungeonHitCollector;
 import features.world.dungeonmap.shell.interaction.DungeonHitProbe;
 import features.world.dungeonmap.shell.interaction.DungeonHitSnapshot;
-import features.world.dungeonmap.shell.interaction.DungeonPlacementValidator;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.EditorInteractionState;
@@ -28,8 +27,7 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
     private final EditorInteractionState state;
     private final Map<DungeonEditorTool, EditorTool> toolsByEnum;
     private final DungeonHitCollector hitCollector;
-    private final DungeonEditorSelectionPolicy selectionPolicy = new DungeonEditorSelectionPolicy(
-            new DungeonPlacementValidator());
+    private final DungeonEditorSelectionPolicy selectionPolicy = new DungeonEditorSelectionPolicy();
     private EditorTool activeTool;
     private Runnable toolStateChanged = () -> { };
 
@@ -63,8 +61,6 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
         }
         var decision = selectionPolicy.select(
                 DungeonEditorSelectionPolicy.EditorInteractionPhase.PRESS,
-                sessionState.selectedTool(),
-                snapshot.activeMap(),
                 event,
                 snapshot.hitSnapshot());
         if (!decision.dispatchToTool()) {
@@ -87,8 +83,6 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
         }
         var decision = selectionPolicy.select(
                 DungeonEditorSelectionPolicy.EditorInteractionPhase.DRAG,
-                sessionState.selectedTool(),
-                snapshot.activeMap(),
                 event,
                 snapshot.hitSnapshot());
         if (!decision.dispatchToTool()) {
@@ -111,8 +105,6 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
         }
         var decision = selectionPolicy.select(
                 DungeonEditorSelectionPolicy.EditorInteractionPhase.RELEASE,
-                sessionState.selectedTool(),
-                snapshot.activeMap(),
                 event,
                 snapshot.hitSnapshot());
         if (!decision.dispatchToTool()) {
