@@ -3,7 +3,6 @@ package features.world.dungeonmap.model.structures.stair;
 import features.world.dungeonmap.model.geometry.CubePoint;
 
 public record DungeonStairExit(
-        long exitId,
         CubePoint position,
         String label
 ) {

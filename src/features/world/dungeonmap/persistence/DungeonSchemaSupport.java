@@ -99,13 +99,7 @@ public final class DungeonSchemaSupport {
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_stairs ("
                 + "stair_id         INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + "dungeon_map_id   INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
-                + "name             TEXT,"
-                + "anchor_x         INTEGER NOT NULL DEFAULT 0,"
-                + "anchor_y         INTEGER NOT NULL DEFAULT 0,"
-                + "shape            TEXT NOT NULL DEFAULT 'LADDER',"
-                + "direction        TEXT NOT NULL DEFAULT 'NORTH',"
-                + "dimension1       INTEGER NOT NULL DEFAULT 0,"
-                + "dimension2       INTEGER NOT NULL DEFAULT 0"
+                + "name             TEXT"
                 + ")");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_stair_path_nodes ("
                 + "stair_id         INTEGER NOT NULL REFERENCES dungeon_stairs(stair_id) ON DELETE CASCADE,"
@@ -115,14 +109,6 @@ public final class DungeonSchemaSupport {
                 + "cell_z           INTEGER NOT NULL,"
                 + "PRIMARY KEY (stair_id, sort_order)"
                 + ")");
-        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_stair_exits ("
-                + "stair_exit_id    INTEGER PRIMARY KEY AUTOINCREMENT,"
-                + "stair_id         INTEGER NOT NULL REFERENCES dungeon_stairs(stair_id) ON DELETE CASCADE,"
-                + "cell_x           INTEGER NOT NULL,"
-                + "cell_y           INTEGER NOT NULL,"
-                + "cell_z           INTEGER NOT NULL,"
-                + "label            TEXT"
-                + ")");
     }
 
     public static void ensureCompatibility(Connection conn) throws SQLException {
@@ -130,12 +116,6 @@ public final class DungeonSchemaSupport {
             createSchema(stmt);
             addColumnIfMissing(stmt, "dungeon_corridors", "level_z INTEGER NOT NULL DEFAULT 0");
             addColumnIfMissing(stmt, "dungeon_stairs", "name TEXT");
-            addColumnIfMissing(stmt, "dungeon_stairs", "anchor_x INTEGER NOT NULL DEFAULT 0");
-            addColumnIfMissing(stmt, "dungeon_stairs", "anchor_y INTEGER NOT NULL DEFAULT 0");
-            addColumnIfMissing(stmt, "dungeon_stairs", "shape TEXT NOT NULL DEFAULT 'LADDER'");
-            addColumnIfMissing(stmt, "dungeon_stairs", "direction TEXT NOT NULL DEFAULT 'NORTH'");
-            addColumnIfMissing(stmt, "dungeon_stairs", "dimension1 INTEGER NOT NULL DEFAULT 0");
-            addColumnIfMissing(stmt, "dungeon_stairs", "dimension2 INTEGER NOT NULL DEFAULT 0");
         }
     }
 

@@ -22,7 +22,6 @@ import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
-import features.world.dungeonmap.model.structures.stair.StairShape;
 import features.world.dungeonmap.persistence.DungeonPersistenceDirections;
 import features.world.dungeonmap.persistence.DungeonSchemaSupport;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
@@ -131,7 +130,7 @@ public final class DungeonMapLoader {
         List<RoomCluster> clusters = loadClusters(conn, map.mapId(), rooms);
         Map<Long, Integer> clusterLevels = loadClusterLevels(conn, map.mapId());
         List<Corridor> corridors = loadCorridors(conn, map.mapId(), roomsById(clusters));
-        List<DungeonStair> stairs = loadStairs(conn, map.mapId());
+        List<DungeonStair> stairs = loadStairs(conn, map.mapId(), clusters, corridors);
         return new DungeonLayout(
                 map.mapId(),
                 map.name(),
@@ -306,19 +305,22 @@ public final class DungeonMapLoader {
 
     private static List<DungeonStair> loadStairs(
             Connection conn,
-            long mapId
+            long mapId,
+            List<RoomCluster> clusters,
+            List<Corridor> corridors
     ) throws SQLException {
         DungeonSchemaSupport.ensureCompatibility(conn);
-        Map<Long, List<Integer>> exitLevelsByStairId = loadGrouped(conn,
-                "SELECT stair_id, cell_z"
-                        + " FROM dungeon_stair_exits"
+        Map<Long, List<CubePoint>> pathByStairId = loadGrouped(conn,
+                "SELECT stair_id, cell_x, cell_y, cell_z"
+                        + " FROM dungeon_stair_path_nodes"
                         + " WHERE stair_id IN (SELECT stair_id FROM dungeon_stairs WHERE dungeon_map_id=?)"
-                        + " ORDER BY stair_id, cell_z, stair_exit_id",
+                        + " ORDER BY stair_id, sort_order",
                 mapId,
                 rs -> rs.getLong("stair_id"),
-                rs -> rs.getInt("cell_z"));
+                rs -> new CubePoint(rs.getInt("cell_x"), rs.getInt("cell_y"), rs.getInt("cell_z")));
+        Set<CubePoint> occupiedFloorPoints = occupiedFloorPoints(clusters, corridors);
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT stair_id, dungeon_map_id, name, anchor_x, anchor_y, shape, direction, dimension1, dimension2"
+                "SELECT stair_id, dungeon_map_id, name"
                         + " FROM dungeon_stairs WHERE dungeon_map_id=? ORDER BY stair_id")) {
             ps.setLong(1, mapId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -329,16 +331,35 @@ public final class DungeonMapLoader {
                             stairId,
                             rs.getLong("dungeon_map_id"),
                             rs.getString("name"),
-                            new Point2i(requiredInt(rs, stairId, "anchor_x"), requiredInt(rs, stairId, "anchor_y")),
-                            requiredStairShape(rs, stairId),
-                            requiredDirection(rs, stairId),
-                            requiredInt(rs, stairId, "dimension1"),
-                            requiredInt(rs, stairId, "dimension2"),
-                            exitLevelsByStairId.getOrDefault(stairId, List.of())));
+                            pathByStairId.getOrDefault(stairId, List.of()),
+                            occupiedFloorPoints));
                 }
                 return result.isEmpty() ? List.of() : List.copyOf(result);
             }
         }
+    }
+
+    private static Set<CubePoint> occupiedFloorPoints(
+            List<RoomCluster> clusters,
+            List<Corridor> corridors
+    ) {
+        LinkedHashSet<CubePoint> result = new LinkedHashSet<>();
+        for (RoomCluster cluster : clusters == null ? List.<RoomCluster>of() : clusters) {
+            if (cluster == null) {
+                continue;
+            }
+            for (Room room : cluster.rooms()) {
+                if (room != null) {
+                    result.addAll(room.cubePoints());
+                }
+            }
+        }
+        for (Corridor corridor : corridors == null ? List.<Corridor>of() : corridors) {
+            if (corridor != null && corridor.path() != null) {
+                result.addAll(corridor.path().cells());
+            }
+        }
+        return Set.copyOf(result);
     }
 
     private static List<Corridor> loadCorridors(
@@ -394,38 +415,6 @@ public final class DungeonMapLoader {
                 }
                 return result.isEmpty() ? List.of() : List.copyOf(result);
             }
-        }
-    }
-
-    private static int requiredInt(ResultSet rs, long stairId, String column) throws SQLException {
-        Integer value = rs.getObject(column, Integer.class);
-        if (value == null) {
-            throw new SQLException("Dungeon-Treppe " + stairId + " fehlt Pflichtspalte " + column);
-        }
-        return value;
-    }
-
-    private static StairShape requiredStairShape(ResultSet rs, long stairId) throws SQLException {
-        String rawShape = rs.getString("shape");
-        if (rawShape == null || rawShape.isBlank()) {
-            throw new SQLException("Dungeon-Treppe " + stairId + " fehlt shape");
-        }
-        try {
-            return StairShape.valueOf(rawShape.trim().toUpperCase(java.util.Locale.ROOT));
-        } catch (IllegalArgumentException exception) {
-            throw new SQLException("Dungeon-Treppe " + stairId + " hat ungueltige shape " + rawShape, exception);
-        }
-    }
-
-    private static CardinalDirection requiredDirection(ResultSet rs, long stairId) throws SQLException {
-        String rawDirection = rs.getString("direction");
-        if (rawDirection == null || rawDirection.isBlank()) {
-            throw new SQLException("Dungeon-Treppe " + stairId + " fehlt direction");
-        }
-        try {
-            return CardinalDirection.valueOf(rawDirection.trim().toUpperCase(java.util.Locale.ROOT));
-        } catch (IllegalArgumentException exception) {
-            throw new SQLException("Dungeon-Treppe " + stairId + " hat ungueltige direction " + rawDirection, exception);
         }
     }
 

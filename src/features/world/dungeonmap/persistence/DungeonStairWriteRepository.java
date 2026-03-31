@@ -2,7 +2,6 @@ package features.world.dungeonmap.persistence;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
-import features.world.dungeonmap.model.structures.stair.DungeonStairExit;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -21,12 +20,10 @@ public final class DungeonStairWriteRepository {
     ) throws SQLException {
         DungeonStair resolvedStair = Objects.requireNonNull(stair, "stair");
         try (PreparedStatement ps = conn.prepareStatement(
-                "INSERT INTO dungeon_stairs("
-                        + "dungeon_map_id, name, anchor_x, anchor_y, shape, direction, dimension1, dimension2"
-                        + ") VALUES(?, ?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO dungeon_stairs(dungeon_map_id, name) VALUES(?, ?)",
                 Statement.RETURN_GENERATED_KEYS)) {
             ps.setLong(1, mapId);
-            bindStairSpecification(ps, 2, resolvedStair);
+            ps.setString(2, resolvedStair.name());
             ps.executeUpdate();
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (!rs.next()) {
@@ -44,11 +41,9 @@ public final class DungeonStairWriteRepository {
     ) throws SQLException {
         DungeonStair resolvedStair = Objects.requireNonNull(stair, "stair");
         try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE dungeon_stairs"
-                        + " SET name=?, anchor_x=?, anchor_y=?, shape=?, direction=?, dimension1=?, dimension2=?"
-                        + " WHERE stair_id=?")) {
-            bindStairSpecification(ps, 1, resolvedStair);
-            ps.setLong(8, stairId);
+                "UPDATE dungeon_stairs SET name=? WHERE stair_id=?")) {
+            ps.setString(1, resolvedStair.name());
+            ps.setLong(2, stairId);
             ps.executeUpdate();
         }
     }
@@ -74,26 +69,6 @@ public final class DungeonStairWriteRepository {
         }
     }
 
-    public void replaceExits(Connection conn, long stairId, List<DungeonStairExit> exits) throws SQLException {
-        try (PreparedStatement delete = conn.prepareStatement(
-                "DELETE FROM dungeon_stair_exits WHERE stair_id=?")) {
-            delete.setLong(1, stairId);
-            delete.executeUpdate();
-        }
-        try (PreparedStatement insert = conn.prepareStatement(
-                "INSERT INTO dungeon_stair_exits(stair_id, cell_x, cell_y, cell_z, label) VALUES(?,?,?,?,?)")) {
-            for (DungeonStairExit exit : exits) {
-                insert.setLong(1, stairId);
-                insert.setInt(2, exit.position().x());
-                insert.setInt(3, exit.position().y());
-                insert.setInt(4, exit.position().z());
-                insert.setString(5, exit.label());
-                insert.addBatch();
-            }
-            insert.executeBatch();
-        }
-    }
-
     public void deleteStair(Connection conn, long stairId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "DELETE FROM dungeon_stairs WHERE stair_id=?")) {
@@ -101,19 +76,4 @@ public final class DungeonStairWriteRepository {
             ps.executeUpdate();
         }
     }
-
-    private static void bindStairSpecification(
-            PreparedStatement ps,
-            int startIndex,
-            DungeonStair stair
-    ) throws SQLException {
-        ps.setString(startIndex, stair.name());
-        ps.setInt(startIndex + 1, stair.anchor().x());
-        ps.setInt(startIndex + 2, stair.anchor().y());
-        ps.setString(startIndex + 3, stair.shape().name());
-        ps.setString(startIndex + 4, stair.direction().name());
-        ps.setInt(startIndex + 5, stair.dimension1());
-        ps.setInt(startIndex + 6, stair.dimension2());
-    }
-
 }
