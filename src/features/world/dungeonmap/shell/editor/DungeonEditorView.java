@@ -43,35 +43,13 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
                 });
 
         // Editor interaction state → one batched render payload for the workspace
-        interactionState.addListener(() -> {
-            workspace().showEditorRenderState(editorRenderState(interactionState));
-        });
+        interactionState.addListener(() -> refreshEditorRenderState(interactionState));
 
         // Session state → tool activation + controls
-        sessionState.addListener(() -> {
-            workspace().setViewMode(sessionState.viewMode());
-            controls.selectViewMode(sessionState.viewMode());
-            controls.showDisplayedTool(sessionState.selectedTool());
-            editorInteraction.activateTool(sessionState.selectedTool());
-            statePane.refresh(sessionState.selectedTool(), editorInteraction.activeToolPane());
-        });
+        sessionState.addListener(() -> refreshSessionUi(sessionState, editorInteraction));
 
         // Map state → controls refresh (workspace syncs itself via DungeonMapState listener)
-        mapState.addListener(() -> {
-            boolean mapChanged = !Objects.equals(previousMapId, mapState.activeMapId());
-            controls.showMaps(mapState.maps(), mapState.activeMapId(), mapState.busy(), mapStatusText(mapState));
-            controls.showLevels(
-                    mapState.activeMap().reachableLevels(),
-                    mapState.activeProjectionLevel(),
-                    mapState.busy(),
-                    mapState.activeMapId() != null);
-            controls.showOverlaySettings(mapState.levelOverlaySettings(), mapState.busy());
-            if (mapChanged) {
-                editorInteraction.activateTool(sessionState.selectedTool());
-            }
-            statePane.refresh(sessionState.selectedTool(), editorInteraction.activeToolPane());
-            previousMapId = mapState.activeMapId();
-        });
+        mapState.addListener(() -> refreshMapUi(mapState, sessionState, editorInteraction));
 
         // Tool state changes → state pane refresh
         editorInteraction.setOnToolStateChanged(
@@ -96,6 +74,9 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
         controls.setOnToolChanged(sessionState::selectTool);
 
         workspace().setInteractionHandler(editorInteraction);
+        refreshSessionUi(sessionState, editorInteraction);
+        refreshMapUi(mapState, sessionState, editorInteraction);
+        refreshEditorRenderState(interactionState);
     }
 
     @Override
@@ -123,6 +104,38 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
             return "Aenderungen werden gespeichert...";
         }
         return mapState.errorMessage();
+    }
+
+    private void refreshEditorRenderState(EditorInteractionState interactionState) {
+        workspace().showEditorRenderState(editorRenderState(interactionState));
+    }
+
+    private void refreshSessionUi(DungeonEditorSessionState sessionState, EditorInteraction editorInteraction) {
+        workspace().setViewMode(sessionState.viewMode());
+        controls.selectViewMode(sessionState.viewMode());
+        controls.showDisplayedTool(sessionState.selectedTool());
+        editorInteraction.activateTool(sessionState.selectedTool());
+        statePane.refresh(sessionState.selectedTool(), editorInteraction.activeToolPane());
+    }
+
+    private void refreshMapUi(
+            DungeonMapState mapState,
+            DungeonEditorSessionState sessionState,
+            EditorInteraction editorInteraction
+    ) {
+        boolean mapChanged = !Objects.equals(previousMapId, mapState.activeMapId());
+        controls.showMaps(mapState.maps(), mapState.activeMapId(), mapState.busy(), mapStatusText(mapState));
+        controls.showLevels(
+                mapState.activeMap().reachableLevels(),
+                mapState.activeProjectionLevel(),
+                mapState.busy(),
+                mapState.activeMapId() != null);
+        controls.showOverlaySettings(mapState.levelOverlaySettings(), mapState.busy());
+        if (mapChanged) {
+            editorInteraction.activateTool(sessionState.selectedTool());
+        }
+        statePane.refresh(sessionState.selectedTool(), editorInteraction.activeToolPane());
+        previousMapId = mapState.activeMapId();
     }
 
     private static DungeonEditorRenderState editorRenderState(EditorInteractionState interactionState) {

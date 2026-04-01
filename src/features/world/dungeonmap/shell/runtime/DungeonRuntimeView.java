@@ -155,10 +155,8 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
 
     private void refreshRuntimeUi() {
         runtimePresentation = resolveRuntimePresentation();
-        workspace().showRuntimeRenderOverlay(runtimePresentation.overlay());
+        publishRuntimePresentation(runtimePresentation);
         refreshLabels();
-        refreshTravelPane(runtimePresentation.surface());
-        publishRoomDetails(runtimePresentation.surface());
     }
 
     private void refreshRuntimeState() {
@@ -269,21 +267,29 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         return "Token auf der Karte ziehen";
     }
 
-    private void refreshTravelPane(DungeonRuntimeSurface surface) {
+    private void publishRuntimePresentation(RuntimePresentation presentation) {
+        RuntimePresentation resolvedPresentation = presentation == null ? RuntimePresentation.empty() : presentation;
+        workspace().showRuntimeRenderOverlay(resolvedPresentation.overlay());
+        refreshTravelPane(resolvedPresentation);
+        publishRoomDetails(resolvedPresentation);
+    }
+
+    private void refreshTravelPane(RuntimePresentation presentation) {
         if (travelSurface == null) {
             return;
         }
         travelSurface.showDungeonTravel(
                 state().activeMap().name(),
                 DungeonRuntimeLabels.activeLocationLabel(state().activeMap(), runtimeState.activeLocation()),
-                DungeonRuntimeLabels.tileLabel(runtimeState.activeLocation()),
+                DungeonRuntimeLabels.tileLabel(presentation == null ? null : presentation.activeTile()),
                 DungeonRuntimeLabels.headingLabel(runtimeState.heading()),
                 runtimeStatusText(),
-                travelActions(surface),
+                travelActions(presentation),
                 workspace()::resetView);
     }
 
-    private List<WorldTravelSurface.DungeonDoorAction> travelActions(DungeonRuntimeSurface surface) {
+    private List<WorldTravelSurface.DungeonDoorAction> travelActions(RuntimePresentation presentation) {
+        DungeonRuntimeSurface surface = presentation == null ? null : presentation.surface();
         if (surface == null) {
             return List.of();
         }
@@ -355,7 +361,8 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         }
     }
 
-    private void publishRoomDetails(DungeonRuntimeSurface surface) {
+    private void publishRoomDetails(RuntimePresentation presentation) {
+        DungeonRuntimeSurface surface = presentation == null ? null : presentation.surface();
         if (runtimeState.loading() || runtimeState.moving() || runtimeState.dragging()) {
             return;
         }
