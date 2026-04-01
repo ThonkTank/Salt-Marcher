@@ -1,210 +1,149 @@
 # AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file covers `src/features/world/dungeonmap/`. Use it together with the root `AGENTS.md`; root rules still apply unless this file narrows them for the dungeon feature.
 
 ## Scope
 
-This file covers the `dungeonmap` feature — a tile-grid dungeon editor and runtime viewer within the SaltMarcher app. See the root `AGENTS.md` for build commands, project-wide conventions, and the cockpit shell architecture.
+`dungeonmap` is a tile-grid dungeon editor and runtime surface inside Salt Marcher. Document the code that actually exists. Do not treat empty placeholder directories such as `application/stair`, `application/traversal`, or `canvas/graph` as architecture commitments until they contain real code.
 
-## Feature Architecture
+## Composition Root
 
-The feature ships two `AppView` implementations: `DungeonEditorView` (EDITOR) and `DungeonRuntimeView` (SESSION). Both extend `AbstractDungeonMapView`, which owns a shared `DungeonCanvasWorkspace` and lazy-loads map data on first `onShow()`.
+- `bootstrap/DungeonMapModule` is the only feature composition root. It wires one shared `DungeonMapState`, `DungeonEditorSessionState`, `EditorInteractionState`, `DungeonHitCollector`, loading services, edit services, and exposes `DungeonRuntimeView` plus `DungeonEditorView`.
+- Both views extend `shell/AbstractDungeonMapView`. That base class owns the view-local `DungeonCanvasWorkspace` and calls `DungeonMapLoadingService.ensureLoaded()` from `onShow()`.
+- `DungeonViewMode` currently supports `GRID` only. Do not reintroduce graph-mode assumptions into UI or docs until a second projection exists and preserves the same direct-owner semantics.
 
-`DungeonMapModule` (`bootstrap/`) is the composition root — it wires all dependencies and exposes the two views to the app shell.
+## Current Architecture
 
-### Current Architecture
+- `DungeonLayout` is the immutable global lookup over direct structure owners: room clusters, corridors, stairs, transitions, connections, traversable cells, and spatial indexes.
+- Corridors, stairs, and transitions are first-class persisted structures. There is no second aggregate that owns their geometry.
+- Room paint/delete/boundary edits persist only room and cluster truth. They do not reroute or regenerate corridors or stairs.
+- Runtime presentation resolves surfaces from the same structure owners used by the editor. Do not invent runtime-only structure mirrors.
 
-- `DungeonLayout` owns only direct top-level structures: corridors, stairs, clusters, transitions.
-- Corridors and stairs are first-class persisted owners; there is no second aggregate for connection geometry.
-- The editor exposes `ConnectionsTool` for door/corridor authoring. Stair authoring remains deferred.
-- Room topology edits and cluster moves do not reroute or rewrite corridors/stairs; those structures remain unchanged unless their own edit workflows persist a new version.
+## Package Roles
 
-### Package Roles
-
-- `model/` — immutable domain model in three strict layers (see **Model Layering** below)
-- `application/` — stateful edit services that orchestrate workflows, transactions, and persistence around topology changes. Organized by domain concern:
-  - `application/room/` — room paint topology: `DungeonRoomTopologyService` is the single room topology orchestrator for paint/delete/boundary edits; thin facades may wrap transaction entrypoints but must not re-plan topology outside the model. Exit catalogs: `DoorExitCatalog` groups adjacent connection boundary edges into logical openings via BFS, `RoomExitCatalog` wraps it per-room, `RoomExitDescriptor` carries the result
-  - `application/transition/` — inter-map transition lifecycle: `DungeonTransitionEditService` (two-phase create: direct or prepared+place-later, bidirectional linking, delete with cascade), `DungeonTransitionEditRequest` (sealed creation parameters), `DungeonTransitionTargetCatalogService` (loads placed transitions on a target map for destination selection → `DungeonTransitionTargetSummary`)
-  - `application/runtime/` — runtime navigation subsystem: `DungeonRuntimeNavigationService` (orchestrator: load position, resolve surface, move party), `DungeonRuntimeLocation` (sealed: Room | Corridor | Tile | StairExit | Transition), `CardinalDirection` (`model/geometry/`, shared 4-direction type with relative-label logic and persistence code), surface pipeline (`DungeonRuntimeSurfaceResolver` → `DungeonRuntimeSurface` → `DungeonRuntimeSurfacePresenter`), door pipeline (`DungeonRuntimeDoorCatalog` enriches exits with destination labels and narration → `DungeonRuntimeDoorDescriptor` adds heading-relative labels), stair pipeline (`DungeonRuntimeStairCatalog` → `DungeonRuntimeStairDescriptor`: filters exits reachable from current level, excludes active tile), transition pipeline (`DungeonRuntimeTransitionCatalog` → `DungeonRuntimeTransitionDescriptor`: resolves destination labels from overworld/dungeon targets), `DungeonRuntimeLabels` (static label generation), `DungeonRuntimeLocations` (location ↔ persistence serialization), `DungeonRuntimeStateRepairService` (consistency repair)
-  - `application/support/` — `DungeonTransactionRunner`
-  - Services coordinate between model and persistence but must not reconstruct structure truth that already belongs on `Room`, `RoomCluster`, or `Corridor`
-- `loading/` — `DungeonMapLoader` (raw JDBC reads) + `DungeonMapLoadingService` (async loading with sequenced request deduplication via `requestSequence` AtomicLong — stale responses discarded). Loader hydrates rooms from stored cluster topology via BFS flood-fill
-- `persistence/` — write-side repositories (`DungeonRoomWriteRepository`, `DungeonRoomGeometryWriteMapper`, `DungeonCorridorWriteRepository`, `DungeonStairWriteRepository`, `DungeonTransitionWriteRepository`). Schema helpers (`DungeonSchemaSupport`, `DungeonTransitionSchemaSupport`) for idempotent table creation. Read-side lives in `loading/`
-- `catalog/` — map CRUD (create/rename/delete) with its own `application/` + `persistence/` sub-packages
-- `canvas/` — JavaFX Canvas rendering, organized into sub-packages:
-  - `canvas/base/` — `DungeonCanvasWorkspace` observes `DungeonMapState` directly for map/level/overlay changes, dispatches rendering to the grid `DungeonSceneRenderer`, and owns level-scroll routing (scroll → `mapState.setActiveProjectionLevel()` or custom `IntConsumer` handler, then notifies interaction handler via `levelScrolled(int)`). Views publish batched display-only payloads via `showEditorRenderState(DungeonEditorRenderState)` and `showRuntimeRenderOverlay(DungeonRuntimeRenderOverlay)`. Workspace invalidation is explicit and coalesced via `requestRedraw()`; `redraw()` builds one `DungeonSceneFrame` snapshot from current state. `DungeonCanvasCamera` handles pan (right-drag) and zoom (scroll, 0.2–5.0×). `DungeonCanvasInteractionHandler` routes pointer events to `DungeonCanvasPointerEvent` with cell coordinates; `levelScrolled(int)` is a void notification (workspace owns the level change). `DungeonCanvasTheme` provides drawing constants
-  - `canvas/grid/` — `DungeonGridSceneRenderer` (tile-based view: background, grid, room fills/outlines, walls, doors, corridor cells/doors, interactive labels, axes), `DungeonGridInteractiveLabels`
-- `shell/` — view and UI coordinator layer:
-  - `shell/editor/` — `DungeonEditorView` (owns all state listener wiring: map state → controls, session state → tool activation, interaction state → workspace preview/selection), `DungeonEditorControls`, `DungeonEditorStatePane`
-  - `shell/editor/controls/` — left-panel UI: `MapControls` (map selector/CRUD), `ToolControls` (tool palette), `ViewModeControls` (grid/graph toggle), `ToolFamilyDropdownController`, `GuardState`
-  - `shell/editor/interaction/` — `EditorInteraction` dispatches canvas events to `EditorTool` implementations (`SelectionTool`, `PaintTool`, `BoundaryTool`, `ConnectionsTool`, `TransitionTool`). Tool-local transient state stays inside the tool unless it must be shared via `state/`
-  - `shell/controls/` — shared controls: `DungeonLevelOverlayControls` (configures multi-level overlay rendering)
-  - `shell/runtime/` — `DungeonRuntimeView` (publishes surfaces to `DetailsNavigator`, wires drag-to-move interaction), `DungeonRuntimeInteractionController` (drag-to-move: press on party tile → drag preview → release commits move)
-- `state/` — observable transient state containers with `CopyOnWriteArrayList` listener lists. These are the single source of truth for cross-class coordination:
-  - `DungeonMapState` — loaded map data (catalog entries, active `DungeonLayout`, loading/error state)
-  - `DungeonEditorSessionState` — current tool + view mode
-  - `EditorInteractionState` — shared editor interaction state: selected `DungeonSelectionKey`, active `EditorPreview`, active `EditorDraft`. `DungeonHitSubject` remains event-time hit metadata only
-  - `EditorPreview` — sealed preview payloads for dragged cluster layouts, room paint/delete shapes, and boundary path overlays
-  - `EditorDraft` — sealed shared drafts for boundary-path status
-  - Transition placement state stays tool-local inside `TransitionTool`. Do not reintroduce parallel shared listener channels for transition-private draft state
-  - `DungeonLevelOverlaySettings` — overlay mode (`DungeonLevelOverlayMode`: OFF | NEARBY±range | SELECTED levels), opacity, level range
-  - `DungeonRuntimeState` — active location + heading, loading/dragging/moving mode flags, error state
-
-### Quarantine
-
-`features/world/quarantine/dungeonmap/` is retained only as legacy code outside the clean feature. `features/world/dungeonmap/` must not import from `features.world.quarantine.dungeonmap`; migrate any needed behavior into the clean package structure instead of reintroducing cross-package bridges.
+- `model/`
+  - `geometry/` owns pure grid math and routing primitives.
+  - `interaction/` owns model-side interaction seams such as `InteractiveLabelHandle`; semantic label identity lives here, not in canvas code.
+  - `objects/` owns thin domain objects over geometry such as `Floor`, `Wall`, `Door`, and `StructureGeometry`.
+  - `structures/` owns first-class structures and the structure-specific subpackages `cluster`, `connection`, `corridor`, `room`, `stair`, and `transition`.
+  - `DungeonLayout` stays the feature-wide lookup surface, not a second mutation owner.
+- `application/`
+  - `room/` owns room topology, boundary edits, cluster move projection and persistence, room narration, and exit catalogs.
+  - `corridor/` owns corridor graph editing and persistence orchestration.
+  - `runtime/` owns navigation, location serialization, surface resolution, labels, door/stair/transition catalogs, and runtime state repair.
+  - `transition/` owns transition create/place/delete flows and transition target lookup.
+  - `support/` owns transaction helpers.
+  - Application services orchestrate workflows and transactions; they must not keep a second interpretation of room, corridor, or runtime truth.
+- `loading/`
+  - `DungeonMapLoader` performs JDBC reads, schema compatibility checks, and layout rehydration.
+  - `DungeonMapLoadingService` owns async loading, initial-load deduplication, stale-request suppression via `requestSequence`, and reload-after-write flows.
+- `persistence/`
+  - Write-side repositories and schema helpers only. Storage writes stay here; feature code must not write SQL anywhere else.
+- `catalog/`
+  - Map create/rename/delete lives here with feature-local application and persistence code.
+- `canvas/`
+  - `canvas/base/` owns workspace, camera, pointer events, theme, view mode, render payloads, and scene frame assembly.
+  - `canvas/grid/` owns the grid renderer and interactive label drawing.
+  - Canvas code renders and captures raw input; it does not decide domain meaning.
+- `shell/`
+  - `editor/` owns the editor view, controls, state pane, dropdowns, and tool coordinator wiring.
+  - `editor/interaction/` owns editor tool implementations plus the tool-resolution pipeline.
+  - `interaction/` owns shared hit probing, hit sources, selection objects, placement validation, and drag helpers used by editor and runtime.
+  - `runtime/` owns runtime view, runtime interaction controller, and runtime selection policy.
+- `state/`
+  - Observable cross-class runtime/editor state only. If a transient concern is private to one tool, keep it on the tool.
 
 ## Concern Ownership
 
-The domain-model ownership rules below apply to the full interaction pipeline, not only to `model/`. Treat each mutable concern as having exactly one authoritative owner from input capture through persisted outcome.
+- Hit collection owns raw candidates. `DungeonSelection` is event-time data only.
+- `EditorTool.resolveHit(...)` owns tool-specific interpretation of those candidates. Do not move per-tool allowlists back into a central selector.
+- `EditorInteractionState` owns only shared editor coordination state:
+  - `selectedKey`
+  - `hovered` as `EditorHover`
+  - `activePreview`
+  - `activeDraft`
+- `EditorHover` is explicit render intent: `EditorHoverScope.OWNER` highlights the owning target, `PART` highlights the concrete part. Hover is not just "the current selection key".
+- `DungeonMapState` owns loaded map/catalog data, projection level, overlay settings, loading flags, and mutation-pending state.
+- `DungeonRuntimeState` owns persisted location, drag preview location, heading, and loading/moving error flags.
+- Preview is never commit state. Reload is the authoritative rebuild after a successful write, not a repair step for partial semantics.
 
-- Give each concern exactly one authoritative owner. A concern is any mutable fact or workflow with a central truth: selection, active gesture, preview, draft, loaded map state, persisted edit result, runtime position, corridor bindings, cluster topology.
-- Place ownership at the lowest layer that actually interprets, edits, validates, or completes that concern.
-- Higher layers may trigger, observe, or render a concern, but must not mirror, cache, reconstruct, or locally finalize it.
-- If two classes can both answer "what is the current truth of this concern?", the architecture has already drifted.
+## Editor Interaction
 
-### Layered Concern Boundaries
+- `DungeonEditorSelectionPolicy` only gates raw input phases. It must not encode tool semantics.
+- `EditorInteraction` runs the canonical editor pipeline:
+  1. collect `DungeonHitSnapshot`
+  2. build `DungeonSelection`
+  3. ask the active tool to `resolveHit(...)`
+  4. store hover from `EditorHitResolution`
+  5. dispatch `pressed`, `dragged`, or `released` with an `EditorToolContext` that carries the resolved subject
+- `EditorTool` implementations own gesture meaning. Shared state is justified only when multiple collaborators need it.
+- Tool responsibilities:
+  - `SelectionTool` owns semantic selection plus cluster-drag and corridor-node drag gestures.
+  - `PaintTool` owns room paint/delete sessions from resolved `FloorCellSubject` hits.
+  - `BoundaryTool` owns wall-path drafting. Shared state exposes only boundary preview and lightweight status.
+  - `ConnectionsTool` owns door edits, corridor drafting, node insertion, and corridor deletion.
+  - `TransitionTool` owns transition create/delete gestures and keeps its form state local to the tool.
+- `DungeonSelection.firstSubjectMatching(...)` and `orderedSubjects()` are the shared helpers for per-tool subject resolution. Prefer these over ad-hoc candidate walks.
+- Selection identity is semantic. Use owner-provided keys (`DungeonSelectionKey`, label handles, structure ids) instead of reconstructing or parsing them in renderers.
 
-- UI shell and canvas code own raw input capture, focus, pointer routing, and rendering only. They must not define domain meaning or locally complete edits.
-- Interaction/tool code owns gesture lifecycle and UI-to-domain intent translation. Tool-local gesture state stays on the active tool unless multiple collaborators truly need a shared draft.
-- Shared state containers in `state/` own only cross-class coordination state. They are not a dumping ground for every transient variable and must not become hidden workflow engines.
-- Domain/model objects own domain meaning and structural truth. If a capability is edited, described, constrained, or replanned as part of the domain, the owning model object must answer for it directly.
-- Application services own orchestration, transaction boundaries, persistence sequencing, and async completion wiring. They must not maintain a second domain interpretation of the same edit.
-- Persistence owns stored truth. Loading/rehydration owns reconstruction of the current working projection from stored truth. Neither may be bypassed by silent UI-side "final" state.
-- Layering is a coordination tool, not a license to split one domain operation into separate preview logic, separate commit logic, and separate reload-repair logic. If preview and commit both need the same domain semantics, they must reuse the same canonical operation rather than carry near-duplicate implementations in different layers.
-- Do not treat reload as a normal way to reconcile partial writes or semantic drift between layers. Reload is the authoritative rebuild step after a complete write, not a substitute for an incomplete commit pipeline.
+## Workspace And Rendering
 
-### No Shadow State
+- `DungeonCanvasWorkspace` observes `DungeonMapState` directly for active layout, level, and overlay changes.
+- Rendering is explicit and coalesced: state changes call `requestRedraw()`, `redraw()` builds one `DungeonSceneFrame`, and the grid renderer consumes that snapshot.
+- Views publish batched display-only payloads through `showEditorRenderState(...)` and `showRuntimeRenderOverlay(...)`.
+- The workspace owns zoom, pan, and default level scrolling:
+  - zoom: mouse wheel
+  - pan: middle-mouse drag
+  - level change: Ctrl+scroll or interaction-captured scroll, then `levelScrolled(int)` is sent to the active interaction handler
+- Runtime may replace the default level-scroll handler to clamp to reachable levels.
+- `DungeonEditorRenderState` is display-only. It carries selected target key, explicit hover state, and previews. Do not put workflow state into render payloads.
 
-- Do not duplicate mutable concern state across view, interaction, application, loading, and persistence layers.
-- Projections are disposable views of owner state, not second truths.
-- Preview is never commit state.
-- Selection is never model state.
-- Loaded working state is never a second domain model with its own independent edit truth.
-- Render state is never workflow state.
-- If recovery depends on "reload will probably fix it", ownership is too diffuse.
+## Runtime
 
-### Single Canonical Flow
-
-- Every mutable concern must follow one canonical path from input to persisted outcome.
-- UI captures input.
-- Interaction interprets intent.
-- Domain/application executes the operation.
-- Persistence records the result.
-- Loading/rehydration restores the authoritative working state.
-- No other layer may run a parallel "almost the same" commit pipeline for the same concern.
-- Preview paths may reuse canonical model logic, but they must remain explicitly speculative and must not silently become authoritative state.
-- This layering is the preferred standard for the feature only when the domain semantics are defined exactly once. A flow is not a good reference model if the UI preview, application service, and persistence path each carry their own version of what the operation means.
-- When evaluating or designing a workflow, prefer fewer semantic owners over thinner layers. A slightly deeper domain/application operation is better than multiple shallow layers that each reconstruct part of the same mutation.
-
-### Completion And Failure Semantics
-
-- A concern is complete only where its owner completes it. Async scheduling or optimistic rendering does not transfer ownership.
-- Every async mutating workflow must define pending, success, and failure behavior explicitly.
-- On success, temporary interaction artifacts must be cleared and the working state must converge on the authoritative persisted result.
-- On failure, non-owner projections must be discarded or rebuilt from the authoritative owner. Showing an error while leaving speculative state in place is architectural drift.
-
-### Traceability Rules
-
-- For every mutable concern, a maintainer must be able to answer:
-  1. Who owns it?
-  2. Which layer may change it?
-  3. Which layers may only observe or render it?
-  4. Where does it become persisted truth?
-  5. How is it rebuilt after reload?
-- If answering those questions requires synchronizing multiple partial owners, the design is wrong.
-- Prefer asking the owner over re-deriving truth from neighboring objects.
-- Prefer one deeper owner with a clear API over multiple shallow helpers that each know part of the truth.
-
-### Data Flow
-
-1. `DungeonMapLoadingService.ensureLoaded()` → `CompletableFuture` → `DungeonMapLoader` (JDBC) → `DungeonMapLoadResult`
-2. Result delivered to `DungeonMapState.showLoaded()` on FX thread via `Platform.runLater`
-3. State listeners fire → workspace state sync / render-payload publish → `requestRedraw()` → one coalesced `redraw()`
-4. Edit flow: `EditorInteraction`/active `EditorTool` → edit service → topology/corridor services + write repositories persist in one transaction → reload
-
-### Editor Interaction Model
-
-`DungeonEditorTool` enum defines tool modes (SELECT, ROOM_PAINT, ROOM_DELETE, CLUSTER_WALL/DOOR, TRANSITION_CREATE/DELETE). Tools are grouped into `ToolFamily` for the dropdown toolbar. `DungeonEditorSessionState` holds current tool + view mode.
-
-`EditorInteraction` dispatches events by active `EditorTool`:
-- **SELECT** → `SelectionTool` — click selects clusters/rooms/stairs/transitions via `EditorInteractionState`, drag shows translated cluster preview via `EditorPreview.LayoutPreview`, and the state pane exposes room narration editing
-- **ROOM_PAINT / ROOM_DELETE** → `PaintTool` — manages `RoomPaintSession`, clears selection on paint start, updates `EditorPreview.PaintPreview` during drag, calls `DungeonRoomTopologyService.paint()`/`.delete()` on release
-- **CLUSTER_WALL / CLUSTER_WALL_DELETE** → `BoundaryTool` — owns the wall-path draft locally, publishes overlay edges through `EditorPreview.BoundaryPreview`, and stores only lightweight status/selection in shared state
-- **CONNECTIONS / CONNECTIONS_DELETE** → `ConnectionsTool` — owns door/corridor authoring, direct corridor-graph edits, and corridor-first state-pane actions. Corridor previews must be derived from canonical `Corridor` graph truth instead of a second canvas-local geometry model
-- **TRANSITION_CREATE / TRANSITION_DELETE** → `TransitionTool` — create either places a prepared transition or creates+places atomically from the tool-local transition draft. Delete click-targets transition at cell
-
-Canvas pointer events flow through `DungeonCanvasInteractionHandler` → `handlePressed`/`handleDragged`/`handleReleased` → state update → redraw. Level scrolls are workspace-owned: workspace changes `mapState.activeProjectionLevel` directly, then notifies the handler via `levelScrolled(int)` so tools can react (e.g. `SelectionTool` updates `dragSession.currentLevel`). Hit testing runs through the shared pipeline: editor and runtime build a `DungeonHitProbe`, `DungeonHitCollector` produces a `DungeonHitSnapshot`, and selection/tools consume `DungeonSelection` subjects directly.
-
-### Runtime Navigation Model
-
-`DungeonRuntimeInteractionController` implements drag-to-move: press on the party tile starts a drag, `DungeonRuntimeState.showDragPreview()` renders the preview, release commits the move via `DungeonRuntimeNavigationService.moveToTile()`/`moveThroughDoor()`.
-
-After each move, the runtime view resolves the new location into a presentable surface:
-
-1. `DungeonRuntimeSurfaceResolver` pattern-matches on `DungeonRuntimeLocation` (sealed: Room | Corridor | Tile | StairExit | Transition) → builds `DungeonRuntimeSurface` (title, entry key, visual description, door list, stair list, transition list)
-2. Door enrichment pipeline: structures expose connection boundaries, `DungeonLayout` owns the canonical door registry (`VertexEdge -> Door`), `DoorExitCatalog` groups adjacent boundary edges into openings, then `DungeonRuntimeDoorCatalog`/`DungeonRuntimeDoorDescriptor` add destination labels, narration, and heading-relative labels
-3. Stair enrichment: `DungeonRuntimeStairCatalog` finds stairs with exits on the current level within the surface's cells, builds `DungeonRuntimeStairDescriptor` with destination labels and target locations (excludes exits at the active tile)
-4. Transition enrichment: `DungeonRuntimeTransitionCatalog` finds placed transitions at the surface's cells/level, builds `DungeonRuntimeTransitionDescriptor` with destination labels (overworld tile or dungeon map + target transition)
-5. `DungeonRuntimeSurfacePresenter` converts the surface into JavaFX nodes → published to `DetailsNavigator`
-
-`DungeonRuntimeLabels` provides all display strings (room names, corridor labels joining connected room names, tile coordinates, heading names, stair/transition structure labels at tiles). `DungeonRuntimeLocations` handles bidirectional conversion between `DungeonRuntimeLocation` and the persisted campaign-state format.
-
-Room/corridor narration is model-owned (`RoomNarration`, `RoomExitNarration`). Surface resolution and label generation are static utilities in `application/runtime/`. Do not introduce a separate runtime details panel — surfaces are published through the shared `DetailsNavigator`.
-
-### State Wiring
-
-Each component observes the state objects it needs directly — no coordinator middleman:
-- `DungeonCanvasWorkspace` observes `DungeonMapState` directly for map/level/overlay → `syncFromMapState()` → `requestRedraw()`
-- `DungeonEditorView` wires listeners in its constructor:
-  - `EditorInteractionState` → `DungeonEditorView` assembles one `DungeonEditorRenderState` → `workspace.showEditorRenderState(...)`
-  - `DungeonEditorSessionState` → `workspace.setViewMode()`, tool activation, controls refresh
-  - `DungeonMapState` → controls refresh, tool reactivation on map switch
-- Level scroll is workspace-owned: scroll event → `mapState.setActiveProjectionLevel()` (or custom handler via `setOnLevelScrollRequested()`) → tool notified via `levelScrolled(int)`. Runtime view uses the custom handler for reachable-level clamping.
-
-### Room Topology Reload Semantics
-
-Room paint/delete/boundary edits persist only cluster and room truth in this feature slice. Corridors keep their own node/segment truth, and stairs keep their own explicit path truth. After a successful write, a reload rebuilds all derived corridor/stair projections from persisted geometry plus the current room layout.
+- `DungeonRuntimeInteractionController` owns drag-to-move. Press starts only when the active tile is selected; drag shows preview; release commits a move.
+- `DungeonRuntimeSelectionPolicy` selects the first runtime-selectable subject that actually owns the active tile. Runtime interaction is not driven by the primary hit candidate alone.
+- `DungeonRuntimeView` resolves the active tile first via `DungeonRuntimeLocationTileResolver`, then calls `DungeonRuntimeSurfaceResolver.resolve(layout, location, activeTile, heading)`.
+- `DungeonRuntimeSurfaceResolver` must read from direct structure owners and build one `DungeonRuntimeSurface`; room/corridor/tile/stair/transition presentation all funnel through that one surface model.
+- Runtime details are published through the shared `DetailsNavigator`. Do not add a parallel feature-local runtime details pane.
+- Same-map transition travel should return a resolved navigation snapshot against the current layout immediately; cross-map travel returns a snapshot for the target map and the view triggers a reload.
 
 ## Model Layering
 
-`model/` is split into three layers with strict dependency direction:
+`model/` follows this dependency direction:
 
-```
-geometry/  →  objects/  →  structures/
-```
+`geometry/ -> interaction/ + objects/ -> structures/ -> DungeonLayout`
 
-- **`geometry/`** — Pure grid math primitives: `Point2i`, `CubePoint` (3D grid coordinate), `Tile`, `TileShape`, `VertexEdge`, `VertexPath`, `BoundaryNetwork`, `GridAnchor`, `GridRoute`. Domain-agnostic. No knowledge of walls, doors, rooms.
-- **`objects/`** — Thin domain objects over geometry: `Floor`, `Wall`, `Door`, `StructureGeometry`. `StructureGeometry` is the shared read-owner for walkable floor area plus structural boundary walls. `Door` is the boundary object and runtime/registry carrier for passability state; connectivity lives on `Connection`.
-- **`structures/`** — Self-managed compositions: `Room`, `RoomCluster`, `Corridor`, `DungeonStair`, `DungeonTransition`. Compose objects and own structure-level behavior.
+- `geometry/` owns reusable math with no dungeon semantics.
+- `interaction/` owns model-side interaction descriptors that other layers may consume but not reinterpret.
+- `objects/` are thin domain objects over geometry.
+- `structures/` own dungeon semantics and structure-local behavior.
+- `DungeonLayout` indexes and exposes structure relationships, traversable cells, level projections, connections, stairs, transitions, and lookups. It must not become a second home for structure-specific edit semantics.
 
-`DungeonLayout` is the immutable global lookup layer over structures. Mutations return new instances. Key aggregate queries: `overlappingClusters(TileShape)`, spatial indexes for stairs and transitions (`stairsAtCell(cell, z)`, `stairsAtLevel(z)`, `transitionsAtCell(cell, z)`, `transitionsAtLevel(z)`, `findStair(id)`, `findTransition(id)`), and the canonical room/corridor connection registry. Stair exit positions are included in traversable cells.
+### Key structure rules
 
-### Key Structures
+- `Room` owns room-local truth and narration.
+- `RoomCluster` owns multi-room rewrite logic, grouping, adjacency, and cluster moves.
+- `Connection` owns connectivity; `Door` is the boundary object exposed through that connection.
+- `Corridor` is a first-class structure with stable identity, nodes, segments, bindings, and derived geometry.
+- `DungeonStair` is a first-class structure with stable identity and explicit 3D path geometry. Exits are derived views, not persisted second truths.
+- `DungeonTransition` owns transition identity, placement anchor, destination, and optional bidirectional link. Unplaced transitions are valid; spatial queries must guard for null anchor or placement state.
 
-- **`Room`** — record: roomId, mapId, clusterId, name, `StructureGeometry`, `RoomNarration` (visual description + per-exit `RoomExitNarration` entries). Room edit/persistence seams may still construct from floors/walls, but shared readers consume `geometry()`. Connectivity is queried through layout connections instead of mirrored room-local door state.
-- **`RoomCluster`** — groups rooms spatially, manages adjacency via overlap indexing, and owns cluster-local rewrite logic for paint/delete/boundary changes. `movedBy()` handles translation. Produces `InteractiveLabelHandle` for canvas rendering.
-- **`Corridor`** — first-class horizontal structure: corridorId, mapId, one `levelZ`, stable corridor nodes, stable corridor segments, and corridor-local room bindings on nodes. The graph is canonical; `Corridor` derives shared `StructureGeometry`, corridor-local `Connection`s, and room queries for labels/graph/runtime directly from that graph
-- **`DungeonStair`** — first-class vertical structure: stairId, mapId, name, ordered 3D path (`List<CubePoint>`) as canonical geometry. `DungeonStairExit` values are read-only projections derived from the path nodes that lie on occupied Room-/Corridor-floor cells. Target key: `stair:ID`. Queries: `reachableLevels()`, `occupiedPositions()`, `exitsAtLevel(z)`, `labelHandle(z)`
-- **`DungeonTransition`** — record: transitionId, mapId, description, anchor (`CubePoint`, nullable for unprepared), destination (`DungeonTransitionDestination`: sealed — `OverworldTileDestination(mapId, tileId)` | `DungeonMapDestination(mapId, transitionId)`), linkedTransitionId (for bidirectional pairs). `isPlaced()` checks non-null anchor. Target key: `transition:ID`. Label: "Übergang N".
+## Loading And Persistence
 
-### Layer Rules
+- `DungeonMapLoader` is the only authoritative rehydration path. It loads catalog entries, reconstructs layouts from direct structure tables, skips unusable maps, and falls back to the first usable map when necessary.
+- Room geometry is reconstructed from persisted cluster geometry plus stored boundary edges. Do not add UI-side fallback reconstruction.
+- Storage model:
+  - clusters: relative geometry plus center anchor
+  - rooms: room anchor plus cluster membership
+  - boundaries: `(cell, direction, type)` tuples
+  - corridors: stable corridor identity plus node/segment tables
+  - stairs: stable stair identity plus ordered 3D path nodes
+  - transitions: `dungeon_transitions` with nullable placement coordinates and destination discriminator
+- Write flows should persist in one transaction and then reload through `DungeonMapLoadingService.submitReloadingWrite(...)` or `submitReloadingTask(...)`.
 
-- Geometry owns all reusable mathematical truth. If logic still makes sense without words like "door", "wall", "room", or "corridor", it belongs in geometry.
-- Objects should stay thin — "geometry + one domain rule".
-- Structures may query geometry and objects but must not re-implement primitive math.
-- Each query has exactly one canonical owner on the lowest sensible layer — no convenience duplicates across layers.
-- Runtime state (open/closed/locked) belongs in the `DungeonLayout` door registry, not in geometry or duplicated structure projections. Doors are boundaries; connectivity belongs on `Connection`.
-- `Room` is the canonical owner of room-local topology. `RoomCluster` owns only multi-room facts (grouping, adjacency, partition). Application services must not derive room topology from raw geometry.
-- Selection/interactions keys are canonical semantic identity. If a structure or boundary owner exposes that identity (for example `RoomCluster.labelHandle().key()` or a corridor target-key API), renderers/coordinators/controllers may consume it but must not locally reconstruct or parse it.
-- Clean `dungeonmap/` code must not depend on `features.world.quarantine.dungeonmap`. Shared helpers such as transactions, room-topology orchestration, corridor reconciliation, and runtime-state repair belong locally under `application/` when still needed.
-- Observable transient state belongs in `state/`, not scattered across shell/canvas packages.
-- `Corridor` is a first-class structure with stable identity, graph, derived shared geometry, connections, and corridor-local rules.
-- `DungeonStair` is a first-class structure with stable identity and stair-local path geometry. Whole-stair regeneration may use helper generators, but persisted stair truth is always the explicit 3D path.
-- `DungeonTransition` is the canonical owner of transition identity and destination. Transitions may exist unprepared (anchor=null) — services must guard `isPlaced()` before spatial queries. Bidirectional linking is managed by the edit service, not the model.
+## Guardrails
 
-### Persistence Model
-
-Cluster geometry is stored as relative vertex loops with a center anchor. Rooms store only their anchor cell and cluster membership — runtime floor shapes are hydrated via BFS flood-fill against cluster cells and boundary edges. Boundary persistence still stores `(cell, direction, type)` tuples; canonical `Door` boundary objects are rebuilt once in the `DungeonLayout` registry, while connectivity stays on `Connection`. Corridors persist their own stable structure identity and geometry. Stairs persist only stable identity plus ordered path nodes; exits are derived during load from path nodes that intersect occupied Room-/Corridor-floor cells.
-
-Stairs use two tables: `dungeon_stairs` (stable identity + name) and `dungeon_stair_path_nodes` (ordered 3D path as canonical geometry). Transitions use `dungeon_transitions` with nullable placement coordinates (cell_x/y, level_z — null for unprepared), destination type discriminator (`OVERWORLD_TILE` | `DUNGEON_MAP`), target FKs per type, and optional `linked_transition_id` for bidirectional pairs.
+- Document only code that exists now. If a directory is empty, treat it as unused, not as permission to spread new responsibilities there.
+- Prefer one clear owner over parallel preview/commit/reload interpretations of the same concern.
+- If a workflow can only be explained by "reload will sort it out", the ownership boundary is wrong.
+- Update this file only when the architecture actually changes. It is guidance, not a changelog.
