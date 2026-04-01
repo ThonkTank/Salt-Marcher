@@ -1,7 +1,6 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
-import features.world.dungeonmap.shell.interaction.DungeonSelectionKey;
 import javafx.scene.Node;
 
 import java.util.Set;
@@ -21,9 +20,7 @@ public sealed interface EditorTool
 
     boolean released(EditorToolContext ctx);
 
-    default DungeonSelectionKey hoverSelectionKey(EditorToolContext ctx) {
-        return ctx == null || ctx.selection() == null ? null : ctx.selection().primaryKey();
-    }
+    EditorHitResolution resolveHit(EditorToolContext ctx, EditorToolPhase phase);
 
     default void levelScrolled(int delta) {
     }

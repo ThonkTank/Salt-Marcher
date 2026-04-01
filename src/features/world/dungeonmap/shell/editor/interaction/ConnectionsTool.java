@@ -20,7 +20,6 @@ import features.world.dungeonmap.shell.interaction.DungeonHitKind;
 import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
 import features.world.dungeonmap.shell.interaction.DungeonSelectionKey;
 import features.world.dungeonmap.shell.interaction.DungeonSelectionLookup;
-import features.world.dungeonmap.shell.interaction.DungeonSelection;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.EditorInteractionState;
@@ -103,7 +102,7 @@ public final class ConnectionsTool implements EditorTool {
         if (event == null || !event.isPrimaryButton()) {
             return false;
         }
-        DungeonHitSubject hit = resolvedSubject(ctx);
+        DungeonHitSubject hit = ctx == null ? null : ctx.resolvedSubject();
         if (sessionState.selectedTool() == DungeonEditorTool.CONNECTIONS_DELETE) {
             return handleDeletePressed(ctx, ctx.activeMap(), hit);
         }
@@ -121,23 +120,27 @@ public final class ConnectionsTool implements EditorTool {
     }
 
     @Override
-    public DungeonSelectionKey hoverSelectionKey(EditorToolContext ctx) {
-        DungeonHitSubject subject = resolvedSubject(ctx);
+    public EditorHitResolution resolveHit(EditorToolContext ctx, EditorToolPhase phase) {
+        DungeonHitSubject subject = resolvedSubject(
+                ctx == null ? null : ctx.selection(),
+                ctx == null ? null : ctx.activeMap(),
+                ctx == null || ctx.probe() == null ? mapState.activeProjectionLevel() : ctx.probe().levelZ());
         if (subject == null) {
-            return null;
+            return EditorHitResolution.none();
         }
         if (subject instanceof DungeonHitSubject.RoomBoundarySubject
                 || subject instanceof DungeonHitSubject.ConnectionSubject
                 || subject instanceof DungeonHitSubject.CorridorNodeSubject
                 || subject instanceof DungeonHitSubject.CorridorCornerSubject
-                || subject instanceof DungeonHitSubject.CorridorSegmentSubject) {
-            return EditorHoverKeys.partOnly(subject);
+                || subject instanceof DungeonHitSubject.CorridorSegmentSubject
+                || subject instanceof DungeonHitSubject.FloorCellSubject) {
+            return EditorHitResolution.part(subject);
         }
         if (subject instanceof DungeonHitSubject.RoomSubject
                 || subject instanceof DungeonHitSubject.CorridorSubject) {
-            return EditorHoverKeys.ownerOnly(subject);
+            return EditorHitResolution.owner(subject);
         }
-        return subject.selectionKey();
+        return EditorHitResolution.subjectOnly(subject);
     }
 
     @Override
@@ -173,18 +176,18 @@ public final class ConnectionsTool implements EditorTool {
         }
         if (hit instanceof DungeonHitSubject.RoomBoundarySubject roomBoundaryHit) {
             if (isEditableDoorBoundary(roomBoundaryHit, layout, ctx.probe().levelZ())) {
-                applySelection(ctx.selection(), resolvedSelectionKey(ctx));
+                applySelection(ctx == null ? null : ctx.resolvedSelectionKey());
                 applyDoorEdit(
                         roomBoundaryHit.clusterId(),
                         roomBoundaryHit.edge(),
                         false,
-                        resolvedSelectionKey(ctx));
+                        ctx == null ? null : ctx.resolvedSelectionKey());
                 return true;
             }
             if (!roomBoundaryHit.exterior()) {
                 return false;
             }
-            applySelection(ctx.selection(), resolvedSelectionKey(ctx));
+            applySelection(ctx == null ? null : ctx.resolvedSelectionKey());
             if (draft == null) {
                 startDraft(roomBoundaryHit, layout);
                 return true;
@@ -197,30 +200,30 @@ public final class ConnectionsTool implements EditorTool {
             return true;
         }
         if (draft != null && hit instanceof DungeonHitSubject.CorridorNodeSubject corridorNodeHit) {
-            applySelection(ctx.selection(), resolvedSelectionKey(ctx));
+            applySelection(ctx == null ? null : ctx.resolvedSelectionKey());
             finishDraftWithCorridorNode(corridorNodeHit, layout);
             return true;
         }
         if (hit instanceof DungeonHitSubject.CorridorCornerSubject cornerHit) {
-            applySelection(ctx.selection(), resolvedSelectionKey(ctx));
+            applySelection(ctx == null ? null : ctx.resolvedSelectionKey());
             insertNode(cornerHit.corridorId(), cornerHit.segmentId(), cornerHit.doubledPoint());
             return true;
         }
         if (hit instanceof DungeonHitSubject.CorridorSegmentSubject segmentHit) {
-            applySelection(ctx.selection(), resolvedSelectionKey(ctx));
+            applySelection(ctx == null ? null : ctx.resolvedSelectionKey());
             insertNode(segmentHit.corridorId(), segmentHit.segmentId(), segmentHit.doubledPoint());
             return true;
         }
         if (hit instanceof DungeonHitSubject.CorridorNodeSubject nodeHit) {
-            applySelection(ctx.selection(), resolvedSelectionKey(ctx));
+            applySelection(ctx == null ? null : ctx.resolvedSelectionKey());
             return true;
         }
         if (hit instanceof DungeonHitSubject.ConnectionSubject connectionHit) {
-            applySelection(ctx.selection(), resolvedSelectionKey(ctx));
+            applySelection(ctx == null ? null : ctx.resolvedSelectionKey());
             return true;
         }
         if (hit instanceof DungeonHitSubject.RoomSubject roomHit) {
-            applySelection(ctx.selection(), resolvedSelectionKey(ctx));
+            applySelection(ctx == null ? null : ctx.resolvedSelectionKey());
             return true;
         }
         return false;
@@ -232,13 +235,13 @@ public final class ConnectionsTool implements EditorTool {
         }
         if (hit instanceof DungeonHitSubject.ConnectionSubject connectionHit
                 && connectionHit.connectionKind() == features.world.dungeonmap.model.structures.connection.ConnectionKind.LOCAL) {
-            applySelection(ctx == null ? null : ctx.selection(), resolvedSelectionKey(ctx));
+            applySelection(ctx == null ? null : ctx.resolvedSelectionKey());
             applyDoorEdit(connectionHit.clusterId(), connectionHit.edge(), true, corridorOwnerlessClusterKey(connectionHit.clusterId()));
             return true;
         }
         Long corridorId = corridorId(hit);
         if (corridorId != null) {
-            applySelection(ctx == null ? null : ctx.selection(), resolvedSelectionKey(ctx));
+            applySelection(ctx == null ? null : ctx.resolvedSelectionKey());
             Long mapId = mapState.activeMapId();
             if (mapId == null) {
                 return true;
@@ -510,26 +513,22 @@ public final class ConnectionsTool implements EditorTool {
         };
     }
 
-    private DungeonSelectionKey resolvedSelectionKey(EditorToolContext ctx) {
-        DungeonHitSubject subject = resolvedSubject(ctx);
-        return subject == null ? null : subject.selectionKey();
-    }
-
-    private DungeonHitSubject resolvedSubject(EditorToolContext ctx) {
-        if (ctx == null || ctx.selection() == null) {
+    private DungeonHitSubject resolvedSubject(
+            features.world.dungeonmap.shell.interaction.DungeonSelection selection,
+            DungeonLayout layout,
+            int levelZ
+    ) {
+        if (selection == null) {
             return null;
         }
-        List<DungeonHitSubject> subjects = ctx.selection().orderedCandidates().stream()
-                .map(candidate -> candidate.descriptor().subject())
-                .filter(Objects::nonNull)
-                .toList();
+        List<DungeonHitSubject> subjects = selection.orderedSubjects();
         if (subjects.isEmpty()) {
             return null;
         }
         if (sessionState.selectedTool() == DungeonEditorTool.CONNECTIONS_DELETE) {
             return resolveDeleteSubject(subjects);
         }
-        return resolveCreateSubject(subjects, ctx.activeMap(), ctx.probe().levelZ());
+        return resolveCreateSubject(subjects, layout, levelZ);
     }
 
     private DungeonHitSubject resolveCreateSubject(List<DungeonHitSubject> subjects, DungeonLayout layout, int levelZ) {
@@ -596,13 +595,9 @@ public final class ConnectionsTool implements EditorTool {
         return null;
     }
 
-    private void applySelection(DungeonSelection selection, DungeonSelectionKey resolvedKey) {
+    private void applySelection(DungeonSelectionKey resolvedKey) {
         if (resolvedKey != null) {
             state.selectKey(resolvedKey);
-            return;
-        }
-        if (selection != null) {
-            state.applySelection(selection);
         }
     }
 

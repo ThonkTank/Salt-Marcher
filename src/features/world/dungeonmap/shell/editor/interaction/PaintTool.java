@@ -6,6 +6,7 @@ import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
+import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.EditorInteractionState;
@@ -61,7 +62,7 @@ public final class PaintTool implements EditorTool {
             clear();
             return false;
         }
-        Point2i cell = event.gridCell();
+        Point2i cell = resolvedCell(ctx);
         if (cell == null || !sessionState.selectedTool().isRoomTool()) {
             clear();
             return false;
@@ -78,7 +79,7 @@ public final class PaintTool implements EditorTool {
         if (event == null || !event.isPrimaryButtonDown()) {
             return false;
         }
-        Point2i cell = event.gridCell();
+        Point2i cell = resolvedCell(ctx);
         if (paintSession == null || cell == null || !sessionState.selectedTool().isRoomTool()) {
             return false;
         }
@@ -96,7 +97,7 @@ public final class PaintTool implements EditorTool {
         if (event == null) {
             return false;
         }
-        Point2i cell = event.gridCell();
+        Point2i cell = resolvedCell(ctx);
         if (paintSession == null || cell == null) {
             return false;
         }
@@ -128,11 +129,33 @@ public final class PaintTool implements EditorTool {
     }
 
     @Override
+    public EditorHitResolution resolveHit(EditorToolContext ctx, EditorToolPhase phase) {
+        if (ctx == null || !sessionState.selectedTool().isRoomTool()) {
+            return EditorHitResolution.none();
+        }
+        DungeonHitSubject subject = ctx.selection() == null
+                ? null
+                : ctx.selection().firstSubjectMatching(candidate -> candidate instanceof DungeonHitSubject.FloorCellSubject);
+        if (!(subject instanceof DungeonHitSubject.FloorCellSubject)) {
+            return EditorHitResolution.none();
+        }
+        return phase == EditorToolPhase.HOVER
+                ? EditorHitResolution.none()
+                : EditorHitResolution.subjectOnly(subject);
+    }
+
+    @Override
     public void setRefreshCallback(Runnable callback) {
     }
 
     private void clear() {
         paintSession = null;
         state.clearPreview();
+    }
+
+    private static Point2i resolvedCell(EditorToolContext ctx) {
+        return ctx != null && ctx.resolvedSubject() instanceof DungeonHitSubject.FloorCellSubject floorCellSubject
+                ? floorCellSubject.cell()
+                : null;
     }
 }

@@ -2,6 +2,7 @@ package features.world.dungeonmap.shell.interaction;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 public record DungeonSelection(
         DungeonHitSnapshot snapshot,
@@ -29,5 +30,24 @@ public record DungeonSelection(
 
     public boolean isEmpty() {
         return orderedCandidates.isEmpty();
+    }
+
+    public List<DungeonHitSubject> orderedSubjects() {
+        return orderedCandidates.stream()
+                .map(candidate -> candidate.descriptor().subject())
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    public DungeonHitSubject firstSubjectMatching(Predicate<DungeonHitSubject> predicate) {
+        if (predicate == null) {
+            return null;
+        }
+        for (DungeonHitSubject subject : orderedSubjects()) {
+            if (predicate.test(subject)) {
+                return subject;
+            }
+        }
+        return null;
     }
 }

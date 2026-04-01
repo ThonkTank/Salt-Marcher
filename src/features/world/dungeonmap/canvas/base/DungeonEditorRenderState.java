@@ -4,13 +4,13 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.geometry.VertexEdge;
-import features.world.dungeonmap.shell.interaction.DungeonSelectionKey;
+import features.world.dungeonmap.state.EditorHover;
 
 import java.util.Set;
 
 public record DungeonEditorRenderState(
         String selectedTargetKey,
-        DungeonSelectionKey hoveredSelectionKey,
+        EditorHover hovered,
         DungeonLayout previewLayout,
         TileShape paintPreviewShape,
         boolean paintPreviewDeleteMode,

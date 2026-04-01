@@ -26,23 +26,22 @@ public final class DungeonRuntimeSurfaceResolver {
     public static DungeonRuntimeSurface resolve(
             DungeonLayout layout,
             DungeonRuntimeLocation location,
+            CubePoint activeTile,
             CardinalDirection heading
     ) {
-        if (layout == null || location == null) {
+        if (layout == null || location == null || activeTile == null) {
             return null;
         }
-        CubePoint activeTile = DungeonRuntimeLocationTileResolver.resolve(layout, location);
         if (location instanceof DungeonRuntimeLocation.Room roomLocation) {
             return roomSurface(layout, layout.findRoom(roomLocation.roomId()), heading, activeTile);
         }
         if (location instanceof DungeonRuntimeLocation.Corridor corridorLocation) {
             return corridorSurface(layout, layout.findCorridor(corridorLocation.corridorId()), heading, activeTile);
         }
-        if (location instanceof DungeonRuntimeLocation.Tile tileLocation) {
-            return tileSurface(layout, tileLocation.tile(), heading);
-        }
-        if (location instanceof DungeonRuntimeLocation.StairExit stairExit) {
-            return tileSurface(layout, stairExit.tile(), heading);
+        if (location instanceof DungeonRuntimeLocation.Tile
+                || location instanceof DungeonRuntimeLocation.StairExit
+                || location instanceof DungeonRuntimeLocation.Transition) {
+            return tileSurface(layout, activeTile, heading);
         }
         return null;
     }

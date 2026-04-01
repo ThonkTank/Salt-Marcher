@@ -26,6 +26,7 @@ import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.shell.interaction.DungeonSelectionKey;
 import features.world.dungeonmap.shell.interaction.DungeonSelectionLookup;
+import features.world.dungeonmap.state.EditorHover;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -445,11 +446,16 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
     }
 
     private static void drawHoverSelection(StructureRenderPass pass) {
-        if (pass.overlayPass() || pass.hoveredSelectionKey() == null) {
+        EditorHover hovered = pass.hovered();
+        if (pass.overlayPass() || hovered == null) {
             return;
         }
-        drawHoveredTarget(pass, pass.hoveredSelectionKey());
-        drawHoveredPart(pass, pass.hoveredSelectionKey());
+        if (hovered.scope().showsTarget()) {
+            drawHoveredTarget(pass, hovered.key());
+        }
+        if (hovered.scope().showsPart()) {
+            drawHoveredPart(pass, hovered.key());
+        }
     }
 
     private static void drawHoveredTarget(StructureRenderPass pass, DungeonSelectionKey key) {
@@ -1043,7 +1049,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             double gridSize,
             boolean editorMode,
             String selectedTargetKey,
-            DungeonSelectionKey hoveredSelectionKey,
+            EditorHover hovered,
             int projectionLevel,
             LayerPalette palette,
             boolean overlayPass
@@ -1054,7 +1060,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 DungeonCanvasCamera camera,
                 boolean editorMode,
                 String selectedTargetKey,
-                DungeonSelectionKey hoveredSelectionKey,
+                EditorHover hovered,
                 int projectionLevel,
                 LayerPalette palette,
                 boolean overlayPass
@@ -1066,7 +1072,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                     DungeonCanvasTheme.BASE_GRID * camera.zoom(),
                     editorMode,
                     selectedTargetKey,
-                    hoveredSelectionKey,
+                    hovered,
                     projectionLevel,
                     palette,
                     overlayPass);
@@ -1183,7 +1189,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                     frame.camera(),
                     frame.editorMode(),
                     frame.editor().selectedTargetKey(),
-                    frame.editor().hoveredSelectionKey(),
+                    frame.editor().hovered(),
                     frame.projectionLevel(),
                     LayerPalette.current(frame.editorMode()),
                     false);

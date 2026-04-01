@@ -67,7 +67,8 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
         if (!decision.dispatchToTool()) {
             return false;
         }
-        return activeTool.pressed(contextFor(event, snapshot, decision.selection()));
+        ResolvedToolContext resolved = resolve(event, snapshot, decision.selection(), EditorToolPhase.PRESS);
+        return activeTool.pressed(resolved.context());
     }
 
     @Override
@@ -82,7 +83,7 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
             return;
         }
         DungeonSelection selection = selectionFor(snapshot.hitSnapshot());
-        state.hoverKey(activeTool.hoverSelectionKey(contextFor(event, snapshot, selection)));
+        state.showHover(resolve(event, snapshot, selection, EditorToolPhase.HOVER).resolution().hover());
     }
 
     @Override
@@ -104,7 +105,8 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
         if (!decision.dispatchToTool()) {
             return false;
         }
-        return activeTool.dragged(contextFor(event, snapshot, decision.selection()));
+        ResolvedToolContext resolved = resolve(event, snapshot, decision.selection(), EditorToolPhase.DRAG);
+        return activeTool.dragged(resolved.context());
     }
 
     @Override
@@ -126,7 +128,8 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
         if (!decision.dispatchToTool()) {
             return false;
         }
-        return activeTool.released(contextFor(event, snapshot, decision.selection()));
+        ResolvedToolContext resolved = resolve(event, snapshot, decision.selection(), EditorToolPhase.RELEASE);
+        return activeTool.released(resolved.context());
     }
 
     @Override
@@ -173,7 +176,8 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
     private EditorToolContext contextFor(
             DungeonCanvasPointerEvent event,
             EditorContextSnapshot snapshot,
-            DungeonSelection selection
+            DungeonSelection selection,
+            features.world.dungeonmap.shell.interaction.DungeonHitSubject resolvedSubject
     ) {
         return new EditorToolContext(
                 event,
@@ -181,7 +185,23 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
                 snapshot.probe(),
                 snapshot.hitSnapshot(),
                 selection,
+                resolvedSubject,
                 state);
+    }
+
+    private ResolvedToolContext resolve(
+            DungeonCanvasPointerEvent event,
+            EditorContextSnapshot snapshot,
+            DungeonSelection selection,
+            EditorToolPhase phase
+    ) {
+        EditorToolContext baseContext = contextFor(event, snapshot, selection, null);
+        EditorHitResolution resolution = activeTool == null
+                ? EditorHitResolution.none()
+                : activeTool.resolveHit(baseContext, phase);
+        return new ResolvedToolContext(
+                contextFor(event, snapshot, selection, resolution.subject()),
+                resolution);
     }
 
     private EditorContextSnapshot collect(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
@@ -224,6 +244,12 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
             DungeonCanvasCamera camera,
             DungeonHitProbe probe,
             DungeonHitSnapshot hitSnapshot
+    ) {
+    }
+
+    private record ResolvedToolContext(
+            EditorToolContext context,
+            EditorHitResolution resolution
     ) {
     }
 }

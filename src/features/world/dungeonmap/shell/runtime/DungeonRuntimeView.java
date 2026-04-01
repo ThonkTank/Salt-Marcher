@@ -383,12 +383,16 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
 
     private RuntimePresentation resolveRuntimePresentation() {
         DungeonRuntimeLocation location = runtimeState.activeLocation();
+        var layout = state().activeMap();
         CardinalDirection heading = runtimeState.heading();
-        if (location == null || state().activeMap() == null) {
+        if (location == null || layout == null) {
             return RuntimePresentation.empty();
         }
-        DungeonRuntimeSurface surface = DungeonRuntimeSurfaceResolver.resolve(state().activeMap(), location, heading);
-        CubePoint activeTile = DungeonRuntimeLocationTileResolver.resolve(state().activeMap(), location);
+        CubePoint activeTile = DungeonRuntimeLocationTileResolver.resolve(layout, location);
+        if (activeTile == null) {
+            return RuntimePresentation.empty();
+        }
+        DungeonRuntimeSurface surface = DungeonRuntimeSurfaceResolver.resolve(layout, location, activeTile, heading);
         List<DungeonDoorNumberOverlay> doorNumbers = surface == null
                 ? List.of()
                 : surface.doors().stream()

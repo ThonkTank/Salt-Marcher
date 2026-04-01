@@ -51,13 +51,13 @@ public final class DungeonRuntimeSelectionPolicy {
     ) {
         if (!event.isPrimaryButton()
                 || activeTile == null
-                || selection.primary() == null
                 || activeTile.z() != selection.snapshot().probe().levelZ()
                 || !activeTile.projectedCell().equals(selection.snapshot().probe().gridCell())) {
             return new DungeonSelectionDecision(selection, false, false);
         }
-        DungeonHitSubject subject = selection.primary().descriptor().subject();
-        if (!isRuntimeSelectable(subject) || !subjectOwnsActiveTile(activeMap, activeTile, subject)) {
+        DungeonHitSubject subject = selection.firstSubjectMatching(candidate ->
+                isRuntimeSelectable(candidate) && subjectOwnsActiveTile(activeMap, activeTile, candidate));
+        if (subject == null) {
             return new DungeonSelectionDecision(selection, false, false);
         }
         return new DungeonSelectionDecision(selection, true, true);

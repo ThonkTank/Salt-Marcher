@@ -157,13 +157,17 @@ public final class DungeonRuntimeNavigationService {
             if (dungeon.transitionId() == null) {
                 throw new SQLException("Ziel-Übergang ist noch nicht platziert");
             }
+            DungeonRuntimeLocation targetLocation = DungeonRuntimeLocation.transition(dungeon.transitionId());
             try (Connection conn = DatabaseManager.getConnection()) {
                 CampaignStateApi.setDungeonPosition(conn, DungeonRuntimeLocations.toCampaignPosition(
                         dungeon.mapId(),
-                        DungeonRuntimeLocation.transition(dungeon.transitionId()),
+                        targetLocation,
                         currentHeading));
             }
-            return new DungeonRuntimeNavigationSnapshot(dungeon.mapId(), DungeonRuntimeLocation.transition(dungeon.transitionId()), currentHeading);
+            if (dungeon.mapId() == layout.mapId()) {
+                return resolveNavigation(layout, targetLocation, currentHeading);
+            }
+            return new DungeonRuntimeNavigationSnapshot(dungeon.mapId(), targetLocation, currentHeading);
         }
         throw new SQLException("Unbekanntes Übergangsziel");
     }

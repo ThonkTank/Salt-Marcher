@@ -4,7 +4,9 @@ import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.shell.interaction.DungeonHitProbe;
 import features.world.dungeonmap.shell.interaction.DungeonHitSnapshot;
+import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
 import features.world.dungeonmap.shell.interaction.DungeonSelection;
+import features.world.dungeonmap.shell.interaction.DungeonSelectionKey;
 import features.world.dungeonmap.state.EditorInteractionState;
 
 public record EditorToolContext(
@@ -13,9 +15,14 @@ public record EditorToolContext(
         DungeonHitProbe probe,
         DungeonHitSnapshot snapshot,
         DungeonSelection selection,
+        DungeonHitSubject resolvedSubject,
         EditorInteractionState state
 ) {
     public EditorToolContext {
         activeMap = activeMap == null ? DungeonLayout.empty() : activeMap;
+    }
+
+    public DungeonSelectionKey resolvedSelectionKey() {
+        return resolvedSubject == null ? null : resolvedSubject.selectionKey();
     }
 }

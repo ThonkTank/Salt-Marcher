@@ -12,7 +12,7 @@ public final class EditorInteractionState {
     private final List<Runnable> listeners = new CopyOnWriteArrayList<>();
 
     private DungeonSelectionKey selectedKey;
-    private DungeonSelectionKey hoveredKey;
+    private EditorHover hovered;
     private EditorPreview activePreview;
     private EditorDraft activeDraft;
 
@@ -50,28 +50,20 @@ public final class EditorInteractionState {
         selectKey(null);
     }
 
-    public DungeonSelectionKey hoveredKey() {
-        return hoveredKey;
+    public EditorHover hovered() {
+        return hovered;
     }
 
-    public String hoveredTargetKey() {
-        return hoveredKey == null ? null : hoveredKey.targetKey();
-    }
-
-    public String hoveredPartKey() {
-        return hoveredKey == null ? null : hoveredKey.partKey();
-    }
-
-    public void hoverKey(DungeonSelectionKey key) {
-        if (Objects.equals(hoveredKey, key)) {
+    public void showHover(EditorHover hover) {
+        if (Objects.equals(hovered, hover)) {
             return;
         }
-        hoveredKey = key;
+        hovered = hover;
         notifyListeners();
     }
 
     public void clearHover() {
-        hoverKey(null);
+        showHover(null);
     }
 
     public EditorPreview activePreview() {

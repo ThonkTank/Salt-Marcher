@@ -9,12 +9,12 @@ import features.world.dungeonmap.application.transition.DungeonTransitionTargetS
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapCatalogEntry;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
+import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.shell.editor.EditorCards;
 import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
 import features.world.dungeonmap.shell.interaction.DungeonSelectionLookup;
-import features.world.dungeonmap.shell.interaction.DungeonSelection;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.EditorInteractionState;
@@ -132,7 +132,7 @@ public final class TransitionTool implements EditorTool {
             return false;
         }
         return switch (sessionState.selectedTool()) {
-            case TRANSITION_CREATE -> handleCreatePressed(event);
+            case TRANSITION_CREATE -> handleCreatePressed(ctx);
             case TRANSITION_DELETE -> handleDeletePressed(ctx);
             default -> false;
         };
@@ -146,6 +146,27 @@ public final class TransitionTool implements EditorTool {
     @Override
     public boolean released(EditorToolContext ctx) {
         return false;
+    }
+
+    @Override
+    public EditorHitResolution resolveHit(EditorToolContext ctx, EditorToolPhase phase) {
+        DungeonEditorTool tool = sessionState.selectedTool();
+        if (tool == DungeonEditorTool.TRANSITION_CREATE) {
+            if (phase == EditorToolPhase.HOVER) {
+                return EditorHitResolution.none();
+            }
+            DungeonHitSubject subject = ctx == null || ctx.selection() == null
+                    ? null
+                    : ctx.selection().firstSubjectMatching(candidate -> candidate instanceof DungeonHitSubject.FloorCellSubject);
+            return subject == null ? EditorHitResolution.none() : EditorHitResolution.subjectOnly(subject);
+        }
+        if (tool == DungeonEditorTool.TRANSITION_DELETE) {
+            DungeonHitSubject subject = ctx == null || ctx.selection() == null
+                    ? null
+                    : ctx.selection().firstSubjectMatching(candidate -> candidate instanceof DungeonHitSubject.TransitionSubject);
+            return subject == null ? EditorHitResolution.none() : EditorHitResolution.owner(subject);
+        }
+        return EditorHitResolution.none();
     }
 
     @Override
@@ -164,9 +185,10 @@ public final class TransitionTool implements EditorTool {
         refreshCallback = callback == null ? () -> { } : callback;
     }
 
-    private boolean handleCreatePressed(DungeonCanvasPointerEvent event) {
+    private boolean handleCreatePressed(EditorToolContext ctx) {
         Long mapId = mapState.activeMapId();
-        if (mapId == null || event.gridCell() == null) {
+        Point2i cell = selectedFloorCell(ctx);
+        if (mapId == null || cell == null) {
             return false;
         }
         clearPlacementError();
@@ -175,7 +197,7 @@ public final class TransitionTool implements EditorTool {
             loadingService.submitReloadingWrite(
                     () -> transitionEditService.placePrepared(
                             preparedTransitionId,
-                            event.gridCell(),
+                            cell,
                             mapState.activeProjectionLevel()),
                     mapId,
                     null,
@@ -188,7 +210,7 @@ public final class TransitionTool implements EditorTool {
         loadingService.submitReloadingWrite(
                 () -> transitionEditService.create(
                         mapState.activeMap(),
-                        event.gridCell(),
+                        cell,
                         mapState.activeProjectionLevel(),
                         createRequest()),
                 mapId,
@@ -206,8 +228,7 @@ public final class TransitionTool implements EditorTool {
         if (mapId == null || event.gridCell() == null) {
             return false;
         }
-        DungeonSelection selection = ctx == null ? null : ctx.selection();
-        DungeonHitSubject.TransitionSubject transitionSubject = selectedTransitionSubject(primarySubject(selection));
+        DungeonHitSubject.TransitionSubject transitionSubject = selectedTransitionSubject(ctx == null ? null : ctx.resolvedSubject());
         DungeonTransition transition = transitionSubject == null
                 ? null
                 : mapState.activeMap().findTransition(transitionSubject.transitionId());
@@ -215,9 +236,7 @@ public final class TransitionTool implements EditorTool {
             state.clearSelection();
             return false;
         }
-        if (selection != null) {
-            state.applySelection(selection);
-        }
+        state.selectKey(ctx == null ? null : ctx.resolvedSelectionKey());
         loadingService.submitReloadingWrite(
                 () -> transitionEditService.delete(transition.transitionId()),
                 mapId,
@@ -668,10 +687,10 @@ public final class TransitionTool implements EditorTool {
                 : null;
     }
 
-    private static DungeonHitSubject primarySubject(DungeonSelection selection) {
-        return selection == null || selection.primary() == null
-                ? null
-                : selection.primary().descriptor().subject();
+    private static Point2i selectedFloorCell(EditorToolContext ctx) {
+        return ctx != null && ctx.resolvedSubject() instanceof DungeonHitSubject.FloorCellSubject floorCellSubject
+                ? floorCellSubject.cell()
+                : null;
     }
 
     private static String transitionLabel(Long transitionId) {

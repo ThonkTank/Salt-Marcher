@@ -140,12 +140,12 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
 
     private static DungeonEditorRenderState editorRenderState(EditorInteractionState interactionState) {
         String selectedTargetKey = interactionState.selectedTargetKey();
-        var hoveredSelectionKey = interactionState.hoveredKey();
+        var hovered = interactionState.hovered();
         EditorPreview preview = interactionState.activePreview();
         if (preview instanceof EditorPreview.LayoutPreview layoutPreview) {
             return new DungeonEditorRenderState(
                     selectedTargetKey,
-                    hoveredSelectionKey,
+                    hovered,
                     layoutPreview.layout(),
                     TileShape.empty(),
                     false,
@@ -158,7 +158,7 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
         if (preview instanceof EditorPreview.PaintPreview paintPreview) {
             return new DungeonEditorRenderState(
                     selectedTargetKey,
-                    hoveredSelectionKey,
+                    hovered,
                     null,
                     paintPreview.shape(),
                     paintPreview.deleteMode(),
@@ -171,7 +171,7 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
         if (preview instanceof EditorPreview.BoundaryPreview boundaryPreview) {
             return new DungeonEditorRenderState(
                     selectedTargetKey,
-                    hoveredSelectionKey,
+                    hovered,
                     null,
                     TileShape.empty(),
                     false,
@@ -183,7 +183,7 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
         }
         return new DungeonEditorRenderState(
                 selectedTargetKey,
-                hoveredSelectionKey,
+                hovered,
                 null,
                 TileShape.empty(),
                 false,
