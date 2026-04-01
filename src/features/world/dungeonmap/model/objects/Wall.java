@@ -1,20 +1,55 @@
 package features.world.dungeonmap.model.objects;
 
+import features.world.dungeonmap.model.geometry.CompositeShape;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.geometry.GridShape;
+import features.world.dungeonmap.model.geometry.GridShapes;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.geometry.VertexPath;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
-public final class Wall extends VertexPath {
+public final class Wall extends VertexPath implements DungeonObject {
+
+    private final List<GridSegment2x> segments2x;
 
     // A wall is a path-shaped object whose only added domain rule is that passage is always blocked.
     public Wall(Collection<VertexEdge> edges) {
         super(edges);
+        this.segments2x = edges().stream()
+                .map(GridSegment2x::fromVertexEdge)
+                .sorted(GridSegment2x.SEGMENT_ORDER)
+                .toList();
+    }
+
+    public static Wall fromSegments(Collection<GridSegment2x> segments) {
+        ArrayList<VertexEdge> edges = new ArrayList<>();
+        if (segments != null) {
+            segments.stream()
+                    .filter(segment -> segment != null)
+                    .sorted(GridSegment2x.SEGMENT_ORDER)
+                    .forEach(segment -> segment.toVertexEdge().ifPresent(edges::add));
+        }
+        return new Wall(edges);
     }
 
     protected VertexPath recreate(Collection<VertexEdge> edges) {
         return new Wall(edges);
+    }
+
+    @Override
+    public GridShape shape2x() {
+        if (segments2x.isEmpty()) {
+            return new CompositeShape(List.of());
+        }
+        return GridShapes.union(segments2x.stream().map(GridShapes::edge).toList());
+    }
+
+    public List<GridSegment2x> segments2x() {
+        return segments2x;
     }
 
     public Wall movedBy(Point2i delta) {

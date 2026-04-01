@@ -24,7 +24,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `model/`
   - `geometry/` owns pure grid math and routing primitives.
   - `interaction/` owns model-side interaction seams such as `InteractiveLabelHandle`; semantic label identity lives here, not in canvas code.
-  - `objects/` owns thin domain objects over geometry such as `Floor`, `Wall`, `Door`, and `StructureGeometry`.
+  - `objects/` owns thin domain objects over geometry such as `Floor`, `Wall`, `Door`, `StructureObject`, and the transitional `StructureGeometry` facade.
   - `structures/` owns first-class structures and the structure-specific subpackages `cluster`, `connection`, `corridor`, `room`, `stair`, and `transition`.
   - `DungeonLayout` stays the feature-wide lookup surface, not a second mutation owner.
 - `application/`

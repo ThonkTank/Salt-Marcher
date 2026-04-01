@@ -21,11 +21,10 @@ import java.util.Set;
  */
 public final class StructureGeometry {
 
-    private final Map<Integer, Floor> floors;
-    private final List<Wall> walls;
+    private final StructureObject structureObject;
 
     public static StructureGeometry empty() {
-        return new StructureGeometry(Map.of(), List.of());
+        return new StructureGeometry(StructureObject.empty());
     }
 
     public static StructureGeometry create(Floor floor) {
@@ -35,125 +34,86 @@ public final class StructureGeometry {
     public static StructureGeometry create(Map<Integer, Floor> floors) {
         Map<Integer, Floor> resolvedFloors = normalizedFloors(floors);
         Set<VertexEdge> boundaryEdges = boundaryEdges(resolvedFloors);
-        return new StructureGeometry(
+        return new StructureGeometry(StructureObject.fromLegacyFloorsAndWalls(
                 resolvedFloors,
-                boundaryEdges.isEmpty() ? List.of() : List.of(new Wall(boundaryEdges)));
+                boundaryEdges.isEmpty() ? List.of() : List.of(new Wall(boundaryEdges))));
     }
 
     public static StructureGeometry resolved(Map<Integer, Floor> floors, Collection<Wall> walls) {
         Map<Integer, Floor> resolvedFloors = normalizedFloors(floors);
-        return new StructureGeometry(
+        return new StructureGeometry(StructureObject.fromLegacyFloorsAndWalls(
                 resolvedFloors,
-                normalizedWalls(walls, boundaryEdges(resolvedFloors)));
+                normalizedWalls(walls, boundaryEdges(resolvedFloors))));
     }
 
     public static StructureGeometry fromCubePoints(Collection<CubePoint> cubePoints) {
-        if (cubePoints == null || cubePoints.isEmpty()) {
-            return empty();
-        }
-        Map<Integer, Set<Point2i>> cellsByLevel = new LinkedHashMap<>();
-        for (CubePoint cubePoint : cubePoints) {
-            if (cubePoint == null) {
-                continue;
-            }
-            cellsByLevel.computeIfAbsent(cubePoint.z(), ignored -> new LinkedHashSet<>())
-                    .add(cubePoint.projectedCell());
-        }
-        if (cellsByLevel.isEmpty()) {
-            return empty();
-        }
-        Map<Integer, Floor> floors = new LinkedHashMap<>();
-        for (Map.Entry<Integer, Set<Point2i>> entry : cellsByLevel.entrySet()) {
-            floors.put(entry.getKey(), new Floor(TileShape.fromAbsoluteCells(entry.getValue())));
-        }
-        return create(floors);
+        return new StructureGeometry(StructureObject.fromCubePoints(cubePoints));
     }
 
     public StructureGeometry(Map<Integer, Floor> floors, Collection<Wall> walls) {
-        this.floors = normalizedFloors(floors);
-        this.walls = normalizedWalls(walls, boundaryEdges(this.floors));
+        this(StructureObject.fromLegacyFloorsAndWalls(
+                normalizedFloors(floors),
+                normalizedWalls(walls, boundaryEdges(normalizedFloors(floors)))));
+    }
+
+    public StructureGeometry(StructureObject structureObject) {
+        this.structureObject = structureObject == null ? StructureObject.empty() : structureObject;
+    }
+
+    public StructureObject structureObject() {
+        return structureObject;
     }
 
     public Map<Integer, Floor> floors() {
-        return floors;
+        return structureObject.floors();
     }
 
     public List<Wall> walls() {
-        return walls;
+        return structureObject.walls();
     }
 
     public Floor floor() {
-        return floors.get(primaryLevel());
+        return structureObject.floor();
     }
 
     public Floor floorAtLevel(int z) {
-        return floors.get(z);
+        return structureObject.floorAtLevel(z);
     }
 
     public TileShape shapeAtLevel(int z) {
-        Floor floor = floorAtLevel(z);
-        return floor == null ? TileShape.empty() : floor.shape();
+        return structureObject.shapeAtLevel(z);
     }
 
     public Set<Integer> levels() {
-        return Set.copyOf(floors.keySet());
+        return structureObject.levels();
     }
 
     public Map<Integer, TileShape> shapesByLevel() {
-        if (floors.isEmpty()) {
-            return Map.of();
-        }
-        Map<Integer, TileShape> result = new LinkedHashMap<>();
-        for (Map.Entry<Integer, Floor> entry : floors.entrySet()) {
-            if (entry == null || entry.getKey() == null || entry.getValue() == null) {
-                continue;
-            }
-            result.put(entry.getKey(), entry.getValue().shape());
-        }
-        return result.isEmpty() ? Map.of() : Map.copyOf(result);
+        return structureObject.shapesByLevel();
     }
 
     public Map<Integer, Point2i> anchorsByLevel() {
-        if (floors.isEmpty()) {
-            return Map.of();
-        }
-        Map<Integer, Point2i> result = new LinkedHashMap<>();
-        for (Map.Entry<Integer, Floor> entry : floors.entrySet()) {
-            if (entry == null || entry.getKey() == null || entry.getValue() == null) {
-                continue;
-            }
-            result.put(entry.getKey(), entry.getValue().shape().anchor());
-        }
-        return result.isEmpty() ? Map.of() : Map.copyOf(result);
+        return structureObject.anchorsByLevel();
     }
 
     public Point2i anchorAtLevel(int levelZ) {
-        Floor floor = floorAtLevel(levelZ);
-        return floor == null || floor.shape() == null ? null : floor.shape().anchor();
+        return structureObject.anchorAtLevel(levelZ);
     }
 
     public int primaryLevel() {
-        return floors.keySet().stream()
-                .mapToInt(Integer::intValue)
-                .min()
-                .orElse(0);
+        return structureObject.primaryLevel();
     }
 
     public Point2i centerCellAtLevel(int levelZ) {
-        Floor floor = floorAtLevel(levelZ);
-        if (floor == null || floor.shape() == null || floor.shape().size() == 0) {
-            return null;
-        }
-        return floor.shape().centerCell();
+        return structureObject.centerCellAtLevel(levelZ);
     }
 
     public CubePoint centerPointAtLevel(int levelZ) {
-        Point2i centerCell = centerCellAtLevel(levelZ);
-        return centerCell == null ? null : CubePoint.at(centerCell, levelZ);
+        return structureObject.centerPointAtLevel(levelZ);
     }
 
     public BoundaryNetwork boundaryNetwork() {
-        return BoundaryNetwork.fromPaths(walls);
+        return BoundaryNetwork.fromPaths(walls());
     }
 
     public Set<VertexEdge> boundaryEdges() {
@@ -161,52 +121,27 @@ public final class StructureGeometry {
     }
 
     public Set<VertexEdge> boundaryEdgesAtLevel(int levelZ) {
-        Floor levelFloor = floorAtLevel(levelZ);
-        if (levelFloor == null || levelFloor.shape() == null || levelFloor.shape().size() == 0) {
-            return Set.of();
-        }
-        Set<VertexEdge> allowedEdges = levelFloor.shape().boundaryEdges();
-        Set<VertexEdge> result = new LinkedHashSet<>();
-        for (VertexEdge edge : boundaryEdges()) {
-            if (allowedEdges.contains(edge)) {
-                result.add(edge);
-            }
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+        return structureObject.wallEdgesAtLevel(levelZ);
     }
 
     public Set<Point2i> cells() {
-        Set<Point2i> result = new LinkedHashSet<>();
-        for (Floor floor : floors.values()) {
-            result.addAll(floor.shape().absoluteCells());
-        }
-        return Set.copyOf(result);
+        return structureObject.cells();
     }
 
     public Set<Point2i> cellsAtLevel(int z) {
-        Floor floor = floorAtLevel(z);
-        return floor == null ? Set.of() : floor.shape().absoluteCells();
+        return structureObject.cellsAtLevel(z);
     }
 
     public Set<CubePoint> cubePoints() {
-        Set<CubePoint> result = new LinkedHashSet<>();
-        for (Map.Entry<Integer, Floor> entry : floors.entrySet()) {
-            if (entry == null || entry.getValue() == null) {
-                continue;
-            }
-            for (Point2i cell : entry.getValue().shape().absoluteCells()) {
-                result.add(CubePoint.at(cell, entry.getKey()));
-            }
-        }
-        return Set.copyOf(result);
+        return structureObject.cubePoints();
     }
 
     public boolean contains(Point2i cell) {
-        return cell != null && floors.values().stream().anyMatch(floor -> floor.shape().contains(cell));
+        return structureObject.contains(cell);
     }
 
     public boolean contains(CubePoint point) {
-        return point != null && cellsAtLevel(point.z()).contains(point.projectedCell());
+        return structureObject.contains(point);
     }
 
     public StructureGeometry movedBy(Point2i delta) {
@@ -218,24 +153,15 @@ public final class StructureGeometry {
         if (!translate && levelDelta == 0) {
             return this;
         }
-        Point2i resolvedDelta = delta == null ? new Point2i(0, 0) : delta;
-        Map<Integer, Floor> movedFloors = new LinkedHashMap<>();
-        for (Map.Entry<Integer, Floor> entry : floors.entrySet()) {
-            movedFloors.put(entry.getKey() + levelDelta, entry.getValue().movedBy(resolvedDelta));
-        }
-        List<Wall> movedWalls = walls.stream()
-                .map(wall -> wall == null ? null : wall.movedBy(resolvedDelta))
-                .filter(wall -> wall != null)
-                .toList();
-        return new StructureGeometry(movedFloors, movedWalls);
+        return new StructureGeometry(structureObject.movedBy(delta, levelDelta));
     }
 
     public StructureGeometry withFloors(Map<Integer, Floor> floors) {
-        return new StructureGeometry(floors, walls);
+        return new StructureGeometry(floors, walls());
     }
 
     public StructureGeometry withWalls(Collection<Wall> walls) {
-        return new StructureGeometry(floors, walls);
+        return new StructureGeometry(floors(), walls);
     }
 
     private static Map<Integer, Floor> normalizedFloors(Map<Integer, Floor> floors) {
