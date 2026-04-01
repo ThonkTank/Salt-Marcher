@@ -9,7 +9,6 @@ import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.model.objects.StructureObject;
-import features.world.dungeonmap.model.objects.StructureGeometry;
 import features.world.dungeonmap.model.structures.TargetKey;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.CorridorConnection;
@@ -136,10 +135,6 @@ public final class Corridor {
                 .distinct()
                 .sorted()
                 .toList();
-    }
-
-    public StructureGeometry geometry() {
-        return new StructureGeometry(structure);
     }
 
     public StructureObject structure() {
@@ -321,7 +316,7 @@ public final class Corridor {
             if (roomCell == null) {
                 continue;
             }
-            result.add(GridSegment2x.fromVertexEdge(VertexEdge.betweenCellAndStep(roomCell, node.roomBoundaryDirection().delta())));
+            result.add(GridSegment2x.betweenCellAndStep(roomCell, node.roomBoundaryDirection().delta()));
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
@@ -353,11 +348,7 @@ public final class Corridor {
             if (room == null) {
                 continue;
             }
-            var floor = room.structure().floorAtLevel(levelZ);
-            if (floor == null || floor.shape() == null) {
-                continue;
-            }
-            blocked.addAll(floor.shape().absoluteCells());
+            blocked.addAll(room.structure().cellsAtLevel(levelZ));
         }
         return Set.copyOf(blocked);
     }
@@ -625,11 +616,10 @@ public final class Corridor {
             if (roomCell == null || direction == null) {
                 throw new IllegalArgumentException("Corridor room-bound node could not be resolved");
             }
-            VertexEdge boundaryEdge = VertexEdge.betweenCellAndStep(roomCell, direction.delta());
             result.add(new CorridorConnection(
                     corridorId,
                     mapId,
-                    new Door(List.of(boundaryEdge), Door.DoorState.CLOSED),
+                    Door.fromSegments(List.of(GridSegment2x.betweenCellAndStep(roomCell, direction.delta())), Door.DoorState.CLOSED),
                     List.of(ConnectionEndpoint.room(node.roomId()), ConnectionEndpoint.corridor(corridorId)),
                     levelZ));
         }
@@ -644,11 +634,11 @@ public final class Corridor {
         if (room == null) {
             throw new IllegalArgumentException("Corridor node references missing room " + node.roomId());
         }
-        Point2i anchor = room.structure().anchorAtLevel(levelZ);
-        if (anchor == null) {
+        var floor = room.structure().floorAtLevel(levelZ);
+        if (floor == null) {
             throw new IllegalArgumentException("Corridor node references room without floor at level " + levelZ);
         }
-        return anchor.add(node.roomRelativeCell());
+        return floor.anchorCell().add(node.roomRelativeCell());
     }
 
     private record DerivedProjection(

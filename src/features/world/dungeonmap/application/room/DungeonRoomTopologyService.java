@@ -71,7 +71,7 @@ public final class DungeonRoomTopologyService {
     public void paint(Connection conn, long mapId, StructureDescriptor descriptor) throws SQLException {
         StructureObject structure = StructureObject.fromDescriptor(descriptor);
         for (Integer levelZ : structure.levels().stream().sorted().toList()) {
-            TileShape levelShape = structure.shapeAtLevel(levelZ);
+            TileShape levelShape = shapeAtLevel(structure, levelZ);
             if (levelShape.size() > 0) {
                 paintLevel(conn, mapId, levelZ, levelShape);
             }
@@ -129,7 +129,7 @@ public final class DungeonRoomTopologyService {
     public void delete(Connection conn, long mapId, StructureDescriptor descriptor) throws SQLException {
         StructureObject structure = StructureObject.fromDescriptor(descriptor);
         for (Integer levelZ : structure.levels().stream().sorted().toList()) {
-            TileShape levelShape = structure.shapeAtLevel(levelZ);
+            TileShape levelShape = shapeAtLevel(structure, levelZ);
             if (levelShape.size() > 0) {
                 deleteLevel(conn, mapId, levelZ, levelShape);
             }
@@ -338,6 +338,14 @@ public final class DungeonRoomTopologyService {
                 .mapToInt(Integer::intValue)
                 .min()
                 .orElse(fallbackLevel);
+    }
+
+    private static TileShape shapeAtLevel(StructureObject structure, int levelZ) {
+        if (structure == null) {
+            return TileShape.empty();
+        }
+        Floor floor = structure.floorAtLevel(levelZ);
+        return floor == null ? TileShape.empty() : floor.shape();
     }
 
     private static List<RoomCluster> overlappingClustersAtLevel(DungeonLayout layout, TileShape shape, int levelZ) {

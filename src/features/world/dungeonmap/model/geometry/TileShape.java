@@ -191,10 +191,6 @@ public final class TileShape {
         return Tile.bestCenterTile(tiles()).position();
     }
 
-    public GridAnchor centerAnchor() {
-        return GridAnchor.atTile(centerCell());
-    }
-
     public boolean isConnected() {
         return connectedComponents().size() <= 1;
     }

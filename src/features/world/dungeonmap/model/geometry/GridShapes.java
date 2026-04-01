@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Central factory and bridge surface for the additive 2x geometry model.
+ * Central factory surface for lightweight 2x render and hit shapes.
  */
 public final class GridShapes {
 
@@ -51,17 +51,6 @@ public final class GridShapes {
             segments.add(new GridSegment2x(normalizedPoints.get(index - 1), normalizedPoints.get(index)));
         }
         return new EdgePathShape(segments);
-    }
-
-    public static GridShape polyline(GridRoute route) {
-        if (route == null) {
-            return new CompositeShape(List.of());
-        }
-        ArrayList<GridPoint2x> points = new ArrayList<>();
-        for (GridAnchor anchor : route.anchors()) {
-            points.add(fromAnchor(anchor));
-        }
-        return polyline(points);
     }
 
     public static GridShape translate(GridShape shape, Point2i delta) {
@@ -121,10 +110,6 @@ public final class GridShapes {
             return chains.getFirst();
         }
         return union(chains);
-    }
-
-    public static GridPoint2x fromAnchor(GridAnchor anchor) {
-        return GridPoint2x.fromRaw(anchor == null ? new Point2i(1, 1) : anchor.doubledGridPoint());
     }
 
     private static List<GridPoint2x> normalizePolylinePoints(Collection<GridPoint2x> points) {

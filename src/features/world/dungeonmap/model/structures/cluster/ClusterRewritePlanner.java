@@ -74,15 +74,15 @@ final class ClusterRewritePlanner {
                 candidates.add(RoomRewriteCandidate.keep(
                         room.roomId(),
                         room.name(),
-                        room.structure().shapesByLevel(),
-                        room.structure().anchorsByLevel()));
+                        roomShapesByLevel(room),
+                        roomAnchorsByLevel(room)));
             }
         }
         candidates.add(RoomRewriteCandidate.keep(
                 retainedRoom.roomId(),
                 retainedRoom.name(),
                 mergedRoomShapesByLevel,
-                retainedRoom.structure().anchorsByLevel()));
+                roomAnchorsByLevel(retainedRoom)));
 
         TileShape rewrittenClusterShape = TileShape.fromAbsoluteCells(mergedClusterCells);
         List<ReconciledRoom> reconciledRooms = reconciledRooms(cluster, rewrittenClusterShape, candidates, previousBoundaryKinds);
@@ -146,7 +146,7 @@ final class ClusterRewritePlanner {
             if (room == null || room.roomId() == null) {
                 continue;
             }
-            Map<Integer, TileShape> remainingShapesByLevel = new LinkedHashMap<>(room.structure().shapesByLevel());
+            Map<Integer, TileShape> remainingShapesByLevel = new LinkedHashMap<>(roomShapesByLevel(room));
             TileShape existingDeleteLevelShape = remainingShapesByLevel.getOrDefault(deleteLevel, TileShape.empty());
             TileShape remainingDeleteLevelShape = existingDeleteLevelShape.subtract(deletedShape);
             if (remainingDeleteLevelShape.size() == 0) {
@@ -168,7 +168,7 @@ final class ClusterRewritePlanner {
                         room.roomId(),
                         room.name(),
                         remainingShapesByLevel,
-                        room.structure().anchorsByLevel());
+                        roomAnchorsByLevel(room));
                 candidates.add(retainedCandidate);
                 fragmentsBySourceRoomId.put(room.roomId(), List.of(retainedCandidate));
                 continue;
@@ -191,8 +191,8 @@ final class ClusterRewritePlanner {
                         ? room.name()
                         : nextGeneratedRoomName(roomNameSupplier, room.name());
                 RoomRewriteCandidate candidate = index == 0
-                        ? RoomRewriteCandidate.keep(room.roomId(), roomName, fragmentShapesByLevel, room.structure().anchorsByLevel())
-                        : RoomRewriteCandidate.create(room.roomId(), roomName, fragmentShapesByLevel, room.structure().anchorsByLevel());
+                        ? RoomRewriteCandidate.keep(room.roomId(), roomName, fragmentShapesByLevel, roomAnchorsByLevel(room))
+                        : RoomRewriteCandidate.create(room.roomId(), roomName, fragmentShapesByLevel, roomAnchorsByLevel(room));
                 candidates.add(candidate);
                 sourceFragments.add(candidate);
             }
@@ -500,7 +500,7 @@ final class ClusterRewritePlanner {
                 : retainedRoom.narration();
         Map<Integer, Point2i> preferredAnchorsByLevel = retainedRoom == null
                 ? preferredAnchors(sourceRooms)
-                : retainedRoom.structure().anchorsByLevel();
+                : roomAnchorsByLevel(retainedRoom);
         return resolvedRoom(
                 cluster,
                 roomShapesByLevel,
@@ -745,11 +745,9 @@ final class ClusterRewritePlanner {
             if (room == null) {
                 continue;
             }
-            for (Wall wall : room.structure().walls()) {
-                for (VertexEdge edge : wall.edges()) {
-                    if (isInternalEdge(clusterCells, edge)) {
-                        result.putIfAbsent(edge, InternalBoundaryType.WALL);
-                    }
+            for (VertexEdge edge : roomWallEdges(room)) {
+                if (isInternalEdge(clusterCells, edge)) {
+                    result.putIfAbsent(edge, InternalBoundaryType.WALL);
                 }
             }
         }
@@ -938,7 +936,7 @@ final class ClusterRewritePlanner {
         if (room == null || paintShape == null) {
             return false;
         }
-        for (TileShape shape : room.structure().shapesByLevel().values()) {
+        for (TileShape shape : roomShapesByLevel(room).values()) {
             if (shape != null && shape.overlaps(paintShape)) {
                 return true;
             }
@@ -950,7 +948,7 @@ final class ClusterRewritePlanner {
         if (result == null || room == null) {
             return;
         }
-        for (Map.Entry<Integer, TileShape> entry : room.structure().shapesByLevel().entrySet()) {
+        for (Map.Entry<Integer, TileShape> entry : roomShapesByLevel(room).entrySet()) {
             if (entry == null || entry.getKey() == null || entry.getValue() == null) {
                 continue;
             }
@@ -973,7 +971,7 @@ final class ClusterRewritePlanner {
             if (room == null) {
                 continue;
             }
-            for (Map.Entry<Integer, TileShape> entry : room.structure().shapesByLevel().entrySet()) {
+            for (Map.Entry<Integer, TileShape> entry : roomShapesByLevel(room).entrySet()) {
                 if (entry == null || entry.getKey() == null || entry.getValue() == null) {
                     continue;
                 }
@@ -993,7 +991,7 @@ final class ClusterRewritePlanner {
         if (room == null || remainingCellsByLevel == null || remainingCellsByLevel.isEmpty()) {
             return Map.of();
         }
-        for (Map.Entry<Integer, Point2i> entry : room.structure().anchorsByLevel().entrySet().stream()
+        for (Map.Entry<Integer, Point2i> entry : roomAnchorsByLevel(room).entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
                 .toList()) {
             Integer level = entry.getKey();
@@ -1081,11 +1079,55 @@ final class ClusterRewritePlanner {
             return Map.of();
         }
         for (Room room : sourceRooms) {
-            if (room != null && !room.structure().anchorsByLevel().isEmpty()) {
-                return room.structure().anchorsByLevel();
+            if (room != null && !roomAnchorsByLevel(room).isEmpty()) {
+                return roomAnchorsByLevel(room);
             }
         }
         return Map.of();
+    }
+
+    private static Map<Integer, TileShape> roomShapesByLevel(Room room) {
+        if (room == null) {
+            return Map.of();
+        }
+        Map<Integer, TileShape> result = new LinkedHashMap<>();
+        for (Integer levelZ : room.structure().levels().stream().sorted().toList()) {
+            Set<Point2i> cellsAtLevel = room.structure().cellsAtLevel(levelZ);
+            if (cellsAtLevel.isEmpty()) {
+                continue;
+            }
+            var floor = room.structure().floorAtLevel(levelZ);
+            Point2i anchor = floor == null ? null : floor.anchorCell();
+            result.put(levelZ, TileShape.fromAbsoluteCells(anchor, cellsAtLevel));
+        }
+        return result.isEmpty() ? Map.of() : Map.copyOf(result);
+    }
+
+    private static Map<Integer, Point2i> roomAnchorsByLevel(Room room) {
+        if (room == null) {
+            return Map.of();
+        }
+        Map<Integer, Point2i> result = new LinkedHashMap<>();
+        for (Integer levelZ : room.structure().levels().stream().sorted().toList()) {
+            var floor = room.structure().floorAtLevel(levelZ);
+            if (floor != null) {
+                result.put(levelZ, floor.anchorCell());
+            }
+        }
+        return result.isEmpty() ? Map.of() : Map.copyOf(result);
+    }
+
+    private static Set<VertexEdge> roomWallEdges(Room room) {
+        if (room == null) {
+            return Set.of();
+        }
+        Set<VertexEdge> result = new LinkedHashSet<>();
+        for (Integer levelZ : room.structure().levels()) {
+            for (Wall wall : room.structure().wallsAtLevel(levelZ)) {
+                result.addAll(wall.edges());
+            }
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
     private static Set<Point2i> flattenCells(Map<Integer, Set<Point2i>> cellsByLevel) {

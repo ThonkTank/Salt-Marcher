@@ -2,12 +2,15 @@ package features.world.dungeonmap.model.structures.cluster;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.objects.Floor;
+import features.world.dungeonmap.model.objects.StructureDescriptor;
+import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.objects.Wall;
 import features.world.dungeonmap.model.structures.connection.LocalConnection;
 import features.world.dungeonmap.model.structures.TargetKey;
@@ -208,7 +211,7 @@ public final class RoomCluster {
             if (room == null) {
                 continue;
             }
-            for (Map.Entry<Integer, TileShape> entry : room.structure().shapesByLevel().entrySet()) {
+            for (Map.Entry<Integer, TileShape> entry : roomShapesByLevel(room).entrySet()) {
                 if (entry == null || entry.getKey() == null || entry.getValue() == null) {
                     continue;
                 }
@@ -279,12 +282,13 @@ public final class RoomCluster {
     }
 
     public Room createRoom(Long roomId, String name, Floor floor) {
+        Floor resolvedFloor = floor == null ? new Floor(null) : floor;
         return Room.create(
                 roomId,
                 mapId,
                 clusterId == null ? 0L : clusterId,
                 ClusterRewritePlanner.normalizedRoomName(roomId, name),
-                floor);
+                StructureObject.fromDescriptor(StructureDescriptor.fromCellsByLevel(Map.of(0, resolvedFloor.cells()))));
     }
 
     public RoomCluster withCreatedRoom(Long roomId, String name, Floor floor) {
@@ -382,8 +386,9 @@ public final class RoomCluster {
                 mapId,
                 clusterId == null ? 0L : clusterId,
                 resolvedName,
-                mergedFloors,
-                mergedWallEdges.isEmpty() ? List.of() : List.of(new Wall(mergedWallEdges)),
+                structureFromFloorsAndWalls(
+                        mergedFloors,
+                        mergedWallEdges.isEmpty() ? List.of() : List.of(new Wall(mergedWallEdges))),
                 findRoom(selected.iterator().next()).narration());
     }
 
@@ -438,14 +443,16 @@ public final class RoomCluster {
         if (room == null || !room.structure().levels().contains(levelZ)) {
             return null;
         }
-        Floor floor = room.structure().floorAtLevel(levelZ);
+        StructureDescriptor.LevelDescriptor levelDescriptor = room.structure().descriptor().level(levelZ);
+        if (levelDescriptor == null) {
+            return null;
+        }
         return Room.resolved(
                 room.roomId(),
                 room.mapId(),
                 room.clusterId(),
                 room.name(),
-                Map.of(levelZ, floor == null ? new Floor(null) : floor),
-                room.structure().wallsAtLevel(levelZ),
+                StructureObject.fromDescriptor(new StructureDescriptor(Map.of(levelZ, levelDescriptor))),
                 room.narration());
     }
 
@@ -605,11 +612,11 @@ public final class RoomCluster {
             if (room == null) {
                 continue;
             }
-            for (Map.Entry<Integer, Floor> entry : room.structure().floors().entrySet()) {
+            for (Map.Entry<Integer, TileShape> entry : roomShapesByLevel(room).entrySet()) {
                 if (entry == null || entry.getKey() == null || entry.getValue() == null) {
                     continue;
                 }
-                mergedShapesByLevel.merge(entry.getKey(), entry.getValue().shape(), TileShape::union);
+                mergedShapesByLevel.merge(entry.getKey(), entry.getValue(), TileShape::union);
             }
         }
         if (mergedShapesByLevel.isEmpty()) {
@@ -637,13 +644,75 @@ public final class RoomCluster {
             if (room == null) {
                 continue;
             }
-            for (VertexEdge edge : room.structure().wallEdges()) {
+            for (VertexEdge edge : wallEdges(room)) {
                 if (boundaryEdges.contains(edge)) {
                     result.add(edge);
                 }
             }
         }
         return result;
+    }
+
+    private static Map<Integer, TileShape> roomShapesByLevel(Room room) {
+        if (room == null) {
+            return Map.of();
+        }
+        Map<Integer, TileShape> result = new LinkedHashMap<>();
+        for (Integer levelZ : room.structure().levels().stream().sorted().toList()) {
+            Set<Point2i> cellsAtLevel = room.structure().cellsAtLevel(levelZ);
+            if (cellsAtLevel.isEmpty()) {
+                continue;
+            }
+            Floor floor = room.structure().floorAtLevel(levelZ);
+            Point2i anchor = floor == null ? null : floor.anchorCell();
+            result.put(levelZ, TileShape.fromAbsoluteCells(anchor, cellsAtLevel));
+        }
+        return result.isEmpty() ? Map.of() : Map.copyOf(result);
+    }
+
+    private static Set<VertexEdge> wallEdges(Room room) {
+        if (room == null) {
+            return Set.of();
+        }
+        Set<VertexEdge> result = new LinkedHashSet<>();
+        for (Integer levelZ : room.structure().levels()) {
+            for (Wall wall : room.structure().wallsAtLevel(levelZ)) {
+                result.addAll(wall.edges());
+            }
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
+    private static StructureObject structureFromFloorsAndWalls(Map<Integer, Floor> floors, Collection<Wall> walls) {
+        if (floors == null || floors.isEmpty()) {
+            return StructureObject.empty();
+        }
+        Set<GridSegment2x> wallSegments = new LinkedHashSet<>();
+        for (Wall wall : walls == null ? List.<Wall>of() : walls) {
+            if (wall != null) {
+                wallSegments.addAll(wall.segments2x());
+            }
+        }
+        Map<Integer, StructureDescriptor.LevelDescriptor> levels = new LinkedHashMap<>();
+        for (Map.Entry<Integer, Floor> entry : floors.entrySet()) {
+            Integer levelZ = entry.getKey();
+            Floor floor = entry.getValue();
+            if (levelZ == null || floor == null || floor.cells().isEmpty()) {
+                continue;
+            }
+            StructureDescriptor.LevelDescriptor base = StructureDescriptor.fromCellsByLevel(Map.of(levelZ, floor.cells())).level(levelZ);
+            if (base == null) {
+                continue;
+            }
+            Set<GridSegment2x> openings = new LinkedHashSet<>(base.boundarySegments2x());
+            openings.removeAll(wallSegments);
+            levels.put(levelZ, new StructureDescriptor.LevelDescriptor(
+                    floor.anchor2x(),
+                    Set.of(floor.anchor2x()),
+                    base.boundarySegments2x(),
+                    openings));
+        }
+        return StructureObject.fromDescriptor(new StructureDescriptor(levels));
     }
 
     private static LocalConnection movedConnection(LocalConnection connection, Point2i delta) {

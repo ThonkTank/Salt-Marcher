@@ -1,9 +1,6 @@
 package features.world.dungeonmap.model.objects;
 
-import features.world.dungeonmap.model.geometry.CompositeShape;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.geometry.GridShape;
-import features.world.dungeonmap.model.geometry.GridShapes;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.geometry.VertexPath;
@@ -12,7 +9,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-public final class Door extends VertexPath implements DungeonObject {
+public final class Door extends VertexPath {
 
     private final DoorState doorState;
     private final List<GridSegment2x> segments2x;
@@ -43,14 +40,6 @@ public final class Door extends VertexPath implements DungeonObject {
 
     protected VertexPath recreate(Collection<VertexEdge> edges) {
         return new Door(edges, doorState);
-    }
-
-    @Override
-    public GridShape shape2x() {
-        if (segments2x.isEmpty()) {
-            return new CompositeShape(List.of());
-        }
-        return GridShapes.union(segments2x.stream().map(GridShapes::edge).toList());
     }
 
     public Door movedBy(Point2i delta) {

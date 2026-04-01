@@ -1,16 +1,10 @@
 package features.world.dungeonmap.model.structures.room;
 
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.geometry.VertexEdge;
-import features.world.dungeonmap.model.objects.Floor;
-import features.world.dungeonmap.model.objects.StructureGeometry;
+import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.model.objects.StructureObject;
-import features.world.dungeonmap.model.objects.Wall;
 import features.world.dungeonmap.model.structures.TargetKey;
 
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -51,48 +45,6 @@ public record Room(
                 narration);
     }
 
-    public static Room create(
-            Long roomId,
-            long mapId,
-            long clusterId,
-            String name,
-            Floor floor
-    ) {
-        return create(roomId, mapId, clusterId, name, floor, RoomNarration.empty());
-    }
-
-    public static Room create(
-            Long roomId,
-            long mapId,
-            long clusterId,
-            String name,
-            Floor floor,
-            RoomNarration narration
-    ) {
-        return create(roomId, mapId, clusterId, name, Map.of(0, floor == null ? new Floor(null) : floor), narration);
-    }
-
-    public static Room create(
-            Long roomId,
-            long mapId,
-            long clusterId,
-            String name,
-            Map<Integer, Floor> floors
-    ) {
-        return create(roomId, mapId, clusterId, name, floors, RoomNarration.empty());
-    }
-
-    public static Room create(
-            Long roomId,
-            long mapId,
-            long clusterId,
-            String name,
-            Map<Integer, Floor> floors,
-            RoomNarration narration
-    ) {
-        return create(roomId, mapId, clusterId, name, createdStructure(normalizedRoomFloors(floors)), narration);
-    }
-
     public static Room resolved(
             Long roomId,
             long mapId,
@@ -120,78 +72,9 @@ public record Room(
                 narration);
     }
 
-    public static Room resolved(
-            Long roomId,
-            long mapId,
-            long clusterId,
-            String name,
-            Floor floor,
-            Collection<Wall> walls
-    ) {
-        return resolved(roomId, mapId, clusterId, name, floor, walls, RoomNarration.empty());
-    }
-
-    public static Room resolved(
-            Long roomId,
-            long mapId,
-            long clusterId,
-            String name,
-            Floor floor,
-            Collection<Wall> walls,
-            RoomNarration narration
-    ) {
-        return resolved(roomId, mapId, clusterId, name, Map.of(0, floor == null ? new Floor(null) : floor), walls, narration);
-    }
-
-    public static Room resolved(
-            Long roomId,
-            long mapId,
-            long clusterId,
-            String name,
-            Map<Integer, Floor> floors,
-            Collection<Wall> walls
-    ) {
-        return resolved(roomId, mapId, clusterId, name, floors, walls, RoomNarration.empty());
-    }
-
-    public static Room resolved(
-            Long roomId,
-            long mapId,
-            long clusterId,
-            String name,
-            Map<Integer, Floor> floors,
-            Collection<Wall> walls,
-            RoomNarration narration
-    ) {
-        return resolved(roomId, mapId, clusterId, name, resolvedStructure(normalizedRoomFloors(floors), walls), narration);
-    }
-
     public Room {
         structure = normalizeStructure(structure);
         narration = narration == null ? RoomNarration.empty() : narration;
-    }
-
-    public StructureGeometry geometry() {
-        return new StructureGeometry(structure);
-    }
-
-    public Room withFloor(Floor floor) {
-        return resolved(
-                roomId,
-                mapId,
-                clusterId,
-                name,
-                Map.of(structure.primaryLevel(), floor == null ? new Floor(null) : floor),
-                structure.walls(),
-                narration);
-    }
-
-    public Room withFloors(Map<Integer, Floor> floors) {
-        return resolved(roomId, mapId, clusterId, name, floors, structure.walls(), narration);
-    }
-
-    public Room withBoundaries(List<Wall> walls) {
-        return resolved(roomId, mapId, clusterId, name, structure.floors(), walls, narration);
     }
 
     public Room withNarration(RoomNarration narration) {
@@ -237,38 +120,13 @@ public record Room(
     }
 
     private static StructureObject normalizeStructure(StructureObject structure) {
-        if (structure == null || structure.floors().isEmpty()) {
-            return createdStructure(Map.of(0, new Floor(null)));
+        if (structure == null || structure.levels().isEmpty()) {
+            return defaultStructure();
         }
         return structure;
     }
 
-    private static StructureObject createdStructure(Map<Integer, Floor> floors) {
-        Map<Integer, Floor> resolvedFloors = normalizedRoomFloors(floors);
-        Set<VertexEdge> boundaryEdges = new LinkedHashSet<>();
-        for (Floor floor : resolvedFloors.values()) {
-            boundaryEdges.addAll(floor.shape().boundaryEdges());
-        }
-        return resolvedStructure(
-                resolvedFloors,
-                boundaryEdges.isEmpty() ? List.of() : List.of(new Wall(boundaryEdges)));
-    }
-
-    private static StructureObject resolvedStructure(Map<Integer, Floor> floors, Collection<Wall> walls) {
-        return StructureObject.fromLegacyFloorsAndWalls(normalizedRoomFloors(floors), walls);
-    }
-
-    private static Map<Integer, Floor> normalizedRoomFloors(Map<Integer, Floor> floors) {
-        if (floors == null || floors.isEmpty()) {
-            return Map.of(0, new Floor(null));
-        }
-        Map<Integer, Floor> result = new java.util.LinkedHashMap<>();
-        for (Map.Entry<Integer, Floor> entry : floors.entrySet()) {
-            if (entry == null || entry.getKey() == null) {
-                continue;
-            }
-            result.put(entry.getKey(), entry.getValue() == null ? new Floor(null) : entry.getValue());
-        }
-        return result.isEmpty() ? Map.of(0, new Floor(null)) : Map.copyOf(result);
+    private static StructureObject defaultStructure() {
+        return StructureObject.fromDescriptor(StructureDescriptor.fromCellsByLevel(Map.of(0, Set.of(new Point2i(0, 0)))));
     }
 }

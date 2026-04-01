@@ -14,7 +14,7 @@ import java.util.Set;
  * <p>All reusable area math stays in {@link TileShape}. Floor only exposes that geometry as a room-facing object
  * so structures do not depend directly on geometry primitives more than necessary.</p>
  */
-public record Floor(TileFaceShape faceShape, GridPoint2x anchor2x) implements DungeonObject {
+public record Floor(TileFaceShape faceShape, GridPoint2x anchor2x) {
 
     public Floor {
         faceShape = faceShape == null ? new TileFaceShape(Set.of()) : faceShape;
@@ -27,7 +27,6 @@ public record Floor(TileFaceShape faceShape, GridPoint2x anchor2x) implements Du
                 GridPoint2x.fromTileCenter(shape == null ? new Point2i(0, 0) : shape.anchor()));
     }
 
-    @Override
     public TileFaceShape shape2x() {
         return faceShape;
     }
