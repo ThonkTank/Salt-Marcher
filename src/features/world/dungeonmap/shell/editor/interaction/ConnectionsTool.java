@@ -436,7 +436,10 @@ public final class ConnectionsTool implements EditorTool {
     }
 
     private CorridorNode roomBoundaryNode(Room room, DungeonHitSubject.RoomBoundarySubject hit, long nodeId) {
-        Point2i anchor = room == null ? new Point2i(0, 0) : room.anchorsByLevel().getOrDefault(mapState.activeProjectionLevel(), new Point2i(0, 0));
+        Point2i anchor = room == null ? new Point2i(0, 0) : room.geometry().anchorAtLevel(mapState.activeProjectionLevel());
+        if (anchor == null) {
+            anchor = new Point2i(0, 0);
+        }
         Point2i relativeCell = hit.roomCell().subtract(anchor);
         Point2i doubled = new Point2i(hit.roomCell().x() * 2 + 1, hit.roomCell().y() * 2 + 1).add(hit.outwardStep());
         return new CorridorNode(

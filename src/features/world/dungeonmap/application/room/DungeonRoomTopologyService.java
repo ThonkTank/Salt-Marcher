@@ -299,16 +299,16 @@ public final class DungeonRoomTopologyService {
                         mapId,
                         clusterId,
                         room.name(),
-                        room.anchorsByLevel(),
-                        room.primaryLevel());
+                        room.geometry().anchorsByLevel(),
+                        room.geometry().primaryLevel());
                 if (roomId <= 0) {
                     throw new SQLException("Raum konnte nicht angelegt werden");
                 }
                 continue;
             }
             roomWriteRepository.reassignRoomCluster(conn, room.roomId(), clusterId);
-            roomWriteRepository.updateRoom(conn, room.roomId(), room.name(), room.anchorsByLevel(), room.primaryLevel());
-            roomWriteRepository.replaceRoomFloors(conn, room.roomId(), room.anchorsByLevel());
+            roomWriteRepository.updateRoom(conn, room.roomId(), room.name(), room.geometry().anchorsByLevel(), room.geometry().primaryLevel());
+            roomWriteRepository.replaceRoomFloors(conn, room.roomId(), room.geometry().anchorsByLevel());
         }
     }
 
@@ -318,7 +318,7 @@ public final class DungeonRoomTopologyService {
             if (room == null) {
                 continue;
             }
-            for (Map.Entry<Integer, TileShape> entry : room.shapesByLevel().entrySet()) {
+            for (Map.Entry<Integer, TileShape> entry : room.geometry().shapesByLevel().entrySet()) {
                 if (entry == null || entry.getKey() == null || entry.getValue() == null) {
                     continue;
                 }
@@ -342,7 +342,7 @@ public final class DungeonRoomTopologyService {
         return layout.overlappingClusters(shape).stream()
                 .filter(cluster -> cluster != null && cluster.rooms().stream()
                         .anyMatch(room -> room != null
-                                && room.levels().contains(levelZ)))
+                                && room.geometry().levels().contains(levelZ)))
                 .toList();
     }
 

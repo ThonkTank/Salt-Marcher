@@ -243,18 +243,16 @@ final class DungeonRuntimeLocations {
 
     private static CubePoint roomAnchor(DungeonLayout layout, Long roomId) {
         Room room = layout.findRoom(roomId);
-        if (room == null || room.floor() == null) {
+        if (room == null) {
             return null;
         }
-        Point2i center = room.floor().shape().centerCell();
-        CubePoint preferred = CubePoint.at(center, layout.levelForRoom(roomId));
+        CubePoint preferred = room.geometry().centerPointAtLevel(layout.levelForRoom(roomId));
         return layout.isTraversableCell(preferred) ? preferred : layout.nearestTraversableCell(preferred);
     }
 
     private static CubePoint corridorAnchor(DungeonLayout layout, Corridor corridor, CubePoint preferred) {
         if (corridor != null) {
-            Point2i centerCell = corridor.centerCellAtLevel(corridor.levelZ());
-            return centerCell == null ? null : CubePoint.at(centerCell, corridor.levelZ());
+            return corridor.geometry().centerPointAtLevel(corridor.levelZ());
         }
         if (layout == null || preferred == null) {
             return null;
@@ -266,8 +264,7 @@ final class DungeonRuntimeLocations {
         if (fallback == null) {
             return null;
         }
-        Point2i centerCell = fallback.centerCellAtLevel(fallback.levelZ());
-        return centerCell == null ? null : CubePoint.at(centerCell, fallback.levelZ());
+        return fallback.geometry().centerPointAtLevel(fallback.levelZ());
     }
 
     private static CubePoint stairExitAnchor(DungeonLayout layout, long stairId, CubePoint preferred) {

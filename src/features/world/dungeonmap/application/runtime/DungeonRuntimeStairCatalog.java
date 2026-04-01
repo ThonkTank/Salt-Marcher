@@ -28,8 +28,8 @@ public final class DungeonRuntimeStairCatalog {
         if (layout == null || room == null || room.roomId() == null) {
             return List.of();
         }
-        return levelsForRoomSurface(room, activeTile).stream()
-                .flatMap(levelZ -> describe(layout, room.cellsAtLevel(levelZ), levelZ, activeTile).stream())
+        return levelsForRoomSurface(room.geometry(), activeTile).stream()
+                .flatMap(levelZ -> describe(layout, room.geometry().cellsAtLevel(levelZ), levelZ, activeTile).stream())
                 .toList();
     }
 
@@ -41,7 +41,7 @@ public final class DungeonRuntimeStairCatalog {
         if (layout == null || corridor == null || corridor.corridorId() == null) {
             return List.of();
         }
-        return describe(layout, corridor.cellsAtLevel(corridor.levelZ()), corridor.levelZ(), activeTile);
+        return describe(layout, corridor.geometry().cellsAtLevel(corridor.levelZ()), corridor.levelZ(), activeTile);
     }
 
     public static List<DungeonRuntimeStairDescriptor> describeAtCells(
@@ -121,14 +121,14 @@ public final class DungeonRuntimeStairCatalog {
         return "Über " + stairName + " gelangt ihr zu " + target + ".";
     }
 
-    private static List<Integer> levelsForRoomSurface(Room room, CubePoint activeTile) {
-        if (room == null) {
+    private static List<Integer> levelsForRoomSurface(features.world.dungeonmap.model.objects.StructureGeometry geometry, CubePoint activeTile) {
+        if (geometry == null) {
             return List.of();
         }
-        if (activeTile != null && room.contains(activeTile)) {
+        if (activeTile != null && geometry.contains(activeTile)) {
             return List.of(activeTile.z());
         }
-        return room.levels().stream()
+        return geometry.levels().stream()
                 .sorted()
                 .toList();
     }

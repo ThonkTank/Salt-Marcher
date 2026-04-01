@@ -41,8 +41,8 @@ public record ClusterRewriteSplit(
                 room.mapId(),
                 resolvedClusterId,
                 room.name(),
-                room.floors(),
-                room.walls(),
+                room.geometry().floors(),
+                room.geometry().walls(),
                 room.narration());
     }
 

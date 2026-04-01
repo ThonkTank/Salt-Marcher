@@ -36,7 +36,7 @@ public final class DungeonRuntimeDoorCatalog {
             return List.of();
         }
         return describe(
-                corridor.cellsAtLevel(corridor.levelZ()),
+                corridor.geometry().cellsAtLevel(corridor.levelZ()),
                 layout.connectionsForCorridor(corridor.corridorId()),
                 heading,
                 (cell, direction) -> "",

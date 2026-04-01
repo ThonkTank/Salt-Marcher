@@ -3,10 +3,8 @@ package features.world.dungeonmap.model.structures.corridor;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.objects.Door;
-import features.world.dungeonmap.model.objects.Floor;
 import features.world.dungeonmap.model.objects.StructureGeometry;
 import features.world.dungeonmap.model.structures.TargetKey;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
@@ -29,7 +27,7 @@ import java.util.Set;
 /**
  * Corridors are edited and persisted as standalone structures.
  *
- * <p>The behavior to preserve here is: the graph is canonical, {@link CorridorPath} is only a read projection, room
+ * <p>The behavior to preserve here is: the graph is canonical, shared structure geometry is derived from it, room
  * attachments stay explicit, and callers must get the same corridor behavior without any second aggregate owner.
  */
 public final class Corridor {
@@ -43,7 +41,6 @@ public final class Corridor {
     private final List<CorridorNode> nodes;
     private final List<CorridorSegment> segments;
     private final StructureGeometry geometry;
-    private final CorridorPath path;
     private final List<CorridorRoute> routes;
     private final List<CorridorConnection> connections;
 
@@ -83,7 +80,6 @@ public final class Corridor {
         this.segments = normalizeSegments(segments);
         DerivedProjection projection = deriveProjection(corridorId, mapId, levelZ, this.nodes, this.segments, roomsById);
         this.geometry = projection.geometry();
-        this.path = CorridorPath.fromCells(this.geometry.cubePoints());
         this.routes = projection.routes();
         this.connections = projection.connections();
     }
@@ -142,38 +138,8 @@ public final class Corridor {
         return geometry;
     }
 
-    public CorridorPath path() {
-        return path;
-    }
-
     public List<CorridorRoute> routes() {
         return routes;
-    }
-
-    public Set<CubePoint> occupiedCells() {
-        return geometry.cubePoints();
-    }
-
-    public Set<Point2i> cells() {
-        return geometry.cells();
-    }
-
-    public Set<Point2i> cellsAtLevel(int levelZ) {
-        return geometry.cellsAtLevel(levelZ);
-    }
-
-    public Point2i centerCellAtLevel(int levelZ) {
-        return geometry.centerCellAtLevel(levelZ);
-    }
-
-    public Floor floor() {
-        Floor floor = geometry.floorAtLevel(levelZ);
-        return floor == null ? new Floor(TileShape.empty()) : floor;
-    }
-
-    public Floor floorAtLevel(int levelZ) {
-        Floor floor = geometry.floorAtLevel(levelZ);
-        return floor == null ? new Floor(TileShape.empty()) : floor;
     }
 
     public List<CorridorConnection> connections() {
@@ -333,7 +299,7 @@ public final class Corridor {
             if (room == null) {
                 continue;
             }
-            Floor floor = room.floorAtLevel(levelZ);
+            var floor = room.geometry().floorAtLevel(levelZ);
             if (floor == null || floor.shape() == null) {
                 continue;
             }
@@ -624,7 +590,7 @@ public final class Corridor {
         if (room == null) {
             throw new IllegalArgumentException("Corridor node references missing room " + node.roomId());
         }
-        Point2i anchor = room.anchorsByLevel().get(levelZ);
+        Point2i anchor = room.geometry().anchorAtLevel(levelZ);
         if (anchor == null) {
             throw new IllegalArgumentException("Corridor node references room without floor at level " + levelZ);
         }

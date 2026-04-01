@@ -56,7 +56,7 @@ public final class DungeonClusterMoveService {
                     if (room == null || room.roomId() == null) {
                         continue;
                     }
-                    roomWriteRepository.updateRoomPosition(conn, room.roomId(), room.anchorsByLevel(), room.primaryLevel());
+                    roomWriteRepository.updateRoomPosition(conn, room.roomId(), room.geometry().anchorsByLevel(), room.geometry().primaryLevel());
                 }
                 return null;
             });

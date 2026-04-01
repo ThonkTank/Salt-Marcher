@@ -29,15 +29,14 @@ public final class DungeonRuntimeLocationTileResolver {
         }
         if (location instanceof DungeonRuntimeLocation.Room roomLocation) {
             Room room = layout.findRoom(roomLocation.roomId());
-            return room == null || room.floor() == null
+            return room == null
                     ? null
-                    : CubePoint.at(room.floor().shape().centerCell(), layout.levelForRoom(room.roomId()));
+                    : room.geometry().centerPointAtLevel(layout.levelForRoom(room.roomId()));
         }
         if (location instanceof DungeonRuntimeLocation.Corridor corridorLocation) {
             Corridor corridor = layout.findCorridor(corridorLocation.corridorId());
             if (corridor != null) {
-                Point2i centerCell = corridor.centerCellAtLevel(corridor.levelZ());
-                return centerCell == null ? null : CubePoint.at(centerCell, corridor.levelZ());
+                return corridor.geometry().centerPointAtLevel(corridor.levelZ());
             }
             return corridorLocation.anchorTile();
         }

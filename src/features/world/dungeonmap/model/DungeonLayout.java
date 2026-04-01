@@ -191,7 +191,7 @@ public final class DungeonLayout {
 
     public int levelForRoom(Long roomId) {
         Room room = findRoom(roomId);
-        return room == null ? 0 : room.primaryLevel();
+        return room == null ? 0 : room.geometry().primaryLevel();
     }
 
     public Set<Integer> levelsForRoom(Long roomId) {
@@ -564,7 +564,7 @@ public final class DungeonLayout {
 
     private static boolean corridorReachesLevel(Corridor corridor, int levelZ) {
         return corridor != null
-                && !corridor.cellsAtLevel(levelZ).isEmpty();
+                && !corridor.geometry().cellsAtLevel(levelZ).isEmpty();
     }
 
     private static Map<Long, Room> indexRooms(List<RoomCluster> clusters) {
@@ -700,7 +700,7 @@ public final class DungeonLayout {
         Map<Long, Set<Integer>> result = new LinkedHashMap<>();
         for (Map.Entry<Long, Room> entry : roomsById.entrySet()) {
             Room room = entry.getValue();
-            result.put(entry.getKey(), room == null ? Set.of(0) : room.levels());
+            result.put(entry.getKey(), room == null ? Set.of(0) : room.geometry().levels());
         }
         return Map.copyOf(result);
     }
@@ -713,13 +713,13 @@ public final class DungeonLayout {
             }
             for (Room room : cluster.rooms()) {
                 if (room != null) {
-                    result.addAll(room.cells());
+                    result.addAll(room.geometry().cells());
                 }
             }
         }
         for (Corridor corridor : corridors) {
             if (corridor != null) {
-                result.addAll(corridor.cells());
+                result.addAll(corridor.geometry().cells());
             }
         }
         return Set.copyOf(result);
@@ -739,14 +739,14 @@ public final class DungeonLayout {
                 if (room == null || room.roomId() == null) {
                     continue;
                 }
-                result.addAll(room.cubePoints());
+                result.addAll(room.geometry().cubePoints());
             }
         }
         for (Corridor corridor : corridors) {
             if (corridor == null) {
                 continue;
             }
-            result.addAll(corridor.occupiedCells());
+            result.addAll(corridor.geometry().cubePoints());
         }
         for (DungeonStair stair : stairs) {
             if (stair != null) {
@@ -773,7 +773,7 @@ public final class DungeonLayout {
             if (corridor == null || corridor.corridorId() == null) {
                 continue;
             }
-            for (Point2i cell : corridor.cells()) {
+            for (Point2i cell : corridor.geometry().cells()) {
                 mutable.computeIfAbsent(cell, ignored -> new ArrayList<>()).add(corridor.corridorId());
             }
         }
@@ -790,7 +790,7 @@ public final class DungeonLayout {
             if (corridor == null || corridor.corridorId() == null) {
                 continue;
             }
-            for (CubePoint cell : corridor.occupiedCells()) {
+            for (CubePoint cell : corridor.geometry().cubePoints()) {
                 if (cell != null) {
                     mutable.computeIfAbsent(cell, ignored -> new ArrayList<>()).add(corridor.corridorId());
                 }

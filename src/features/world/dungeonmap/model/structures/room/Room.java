@@ -1,10 +1,6 @@
 package features.world.dungeonmap.model.structures.room;
 
-import features.world.dungeonmap.model.geometry.BoundaryNetwork;
-import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.geometry.TileShape;
-import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.objects.Floor;
 import features.world.dungeonmap.model.objects.StructureGeometry;
 import features.world.dungeonmap.model.objects.Wall;
@@ -13,7 +9,6 @@ import features.world.dungeonmap.model.structures.TargetKey;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public record Room(
         Long roomId,
@@ -130,57 +125,23 @@ public record Room(
         narration = narration == null ? RoomNarration.empty() : narration;
     }
 
-    public Map<Integer, Floor> floors() {
-        return geometry.floors().isEmpty() ? Map.of(0, new Floor(null)) : geometry.floors();
-    }
-
-    public List<Wall> walls() {
-        return geometry.walls();
-    }
-
-    public Floor floor() {
-        return geometry.floor();
-    }
-
-    public Floor floorAtLevel(int z) {
-        return geometry.floorAtLevel(z);
-    }
-
-    public Set<Integer> levels() {
-        return geometry.levels();
-    }
-
-    public Map<Integer, TileShape> shapesByLevel() {
-        Map<Integer, TileShape> shapesByLevel = geometry.shapesByLevel();
-        return shapesByLevel.isEmpty() ? Map.of(0, TileShape.empty()) : shapesByLevel;
-    }
-
-    public Map<Integer, Point2i> anchorsByLevel() {
-        Map<Integer, Point2i> anchorsByLevel = geometry.anchorsByLevel();
-        return anchorsByLevel.isEmpty() ? Map.of(0, new Point2i(0, 0)) : anchorsByLevel;
-    }
-
-    public int primaryLevel() {
-        return geometry.primaryLevel();
-    }
-
     public Room withFloor(Floor floor) {
         return resolved(
                 roomId,
                 mapId,
                 clusterId,
                 name,
-                Map.of(primaryLevel(), floor == null ? new Floor(null) : floor),
-                walls(),
+                Map.of(geometry.primaryLevel(), floor == null ? new Floor(null) : floor),
+                geometry.walls(),
                 narration);
     }
 
     public Room withFloors(Map<Integer, Floor> floors) {
-        return resolved(roomId, mapId, clusterId, name, floors, walls(), narration);
+        return resolved(roomId, mapId, clusterId, name, floors, geometry.walls(), narration);
     }
 
     public Room withBoundaries(List<Wall> walls) {
-        return resolved(roomId, mapId, clusterId, name, floors(), walls, narration);
+        return resolved(roomId, mapId, clusterId, name, geometry.floors(), walls, narration);
     }
 
     public Room withNarration(RoomNarration narration) {
@@ -203,34 +164,6 @@ public record Room(
         return TargetKey.parseId(targetKey, TARGET_KEY_PREFIX);
     }
 
-    public BoundaryNetwork boundaryNetwork() {
-        return geometry.boundaryNetwork();
-    }
-
-    public Set<VertexEdge> boundaryEdges() {
-        return geometry.boundaryEdges();
-    }
-
-    public Set<Point2i> cells() {
-        return geometry.cells();
-    }
-
-    public Set<Point2i> cellsAtLevel(int z) {
-        return geometry.cellsAtLevel(z);
-    }
-
-    public Set<CubePoint> cubePoints() {
-        return geometry.cubePoints();
-    }
-
-    public boolean contains(Point2i cell) {
-        return geometry.contains(cell);
-    }
-
-    public boolean contains(CubePoint point) {
-        return geometry.contains(point);
-    }
-
     public Room movedBy(Point2i delta) {
         return movedBy(delta, 0);
     }
@@ -246,7 +179,7 @@ public record Room(
     }
 
     public Room movedToLevel(int targetPrimaryLevel) {
-        return movedBy(new Point2i(0, 0), targetPrimaryLevel - primaryLevel());
+        return movedBy(new Point2i(0, 0), targetPrimaryLevel - geometry.primaryLevel());
     }
 
     public Room movedByLevel(int levelDelta) {

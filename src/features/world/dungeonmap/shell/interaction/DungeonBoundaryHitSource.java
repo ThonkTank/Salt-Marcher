@@ -56,7 +56,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
         for (RoomCluster cluster : projectedClusters) {
             for (Room room : cluster.rooms()) {
                 if (room != null) {
-                    cells.addAll(room.cells());
+                    cells.addAll(room.geometry().cells());
                 }
             }
         }
@@ -129,7 +129,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
                 if (room == null || room.roomId() == null) {
                     continue;
                 }
-                for (VertexEdge edge : room.boundaryEdges()) {
+                for (VertexEdge edge : room.geometry().boundaryEdgesAtLevel(levelZ)) {
                     if (edge == null || connectionEdges.contains(edge)) {
                         continue;
                     }
@@ -203,7 +203,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
             return null;
         }
         for (Point2i cell : edge.touchingCells().stream().sorted(Point2i.POINT_ORDER).toList()) {
-            if (!room.contains(cell)) {
+            if (!room.geometry().contains(cell)) {
                 continue;
             }
             Point2i outwardStep = edge.directionFrom(cell);

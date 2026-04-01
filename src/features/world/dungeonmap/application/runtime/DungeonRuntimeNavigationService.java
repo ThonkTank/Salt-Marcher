@@ -241,11 +241,12 @@ public final class DungeonRuntimeNavigationService {
                 if (room == null) {
                     yield null;
                 }
-                CubePoint preferred = room.levels().contains(currentLevel)
-                        ? CubePoint.at(room.floorAtLevel(currentLevel).shape().centerCell(), currentLevel)
-                        : room.levels().stream()
+                var geometry = room.geometry();
+                CubePoint preferred = geometry.levels().contains(currentLevel)
+                        ? geometry.centerPointAtLevel(currentLevel)
+                        : geometry.levels().stream()
                         .sorted()
-                        .map(level -> CubePoint.at(room.floorAtLevel(level).shape().centerCell(), level))
+                        .map(geometry::centerPointAtLevel)
                         .findFirst()
                         .orElse(null);
                 yield nearestTraversableTile(layout, preferred);
@@ -256,24 +257,21 @@ public final class DungeonRuntimeNavigationService {
                     yield null;
                 }
                 CubePoint preferred = cluster.rooms().stream()
-                        .filter(room -> room != null && room.levels().contains(currentLevel))
-                        .map(room -> CubePoint.at(room.floorAtLevel(currentLevel).shape().centerCell(), currentLevel))
+                        .filter(room -> room != null && room.geometry().levels().contains(currentLevel))
+                        .map(room -> room.geometry().centerPointAtLevel(currentLevel))
                         .findFirst()
                         .orElseGet(() -> cluster.rooms().stream()
                                 .filter(room -> room != null)
-                                .flatMap(room -> room.levels().stream()
+                                .flatMap(room -> room.geometry().levels().stream()
                                         .sorted()
-                                        .map(level -> CubePoint.at(room.floorAtLevel(level).shape().centerCell(), level)))
+                                        .map(room.geometry()::centerPointAtLevel))
                                 .findFirst()
                                 .orElse(null));
                 yield nearestTraversableTile(layout, preferred);
             }
             case CORRIDOR -> {
                 Corridor corridor = layout.findCorridor(endpoint.id());
-                Point2i centerCell = corridor == null ? null : corridor.centerCellAtLevel(corridor.levelZ());
-                CubePoint preferred = centerCell == null || corridor == null
-                        ? null
-                        : CubePoint.at(centerCell, corridor.levelZ());
+                CubePoint preferred = corridor == null ? null : corridor.geometry().centerPointAtLevel(corridor.levelZ());
                 yield nearestTraversableTile(layout, preferred);
             }
             case STAIR -> {

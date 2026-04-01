@@ -90,6 +90,11 @@ public final class StructureGeometry {
         return floors.get(z);
     }
 
+    public TileShape shapeAtLevel(int z) {
+        Floor floor = floorAtLevel(z);
+        return floor == null ? TileShape.empty() : floor.shape();
+    }
+
     public Set<Integer> levels() {
         return Set.copyOf(floors.keySet());
     }
@@ -122,6 +127,11 @@ public final class StructureGeometry {
         return result.isEmpty() ? Map.of() : Map.copyOf(result);
     }
 
+    public Point2i anchorAtLevel(int levelZ) {
+        Floor floor = floorAtLevel(levelZ);
+        return floor == null || floor.shape() == null ? null : floor.shape().anchor();
+    }
+
     public int primaryLevel() {
         return floors.keySet().stream()
                 .mapToInt(Integer::intValue)
@@ -137,12 +147,32 @@ public final class StructureGeometry {
         return floor.shape().centerCell();
     }
 
+    public CubePoint centerPointAtLevel(int levelZ) {
+        Point2i centerCell = centerCellAtLevel(levelZ);
+        return centerCell == null ? null : CubePoint.at(centerCell, levelZ);
+    }
+
     public BoundaryNetwork boundaryNetwork() {
         return BoundaryNetwork.fromPaths(walls);
     }
 
     public Set<VertexEdge> boundaryEdges() {
         return boundaryNetwork().edges();
+    }
+
+    public Set<VertexEdge> boundaryEdgesAtLevel(int levelZ) {
+        Floor levelFloor = floorAtLevel(levelZ);
+        if (levelFloor == null || levelFloor.shape() == null || levelFloor.shape().size() == 0) {
+            return Set.of();
+        }
+        Set<VertexEdge> allowedEdges = levelFloor.shape().boundaryEdges();
+        Set<VertexEdge> result = new LinkedHashSet<>();
+        for (VertexEdge edge : boundaryEdges()) {
+            if (allowedEdges.contains(edge)) {
+                result.add(edge);
+            }
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
     public Set<Point2i> cells() {

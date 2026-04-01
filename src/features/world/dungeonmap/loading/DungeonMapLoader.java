@@ -359,13 +359,13 @@ public final class DungeonMapLoader {
             }
             for (Room room : cluster.rooms()) {
                 if (room != null) {
-                    result.addAll(room.cubePoints());
+                    result.addAll(room.geometry().cubePoints());
                 }
             }
         }
         for (Corridor corridor : corridors == null ? List.<Corridor>of() : corridors) {
             if (corridor != null) {
-                result.addAll(corridor.occupiedCells());
+                result.addAll(corridor.geometry().cubePoints());
             }
         }
         return Set.copyOf(result);
@@ -651,7 +651,7 @@ public final class DungeonMapLoader {
                 if (room == null || room.roomId() == null) {
                     continue;
                 }
-                Floor anchorFloor = room.floorAtLevel(levelZ);
+                Floor anchorFloor = room.geometry().floorAtLevel(levelZ);
                 if (anchorFloor == null || anchorFloor.shape() == null) {
                     continue;
                 }
@@ -690,7 +690,7 @@ public final class DungeonMapLoader {
                     room.mapId(),
                     room.clusterId(),
                     room.name(),
-                    floorsByRoomId.getOrDefault(room.roomId(), room.floors()),
+                    floorsByRoomId.getOrDefault(room.roomId(), room.geometry().floors()),
                     mergeWalls(wallsByRoomId.getOrDefault(room.roomId(), List.of())),
                     room.narration()));
         }
@@ -709,7 +709,7 @@ public final class DungeonMapLoader {
         Map<Long, Map<Integer, Floor>> result = new LinkedHashMap<>();
         for (Room room : rooms) {
             if (room != null && room.roomId() != null) {
-                result.put(room.roomId(), new LinkedHashMap<>(room.floors()));
+                result.put(room.roomId(), new LinkedHashMap<>(room.geometry().floors()));
             }
         }
         return result;
@@ -836,7 +836,7 @@ public final class DungeonMapLoader {
             if (room == null) {
                 continue;
             }
-            for (Point2i cell : room.cells()) {
+            for (Point2i cell : room.geometry().cells()) {
                 roomsByCell.put(cell, room);
             }
         }

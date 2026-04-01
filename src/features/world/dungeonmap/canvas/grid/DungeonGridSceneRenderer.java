@@ -172,7 +172,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 if (pass.showRuntimeLabels()) {
                     gc.setFill(pass.palette().roomText());
                     gc.setFont(DungeonCanvasTheme.ROOM_LABEL_FONT);
-                    drawRoomLabel(gc, room.name(), pass.camera(), pass.gridSize(), room.floorAtLevel(pass.projectionLevel()));
+                    drawRoomLabel(gc, room.name(), pass.camera(), pass.gridSize(), room.geometry().floorAtLevel(pass.projectionLevel()));
                     gc.setFill(pass.palette().roomFill());
                 }
                 if (selectedCluster || selectedRoom) {

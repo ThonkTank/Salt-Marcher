@@ -175,16 +175,16 @@ geometry/  →  objects/  →  structures/
 ```
 
 - **`geometry/`** — Pure grid math primitives: `Point2i`, `CubePoint` (3D grid coordinate), `Tile`, `TileShape`, `VertexEdge`, `VertexPath`, `BoundaryNetwork`, `GridAnchor`, `GridRoute`. Domain-agnostic. No knowledge of walls, doors, rooms.
-- **`objects/`** — Thin domain objects over geometry: `Floor`, `Wall`, `Door`. `Door` is the boundary object and runtime/registry carrier for passability state; connectivity lives on `Connection`.
+- **`objects/`** — Thin domain objects over geometry: `Floor`, `Wall`, `Door`, `StructureGeometry`. `StructureGeometry` is the shared read-owner for walkable floor area plus structural boundary walls. `Door` is the boundary object and runtime/registry carrier for passability state; connectivity lives on `Connection`.
 - **`structures/`** — Self-managed compositions: `Room`, `RoomCluster`, `Corridor`, `DungeonStair`, `DungeonTransition`. Compose objects and own structure-level behavior.
 
 `DungeonLayout` is the immutable global lookup layer over structures. Mutations return new instances. Key aggregate queries: `overlappingClusters(TileShape)`, spatial indexes for stairs and transitions (`stairsAtCell(cell, z)`, `stairsAtLevel(z)`, `transitionsAtCell(cell, z)`, `transitionsAtLevel(z)`, `findStair(id)`, `findTransition(id)`), and the canonical room/corridor connection registry. Stair exit positions are included in traversable cells.
 
 ### Key Structures
 
-- **`Room`** — record: roomId, mapId, clusterId, name, Floor, Walls, `RoomNarration` (visual description + per-exit `RoomExitNarration` entries). `resolved()` keeps room-owned wall boundaries canonical. Connectivity is queried through layout connections instead of mirrored room-local door state.
+- **`Room`** — record: roomId, mapId, clusterId, name, `StructureGeometry`, `RoomNarration` (visual description + per-exit `RoomExitNarration` entries). Room edit/persistence seams may still construct from floors/walls, but shared readers consume `geometry()`. Connectivity is queried through layout connections instead of mirrored room-local door state.
 - **`RoomCluster`** — groups rooms spatially, manages adjacency via overlap indexing, and owns cluster-local rewrite logic for paint/delete/boundary changes. `movedBy()` handles translation. Produces `InteractiveLabelHandle` for canvas rendering.
-- **`Corridor`** — first-class horizontal structure: corridorId, mapId, one `levelZ`, stable corridor nodes, stable corridor segments, and corridor-local room bindings on nodes. `Corridor` derives its own `CorridorPath`, occupied cells/floors, corridor-local `Connection`s, and room queries for labels/graph/runtime directly from that graph
+- **`Corridor`** — first-class horizontal structure: corridorId, mapId, one `levelZ`, stable corridor nodes, stable corridor segments, and corridor-local room bindings on nodes. The graph is canonical; `Corridor` derives shared `StructureGeometry`, corridor-local `Connection`s, and room queries for labels/graph/runtime directly from that graph
 - **`DungeonStair`** — first-class vertical structure: stairId, mapId, name, ordered 3D path (`List<CubePoint>`) as canonical geometry. `DungeonStairExit` values are read-only projections derived from the path nodes that lie on occupied Room-/Corridor-floor cells. Target key: `stair:ID`. Queries: `reachableLevels()`, `occupiedPositions()`, `exitsAtLevel(z)`, `labelHandle(z)`
 - **`DungeonTransition`** — record: transitionId, mapId, description, anchor (`CubePoint`, nullable for unprepared), destination (`DungeonTransitionDestination`: sealed — `OverworldTileDestination(mapId, tileId)` | `DungeonMapDestination(mapId, transitionId)`), linkedTransitionId (for bidirectional pairs). `isPlaced()` checks non-null anchor. Target key: `transition:ID`. Label: "Übergang N".
 
@@ -199,7 +199,7 @@ geometry/  →  objects/  →  structures/
 - Selection/interactions keys are canonical semantic identity. If a structure or boundary owner exposes that identity (for example `RoomCluster.labelHandle().key()` or a corridor target-key API), renderers/coordinators/controllers may consume it but must not locally reconstruct or parse it.
 - Clean `dungeonmap/` code must not depend on `features.world.quarantine.dungeonmap`. Shared helpers such as transactions, room-topology orchestration, corridor reconciliation, and runtime-state repair belong locally under `application/` when still needed.
 - Observable transient state belongs in `state/`, not scattered across shell/canvas packages.
-- `Corridor` is a first-class structure with stable identity, path, connections, and corridor-local rules.
+- `Corridor` is a first-class structure with stable identity, graph, derived shared geometry, connections, and corridor-local rules.
 - `DungeonStair` is a first-class structure with stable identity and stair-local path geometry. Whole-stair regeneration may use helper generators, but persisted stair truth is always the explicit 3D path.
 - `DungeonTransition` is the canonical owner of transition identity and destination. Transitions may exist unprepared (anchor=null) — services must guard `isPlaced()` before spatial queries. Bidirectional linking is managed by the edit service, not the model.
 

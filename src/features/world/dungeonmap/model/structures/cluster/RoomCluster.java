@@ -1,6 +1,5 @@
 package features.world.dungeonmap.model.structures.cluster;
 
-import features.world.dungeonmap.model.geometry.BoundaryNetwork;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
@@ -205,7 +204,7 @@ public final class RoomCluster {
             if (room == null) {
                 continue;
             }
-            for (Map.Entry<Integer, TileShape> entry : room.shapesByLevel().entrySet()) {
+            for (Map.Entry<Integer, TileShape> entry : room.geometry().shapesByLevel().entrySet()) {
                 if (entry == null || entry.getKey() == null || entry.getValue() == null) {
                     continue;
                 }
@@ -432,17 +431,17 @@ public final class RoomCluster {
     }
 
     private static Room projectRoomToLevel(Room room, int levelZ) {
-        if (room == null || !room.levels().contains(levelZ)) {
+        if (room == null || !room.geometry().levels().contains(levelZ)) {
             return null;
         }
-        Floor floor = room.floorAtLevel(levelZ);
+        Floor floor = room.geometry().floorAtLevel(levelZ);
         return Room.resolved(
                 room.roomId(),
                 room.mapId(),
                 room.clusterId(),
                 room.name(),
                 Map.of(levelZ, floor == null ? new Floor(null) : floor),
-                room.walls(),
+                room.geometry().walls(),
                 room.narration());
     }
 
@@ -453,7 +452,7 @@ public final class RoomCluster {
             if (room == null) {
                 continue;
             }
-            for (Point2i cell : room.cells()) {
+            for (Point2i cell : room.geometry().cells()) {
                 if (result.containsKey(cell)) {
                     hasOverlaps = true;
                 }
@@ -469,7 +468,7 @@ public final class RoomCluster {
             if (room == null) {
                 continue;
             }
-            for (CubePoint point : room.cubePoints()) {
+            for (CubePoint point : room.geometry().cubePoints()) {
                 result.putIfAbsent(point, room);
             }
         }
@@ -480,7 +479,7 @@ public final class RoomCluster {
         Set<Point2i> result = new LinkedHashSet<>();
         for (Room room : rooms) {
             if (room != null) {
-                result.addAll(room.cells());
+                result.addAll(room.geometry().cells());
             }
         }
         return Set.copyOf(result);
@@ -492,7 +491,7 @@ public final class RoomCluster {
             result.put(roomId, new LinkedHashSet<>());
         }
         for (Room room : roomsById.values()) {
-            for (Point2i cell : room.cells()) {
+            for (Point2i cell : room.geometry().cells()) {
                 for (Point2i step : Point2i.CARDINAL_STEPS) {
                     Room neighbor = roomsByCell.get(cell.add(step));
                     if (neighbor == null || neighbor.roomId() == null || neighbor.roomId().equals(room.roomId())) {
@@ -578,8 +577,8 @@ public final class RoomCluster {
                 mapId,
                 clusterId == null ? room.clusterId() : clusterId,
                 room.name(),
-                room.floors(),
-                room.walls(),
+                room.geometry().floors(),
+                room.geometry().walls(),
                 room.narration());
     }
 
@@ -603,7 +602,7 @@ public final class RoomCluster {
             if (room == null) {
                 continue;
             }
-            for (Map.Entry<Integer, Floor> entry : room.floors().entrySet()) {
+            for (Map.Entry<Integer, Floor> entry : room.geometry().floors().entrySet()) {
                 if (entry == null || entry.getKey() == null || entry.getValue() == null) {
                     continue;
                 }
@@ -635,8 +634,7 @@ public final class RoomCluster {
             if (room == null) {
                 continue;
             }
-            BoundaryNetwork network = BoundaryNetwork.fromPaths(room.walls());
-            for (VertexEdge edge : network.edges()) {
+            for (VertexEdge edge : room.geometry().boundaryEdges()) {
                 if (boundaryEdges.contains(edge)) {
                     result.add(edge);
                 }
