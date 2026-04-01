@@ -114,6 +114,25 @@ public final class BoundaryTool implements EditorTool {
     }
 
     @Override
+    public DungeonSelectionKey hoverSelectionKey(EditorToolContext ctx) {
+        Point2i vertex = selectedVertex(ctx);
+        if (vertex == null) {
+            return null;
+        }
+        DungeonLayout layout = ctx == null ? null : ctx.activeMap();
+        DungeonEditorTool tool = sessionState.selectedTool();
+        if (layout == null || tool == null || !tool.isWallTool()) {
+            return null;
+        }
+        boolean deleteMode = tool == DungeonEditorTool.CLUSTER_WALL_DELETE;
+        RoomCluster cluster = resolveCluster(ctx, vertex, deleteMode, layout);
+        if (cluster == null || !pathPlanner.isEditableVertex(cluster, vertex, deleteMode)) {
+            return null;
+        }
+        return EditorHoverKeys.partOnly(new DungeonHitSubject.VertexSubject(vertex));
+    }
+
+    @Override
     public Node statePaneContent() {
         String statusText = boundaryStatusText();
         if (statusText == null || statusText.isBlank()) {

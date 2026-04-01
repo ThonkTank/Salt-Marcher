@@ -31,6 +31,12 @@ public final class DungeonCanvasTheme {
     public static final Color CORRIDOR_STROKE = Color.web("#91b6b0");
     public static final Color CORRIDOR_SELECTED_FILL = Color.web("#58706e", 0.95);
     public static final Color CORRIDOR_SELECTED_STROKE = Color.web("#d7ece7");
+    public static final Color DOOR_EDGE_STROKE = Color.web("#e5c06f");
+    public static final Color DOOR_EDGE_SELECTED_STROKE = Color.web("#fff1ae");
+    public static final Color DOOR_MARKER_FILL = Color.web("#1a2429", 0.96);
+    public static final Color DOOR_MARKER_STROKE = Color.web("#e5c06f");
+    public static final Color DOOR_MARKER_SELECTED_FILL = Color.web("#314148", 0.98);
+    public static final Color DOOR_MARKER_SELECTED_STROKE = Color.web("#fff1ae");
     public static final Color GRAPH_LINK = Color.web("#56636c");
     public static final Color GRAPH_NODE_FILL = Color.web("#2f3a41");
     public static final Color GRAPH_NODE_STROKE = Color.web("#8a6a35");

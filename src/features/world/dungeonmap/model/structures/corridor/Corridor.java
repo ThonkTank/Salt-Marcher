@@ -273,9 +273,11 @@ public final class Corridor {
             if (start == null || end == null) {
                 throw new IllegalArgumentException("Corridor segment references missing node");
             }
-            List<Point2i> doubledPath = findRoute(levelZ, start, end, nodes, resolvedRooms);
-            occupiedCells.addAll(cellsForDoubledPath(doubledPath, levelZ));
-            routes.add(new CorridorRoute(segment.segmentId(), segment.startNodeId(), segment.endNodeId(), doubledPath));
+            RoutePlan routePlan = findRoute(levelZ, start, end, nodes, resolvedRooms);
+            occupiedCells.addAll(routePlan.corridorCells().stream()
+                    .map(cell -> CubePoint.at(cell, levelZ))
+                    .toList());
+            routes.add(new CorridorRoute(segment.segmentId(), segment.startNodeId(), segment.endNodeId(), routePlan.doubledPath()));
         }
         return new DerivedProjection(
                 CorridorPath.fromCells(occupiedCells),
@@ -293,7 +295,7 @@ public final class Corridor {
         return Map.copyOf(result);
     }
 
-    private static List<Point2i> findRoute(
+    private static RoutePlan findRoute(
             int levelZ,
             CorridorNode start,
             CorridorNode end,
@@ -319,7 +321,7 @@ public final class Corridor {
         return Set.copyOf(blocked);
     }
 
-    private static List<Point2i> findAnchoredRoute(
+    private static RoutePlan findAnchoredRoute(
             int levelZ,
             CorridorNode start,
             CorridorNode end,
@@ -343,14 +345,14 @@ public final class Corridor {
                         + startAttachment.adapterCost()
                         + endAttachment.adapterCost();
                 if (bestPlan == null || totalCost < bestPlan.cost()) {
-                    bestPlan = new RoutePlan(doubledPath, totalCost);
+                    bestPlan = new RoutePlan(doubledPath, cellRoute.cells(), totalCost);
                 }
             }
         }
         if (bestPlan == null) {
             throw new IllegalArgumentException("Corridor segment could not be routed");
         }
-        return bestPlan.doubledPath();
+        return bestPlan;
     }
 
     private static List<AnchorAttachment> attachmentsForNode(
@@ -562,31 +564,6 @@ public final class Corridor {
         return Math.max(0.15d, Math.min(0.75d, 0.75d / Math.sqrt(cellDistance)));
     }
 
-    private static Collection<CubePoint> cellsForDoubledPath(List<Point2i> doubledPath, int levelZ) {
-        if (doubledPath == null || doubledPath.size() < 2) {
-            return List.of();
-        }
-        LinkedHashSet<CubePoint> cells = new LinkedHashSet<>();
-        for (int index = 1; index < doubledPath.size(); index++) {
-            Point2i start = doubledPath.get(index - 1);
-            Point2i end = doubledPath.get(index);
-            if (start.x() == end.x() && (start.x() & 1) == 1) {
-                int y2 = Math.min(start.y(), end.y());
-                if ((y2 & 1) == 0) {
-                    cells.add(new CubePoint((start.x() - 1) / 2, y2 / 2, levelZ));
-                }
-                continue;
-            }
-            if (start.y() == end.y() && (start.y() & 1) == 1) {
-                int x2 = Math.min(start.x(), end.x());
-                if ((x2 & 1) == 0) {
-                    cells.add(new CubePoint(x2 / 2, (start.y() - 1) / 2, levelZ));
-                }
-            }
-        }
-        return List.copyOf(cells);
-    }
-
     private static List<CorridorConnection> materializeConnections(
             Long corridorId,
             long mapId,
@@ -669,9 +646,10 @@ public final class Corridor {
         }
     }
 
-    private record RoutePlan(List<Point2i> doubledPath, double cost) {
+    private record RoutePlan(List<Point2i> doubledPath, List<Point2i> corridorCells, double cost) {
         private RoutePlan {
             doubledPath = doubledPath == null ? List.of() : List.copyOf(doubledPath);
+            corridorCells = corridorCells == null ? List.of() : List.copyOf(corridorCells);
         }
     }
 

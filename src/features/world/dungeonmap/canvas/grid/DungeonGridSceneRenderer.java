@@ -195,22 +195,26 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             }
         }
         drawRoomBoundaries(pass, roomBoundaryEdges, pass.palette().wallStroke());
-        drawConnections(
+        drawDoorConnections(
                 gc,
                 pass.camera(),
                 pass.gridSize(),
                 roomDoorConnections,
                 roomDoorEdges(roomDoorConnections, mapModel),
-                pass.palette().wallStroke(),
-                2.0);
-        drawConnections(
+                pass.palette().doorStroke(),
+                pass.palette().doorMarkerFill(),
+                pass.palette().doorMarkerStroke(),
+                2.6);
+        drawDoorConnections(
                 gc,
                 pass.camera(),
                 pass.gridSize(),
                 selectedRoomDoorConnections,
                 roomDoorEdges(selectedRoomDoorConnections, mapModel),
-                pass.palette().highlightAccent(),
-                3.0);
+                pass.palette().selectedDoorStroke(),
+                pass.palette().selectedDoorMarkerFill(),
+                pass.palette().selectedDoorMarkerStroke(),
+                3.4);
         return selectedRoomBoundaryEdges;
     }
 
@@ -410,19 +414,27 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             }
             gc.setFill(selected ? pass.palette().highlightFill() : pass.palette().corridorFill());
             fillRoomTiles(gc, pass.camera(), pass.gridSize(), corridorTiles);
-            strokeRoomTiles(gc, pass.camera(), pass.gridSize(), corridorTiles, pass.palette().roomStroke(), 1.0);
+            strokeRoomTiles(
+                    gc,
+                    pass.camera(),
+                    pass.gridSize(),
+                    corridorTiles,
+                    selected ? pass.palette().highlightStroke() : pass.palette().corridorStroke(),
+                    selected ? 1.6 : 1.2);
 
             Set<VertexEdge> wallEdges = new LinkedHashSet<>(corridor.path().floorAtLevel(pass.projectionLevel()).shape().boundaryEdges());
             wallEdges.removeAll(levelConnectionEdges);
             drawCorridorBoundaries(pass, wallEdges, selected);
-            drawConnections(
+            drawDoorConnections(
                     gc,
                     pass.camera(),
                     pass.gridSize(),
                     corridor.corridorId() == null ? List.of() : mapModel.connectionsForCorridor(corridor.corridorId()),
                     levelConnectionEdges,
-                    selected ? pass.palette().highlightStroke() : pass.palette().corridorStroke(),
-                    selected ? 3.0 : 2.0);
+                    selected ? pass.palette().selectedDoorStroke() : pass.palette().doorStroke(),
+                    selected ? pass.palette().selectedDoorMarkerFill() : pass.palette().doorMarkerFill(),
+                    selected ? pass.palette().selectedDoorMarkerStroke() : pass.palette().doorMarkerStroke(),
+                    selected ? 3.4 : 2.6);
             if (selected && pass.editorMode()) {
                 drawCorridorHandles(pass, corridor);
             }
@@ -592,6 +604,18 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                             }
                         });
             }
+            return;
+        }
+        Point2i vertex = DungeonSelectionLookup.vertex(key);
+        if (vertex != null) {
+            drawBoundaryVertexMarker(
+                    pass.gc(),
+                    pass.camera(),
+                    pass.gridSize(),
+                    vertex,
+                    withOpacity(pass.palette().highlightFill(), 0.95),
+                    withOpacity(pass.palette().highlightStroke(), 1.0),
+                    5.0);
             return;
         }
         CubePoint floorCell = DungeonSelectionLookup.floorCell(key);
@@ -923,13 +947,15 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         gc.setTextAlign(TextAlignment.LEFT);
     }
 
-    private static void drawConnections(
+    private static void drawDoorConnections(
             GraphicsContext gc,
             DungeonCanvasCamera camera,
             double gridSize,
             Collection<? extends Connection> connections,
             Set<VertexEdge> visibleEdges,
             Color stroke,
+            Color markerFill,
+            Color markerStroke,
             double lineWidth
     ) {
         if (connections == null || connections.isEmpty()) {
@@ -946,8 +972,33 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                     continue;
                 }
                 strokeEdge(gc, camera, gridSize, edge);
+                drawDoorMarker(gc, camera, gridSize, edge, markerFill, markerStroke, lineWidth);
             }
         }
+    }
+
+    private static void drawDoorMarker(
+            GraphicsContext gc,
+            DungeonCanvasCamera camera,
+            double gridSize,
+            VertexEdge edge,
+            Color fill,
+            Color stroke,
+            double edgeLineWidth
+    ) {
+        if (edge == null) {
+            return;
+        }
+        double centerX = camera.panX() + ((edge.start().x() + edge.end().x()) / 2.0) * gridSize;
+        double centerY = camera.panY() + ((edge.start().y() + edge.end().y()) / 2.0) * gridSize;
+        boolean vertical = edge.start().x() == edge.end().x();
+        double width = vertical ? Math.max(8.0, gridSize * 0.18) : Math.max(13.0, gridSize * 0.44);
+        double height = vertical ? Math.max(13.0, gridSize * 0.44) : Math.max(8.0, gridSize * 0.18);
+        gc.setFill(fill);
+        gc.fillRoundRect(centerX - width / 2.0, centerY - height / 2.0, width, height, 8, 8);
+        gc.setStroke(stroke);
+        gc.setLineWidth(Math.max(1.2, edgeLineWidth * 0.5));
+        gc.strokeRoundRect(centerX - width / 2.0, centerY - height / 2.0, width, height, 8, 8);
     }
 
     private static Set<VertexEdge> boundaryEdges(Collection<? extends Connection> connections) {
@@ -1063,6 +1114,12 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             Color highlightFill,
             Color corridorStroke,
             Color highlightStroke,
+            Color doorStroke,
+            Color selectedDoorStroke,
+            Color doorMarkerFill,
+            Color selectedDoorMarkerFill,
+            Color doorMarkerStroke,
+            Color selectedDoorMarkerStroke,
             Color stairFill,
             Color stairStroke,
             Color stairExitFill,
@@ -1076,10 +1133,16 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                     DungeonCanvasTheme.grid(editorMode),
                     DungeonCanvasTheme.WALL_STROKE,
                     DungeonCanvasTheme.ROOM_SELECTED_WALL_STROKE,
-                    DungeonCanvasTheme.CELL_FILL,
+                    DungeonCanvasTheme.CORRIDOR_FILL,
                     DungeonCanvasTheme.CORRIDOR_SELECTED_FILL,
                     DungeonCanvasTheme.CORRIDOR_STROKE,
                     DungeonCanvasTheme.CORRIDOR_SELECTED_STROKE,
+                    DungeonCanvasTheme.DOOR_EDGE_STROKE,
+                    DungeonCanvasTheme.DOOR_EDGE_SELECTED_STROKE,
+                    DungeonCanvasTheme.DOOR_MARKER_FILL,
+                    DungeonCanvasTheme.DOOR_MARKER_SELECTED_FILL,
+                    DungeonCanvasTheme.DOOR_MARKER_STROKE,
+                    DungeonCanvasTheme.DOOR_MARKER_SELECTED_STROKE,
                     DungeonCanvasTheme.CORRIDOR_FILL,
                     DungeonCanvasTheme.CORRIDOR_STROKE,
                     DungeonCanvasTheme.ROOM_SELECTED_WALL_STROKE,
@@ -1106,6 +1169,12 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                     blend(DungeonCanvasTheme.CORRIDOR_SELECTED_FILL, tint, 0.44),
                     blend(DungeonCanvasTheme.CORRIDOR_STROKE, tint, 0.62),
                     blend(DungeonCanvasTheme.CORRIDOR_SELECTED_STROKE, tint, 0.38),
+                    blend(DungeonCanvasTheme.DOOR_EDGE_STROKE, tint, 0.48),
+                    blend(DungeonCanvasTheme.DOOR_EDGE_SELECTED_STROKE, tint, 0.34),
+                    blend(DungeonCanvasTheme.DOOR_MARKER_FILL, tint, 0.42),
+                    blend(DungeonCanvasTheme.DOOR_MARKER_SELECTED_FILL, tint, 0.34),
+                    blend(DungeonCanvasTheme.DOOR_MARKER_STROKE, tint, 0.48),
+                    blend(DungeonCanvasTheme.DOOR_MARKER_SELECTED_STROKE, tint, 0.34),
                     blend(DungeonCanvasTheme.CORRIDOR_FILL, tint, 0.45),
                     blend(DungeonCanvasTheme.CORRIDOR_STROKE, tint, 0.55),
                     blend(DungeonCanvasTheme.ROOM_SELECTED_WALL_STROKE, tint, 0.5),

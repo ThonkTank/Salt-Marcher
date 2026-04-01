@@ -122,7 +122,22 @@ public final class ConnectionsTool implements EditorTool {
 
     @Override
     public DungeonSelectionKey hoverSelectionKey(EditorToolContext ctx) {
-        return resolvedSelectionKey(ctx);
+        DungeonHitSubject subject = resolvedSubject(ctx);
+        if (subject == null) {
+            return null;
+        }
+        if (subject instanceof DungeonHitSubject.RoomBoundarySubject
+                || subject instanceof DungeonHitSubject.ConnectionSubject
+                || subject instanceof DungeonHitSubject.CorridorNodeSubject
+                || subject instanceof DungeonHitSubject.CorridorCornerSubject
+                || subject instanceof DungeonHitSubject.CorridorSegmentSubject) {
+            return EditorHoverKeys.partOnly(subject);
+        }
+        if (subject instanceof DungeonHitSubject.RoomSubject
+                || subject instanceof DungeonHitSubject.CorridorSubject) {
+            return EditorHoverKeys.ownerOnly(subject);
+        }
+        return subject.selectionKey();
     }
 
     @Override

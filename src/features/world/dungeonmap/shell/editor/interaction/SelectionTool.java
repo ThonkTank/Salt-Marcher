@@ -218,6 +218,29 @@ public final class SelectionTool implements EditorTool {
     }
 
     @Override
+    public DungeonSelectionKey hoverSelectionKey(EditorToolContext ctx) {
+        DungeonHitSubject subject = primarySubject(ctx);
+        if (subject == null) {
+            return null;
+        }
+        if (subject instanceof DungeonHitSubject.CorridorNodeSubject) {
+            return EditorHoverKeys.partOnly(subject);
+        }
+        if (subject instanceof DungeonHitSubject.ClusterLabelSubject
+                || subject instanceof DungeonHitSubject.RoomSubject
+                || subject instanceof DungeonHitSubject.RoomBoundarySubject
+                || subject instanceof DungeonHitSubject.ConnectionSubject
+                || subject instanceof DungeonHitSubject.CorridorSubject
+                || subject instanceof DungeonHitSubject.CorridorCornerSubject
+                || subject instanceof DungeonHitSubject.CorridorSegmentSubject
+                || subject instanceof DungeonHitSubject.StairSubject
+                || subject instanceof DungeonHitSubject.TransitionSubject) {
+            return EditorHoverKeys.ownerOnly(subject);
+        }
+        return subject.selectionKey();
+    }
+
+    @Override
     public void levelScrolled(int delta) {
         if (dragSession == null || delta == 0) {
             return;
