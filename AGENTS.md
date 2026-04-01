@@ -31,7 +31,7 @@ This file defines the repository-specific operating constraints for Claude Code 
 ./gradlew importItems            # import only (no crawl)
 ```
 
-Legacy end-to-end scripts: `./scripts/crawl.sh`, `./scripts/crawl-items.sh`.
+End-to-end scripts: `./scripts/crawl.sh`, `./scripts/crawl-items.sh`.
 
 No test framework. No linter. The app database is SQLite at `${XDG_DATA_HOME:-~/.local/share}/salt-marcher/game.db` (auto-created on first run). Schema changes require deleting that DB and re-running `./scripts/crawl.sh` — there are no ALTER TABLE migrations. For ad-hoc DB inspection, prefer the vendored CLI at `./tools/sqlite3` or `./gradlew sqliteQuery --args='data/game.db .tables'`.
 
@@ -105,7 +105,7 @@ Additional structure belongs only in the nearest feature-local `AGENTS.md`, or a
 - Touched code should move toward the target architecture at the nearest safe seam without widening scope.
 - Preserve behavior, storage assumptions, user workflows, and explicit invariants unless the task explicitly requires changing them.
 - Avoid wrappers, adapters, or intermediate packages whose only purpose is to rename existing complexity.
-- Legacy code may remain until touched, but legacy shapes do not create new precedent.
+- Existing code may keep older local shapes until touched. Use the target architecture as the precedent for new or edited work.
 - Do not do rename-only churn just to satisfy the naming system. Rename when it clarifies ownership, removes a misleading role signal, or accompanies a real boundary change.
 - When goals compete, use this order: preserve correctness and satisfy the user request; preserve explicit repository invariants and local `AGENTS.md` rules; keep the change small enough to verify safely; then move the touched code toward the target architecture.
 
@@ -186,7 +186,7 @@ If a feature defines a nearer `AGENTS.md`, that file is required context before 
 - `SaltMarcherApp` remains the cross-feature top-level composition root.
 - `*App` and `*Preloader` are allowed for startup lifecycle code.
 
-### Legacy Name Transition
+### Existing Names
 
 - New code should use the hard owner and boundary roles above when one clearly fits.
 - Existing names may remain unless they actively obscure ownership or send a misleading boundary signal.
@@ -204,10 +204,13 @@ The rules in this section are decision filters, not soft preferences. When multi
 - Comments must earn their keep. Use them to preserve invariants, UX rules, non-obvious constraints, or the intended behavior of new or changed non-trivial logic; do not narrate obvious control flow or restate the code in English
 
 ### Documentation Updates
+- `AGENTS.md` files document concrete truths that exist now and durable editing rules. They are guidance, not changelogs
+- Remove or rewrite references to removed systems, rename history, and stale transition notes when they no longer affect current editing decisions
+- Keep transition notes only when they describe a live compatibility constraint or a current implementation hazard
 - During implementation, new or changed non-trivial code must document its intended behavior briefly at the owner seam that enforces it, so later contributors can understand the intent without reconstructing it from surrounding call sites
 - Prefer one concise intent comment on the stable owner over repeated narration on every branch or statement
 - Before handoff, inspect the root `AGENTS.md` and any nearer local `AGENTS.md` files governing the edited paths
-- Update those `AGENTS.md` files whenever the implementation changes documented truths, invariants, workflows, package roles, or UI behavior
+- Update those `AGENTS.md` files whenever the implementation changes documented truths, invariants, workflows, package roles, or UI behavior, and clean out stale statements that no longer describe current code or guidance
 - Treat documentation updates as part of done, not optional cleanup
 
 ### Repository & Application Conventions
@@ -215,7 +218,7 @@ The rules in this section are decision filters, not soft preferences. When multi
 - Application workflows may propagate `SQLException` from repositories and transaction boundaries, but business validation must use domain/argument exceptions (`IllegalArgumentException` or a feature-specific edit exception), not `SQLException`
 - Precise helper types such as `*Factory`, `*Generator`, `*Calculator`, `*Classifier`, `*Normalizer`, `*Assembler`, `*Coordinator`, `*Planner`, `*Matcher`, and comparable pure helpers are static-only with private constructor unless they need explicit state
 - Stateful workflow entrypoints (`*ApplicationService`, `*Session`) are instance-based
-- Legacy `service/` packages may remain in untouched code, but new code uses `application/`. When touching legacy `service/` code, keep public workflow entrypoints at the package root and move close collaborators into focused subpackages instead of widening visibility
+- Some existing feature areas still use `service/` packages. Keep their public workflow entrypoints at the package root, place new code in `application/`, and move close collaborators into focused subpackages when touching that area
 - Cross-feature read DTOs belong in `src/features/<feature>/api/`, not in `model/`. Use the `*Summary` naming pattern for lightweight selector DTOs. Keep `model/` focused on domain/editor state, not transport shapes for other features
 - Feature module APIs should expose narrow, role-specific setup methods. Do not hide unrelated wiring behind a generic `initialize(...)` entrypoint
 
@@ -229,7 +232,7 @@ The rules in this section are decision filters, not soft preferences. When multi
 - `ThemeColors.java` has `Color` constants mirroring CSS variables for Canvas-only drawing — must be kept in sync manually
 
 ### UI Naming
-- `*View` = AppView impls, `*Pane` = Region subclasses, `*Dropdown` = anchored non-modal editor windows backed by `Popup`, `*Popup` = legacy popup controllers not yet renamed, `*Controls` = left-column control panels, `*Canvas` = canvas subclasses for specific contexts
+- `*View` = AppView impls, `*Pane` = Region subclasses, `*Dropdown` = anchored non-modal editor windows backed by `Popup`, `*Popup` = existing popup-oriented controllers, `*Controls` = left-column control panels, `*Canvas` = canvas subclasses for specific contexts
 
 ### Editor & Inspector Design Rules
 

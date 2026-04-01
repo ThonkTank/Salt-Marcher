@@ -4,19 +4,19 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 
 ## Scope
 
-`dungeonmap` is a tile-grid dungeon editor and runtime surface inside Salt Marcher. Document the code that actually exists. Do not treat empty placeholder directories such as `application/stair`, `application/traversal`, or `canvas/graph` as architecture commitments until they contain real code.
+`dungeonmap` is a tile-grid dungeon editor and runtime surface inside Salt Marcher. Empty directories do not define architecture or ownership.
 
 ## Composition Root
 
 - `bootstrap/DungeonMapModule` is the only feature composition root. It wires one shared `DungeonMapState`, `DungeonEditorSessionState`, `EditorInteractionState`, `DungeonHitCollector`, loading services, edit services, and exposes `DungeonRuntimeView` plus `DungeonEditorView`.
 - Both views extend `shell/AbstractDungeonMapView`. That base class owns the view-local `DungeonCanvasWorkspace` and calls `DungeonMapLoadingService.ensureLoaded()` from `onShow()`.
-- `DungeonViewMode` currently supports `GRID` only. Do not reintroduce graph-mode assumptions into UI or docs until a second projection exists and preserves the same direct-owner semantics.
+- `DungeonViewMode` currently exposes the `GRID` projection. Additional modes must preserve the same direct-owner semantics across editor, runtime, and documentation.
 
 ## Current Architecture
 
 - `DungeonLayout` is the immutable global lookup over direct structure owners: room clusters, corridors, stairs, transitions, connections, traversable cells, and spatial indexes.
 - Corridors, stairs, and transitions are first-class persisted structures. There is no second aggregate that owns their geometry.
-- `Room` owns canonical shared surface geometry through `StructureObject`. `StructureGeometry` is only the compatibility facade for still-unmigrated call sites.
+- `Room` owns canonical shared surface geometry through `StructureObject`. `StructureGeometry` is the shared floor-and-wall access surface built on top of that owner.
 - `Corridor` keeps its node/segment graph as truth and compiles it into the same `StructureDescriptor`/`StructureObject` surface model used by rooms.
 - Room paint/delete/boundary edits persist room-owned `StructureDescriptor` truth plus derived cluster metadata. They do not reroute or regenerate corridors or stairs.
 - Runtime presentation resolves surfaces from the same structure owners used by the editor. Do not invent runtime-only structure mirrors.
@@ -26,7 +26,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `model/`
   - `geometry/` owns pure grid math and routing primitives.
   - `interaction/` owns model-side interaction seams such as `InteractiveLabelHandle`; semantic label identity lives here, not in canvas code.
-  - `objects/` owns thin domain objects over geometry such as `Floor`, `Wall`, `Door`, `StructureObject`, and the transitional `StructureGeometry` facade.
+  - `objects/` owns thin domain objects over geometry such as `Floor`, `Wall`, `Door`, `StructureObject`, and `StructureGeometry`.
   - `structures/` owns first-class structures and the structure-specific subpackages `cluster`, `connection`, `corridor`, `room`, `stair`, and `transition`.
   - `DungeonLayout` stays the feature-wide lookup surface, not a second mutation owner.
 - `application/`
@@ -133,14 +133,14 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 ## Loading And Persistence
 
 - `DungeonMapLoader` is the only authoritative rehydration path. It loads catalog entries, reconstructs layouts from direct structure tables, skips unusable maps, and falls back to the first usable map when necessary.
-- Room geometry is loaded directly from persisted room-owned `StructureDescriptor` rows. Do not reintroduce cluster-polygon or flood-fill fallback hydration.
+- Room geometry is loaded directly from persisted room-owned `StructureDescriptor` rows.
 - Storage model:
   - clusters: membership owner plus derived `center_x`, `center_y`, `level_z` metadata only
   - rooms: `dungeon_rooms` row plus per-level descriptor tables `dungeon_room_levels`, `dungeon_room_level_seeds`, and `dungeon_room_level_segments`
   - corridors: stable corridor identity plus node/segment tables
   - stairs: stable stair identity plus ordered 3D path nodes
   - transitions: `dungeon_transitions` with nullable placement coordinates and destination discriminator
-- Existing pre-descriptor dungeon maps are intentionally incompatible. Missing room descriptor rows make the loader reject the map instead of trying to repair legacy geometry.
+- A room must have persisted descriptor rows. Maps with missing room descriptors are rejected during load.
 - Write flows should persist in one transaction and then reload through `DungeonMapLoadingService.submitReloadingWrite(...)` or `submitReloadingTask(...)`.
 
 ## Guardrails
