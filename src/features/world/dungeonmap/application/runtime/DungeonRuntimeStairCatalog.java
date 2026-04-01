@@ -38,10 +38,10 @@ public final class DungeonRuntimeStairCatalog {
             Corridor corridor,
             CubePoint activeTile
     ) {
-        if (layout == null || corridor == null || corridor.corridorId() == null || corridor.path() == null) {
+        if (layout == null || corridor == null || corridor.corridorId() == null) {
             return List.of();
         }
-        return describe(layout, DungeonRuntimeCorridorGeometry.canonicalCells(layout, corridor), corridor.levelZ(), activeTile);
+        return describe(layout, corridor.cellsAtLevel(corridor.levelZ()), corridor.levelZ(), activeTile);
     }
 
     public static List<DungeonRuntimeStairDescriptor> describeAtCells(

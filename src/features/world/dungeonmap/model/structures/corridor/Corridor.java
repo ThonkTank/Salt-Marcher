@@ -7,6 +7,7 @@ import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.objects.Floor;
+import features.world.dungeonmap.model.objects.StructureGeometry;
 import features.world.dungeonmap.model.structures.TargetKey;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.CorridorConnection;
@@ -41,6 +42,7 @@ public final class Corridor {
     private final int levelZ;
     private final List<CorridorNode> nodes;
     private final List<CorridorSegment> segments;
+    private final StructureGeometry geometry;
     private final CorridorPath path;
     private final List<CorridorRoute> routes;
     private final List<CorridorConnection> connections;
@@ -80,7 +82,8 @@ public final class Corridor {
         this.nodes = normalizeNodes(nodes);
         this.segments = normalizeSegments(segments);
         DerivedProjection projection = deriveProjection(corridorId, mapId, levelZ, this.nodes, this.segments, roomsById);
-        this.path = projection.path();
+        this.geometry = projection.geometry();
+        this.path = CorridorPath.fromCells(this.geometry.cubePoints());
         this.routes = projection.routes();
         this.connections = projection.connections();
     }
@@ -135,6 +138,10 @@ public final class Corridor {
                 .toList();
     }
 
+    public StructureGeometry geometry() {
+        return geometry;
+    }
+
     public CorridorPath path() {
         return path;
     }
@@ -144,15 +151,29 @@ public final class Corridor {
     }
 
     public Set<CubePoint> occupiedCells() {
-        return path.cells();
+        return geometry.cubePoints();
+    }
+
+    public Set<Point2i> cells() {
+        return geometry.cells();
+    }
+
+    public Set<Point2i> cellsAtLevel(int levelZ) {
+        return geometry.cellsAtLevel(levelZ);
+    }
+
+    public Point2i centerCellAtLevel(int levelZ) {
+        return geometry.centerCellAtLevel(levelZ);
     }
 
     public Floor floor() {
-        return path.floor();
+        Floor floor = geometry.floorAtLevel(levelZ);
+        return floor == null ? new Floor(TileShape.empty()) : floor;
     }
 
     public Floor floorAtLevel(int levelZ) {
-        return levelZ == this.levelZ ? path.floorAtLevel(levelZ) : new Floor(TileShape.empty());
+        Floor floor = geometry.floorAtLevel(levelZ);
+        return floor == null ? new Floor(TileShape.empty()) : floor;
     }
 
     public List<CorridorConnection> connections() {
@@ -280,7 +301,7 @@ public final class Corridor {
             routes.add(new CorridorRoute(segment.segmentId(), segment.startNodeId(), segment.endNodeId(), routePlan.doubledPath()));
         }
         return new DerivedProjection(
-                CorridorPath.fromCells(occupiedCells),
+                StructureGeometry.fromCubePoints(occupiedCells),
                 routes.isEmpty() ? List.of() : List.copyOf(routes),
                 materializeConnections(corridorId, mapId, levelZ, nodes, resolvedRooms));
     }
@@ -611,7 +632,7 @@ public final class Corridor {
     }
 
     private record DerivedProjection(
-            CorridorPath path,
+            StructureGeometry geometry,
             List<CorridorRoute> routes,
             List<CorridorConnection> connections
     ) {

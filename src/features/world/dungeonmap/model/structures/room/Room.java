@@ -6,12 +6,11 @@ import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.objects.Floor;
+import features.world.dungeonmap.model.objects.StructureGeometry;
 import features.world.dungeonmap.model.objects.Wall;
 import features.world.dungeonmap.model.structures.TargetKey;
 
 import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -21,8 +20,7 @@ public record Room(
         long mapId,
         long clusterId,
         String name,
-        Map<Integer, Floor> floors,
-        List<Wall> walls,
+        StructureGeometry geometry,
         RoomNarration narration
 ) {
     private static final String TARGET_KEY_PREFIX = "room:";
@@ -66,14 +64,12 @@ public record Room(
             Map<Integer, Floor> floors,
             RoomNarration narration
     ) {
-        Map<Integer, Floor> resolvedFloors = normalizedFloors(floors);
-        return resolved(
+        return new Room(
                 roomId,
                 mapId,
                 clusterId,
                 name,
-                resolvedFloors,
-                List.of(new Wall(boundaryEdges(resolvedFloors))),
+                StructureGeometry.create(normalizedRoomFloors(floors)),
                 narration);
     }
 
@@ -120,85 +116,75 @@ public record Room(
             Collection<Wall> walls,
             RoomNarration narration
     ) {
-        Map<Integer, Floor> resolvedFloors = normalizedFloors(floors);
-        List<Wall> canonicalWalls = normalizedWalls(walls, boundaryEdges(resolvedFloors));
         return new Room(
                 roomId,
                 mapId,
                 clusterId,
                 name,
-                resolvedFloors,
-                canonicalWalls,
+                StructureGeometry.resolved(normalizedRoomFloors(floors), walls),
                 narration);
     }
 
     public Room {
-        floors = normalizedFloors(floors);
-        walls = walls == null ? List.of() : List.copyOf(walls);
+        geometry = normalizeGeometry(geometry);
         narration = narration == null ? RoomNarration.empty() : narration;
     }
 
+    public Map<Integer, Floor> floors() {
+        return geometry.floors().isEmpty() ? Map.of(0, new Floor(null)) : geometry.floors();
+    }
+
+    public List<Wall> walls() {
+        return geometry.walls();
+    }
+
     public Floor floor() {
-        return floors.get(primaryLevel());
+        return geometry.floor();
     }
 
     public Floor floorAtLevel(int z) {
-        return floors.get(z);
+        return geometry.floorAtLevel(z);
     }
 
     public Set<Integer> levels() {
-        return Set.copyOf(floors.keySet());
+        return geometry.levels();
     }
 
     public Map<Integer, TileShape> shapesByLevel() {
-        if (floors.isEmpty()) {
-            return Map.of(0, TileShape.empty());
-        }
-        Map<Integer, TileShape> result = new LinkedHashMap<>();
-        for (Map.Entry<Integer, Floor> entry : floors.entrySet()) {
-            if (entry == null || entry.getKey() == null || entry.getValue() == null) {
-                continue;
-            }
-            result.put(entry.getKey(), entry.getValue().shape());
-        }
-        return result.isEmpty() ? Map.of(0, TileShape.empty()) : Map.copyOf(result);
+        Map<Integer, TileShape> shapesByLevel = geometry.shapesByLevel();
+        return shapesByLevel.isEmpty() ? Map.of(0, TileShape.empty()) : shapesByLevel;
     }
 
     public Map<Integer, Point2i> anchorsByLevel() {
-        if (floors.isEmpty()) {
-            return Map.of(0, new Point2i(0, 0));
-        }
-        Map<Integer, Point2i> result = new LinkedHashMap<>();
-        for (Map.Entry<Integer, Floor> entry : floors.entrySet()) {
-            if (entry == null || entry.getKey() == null || entry.getValue() == null) {
-                continue;
-            }
-            result.put(entry.getKey(), entry.getValue().shape().anchor());
-        }
-        return result.isEmpty() ? Map.of(0, new Point2i(0, 0)) : Map.copyOf(result);
+        Map<Integer, Point2i> anchorsByLevel = geometry.anchorsByLevel();
+        return anchorsByLevel.isEmpty() ? Map.of(0, new Point2i(0, 0)) : anchorsByLevel;
     }
 
     public int primaryLevel() {
-        return floors.keySet().stream()
-                .mapToInt(Integer::intValue)
-                .min()
-                .orElse(0);
+        return geometry.primaryLevel();
     }
 
     public Room withFloor(Floor floor) {
-        return resolved(roomId, mapId, clusterId, name, Map.of(primaryLevel(), floor == null ? new Floor(null) : floor), walls, narration);
+        return resolved(
+                roomId,
+                mapId,
+                clusterId,
+                name,
+                Map.of(primaryLevel(), floor == null ? new Floor(null) : floor),
+                walls(),
+                narration);
     }
 
     public Room withFloors(Map<Integer, Floor> floors) {
-        return resolved(roomId, mapId, clusterId, name, floors, walls, narration);
+        return resolved(roomId, mapId, clusterId, name, floors, walls(), narration);
     }
 
     public Room withBoundaries(List<Wall> walls) {
-        return resolved(roomId, mapId, clusterId, name, floors, walls, narration);
+        return resolved(roomId, mapId, clusterId, name, floors(), walls, narration);
     }
 
     public Room withNarration(RoomNarration narration) {
-        return resolved(roomId, mapId, clusterId, name, floors, walls, narration);
+        return new Room(roomId, mapId, clusterId, name, geometry, narration);
     }
 
     public String targetKey() {
@@ -218,42 +204,31 @@ public record Room(
     }
 
     public BoundaryNetwork boundaryNetwork() {
-        return BoundaryNetwork.fromPaths(walls);
+        return geometry.boundaryNetwork();
     }
 
     public Set<VertexEdge> boundaryEdges() {
-        return boundaryNetwork().edges();
+        return geometry.boundaryEdges();
     }
 
     public Set<Point2i> cells() {
-        Set<Point2i> result = new LinkedHashSet<>();
-        for (Floor floor : floors.values()) {
-            result.addAll(floor.shape().absoluteCells());
-        }
-        return Set.copyOf(result);
+        return geometry.cells();
     }
 
     public Set<Point2i> cellsAtLevel(int z) {
-        Floor floor = floorAtLevel(z);
-        return floor == null ? Set.of() : floor.shape().absoluteCells();
+        return geometry.cellsAtLevel(z);
     }
 
     public Set<CubePoint> cubePoints() {
-        Set<CubePoint> result = new LinkedHashSet<>();
-        for (Map.Entry<Integer, Floor> entry : floors.entrySet()) {
-            for (Point2i cell : entry.getValue().shape().absoluteCells()) {
-                result.add(CubePoint.at(cell, entry.getKey()));
-            }
-        }
-        return Set.copyOf(result);
+        return geometry.cubePoints();
     }
 
     public boolean contains(Point2i cell) {
-        return cell != null && floors.values().stream().anyMatch(floor -> floor.shape().contains(cell));
+        return geometry.contains(cell);
     }
 
     public boolean contains(CubePoint point) {
-        return point != null && cellsAtLevel(point.z()).contains(point.projectedCell());
+        return geometry.contains(point);
     }
 
     public Room movedBy(Point2i delta) {
@@ -261,22 +236,12 @@ public record Room(
     }
 
     public Room movedBy(Point2i delta, int levelDelta) {
-        boolean translate = delta != null && (delta.x() != 0 || delta.y() != 0);
-        if (!translate && levelDelta == 0) {
-            return this;
-        }
-        Point2i resolvedDelta = delta == null ? new Point2i(0, 0) : delta;
-        Map<Integer, Floor> movedFloors = new LinkedHashMap<>();
-        for (Map.Entry<Integer, Floor> entry : floors.entrySet()) {
-            movedFloors.put(entry.getKey() + levelDelta, entry.getValue().movedBy(resolvedDelta));
-        }
         return new Room(
                 roomId,
                 mapId,
                 clusterId,
                 name,
-                movedFloors,
-                walls.stream().map(wall -> wall.movedBy(resolvedDelta)).toList(),
+                geometry.movedBy(delta, levelDelta),
                 narration);
     }
 
@@ -288,11 +253,18 @@ public record Room(
         return movedBy(new Point2i(0, 0), levelDelta);
     }
 
-    private static Map<Integer, Floor> normalizedFloors(Map<Integer, Floor> floors) {
+    private static StructureGeometry normalizeGeometry(StructureGeometry geometry) {
+        if (geometry == null || geometry.floors().isEmpty()) {
+            return StructureGeometry.create(Map.of(0, new Floor(null)));
+        }
+        return geometry;
+    }
+
+    private static Map<Integer, Floor> normalizedRoomFloors(Map<Integer, Floor> floors) {
         if (floors == null || floors.isEmpty()) {
             return Map.of(0, new Floor(null));
         }
-        Map<Integer, Floor> result = new LinkedHashMap<>();
+        Map<Integer, Floor> result = new java.util.LinkedHashMap<>();
         for (Map.Entry<Integer, Floor> entry : floors.entrySet()) {
             if (entry == null || entry.getKey() == null) {
                 continue;
@@ -300,35 +272,5 @@ public record Room(
             result.put(entry.getKey(), entry.getValue() == null ? new Floor(null) : entry.getValue());
         }
         return result.isEmpty() ? Map.of(0, new Floor(null)) : Map.copyOf(result);
-    }
-
-    private static Set<VertexEdge> boundaryEdges(Map<Integer, Floor> floors) {
-        Set<VertexEdge> result = new LinkedHashSet<>();
-        for (Floor floor : normalizedFloors(floors).values()) {
-            result.addAll(floor.shape().boundaryEdges());
-        }
-        return Set.copyOf(result);
-    }
-
-    private static List<Wall> normalizedWalls(Collection<Wall> walls, Set<VertexEdge> allowedEdges) {
-        List<Wall> result = new java.util.ArrayList<>();
-        if (walls == null || allowedEdges == null || allowedEdges.isEmpty()) {
-            return result;
-        }
-        for (Wall wall : walls) {
-            if (wall == null) {
-                continue;
-            }
-            Set<VertexEdge> edges = new LinkedHashSet<>();
-            for (VertexEdge edge : wall.edges()) {
-                if (allowedEdges.contains(edge)) {
-                    edges.add(edge);
-                }
-            }
-            if (!edges.isEmpty()) {
-                result.add(new Wall(edges));
-            }
-        }
-        return List.copyOf(result);
     }
 }

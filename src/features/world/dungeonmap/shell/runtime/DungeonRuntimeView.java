@@ -12,6 +12,8 @@ import features.world.dungeonmap.application.runtime.DungeonRuntimeTransitionDes
 import features.world.dungeonmap.application.runtime.DungeonRuntimeSurface;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeSurfacePresenter;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeSurfaceResolver;
+import features.world.dungeonmap.canvas.base.DungeonDoorNumberOverlay;
+import features.world.dungeonmap.canvas.base.DungeonRuntimeRenderOverlay;
 import features.world.dungeonmap.canvas.base.DungeonViewMode;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
@@ -53,6 +55,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
     private long runtimeRequestSequence;
     private Long runtimeMapId;
     private DetailsNavigator.EntryKey lastPublishedSurfaceKey;
+    private RuntimePresentation runtimePresentation = RuntimePresentation.empty();
 
     public DungeonRuntimeView(
             String title,
@@ -151,11 +154,11 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
     }
 
     private void refreshRuntimeUi() {
-        workspace().setActiveLocation(runtimeState.activeLocation());
-        workspace().setHeading(runtimeState.heading());
+        runtimePresentation = resolveRuntimePresentation();
+        workspace().showRuntimeRenderOverlay(runtimePresentation.overlay());
         refreshLabels();
-        refreshTravelPane();
-        publishRoomDetails();
+        refreshTravelPane(runtimePresentation.surface());
+        publishRoomDetails(runtimePresentation.surface());
     }
 
     private void refreshRuntimeState() {
@@ -231,8 +234,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
     }
 
     private CubePoint activeTile() {
-        DungeonRuntimeLocation location = runtimeState.activeLocation();
-        return location instanceof DungeonRuntimeLocation.Tile tile ? tile.tile() : null;
+        return runtimePresentation.activeTile();
     }
 
     private void movePartyThroughConnection(DungeonRuntimeDoorDescriptor door) {
@@ -267,7 +269,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         return "Token auf der Karte ziehen";
     }
 
-    private void refreshTravelPane() {
+    private void refreshTravelPane(DungeonRuntimeSurface surface) {
         if (travelSurface == null) {
             return;
         }
@@ -277,12 +279,11 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
                 DungeonRuntimeLabels.tileLabel(runtimeState.activeLocation()),
                 DungeonRuntimeLabels.headingLabel(runtimeState.heading()),
                 runtimeStatusText(),
-                travelActions(),
+                travelActions(surface),
                 workspace()::resetView);
     }
 
-    private List<WorldTravelSurface.DungeonDoorAction> travelActions() {
-        DungeonRuntimeSurface surface = activeSurface();
+    private List<WorldTravelSurface.DungeonDoorAction> travelActions(DungeonRuntimeSurface surface) {
         if (surface == null) {
             return List.of();
         }
@@ -354,11 +355,10 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         }
     }
 
-    private void publishRoomDetails() {
+    private void publishRoomDetails(DungeonRuntimeSurface surface) {
         if (runtimeState.loading() || runtimeState.moving() || runtimeState.dragging()) {
             return;
         }
-        DungeonRuntimeSurface surface = activeSurface();
         if (surface == null || surface.entryKey() == null) {
             return;
         }
@@ -374,13 +374,42 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
                 this::movePartyThroughTransition));
     }
 
-    private DungeonRuntimeSurface activeSurface() {
-        return DungeonRuntimeSurfaceResolver.resolve(state().activeMap(), runtimeState.activeLocation(), runtimeState.heading());
+    private RuntimePresentation resolveRuntimePresentation() {
+        DungeonRuntimeLocation location = runtimeState.activeLocation();
+        CardinalDirection heading = runtimeState.heading();
+        if (location == null || state().activeMap() == null) {
+            return RuntimePresentation.empty();
+        }
+        DungeonRuntimeSurface surface = DungeonRuntimeSurfaceResolver.resolve(state().activeMap(), location, heading);
+        CubePoint activeTile = DungeonRuntimeLocationTileResolver.resolve(state().activeMap(), location);
+        List<DungeonDoorNumberOverlay> doorNumbers = surface == null
+                ? List.of()
+                : surface.doors().stream()
+                        .map(door -> new DungeonDoorNumberOverlay(door.number(), door.anchorEdge()))
+                        .toList();
+        return new RuntimePresentation(
+                surface,
+                activeTile,
+                new DungeonRuntimeRenderOverlay(activeTile, heading, doorNumbers));
     }
 
     private static Label sectionLabel(String text) {
         Label label = new Label(text);
         label.getStyleClass().addAll("section-header", "text-muted");
         return label;
+    }
+
+    private record RuntimePresentation(
+            DungeonRuntimeSurface surface,
+            CubePoint activeTile,
+            DungeonRuntimeRenderOverlay overlay
+    ) {
+        private RuntimePresentation {
+            overlay = overlay == null ? DungeonRuntimeRenderOverlay.empty() : overlay;
+        }
+
+        private static RuntimePresentation empty() {
+            return new RuntimePresentation(null, null, DungeonRuntimeRenderOverlay.empty());
+        }
     }
 }

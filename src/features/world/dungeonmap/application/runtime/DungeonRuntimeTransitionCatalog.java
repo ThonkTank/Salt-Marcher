@@ -28,10 +28,10 @@ public final class DungeonRuntimeTransitionCatalog {
     }
 
     public static List<DungeonRuntimeTransitionDescriptor> describe(DungeonLayout layout, Corridor corridor, CubePoint activeTile) {
-        if (layout == null || corridor == null || corridor.corridorId() == null || corridor.path() == null) {
+        if (layout == null || corridor == null || corridor.corridorId() == null) {
             return List.of();
         }
-        return describe(layout, DungeonRuntimeCorridorGeometry.canonicalCells(layout, corridor), corridor.levelZ());
+        return describe(layout, corridor.cellsAtLevel(corridor.levelZ()), corridor.levelZ());
     }
 
     public static List<DungeonRuntimeTransitionDescriptor> describeAtTile(DungeonLayout layout, CubePoint tile) {

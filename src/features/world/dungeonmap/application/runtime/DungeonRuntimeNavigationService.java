@@ -270,7 +270,11 @@ public final class DungeonRuntimeNavigationService {
             }
             case CORRIDOR -> {
                 Corridor corridor = layout.findCorridor(endpoint.id());
-                yield nearestTraversableTile(layout, DungeonRuntimeCorridorGeometry.canonicalAnchor(layout, corridor));
+                Point2i centerCell = corridor == null ? null : corridor.centerCellAtLevel(corridor.levelZ());
+                CubePoint preferred = centerCell == null || corridor == null
+                        ? null
+                        : CubePoint.at(centerCell, corridor.levelZ());
+                yield nearestTraversableTile(layout, preferred);
             }
             case STAIR -> {
                 DungeonStair stair = layout.findStair(endpoint.id());

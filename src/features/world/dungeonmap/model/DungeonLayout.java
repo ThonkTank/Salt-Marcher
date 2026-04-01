@@ -564,8 +564,7 @@ public final class DungeonLayout {
 
     private static boolean corridorReachesLevel(Corridor corridor, int levelZ) {
         return corridor != null
-                && corridor.path() != null
-                && !corridor.path().floorAtLevel(levelZ).shape().absoluteCells().isEmpty();
+                && !corridor.cellsAtLevel(levelZ).isEmpty();
     }
 
     private static Map<Long, Room> indexRooms(List<RoomCluster> clusters) {
@@ -719,8 +718,8 @@ public final class DungeonLayout {
             }
         }
         for (Corridor corridor : corridors) {
-            if (corridor != null && corridor.path() != null && corridor.path().floor() != null) {
-                result.addAll(corridor.path().floor().shape().absoluteCells());
+            if (corridor != null) {
+                result.addAll(corridor.cells());
             }
         }
         return Set.copyOf(result);
@@ -744,10 +743,10 @@ public final class DungeonLayout {
             }
         }
         for (Corridor corridor : corridors) {
-            if (corridor == null || corridor.path() == null) {
+            if (corridor == null) {
                 continue;
             }
-            result.addAll(corridor.path().cells());
+            result.addAll(corridor.occupiedCells());
         }
         for (DungeonStair stair : stairs) {
             if (stair != null) {
@@ -771,10 +770,10 @@ public final class DungeonLayout {
     private static Map<Point2i, List<Long>> indexCorridorIdsByCell(List<Corridor> corridors) {
         Map<Point2i, List<Long>> mutable = new LinkedHashMap<>();
         for (Corridor corridor : corridors) {
-            if (corridor == null || corridor.corridorId() == null || corridor.path() == null) {
+            if (corridor == null || corridor.corridorId() == null) {
                 continue;
             }
-            for (Point2i cell : corridor.path().floor().shape().absoluteCells()) {
+            for (Point2i cell : corridor.cells()) {
                 mutable.computeIfAbsent(cell, ignored -> new ArrayList<>()).add(corridor.corridorId());
             }
         }
@@ -788,10 +787,10 @@ public final class DungeonLayout {
     private static Map<CubePoint, List<Long>> indexCorridorIdsByPoint(List<Corridor> corridors) {
         Map<CubePoint, List<Long>> mutable = new LinkedHashMap<>();
         for (Corridor corridor : corridors) {
-            if (corridor == null || corridor.corridorId() == null || corridor.path() == null) {
+            if (corridor == null || corridor.corridorId() == null) {
                 continue;
             }
-            for (CubePoint cell : corridor.path().cells()) {
+            for (CubePoint cell : corridor.occupiedCells()) {
                 if (cell != null) {
                     mutable.computeIfAbsent(cell, ignored -> new ArrayList<>()).add(corridor.corridorId());
                 }

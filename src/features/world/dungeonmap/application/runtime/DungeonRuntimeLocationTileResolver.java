@@ -2,6 +2,7 @@ package features.world.dungeonmap.application.runtime;
 
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
@@ -35,7 +36,8 @@ public final class DungeonRuntimeLocationTileResolver {
         if (location instanceof DungeonRuntimeLocation.Corridor corridorLocation) {
             Corridor corridor = layout.findCorridor(corridorLocation.corridorId());
             if (corridor != null) {
-                return DungeonRuntimeCorridorGeometry.canonicalAnchor(layout, corridor);
+                Point2i centerCell = corridor.centerCellAtLevel(corridor.levelZ());
+                return centerCell == null ? null : CubePoint.at(centerCell, corridor.levelZ());
             }
             return corridorLocation.anchorTile();
         }

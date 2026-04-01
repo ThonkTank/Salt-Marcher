@@ -9,8 +9,5 @@ public interface DungeonSceneRenderer {
             GraphicsContext gc,
             double width,
             double height,
-            DungeonLayout mapModel,
-            DungeonCanvasCamera camera,
-            boolean editorMode,
-            DungeonRenderState renderState);
+            DungeonSceneFrame frame);
 }

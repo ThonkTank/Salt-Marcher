@@ -32,11 +32,11 @@ public final class DungeonRuntimeDoorCatalog {
     }
 
     public static List<DungeonRuntimeDoorDescriptor> describe(DungeonLayout layout, Corridor corridor, CardinalDirection heading) {
-        if (layout == null || corridor == null || corridor.path() == null) {
+        if (layout == null || corridor == null || corridor.corridorId() == null) {
             return List.of();
         }
         return describe(
-                DungeonRuntimeCorridorGeometry.canonicalCells(layout, corridor),
+                corridor.cellsAtLevel(corridor.levelZ()),
                 layout.connectionsForCorridor(corridor.corridorId()),
                 heading,
                 (cell, direction) -> "",

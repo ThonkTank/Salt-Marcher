@@ -253,7 +253,8 @@ final class DungeonRuntimeLocations {
 
     private static CubePoint corridorAnchor(DungeonLayout layout, Corridor corridor, CubePoint preferred) {
         if (corridor != null) {
-            return DungeonRuntimeCorridorGeometry.canonicalAnchor(layout, corridor);
+            Point2i centerCell = corridor.centerCellAtLevel(corridor.levelZ());
+            return centerCell == null ? null : CubePoint.at(centerCell, corridor.levelZ());
         }
         if (layout == null || preferred == null) {
             return null;
@@ -262,7 +263,11 @@ final class DungeonRuntimeLocations {
                 .filter(Objects::nonNull)
                 .min(java.util.Comparator.comparing(Corridor::corridorId, java.util.Comparator.nullsLast(Long::compareTo)))
                 .orElse(null);
-        return fallback == null ? null : DungeonRuntimeCorridorGeometry.canonicalAnchor(layout, fallback);
+        if (fallback == null) {
+            return null;
+        }
+        Point2i centerCell = fallback.centerCellAtLevel(fallback.levelZ());
+        return centerCell == null ? null : CubePoint.at(centerCell, fallback.levelZ());
     }
 
     private static CubePoint stairExitAnchor(DungeonLayout layout, long stairId, CubePoint preferred) {

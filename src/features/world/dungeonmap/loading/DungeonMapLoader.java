@@ -364,8 +364,8 @@ public final class DungeonMapLoader {
             }
         }
         for (Corridor corridor : corridors == null ? List.<Corridor>of() : corridors) {
-            if (corridor != null && corridor.path() != null) {
-                result.addAll(corridor.path().cells());
+            if (corridor != null) {
+                result.addAll(corridor.occupiedCells());
             }
         }
         return Set.copyOf(result);

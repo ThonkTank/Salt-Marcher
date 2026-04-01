@@ -1,9 +1,7 @@
 package features.world.dungeonmap.canvas.base;
 
-import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeonmap.canvas.grid.DungeonGridSceneRenderer;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.geometry.VertexEdge;
@@ -65,8 +63,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
     private Point2i previewBoundaryStartVertex;
     private Point2i previewBoundaryCurrentVertex;
     private boolean previewBoundaryDeleteMode;
-    private DungeonRuntimeLocation activeLocation;
-    private CardinalDirection heading = CardinalDirection.defaultDirection();
+    private DungeonRuntimeRenderOverlay runtimeRenderOverlay = DungeonRuntimeRenderOverlay.empty();
     private DungeonCanvasInteractionHandler interactionHandler = NOOP_HANDLER;
     private Point2D lastPointer;
     private PointerCapture activePointerCapture = PointerCapture.NONE;
@@ -174,20 +171,14 @@ public final class DungeonCanvasWorkspace extends BorderPane {
         this.levelScrollHandler = handler;
     }
 
-    public void setActiveLocation(DungeonRuntimeLocation activeLocation) {
-        if (Objects.equals(this.activeLocation, activeLocation)) {
+    public void showRuntimeRenderOverlay(DungeonRuntimeRenderOverlay overlay) {
+        DungeonRuntimeRenderOverlay nextOverlay = overlay == null
+                ? DungeonRuntimeRenderOverlay.empty()
+                : overlay;
+        if (Objects.equals(this.runtimeRenderOverlay, nextOverlay)) {
             return;
         }
-        this.activeLocation = activeLocation;
-        notifyViewChanged();
-    }
-
-    public void setHeading(CardinalDirection heading) {
-        CardinalDirection nextHeading = heading == null ? CardinalDirection.defaultDirection() : heading;
-        if (this.heading == nextHeading) {
-            return;
-        }
-        this.heading = nextHeading;
+        this.runtimeRenderOverlay = nextOverlay;
         notifyViewChanged();
     }
 
@@ -368,27 +359,29 @@ public final class DungeonCanvasWorkspace extends BorderPane {
         if (canvas.getWidth() <= 0 || canvas.getHeight() <= 0) {
             return;
         }
+        DungeonLayout renderedLayout = renderedMapModel();
         gridRenderer.render(
                 canvas.getGraphicsContext2D(),
                 canvas.getWidth(),
                 canvas.getHeight(),
-                renderedMapModel(),
-                camera,
-                editorMode,
-                new DungeonRenderState(
-                        selectedTargetKey,
-                        hoveredSelectionKey,
-                        previewPaintShape,
-                        previewPaintDeleteMode,
-                        previewBoundaryEdges,
-                        previewBoundarySkippedEdges,
-                        previewBoundaryStartVertex,
-                        previewBoundaryCurrentVertex,
-                        previewBoundaryDeleteMode,
+                new DungeonSceneFrame(
+                        renderedLayout,
+                        renderedLayout.projectedToLevel(projectionLevel),
+                        camera,
+                        editorMode,
                         projectionLevel,
                         levelOverlaySettings,
-                        activeLocation,
-                        heading));
+                        new DungeonEditorRenderState(
+                                selectedTargetKey,
+                                hoveredSelectionKey,
+                                previewPaintShape,
+                                previewPaintDeleteMode,
+                                previewBoundaryEdges,
+                                previewBoundarySkippedEdges,
+                                previewBoundaryStartVertex,
+                                previewBoundaryCurrentVertex,
+                                previewBoundaryDeleteMode),
+                        runtimeRenderOverlay));
     }
 
     private void notifyViewChanged() {
