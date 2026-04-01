@@ -32,7 +32,7 @@ The feature ships two `AppView` implementations: `DungeonEditorView` (EDITOR) an
 - `persistence/` — write-side repositories (`DungeonRoomWriteRepository`, `DungeonRoomGeometryWriteMapper`, `DungeonCorridorWriteRepository`, `DungeonStairWriteRepository`, `DungeonTransitionWriteRepository`). Schema helpers (`DungeonSchemaSupport`, `DungeonTransitionSchemaSupport`) for idempotent table creation. Read-side lives in `loading/`
 - `catalog/` — map CRUD (create/rename/delete) with its own `application/` + `persistence/` sub-packages
 - `canvas/` — JavaFX Canvas rendering, organized into sub-packages:
-  - `canvas/base/` — `DungeonCanvasWorkspace` observes `DungeonMapState` directly for map/level/overlay changes, dispatches rendering to the grid `DungeonSceneRenderer`, and owns level-scroll routing (scroll → `mapState.setActiveProjectionLevel()` or custom `IntConsumer` handler, then notifies interaction handler via `levelScrolled(int)`). `showPreview(EditorPreview)` accepts the sealed preview type directly. All internal state setters route through `notifyViewChanged()` with equality guard clauses for idempotent change propagation. `DungeonRenderState` carries shared render inputs. `DungeonCanvasCamera` handles pan (right-drag) and zoom (scroll, 0.2–5.0×). `DungeonCanvasInteractionHandler` routes pointer events to `DungeonCanvasPointerEvent` with cell coordinates; `levelScrolled(int)` is a void notification (workspace owns the level change). `DungeonCanvasTheme` provides drawing constants
+  - `canvas/base/` — `DungeonCanvasWorkspace` observes `DungeonMapState` directly for map/level/overlay changes, dispatches rendering to the grid `DungeonSceneRenderer`, and owns level-scroll routing (scroll → `mapState.setActiveProjectionLevel()` or custom `IntConsumer` handler, then notifies interaction handler via `levelScrolled(int)`). Views publish batched display-only payloads via `showEditorRenderState(DungeonEditorRenderState)` and `showRuntimeRenderOverlay(DungeonRuntimeRenderOverlay)`. Workspace invalidation is explicit and coalesced via `requestRedraw()`; `redraw()` builds one `DungeonSceneFrame` snapshot from current state. `DungeonCanvasCamera` handles pan (right-drag) and zoom (scroll, 0.2–5.0×). `DungeonCanvasInteractionHandler` routes pointer events to `DungeonCanvasPointerEvent` with cell coordinates; `levelScrolled(int)` is a void notification (workspace owns the level change). `DungeonCanvasTheme` provides drawing constants
   - `canvas/grid/` — `DungeonGridSceneRenderer` (tile-based view: background, grid, room fills/outlines, walls, doors, corridor cells/doors, interactive labels, axes), `DungeonGridInteractiveLabels`
 - `shell/` — view and UI coordinator layer:
   - `shell/editor/` — `DungeonEditorView` (owns all state listener wiring: map state → controls, session state → tool activation, interaction state → workspace preview/selection), `DungeonEditorControls`, `DungeonEditorStatePane`
@@ -120,7 +120,7 @@ The domain-model ownership rules below apply to the full interaction pipeline, n
 
 1. `DungeonMapLoadingService.ensureLoaded()` → `CompletableFuture` → `DungeonMapLoader` (JDBC) → `DungeonMapLoadResult`
 2. Result delivered to `DungeonMapState.showLoaded()` on FX thread via `Platform.runLater`
-3. State listeners fire → `DungeonCanvasWorkspace.setMapModel()` → `notifyViewChanged()` → `redraw()`
+3. State listeners fire → workspace state sync / render-payload publish → `requestRedraw()` → one coalesced `redraw()`
 4. Edit flow: `EditorInteraction`/active `EditorTool` → edit service → topology/corridor services + write repositories persist in one transaction → reload
 
 ### Editor Interaction Model
@@ -155,9 +155,9 @@ Room/corridor narration is model-owned (`RoomNarration`, `RoomExitNarration`). S
 ### State Wiring
 
 Each component observes the state objects it needs directly — no coordinator middleman:
-- `DungeonCanvasWorkspace` observes `DungeonMapState` directly for map/level/overlay → `syncFromMapState()` → `redraw()`
+- `DungeonCanvasWorkspace` observes `DungeonMapState` directly for map/level/overlay → `syncFromMapState()` → `requestRedraw()`
 - `DungeonEditorView` wires listeners in its constructor:
-  - `EditorInteractionState` → `workspace.setSelectedTargetKey()` + `workspace.showPreview()`
+  - `EditorInteractionState` → `DungeonEditorView` assembles one `DungeonEditorRenderState` → `workspace.showEditorRenderState(...)`
   - `DungeonEditorSessionState` → `workspace.setViewMode()`, tool activation, controls refresh
   - `DungeonMapState` → controls refresh, tool reactivation on map switch
 - Level scroll is workspace-owned: scroll event → `mapState.setActiveProjectionLevel()` (or custom handler via `setOnLevelScrollRequested()`) → tool notified via `levelScrolled(int)`. Runtime view uses the custom handler for reachable-level clamping.

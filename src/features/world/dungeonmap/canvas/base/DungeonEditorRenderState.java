@@ -1,5 +1,6 @@
 package features.world.dungeonmap.canvas.base;
 
+import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.geometry.VertexEdge;
@@ -10,6 +11,7 @@ import java.util.Set;
 public record DungeonEditorRenderState(
         String selectedTargetKey,
         DungeonSelectionKey hoveredSelectionKey,
+        DungeonLayout previewLayout,
         TileShape paintPreviewShape,
         boolean paintPreviewDeleteMode,
         Set<VertexEdge> boundaryPreviewEdges,
@@ -26,6 +28,7 @@ public record DungeonEditorRenderState(
 
     public static DungeonEditorRenderState empty() {
         return new DungeonEditorRenderState(
+                null,
                 null,
                 null,
                 TileShape.empty(),

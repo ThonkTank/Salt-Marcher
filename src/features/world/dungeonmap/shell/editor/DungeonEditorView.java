@@ -1,16 +1,20 @@
 package features.world.dungeonmap.shell.editor;
 
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
+import features.world.dungeonmap.canvas.base.DungeonEditorRenderState;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
+import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.shell.AbstractDungeonMapView;
 import features.world.dungeonmap.shell.editor.interaction.EditorInteraction;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.EditorInteractionState;
+import features.world.dungeonmap.state.EditorPreview;
 import javafx.scene.Node;
 import ui.shell.NavigationIcons;
 
 import java.util.Objects;
+import java.util.Set;
 
 public final class DungeonEditorView extends AbstractDungeonMapView {
 
@@ -38,11 +42,9 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
                     }
                 });
 
-        // Workspace observes EditorInteractionState directly for preview/selection
+        // Editor interaction state → one batched render payload for the workspace
         interactionState.addListener(() -> {
-            workspace().setSelectedTargetKey(interactionState.selectedTargetKey());
-            workspace().setHoveredSelectionKey(interactionState.hoveredKey());
-            workspace().showPreview(interactionState.activePreview());
+            workspace().showEditorRenderState(editorRenderState(interactionState));
         });
 
         // Session state → tool activation + controls
@@ -121,5 +123,61 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
             return "Aenderungen werden gespeichert...";
         }
         return mapState.errorMessage();
+    }
+
+    private static DungeonEditorRenderState editorRenderState(EditorInteractionState interactionState) {
+        String selectedTargetKey = interactionState.selectedTargetKey();
+        var hoveredSelectionKey = interactionState.hoveredKey();
+        EditorPreview preview = interactionState.activePreview();
+        if (preview instanceof EditorPreview.LayoutPreview layoutPreview) {
+            return new DungeonEditorRenderState(
+                    selectedTargetKey,
+                    hoveredSelectionKey,
+                    layoutPreview.layout(),
+                    TileShape.empty(),
+                    false,
+                    Set.of(),
+                    Set.of(),
+                    null,
+                    null,
+                    false);
+        }
+        if (preview instanceof EditorPreview.PaintPreview paintPreview) {
+            return new DungeonEditorRenderState(
+                    selectedTargetKey,
+                    hoveredSelectionKey,
+                    null,
+                    paintPreview.shape(),
+                    paintPreview.deleteMode(),
+                    Set.of(),
+                    Set.of(),
+                    null,
+                    null,
+                    false);
+        }
+        if (preview instanceof EditorPreview.BoundaryPreview boundaryPreview) {
+            return new DungeonEditorRenderState(
+                    selectedTargetKey,
+                    hoveredSelectionKey,
+                    null,
+                    TileShape.empty(),
+                    false,
+                    boundaryPreview.edges(),
+                    boundaryPreview.skippedConnectionEdges(),
+                    boundaryPreview.startVertex(),
+                    boundaryPreview.currentVertex(),
+                    boundaryPreview.deleteMode());
+        }
+        return new DungeonEditorRenderState(
+                selectedTargetKey,
+                hoveredSelectionKey,
+                null,
+                TileShape.empty(),
+                false,
+                Set.of(),
+                Set.of(),
+                null,
+                null,
+                false);
     }
 }

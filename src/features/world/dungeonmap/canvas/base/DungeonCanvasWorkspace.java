@@ -3,12 +3,9 @@ package features.world.dungeonmap.canvas.base;
 import features.world.dungeonmap.canvas.grid.DungeonGridSceneRenderer;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.geometry.TileShape;
-import features.world.dungeonmap.model.geometry.VertexEdge;
-import features.world.dungeonmap.shell.interaction.DungeonSelectionKey;
 import features.world.dungeonmap.state.DungeonLevelOverlaySettings;
 import features.world.dungeonmap.state.DungeonMapState;
-import features.world.dungeonmap.state.EditorPreview;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Point2D;
 import javafx.scene.canvas.Canvas;
@@ -21,7 +18,6 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.IntConsumer;
 
 public final class DungeonCanvasWorkspace extends BorderPane {
@@ -50,25 +46,18 @@ public final class DungeonCanvasWorkspace extends BorderPane {
     private final DungeonSceneRenderer gridRenderer = new DungeonGridSceneRenderer();
 
     private DungeonLayout mapModel = DungeonLayout.empty();
-    private DungeonLayout previewMapModel;
     private DungeonViewMode viewMode = DungeonViewMode.GRID;
     private int projectionLevel;
     private DungeonLevelOverlaySettings levelOverlaySettings = DungeonLevelOverlaySettings.defaults();
-    private String selectedTargetKey;
-    private DungeonSelectionKey hoveredSelectionKey;
-    private TileShape previewPaintShape = TileShape.empty();
-    private boolean previewPaintDeleteMode;
-    private Set<VertexEdge> previewBoundaryEdges = Set.of();
-    private Set<VertexEdge> previewBoundarySkippedEdges = Set.of();
-    private Point2i previewBoundaryStartVertex;
-    private Point2i previewBoundaryCurrentVertex;
-    private boolean previewBoundaryDeleteMode;
+    private DungeonEditorRenderState editorRenderState = DungeonEditorRenderState.empty();
     private DungeonRuntimeRenderOverlay runtimeRenderOverlay = DungeonRuntimeRenderOverlay.empty();
     private DungeonCanvasInteractionHandler interactionHandler = NOOP_HANDLER;
     private Point2D lastPointer;
     private PointerCapture activePointerCapture = PointerCapture.NONE;
     private Runnable stateListener = () -> {};
     private IntConsumer levelScrollHandler;
+    private boolean redrawScheduled;
+    private boolean redrawDirty;
 
     public DungeonCanvasWorkspace(boolean editorMode, DungeonMapState mapState) {
         this.editorMode = editorMode;
@@ -80,14 +69,8 @@ public final class DungeonCanvasWorkspace extends BorderPane {
         setCenter(viewport);
 
         canvas.setFocusTraversable(true);
-        viewport.widthProperty().addListener((obs, oldValue, newValue) -> {
-            canvas.setWidth(newValue.doubleValue());
-            redraw();
-        });
-        viewport.heightProperty().addListener((obs, oldValue, newValue) -> {
-            canvas.setHeight(newValue.doubleValue());
-            redraw();
-        });
+        viewport.widthProperty().addListener((obs, oldValue, newValue) -> updateCanvasWidth(newValue.doubleValue()));
+        viewport.heightProperty().addListener((obs, oldValue, newValue) -> updateCanvasHeight(newValue.doubleValue()));
         canvas.addEventHandler(MouseEvent.MOUSE_PRESSED, this::handlePress);
         canvas.addEventHandler(MouseEvent.MOUSE_MOVED, this::handleMove);
         canvas.addEventHandler(MouseEvent.MOUSE_DRAGGED, this::handleDrag);
@@ -95,76 +78,21 @@ public final class DungeonCanvasWorkspace extends BorderPane {
         canvas.addEventHandler(MouseEvent.MOUSE_EXITED, this::handleExit);
         canvas.addEventHandler(ScrollEvent.SCROLL, this::handleScroll);
         canvas.addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPress);
+        syncFromMapState();
     }
 
     public void setViewMode(DungeonViewMode viewMode) {
-        DungeonViewMode nextViewMode = viewMode == null ? DungeonViewMode.GRID : viewMode;
-        if (this.viewMode == nextViewMode) {
+        if (!applyViewMode(viewMode)) {
             return;
         }
-        this.viewMode = nextViewMode;
-        notifyViewChanged();
+        publishStateChange();
     }
 
-    public void setSelectedTargetKey(String selectedTargetKey) {
-        if (Objects.equals(this.selectedTargetKey, selectedTargetKey)) {
+    public void showEditorRenderState(DungeonEditorRenderState state) {
+        if (!applyEditorRenderState(state)) {
             return;
         }
-        this.selectedTargetKey = selectedTargetKey;
-        notifyViewChanged();
-    }
-
-    public void setHoveredSelectionKey(DungeonSelectionKey hoveredSelectionKey) {
-        if (Objects.equals(this.hoveredSelectionKey, hoveredSelectionKey)) {
-            return;
-        }
-        this.hoveredSelectionKey = hoveredSelectionKey;
-        notifyViewChanged();
-    }
-
-    public void showPreview(EditorPreview preview) {
-        if (preview instanceof EditorPreview.LayoutPreview layoutPreview) {
-            this.previewMapModel = layoutPreview.layout();
-            this.previewPaintShape = TileShape.empty();
-            this.previewPaintDeleteMode = false;
-            clearBoundaryPreviewFields();
-        } else if (preview instanceof EditorPreview.PaintPreview paintPreview) {
-            this.previewMapModel = null;
-            this.previewPaintShape = paintPreview.shape() == null ? TileShape.empty() : paintPreview.shape();
-            this.previewPaintDeleteMode = paintPreview.deleteMode();
-            clearBoundaryPreviewFields();
-        } else if (preview instanceof EditorPreview.BoundaryPreview boundaryPreview) {
-            this.previewMapModel = null;
-            this.previewPaintShape = TileShape.empty();
-            this.previewPaintDeleteMode = false;
-            this.previewBoundaryEdges = boundaryPreview.edges() == null ? Set.of() : Set.copyOf(boundaryPreview.edges());
-            this.previewBoundarySkippedEdges = boundaryPreview.skippedConnectionEdges() == null ? Set.of() : Set.copyOf(boundaryPreview.skippedConnectionEdges());
-            this.previewBoundaryStartVertex = boundaryPreview.startVertex();
-            this.previewBoundaryCurrentVertex = boundaryPreview.currentVertex();
-            this.previewBoundaryDeleteMode = boundaryPreview.deleteMode();
-        } else {
-            this.previewMapModel = null;
-            this.previewPaintShape = TileShape.empty();
-            this.previewPaintDeleteMode = false;
-            clearBoundaryPreviewFields();
-        }
-        notifyViewChanged();
-    }
-
-    public void clearPreview() {
-        this.previewMapModel = null;
-        this.previewPaintShape = TileShape.empty();
-        this.previewPaintDeleteMode = false;
-        clearBoundaryPreviewFields();
-        notifyViewChanged();
-    }
-
-    private void clearBoundaryPreviewFields() {
-        this.previewBoundaryEdges = Set.of();
-        this.previewBoundarySkippedEdges = Set.of();
-        this.previewBoundaryStartVertex = null;
-        this.previewBoundaryCurrentVertex = null;
-        this.previewBoundaryDeleteMode = false;
+        publishStateChange();
     }
 
     public void setOnLevelScrollRequested(IntConsumer handler) {
@@ -179,7 +107,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
             return;
         }
         this.runtimeRenderOverlay = nextOverlay;
-        notifyViewChanged();
+        publishStateChange();
     }
 
     public void setInteractionHandler(DungeonCanvasInteractionHandler interactionHandler) {
@@ -193,7 +121,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
 
     public void resetView() {
         camera.reset();
-        notifyViewChanged();
+        publishStateChange();
     }
 
     public double zoom() {
@@ -205,37 +133,58 @@ public final class DungeonCanvasWorkspace extends BorderPane {
     }
 
     private void syncFromMapState() {
-        setMapModel(mapState.activeMap());
-        setProjectionLevel(mapState.activeProjectionLevel());
-        setLevelOverlaySettings(mapState.levelOverlaySettings());
+        boolean changed = applyMapModel(mapState.activeMap());
+        changed |= applyProjectionLevel(mapState.activeProjectionLevel());
+        changed |= applyLevelOverlaySettings(mapState.levelOverlaySettings());
+        if (changed) {
+            publishStateChange();
+        }
     }
 
-    private void setMapModel(DungeonLayout mapModel) {
+    private boolean applyMapModel(DungeonLayout mapModel) {
         DungeonLayout nextMapModel = mapModel == null ? DungeonLayout.empty() : mapModel;
         if (this.mapModel == nextMapModel) {
-            return;
+            return false;
         }
         this.mapModel = nextMapModel;
-        notifyViewChanged();
+        return true;
     }
 
-    private void setProjectionLevel(int projectionLevel) {
+    private boolean applyProjectionLevel(int projectionLevel) {
         if (this.projectionLevel == projectionLevel) {
-            return;
+            return false;
         }
         this.projectionLevel = projectionLevel;
-        notifyViewChanged();
+        return true;
     }
 
-    private void setLevelOverlaySettings(DungeonLevelOverlaySettings levelOverlaySettings) {
+    private boolean applyLevelOverlaySettings(DungeonLevelOverlaySettings levelOverlaySettings) {
         DungeonLevelOverlaySettings nextSettings = levelOverlaySettings == null
                 ? DungeonLevelOverlaySettings.defaults()
                 : levelOverlaySettings;
         if (Objects.equals(this.levelOverlaySettings, nextSettings)) {
-            return;
+            return false;
         }
         this.levelOverlaySettings = nextSettings;
-        notifyViewChanged();
+        return true;
+    }
+
+    private boolean applyViewMode(DungeonViewMode viewMode) {
+        DungeonViewMode nextViewMode = viewMode == null ? DungeonViewMode.GRID : viewMode;
+        if (this.viewMode == nextViewMode) {
+            return false;
+        }
+        this.viewMode = nextViewMode;
+        return true;
+    }
+
+    private boolean applyEditorRenderState(DungeonEditorRenderState state) {
+        DungeonEditorRenderState nextState = state == null ? DungeonEditorRenderState.empty() : state;
+        if (Objects.equals(this.editorRenderState, nextState)) {
+            return false;
+        }
+        this.editorRenderState = nextState;
+        return true;
     }
 
     private void handlePress(MouseEvent event) {
@@ -243,7 +192,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
         if (isInteractionPress(event) && interactionHandler.handlePressed(pointerEvent(event), camera)) {
             activePointerCapture = PointerCapture.INTERACTION;
             lastPointer = null;
-            redraw();
+            requestRedraw();
             stateListener.run();
             event.consume();
             return;
@@ -261,6 +210,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
     private void handleDrag(MouseEvent event) {
         if (activePointerCapture == PointerCapture.INTERACTION) {
             if (interactionHandler.handleDragged(pointerEvent(event), camera)) {
+                requestRedraw();
                 stateListener.run();
             }
             event.consume();
@@ -275,7 +225,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
         }
         camera.panBy(event.getX() - lastPointer.getX(), event.getY() - lastPointer.getY());
         lastPointer = new Point2D(event.getX(), event.getY());
-        redraw();
+        requestRedraw();
         stateListener.run();
     }
 
@@ -292,7 +242,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
             interactionHandler.handleReleased(pointerEvent(event), camera);
             activePointerCapture = PointerCapture.NONE;
             lastPointer = null;
-            redraw();
+            requestRedraw();
             stateListener.run();
             event.consume();
             return;
@@ -324,7 +274,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
         }
         double factor = event.getDeltaY() >= 0 ? 1.1 : 1.0 / 1.1;
         camera.zoomAt(factor, event.getX(), event.getY());
-        redraw();
+        requestRedraw();
         stateListener.run();
         event.consume();
     }
@@ -371,28 +321,62 @@ public final class DungeonCanvasWorkspace extends BorderPane {
                         editorMode,
                         projectionLevel,
                         levelOverlaySettings,
-                        new DungeonEditorRenderState(
-                                selectedTargetKey,
-                                hoveredSelectionKey,
-                                previewPaintShape,
-                                previewPaintDeleteMode,
-                                previewBoundaryEdges,
-                                previewBoundarySkippedEdges,
-                                previewBoundaryStartVertex,
-                                previewBoundaryCurrentVertex,
-                                previewBoundaryDeleteMode),
+                        editorRenderState,
                         runtimeRenderOverlay));
     }
 
-    private void notifyViewChanged() {
+    public void requestRedraw() {
+        redrawDirty = true;
+        if (redrawScheduled) {
+            return;
+        }
+        redrawScheduled = true;
+        Platform.runLater(this::flushRedraw);
+    }
+
+    private void flushRedraw() {
+        if (!redrawDirty) {
+            redrawScheduled = false;
+            return;
+        }
+        redrawDirty = false;
         redraw();
+        if (redrawDirty) {
+            Platform.runLater(this::flushRedraw);
+            return;
+        }
+        redrawScheduled = false;
+    }
+
+    private void publishStateChange() {
+        requestRedraw();
         stateListener.run();
     }
 
     private DungeonLayout renderedMapModel() {
-        DungeonLayout base = previewMapModel == null ? mapModel : previewMapModel;
+        DungeonLayout base = editorRenderState.previewLayout() == null ? mapModel : editorRenderState.previewLayout();
         DungeonLayout resolved = base == null ? DungeonLayout.empty() : base;
         return resolved;
+    }
+
+    private void updateCanvasWidth(double width) {
+        boolean becameDrawable = canvas.getWidth() <= 0.0 && width > 0.0 && canvas.getHeight() > 0.0;
+        canvas.setWidth(width);
+        if (becameDrawable) {
+            redraw();
+            return;
+        }
+        requestRedraw();
+    }
+
+    private void updateCanvasHeight(double height) {
+        boolean becameDrawable = canvas.getHeight() <= 0.0 && height > 0.0 && canvas.getWidth() > 0.0;
+        canvas.setHeight(height);
+        if (becameDrawable) {
+            redraw();
+            return;
+        }
+        requestRedraw();
     }
 
     private DungeonCanvasPointerEvent pointerEvent(MouseEvent event) {
