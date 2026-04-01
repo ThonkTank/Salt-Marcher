@@ -5,7 +5,6 @@ import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
@@ -109,11 +108,6 @@ public final class DungeonSelectionLookup {
             case CLUSTER_BOUNDARY, ROOM_BOUNDARY, CONNECTION -> parseSegment2x(key.partKey());
             default -> null;
         };
-    }
-
-    public static VertexEdge edge(DungeonSelectionKey key) {
-        GridSegment2x segment2x = segment2x(key);
-        return segment2x == null ? null : segment2x.toVertexEdge().orElse(null);
     }
 
     public static GridPoint2x vertex2x(DungeonSelectionKey key) {

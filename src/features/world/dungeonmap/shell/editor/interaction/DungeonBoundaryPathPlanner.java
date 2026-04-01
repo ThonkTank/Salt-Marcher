@@ -18,10 +18,6 @@ import java.util.Set;
 
 final class DungeonBoundaryPathPlanner {
 
-    PathResult findCreatePath(RoomCluster cluster, Point2i start, Point2i goal) {
-        return findCreatePath(cluster, GridPoint2x.fromVertex(start), GridPoint2x.fromVertex(goal));
-    }
-
     PathResult findCreatePath(RoomCluster cluster, GridPoint2x start, GridPoint2x goal) {
         if (cluster == null || start == null || goal == null) {
             return PathResult.empty();
@@ -37,10 +33,6 @@ final class DungeonBoundaryPathPlanner {
         Set<GridSegment2x> skippedConnectionEdges = new LinkedHashSet<>(route);
         skippedConnectionEdges.retainAll(localConnectionEdges);
         return new PathResult(route, committedEdges, skippedConnectionEdges);
-    }
-
-    PathResult findDeletePath(RoomCluster cluster, Point2i start, Point2i goal) {
-        return findDeletePath(cluster, GridPoint2x.fromVertex(start), GridPoint2x.fromVertex(goal));
     }
 
     PathResult findDeletePath(RoomCluster cluster, GridPoint2x start, GridPoint2x goal) {

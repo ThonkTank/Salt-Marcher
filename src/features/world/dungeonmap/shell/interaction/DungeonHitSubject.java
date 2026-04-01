@@ -3,7 +3,6 @@ package features.world.dungeonmap.shell.interaction;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.ConnectionKind;
@@ -115,10 +114,6 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         public String partKey() {
             return DungeonHitConventions.segment2xPartKey(boundarySegment2x);
         }
-
-        public VertexEdge edge() {
-            return boundarySegment2x.toVertexEdge().orElse(null);
-        }
     }
 
     record RoomSubject(Long roomId, Long clusterId) implements DungeonHitSubject {
@@ -166,10 +161,6 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         public String partKey() {
             return DungeonHitConventions.segment2xPartKey(boundarySegment2x);
         }
-
-        public VertexEdge edge() {
-            return boundarySegment2x.toVertexEdge().orElse(null);
-        }
     }
 
     record ConnectionSubject(
@@ -215,10 +206,6 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         @Override
         public String partKey() {
             return DungeonHitConventions.segment2xPartKey(boundarySegment2x);
-        }
-
-        public VertexEdge edge() {
-            return boundarySegment2x.toVertexEdge().orElse(null);
         }
     }
 
