@@ -15,6 +15,12 @@ public final class RoomExitCatalog {
         if (layout == null || room == null || room.roomId() == null) {
             return List.of();
         }
-        return DoorExitCatalog.describe(room.geometry().cells(), layout.connectionsForRoom(room.roomId()));
+        return room.structure().levels().stream()
+                .sorted()
+                .flatMap(levelZ -> DoorExitCatalog.describe(
+                        room.structure().cellsAtLevel(levelZ),
+                        levelZ,
+                        layout.connectionsForRoom(room.roomId())).stream())
+                .toList();
     }
 }

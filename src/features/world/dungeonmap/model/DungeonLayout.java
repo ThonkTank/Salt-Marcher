@@ -1,6 +1,7 @@
 package features.world.dungeonmap.model;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.geometry.VertexEdge;
@@ -58,6 +59,8 @@ public final class DungeonLayout {
     private final List<DungeonTransition> transitions;
     private final List<Connection> connections;
     private final Map<VertexEdge, Connection> connectionsByEdge;
+    private final Map<GridSegment2x, Connection> connectionsBySegment2x;
+    private final Map<ConnectionSegmentKey, Connection> connectionsBySegmentAndLevel2x;
     private final Map<ConnectionEndpoint, List<Connection>> connectionsByEndpoint;
     private final Map<Door, List<ConnectionEndpoint>> endpointsByDoor;
     private final Map<Long, Room> roomsById;
@@ -101,6 +104,8 @@ public final class DungeonLayout {
         this.transitions = transitions == null ? List.of() : List.copyOf(transitions);
         this.connections = indexConnections(this.clusters, this.corridors);
         this.connectionsByEdge = indexConnectionsByEdge(this.connections);
+        this.connectionsBySegment2x = indexConnectionsBySegment2x(this.connections);
+        this.connectionsBySegmentAndLevel2x = indexConnectionsBySegmentAndLevel2x(this.connections);
         this.connectionsByEndpoint = indexConnectionsByEndpoint(this.connections);
         this.endpointsByDoor = indexEndpointsByDoor(this.connections);
         this.roomsById = indexRooms(this.clusters);
@@ -191,7 +196,7 @@ public final class DungeonLayout {
 
     public int levelForRoom(Long roomId) {
         Room room = findRoom(roomId);
-        return room == null ? 0 : room.geometry().primaryLevel();
+        return room == null ? 0 : room.structure().primaryLevel();
     }
 
     public Set<Integer> levelsForRoom(Long roomId) {
@@ -236,8 +241,21 @@ public final class DungeonLayout {
         return connection == null ? null : connection.door();
     }
 
+    public Door doorAt(GridSegment2x segment2x) {
+        Connection connection = connectionAt(segment2x);
+        return connection == null ? null : connection.door();
+    }
+
     public Connection connectionAt(VertexEdge edge) {
         return edge == null ? null : connectionsByEdge.get(edge);
+    }
+
+    public Connection connectionAt(GridSegment2x segment2x) {
+        return segment2x == null ? null : connectionsBySegment2x.get(segment2x);
+    }
+
+    public Connection connectionAt(int levelZ, GridSegment2x segment2x) {
+        return segment2x == null ? null : connectionsBySegmentAndLevel2x.get(new ConnectionSegmentKey(levelZ, segment2x));
     }
 
     public List<Connection> connectionsForRoom(long roomId) {
@@ -267,6 +285,16 @@ public final class DungeonLayout {
             return List.of();
         }
         return edges.stream()
+                .map(this::doorAt)
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    public List<Door> doorsAtSegments(Set<GridSegment2x> segments2x) {
+        if (segments2x == null || segments2x.isEmpty()) {
+            return List.of();
+        }
+        return segments2x.stream()
                 .map(this::doorAt)
                 .filter(Objects::nonNull)
                 .toList();
@@ -564,7 +592,7 @@ public final class DungeonLayout {
 
     private static boolean corridorReachesLevel(Corridor corridor, int levelZ) {
         return corridor != null
-                && !corridor.geometry().cellsAtLevel(levelZ).isEmpty();
+                && !corridor.structure().cellsAtLevel(levelZ).isEmpty();
     }
 
     private static Map<Long, Room> indexRooms(List<RoomCluster> clusters) {
@@ -613,6 +641,30 @@ public final class DungeonLayout {
             }
             for (VertexEdge edge : connection.door().edges()) {
                 result.putIfAbsent(edge, connection);
+            }
+        }
+        return Map.copyOf(result);
+    }
+
+    private static Map<GridSegment2x, Connection> indexConnectionsBySegment2x(List<Connection> connections) {
+        Map<GridSegment2x, Connection> result = new LinkedHashMap<>();
+        for (Connection connection : connections) {
+            if (connection == null || connection.door() == null) {
+                continue;
+            }
+            connection.door().segments2x().forEach(segment2x -> result.putIfAbsent(segment2x, connection));
+        }
+        return Map.copyOf(result);
+    }
+
+    private static Map<ConnectionSegmentKey, Connection> indexConnectionsBySegmentAndLevel2x(List<Connection> connections) {
+        Map<ConnectionSegmentKey, Connection> result = new LinkedHashMap<>();
+        for (Connection connection : connections) {
+            if (connection == null || connection.door() == null) {
+                continue;
+            }
+            for (GridSegment2x segment2x : connection.door().segments2x()) {
+                result.putIfAbsent(new ConnectionSegmentKey(connection.levelZ(), segment2x), connection);
             }
         }
         return Map.copyOf(result);
@@ -700,7 +752,7 @@ public final class DungeonLayout {
         Map<Long, Set<Integer>> result = new LinkedHashMap<>();
         for (Map.Entry<Long, Room> entry : roomsById.entrySet()) {
             Room room = entry.getValue();
-            result.put(entry.getKey(), room == null ? Set.of(0) : room.geometry().levels());
+            result.put(entry.getKey(), room == null ? Set.of(0) : room.structure().levels());
         }
         return Map.copyOf(result);
     }
@@ -713,13 +765,13 @@ public final class DungeonLayout {
             }
             for (Room room : cluster.rooms()) {
                 if (room != null) {
-                    result.addAll(room.geometry().cells());
+                    result.addAll(room.structure().cells());
                 }
             }
         }
         for (Corridor corridor : corridors) {
             if (corridor != null) {
-                result.addAll(corridor.geometry().cells());
+                result.addAll(corridor.structure().cells());
             }
         }
         return Set.copyOf(result);
@@ -739,14 +791,14 @@ public final class DungeonLayout {
                 if (room == null || room.roomId() == null) {
                     continue;
                 }
-                result.addAll(room.geometry().cubePoints());
+                result.addAll(room.structure().cubePoints());
             }
         }
         for (Corridor corridor : corridors) {
             if (corridor == null) {
                 continue;
             }
-            result.addAll(corridor.geometry().cubePoints());
+            result.addAll(corridor.structure().cubePoints());
         }
         for (DungeonStair stair : stairs) {
             if (stair != null) {
@@ -773,7 +825,7 @@ public final class DungeonLayout {
             if (corridor == null || corridor.corridorId() == null) {
                 continue;
             }
-            for (Point2i cell : corridor.geometry().cells()) {
+            for (Point2i cell : corridor.structure().cells()) {
                 mutable.computeIfAbsent(cell, ignored -> new ArrayList<>()).add(corridor.corridorId());
             }
         }
@@ -790,7 +842,7 @@ public final class DungeonLayout {
             if (corridor == null || corridor.corridorId() == null) {
                 continue;
             }
-            for (CubePoint cell : corridor.geometry().cubePoints()) {
+            for (CubePoint cell : corridor.structure().cubePoints()) {
                 if (cell != null) {
                     mutable.computeIfAbsent(cell, ignored -> new ArrayList<>()).add(corridor.corridorId());
                 }
@@ -833,5 +885,8 @@ public final class DungeonLayout {
             result.put(entry.getKey(), List.copyOf(entry.getValue()));
         }
         return Map.copyOf(result);
+    }
+
+    private record ConnectionSegmentKey(int levelZ, GridSegment2x segment2x) {
     }
 }

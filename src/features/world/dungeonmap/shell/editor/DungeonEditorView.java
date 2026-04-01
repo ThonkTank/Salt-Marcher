@@ -3,7 +3,7 @@ package features.world.dungeonmap.shell.editor;
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
 import features.world.dungeonmap.canvas.base.DungeonEditorRenderState;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
-import features.world.dungeonmap.model.geometry.TileShape;
+import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.shell.AbstractDungeonMapView;
 import features.world.dungeonmap.shell.editor.interaction.EditorInteraction;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
@@ -147,7 +147,8 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
                     selectedTargetKey,
                     hovered,
                     layoutPreview.layout(),
-                    TileShape.empty(),
+                    StructureObject.empty(),
+                    0,
                     false,
                     Set.of(),
                     Set.of(),
@@ -160,7 +161,8 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
                     selectedTargetKey,
                     hovered,
                     null,
-                    paintPreview.shape(),
+                    paintPreview.structure(),
+                    paintPreview.levelZ(),
                     paintPreview.deleteMode(),
                     Set.of(),
                     Set.of(),
@@ -173,7 +175,8 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
                     selectedTargetKey,
                     hovered,
                     null,
-                    TileShape.empty(),
+                    StructureObject.empty(),
+                    0,
                     false,
                     boundaryPreview.edges(),
                     boundaryPreview.skippedConnectionEdges(),
@@ -185,7 +188,8 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
                 selectedTargetKey,
                 hovered,
                 null,
-                TileShape.empty(),
+                StructureObject.empty(),
+                0,
                 false,
                 Set.of(),
                 Set.of(),

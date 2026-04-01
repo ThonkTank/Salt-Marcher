@@ -31,12 +31,12 @@ public final class DungeonRuntimeLocationTileResolver {
             Room room = layout.findRoom(roomLocation.roomId());
             return room == null
                     ? null
-                    : room.geometry().centerPointAtLevel(layout.levelForRoom(room.roomId()));
+                    : room.structure().centerPointAtLevel(layout.levelForRoom(room.roomId()));
         }
         if (location instanceof DungeonRuntimeLocation.Corridor corridorLocation) {
             Corridor corridor = layout.findCorridor(corridorLocation.corridorId());
             if (corridor != null) {
-                return corridor.geometry().centerPointAtLevel(corridor.levelZ());
+                return corridor.structure().centerPointAtLevel(corridor.levelZ());
             }
             return corridorLocation.anchorTile();
         }

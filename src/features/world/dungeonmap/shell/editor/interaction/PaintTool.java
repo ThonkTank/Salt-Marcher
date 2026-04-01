@@ -4,7 +4,7 @@ import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.geometry.TileShape;
+import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
@@ -69,7 +69,10 @@ public final class PaintTool implements EditorTool {
         }
         state.clearSelection();
         paintSession = new RoomPaintSession(cell, cell, sessionState.selectedTool() == DungeonEditorTool.ROOM_DELETE);
-        state.showPreview(new EditorPreview.PaintPreview(paintSession.previewShape(), paintSession.deleteMode()));
+        state.showPreview(new EditorPreview.PaintPreview(
+                paintSession.previewStructure(mapState.activeProjectionLevel()),
+                mapState.activeProjectionLevel(),
+                paintSession.deleteMode()));
         return true;
     }
 
@@ -87,7 +90,10 @@ public final class PaintTool implements EditorTool {
             return true;
         }
         paintSession = paintSession.withEndCell(cell);
-        state.showPreview(new EditorPreview.PaintPreview(paintSession.previewShape(), paintSession.deleteMode()));
+        state.showPreview(new EditorPreview.PaintPreview(
+                paintSession.previewStructure(mapState.activeProjectionLevel()),
+                mapState.activeProjectionLevel(),
+                paintSession.deleteMode()));
         return true;
     }
 
@@ -102,19 +108,19 @@ public final class PaintTool implements EditorTool {
             return false;
         }
         RoomPaintSession finishedSession = paintSession.withEndCell(cell);
-        TileShape shape = finishedSession.previewShape();
+        int activeLevel = mapState.activeProjectionLevel();
+        StructureDescriptor descriptor = finishedSession.previewDescriptor(activeLevel);
         clear();
         Long mapId = mapState.activeMapId();
-        int activeLevel = mapState.activeProjectionLevel();
-        if (mapId == null || shape.size() == 0) {
+        if (mapId == null || descriptor.levels().isEmpty()) {
             return true;
         }
         loadingService.submitReloadingWrite(
                 () -> {
                     if (finishedSession.deleteMode()) {
-                        roomTopologyService.delete(mapId, activeLevel, shape);
+                        roomTopologyService.delete(mapId, descriptor);
                     } else {
-                        roomTopologyService.paint(mapId, activeLevel, shape);
+                        roomTopologyService.paint(mapId, descriptor);
                     }
                 },
                 mapId,

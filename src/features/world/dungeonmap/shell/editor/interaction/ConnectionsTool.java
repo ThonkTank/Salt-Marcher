@@ -180,7 +180,7 @@ public final class ConnectionsTool implements EditorTool {
                 applySelection(ctx == null ? null : ctx.resolvedSelectionKey());
                 applyDoorEdit(
                         roomBoundaryHit.clusterId(),
-                        roomBoundaryHit.edge(),
+                        roomBoundaryHit.boundarySegment2x(),
                         false,
                         ctx == null ? null : ctx.resolvedSelectionKey());
                 return true;
@@ -197,7 +197,10 @@ public final class ConnectionsTool implements EditorTool {
             return true;
         }
         if (draft != null && hit instanceof DungeonHitSubject.FloorCellSubject floorHit) {
-            appendDraftNode(floorHit.cell());
+            GridPoint2x point2x = ctx == null || ctx.probe() == null
+                    ? GridPoint2x.fromTileCenter(floorHit.cell())
+                    : ctx.probe().probePoint2x();
+            appendDraftNode(point2x);
             return true;
         }
         if (draft != null && hit instanceof DungeonHitSubject.CorridorNodeSubject corridorNodeHit) {
@@ -237,7 +240,11 @@ public final class ConnectionsTool implements EditorTool {
         if (hit instanceof DungeonHitSubject.ConnectionSubject connectionHit
                 && connectionHit.connectionKind() == features.world.dungeonmap.model.structures.connection.ConnectionKind.LOCAL) {
             applySelection(ctx == null ? null : ctx.resolvedSelectionKey());
-            applyDoorEdit(connectionHit.clusterId(), connectionHit.edge(), true, corridorOwnerlessClusterKey(connectionHit.clusterId()));
+            applyDoorEdit(
+                    connectionHit.clusterId(),
+                    connectionHit.boundarySegment2x(),
+                    true,
+                    corridorOwnerlessClusterKey(connectionHit.clusterId()));
             return true;
         }
         Long corridorId = corridorId(hit);
@@ -274,11 +281,10 @@ public final class ConnectionsTool implements EditorTool {
         refreshStatePane();
     }
 
-    private void appendDraftNode(Point2i cell) {
-        if (draft == null || cell == null) {
+    private void appendDraftNode(GridPoint2x point2x) {
+        if (draft == null || point2x == null) {
             return;
         }
-        GridPoint2x point2x = GridPoint2x.fromTileCenter(cell);
         CorridorNode node = new CorridorNode(draft.nextNodeId(), point2x.x2(), point2x.y2(), null, null, null);
         CorridorSegment segment = new CorridorSegment(draft.nextSegmentId(), draft.nodes().getLast().nodeId(), node.nodeId());
         draft.nodes().add(node);
@@ -397,16 +403,22 @@ public final class ConnectionsTool implements EditorTool {
 
     private void applyDoorEdit(
             Long clusterId,
-            features.world.dungeonmap.model.geometry.VertexEdge edge,
+            features.world.dungeonmap.model.geometry.GridSegment2x segment2x,
             boolean deleteBoundary,
             DungeonSelectionKey followUpKey
     ) {
         Long mapId = mapState.activeMapId();
-        if (mapId == null || clusterId == null || edge == null) {
+        if (mapId == null || clusterId == null || segment2x == null) {
             return;
         }
         loadingService.submitReloadingWrite(
-                () -> boundaryEditService.apply(mapId, clusterId, edge, InternalBoundaryType.DOOR, deleteBoundary),
+                () -> boundaryEditService.apply(
+                        mapId,
+                        clusterId,
+                        mapState.activeProjectionLevel(),
+                        segment2x,
+                        InternalBoundaryType.DOOR,
+                        deleteBoundary),
                 mapId,
                 () -> state.selectKey(followUpKey),
                 throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.applyDoorEdit()", throwable));
@@ -440,7 +452,7 @@ public final class ConnectionsTool implements EditorTool {
     }
 
     private CorridorNode roomBoundaryNode(Room room, DungeonHitSubject.RoomBoundarySubject hit, long nodeId) {
-        Point2i anchor = room == null ? new Point2i(0, 0) : room.geometry().anchorAtLevel(mapState.activeProjectionLevel());
+        Point2i anchor = room == null ? new Point2i(0, 0) : room.structure().anchorAtLevel(mapState.activeProjectionLevel());
         if (anchor == null) {
             anchor = new Point2i(0, 0);
         }

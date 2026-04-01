@@ -4,11 +4,14 @@ import database.DatabaseManager;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.objects.Floor;
+import features.world.dungeonmap.model.objects.StructureDescriptor;
+import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.structures.cluster.ClusterRewrite;
 import features.world.dungeonmap.model.structures.cluster.ClusterRewriteSplit;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
@@ -43,9 +46,16 @@ public final class DungeonRoomTopologyService {
         if (shape == null || shape.size() == 0) {
             return;
         }
+        paint(mapId, StructureDescriptor.fromCellsByLevel(Map.of(levelZ, shape.absoluteCells())));
+    }
+
+    public void paint(long mapId, StructureDescriptor descriptor) throws SQLException {
+        if (descriptor == null || descriptor.levels().isEmpty()) {
+            return;
+        }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                paint(conn, mapId, levelZ, shape);
+                paint(conn, mapId, descriptor);
                 return null;
             });
         }
@@ -55,12 +65,30 @@ public final class DungeonRoomTopologyService {
         if (shape == null || shape.size() == 0) {
             return;
         }
+        paint(conn, mapId, StructureDescriptor.fromCellsByLevel(Map.of(levelZ, shape.absoluteCells())));
+    }
+
+    public void paint(Connection conn, long mapId, StructureDescriptor descriptor) throws SQLException {
+        StructureObject structure = StructureObject.fromDescriptor(descriptor);
+        for (Integer levelZ : structure.levels().stream().sorted().toList()) {
+            TileShape levelShape = structure.shapeAtLevel(levelZ);
+            if (levelShape.size() > 0) {
+                paintLevel(conn, mapId, levelZ, levelShape);
+            }
+        }
+    }
+
+    private void paintLevel(Connection conn, long mapId, int levelZ, TileShape shape) throws SQLException {
         DungeonLayout layout = requireLayout(conn, mapId);
         List<RoomCluster> overlappingClusters = overlappingClustersAtLevel(layout, shape, levelZ).stream()
                 .sorted(Comparator.comparing(cluster -> cluster.clusterId() == null ? Long.MAX_VALUE : cluster.clusterId()))
                 .toList();
         if (overlappingClusters.isEmpty()) {
-            createCluster(conn, mapId, levelZ, shape, nextRoomName(layout, new LinkedHashSet<>()));
+            createCluster(
+                    conn,
+                    mapId,
+                    StructureDescriptor.fromCellsByLevel(Map.of(levelZ, shape.absoluteCells())),
+                    nextRoomName(layout, new LinkedHashSet<>()));
             return;
         }
 
@@ -76,9 +104,16 @@ public final class DungeonRoomTopologyService {
         if (shape == null || shape.size() == 0) {
             return;
         }
+        delete(mapId, StructureDescriptor.fromCellsByLevel(Map.of(levelZ, shape.absoluteCells())));
+    }
+
+    public void delete(long mapId, StructureDescriptor descriptor) throws SQLException {
+        if (descriptor == null || descriptor.levels().isEmpty()) {
+            return;
+        }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                delete(conn, mapId, levelZ, shape);
+                delete(conn, mapId, descriptor);
                 return null;
             });
         }
@@ -88,6 +123,20 @@ public final class DungeonRoomTopologyService {
         if (shape == null || shape.size() == 0) {
             return;
         }
+        delete(conn, mapId, StructureDescriptor.fromCellsByLevel(Map.of(levelZ, shape.absoluteCells())));
+    }
+
+    public void delete(Connection conn, long mapId, StructureDescriptor descriptor) throws SQLException {
+        StructureObject structure = StructureObject.fromDescriptor(descriptor);
+        for (Integer levelZ : structure.levels().stream().sorted().toList()) {
+            TileShape levelShape = structure.shapeAtLevel(levelZ);
+            if (levelShape.size() > 0) {
+                deleteLevel(conn, mapId, levelZ, levelShape);
+            }
+        }
+    }
+
+    private void deleteLevel(Connection conn, long mapId, int levelZ, TileShape shape) throws SQLException {
         DungeonLayout workingLayout = requireLayout(conn, mapId);
         Set<String> reservedNames = new LinkedHashSet<>();
         for (Room room : workingLayout.rooms()) {
@@ -121,7 +170,7 @@ public final class DungeonRoomTopologyService {
     }
 
     public void createDefaultRoom(Connection conn, long mapId) throws SQLException {
-        createCluster(conn, mapId, 0, TileShape.singleCell(new Point2i(0, 0)), "Eingang");
+        createCluster(conn, mapId, StructureDescriptor.fromCellsByLevel(Map.of(0, Set.of(new Point2i(0, 0)))), "Eingang");
     }
 
     public void ensureTraversableCell(Connection conn, long mapId, Point2i cell, int levelZ) throws SQLException {
@@ -132,7 +181,35 @@ public final class DungeonRoomTopologyService {
         if (layout.isTraversableCell(CubePoint.at(cell, levelZ))) {
             return;
         }
-        paint(conn, mapId, levelZ, TileShape.singleCell(cell));
+        paint(conn, mapId, StructureDescriptor.fromCellsByLevel(Map.of(levelZ, Set.of(cell))));
+    }
+
+    public void editBoundary(
+            Connection conn,
+            long mapId,
+            long clusterId,
+            int levelZ,
+            GridSegment2x segment2x,
+            InternalBoundaryType type,
+            boolean deleteBoundary
+    ) throws SQLException {
+        editBoundary(conn, mapId, clusterId, levelZ, segment2x == null ? List.<GridSegment2x>of() : List.of(segment2x), type, deleteBoundary);
+    }
+
+    public void editBoundary(
+            Connection conn,
+            long mapId,
+            long clusterId,
+            int levelZ,
+            Collection<GridSegment2x> segments2x,
+            InternalBoundaryType type,
+            boolean deleteBoundary
+    ) throws SQLException {
+        List<VertexEdge> edges = (segments2x == null ? List.<GridSegment2x>of() : segments2x).stream()
+                .map(segment -> segment == null ? null : segment.toVertexEdge().orElse(null))
+                .filter(Objects::nonNull)
+                .toList();
+        editBoundary(conn, mapId, clusterId, edges, type, deleteBoundary);
     }
 
     public void editBoundary(
@@ -170,18 +247,21 @@ public final class DungeonRoomTopologyService {
         persistClusterRewrite(conn, mapId, rewrite, layout.levelForCluster(rewrite.targetClusterId()));
     }
 
-    private void createCluster(Connection conn, long mapId, int levelZ, TileShape shape, String roomName) throws SQLException {
+    private void createCluster(Connection conn, long mapId, StructureDescriptor descriptor, String roomName) throws SQLException {
+        StructureObject structure = StructureObject.fromDescriptor(descriptor);
+        int primaryLevel = structure.primaryLevel();
+        Point2i centerCell = structure.centerCellAtLevel(primaryLevel);
         long clusterId = roomWriteRepository.insertCluster(
                 conn,
                 mapId,
-                shape.centerCell(),
-                levelZ);
+                centerCell,
+                primaryLevel);
         roomWriteRepository.insertRoom(
                 conn,
                 mapId,
                 clusterId,
                 roomName,
-                Room.create(null, mapId, clusterId, roomName, Map.of(levelZ, new Floor(shape))).structure().descriptor());
+                descriptor);
     }
 
     private ClusterRewrite persistClusterRewrite(Connection conn, long mapId, ClusterRewrite rewrite, int levelZ) throws SQLException {

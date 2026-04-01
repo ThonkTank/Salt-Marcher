@@ -1,5 +1,7 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
+import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
@@ -18,48 +20,56 @@ import java.util.Set;
 final class DungeonBoundaryPathPlanner {
 
     PathResult findCreatePath(RoomCluster cluster, Point2i start, Point2i goal) {
+        return findCreatePath(cluster, GridPoint2x.fromVertex(start), GridPoint2x.fromVertex(goal));
+    }
+
+    PathResult findCreatePath(RoomCluster cluster, GridPoint2x start, GridPoint2x goal) {
         if (cluster == null || start == null || goal == null) {
             return PathResult.empty();
         }
-        Set<VertexEdge> traversableEdges = internalClusterEdges(cluster);
-        Set<VertexEdge> localConnectionEdges = localConnectionEdges(cluster, traversableEdges);
-        List<VertexEdge> route = shortestPath(start, goal, traversableEdges);
+        Set<GridSegment2x> traversableEdges = internalClusterEdges(cluster);
+        Set<GridSegment2x> localConnectionEdges = localConnectionEdges(cluster, traversableEdges);
+        List<GridSegment2x> route = shortestPath(start, goal, traversableEdges);
         if (route.isEmpty()) {
             return PathResult.empty();
         }
-        Set<VertexEdge> committedEdges = new LinkedHashSet<>(route);
+        Set<GridSegment2x> committedEdges = new LinkedHashSet<>(route);
         committedEdges.removeAll(localConnectionEdges);
-        Set<VertexEdge> skippedConnectionEdges = new LinkedHashSet<>(route);
+        Set<GridSegment2x> skippedConnectionEdges = new LinkedHashSet<>(route);
         skippedConnectionEdges.retainAll(localConnectionEdges);
         return new PathResult(route, committedEdges, skippedConnectionEdges);
     }
 
     PathResult findDeletePath(RoomCluster cluster, Point2i start, Point2i goal) {
+        return findDeletePath(cluster, GridPoint2x.fromVertex(start), GridPoint2x.fromVertex(goal));
+    }
+
+    PathResult findDeletePath(RoomCluster cluster, GridPoint2x start, GridPoint2x goal) {
         if (cluster == null || start == null || goal == null) {
             return PathResult.empty();
         }
-        Set<VertexEdge> traversableEdges = internalWallEdges(cluster);
-        List<VertexEdge> route = shortestPath(start, goal, traversableEdges);
+        Set<GridSegment2x> traversableEdges = internalWallEdges(cluster);
+        List<GridSegment2x> route = shortestPath(start, goal, traversableEdges);
         if (route.isEmpty()) {
             return PathResult.empty();
         }
         return new PathResult(route, new LinkedHashSet<>(route), Set.of());
     }
 
-    Set<VertexEdge> existingWallEdges(RoomCluster cluster) {
+    Set<GridSegment2x> existingWallEdges(RoomCluster cluster) {
         if (cluster == null) {
             return Set.of();
         }
-        Set<VertexEdge> edges = new LinkedHashSet<>(internalWallEdges(cluster));
+        Set<GridSegment2x> edges = new LinkedHashSet<>(internalWallEdges(cluster));
         edges.addAll(outerWallEdges(cluster));
         return Set.copyOf(edges);
     }
 
-    boolean touchesExistingWall(RoomCluster cluster, Point2i vertex) {
+    boolean touchesExistingWall(RoomCluster cluster, GridPoint2x vertex) {
         if (cluster == null || vertex == null) {
             return false;
         }
-        for (VertexEdge edge : existingWallEdges(cluster)) {
+        for (GridSegment2x edge : existingWallEdges(cluster)) {
             if (edge.touches(vertex)) {
                 return true;
             }
@@ -67,35 +77,35 @@ final class DungeonBoundaryPathPlanner {
         return false;
     }
 
-    boolean isEditableVertex(RoomCluster cluster, Point2i vertex, boolean deleteMode) {
+    boolean isEditableVertex(RoomCluster cluster, GridPoint2x vertex, boolean deleteMode) {
         if (cluster == null || vertex == null) {
             return false;
         }
-        Set<VertexEdge> edges = deleteMode ? internalWallEdges(cluster) : internalClusterEdges(cluster);
+        Set<GridSegment2x> edges = deleteMode ? internalWallEdges(cluster) : internalClusterEdges(cluster);
         return edges.stream().anyMatch(edge -> edge.touches(vertex));
     }
 
-    private static List<VertexEdge> shortestPath(Point2i start, Point2i goal, Set<VertexEdge> traversableEdges) {
+    private static List<GridSegment2x> shortestPath(GridPoint2x start, GridPoint2x goal, Set<GridSegment2x> traversableEdges) {
         if (start == null || goal == null || traversableEdges == null || traversableEdges.isEmpty()) {
             return List.of();
         }
         if (Objects.equals(start, goal)) {
             return List.of();
         }
-        Map<Point2i, Set<Point2i>> adjacency = adjacency(traversableEdges);
+        Map<GridPoint2x, Set<GridPoint2x>> adjacency = adjacency(traversableEdges);
         if (!adjacency.containsKey(start) || !adjacency.containsKey(goal)) {
             return List.of();
         }
-        ArrayDeque<Point2i> queue = new ArrayDeque<>();
-        Map<Point2i, Point2i> previous = new LinkedHashMap<>();
+        ArrayDeque<GridPoint2x> queue = new ArrayDeque<>();
+        Map<GridPoint2x, GridPoint2x> previous = new LinkedHashMap<>();
         queue.add(start);
         previous.put(start, null);
         while (!queue.isEmpty()) {
-            Point2i current = queue.removeFirst();
+            GridPoint2x current = queue.removeFirst();
             if (current.equals(goal)) {
                 break;
             }
-            for (Point2i neighbor : adjacency.getOrDefault(current, Set.of()).stream().sorted(Point2i.POINT_ORDER).toList()) {
+            for (GridPoint2x neighbor : adjacency.getOrDefault(current, Set.of()).stream().sorted(GridPoint2x.POINT_ORDER).toList()) {
                 if (previous.containsKey(neighbor)) {
                     continue;
                 }
@@ -106,41 +116,41 @@ final class DungeonBoundaryPathPlanner {
         if (!previous.containsKey(goal)) {
             return List.of();
         }
-        java.util.ArrayList<VertexEdge> path = new java.util.ArrayList<>();
-        Point2i current = goal;
+        java.util.ArrayList<GridSegment2x> path = new java.util.ArrayList<>();
+        GridPoint2x current = goal;
         while (!Objects.equals(current, start)) {
-            Point2i parent = previous.get(current);
+            GridPoint2x parent = previous.get(current);
             if (parent == null) {
                 return List.of();
             }
-            path.add(new VertexEdge(parent, current));
+            path.add(new GridSegment2x(parent, current));
             current = parent;
         }
         java.util.Collections.reverse(path);
         return List.copyOf(path);
     }
 
-    private static Map<Point2i, Set<Point2i>> adjacency(Collection<VertexEdge> edges) {
-        Map<Point2i, Set<Point2i>> result = new LinkedHashMap<>();
-        for (VertexEdge edge : edges == null ? List.<VertexEdge>of() : edges) {
+    private static Map<GridPoint2x, Set<GridPoint2x>> adjacency(Collection<GridSegment2x> edges) {
+        Map<GridPoint2x, Set<GridPoint2x>> result = new LinkedHashMap<>();
+        for (GridSegment2x edge : edges == null ? List.<GridSegment2x>of() : edges) {
             if (edge == null) {
                 continue;
             }
             result.computeIfAbsent(edge.start(), ignored -> new LinkedHashSet<>()).add(edge.end());
             result.computeIfAbsent(edge.end(), ignored -> new LinkedHashSet<>()).add(edge.start());
         }
-        Map<Point2i, Set<Point2i>> immutable = new LinkedHashMap<>();
-        for (Map.Entry<Point2i, Set<Point2i>> entry : result.entrySet()) {
+        Map<GridPoint2x, Set<GridPoint2x>> immutable = new LinkedHashMap<>();
+        for (Map.Entry<GridPoint2x, Set<GridPoint2x>> entry : result.entrySet()) {
             immutable.put(entry.getKey(), Set.copyOf(entry.getValue()));
         }
         return Map.copyOf(immutable);
     }
 
-    private static Set<VertexEdge> internalClusterEdges(RoomCluster cluster) {
+    private static Set<GridSegment2x> internalClusterEdges(RoomCluster cluster) {
         if (cluster == null) {
             return Set.of();
         }
-        Set<VertexEdge> result = new LinkedHashSet<>();
+        Set<GridSegment2x> result = new LinkedHashSet<>();
         for (Point2i cell : cluster.cells()) {
             for (Point2i step : Point2i.CARDINAL_STEPS) {
                 Point2i neighbor = cell.add(step);
@@ -150,50 +160,53 @@ final class DungeonBoundaryPathPlanner {
                 if (Point2i.POINT_ORDER.compare(cell, neighbor) >= 0) {
                     continue;
                 }
-                result.add(VertexEdge.betweenCellAndStep(cell, step));
+                result.add(GridSegment2x.fromVertexEdge(VertexEdge.betweenCellAndStep(cell, step)));
             }
         }
         return Set.copyOf(result);
     }
 
-    private static Set<VertexEdge> internalWallEdges(RoomCluster cluster) {
+    private static Set<GridSegment2x> internalWallEdges(RoomCluster cluster) {
         if (cluster == null) {
             return Set.of();
         }
         return cluster.internalBoundaryKinds().entrySet().stream()
                 .filter(entry -> entry.getValue() == InternalBoundaryType.WALL)
                 .map(Map.Entry::getKey)
+                .map(GridSegment2x::fromVertexEdge)
                 .filter(Objects::nonNull)
-                .sorted(VertexEdge.EDGE_ORDER)
+                .sorted(GridSegment2x.SEGMENT_ORDER)
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
     }
 
-    private static Set<VertexEdge> outerWallEdges(RoomCluster cluster) {
+    private static Set<GridSegment2x> outerWallEdges(RoomCluster cluster) {
         if (cluster == null) {
             return Set.of();
         }
-        Set<VertexEdge> result = new LinkedHashSet<>(cluster.shape().boundaryEdges());
+        Set<GridSegment2x> result = cluster.shape().boundaryEdges().stream()
+                .map(GridSegment2x::fromVertexEdge)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
         result.removeAll(localConnectionEdges(cluster, result));
         return Set.copyOf(result);
     }
 
-    private static Set<VertexEdge> localConnectionEdges(RoomCluster cluster, Set<VertexEdge> allowedEdges) {
+    private static Set<GridSegment2x> localConnectionEdges(RoomCluster cluster, Set<GridSegment2x> allowedEdges) {
         if (cluster == null || allowedEdges == null || allowedEdges.isEmpty()) {
             return Set.of();
         }
         return cluster.localConnections().stream()
                 .filter(Objects::nonNull)
                 .filter(connection -> connection.door() != null)
-                .flatMap(connection -> connection.door().edges().stream())
+                .flatMap(connection -> connection.door().segments2x().stream())
                 .filter(allowedEdges::contains)
-                .sorted(VertexEdge.EDGE_ORDER)
+                .sorted(GridSegment2x.SEGMENT_ORDER)
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
     }
 
     record PathResult(
-            List<VertexEdge> routeEdges,
-            Set<VertexEdge> committedEdges,
-            Set<VertexEdge> skippedConnectionEdges
+            List<GridSegment2x> routeEdges,
+            Set<GridSegment2x> committedEdges,
+            Set<GridSegment2x> skippedConnectionEdges
     ) {
         PathResult {
             routeEdges = routeEdges == null ? List.of() : List.copyOf(routeEdges);

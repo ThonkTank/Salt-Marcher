@@ -9,7 +9,6 @@ import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
-import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.shell.editor.EditorCards;
 import features.world.dungeonmap.shell.interaction.DungeonHitKind;
@@ -120,7 +119,7 @@ public final class BoundaryTool implements EditorTool {
             return EditorHitResolution.none();
         }
         return EditorHitResolution.part(
-                new DungeonHitSubject.VertexSubject(resolved.vertex()),
+                new DungeonHitSubject.VertexSubject(resolved.vertex2x()),
                 clusterOwnerKey(resolved.clusterId()));
     }
 
@@ -142,7 +141,7 @@ public final class BoundaryTool implements EditorTool {
 
     private boolean handleWallPressed(EditorToolContext ctx, boolean deleteMode) {
         DungeonLayout layout = ctx == null ? null : ctx.activeMap();
-        Point2i vertex = selectedVertex(ctx);
+        GridPoint2x vertex = selectedVertex(ctx);
         DungeonSelectionKey resolvedKey = ctx == null ? null : ctx.resolvedSelectionKey();
         RoomCluster cluster = DungeonSelectionLookup.clusterOnLevel(
                 layout,
@@ -193,9 +192,9 @@ public final class BoundaryTool implements EditorTool {
             return true;
         }
 
-        Set<VertexEdge> nextPreview = new LinkedHashSet<>(draft.previewEdges());
+        Set<GridSegment2x> nextPreview = new LinkedHashSet<>(draft.previewEdges());
         nextPreview.addAll(result.committedEdges());
-        Set<VertexEdge> nextSkipped = new LinkedHashSet<>(draft.skippedConnectionEdges());
+        Set<GridSegment2x> nextSkipped = new LinkedHashSet<>(draft.skippedConnectionEdges());
         nextSkipped.addAll(result.skippedConnectionEdges());
         showDraft(new Draft(
                 draft.clusterId(),
@@ -218,13 +217,19 @@ public final class BoundaryTool implements EditorTool {
             return false;
         }
         Long mapId = mapState.activeMapId();
-        Set<VertexEdge> edges = currentDraft.previewEdges();
+        Set<GridSegment2x> edges = currentDraft.previewEdges();
         clear();
         if (mapId == null || edges.isEmpty()) {
             return true;
         }
         loadingService.submitReloadingWrite(
-                () -> boundaryEditService.apply(mapId, currentDraft.clusterId(), edges, InternalBoundaryType.WALL, currentDraft.deleteMode()),
+                () -> boundaryEditService.apply(
+                        mapId,
+                        currentDraft.clusterId(),
+                        mapState.activeProjectionLevel(),
+                        edges,
+                        InternalBoundaryType.WALL,
+                        currentDraft.deleteMode()),
                 mapId,
                 null,
                 throwable -> UiErrorReporter.reportBackgroundFailure("BoundaryTool.finishDraft()", throwable));
@@ -233,7 +238,7 @@ public final class BoundaryTool implements EditorTool {
 
     private ResolvedBoundaryVertex resolveBoundaryVertex(EditorToolContext ctx, boolean deleteMode) {
         DungeonLayout layout = ctx == null ? null : ctx.activeMap();
-        Point2i vertex = firstVertex(ctx == null ? null : ctx.selection());
+        GridPoint2x vertex = firstVertex(ctx == null ? null : ctx.selection());
         if (layout == null || vertex == null) {
             return null;
         }
@@ -254,7 +259,7 @@ public final class BoundaryTool implements EditorTool {
         return null;
     }
 
-    private boolean isEditableCluster(Long clusterId, DungeonLayout layout, Point2i vertex, boolean deleteMode) {
+    private boolean isEditableCluster(Long clusterId, DungeonLayout layout, GridPoint2x vertex, boolean deleteMode) {
         RoomCluster cluster = clusterOnActiveLevel(clusterId, layout);
         return cluster != null && pathPlanner.isEditableVertex(cluster, vertex, deleteMode);
     }
@@ -281,19 +286,19 @@ public final class BoundaryTool implements EditorTool {
         return cluster;
     }
 
-    private static Point2i firstVertex(features.world.dungeonmap.shell.interaction.DungeonSelection selection) {
+    private static GridPoint2x firstVertex(features.world.dungeonmap.shell.interaction.DungeonSelection selection) {
         DungeonHitSubject subject = selection == null
                 ? null
                 : selection.firstSubjectMatching(candidate -> candidate instanceof DungeonHitSubject.VertexSubject);
         if (subject instanceof DungeonHitSubject.VertexSubject vertexSubject) {
-            return vertexSubject.vertex();
+            return vertexSubject.vertex2x();
         }
         return null;
     }
 
-    private static Point2i selectedVertex(EditorToolContext ctx) {
+    private static GridPoint2x selectedVertex(EditorToolContext ctx) {
         return ctx != null && ctx.resolvedSubject() instanceof DungeonHitSubject.VertexSubject vertexSubject
-                ? vertexSubject.vertex()
+                ? vertexSubject.vertex2x()
                 : null;
     }
 
@@ -311,14 +316,10 @@ public final class BoundaryTool implements EditorTool {
         draft = nextDraft;
         state.showDraft(new EditorDraft.BoundaryDraft(nextDraft.clusterId(), nextDraft.statusMessage()));
         state.showPreview(new EditorPreview.BoundaryPreview(
-                nextDraft.previewEdges().stream()
-                        .map(GridSegment2x::fromVertexEdge)
-                        .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new)),
-                nextDraft.skippedConnectionEdges().stream()
-                        .map(GridSegment2x::fromVertexEdge)
-                        .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new)),
-                GridPoint2x.fromVertex(nextDraft.startVertex()),
-                GridPoint2x.fromVertex(nextDraft.currentVertex()),
+                nextDraft.previewEdges(),
+                nextDraft.skippedConnectionEdges(),
+                nextDraft.startVertex(),
+                nextDraft.currentVertex(),
                 nextDraft.deleteMode()));
         refreshStatePane();
     }
@@ -373,8 +374,8 @@ public final class BoundaryTool implements EditorTool {
     private static String statusMessage(
             RoomCluster cluster,
             boolean deleteMode,
-            Set<VertexEdge> previewEdges,
-            Set<VertexEdge> skippedConnectionEdges
+            Set<GridSegment2x> previewEdges,
+            Set<GridSegment2x> skippedConnectionEdges
     ) {
         if (deleteMode) {
             return previewEdges.isEmpty()
@@ -393,10 +394,10 @@ public final class BoundaryTool implements EditorTool {
     private record Draft(
             Long clusterId,
             boolean deleteMode,
-            Point2i startVertex,
-            Point2i currentVertex,
-            Set<VertexEdge> previewEdges,
-            Set<VertexEdge> skippedConnectionEdges,
+            GridPoint2x startVertex,
+            GridPoint2x currentVertex,
+            Set<GridSegment2x> previewEdges,
+            Set<GridSegment2x> skippedConnectionEdges,
             String statusMessage
     ) {
         private Draft {
@@ -408,7 +409,7 @@ public final class BoundaryTool implements EditorTool {
 
     private record ResolvedBoundaryVertex(
             Long clusterId,
-            Point2i vertex
+            GridPoint2x vertex2x
     ) {
     }
 }

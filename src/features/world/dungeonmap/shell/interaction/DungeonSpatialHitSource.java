@@ -39,7 +39,7 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
                 continue;
             }
             Room room = cluster.roomAt(point);
-            if (room == null || room.roomId() == null || room.geometry().floorAtLevel(levelZ) == null) {
+            if (room == null || room.roomId() == null || room.structure().floorAtLevel(levelZ) == null) {
                 continue;
             }
             descriptorsByRoomId.putIfAbsent(

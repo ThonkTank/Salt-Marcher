@@ -22,8 +22,8 @@ public final class DungeonRuntimeTransitionCatalog {
         if (layout == null || room == null || room.roomId() == null) {
             return List.of();
         }
-        return levelsForRoomSurface(room.geometry(), activeTile).stream()
-                .flatMap(levelZ -> describe(layout, room.geometry().cellsAtLevel(levelZ), levelZ).stream())
+        return levelsForRoomSurface(room.structure(), activeTile).stream()
+                .flatMap(levelZ -> describe(layout, room.structure().cellsAtLevel(levelZ), levelZ).stream())
                 .toList();
     }
 
@@ -31,7 +31,7 @@ public final class DungeonRuntimeTransitionCatalog {
         if (layout == null || corridor == null || corridor.corridorId() == null) {
             return List.of();
         }
-        return describe(layout, corridor.geometry().cellsAtLevel(corridor.levelZ()), corridor.levelZ());
+        return describe(layout, corridor.structure().cellsAtLevel(corridor.levelZ()), corridor.levelZ());
     }
 
     public static List<DungeonRuntimeTransitionDescriptor> describeAtTile(DungeonLayout layout, CubePoint tile) {
@@ -96,14 +96,14 @@ public final class DungeonRuntimeTransitionCatalog {
         return transition.label();
     }
 
-    private static List<Integer> levelsForRoomSurface(features.world.dungeonmap.model.objects.StructureGeometry geometry, CubePoint activeTile) {
-        if (geometry == null) {
+    private static List<Integer> levelsForRoomSurface(features.world.dungeonmap.model.objects.StructureObject structure, CubePoint activeTile) {
+        if (structure == null) {
             return List.of();
         }
-        if (activeTile != null && geometry.contains(activeTile)) {
+        if (activeTile != null && structure.contains(activeTile)) {
             return List.of(activeTile.z());
         }
-        return geometry.levels().stream()
+        return structure.levels().stream()
                 .sorted()
                 .toList();
     }

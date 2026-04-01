@@ -2,18 +2,19 @@ package features.world.dungeonmap.application.runtime;
 
 import features.world.dungeonmap.application.room.RoomExitDescriptor;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 
 public record DungeonRuntimeDoorDescriptor(
         int number,
         String label,
         String destinationLabel,
+        int levelZ,
         Point2i roomCell,
         Point2i outsideCell,
         Point2i direction,
-        VertexEdge anchorEdge,
+        GridSegment2x anchorSegment2x,
         ConnectionEndpoint activeEndpoint,
         ConnectionEndpoint destinationEndpoint,
         String relativeLabel,
@@ -23,10 +24,13 @@ public record DungeonRuntimeDoorDescriptor(
         number = number <= 0 ? 1 : number;
         label = label == null || label.isBlank() ? "Tür " + number : label;
         destinationLabel = destinationLabel == null ? "" : destinationLabel.trim();
+        levelZ = levelZ;
         roomCell = roomCell == null ? new Point2i(0, 0) : roomCell;
         direction = direction == null ? new Point2i(0, -1) : direction;
         outsideCell = outsideCell == null ? roomCell.add(direction) : outsideCell;
-        anchorEdge = anchorEdge == null ? VertexEdge.betweenCellAndStep(roomCell, direction) : anchorEdge;
+        anchorSegment2x = anchorSegment2x == null
+                ? GridSegment2x.betweenCellAndStep(roomCell, direction)
+                : anchorSegment2x;
         relativeLabel = relativeLabel == null || relativeLabel.isBlank() ? "Direkt vor euch" : relativeLabel;
         description = description == null || description.isBlank() ? describe(relativeLabel, "eine Tür") : description;
     }
@@ -47,10 +51,11 @@ public record DungeonRuntimeDoorDescriptor(
                 exit.number(),
                 exit.label(),
                 destinationLabel,
+                exit.levelZ(),
                 exit.roomCell(),
                 exit.outsideCell(),
                 exit.direction(),
-                exit.anchorEdge(),
+                exit.anchorSegment2x(),
                 activeEndpoint,
                 destinationEndpoint,
                 relativeLabel,

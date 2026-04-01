@@ -36,21 +36,23 @@ public final class DungeonRuntimeDoorCatalog {
             return List.of();
         }
         return describe(
-                corridor.geometry().cellsAtLevel(corridor.levelZ()),
+                corridor.structure().cellsAtLevel(corridor.levelZ()),
+                corridor.levelZ(),
                 layout.connectionsForCorridor(corridor.corridorId()),
                 heading,
                 (cell, direction) -> "",
-                exit -> doorContext(layout, layout.connectionAt(exit.anchorEdge()), ConnectionEndpoint.corridor(corridor.corridorId())));
+                exit -> doorContext(layout, layout.connectionAt(exit.levelZ(), exit.anchorSegment2x()), ConnectionEndpoint.corridor(corridor.corridorId())));
     }
 
     private static List<DungeonRuntimeDoorDescriptor> describe(
             java.util.Set<Point2i> cells,
+            int levelZ,
             List<? extends Connection> connections,
             CardinalDirection heading,
             BiFunction<Point2i, Point2i, String> narrationLookup,
             Function<RoomExitDescriptor, DoorContext> contextLookup
     ) {
-        return DoorExitCatalog.describe(cells, connections).stream()
+        return DoorExitCatalog.describe(cells, levelZ, connections).stream()
                 .map(exit -> {
                     DoorContext context = contextLookup.apply(exit);
                     return DungeonRuntimeDoorDescriptor.from(
@@ -70,8 +72,8 @@ public final class DungeonRuntimeDoorCatalog {
             RoomExitDescriptor exit,
             CardinalDirection heading
     ) {
-        String narration = room.narration().exitDescription(exit.roomCell(), exit.direction());
-        DoorContext context = doorContext(layout, layout.connectionAt(exit.anchorEdge()), ConnectionEndpoint.room(room.roomId()));
+        String narration = room.narration().exitDescription(exit.levelZ(), exit.roomCell(), exit.direction());
+        DoorContext context = doorContext(layout, layout.connectionAt(exit.levelZ(), exit.anchorSegment2x()), ConnectionEndpoint.room(room.roomId()));
         return DungeonRuntimeDoorDescriptor.from(
                 exit,
                 heading,

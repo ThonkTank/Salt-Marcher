@@ -41,6 +41,10 @@ public record GridSegment2x(GridPoint2x start, GridPoint2x end) {
                 GridPoint2x.fromVertex(resolvedEdge.end()));
     }
 
+    public static GridSegment2x betweenCellAndStep(Point2i fromCell, Point2i stepDelta) {
+        return fromVertexEdge(VertexEdge.betweenCellAndStep(fromCell, stepDelta));
+    }
+
     public boolean isHorizontal() {
         return start.y2() == end.y2();
     }

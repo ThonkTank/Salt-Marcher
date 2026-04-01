@@ -6,8 +6,8 @@ import features.campaignstate.api.CampaignStateReadApi;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
@@ -87,17 +87,19 @@ public final class DungeonRuntimeNavigationService {
         if (layout == null || layout.mapId() <= 0) {
             throw new SQLException("Kein aktiver Dungeon geladen");
         }
-        if (descriptor == null || descriptor.anchorEdge() == null) {
+        if (descriptor == null || descriptor.anchorSegment2x() == null) {
             throw new SQLException("Keine Verbindung verfügbar");
         }
-        features.world.dungeonmap.model.structures.connection.Connection connection = layout.connectionAt(descriptor.anchorEdge());
+        features.world.dungeonmap.model.structures.connection.Connection connection = layout.connectionAt(
+                descriptor.levelZ(),
+                descriptor.anchorSegment2x());
         if (connection == null) {
             throw new SQLException("Verbindung konnte nicht aufgelöst werden");
         }
         if (!connection.isTraversable()) {
             throw new SQLException("Verbindung ist blockiert");
         }
-        CubePoint resolvedTile = resolveConnectionTargetTile(layout, connection, descriptor, currentLevel);
+        CubePoint resolvedTile = resolveConnectionTargetTile(layout, connection, descriptor, descriptor.levelZ());
         if (resolvedTile == null) {
             throw new SQLException("Ziel hinter der Verbindung ist nicht begehbar");
         }
@@ -185,7 +187,7 @@ public final class DungeonRuntimeNavigationService {
         if (destination == null) {
             return null;
         }
-        CubePoint adjacentTile = resolveAdjacentEndpointTile(layout, descriptor.anchorEdge(), destination, currentLevel);
+        CubePoint adjacentTile = resolveAdjacentEndpointTile(layout, descriptor.anchorSegment2x(), destination, currentLevel);
         if (adjacentTile != null) {
             return adjacentTile;
         }
@@ -194,14 +196,14 @@ public final class DungeonRuntimeNavigationService {
 
     private CubePoint resolveAdjacentEndpointTile(
             DungeonLayout layout,
-            VertexEdge anchorEdge,
+            GridSegment2x anchorSegment2x,
             ConnectionEndpoint endpoint,
             int currentLevel
     ) {
-        if (layout == null || anchorEdge == null || endpoint == null) {
+        if (layout == null || anchorSegment2x == null || endpoint == null) {
             return null;
         }
-        for (Point2i cell : anchorEdge.touchingCells()) {
+        for (Point2i cell : anchorSegment2x.touchingCells()) {
             if (!matchesEndpoint(layout, cell, currentLevel, endpoint)) {
                 continue;
             }
@@ -245,12 +247,12 @@ public final class DungeonRuntimeNavigationService {
                 if (room == null) {
                     yield null;
                 }
-                var geometry = room.geometry();
-                CubePoint preferred = geometry.levels().contains(currentLevel)
-                        ? geometry.centerPointAtLevel(currentLevel)
-                        : geometry.levels().stream()
+                var structure = room.structure();
+                CubePoint preferred = structure.levels().contains(currentLevel)
+                        ? structure.centerPointAtLevel(currentLevel)
+                        : structure.levels().stream()
                         .sorted()
-                        .map(geometry::centerPointAtLevel)
+                        .map(structure::centerPointAtLevel)
                         .findFirst()
                         .orElse(null);
                 yield nearestTraversableTile(layout, preferred);
@@ -261,21 +263,21 @@ public final class DungeonRuntimeNavigationService {
                     yield null;
                 }
                 CubePoint preferred = cluster.rooms().stream()
-                        .filter(room -> room != null && room.geometry().levels().contains(currentLevel))
-                        .map(room -> room.geometry().centerPointAtLevel(currentLevel))
+                        .filter(room -> room != null && room.structure().levels().contains(currentLevel))
+                        .map(room -> room.structure().centerPointAtLevel(currentLevel))
                         .findFirst()
                         .orElseGet(() -> cluster.rooms().stream()
                                 .filter(room -> room != null)
-                                .flatMap(room -> room.geometry().levels().stream()
+                                .flatMap(room -> room.structure().levels().stream()
                                         .sorted()
-                                        .map(room.geometry()::centerPointAtLevel))
+                                        .map(room.structure()::centerPointAtLevel))
                                 .findFirst()
                                 .orElse(null));
                 yield nearestTraversableTile(layout, preferred);
             }
             case CORRIDOR -> {
                 Corridor corridor = layout.findCorridor(endpoint.id());
-                CubePoint preferred = corridor == null ? null : corridor.geometry().centerPointAtLevel(corridor.levelZ());
+                CubePoint preferred = corridor == null ? null : corridor.structure().centerPointAtLevel(corridor.levelZ());
                 yield nearestTraversableTile(layout, preferred);
             }
             case STAIR -> {

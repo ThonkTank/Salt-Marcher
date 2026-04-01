@@ -21,9 +21,11 @@ public record RoomNarration(
         return EMPTY;
     }
 
-    public String exitDescription(Point2i roomCell, Point2i direction) {
+    public String exitDescription(int levelZ, Point2i roomCell, Point2i direction) {
         return exitNarrations.stream()
-                .filter(exit -> exit.roomCell().equals(roomCell) && exit.direction().equals(direction))
+                .filter(exit -> exit.levelZ() == levelZ
+                        && exit.roomCell().equals(roomCell)
+                        && exit.direction().equals(direction))
                 .map(RoomExitNarration::description)
                 .findFirst()
                 .orElse("");

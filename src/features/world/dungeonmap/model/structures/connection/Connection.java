@@ -16,6 +16,8 @@ public interface Connection {
 
     long mapId();
 
+    int levelZ();
+
     Door door();
 
     List<ConnectionEndpoint> endpoints();

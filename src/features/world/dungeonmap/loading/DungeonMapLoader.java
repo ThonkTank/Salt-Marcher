@@ -264,13 +264,14 @@ public final class DungeonMapLoader {
     private static List<Room> loadRooms(Connection conn, long mapId) throws SQLException {
         Map<Long, StructureDescriptor> descriptorsByRoomId = loadRoomDescriptors(conn, mapId);
         Map<Long, List<RoomExitNarration>> exitNarrationsByRoomId = loadGrouped(conn,
-                "SELECT room_id, cell_x, cell_y, edge_direction, description"
+                "SELECT room_id, level_z, cell_x, cell_y, edge_direction, description"
                         + " FROM dungeon_room_exit_descriptions"
                         + " WHERE room_id IN (SELECT room_id FROM dungeon_rooms WHERE dungeon_map_id=?)"
-                        + " ORDER BY room_id, sort_order, cell_y, cell_x, edge_direction",
+                        + " ORDER BY room_id, level_z, sort_order, cell_y, cell_x, edge_direction",
                 mapId,
                 rs -> rs.getLong("room_id"),
                 rs -> new RoomExitNarration(
+                        rs.getInt("level_z"),
                         new Point2i(rs.getInt("cell_x"), rs.getInt("cell_y")),
                         DungeonPersistenceDirections.fromPersistedEdgeDirection(rs.getString("edge_direction")),
                         rs.getString("description")));
@@ -355,13 +356,13 @@ public final class DungeonMapLoader {
             }
             for (Room room : cluster.rooms()) {
                 if (room != null) {
-                    result.addAll(room.geometry().cubePoints());
+                    result.addAll(room.structure().cubePoints());
                 }
             }
         }
         for (Corridor corridor : corridors == null ? List.<Corridor>of() : corridors) {
             if (corridor != null) {
-                result.addAll(corridor.geometry().cubePoints());
+                result.addAll(corridor.structure().cubePoints());
             }
         }
         return Set.copyOf(result);
@@ -657,6 +658,7 @@ public final class DungeonMapLoader {
                 null,
                 mapId,
                 clusterId,
+                doorComponent.levelZ(),
                 new Door(doorComponent.door().edges()),
                 endpoints);
     }

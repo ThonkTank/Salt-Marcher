@@ -8,6 +8,7 @@ public record LocalConnection(
         Long connectionId,
         long mapId,
         long clusterId,
+        int levelZ,
         Door door,
         List<ConnectionEndpoint> endpoints
 ) implements Connection {

@@ -131,7 +131,10 @@ public final class RoomCluster {
         if (projectedRooms.isEmpty()) {
             return null;
         }
-        return new RoomCluster(clusterId, mapId, center, projectedRooms, localConnections);
+        List<LocalConnection> projectedConnections = localConnections.stream()
+                .filter(connection -> connection != null && connection.levelZ() == levelZ)
+                .toList();
+        return new RoomCluster(clusterId, mapId, center, projectedRooms, projectedConnections);
     }
 
     public ClusterRewrite editBoundary(VertexEdge edge, InternalBoundaryType type, boolean deleteBoundary) {
@@ -651,6 +654,7 @@ public final class RoomCluster {
                 connection.connectionId(),
                 connection.mapId(),
                 connection.clusterId(),
+                connection.levelZ(),
                 connection.door().movedBy(delta),
                 connection.endpoints());
     }

@@ -848,12 +848,13 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             double gridSize,
             DungeonDoorNumberOverlay doorNumber
     ) {
-        if (doorNumber == null || doorNumber.anchorEdge() == null) {
+        if (doorNumber == null || doorNumber.anchorSegment2x() == null) {
             return;
         }
-        VertexEdge edge = doorNumber.anchorEdge();
-        double centerX = camera.panX() + ((edge.start().x() + edge.end().x()) / 2.0) * gridSize;
-        double centerY = camera.panY() + ((edge.start().y() + edge.end().y()) / 2.0) * gridSize;
+        GridSegment2x segment2x = doorNumber.anchorSegment2x();
+        GridPoint2x midpoint = segment2x.midpoint();
+        double centerX = camera.panX() + midpoint.x2() * gridSize / 2.0;
+        double centerY = camera.panY() + midpoint.y2() * gridSize / 2.0;
         double width = 22.0;
         double height = 18.0;
         gc.setFill(DungeonCanvasTheme.LABEL_FILL);
@@ -941,17 +942,19 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
     private static void drawPaintPreview(
             GraphicsContext gc,
             DungeonCanvasCamera camera,
-            TileShape previewPaintShape,
+            StructureObject previewStructure,
+            int levelZ,
             boolean deleteMode
     ) {
-        if (previewPaintShape == null || previewPaintShape.size() == 0) {
+        WalkableSurface surface = walkableSurface(previewStructure, levelZ);
+        if (surface.tiles().isEmpty()) {
             return;
         }
         double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
         gc.setFill(deleteMode ? DungeonCanvasTheme.DELETE_PREVIEW_FILL : DungeonCanvasTheme.PAINT_PREVIEW_FILL);
         gc.setStroke(deleteMode ? DungeonCanvasTheme.DELETE_PREVIEW_STROKE : DungeonCanvasTheme.PAINT_PREVIEW_STROKE);
         gc.setLineWidth(1.5);
-        for (Tile tile : previewPaintShape.tiles()) {
+        for (Point2i tile : surface.tiles()) {
             double x = camera.panX() + tile.x() * gridSize;
             double y = camera.panY() + tile.y() * gridSize;
             gc.fillRect(x, y, gridSize, gridSize);
@@ -1162,7 +1165,12 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 return;
             }
             DungeonEditorRenderState editor = frame.editor();
-            drawPaintPreview(gc, frame.camera(), editor.paintPreviewShape(), editor.paintPreviewDeleteMode());
+            drawPaintPreview(
+                    gc,
+                    frame.camera(),
+                    editor.paintPreviewStructure(),
+                    editor.paintPreviewLevelZ(),
+                    editor.paintPreviewDeleteMode());
             drawBoundaryPreview(
                     gc,
                     frame.camera(),

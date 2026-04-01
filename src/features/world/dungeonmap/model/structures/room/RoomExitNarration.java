@@ -3,11 +3,13 @@ package features.world.dungeonmap.model.structures.room;
 import features.world.dungeonmap.model.geometry.Point2i;
 
 public record RoomExitNarration(
+        int levelZ,
         Point2i roomCell,
         Point2i direction,
         String description
 ) {
     public RoomExitNarration {
+        levelZ = levelZ;
         roomCell = roomCell == null ? new Point2i(0, 0) : roomCell;
         direction = normalizeDirection(direction);
         description = description == null ? "" : description.trim();

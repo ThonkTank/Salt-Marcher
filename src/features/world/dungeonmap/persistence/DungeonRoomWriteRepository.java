@@ -120,16 +120,17 @@ public final class DungeonRoomWriteRepository {
             delete.executeUpdate();
         }
         try (PreparedStatement insert = conn.prepareStatement(
-                "INSERT INTO dungeon_room_exit_descriptions(room_id, cell_x, cell_y, edge_direction, description, sort_order)"
-                        + " VALUES(?,?,?,?,?,?)")) {
+                "INSERT INTO dungeon_room_exit_descriptions(room_id, level_z, cell_x, cell_y, edge_direction, description, sort_order)"
+                        + " VALUES(?,?,?,?,?,?,?)")) {
             int sortOrder = 0;
             for (RoomExitNarration exitNarration : resolvedNarration.exitNarrations()) {
                 insert.setLong(1, roomId);
-                insert.setInt(2, exitNarration.roomCell().x());
-                insert.setInt(3, exitNarration.roomCell().y());
-                insert.setString(4, DungeonPersistenceDirections.toPersistedEdgeDirection(exitNarration.direction()));
-                insert.setString(5, exitNarration.description());
-                insert.setInt(6, sortOrder++);
+                insert.setInt(2, exitNarration.levelZ());
+                insert.setInt(3, exitNarration.roomCell().x());
+                insert.setInt(4, exitNarration.roomCell().y());
+                insert.setString(5, DungeonPersistenceDirections.toPersistedEdgeDirection(exitNarration.direction()));
+                insert.setString(6, exitNarration.description());
+                insert.setInt(7, sortOrder++);
                 insert.addBatch();
             }
             insert.executeBatch();

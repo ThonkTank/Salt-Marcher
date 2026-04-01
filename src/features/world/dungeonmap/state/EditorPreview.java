@@ -3,8 +3,7 @@ package features.world.dungeonmap.state;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.geometry.TileShape;
+import features.world.dungeonmap.model.objects.StructureObject;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -14,9 +13,9 @@ public sealed interface EditorPreview permits EditorPreview.LayoutPreview, Edito
     record LayoutPreview(DungeonLayout layout) implements EditorPreview {
     }
 
-    record PaintPreview(TileShape shape, boolean deleteMode) implements EditorPreview {
+    record PaintPreview(StructureObject structure, int levelZ, boolean deleteMode) implements EditorPreview {
         public PaintPreview {
-            shape = shape == null ? TileShape.empty() : shape;
+            structure = structure == null ? StructureObject.empty() : structure;
         }
     }
 

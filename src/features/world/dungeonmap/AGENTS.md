@@ -19,6 +19,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `Room` owns canonical shared surface geometry through `StructureObject`. `StructureGeometry` is the shared floor-and-wall access surface built on top of that owner.
 - `Corridor` keeps its node/segment graph as truth and compiles it into the same `StructureDescriptor`/`StructureObject` surface model used by rooms, including opening segments for room-bound endpoints.
 - Room paint/delete/boundary edits persist room-owned `StructureDescriptor` truth plus derived cluster metadata. They do not reroute or regenerate corridors or stairs.
+- Connection doors and room exit narration are level-aware. Shared boundary/door queries must keep `levelZ` together with the 2x segment instead of collapsing identical segments across floors.
 - Runtime presentation resolves surfaces from the same structure owners used by the editor. Do not invent runtime-only structure mirrors.
 
 ## Package Roles

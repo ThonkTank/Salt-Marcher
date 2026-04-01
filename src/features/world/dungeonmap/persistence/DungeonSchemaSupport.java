@@ -98,12 +98,13 @@ public final class DungeonSchemaSupport {
                 + ")");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_room_exit_descriptions ("
                 + "room_id          INTEGER NOT NULL REFERENCES dungeon_rooms(room_id) ON DELETE CASCADE,"
+                + "level_z          INTEGER NOT NULL DEFAULT 0,"
                 + "cell_x           INTEGER NOT NULL,"
                 + "cell_y           INTEGER NOT NULL,"
                 + "edge_direction   TEXT NOT NULL,"
                 + "description      TEXT,"
                 + "sort_order       INTEGER NOT NULL DEFAULT 0,"
-                + "PRIMARY KEY (room_id, cell_x, cell_y, edge_direction)"
+                + "PRIMARY KEY (room_id, level_z, cell_x, cell_y, edge_direction)"
                 + ")");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_stairs ("
                 + "stair_id         INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -131,6 +132,7 @@ public final class DungeonSchemaSupport {
             addColumnIfMissing(stmt, "dungeon_rooms", "level_z INTEGER NOT NULL DEFAULT 0");
             addColumnIfMissing(stmt, "dungeon_corridors", "level_z INTEGER NOT NULL DEFAULT 0");
             addColumnIfMissing(stmt, "dungeon_stairs", "name TEXT");
+            addColumnIfMissing(stmt, "dungeon_room_exit_descriptions", "level_z INTEGER NOT NULL DEFAULT 0");
         }
     }
 

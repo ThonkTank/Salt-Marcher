@@ -396,7 +396,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         List<DungeonDoorNumberOverlay> doorNumbers = surface == null
                 ? List.of()
                 : surface.doors().stream()
-                        .map(door -> new DungeonDoorNumberOverlay(door.number(), door.anchorEdge()))
+                        .map(door -> new DungeonDoorNumberOverlay(door.number(), door.anchorSegment2x()))
                         .toList();
         return new RuntimePresentation(
                 surface,

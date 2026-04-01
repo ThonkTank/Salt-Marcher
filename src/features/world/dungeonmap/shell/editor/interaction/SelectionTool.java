@@ -154,7 +154,9 @@ public final class SelectionTool implements EditorTool {
             if (event == null || !event.isPrimaryButtonDown()) {
                 return false;
             }
-            GridPoint2x point2x = GridPoint2x.fromTileCenter(event.gridCell());
+            GridPoint2x point2x = ctx == null || ctx.probe() == null
+                    ? GridPoint2x.fromTileCenter(event.gridCell())
+                    : ctx.probe().probePoint2x();
             if (Objects.equals(point2x, corridorNodeDragSession.currentPoint())) {
                 return true;
             }
@@ -291,9 +293,10 @@ public final class SelectionTool implements EditorTool {
                 RoomExitCatalog.describe(mapState.activeMap(), room).stream()
                         .map(exit -> new RoomExitCard(
                                 exit.label(),
+                                exit.levelZ(),
                                 exit.roomCell(),
                                 exit.direction(),
-                                room.narration().exitDescription(exit.roomCell(), exit.direction())))
+                                room.narration().exitDescription(exit.levelZ(), exit.roomCell(), exit.direction())))
                         .toList());
     }
 
@@ -344,7 +347,7 @@ public final class SelectionTool implements EditorTool {
         ArrayList<RoomExitNarration> exitNarrations = new ArrayList<>();
         for (int index = 0; index < card.exits().size(); index++) {
             RoomExitCard exit = card.exits().get(index);
-            exitNarrations.add(new RoomExitNarration(exit.roomCell(), exit.direction(), exitAreas.get(index).getText()));
+            exitNarrations.add(new RoomExitNarration(exit.levelZ(), exit.roomCell(), exit.direction(), exitAreas.get(index).getText()));
         }
         setRoomNarrationSaveState(card.roomId(), true, "Speichert...");
         loadingService.submitReloadingWrite(
@@ -471,6 +474,7 @@ public final class SelectionTool implements EditorTool {
 
     private record RoomExitCard(
             String label,
+            int levelZ,
             Point2i roomCell,
             Point2i direction,
             String description
