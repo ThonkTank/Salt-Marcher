@@ -18,7 +18,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - Corridors, stairs, and transitions are first-class persisted structures. There is no second aggregate that owns their geometry.
 - `Room` owns canonical shared surface geometry through `StructureObject`. `StructureGeometry` is only the compatibility facade for still-unmigrated call sites.
 - `Corridor` keeps its node/segment graph as truth and compiles it into the same `StructureDescriptor`/`StructureObject` surface model used by rooms.
-- Room paint/delete/boundary edits persist only room and cluster truth. They do not reroute or regenerate corridors or stairs.
+- Room paint/delete/boundary edits persist room-owned `StructureDescriptor` truth plus derived cluster metadata. They do not reroute or regenerate corridors or stairs.
 - Runtime presentation resolves surfaces from the same structure owners used by the editor. Do not invent runtime-only structure mirrors.
 
 ## Package Roles
@@ -133,14 +133,14 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 ## Loading And Persistence
 
 - `DungeonMapLoader` is the only authoritative rehydration path. It loads catalog entries, reconstructs layouts from direct structure tables, skips unusable maps, and falls back to the first usable map when necessary.
-- Room geometry is reconstructed from persisted cluster geometry plus stored boundary edges. Do not add UI-side fallback reconstruction.
+- Room geometry is loaded directly from persisted room-owned `StructureDescriptor` rows. Do not reintroduce cluster-polygon or flood-fill fallback hydration.
 - Storage model:
-  - clusters: relative geometry plus center anchor
-  - rooms: room anchor plus cluster membership
-  - boundaries: `(cell, direction, type)` tuples
+  - clusters: membership owner plus derived `center_x`, `center_y`, `level_z` metadata only
+  - rooms: `dungeon_rooms` row plus per-level descriptor tables `dungeon_room_levels`, `dungeon_room_level_seeds`, and `dungeon_room_level_segments`
   - corridors: stable corridor identity plus node/segment tables
   - stairs: stable stair identity plus ordered 3D path nodes
   - transitions: `dungeon_transitions` with nullable placement coordinates and destination discriminator
+- Existing pre-descriptor dungeon maps are intentionally incompatible. Missing room descriptor rows make the loader reject the map instead of trying to repair legacy geometry.
 - Write flows should persist in one transaction and then reload through `DungeonMapLoadingService.submitReloadingWrite(...)` or `submitReloadingTask(...)`.
 
 ## Guardrails

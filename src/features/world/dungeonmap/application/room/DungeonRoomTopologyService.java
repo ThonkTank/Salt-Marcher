@@ -8,21 +8,18 @@ import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.geometry.VertexEdge;
+import features.world.dungeonmap.model.objects.Floor;
 import features.world.dungeonmap.model.structures.cluster.ClusterRewrite;
 import features.world.dungeonmap.model.structures.cluster.ClusterRewriteSplit;
-import features.world.dungeonmap.model.structures.cluster.InternalBoundaryEdge;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.persistence.ClusterBoundaryWrite;
-import features.world.dungeonmap.persistence.DungeonRoomGeometryWriteMapper;
 import features.world.dungeonmap.persistence.DungeonRoomWriteRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -33,16 +30,13 @@ public final class DungeonRoomTopologyService {
 
     private final DungeonMapLoader mapLoader;
     private final DungeonRoomWriteRepository roomWriteRepository;
-    private final DungeonRoomGeometryWriteMapper geometryWriteMapper;
 
     public DungeonRoomTopologyService(
             DungeonMapLoader mapLoader,
-            DungeonRoomWriteRepository roomWriteRepository,
-            DungeonRoomGeometryWriteMapper geometryWriteMapper
+            DungeonRoomWriteRepository roomWriteRepository
     ) {
         this.mapLoader = Objects.requireNonNull(mapLoader, "mapLoader");
         this.roomWriteRepository = Objects.requireNonNull(roomWriteRepository, "roomWriteRepository");
-        this.geometryWriteMapper = Objects.requireNonNull(geometryWriteMapper, "geometryWriteMapper");
     }
 
     public void paint(long mapId, int levelZ, TileShape shape) throws SQLException {
@@ -75,7 +69,7 @@ public final class DungeonRoomTopologyService {
             return;
         }
 
-        ClusterRewrite persistedRewrite = persistClusterRewrite(conn, mapId, rewrite, levelZ);
+        persistClusterRewrite(conn, mapId, rewrite, levelZ);
     }
 
     public void delete(long mapId, int levelZ, TileShape shape) throws SQLException {
@@ -180,10 +174,14 @@ public final class DungeonRoomTopologyService {
         long clusterId = roomWriteRepository.insertCluster(
                 conn,
                 mapId,
-                geometryWriteMapper.toClusterGeometry(Map.of(levelZ, shape)),
+                shape.centerCell(),
                 levelZ);
-        roomWriteRepository.replaceClusterEdges(conn, clusterId, shape.centerCell(), Map.of(levelZ, List.of()));
-        roomWriteRepository.insertRoom(conn, mapId, clusterId, roomName, shape.centerCell(), levelZ);
+        roomWriteRepository.insertRoom(
+                conn,
+                mapId,
+                clusterId,
+                roomName,
+                Room.create(null, mapId, clusterId, roomName, Map.of(levelZ, new Floor(shape))).structure().descriptor());
     }
 
     private ClusterRewrite persistClusterRewrite(Connection conn, long mapId, ClusterRewrite rewrite, int levelZ) throws SQLException {
@@ -204,26 +202,16 @@ public final class DungeonRoomTopologyService {
             long splitClusterId = roomWriteRepository.insertCluster(
                     conn,
                     mapId,
-                    geometryWriteMapper.toClusterGeometry(shapesByLevel(splitCluster.rooms())),
-                    primaryLevel(splitCluster.rooms(), levelZ));
-            roomWriteRepository.replaceClusterEdges(
-                    conn,
-                    splitClusterId,
                     splitCluster.clusterCenter(),
-                    boundaryWritesByLevel(splitCluster.rooms(), splitCluster.persistedBoundaries()));
+                    primaryLevel(splitCluster.rooms(), levelZ));
             realizedSplitClusters.add(splitCluster.withClusterId(splitClusterId));
         }
         ClusterRewrite realizedRewrite = rewrite.withSplitClusters(realizedSplitClusters);
-        roomWriteRepository.updateClusterGeometry(
-                conn,
-                realizedRewrite.targetClusterId(),
-                geometryWriteMapper.toClusterGeometry(shapesByLevel(realizedRewrite.rooms())),
-                primaryLevel(realizedRewrite.rooms(), levelZ));
-        roomWriteRepository.replaceClusterEdges(
+        roomWriteRepository.updateClusterMetadata(
                 conn,
                 realizedRewrite.targetClusterId(),
                 realizedRewrite.clusterCenter(),
-                boundaryWritesByLevel(realizedRewrite.rooms(), realizedRewrite.persistedBoundaries()));
+                primaryLevel(realizedRewrite.rooms(), levelZ));
         persistRooms(conn, mapId, realizedRewrite.targetClusterId(), realizedRewrite.rooms());
         for (ClusterRewriteSplit splitCluster : realizedRewrite.splitClusters()) {
             persistRooms(conn, mapId, splitCluster.clusterId(), splitCluster.rooms());
@@ -234,53 +222,6 @@ public final class DungeonRoomTopologyService {
             }
         }
         return realizedRewrite;
-    }
-
-    private static ClusterBoundaryWrite.Type toBoundaryWriteType(InternalBoundaryType type) {
-        return type == InternalBoundaryType.DOOR ? ClusterBoundaryWrite.Type.DOOR : ClusterBoundaryWrite.Type.WALL;
-    }
-
-    private static List<ClusterBoundaryWrite> toBoundaryWrites(List<InternalBoundaryEdge> boundaries) {
-        if (boundaries == null || boundaries.isEmpty()) {
-            return List.of();
-        }
-        return boundaries.stream()
-                .map(DungeonRoomTopologyService::toBoundaryWrite)
-                .filter(Objects::nonNull)
-                .toList();
-    }
-
-    private static ClusterBoundaryWrite toBoundaryWrite(InternalBoundaryEdge boundary) {
-        if (boundary == null || boundary.cell() == null || boundary.direction() == null) {
-            return null;
-        }
-        return new ClusterBoundaryWrite(boundary.cell(), boundary.direction(), toBoundaryWriteType(boundary.type()));
-    }
-
-    private static Map<Integer, List<ClusterBoundaryWrite>> boundaryWritesByLevel(List<Room> rooms, List<InternalBoundaryEdge> boundaries) {
-        Map<Integer, TileShape> clusterShapesByLevel = shapesByLevel(rooms);
-        Map<Integer, List<ClusterBoundaryWrite>> result = new LinkedHashMap<>();
-        for (Map.Entry<Integer, TileShape> entry : clusterShapesByLevel.entrySet()) {
-            if (entry == null || entry.getKey() == null || entry.getValue() == null) {
-                continue;
-            }
-            Set<Point2i> clusterCells = entry.getValue().absoluteCells();
-            List<ClusterBoundaryWrite> levelWrites = (boundaries == null ? List.<InternalBoundaryEdge>of() : boundaries).stream()
-                    .filter(boundary -> boundaryExistsAtLevel(boundary, clusterCells))
-                    .map(DungeonRoomTopologyService::toBoundaryWrite)
-                    .filter(Objects::nonNull)
-                    .toList();
-            result.put(entry.getKey(), levelWrites);
-        }
-        return Map.copyOf(result);
-    }
-
-    private static boolean boundaryExistsAtLevel(InternalBoundaryEdge boundary, Set<Point2i> clusterCells) {
-        if (boundary == null || boundary.cell() == null || boundary.direction() == null || clusterCells == null || clusterCells.isEmpty()) {
-            return false;
-        }
-        VertexEdge edge = VertexEdge.betweenCellAndStep(boundary.cell(), boundary.direction());
-        return clusterCells.containsAll(edge.touchingCells());
     }
 
     private void persistRooms(
@@ -299,40 +240,21 @@ public final class DungeonRoomTopologyService {
                         mapId,
                         clusterId,
                         room.name(),
-                        room.geometry().anchorsByLevel(),
-                        room.geometry().primaryLevel());
+                        room.structure().descriptor());
                 if (roomId <= 0) {
                     throw new SQLException("Raum konnte nicht angelegt werden");
                 }
                 continue;
             }
             roomWriteRepository.reassignRoomCluster(conn, room.roomId(), clusterId);
-            roomWriteRepository.updateRoom(conn, room.roomId(), room.name(), room.geometry().anchorsByLevel(), room.geometry().primaryLevel());
-            roomWriteRepository.replaceRoomFloors(conn, room.roomId(), room.geometry().anchorsByLevel());
+            roomWriteRepository.updateRoom(conn, room.roomId(), room.name(), room.structure().descriptor());
         }
-    }
-
-    private static Map<Integer, TileShape> shapesByLevel(List<Room> rooms) {
-        Map<Integer, TileShape> result = new LinkedHashMap<>();
-        for (Room room : rooms == null ? List.<Room>of() : rooms) {
-            if (room == null) {
-                continue;
-            }
-            for (Map.Entry<Integer, TileShape> entry : room.geometry().shapesByLevel().entrySet()) {
-                if (entry == null || entry.getKey() == null || entry.getValue() == null) {
-                    continue;
-                }
-                result.merge(entry.getKey(), entry.getValue(), TileShape::union);
-            }
-        }
-        if (result.isEmpty()) {
-            return Map.of(0, TileShape.empty());
-        }
-        return Map.copyOf(result);
     }
 
     private static int primaryLevel(List<Room> rooms, int fallbackLevel) {
-        return shapesByLevel(rooms).keySet().stream()
+        return (rooms == null ? List.<Room>of() : rooms).stream()
+                .filter(Objects::nonNull)
+                .flatMap(room -> room.structure().levels().stream())
                 .mapToInt(Integer::intValue)
                 .min()
                 .orElse(fallbackLevel);
@@ -342,7 +264,7 @@ public final class DungeonRoomTopologyService {
         return layout.overlappingClusters(shape).stream()
                 .filter(cluster -> cluster != null && cluster.rooms().stream()
                         .anyMatch(room -> room != null
-                                && room.geometry().levels().contains(levelZ)))
+                                && room.structure().levels().contains(levelZ)))
                 .toList();
     }
 

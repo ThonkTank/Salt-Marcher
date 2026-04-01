@@ -1,6 +1,9 @@
 package features.world.dungeonmap.persistence;
 
+import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
 
@@ -9,57 +12,38 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 public final class DungeonRoomWriteRepository {
 
-    public long insertCluster(Connection conn, long mapId, ClusterGeometryWrite geometry) throws SQLException {
-        return insertCluster(conn, mapId, geometry, 0);
-    }
-
-    public long insertCluster(Connection conn, long mapId, ClusterGeometryWrite geometry, int levelZ) throws SQLException {
-        ClusterGeometryWrite resolvedGeometry = geometry == null
-                ? new ClusterGeometryWrite(new Point2i(0, 0), Map.of())
-                : geometry;
-        long clusterId;
+    public long insertCluster(Connection conn, long mapId, Point2i center, int levelZ) throws SQLException {
+        Point2i resolvedCenter = center == null ? new Point2i(0, 0) : center;
         try (PreparedStatement ps = conn.prepareStatement(
                 "INSERT INTO dungeon_room_clusters(dungeon_map_id, center_x, center_y, level_z) VALUES(?,?,?,?)",
                 Statement.RETURN_GENERATED_KEYS)) {
             ps.setLong(1, mapId);
-            ps.setInt(2, resolvedGeometry.center().x());
-            ps.setInt(3, resolvedGeometry.center().y());
+            ps.setInt(2, resolvedCenter.x());
+            ps.setInt(3, resolvedCenter.y());
             ps.setInt(4, levelZ);
             ps.executeUpdate();
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (!rs.next()) {
                     throw new SQLException("No key returned for dungeon_room_clusters insert");
                 }
-                clusterId = rs.getLong(1);
+                return rs.getLong(1);
             }
         }
-        replaceClusterVertices(conn, clusterId, resolvedGeometry.relativeVerticesByLevel());
-        return clusterId;
     }
 
-    public void updateClusterGeometry(Connection conn, long clusterId, ClusterGeometryWrite geometry) throws SQLException {
-        updateClusterGeometry(conn, clusterId, geometry, primaryLevel(geometry == null ? Map.of() : geometry.relativeVerticesByLevel(), 0));
-    }
-
-    public void updateClusterGeometry(Connection conn, long clusterId, ClusterGeometryWrite geometry, int levelZ) throws SQLException {
-        ClusterGeometryWrite resolvedGeometry = geometry == null
-                ? new ClusterGeometryWrite(new Point2i(0, 0), Map.of())
-                : geometry;
+    public void updateClusterMetadata(Connection conn, long clusterId, Point2i center, int levelZ) throws SQLException {
+        Point2i resolvedCenter = center == null ? new Point2i(0, 0) : center;
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE dungeon_room_clusters SET center_x=?, center_y=?, level_z=? WHERE cluster_id=?")) {
-            ps.setInt(1, resolvedGeometry.center().x());
-            ps.setInt(2, resolvedGeometry.center().y());
+            ps.setInt(1, resolvedCenter.x());
+            ps.setInt(2, resolvedCenter.y());
             ps.setInt(3, levelZ);
             ps.setLong(4, clusterId);
             ps.executeUpdate();
         }
-        replaceClusterVertices(conn, clusterId, resolvedGeometry.relativeVerticesByLevel());
     }
 
     public void deleteCluster(Connection conn, long clusterId) throws SQLException {
@@ -70,88 +54,16 @@ public final class DungeonRoomWriteRepository {
         }
     }
 
-    public void replaceClusterEdges(
-            Connection conn,
-            long clusterId,
-            Point2i clusterCenter,
-            int levelZ,
-            List<ClusterBoundaryWrite> boundaries
-    ) throws SQLException {
-        List<ClusterBoundaryWrite> sanitized = boundaries == null ? List.of() : boundaries.stream()
-                .filter(java.util.Objects::nonNull)
-                .toList();
-        Point2i resolvedCenter = clusterCenter == null ? new Point2i(0, 0) : clusterCenter;
-        try (PreparedStatement delete = conn.prepareStatement(
-                "DELETE FROM dungeon_room_cluster_edges WHERE cluster_id=? AND level_z=?")) {
-            delete.setLong(1, clusterId);
-            delete.setInt(2, levelZ);
-            delete.executeUpdate();
-        }
-        try (PreparedStatement insert = conn.prepareStatement(
-                "INSERT INTO dungeon_room_cluster_edges(cluster_id, level_z, cell_x, cell_y, edge_direction, edge_type)"
-                        + " VALUES(?,?,?,?,?,?)")) {
-            for (ClusterBoundaryWrite boundary : sanitized) {
-                Point2i relativeCell = boundary.cell().subtract(resolvedCenter);
-                insert.setLong(1, clusterId);
-                insert.setInt(2, levelZ);
-                insert.setInt(3, relativeCell.x());
-                insert.setInt(4, relativeCell.y());
-                insert.setString(5, DungeonPersistenceDirections.toPersistedEdgeDirection(boundary.direction()));
-                insert.setString(6, boundary.type().name());
-                insert.addBatch();
-            }
-            insert.executeBatch();
-        }
-    }
-
-    public void replaceClusterEdges(
-            Connection conn,
-            long clusterId,
-            Point2i clusterCenter,
-            Map<Integer, List<ClusterBoundaryWrite>> boundariesByLevel
-    ) throws SQLException {
-        Map<Integer, List<ClusterBoundaryWrite>> resolvedBoundariesByLevel = boundariesByLevel == null ? Map.of() : Map.copyOf(boundariesByLevel);
-        try (PreparedStatement delete = conn.prepareStatement(
-                "DELETE FROM dungeon_room_cluster_edges WHERE cluster_id=?")) {
-            delete.setLong(1, clusterId);
-            delete.executeUpdate();
-        }
-        for (Map.Entry<Integer, List<ClusterBoundaryWrite>> entry : resolvedBoundariesByLevel.entrySet()) {
-            if (entry == null || entry.getKey() == null) {
-                continue;
-            }
-            replaceClusterEdges(conn, clusterId, clusterCenter, entry.getKey(), entry.getValue());
-        }
-    }
-
-    public long insertRoom(Connection conn, long mapId, long clusterId, String name, Point2i anchor) throws SQLException {
-        return insertRoom(conn, mapId, clusterId, name, anchor, 0);
-    }
-
-    public long insertRoom(Connection conn, long mapId, long clusterId, String name, Point2i anchor, int levelZ) throws SQLException {
-        return insertRoom(conn, mapId, clusterId, name, Map.of(levelZ, anchor), levelZ);
-    }
-
     public long insertRoom(
             Connection conn,
             long mapId,
             long clusterId,
             String name,
-            Map<Integer, Point2i> anchorsByLevel
+            StructureDescriptor descriptor
     ) throws SQLException {
-        return insertRoom(conn, mapId, clusterId, name, anchorsByLevel, primaryLevel(anchorsByLevel, 0));
-    }
-
-    public long insertRoom(
-            Connection conn,
-            long mapId,
-            long clusterId,
-            String name,
-            Map<Integer, Point2i> anchorsByLevel,
-            int levelZ
-    ) throws SQLException {
-        Map<Integer, Point2i> resolvedAnchors = normalizedAnchorsByLevel(anchorsByLevel, levelZ);
-        Point2i primaryAnchor = resolvedAnchors.getOrDefault(levelZ, new Point2i(0, 0));
+        StructureDescriptor resolvedDescriptor = requiredDescriptor(descriptor);
+        int primaryLevel = primaryLevel(resolvedDescriptor);
+        Point2i primaryAnchor = primaryAnchorCell(resolvedDescriptor);
         try (PreparedStatement ps = conn.prepareStatement(
                 "INSERT INTO dungeon_rooms(dungeon_map_id, cluster_id, name, component_x, component_y, level_z) VALUES(?,?,?,?,?,?)",
                 Statement.RETURN_GENERATED_KEYS)) {
@@ -160,82 +72,38 @@ public final class DungeonRoomWriteRepository {
             ps.setString(3, name);
             ps.setInt(4, primaryAnchor.x());
             ps.setInt(5, primaryAnchor.y());
-            ps.setInt(6, levelZ);
+            ps.setInt(6, primaryLevel);
             ps.executeUpdate();
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (!rs.next()) {
                     throw new SQLException("No key returned for dungeon_rooms insert");
                 }
                 long roomId = rs.getLong(1);
-                replaceRoomFloors(conn, roomId, resolvedAnchors);
+                replaceRoomDescriptor(conn, roomId, resolvedDescriptor);
                 return roomId;
             }
         }
     }
 
-    public void updateRoomPosition(Connection conn, long roomId, Point2i anchor) throws SQLException {
-        updateRoomPosition(conn, roomId, Map.of(0, anchor), 0);
-    }
-
-    public void updateRoomPosition(Connection conn, long roomId, Map<Integer, Point2i> anchorsByLevel) throws SQLException {
-        updateRoomPosition(conn, roomId, anchorsByLevel, primaryLevel(anchorsByLevel, 0));
-    }
-
-    public void updateRoomPosition(
-            Connection conn,
-            long roomId,
-            Map<Integer, Point2i> anchorsByLevel,
-            int levelZ
-    ) throws SQLException {
-        Map<Integer, Point2i> resolvedAnchors = normalizedAnchorsByLevel(anchorsByLevel, levelZ);
-        Point2i primaryAnchor = resolvedAnchors.getOrDefault(levelZ, new Point2i(0, 0));
-        try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE dungeon_rooms SET component_x=?, component_y=?, level_z=? WHERE room_id=?")) {
-            ps.setInt(1, primaryAnchor.x());
-            ps.setInt(2, primaryAnchor.y());
-            ps.setInt(3, levelZ);
-            ps.setLong(4, roomId);
-            ps.executeUpdate();
-        }
-        replaceRoomFloors(conn, roomId, resolvedAnchors);
-    }
-
-    public void updateRoom(Connection conn, long roomId, String name, Point2i anchor) throws SQLException {
-        updateRoom(conn, roomId, name, anchor, 0);
-    }
-
-    public void updateRoom(Connection conn, long roomId, String name, Point2i anchor, int levelZ) throws SQLException {
-        updateRoom(conn, roomId, name, Map.of(levelZ, anchor), levelZ);
-    }
-
     public void updateRoom(
             Connection conn,
             long roomId,
             String name,
-            Map<Integer, Point2i> anchorsByLevel
+            StructureDescriptor descriptor
     ) throws SQLException {
-        updateRoom(conn, roomId, name, anchorsByLevel, primaryLevel(anchorsByLevel, 0));
-    }
-
-    public void updateRoom(
-            Connection conn,
-            long roomId,
-            String name,
-            Map<Integer, Point2i> anchorsByLevel,
-            int levelZ
-    ) throws SQLException {
-        Map<Integer, Point2i> resolvedAnchors = normalizedAnchorsByLevel(anchorsByLevel, levelZ);
-        Point2i primaryAnchor = resolvedAnchors.getOrDefault(levelZ, new Point2i(0, 0));
+        StructureDescriptor resolvedDescriptor = requiredDescriptor(descriptor);
+        int primaryLevel = primaryLevel(resolvedDescriptor);
+        Point2i primaryAnchor = primaryAnchorCell(resolvedDescriptor);
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE dungeon_rooms SET name=?, component_x=?, component_y=?, level_z=? WHERE room_id=?")) {
             ps.setString(1, name);
             ps.setInt(2, primaryAnchor.x());
             ps.setInt(3, primaryAnchor.y());
-            ps.setInt(4, levelZ);
+            ps.setInt(4, primaryLevel);
             ps.setLong(5, roomId);
             ps.executeUpdate();
         }
-        replaceRoomFloors(conn, roomId, resolvedAnchors);
+        replaceRoomDescriptor(conn, roomId, resolvedDescriptor);
     }
 
     public void replaceRoomNarration(Connection conn, long roomId, RoomNarration narration) throws SQLException {
@@ -285,79 +153,97 @@ public final class DungeonRoomWriteRepository {
         }
     }
 
-    public void replaceRoomFloors(Connection conn, long roomId, Map<Integer, Point2i> anchorsByLevel) throws SQLException {
-        Map<Integer, Point2i> resolvedAnchors = normalizedAnchorsByLevel(anchorsByLevel, primaryLevel(anchorsByLevel, 0));
-        try (PreparedStatement delete = conn.prepareStatement(
-                "DELETE FROM dungeon_room_floors WHERE room_id=?")) {
-            delete.setLong(1, roomId);
-            delete.executeUpdate();
+    public void replaceRoomDescriptor(Connection conn, long roomId, StructureDescriptor descriptor) throws SQLException {
+        StructureDescriptor resolvedDescriptor = requiredDescriptor(descriptor);
+        try (PreparedStatement deleteSegments = conn.prepareStatement(
+                "DELETE FROM dungeon_room_level_segments WHERE room_id=?");
+             PreparedStatement deleteSeeds = conn.prepareStatement(
+                     "DELETE FROM dungeon_room_level_seeds WHERE room_id=?");
+             PreparedStatement deleteLevels = conn.prepareStatement(
+                     "DELETE FROM dungeon_room_levels WHERE room_id=?")) {
+            deleteSegments.setLong(1, roomId);
+            deleteSegments.executeUpdate();
+            deleteSeeds.setLong(1, roomId);
+            deleteSeeds.executeUpdate();
+            deleteLevels.setLong(1, roomId);
+            deleteLevels.executeUpdate();
         }
-        try (PreparedStatement insert = conn.prepareStatement(
-                "INSERT INTO dungeon_room_floors(room_id, level_z, anchor_x, anchor_y) VALUES(?,?,?,?)")) {
-            for (Map.Entry<Integer, Point2i> entry : resolvedAnchors.entrySet().stream()
-                    .sorted(Map.Entry.comparingByKey())
-                    .toList()) {
-                insert.setLong(1, roomId);
-                insert.setInt(2, entry.getKey());
-                insert.setInt(3, entry.getValue().x());
-                insert.setInt(4, entry.getValue().y());
-                insert.addBatch();
-            }
-            insert.executeBatch();
-        }
-    }
-
-    private void replaceClusterVertices(Connection conn, long clusterId, Map<Integer, List<Point2i>> relativeVerticesByLevel) throws SQLException {
-        try (PreparedStatement delete = conn.prepareStatement(
-                "DELETE FROM dungeon_room_cluster_vertices WHERE cluster_id=?")) {
-            delete.setLong(1, clusterId);
-            delete.executeUpdate();
-        }
-        try (PreparedStatement insert = conn.prepareStatement(
-                "INSERT INTO dungeon_room_cluster_vertices(cluster_id, level_z, vertex_index, relative_x, relative_y)"
-                        + " VALUES(?,?,?,?,?)")) {
-            for (Map.Entry<Integer, List<Point2i>> entry : relativeVerticesByLevel.entrySet()) {
-                List<Point2i> relativeVertices = entry.getValue() == null ? List.of() : entry.getValue();
-                for (int i = 0; i < relativeVertices.size(); i++) {
-                    Point2i vertex = relativeVertices.get(i);
-                    insert.setLong(1, clusterId);
-                    insert.setInt(2, entry.getKey());
-                    insert.setInt(3, i);
-                    insert.setInt(4, vertex.x());
-                    insert.setInt(5, vertex.y());
-                    insert.addBatch();
+        try (PreparedStatement insertLevel = conn.prepareStatement(
+                "INSERT INTO dungeon_room_levels(room_id, level_z, anchor_x2, anchor_y2) VALUES(?,?,?,?)");
+             PreparedStatement insertSeed = conn.prepareStatement(
+                     "INSERT INTO dungeon_room_level_seeds(room_id, level_z, seed_x2, seed_y2) VALUES(?,?,?,?)");
+             PreparedStatement insertSegment = conn.prepareStatement(
+                     "INSERT INTO dungeon_room_level_segments("
+                             + "room_id, level_z, segment_kind, start_x2, start_y2, end_x2, end_y2"
+                             + ") VALUES(?,?,?,?,?,?,?)")) {
+            for (var entry : resolvedDescriptor.levels().entrySet()) {
+                int levelZ = entry.getKey();
+                StructureDescriptor.LevelDescriptor level = entry.getValue();
+                insertLevel.setLong(1, roomId);
+                insertLevel.setInt(2, levelZ);
+                insertLevel.setInt(3, level.anchor2x().x2());
+                insertLevel.setInt(4, level.anchor2x().y2());
+                insertLevel.addBatch();
+                for (GridPoint2x seed : level.fillSeeds2x().stream()
+                        .sorted(GridPoint2x.POINT_ORDER)
+                        .toList()) {
+                    insertSeed.setLong(1, roomId);
+                    insertSeed.setInt(2, levelZ);
+                    insertSeed.setInt(3, seed.x2());
+                    insertSeed.setInt(4, seed.y2());
+                    insertSeed.addBatch();
                 }
+                addSegments(insertSegment, roomId, levelZ, "BOUNDARY", level.boundarySegments2x());
+                addSegments(insertSegment, roomId, levelZ, "OPENING", level.openingSegments2x());
             }
-            insert.executeBatch();
+            insertLevel.executeBatch();
+            insertSeed.executeBatch();
+            insertSegment.executeBatch();
         }
     }
 
-    private static Map<Integer, Point2i> normalizedAnchorsByLevel(Map<Integer, Point2i> anchorsByLevel, int fallbackLevel) {
-        Map<Integer, Point2i> result = new LinkedHashMap<>();
-        if (anchorsByLevel != null) {
-            for (Map.Entry<Integer, Point2i> entry : anchorsByLevel.entrySet()) {
-                if (entry == null || entry.getKey() == null) {
-                    continue;
-                }
-                result.put(entry.getKey(), entry.getValue() == null ? new Point2i(0, 0) : entry.getValue());
-            }
-        }
-        if (result.isEmpty()) {
-            result.put(fallbackLevel, new Point2i(0, 0));
-        } else if (!result.containsKey(fallbackLevel)) {
-            result.put(fallbackLevel, result.values().iterator().next());
-        }
-        return Map.copyOf(result);
-    }
-
-    private static int primaryLevel(Map<Integer, ?> valuesByLevel, int fallbackLevel) {
-        if (valuesByLevel == null || valuesByLevel.isEmpty()) {
-            return fallbackLevel;
-        }
-        return valuesByLevel.keySet().stream()
+    private static void addSegments(
+            PreparedStatement insertSegment,
+            long roomId,
+            int levelZ,
+            String kind,
+            java.util.Collection<GridSegment2x> segments
+    ) throws SQLException {
+        for (GridSegment2x segment : (segments == null ? java.util.List.<GridSegment2x>of() : segments).stream()
                 .filter(java.util.Objects::nonNull)
+                .sorted(GridSegment2x.SEGMENT_ORDER)
+                .toList()) {
+            insertSegment.setLong(1, roomId);
+            insertSegment.setInt(2, levelZ);
+            insertSegment.setString(3, kind);
+            insertSegment.setInt(4, segment.start().x2());
+            insertSegment.setInt(5, segment.start().y2());
+            insertSegment.setInt(6, segment.end().x2());
+            insertSegment.setInt(7, segment.end().y2());
+            insertSegment.addBatch();
+        }
+    }
+
+    private static StructureDescriptor requiredDescriptor(StructureDescriptor descriptor) {
+        StructureDescriptor resolvedDescriptor = descriptor == null ? StructureDescriptor.empty() : descriptor;
+        if (resolvedDescriptor.levels().isEmpty()) {
+            throw new IllegalArgumentException("Room descriptor must not be empty");
+        }
+        return resolvedDescriptor;
+    }
+
+    private static int primaryLevel(StructureDescriptor descriptor) {
+        return descriptor.levels().keySet().stream()
                 .mapToInt(Integer::intValue)
                 .min()
-                .orElse(fallbackLevel);
+                .orElse(0);
+    }
+
+    private static Point2i primaryAnchorCell(StructureDescriptor descriptor) {
+        StructureDescriptor.LevelDescriptor level = descriptor.level(primaryLevel(descriptor));
+        if (level == null) {
+            return new Point2i(0, 0);
+        }
+        return level.anchor2x().toCellCenter().orElse(new Point2i(0, 0));
     }
 }

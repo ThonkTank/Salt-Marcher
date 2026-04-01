@@ -69,29 +69,32 @@ public final class DungeonSchemaSupport {
                 + "FOREIGN KEY(corridor_id, start_node_id) REFERENCES dungeon_corridor_nodes(corridor_id, corridor_node_id) ON DELETE CASCADE,"
                 + "FOREIGN KEY(corridor_id, end_node_id) REFERENCES dungeon_corridor_nodes(corridor_id, corridor_node_id) ON DELETE CASCADE"
                 + ")");
-        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_room_cluster_vertices ("
-                + "cluster_id       INTEGER NOT NULL REFERENCES dungeon_room_clusters(cluster_id) ON DELETE CASCADE,"
-                + "level_z          INTEGER NOT NULL DEFAULT 0,"
-                + "vertex_index     INTEGER NOT NULL,"
-                + "relative_x       INTEGER NOT NULL,"
-                + "relative_y       INTEGER NOT NULL,"
-                + "PRIMARY KEY (cluster_id, level_z, vertex_index)"
-                + ")");
-        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_room_cluster_edges ("
-                + "cluster_id       INTEGER NOT NULL REFERENCES dungeon_room_clusters(cluster_id) ON DELETE CASCADE,"
-                + "level_z          INTEGER NOT NULL DEFAULT 0,"
-                + "cell_x           INTEGER NOT NULL,"
-                + "cell_y           INTEGER NOT NULL,"
-                + "edge_direction   TEXT NOT NULL,"
-                + "edge_type        TEXT NOT NULL,"
-                + "PRIMARY KEY (cluster_id, level_z, cell_x, cell_y, edge_direction)"
-                + ")");
-        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_room_floors ("
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_room_levels ("
                 + "room_id          INTEGER NOT NULL REFERENCES dungeon_rooms(room_id) ON DELETE CASCADE,"
                 + "level_z          INTEGER NOT NULL,"
-                + "anchor_x         INTEGER NOT NULL,"
-                + "anchor_y         INTEGER NOT NULL,"
+                + "anchor_x2        INTEGER NOT NULL,"
+                + "anchor_y2        INTEGER NOT NULL,"
                 + "PRIMARY KEY (room_id, level_z)"
+                + ")");
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_room_level_seeds ("
+                + "room_id          INTEGER NOT NULL,"
+                + "level_z          INTEGER NOT NULL,"
+                + "seed_x2          INTEGER NOT NULL,"
+                + "seed_y2          INTEGER NOT NULL,"
+                + "PRIMARY KEY (room_id, level_z, seed_x2, seed_y2),"
+                + "FOREIGN KEY(room_id, level_z) REFERENCES dungeon_room_levels(room_id, level_z) ON DELETE CASCADE"
+                + ")");
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_room_level_segments ("
+                + "room_id          INTEGER NOT NULL,"
+                + "level_z          INTEGER NOT NULL,"
+                + "segment_kind     TEXT NOT NULL,"
+                + "start_x2         INTEGER NOT NULL,"
+                + "start_y2         INTEGER NOT NULL,"
+                + "end_x2           INTEGER NOT NULL,"
+                + "end_y2           INTEGER NOT NULL,"
+                + "PRIMARY KEY (room_id, level_z, segment_kind, start_x2, start_y2, end_x2, end_y2),"
+                + "FOREIGN KEY(room_id, level_z) REFERENCES dungeon_room_levels(room_id, level_z) ON DELETE CASCADE,"
+                + "CHECK(segment_kind IN ('BOUNDARY','OPENING'))"
                 + ")");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_room_exit_descriptions ("
                 + "room_id          INTEGER NOT NULL REFERENCES dungeon_rooms(room_id) ON DELETE CASCADE,"
@@ -122,6 +125,10 @@ public final class DungeonSchemaSupport {
     public static void ensureCompatibility(Connection conn) throws SQLException {
         try (Statement stmt = conn.createStatement()) {
             createSchema(stmt);
+            addColumnIfMissing(stmt, "dungeon_rooms", "visual_description TEXT");
+            addColumnIfMissing(stmt, "dungeon_rooms", "component_x INTEGER NOT NULL DEFAULT 0");
+            addColumnIfMissing(stmt, "dungeon_rooms", "component_y INTEGER NOT NULL DEFAULT 0");
+            addColumnIfMissing(stmt, "dungeon_rooms", "level_z INTEGER NOT NULL DEFAULT 0");
             addColumnIfMissing(stmt, "dungeon_corridors", "level_z INTEGER NOT NULL DEFAULT 0");
             addColumnIfMissing(stmt, "dungeon_stairs", "name TEXT");
         }
@@ -149,6 +156,9 @@ public final class DungeonSchemaSupport {
             stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_connection_endpoints");
             stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_connections");
             stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_path_nodes");
+            stmt.execute("DROP TABLE IF EXISTS dungeon_room_level_segments");
+            stmt.execute("DROP TABLE IF EXISTS dungeon_room_level_seeds");
+            stmt.execute("DROP TABLE IF EXISTS dungeon_room_levels");
             stmt.execute("DROP TABLE IF EXISTS dungeon_room_floors");
             stmt.execute("DROP TABLE IF EXISTS dungeon_room_cluster_edges");
             stmt.execute("DROP TABLE IF EXISTS dungeon_room_cluster_vertices");

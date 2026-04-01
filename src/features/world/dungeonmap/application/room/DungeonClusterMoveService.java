@@ -7,7 +7,6 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.persistence.DungeonRoomGeometryWriteMapper;
 import features.world.dungeonmap.persistence.DungeonRoomWriteRepository;
 
 import java.sql.Connection;
@@ -18,18 +17,15 @@ public final class DungeonClusterMoveService {
 
     private final DungeonMapLoader mapLoader;
     private final DungeonRoomWriteRepository roomWriteRepository;
-    private final DungeonRoomGeometryWriteMapper geometryWriteMapper;
     private final DungeonClusterMoveProjectionApplicationService projectionApplicationService;
 
     public DungeonClusterMoveService(
             DungeonMapLoader mapLoader,
             DungeonRoomWriteRepository roomWriteRepository,
-            DungeonRoomGeometryWriteMapper geometryWriteMapper,
             DungeonClusterMoveProjectionApplicationService projectionApplicationService
     ) {
         this.mapLoader = Objects.requireNonNull(mapLoader, "mapLoader");
         this.roomWriteRepository = Objects.requireNonNull(roomWriteRepository, "roomWriteRepository");
-        this.geometryWriteMapper = Objects.requireNonNull(geometryWriteMapper, "geometryWriteMapper");
         this.projectionApplicationService = Objects.requireNonNull(projectionApplicationService, "projectionApplicationService");
     }
 
@@ -47,16 +43,16 @@ public final class DungeonClusterMoveService {
                 DungeonLayout layout = requireLayout(conn, mapId);
                 DungeonClusterMoveProjection projection = projectionApplicationService.project(layout, clusterId, delta, levelDelta);
                 RoomCluster cluster = requireCluster(projection.layout(), clusterId);
-                roomWriteRepository.updateClusterGeometry(
+                roomWriteRepository.updateClusterMetadata(
                         conn,
                         clusterId,
-                        geometryWriteMapper.toClusterGeometry(cluster.shapesByLevel()),
+                        cluster.center(),
                         cluster.primaryLevel());
                 for (Room room : cluster.rooms()) {
                     if (room == null || room.roomId() == null) {
                         continue;
                     }
-                    roomWriteRepository.updateRoomPosition(conn, room.roomId(), room.geometry().anchorsByLevel(), room.geometry().primaryLevel());
+                    roomWriteRepository.updateRoom(conn, room.roomId(), room.name(), room.structure().descriptor());
                 }
                 return null;
             });
