@@ -1,7 +1,7 @@
 package features.world.dungeonmap.canvas.grid;
 
 import features.world.dungeonmap.canvas.base.DungeonCanvasCamera;
-import features.world.dungeonmap.model.geometry.GridAnchor;
+import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 import javafx.geometry.Point2D;
@@ -45,11 +45,11 @@ public final class DungeonGridInteractiveLabels {
         if (handle == null || gridSize <= 0.0) {
             return new Point2D(0.0, 0.0);
         }
-        GridAnchor anchor = handle == null ? null : handle.anchor();
-        Point2i doubled = anchor == null ? new Point2i(1, 1) : anchor.doubledGridPoint();
+        GridPoint2x anchor = handle.anchor2x();
+        GridPoint2x doubled = anchor == null ? GridPoint2x.fromTileCenter(new Point2i(0, 0)) : anchor;
         return new Point2D(
-                panX + (doubled.x() / 2.0) * gridSize,
-                panY + (doubled.y() / 2.0) * gridSize);
+                panX + (doubled.x2() / 2.0) * gridSize,
+                panY + (doubled.y2() / 2.0) * gridSize);
     }
 
     public static double labelWidth(String label) {

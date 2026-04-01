@@ -16,6 +16,8 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 
 - `DungeonLayout` is the immutable global lookup over direct structure owners: room clusters, corridors, stairs, transitions, connections, traversable cells, and spatial indexes.
 - Corridors, stairs, and transitions are first-class persisted structures. There is no second aggregate that owns their geometry.
+- `Room` owns canonical shared surface geometry through `StructureObject`. `StructureGeometry` is only the compatibility facade for still-unmigrated call sites.
+- `Corridor` keeps its node/segment graph as truth and compiles it into the same `StructureDescriptor`/`StructureObject` surface model used by rooms.
 - Room paint/delete/boundary edits persist only room and cluster truth. They do not reroute or regenerate corridors or stairs.
 - Runtime presentation resolves surfaces from the same structure owners used by the editor. Do not invent runtime-only structure mirrors.
 
@@ -122,7 +124,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 ### Key structure rules
 
 - `Room` owns room-local truth and narration.
-- `RoomCluster` owns multi-room rewrite logic, grouping, adjacency, and cluster moves.
+- `RoomCluster` owns multi-room rewrite logic, grouping, adjacency, and cluster moves. Its aggregate cells/shapes stay derived from room-owned `StructureObject`s.
 - `Connection` owns connectivity; `Door` is the boundary object exposed through that connection.
 - `Corridor` is a first-class structure with stable identity, nodes, segments, bindings, and derived geometry.
 - `DungeonStair` is a first-class structure with stable identity and explicit 3D path geometry. Exits are derived views, not persisted second truths.

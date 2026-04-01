@@ -5,6 +5,8 @@ import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.objects.Door;
+import features.world.dungeonmap.model.objects.StructureDescriptor;
+import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.objects.StructureGeometry;
 import features.world.dungeonmap.model.structures.TargetKey;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
@@ -40,7 +42,7 @@ public final class Corridor {
     private final int levelZ;
     private final List<CorridorNode> nodes;
     private final List<CorridorSegment> segments;
-    private final StructureGeometry geometry;
+    private final StructureObject structure;
     private final List<CorridorRoute> routes;
     private final List<CorridorConnection> connections;
 
@@ -79,7 +81,7 @@ public final class Corridor {
         this.nodes = normalizeNodes(nodes);
         this.segments = normalizeSegments(segments);
         DerivedProjection projection = deriveProjection(corridorId, mapId, levelZ, this.nodes, this.segments, roomsById);
-        this.geometry = projection.geometry();
+        this.structure = projection.structure();
         this.routes = projection.routes();
         this.connections = projection.connections();
     }
@@ -135,7 +137,11 @@ public final class Corridor {
     }
 
     public StructureGeometry geometry() {
-        return geometry;
+        return new StructureGeometry(structure);
+    }
+
+    public StructureObject structure() {
+        return structure;
     }
 
     public List<CorridorRoute> routes() {
@@ -267,9 +273,13 @@ public final class Corridor {
             routes.add(new CorridorRoute(segment.segmentId(), segment.startNodeId(), segment.endNodeId(), routePlan.doubledPath()));
         }
         return new DerivedProjection(
-                StructureGeometry.fromCubePoints(occupiedCells),
+                compileStructure(occupiedCells),
                 routes.isEmpty() ? List.of() : List.copyOf(routes),
                 materializeConnections(corridorId, mapId, levelZ, nodes, resolvedRooms));
+    }
+
+    private static StructureObject compileStructure(Collection<CubePoint> occupiedCells) {
+        return StructureObject.fromDescriptor(StructureDescriptor.fromCubePoints(occupiedCells));
     }
 
     private static Map<Long, CorridorNode> indexNodes(List<CorridorNode> nodes) {
@@ -299,7 +309,7 @@ public final class Corridor {
             if (room == null) {
                 continue;
             }
-            var floor = room.geometry().floorAtLevel(levelZ);
+            var floor = room.structure().floorAtLevel(levelZ);
             if (floor == null || floor.shape() == null) {
                 continue;
             }
@@ -590,7 +600,7 @@ public final class Corridor {
         if (room == null) {
             throw new IllegalArgumentException("Corridor node references missing room " + node.roomId());
         }
-        Point2i anchor = room.geometry().anchorAtLevel(levelZ);
+        Point2i anchor = room.structure().anchorAtLevel(levelZ);
         if (anchor == null) {
             throw new IllegalArgumentException("Corridor node references room without floor at level " + levelZ);
         }
@@ -598,7 +608,7 @@ public final class Corridor {
     }
 
     private record DerivedProjection(
-            StructureGeometry geometry,
+            StructureObject structure,
             List<CorridorRoute> routes,
             List<CorridorConnection> connections
     ) {

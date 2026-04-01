@@ -1,9 +1,13 @@
 package features.world.dungeonmap.model.objects;
 
+import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.geometry.TileShape;
+import features.world.dungeonmap.model.geometry.VertexEdge;
 
+import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -21,6 +25,38 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
 
     public static StructureDescriptor empty() {
         return new StructureDescriptor(Map.of());
+    }
+
+    public static StructureDescriptor fromCubePoints(Collection<CubePoint> cubePoints) {
+        if (cubePoints == null || cubePoints.isEmpty()) {
+            return empty();
+        }
+        Map<Integer, Set<Point2i>> cellsByLevel = new LinkedHashMap<>();
+        for (CubePoint cubePoint : cubePoints) {
+            if (cubePoint == null) {
+                continue;
+            }
+            cellsByLevel.computeIfAbsent(cubePoint.z(), ignored -> new LinkedHashSet<>())
+                    .add(cubePoint.projectedCell());
+        }
+        return fromCellsByLevel(cellsByLevel);
+    }
+
+    public static StructureDescriptor fromCellsByLevel(Map<Integer, ? extends Collection<Point2i>> cellsByLevel) {
+        if (cellsByLevel == null || cellsByLevel.isEmpty()) {
+            return empty();
+        }
+        Map<Integer, LevelDescriptor> levels = new LinkedHashMap<>();
+        cellsByLevel.entrySet().stream()
+                .filter(entry -> entry != null && entry.getKey() != null)
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(entry -> {
+                    LevelDescriptor level = descriptorForCells(entry.getValue());
+                    if (!level.isEmpty()) {
+                        levels.put(entry.getKey(), level);
+                    }
+                });
+        return levels.isEmpty() ? empty() : new StructureDescriptor(levels);
     }
 
     public LevelDescriptor level(int levelZ) {
@@ -53,6 +89,77 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
                 .sorted(Map.Entry.comparingByKey())
                 .forEach(entry -> result.put(entry.getKey(), entry.getValue()));
         return result.isEmpty() ? Map.of() : Map.copyOf(result);
+    }
+
+    private static LevelDescriptor descriptorForCells(Collection<Point2i> cells) {
+        Set<Point2i> normalizedCells = normalizeCells(cells);
+        if (normalizedCells.isEmpty()) {
+            return new LevelDescriptor(GridPoint2x.fromTileCenter(new Point2i(0, 0)), Set.of(), Set.of(), Set.of());
+        }
+        Point2i anchorCell = TileShape.fromAbsoluteCells(normalizedCells).anchor();
+        return new LevelDescriptor(
+                GridPoint2x.fromTileCenter(anchorCell),
+                seedPoints(normalizedCells),
+                boundarySegments(normalizedCells),
+                Set.of());
+    }
+
+    private static Set<Point2i> normalizeCells(Collection<Point2i> cells) {
+        if (cells == null || cells.isEmpty()) {
+            return Set.of();
+        }
+        LinkedHashSet<Point2i> result = new LinkedHashSet<>();
+        for (Point2i cell : cells) {
+            if (cell != null) {
+                result.add(cell);
+            }
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
+    private static Set<GridPoint2x> seedPoints(Set<Point2i> cells) {
+        if (cells == null || cells.isEmpty()) {
+            return Set.of();
+        }
+        LinkedHashSet<GridPoint2x> result = new LinkedHashSet<>();
+        Set<Point2i> remaining = new LinkedHashSet<>(cells);
+        while (!remaining.isEmpty()) {
+            Point2i seed = remaining.iterator().next();
+            LinkedHashSet<Point2i> component = new LinkedHashSet<>();
+            ArrayDeque<Point2i> queue = new ArrayDeque<>();
+            queue.add(seed);
+            remaining.remove(seed);
+            while (!queue.isEmpty()) {
+                Point2i current = queue.removeFirst();
+                if (!component.add(current)) {
+                    continue;
+                }
+                for (Point2i step : Point2i.CARDINAL_STEPS) {
+                    Point2i neighbor = current.add(step);
+                    if (remaining.remove(neighbor)) {
+                        queue.addLast(neighbor);
+                    }
+                }
+            }
+            Point2i anchorCell = TileShape.fromAbsoluteCells(component).anchor();
+            result.add(GridPoint2x.fromTileCenter(anchorCell));
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
+    private static Set<GridSegment2x> boundarySegments(Set<Point2i> cells) {
+        if (cells == null || cells.isEmpty()) {
+            return Set.of();
+        }
+        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
+        for (Point2i cell : cells) {
+            for (Point2i step : Point2i.CARDINAL_STEPS) {
+                if (!cells.contains(cell.add(step))) {
+                    result.add(GridSegment2x.fromVertexEdge(VertexEdge.betweenCellAndStep(cell, step)));
+                }
+            }
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
     public record LevelDescriptor(

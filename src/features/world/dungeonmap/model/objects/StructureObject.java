@@ -78,31 +78,7 @@ public final class StructureObject {
     }
 
     public static StructureObject fromCubePoints(Collection<CubePoint> cubePoints) {
-        if (cubePoints == null || cubePoints.isEmpty()) {
-            return empty();
-        }
-        Map<Integer, Set<Point2i>> cellsByLevel = new LinkedHashMap<>();
-        for (CubePoint cubePoint : cubePoints) {
-            if (cubePoint == null) {
-                continue;
-            }
-            cellsByLevel.computeIfAbsent(cubePoint.z(), ignored -> new LinkedHashSet<>())
-                    .add(cubePoint.projectedCell());
-        }
-        Map<Integer, Floor> floors = new LinkedHashMap<>();
-        for (Map.Entry<Integer, Set<Point2i>> entry : cellsByLevel.entrySet()) {
-            floors.put(entry.getKey(), new Floor(TileShape.fromAbsoluteCells(entry.getValue())));
-        }
-        Map<Integer, List<Wall>> walls = new LinkedHashMap<>();
-        for (Map.Entry<Integer, Floor> entry : floors.entrySet()) {
-            Set<VertexEdge> boundaryEdges = entry.getValue().shape().boundaryEdges();
-            walls.put(entry.getKey(), boundaryEdges.isEmpty() ? List.of() : List.of(new Wall(boundaryEdges)));
-        }
-        ArrayList<Wall> aggregateWalls = new ArrayList<>();
-        for (List<Wall> levelWalls : walls.values()) {
-            aggregateWalls.addAll(levelWalls);
-        }
-        return fromLegacyFloorsAndWalls(floors, aggregateWalls);
+        return fromDescriptor(StructureDescriptor.fromCubePoints(cubePoints));
     }
 
     private StructureObject(
@@ -115,7 +91,7 @@ public final class StructureObject {
         this.floorsByLevel = normalizedFloors(floorsByLevel);
         this.wallsByLevel = normalizedObjectsByLevel(wallsByLevel);
         this.doorsByLevel = normalizedObjectsByLevel(doorsByLevel);
-        this.aggregateWalls = aggregateWalls(this.wallsByLevel).getOrDefault(0, List.of());
+        this.aggregateWalls = aggregateWalls(this.wallsByLevel);
     }
 
     public StructureDescriptor descriptor() {
@@ -255,6 +231,22 @@ public final class StructureObject {
         LinkedHashSet<VertexEdge> result = new LinkedHashSet<>();
         for (Integer levelZ : levels()) {
             result.addAll(boundaryEdgesAtLevel(levelZ));
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
+    public Set<VertexEdge> wallEdges() {
+        LinkedHashSet<VertexEdge> result = new LinkedHashSet<>();
+        for (Integer levelZ : levels()) {
+            result.addAll(wallEdgesAtLevel(levelZ));
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
+    public Set<VertexEdge> doorEdges() {
+        LinkedHashSet<VertexEdge> result = new LinkedHashSet<>();
+        for (Integer levelZ : levels()) {
+            result.addAll(doorEdgesAtLevel(levelZ));
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
@@ -510,22 +502,22 @@ public final class StructureObject {
         return result.isEmpty() ? Map.of() : Map.copyOf(result);
     }
 
-    private static Map<Integer, List<Wall>> aggregateWalls(Map<Integer, List<Wall>> wallsByLevel) {
+    private static List<Wall> aggregateWalls(Map<Integer, List<Wall>> wallsByLevel) {
         if (wallsByLevel == null || wallsByLevel.isEmpty()) {
-            return Map.of(0, List.of());
+            return List.of();
         }
-        LinkedHashSet<VertexEdge> mergedEdges = new LinkedHashSet<>();
+        ArrayList<Wall> result = new ArrayList<>();
         for (List<Wall> walls : wallsByLevel.values()) {
             if (walls == null) {
                 continue;
             }
             for (Wall wall : walls) {
                 if (wall != null) {
-                    mergedEdges.addAll(wall.edges());
+                    result.add(wall);
                 }
             }
         }
-        return Map.of(0, mergedEdges.isEmpty() ? List.of() : List.of(new Wall(mergedEdges)));
+        return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
     private record CellBounds(int minX, int minY, int maxX, int maxY) {

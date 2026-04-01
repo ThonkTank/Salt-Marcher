@@ -1,24 +1,24 @@
 package features.world.dungeonmap.model.interaction;
 
-import features.world.dungeonmap.model.geometry.GridAnchor;
+import features.world.dungeonmap.model.geometry.GridPoint2x;
 
 import java.util.Objects;
 
 /**
  * Canvas-independent label handle for interactive map objects.
  *
- * <p>The model owns the semantic label key, visible text, and grid anchor. Hit testing, pixel tolerance,
+ * <p>The model owns the semantic label key, visible text, and explicit 2x-grid anchor. Hit testing, pixel tolerance,
  * selection policy, and drag behavior belong to editor interaction code.</p>
  */
 public record InteractiveLabelHandle(
         String key,
         String label,
-        GridAnchor anchor
+        GridPoint2x anchor2x
 ) {
     public InteractiveLabelHandle {
         key = normalizeKey(key);
         label = normalizeLabel(label);
-        anchor = Objects.requireNonNull(anchor, "anchor");
+        anchor2x = Objects.requireNonNull(anchor2x, "anchor2x");
     }
 
     private static String normalizeKey(String key) {

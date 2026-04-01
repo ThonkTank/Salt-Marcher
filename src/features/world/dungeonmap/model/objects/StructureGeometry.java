@@ -2,6 +2,7 @@ package features.world.dungeonmap.model.objects;
 
 import features.world.dungeonmap.model.geometry.BoundaryNetwork;
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.geometry.VertexEdge;
@@ -64,12 +65,24 @@ public final class StructureGeometry {
         return structureObject;
     }
 
+    public StructureDescriptor descriptor() {
+        return structureObject.descriptor();
+    }
+
     public Map<Integer, Floor> floors() {
         return structureObject.floors();
     }
 
     public List<Wall> walls() {
         return structureObject.walls();
+    }
+
+    public List<Wall> wallsAtLevel(int levelZ) {
+        return structureObject.wallsAtLevel(levelZ);
+    }
+
+    public List<Door> doorsAtLevel(int levelZ) {
+        return structureObject.doorsAtLevel(levelZ);
     }
 
     public Floor floor() {
@@ -112,12 +125,20 @@ public final class StructureGeometry {
         return structureObject.centerPointAtLevel(levelZ);
     }
 
+    public Set<GridSegment2x> boundarySegmentsAtLevel(int levelZ) {
+        return structureObject.boundarySegmentsAtLevel(levelZ);
+    }
+
+    public Set<GridSegment2x> openingSegmentsAtLevel(int levelZ) {
+        return structureObject.openingSegmentsAtLevel(levelZ);
+    }
+
     public BoundaryNetwork boundaryNetwork() {
         return BoundaryNetwork.fromPaths(walls());
     }
 
     public Set<VertexEdge> boundaryEdges() {
-        return boundaryNetwork().edges();
+        return structureObject.wallEdges();
     }
 
     public Set<VertexEdge> boundaryEdgesAtLevel(int levelZ) {

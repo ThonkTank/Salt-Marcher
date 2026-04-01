@@ -1,6 +1,7 @@
 package features.world.dungeonmap.model.structures.cluster;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
@@ -161,7 +162,7 @@ public final class RoomCluster {
         return new InteractiveLabelHandle(
                 targetKey(),
                 clusterId == null ? "Cluster" : "Cluster " + clusterId,
-                shape.centerAnchor());
+                GridPoint2x.fromTileCenter(shape.centerCell()));
     }
 
     public boolean overlaps(TileShape shape) {
@@ -204,7 +205,7 @@ public final class RoomCluster {
             if (room == null) {
                 continue;
             }
-            for (Map.Entry<Integer, TileShape> entry : room.geometry().shapesByLevel().entrySet()) {
+            for (Map.Entry<Integer, TileShape> entry : room.structure().shapesByLevel().entrySet()) {
                 if (entry == null || entry.getKey() == null || entry.getValue() == null) {
                     continue;
                 }
@@ -431,17 +432,17 @@ public final class RoomCluster {
     }
 
     private static Room projectRoomToLevel(Room room, int levelZ) {
-        if (room == null || !room.geometry().levels().contains(levelZ)) {
+        if (room == null || !room.structure().levels().contains(levelZ)) {
             return null;
         }
-        Floor floor = room.geometry().floorAtLevel(levelZ);
+        Floor floor = room.structure().floorAtLevel(levelZ);
         return Room.resolved(
                 room.roomId(),
                 room.mapId(),
                 room.clusterId(),
                 room.name(),
                 Map.of(levelZ, floor == null ? new Floor(null) : floor),
-                room.geometry().walls(),
+                room.structure().wallsAtLevel(levelZ),
                 room.narration());
     }
 
@@ -452,7 +453,7 @@ public final class RoomCluster {
             if (room == null) {
                 continue;
             }
-            for (Point2i cell : room.geometry().cells()) {
+            for (Point2i cell : room.structure().cells()) {
                 if (result.containsKey(cell)) {
                     hasOverlaps = true;
                 }
@@ -468,7 +469,7 @@ public final class RoomCluster {
             if (room == null) {
                 continue;
             }
-            for (CubePoint point : room.geometry().cubePoints()) {
+            for (CubePoint point : room.structure().cubePoints()) {
                 result.putIfAbsent(point, room);
             }
         }
@@ -479,7 +480,7 @@ public final class RoomCluster {
         Set<Point2i> result = new LinkedHashSet<>();
         for (Room room : rooms) {
             if (room != null) {
-                result.addAll(room.geometry().cells());
+                result.addAll(room.structure().cells());
             }
         }
         return Set.copyOf(result);
@@ -491,7 +492,7 @@ public final class RoomCluster {
             result.put(roomId, new LinkedHashSet<>());
         }
         for (Room room : roomsById.values()) {
-            for (Point2i cell : room.geometry().cells()) {
+            for (Point2i cell : room.structure().cells()) {
                 for (Point2i step : Point2i.CARDINAL_STEPS) {
                     Room neighbor = roomsByCell.get(cell.add(step));
                     if (neighbor == null || neighbor.roomId() == null || neighbor.roomId().equals(room.roomId())) {
@@ -577,8 +578,7 @@ public final class RoomCluster {
                 mapId,
                 clusterId == null ? room.clusterId() : clusterId,
                 room.name(),
-                room.geometry().floors(),
-                room.geometry().walls(),
+                room.structure(),
                 room.narration());
     }
 
@@ -602,7 +602,7 @@ public final class RoomCluster {
             if (room == null) {
                 continue;
             }
-            for (Map.Entry<Integer, Floor> entry : room.geometry().floors().entrySet()) {
+            for (Map.Entry<Integer, Floor> entry : room.structure().floors().entrySet()) {
                 if (entry == null || entry.getKey() == null || entry.getValue() == null) {
                     continue;
                 }
@@ -634,7 +634,7 @@ public final class RoomCluster {
             if (room == null) {
                 continue;
             }
-            for (VertexEdge edge : room.geometry().boundaryEdges()) {
+            for (VertexEdge edge : room.structure().wallEdges()) {
                 if (boundaryEdges.contains(edge)) {
                     result.add(edge);
                 }
