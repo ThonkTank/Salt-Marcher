@@ -3,7 +3,6 @@ package features.world.dungeonmap.shell.editor.interaction;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 
@@ -160,7 +159,7 @@ final class DungeonBoundaryPathPlanner {
                 if (Point2i.POINT_ORDER.compare(cell, neighbor) >= 0) {
                     continue;
                 }
-                result.add(GridSegment2x.fromVertexEdge(VertexEdge.betweenCellAndStep(cell, step)));
+                result.add(GridSegment2x.betweenCellAndStep(cell, step));
             }
         }
         return Set.copyOf(result);
@@ -173,7 +172,6 @@ final class DungeonBoundaryPathPlanner {
         return cluster.internalBoundaryKinds().entrySet().stream()
                 .filter(entry -> entry.getValue() == InternalBoundaryType.WALL)
                 .map(Map.Entry::getKey)
-                .map(GridSegment2x::fromVertexEdge)
                 .filter(Objects::nonNull)
                 .sorted(GridSegment2x.SEGMENT_ORDER)
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
@@ -183,9 +181,7 @@ final class DungeonBoundaryPathPlanner {
         if (cluster == null) {
             return Set.of();
         }
-        Set<GridSegment2x> result = cluster.shape().boundaryEdges().stream()
-                .map(GridSegment2x::fromVertexEdge)
-                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        Set<GridSegment2x> result = new LinkedHashSet<>(cluster.outerBoundarySegments2x());
         result.removeAll(localConnectionEdges(cluster, result));
         return Set.copyOf(result);
     }

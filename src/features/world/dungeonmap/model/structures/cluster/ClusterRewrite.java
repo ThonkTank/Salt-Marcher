@@ -1,7 +1,6 @@
 package features.world.dungeonmap.model.structures.cluster;
 
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.structures.connection.LocalConnection;
 import features.world.dungeonmap.model.structures.room.Room;
 
@@ -13,7 +12,6 @@ import java.util.Set;
 
 public record ClusterRewrite(
         Long targetClusterId,
-        TileShape clusterShape,
         Point2i clusterCenter,
         List<Room> rooms,
         List<LocalConnection> localConnections,
@@ -41,24 +39,22 @@ public record ClusterRewrite(
 
     public static Builder builder(
             Long targetClusterId,
-            TileShape clusterShape,
             Point2i clusterCenter,
             List<Room> rooms,
             List<LocalConnection> localConnections,
             List<InternalBoundaryEdge> persistedBoundaries
     ) {
-        return new Builder(targetClusterId, clusterShape, clusterCenter, rooms, localConnections, persistedBoundaries);
+        return new Builder(targetClusterId, clusterCenter, rooms, localConnections, persistedBoundaries);
     }
 
     public static ClusterRewrite unchanged(
             Long targetClusterId,
-            TileShape clusterShape,
             Point2i clusterCenter,
             List<Room> rooms,
             List<LocalConnection> localConnections,
             List<InternalBoundaryEdge> persistedBoundaries
     ) {
-        return builder(targetClusterId, clusterShape, clusterCenter, rooms, localConnections, persistedBoundaries).build();
+        return builder(targetClusterId, clusterCenter, rooms, localConnections, persistedBoundaries).build();
     }
 
     public boolean deletesCluster() {
@@ -99,7 +95,7 @@ public record ClusterRewrite(
     }
 
     public ClusterRewrite withSplitClusters(List<ClusterRewriteSplit> splitClusters) {
-        return builder(targetClusterId, clusterShape, clusterCenter, rooms, localConnections, persistedBoundaries)
+        return builder(targetClusterId, clusterCenter, rooms, localConnections, persistedBoundaries)
                 .deletedRoomIds(deletedRoomIds)
                 .replacedRoomIds(replacedRoomIds)
                 .mergedRoomIds(mergedRoomIds)
@@ -112,7 +108,6 @@ public record ClusterRewrite(
 
     public static final class Builder {
         private final Long targetClusterId;
-        private final TileShape clusterShape;
         private final Point2i clusterCenter;
         private final List<Room> rooms;
         private final List<LocalConnection> localConnections;
@@ -127,14 +122,12 @@ public record ClusterRewrite(
 
         private Builder(
                 Long targetClusterId,
-                TileShape clusterShape,
                 Point2i clusterCenter,
                 List<Room> rooms,
                 List<LocalConnection> localConnections,
                 List<InternalBoundaryEdge> persistedBoundaries
         ) {
             this.targetClusterId = targetClusterId;
-            this.clusterShape = clusterShape;
             this.clusterCenter = clusterCenter;
             this.rooms = rooms == null ? List.of() : List.copyOf(rooms);
             this.localConnections = localConnections == null ? List.of() : List.copyOf(localConnections);
@@ -181,7 +174,6 @@ public record ClusterRewrite(
         public ClusterRewrite build() {
             return new ClusterRewrite(
                     targetClusterId,
-                    clusterShape,
                     clusterCenter,
                     rooms,
                     localConnections,

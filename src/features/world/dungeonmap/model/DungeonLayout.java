@@ -18,6 +18,7 @@ import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -208,12 +209,12 @@ public final class DungeonLayout {
         return corridor == null ? 0 : corridor.levelZ();
     }
 
-    public List<RoomCluster> overlappingClusters(TileShape shape) {
-        if (shape == null || shape.size() == 0) {
+    public List<RoomCluster> overlappingClusters(Collection<Point2i> cells) {
+        if (cells == null || cells.isEmpty()) {
             return List.of();
         }
         return clusters.stream()
-                .filter(cluster -> cluster != null && cluster.overlaps(shape))
+                .filter(cluster -> cluster != null && cluster.overlaps(cells))
                 .toList();
     }
 

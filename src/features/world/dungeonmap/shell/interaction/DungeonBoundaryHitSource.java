@@ -90,8 +90,8 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
             if (cluster.clusterId() == null) {
                 continue;
             }
-            for (Map.Entry<features.world.dungeonmap.model.geometry.VertexEdge, InternalBoundaryType> entry : cluster.internalBoundaryKinds().entrySet()) {
-                GridSegment2x segment2x = entry.getKey() == null ? null : GridSegment2x.fromVertexEdge(entry.getKey());
+            for (Map.Entry<GridSegment2x, InternalBoundaryType> entry : cluster.internalBoundaryKinds().entrySet()) {
+                GridSegment2x segment2x = entry.getKey();
                 if (segment2x == null) {
                     continue;
                 }

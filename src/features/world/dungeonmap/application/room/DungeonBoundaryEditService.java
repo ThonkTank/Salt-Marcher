@@ -3,7 +3,6 @@ package features.world.dungeonmap.application.room;
 import database.DatabaseManager;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 
 import java.sql.Connection;
@@ -44,34 +43,6 @@ public final class DungeonBoundaryEditService {
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
                 topologyService.editBoundary(conn, mapId, clusterId, levelZ, segments2x, type, deleteBoundary);
-                return null;
-            });
-        }
-    }
-
-    public void apply(
-            long mapId,
-            Long clusterId,
-            VertexEdge edge,
-            InternalBoundaryType type,
-            boolean deleteBoundary
-    ) throws SQLException {
-        apply(mapId, clusterId, edge == null ? java.util.List.<VertexEdge>of() : java.util.List.of(edge), type, deleteBoundary);
-    }
-
-    public void apply(
-            long mapId,
-            Long clusterId,
-            Collection<VertexEdge> edges,
-            InternalBoundaryType type,
-            boolean deleteBoundary
-    ) throws SQLException {
-        if (mapId <= 0 || clusterId == null || edges == null || edges.isEmpty()) {
-            return;
-        }
-        try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonTransactionRunner.inTransaction(conn, () -> {
-                topologyService.editBoundary(conn, mapId, clusterId, edges, type, deleteBoundary);
                 return null;
             });
         }

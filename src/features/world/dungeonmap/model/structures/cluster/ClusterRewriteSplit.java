@@ -1,7 +1,6 @@
 package features.world.dungeonmap.model.structures.cluster;
 
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.structures.connection.LocalConnection;
 import features.world.dungeonmap.model.structures.room.Room;
 
@@ -9,7 +8,6 @@ import java.util.List;
 
 public record ClusterRewriteSplit(
         Long clusterId,
-        TileShape clusterShape,
         Point2i clusterCenter,
         List<Room> rooms,
         List<LocalConnection> localConnections,
@@ -28,7 +26,7 @@ public record ClusterRewriteSplit(
         List<LocalConnection> reassignedConnections = localConnections.stream()
                 .map(connection -> reassignCluster(connection, clusterId))
                 .toList();
-        return new ClusterRewriteSplit(clusterId, clusterShape, clusterCenter, reassignedRooms, reassignedConnections, persistedBoundaries);
+        return new ClusterRewriteSplit(clusterId, clusterCenter, reassignedRooms, reassignedConnections, persistedBoundaries);
     }
 
     private static Room reassignCluster(Room room, Long clusterId) {

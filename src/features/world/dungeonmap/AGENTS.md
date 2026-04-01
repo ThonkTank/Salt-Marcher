@@ -127,7 +127,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 ### Key structure rules
 
 - `Room` owns room-local truth and narration.
-- `RoomCluster` owns multi-room rewrite logic, grouping, adjacency, and cluster moves. Its aggregate cells/shapes stay derived from room-owned `StructureObject`s.
+- `RoomCluster` owns multi-room rewrite logic, grouping, adjacency, and cluster moves. Its aggregate cells and internal 2x boundary segments stay derived from room-owned `StructureObject`s.
 - `Connection` owns connectivity; `Door` is the boundary object exposed through that connection.
 - `Corridor` is a first-class structure with stable identity, nodes, segments, bindings, and derived geometry.
 - `DungeonStair` is a first-class structure with stable identity and explicit 3D path geometry. Exits are derived views, not persisted second truths.
