@@ -177,8 +177,8 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
                     false,
                     boundaryPreview.edges(),
                     boundaryPreview.skippedConnectionEdges(),
-                    boundaryPreview.startVertex(),
-                    boundaryPreview.currentVertex(),
+                    boundaryPreview.startVertex2x(),
+                    boundaryPreview.currentVertex2x(),
                     boundaryPreview.deleteMode());
         }
         return new DungeonEditorRenderState(

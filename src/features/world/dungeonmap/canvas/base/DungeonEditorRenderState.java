@@ -1,9 +1,9 @@
 package features.world.dungeonmap.canvas.base;
 
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.TileShape;
-import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.state.EditorHover;
 
 import java.util.Set;
@@ -14,10 +14,10 @@ public record DungeonEditorRenderState(
         DungeonLayout previewLayout,
         TileShape paintPreviewShape,
         boolean paintPreviewDeleteMode,
-        Set<VertexEdge> boundaryPreviewEdges,
-        Set<VertexEdge> boundaryPreviewSkippedEdges,
-        Point2i boundaryPreviewStartVertex,
-        Point2i boundaryPreviewCurrentVertex,
+        Set<GridSegment2x> boundaryPreviewEdges,
+        Set<GridSegment2x> boundaryPreviewSkippedEdges,
+        GridPoint2x boundaryPreviewStartVertex2x,
+        GridPoint2x boundaryPreviewCurrentVertex2x,
         boolean boundaryPreviewDeleteMode
 ) {
     public DungeonEditorRenderState {

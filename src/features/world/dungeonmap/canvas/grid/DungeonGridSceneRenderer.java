@@ -10,15 +10,16 @@ import features.world.dungeonmap.canvas.base.DungeonSceneRenderer;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.Tile;
 import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 import features.world.dungeonmap.model.objects.Floor;
-import features.world.dungeonmap.model.objects.StructureGeometry;
+import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
-import features.world.dungeonmap.model.structures.connection.Connection;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNode;
 import features.world.dungeonmap.model.structures.room.Room;
@@ -105,22 +106,19 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         }
     }
 
-    private static Set<VertexEdge> drawRooms(StructureRenderPass pass) {
+    private static Set<GridSegment2x> drawRooms(StructureRenderPass pass) {
         GraphicsContext gc = pass.gc();
         DungeonLayout mapModel = pass.projected();
         gc.setFill(pass.palette().roomFill());
-        Set<VertexEdge> roomBoundaryEdges = new LinkedHashSet<>();
-        Set<VertexEdge> selectedRoomBoundaryEdges = new LinkedHashSet<>();
-        Set<Connection> roomDoorConnections = new LinkedHashSet<>();
-        Set<Connection> selectedRoomDoorConnections = new LinkedHashSet<>();
+        Set<GridSegment2x> roomBoundarySegments = new LinkedHashSet<>();
+        Set<GridSegment2x> selectedRoomBoundarySegments = new LinkedHashSet<>();
+        Set<GridSegment2x> roomDoorSegments = new LinkedHashSet<>();
+        Set<GridSegment2x> selectedRoomDoorSegments = new LinkedHashSet<>();
         for (RoomCluster cluster : mapModel.clusters()) {
             InteractiveLabelHandle handle = cluster.labelHandle();
             boolean selectedCluster = handle != null && Objects.equals(handle.key(), pass.selectedTargetKey());
             for (Room room : cluster.rooms()) {
-                List<Connection> roomConnections = room.roomId() == null
-                        ? List.of()
-                        : mapModel.connectionsForRoom(room.roomId());
-                WalkableSurface surface = walkableSurface(room.geometry(), roomConnections, pass.projectionLevel());
+                WalkableSurface surface = walkableSurface(room.structure(), pass.projectionLevel());
                 if (surface.tiles().isEmpty()) {
                     continue;
                 }
@@ -129,54 +127,52 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 fillRoomTiles(gc, pass.camera(), pass.gridSize(), surface.tiles());
                 strokeRoomTiles(gc, pass.camera(), pass.gridSize(), surface.tiles(), pass.palette().roomStroke(), 1.0);
                 if (selectedCluster || selectedRoom) {
-                    selectedRoomBoundaryEdges.addAll(surface.wallEdges());
+                    selectedRoomBoundarySegments.addAll(surface.wallSegments());
                 } else {
-                    roomBoundaryEdges.addAll(surface.wallEdges());
+                    roomBoundarySegments.addAll(surface.wallSegments());
                 }
                 if (pass.showRuntimeLabels()) {
                     gc.setFill(pass.palette().roomText());
                     gc.setFont(DungeonCanvasTheme.ROOM_LABEL_FONT);
-                    drawRoomLabel(gc, room.name(), pass.camera(), pass.gridSize(), room.geometry().floorAtLevel(pass.projectionLevel()));
+                    drawRoomLabel(gc, room.name(), pass.camera(), pass.gridSize(), room.structure().floorAtLevel(pass.projectionLevel()));
                     gc.setFill(pass.palette().roomFill());
                 }
                 if (selectedCluster || selectedRoom) {
-                    selectedRoomDoorConnections.addAll(roomConnections);
+                    selectedRoomDoorSegments.addAll(surface.doorSegments());
                 } else {
-                    roomDoorConnections.addAll(roomConnections);
+                    roomDoorSegments.addAll(surface.doorSegments());
                 }
             }
         }
-        drawRoomBoundaries(pass, roomBoundaryEdges, pass.palette().wallStroke());
-        drawDoorConnections(
+        drawDoorSegments(
                 gc,
                 pass.camera(),
                 pass.gridSize(),
-                roomDoorConnections,
-                roomDoorEdges(roomDoorConnections, mapModel),
+                roomDoorSegments,
                 pass.palette().doorStroke(),
                 pass.palette().doorMarkerFill(),
                 pass.palette().doorMarkerStroke(),
                 2.6);
-        drawDoorConnections(
+        drawDoorSegments(
                 gc,
                 pass.camera(),
                 pass.gridSize(),
-                selectedRoomDoorConnections,
-                roomDoorEdges(selectedRoomDoorConnections, mapModel),
+                selectedRoomDoorSegments,
                 pass.palette().selectedDoorStroke(),
                 pass.palette().selectedDoorMarkerFill(),
                 pass.palette().selectedDoorMarkerStroke(),
                 3.4);
-        return selectedRoomBoundaryEdges;
+        drawRoomBoundaries(pass, roomBoundarySegments, pass.palette().wallStroke());
+        return selectedRoomBoundarySegments;
     }
 
     private static void fillRoomTiles(
             GraphicsContext gc,
             DungeonCanvasCamera camera,
             double gridSize,
-            Set<Tile> tiles
+            Set<Point2i> tiles
     ) {
-        for (Tile tile : tiles) {
+        for (Point2i tile : tiles) {
             double x = camera.panX() + tile.x() * gridSize;
             double y = camera.panY() + tile.y() * gridSize;
             gc.fillRect(x, y, gridSize, gridSize);
@@ -187,38 +183,38 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             GraphicsContext gc,
             DungeonCanvasCamera camera,
             double gridSize,
-            Set<Tile> tiles,
+            Set<Point2i> tiles,
             javafx.scene.paint.Color stroke,
             double lineWidth
     ) {
         gc.setStroke(stroke);
         gc.setLineWidth(lineWidth);
-        for (Tile tile : tiles) {
+        for (Point2i tile : tiles) {
             double x = camera.panX() + tile.x() * gridSize;
             double y = camera.panY() + tile.y() * gridSize;
             gc.strokeRect(x, y, gridSize, gridSize);
         }
     }
 
-    private static void drawRoomBoundaries(StructureRenderPass pass, Set<VertexEdge> edges, Color stroke) {
-        if (edges.isEmpty()) {
+    private static void drawRoomBoundaries(StructureRenderPass pass, Set<GridSegment2x> segments, Color stroke) {
+        if (segments.isEmpty()) {
             return;
         }
         pass.gc().setStroke(stroke);
         pass.gc().setLineWidth(2.0);
-        for (VertexEdge edge : edges) {
-            strokeEdge(pass.gc(), pass.camera(), pass.gridSize(), edge);
+        for (GridSegment2x segment2x : segments) {
+            strokeSegment2x(pass.gc(), pass.camera(), pass.gridSize(), segment2x);
         }
     }
 
-    private static void drawSelectedRoomBoundaries(StructureRenderPass pass, Set<VertexEdge> edges, Color stroke) {
-        if (edges.isEmpty()) {
+    private static void drawSelectedRoomBoundaries(StructureRenderPass pass, Set<GridSegment2x> segments, Color stroke) {
+        if (segments.isEmpty()) {
             return;
         }
         pass.gc().setStroke(stroke);
         pass.gc().setLineWidth(2.6);
-        for (VertexEdge edge : edges) {
-            strokeEdge(pass.gc(), pass.camera(), pass.gridSize(), edge);
+        for (GridSegment2x segment2x : segments) {
+            strokeSegment2x(pass.gc(), pass.camera(), pass.gridSize(), segment2x);
         }
     }
 
@@ -226,44 +222,44 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             GraphicsContext gc,
             DungeonCanvasCamera camera,
             double gridSize,
-            Set<VertexEdge> previewEdges,
-            Set<VertexEdge> skippedEdges,
-            Point2i startVertex,
-            Point2i currentVertex,
+            Set<GridSegment2x> previewEdges,
+            Set<GridSegment2x> skippedEdges,
+            GridPoint2x startVertex2x,
+            GridPoint2x currentVertex2x,
             boolean deleteMode
     ) {
         if (previewEdges != null && !previewEdges.isEmpty()) {
             gc.setStroke(deleteMode ? DungeonCanvasTheme.BOUNDARY_DELETE_PREVIEW_STROKE : DungeonCanvasTheme.BOUNDARY_PREVIEW_STROKE);
             gc.setLineWidth(3.2);
-            for (VertexEdge edge : previewEdges) {
-                strokeEdge(gc, camera, gridSize, edge);
+            for (GridSegment2x segment2x : previewEdges) {
+                strokeSegment2x(gc, camera, gridSize, segment2x);
             }
         }
         if (skippedEdges != null && !skippedEdges.isEmpty()) {
             gc.setStroke(DungeonCanvasTheme.BOUNDARY_SKIPPED_PREVIEW_STROKE);
             gc.setLineWidth(2.2);
             gc.setLineDashes(8.0, 5.0);
-            for (VertexEdge edge : skippedEdges) {
-                strokeEdge(gc, camera, gridSize, edge);
+            for (GridSegment2x segment2x : skippedEdges) {
+                strokeSegment2x(gc, camera, gridSize, segment2x);
             }
             gc.setLineDashes();
         }
-        if (startVertex != null) {
+        if (startVertex2x != null) {
             drawBoundaryVertexMarker(
                     gc,
                     camera,
                     gridSize,
-                    startVertex,
+                    startVertex2x,
                     DungeonCanvasTheme.BOUNDARY_START_VERTEX_FILL,
                     DungeonCanvasTheme.BOUNDARY_START_VERTEX_STROKE,
-                    currentVertex != null && currentVertex.equals(startVertex) ? 6.0 : 5.0);
+                    currentVertex2x != null && currentVertex2x.equals(startVertex2x) ? 6.0 : 5.0);
         }
-        if (currentVertex != null && !currentVertex.equals(startVertex)) {
+        if (currentVertex2x != null && !currentVertex2x.equals(startVertex2x)) {
             drawBoundaryVertexMarker(
                     gc,
                     camera,
                     gridSize,
-                    currentVertex,
+                    currentVertex2x,
                     DungeonCanvasTheme.BOUNDARY_CURRENT_VERTEX_FILL,
                     DungeonCanvasTheme.BOUNDARY_CURRENT_VERTEX_STROKE,
                     5.0);
@@ -274,13 +270,13 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             GraphicsContext gc,
             DungeonCanvasCamera camera,
             double gridSize,
-            Point2i vertex,
+            GridPoint2x vertex2x,
             Color fill,
             Color stroke,
             double radius
     ) {
-        double centerX = camera.panX() + vertex.x() * gridSize;
-        double centerY = camera.panY() + vertex.y() * gridSize;
+        double centerX = camera.panX() + vertex2x.x2() * gridSize / 2.0;
+        double centerY = camera.panY() + vertex2x.y2() * gridSize / 2.0;
         double diameter = radius * 2.0;
         gc.setFill(fill);
         gc.fillOval(centerX - radius, centerY - radius, diameter, diameter);
@@ -289,29 +285,16 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         gc.strokeOval(centerX - radius, centerY - radius, diameter, diameter);
     }
 
-    private static void strokeEdge(
+    private static void strokeSegment2x(
             GraphicsContext gc,
             DungeonCanvasCamera camera,
             double gridSize,
-            VertexEdge edge
+            GridSegment2x segment2x
     ) {
-        double startX = camera.panX() + edge.start().x() * gridSize;
-        double startY = camera.panY() + edge.start().y() * gridSize;
-        double endX = camera.panX() + edge.end().x() * gridSize;
-        double endY = camera.panY() + edge.end().y() * gridSize;
-        gc.strokeLine(startX, startY, endX, endY);
-    }
-
-    private static void strokeDoubledEdge(
-            GraphicsContext gc,
-            DungeonCanvasCamera camera,
-            double gridSize,
-            VertexEdge edge
-    ) {
-        double startX = camera.panX() + edge.start().x() * gridSize / 2.0;
-        double startY = camera.panY() + edge.start().y() * gridSize / 2.0;
-        double endX = camera.panX() + edge.end().x() * gridSize / 2.0;
-        double endY = camera.panY() + edge.end().y() * gridSize / 2.0;
+        double startX = camera.panX() + segment2x.start().x2() * gridSize / 2.0;
+        double startY = camera.panY() + segment2x.start().y2() * gridSize / 2.0;
+        double endX = camera.panX() + segment2x.end().x2() * gridSize / 2.0;
+        double endY = camera.panY() + segment2x.end().y2() * gridSize / 2.0;
         gc.strokeLine(startX, startY, endX, endY);
     }
 
@@ -357,11 +340,8 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 continue;
             }
             boolean selected = Objects.equals(corridor.targetKey(), pass.selectedTargetKey());
-            List<Connection> corridorConnections = corridor.corridorId() == null
-                    ? List.of()
-                    : mapModel.connectionsForCorridor(corridor.corridorId());
-            WalkableSurface surface = walkableSurface(corridor.geometry(), corridorConnections, pass.projectionLevel());
-            if (surface.tiles().isEmpty() && surface.visibleDoorEdges().isEmpty()) {
+            WalkableSurface surface = walkableSurface(corridor.structure(), pass.projectionLevel());
+            if (surface.tiles().isEmpty() && surface.doorSegments().isEmpty()) {
                 continue;
             }
             gc.setFill(selected ? pass.palette().highlightFill() : pass.palette().corridorFill());
@@ -373,13 +353,12 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                     surface.tiles(),
                     selected ? pass.palette().highlightStroke() : pass.palette().corridorStroke(),
                     selected ? 1.6 : 1.2);
-            drawCorridorBoundaries(pass, surface.wallEdges(), selected);
-            drawDoorConnections(
+            drawCorridorBoundaries(pass, surface.wallSegments(), selected);
+            drawDoorSegments(
                     gc,
                     pass.camera(),
                     pass.gridSize(),
-                    corridorConnections,
-                    surface.visibleDoorEdges(),
+                    surface.doorSegments(),
                     selected ? pass.palette().selectedDoorStroke() : pass.palette().doorStroke(),
                     selected ? pass.palette().selectedDoorMarkerFill() : pass.palette().doorMarkerFill(),
                     selected ? pass.palette().selectedDoorMarkerStroke() : pass.palette().doorMarkerStroke(),
@@ -396,13 +375,13 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                     pass.gc(),
                     pass.camera(),
                     pass.gridSize(),
-                    new Point2i(node.gridX2(), node.gridY2()),
+                    node.point2x(),
                     pass.palette().highlightAccent(),
                     pass.palette().highlightStroke(),
                     Math.max(5.0, pass.gridSize() * 0.16));
         }
         for (Corridor.CorridorRoute route : corridor.routes()) {
-            for (Point2i corner : route.cornerPoints()) {
+            for (GridPoint2x corner : route.cornerPoints2x()) {
                 drawCorridorHandle(
                         pass.gc(),
                         pass.camera(),
@@ -419,13 +398,13 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             GraphicsContext gc,
             DungeonCanvasCamera camera,
             double gridSize,
-            Point2i doubledPoint,
+            GridPoint2x point2x,
             Color fill,
             Color stroke,
             double radius
     ) {
-        double centerX = camera.panX() + (doubledPoint.x() * gridSize / 2.0);
-        double centerY = camera.panY() + (doubledPoint.y() * gridSize / 2.0);
+        double centerX = camera.panX() + (point2x.x2() * gridSize / 2.0);
+        double centerY = camera.panY() + (point2x.y2() * gridSize / 2.0);
         double diameter = radius * 2.0;
         gc.setFill(fill);
         gc.fillOval(centerX - radius, centerY - radius, diameter, diameter);
@@ -434,14 +413,14 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         gc.strokeOval(centerX - radius, centerY - radius, diameter, diameter);
     }
 
-    private static void drawCorridorBoundaries(StructureRenderPass pass, Set<VertexEdge> edges, boolean selected) {
-        if (edges.isEmpty()) {
+    private static void drawCorridorBoundaries(StructureRenderPass pass, Set<GridSegment2x> segments, boolean selected) {
+        if (segments.isEmpty()) {
             return;
         }
         pass.gc().setStroke(selected ? pass.palette().highlightStroke() : pass.palette().wallStroke());
         pass.gc().setLineWidth(selected ? 2.5 : 2.0);
-        for (VertexEdge edge : edges) {
-            strokeEdge(pass.gc(), pass.camera(), pass.gridSize(), edge);
+        for (GridSegment2x segment2x : segments) {
+            strokeSegment2x(pass.gc(), pass.camera(), pass.gridSize(), segment2x);
         }
     }
 
@@ -506,11 +485,11 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         if (key == null) {
             return;
         }
-        VertexEdge edge = DungeonSelectionLookup.edge(key);
-        if (edge != null) {
+        GridSegment2x segment2x = DungeonSelectionLookup.segment2x(key);
+        if (segment2x != null) {
             pass.gc().setStroke(withOpacity(pass.palette().highlightStroke(), 0.95));
             pass.gc().setLineWidth(3.0);
-            strokeEdge(pass.gc(), pass.camera(), pass.gridSize(), edge);
+            strokeSegment2x(pass.gc(), pass.camera(), pass.gridSize(), segment2x);
             return;
         }
         if (key.kind() == features.world.dungeonmap.shell.interaction.DungeonHitKind.CORRIDOR_NODE) {
@@ -522,7 +501,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                         pass.gc(),
                         pass.camera(),
                         pass.gridSize(),
-                        new Point2i(node.gridX2(), node.gridY2()),
+                        node.point2x(),
                         withOpacity(pass.palette().highlightFill(), 0.92),
                         withOpacity(pass.palette().highlightStroke(), 1.0),
                         Math.max(5.0, pass.gridSize() * 0.17));
@@ -530,7 +509,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             return;
         }
         if (key.kind() == features.world.dungeonmap.shell.interaction.DungeonHitKind.CORRIDOR_CORNER) {
-            Point2i corner = DungeonSelectionLookup.corridorCornerPoint(key);
+            GridPoint2x corner = DungeonSelectionLookup.corridorCornerPoint2x(key);
             if (corner != null) {
                 drawCorridorHandle(
                         pass.gc(),
@@ -549,24 +528,24 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             if (corridor != null && segmentId != null) {
                 corridor.routes().stream()
                         .filter(route -> Objects.equals(route.segmentId(), segmentId))
-                        .findFirst()
-                        .ifPresent(route -> {
-                            pass.gc().setStroke(withOpacity(pass.palette().highlightStroke(), 0.95));
-                            pass.gc().setLineWidth(3.0);
-                            for (VertexEdge hoveredEdge : route.doubledEdges()) {
-                                strokeDoubledEdge(pass.gc(), pass.camera(), pass.gridSize(), hoveredEdge);
-                            }
-                        });
+                    .findFirst()
+                    .ifPresent(route -> {
+                        pass.gc().setStroke(withOpacity(pass.palette().highlightStroke(), 0.95));
+                        pass.gc().setLineWidth(3.0);
+                        for (GridSegment2x hoveredSegment : route.segments2x()) {
+                            strokeSegment2x(pass.gc(), pass.camera(), pass.gridSize(), hoveredSegment);
+                        }
+                    });
             }
             return;
         }
-        Point2i vertex = DungeonSelectionLookup.vertex(key);
-        if (vertex != null) {
+        GridPoint2x vertex2x = DungeonSelectionLookup.vertex2x(key);
+        if (vertex2x != null) {
             drawBoundaryVertexMarker(
                     pass.gc(),
                     pass.camera(),
                     pass.gridSize(),
-                    vertex,
+                    vertex2x,
                     withOpacity(pass.palette().highlightFill(), 0.95),
                     withOpacity(pass.palette().highlightStroke(), 1.0),
                     5.0);
@@ -585,7 +564,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
     }
 
     private static void drawHoveredRoom(StructureRenderPass pass, Room room) {
-        WalkableSurface surface = walkableSurface(room.geometry(), List.of(), pass.projectionLevel());
+        WalkableSurface surface = walkableSurface(room.structure(), pass.projectionLevel());
         if (surface.tiles().isEmpty()) {
             return;
         }
@@ -595,7 +574,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
     }
 
     private static void drawHoveredCorridor(StructureRenderPass pass, Corridor corridor) {
-        WalkableSurface surface = walkableSurface(corridor.geometry(), List.of(), pass.projectionLevel());
+        WalkableSurface surface = walkableSurface(corridor.structure(), pass.projectionLevel());
         if (surface.tiles().isEmpty()) {
             return;
         }
@@ -676,8 +655,8 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         gc.setTextAlign(TextAlignment.LEFT);
     }
 
-    private static Set<VertexEdge> drawStructures(StructureRenderPass pass) {
-        Set<VertexEdge> selectedBoundaryEdges = drawRooms(pass);
+    private static Set<GridSegment2x> drawStructures(StructureRenderPass pass) {
+        Set<GridSegment2x> selectedBoundaryEdges = drawRooms(pass);
         drawCorridors(pass);
         drawStairs(pass);
         drawTransitions(pass);
@@ -721,8 +700,8 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 overlay.level(),
                 palette,
                 true);
-        Set<VertexEdge> selectedRoomBoundaryEdges = drawStructures(overlayPass);
-        drawSelectedRoomBoundaries(overlayPass, selectedRoomBoundaryEdges, palette.highlightAccent());
+        Set<GridSegment2x> selectedRoomBoundarySegments = drawStructures(overlayPass);
+        drawSelectedRoomBoundaries(overlayPass, selectedRoomBoundarySegments, palette.highlightAccent());
         gc.restore();
     }
 
@@ -889,33 +868,27 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         gc.setTextAlign(TextAlignment.LEFT);
     }
 
-    private static void drawDoorConnections(
+    private static void drawDoorSegments(
             GraphicsContext gc,
             DungeonCanvasCamera camera,
             double gridSize,
-            Collection<? extends Connection> connections,
-            Set<VertexEdge> visibleEdges,
+            Collection<GridSegment2x> segments,
             Color stroke,
             Color markerFill,
             Color markerStroke,
             double lineWidth
     ) {
-        if (connections == null || connections.isEmpty()) {
+        if (segments == null || segments.isEmpty()) {
             return;
         }
         gc.setStroke(stroke);
         gc.setLineWidth(lineWidth);
-        for (Connection connection : connections) {
-            if (connection == null || connection.door() == null) {
+        for (GridSegment2x segment2x : segments) {
+            if (segment2x == null) {
                 continue;
             }
-            for (VertexEdge edge : connection.door().edges()) {
-                if (visibleEdges != null && !visibleEdges.contains(edge)) {
-                    continue;
-                }
-                strokeEdge(gc, camera, gridSize, edge);
-                drawDoorMarker(gc, camera, gridSize, edge, markerFill, markerStroke, lineWidth);
-            }
+            strokeSegment2x(gc, camera, gridSize, segment2x);
+            drawDoorMarker(gc, camera, gridSize, segment2x, markerFill, markerStroke, lineWidth);
         }
     }
 
@@ -923,17 +896,18 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             GraphicsContext gc,
             DungeonCanvasCamera camera,
             double gridSize,
-            VertexEdge edge,
+            GridSegment2x segment2x,
             Color fill,
             Color stroke,
             double edgeLineWidth
     ) {
-        if (edge == null) {
+        if (segment2x == null) {
             return;
         }
-        double centerX = camera.panX() + ((edge.start().x() + edge.end().x()) / 2.0) * gridSize;
-        double centerY = camera.panY() + ((edge.start().y() + edge.end().y()) / 2.0) * gridSize;
-        boolean vertical = edge.start().x() == edge.end().x();
+        GridPoint2x midpoint = segment2x.midpoint();
+        double centerX = camera.panX() + midpoint.x2() * gridSize / 2.0;
+        double centerY = camera.panY() + midpoint.y2() * gridSize / 2.0;
+        boolean vertical = segment2x.isVertical();
         double width = vertical ? Math.max(8.0, gridSize * 0.18) : Math.max(13.0, gridSize * 0.44);
         double height = vertical ? Math.max(13.0, gridSize * 0.44) : Math.max(8.0, gridSize * 0.18);
         gc.setFill(fill);
@@ -943,63 +917,25 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         gc.strokeRoundRect(centerX - width / 2.0, centerY - height / 2.0, width, height, 8, 8);
     }
 
-    private static Set<VertexEdge> boundaryEdges(Collection<? extends Connection> connections) {
-        Set<VertexEdge> edges = new LinkedHashSet<>();
-        if (connections == null) {
-            return edges;
-        }
-        for (Connection connection : connections) {
-            if (connection == null || connection.door() == null) {
-                continue;
-            }
-            edges.addAll(connection.door().edges());
-        }
-        return edges;
-    }
-
-    private static Set<VertexEdge> visibleEdges(Collection<VertexEdge> edges, Set<VertexEdge> allowedEdges) {
-        Set<VertexEdge> result = new LinkedHashSet<>();
-        if (edges == null || allowedEdges == null || allowedEdges.isEmpty()) {
-            return result;
-        }
-        for (VertexEdge edge : edges) {
-            if (edge != null && allowedEdges.contains(edge)) {
-                result.add(edge);
-            }
-        }
-        return result;
-    }
-
-    private static Set<VertexEdge> roomDoorEdges(
-            Collection<? extends Connection> connections,
-            DungeonLayout projectedMap
-    ) {
-        if (connections == null || connections.isEmpty() || projectedMap == null) {
-            return Set.of();
-        }
-        // Room connections must render consistently whether the door lies on the room outline or on an internal
-        // boundary between two rooms inside the same cluster.
-        return boundaryEdges(connections);
-    }
-
     private static WalkableSurface walkableSurface(
-            StructureGeometry geometry,
-            Collection<? extends Connection> connections,
+            StructureObject structure,
             int levelZ
     ) {
-        if (geometry == null) {
+        if (structure == null) {
             return WalkableSurface.empty();
         }
-        Floor levelFloor = geometry.floorAtLevel(levelZ);
-        if (levelFloor == null || levelFloor.shape() == null || levelFloor.shape().size() == 0) {
+        Floor levelFloor = structure.floorAtLevel(levelZ);
+        if (levelFloor == null || levelFloor.cells().isEmpty()) {
             return WalkableSurface.empty();
         }
-        Set<Tile> tiles = levelFloor.shape().tiles();
-        Set<VertexEdge> levelBoundaryEdges = levelFloor.shape().boundaryEdges();
-        Set<VertexEdge> visibleDoorEdges = visibleEdges(boundaryEdges(connections), levelBoundaryEdges);
-        Set<VertexEdge> wallEdges = new LinkedHashSet<>(visibleEdges(geometry.boundaryEdges(), levelBoundaryEdges));
-        wallEdges.removeAll(visibleDoorEdges);
-        return new WalkableSurface(tiles, Set.copyOf(wallEdges), Set.copyOf(visibleDoorEdges));
+        Set<Point2i> tiles = levelFloor.cells();
+        Set<GridSegment2x> wallSegments = structure.wallsAtLevel(levelZ).stream()
+                .flatMap(wall -> wall.segments2x().stream())
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        Set<GridSegment2x> doorSegments = structure.doorsAtLevel(levelZ).stream()
+                .flatMap(door -> door.segments2x().stream())
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        return new WalkableSurface(tiles, Set.copyOf(wallSegments), Set.copyOf(doorSegments));
     }
 
     private static void drawPaintPreview(
@@ -1027,14 +963,14 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
     }
 
     private record WalkableSurface(
-            Set<Tile> tiles,
-            Set<VertexEdge> wallEdges,
-            Set<VertexEdge> visibleDoorEdges
+            Set<Point2i> tiles,
+            Set<GridSegment2x> wallSegments,
+            Set<GridSegment2x> doorSegments
     ) {
         private WalkableSurface {
             tiles = tiles == null ? Set.of() : Set.copyOf(tiles);
-            wallEdges = wallEdges == null ? Set.of() : Set.copyOf(wallEdges);
-            visibleDoorEdges = visibleDoorEdges == null ? Set.of() : Set.copyOf(visibleDoorEdges);
+            wallSegments = wallSegments == null ? Set.of() : Set.copyOf(wallSegments);
+            doorSegments = doorSegments == null ? Set.of() : Set.copyOf(doorSegments);
         }
 
         private static WalkableSurface empty() {
@@ -1193,8 +1129,8 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                     frame.projectionLevel(),
                     LayerPalette.current(frame.editorMode()),
                     false);
-            Set<VertexEdge> selectedRoomBoundaryEdges = drawStructures(renderPass);
-            drawSelectedRoomBoundaries(renderPass, selectedRoomBoundaryEdges, renderPass.palette().highlightAccent());
+            Set<GridSegment2x> selectedRoomBoundarySegments = drawStructures(renderPass);
+            drawSelectedRoomBoundaries(renderPass, selectedRoomBoundarySegments, renderPass.palette().highlightAccent());
             if (frame.editorMode()) {
                 drawHoverSelection(renderPass);
                 drawInteractiveLabels(renderPass);
@@ -1233,8 +1169,8 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                     DungeonCanvasTheme.BASE_GRID * frame.camera().zoom(),
                     editor.boundaryPreviewEdges(),
                     editor.boundaryPreviewSkippedEdges(),
-                    editor.boundaryPreviewStartVertex(),
-                    editor.boundaryPreviewCurrentVertex(),
+                    editor.boundaryPreviewStartVertex2x(),
+                    editor.boundaryPreviewCurrentVertex2x(),
                     editor.boundaryPreviewDeleteMode());
         }
     }

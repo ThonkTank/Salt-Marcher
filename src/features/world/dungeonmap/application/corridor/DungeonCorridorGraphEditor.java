@@ -1,6 +1,7 @@
 package features.world.dungeonmap.application.corridor;
 
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNode;
@@ -19,8 +20,8 @@ public final class DungeonCorridorGraphEditor {
         throw new AssertionError("No instances");
     }
 
-    public static Corridor withMovedNode(DungeonLayout layout, Corridor corridor, Long nodeId, Point2i doubledPoint) {
-        if (layout == null || corridor == null || nodeId == null || doubledPoint == null) {
+    public static Corridor withMovedNode(DungeonLayout layout, Corridor corridor, Long nodeId, GridPoint2x point2x) {
+        if (layout == null || corridor == null || nodeId == null || point2x == null) {
             return corridor;
         }
         ArrayList<CorridorNode> updatedNodes = new ArrayList<>();
@@ -34,8 +35,8 @@ public final class DungeonCorridorGraphEditor {
             }
             updatedNodes.add(new CorridorNode(
                     node.nodeId(),
-                    doubledPoint.x(),
-                    doubledPoint.y(),
+                    point2x.x2(),
+                    point2x.y2(),
                     node.roomId(),
                     node.roomRelativeCell(),
                     node.roomBoundaryDirection()));
@@ -43,8 +44,8 @@ public final class DungeonCorridorGraphEditor {
         return Corridor.resolved(corridor.corridorId(), layout.mapId(), corridor.levelZ(), updatedNodes, corridor.segments(), roomsById(layout));
     }
 
-    public static Corridor withInsertedNode(DungeonLayout layout, Corridor corridor, Long segmentId, Point2i doubledPoint) {
-        if (layout == null || corridor == null || segmentId == null || doubledPoint == null) {
+    public static Corridor withInsertedNode(DungeonLayout layout, Corridor corridor, Long segmentId, GridPoint2x point2x) {
+        if (layout == null || corridor == null || segmentId == null || point2x == null) {
             return corridor;
         }
         CorridorSegment target = corridor.findSegment(segmentId);
@@ -55,7 +56,7 @@ public final class DungeonCorridorGraphEditor {
         long segmentStartId = nextSyntheticSegmentId(corridor);
         long segmentEndId = segmentStartId - 1;
         ArrayList<CorridorNode> nodes = new ArrayList<>(corridor.nodes());
-        nodes.add(new CorridorNode(nodeId, doubledPoint.x(), doubledPoint.y(), null, null, null));
+        nodes.add(new CorridorNode(nodeId, point2x.x2(), point2x.y2(), null, null, null));
         ArrayList<CorridorSegment> segments = new ArrayList<>();
         for (CorridorSegment segment : corridor.segments()) {
             if (!Objects.equals(segment.segmentId(), segmentId)) {

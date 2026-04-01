@@ -1,7 +1,8 @@
 package features.world.dungeonmap.shell.interaction;
 
+import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.geometry.VertexEdge;
 import javafx.geometry.Point2D;
 
 import java.util.Objects;
@@ -85,20 +86,28 @@ public final class DungeonHitConventions {
     }
 
     public static String cornerPartKey(Point2i doubledPoint) {
-        Point2i point = Objects.requireNonNull(doubledPoint, "doubledPoint");
-        return "corner:" + point.x() + ":" + point.y();
+        return cornerPartKey(GridPoint2x.fromRaw(Objects.requireNonNull(doubledPoint, "doubledPoint")));
     }
 
-    public static String edgePartKey(VertexEdge edge) {
-        VertexEdge resolvedEdge = Objects.requireNonNull(edge, "edge");
-        return "edge:"
-                + resolvedEdge.start().x() + ":" + resolvedEdge.start().y()
-                + ":" + resolvedEdge.end().x() + ":" + resolvedEdge.end().y();
+    public static String cornerPartKey(GridPoint2x point2x) {
+        GridPoint2x resolvedPoint = Objects.requireNonNull(point2x, "point2x");
+        return "point2x:" + resolvedPoint.x2() + ":" + resolvedPoint.y2();
     }
 
     public static String vertexPartKey(Point2i vertex) {
-        Point2i resolvedVertex = Objects.requireNonNull(vertex, "vertex");
-        return "vertex:" + resolvedVertex.x() + ":" + resolvedVertex.y();
+        return vertexPartKey(GridPoint2x.fromVertex(Objects.requireNonNull(vertex, "vertex")));
+    }
+
+    public static String vertexPartKey(GridPoint2x vertex2x) {
+        GridPoint2x resolvedVertex = Objects.requireNonNull(vertex2x, "vertex2x");
+        return "point2x:" + resolvedVertex.x2() + ":" + resolvedVertex.y2();
+    }
+
+    public static String segment2xPartKey(GridSegment2x segment2x) {
+        GridSegment2x resolvedSegment = Objects.requireNonNull(segment2x, "segment2x");
+        return "segment2x:"
+                + resolvedSegment.start().x2() + ":" + resolvedSegment.start().y2()
+                + ":" + resolvedSegment.end().x2() + ":" + resolvedSegment.end().y2();
     }
 
     public static String cellPartKey(Point2i cell, int levelZ) {

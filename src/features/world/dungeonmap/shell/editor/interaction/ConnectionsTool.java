@@ -7,6 +7,7 @@ import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
+import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
@@ -206,12 +207,12 @@ public final class ConnectionsTool implements EditorTool {
         }
         if (hit instanceof DungeonHitSubject.CorridorCornerSubject cornerHit) {
             applySelection(ctx == null ? null : ctx.resolvedSelectionKey());
-            insertNode(cornerHit.corridorId(), cornerHit.segmentId(), cornerHit.doubledPoint());
+            insertNode(cornerHit.corridorId(), cornerHit.segmentId(), cornerHit.point2x());
             return true;
         }
         if (hit instanceof DungeonHitSubject.CorridorSegmentSubject segmentHit) {
             applySelection(ctx == null ? null : ctx.resolvedSelectionKey());
-            insertNode(segmentHit.corridorId(), segmentHit.segmentId(), segmentHit.doubledPoint());
+            insertNode(segmentHit.corridorId(), segmentHit.segmentId(), segmentHit.point2x());
             return true;
         }
         if (hit instanceof DungeonHitSubject.CorridorNodeSubject nodeHit) {
@@ -277,8 +278,8 @@ public final class ConnectionsTool implements EditorTool {
         if (draft == null || cell == null) {
             return;
         }
-        Point2i doubled = new Point2i(cell.x() * 2 + 1, cell.y() * 2 + 1);
-        CorridorNode node = new CorridorNode(draft.nextNodeId(), doubled.x(), doubled.y(), null, null, null);
+        GridPoint2x point2x = GridPoint2x.fromTileCenter(cell);
+        CorridorNode node = new CorridorNode(draft.nextNodeId(), point2x.x2(), point2x.y2(), null, null, null);
         CorridorSegment segment = new CorridorSegment(draft.nextSegmentId(), draft.nodes().getLast().nodeId(), node.nodeId());
         draft.nodes().add(node);
         draft.segments().add(segment);
@@ -349,12 +350,12 @@ public final class ConnectionsTool implements EditorTool {
                 throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.finishDraftWithCorridorNode()", throwable));
     }
 
-    private void insertNode(Long corridorId, Long segmentId, Point2i doubledPoint) {
+    private void insertNode(Long corridorId, Long segmentId, GridPoint2x point2x) {
         Corridor corridor = mapState.activeMap().findCorridor(corridorId);
-        if (corridor == null || corridor.corridorId() == null || segmentId == null || doubledPoint == null) {
+        if (corridor == null || corridor.corridorId() == null || segmentId == null || point2x == null) {
             return;
         }
-        Corridor updated = DungeonCorridorGraphEditor.withInsertedNode(mapState.activeMap(), corridor, segmentId, doubledPoint);
+        Corridor updated = DungeonCorridorGraphEditor.withInsertedNode(mapState.activeMap(), corridor, segmentId, point2x);
         Long mapId = mapState.activeMapId();
         if (mapId == null) {
             return;
@@ -444,11 +445,12 @@ public final class ConnectionsTool implements EditorTool {
             anchor = new Point2i(0, 0);
         }
         Point2i relativeCell = hit.roomCell().subtract(anchor);
-        Point2i doubled = new Point2i(hit.roomCell().x() * 2 + 1, hit.roomCell().y() * 2 + 1).add(hit.outwardStep());
+        GridPoint2x point2x = GridPoint2x.fromTileCenter(hit.roomCell())
+                .offset(hit.outwardStep().x(), hit.outwardStep().y());
         return new CorridorNode(
                 nodeId,
-                doubled.x(),
-                doubled.y(),
+                point2x.x2(),
+                point2x.y2(),
                 room == null ? null : room.roomId(),
                 relativeCell,
                 CardinalDirection.fromDirection(hit.outwardStep()));

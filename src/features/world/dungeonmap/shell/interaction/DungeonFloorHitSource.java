@@ -1,6 +1,7 @@
 package features.world.dungeonmap.shell.interaction;
 
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.GridShapes;
 
 import java.util.List;
 
@@ -13,6 +14,6 @@ public final class DungeonFloorHitSource implements DungeonHitSource {
         }
         return List.of(new DungeonHitDescriptor(
                 new DungeonHitSubject.FloorCellSubject(probe.gridCell(), probe.levelZ()),
-                List.of(new DungeonHitSurface.TileCellSurface(probe.gridCell(), probe.levelZ()))));
+                List.of(new DungeonHitSurface.ShapeSurface(GridShapes.tile(probe.gridCell()), probe.levelZ()))));
     }
 }

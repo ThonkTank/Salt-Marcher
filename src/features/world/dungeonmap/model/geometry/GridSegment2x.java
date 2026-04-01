@@ -1,7 +1,9 @@
 package features.world.dungeonmap.model.geometry;
 
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Orthogonal segment on the doubled dungeon grid.
@@ -108,6 +110,41 @@ public record GridSegment2x(GridPoint2x start, GridPoint2x end) {
 
     public GridSegment2x translatedByCells(Point2i delta) {
         return new GridSegment2x(start.translatedByCells(delta), end.translatedByCells(delta));
+    }
+
+    public GridPoint2x midpoint() {
+        return GridPoint2x.fromRaw((start.x2() + end.x2()) / 2, (start.y2() + end.y2()) / 2);
+    }
+
+    public Set<Point2i> touchingCells() {
+        if (!start.isVertex() || !end.isVertex() || manhattanLength2() != 2) {
+            return Set.of();
+        }
+        LinkedHashSet<Point2i> cells = new LinkedHashSet<>();
+        if (isHorizontal()) {
+            int cellX = minX2() / 2;
+            int boundaryY = start.y2() / 2;
+            cells.add(new Point2i(cellX, boundaryY - 1));
+            cells.add(new Point2i(cellX, boundaryY));
+        } else {
+            int boundaryX = start.x2() / 2;
+            int cellY = minY2() / 2;
+            cells.add(new Point2i(boundaryX - 1, cellY));
+            cells.add(new Point2i(boundaryX, cellY));
+        }
+        return Set.copyOf(cells);
+    }
+
+    public Point2i directionFrom(Point2i cell) {
+        if (cell == null || !touchingCells().contains(cell)) {
+            return null;
+        }
+        if (isHorizontal()) {
+            int cellBoundaryY = cell.y() * 2 + 1;
+            return start.y2() < cellBoundaryY ? new Point2i(0, -1) : new Point2i(0, 1);
+        }
+        int cellBoundaryX = cell.x() * 2 + 1;
+        return start.x2() < cellBoundaryX ? new Point2i(-1, 0) : new Point2i(1, 0);
     }
 
     public Optional<VertexEdge> toVertexEdge() {

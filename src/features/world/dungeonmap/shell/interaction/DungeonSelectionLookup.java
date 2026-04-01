@@ -2,6 +2,8 @@ package features.world.dungeonmap.shell.interaction;
 
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
@@ -14,8 +16,8 @@ public final class DungeonSelectionLookup {
 
     private static final String NODE_PREFIX = "node:";
     private static final String SEGMENT_PREFIX = "segment:";
-    private static final String EDGE_PREFIX = "edge:";
-    private static final String VERTEX_PREFIX = "vertex:";
+    private static final String SEGMENT2X_PREFIX = "segment2x:";
+    private static final String POINT2X_PREFIX = "point2x:";
     private static final String CELL_PREFIX = "cell:";
 
     private DungeonSelectionLookup() {
@@ -88,27 +90,42 @@ public final class DungeonSelectionLookup {
     }
 
     public static Point2i corridorCornerPoint(DungeonSelectionKey key) {
+        GridPoint2x point2x = corridorCornerPoint2x(key);
+        return point2x == null ? null : point2x.toRawPoint2i();
+    }
+
+    public static GridPoint2x corridorCornerPoint2x(DungeonSelectionKey key) {
         if (key == null || key.kind() != DungeonHitKind.CORRIDOR_CORNER) {
             return null;
         }
-        return parsePoint(key.partKey(), "corner:");
+        return parsePoint2x(key.partKey());
     }
 
-    public static VertexEdge edge(DungeonSelectionKey key) {
+    public static GridSegment2x segment2x(DungeonSelectionKey key) {
         if (key == null) {
             return null;
         }
         return switch (key.kind()) {
-            case CLUSTER_BOUNDARY, ROOM_BOUNDARY, CONNECTION -> parseEdge(key.partKey());
+            case CLUSTER_BOUNDARY, ROOM_BOUNDARY, CONNECTION -> parseSegment2x(key.partKey());
             default -> null;
         };
     }
 
-    public static Point2i vertex(DungeonSelectionKey key) {
+    public static VertexEdge edge(DungeonSelectionKey key) {
+        GridSegment2x segment2x = segment2x(key);
+        return segment2x == null ? null : segment2x.toVertexEdge().orElse(null);
+    }
+
+    public static GridPoint2x vertex2x(DungeonSelectionKey key) {
         if (key == null || key.kind() != DungeonHitKind.VERTEX) {
             return null;
         }
-        return parsePoint(key.partKey(), VERTEX_PREFIX);
+        return parsePoint2x(key.partKey());
+    }
+
+    public static Point2i vertex(DungeonSelectionKey key) {
+        GridPoint2x vertex2x = vertex2x(key);
+        return vertex2x == null ? null : vertex2x.toVertex().orElse(null);
     }
 
     public static CubePoint floorCell(DungeonSelectionKey key) {
@@ -139,11 +156,11 @@ public final class DungeonSelectionLookup {
         }
     }
 
-    private static Point2i parsePoint(String partKey, String prefix) {
-        if (partKey == null || prefix == null || !partKey.startsWith(prefix)) {
+    private static GridPoint2x parsePoint2x(String partKey) {
+        if (partKey == null || !partKey.startsWith(POINT2X_PREFIX)) {
             return null;
         }
-        String[] parts = partKey.substring(prefix.length()).split(":");
+        String[] parts = partKey.substring(POINT2X_PREFIX.length()).split(":");
         if (parts.length != 2) {
             return null;
         }
@@ -152,14 +169,14 @@ public final class DungeonSelectionLookup {
         if (x == null || y == null) {
             return null;
         }
-        return new Point2i(x, y);
+        return GridPoint2x.fromRaw(x, y);
     }
 
-    private static VertexEdge parseEdge(String partKey) {
-        if (partKey == null || !partKey.startsWith(EDGE_PREFIX)) {
+    private static GridSegment2x parseSegment2x(String partKey) {
+        if (partKey == null || !partKey.startsWith(SEGMENT2X_PREFIX)) {
             return null;
         }
-        String[] parts = partKey.substring(EDGE_PREFIX.length()).split(":");
+        String[] parts = partKey.substring(SEGMENT2X_PREFIX.length()).split(":");
         if (parts.length != 4) {
             return null;
         }
@@ -170,7 +187,7 @@ public final class DungeonSelectionLookup {
         if (x1 == null || y1 == null || x2 == null || y2 == null) {
             return null;
         }
-        return new VertexEdge(new Point2i(x1, y1), new Point2i(x2, y2));
+        return new GridSegment2x(GridPoint2x.fromRaw(x1, y1), GridPoint2x.fromRaw(x2, y2));
     }
 
     private static Integer parseInt(String value) {

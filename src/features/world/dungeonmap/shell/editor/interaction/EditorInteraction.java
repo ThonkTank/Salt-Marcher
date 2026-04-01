@@ -212,13 +212,15 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
         }
         DungeonLayout layout = mapState.activeMap();
         DungeonLayout activeMap = layout == null ? DungeonLayout.empty() : layout;
+        double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
         DungeonHitProbe probe = new DungeonHitProbe(
                 event.canvasPoint(),
                 event.gridCell(),
+                DungeonHitProbe.point2xForCanvas(event.canvasPoint(), camera.panX(), camera.panY(), gridSize),
                 mapState.activeProjectionLevel(),
                 camera.panX(),
                 camera.panY(),
-                DungeonCanvasTheme.BASE_GRID * camera.zoom());
+                gridSize);
         DungeonHitSnapshot hitSnapshot = hitCollector.collect(activeMap, probe);
         return new EditorContextSnapshot(activeMap, camera, probe, hitSnapshot);
     }

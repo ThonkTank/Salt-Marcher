@@ -4,6 +4,8 @@ import features.world.dungeonmap.application.room.DungeonBoundaryEditService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
@@ -309,10 +311,14 @@ public final class BoundaryTool implements EditorTool {
         draft = nextDraft;
         state.showDraft(new EditorDraft.BoundaryDraft(nextDraft.clusterId(), nextDraft.statusMessage()));
         state.showPreview(new EditorPreview.BoundaryPreview(
-                nextDraft.previewEdges(),
-                nextDraft.skippedConnectionEdges(),
-                nextDraft.startVertex(),
-                nextDraft.currentVertex(),
+                nextDraft.previewEdges().stream()
+                        .map(GridSegment2x::fromVertexEdge)
+                        .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new)),
+                nextDraft.skippedConnectionEdges().stream()
+                        .map(GridSegment2x::fromVertexEdge)
+                        .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new)),
+                GridPoint2x.fromVertex(nextDraft.startVertex()),
+                GridPoint2x.fromVertex(nextDraft.currentVertex()),
                 nextDraft.deleteMode()));
         refreshStatePane();
     }

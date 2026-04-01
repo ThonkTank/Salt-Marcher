@@ -2,6 +2,7 @@ package features.world.dungeonmap.shell.interaction;
 
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.GridShapes;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
@@ -45,7 +46,7 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
                     room.roomId(),
                     new DungeonHitDescriptor(
                             new DungeonHitSubject.RoomSubject(room.roomId(), room.clusterId()),
-                            List.of(new DungeonHitSurface.TileShapeSurface(room.geometry().floorAtLevel(levelZ).shape(), levelZ))));
+                            List.of(new DungeonHitSurface.ShapeSurface(room.structure().floorAtLevel(levelZ).shape2x(), levelZ))));
         }
         return List.copyOf(descriptorsByRoomId.values());
     }
@@ -58,7 +59,9 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
             }
             descriptors.add(new DungeonHitDescriptor(
                     new DungeonHitSubject.CorridorSubject(corridor.corridorId(), corridor.levelZ()),
-                    List.of(new DungeonHitSurface.TileShapeSurface(corridor.geometry().shapeAtLevel(probe.levelZ()), probe.levelZ()))));
+                    List.of(new DungeonHitSurface.ShapeSurface(
+                            corridor.structure().floorAtLevel(probe.levelZ()).shape2x(),
+                            probe.levelZ()))));
         }
         return List.copyOf(descriptors);
     }
@@ -71,7 +74,7 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
             }
             descriptors.add(new DungeonHitDescriptor(
                     new DungeonHitSubject.StairSubject(stair.stairId()),
-                    List.of(new DungeonHitSurface.TileCellSurface(probe.gridCell(), probe.levelZ()))));
+                    List.of(new DungeonHitSurface.ShapeSurface(GridShapes.tile(probe.gridCell()), probe.levelZ()))));
         }
         return List.copyOf(descriptors);
     }
@@ -84,7 +87,9 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
             }
             descriptors.add(new DungeonHitDescriptor(
                     new DungeonHitSubject.TransitionSubject(transition.transitionId()),
-                    List.of(new DungeonHitSurface.TileCellSurface(transition.anchor().projectedCell(), transition.anchor().z()))));
+                    List.of(new DungeonHitSurface.ShapeSurface(
+                            GridShapes.tile(transition.anchor().projectedCell()),
+                            transition.anchor().z()))));
         }
         return List.copyOf(descriptors);
     }

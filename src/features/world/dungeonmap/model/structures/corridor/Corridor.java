@@ -2,6 +2,8 @@ package features.world.dungeonmap.model.structures.corridor;
 
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.objects.Door;
@@ -272,14 +274,56 @@ public final class Corridor {
                     .toList());
             routes.add(new CorridorRoute(segment.segmentId(), segment.startNodeId(), segment.endNodeId(), routePlan.doubledPath()));
         }
+        Set<GridSegment2x> openingSegments2x = corridorOpeningSegments(levelZ, nodes, resolvedRooms);
         return new DerivedProjection(
-                compileStructure(occupiedCells),
+                compileStructure(occupiedCells, openingSegments2x),
                 routes.isEmpty() ? List.of() : List.copyOf(routes),
                 materializeConnections(corridorId, mapId, levelZ, nodes, resolvedRooms));
     }
 
-    private static StructureObject compileStructure(Collection<CubePoint> occupiedCells) {
-        return StructureObject.fromDescriptor(StructureDescriptor.fromCubePoints(occupiedCells));
+    private static StructureObject compileStructure(
+            Collection<CubePoint> occupiedCells,
+            Set<GridSegment2x> openingSegments2x
+    ) {
+        StructureDescriptor descriptor = StructureDescriptor.fromCubePoints(occupiedCells);
+        if (descriptor.levels().isEmpty() || openingSegments2x == null || openingSegments2x.isEmpty()) {
+            return StructureObject.fromDescriptor(descriptor);
+        }
+        Map<Integer, StructureDescriptor.LevelDescriptor> levels = new LinkedHashMap<>();
+        for (Map.Entry<Integer, StructureDescriptor.LevelDescriptor> entry : descriptor.levels().entrySet()) {
+            StructureDescriptor.LevelDescriptor level = entry.getValue();
+            LinkedHashSet<GridSegment2x> validOpenings = new LinkedHashSet<>();
+            for (GridSegment2x segment2x : openingSegments2x) {
+                if (segment2x != null && level.boundarySegments2x().contains(segment2x)) {
+                    validOpenings.add(segment2x);
+                }
+            }
+            levels.put(entry.getKey(), new StructureDescriptor.LevelDescriptor(
+                    level.anchor2x(),
+                    level.fillSeeds2x(),
+                    level.boundarySegments2x(),
+                    validOpenings));
+        }
+        return StructureObject.fromDescriptor(new StructureDescriptor(levels));
+    }
+
+    private static Set<GridSegment2x> corridorOpeningSegments(
+            int levelZ,
+            List<CorridorNode> nodes,
+            Map<Long, Room> roomsById
+    ) {
+        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
+        for (CorridorNode node : nodes) {
+            if (node == null || !node.isRoomBound() || node.roomBoundaryDirection() == null) {
+                continue;
+            }
+            Point2i roomCell = absoluteRoomCell(node, levelZ, roomsById);
+            if (roomCell == null) {
+                continue;
+            }
+            result.add(GridSegment2x.fromVertexEdge(VertexEdge.betweenCellAndStep(roomCell, node.roomBoundaryDirection().delta())));
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
     private static Map<Long, CorridorNode> indexNodes(List<CorridorNode> nodes) {
@@ -671,6 +715,27 @@ public final class Corridor {
             return List.copyOf(result);
         }
 
+        public List<GridPoint2x> path2x() {
+            if (doubledPath.isEmpty()) {
+                return List.of();
+            }
+            return doubledPath.stream()
+                    .map(GridPoint2x::fromRaw)
+                    .toList();
+        }
+
+        public List<GridSegment2x> segments2x() {
+            List<GridPoint2x> path = path2x();
+            if (path.size() < 2) {
+                return List.of();
+            }
+            ArrayList<GridSegment2x> result = new ArrayList<>();
+            for (int index = 1; index < path.size(); index++) {
+                result.add(new GridSegment2x(path.get(index - 1), path.get(index)));
+            }
+            return List.copyOf(result);
+        }
+
         public List<Point2i> cornerPoints() {
             if (doubledPath.size() < 3) {
                 return List.of();
@@ -687,6 +752,15 @@ public final class Corridor {
                 }
             }
             return List.copyOf(result);
+        }
+
+        public List<GridPoint2x> cornerPoints2x() {
+            if (doubledPath.size() < 3) {
+                return List.of();
+            }
+            return cornerPoints().stream()
+                    .map(GridPoint2x::fromRaw)
+                    .toList();
         }
     }
 }

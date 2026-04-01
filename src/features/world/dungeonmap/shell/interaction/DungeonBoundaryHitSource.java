@@ -1,8 +1,8 @@
 package features.world.dungeonmap.shell.interaction;
 
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.Connection;
@@ -29,10 +29,10 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
         ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
         List<RoomCluster> projectedClusters = projectedClusters(layout, probe.levelZ());
         Set<Point2i> occupiedRoomCells = occupiedRoomCells(projectedClusters);
-        Set<VertexEdge> connectionEdges = connectionEdges(projectedClusters, layout, probe.levelZ());
+        Set<GridSegment2x> connectionSegments = connectionSegments(projectedClusters, layout, probe.levelZ());
 
         descriptors.addAll(clusterBoundaryDescriptors(projectedClusters, probe.levelZ()));
-        descriptors.addAll(roomBoundaryDescriptors(projectedClusters, occupiedRoomCells, connectionEdges, probe.levelZ()));
+        descriptors.addAll(roomBoundaryDescriptors(projectedClusters, occupiedRoomCells, connectionSegments, probe.levelZ()));
         descriptors.addAll(connectionDescriptors(projectedClusters, layout, probe.levelZ()));
         return List.copyOf(descriptors);
     }
@@ -56,21 +56,21 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
         for (RoomCluster cluster : projectedClusters) {
             for (Room room : cluster.rooms()) {
                 if (room != null) {
-                    cells.addAll(room.geometry().cells());
+                    cells.addAll(room.structure().cells());
                 }
             }
         }
         return Set.copyOf(cells);
     }
 
-    private static Set<VertexEdge> connectionEdges(List<RoomCluster> projectedClusters, DungeonLayout layout, int levelZ) {
-        LinkedHashSet<VertexEdge> edges = new LinkedHashSet<>();
+    private static Set<GridSegment2x> connectionSegments(List<RoomCluster> projectedClusters, DungeonLayout layout, int levelZ) {
+        LinkedHashSet<GridSegment2x> segments = new LinkedHashSet<>();
         for (RoomCluster cluster : projectedClusters) {
             for (var connection : cluster.localConnections()) {
                 if (connection == null || connection.door() == null) {
                     continue;
                 }
-                edges.addAll(connection.door().edges());
+                segments.addAll(connection.door().segments2x());
             }
         }
         for (Corridor corridor : corridorsAtLevel(layout, levelZ)) {
@@ -78,10 +78,10 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
                 if (connection == null || connection.door() == null || connection.levelZ() != levelZ) {
                     continue;
                 }
-                edges.addAll(connection.door().edges());
+                segments.addAll(connection.door().segments2x());
             }
         }
-        return Set.copyOf(edges);
+        return Set.copyOf(segments);
     }
 
     private static List<DungeonHitDescriptor> clusterBoundaryDescriptors(List<RoomCluster> projectedClusters, int levelZ) {
@@ -90,28 +90,28 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
             if (cluster.clusterId() == null) {
                 continue;
             }
-            for (Map.Entry<VertexEdge, InternalBoundaryType> entry : cluster.internalBoundaryKinds().entrySet()) {
-                VertexEdge edge = entry.getKey();
-                if (edge == null) {
+            for (Map.Entry<features.world.dungeonmap.model.geometry.VertexEdge, InternalBoundaryType> entry : cluster.internalBoundaryKinds().entrySet()) {
+                GridSegment2x segment2x = entry.getKey() == null ? null : GridSegment2x.fromVertexEdge(entry.getKey());
+                if (segment2x == null) {
                     continue;
                 }
-                Point2i baseCell = edge.touchingCells().stream()
+                Point2i baseCell = segment2x.touchingCells().stream()
                         .filter(cluster::contains)
                         .sorted(Point2i.POINT_ORDER)
                         .findFirst()
                         .orElse(null);
-                Point2i direction = baseCell == null ? null : edge.directionFrom(baseCell);
+                Point2i direction = baseCell == null ? null : segment2x.directionFrom(baseCell);
                 if (baseCell == null || direction == null) {
                     continue;
                 }
                 descriptors.add(new DungeonHitDescriptor(
                         new DungeonHitSubject.ClusterBoundarySubject(
                                 cluster.clusterId(),
-                                edge,
+                                segment2x,
                                 entry.getValue(),
                                 baseCell,
                                 direction),
-                        List.of(new DungeonHitSurface.EdgeSurface(edge, levelZ))));
+                        List.of(new DungeonHitSurface.SegmentSurface(segment2x, levelZ))));
             }
         }
         return List.copyOf(descriptors);
@@ -120,7 +120,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
     private static List<DungeonHitDescriptor> roomBoundaryDescriptors(
             List<RoomCluster> projectedClusters,
             Set<Point2i> occupiedRoomCells,
-            Set<VertexEdge> connectionEdges,
+            Set<GridSegment2x> connectionSegments,
             int levelZ
     ) {
         ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
@@ -129,11 +129,11 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
                 if (room == null || room.roomId() == null) {
                     continue;
                 }
-                for (VertexEdge edge : room.geometry().boundaryEdgesAtLevel(levelZ)) {
-                    if (edge == null || connectionEdges.contains(edge)) {
+                for (GridSegment2x segment2x : room.structure().boundarySegmentsAtLevel(levelZ)) {
+                    if (segment2x == null || connectionSegments.contains(segment2x)) {
                         continue;
                     }
-                    RoomBoundaryGeometry geometry = roomBoundaryGeometry(room, occupiedRoomCells, edge);
+                    RoomBoundaryGeometry geometry = roomBoundaryGeometry(room, occupiedRoomCells, segment2x, levelZ);
                     if (geometry == null) {
                         continue;
                     }
@@ -141,11 +141,11 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
                             new DungeonHitSubject.RoomBoundarySubject(
                                     room.roomId(),
                                     room.clusterId(),
-                                    edge,
+                                    segment2x,
                                     geometry.roomCell(),
                                     geometry.outwardStep(),
                                     geometry.exterior()),
-                            List.of(new DungeonHitSurface.EdgeSurface(edge, levelZ))));
+                            List.of(new DungeonHitSurface.SegmentSurface(segment2x, levelZ))));
                 }
             }
         }
@@ -176,15 +176,15 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
             return List.of();
         }
         ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
-        for (VertexEdge edge : connection.door().edges()) {
-            if (edge == null) {
+        for (GridSegment2x segment2x : connection.door().segments2x()) {
+            if (segment2x == null) {
                 continue;
             }
             Long clusterId = connection instanceof LocalConnection localConnection ? localConnection.clusterId() : null;
             Long corridorId = connection instanceof CorridorConnection corridorConnection ? corridorConnection.corridorId() : null;
             descriptors.add(new DungeonHitDescriptor(
-                    new DungeonHitSubject.ConnectionSubject(connection.kind(), clusterId, corridorId, edge),
-                    List.of(new DungeonHitSurface.EdgeSurface(edge, levelZ))));
+                    new DungeonHitSubject.ConnectionSubject(connection.kind(), clusterId, corridorId, segment2x),
+                    List.of(new DungeonHitSurface.SegmentSurface(segment2x, levelZ))));
         }
         return List.copyOf(descriptors);
     }
@@ -198,15 +198,20 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
                 .toList();
     }
 
-    private static RoomBoundaryGeometry roomBoundaryGeometry(Room room, Set<Point2i> occupiedRoomCells, VertexEdge edge) {
-        if (room == null || edge == null) {
+    private static RoomBoundaryGeometry roomBoundaryGeometry(
+            Room room,
+            Set<Point2i> occupiedRoomCells,
+            GridSegment2x segment2x,
+            int levelZ
+    ) {
+        if (room == null || segment2x == null) {
             return null;
         }
-        for (Point2i cell : edge.touchingCells().stream().sorted(Point2i.POINT_ORDER).toList()) {
-            if (!room.geometry().contains(cell)) {
+        for (Point2i cell : segment2x.touchingCells().stream().sorted(Point2i.POINT_ORDER).toList()) {
+            if (!room.structure().cellsAtLevel(levelZ).contains(cell)) {
                 continue;
             }
-            Point2i outwardStep = edge.directionFrom(cell);
+            Point2i outwardStep = segment2x.directionFrom(cell);
             Point2i opposite = outwardStep == null ? null : cell.add(outwardStep);
             boolean exterior = opposite == null || !occupiedRoomCells.contains(opposite);
             return new RoomBoundaryGeometry(cell, outwardStep, exterior);

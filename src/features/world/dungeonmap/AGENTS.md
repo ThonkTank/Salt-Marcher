@@ -17,7 +17,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `DungeonLayout` is the immutable global lookup over direct structure owners: room clusters, corridors, stairs, transitions, connections, traversable cells, and spatial indexes.
 - Corridors, stairs, and transitions are first-class persisted structures. There is no second aggregate that owns their geometry.
 - `Room` owns canonical shared surface geometry through `StructureObject`. `StructureGeometry` is the shared floor-and-wall access surface built on top of that owner.
-- `Corridor` keeps its node/segment graph as truth and compiles it into the same `StructureDescriptor`/`StructureObject` surface model used by rooms.
+- `Corridor` keeps its node/segment graph as truth and compiles it into the same `StructureDescriptor`/`StructureObject` surface model used by rooms, including opening segments for room-bound endpoints.
 - Room paint/delete/boundary edits persist room-owned `StructureDescriptor` truth plus derived cluster metadata. They do not reroute or regenerate corridors or stairs.
 - Runtime presentation resolves surfaces from the same structure owners used by the editor. Do not invent runtime-only structure mirrors.
 
@@ -58,6 +58,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 ## Concern Ownership
 
 - Hit collection owns raw candidates. `DungeonSelection` is event-time data only.
+- `DungeonHitProbe`, `DungeonHitSurface`, and geometry-backed selection part keys speak the explicit 2x language (`GridPoint2x`, `GridSegment2x`). Cell coordinates remain convenience data, not the shared half-step truth.
 - `EditorTool.resolveHit(...)` owns tool-specific interpretation of those candidates. Do not move per-tool allowlists back into a central selector.
 - `EditorInteractionState` owns only shared editor coordination state:
   - `selectedKey`
@@ -80,10 +81,10 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
   5. dispatch `pressed`, `dragged`, or `released` with an `EditorToolContext` that carries the resolved subject
 - `EditorTool` implementations own gesture meaning. Shared state is justified only when multiple collaborators need it.
 - Tool responsibilities:
-  - `SelectionTool` owns semantic selection plus cluster-drag and corridor-node drag gestures.
-  - `PaintTool` owns room paint/delete sessions from resolved `FloorCellSubject` hits.
-  - `BoundaryTool` owns wall-path drafting. Shared state exposes only boundary preview and lightweight status.
-  - `ConnectionsTool` owns door edits, corridor drafting, node insertion, and corridor deletion.
+- `SelectionTool` owns semantic selection plus cluster-drag and corridor-node drag gestures.
+- `PaintTool` owns room paint/delete sessions from resolved `FloorCellSubject` hits.
+- `BoundaryTool` owns wall-path drafting. Shared state exposes only boundary preview and lightweight status; the shared preview payload is 2x render geometry, not commit truth.
+- `ConnectionsTool` owns door edits, corridor drafting, node insertion, and corridor deletion. Corridor graph edits use explicit 2x node/segment points.
   - `TransitionTool` owns transition create/delete gestures and keeps its form state local to the tool.
 - `DungeonSelection.firstSubjectMatching(...)` and `orderedSubjects()` are the shared helpers for per-tool subject resolution. Prefer these over ad-hoc candidate walks.
 - Selection identity is semantic. Use owner-provided keys (`DungeonSelectionKey`, label handles, structure ids) instead of reconstructing or parsing them in renderers.
@@ -93,12 +94,13 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `DungeonCanvasWorkspace` observes `DungeonMapState` directly for active layout, level, and overlay changes.
 - Rendering is explicit and coalesced: state changes call `requestRedraw()`, `redraw()` builds one `DungeonSceneFrame`, and the grid renderer consumes that snapshot.
 - Views publish batched display-only payloads through `showEditorRenderState(...)` and `showRuntimeRenderOverlay(...)`.
+- `DungeonGridSceneRenderer` renders room and corridor floors, walls, and doors from `StructureObject` primitives. Corridor graph handles are the editor-only overlay on top of that shared structure geometry.
 - The workspace owns zoom, pan, and default level scrolling:
   - zoom: mouse wheel
   - pan: middle-mouse drag
   - level change: Ctrl+scroll or interaction-captured scroll, then `levelScrolled(int)` is sent to the active interaction handler
 - Runtime may replace the default level-scroll handler to clamp to reachable levels.
-- `DungeonEditorRenderState` is display-only. It carries selected target key, explicit hover state, and previews. Do not put workflow state into render payloads.
+- `DungeonEditorRenderState` is display-only. It carries selected target key, explicit hover state, and previews, including 2x boundary preview segments/points. Do not put workflow state into render payloads.
 
 ## Runtime
 

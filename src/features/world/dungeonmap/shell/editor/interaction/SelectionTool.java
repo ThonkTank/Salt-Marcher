@@ -9,6 +9,7 @@ import features.world.dungeonmap.application.room.RoomExitCatalog;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
@@ -117,8 +118,8 @@ public final class SelectionTool implements EditorTool {
             corridorNodeDragSession = new CorridorNodeDragSession(
                     corridorNodeHit.corridorId(),
                     corridorNodeHit.nodeId(),
-                    corridorNodeHit.doubledPoint(),
-                    corridorNodeHit.doubledPoint());
+                    corridorNodeHit.point2x(),
+                    corridorNodeHit.point2x());
             return true;
         }
         if (hit instanceof DungeonHitSubject.ClusterLabelSubject clusterLabelHit) {
@@ -153,11 +154,11 @@ public final class SelectionTool implements EditorTool {
             if (event == null || !event.isPrimaryButtonDown()) {
                 return false;
             }
-            Point2i doubledPoint = new Point2i(event.gridCell().x() * 2 + 1, event.gridCell().y() * 2 + 1);
-            if (Objects.equals(doubledPoint, corridorNodeDragSession.currentPoint())) {
+            GridPoint2x point2x = GridPoint2x.fromTileCenter(event.gridCell());
+            if (Objects.equals(point2x, corridorNodeDragSession.currentPoint())) {
                 return true;
             }
-            corridorNodeDragSession = corridorNodeDragSession.withCurrentPoint(doubledPoint);
+            corridorNodeDragSession = corridorNodeDragSession.withCurrentPoint(point2x);
             state.showPreview(new EditorPreview.LayoutPreview(previewCorridorMap()));
             return true;
         }
@@ -505,10 +506,10 @@ public final class SelectionTool implements EditorTool {
     private record CorridorNodeDragSession(
             long corridorId,
             Long nodeId,
-            Point2i startPoint,
-            Point2i currentPoint
+            GridPoint2x startPoint,
+            GridPoint2x currentPoint
     ) {
-        private CorridorNodeDragSession withCurrentPoint(Point2i currentPoint) {
+        private CorridorNodeDragSession withCurrentPoint(GridPoint2x currentPoint) {
             return new CorridorNodeDragSession(corridorId, nodeId, startPoint, currentPoint);
         }
     }

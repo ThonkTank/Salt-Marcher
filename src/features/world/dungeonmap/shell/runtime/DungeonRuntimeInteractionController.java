@@ -157,13 +157,15 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
         }
         DungeonLayout layout = mapState.activeMap();
         DungeonLayout activeMap = layout == null ? DungeonLayout.empty() : layout;
+        double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
         DungeonHitProbe probe = new DungeonHitProbe(
                 event.canvasPoint(),
                 event.gridCell(),
+                DungeonHitProbe.point2xForCanvas(event.canvasPoint(), camera.panX(), camera.panY(), gridSize),
                 mapState.activeProjectionLevel(),
                 camera.panX(),
                 camera.panY(),
-                DungeonCanvasTheme.BASE_GRID * camera.zoom());
+                gridSize);
         DungeonHitSnapshot hitSnapshot = hitCollector.collect(activeMap, probe);
         return new RuntimeContextSnapshot(activeMap, probe, hitSnapshot);
     }

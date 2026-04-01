@@ -1,6 +1,7 @@
 package features.world.dungeonmap.model.structures.corridor;
 
 import features.world.dungeonmap.model.geometry.CardinalDirection;
+import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 
 public record CorridorNode(
@@ -21,5 +22,9 @@ public record CorridorNode(
 
     public boolean isRoomBound() {
         return roomId != null;
+    }
+
+    public GridPoint2x point2x() {
+        return GridPoint2x.fromRaw(gridX2, gridY2);
     }
 }

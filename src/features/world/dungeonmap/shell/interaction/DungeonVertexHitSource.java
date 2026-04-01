@@ -1,6 +1,7 @@
 package features.world.dungeonmap.shell.interaction;
 
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 
 import java.util.ArrayList;
@@ -25,11 +26,10 @@ public final class DungeonVertexHitSource implements DungeonHitSource {
 
         ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
         for (Point2i vertex : vertices) {
+            GridPoint2x point2x = GridPoint2x.fromVertex(vertex);
             descriptors.add(new DungeonHitDescriptor(
-                    new DungeonHitSubject.VertexSubject(vertex),
-                    List.of(new DungeonHitSurface.DoubledPointSurface(
-                            new Point2i(vertex.x() * 2, vertex.y() * 2),
-                            probe.levelZ()))));
+                    new DungeonHitSubject.VertexSubject(point2x),
+                    List.of(new DungeonHitSurface.PointSurface(point2x, probe.levelZ()))));
         }
         return List.copyOf(descriptors);
     }

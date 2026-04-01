@@ -1,49 +1,36 @@
 package features.world.dungeonmap.shell.interaction;
 
+import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.geometry.GridShape;
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.geometry.TileShape;
-import features.world.dungeonmap.model.geometry.VertexEdge;
 import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
 
 import java.util.Objects;
 
-public sealed interface DungeonHitSurface permits DungeonHitSurface.TileCellSurface,
-        DungeonHitSurface.TileShapeSurface,
-        DungeonHitSurface.EdgeSurface,
-        DungeonHitSurface.DoubledPointSurface,
-        DungeonHitSurface.DoubledEdgeSurface,
+public sealed interface DungeonHitSurface permits DungeonHitSurface.ShapeSurface,
+        DungeonHitSurface.SegmentSurface,
+        DungeonHitSurface.PointSurface,
         DungeonHitSurface.LabelSurface {
 
     int levelZ();
 
-    record TileCellSurface(Point2i cell, int levelZ) implements DungeonHitSurface {
-        public TileCellSurface {
-            cell = Objects.requireNonNull(cell, "cell");
-        }
-    }
-
-    record TileShapeSurface(TileShape shape, int levelZ) implements DungeonHitSurface {
-        public TileShapeSurface {
+    record ShapeSurface(GridShape shape, int levelZ) implements DungeonHitSurface {
+        public ShapeSurface {
             shape = Objects.requireNonNull(shape, "shape");
         }
     }
 
-    record EdgeSurface(VertexEdge edge, int levelZ) implements DungeonHitSurface {
-        public EdgeSurface {
-            edge = Objects.requireNonNull(edge, "edge");
+    record SegmentSurface(GridSegment2x segment2x, int levelZ) implements DungeonHitSurface {
+        public SegmentSurface {
+            segment2x = Objects.requireNonNull(segment2x, "segment2x");
         }
     }
 
-    record DoubledPointSurface(Point2i point, int levelZ) implements DungeonHitSurface {
-        public DoubledPointSurface {
-            point = Objects.requireNonNull(point, "point");
-        }
-    }
-
-    record DoubledEdgeSurface(VertexEdge edge, int levelZ) implements DungeonHitSurface {
-        public DoubledEdgeSurface {
-            edge = Objects.requireNonNull(edge, "edge");
+    record PointSurface(GridPoint2x point2x, int levelZ) implements DungeonHitSurface {
+        public PointSurface {
+            point2x = Objects.requireNonNull(point2x, "point2x");
         }
     }
 
