@@ -48,49 +48,12 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             double height,
             DungeonSceneFrame frame
     ) {
-        DungeonEditorRenderState editor = frame.editor();
-        DungeonRuntimeRenderOverlay runtime = frame.runtime();
-        fillBackground(gc, width, height, frame.editorMode());
-        drawGrid(gc, width, height, frame.camera(), frame.editorMode());
-        drawOverlayLevels(gc, frame);
-        if (frame.editorMode()) {
-            drawPaintPreview(gc, frame.camera(), editor.paintPreviewShape(), editor.paintPreviewDeleteMode());
-        }
-        StructureRenderPass renderPass = new StructureRenderPass(
-                gc,
-                frame.projectedLayout(),
-                frame.camera(),
-                frame.editorMode(),
-                editor.selectedTargetKey(),
-                editor.hoveredSelectionKey(),
-                frame.projectionLevel(),
-                LayerPalette.current(frame.editorMode()),
-                false);
-        Set<VertexEdge> selectedRoomBoundaryEdges = drawStructures(renderPass);
-        drawPartyToken(gc, frame.camera(), runtime, frame.projectionLevel());
-        if (!frame.editorMode()) {
-            drawDoorNumbers(gc, frame.camera(), runtime);
-        }
-        if (frame.editorMode()) {
-            drawBoundaryPreview(
-                    gc,
-                    frame.camera(),
-                    DungeonCanvasTheme.BASE_GRID * frame.camera().zoom(),
-                    editor.boundaryPreviewEdges(),
-                    editor.boundaryPreviewSkippedEdges(),
-                    editor.boundaryPreviewStartVertex(),
-                    editor.boundaryPreviewCurrentVertex(),
-                    editor.boundaryPreviewDeleteMode());
-        }
-        drawSelectedRoomBoundaries(renderPass, selectedRoomBoundaryEdges, renderPass.palette().highlightAccent());
-        if (frame.editorMode()) {
-            drawHoverSelection(renderPass);
-        }
-        if (frame.editorMode()) {
-            drawInteractiveLabels(renderPass);
-        }
-        drawAxes(gc, width, height, frame.camera(), frame.editorMode());
-        drawGridReference(gc, width, height, frame.camera());
+        DungeonBackdropPass.paint(gc, width, height, frame);
+        DungeonStructurePass.paintOverlayLevels(gc, frame);
+        DungeonStructurePass.paintCurrentLevel(gc, frame);
+        DungeonRuntimeOverlayPass.paint(gc, frame);
+        DungeonEditorOverlayPass.paint(gc, frame);
+        DungeonHudPass.paint(gc, width, height, frame);
     }
 
     private static void fillBackground(GraphicsContext gc, double width, double height, boolean editorMode) {
@@ -1190,6 +1153,94 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                     blend(DungeonCanvasTheme.ROOM_SELECTED_WALL_STROKE, tint, 0.5),
                     blend(DungeonCanvasTheme.CORRIDOR_STROKE, tint, 0.55),
                     blend(DungeonCanvasTheme.text(editorMode), tint, 0.24));
+        }
+    }
+
+    static final class DungeonBackdropPass {
+
+        private DungeonBackdropPass() {
+        }
+
+        static void paint(GraphicsContext gc, double width, double height, DungeonSceneFrame frame) {
+            fillBackground(gc, width, height, frame.editorMode());
+            drawGrid(gc, width, height, frame.camera(), frame.editorMode());
+        }
+    }
+
+    static final class DungeonStructurePass {
+
+        private DungeonStructurePass() {
+        }
+
+        static void paintOverlayLevels(GraphicsContext gc, DungeonSceneFrame frame) {
+            drawOverlayLevels(gc, frame);
+        }
+
+        static void paintCurrentLevel(GraphicsContext gc, DungeonSceneFrame frame) {
+            StructureRenderPass renderPass = new StructureRenderPass(
+                    gc,
+                    frame.projectedLayout(),
+                    frame.camera(),
+                    frame.editorMode(),
+                    frame.editor().selectedTargetKey(),
+                    frame.editor().hoveredSelectionKey(),
+                    frame.projectionLevel(),
+                    LayerPalette.current(frame.editorMode()),
+                    false);
+            Set<VertexEdge> selectedRoomBoundaryEdges = drawStructures(renderPass);
+            drawSelectedRoomBoundaries(renderPass, selectedRoomBoundaryEdges, renderPass.palette().highlightAccent());
+            if (frame.editorMode()) {
+                drawHoverSelection(renderPass);
+                drawInteractiveLabels(renderPass);
+            }
+        }
+    }
+
+    static final class DungeonRuntimeOverlayPass {
+
+        private DungeonRuntimeOverlayPass() {
+        }
+
+        static void paint(GraphicsContext gc, DungeonSceneFrame frame) {
+            DungeonRuntimeRenderOverlay runtime = frame.runtime();
+            drawPartyToken(gc, frame.camera(), runtime, frame.projectionLevel());
+            if (!frame.editorMode()) {
+                drawDoorNumbers(gc, frame.camera(), runtime);
+            }
+        }
+    }
+
+    static final class DungeonEditorOverlayPass {
+
+        private DungeonEditorOverlayPass() {
+        }
+
+        static void paint(GraphicsContext gc, DungeonSceneFrame frame) {
+            if (!frame.editorMode()) {
+                return;
+            }
+            DungeonEditorRenderState editor = frame.editor();
+            drawPaintPreview(gc, frame.camera(), editor.paintPreviewShape(), editor.paintPreviewDeleteMode());
+            drawBoundaryPreview(
+                    gc,
+                    frame.camera(),
+                    DungeonCanvasTheme.BASE_GRID * frame.camera().zoom(),
+                    editor.boundaryPreviewEdges(),
+                    editor.boundaryPreviewSkippedEdges(),
+                    editor.boundaryPreviewStartVertex(),
+                    editor.boundaryPreviewCurrentVertex(),
+                    editor.boundaryPreviewDeleteMode());
+        }
+    }
+
+    static final class DungeonHudPass {
+
+        private DungeonHudPass() {
+        }
+
+        static void paint(GraphicsContext gc, double width, double height, DungeonSceneFrame frame) {
+            drawAxes(gc, width, height, frame.camera(), frame.editorMode());
+            drawGridReference(gc, width, height, frame.camera());
         }
     }
 
