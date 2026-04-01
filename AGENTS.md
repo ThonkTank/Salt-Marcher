@@ -13,7 +13,7 @@ This file defines the repository-specific operating constraints for Claude Code 
 - `src/ui/` — JavaFX shell/bootstrap (`src/ui/bootstrap/`) plus shared UI-only components (`src/ui/components/`)
 - `resources/salt-marcher.css` — single CSS source of truth. `data/` for runtime data and backups
 
-**AGENTS.md placement convention:** the root `AGENTS.md` is for project-wide rules only. Feature-specific architecture, workflows, invariants, package roles, and editor/runtime behavior belong in the nearest local `AGENTS.md` under that feature subtree. If a rule stops being globally true and starts describing one feature, move it out of the root file. When both files exist, apply both, with the deeper local file governing the feature-specific details. Before changing files in a subtree, check whether that subtree defines a nearer `AGENTS.md`; if it does, treat that local file as required context, not optional reference.
+**AGENTS.md placement convention:** the root `AGENTS.md` is for project-wide rules only. Feature-specific architecture, workflows, invariants, package roles, and editor/runtime behavior belong in the nearest local `AGENTS.md` under that feature subtree. If a rule stops being globally true and starts describing one feature, move it out of the root file. When both files exist, apply both, with the deeper local file governing the feature-specific details. Before changing files in a subtree, check whether that subtree defines a nearer `AGENTS.md`; if it does, treat that local file as required context, not optional reference. Before handoff, re-check the `AGENTS.md` files governing the edited paths and update them whenever the implementation changed the truths they describe.
 
 **DB storage conventions:** Multi-value fields stored as delimited strings — `KEY:value,KEY:value,...` (e.g. `SavingThrows = "CON:10,INT:12"`, `Senses = "darkvision:60"`). Junction tables (`creature_biomes`, `creature_subtypes`, `item_tags`) for many-to-many. `campaign_state` is a singleton row (id=1). No name-column indexes anywhere (leading-wildcard `LIKE` can't use B-tree).
 
@@ -201,7 +201,14 @@ The rules in this section are decision filters, not soft preferences. When multi
 - `try-with-resources` for all JDBC connections, statements, result sets
 - UI text stays German; established DnD terms (`Encounter`, `CR`, `Deadly`) remain English. Code identifiers, comments, and commit messages are English
 - Avoid `System.out` and `System.err` in feature application/repository code. Error logging elsewhere: `System.err.println` with format `ClassName.methodName(): message` (no logging framework)
-- Comments must earn their keep. Use them to preserve invariants, UX rules, or non-obvious constraints; do not narrate obvious control flow or restate the code in English
+- Comments must earn their keep. Use them to preserve invariants, UX rules, non-obvious constraints, or the intended behavior of new or changed non-trivial logic; do not narrate obvious control flow or restate the code in English
+
+### Documentation Updates
+- During implementation, new or changed non-trivial code must document its intended behavior briefly at the owner seam that enforces it, so later contributors can understand the intent without reconstructing it from surrounding call sites
+- Prefer one concise intent comment on the stable owner over repeated narration on every branch or statement
+- Before handoff, inspect the root `AGENTS.md` and any nearer local `AGENTS.md` files governing the edited paths
+- Update those `AGENTS.md` files whenever the implementation changes documented truths, invariants, workflows, package roles, or UI behavior
+- Treat documentation updates as part of done, not optional cleanup
 
 ### Repository & Application Conventions
 - Repositories are stateless (`Connection` passed in). Let repositories propagate `SQLException`; fallback behavior, retries, and user-facing degradation belong in application workflows
