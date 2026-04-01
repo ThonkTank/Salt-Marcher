@@ -20,14 +20,6 @@ public record DungeonSelection(
         }
     }
 
-    public DungeonHitCandidate primary() {
-        return orderedCandidates.isEmpty() ? null : orderedCandidates.getFirst();
-    }
-
-    public DungeonSelectionKey primaryKey() {
-        return primary() == null ? null : primary().descriptor().subject().selectionKey();
-    }
-
     public boolean isEmpty() {
         return orderedCandidates.isEmpty();
     }

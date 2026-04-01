@@ -177,7 +177,8 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
             DungeonCanvasPointerEvent event,
             EditorContextSnapshot snapshot,
             DungeonSelection selection,
-            features.world.dungeonmap.shell.interaction.DungeonHitSubject resolvedSubject
+            features.world.dungeonmap.shell.interaction.DungeonHitSubject resolvedSubject,
+            features.world.dungeonmap.shell.interaction.DungeonSelectionKey resolvedKey
     ) {
         return new EditorToolContext(
                 event,
@@ -186,6 +187,7 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
                 snapshot.hitSnapshot(),
                 selection,
                 resolvedSubject,
+                resolvedKey,
                 state);
     }
 
@@ -195,12 +197,12 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
             DungeonSelection selection,
             EditorToolPhase phase
     ) {
-        EditorToolContext baseContext = contextFor(event, snapshot, selection, null);
+        EditorToolContext baseContext = contextFor(event, snapshot, selection, null, null);
         EditorHitResolution resolution = activeTool == null
                 ? EditorHitResolution.none()
                 : activeTool.resolveHit(baseContext, phase);
         return new ResolvedToolContext(
-                contextFor(event, snapshot, selection, resolution.subject()),
+                contextFor(event, snapshot, selection, resolution.subject(), resolution.resolvedKey()),
                 resolution);
     }
 

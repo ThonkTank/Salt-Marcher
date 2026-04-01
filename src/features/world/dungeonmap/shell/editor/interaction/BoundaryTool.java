@@ -5,19 +5,15 @@ import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.geometry.VertexEdge;
-import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
-import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.shell.editor.EditorCards;
-import features.world.dungeonmap.shell.interaction.DungeonHitCandidate;
 import features.world.dungeonmap.shell.interaction.DungeonHitKind;
 import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
 import features.world.dungeonmap.shell.interaction.DungeonSelectionKey;
 import features.world.dungeonmap.shell.interaction.DungeonSelectionLookup;
-import features.world.dungeonmap.shell.interaction.DungeonSelection;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.EditorDraft;
@@ -26,11 +22,9 @@ import features.world.dungeonmap.state.EditorPreview;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
-import ui.async.UiAsyncTasks;
 import ui.async.UiErrorReporter;
 
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -115,21 +109,17 @@ public final class BoundaryTool implements EditorTool {
 
     @Override
     public EditorHitResolution resolveHit(EditorToolContext ctx, EditorToolPhase phase) {
-        DungeonLayout layout = ctx == null ? null : ctx.activeMap();
         DungeonEditorTool tool = sessionState.selectedTool();
-        if (layout == null || tool == null || !tool.isWallTool()) {
+        if (tool == null || !tool.isWallTool()) {
             return EditorHitResolution.none();
         }
-        Point2i vertex = firstVertex(ctx == null ? null : ctx.selection());
-        if (vertex == null) {
+        ResolvedBoundaryVertex resolved = resolveBoundaryVertex(ctx, tool == DungeonEditorTool.CLUSTER_WALL_DELETE);
+        if (resolved == null) {
             return EditorHitResolution.none();
         }
-        boolean deleteMode = tool == DungeonEditorTool.CLUSTER_WALL_DELETE;
-        RoomCluster cluster = resolveCluster(ctx, vertex, deleteMode, layout);
-        if (cluster == null || !pathPlanner.isEditableVertex(cluster, vertex, deleteMode)) {
-            return EditorHitResolution.none();
-        }
-        return EditorHitResolution.part(new DungeonHitSubject.VertexSubject(vertex));
+        return EditorHitResolution.part(
+                new DungeonHitSubject.VertexSubject(resolved.vertex()),
+                clusterOwnerKey(resolved.clusterId()));
     }
 
     @Override
@@ -149,32 +139,24 @@ public final class BoundaryTool implements EditorTool {
     }
 
     private boolean handleWallPressed(EditorToolContext ctx, boolean deleteMode) {
-        DungeonLayout layout = ctx.activeMap();
+        DungeonLayout layout = ctx == null ? null : ctx.activeMap();
         Point2i vertex = selectedVertex(ctx);
-        if (layout == null || vertex == null) {
+        DungeonSelectionKey resolvedKey = ctx == null ? null : ctx.resolvedSelectionKey();
+        RoomCluster cluster = DungeonSelectionLookup.clusterOnLevel(
+                layout,
+                resolvedKey,
+                mapState.activeProjectionLevel());
+        if (layout == null || vertex == null || cluster == null || cluster.clusterId() == null) {
             if (activeBoundaryDraftClusterId() == null) {
                 state.clearSelection();
             }
             return false;
         }
-
-        RoomCluster cluster = resolveCluster(ctx, vertex, deleteMode, layout);
-        if (cluster == null || cluster.clusterId() == null) {
-            if (activeBoundaryDraftClusterId() == null) {
-                state.clearSelection();
-            }
-            return false;
-        }
-        if (!Objects.equals(
-                DungeonSelectionLookup.clusterId(layout, state.selectedKey()),
-                cluster.clusterId())) {
-            state.selectKey(clusterOwnerKey(cluster.clusterId()));
+        if (!Objects.equals(state.selectedKey(), resolvedKey)) {
+            state.selectKey(resolvedKey);
         }
 
         if (draft == null || !Objects.equals(draft.clusterId(), cluster.clusterId())) {
-            if (!pathPlanner.isEditableVertex(cluster, vertex, deleteMode)) {
-                return false;
-            }
             showDraft(new Draft(
                     cluster.clusterId(),
                     deleteMode,
@@ -247,36 +229,32 @@ public final class BoundaryTool implements EditorTool {
         return true;
     }
 
-    private RoomCluster resolveCluster(
-            EditorToolContext ctx,
-            Point2i vertex,
-            boolean deleteMode,
-            DungeonLayout layout
-    ) {
+    private ResolvedBoundaryVertex resolveBoundaryVertex(EditorToolContext ctx, boolean deleteMode) {
+        DungeonLayout layout = ctx == null ? null : ctx.activeMap();
+        Point2i vertex = firstVertex(ctx == null ? null : ctx.selection());
+        if (layout == null || vertex == null) {
+            return null;
+        }
         Long draftClusterId = activeBoundaryDraftClusterId();
-        if (draftClusterId != null) {
-            RoomCluster cluster = clusterOnActiveLevel(draftClusterId, layout);
-            if (cluster != null && pathPlanner.isEditableVertex(cluster, vertex, deleteMode)) {
-                return cluster;
-            }
+        if (isEditableCluster(draftClusterId, layout, vertex, deleteMode)) {
+            return new ResolvedBoundaryVertex(draftClusterId, vertex);
         }
 
-        RoomCluster selectedCluster = DungeonSelectionLookup.clusterOnLevel(
-                layout,
-                state.selectedKey(),
-                mapState.activeProjectionLevel());
-        if (selectedCluster != null && pathPlanner.isEditableVertex(selectedCluster, vertex, deleteMode)) {
-            return selectedCluster;
+        Long selectedClusterId = DungeonSelectionLookup.clusterId(layout, state.selectedKey());
+        if (isEditableCluster(selectedClusterId, layout, vertex, deleteMode)) {
+            return new ResolvedBoundaryVertex(selectedClusterId, vertex);
         }
 
-        Long boundaryClusterId = snapshotClusterId(ctx, layout);
-        if (boundaryClusterId != null) {
-            RoomCluster boundaryCluster = clusterOnActiveLevel(boundaryClusterId, layout);
-            if (boundaryCluster != null && pathPlanner.isEditableVertex(boundaryCluster, vertex, deleteMode)) {
-                return boundaryCluster;
-            }
+        Long boundaryClusterId = boundaryClusterId(ctx == null ? null : ctx.selection());
+        if (isEditableCluster(boundaryClusterId, layout, vertex, deleteMode)) {
+            return new ResolvedBoundaryVertex(boundaryClusterId, vertex);
         }
         return null;
+    }
+
+    private boolean isEditableCluster(Long clusterId, DungeonLayout layout, Point2i vertex, boolean deleteMode) {
+        RoomCluster cluster = clusterOnActiveLevel(clusterId, layout);
+        return cluster != null && pathPlanner.isEditableVertex(cluster, vertex, deleteMode);
     }
 
     private Long activeBoundaryDraftClusterId() {
@@ -317,17 +295,14 @@ public final class BoundaryTool implements EditorTool {
                 : null;
     }
 
-    private static Long snapshotClusterId(EditorToolContext ctx, DungeonLayout layout) {
-        if (ctx == null || ctx.snapshot() == null) {
+    private static Long boundaryClusterId(features.world.dungeonmap.shell.interaction.DungeonSelection selection) {
+        if (selection == null) {
             return null;
         }
-        for (DungeonHitCandidate candidate : ctx.snapshot().candidates()) {
-            Long clusterId = clusterIdFromBoundarySubject(candidate.descriptor().subject(), layout);
-            if (clusterId != null) {
-                return clusterId;
-            }
-        }
-        return null;
+        DungeonHitSubject subject = selection.firstSubjectMatching(candidate ->
+                candidate instanceof DungeonHitSubject.ClusterBoundarySubject
+                        || candidate instanceof DungeonHitSubject.RoomBoundarySubject);
+        return clusterIdFromBoundarySubject(subject);
     }
 
     private void showDraft(Draft nextDraft) {
@@ -349,35 +324,12 @@ public final class BoundaryTool implements EditorTool {
         refreshStatePane();
     }
 
-    private static Long clusterIdFromBoundarySubject(DungeonHitSubject subject, DungeonLayout layout) {
+    private static Long clusterIdFromBoundarySubject(DungeonHitSubject subject) {
         return switch (subject) {
             case DungeonHitSubject.ClusterBoundarySubject clusterBoundarySubject -> clusterBoundarySubject.clusterId();
             case DungeonHitSubject.RoomBoundarySubject roomBoundarySubject -> roomBoundarySubject.clusterId();
             default -> null;
         };
-    }
-
-    private static Long clusterIdFromSubject(DungeonHitSubject subject, DungeonLayout layout) {
-        if (subject == null) {
-            return null;
-        }
-        return switch (subject) {
-            case DungeonHitSubject.ClusterLabelSubject clusterLabelSubject -> clusterLabelSubject.clusterId();
-            case DungeonHitSubject.ClusterBoundarySubject clusterBoundarySubject -> clusterBoundarySubject.clusterId();
-            case DungeonHitSubject.RoomBoundarySubject roomBoundarySubject -> roomBoundarySubject.clusterId();
-            case DungeonHitSubject.RoomSubject roomSubject -> roomSubject.clusterId() != null
-                    ? roomSubject.clusterId()
-                    : clusterIdFromRoom(layout, roomSubject.roomId());
-            default -> null;
-        };
-    }
-
-    private static Long clusterIdFromRoom(DungeonLayout layout, Long roomId) {
-        if (layout == null || roomId == null) {
-            return null;
-        }
-        Room room = layout.findRoom(roomId);
-        return room == null ? null : room.clusterId();
     }
 
     private static DungeonSelectionKey clusterOwnerKey(Long clusterId) {
@@ -446,5 +398,11 @@ public final class BoundaryTool implements EditorTool {
             skippedConnectionEdges = skippedConnectionEdges == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(skippedConnectionEdges));
             statusMessage = statusMessage == null ? "" : statusMessage;
         }
+    }
+
+    private record ResolvedBoundaryVertex(
+            Long clusterId,
+            Point2i vertex
+    ) {
     }
 }

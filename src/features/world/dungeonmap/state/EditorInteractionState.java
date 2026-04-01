@@ -1,7 +1,6 @@
 package features.world.dungeonmap.state;
 
 import features.world.dungeonmap.shell.interaction.DungeonSelectionKey;
-import features.world.dungeonmap.shell.interaction.DungeonSelection;
 
 import java.util.List;
 import java.util.Objects;
@@ -32,10 +31,6 @@ public final class EditorInteractionState {
             return null;
         }
         return selectedKey.partKey();
-    }
-
-    public void applySelection(DungeonSelection selection) {
-        selectKey(selection == null ? null : selection.primaryKey());
     }
 
     public void selectKey(DungeonSelectionKey key) {

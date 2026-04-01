@@ -16,6 +16,7 @@ public record EditorToolContext(
         DungeonHitSnapshot snapshot,
         DungeonSelection selection,
         DungeonHitSubject resolvedSubject,
+        DungeonSelectionKey resolvedKey,
         EditorInteractionState state
 ) {
     public EditorToolContext {
@@ -23,6 +24,9 @@ public record EditorToolContext(
     }
 
     public DungeonSelectionKey resolvedSelectionKey() {
+        if (resolvedKey != null) {
+            return resolvedKey;
+        }
         return resolvedSubject == null ? null : resolvedSubject.selectionKey();
     }
 }

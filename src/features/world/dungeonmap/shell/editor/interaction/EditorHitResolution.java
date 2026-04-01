@@ -9,6 +9,7 @@ import java.util.Objects;
 
 public record EditorHitResolution(
         DungeonHitSubject subject,
+        DungeonSelectionKey resolvedKey,
         EditorHover hover
 ) {
     public EditorHitResolution {
@@ -18,24 +19,38 @@ public record EditorHitResolution(
     }
 
     public static EditorHitResolution none() {
-        return new EditorHitResolution(null, null);
+        return new EditorHitResolution(null, null, null);
     }
 
     public static EditorHitResolution subjectOnly(DungeonHitSubject subject) {
-        return new EditorHitResolution(Objects.requireNonNull(subject, "subject"), null);
+        return subjectOnly(subject, null);
+    }
+
+    public static EditorHitResolution subjectOnly(DungeonHitSubject subject, DungeonSelectionKey resolvedKey) {
+        return new EditorHitResolution(Objects.requireNonNull(subject, "subject"), resolvedKey, null);
     }
 
     public static EditorHitResolution owner(DungeonHitSubject subject) {
+        return owner(subject, null);
+    }
+
+    public static EditorHitResolution owner(DungeonHitSubject subject, DungeonSelectionKey resolvedKey) {
         DungeonHitSubject resolved = Objects.requireNonNull(subject, "subject");
-        return new EditorHitResolution(resolved, new EditorHover(resolved.selectionKey(), EditorHoverScope.OWNER));
+        return new EditorHitResolution(
+                resolved,
+                resolvedKey,
+                new EditorHover(resolved.selectionKey(), EditorHoverScope.OWNER));
     }
 
     public static EditorHitResolution part(DungeonHitSubject subject) {
-        DungeonHitSubject resolved = Objects.requireNonNull(subject, "subject");
-        return new EditorHitResolution(resolved, new EditorHover(resolved.selectionKey(), EditorHoverScope.PART));
+        return part(subject, null);
     }
 
-    public DungeonSelectionKey selectionKey() {
-        return subject == null ? null : subject.selectionKey();
+    public static EditorHitResolution part(DungeonHitSubject subject, DungeonSelectionKey resolvedKey) {
+        DungeonHitSubject resolved = Objects.requireNonNull(subject, "subject");
+        return new EditorHitResolution(
+                resolved,
+                resolvedKey,
+                new EditorHover(resolved.selectionKey(), EditorHoverScope.PART));
     }
 }
