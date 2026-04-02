@@ -372,7 +372,7 @@ public final class DungeonMapLoader {
             long mapId,
             Map<Long, Room> roomsById
     ) throws SQLException {
-        // Load direct corridor graph truth only and translate stored persisted odd/odd 2x coordinates at this JDBC seam.
+        // Load direct corridor graph truth only; persisted x2 coordinates are the same canonical raw values used in memory.
         DungeonSchemaSupport.ensureCompatibility(conn);
         Map<Long, List<CorridorNode>> nodesByCorridorId = loadGrouped(conn,
                 "SELECT corridor_id, corridor_node_id, grid_x2, grid_y2, room_id, room_relative_cell_x, room_relative_cell_y, room_edge_direction"
@@ -383,7 +383,7 @@ public final class DungeonMapLoader {
                 row -> row.getLong("corridor_id"),
                 row -> new CorridorNode(
                         row.getLong("corridor_node_id"),
-                        GridPoint2x.raw(row.getInt("grid_x2") - 1, row.getInt("grid_y2") - 1),
+                        GridPoint2x.raw(row.getInt("grid_x2"), row.getInt("grid_y2")),
                         nullableLong(row, "room_id"),
                         row.getObject("room_relative_cell_x") == null
                                 ? null
@@ -566,14 +566,14 @@ public final class DungeonMapLoader {
     }
 
     private static CellCoord requireStoredCellCenter(int persistedX2, int persistedY2, String label, long roomId, int levelZ) {
-        return GridPoint2x.raw(persistedX2 - 1, persistedY2 - 1).asCell().orElseThrow(() -> new IllegalArgumentException(
+        return GridPoint2x.raw(persistedX2, persistedY2).asCell().orElseThrow(() -> new IllegalArgumentException(
                 label + " must be a tile center for room " + roomId + " at level " + levelZ));
     }
 
     private static Set<GridSegment2x> storedBoundarySteps(int startX2, int startY2, int endX2, int endY2) {
         return GridSegment2x.boundarySteps(Set.of(new GridSegment2x(
-                GridPoint2x.raw(startX2 - 1, startY2 - 1),
-                GridPoint2x.raw(endX2 - 1, endY2 - 1))));
+                GridPoint2x.raw(startX2, startY2),
+                GridPoint2x.raw(endX2, endY2))));
     }
 
     private static List<RoomCluster> loadClusters(Connection conn, long mapId, List<Room> rooms) throws SQLException {

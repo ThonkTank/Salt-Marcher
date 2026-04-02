@@ -134,6 +134,7 @@ public final class DungeonSchemaSupport {
             addColumnIfMissing(stmt, "dungeon_stairs", "name TEXT");
             addColumnIfMissing(stmt, "dungeon_room_exit_descriptions", "level_z INTEGER NOT NULL DEFAULT 0");
         }
+        DungeonGeometryParityMigration.migrateIfNeeded(conn);
     }
 
     private static void addColumnIfMissing(Statement stmt, String table, String columnDefinition) throws SQLException {

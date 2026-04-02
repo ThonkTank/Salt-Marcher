@@ -1,6 +1,7 @@
 package features.world.dungeonmap.persistence;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
@@ -215,10 +216,10 @@ public final class DungeonRoomWriteRepository {
             insertSegment.setLong(1, roomId);
             insertSegment.setInt(2, levelZ);
             insertSegment.setString(3, kind);
-            insertSegment.setInt(4, persistedSegment.start().x2() + 1);
-            insertSegment.setInt(5, persistedSegment.start().y2() + 1);
-            insertSegment.setInt(6, persistedSegment.end().x2() + 1);
-            insertSegment.setInt(7, persistedSegment.end().y2() + 1);
+            insertSegment.setInt(4, persistedSegment.start().x2());
+            insertSegment.setInt(5, persistedSegment.start().y2());
+            insertSegment.setInt(6, persistedSegment.end().x2());
+            insertSegment.setInt(7, persistedSegment.end().y2());
             insertSegment.addBatch();
         }
     }
@@ -248,12 +249,12 @@ public final class DungeonRoomWriteRepository {
 
     private static int persistedCellX2(CellCoord cell) {
         CellCoord resolvedCell = cell == null ? new CellCoord(0, 0) : cell;
-        return resolvedCell.x() * 2 + 1;
+        return GridPoint2x.cell(resolvedCell).x2();
     }
 
     private static int persistedCellY2(CellCoord cell) {
         CellCoord resolvedCell = cell == null ? new CellCoord(0, 0) : cell;
-        return resolvedCell.y() * 2 + 1;
+        return GridPoint2x.cell(resolvedCell).y2();
     }
 
 }

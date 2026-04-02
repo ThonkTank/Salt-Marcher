@@ -101,8 +101,8 @@ public final class DungeonCorridorWriteRepository {
     private static void bindNode(PreparedStatement ps, long corridorId, CorridorNode node) throws SQLException {
         ps.setLong(1, requiredId(node.nodeId(), "corridor node"));
         ps.setLong(2, corridorId);
-        ps.setInt(3, node.point2x().x2() + 1);
-        ps.setInt(4, node.point2x().y2() + 1);
+        ps.setInt(3, node.point2x().x2());
+        ps.setInt(4, node.point2x().y2());
         if (node.roomId() == null) {
             ps.setObject(5, null);
             ps.setObject(6, null);

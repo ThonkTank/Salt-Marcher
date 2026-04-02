@@ -42,6 +42,8 @@ public record DungeonHitProbe(
             throw new IllegalArgumentException("gridSizePx must be > 0");
         }
         double halfGrid = gridSizePx / 2.0;
+        // Pixel projection treats the top-left corner of CellCoord(0,0) as GridPoint2x(-1,-1), so raw 2x values map
+        // to canvas space with a fixed half-cell offset rather than a storage compatibility codec.
         return GridPoint2x.raw(
                 (int) Math.round((resolvedPoint.getX() - panX) / halfGrid) - 1,
                 (int) Math.round((resolvedPoint.getY() - panY) / halfGrid) - 1);
