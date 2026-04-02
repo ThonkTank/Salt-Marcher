@@ -153,9 +153,7 @@ public final class StructureObject {
     }
 
     public boolean contains(CubePoint point) {
-        return point != null
-                && contains(point.projectedCellCoord())
-                && cellCoordsAtLevel(point.z()).contains(point.projectedCellCoord());
+        return point != null && cellCoordsAtLevel(point.z()).contains(point.projectedCellCoord());
     }
 
     public StructureObject movedBy(Point2i delta, int levelDelta) {

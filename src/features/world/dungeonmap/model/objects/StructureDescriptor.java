@@ -2,11 +2,9 @@ package features.world.dungeonmap.model.objects;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 
-import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -107,75 +105,16 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
     }
 
     private static LevelDescriptor descriptorForCells(Collection<CellCoord> cells) {
-        Set<CellCoord> normalizedCells = normalizeCellCoords(cells);
+        Set<CellCoord> normalizedCells = CellCoord.normalize(cells);
         if (normalizedCells.isEmpty()) {
             return new LevelDescriptor(new CellCoord(0, 0), Set.of(), Set.of(), Set.of());
         }
-        CellCoord anchorCell = bestCenterCoord(normalizedCells);
+        CellCoord anchorCell = CellCoord.bestCenter(normalizedCells);
         return new LevelDescriptor(
                 anchorCell,
-                fillSeeds(normalizedCells),
+                CellCoord.componentCenters(normalizedCells),
                 boundaryEdges(normalizedCells),
                 Set.of());
-    }
-
-    private static Set<CellCoord> normalizeCellCoords(Collection<CellCoord> cells) {
-        if (cells == null || cells.isEmpty()) {
-            return Set.of();
-        }
-        LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
-        cells.stream()
-                .filter(cell -> cell != null)
-                .sorted(CellCoord.ORDER)
-                .forEach(result::add);
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
-    static Point2i bestCenterCell(Collection<Point2i> cells) {
-        return bestCenterCoord(CellCoord.fromPoints(cells)).toPoint2i();
-    }
-
-    static CellCoord bestCenterCoord(Collection<CellCoord> cells) {
-        Set<CellCoord> normalizedCells = normalizeCellCoords(cells);
-        if (normalizedCells.isEmpty()) {
-            return new CellCoord(0, 0);
-        }
-        double averageX = normalizedCells.stream().mapToInt(CellCoord::x).average().orElse(0.0);
-        double averageY = normalizedCells.stream().mapToInt(CellCoord::y).average().orElse(0.0);
-        return normalizedCells.stream()
-                .min(java.util.Comparator
-                        .comparingDouble((CellCoord cell) -> squaredDistance(cell, averageX, averageY))
-                        .thenComparing(CellCoord.ORDER))
-                .orElse(new CellCoord(0, 0));
-    }
-
-    private static Set<CellCoord> fillSeeds(Set<CellCoord> cells) {
-        if (cells == null || cells.isEmpty()) {
-            return Set.of();
-        }
-        LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
-        Set<CellCoord> remaining = new LinkedHashSet<>(cells);
-        while (!remaining.isEmpty()) {
-            CellCoord seed = remaining.iterator().next();
-            LinkedHashSet<CellCoord> component = new LinkedHashSet<>();
-            ArrayDeque<CellCoord> queue = new ArrayDeque<>();
-            queue.add(seed);
-            remaining.remove(seed);
-            while (!queue.isEmpty()) {
-                CellCoord current = queue.removeFirst();
-                if (!component.add(current)) {
-                    continue;
-                }
-                for (CellCoord step : CellCoord.CARDINAL_STEPS) {
-                    CellCoord neighbor = current.add(step);
-                    if (remaining.remove(neighbor)) {
-                        queue.addLast(neighbor);
-                    }
-                }
-            }
-            result.add(bestCenterCoord(component));
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
     private static Set<GridSegment2x> boundaryEdges(Set<CellCoord> cells) {
@@ -191,12 +130,6 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
             }
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
-    private static double squaredDistance(CellCoord cell, double centerX, double centerY) {
-        double deltaX = cell.x() - centerX;
-        double deltaY = cell.y() - centerY;
-        return deltaX * deltaX + deltaY * deltaY;
     }
 
     public record LevelDescriptor(
@@ -243,27 +176,6 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
 
         public boolean isEmpty() {
             return fillSeeds.isEmpty() && boundaryEdges.isEmpty() && openingEdges.isEmpty();
-        }
-
-        public GridPoint2x anchor2x() {
-            return GridPoint2x.fromTileCenter(anchorCell);
-        }
-
-        public Set<GridPoint2x> fillSeeds2x() {
-            LinkedHashSet<GridPoint2x> result = new LinkedHashSet<>();
-            fillSeeds.stream()
-                    .sorted(CellCoord.ORDER)
-                    .map(GridPoint2x::fromTileCenter)
-                    .forEach(result::add);
-            return result.isEmpty() ? Set.of() : Set.copyOf(result);
-        }
-
-        public Set<GridSegment2x> boundarySegments2x() {
-            return boundaryEdges;
-        }
-
-        public Set<GridSegment2x> openingSegments2x() {
-            return openingEdges;
         }
 
         private static CellCoord normalizeAnchor(CellCoord anchorCell) {

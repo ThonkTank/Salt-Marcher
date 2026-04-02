@@ -1,11 +1,12 @@
 package features.world.dungeonmap.shell.interaction;
 
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.geometry.TileFaceShape;
 import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
 
+import java.util.Set;
 import java.util.Objects;
 
 public sealed interface DungeonHitSurface permits DungeonHitSurface.TileSurface,
@@ -15,9 +16,9 @@ public sealed interface DungeonHitSurface permits DungeonHitSurface.TileSurface,
 
     int levelZ();
 
-    record TileSurface(TileFaceShape faceShape, int levelZ) implements DungeonHitSurface {
+    record TileSurface(Set<CellCoord> cells, int levelZ) implements DungeonHitSurface {
         public TileSurface {
-            faceShape = Objects.requireNonNull(faceShape, "faceShape");
+            cells = cells == null ? Set.of() : Set.copyOf(cells);
         }
     }
 

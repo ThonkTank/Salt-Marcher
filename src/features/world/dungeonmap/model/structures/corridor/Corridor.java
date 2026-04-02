@@ -290,7 +290,7 @@ public final class Corridor {
         // Corridor descriptor truth is authored directly from routed 2x paths plus room-opening segments; routing still
         // uses cell paths internally, but shared structure geometry no longer round-trips through generic cell import.
         StructureDescriptor descriptor = new StructureDescriptor(Map.of(levelZ, new StructureDescriptor.LevelDescriptor(
-                CellCoord.fromPoint(bestCenterCell(occupiedCells)),
+                CellCoord.fromPoint(CellCoord.bestPoint(occupiedCells)),
                 fillSeeds(occupiedCells),
                 boundarySegments2x,
                 Set.copyOf(validOpenings))));
@@ -655,63 +655,7 @@ public final class Corridor {
     }
 
     private static Set<CellCoord> fillSeeds(Set<Point2i> occupiedCells) {
-        if (occupiedCells == null || occupiedCells.isEmpty()) {
-            return Set.of();
-        }
-        LinkedHashSet<CellCoord> result = connectedComponents(occupiedCells).stream()
-                .sorted(Comparator.comparing(Corridor::bestCenterCell, Point2i.POINT_ORDER))
-                .map(Corridor::bestCenterCell)
-                .map(CellCoord::fromPoint)
-                .collect(LinkedHashSet::new, Set::add, Set::addAll);
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
-    private static List<Set<Point2i>> connectedComponents(Set<Point2i> occupiedCells) {
-        if (occupiedCells == null || occupiedCells.isEmpty()) {
-            return List.of();
-        }
-        LinkedHashSet<Point2i> remaining = new LinkedHashSet<>(occupiedCells);
-        ArrayList<Set<Point2i>> result = new ArrayList<>();
-        while (!remaining.isEmpty()) {
-            Point2i seed = remaining.iterator().next();
-            ArrayDeque<Point2i> queue = new ArrayDeque<>();
-            LinkedHashSet<Point2i> component = new LinkedHashSet<>();
-            queue.add(seed);
-            remaining.remove(seed);
-            while (!queue.isEmpty()) {
-                Point2i current = queue.removeFirst();
-                if (!component.add(current)) {
-                    continue;
-                }
-                for (Point2i step : Point2i.CARDINAL_STEPS) {
-                    Point2i neighbor = current.add(step);
-                    if (remaining.remove(neighbor)) {
-                        queue.addLast(neighbor);
-                    }
-                }
-            }
-            result.add(Set.copyOf(component));
-        }
-        return List.copyOf(result);
-    }
-
-    private static Point2i bestCenterCell(Set<Point2i> occupiedCells) {
-        if (occupiedCells == null || occupiedCells.isEmpty()) {
-            return new Point2i(0, 0);
-        }
-        double averageX = occupiedCells.stream().mapToInt(Point2i::x).average().orElse(0.0);
-        double averageY = occupiedCells.stream().mapToInt(Point2i::y).average().orElse(0.0);
-        return occupiedCells.stream()
-                .min(Comparator
-                        .comparingDouble((Point2i cell) -> squaredDistance(cell, averageX, averageY))
-                        .thenComparing(Point2i.POINT_ORDER))
-                .orElse(new Point2i(0, 0));
-    }
-
-    private static double squaredDistance(Point2i cell, double centerX, double centerY) {
-        double deltaX = cell.x() - centerX;
-        double deltaY = cell.y() - centerY;
-        return deltaX * deltaX + deltaY * deltaY;
+        return CellCoord.componentCentersOfPoints(occupiedCells);
     }
 
     private record DerivedProjection(

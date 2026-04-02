@@ -1,5 +1,6 @@
 package features.world.dungeonmap.model.structures.cluster;
 
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
@@ -158,7 +159,7 @@ public final class RoomCluster {
         return new InteractiveLabelHandle(
                 targetKey(),
                 clusterId == null ? "Cluster" : "Cluster " + clusterId,
-                GridPoint2x.fromTileCenter(bestCenterCell(cells)));
+                GridPoint2x.fromTileCenter(CellCoord.bestPoint(cells)));
     }
 
     public boolean overlaps(Collection<Point2i> candidateCells) {
@@ -565,26 +566,6 @@ public final class RoomCluster {
             }
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
-    private static Point2i bestCenterCell(Set<Point2i> cells) {
-        if (cells == null || cells.isEmpty()) {
-            return new Point2i(0, 0);
-        }
-        double averageX = cells.stream().mapToInt(Point2i::x).average().orElse(0.0);
-        double averageY = cells.stream().mapToInt(Point2i::y).average().orElse(0.0);
-        return cells.stream()
-                .min(java.util.Comparator
-                        .comparingDouble((Point2i cell) -> squaredDistance(cell, averageX, averageY))
-                        .thenComparingInt(Point2i::y)
-                        .thenComparingInt(Point2i::x))
-                .orElse(new Point2i(0, 0));
-    }
-
-    private static double squaredDistance(Point2i cell, double x, double y) {
-        double deltaX = cell.x() - x;
-        double deltaY = cell.y() - y;
-        return deltaX * deltaX + deltaY * deltaY;
     }
 
     private static LocalConnection movedConnection(LocalConnection connection, Point2i delta) {

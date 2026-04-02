@@ -95,7 +95,7 @@ final class ClusterRewritePlanner {
         deletedRoomIds.remove(retainedRoom.roomId());
         return ClusterRewrite.builder(
                         cluster.clusterId(),
-                        bestCenterCell(mergedClusterCells),
+                        CellCoord.bestPoint(mergedClusterCells),
                         rewrittenRooms,
                         localConnections(cluster.mapId(), cluster.clusterId(), rewrittenRooms),
                         persistedBoundaries(mergedClusterCells, rewrittenRooms, previousBoundaryKinds))
@@ -154,7 +154,7 @@ final class ClusterRewritePlanner {
             List<Set<Point2i>> components = connectedComponents(remainingRoomDeleteLevelCells).stream()
                     .sorted(Comparator
                             .comparing((Set<Point2i> component) -> !contains(component, preferredAnchor(existingDeleteLevelCells, roomAnchorsByLevel(room).get(deleteLevel))))
-                            .thenComparing(ClusterRewritePlanner::bestCenterCell, Point2i.POINT_ORDER))
+                            .thenComparing(CellCoord::bestPoint, Point2i.POINT_ORDER))
                     .toList();
             if (remainingRoomCellsByLevel.isEmpty()) {
                 deletedRoomIds.add(room.roomId());
@@ -546,13 +546,13 @@ final class ClusterRewritePlanner {
         return connectedComponents(rewrittenClusterCells).stream()
                 .sorted(Comparator
                         .comparing((Set<Point2i> component) -> !component.contains(cluster.center()))
-                        .thenComparingInt(component -> bestCenterCell(component).distanceTo(cluster.center()))
-                        .thenComparing(ClusterRewritePlanner::bestCenterCell, Point2i.POINT_ORDER))
+                        .thenComparingInt(component -> CellCoord.bestPoint(component).distanceTo(cluster.center()))
+                        .thenComparing(CellCoord::bestPoint, Point2i.POINT_ORDER))
                 .map(componentCells -> {
                     List<Room> componentRooms = roomsForDeleteComponent(componentCells, rewrittenRooms);
                     return new ClusterRewriteSplit(
                             null,
-                            bestCenterCell(componentCells),
+                            CellCoord.bestPoint(componentCells),
                             componentRooms,
                             localConnections(cluster.mapId(), null, componentRooms),
                             persistedBoundaries(componentCells, componentRooms, boundaryKinds));
@@ -1162,40 +1162,12 @@ final class ClusterRewritePlanner {
     private static CellCoord anchorCellForRoom(Set<Point2i> roomCells, Point2i preferredAnchor) {
         Point2i anchorCell = preferredAnchor != null && roomCells.contains(preferredAnchor)
                 ? preferredAnchor
-                : bestCenterCell(roomCells);
+                : CellCoord.bestPoint(roomCells);
         return CellCoord.fromPoint(anchorCell);
     }
 
     private static Set<CellCoord> fillSeedsForRoom(Set<Point2i> roomCells) {
-        if (roomCells == null || roomCells.isEmpty()) {
-            return Set.of();
-        }
-        LinkedHashSet<CellCoord> result = connectedComponents(roomCells).stream()
-                .sorted(Comparator.comparing(ClusterRewritePlanner::bestCenterCell, Point2i.POINT_ORDER))
-                .map(ClusterRewritePlanner::bestCenterCell)
-                .map(CellCoord::fromPoint)
-                .collect(LinkedHashSet::new, Set::add, Set::addAll);
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
-    private static Point2i bestCenterCell(Set<Point2i> cells) {
-        if (cells == null || cells.isEmpty()) {
-            return new Point2i(0, 0);
-        }
-        double averageX = cells.stream().mapToInt(Point2i::x).average().orElse(0.0);
-        double averageY = cells.stream().mapToInt(Point2i::y).average().orElse(0.0);
-        return cells.stream()
-                .min(Comparator
-                        .comparingDouble((Point2i cell) -> squaredDistance(cell, averageX, averageY))
-                        .thenComparingInt(Point2i::y)
-                        .thenComparingInt(Point2i::x))
-                .orElse(new Point2i(0, 0));
-    }
-
-    private static double squaredDistance(Point2i cell, double x, double y) {
-        double deltaX = cell.x() - x;
-        double deltaY = cell.y() - y;
-        return deltaX * deltaX + deltaY * deltaY;
+        return CellCoord.componentCentersOfPoints(roomCells);
     }
 
     private static boolean contains(Set<Point2i> cells, Point2i cell) {
@@ -1206,7 +1178,7 @@ final class ClusterRewritePlanner {
         if (preferredAnchor != null && contains(roomCells, preferredAnchor)) {
             return preferredAnchor;
         }
-        return roomCells == null || roomCells.isEmpty() ? null : bestCenterCell(roomCells);
+        return roomCells == null || roomCells.isEmpty() ? null : CellCoord.bestPoint(roomCells);
     }
 
     private record LevelSeed(int level, Point2i cell) {

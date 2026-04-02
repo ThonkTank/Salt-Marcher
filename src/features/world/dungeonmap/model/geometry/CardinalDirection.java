@@ -8,13 +8,11 @@ public enum CardinalDirection {
 
     private final int code;
     private final Point2i delta;
-    private final CellCoord cellDelta;
     private final String label;
 
     CardinalDirection(int code, Point2i delta, String label) {
         this.code = code;
         this.delta = delta;
-        this.cellDelta = CellCoord.fromPoint(delta);
         this.label = label;
     }
 
@@ -27,7 +25,7 @@ public enum CardinalDirection {
     }
 
     public CellCoord deltaCell() {
-        return cellDelta;
+        return CellCoord.fromPoint(delta);
     }
 
     public String label() {
@@ -53,20 +51,7 @@ public enum CardinalDirection {
     }
 
     public String relativeLabel(Point2i absoluteDirection) {
-        CardinalDirection direction = fromDirection(absoluteDirection);
-        if (direction == null) {
-            return "Unklar";
-        }
-        if (direction == this) {
-            return "Direkt vor euch";
-        }
-        if (direction == clockwise()) {
-            return "Rechts von euch";
-        }
-        if (direction == opposite()) {
-            return "Hinter euch";
-        }
-        return "Links von euch";
+        return relativeLabel(CellCoord.fromPoint(absoluteDirection));
     }
 
     public String relativeLabel(CellCoord absoluteDirection) {
@@ -123,30 +108,11 @@ public enum CardinalDirection {
     }
 
     public static CardinalDirection fromDirection(CellCoord direction) {
-        if (direction == null) {
-            return null;
-        }
-        for (CardinalDirection candidate : values()) {
-            if (candidate.cellDelta.equals(direction)) {
-                return candidate;
-            }
-        }
-        return null;
+        return fromDirection(direction == null ? null : direction.toPoint2i());
     }
 
     public static CardinalDirection fromTravel(Point2i from, Point2i to, CardinalDirection fallback) {
-        if (from == null || to == null) {
-            return fallback == null ? defaultDirection() : fallback;
-        }
-        int deltaX = to.x() - from.x();
-        int deltaY = to.y() - from.y();
-        if (deltaX == 0 && deltaY == 0) {
-            return fallback == null ? defaultDirection() : fallback;
-        }
-        if (Math.abs(deltaX) >= Math.abs(deltaY)) {
-            return deltaX >= 0 ? EAST : WEST;
-        }
-        return deltaY >= 0 ? SOUTH : NORTH;
+        return fromTravel(CellCoord.fromPoint(from), CellCoord.fromPoint(to), fallback);
     }
 
     public static CardinalDirection fromTravel(CellCoord from, CellCoord to, CardinalDirection fallback) {

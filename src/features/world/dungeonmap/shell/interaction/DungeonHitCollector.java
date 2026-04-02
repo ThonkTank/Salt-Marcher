@@ -1,6 +1,7 @@
 package features.world.dungeonmap.shell.interaction;
 
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import javafx.geometry.Point2D;
@@ -91,7 +92,7 @@ public final class DungeonHitCollector {
     }
 
     private static SurfaceMatch matchTile(DungeonHitSurface.TileSurface surface, DungeonHitProbe probe) {
-        return surface.faceShape().contains(probe.gridCell()) ? new SurfaceMatch(surface, 0.0) : null;
+        return surface.cells().contains(CellCoord.fromPoint(probe.gridCell())) ? new SurfaceMatch(surface, 0.0) : null;
     }
 
     private static SurfaceMatch matchSegment(DungeonHitSurface.SegmentSurface surface, DungeonHitProbe probe) {

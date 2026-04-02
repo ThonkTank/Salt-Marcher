@@ -2,14 +2,13 @@ package features.world.dungeonmap.model.objects;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.geometry.TileFaceShape;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
- * A floor owns its walkable cells directly; TileFaceShape is now only a derived compatibility surface.
+ * A floor owns its walkable cells directly.
  */
 public final class Floor {
 
@@ -34,10 +33,6 @@ public final class Floor {
         return anchorCell;
     }
 
-    public TileFaceShape shape2x() {
-        return new TileFaceShape(cells());
-    }
-
     public Point2i anchorCell() {
         return anchorCell.toPoint2i();
     }
@@ -47,7 +42,7 @@ public final class Floor {
     }
 
     public CellCoord centerCellCoord() {
-        return cellCoords.isEmpty() ? null : StructureDescriptor.bestCenterCoord(cellCoords);
+        return cellCoords.isEmpty() ? null : CellCoord.bestCenter(cellCoords);
     }
 
     public Point2i centerCell() {
@@ -80,15 +75,7 @@ public final class Floor {
     }
 
     private static Set<CellCoord> normalizeCells(Collection<CellCoord> cells) {
-        if (cells == null || cells.isEmpty()) {
-            return Set.of();
-        }
-        LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
-        cells.stream()
-                .filter(cell -> cell != null)
-                .sorted(CellCoord.ORDER)
-                .forEach(result::add);
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+        return CellCoord.normalize(cells);
     }
 
     private static CellCoord normalizeAnchor(CellCoord anchorCell, Set<CellCoord> cellCoords) {
@@ -98,6 +85,6 @@ public final class Floor {
         if (cellCoords == null || cellCoords.isEmpty()) {
             return new CellCoord(0, 0);
         }
-        return StructureDescriptor.bestCenterCoord(cellCoords);
+        return CellCoord.bestCenter(cellCoords);
     }
 }

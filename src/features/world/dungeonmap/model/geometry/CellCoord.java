@@ -2,8 +2,10 @@ package features.world.dungeonmap.model.geometry;
 
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
@@ -74,6 +76,77 @@ public record CellCoord(int x, int y) {
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
+    public static Set<CellCoord> normalize(Collection<CellCoord> cells) {
+        LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
+        if (cells != null) {
+            cells.stream()
+                    .filter(cell -> cell != null)
+                    .sorted(ORDER)
+                    .forEach(result::add);
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
+    public static CellCoord bestCenter(Collection<CellCoord> cells) {
+        Set<CellCoord> normalizedCells = normalize(cells);
+        if (normalizedCells.isEmpty()) {
+            return new CellCoord(0, 0);
+        }
+        double averageX = normalizedCells.stream().mapToInt(CellCoord::x).average().orElse(0.0);
+        double averageY = normalizedCells.stream().mapToInt(CellCoord::y).average().orElse(0.0);
+        return normalizedCells.stream()
+                .min(Comparator
+                        .comparingDouble((CellCoord cell) -> squaredDistance(cell, averageX, averageY))
+                        .thenComparing(ORDER))
+                .orElse(new CellCoord(0, 0));
+    }
+
+    public static Point2i bestPoint(Collection<Point2i> points) {
+        return bestCenter(fromPoints(points)).toPoint2i();
+    }
+
+    public static List<Set<CellCoord>> connectedComponents(Collection<CellCoord> cells) {
+        Set<CellCoord> normalizedCells = normalize(cells);
+        if (normalizedCells.isEmpty()) {
+            return List.of();
+        }
+        LinkedHashSet<CellCoord> remaining = new LinkedHashSet<>(normalizedCells);
+        ArrayList<Set<CellCoord>> result = new ArrayList<>();
+        while (!remaining.isEmpty()) {
+            CellCoord seed = remaining.iterator().next();
+            ArrayDeque<CellCoord> queue = new ArrayDeque<>();
+            LinkedHashSet<CellCoord> component = new LinkedHashSet<>();
+            queue.add(seed);
+            remaining.remove(seed);
+            while (!queue.isEmpty()) {
+                CellCoord current = queue.removeFirst();
+                if (!component.add(current)) {
+                    continue;
+                }
+                for (CellCoord step : CARDINAL_STEPS) {
+                    CellCoord neighbor = current.add(step);
+                    if (remaining.remove(neighbor)) {
+                        queue.addLast(neighbor);
+                    }
+                }
+            }
+            result.add(Set.copyOf(component));
+        }
+        return List.copyOf(result);
+    }
+
+    public static Set<CellCoord> componentCenters(Collection<CellCoord> cells) {
+        LinkedHashSet<CellCoord> result = connectedComponents(cells).stream()
+                .map(CellCoord::bestCenter)
+                .sorted(ORDER)
+                .collect(LinkedHashSet::new, Set::add, Set::addAll);
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
+    public static Set<CellCoord> componentCentersOfPoints(Collection<Point2i> points) {
+        return componentCenters(fromPoints(points));
+    }
+
     public static Set<Point2i> toPoints(Collection<CellCoord> cells) {
         LinkedHashSet<Point2i> result = new LinkedHashSet<>();
         if (cells != null) {
@@ -84,5 +157,11 @@ public record CellCoord(int x, int y) {
             }
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
+    private static double squaredDistance(CellCoord cell, double centerX, double centerY) {
+        double deltaX = cell.x() - centerX;
+        double deltaY = cell.y() - centerY;
+        return deltaX * deltaX + deltaY * deltaY;
     }
 }
