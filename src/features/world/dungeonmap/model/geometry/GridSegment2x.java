@@ -35,8 +35,8 @@ public record GridSegment2x(GridPoint2x start, GridPoint2x end) {
     public static GridSegment2x betweenCellAndStep(Point2i fromCell, Point2i stepDelta) {
         Point2i origin = fromCell == null ? new Point2i(0, 0) : fromCell;
         Point2i delta = stepDelta == null ? new Point2i(0, 0) : stepDelta;
-        GridPoint2x origin2x = GridPoint2x.fromVertex(origin);
-        // Productive room/corridor boundary flows stay in 2x geometry instead of detouring through VertexEdge.
+        GridPoint2x origin2x = GridPoint2x.fromRaw(origin.x() * 2, origin.y() * 2);
+        // The input Point2i stays a cell anchor; productive boundary flows remain 2x-native.
         return switch (delta.x() + "," + delta.y()) {
             case "0,-1" -> new GridSegment2x(origin2x, origin2x.offset(2, 0));
             case "1,0" -> new GridSegment2x(origin2x.offset(2, 0), origin2x.offset(2, 2));

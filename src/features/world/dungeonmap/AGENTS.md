@@ -62,6 +62,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - Hit collection owns raw candidates. `DungeonSelection` is event-time data only.
 - `DungeonHitProbe`, `DungeonHitSurface`, and geometry-backed selection part keys speak the explicit 2x language (`GridPoint2x`, `GridSegment2x`). Cell coordinates remain convenience data, not the shared half-step truth.
 - `Point2i` is the cell/vector type. It is not a doubled/raw/vertex geometry carrier; shared half-step and boundary geometry stays in `GridPoint2x` and `GridSegment2x`.
+- `DungeonLayout`, `DungeonHitProbe`, runtime navigation, and `CorridorNode.roomRelativeCell` may keep `Point2i` only as explicit cell queries or cardinal vectors. Vertex picks and half-step hit geometry stay in `GridPoint2x`.
 - `DungeonHitSubject` and `DungeonSelectionLookup` expose geometry-backed editor/runtime selections only as `GridPoint2x` and `GridSegment2x`. Do not add raw doubled-`Point2i` or vertex mirrors back into those seams.
 - `EditorTool.resolveHit(...)` owns tool-specific interpretation of those candidates. Do not move per-tool allowlists back into a central selector.
 - `EditorInteractionState` owns only shared editor coordination state:

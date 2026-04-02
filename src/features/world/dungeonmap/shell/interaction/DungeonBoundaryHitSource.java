@@ -207,6 +207,8 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
         if (room == null || segment2x == null) {
             return null;
         }
+        // Boundary hits expose the owning room cell plus outward cardinal step for tool semantics,
+        // while the shared boundary itself stays on the 2x segment.
         for (Point2i cell : segment2x.touchingCells().stream().sorted(Point2i.POINT_ORDER).toList()) {
             if (!room.structure().cellsAtLevel(levelZ).contains(cell)) {
                 continue;

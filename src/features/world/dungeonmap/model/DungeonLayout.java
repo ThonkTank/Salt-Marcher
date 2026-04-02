@@ -30,6 +30,9 @@ import java.util.stream.Collectors;
  *
  * <p>The behavior to preserve is that rooms/clusters, corridors, stairs, and transitions answer queries directly.
  * Do not move active behavior back into a second aggregate layer.
+ *
+ * <p>`Point2i` here stays limited to cell lookups, traversable-cell indexes, and movement vectors. Shared half-step
+ * geometry belongs to `GridPoint2x` and `GridSegment2x` instead.
  */
 public final class DungeonLayout {
 

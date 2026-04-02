@@ -279,7 +279,7 @@ public final class StructureObject {
         }
         result.sort(Comparator.comparing((Set<GridSegment2x> component) -> component.stream()
                 .min(GridSegment2x.SEGMENT_ORDER)
-                .orElse(new GridSegment2x(GridPoint2x.fromVertex(new Point2i(0, 0)), GridPoint2x.fromVertex(new Point2i(1, 0)))),
+                .orElse(new GridSegment2x(GridPoint2x.fromRaw(0, 0), GridPoint2x.fromRaw(2, 0))),
                 GridSegment2x.SEGMENT_ORDER));
         return List.copyOf(result);
     }

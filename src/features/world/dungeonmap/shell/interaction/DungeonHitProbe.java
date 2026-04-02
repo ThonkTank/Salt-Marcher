@@ -6,6 +6,11 @@ import javafx.geometry.Point2D;
 
 import java.util.Objects;
 
+/**
+ * Hit probing carries both a tile cell and the canonical 2x probe point.
+ *
+ * <p>`gridCell` stays a convenience cell query for tile-owned logic; geometry-backed seams must use `probePoint2x`.
+ */
 public record DungeonHitProbe(
         Point2D canvasPoint,
         Point2i gridCell,
@@ -42,11 +47,11 @@ public record DungeonHitProbe(
                 (int) Math.round((resolvedPoint.getY() - panY) / halfGrid));
     }
 
-    public Point2D canvasPointForGrid(Point2i point) {
-        Point2i resolvedPoint = Objects.requireNonNull(point, "point");
+    public Point2D canvasPointForGrid(Point2i cell) {
+        Point2i resolvedCell = Objects.requireNonNull(cell, "cell");
         return new Point2D(
-                panX + resolvedPoint.x() * gridSizePx,
-                panY + resolvedPoint.y() * gridSizePx);
+                panX + resolvedCell.x() * gridSizePx,
+                panY + resolvedCell.y() * gridSizePx);
     }
 
     public Point2D canvasPointForPoint2x(GridPoint2x point2x) {

@@ -4,6 +4,10 @@ import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 
+/**
+ * Corridor routing geometry stays in `point2x`; `roomRelativeCell` remains the room-local cell binding for room-bound
+ * endpoints and is not a 2x mirror.
+ */
 public record CorridorNode(
         Long nodeId,
         GridPoint2x point2x,
