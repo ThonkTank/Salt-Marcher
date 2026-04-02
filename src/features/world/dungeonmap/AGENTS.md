@@ -21,12 +21,14 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - Room paint/delete/boundary edits persist room-owned `StructureDescriptor` truth plus derived cluster metadata. They do not reroute or regenerate corridors or stairs.
 - Connection doors and room exit narration are level-aware. Shared boundary/door queries must keep `levelZ` together with the 2x segment instead of collapsing identical segments across floors.
 - `Wall` and `Door` are 2x-native boundary objects keyed by normalized `GridSegment2x` collections. Do not reintroduce vertex-edge wrapper geometry in productive wall/door/corridor flows.
+- Tile-owned surfaces are explicit cell collections (`Floor.cells()`, `TileFaceShape`) instead of a second legacy area model.
 - Runtime presentation resolves surfaces from the same structure owners used by the editor. Do not invent runtime-only structure mirrors.
 
 ## Package Roles
 
 - `model/`
   - `geometry/` owns pure grid math and routing primitives.
+  - `geometry/` keeps shared half-step primitives on `GridPoint2x`/`GridSegment2x`; concrete tile-area surfaces use explicit cell sets or `TileFaceShape`.
   - `interaction/` owns model-side interaction seams such as `InteractiveLabelHandle`; semantic label identity lives here, not in canvas code.
 - `objects/` owns thin domain objects over geometry such as `Floor`, `Wall`, `Door`, `StructureObject`, and `StructureDescriptor`. `Wall`/`Door` stay segment-based; shared boundary queries operate on `GridSegment2x`.
   - `structures/` owns first-class structures and the structure-specific subpackages `cluster`, `connection`, `corridor`, `room`, `stair`, and `transition`.
