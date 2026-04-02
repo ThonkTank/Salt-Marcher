@@ -1,6 +1,7 @@
 package features.world.dungeonmap.model.geometry;
 
 import java.util.Comparator;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -17,8 +18,8 @@ public record GridSegment2x(GridPoint2x start, GridPoint2x end) {
                     .thenComparing(GridSegment2x::end, GridPoint2x.ORDER);
 
     public GridSegment2x {
-        GridPoint2x resolvedStart = start == null ? GridPoint2x.raw(0, 0) : start;
-        GridPoint2x resolvedEnd = end == null ? resolvedStart : end;
+        GridPoint2x resolvedStart = Objects.requireNonNull(start, "start");
+        GridPoint2x resolvedEnd = Objects.requireNonNull(end, "end");
         if (resolvedStart.equals(resolvedEnd)) {
             throw new IllegalArgumentException("GridSegment2x requires distinct endpoints");
         }
@@ -35,23 +36,12 @@ public record GridSegment2x(GridPoint2x start, GridPoint2x end) {
     }
 
     public static GridSegment2x boundaryEdge(CellCoord cell, CardinalDirection dir) {
-        if (dir == null) {
-            throw new IllegalArgumentException("GridSegment2x.boundaryEdge requires a direction");
-        }
-        CellCoord resolvedCell = cell == null ? new CellCoord(0, 0) : cell;
-        return switch (dir) {
-            case NORTH -> new GridSegment2x(
-                    GridPoint2x.vertex(resolvedCell, -1, -1),
-                    GridPoint2x.vertex(resolvedCell, 1, -1));
-            case EAST -> new GridSegment2x(
-                    GridPoint2x.vertex(resolvedCell, 1, -1),
-                    GridPoint2x.vertex(resolvedCell, 1, 1));
-            case SOUTH -> new GridSegment2x(
-                    GridPoint2x.vertex(resolvedCell, -1, 1),
-                    GridPoint2x.vertex(resolvedCell, 1, 1));
-            case WEST -> new GridSegment2x(
-                    GridPoint2x.vertex(resolvedCell, -1, -1),
-                    GridPoint2x.vertex(resolvedCell, -1, 1));
+        CellCoord resolvedCell = Objects.requireNonNull(cell, "cell");
+        CardinalDirection resolvedDirection = Objects.requireNonNull(dir, "dir");
+        GridPoint2x edgeCenter = GridPoint2x.edgeCenter(resolvedCell, resolvedDirection);
+        return switch (resolvedDirection) {
+            case NORTH, SOUTH -> new GridSegment2x(edgeCenter.offset2x(-1, 0), edgeCenter.offset2x(1, 0));
+            case EAST, WEST -> new GridSegment2x(edgeCenter.offset2x(0, -1), edgeCenter.offset2x(0, 1));
         };
     }
 
@@ -64,7 +54,7 @@ public record GridSegment2x(GridPoint2x start, GridPoint2x end) {
     }
 
     public int length2() {
-        return Math.abs(end.x2() - start.x2()) + Math.abs(end.y2() - start.y2());
+        return start.manhattanDistance2x(end);
     }
 
     public boolean sharesEndpoint(GridSegment2x other) {
@@ -95,7 +85,8 @@ public record GridSegment2x(GridPoint2x start, GridPoint2x end) {
     }
 
     public GridSegment2x translatedByCells(CellCoord delta) {
-        return new GridSegment2x(start.translatedByCells(delta), end.translatedByCells(delta));
+        CellCoord resolvedDelta = Objects.requireNonNull(delta, "delta");
+        return new GridSegment2x(start.translatedByCells(resolvedDelta), end.translatedByCells(resolvedDelta));
     }
 
     public GridPoint2x midpoint() {
@@ -121,11 +112,10 @@ public record GridSegment2x(GridPoint2x start, GridPoint2x end) {
         if (!touchingCells.contains(cell)) {
             return null;
         }
-        for (CellCoord touchingCell : touchingCells) {
-            if (!touchingCell.equals(cell)) {
-                return cell.directionTo4(touchingCell);
-            }
-        }
-        return null;
+        return touchingCells.stream()
+                .filter(touchingCell -> !touchingCell.equals(cell))
+                .findFirst()
+                .map(cell::directionTo4)
+                .orElse(null);
     }
 }

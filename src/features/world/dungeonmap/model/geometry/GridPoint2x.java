@@ -1,8 +1,7 @@
 package features.world.dungeonmap.model.geometry;
 
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.LinkedHashSet;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -29,25 +28,23 @@ public record GridPoint2x(int x2, int y2) {
     }
 
     public static GridPoint2x cell(CellCoord cell) {
-        CellCoord resolvedCell = cell == null ? new CellCoord(0, 0) : cell;
+        CellCoord resolvedCell = Objects.requireNonNull(cell, "cell");
         return new GridPoint2x(resolvedCell.x() * 2, resolvedCell.y() * 2);
     }
 
     public static GridPoint2x edgeCenter(CellCoord cell, CardinalDirection dir) {
-        if (dir == null) {
-            throw new IllegalArgumentException("GridPoint2x.edgeCenter requires a direction");
-        }
-        CellCoord resolvedCell = cell == null ? new CellCoord(0, 0) : cell;
-        CellCoord delta = dir.deltaCell();
-        return new GridPoint2x(resolvedCell.x() * 2 + delta.x(), resolvedCell.y() * 2 + delta.y());
+        CellCoord resolvedCell = Objects.requireNonNull(cell, "cell");
+        CardinalDirection resolvedDirection = Objects.requireNonNull(dir, "dir");
+        CellCoord delta = resolvedDirection.deltaCell();
+        return cell(resolvedCell).offset2x(delta.x(), delta.y());
     }
 
     public static GridPoint2x vertex(CellCoord baseCell, int dx, int dy) {
+        CellCoord resolvedCell = Objects.requireNonNull(baseCell, "baseCell");
         if ((dx != -1 && dx != 1) || (dy != -1 && dy != 1)) {
             throw new IllegalArgumentException("GridPoint2x.vertex requires dx/dy in {-1,+1}");
         }
-        CellCoord resolvedCell = baseCell == null ? new CellCoord(0, 0) : baseCell;
-        return new GridPoint2x(resolvedCell.x() * 2 + dx, resolvedCell.y() * 2 + dy);
+        return cell(resolvedCell).offset2x(dx, dy);
     }
 
     public Kind kind() {
@@ -83,7 +80,7 @@ public record GridPoint2x(int x2, int y2) {
 
     public Set<CellCoord> touchingCells() {
         return switch (kind()) {
-            case CELL -> asCell().map(Set::of).orElse(Set.of());
+            case CELL -> Set.of(asCell().orElseThrow());
             case EDGE -> touchingCellsForEdge();
             case VERTEX -> touchingCellsForVertex();
         };
@@ -97,7 +94,7 @@ public record GridPoint2x(int x2, int y2) {
     }
 
     public GridPoint2x translatedByCells(CellCoord delta) {
-        CellCoord resolvedDelta = delta == null ? new CellCoord(0, 0) : delta;
+        CellCoord resolvedDelta = Objects.requireNonNull(delta, "delta");
         if (resolvedDelta.x() == 0 && resolvedDelta.y() == 0) {
             return this;
         }
@@ -105,7 +102,8 @@ public record GridPoint2x(int x2, int y2) {
     }
 
     public int manhattanDistance2x(GridPoint2x other) {
-        return other == null ? Integer.MAX_VALUE : Math.abs(x2 - other.x2) + Math.abs(y2 - other.y2);
+        GridPoint2x resolvedOther = Objects.requireNonNull(other, "other");
+        return Math.abs(x2 - resolvedOther.x2) + Math.abs(y2 - resolvedOther.y2);
     }
 
     public long encodedKey() {
@@ -113,17 +111,16 @@ public record GridPoint2x(int x2, int y2) {
     }
 
     private Set<CellCoord> touchingCellsForEdge() {
-        LinkedHashSet<CellCoord> cells = new LinkedHashSet<>();
         if ((x2 & 1) != 0) {
             int cellY = y2 / 2;
-            cells.add(new CellCoord((x2 - 1) / 2, cellY));
-            cells.add(new CellCoord((x2 + 1) / 2, cellY));
-        } else {
-            int cellX = x2 / 2;
-            cells.add(new CellCoord(cellX, (y2 - 1) / 2));
-            cells.add(new CellCoord(cellX, (y2 + 1) / 2));
+            return Set.of(
+                    new CellCoord((x2 - 1) / 2, cellY),
+                    new CellCoord((x2 + 1) / 2, cellY));
         }
-        return immutableCells(cells);
+        int cellX = x2 / 2;
+        return Set.of(
+                new CellCoord(cellX, (y2 - 1) / 2),
+                new CellCoord(cellX, (y2 + 1) / 2));
     }
 
     private Set<CellCoord> touchingCellsForVertex() {
@@ -131,18 +128,10 @@ public record GridPoint2x(int x2, int y2) {
         int eastX = (x2 + 1) / 2;
         int northY = (y2 - 1) / 2;
         int southY = (y2 + 1) / 2;
-        LinkedHashSet<CellCoord> cells = new LinkedHashSet<>();
-        cells.add(new CellCoord(westX, northY));
-        cells.add(new CellCoord(eastX, northY));
-        cells.add(new CellCoord(westX, southY));
-        cells.add(new CellCoord(eastX, southY));
-        return immutableCells(cells);
-    }
-
-    private static Set<CellCoord> immutableCells(LinkedHashSet<CellCoord> cells) {
-        if (cells.isEmpty()) {
-            return Set.of();
-        }
-        return Collections.unmodifiableSet(cells);
+        return Set.of(
+                new CellCoord(westX, northY),
+                new CellCoord(eastX, northY),
+                new CellCoord(westX, southY),
+                new CellCoord(eastX, southY));
     }
 }
