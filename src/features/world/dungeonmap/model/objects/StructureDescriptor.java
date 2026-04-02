@@ -4,7 +4,6 @@ import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.geometry.TileShape;
 
 import java.util.ArrayDeque;
 import java.util.Collection;
@@ -14,7 +13,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Canonical per-level structure input in the shared doubled-grid language.
+ * Canonical per-level structure input reduced to tile-center seeds and 2x boundary truth.
  */
 public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescriptor> levels) {
 
@@ -95,7 +94,7 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
         if (normalizedCells.isEmpty()) {
             return new LevelDescriptor(GridPoint2x.fromTileCenter(new Point2i(0, 0)), Set.of(), Set.of(), Set.of());
         }
-        Point2i anchorCell = TileShape.fromAbsoluteCells(normalizedCells).anchor();
+        Point2i anchorCell = bestCenterCell(normalizedCells);
         return new LevelDescriptor(
                 GridPoint2x.fromTileCenter(anchorCell),
                 seedPoints(normalizedCells),
@@ -114,6 +113,20 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
             }
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
+    static Point2i bestCenterCell(Collection<Point2i> cells) {
+        Set<Point2i> normalizedCells = normalizeCells(cells);
+        if (normalizedCells.isEmpty()) {
+            return new Point2i(0, 0);
+        }
+        double averageX = normalizedCells.stream().mapToInt(Point2i::x).average().orElse(0.0);
+        double averageY = normalizedCells.stream().mapToInt(Point2i::y).average().orElse(0.0);
+        return normalizedCells.stream()
+                .min(java.util.Comparator
+                        .comparingDouble((Point2i cell) -> squaredDistance(cell, averageX, averageY))
+                        .thenComparing(Point2i.POINT_ORDER))
+                .orElse(new Point2i(0, 0));
     }
 
     private static Set<GridPoint2x> seedPoints(Set<Point2i> cells) {
@@ -140,7 +153,7 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
                     }
                 }
             }
-            Point2i anchorCell = TileShape.fromAbsoluteCells(component).anchor();
+            Point2i anchorCell = bestCenterCell(component);
             result.add(GridPoint2x.fromTileCenter(anchorCell));
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
@@ -159,6 +172,12 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
             }
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
+    private static double squaredDistance(Point2i cell, double centerX, double centerY) {
+        double deltaX = cell.x() - centerX;
+        double deltaY = cell.y() - centerY;
+        return deltaX * deltaX + deltaY * deltaY;
     }
 
     public record LevelDescriptor(

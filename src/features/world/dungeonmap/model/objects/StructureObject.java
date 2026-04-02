@@ -5,7 +5,6 @@ import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileFaceShape;
-import features.world.dungeonmap.model.geometry.VertexEdge;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -18,7 +17,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Shared synthesized owner for descriptor-native floor, wall, and door geometry.
+ * Shared synthesized owner for floor, wall, and door geometry rebuilt from descriptor-native 2x truth.
  */
 public final class StructureObject {
 
@@ -91,10 +90,10 @@ public final class StructureObject {
 
     public Point2i centerCellAtLevel(int levelZ) {
         Floor floor = floorAtLevel(levelZ);
-        if (floor == null || floor.shape().size() == 0) {
+        if (floor == null || floor.cells().isEmpty()) {
             return null;
         }
-        return floor.shape().centerCell();
+        return StructureDescriptor.bestCenterCell(floor.cells());
     }
 
     public CubePoint centerPointAtLevel(int levelZ) {
@@ -170,8 +169,8 @@ public final class StructureObject {
         return List.copyOf(result);
     }
 
-    // The descriptor keeps one shared boundary language; the floor is rebuilt by filling from tile-center seeds
-    // while treating both wall and opening segments as blocking perimeter edges.
+    // The descriptor keeps one shared 2x boundary language; hydration flood-fills from tile-center seeds while
+    // splitting long perimeter segments into one-step GridSegment2x barriers for exact cell-to-cell blocking.
     private static Set<Point2i> hydrateCells(StructureDescriptor.LevelDescriptor level) {
         Set<Point2i> seeds = level.fillSeeds2x().stream()
                 .map(GridPoint2x::toCellCenter)
@@ -180,8 +179,8 @@ public final class StructureObject {
         if (seeds.isEmpty()) {
             return Set.of();
         }
-        Set<VertexEdge> blockedEdges = toBoundaryEdges(level.boundarySegments2x());
-        if (blockedEdges.isEmpty()) {
+        Set<GridSegment2x> blockedSegments = stepBoundarySegments(level.boundarySegments2x());
+        if (blockedSegments.isEmpty()) {
             return Set.copyOf(seeds);
         }
         CellBounds bounds = cellBounds(level.boundarySegments2x(), seeds);
@@ -194,7 +193,8 @@ public final class StructureObject {
             }
             for (Point2i step : Point2i.CARDINAL_STEPS) {
                 Point2i neighbor = current.add(step);
-                if (!bounds.contains(neighbor) || blockedEdges.contains(VertexEdge.betweenCellAndStep(current, step))) {
+                if (!bounds.contains(neighbor)
+                        || blockedSegments.contains(GridSegment2x.betweenCellAndStep(current, step))) {
                     continue;
                 }
                 queue.addLast(neighbor);
@@ -217,33 +217,33 @@ public final class StructureObject {
         return new CellBounds(minX, minY, maxX, maxY);
     }
 
-    private static Set<VertexEdge> toBoundaryEdges(Collection<GridSegment2x> segments) {
-        LinkedHashSet<VertexEdge> result = new LinkedHashSet<>();
+    private static Set<GridSegment2x> stepBoundarySegments(Collection<GridSegment2x> segments) {
+        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
         if (segments != null) {
             for (GridSegment2x segment : segments) {
                 if (segment == null) {
                     continue;
                 }
-                result.addAll(toBoundaryEdges(segment));
+                result.addAll(stepBoundarySegments(segment));
             }
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
-    private static Set<VertexEdge> toBoundaryEdges(GridSegment2x segment) {
-        LinkedHashSet<VertexEdge> result = new LinkedHashSet<>();
+    private static Set<GridSegment2x> stepBoundarySegments(GridSegment2x segment) {
+        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
         if (segment == null) {
             return Set.of();
         }
         if (segment.isHorizontal()) {
             int y2 = segment.start().y2();
             for (int x2 = segment.minX2(); x2 < segment.maxX2(); x2 += 2) {
-                result.add(new VertexEdge(new Point2i(x2 / 2, y2 / 2), new Point2i(x2 / 2 + 1, y2 / 2)));
+                result.add(new GridSegment2x(GridPoint2x.fromRaw(x2, y2), GridPoint2x.fromRaw(x2 + 2, y2)));
             }
         } else {
             int x2 = segment.start().x2();
             for (int y2 = segment.minY2(); y2 < segment.maxY2(); y2 += 2) {
-                result.add(new VertexEdge(new Point2i(x2 / 2, y2 / 2), new Point2i(x2 / 2, y2 / 2 + 1)));
+                result.add(new GridSegment2x(GridPoint2x.fromRaw(x2, y2), GridPoint2x.fromRaw(x2, y2 + 2)));
             }
         }
         return Set.copyOf(result);
