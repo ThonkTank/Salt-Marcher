@@ -34,7 +34,7 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
                 continue;
             }
             cellsByLevel.computeIfAbsent(cubePoint.z(), ignored -> new LinkedHashSet<>())
-                    .add(cubePoint.projectedCellCoord());
+                    .add(cubePoint.projectedCell());
         }
         return fromCellCoordsByLevel(cellsByLevel);
     }

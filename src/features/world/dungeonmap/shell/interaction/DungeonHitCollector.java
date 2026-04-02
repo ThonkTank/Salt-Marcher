@@ -92,7 +92,7 @@ public final class DungeonHitCollector {
     }
 
     private static SurfaceMatch matchTile(DungeonHitSurface.TileSurface surface, DungeonHitProbe probe) {
-        return surface.cells().contains(CellCoord.fromPoint(probe.gridCell())) ? new SurfaceMatch(surface, 0.0) : null;
+        return surface.cells().contains(probe.gridCell()) ? new SurfaceMatch(surface, 0.0) : null;
     }
 
     private static SurfaceMatch matchSegment(DungeonHitSurface.SegmentSurface surface, DungeonHitProbe probe) {

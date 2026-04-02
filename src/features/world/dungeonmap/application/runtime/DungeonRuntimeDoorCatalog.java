@@ -5,7 +5,7 @@ import features.world.dungeonmap.application.room.RoomExitCatalog;
 import features.world.dungeonmap.application.room.RoomExitDescriptor;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.structures.connection.Connection;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpointType;
@@ -36,7 +36,7 @@ public final class DungeonRuntimeDoorCatalog {
             return List.of();
         }
         return describe(
-                corridor.structure().cellsAtLevel(corridor.levelZ()),
+                corridor.structure().cellCoordsAtLevel(corridor.levelZ()),
                 corridor.levelZ(),
                 layout.connectionsForCorridor(corridor.corridorId()),
                 heading,
@@ -45,11 +45,11 @@ public final class DungeonRuntimeDoorCatalog {
     }
 
     private static List<DungeonRuntimeDoorDescriptor> describe(
-            java.util.Set<Point2i> cells,
+            java.util.Set<CellCoord> cells,
             int levelZ,
             List<? extends Connection> connections,
             CardinalDirection heading,
-            BiFunction<Point2i, Point2i, String> narrationLookup,
+            BiFunction<CellCoord, CardinalDirection, String> narrationLookup,
             Function<RoomExitDescriptor, DoorContext> contextLookup
     ) {
         return DoorExitCatalog.describe(cells, levelZ, connections).stream()

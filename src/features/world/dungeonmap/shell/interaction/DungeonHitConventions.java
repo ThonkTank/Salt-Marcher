@@ -2,7 +2,7 @@ package features.world.dungeonmap.shell.interaction;
 
 import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
 import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
-import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.geometry.CellCoord;
 import javafx.geometry.Point2D;
 
 import java.util.Objects;
@@ -102,8 +102,8 @@ public final class DungeonHitConventions {
                 + ":" + resolvedSegment.end().x2() + ":" + resolvedSegment.end().y2();
     }
 
-    public static String cellPartKey(Point2i cell, int levelZ) {
-        Point2i resolvedCell = Objects.requireNonNull(cell, "cell");
+    public static String cellPartKey(CellCoord cell, int levelZ) {
+        CellCoord resolvedCell = Objects.requireNonNull(cell, "cell");
         return "cell:" + resolvedCell.x() + ":" + resolvedCell.y() + ":" + levelZ;
     }
 }

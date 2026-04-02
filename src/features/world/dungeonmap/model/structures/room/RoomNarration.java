@@ -1,6 +1,7 @@
 package features.world.dungeonmap.model.structures.room;
 
-import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.geometry.CardinalDirection;
+import features.world.dungeonmap.model.geometry.CellCoord;
 
 import java.util.List;
 
@@ -21,7 +22,7 @@ public record RoomNarration(
         return EMPTY;
     }
 
-    public String exitDescription(int levelZ, Point2i roomCell, Point2i direction) {
+    public String exitDescription(int levelZ, CellCoord roomCell, CardinalDirection direction) {
         return exitNarrations.stream()
                 .filter(exit -> exit.levelZ() == levelZ
                         && exit.roomCell().equals(roomCell)

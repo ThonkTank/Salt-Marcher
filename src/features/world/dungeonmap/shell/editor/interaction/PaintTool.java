@@ -3,6 +3,7 @@ package features.world.dungeonmap.shell.editor.interaction;
 import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
@@ -161,7 +162,7 @@ public final class PaintTool implements EditorTool {
 
     private static Point2i resolvedCell(EditorToolContext ctx) {
         return ctx != null && ctx.resolvedSubject() instanceof DungeonHitSubject.FloorCellSubject floorCellSubject
-                ? floorCellSubject.cell()
+                ? floorCellSubject.cell().toPoint2i()
                 : null;
     }
 }

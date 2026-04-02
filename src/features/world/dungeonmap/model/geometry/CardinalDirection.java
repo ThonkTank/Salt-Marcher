@@ -1,16 +1,16 @@
 package features.world.dungeonmap.model.geometry;
 
 public enum CardinalDirection {
-    NORTH(0, new Point2i(0, -1), "Nord"),
-    EAST(1, new Point2i(1, 0), "Ost"),
-    SOUTH(2, new Point2i(0, 1), "Süd"),
-    WEST(3, new Point2i(-1, 0), "West");
+    NORTH(0, new CellCoord(0, -1), "Nord"),
+    EAST(1, new CellCoord(1, 0), "Ost"),
+    SOUTH(2, new CellCoord(0, 1), "Süd"),
+    WEST(3, new CellCoord(-1, 0), "West");
 
     private final int code;
-    private final Point2i delta;
+    private final CellCoord delta;
     private final String label;
 
-    CardinalDirection(int code, Point2i delta, String label) {
+    CardinalDirection(int code, CellCoord delta, String label) {
         this.code = code;
         this.delta = delta;
         this.label = label;
@@ -20,12 +20,12 @@ public enum CardinalDirection {
         return code;
     }
 
-    public Point2i delta() {
+    public CellCoord delta() {
         return delta;
     }
 
-    public CellCoord deltaCell() {
-        return CellCoord.fromPoint(delta);
+    public Point2i deltaPoint2i() {
+        return delta.toPoint2i();
     }
 
     public String label() {
@@ -95,7 +95,7 @@ public enum CardinalDirection {
         return defaultDirection();
     }
 
-    public static CardinalDirection fromDirection(Point2i direction) {
+    public static CardinalDirection fromDirection(CellCoord direction) {
         if (direction == null) {
             return null;
         }
@@ -107,8 +107,8 @@ public enum CardinalDirection {
         return null;
     }
 
-    public static CardinalDirection fromDirection(CellCoord direction) {
-        return fromDirection(direction == null ? null : direction.toPoint2i());
+    public static CardinalDirection fromDirection(Point2i direction) {
+        return fromDirection(direction == null ? null : CellCoord.fromPoint(direction));
     }
 
     public static CardinalDirection fromTravel(Point2i from, Point2i to, CardinalDirection fallback) {
@@ -134,6 +134,6 @@ public enum CardinalDirection {
         if (from == null || to == null) {
             return fallback == null ? defaultDirection() : fallback;
         }
-        return fromTravel(from.projectedCellCoord(), to.projectedCellCoord(), fallback);
+        return fromTravel(from.projectedCell(), to.projectedCell(), fallback);
     }
 }

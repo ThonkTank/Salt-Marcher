@@ -17,6 +17,7 @@ import features.world.dungeonmap.canvas.base.DungeonRuntimeRenderOverlay;
 import features.world.dungeonmap.canvas.base.DungeonViewMode;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.shell.AbstractDungeonMapView;
 import features.world.dungeonmap.shell.controls.DungeonLevelOverlayControls;
@@ -204,7 +205,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
                 });
     }
 
-    private void previewPartyTile(features.world.dungeonmap.model.geometry.Point2i tile) {
+    private void previewPartyTile(CellCoord tile) {
         if (tile == null) {
             runtimeState.clearDragPreview();
             return;
@@ -212,7 +213,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         runtimeState.showDragPreview(DungeonRuntimeLocation.tile(CubePoint.at(tile, state().activeProjectionLevel())));
     }
 
-    private void movePartyToTile(features.world.dungeonmap.model.geometry.Point2i tile) {
+    private void movePartyToTile(CellCoord tile) {
         if (runtimeState.loading() || runtimeState.moving() || state().activeMap().mapId() <= 0) {
             return;
         }

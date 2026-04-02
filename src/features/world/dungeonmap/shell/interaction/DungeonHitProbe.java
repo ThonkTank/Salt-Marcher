@@ -1,7 +1,7 @@
 package features.world.dungeonmap.shell.interaction;
 
 import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
-import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.geometry.CellCoord;
 import javafx.geometry.Point2D;
 
 import java.util.Objects;
@@ -13,7 +13,7 @@ import java.util.Objects;
  */
 public record DungeonHitProbe(
         Point2D canvasPoint,
-        Point2i gridCell,
+        CellCoord gridCell,
         LegacyGridPoint2x probePoint2x,
         int levelZ,
         double panX,
@@ -47,8 +47,8 @@ public record DungeonHitProbe(
                 (int) Math.round((resolvedPoint.getY() - panY) / halfGrid));
     }
 
-    public Point2D canvasPointForGrid(Point2i cell) {
-        Point2i resolvedCell = Objects.requireNonNull(cell, "cell");
+    public Point2D canvasPointForGrid(CellCoord cell) {
+        CellCoord resolvedCell = Objects.requireNonNull(cell, "cell");
         return new Point2D(
                 panX + resolvedCell.x() * gridSizePx,
                 panY + resolvedCell.y() * gridSizePx);

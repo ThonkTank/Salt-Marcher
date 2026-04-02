@@ -18,7 +18,7 @@ public final class RoomExitCatalog {
         return room.structure().levels().stream()
                 .sorted()
                 .flatMap(levelZ -> DoorExitCatalog.describe(
-                        room.structure().cellsAtLevel(levelZ),
+                        room.structure().cellCoordsAtLevel(levelZ),
                         levelZ,
                         layout.connectionsForRoom(room.roomId())).stream())
                 .toList();

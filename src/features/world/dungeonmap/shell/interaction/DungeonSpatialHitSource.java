@@ -54,7 +54,7 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
 
     private static List<DungeonHitDescriptor> corridorDescriptors(DungeonLayout layout, DungeonHitProbe probe) {
         ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
-        for (Corridor corridor : layout.corridorsAtCell(probe.gridCell(), probe.levelZ())) {
+        for (Corridor corridor : layout.corridorsAtCell(probe.gridCell().toPoint2i(), probe.levelZ())) {
             if (corridor == null || corridor.corridorId() == null) {
                 continue;
             }
@@ -69,27 +69,27 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
 
     private static List<DungeonHitDescriptor> stairDescriptors(DungeonLayout layout, DungeonHitProbe probe) {
         ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
-        for (DungeonStair stair : layout.stairsAtCell(probe.gridCell(), probe.levelZ())) {
+        for (DungeonStair stair : layout.stairsAtCell(probe.gridCell().toPoint2i(), probe.levelZ())) {
             if (stair == null || stair.stairId() == null) {
                 continue;
             }
             descriptors.add(new DungeonHitDescriptor(
                     new DungeonHitSubject.StairSubject(stair.stairId()),
-                    List.of(new DungeonHitSurface.TileSurface(Set.of(CellCoord.fromPoint(probe.gridCell())), probe.levelZ()))));
+                    List.of(new DungeonHitSurface.TileSurface(Set.of(probe.gridCell()), probe.levelZ()))));
         }
         return List.copyOf(descriptors);
     }
 
     private static List<DungeonHitDescriptor> transitionDescriptors(DungeonLayout layout, DungeonHitProbe probe) {
         ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
-        for (DungeonTransition transition : layout.transitionsAtCell(probe.gridCell(), probe.levelZ())) {
+        for (DungeonTransition transition : layout.transitionsAtCell(probe.gridCell().toPoint2i(), probe.levelZ())) {
             if (transition == null || transition.transitionId() == null || transition.anchor() == null) {
                 continue;
             }
             descriptors.add(new DungeonHitDescriptor(
                     new DungeonHitSubject.TransitionSubject(transition.transitionId()),
                     List.of(new DungeonHitSurface.TileSurface(
-                            Set.of(transition.anchor().projectedCellCoord()),
+                            Set.of(transition.anchor().projectedCell()),
                             transition.anchor().z()))));
         }
         return List.copyOf(descriptors);

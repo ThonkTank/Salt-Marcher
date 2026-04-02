@@ -1,8 +1,8 @@
 package features.world.dungeonmap.application.runtime;
 
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
@@ -23,7 +23,7 @@ public final class DungeonRuntimeTransitionCatalog {
             return List.of();
         }
         return levelsForRoomSurface(room.structure(), activeTile).stream()
-                .flatMap(levelZ -> describe(layout, room.structure().cellsAtLevel(levelZ), levelZ).stream())
+                .flatMap(levelZ -> describe(layout, room.structure().cellCoordsAtLevel(levelZ), levelZ).stream())
                 .toList();
     }
 
@@ -31,7 +31,7 @@ public final class DungeonRuntimeTransitionCatalog {
         if (layout == null || corridor == null || corridor.corridorId() == null) {
             return List.of();
         }
-        return describe(layout, corridor.structure().cellsAtLevel(corridor.levelZ()), corridor.levelZ());
+        return describe(layout, corridor.structure().cellCoordsAtLevel(corridor.levelZ()), corridor.levelZ());
     }
 
     public static List<DungeonRuntimeTransitionDescriptor> describeAtTile(DungeonLayout layout, CubePoint tile) {
@@ -49,7 +49,7 @@ public final class DungeonRuntimeTransitionCatalog {
                 .toList();
     }
 
-    private static List<DungeonRuntimeTransitionDescriptor> describe(DungeonLayout layout, Set<Point2i> cells, int levelZ) {
+    private static List<DungeonRuntimeTransitionDescriptor> describe(DungeonLayout layout, Set<CellCoord> cells, int levelZ) {
         if (layout == null || cells == null || cells.isEmpty()) {
             return List.of();
         }

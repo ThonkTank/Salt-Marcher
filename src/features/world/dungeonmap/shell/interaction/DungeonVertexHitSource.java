@@ -1,8 +1,8 @@
 package features.world.dungeonmap.shell.interaction;
 
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
-import features.world.dungeonmap.model.geometry.Point2i;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -26,7 +26,7 @@ public final class DungeonVertexHitSource implements DungeonHitSource {
         return List.copyOf(descriptors);
     }
 
-    private static Set<LegacyGridPoint2x> cellVertices2x(Point2i cell) {
+    private static Set<LegacyGridPoint2x> cellVertices2x(CellCoord cell) {
         if (cell == null) {
             return Set.of();
         }

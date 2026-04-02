@@ -1,6 +1,8 @@
 package features.world.dungeonmap.shell.interaction;
 
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.CardinalDirection;
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
@@ -28,7 +30,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
 
         ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
         List<RoomCluster> projectedClusters = projectedClusters(layout, probe.levelZ());
-        Set<Point2i> occupiedRoomCells = occupiedRoomCells(projectedClusters);
+        Set<CellCoord> occupiedRoomCells = occupiedRoomCells(projectedClusters);
         Set<LegacyGridSegment2x> connectionSegments = connectionSegments(projectedClusters, layout, probe.levelZ());
 
         descriptors.addAll(clusterBoundaryDescriptors(projectedClusters, probe.levelZ()));
@@ -51,12 +53,12 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
         return List.copyOf(clusters);
     }
 
-    private static Set<Point2i> occupiedRoomCells(List<RoomCluster> projectedClusters) {
-        LinkedHashSet<Point2i> cells = new LinkedHashSet<>();
+    private static Set<CellCoord> occupiedRoomCells(List<RoomCluster> projectedClusters) {
+        LinkedHashSet<CellCoord> cells = new LinkedHashSet<>();
         for (RoomCluster cluster : projectedClusters) {
             for (Room room : cluster.rooms()) {
                 if (room != null) {
-                    cells.addAll(room.structure().cells());
+                    cells.addAll(room.structure().cellCoords());
                 }
             }
         }
@@ -95,12 +97,14 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
                 if (segment2x == null) {
                     continue;
                 }
-                Point2i baseCell = segment2x.touchingCells().stream()
-                        .filter(cluster::contains)
-                        .sorted(Point2i.POINT_ORDER)
+                CellCoord baseCell = segment2x.touchingCellCoords().stream()
+                        .filter(cell -> cluster.contains(cell.toPoint2i()))
+                        .sorted(CellCoord.ORDER)
                         .findFirst()
                         .orElse(null);
-                Point2i direction = baseCell == null ? null : segment2x.directionFrom(baseCell);
+                CardinalDirection direction = baseCell == null
+                        ? null
+                        : CardinalDirection.fromDirection(segment2x.directionFrom(baseCell.toPoint2i()));
                 if (baseCell == null || direction == null) {
                     continue;
                 }
@@ -119,7 +123,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
 
     private static List<DungeonHitDescriptor> roomBoundaryDescriptors(
             List<RoomCluster> projectedClusters,
-            Set<Point2i> occupiedRoomCells,
+            Set<CellCoord> occupiedRoomCells,
             Set<LegacyGridSegment2x> connectionSegments,
             int levelZ
     ) {
@@ -143,7 +147,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
                                     room.clusterId(),
                                     segment2x,
                                     geometry.roomCell(),
-                                    geometry.outwardStep(),
+                                    geometry.outwardDirection(),
                                     geometry.exterior()),
                             List.of(new DungeonHitSurface.SegmentSurface(segment2x, levelZ))));
                 }
@@ -200,7 +204,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
 
     private static RoomBoundaryGeometry roomBoundaryGeometry(
             Room room,
-            Set<Point2i> occupiedRoomCells,
+            Set<CellCoord> occupiedRoomCells,
             LegacyGridSegment2x segment2x,
             int levelZ
     ) {
@@ -209,18 +213,18 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
         }
         // Boundary hits expose the owning room cell plus outward cardinal step for tool semantics,
         // while the shared boundary itself stays on the 2x segment.
-        for (Point2i cell : segment2x.touchingCells().stream().sorted(Point2i.POINT_ORDER).toList()) {
-            if (!room.structure().cellsAtLevel(levelZ).contains(cell)) {
+        for (CellCoord cell : segment2x.touchingCellCoords().stream().sorted(CellCoord.ORDER).toList()) {
+            if (!room.structure().cellCoordsAtLevel(levelZ).contains(cell)) {
                 continue;
             }
-            Point2i outwardStep = segment2x.directionFrom(cell);
-            Point2i opposite = outwardStep == null ? null : cell.add(outwardStep);
+            CardinalDirection outwardDirection = CardinalDirection.fromDirection(segment2x.directionFrom(cell.toPoint2i()));
+            CellCoord opposite = outwardDirection == null ? null : cell.add(outwardDirection.delta());
             boolean exterior = opposite == null || !occupiedRoomCells.contains(opposite);
-            return new RoomBoundaryGeometry(cell, outwardStep, exterior);
+            return new RoomBoundaryGeometry(cell, outwardDirection, exterior);
         }
         return null;
     }
 
-    private record RoomBoundaryGeometry(Point2i roomCell, Point2i outwardStep, boolean exterior) {
+    private record RoomBoundaryGeometry(CellCoord roomCell, CardinalDirection outwardDirection, boolean exterior) {
     }
 }

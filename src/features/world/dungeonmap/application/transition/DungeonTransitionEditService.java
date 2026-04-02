@@ -5,6 +5,7 @@ import features.campaignstate.api.CampaignStateApi;
 import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
@@ -33,7 +34,7 @@ public final class DungeonTransitionEditService {
 
     public void create(
             DungeonLayout layout,
-            Point2i anchorCell,
+            CellCoord anchorCell,
             int levelZ,
             DungeonTransitionEditRequest request
     ) throws SQLException {
@@ -47,7 +48,7 @@ public final class DungeonTransitionEditService {
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
                 DungeonTransitionSchemaSupport.ensureCompatibility(conn);
-                roomTopologyService.ensureTraversableCell(conn, layout.mapId(), anchorCell, levelZ);
+                roomTopologyService.ensureTraversableCell(conn, layout.mapId(), anchorCell.toPoint2i(), levelZ);
                 DungeonTransitionDestination destination = resolveDestination(conn, resolvedRequest);
                 CubePoint anchor = CubePoint.at(anchorCell, levelZ);
                 long transitionId = transitionWriteRepository.insert(conn, new DungeonTransition(
@@ -74,7 +75,7 @@ public final class DungeonTransitionEditService {
         }
     }
 
-    public void placePrepared(long transitionId, Point2i anchorCell, int levelZ) throws SQLException {
+    public void placePrepared(long transitionId, CellCoord anchorCell, int levelZ) throws SQLException {
         if (transitionId <= 0) {
             throw new SQLException("Kein vorbereiteter Übergang gewählt");
         }
@@ -85,7 +86,7 @@ public final class DungeonTransitionEditService {
             DungeonTransactionRunner.inTransaction(conn, () -> {
                 DungeonTransitionSchemaSupport.ensureCompatibility(conn);
                 DungeonTransition transition = requireTransition(conn, transitionId);
-                roomTopologyService.ensureTraversableCell(conn, transition.mapId(), anchorCell, levelZ);
+                roomTopologyService.ensureTraversableCell(conn, transition.mapId(), anchorCell.toPoint2i(), levelZ);
                 transitionWriteRepository.updatePlacement(conn, transitionId, CubePoint.at(anchorCell, levelZ));
                 return null;
             });

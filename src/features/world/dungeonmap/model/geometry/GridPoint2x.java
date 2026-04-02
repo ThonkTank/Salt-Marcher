@@ -35,7 +35,7 @@ public record GridPoint2x(int x2, int y2) {
     public static GridPoint2x edgeCenter(CellCoord cell, CardinalDirection dir) {
         CellCoord resolvedCell = Objects.requireNonNull(cell, "cell");
         CardinalDirection resolvedDirection = Objects.requireNonNull(dir, "dir");
-        CellCoord delta = resolvedDirection.deltaCell();
+        CellCoord delta = resolvedDirection.delta();
         return cell(resolvedCell).offset2x(delta.x(), delta.y());
     }
 

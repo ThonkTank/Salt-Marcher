@@ -1,8 +1,9 @@
 package features.world.dungeonmap.shell.interaction;
 
+import features.world.dungeonmap.model.geometry.CardinalDirection;
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
 import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
-import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.ConnectionKind;
@@ -82,8 +83,8 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
             Long clusterId,
             LegacyGridSegment2x boundarySegment2x,
             InternalBoundaryType boundaryType,
-            Point2i baseCell,
-            Point2i direction
+            CellCoord baseCell,
+            CardinalDirection direction
     ) implements DungeonHitSubject {
         public ClusterBoundarySubject {
             boundarySegment2x = Objects.requireNonNull(boundarySegment2x, "boundarySegment2x");
@@ -129,14 +130,14 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
             Long roomId,
             Long clusterId,
             LegacyGridSegment2x boundarySegment2x,
-            Point2i roomCell,
-            Point2i outwardStep,
+            CellCoord roomCell,
+            CardinalDirection outwardDirection,
             boolean exterior
     ) implements DungeonHitSubject {
         public RoomBoundarySubject {
             boundarySegment2x = Objects.requireNonNull(boundarySegment2x, "boundarySegment2x");
             roomCell = Objects.requireNonNull(roomCell, "roomCell");
-            outwardStep = Objects.requireNonNull(outwardStep, "outwardStep");
+            outwardDirection = Objects.requireNonNull(outwardDirection, "outwardDirection");
         }
 
         @Override
@@ -321,7 +322,7 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         }
     }
 
-    record FloorCellSubject(Point2i cell, int levelZ) implements DungeonHitSubject {
+    record FloorCellSubject(CellCoord cell, int levelZ) implements DungeonHitSubject {
         public FloorCellSubject {
             cell = Objects.requireNonNull(cell, "cell");
         }

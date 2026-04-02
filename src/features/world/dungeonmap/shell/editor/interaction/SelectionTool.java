@@ -9,8 +9,9 @@ import features.world.dungeonmap.application.room.RoomExitCatalog;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.CardinalDirection;
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
-import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
@@ -167,7 +168,7 @@ public final class SelectionTool implements EditorTool {
         if (dragSession == null || event == null || !event.isPrimaryButtonDown()) {
             return false;
         }
-        Point2i delta = event.gridCell().subtract(dragSession.pressCell());
+        CellCoord delta = event.gridCell().subtract(dragSession.pressCell());
         if (Objects.equals(delta, dragSession.currentDelta())) {
             return true;
         }
@@ -203,7 +204,7 @@ public final class SelectionTool implements EditorTool {
         if (dragSession == null || event == null) {
             return false;
         }
-        Point2i delta = event.gridCell().subtract(dragSession.pressCell());
+        CellCoord delta = event.gridCell().subtract(dragSession.pressCell());
         int levelDelta = dragSession.currentLevel() - dragSession.startLevel();
         Long mapId = dragSession.baseMap().mapId() > 0 ? dragSession.baseMap().mapId() : null;
         Long clusterId = dragSession.clusterId();
@@ -211,7 +212,7 @@ public final class SelectionTool implements EditorTool {
         dragSession = null;
         if (mapId != null && clusterId != null && (delta.x() != 0 || delta.y() != 0 || levelDelta != 0)) {
             loadingService.submitReloadingWrite(
-                    () -> clusterMoveService.move(mapId, clusterId, delta, levelDelta),
+                    () -> clusterMoveService.move(mapId, clusterId, delta.toPoint2i(), levelDelta),
                     mapId,
                     null,
                     throwable -> UiErrorReporter.reportBackgroundFailure("SelectionTool.released()", throwable));
@@ -423,7 +424,7 @@ public final class SelectionTool implements EditorTool {
         return clusterMoveProjectionApplicationService.project(
                 dragSession.baseMap(),
                 dragSession.clusterId(),
-                dragSession.currentDelta(),
+                dragSession.currentDelta().toPoint2i(),
                 dragSession.currentLevel() - dragSession.startLevel()).layout();
     }
 
@@ -475,8 +476,8 @@ public final class SelectionTool implements EditorTool {
     private record RoomExitCard(
             String label,
             int levelZ,
-            Point2i roomCell,
-            Point2i direction,
+            CellCoord roomCell,
+            CardinalDirection direction,
             String description
     ) {
     }
@@ -484,12 +485,12 @@ public final class SelectionTool implements EditorTool {
     private record ClusterDragSession(
             Long clusterId,
             DungeonLayout baseMap,
-            Point2i pressCell,
-            Point2i currentDelta,
+            CellCoord pressCell,
+            CellCoord currentDelta,
             int startLevel,
             int currentLevel
     ) {
-        private ClusterDragSession withCurrentDelta(Point2i delta) {
+        private ClusterDragSession withCurrentDelta(CellCoord delta) {
             return new ClusterDragSession(clusterId, baseMap, pressCell, delta, startLevel, currentLevel);
         }
 
@@ -500,10 +501,10 @@ public final class SelectionTool implements EditorTool {
         private static ClusterDragSession start(
                 Long clusterId,
                 DungeonLayout baseMap,
-                Point2i pressCell,
+                CellCoord pressCell,
                 int startLevel
         ) {
-            return new ClusterDragSession(clusterId, baseMap, pressCell, new Point2i(0, 0), startLevel, startLevel);
+            return new ClusterDragSession(clusterId, baseMap, pressCell, new CellCoord(0, 0), startLevel, startLevel);
         }
     }
 

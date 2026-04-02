@@ -1,7 +1,8 @@
 package features.world.dungeonmap.application.room;
 
+import features.world.dungeonmap.model.geometry.CardinalDirection;
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
-import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.connection.Connection;
 
 import java.util.ArrayDeque;
@@ -14,15 +15,15 @@ import java.util.Set;
 public final class DoorExitCatalog {
 
     private static final Comparator<ExitEdge> EXIT_EDGE_ORDER = Comparator
-            .comparing(ExitEdge::direction, DoorExitCatalog::compareDirection)
-            .thenComparing(ExitEdge::roomCell, Point2i.POINT_ORDER)
+            .comparing(ExitEdge::direction, Comparator.comparingInt(CardinalDirection::code))
+            .thenComparing(ExitEdge::roomCell, CellCoord.ORDER)
             .thenComparing(ExitEdge::segment2x, LegacyGridSegment2x.SEGMENT_ORDER);
 
     private DoorExitCatalog() {
         throw new AssertionError("No instances");
     }
 
-    public static List<RoomExitDescriptor> describe(Set<Point2i> cells, int levelZ, List<? extends Connection> connections) {
+    public static List<RoomExitDescriptor> describe(Set<CellCoord> cells, int levelZ, List<? extends Connection> connections) {
         if (cells == null || cells.isEmpty() || connections == null || connections.isEmpty()) {
             return List.of();
         }
@@ -40,7 +41,7 @@ public final class DoorExitCatalog {
                     number,
                     levelZ,
                     representative.roomCell(),
-                    representative.roomCell().add(representative.direction()),
+                    representative.roomCell().add(representative.direction().delta()),
                     representative.direction(),
                     "Tür " + number,
                     representative.segment2x(),
@@ -49,7 +50,7 @@ public final class DoorExitCatalog {
         return List.copyOf(result);
     }
 
-    private static List<ExitEdge> collectExitEdges(Set<Point2i> cells, int levelZ, List<? extends Connection> connections) {
+    private static List<ExitEdge> collectExitEdges(Set<CellCoord> cells, int levelZ, List<? extends Connection> connections) {
         List<ExitEdge> result = new ArrayList<>();
         Set<LegacyGridSegment2x> boundarySegments = new LinkedHashSet<>();
         for (Connection connection : connections) {
@@ -61,19 +62,19 @@ public final class DoorExitCatalog {
             if (segment2x == null) {
                 continue;
             }
-            Set<Point2i> touchingCells = segment2x.touchingCells();
+            Set<CellCoord> touchingCells = segment2x.touchingCellCoords();
             if (touchingCells.size() != 2) {
                 continue;
             }
-            Point2i roomCell = touchingCells.stream()
+            CellCoord roomCell = touchingCells.stream()
                     .filter(cells::contains)
-                    .sorted(Point2i.POINT_ORDER)
+                    .sorted(CellCoord.ORDER)
                     .findFirst()
                     .orElse(null);
             if (roomCell == null) {
                 continue;
             }
-            Point2i direction = segment2x.directionFrom(roomCell);
+            CardinalDirection direction = CardinalDirection.fromDirection(segment2x.directionFrom(roomCell.toPoint2i()));
             if (direction == null) {
                 continue;
             }
@@ -111,29 +112,6 @@ public final class DoorExitCatalog {
         return List.copyOf(result);
     }
 
-    private static int compareDirection(Point2i left, Point2i right) {
-        return Integer.compare(directionOrder(left), directionOrder(right));
-    }
-
-    private static int directionOrder(Point2i direction) {
-        if (direction == null) {
-            return 4;
-        }
-        if (direction.x() == 0 && direction.y() == -1) {
-            return 0;
-        }
-        if (direction.x() == 1 && direction.y() == 0) {
-            return 1;
-        }
-        if (direction.x() == 0 && direction.y() == 1) {
-            return 2;
-        }
-        if (direction.x() == -1 && direction.y() == 0) {
-            return 3;
-        }
-        return 4;
-    }
-
-    private record ExitEdge(Point2i roomCell, Point2i direction, LegacyGridSegment2x segment2x) {
+    private record ExitEdge(CellCoord roomCell, CardinalDirection direction, LegacyGridSegment2x segment2x) {
     }
 }

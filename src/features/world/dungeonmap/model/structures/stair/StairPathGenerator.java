@@ -70,7 +70,7 @@ public final class StairPathGenerator {
         Point2i current = anchor;
         result.add(current);
         for (int index = 1; index < stepCount; index++) {
-            current = current.add(direction.delta());
+            current = current.add(direction.deltaPoint2i());
             result.add(current);
         }
         return List.copyOf(result);
@@ -91,7 +91,7 @@ public final class StairPathGenerator {
         int currentSegmentLength = firstSegmentLength;
         result.add(current);
         for (int index = 1; index < stepCount; index++) {
-            current = current.add(currentDirection.delta());
+            current = current.add(currentDirection.deltaPoint2i());
             result.add(current);
             segmentSteps++;
             if (segmentSteps >= currentSegmentLength) {
@@ -181,7 +181,7 @@ public final class StairPathGenerator {
     }
 
     private static int startIndexForDirection(List<Point2i> loop, Point2i anchor, CardinalDirection direction) {
-        Point2i delta = direction.delta();
+        Point2i delta = direction.deltaPoint2i();
         double targetAngle = Math.atan2(delta.y(), delta.x());
         if (targetAngle < 0) {
             targetAngle += Math.PI * 2.0;

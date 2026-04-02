@@ -6,8 +6,8 @@ import features.world.dungeonmap.canvas.base.DungeonCanvasInteractionHandler;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.canvas.base.DungeonCanvasTheme;
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.shell.interaction.DungeonDragService;
 import features.world.dungeonmap.shell.interaction.DungeonHitCollector;
 import features.world.dungeonmap.shell.interaction.DungeonHitProbe;
@@ -24,9 +24,9 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
 
     private final DungeonMapState mapState;
     private final DungeonRuntimeState runtimeState;
-    private final Function<Point2i, Point2i> nearestTraversableTile;
-    private final Consumer<Point2i> previewHandler;
-    private final Consumer<Point2i> moveHandler;
+    private final Function<CellCoord, CellCoord> nearestTraversableTile;
+    private final Consumer<CellCoord> previewHandler;
+    private final Consumer<CellCoord> moveHandler;
     private final DungeonHitCollector hitCollector;
     private final DungeonRuntimeSelectionPolicy selectionPolicy = new DungeonRuntimeSelectionPolicy();
     private final DungeonDragService dragService = new DungeonDragService();
@@ -37,9 +37,9 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
     DungeonRuntimeInteractionController(
             DungeonMapState mapState,
             DungeonRuntimeState runtimeState,
-            Function<Point2i, Point2i> nearestTraversableTile,
-            Consumer<Point2i> previewHandler,
-            Consumer<Point2i> moveHandler,
+            Function<CellCoord, CellCoord> nearestTraversableTile,
+            Consumer<CellCoord> previewHandler,
+            Consumer<CellCoord> moveHandler,
             DungeonHitCollector hitCollector
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");

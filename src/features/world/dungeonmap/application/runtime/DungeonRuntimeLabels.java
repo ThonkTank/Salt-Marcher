@@ -58,7 +58,7 @@ public final class DungeonRuntimeLabels {
         if (layout == null || tile == null) {
             return "Kein Standort";
         }
-        DungeonLayout.CellStructure structure = layout.projectedToLevel(tile.z()).structureAtCell(tile.projectedCell());
+        DungeonLayout.CellStructure structure = layout.projectedToLevel(tile.z()).structureAtCell(tile.projectedCell().toPoint2i());
         if (structure instanceof DungeonLayout.CellStructure.RoomStructure roomStructure) {
             return roomLabel(roomStructure.room());
         }
@@ -99,7 +99,7 @@ public final class DungeonRuntimeLabels {
             return roomForId(layout, roomLocation.roomId());
         }
         if (location instanceof DungeonRuntimeLocation.Tile tileLocation) {
-            return layout.projectedToLevel(tileLocation.tile().z()).roomAtCell(tileLocation.tile().projectedCell());
+            return layout.projectedToLevel(tileLocation.tile().z()).roomAtCell(tileLocation.tile().projectedCell().toPoint2i());
         }
         return null;
     }

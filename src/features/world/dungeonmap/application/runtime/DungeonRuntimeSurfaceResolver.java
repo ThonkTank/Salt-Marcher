@@ -51,7 +51,7 @@ public final class DungeonRuntimeSurfaceResolver {
             return null;
         }
         DungeonLayout projectedLayout = layout.projectedToLevel(tile.z());
-        DungeonLayout.CellStructure structure = projectedLayout.structureAtCell(tile.projectedCell());
+        DungeonLayout.CellStructure structure = projectedLayout.structureAtCell(tile.projectedCell().toPoint2i());
         if (structure instanceof DungeonLayout.CellStructure.RoomStructure roomStructure) {
             return roomSurface(layout, roomStructure.room(), heading, tile);
         }

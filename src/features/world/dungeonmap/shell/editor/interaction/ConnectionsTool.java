@@ -7,6 +7,7 @@ import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
@@ -440,9 +441,9 @@ public final class ConnectionsTool implements EditorTool {
         if (projectedCluster == null) {
             return false;
         }
-        Room sourceRoom = projectedCluster.roomAt(hit.roomCell());
-        Point2i oppositeCell = hit.roomCell().add(hit.outwardStep());
-        Room oppositeRoom = projectedCluster.roomAt(oppositeCell);
+        Room sourceRoom = projectedCluster.roomAt(hit.roomCell().toPoint2i());
+        CellCoord oppositeCell = hit.roomCell().add(hit.outwardDirection().delta());
+        Room oppositeRoom = projectedCluster.roomAt(oppositeCell.toPoint2i());
         if (sourceRoom == null || oppositeRoom == null) {
             return false;
         }
@@ -452,21 +453,21 @@ public final class ConnectionsTool implements EditorTool {
     }
 
     private CorridorNode roomBoundaryNode(Room room, DungeonHitSubject.RoomBoundarySubject hit, long nodeId) {
-        Point2i anchor = room == null || room.structure().floorAtLevel(mapState.activeProjectionLevel()) == null
-                ? new Point2i(0, 0)
-                : room.structure().floorAtLevel(mapState.activeProjectionLevel()).anchorCell();
+        CellCoord anchor = room == null || room.structure().floorAtLevel(mapState.activeProjectionLevel()) == null
+                ? new CellCoord(0, 0)
+                : room.structure().floorAtLevel(mapState.activeProjectionLevel()).anchorCellCoord();
         if (anchor == null) {
-            anchor = new Point2i(0, 0);
+            anchor = new CellCoord(0, 0);
         }
-        Point2i relativeCell = hit.roomCell().subtract(anchor);
+        Point2i relativeCell = hit.roomCell().subtract(anchor).toPoint2i();
         LegacyGridPoint2x point2x = LegacyGridPoint2x.fromTileCenter(hit.roomCell())
-                .offset(hit.outwardStep().x(), hit.outwardStep().y());
+                .offset(hit.outwardDirection().delta().x(), hit.outwardDirection().delta().y());
         return new CorridorNode(
                 nodeId,
                 point2x,
                 room == null ? null : room.roomId(),
                 relativeCell,
-                CardinalDirection.fromDirection(hit.outwardStep()));
+                hit.outwardDirection());
     }
 
     private void showDraftPreview() {

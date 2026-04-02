@@ -1,8 +1,8 @@
 package features.world.dungeonmap.application.runtime;
 
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
@@ -29,7 +29,7 @@ public final class DungeonRuntimeStairCatalog {
             return List.of();
         }
         return levelsForRoomSurface(room.structure(), activeTile).stream()
-                .flatMap(levelZ -> describe(layout, room.structure().cellsAtLevel(levelZ), levelZ, activeTile).stream())
+                .flatMap(levelZ -> describe(layout, room.structure().cellCoordsAtLevel(levelZ), levelZ, activeTile).stream())
                 .toList();
     }
 
@@ -41,12 +41,12 @@ public final class DungeonRuntimeStairCatalog {
         if (layout == null || corridor == null || corridor.corridorId() == null) {
             return List.of();
         }
-        return describe(layout, corridor.structure().cellsAtLevel(corridor.levelZ()), corridor.levelZ(), activeTile);
+        return describe(layout, corridor.structure().cellCoordsAtLevel(corridor.levelZ()), corridor.levelZ(), activeTile);
     }
 
     public static List<DungeonRuntimeStairDescriptor> describeAtCells(
             DungeonLayout layout,
-            Set<Point2i> surfaceCells,
+            Set<CellCoord> surfaceCells,
             int levelZ,
             CubePoint activeTile
     ) {
@@ -55,14 +55,14 @@ public final class DungeonRuntimeStairCatalog {
 
     private static List<DungeonRuntimeStairDescriptor> describe(
             DungeonLayout layout,
-            Set<Point2i> surfaceCells,
+            Set<CellCoord> surfaceCells,
             int levelZ,
             CubePoint activeTile
     ) {
         if (layout == null || surfaceCells == null || surfaceCells.isEmpty()) {
             return List.of();
         }
-        Set<Point2i> resolvedCells = Set.copyOf(surfaceCells);
+        Set<CellCoord> resolvedCells = Set.copyOf(surfaceCells);
         return layout.stairsAtLevel(levelZ).stream()
                 .filter(stair -> stair != null && stair.stairId() != null)
                 .filter(stair -> stair.exitsAtLevel(levelZ).stream()
@@ -79,7 +79,7 @@ public final class DungeonRuntimeStairCatalog {
     private static List<DungeonRuntimeStairDescriptor> toDescriptor(
             DungeonStair stair,
             int levelZ,
-            Set<Point2i> surfaceCells,
+            Set<CellCoord> surfaceCells,
             CubePoint activeTile
     ) {
         if (stair == null) {

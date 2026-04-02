@@ -2,8 +2,8 @@ package features.world.dungeonmap.application.runtime;
 
 import features.world.dungeonmap.application.room.RoomExitDescriptor;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
-import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 
 public record DungeonRuntimeDoorDescriptor(
@@ -11,9 +11,9 @@ public record DungeonRuntimeDoorDescriptor(
         String label,
         String destinationLabel,
         int levelZ,
-        Point2i roomCell,
-        Point2i outsideCell,
-        Point2i direction,
+        CellCoord roomCell,
+        CellCoord outsideCell,
+        CardinalDirection direction,
         LegacyGridSegment2x anchorSegment2x,
         ConnectionEndpoint activeEndpoint,
         ConnectionEndpoint destinationEndpoint,
@@ -24,12 +24,11 @@ public record DungeonRuntimeDoorDescriptor(
         number = number <= 0 ? 1 : number;
         label = label == null || label.isBlank() ? "Tür " + number : label;
         destinationLabel = destinationLabel == null ? "" : destinationLabel.trim();
-        levelZ = levelZ;
-        roomCell = roomCell == null ? new Point2i(0, 0) : roomCell;
-        direction = direction == null ? new Point2i(0, -1) : direction;
-        outsideCell = outsideCell == null ? roomCell.add(direction) : outsideCell;
+        roomCell = roomCell == null ? new CellCoord(0, 0) : roomCell;
+        direction = direction == null ? CardinalDirection.defaultDirection() : direction;
+        outsideCell = outsideCell == null ? roomCell.add(direction.delta()) : outsideCell;
         anchorSegment2x = anchorSegment2x == null
-                ? LegacyGridSegment2x.betweenCellAndStep(roomCell, direction)
+                ? LegacyGridSegment2x.betweenCellAndStep(roomCell, direction.delta())
                 : anchorSegment2x;
         relativeLabel = relativeLabel == null || relativeLabel.isBlank() ? "Direkt vor euch" : relativeLabel;
         description = description == null || description.isBlank() ? describe(relativeLabel, "eine Tür") : description;
@@ -44,7 +43,7 @@ public record DungeonRuntimeDoorDescriptor(
             String narration
     ) {
         CardinalDirection resolvedHeading = heading == null ? CardinalDirection.defaultDirection() : heading;
-        String relativeLabel = resolvedHeading.relativeLabel(exit.direction());
+        String relativeLabel = resolvedHeading.relativeLabel(exit.direction().delta());
         String resolvedNarration = narration == null ? "" : narration.trim();
         String description = describe(relativeLabel, resolvedNarration.isBlank() ? "eine Tür" : resolvedNarration);
         return new DungeonRuntimeDoorDescriptor(

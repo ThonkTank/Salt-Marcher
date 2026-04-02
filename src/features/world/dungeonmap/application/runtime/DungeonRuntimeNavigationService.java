@@ -5,9 +5,9 @@ import features.campaignstate.api.CampaignStateApi;
 import features.campaignstate.api.CampaignStateReadApi;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
-import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
@@ -103,7 +103,7 @@ public final class DungeonRuntimeNavigationService {
         if (resolvedTile == null) {
             throw new SQLException("Ziel hinter der Verbindung ist nicht begehbar");
         }
-        CardinalDirection nextHeading = CardinalDirection.fromDirection(descriptor.direction());
+        CardinalDirection nextHeading = descriptor.direction();
         DungeonRuntimeLocation targetLocation = DungeonRuntimeLocation.tile(resolvedTile);
         try (Connection conn = DatabaseManager.getConnection()) {
             CampaignStateApi.setDungeonPosition(conn, DungeonRuntimeLocations.toCampaignPosition(layout.mapId(), targetLocation, nextHeading));
@@ -203,7 +203,7 @@ public final class DungeonRuntimeNavigationService {
         if (layout == null || anchorSegment2x == null || endpoint == null) {
             return null;
         }
-        for (Point2i cell : anchorSegment2x.touchingCells()) {
+        for (CellCoord cell : anchorSegment2x.touchingCellCoords()) {
             if (!matchesEndpoint(layout, cell, currentLevel, endpoint)) {
                 continue;
             }
@@ -215,7 +215,7 @@ public final class DungeonRuntimeNavigationService {
         return null;
     }
 
-    private boolean matchesEndpoint(DungeonLayout layout, Point2i cell, int currentLevel, ConnectionEndpoint endpoint) {
+    private boolean matchesEndpoint(DungeonLayout layout, CellCoord cell, int currentLevel, ConnectionEndpoint endpoint) {
         if (layout == null || cell == null || endpoint == null || endpoint.type() == null || endpoint.id() == null) {
             return false;
         }
@@ -228,11 +228,11 @@ public final class DungeonRuntimeNavigationService {
                 RoomCluster cluster = clusterAt(layout, CubePoint.at(cell, currentLevel));
                 yield cluster != null && endpoint.id().equals(cluster.clusterId());
             }
-            case CORRIDOR -> layout.corridorsAtCell(cell, currentLevel).stream()
+            case CORRIDOR -> layout.corridorsAtCell(cell.toPoint2i(), currentLevel).stream()
                     .anyMatch(corridor -> corridor != null && endpoint.id().equals(corridor.corridorId()));
-            case STAIR -> layout.stairsAtCell(cell, currentLevel).stream()
+            case STAIR -> layout.stairsAtCell(cell.toPoint2i(), currentLevel).stream()
                     .anyMatch(stair -> stair != null && endpoint.id().equals(stair.stairId()));
-            case TRANSITION -> layout.transitionsAtCell(cell, currentLevel).stream()
+            case TRANSITION -> layout.transitionsAtCell(cell.toPoint2i(), currentLevel).stream()
                     .anyMatch(transition -> transition != null && endpoint.id().equals(transition.transitionId()));
         };
     }

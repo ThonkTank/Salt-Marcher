@@ -311,7 +311,7 @@ public final class Corridor {
             if (roomCell == null) {
                 continue;
             }
-            result.add(LegacyGridSegment2x.betweenCellAndStep(roomCell, node.roomBoundaryDirection().delta()));
+            result.add(LegacyGridSegment2x.betweenCellAndStep(roomCell, node.roomBoundaryDirection().deltaPoint2i()));
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
@@ -397,7 +397,7 @@ public final class Corridor {
             if (roomCell == null || node.roomBoundaryDirection() == null) {
                 throw new IllegalArgumentException("Corridor room-bound node could not be resolved");
             }
-            Point2i exteriorCell = roomCell.add(node.roomBoundaryDirection().delta());
+            Point2i exteriorCell = roomCell.add(node.roomBoundaryDirection().deltaPoint2i());
             return List.of(new AnchorAttachment(
                     exteriorCell,
                     List.of(anchorPoint, LegacyGridPoint2x.fromTileCenter(exteriorCell))));
@@ -602,7 +602,7 @@ public final class Corridor {
             result.add(new CorridorConnection(
                     corridorId,
                     mapId,
-                    Door.fromSegments(List.of(LegacyGridSegment2x.betweenCellAndStep(roomCell, direction.delta())), Door.DoorState.CLOSED),
+                    Door.fromSegments(List.of(LegacyGridSegment2x.betweenCellAndStep(roomCell, direction.deltaPoint2i())), Door.DoorState.CLOSED),
                     List.of(ConnectionEndpoint.room(node.roomId()), ConnectionEndpoint.corridor(corridorId)),
                     levelZ));
         }

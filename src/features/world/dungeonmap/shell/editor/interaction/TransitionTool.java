@@ -9,7 +9,7 @@ import features.world.dungeonmap.application.transition.DungeonTransitionTargetS
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapCatalogEntry;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
-import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.shell.editor.EditorCards;
@@ -187,7 +187,7 @@ public final class TransitionTool implements EditorTool {
 
     private boolean handleCreatePressed(EditorToolContext ctx) {
         Long mapId = mapState.activeMapId();
-        Point2i cell = selectedFloorCell(ctx);
+        CellCoord cell = selectedFloorCell(ctx);
         if (mapId == null || cell == null) {
             return false;
         }
@@ -687,7 +687,7 @@ public final class TransitionTool implements EditorTool {
                 : null;
     }
 
-    private static Point2i selectedFloorCell(EditorToolContext ctx) {
+    private static CellCoord selectedFloorCell(EditorToolContext ctx) {
         return ctx != null && ctx.resolvedSubject() instanceof DungeonHitSubject.FloorCellSubject floorCellSubject
                 ? floorCellSubject.cell()
                 : null;
