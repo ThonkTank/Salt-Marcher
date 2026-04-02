@@ -64,28 +64,30 @@ public final class DungeonMapLoader {
         }
     }
 
-    public DungeonMapLoadResult loadMap(long mapId, List<DungeonMapCatalogEntry> fallbackMaps) throws SQLException {
+    public DungeonMapLoadResult selectMap(long mapId, List<DungeonMapCatalogEntry> fallbackMaps) throws SQLException {
         try (Connection conn = DatabaseManager.getConnection()) {
             List<DungeonMapCatalogEntry> maps = loadCatalog(conn);
-            LoadedCatalog loadedCatalog = loadUsableCatalog(conn, maps);
             DungeonMapCatalogEntry requestedMap = findMap(maps, mapId);
             if (requestedMap == null) {
                 return fallbackResult(
-                        loadedCatalog,
+                        conn,
+                        maps,
                         fallbackMaps,
+                        Set.of(),
                         "Dungeon " + mapId + " existiert nicht mehr");
             }
-            DungeonLayout requestedLayout = loadedCatalog.layoutsById().get(mapId);
-            if (requestedLayout == null) {
+            try {
+                return new DungeonMapLoadResult(maps, loadLayoutOrThrow(conn, requestedMap), null);
+            } catch (RuntimeException exception) {
                 return fallbackResult(
-                        loadedCatalog,
+                        conn,
+                        maps,
                         fallbackMaps,
-                        "Dungeon " + requestedMap.name() + " konnte nicht geladen werden");
+                        Set.of(requestedMap.mapId()),
+                        combineMessages(
+                                "Dungeon " + requestedMap.name() + " konnte nicht geladen werden",
+                                requestedMap.name() + " (" + loadFailureMessage(exception) + ")"));
             }
-            return new DungeonMapLoadResult(
-                    loadedCatalog.allMaps(),
-                    requestedLayout,
-                    loadedCatalog.failureMessage());
         }
     }
 
@@ -116,14 +118,6 @@ public final class DungeonMapLoader {
             return null;
         }
         return loadedCatalog.layoutsById().get(loadedCatalog.usableMaps().getFirst().mapId());
-    }
-
-    private static DungeonMapLoadResult loadExistingMap(
-            Connection conn,
-            List<DungeonMapCatalogEntry> maps,
-            DungeonMapCatalogEntry map
-    ) throws SQLException {
-        return new DungeonMapLoadResult(maps, loadLayoutOrThrow(conn, map), null);
     }
 
     private static DungeonLayout loadLayoutOrThrow(Connection conn, DungeonMapCatalogEntry map) throws SQLException {
@@ -166,38 +160,44 @@ public final class DungeonMapLoader {
     }
 
     private static DungeonMapLoadResult fallbackResult(
-            LoadedCatalog loadedCatalog,
+            Connection conn,
+            List<DungeonMapCatalogEntry> maps,
             List<DungeonMapCatalogEntry> fallbackMaps,
+            Set<Long> excludedMapIds,
             String primaryMessage
-    ) {
-        String message = combineMessages(primaryMessage, loadedCatalog.failureMessage());
-        if (!loadedCatalog.usableMaps().isEmpty()) {
-            DungeonMapCatalogEntry fallbackMap = fallbackSelection(loadedCatalog.usableMaps(), fallbackMaps);
-            return new DungeonMapLoadResult(
-                    loadedCatalog.allMaps(),
-                    loadedCatalog.layoutsById().get(fallbackMap.mapId()),
-                    message);
+    ) throws SQLException {
+        String message = primaryMessage;
+        for (DungeonMapCatalogEntry fallbackMap : fallbackCandidates(maps, fallbackMaps, excludedMapIds)) {
+            try {
+                return new DungeonMapLoadResult(maps, loadLayoutOrThrow(conn, fallbackMap), message);
+            } catch (RuntimeException exception) {
+                message = combineMessages(
+                        message,
+                        fallbackMap.name() + " (" + loadFailureMessage(exception) + ")");
+            }
         }
-        return new DungeonMapLoadResult(loadedCatalog.allMaps(), null, message);
+        return new DungeonMapLoadResult(maps, null, message);
     }
 
-    private static DungeonMapCatalogEntry fallbackSelection(
-            List<DungeonMapCatalogEntry> usableMaps,
-            List<DungeonMapCatalogEntry> fallbackMaps
+    private static List<DungeonMapCatalogEntry> fallbackCandidates(
+            List<DungeonMapCatalogEntry> maps,
+            List<DungeonMapCatalogEntry> fallbackMaps,
+            Set<Long> excludedMapIds
     ) {
+        LinkedHashMap<Long, DungeonMapCatalogEntry> candidates = new LinkedHashMap<>();
         if (fallbackMaps != null) {
             for (DungeonMapCatalogEntry fallbackMap : fallbackMaps) {
-                if (fallbackMap == null) {
-                    continue;
-                }
-                for (DungeonMapCatalogEntry usableMap : usableMaps) {
-                    if (usableMap != null && usableMap.mapId() == fallbackMap.mapId()) {
-                        return usableMap;
-                    }
+                if (fallbackMap != null && !excludedMapIds.contains(fallbackMap.mapId())) {
+                    candidates.putIfAbsent(fallbackMap.mapId(), fallbackMap);
                 }
             }
         }
-        return usableMaps.getFirst();
+        for (DungeonMapCatalogEntry map : maps) {
+            if (map != null && !excludedMapIds.contains(map.mapId())) {
+                candidates.putIfAbsent(map.mapId(), map);
+            }
+        }
+        return List.copyOf(candidates.values());
     }
 
     private static String combineMessages(String primaryMessage, String secondaryMessage) {

@@ -40,7 +40,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `application/`
   - `room/` owns room topology, boundary edits, cluster move projection and persistence, room narration, and exit catalogs.
   - `corridor/` owns corridor graph editing and persistence orchestration.
-  - `runtime/` owns navigation, location serialization, surface resolution, labels, door/stair/transition catalogs, and runtime state repair.
+  - `runtime/` owns navigation, location serialization, surface resolution, labels, the unified runtime action catalog, and runtime state repair.
   - `transition/` owns transition create/place/delete flows and transition target lookup.
   - `support/` owns transaction helpers.
   - Application services orchestrate workflows and transactions; they must not keep a second interpretation of room, corridor, or runtime truth.
@@ -119,10 +119,12 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 
 - `DungeonRuntimeInteractionController` owns drag-to-move. Press starts only when the active cell is selected; drag shows preview; release commits a move.
 - `DungeonRuntimeSelectionPolicy` selects the first runtime-selectable subject that actually owns the active cell. Runtime interaction is not driven by the primary hit candidate alone.
+- `DungeonRuntimeApplicationService` is the single runtime workflow owner. It loads persisted navigation, resolves runtime locations against the active layout, executes cell/action travel, persists campaign position, and repairs stored runtime state after catalog mutations.
 - `DungeonRuntimeView` keeps runtime presentation on `DungeonRuntimeLocation.Cell` plus projection level and calls `DungeonRuntimeSurfaceResolver.resolve(layout, activeCell, levelZ, heading)` directly.
 - `DungeonRuntimeSurfaceResolver` must read from direct structure owners and build one `DungeonRuntimeSurface`; room/corridor/cell/stair/transition presentation all funnel through that one surface model.
+- `DungeonRuntimeActionCatalog` is the only seam that expands a runtime surface into concrete door/stair/transition actions. Do not re-split that action list into parallel public catalogs.
 - Runtime details are published through the shared `DetailsNavigator`. Do not add a parallel feature-local runtime details pane.
-- Same-map transition travel should return a resolved navigation snapshot against the current layout immediately; cross-map travel returns a snapshot for the target map and the view triggers a reload.
+- Same-map transition travel should return a resolved navigation snapshot against the current layout immediately; cross-map travel returns a snapshot for the target map, the view loads that map, and then applies the pending snapshot directly instead of re-reading campaign state first.
 
 ## Model Layering
 
@@ -148,6 +150,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 ## Loading And Persistence
 
 - `DungeonMapLoader` is the only authoritative rehydration path. It loads catalog entries, reconstructs layouts from direct structure tables, skips unusable maps, and falls back to the first usable map when necessary.
+- `DungeonMapLoader.selectMap(...)` should load the requested map directly and only fall back when that concrete target is unusable; full-catalog usable-layout scans are for initial load, not every selection change.
 - Room geometry is loaded directly from persisted room-owned `StructureDescriptor` rows.
 - Storage model:
   - clusters: membership owner plus derived `center_x`, `center_y`, `level_z` metadata only
@@ -156,7 +159,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
   - stairs: stable stair identity plus ordered 3D path nodes
   - transitions: `dungeon_transitions` with nullable placement coordinates and destination discriminator
 - A room must have persisted descriptor rows. Maps with missing room descriptors are rejected during load.
-- Write flows should persist in one transaction and then reload through `DungeonMapLoadingService.submitReloadingWrite(...)` or `submitReloadingTask(...)`.
+- Write flows should persist in one transaction and then reload through `DungeonMapLoadingService.submitMutation(...)`; map switches should go through `selectMap(...)`.
 
 ## Guardrails
 

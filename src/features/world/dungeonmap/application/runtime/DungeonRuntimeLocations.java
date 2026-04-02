@@ -81,31 +81,6 @@ final class DungeonRuntimeLocations {
         return fallback;
     }
 
-    static boolean containsLocation(DungeonLayout layout, DungeonRuntimeLocation location) {
-        if (layout == null || location == null) {
-            return false;
-        }
-        if (location instanceof DungeonRuntimeLocation.Cell cell) {
-            return layout.isTraversableCell(cell.cell(), cell.levelZ());
-        }
-        if (location instanceof DungeonRuntimeLocation.StairExit stairExit) {
-            return stairExitAnchor(layout, stairExit.stairId(), new DungeonRuntimeLocation.Cell(stairExit.cell(), stairExit.levelZ())) != null;
-        }
-        if (location instanceof DungeonRuntimeLocation.Transition transition) {
-            return transitionAnchor(layout, transition.transitionId()) != null;
-        }
-        if (location instanceof DungeonRuntimeLocation.Corridor corridor) {
-            DungeonRuntimeLocation.Cell preferred = corridor.anchorCell() == null
-                    ? null
-                    : new DungeonRuntimeLocation.Cell(corridor.anchorCell(), corridor.levelZ());
-            return corridorAnchor(layout, layout.findCorridor(corridor.corridorId()), preferred) != null;
-        }
-        if (location instanceof DungeonRuntimeLocation.Room room) {
-            return layout.findRoom(room.roomId()) != null;
-        }
-        return false;
-    }
-
     static DungeonPositionRef toCampaignPosition(long mapId, DungeonRuntimeLocation location, CardinalDirection heading) {
         String headingValue = (heading == null ? CardinalDirection.defaultDirection() : heading).name();
         if (location instanceof DungeonRuntimeLocation.Cell cell) {

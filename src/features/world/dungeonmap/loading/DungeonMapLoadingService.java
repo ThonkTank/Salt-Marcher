@@ -1,17 +1,14 @@
 package features.world.dungeonmap.loading;
 
 import features.world.dungeonmap.state.DungeonMapState;
-import javafx.application.Platform;
 import ui.async.UiAsyncTasks;
 
 import java.sql.SQLException;
-import java.util.concurrent.Callable;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -38,42 +35,11 @@ public final class DungeonMapLoadingService {
         }
     }
 
-    public void loadMap(long mapId) {
-        startRequest(false, () -> loadSpecificMapResult(mapId));
+    public void selectMap(long mapId) {
+        startRequest(false, () -> loadSelectedMapResult(mapId));
     }
 
-    public void reload(Long preferredMapId) {
-        if (preferredMapId == null) {
-            startRequest(false, this::loadInitialResult);
-            return;
-        }
-        loadMap(preferredMapId);
-    }
-
-    public void submitReloadingWrite(
-            UiAsyncTasks.ThrowingRunnable work,
-            Long preferredMapId,
-            Runnable onPersisted,
-            Consumer<Throwable> onFailure
-    ) {
-        state.showMutationPending();
-        UiAsyncTasks.submitVoid(
-                work,
-                () -> {
-                    if (onPersisted != null) {
-                        onPersisted.run();
-                    }
-                    reload(preferredMapId);
-                },
-                failure -> {
-                    state.clearMutationPending();
-                    if (onFailure != null) {
-                        onFailure.accept(failure);
-                    }
-                });
-    }
-
-    public <T> void submitReloadingTask(
+    public <T> void submitMutation(
             Callable<T> work,
             Function<T, Long> preferredMapIdResolver,
             Consumer<T> onPersisted,
@@ -96,12 +62,21 @@ public final class DungeonMapLoadingService {
                 });
     }
 
-    private void startRequest(boolean initialRequest, Supplier<DungeonMapLoadResult> task) {
+    private void reload(Long preferredMapId) {
+        if (preferredMapId == null) {
+            startRequest(false, this::loadInitialResult);
+            return;
+        }
+        selectMap(preferredMapId);
+    }
+
+    private void startRequest(boolean initialRequest, Callable<DungeonMapLoadResult> task) {
         long requestId = requestSequence.incrementAndGet();
         state.showLoading();
-        CompletableFuture
-                .supplyAsync(task)
-                .whenComplete((result, failure) -> Platform.runLater(() -> applyResult(requestId, initialRequest, result, failure)));
+        UiAsyncTasks.submit(
+                task,
+                result -> applyResult(requestId, initialRequest, result, null),
+                failure -> applyResult(requestId, initialRequest, null, failure));
     }
 
     private boolean beginInitialLoad() {
@@ -132,9 +107,9 @@ public final class DungeonMapLoadingService {
         }
     }
 
-    private DungeonMapLoadResult loadSpecificMapResult(long mapId) {
+    private DungeonMapLoadResult loadSelectedMapResult(long mapId) {
         try {
-            return loader.loadMap(mapId, state.maps());
+            return loader.selectMap(mapId, state.maps());
         } catch (SQLException exception) {
             LOGGER.log(Level.WARNING, "Dungeon konnte nicht geladen werden", exception);
             return new DungeonMapLoadResult(state.maps(), null, "Dungeon konnte nicht geladen werden");
@@ -168,6 +143,6 @@ public final class DungeonMapLoadingService {
         return requestId == requestSequence.get()
                 && failure == null
                 && result != null
-                && result.errorMessage() == null;
+                && (result.activeMap() != null || result.maps().isEmpty());
     }
 }

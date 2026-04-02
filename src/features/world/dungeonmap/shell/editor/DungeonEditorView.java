@@ -3,18 +3,15 @@ package features.world.dungeonmap.shell.editor;
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
 import features.world.dungeonmap.canvas.base.DungeonEditorRenderState;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
-import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.shell.AbstractDungeonMapView;
 import features.world.dungeonmap.shell.editor.interaction.EditorInteraction;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.EditorInteractionState;
-import features.world.dungeonmap.state.EditorPreview;
 import javafx.scene.Node;
 import ui.shell.NavigationIcons;
 
 import java.util.Objects;
-import java.util.Set;
 
 public final class DungeonEditorView extends AbstractDungeonMapView {
 
@@ -35,12 +32,7 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
         DungeonMapDropdownController mapDropdownController = new DungeonMapDropdownController(
                 mapCatalogService,
                 loadingService,
-                new DungeonMapDropdownController.ReloadHandle() {
-                    @Override
-                    public Long sessionMapId() {
-                        return mapState.activeMapId();
-                    }
-                });
+                mapState::activeMapId);
 
         // Editor interaction state → one batched render payload for the workspace
         interactionState.addListener(() -> refreshEditorRenderState(interactionState));
@@ -58,7 +50,7 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
         // Control callbacks → state mutations
         controls.setOnMapSelected(entry -> {
             if (entry != null) {
-                loadingService.loadMap(entry.mapId());
+                loadingService.selectMap(entry.mapId());
             }
         });
         controls.setOnNewMapRequested(mapDropdownController::showCreate);
@@ -107,7 +99,10 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
     }
 
     private void refreshEditorRenderState(EditorInteractionState interactionState) {
-        workspace().showEditorRenderState(editorRenderState(interactionState));
+        workspace().showEditorRenderState(DungeonEditorRenderState.from(
+                interactionState.selectedKey(),
+                interactionState.hovered(),
+                interactionState.activePreview()));
     }
 
     private void refreshSessionUi(DungeonEditorSessionState sessionState, EditorInteraction editorInteraction) {
@@ -138,63 +133,4 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
         previousMapId = mapState.activeMapId();
     }
 
-    private static DungeonEditorRenderState editorRenderState(EditorInteractionState interactionState) {
-        String selectedTargetKey = interactionState.selectedTargetKey();
-        var hovered = interactionState.hovered();
-        EditorPreview preview = interactionState.activePreview();
-        if (preview instanceof EditorPreview.LayoutPreview layoutPreview) {
-            return new DungeonEditorRenderState(
-                    selectedTargetKey,
-                    hovered,
-                    layoutPreview.layout(),
-                    StructureObject.empty(),
-                    0,
-                    false,
-                    Set.of(),
-                    Set.of(),
-                    null,
-                    null,
-                    false);
-        }
-        if (preview instanceof EditorPreview.PaintPreview paintPreview) {
-            return new DungeonEditorRenderState(
-                    selectedTargetKey,
-                    hovered,
-                    null,
-                    paintPreview.structure(),
-                    paintPreview.levelZ(),
-                    paintPreview.deleteMode(),
-                    Set.of(),
-                    Set.of(),
-                    null,
-                    null,
-                    false);
-        }
-        if (preview instanceof EditorPreview.BoundaryPreview boundaryPreview) {
-            return new DungeonEditorRenderState(
-                    selectedTargetKey,
-                    hovered,
-                    null,
-                    StructureObject.empty(),
-                    0,
-                    false,
-                    boundaryPreview.edges(),
-                    boundaryPreview.skippedConnectionEdges(),
-                    boundaryPreview.startVertex2x(),
-                    boundaryPreview.currentVertex2x(),
-                    boundaryPreview.deleteMode());
-        }
-        return new DungeonEditorRenderState(
-                selectedTargetKey,
-                hovered,
-                null,
-                StructureObject.empty(),
-                0,
-                false,
-                Set.of(),
-                Set.of(),
-                null,
-                null,
-                false);
-    }
 }

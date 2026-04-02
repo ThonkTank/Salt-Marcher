@@ -19,7 +19,7 @@ public record DungeonRuntimeDoorDescriptor(
         ConnectionEndpoint destinationEndpoint,
         String relativeLabel,
         String description
-) {
+) implements DungeonRuntimeAction {
     public DungeonRuntimeDoorDescriptor {
         number = number <= 0 ? 1 : number;
         label = label == null || label.isBlank() ? "Tür " + number : label;

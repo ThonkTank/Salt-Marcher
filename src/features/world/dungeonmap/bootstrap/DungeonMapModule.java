@@ -2,8 +2,7 @@ package features.world.dungeonmap.bootstrap;
 
 import features.world.api.WorldTravelSurface;
 import features.world.dungeonmap.application.corridor.DungeonCorridorEditService;
-import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationService;
-import features.world.dungeonmap.application.runtime.DungeonRuntimeStateRepairService;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeApplicationService;
 import features.world.dungeonmap.application.transition.DungeonTransitionEditService;
 import features.world.dungeonmap.application.transition.DungeonTransitionTargetCatalogService;
 import features.world.dungeonmap.application.room.DungeonClusterMoveProjectionApplicationService;
@@ -52,9 +51,10 @@ public final class DungeonMapModule {
                 mapLoader,
                 roomWriteRepository);
         DungeonTransitionEditService transitionEditService = new DungeonTransitionEditService(roomTopologyService, transitionWriteRepository);
+        DungeonRuntimeApplicationService runtimeApplicationService = new DungeonRuntimeApplicationService(mapLoader);
         DungeonMapCatalogService mapCatalogService = new DungeonMapCatalogService(
                 roomTopologyService,
-                new DungeonRuntimeStateRepairService(mapLoader));
+                runtimeApplicationService);
         DungeonBoundaryEditService boundaryEditService = new DungeonBoundaryEditService(roomTopologyService);
         DungeonCorridorEditService corridorEditService = new DungeonCorridorEditService(mapLoader, corridorWriteRepository);
         DungeonClusterMoveProjectionApplicationService clusterMoveProjectionApplicationService =
@@ -117,7 +117,7 @@ public final class DungeonMapModule {
                 false,
                 loadingService,
                 state,
-                new DungeonRuntimeNavigationService(),
+                runtimeApplicationService,
                 detailsNavigator,
                 travelSurface,
                 hitCollector);

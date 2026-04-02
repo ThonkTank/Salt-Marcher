@@ -221,16 +221,20 @@ public final class BoundaryTool implements EditorTool {
         if (mapId == null || edges.isEmpty()) {
             return true;
         }
-        loadingService.submitReloadingWrite(
-                () -> boundaryEditService.apply(
+        loadingService.submitMutation(
+                () -> {
+                    boundaryEditService.apply(
                         mapId,
                         currentDraft.clusterId(),
                         mapState.activeProjectionLevel(),
                         edges,
                         InternalBoundaryType.WALL,
-                        currentDraft.deleteMode()),
-                mapId,
-                null,
+                        currentDraft.deleteMode());
+                    return mapId;
+                },
+                updatedMapId -> updatedMapId,
+                ignored -> {
+                },
                 throwable -> UiErrorReporter.reportBackgroundFailure("BoundaryTool.finishDraft()", throwable));
         return true;
     }

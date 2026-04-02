@@ -254,10 +254,13 @@ public final class ConnectionsTool implements EditorTool {
             if (mapId == null) {
                 return true;
             }
-            loadingService.submitReloadingWrite(
-                () -> corridorEditService.delete(mapId, corridorId),
-                mapId,
-                state::clearSelection,
+            loadingService.submitMutation(
+                () -> {
+                    corridorEditService.delete(mapId, corridorId);
+                    return mapId;
+                },
+                updatedMapId -> updatedMapId,
+                ignored -> state.clearSelection(),
                 throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.handleDeletePressed()", throwable));
             return true;
         }
@@ -316,7 +319,7 @@ public final class ConnectionsTool implements EditorTool {
         if (mapId == null) {
             return;
         }
-        loadingService.submitReloadingTask(
+        loadingService.submitMutation(
                 () -> corridorEditService.create(mapId, planned),
                 createdId -> mapId,
                 createdId -> {
@@ -346,10 +349,13 @@ public final class ConnectionsTool implements EditorTool {
         if (mapId == null) {
             return;
         }
-        loadingService.submitReloadingWrite(
-                () -> corridorEditService.update(mapId, updated),
-                mapId,
+        loadingService.submitMutation(
                 () -> {
+                    corridorEditService.update(mapId, updated);
+                    return mapId;
+                },
+                updatedMapId -> updatedMapId,
+                ignored -> {
                     clearDraft();
                     state.selectKey(corridorOwnerKey(updated.corridorId()));
                 },
@@ -366,10 +372,13 @@ public final class ConnectionsTool implements EditorTool {
         if (mapId == null) {
             return;
         }
-        loadingService.submitReloadingWrite(
-                () -> corridorEditService.update(mapId, updated),
-                mapId,
-                () -> state.selectKey(corridorOwnerKey(updated.corridorId())),
+        loadingService.submitMutation(
+                () -> {
+                    corridorEditService.update(mapId, updated);
+                    return mapId;
+                },
+                updatedMapId -> updatedMapId,
+                ignored -> state.selectKey(corridorOwnerKey(updated.corridorId())),
                 throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.insertNode()", throwable));
     }
 
@@ -381,10 +390,13 @@ public final class ConnectionsTool implements EditorTool {
             return;
         }
         Corridor updated = DungeonCorridorGraphEditor.withDeletedNode(mapState.activeMap(), corridor, selectedNodeId);
-        loadingService.submitReloadingWrite(
-                () -> corridorEditService.update(mapId, updated),
-                mapId,
-                () -> state.selectKey(corridorOwnerKey(updated.corridorId())),
+        loadingService.submitMutation(
+                () -> {
+                    corridorEditService.update(mapId, updated);
+                    return mapId;
+                },
+                updatedMapId -> updatedMapId,
+                ignored -> state.selectKey(corridorOwnerKey(updated.corridorId())),
                 throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.deleteSelectedNode()", throwable));
     }
 
@@ -394,10 +406,13 @@ public final class ConnectionsTool implements EditorTool {
         if (corridor == null || corridor.corridorId() == null || mapId == null) {
             return;
         }
-        loadingService.submitReloadingWrite(
-                () -> corridorEditService.delete(mapId, corridor.corridorId()),
-                mapId,
-                state::clearSelection,
+        loadingService.submitMutation(
+                () -> {
+                    corridorEditService.delete(mapId, corridor.corridorId());
+                    return mapId;
+                },
+                updatedMapId -> updatedMapId,
+                ignored -> state.clearSelection(),
                 throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.deleteSelectedCorridor()", throwable));
     }
 
@@ -411,16 +426,19 @@ public final class ConnectionsTool implements EditorTool {
         if (mapId == null || clusterId == null || segment2x == null) {
             return;
         }
-        loadingService.submitReloadingWrite(
-                () -> boundaryEditService.apply(
+        loadingService.submitMutation(
+                () -> {
+                    boundaryEditService.apply(
                         mapId,
                         clusterId,
                         mapState.activeProjectionLevel(),
                         segment2x,
                         InternalBoundaryType.DOOR,
-                        deleteBoundary),
-                mapId,
-                () -> state.selectKey(followUpKey),
+                        deleteBoundary);
+                    return mapId;
+                },
+                updatedMapId -> updatedMapId,
+                ignored -> state.selectKey(followUpKey),
                 throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.applyDoorEdit()", throwable));
     }
 

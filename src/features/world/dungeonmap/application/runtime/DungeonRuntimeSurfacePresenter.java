@@ -18,8 +18,7 @@ public final class DungeonRuntimeSurfacePresenter {
 
     public static Node buildNode(
             DungeonRuntimeSurface surface,
-            Consumer<DungeonRuntimeStairDescriptor> onStairSelected,
-            Consumer<DungeonRuntimeTransitionDescriptor> onTransitionSelected
+            Consumer<DungeonRuntimeAction> onActionSelected
     ) {
         VBox box = new VBox(8);
         box.setPadding(new Insets(12));
@@ -27,11 +26,23 @@ public final class DungeonRuntimeSurfacePresenter {
             box.getChildren().add(text("Keine Beschreibung verfügbar"));
             return box;
         }
+        var doors = surface.actions().stream()
+                .filter(DungeonRuntimeDoorDescriptor.class::isInstance)
+                .map(DungeonRuntimeDoorDescriptor.class::cast)
+                .toList();
+        var stairs = surface.actions().stream()
+                .filter(DungeonRuntimeStairDescriptor.class::isInstance)
+                .map(DungeonRuntimeStairDescriptor.class::cast)
+                .toList();
+        var transitions = surface.actions().stream()
+                .filter(DungeonRuntimeTransitionDescriptor.class::isInstance)
+                .map(DungeonRuntimeTransitionDescriptor.class::cast)
+                .toList();
         VBox descriptionBlock = new VBox(2);
         descriptionBlock.getChildren().add(text(valueOrDash(surface.visualDescription())));
-        if (!surface.doors().isEmpty()) {
+        if (!doors.isEmpty()) {
             descriptionBlock.getChildren().add(sectionTitle("Durchgänge"));
-            for (DungeonRuntimeDoorDescriptor door : surface.doors()) {
+            for (DungeonRuntimeDoorDescriptor door : doors) {
                 descriptionBlock.getChildren().add(doorLine(door));
             }
         }
@@ -39,15 +50,15 @@ public final class DungeonRuntimeSurfacePresenter {
                 sectionTitle("Visueller Eindruck"),
                 descriptionBlock);
         box.getChildren().add(sectionTitle("Treppen"));
-        if (surface.stairs().isEmpty()) {
+        if (stairs.isEmpty()) {
             box.getChildren().add(text("—"));
         } else {
-            for (DungeonRuntimeStairDescriptor stair : surface.stairs()) {
+            for (DungeonRuntimeStairDescriptor stair : stairs) {
                 Button button = new Button(stair.displayLabel());
                 button.setMaxWidth(Double.MAX_VALUE);
                 button.setOnAction(event -> {
-                    if (onStairSelected != null) {
-                        onStairSelected.accept(stair);
+                    if (onActionSelected != null) {
+                        onActionSelected.accept(stair);
                     }
                 });
                 box.getChildren().add(button);
@@ -57,15 +68,15 @@ public final class DungeonRuntimeSurfacePresenter {
             }
         }
         box.getChildren().add(sectionTitle("Übergänge"));
-        if (surface.transitions().isEmpty()) {
+        if (transitions.isEmpty()) {
             box.getChildren().add(text("—"));
         } else {
-            for (DungeonRuntimeTransitionDescriptor transition : surface.transitions()) {
+            for (DungeonRuntimeTransitionDescriptor transition : transitions) {
                 Button button = new Button(transition.displayLabel());
                 button.setMaxWidth(Double.MAX_VALUE);
                 button.setOnAction(event -> {
-                    if (onTransitionSelected != null) {
-                        onTransitionSelected.accept(transition);
+                    if (onActionSelected != null) {
+                        onActionSelected.accept(transition);
                     }
                 });
                 box.getChildren().add(button);

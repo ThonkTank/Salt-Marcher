@@ -115,16 +115,18 @@ public final class PaintTool implements EditorTool {
         if (mapId == null || descriptor.levels().isEmpty()) {
             return true;
         }
-        loadingService.submitReloadingWrite(
+        loadingService.submitMutation(
                 () -> {
                     if (finishedSession.deleteMode()) {
                         roomTopologyService.delete(mapId, descriptor);
                     } else {
                         roomTopologyService.paint(mapId, descriptor);
                     }
+                    return mapId;
                 },
-                mapId,
-                null,
+                updatedMapId -> updatedMapId,
+                ignored -> {
+                },
                 throwable -> UiErrorReporter.reportBackgroundFailure("PaintTool.released()", throwable));
         return true;
     }

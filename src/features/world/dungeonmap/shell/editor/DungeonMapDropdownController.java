@@ -7,22 +7,23 @@ import javafx.scene.Node;
 import ui.async.UiErrorReporter;
 
 import java.util.Objects;
+import java.util.function.Supplier;
 
 public final class DungeonMapDropdownController {
 
     private final DungeonMapCatalogService mapCatalogService;
     private final DungeonMapLoadingService loadingService;
-    private final ReloadHandle reloadHandle;
+    private final Supplier<Long> activeMapIdSupplier;
     private final DungeonMapEditorDropdown mapDropdown = new DungeonMapEditorDropdown();
 
     public DungeonMapDropdownController(
             DungeonMapCatalogService mapCatalogService,
             DungeonMapLoadingService loadingService,
-            ReloadHandle reloadHandle
+            Supplier<Long> activeMapIdSupplier
     ) {
         this.mapCatalogService = Objects.requireNonNull(mapCatalogService, "mapCatalogService");
         this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
-        this.reloadHandle = Objects.requireNonNull(reloadHandle, "reloadHandle");
+        this.activeMapIdSupplier = Objects.requireNonNull(activeMapIdSupplier, "activeMapIdSupplier");
     }
 
     public void showCreate(Node anchor) {
@@ -39,7 +40,7 @@ public final class DungeonMapDropdownController {
 
     private void createMap(String name) {
         mapDropdown.setBusy(true);
-        loadingService.submitReloadingTask(
+        loadingService.submitMutation(
                 () -> mapCatalogService.createMap(name),
                 mapId -> mapId,
                 ignored -> mapDropdown.hide(),
@@ -54,10 +55,13 @@ public final class DungeonMapDropdownController {
             return;
         }
         mapDropdown.setBusy(true);
-        loadingService.submitReloadingWrite(
-                () -> mapCatalogService.renameMap(mapId, name),
-                mapId,
-                mapDropdown::hide,
+        loadingService.submitMutation(
+                () -> {
+                    mapCatalogService.renameMap(mapId, name);
+                    return mapId;
+                },
+                updatedMapId -> updatedMapId,
+                ignored -> mapDropdown.hide(),
                 throwable -> {
                     UiErrorReporter.reportBackgroundFailure("DungeonMapDropdownController.updateMap()", throwable);
                     mapDropdown.showError("Dungeon konnte nicht gespeichert werden.");
@@ -70,11 +74,15 @@ public final class DungeonMapDropdownController {
         }
         long mapId = map.mapId();
         mapDropdown.setBusy(true);
-        Long preferredMapId = Objects.equals(mapId, reloadHandle.sessionMapId()) ? null : reloadHandle.sessionMapId();
-        loadingService.submitReloadingWrite(
-                () -> mapCatalogService.deleteMap(mapId),
-                preferredMapId,
-                mapDropdown::hide,
+        Long activeMapId = activeMapIdSupplier.get();
+        Long preferredMapId = Objects.equals(mapId, activeMapId) ? null : activeMapId;
+        loadingService.submitMutation(
+                () -> {
+                    mapCatalogService.deleteMap(mapId);
+                    return preferredMapId;
+                },
+                nextMapId -> nextMapId,
+                ignored -> mapDropdown.hide(),
                 throwable -> {
                     UiErrorReporter.reportBackgroundFailure("DungeonMapDropdownController.deleteMap()", throwable);
                     mapDropdown.showError("Dungeon konnte nicht geloescht werden.");
@@ -82,9 +90,5 @@ public final class DungeonMapDropdownController {
     }
 
     public record EditRequest(DungeonMapCatalogEntry map, Node anchor) {
-    }
-
-    public interface ReloadHandle {
-        Long sessionMapId();
     }
 }

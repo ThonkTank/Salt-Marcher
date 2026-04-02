@@ -5,7 +5,7 @@ public record DungeonRuntimeTransitionDescriptor(
         String transitionLabel,
         String destinationLabel,
         String description
-) {
+) implements DungeonRuntimeAction {
 
     public DungeonRuntimeTransitionDescriptor {
         transitionLabel = transitionLabel == null || transitionLabel.isBlank() ? "Übergang" : transitionLabel.trim();

@@ -194,27 +194,35 @@ public final class TransitionTool implements EditorTool {
         clearPlacementError();
         state.clearSelection();
         if (preparedTransitionId != null && preparedTransitionId > 0) {
-            loadingService.submitReloadingWrite(
-                    () -> transitionEditService.placePrepared(
+            loadingService.submitMutation(
+                    () -> {
+                        transitionEditService.placePrepared(
                             preparedTransitionId,
                             cell,
-                            mapState.activeProjectionLevel()),
-                    mapId,
-                    null,
+                            mapState.activeProjectionLevel());
+                        return mapId;
+                    },
+                    updatedMapId -> updatedMapId,
+                    ignored -> {
+                    },
                     throwable -> {
                         showPlacementError(throwable == null ? "Übergang konnte nicht platziert werden" : throwable.getMessage());
                         UiErrorReporter.reportBackgroundFailure("TransitionTool.handleCreatePressed()", throwable);
                     });
             return true;
         }
-        loadingService.submitReloadingWrite(
-                () -> transitionEditService.create(
+        loadingService.submitMutation(
+                () -> {
+                    transitionEditService.create(
                         mapState.activeMap(),
                         cell,
                         mapState.activeProjectionLevel(),
-                        createRequest()),
-                mapId,
-                null,
+                        createRequest());
+                    return mapId;
+                },
+                updatedMapId -> updatedMapId,
+                ignored -> {
+                },
                 throwable -> {
                     showPlacementError(throwable == null ? "Übergang konnte nicht erstellt werden" : throwable.getMessage());
                     UiErrorReporter.reportBackgroundFailure("TransitionTool.handleCreatePressed()", throwable);
@@ -237,10 +245,13 @@ public final class TransitionTool implements EditorTool {
             return false;
         }
         state.selectKey(ctx == null ? null : ctx.resolvedSelectionKey());
-        loadingService.submitReloadingWrite(
-                () -> transitionEditService.delete(transition.transitionId()),
-                mapId,
-                state::clearSelection,
+        loadingService.submitMutation(
+                () -> {
+                    transitionEditService.delete(transition.transitionId());
+                    return mapId;
+                },
+                updatedMapId -> updatedMapId,
+                ignored -> state.clearSelection(),
                 throwable -> UiErrorReporter.reportBackgroundFailure("TransitionTool.handleDeletePressed()", throwable));
         return true;
     }

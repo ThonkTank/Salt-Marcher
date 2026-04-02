@@ -9,7 +9,6 @@ import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import ui.shell.DetailsNavigator;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Runtime surfaces should read from the same direct owners that the rest of the feature uses.
@@ -62,9 +61,7 @@ public final class DungeonRuntimeSurfaceResolver {
                 DungeonRuntimeLabels.roomLabel(room),
                 new DetailsNavigator.EntryKey("dungeon-room", layout.mapId() + ":" + room.roomId()),
                 room.narration().visualDescription(),
-                DungeonRuntimeDoorCatalog.describe(layout, room, heading),
-                DungeonRuntimeStairCatalog.describe(layout, room, activeCell, activeLevelZ),
-                DungeonRuntimeTransitionCatalog.describe(layout, room, activeCell, activeLevelZ));
+                DungeonRuntimeActionCatalog.describe(layout, room, heading, activeCell, activeLevelZ));
     }
 
     private static DungeonRuntimeSurface corridorSurface(
@@ -81,9 +78,7 @@ public final class DungeonRuntimeSurfaceResolver {
                 DungeonRuntimeLabels.corridorLabel(layout, corridor),
                 new DetailsNavigator.EntryKey("dungeon-corridor", layout.mapId() + ":" + corridor.corridorId()),
                 "",
-                DungeonRuntimeDoorCatalog.describe(layout, corridor, heading),
-                DungeonRuntimeStairCatalog.describe(layout, corridor, activeCell, activeLevelZ),
-                DungeonRuntimeTransitionCatalog.describe(layout, corridor, activeCell, activeLevelZ));
+                DungeonRuntimeActionCatalog.describe(layout, corridor, heading, activeCell, activeLevelZ));
     }
 
     private static DungeonRuntimeSurface stairOnlySurface(
@@ -99,17 +94,7 @@ public final class DungeonRuntimeSurfaceResolver {
                 stair.label(),
                 new DetailsNavigator.EntryKey("dungeon-stair", layout.mapId() + ":" + stair.stairId()),
                 "Eine Treppe verbindet mehrere erschlossene Höhenstufen.",
-                List.of(),
-                DungeonRuntimeStairCatalog.describeAtCells(
-                        layout,
-                        stair.occupiedPositions().stream()
-                                .filter(position -> position != null && position.z() == activeLevelZ)
-                                .map(position -> position.projectedCell())
-                                .collect(Collectors.toSet()),
-                        activeLevelZ,
-                        activeCell,
-                        activeLevelZ),
-                DungeonRuntimeTransitionCatalog.describeAtCell(layout, activeCell, activeLevelZ));
+                DungeonRuntimeActionCatalog.describe(layout, stair, activeCell, activeLevelZ));
     }
 
     private static DungeonRuntimeSurface transitionOnlySurface(
@@ -125,8 +110,6 @@ public final class DungeonRuntimeSurfaceResolver {
                 transition.label(),
                 new DetailsNavigator.EntryKey("dungeon-transition", layout.mapId() + ":" + transition.transitionId()),
                 transition.description().isBlank() ? transition.label() : transition.description(),
-                List.of(),
-                List.of(),
-                DungeonRuntimeTransitionCatalog.describeAtCell(layout, activeCell, activeLevelZ));
+                DungeonRuntimeActionCatalog.describe(layout, transition, activeCell, activeLevelZ));
     }
 }

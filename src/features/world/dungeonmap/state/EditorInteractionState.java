@@ -19,20 +19,6 @@ public final class EditorInteractionState {
         return selectedKey;
     }
 
-    public String selectedTargetKey() {
-        if (selectedKey == null) {
-            return null;
-        }
-        return selectedKey.targetKey();
-    }
-
-    public String selectedPartKey() {
-        if (selectedKey == null) {
-            return null;
-        }
-        return selectedKey.partKey();
-    }
-
     public void selectKey(DungeonSelectionKey key) {
         if (Objects.equals(selectedKey, key)) {
             return;

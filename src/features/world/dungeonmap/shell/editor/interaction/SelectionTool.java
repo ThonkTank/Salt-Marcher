@@ -192,10 +192,13 @@ public final class SelectionTool implements EditorTool {
                             corridor,
                             current.nodeId(),
                             current.currentPoint());
-                    loadingService.submitReloadingWrite(
-                            () -> corridorEditService.update(mapState.activeMapId(), updated),
-                            mapState.activeMapId(),
-                            () -> state.selectKey(corridorNodeKey(current.corridorId(), current.nodeId())),
+                    loadingService.submitMutation(
+                            () -> {
+                                corridorEditService.update(mapState.activeMapId(), updated);
+                                return mapState.activeMapId();
+                            },
+                            updatedMapId -> updatedMapId,
+                            ignored -> state.selectKey(corridorNodeKey(current.corridorId(), current.nodeId())),
                             throwable -> UiErrorReporter.reportBackgroundFailure("SelectionTool.released()", throwable));
                 }
             }
@@ -211,10 +214,14 @@ public final class SelectionTool implements EditorTool {
         state.clearPreview();
         dragSession = null;
         if (mapId != null && clusterId != null && (delta.x() != 0 || delta.y() != 0 || levelDelta != 0)) {
-            loadingService.submitReloadingWrite(
-                    () -> clusterMoveService.move(mapId, clusterId, delta, levelDelta),
-                    mapId,
-                    null,
+            loadingService.submitMutation(
+                    () -> {
+                        clusterMoveService.move(mapId, clusterId, delta, levelDelta);
+                        return mapId;
+                    },
+                    updatedMapId -> updatedMapId,
+                    ignored -> {
+                    },
                     throwable -> UiErrorReporter.reportBackgroundFailure("SelectionTool.released()", throwable));
         }
         return true;
@@ -351,10 +358,13 @@ public final class SelectionTool implements EditorTool {
             exitNarrations.add(new RoomExitNarration(exit.levelZ(), exit.roomCell(), exit.direction(), exitAreas.get(index).getText()));
         }
         setRoomNarrationSaveState(card.roomId(), true, "Speichert...");
-        loadingService.submitReloadingWrite(
-                () -> roomNarrationService.saveNarration(card.roomId(), new RoomNarration(visualArea.getText(), exitNarrations)),
-                mapState.activeMapId(),
+        loadingService.submitMutation(
                 () -> {
+                    roomNarrationService.saveNarration(card.roomId(), new RoomNarration(visualArea.getText(), exitNarrations));
+                    return mapState.activeMapId();
+                },
+                updatedMapId -> updatedMapId,
+                ignored -> {
                     setRoomNarrationSaveState(card.roomId(), false, "Gespeichert");
                 },
                 throwable -> {

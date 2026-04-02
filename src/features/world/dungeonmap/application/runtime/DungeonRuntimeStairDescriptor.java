@@ -6,7 +6,7 @@ public record DungeonRuntimeStairDescriptor(
         String destinationLabel,
         String description,
         DungeonRuntimeLocation targetLocation
-) {
+) implements DungeonRuntimeAction {
     public DungeonRuntimeStairDescriptor {
         stairLabel = stairLabel == null || stairLabel.isBlank() ? "Treppe" : stairLabel.trim();
         exitLabel = exitLabel == null || exitLabel.isBlank() ? "Ausgang" : exitLabel.trim();
