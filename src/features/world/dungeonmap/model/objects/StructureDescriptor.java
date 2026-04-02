@@ -5,7 +5,6 @@ import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
-import features.world.dungeonmap.model.geometry.VertexEdge;
 
 import java.util.ArrayDeque;
 import java.util.Collection;
@@ -155,7 +154,7 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
         for (Point2i cell : cells) {
             for (Point2i step : Point2i.CARDINAL_STEPS) {
                 if (!cells.contains(cell.add(step))) {
-                    result.add(GridSegment2x.fromVertexEdge(VertexEdge.betweenCellAndStep(cell, step)));
+                    result.add(GridSegment2x.betweenCellAndStep(cell, step));
                 }
             }
         }

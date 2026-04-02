@@ -32,17 +32,18 @@ public record GridSegment2x(GridPoint2x start, GridPoint2x end) {
         }
     }
 
-    public static GridSegment2x fromVertexEdge(VertexEdge edge) {
-        VertexEdge resolvedEdge = edge == null
-                ? new VertexEdge(new Point2i(0, 0), new Point2i(1, 0))
-                : edge;
-        return new GridSegment2x(
-                GridPoint2x.fromVertex(resolvedEdge.start()),
-                GridPoint2x.fromVertex(resolvedEdge.end()));
-    }
-
     public static GridSegment2x betweenCellAndStep(Point2i fromCell, Point2i stepDelta) {
-        return fromVertexEdge(VertexEdge.betweenCellAndStep(fromCell, stepDelta));
+        Point2i origin = fromCell == null ? new Point2i(0, 0) : fromCell;
+        Point2i delta = stepDelta == null ? new Point2i(0, 0) : stepDelta;
+        GridPoint2x origin2x = GridPoint2x.fromVertex(origin);
+        // Productive room/corridor boundary flows stay in 2x geometry instead of detouring through VertexEdge.
+        return switch (delta.x() + "," + delta.y()) {
+            case "0,-1" -> new GridSegment2x(origin2x, origin2x.offset(2, 0));
+            case "1,0" -> new GridSegment2x(origin2x.offset(2, 0), origin2x.offset(2, 2));
+            case "0,1" -> new GridSegment2x(origin2x.offset(0, 2), origin2x.offset(2, 2));
+            case "-1,0" -> new GridSegment2x(origin2x, origin2x.offset(0, 2));
+            default -> throw new IllegalArgumentException("Schritt ist keine Kardinalkante: " + delta);
+        };
     }
 
     public boolean isHorizontal() {
@@ -151,8 +152,4 @@ public record GridSegment2x(GridPoint2x start, GridPoint2x end) {
         return start.x2() < cellBoundaryX ? new Point2i(-1, 0) : new Point2i(1, 0);
     }
 
-    public Optional<VertexEdge> toVertexEdge() {
-        return start.toVertex()
-                .flatMap(startVertex -> end.toVertex().map(endVertex -> new VertexEdge(startVertex, endVertex)));
-    }
 }

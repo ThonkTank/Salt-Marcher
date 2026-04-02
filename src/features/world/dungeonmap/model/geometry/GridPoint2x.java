@@ -24,11 +24,6 @@ public record GridPoint2x(int x2, int y2) {
         return new GridPoint2x(x2, y2);
     }
 
-    public static GridPoint2x fromRaw(Point2i point) {
-        Point2i resolvedPoint = point == null ? new Point2i(0, 0) : point;
-        return new GridPoint2x(resolvedPoint.x(), resolvedPoint.y());
-    }
-
     public static GridPoint2x fromTileCenter(Point2i cell) {
         Point2i resolvedCell = cell == null ? new Point2i(0, 0) : cell;
         return new GridPoint2x(resolvedCell.x() * 2 + 1, resolvedCell.y() * 2 + 1);
@@ -37,15 +32,6 @@ public record GridPoint2x(int x2, int y2) {
     public static GridPoint2x fromVertex(Point2i vertex) {
         Point2i resolvedVertex = vertex == null ? new Point2i(0, 0) : vertex;
         return new GridPoint2x(resolvedVertex.x() * 2, resolvedVertex.y() * 2);
-    }
-
-    public static GridPoint2x fromEdge(VertexEdge edge) {
-        VertexEdge resolvedEdge = edge == null
-                ? new VertexEdge(new Point2i(0, 0), new Point2i(1, 0))
-                : edge;
-        return new GridPoint2x(
-                resolvedEdge.start().x() + resolvedEdge.end().x(),
-                resolvedEdge.start().y() + resolvedEdge.end().y());
     }
 
     public Kind kind() {
@@ -70,10 +56,6 @@ public record GridPoint2x(int x2, int y2) {
 
     public boolean isEdgeCenter() {
         return kind() == Kind.EDGE_CENTER;
-    }
-
-    public Point2i toRawPoint2i() {
-        return new Point2i(x2, y2);
     }
 
     public Optional<Point2i> toCellCenter() {

@@ -80,14 +80,6 @@ public final class GridShapes {
         return union(shapes).bounds();
     }
 
-    public static TileFaceShape fromTileShape(TileShape shape) {
-        return tile(shape == null ? Set.of() : shape.absoluteCells());
-    }
-
-    public static EdgePathShape fromVertexEdge(VertexEdge edge) {
-        return edge(edge == null ? null : GridSegment2x.fromVertexEdge(edge));
-    }
-
     private static List<GridPoint2x> normalizePolylinePoints(Collection<GridPoint2x> points) {
         ArrayList<GridPoint2x> result = new ArrayList<>();
         GridPoint2x previous = null;
