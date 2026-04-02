@@ -75,12 +75,13 @@ public final class Corridor {
             List<CorridorSegment> segments,
             Map<Long, Room> roomsById
     ) {
+        Map<Long, Room> resolvedRooms = roomsById == null ? Map.of() : Map.copyOf(roomsById);
         this.corridorId = corridorId;
         this.mapId = mapId;
         this.levelZ = levelZ;
-        this.nodes = normalizeNodes(nodes);
+        this.nodes = normalizeNodes(levelZ, nodes, resolvedRooms);
         this.segments = normalizeSegments(segments);
-        DerivedProjection projection = deriveProjection(corridorId, mapId, levelZ, this.nodes, this.segments, roomsById);
+        DerivedProjection projection = deriveProjection(corridorId, mapId, levelZ, this.nodes, this.segments, resolvedRooms);
         this.structure = projection.structure();
         this.routes = projection.routes();
         this.connections = projection.connections();
@@ -187,7 +188,7 @@ public final class Corridor {
                 .toList();
     }
 
-    private static List<CorridorNode> normalizeNodes(List<CorridorNode> nodes) {
+    private static List<CorridorNode> normalizeNodes(int levelZ, List<CorridorNode> nodes, Map<Long, Room> roomsById) {
         if (nodes == null || nodes.isEmpty()) {
             throw new IllegalArgumentException("Corridor requires at least two nodes");
         }
@@ -198,14 +199,15 @@ public final class Corridor {
             if (node == null) {
                 continue;
             }
+            CorridorNode resolvedNode = canonicalizeRoomBoundNode(node, levelZ, roomsById);
             if (node.nodeId() != null && !seenIds.add(node.nodeId())) {
                 throw new IllegalArgumentException("Duplicate corridor node id " + node.nodeId());
             }
-            long coordinateKey = node.point2x().encodedKey();
+            long coordinateKey = resolvedNode.point2x().encodedKey();
             if (!seenCoordinates.add(coordinateKey)) {
                 throw new IllegalArgumentException("Duplicate corridor node coordinates");
             }
-            result.add(node);
+            result.add(resolvedNode);
         }
         if (result.size() < 2) {
             throw new IllegalArgumentException("Corridor requires at least two nodes");
@@ -296,6 +298,16 @@ public final class Corridor {
         return StructureObject.fromDescriptor(descriptor);
     }
 
+    private static CorridorNode canonicalizeRoomBoundNode(CorridorNode node, int levelZ, Map<Long, Room> roomsById) {
+        if (node == null || !node.isRoomBound()) {
+            return node;
+        }
+        GridPoint2x anchorPoint = roomAnchorPoint(node, levelZ, roomsById);
+        return anchorPoint.equals(node.point2x())
+                ? node
+                : new CorridorNode(node.nodeId(), anchorPoint, node.roomId(), node.roomRelativeCell(), node.roomBoundaryDirection());
+    }
+
     private static Set<GridSegment2x> corridorOpeningSegments(
             int levelZ,
             List<CorridorNode> nodes,
@@ -306,11 +318,11 @@ public final class Corridor {
             if (node == null || !node.isRoomBound() || node.roomBoundaryDirection() == null) {
                 continue;
             }
-            CellCoord roomCell = absoluteRoomCell(node, levelZ, roomsById);
-            if (roomCell == null) {
+            GridSegment2x boundaryEdge = roomBoundaryEdge(node, levelZ, roomsById);
+            if (boundaryEdge == null) {
                 continue;
             }
-            result.add(GridSegment2x.boundaryEdge(roomCell, node.roomBoundaryDirection()));
+            result.add(boundaryEdge);
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
@@ -389,10 +401,10 @@ public final class Corridor {
         if (node == null) {
             return List.of();
         }
-        GridPoint2x anchorPoint = node.point2x();
         if (node.isRoomBound()) {
             CellCoord roomCell = absoluteRoomCell(node, levelZ, roomsById);
-            if (roomCell == null || node.roomBoundaryDirection() == null) {
+            GridPoint2x anchorPoint = roomAnchorPoint(node, levelZ, roomsById);
+            if (roomCell == null || anchorPoint == null || node.roomBoundaryDirection() == null) {
                 throw new IllegalArgumentException("Corridor room-bound node could not be resolved");
             }
             CellCoord exteriorCell = roomCell.add(node.roomBoundaryDirection().delta());
@@ -400,6 +412,7 @@ public final class Corridor {
                     exteriorCell,
                     List.of(anchorPoint, GridPoint2x.cell(exteriorCell))));
         }
+        GridPoint2x anchorPoint = node.point2x();
         if (anchorPoint.isCell()) {
             return List.of(new AnchorAttachment(anchorPoint.asCell().orElseThrow(), List.of(anchorPoint)));
         }
@@ -570,19 +583,30 @@ public final class Corridor {
             if (!node.isRoomBound()) {
                 continue;
             }
-            CellCoord roomCell = absoluteRoomCell(node, levelZ, roomsById);
-            CardinalDirection direction = node.roomBoundaryDirection();
-            if (roomCell == null || direction == null) {
+            GridSegment2x boundaryEdge = roomBoundaryEdge(node, levelZ, roomsById);
+            if (boundaryEdge == null) {
                 throw new IllegalArgumentException("Corridor room-bound node could not be resolved");
             }
             result.add(new CorridorConnection(
                     corridorId,
                     mapId,
-                    Door.fromSegments(List.of(GridSegment2x.boundaryEdge(roomCell, direction).toLegacyBoundaryEdge()), Door.DoorState.CLOSED),
+                    Door.fromSegments(List.of(boundaryEdge.toLegacyBoundaryEdge()), Door.DoorState.CLOSED),
                     List.of(ConnectionEndpoint.room(node.roomId()), ConnectionEndpoint.corridor(corridorId)),
                     levelZ));
         }
         return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
+    private static GridPoint2x roomAnchorPoint(CorridorNode node, int levelZ, Map<Long, Room> roomsById) {
+        CellCoord roomCell = absoluteRoomCell(node, levelZ, roomsById);
+        CardinalDirection direction = node == null ? null : node.roomBoundaryDirection();
+        return roomCell == null || direction == null ? null : GridPoint2x.edgeCenter(roomCell, direction);
+    }
+
+    private static GridSegment2x roomBoundaryEdge(CorridorNode node, int levelZ, Map<Long, Room> roomsById) {
+        CellCoord roomCell = absoluteRoomCell(node, levelZ, roomsById);
+        CardinalDirection direction = node == null ? null : node.roomBoundaryDirection();
+        return roomCell == null || direction == null ? null : GridSegment2x.boundaryEdge(roomCell, direction);
     }
 
     private static CellCoord absoluteRoomCell(CorridorNode node, int levelZ, Map<Long, Room> roomsById) {
