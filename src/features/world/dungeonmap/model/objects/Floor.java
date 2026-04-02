@@ -3,28 +3,20 @@ package features.world.dungeonmap.model.objects;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileFaceShape;
-import features.world.dungeonmap.model.geometry.TileShape;
-
-import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
- * A floor is the object-level owner of walkable room area.
- *
- * <p>All reusable area math stays in {@link TileShape}. Floor only exposes that geometry as a room-facing object
- * so structures do not depend directly on geometry primitives more than necessary.</p>
+ * A floor is the object-level owner of walkable cells plus explicit 2x anchor semantics.
  */
 public record Floor(TileFaceShape faceShape, GridPoint2x anchor2x) {
+
+    public static Floor empty() {
+        return new Floor(null, null);
+    }
 
     public Floor {
         faceShape = faceShape == null ? new TileFaceShape(Set.of()) : faceShape;
         anchor2x = normalizeAnchor(anchor2x, faceShape);
-    }
-
-    public Floor(TileShape shape) {
-        this(
-                shape == null ? new TileFaceShape(Set.of(new Point2i(0, 0))) : new TileFaceShape(shape.absoluteCells()),
-                GridPoint2x.fromTileCenter(shape == null ? new Point2i(0, 0) : shape.anchor()));
     }
 
     public TileFaceShape shape2x() {
@@ -39,12 +31,12 @@ public record Floor(TileFaceShape faceShape, GridPoint2x anchor2x) {
         return faceShape.cells();
     }
 
-    public boolean contains(Point2i cell) {
-        return faceShape.contains(cell);
+    public Point2i centerCell() {
+        return cells().isEmpty() ? null : StructureDescriptor.bestCenterCell(cells());
     }
 
-    public TileShape shape() {
-        return TileShape.fromAbsoluteCells(anchorCell(), faceShape.cells());
+    public boolean contains(Point2i cell) {
+        return faceShape.contains(cell);
     }
 
     public Floor movedBy(Point2i delta) {
@@ -53,10 +45,6 @@ public record Floor(TileFaceShape faceShape, GridPoint2x anchor2x) {
             return this;
         }
         return new Floor(faceShape.translatedByCells(resolvedDelta), anchor2x.translatedByCells(resolvedDelta));
-    }
-
-    public Floor withShape(TileShape shape) {
-        return new Floor(shape);
     }
 
     private static GridPoint2x normalizeAnchor(GridPoint2x anchor2x, TileFaceShape faceShape) {
@@ -69,7 +57,6 @@ public record Floor(TileFaceShape faceShape, GridPoint2x anchor2x) {
         if (faceShape == null || faceShape.cells().isEmpty()) {
             return GridPoint2x.fromTileCenter(new Point2i(0, 0));
         }
-        TileShape shape = TileShape.fromAbsoluteCells(new LinkedHashSet<>(faceShape.cells()));
-        return GridPoint2x.fromTileCenter(shape.anchor());
+        return GridPoint2x.fromTileCenter(StructureDescriptor.bestCenterCell(faceShape.cells()));
     }
 }

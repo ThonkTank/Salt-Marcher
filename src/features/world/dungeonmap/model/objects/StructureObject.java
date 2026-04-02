@@ -90,10 +90,7 @@ public final class StructureObject {
 
     public Point2i centerCellAtLevel(int levelZ) {
         Floor floor = floorAtLevel(levelZ);
-        if (floor == null || floor.cells().isEmpty()) {
-            return null;
-        }
-        return StructureDescriptor.bestCenterCell(floor.cells());
+        return floor == null ? null : floor.centerCell();
     }
 
     public CubePoint centerPointAtLevel(int levelZ) {

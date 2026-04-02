@@ -14,8 +14,6 @@ import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.Tile;
-import features.world.dungeonmap.model.geometry.TileShape;
-import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 import features.world.dungeonmap.model.objects.Floor;
 import features.world.dungeonmap.model.objects.StructureObject;
@@ -305,11 +303,12 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             double gridSize,
             Floor floor
     ) {
-        if (roomName == null || roomName.isBlank() || floor == null || floor.shape() == null) {
+        if (roomName == null || roomName.isBlank() || floor == null || floor.cells().isEmpty()) {
             return;
         }
-        double centerX = camera.panX() + (floor.shape().anchor().x() + 0.15) * gridSize;
-        double centerY = camera.panY() + (floor.shape().anchor().y() + 0.55) * gridSize;
+        Point2i labelAnchor = floor.anchorCell();
+        double centerX = camera.panX() + (labelAnchor.x() + 0.15) * gridSize;
+        double centerY = camera.panY() + (labelAnchor.y() + 0.55) * gridSize;
         gc.fillText(roomName, centerX, centerY);
     }
 

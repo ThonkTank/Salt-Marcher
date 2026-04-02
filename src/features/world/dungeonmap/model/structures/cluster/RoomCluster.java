@@ -277,7 +277,7 @@ public final class RoomCluster {
     }
 
     public Room createRoom(Long roomId, String name, Floor floor) {
-        Floor resolvedFloor = floor == null ? new Floor(null) : floor;
+        Floor resolvedFloor = floor == null ? Floor.empty() : floor;
         return Room.create(
                 roomId,
                 mapId,
