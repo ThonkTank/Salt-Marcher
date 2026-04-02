@@ -23,7 +23,8 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - Connection doors and room exit narration are level-aware. Shared boundary/door queries must keep `levelZ` together with the 2x segment instead of collapsing identical segments across floors.
 - `Wall` and `Door` are 2x-native boundary objects keyed by normalized `LegacyGridSegment2x` collections. Do not reintroduce vertex-edge wrapper geometry in productive wall/door/corridor flows.
 - Tile-owned surfaces are owned as explicit `CellCoord` sets on `Floor` and other cell-surface seams. Do not reintroduce a second tile-area wrapper type just to shuttle those cells between owners.
-- `StructureDescriptor.LevelDescriptor` authors room/corridor floor truth as `anchorCell`, `fillSeeds`, `boundaryEdges`, and `openingEdges`. `StructureObject` hydrates floors, walls, and doors from that cell/edge truth without reconstructing removed legacy tile wrappers.
+- `StructureDescriptor.LevelDescriptor` authors room/corridor floor truth as `anchorCell`, `fillSeeds`, `boundaryEdges`, and `openingEdges`, with room/cluster descriptors carrying canonical `GridSegment2x` boundary edges in memory. `StructureObject` hydrates floors, walls, and doors from that cell/edge truth without reconstructing removed legacy tile wrappers.
+- Room/cluster persistence keeps the existing `anchor_x2`/`seed_x2` odd/odd storage columns, but `DungeonRoomWriteRepository` and `DungeonMapLoader` must translate that storage coding to in-memory `CellCoord` plus final `GridSegment2x` instead of leaking DB parity into model owners.
 - Runtime presentation resolves surfaces from the same structure owners used by the editor. Do not invent runtime-only structure mirrors.
 
 ## Package Roles
@@ -135,7 +136,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 ### Key structure rules
 
 - `Room` owns room-local truth and narration.
-- `RoomCluster` owns multi-room rewrite logic, grouping, adjacency, and cluster moves. Its aggregate cells and internal 2x boundary segments stay derived from room-owned `StructureObject`s.
+- `RoomCluster` owns multi-room rewrite logic, grouping, adjacency, and cluster moves. Its aggregate cells stay on `CellCoord`, and its internal boundary edits/metadata use final `GridSegment2x`, both derived from room-owned `StructureObject`s.
 - `Connection` owns connectivity; `Door` is the boundary object exposed through that connection.
 - `Corridor` is a first-class structure with stable identity, nodes, segments, room bindings, and derived geometry. Persisted node coordinates stay 2x-native as `LegacyGridPoint2x`, and derived routes stay 2x-native as ordered `LegacyGridPoint2x` paths.
 - `DungeonStair` is a first-class structure with stable identity and explicit 3D path geometry. Exits are derived views, not persisted second truths.

@@ -5,8 +5,9 @@ import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.model.objects.StructureObject;
@@ -76,7 +77,7 @@ public final class DungeonRoomTopologyService {
             return;
         }
 
-        ClusterRewrite rewrite = overlappingClusters.getFirst().applyPaint(cells, overlappingClusters, levelZ);
+        ClusterRewrite rewrite = overlappingClusters.getFirst().applyPaint(CellCoord.fromPoints(cells), overlappingClusters, levelZ);
         if (rewrite.isNoOp()) {
             return;
         }
@@ -126,7 +127,7 @@ public final class DungeonRoomTopologyService {
                 continue;
             }
             DungeonLayout layoutSnapshot = workingLayout;
-            ClusterRewrite rewrite = cluster.applyDelete(cells, () -> nextRoomName(layoutSnapshot, reservedNames), levelZ);
+            ClusterRewrite rewrite = cluster.applyDelete(CellCoord.fromPoints(cells), () -> nextRoomName(layoutSnapshot, reservedNames), levelZ);
             if (rewrite.isNoOp()) {
                 continue;
             }
@@ -183,7 +184,7 @@ public final class DungeonRoomTopologyService {
         if (cluster == null) {
             return;
         }
-        ClusterRewrite rewrite = cluster.editBoundary(segments2x, type, deleteBoundary);
+        ClusterRewrite rewrite = cluster.editBoundary(GridSegment2x.fromLegacyBoundaryEdges(segments2x), type, deleteBoundary);
         if (rewrite == null) {
             return;
         }

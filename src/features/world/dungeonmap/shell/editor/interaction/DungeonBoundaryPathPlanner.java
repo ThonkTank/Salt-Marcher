@@ -1,5 +1,6 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
 import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
@@ -142,13 +143,13 @@ final class DungeonBoundaryPathPlanner {
             return Set.of();
         }
         Set<LegacyGridSegment2x> result = new LinkedHashSet<>();
-        for (Point2i cell : cluster.cells()) {
-            for (Point2i step : Point2i.CARDINAL_STEPS) {
-                Point2i neighbor = cell.add(step);
+        for (CellCoord cell : cluster.cells()) {
+            for (CellCoord step : CellCoord.CARDINAL_STEPS) {
+                CellCoord neighbor = cell.add(step);
                 if (!cluster.contains(neighbor)) {
                     continue;
                 }
-                if (Point2i.POINT_ORDER.compare(cell, neighbor) >= 0) {
+                if (CellCoord.ORDER.compare(cell, neighbor) >= 0) {
                     continue;
                 }
                 result.add(LegacyGridSegment2x.betweenCellAndStep(cell, step));
@@ -163,7 +164,7 @@ final class DungeonBoundaryPathPlanner {
         }
         return cluster.internalBoundaryKinds().entrySet().stream()
                 .filter(entry -> entry.getValue() == InternalBoundaryType.WALL)
-                .map(Map.Entry::getKey)
+                .map(entry -> entry.getKey().toLegacyBoundaryEdge())
                 .filter(Objects::nonNull)
                 .sorted(LegacyGridSegment2x.SEGMENT_ORDER)
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
@@ -173,7 +174,11 @@ final class DungeonBoundaryPathPlanner {
         if (cluster == null) {
             return Set.of();
         }
-        Set<LegacyGridSegment2x> result = new LinkedHashSet<>(cluster.outerBoundarySegments2x());
+        Set<LegacyGridSegment2x> result = cluster.outerBoundarySegments2x().stream()
+                .map(segment -> segment == null ? null : segment.toLegacyBoundaryEdge())
+                .filter(Objects::nonNull)
+                .sorted(LegacyGridSegment2x.SEGMENT_ORDER)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
         result.removeAll(localConnectionEdges(cluster, result));
         return Set.copyOf(result);
     }

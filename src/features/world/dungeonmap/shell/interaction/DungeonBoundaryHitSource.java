@@ -3,6 +3,7 @@ package features.world.dungeonmap.shell.interaction;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
@@ -91,19 +92,20 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
             if (cluster.clusterId() == null) {
                 continue;
             }
-            for (Map.Entry<LegacyGridSegment2x, InternalBoundaryType> entry : cluster.internalBoundaryKinds().entrySet()) {
-                LegacyGridSegment2x segment2x = entry.getKey();
+            for (Map.Entry<GridSegment2x, InternalBoundaryType> entry : cluster.internalBoundaryKinds().entrySet()) {
+                GridSegment2x segment = entry.getKey();
+                LegacyGridSegment2x segment2x = segment == null ? null : segment.toLegacyBoundaryEdge();
                 if (segment2x == null) {
                     continue;
                 }
-                CellCoord baseCell = segment2x.touchingCellCoords().stream()
+                CellCoord baseCell = segment.touchingCells().stream()
                         .filter(cluster::contains)
                         .sorted(CellCoord.ORDER)
                         .findFirst()
                         .orElse(null);
                 CardinalDirection direction = baseCell == null
                         ? null
-                        : segment2x.directionFrom(baseCell);
+                        : segment.directionFrom(baseCell);
                 if (baseCell == null || direction == null) {
                     continue;
                 }

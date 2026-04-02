@@ -7,7 +7,7 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
@@ -196,14 +196,14 @@ public final class DungeonRuntimeNavigationService {
 
     private CubePoint resolveAdjacentEndpointTile(
             DungeonLayout layout,
-            LegacyGridSegment2x anchorSegment2x,
+            GridSegment2x anchorSegment2x,
             ConnectionEndpoint endpoint,
             int currentLevel
     ) {
         if (layout == null || anchorSegment2x == null || endpoint == null) {
             return null;
         }
-        for (CellCoord cell : anchorSegment2x.touchingCellCoords()) {
+        for (CellCoord cell : anchorSegment2x.touchingCells()) {
             if (!matchesEndpoint(layout, cell, currentLevel, endpoint)) {
                 continue;
             }

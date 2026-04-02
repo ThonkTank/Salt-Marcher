@@ -5,6 +5,7 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
 import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
@@ -487,8 +488,8 @@ public final class DungeonMapLoader {
     private static Map<Long, StructureDescriptor> loadRoomDescriptors(Connection conn, long mapId) throws SQLException {
         Map<Long, Map<Integer, LegacyGridPoint2x>> anchorsByRoomId = new LinkedHashMap<>();
         Map<Long, Map<Integer, Set<LegacyGridPoint2x>>> seedsByRoomId = new LinkedHashMap<>();
-        Map<Long, Map<Integer, Set<LegacyGridSegment2x>>> boundarySegmentsByRoomId = new LinkedHashMap<>();
-        Map<Long, Map<Integer, Set<LegacyGridSegment2x>>> openingSegmentsByRoomId = new LinkedHashMap<>();
+        Map<Long, Map<Integer, Set<GridSegment2x>>> boundarySegmentsByRoomId = new LinkedHashMap<>();
+        Map<Long, Map<Integer, Set<GridSegment2x>>> openingSegmentsByRoomId = new LinkedHashMap<>();
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT room_id, level_z, anchor_x2, anchor_y2"
                         + " FROM dungeon_room_levels"
@@ -529,12 +530,12 @@ public final class DungeonMapLoader {
                     LegacyGridSegment2x segment = new LegacyGridSegment2x(
                             LegacyGridPoint2x.fromRaw(rs.getInt("start_x2"), rs.getInt("start_y2")),
                             LegacyGridPoint2x.fromRaw(rs.getInt("end_x2"), rs.getInt("end_y2")));
-                    Map<Long, Map<Integer, Set<LegacyGridSegment2x>>> target = "OPENING".equals(rs.getString("segment_kind"))
+                    Map<Long, Map<Integer, Set<GridSegment2x>>> target = "OPENING".equals(rs.getString("segment_kind"))
                             ? openingSegmentsByRoomId
                             : boundarySegmentsByRoomId;
                     target.computeIfAbsent(roomId, ignored -> new LinkedHashMap<>())
                             .computeIfAbsent(levelZ, ignored -> new LinkedHashSet<>())
-                            .add(segment);
+                            .addAll(GridSegment2x.fromLegacyBoundaryEdges(Set.of(segment)));
                 }
             }
         }
@@ -592,7 +593,7 @@ public final class DungeonMapLoader {
                     clusters.add(new RoomCluster(
                             clusterId,
                             rs.getLong("dungeon_map_id"),
-                            new Point2i(rs.getInt("center_x"), rs.getInt("center_y")),
+                            new CellCoord(rs.getInt("center_x"), rs.getInt("center_y")),
                             clusterRooms,
                             materializeLocalConnections(rs.getLong("dungeon_map_id"), clusterId, clusterRooms)));
                 }

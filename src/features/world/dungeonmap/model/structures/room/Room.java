@@ -1,5 +1,6 @@
 package features.world.dungeonmap.model.structures.room;
 
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.model.objects.StructureObject;
@@ -97,11 +98,11 @@ public record Room(
         return TargetKey.parseId(targetKey, TARGET_KEY_PREFIX);
     }
 
-    public Room movedBy(Point2i delta) {
+    public Room movedBy(CellCoord delta) {
         return movedBy(delta, 0);
     }
 
-    public Room movedBy(Point2i delta, int levelDelta) {
+    public Room movedBy(CellCoord delta, int levelDelta) {
         return new Room(
                 roomId,
                 mapId,
@@ -111,12 +112,20 @@ public record Room(
                 narration);
     }
 
+    public Room movedBy(Point2i delta) {
+        return movedBy(CellCoord.fromPoint(delta));
+    }
+
+    public Room movedBy(Point2i delta, int levelDelta) {
+        return movedBy(CellCoord.fromPoint(delta), levelDelta);
+    }
+
     public Room movedToLevel(int targetPrimaryLevel) {
-        return movedBy(new Point2i(0, 0), targetPrimaryLevel - structure.primaryLevel());
+        return movedBy(new CellCoord(0, 0), targetPrimaryLevel - structure.primaryLevel());
     }
 
     public Room movedByLevel(int levelDelta) {
-        return movedBy(new Point2i(0, 0), levelDelta);
+        return movedBy(new CellCoord(0, 0), levelDelta);
     }
 
     private static StructureObject normalizeStructure(StructureObject structure) {
@@ -127,6 +136,6 @@ public record Room(
     }
 
     private static StructureObject defaultStructure() {
-        return StructureObject.fromDescriptor(StructureDescriptor.fromCellsByLevel(Map.of(0, Set.of(new Point2i(0, 0)))));
+        return StructureObject.fromDescriptor(StructureDescriptor.fromCellCoordsByLevel(Map.of(0, Set.of(new CellCoord(0, 0)))));
     }
 }

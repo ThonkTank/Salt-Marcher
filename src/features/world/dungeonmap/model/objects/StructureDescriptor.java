@@ -2,7 +2,7 @@ package features.world.dungeonmap.model.objects;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 
 import java.util.Collection;
@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Canonical per-level structure input reduced to cell-space seeds plus shared 2x boundary truth.
+ * Canonical per-level structure input reduced to cell-space seeds plus shared final-parity 2x boundary truth.
  */
 public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescriptor> levels) {
 
@@ -117,15 +117,15 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
                 Set.of());
     }
 
-    private static Set<LegacyGridSegment2x> boundaryEdges(Set<CellCoord> cells) {
+    private static Set<GridSegment2x> boundaryEdges(Set<CellCoord> cells) {
         if (cells == null || cells.isEmpty()) {
             return Set.of();
         }
-        LinkedHashSet<LegacyGridSegment2x> result = new LinkedHashSet<>();
+        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
         for (CellCoord cell : cells) {
             for (CellCoord step : CellCoord.CARDINAL_STEPS) {
                 if (!cells.contains(cell.add(step))) {
-                    result.add(LegacyGridSegment2x.betweenCellAndStep(cell, step));
+                    result.add(GridSegment2x.boundaryEdge(cell, cell.directionTo4(cell.add(step))));
                 }
             }
         }
@@ -135,8 +135,8 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
     public record LevelDescriptor(
             CellCoord anchorCell,
             Set<CellCoord> fillSeeds,
-            Set<LegacyGridSegment2x> boundaryEdges,
-            Set<LegacyGridSegment2x> openingEdges
+            Set<GridSegment2x> boundaryEdges,
+            Set<GridSegment2x> openingEdges
     ) {
 
         public LevelDescriptor {
@@ -159,12 +159,12 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
             for (CellCoord seed : fillSeeds) {
                 translatedSeeds.add(seed.add(resolvedDelta));
             }
-            Set<LegacyGridSegment2x> translatedBoundary = new LinkedHashSet<>();
-            for (LegacyGridSegment2x segment : boundaryEdges) {
+            Set<GridSegment2x> translatedBoundary = new LinkedHashSet<>();
+            for (GridSegment2x segment : boundaryEdges) {
                 translatedBoundary.add(segment.translatedByCells(resolvedDelta));
             }
-            Set<LegacyGridSegment2x> translatedOpenings = new LinkedHashSet<>();
-            for (LegacyGridSegment2x segment : openingEdges) {
+            Set<GridSegment2x> translatedOpenings = new LinkedHashSet<>();
+            for (GridSegment2x segment : openingEdges) {
                 translatedOpenings.add(segment.translatedByCells(resolvedDelta));
             }
             return new LevelDescriptor(
@@ -200,14 +200,14 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
             return result.isEmpty() ? Set.of() : Set.copyOf(result);
         }
 
-        private static Set<LegacyGridSegment2x> normalizeBoundaryEdges(Collection<LegacyGridSegment2x> segments) {
-            LinkedHashSet<LegacyGridSegment2x> result = new LinkedHashSet<>();
+        private static Set<GridSegment2x> normalizeBoundaryEdges(Collection<GridSegment2x> segments) {
+            LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
             if (segments != null) {
                 segments.stream()
                         .filter(segment -> segment != null)
-                        .sorted(LegacyGridSegment2x.SEGMENT_ORDER)
+                        .sorted(GridSegment2x.ORDER)
                         .forEach(segment -> {
-                            if (!segment.start().isVertex() || !segment.end().isVertex() || (segment.manhattanLength2() & 1) != 0) {
+                            if (!segment.start().isVertex() || !segment.end().isVertex() || (segment.length2() & 1) != 0) {
                                 throw new IllegalArgumentException("StructureDescriptor boundaries must be vertex-to-vertex segments");
                             }
                             result.add(segment);
@@ -216,17 +216,17 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
             return result.isEmpty() ? Set.of() : Set.copyOf(result);
         }
 
-        private static Set<LegacyGridSegment2x> normalizeOpenings(
-                Collection<LegacyGridSegment2x> openings,
-                Set<LegacyGridSegment2x> boundaryEdges
+        private static Set<GridSegment2x> normalizeOpenings(
+                Collection<GridSegment2x> openings,
+                Set<GridSegment2x> boundaryEdges
         ) {
             if (openings == null || openings.isEmpty() || boundaryEdges.isEmpty()) {
                 return Set.of();
             }
-            LinkedHashSet<LegacyGridSegment2x> result = new LinkedHashSet<>();
+            LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
             openings.stream()
                     .filter(segment -> segment != null && boundaryEdges.contains(segment))
-                    .sorted(LegacyGridSegment2x.SEGMENT_ORDER)
+                    .sorted(GridSegment2x.ORDER)
                     .forEach(result::add);
             return result.isEmpty() ? Set.of() : Set.copyOf(result);
         }

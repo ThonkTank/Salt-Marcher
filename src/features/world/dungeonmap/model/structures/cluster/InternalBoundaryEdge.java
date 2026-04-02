@@ -1,10 +1,11 @@
 package features.world.dungeonmap.model.structures.cluster;
 
-import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.geometry.CardinalDirection;
+import features.world.dungeonmap.model.geometry.CellCoord;
 
 public record InternalBoundaryEdge(
-        Point2i cell,
-        Point2i direction,
+        CellCoord cell,
+        CardinalDirection direction,
         InternalBoundaryType type
 ) {
 }

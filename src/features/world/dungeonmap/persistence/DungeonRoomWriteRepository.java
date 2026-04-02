@@ -1,8 +1,8 @@
 package features.world.dungeonmap.persistence;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
-import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
@@ -16,8 +16,8 @@ import java.sql.Statement;
 
 public final class DungeonRoomWriteRepository {
 
-    public long insertCluster(Connection conn, long mapId, Point2i center, int levelZ) throws SQLException {
-        Point2i resolvedCenter = center == null ? new Point2i(0, 0) : center;
+    public long insertCluster(Connection conn, long mapId, CellCoord center, int levelZ) throws SQLException {
+        CellCoord resolvedCenter = center == null ? new CellCoord(0, 0) : center;
         try (PreparedStatement ps = conn.prepareStatement(
                 "INSERT INTO dungeon_room_clusters(dungeon_map_id, center_x, center_y, level_z) VALUES(?,?,?,?)",
                 Statement.RETURN_GENERATED_KEYS)) {
@@ -35,8 +35,12 @@ public final class DungeonRoomWriteRepository {
         }
     }
 
-    public void updateClusterMetadata(Connection conn, long clusterId, Point2i center, int levelZ) throws SQLException {
-        Point2i resolvedCenter = center == null ? new Point2i(0, 0) : center;
+    public long insertCluster(Connection conn, long mapId, Point2i center, int levelZ) throws SQLException {
+        return insertCluster(conn, mapId, CellCoord.fromPoint(center), levelZ);
+    }
+
+    public void updateClusterMetadata(Connection conn, long clusterId, CellCoord center, int levelZ) throws SQLException {
+        CellCoord resolvedCenter = center == null ? new CellCoord(0, 0) : center;
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE dungeon_room_clusters SET center_x=?, center_y=?, level_z=? WHERE cluster_id=?")) {
             ps.setInt(1, resolvedCenter.x());
@@ -45,6 +49,10 @@ public final class DungeonRoomWriteRepository {
             ps.setLong(4, clusterId);
             ps.executeUpdate();
         }
+    }
+
+    public void updateClusterMetadata(Connection conn, long clusterId, Point2i center, int levelZ) throws SQLException {
+        updateClusterMetadata(conn, clusterId, CellCoord.fromPoint(center), levelZ);
     }
 
     public void deleteCluster(Connection conn, long clusterId) throws SQLException {
@@ -64,7 +72,7 @@ public final class DungeonRoomWriteRepository {
     ) throws SQLException {
         StructureDescriptor resolvedDescriptor = requiredDescriptor(descriptor);
         int primaryLevel = primaryLevel(resolvedDescriptor);
-        Point2i primaryAnchor = primaryAnchorCell(resolvedDescriptor);
+        CellCoord primaryAnchor = primaryAnchorCell(resolvedDescriptor);
         try (PreparedStatement ps = conn.prepareStatement(
                 "INSERT INTO dungeon_rooms(dungeon_map_id, cluster_id, name, component_x, component_y, level_z) VALUES(?,?,?,?,?,?)",
                 Statement.RETURN_GENERATED_KEYS)) {
@@ -94,7 +102,7 @@ public final class DungeonRoomWriteRepository {
     ) throws SQLException {
         StructureDescriptor resolvedDescriptor = requiredDescriptor(descriptor);
         int primaryLevel = primaryLevel(resolvedDescriptor);
-        Point2i primaryAnchor = primaryAnchorCell(resolvedDescriptor);
+        CellCoord primaryAnchor = primaryAnchorCell(resolvedDescriptor);
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE dungeon_rooms SET name=?, component_x=?, component_y=?, level_z=? WHERE room_id=?")) {
             ps.setString(1, name);
@@ -174,7 +182,7 @@ public final class DungeonRoomWriteRepository {
                 "INSERT INTO dungeon_room_levels(room_id, level_z, anchor_x2, anchor_y2) VALUES(?,?,?,?)");
              PreparedStatement insertSeed = conn.prepareStatement(
                      "INSERT INTO dungeon_room_level_seeds(room_id, level_z, seed_x2, seed_y2) VALUES(?,?,?,?)");
-             PreparedStatement insertSegment = conn.prepareStatement(
+            PreparedStatement insertSegment = conn.prepareStatement(
                      "INSERT INTO dungeon_room_level_segments("
                              + "room_id, level_z, segment_kind, start_x2, start_y2, end_x2, end_y2"
                              + ") VALUES(?,?,?,?,?,?,?)")) {
@@ -211,20 +219,13 @@ public final class DungeonRoomWriteRepository {
             long roomId,
             int levelZ,
             String kind,
-            java.util.Collection<LegacyGridSegment2x> segments
+            java.util.Collection<GridSegment2x> segments
     ) throws SQLException {
-        for (LegacyGridSegment2x segment : (segments == null ? java.util.List.<LegacyGridSegment2x>of() : segments).stream()
+        for (GridSegment2x segment : (segments == null ? java.util.List.<GridSegment2x>of() : segments).stream()
                 .filter(java.util.Objects::nonNull)
-                .sorted(LegacyGridSegment2x.SEGMENT_ORDER)
+                .sorted(GridSegment2x.ORDER)
                 .toList()) {
-            insertSegment.setLong(1, roomId);
-            insertSegment.setInt(2, levelZ);
-            insertSegment.setString(3, kind);
-            insertSegment.setInt(4, segment.start().x2());
-            insertSegment.setInt(5, segment.start().y2());
-            insertSegment.setInt(6, segment.end().x2());
-            insertSegment.setInt(7, segment.end().y2());
-            insertSegment.addBatch();
+            addBoundarySegment(insertSegment, roomId, levelZ, kind, segment);
         }
     }
 
@@ -243,11 +244,50 @@ public final class DungeonRoomWriteRepository {
                 .orElse(0);
     }
 
-    private static Point2i primaryAnchorCell(StructureDescriptor descriptor) {
+    private static CellCoord primaryAnchorCell(StructureDescriptor descriptor) {
         StructureDescriptor.LevelDescriptor level = descriptor.level(primaryLevel(descriptor));
         if (level == null) {
-            return new Point2i(0, 0);
+            return new CellCoord(0, 0);
         }
-        return level.anchorCell().toPoint2i();
+        return level.anchorCell();
+    }
+
+    private static void addBoundarySegment(
+            PreparedStatement insertSegment,
+            long roomId,
+            int levelZ,
+            String kind,
+            GridSegment2x segment
+    ) throws SQLException {
+        if (segment == null) {
+            return;
+        }
+        if (segment.length2() > 2) {
+            if (segment.isHorizontal()) {
+                int y2 = segment.start().y2();
+                for (int x2 = segment.start().x2(); x2 < segment.end().x2(); x2 += 2) {
+                    addBoundarySegment(insertSegment, roomId, levelZ, kind, new GridSegment2x(
+                            features.world.dungeonmap.model.geometry.GridPoint2x.raw(x2, y2),
+                            features.world.dungeonmap.model.geometry.GridPoint2x.raw(x2 + 2, y2)));
+                }
+            } else {
+                int x2 = segment.start().x2();
+                for (int y2 = segment.start().y2(); y2 < segment.end().y2(); y2 += 2) {
+                    addBoundarySegment(insertSegment, roomId, levelZ, kind, new GridSegment2x(
+                            features.world.dungeonmap.model.geometry.GridPoint2x.raw(x2, y2),
+                            features.world.dungeonmap.model.geometry.GridPoint2x.raw(x2, y2 + 2)));
+                }
+            }
+            return;
+        }
+        var persistedSegment = segment.toLegacyBoundaryEdge();
+        insertSegment.setLong(1, roomId);
+        insertSegment.setInt(2, levelZ);
+        insertSegment.setString(3, kind);
+        insertSegment.setInt(4, persistedSegment.start().x2());
+        insertSegment.setInt(5, persistedSegment.start().y2());
+        insertSegment.setInt(6, persistedSegment.end().x2());
+        insertSegment.setInt(7, persistedSegment.end().y2());
+        insertSegment.addBatch();
     }
 }

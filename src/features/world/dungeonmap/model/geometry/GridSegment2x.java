@@ -1,8 +1,10 @@
 package features.world.dungeonmap.model.geometry;
 
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Collection;
 import java.util.Set;
 
 /**
@@ -43,6 +45,40 @@ public record GridSegment2x(GridPoint2x start, GridPoint2x end) {
             case NORTH, SOUTH -> new GridSegment2x(edgeCenter.offset2x(-1, 0), edgeCenter.offset2x(1, 0));
             case EAST, WEST -> new GridSegment2x(edgeCenter.offset2x(0, -1), edgeCenter.offset2x(0, 1));
         };
+    }
+
+    public static GridSegment2x fromLegacyBoundaryEdge(LegacyGridSegment2x segment) {
+        LegacyGridSegment2x resolvedSegment = Objects.requireNonNull(segment, "segment");
+        if (resolvedSegment.manhattanLength2() != 2) {
+            throw new IllegalArgumentException("Legacy boundary edge must have length2 == 2");
+        }
+        Set<CellCoord> touchingCells = resolvedSegment.touchingCellCoords();
+        if (touchingCells.size() != 2) {
+            throw new IllegalArgumentException("Legacy boundary edge must touch exactly two cells");
+        }
+        CellCoord baseCell = touchingCells.stream()
+                .sorted(CellCoord.ORDER)
+                .findFirst()
+                .orElseThrow();
+        CardinalDirection direction = resolvedSegment.directionFrom(baseCell);
+        if (direction == null) {
+            throw new IllegalArgumentException("Legacy boundary edge direction could not be resolved");
+        }
+        return boundaryEdge(baseCell, direction);
+    }
+
+    public static Set<GridSegment2x> fromLegacyBoundaryEdges(Collection<LegacyGridSegment2x> segments) {
+        if (segments == null || segments.isEmpty()) {
+            return Set.of();
+        }
+        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
+        for (LegacyGridSegment2x segment : segments) {
+            if (segment == null) {
+                continue;
+            }
+            result.addAll(splitLegacyBoundaryEdges(segment));
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
     public boolean isHorizontal() {
@@ -117,5 +153,43 @@ public record GridSegment2x(GridPoint2x start, GridPoint2x end) {
                 .findFirst()
                 .map(cell::directionTo4)
                 .orElse(null);
+    }
+
+    public LegacyGridSegment2x toLegacyBoundaryEdge() {
+        if (!isBoundaryEdge()) {
+            throw new IllegalArgumentException("Only boundary edges can be translated to legacy odd/odd segments");
+        }
+        CellCoord baseCell = touchingCells().stream()
+                .sorted(CellCoord.ORDER)
+                .findFirst()
+                .orElseThrow();
+        CardinalDirection direction = directionFrom(baseCell);
+        if (direction == null) {
+            throw new IllegalArgumentException("Boundary edge direction could not be resolved");
+        }
+        return LegacyGridSegment2x.betweenCellAndStep(baseCell, direction.delta());
+    }
+
+    private static Set<GridSegment2x> splitLegacyBoundaryEdges(LegacyGridSegment2x segment) {
+        if (segment.manhattanLength2() == 2) {
+            return Set.of(fromLegacyBoundaryEdge(segment));
+        }
+        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
+        if (segment.isHorizontal()) {
+            int y2 = segment.start().y2();
+            for (int x2 = segment.minX2(); x2 < segment.maxX2(); x2 += 2) {
+                result.add(fromLegacyBoundaryEdge(new LegacyGridSegment2x(
+                        LegacyGridPoint2x.fromRaw(x2, y2),
+                        LegacyGridPoint2x.fromRaw(x2 + 2, y2))));
+            }
+        } else {
+            int x2 = segment.start().x2();
+            for (int y2 = segment.minY2(); y2 < segment.maxY2(); y2 += 2) {
+                result.add(fromLegacyBoundaryEdge(new LegacyGridSegment2x(
+                        LegacyGridPoint2x.fromRaw(x2, y2),
+                        LegacyGridPoint2x.fromRaw(x2, y2 + 2))));
+            }
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 }

@@ -2,6 +2,7 @@ package features.world.dungeonmap.model.structures.corridor;
 
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
 import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
@@ -292,8 +293,8 @@ public final class Corridor {
         StructureDescriptor descriptor = new StructureDescriptor(Map.of(levelZ, new StructureDescriptor.LevelDescriptor(
                 CellCoord.fromPoint(CellCoord.bestPoint(occupiedCells)),
                 fillSeeds(occupiedCells),
-                boundarySegments2x,
-                Set.copyOf(validOpenings))));
+                GridSegment2x.fromLegacyBoundaryEdges(boundarySegments2x),
+                GridSegment2x.fromLegacyBoundaryEdges(validOpenings))));
         return StructureObject.fromDescriptor(descriptor);
     }
 

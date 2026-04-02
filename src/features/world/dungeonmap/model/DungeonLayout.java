@@ -2,6 +2,7 @@ package features.world.dungeonmap.model;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.objects.Door;
@@ -184,7 +185,7 @@ public final class DungeonLayout {
         Map<Long, Point2i> result = new LinkedHashMap<>();
         for (RoomCluster cluster : clusters) {
             if (cluster != null && cluster.clusterId() != null) {
-                result.put(cluster.clusterId(), cluster.center());
+                result.put(cluster.clusterId(), cluster.centerPoint());
             }
         }
         return Map.copyOf(result);
@@ -212,8 +213,9 @@ public final class DungeonLayout {
         if (cells == null || cells.isEmpty()) {
             return List.of();
         }
+        Set<CellCoord> candidateCells = CellCoord.fromPoints(cells);
         return clusters.stream()
-                .filter(cluster -> cluster != null && cluster.overlaps(cells))
+                .filter(cluster -> cluster != null && cluster.overlapsCells(candidateCells))
                 .toList();
     }
 
@@ -247,6 +249,10 @@ public final class DungeonLayout {
 
     public Connection connectionAt(int levelZ, LegacyGridSegment2x segment2x) {
         return segment2x == null ? null : connectionsBySegmentAndLevel2x.get(new ConnectionSegmentKey(levelZ, segment2x));
+    }
+
+    public Connection connectionAt(int levelZ, GridSegment2x segment2x) {
+        return segment2x == null ? null : connectionAt(levelZ, segment2x.toLegacyBoundaryEdge());
     }
 
     public List<Connection> connectionsForRoom(long roomId) {

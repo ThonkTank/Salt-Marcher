@@ -3,7 +3,7 @@ package features.world.dungeonmap.application.runtime;
 import features.world.dungeonmap.application.room.RoomExitDescriptor;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 
 public record DungeonRuntimeDoorDescriptor(
@@ -14,7 +14,7 @@ public record DungeonRuntimeDoorDescriptor(
         CellCoord roomCell,
         CellCoord outsideCell,
         CardinalDirection direction,
-        LegacyGridSegment2x anchorSegment2x,
+        GridSegment2x anchorSegment2x,
         ConnectionEndpoint activeEndpoint,
         ConnectionEndpoint destinationEndpoint,
         String relativeLabel,
@@ -28,7 +28,7 @@ public record DungeonRuntimeDoorDescriptor(
         direction = direction == null ? CardinalDirection.defaultDirection() : direction;
         outsideCell = outsideCell == null ? roomCell.add(direction.delta()) : outsideCell;
         anchorSegment2x = anchorSegment2x == null
-                ? LegacyGridSegment2x.betweenCellAndStep(roomCell, direction.delta())
+                ? GridSegment2x.boundaryEdge(roomCell, direction)
                 : anchorSegment2x;
         relativeLabel = relativeLabel == null || relativeLabel.isBlank() ? "Direkt vor euch" : relativeLabel;
         description = description == null || description.isBlank() ? describe(relativeLabel, "eine Tür") : description;

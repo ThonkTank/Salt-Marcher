@@ -1,6 +1,6 @@
 package features.world.dungeonmap.model.structures.cluster;
 
-import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.structures.connection.LocalConnection;
 import features.world.dungeonmap.model.structures.room.Room;
 
@@ -8,7 +8,7 @@ import java.util.List;
 
 public record ClusterRewriteSplit(
         Long clusterId,
-        Point2i clusterCenter,
+        CellCoord clusterCenter,
         List<Room> rooms,
         List<LocalConnection> localConnections,
         List<InternalBoundaryEdge> persistedBoundaries

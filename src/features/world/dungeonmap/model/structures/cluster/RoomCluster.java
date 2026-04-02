@@ -2,8 +2,8 @@ package features.world.dungeonmap.model.structures.cluster;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
-import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 import features.world.dungeonmap.model.objects.Floor;
@@ -29,13 +29,13 @@ public final class RoomCluster {
 
     private final Long clusterId;
     private final long mapId;
-    private final Point2i center;
+    private final CellCoord center;
     // A cluster manages room grouping/runtime lookup, but room truth lives in the rooms.
     private final List<Room> rooms;
     private final List<LocalConnection> localConnections;
-    private final Set<Point2i> cells;
+    private final Set<CellCoord> cells;
     private final Map<Long, Room> roomsById;
-    private final Map<Point2i, Room> roomsByCell;
+    private final Map<CellCoord, Room> roomsByCell;
     private final Map<CubePoint, Room> roomsByPoint;
     // Lazy-computed on first access; safe because RoomCluster is only accessed on the FX application thread.
     private Map<Long, Set<Long>> adjacentRoomIdsByRoomId;
@@ -46,7 +46,7 @@ public final class RoomCluster {
     public RoomCluster(
             Long clusterId,
             long mapId,
-            Point2i center,
+            CellCoord center,
             List<Room> rooms
     ) {
         this(clusterId, mapId, center, rooms, List.of());
@@ -56,6 +56,15 @@ public final class RoomCluster {
             Long clusterId,
             long mapId,
             Point2i center,
+            List<Room> rooms
+    ) {
+        this(clusterId, mapId, CellCoord.fromPoint(center), rooms, List.of());
+    }
+
+    public RoomCluster(
+            Long clusterId,
+            long mapId,
+            CellCoord center,
             List<Room> rooms,
             List<LocalConnection> localConnections
     ) {
@@ -66,7 +75,7 @@ public final class RoomCluster {
 
         this.clusterId = clusterId;
         this.mapId = mapId;
-        this.center = center == null ? new Point2i(0, 0) : center;
+        this.center = center == null ? new CellCoord(0, 0) : center;
         this.rooms = resolvedRooms;
         this.localConnections = resolvedLocalConnections;
         this.cells = indexCells(resolvedRooms);
@@ -79,6 +88,16 @@ public final class RoomCluster {
         this.hasOverlappingRooms = overlapIndex.hasOverlaps();
     }
 
+    public RoomCluster(
+            Long clusterId,
+            long mapId,
+            Point2i center,
+            List<Room> rooms,
+            List<LocalConnection> localConnections
+    ) {
+        this(clusterId, mapId, CellCoord.fromPoint(center), rooms, localConnections);
+    }
+
     public Long clusterId() {
         return clusterId;
     }
@@ -87,8 +106,12 @@ public final class RoomCluster {
         return mapId;
     }
 
-    public Point2i center() {
+    public CellCoord center() {
         return center;
+    }
+
+    public Point2i centerPoint() {
+        return center.toPoint2i();
     }
 
     public List<Room> rooms() {
@@ -131,11 +154,11 @@ public final class RoomCluster {
         return new RoomCluster(clusterId, mapId, center, projectedRooms, projectedConnections);
     }
 
-    public ClusterRewrite editBoundary(LegacyGridSegment2x segment2x, InternalBoundaryType type, boolean deleteBoundary) {
-        return editBoundary(segment2x == null ? List.<LegacyGridSegment2x>of() : List.of(segment2x), type, deleteBoundary);
+    public ClusterRewrite editBoundary(GridSegment2x segment2x, InternalBoundaryType type, boolean deleteBoundary) {
+        return editBoundary(segment2x == null ? List.<GridSegment2x>of() : List.of(segment2x), type, deleteBoundary);
     }
 
-    public ClusterRewrite editBoundary(Collection<LegacyGridSegment2x> segments2x, InternalBoundaryType type, boolean deleteBoundary) {
+    public ClusterRewrite editBoundary(Collection<GridSegment2x> segments2x, InternalBoundaryType type, boolean deleteBoundary) {
         return ClusterRewritePlanner.editBoundary(this, segments2x, type, deleteBoundary);
     }
 
@@ -159,14 +182,14 @@ public final class RoomCluster {
         return new InteractiveLabelHandle(
                 targetKey(),
                 clusterId == null ? "Cluster" : "Cluster " + clusterId,
-                LegacyGridPoint2x.fromTileCenter(CellCoord.bestPoint(cells)));
+                LegacyGridPoint2x.fromTileCenter(CellCoord.bestCenter(cells)));
     }
 
-    public boolean overlaps(Collection<Point2i> candidateCells) {
+    public boolean overlapsCells(Collection<CellCoord> candidateCells) {
         if (candidateCells == null || candidateCells.isEmpty() || cells.isEmpty()) {
             return false;
         }
-        for (Point2i cell : candidateCells) {
+        for (CellCoord cell : candidateCells) {
             if (cell != null && cells.contains(cell)) {
                 return true;
             }
@@ -178,16 +201,16 @@ public final class RoomCluster {
         return rooms.size() == 1 ? rooms.getFirst() : null;
     }
 
-    public RoomCluster movedBy(Point2i delta) {
+    public RoomCluster movedBy(CellCoord delta) {
         return movedBy(delta, 0);
     }
 
-    public RoomCluster movedBy(Point2i delta, int levelDelta) {
+    public RoomCluster movedBy(CellCoord delta, int levelDelta) {
         boolean translate = delta != null && (delta.x() != 0 || delta.y() != 0);
         if (!translate && levelDelta == 0) {
             return this;
         }
-        Point2i resolvedDelta = delta == null ? new Point2i(0, 0) : delta;
+        CellCoord resolvedDelta = delta == null ? new CellCoord(0, 0) : delta;
         return new RoomCluster(
                 clusterId,
                 mapId,
@@ -200,26 +223,38 @@ public final class RoomCluster {
                         .toList());
     }
 
-    public Set<Point2i> cells() {
+    public RoomCluster movedBy(Point2i delta) {
+        return movedBy(CellCoord.fromPoint(delta));
+    }
+
+    public RoomCluster movedBy(Point2i delta, int levelDelta) {
+        return movedBy(CellCoord.fromPoint(delta), levelDelta);
+    }
+
+    public Set<CellCoord> cells() {
         return cells;
     }
 
-    public Map<Integer, Set<Point2i>> cellsByLevel() {
-        Map<Integer, LinkedHashSet<Point2i>> result = new LinkedHashMap<>();
+    public Set<Point2i> pointCells() {
+        return CellCoord.toPoints(cells);
+    }
+
+    public Map<Integer, Set<CellCoord>> cellsByLevel() {
+        Map<Integer, LinkedHashSet<CellCoord>> result = new LinkedHashMap<>();
         for (Room room : rooms) {
             if (room == null) {
                 continue;
             }
             for (Integer levelZ : room.structure().levels().stream().sorted().toList()) {
-                Set<Point2i> cellsAtLevel = room.structure().cellsAtLevel(levelZ);
+                Set<CellCoord> cellsAtLevel = room.structure().cellCoordsAtLevel(levelZ);
                 if (cellsAtLevel.isEmpty()) {
                     continue;
                 }
                 result.computeIfAbsent(levelZ, ignored -> new LinkedHashSet<>()).addAll(cellsAtLevel);
             }
         }
-        Map<Integer, Set<Point2i>> immutable = new LinkedHashMap<>();
-        for (Map.Entry<Integer, LinkedHashSet<Point2i>> entry : result.entrySet()) {
+        Map<Integer, Set<CellCoord>> immutable = new LinkedHashMap<>();
+        for (Map.Entry<Integer, LinkedHashSet<CellCoord>> entry : result.entrySet()) {
             immutable.put(entry.getKey(), Set.copyOf(entry.getValue()));
         }
         return immutable.isEmpty() ? Map.of() : Map.copyOf(immutable);
@@ -232,7 +267,7 @@ public final class RoomCluster {
                 .orElse(0);
     }
 
-    public Set<LegacyGridSegment2x> outerBoundarySegments2x() {
+    public Set<GridSegment2x> outerBoundarySegments2x() {
         return boundarySegments(cells);
     }
 
@@ -292,7 +327,7 @@ public final class RoomCluster {
     }
 
     public Room roomAt(CellCoord cell) {
-        return cell == null ? null : roomsByCell.get(cell.toPoint2i());
+        return cell == null ? null : roomsByCell.get(cell);
     }
 
     public Room roomAt(Point2i cell) {
@@ -304,7 +339,7 @@ public final class RoomCluster {
     }
 
     public boolean contains(CellCoord cell) {
-        return cell != null && cells.contains(cell.toPoint2i());
+        return cell != null && cells.contains(cell);
     }
 
     public boolean contains(Point2i cell) {
@@ -337,9 +372,13 @@ public final class RoomCluster {
         return roomId == null ? Set.of() : componentByRoomId().getOrDefault(roomId, Set.of());
     }
 
-    public Set<Long> componentContaining(Point2i cell) {
+    public Set<Long> componentContaining(CellCoord cell) {
         Room room = roomAt(cell);
         return room == null ? Set.of() : componentContaining(room.roomId());
+    }
+
+    public Set<Long> componentContaining(Point2i cell) {
+        return componentContaining(cell == null ? null : CellCoord.fromPoint(cell));
     }
 
     public boolean isConnected() {
@@ -373,15 +412,15 @@ public final class RoomCluster {
         return visited.equals(selected);
     }
 
-    public Map<LegacyGridSegment2x, InternalBoundaryType> internalBoundaryKinds() {
+    public Map<GridSegment2x, InternalBoundaryType> internalBoundaryKinds() {
         return ClusterRewritePlanner.internalBoundaryKinds(cells, rooms, localConnections);
     }
 
-    public ClusterRewrite applyPaint(Set<Point2i> paintCells, List<RoomCluster> overlappingClusters, int paintLevel) {
+    public ClusterRewrite applyPaint(Set<CellCoord> paintCells, List<RoomCluster> overlappingClusters, int paintLevel) {
         return ClusterRewritePlanner.applyPaint(this, paintCells, overlappingClusters, paintLevel);
     }
 
-    public ClusterRewrite applyDelete(Set<Point2i> deletedCells, Supplier<String> roomNameSupplier, int deleteLevel) {
+    public ClusterRewrite applyDelete(Set<CellCoord> deletedCells, Supplier<String> roomNameSupplier, int deleteLevel) {
         return ClusterRewritePlanner.applyDelete(this, deletedCells, roomNameSupplier, deleteLevel);
     }
 
@@ -413,13 +452,13 @@ public final class RoomCluster {
     }
 
     private static OverlapIndex indexRoomsByCell(List<Room> rooms) {
-        Map<Point2i, Room> result = new LinkedHashMap<>();
+        Map<CellCoord, Room> result = new LinkedHashMap<>();
         boolean hasOverlaps = false;
         for (Room room : rooms) {
             if (room == null) {
                 continue;
             }
-            for (Point2i cell : room.structure().cells()) {
+            for (CellCoord cell : room.structure().cellCoords()) {
                 if (result.containsKey(cell)) {
                     hasOverlaps = true;
                 }
@@ -442,24 +481,24 @@ public final class RoomCluster {
         return Map.copyOf(result);
     }
 
-    private static Set<Point2i> indexCells(List<Room> rooms) {
-        LinkedHashSet<Point2i> result = new LinkedHashSet<>();
+    private static Set<CellCoord> indexCells(List<Room> rooms) {
+        LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
         for (Room room : rooms) {
             if (room != null) {
-                result.addAll(room.structure().cells());
+                result.addAll(room.structure().cellCoords());
             }
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
-    private static Map<Long, Set<Long>> indexAdjacentRoomIds(Map<Long, Room> roomsById, Map<Point2i, Room> roomsByCell) {
+    private static Map<Long, Set<Long>> indexAdjacentRoomIds(Map<Long, Room> roomsById, Map<CellCoord, Room> roomsByCell) {
         Map<Long, Set<Long>> result = new LinkedHashMap<>();
         for (Long roomId : roomsById.keySet()) {
             result.put(roomId, new LinkedHashSet<>());
         }
         for (Room room : roomsById.values()) {
-            for (Point2i cell : room.structure().cells()) {
-                for (Point2i step : Point2i.CARDINAL_STEPS) {
+            for (CellCoord cell : room.structure().cellCoords()) {
+                for (CellCoord step : CellCoord.CARDINAL_STEPS) {
                     Room neighbor = roomsByCell.get(cell.add(step));
                     if (neighbor == null || neighbor.roomId() == null || neighbor.roomId().equals(room.roomId())) {
                         continue;
@@ -561,22 +600,22 @@ public final class RoomCluster {
         return Set.copyOf(result);
     }
 
-    private static Set<LegacyGridSegment2x> boundarySegments(Set<Point2i> cells) {
+    private static Set<GridSegment2x> boundarySegments(Set<CellCoord> cells) {
         if (cells == null || cells.isEmpty()) {
             return Set.of();
         }
-        LinkedHashSet<LegacyGridSegment2x> result = new LinkedHashSet<>();
-        for (Point2i cell : cells) {
-            for (Point2i step : Point2i.CARDINAL_STEPS) {
+        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
+        for (CellCoord cell : cells) {
+            for (CellCoord step : CellCoord.CARDINAL_STEPS) {
                 if (!cells.contains(cell.add(step))) {
-                    result.add(LegacyGridSegment2x.betweenCellAndStep(cell, step));
+                    result.add(GridSegment2x.boundaryEdge(cell, cell.directionTo4(cell.add(step))));
                 }
             }
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
-    private static LocalConnection movedConnection(LocalConnection connection, Point2i delta) {
+    private static LocalConnection movedConnection(LocalConnection connection, CellCoord delta) {
         if (connection == null || delta == null || connection.door() == null) {
             return connection;
         }
@@ -585,10 +624,10 @@ public final class RoomCluster {
                 connection.mapId(),
                 connection.clusterId(),
                 connection.levelZ(),
-                connection.door().movedBy(delta),
+                connection.door().movedBy(delta.toPoint2i()),
                 connection.endpoints());
     }
 
-    private record OverlapIndex(Map<Point2i, Room> roomsByCell, boolean hasOverlaps) {
+    private record OverlapIndex(Map<CellCoord, Room> roomsByCell, boolean hasOverlaps) {
     }
 }

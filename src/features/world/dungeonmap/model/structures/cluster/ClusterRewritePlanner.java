@@ -1,7 +1,9 @@
 package features.world.dungeonmap.model.structures.cluster;
 
+import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
 import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
@@ -31,7 +33,7 @@ final class ClusterRewritePlanner {
     private ClusterRewritePlanner() {
     }
 
-    static ClusterRewrite applyPaint(RoomCluster cluster, Set<Point2i> paintCells, List<RoomCluster> overlappingClusters, int paintLevel) {
+    static ClusterRewrite applyPaint(RoomCluster cluster, Set<CellCoord> paintCells, List<RoomCluster> overlappingClusters, int paintLevel) {
         if (cluster == null || paintCells == null || paintCells.isEmpty()) {
             return unchangedRewrite(cluster);
         }
@@ -50,14 +52,14 @@ final class ClusterRewritePlanner {
                 .map(Room::roomId)
                 .filter(java.util.Objects::nonNull)
                 .collect(LinkedHashSet::new, Set::add, Set::addAll);
-        Map<Integer, Set<Point2i>> mergedRoomCellsByLevel = new LinkedHashMap<>();
+        Map<Integer, Set<CellCoord>> mergedRoomCellsByLevel = new LinkedHashMap<>();
         for (Room room : touchedRooms) {
             mergeRoomCells(mergedRoomCellsByLevel, room);
         }
         mergedRoomCellsByLevel.computeIfAbsent(paintLevel, ignored -> new LinkedHashSet<>()).addAll(paintCells);
 
-        Set<Point2i> mergedClusterCells = new LinkedHashSet<>(paintCells);
-        Map<LegacyGridSegment2x, InternalBoundaryType> previousBoundaryKinds = new LinkedHashMap<>();
+        Set<CellCoord> mergedClusterCells = new LinkedHashSet<>(paintCells);
+        Map<GridSegment2x, InternalBoundaryType> previousBoundaryKinds = new LinkedHashMap<>();
         List<RoomRewriteCandidate> candidates = new ArrayList<>();
         Set<Long> deletedClusterIds = new LinkedHashSet<>();
         for (RoomCluster overlappingCluster : resolvedClusters) {
@@ -95,7 +97,7 @@ final class ClusterRewritePlanner {
         deletedRoomIds.remove(retainedRoom.roomId());
         return ClusterRewrite.builder(
                         cluster.clusterId(),
-                        CellCoord.bestPoint(mergedClusterCells),
+                        CellCoord.bestCenter(mergedClusterCells),
                         rewrittenRooms,
                         localConnections(cluster.mapId(), cluster.clusterId(), rewrittenRooms),
                         persistedBoundaries(mergedClusterCells, rewrittenRooms, previousBoundaryKinds))
@@ -107,12 +109,12 @@ final class ClusterRewritePlanner {
                 .build();
     }
 
-    static ClusterRewrite applyDelete(RoomCluster cluster, Set<Point2i> deletedCells, Supplier<String> roomNameSupplier, int deleteLevel) {
+    static ClusterRewrite applyDelete(RoomCluster cluster, Set<CellCoord> deletedCells, Supplier<String> roomNameSupplier, int deleteLevel) {
         if (cluster == null || deletedCells == null || deletedCells.isEmpty()) {
             return unchangedRewrite(cluster);
         }
-        Map<Integer, Set<Point2i>> remainingCellsByLevel = mutableClusterCellsByLevel(cluster);
-        Set<Point2i> remainingDeleteLevelCells = new LinkedHashSet<>(remainingCellsByLevel.getOrDefault(deleteLevel, Set.of()));
+        Map<Integer, Set<CellCoord>> remainingCellsByLevel = mutableClusterCellsByLevel(cluster);
+        Set<CellCoord> remainingDeleteLevelCells = new LinkedHashSet<>(remainingCellsByLevel.getOrDefault(deleteLevel, Set.of()));
         if (!remainingDeleteLevelCells.removeAll(deletedCells)) {
             return unchangedRewrite(cluster);
         }
@@ -134,7 +136,7 @@ final class ClusterRewritePlanner {
                     .build();
         }
 
-        Map<LegacyGridSegment2x, InternalBoundaryType> previousBoundaryKinds = cluster.internalBoundaryKinds();
+        Map<GridSegment2x, InternalBoundaryType> previousBoundaryKinds = cluster.internalBoundaryKinds();
         List<RoomRewriteCandidate> candidates = new ArrayList<>();
         Set<Long> deletedRoomIds = new LinkedHashSet<>();
         Map<Long, List<RoomRewriteCandidate>> fragmentsBySourceRoomId = new LinkedHashMap<>();
@@ -142,19 +144,19 @@ final class ClusterRewritePlanner {
             if (room == null || room.roomId() == null) {
                 continue;
             }
-            Map<Integer, Set<Point2i>> remainingRoomCellsByLevel = mutableCellsByLevel(roomCellsByLevel(room));
-            Set<Point2i> existingDeleteLevelCells = new LinkedHashSet<>(remainingRoomCellsByLevel.getOrDefault(deleteLevel, Set.of()));
-            Set<Point2i> remainingRoomDeleteLevelCells = new LinkedHashSet<>(existingDeleteLevelCells);
+            Map<Integer, Set<CellCoord>> remainingRoomCellsByLevel = mutableCellsByLevel(roomCellsByLevel(room));
+            Set<CellCoord> existingDeleteLevelCells = new LinkedHashSet<>(remainingRoomCellsByLevel.getOrDefault(deleteLevel, Set.of()));
+            Set<CellCoord> remainingRoomDeleteLevelCells = new LinkedHashSet<>(existingDeleteLevelCells);
             remainingRoomDeleteLevelCells.removeAll(deletedCells);
             if (remainingRoomDeleteLevelCells.isEmpty()) {
                 remainingRoomCellsByLevel.remove(deleteLevel);
             } else {
                 remainingRoomCellsByLevel.put(deleteLevel, Set.copyOf(remainingRoomDeleteLevelCells));
             }
-            List<Set<Point2i>> components = connectedComponents(remainingRoomDeleteLevelCells).stream()
+            List<Set<CellCoord>> components = connectedComponents(remainingRoomDeleteLevelCells).stream()
                     .sorted(Comparator
-                            .comparing((Set<Point2i> component) -> !contains(component, preferredAnchor(existingDeleteLevelCells, roomAnchorsByLevel(room).get(deleteLevel))))
-                            .thenComparing(CellCoord::bestPoint, Point2i.POINT_ORDER))
+                            .comparing((Set<CellCoord> component) -> !contains(component, preferredAnchor(existingDeleteLevelCells, roomAnchorsByLevel(room).get(deleteLevel))))
+                            .thenComparing(CellCoord::bestCenter, CellCoord.ORDER))
                     .toList();
             if (remainingRoomCellsByLevel.isEmpty()) {
                 deletedRoomIds.add(room.roomId());
@@ -172,8 +174,8 @@ final class ClusterRewritePlanner {
             }
             List<RoomRewriteCandidate> sourceFragments = new ArrayList<>();
             for (int index = 0; index < components.size(); index++) {
-                Set<Point2i> component = components.get(index);
-                Map<Integer, Set<Point2i>> fragmentCellsByLevel = index == 0
+                Set<CellCoord> component = components.get(index);
+                Map<Integer, Set<CellCoord>> fragmentCellsByLevel = index == 0
                         ? mutableCellsByLevel(remainingRoomCellsByLevel)
                         : mutableCellsByLevelWithoutLevel(remainingRoomCellsByLevel, deleteLevel);
                 fragmentCellsByLevel.put(deleteLevel, Set.copyOf(component));
@@ -189,7 +191,7 @@ final class ClusterRewritePlanner {
             fragmentsBySourceRoomId.put(room.roomId(), List.copyOf(sourceFragments));
         }
 
-        Set<Point2i> rewrittenClusterCells = flattenCells(remainingCellsByLevel);
+        Set<CellCoord> rewrittenClusterCells = flattenCells(remainingCellsByLevel);
         List<ReconciledRoom> reconciledRooms = reconciledRooms(cluster, rewrittenClusterCells, candidates, previousBoundaryKinds);
         List<Room> rewrittenRooms = rooms(reconciledRooms);
         Map<Long, List<Room>> splitFragmentsBySourceRoomId = resolvedFragmentsBySourceRoomId(
@@ -217,19 +219,19 @@ final class ClusterRewritePlanner {
                 .build();
     }
 
-    static ClusterRewrite editBoundary(RoomCluster cluster, Collection<LegacyGridSegment2x> segments2x, InternalBoundaryType type, boolean deleteBoundary) {
+    static ClusterRewrite editBoundary(RoomCluster cluster, Collection<GridSegment2x> segments2x, InternalBoundaryType type, boolean deleteBoundary) {
         if (cluster == null || segments2x == null || segments2x.isEmpty()) {
             return null;
         }
-        Map<LegacyGridSegment2x, InternalBoundaryType> updatedBoundaryKinds = new LinkedHashMap<>(cluster.internalBoundaryKinds());
+        Map<GridSegment2x, InternalBoundaryType> updatedBoundaryKinds = new LinkedHashMap<>(cluster.internalBoundaryKinds());
         InternalBoundaryType resolvedType = type == null ? InternalBoundaryType.WALL : type;
         boolean changed = false;
-        for (LegacyGridSegment2x segment2x : segments2x) {
+        for (GridSegment2x segment2x : segments2x) {
             if (segment2x == null || !isInternalSegment(cluster.cells(), segment2x)) {
                 continue;
             }
-            List<Point2i> touchingCells = segment2x.touchingCells().stream()
-                    .sorted(Point2i.POINT_ORDER)
+            List<CellCoord> touchingCells = segment2x.touchingCells().stream()
+                    .sorted(CellCoord.ORDER)
                     .toList();
             if (touchingCells.size() != 2) {
                 continue;
@@ -279,14 +281,14 @@ final class ClusterRewritePlanner {
 
     static List<ReconciledRoom> reconciledRooms(
             RoomCluster cluster,
-            Set<Point2i> clusterCells,
+            Set<CellCoord> clusterCells,
             List<RoomRewriteCandidate> candidates,
-            Map<LegacyGridSegment2x, InternalBoundaryType> previousKinds
+            Map<GridSegment2x, InternalBoundaryType> previousKinds
     ) {
         if (cluster == null || clusterCells == null || clusterCells.isEmpty()) {
             return List.of();
         }
-        Map<LegacyGridSegment2x, InternalBoundaryType> boundaryKinds = previousKinds == null ? Map.of() : Map.copyOf(previousKinds);
+        Map<GridSegment2x, InternalBoundaryType> boundaryKinds = previousKinds == null ? Map.of() : Map.copyOf(previousKinds);
         List<ReconciledRoom> result = new ArrayList<>();
         for (RoomRewriteCandidate candidate : candidates == null ? List.<RoomRewriteCandidate>of() : candidates) {
             if (candidate == null || candidate.cellsByLevel() == null || candidate.cellsByLevel().isEmpty()) {
@@ -309,19 +311,19 @@ final class ClusterRewritePlanner {
         return List.copyOf(result);
     }
 
-    static List<Room> rewriteRoomsForBoundaryKinds(RoomCluster cluster, Map<LegacyGridSegment2x, InternalBoundaryType> boundaryKinds) {
+    static List<Room> rewriteRoomsForBoundaryKinds(RoomCluster cluster, Map<GridSegment2x, InternalBoundaryType> boundaryKinds) {
         if (cluster == null || cluster.cells().isEmpty() || cluster.rooms().isEmpty()) {
             return List.of();
         }
-        Map<Integer, Set<Point2i>> remainingCellsByLevel = mutableClusterCellsByLevel(cluster);
-        Set<LegacyGridSegment2x> barriers = barriersForBoundaryKinds(boundaryKinds);
+        Map<Integer, Set<CellCoord>> remainingCellsByLevel = mutableClusterCellsByLevel(cluster);
+        Set<GridSegment2x> barriers = barriersForBoundaryKinds(boundaryKinds);
         List<Room> rewrittenRooms = new ArrayList<>();
         Set<Long> retainedRoomIds = new LinkedHashSet<>();
         for (Room room : cluster.rooms()) {
             if (room == null || room.roomId() == null) {
                 continue;
             }
-            Map<Integer, Set<Point2i>> roomCellsByLevel = rewrittenRoomCellsByLevel(room, remainingCellsByLevel, barriers);
+            Map<Integer, Set<CellCoord>> roomCellsByLevel = rewrittenRoomCellsByLevel(room, remainingCellsByLevel, barriers);
             if (roomCellsByLevel.isEmpty()) {
                 continue;
             }
@@ -332,9 +334,9 @@ final class ClusterRewritePlanner {
         for (LevelSeed seed = firstRemainingSeed(remainingCellsByLevel);
                 seed != null;
                 seed = firstRemainingSeed(remainingCellsByLevel)) {
-            Point2i anchor = seed.cell();
-            Set<Point2i> levelCells = remainingCellsByLevel.getOrDefault(seed.level(), Set.of());
-            Set<Point2i> roomCells = reachableCells(anchor, levelCells, barriers);
+            CellCoord anchor = seed.cell();
+            Set<CellCoord> levelCells = remainingCellsByLevel.getOrDefault(seed.level(), Set.of());
+            Set<CellCoord> roomCells = reachableCells(anchor, levelCells, barriers);
             if (roomCells.isEmpty()) {
                 remainingCellsByLevel.computeIfPresent(seed.level(), (ignored, cells) -> {
                     cells.remove(anchor);
@@ -360,10 +362,10 @@ final class ClusterRewritePlanner {
 
     static Room resolvedRoom(
             RoomCluster cluster,
-            Map<Integer, Set<Point2i>> roomCellsByLevel,
-            Set<Point2i> clusterCells,
-            Map<LegacyGridSegment2x, InternalBoundaryType> boundaryKinds,
-            Map<Integer, Point2i> preferredAnchorsByLevel,
+            Map<Integer, Set<CellCoord>> roomCellsByLevel,
+            Set<CellCoord> clusterCells,
+            Map<GridSegment2x, InternalBoundaryType> boundaryKinds,
+            Map<Integer, CellCoord> preferredAnchorsByLevel,
             Long roomId,
             String roomName,
             RoomNarration narration
@@ -379,22 +381,22 @@ final class ClusterRewritePlanner {
     }
 
     private static BoundarySets boundarySetsForRoom(
-            Set<Point2i> roomCells,
-            Set<Point2i> clusterCells,
-            Map<LegacyGridSegment2x, InternalBoundaryType> boundaryKinds
+            Set<CellCoord> roomCells,
+            Set<CellCoord> clusterCells,
+            Map<GridSegment2x, InternalBoundaryType> boundaryKinds
     ) {
-        Set<LegacyGridSegment2x> wallSegments = new LinkedHashSet<>();
-        Set<LegacyGridSegment2x> connectionSegments = new LinkedHashSet<>();
+        Set<GridSegment2x> wallSegments = new LinkedHashSet<>();
+        Set<GridSegment2x> connectionSegments = new LinkedHashSet<>();
         if (roomCells == null || roomCells.isEmpty() || clusterCells == null || clusterCells.isEmpty()) {
             return new BoundarySets(Set.of(), Set.of());
         }
-        for (Point2i cell : roomCells) {
-            for (Point2i step : Point2i.CARDINAL_STEPS) {
-                Point2i neighbor = cell.add(step);
+        for (CellCoord cell : roomCells) {
+            for (CellCoord step : CellCoord.CARDINAL_STEPS) {
+                CellCoord neighbor = cell.add(step);
                 if (roomCells.contains(neighbor)) {
                     continue;
                 }
-                LegacyGridSegment2x segment2x = LegacyGridSegment2x.betweenCellAndStep(cell, step);
+                GridSegment2x segment2x = GridSegment2x.boundaryEdge(cell, cell.directionTo4(neighbor));
                 if (!clusterCells.contains(neighbor)) {
                     wallSegments.add(segment2x);
                     continue;
@@ -412,30 +414,30 @@ final class ClusterRewritePlanner {
         return new BoundarySets(Set.copyOf(wallSegments), Set.copyOf(connectionSegments));
     }
 
-    private static Set<LegacyGridSegment2x> barriersForBoundaryKinds(Map<LegacyGridSegment2x, InternalBoundaryType> boundaryKinds) {
+    private static Set<GridSegment2x> barriersForBoundaryKinds(Map<GridSegment2x, InternalBoundaryType> boundaryKinds) {
         if (boundaryKinds == null || boundaryKinds.isEmpty()) {
             return Set.of();
         }
         return boundaryKinds.keySet().stream()
                 .filter(java.util.Objects::nonNull)
-                .sorted(LegacyGridSegment2x.SEGMENT_ORDER)
+                .sorted(GridSegment2x.ORDER)
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
     }
 
-    private static Set<Point2i> reachableCells(Point2i startAnchor, Set<Point2i> traversableCells, Set<LegacyGridSegment2x> barriers) {
+    private static Set<CellCoord> reachableCells(CellCoord startAnchor, Set<CellCoord> traversableCells, Set<GridSegment2x> barriers) {
         if (startAnchor == null || traversableCells == null || traversableCells.isEmpty() || !traversableCells.contains(startAnchor)) {
             return Set.of();
         }
-        Set<Point2i> visited = new LinkedHashSet<>();
-        Set<Point2i> frontier = new LinkedHashSet<>(traversableCells);
-        ArrayDeque<Point2i> queue = new ArrayDeque<>();
+        Set<CellCoord> visited = new LinkedHashSet<>();
+        Set<CellCoord> frontier = new LinkedHashSet<>(traversableCells);
+        ArrayDeque<CellCoord> queue = new ArrayDeque<>();
         queue.add(startAnchor);
         frontier.remove(startAnchor);
         while (!queue.isEmpty()) {
-            Point2i current = queue.removeFirst();
+            CellCoord current = queue.removeFirst();
             visited.add(current);
-            for (Point2i step : Point2i.CARDINAL_STEPS) {
-                Point2i neighbor = current.add(step);
+            for (CellCoord step : CellCoord.CARDINAL_STEPS) {
+                CellCoord neighbor = current.add(step);
                 if (!frontier.contains(neighbor) || isBlocked(barriers, current, step)) {
                     continue;
                 }
@@ -446,12 +448,12 @@ final class ClusterRewritePlanner {
         return Set.copyOf(visited);
     }
 
-    private static List<Room> roomsForCells(RoomCluster cluster, Set<Point2i> roomCells) {
+    private static List<Room> roomsForCells(RoomCluster cluster, Set<CellCoord> roomCells) {
         if (cluster == null) {
             return List.of();
         }
         return cluster.rooms().stream()
-                .filter(room -> room != null && room.roomId() != null && !disjoint(room.structure().cells(), roomCells))
+                .filter(room -> room != null && room.roomId() != null && !disjoint(room.structure().cellCoords(), roomCells))
                 .sorted(Comparator.comparing(Room::roomId, Comparator.nullsLast(Long::compareTo)))
                 .toList();
     }
@@ -474,8 +476,8 @@ final class ClusterRewritePlanner {
     private static Room resolveRoomForCells(
             RoomCluster cluster,
             Room retainedRoom,
-            Map<Integer, Set<Point2i>> roomCellsByLevel,
-            Map<LegacyGridSegment2x, InternalBoundaryType> boundaryKinds,
+            Map<Integer, Set<CellCoord>> roomCellsByLevel,
+            Map<GridSegment2x, InternalBoundaryType> boundaryKinds,
             List<Room> sourceRooms
     ) {
         Long roomId = retainedRoom == null ? null : retainedRoom.roomId();
@@ -483,7 +485,7 @@ final class ClusterRewritePlanner {
         RoomNarration narration = retainedRoom == null
                 ? (sourceRooms == null || sourceRooms.isEmpty() ? RoomNarration.empty() : sourceRooms.getFirst().narration())
                 : retainedRoom.narration();
-        Map<Integer, Point2i> preferredAnchorsByLevel = retainedRoom == null
+        Map<Integer, CellCoord> preferredAnchorsByLevel = retainedRoom == null
                 ? preferredAnchors(sourceRooms)
                 : roomAnchorsByLevel(retainedRoom);
         return resolvedRoom(
@@ -515,7 +517,7 @@ final class ClusterRewritePlanner {
             if (rewrittenRoom == null) {
                 continue;
             }
-            List<Room> sourceRooms = roomsForCells(cluster, rewrittenRoom.structure().cells());
+            List<Room> sourceRooms = roomsForCells(cluster, rewrittenRoom.structure().cellCoords());
             if (sourceRooms.size() <= 1) {
                 continue;
             }
@@ -536,23 +538,23 @@ final class ClusterRewritePlanner {
 
     static List<ClusterRewriteSplit> deleteRewriteClusters(
             RoomCluster cluster,
-            Set<Point2i> rewrittenClusterCells,
+            Set<CellCoord> rewrittenClusterCells,
             List<Room> rewrittenRooms,
-            Map<LegacyGridSegment2x, InternalBoundaryType> boundaryKinds
+            Map<GridSegment2x, InternalBoundaryType> boundaryKinds
     ) {
         if (cluster == null || rewrittenClusterCells == null || rewrittenClusterCells.isEmpty()) {
             return List.of();
         }
         return connectedComponents(rewrittenClusterCells).stream()
                 .sorted(Comparator
-                        .comparing((Set<Point2i> component) -> !component.contains(cluster.center()))
-                        .thenComparingInt(component -> CellCoord.bestPoint(component).distanceTo(cluster.center()))
-                        .thenComparing(CellCoord::bestPoint, Point2i.POINT_ORDER))
+                        .comparing((Set<CellCoord> component) -> !component.contains(cluster.center()))
+                        .thenComparingInt(component -> CellCoord.bestCenter(component).manhattanDistance(cluster.center()))
+                        .thenComparing(CellCoord::bestCenter, CellCoord.ORDER))
                 .map(componentCells -> {
                     List<Room> componentRooms = roomsForDeleteComponent(componentCells, rewrittenRooms);
                     return new ClusterRewriteSplit(
                             null,
-                            CellCoord.bestPoint(componentCells),
+                            CellCoord.bestCenter(componentCells),
                             componentRooms,
                             localConnections(cluster.mapId(), null, componentRooms),
                             persistedBoundaries(componentCells, componentRooms, boundaryKinds));
@@ -560,21 +562,21 @@ final class ClusterRewritePlanner {
                 .toList();
     }
 
-    static List<Room> roomsForDeleteComponent(Set<Point2i> componentCells, List<Room> rewrittenRooms) {
+    static List<Room> roomsForDeleteComponent(Set<CellCoord> componentCells, List<Room> rewrittenRooms) {
         if (componentCells == null || componentCells.isEmpty()) {
             return List.of();
         }
         return rewrittenRooms.stream()
-                .filter(room -> room != null && !disjoint(room.structure().cells(), componentCells))
+                .filter(room -> room != null && !disjoint(room.structure().cellCoords(), componentCells))
                 .sorted(Comparator.comparing(Room::roomId, Comparator.nullsLast(Long::compareTo))
-                        .thenComparing(room -> room.structure().centerCellAtLevel(room.structure().primaryLevel()), Point2i.POINT_ORDER))
+                        .thenComparing(room -> room.structure().centerCellCoordAtLevel(room.structure().primaryLevel()), CellCoord.ORDER))
                 .toList();
     }
 
     static List<InternalBoundaryEdge> persistedBoundaries(
-            Set<Point2i> clusterCells,
+            Set<CellCoord> clusterCells,
             List<Room> rooms,
-            Map<LegacyGridSegment2x, InternalBoundaryType> boundaryKinds
+            Map<GridSegment2x, InternalBoundaryType> boundaryKinds
     ) {
         return computeInternalBoundaries(clusterCells, rooms, boundaryKinds).entrySet().stream()
                 .map(entry -> toInternalBoundaryEdge(entry.getKey(), entry.getValue()))
@@ -616,8 +618,8 @@ final class ClusterRewritePlanner {
         return List.copyOf(result);
     }
 
-    static Map<LegacyGridSegment2x, InternalBoundaryType> internalBoundaryKinds(
-            Set<Point2i> clusterCells,
+    static Map<GridSegment2x, InternalBoundaryType> internalBoundaryKinds(
+            Set<CellCoord> clusterCells,
             List<Room> rooms,
             List<LocalConnection> localConnections
     ) {
@@ -674,22 +676,26 @@ final class ClusterRewritePlanner {
     }
 
     private static InternalBoundaryEdge toInternalBoundaryEdge(LegacyGridSegment2x segment2x, InternalBoundaryType type) {
+        return segment2x == null ? null : toInternalBoundaryEdge(GridSegment2x.fromLegacyBoundaryEdge(segment2x), type);
+    }
+
+    private static InternalBoundaryEdge toInternalBoundaryEdge(GridSegment2x segment2x, InternalBoundaryType type) {
         if (segment2x == null) {
             return null;
         }
-        List<Point2i> touchingCells = segment2x.touchingCells().stream()
-                .sorted(Point2i.POINT_ORDER)
+        List<CellCoord> touchingCells = segment2x.touchingCells().stream()
+                .sorted(CellCoord.ORDER)
                 .toList();
         if (touchingCells.size() != 2) {
             return null;
         }
-        Point2i baseCell = touchingCells.getFirst();
-        Point2i direction = baseCell.directionToCardinal(touchingCells.get(1));
+        CellCoord baseCell = touchingCells.getFirst();
+        CardinalDirection direction = segment2x.directionFrom(baseCell);
         return direction == null ? null : new InternalBoundaryEdge(baseCell, direction, type);
     }
 
-    private static boolean isInternalSegment(Set<Point2i> clusterCells, LegacyGridSegment2x segment2x) {
-        Set<Point2i> touchingCells = segment2x == null ? Set.of() : segment2x.touchingCells();
+    private static boolean isInternalSegment(Set<CellCoord> clusterCells, GridSegment2x segment2x) {
+        Set<CellCoord> touchingCells = segment2x == null ? Set.of() : segment2x.touchingCells();
         return touchingCells.size() == 2 && clusterCells.containsAll(touchingCells);
     }
 
@@ -711,26 +717,26 @@ final class ClusterRewritePlanner {
                 .toList();
     }
 
-    private static Map<LegacyGridSegment2x, InternalBoundaryType> computeInternalBoundaries(
-            Set<Point2i> clusterCells,
+    private static Map<GridSegment2x, InternalBoundaryType> computeInternalBoundaries(
+            Set<CellCoord> clusterCells,
             List<Room> rooms,
-            Map<LegacyGridSegment2x, InternalBoundaryType> boundaryKinds
+            Map<GridSegment2x, InternalBoundaryType> boundaryKinds
     ) {
         if (clusterCells == null || clusterCells.isEmpty()) {
             return Map.of();
         }
-        Map<LegacyGridSegment2x, InternalBoundaryType> result = new LinkedHashMap<>();
+        Map<GridSegment2x, InternalBoundaryType> result = new LinkedHashMap<>();
         for (Room room : rooms == null ? List.<Room>of() : rooms) {
             if (room == null) {
                 continue;
             }
-            for (LegacyGridSegment2x segment2x : roomWallSegments(room)) {
+            for (GridSegment2x segment2x : GridSegment2x.fromLegacyBoundaryEdges(roomWallSegments(room))) {
                 if (isInternalSegment(clusterCells, segment2x)) {
                     result.putIfAbsent(segment2x, InternalBoundaryType.WALL);
                 }
             }
         }
-        for (Map.Entry<LegacyGridSegment2x, InternalBoundaryType> entry : (boundaryKinds == null ? Map.<LegacyGridSegment2x, InternalBoundaryType>of() : boundaryKinds).entrySet()) {
+        for (Map.Entry<GridSegment2x, InternalBoundaryType> entry : (boundaryKinds == null ? Map.<GridSegment2x, InternalBoundaryType>of() : boundaryKinds).entrySet()) {
             if (isInternalSegment(clusterCells, entry.getKey()) && entry.getValue() == InternalBoundaryType.DOOR) {
                 result.put(entry.getKey(), InternalBoundaryType.DOOR);
             }
@@ -745,12 +751,12 @@ final class ClusterRewritePlanner {
                 && left.roomId().equals(right.roomId());
     }
 
-    private static boolean isBlocked(Set<LegacyGridSegment2x> barriers, Point2i cell, Point2i step) {
-        return barriers != null && barriers.contains(LegacyGridSegment2x.betweenCellAndStep(cell, step));
+    private static boolean isBlocked(Set<GridSegment2x> barriers, CellCoord cell, CellCoord step) {
+        return barriers != null && barriers.contains(GridSegment2x.boundaryEdge(cell, cell.directionTo4(cell.add(step))));
     }
 
-    static boolean disjoint(Set<Point2i> left, Set<Point2i> right) {
-        for (Point2i point : left) {
+    static boolean disjoint(Set<CellCoord> left, Set<CellCoord> right) {
+        for (CellCoord point : left) {
             if (right.contains(point)) {
                 return false;
             }
@@ -788,7 +794,7 @@ final class ClusterRewritePlanner {
         }
         List<Room> touchingRooms = new ArrayList<>();
         for (LegacyGridSegment2x segment2x : doorComponent.door().segments2x()) {
-            for (Point2i cell : segment2x.touchingCells().stream().sorted(Point2i.POINT_ORDER).toList()) {
+            for (CellCoord cell : segment2x.touchingCellCoords().stream().sorted(CellCoord.ORDER).toList()) {
                 Room room = roomsByPoint.get(CubePoint.at(cell, doorComponent.levelZ()));
                 if (room != null && !touchingRooms.contains(room)) {
                     touchingRooms.add(room);
@@ -845,13 +851,13 @@ final class ClusterRewritePlanner {
         return builder.toString();
     }
 
-    private static Map<LegacyGridSegment2x, InternalBoundaryType> boundaryKinds(List<LocalConnection> localConnections) {
-        Map<LegacyGridSegment2x, InternalBoundaryType> result = new LinkedHashMap<>();
+    private static Map<GridSegment2x, InternalBoundaryType> boundaryKinds(List<LocalConnection> localConnections) {
+        Map<GridSegment2x, InternalBoundaryType> result = new LinkedHashMap<>();
         for (LocalConnection connection : localConnections == null ? List.<LocalConnection>of() : localConnections) {
             if (connection == null || connection.door() == null) {
                 continue;
             }
-            for (LegacyGridSegment2x segment2x : connection.door().segments2x()) {
+            for (GridSegment2x segment2x : GridSegment2x.fromLegacyBoundaryEdges(connection.door().segments2x())) {
                 result.put(segment2x, InternalBoundaryType.DOOR);
             }
         }
@@ -865,7 +871,7 @@ final class ClusterRewritePlanner {
     ) {
     }
 
-    record BoundarySets(Set<LegacyGridSegment2x> walls, Set<LegacyGridSegment2x> openings) {
+    record BoundarySets(Set<GridSegment2x> walls, Set<GridSegment2x> openings) {
     }
 
     private record DoorComponent(int levelZ, Door door) {
@@ -875,14 +881,14 @@ final class ClusterRewritePlanner {
             Long sourceRoomId,
             Long roomId,
             String name,
-            Map<Integer, Set<Point2i>> cellsByLevel,
-            Map<Integer, Point2i> preferredAnchorsByLevel
+            Map<Integer, Set<CellCoord>> cellsByLevel,
+            Map<Integer, CellCoord> preferredAnchorsByLevel
     ) {
-        static RoomRewriteCandidate keep(Long roomId, String name, Map<Integer, Set<Point2i>> cellsByLevel, Map<Integer, Point2i> preferredAnchorsByLevel) {
+        static RoomRewriteCandidate keep(Long roomId, String name, Map<Integer, Set<CellCoord>> cellsByLevel, Map<Integer, CellCoord> preferredAnchorsByLevel) {
             return new RoomRewriteCandidate(roomId, roomId, name, immutableCellsByLevel(cellsByLevel), immutableAnchors(preferredAnchorsByLevel));
         }
 
-        static RoomRewriteCandidate create(Long sourceRoomId, String name, Map<Integer, Set<Point2i>> cellsByLevel, Map<Integer, Point2i> preferredAnchorsByLevel) {
+        static RoomRewriteCandidate create(Long sourceRoomId, String name, Map<Integer, Set<CellCoord>> cellsByLevel, Map<Integer, CellCoord> preferredAnchorsByLevel) {
             return new RoomRewriteCandidate(sourceRoomId, null, name, immutableCellsByLevel(cellsByLevel), immutableAnchors(preferredAnchorsByLevel));
         }
     }
@@ -893,18 +899,18 @@ final class ClusterRewritePlanner {
     ) {
     }
 
-    private static boolean overlapsAtLevel(Room room, Set<Point2i> paintCells, int levelZ) {
+    private static boolean overlapsAtLevel(Room room, Set<CellCoord> paintCells, int levelZ) {
         if (room == null || paintCells == null || paintCells.isEmpty()) {
             return false;
         }
-        return !disjoint(room.structure().cellsAtLevel(levelZ), paintCells);
+        return !disjoint(room.structure().cellCoordsAtLevel(levelZ), paintCells);
     }
 
-    private static void mergeRoomCells(Map<Integer, Set<Point2i>> result, Room room) {
+    private static void mergeRoomCells(Map<Integer, Set<CellCoord>> result, Room room) {
         if (result == null || room == null) {
             return;
         }
-        for (Map.Entry<Integer, Set<Point2i>> entry : roomCellsByLevel(room).entrySet()) {
+        for (Map.Entry<Integer, Set<CellCoord>> entry : roomCellsByLevel(room).entrySet()) {
             if (entry == null || entry.getKey() == null || entry.getValue() == null || entry.getValue().isEmpty()) {
                 continue;
             }
@@ -912,32 +918,32 @@ final class ClusterRewritePlanner {
         }
     }
 
-    private static Map<Integer, Set<Point2i>> mutableClusterCellsByLevel(RoomCluster cluster) {
+    private static Map<Integer, Set<CellCoord>> mutableClusterCellsByLevel(RoomCluster cluster) {
         return mutableCellsByLevel(cluster == null ? Map.of() : cluster.cellsByLevel());
     }
 
-    private static Map<Integer, Set<Point2i>> rewrittenRoomCellsByLevel(
+    private static Map<Integer, Set<CellCoord>> rewrittenRoomCellsByLevel(
             Room room,
-            Map<Integer, Set<Point2i>> remainingCellsByLevel,
-            Set<LegacyGridSegment2x> barriers
+            Map<Integer, Set<CellCoord>> remainingCellsByLevel,
+            Set<GridSegment2x> barriers
     ) {
-        Map<Integer, Set<Point2i>> result = new LinkedHashMap<>();
+        Map<Integer, Set<CellCoord>> result = new LinkedHashMap<>();
         if (room == null || remainingCellsByLevel == null || remainingCellsByLevel.isEmpty()) {
             return Map.of();
         }
-        for (Map.Entry<Integer, Point2i> entry : roomAnchorsByLevel(room).entrySet().stream()
+        for (Map.Entry<Integer, CellCoord> entry : roomAnchorsByLevel(room).entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
                 .toList()) {
             Integer level = entry.getKey();
-            Point2i anchor = entry.getValue();
+            CellCoord anchor = entry.getValue();
             if (level == null || anchor == null) {
                 continue;
             }
-            Set<Point2i> remainingCells = remainingCellsByLevel.get(level);
+            Set<CellCoord> remainingCells = remainingCellsByLevel.get(level);
             if (remainingCells == null || !remainingCells.contains(anchor)) {
                 continue;
             }
-            Set<Point2i> roomCells = reachableCells(anchor, remainingCells, barriers);
+            Set<CellCoord> roomCells = reachableCells(anchor, remainingCells, barriers);
             if (roomCells.isEmpty()) {
                 continue;
             }
@@ -950,7 +956,7 @@ final class ClusterRewritePlanner {
         return result.isEmpty() ? Map.of() : Map.copyOf(result);
     }
 
-    private static LevelSeed firstRemainingSeed(Map<Integer, Set<Point2i>> remainingCellsByLevel) {
+    private static LevelSeed firstRemainingSeed(Map<Integer, Set<CellCoord>> remainingCellsByLevel) {
         if (remainingCellsByLevel == null || remainingCellsByLevel.isEmpty()) {
             return null;
         }
@@ -959,33 +965,33 @@ final class ClusterRewritePlanner {
                 .sorted(Map.Entry.comparingByKey())
                 .map(entry -> new LevelSeed(
                         entry.getKey(),
-                        entry.getValue().stream().min(Point2i.POINT_ORDER).orElse(null)))
+                        entry.getValue().stream().min(CellCoord.ORDER).orElse(null)))
                 .filter(seed -> seed.cell() != null)
                 .findFirst()
                 .orElse(null);
     }
 
-    private static Set<Point2i> flattenCells(Map<Integer, Set<Point2i>> cellsByLevel) {
-        LinkedHashSet<Point2i> result = new LinkedHashSet<>();
-        for (Set<Point2i> cells : cellsByLevel.values()) {
+    private static Set<CellCoord> flattenCells(Map<Integer, Set<CellCoord>> cellsByLevel) {
+        LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
+        for (Set<CellCoord> cells : cellsByLevel.values()) {
             result.addAll(cells);
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
     private static StructureDescriptor descriptorForRoom(
-            Map<Integer, Set<Point2i>> roomCellsByLevel,
-            Set<Point2i> clusterCells,
-            Map<LegacyGridSegment2x, InternalBoundaryType> boundaryKinds,
-            Map<Integer, Point2i> preferredAnchorsByLevel
+            Map<Integer, Set<CellCoord>> roomCellsByLevel,
+            Set<CellCoord> clusterCells,
+            Map<GridSegment2x, InternalBoundaryType> boundaryKinds,
+            Map<Integer, CellCoord> preferredAnchorsByLevel
     ) {
         Map<Integer, StructureDescriptor.LevelDescriptor> levels = new LinkedHashMap<>();
-        Set<Point2i> resolvedClusterCells = normalizeCells(clusterCells);
-        for (Map.Entry<Integer, Set<Point2i>> entry : (roomCellsByLevel == null ? Map.<Integer, Set<Point2i>>of() : roomCellsByLevel).entrySet().stream()
+        Set<CellCoord> resolvedClusterCells = normalizeCells(clusterCells);
+        for (Map.Entry<Integer, Set<CellCoord>> entry : (roomCellsByLevel == null ? Map.<Integer, Set<CellCoord>>of() : roomCellsByLevel).entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
                 .toList()) {
             Integer levelZ = entry.getKey();
-            Set<Point2i> roomCells = normalizeCells(entry.getValue());
+            Set<CellCoord> roomCells = normalizeCells(entry.getValue());
             if (levelZ == null || roomCells.isEmpty()) {
                 continue;
             }
@@ -993,7 +999,7 @@ final class ClusterRewritePlanner {
                     roomCells,
                     resolvedClusterCells.isEmpty() ? roomCells : resolvedClusterCells,
                     boundaryKinds);
-            Point2i preferredAnchor = preferredAnchorsByLevel == null ? null : preferredAnchorsByLevel.get(levelZ);
+            CellCoord preferredAnchor = preferredAnchorsByLevel == null ? null : preferredAnchorsByLevel.get(levelZ);
             // Room rewrites author descriptor truth directly so boundary edits do not round-trip through generic cell import.
             levels.put(levelZ, new StructureDescriptor.LevelDescriptor(
                     anchorCellForRoom(roomCells, preferredAnchor),
@@ -1006,7 +1012,7 @@ final class ClusterRewritePlanner {
 
     static StructureDescriptor descriptorForStandaloneRoom(Floor floor) {
         Floor resolvedFloor = floor == null ? Floor.empty() : floor;
-        Set<Point2i> roomCells = normalizeCells(resolvedFloor.cells());
+        Set<CellCoord> roomCells = normalizeCells(resolvedFloor.cellCoords());
         if (roomCells.isEmpty()) {
             return StructureDescriptor.empty();
         }
@@ -1014,10 +1020,10 @@ final class ClusterRewritePlanner {
                 Map.of(0, roomCells),
                 roomCells,
                 Map.of(),
-                Map.of(0, resolvedFloor.anchorCell()));
+                Map.of(0, resolvedFloor.anchorCellCoord()));
     }
 
-    private static Map<Integer, Point2i> preferredAnchors(List<Room> sourceRooms) {
+    private static Map<Integer, CellCoord> preferredAnchors(List<Room> sourceRooms) {
         if (sourceRooms == null || sourceRooms.isEmpty()) {
             return Map.of();
         }
@@ -1029,13 +1035,13 @@ final class ClusterRewritePlanner {
         return Map.of();
     }
 
-    private static Map<Integer, Set<Point2i>> roomCellsByLevel(Room room) {
+    private static Map<Integer, Set<CellCoord>> roomCellsByLevel(Room room) {
         if (room == null) {
             return Map.of();
         }
-        Map<Integer, Set<Point2i>> result = new LinkedHashMap<>();
+        Map<Integer, Set<CellCoord>> result = new LinkedHashMap<>();
         for (Integer levelZ : room.structure().levels().stream().sorted().toList()) {
-            Set<Point2i> cellsAtLevel = room.structure().cellsAtLevel(levelZ);
+            Set<CellCoord> cellsAtLevel = room.structure().cellCoordsAtLevel(levelZ);
             if (!cellsAtLevel.isEmpty()) {
                 result.put(levelZ, Set.copyOf(cellsAtLevel));
             }
@@ -1043,15 +1049,15 @@ final class ClusterRewritePlanner {
         return result.isEmpty() ? Map.of() : Map.copyOf(result);
     }
 
-    private static Map<Integer, Point2i> roomAnchorsByLevel(Room room) {
+    private static Map<Integer, CellCoord> roomAnchorsByLevel(Room room) {
         if (room == null) {
             return Map.of();
         }
-        Map<Integer, Point2i> result = new LinkedHashMap<>();
+        Map<Integer, CellCoord> result = new LinkedHashMap<>();
         for (Integer levelZ : room.structure().levels().stream().sorted().toList()) {
             var floor = room.structure().floorAtLevel(levelZ);
             if (floor != null) {
-                result.put(levelZ, floor.anchorCell());
+                result.put(levelZ, floor.anchorCellCoord());
             }
         }
         return result.isEmpty() ? Map.of() : Map.copyOf(result);
@@ -1070,26 +1076,26 @@ final class ClusterRewritePlanner {
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
-    private static List<Set<Point2i>> connectedComponents(Collection<Point2i> cells) {
-        Set<Point2i> remaining = normalizeCells(cells);
+    private static List<Set<CellCoord>> connectedComponents(Collection<CellCoord> cells) {
+        Set<CellCoord> remaining = normalizeCells(cells);
         if (remaining.isEmpty()) {
             return List.of();
         }
-        List<Set<Point2i>> components = new ArrayList<>();
-        LinkedHashSet<Point2i> unvisited = new LinkedHashSet<>(remaining);
+        List<Set<CellCoord>> components = new ArrayList<>();
+        LinkedHashSet<CellCoord> unvisited = new LinkedHashSet<>(remaining);
         while (!unvisited.isEmpty()) {
-            Point2i seed = unvisited.iterator().next();
-            ArrayDeque<Point2i> queue = new ArrayDeque<>();
-            LinkedHashSet<Point2i> component = new LinkedHashSet<>();
+            CellCoord seed = unvisited.iterator().next();
+            ArrayDeque<CellCoord> queue = new ArrayDeque<>();
+            LinkedHashSet<CellCoord> component = new LinkedHashSet<>();
             queue.add(seed);
             unvisited.remove(seed);
             while (!queue.isEmpty()) {
-                Point2i current = queue.removeFirst();
+                CellCoord current = queue.removeFirst();
                 if (!component.add(current)) {
                     continue;
                 }
-                for (Point2i step : Point2i.CARDINAL_STEPS) {
-                    Point2i neighbor = current.add(step);
+                for (CellCoord step : CellCoord.CARDINAL_STEPS) {
+                    CellCoord neighbor = current.add(step);
                     if (unvisited.remove(neighbor)) {
                         queue.addLast(neighbor);
                     }
@@ -1100,17 +1106,17 @@ final class ClusterRewritePlanner {
         return List.copyOf(components);
     }
 
-    private static Map<Integer, Set<Point2i>> mutableCellsByLevel(Map<Integer, Set<Point2i>> source) {
-        Map<Integer, Set<Point2i>> result = new LinkedHashMap<>();
-        for (Map.Entry<Integer, Set<Point2i>> entry : source.entrySet()) {
+    private static Map<Integer, Set<CellCoord>> mutableCellsByLevel(Map<Integer, Set<CellCoord>> source) {
+        Map<Integer, Set<CellCoord>> result = new LinkedHashMap<>();
+        for (Map.Entry<Integer, Set<CellCoord>> entry : source.entrySet()) {
             result.put(entry.getKey(), new LinkedHashSet<>(entry.getValue()));
         }
         return result;
     }
 
-    private static Map<Integer, Set<Point2i>> mutableCellsByLevelWithoutLevel(Map<Integer, Set<Point2i>> source, int excludedLevel) {
-        Map<Integer, Set<Point2i>> result = new LinkedHashMap<>();
-        for (Map.Entry<Integer, Set<Point2i>> entry : source.entrySet()) {
+    private static Map<Integer, Set<CellCoord>> mutableCellsByLevelWithoutLevel(Map<Integer, Set<CellCoord>> source, int excludedLevel) {
+        Map<Integer, Set<CellCoord>> result = new LinkedHashMap<>();
+        for (Map.Entry<Integer, Set<CellCoord>> entry : source.entrySet()) {
             if (entry.getKey() != excludedLevel) {
                 result.put(entry.getKey(), new LinkedHashSet<>(entry.getValue()));
             }
@@ -1118,16 +1124,16 @@ final class ClusterRewritePlanner {
         return result;
     }
 
-    private static Map<Integer, Set<Point2i>> immutableCellsByLevel(Map<Integer, Set<Point2i>> source) {
+    private static Map<Integer, Set<CellCoord>> immutableCellsByLevel(Map<Integer, Set<CellCoord>> source) {
         if (source == null || source.isEmpty()) {
             return Map.of();
         }
-        Map<Integer, Set<Point2i>> result = new LinkedHashMap<>();
+        Map<Integer, Set<CellCoord>> result = new LinkedHashMap<>();
         source.entrySet().stream()
                 .filter(entry -> entry != null && entry.getKey() != null)
                 .sorted(Map.Entry.comparingByKey())
                 .forEach(entry -> {
-                    Set<Point2i> cells = normalizeCells(entry.getValue());
+                    Set<CellCoord> cells = normalizeCells(entry.getValue());
                     if (!cells.isEmpty()) {
                         result.put(entry.getKey(), cells);
                     }
@@ -1135,11 +1141,11 @@ final class ClusterRewritePlanner {
         return result.isEmpty() ? Map.of() : Map.copyOf(result);
     }
 
-    private static Map<Integer, Point2i> immutableAnchors(Map<Integer, Point2i> source) {
+    private static Map<Integer, CellCoord> immutableAnchors(Map<Integer, CellCoord> source) {
         if (source == null || source.isEmpty()) {
             return Map.of();
         }
-        Map<Integer, Point2i> result = new LinkedHashMap<>();
+        Map<Integer, CellCoord> result = new LinkedHashMap<>();
         source.entrySet().stream()
                 .filter(entry -> entry != null && entry.getKey() != null && entry.getValue() != null)
                 .sorted(Map.Entry.comparingByKey())
@@ -1147,40 +1153,31 @@ final class ClusterRewritePlanner {
         return result.isEmpty() ? Map.of() : Map.copyOf(result);
     }
 
-    private static Set<Point2i> normalizeCells(Collection<Point2i> input) {
-        LinkedHashSet<Point2i> result = new LinkedHashSet<>();
-        if (input != null) {
-            for (Point2i cell : input) {
-                if (cell != null) {
-                    result.add(cell);
-                }
-            }
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    private static Set<CellCoord> normalizeCells(Collection<CellCoord> input) {
+        return CellCoord.normalize(input);
     }
 
-    private static CellCoord anchorCellForRoom(Set<Point2i> roomCells, Point2i preferredAnchor) {
-        Point2i anchorCell = preferredAnchor != null && roomCells.contains(preferredAnchor)
+    private static CellCoord anchorCellForRoom(Set<CellCoord> roomCells, CellCoord preferredAnchor) {
+        return preferredAnchor != null && roomCells.contains(preferredAnchor)
                 ? preferredAnchor
-                : CellCoord.bestPoint(roomCells);
-        return CellCoord.fromPoint(anchorCell);
+                : CellCoord.bestCenter(roomCells);
     }
 
-    private static Set<CellCoord> fillSeedsForRoom(Set<Point2i> roomCells) {
-        return CellCoord.componentCentersOfPoints(roomCells);
+    private static Set<CellCoord> fillSeedsForRoom(Set<CellCoord> roomCells) {
+        return CellCoord.componentCenters(roomCells);
     }
 
-    private static boolean contains(Set<Point2i> cells, Point2i cell) {
+    private static boolean contains(Set<CellCoord> cells, CellCoord cell) {
         return cell != null && cells != null && cells.contains(cell);
     }
 
-    private static Point2i preferredAnchor(Set<Point2i> roomCells, Point2i preferredAnchor) {
+    private static CellCoord preferredAnchor(Set<CellCoord> roomCells, CellCoord preferredAnchor) {
         if (preferredAnchor != null && contains(roomCells, preferredAnchor)) {
             return preferredAnchor;
         }
-        return roomCells == null || roomCells.isEmpty() ? null : CellCoord.bestPoint(roomCells);
+        return roomCells == null || roomCells.isEmpty() ? null : CellCoord.bestCenter(roomCells);
     }
 
-    private record LevelSeed(int level, Point2i cell) {
+    private record LevelSeed(int level, CellCoord cell) {
     }
 }
