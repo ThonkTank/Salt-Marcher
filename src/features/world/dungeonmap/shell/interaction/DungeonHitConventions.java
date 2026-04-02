@@ -85,17 +85,9 @@ public final class DungeonHitConventions {
         return "segment:" + segmentId;
     }
 
-    public static String cornerPartKey(Point2i doubledPoint) {
-        return cornerPartKey(GridPoint2x.fromRaw(Objects.requireNonNull(doubledPoint, "doubledPoint")));
-    }
-
     public static String cornerPartKey(GridPoint2x point2x) {
         GridPoint2x resolvedPoint = Objects.requireNonNull(point2x, "point2x");
         return "point2x:" + resolvedPoint.x2() + ":" + resolvedPoint.y2();
-    }
-
-    public static String vertexPartKey(Point2i vertex) {
-        return vertexPartKey(GridPoint2x.fromVertex(Objects.requireNonNull(vertex, "vertex")));
     }
 
     public static String vertexPartKey(GridPoint2x vertex2x) {

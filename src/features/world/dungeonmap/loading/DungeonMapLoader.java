@@ -657,7 +657,7 @@ public final class DungeonMapLoader {
                 mapId,
                 clusterId,
                 doorComponent.levelZ(),
-                Door.fromSegments(doorComponent.door().segments2x(), Door.DoorState.CLOSED),
+                Door.fromSegments(doorComponent.door().segments2x(), doorComponent.door().doorState()),
                 endpoints);
     }
 

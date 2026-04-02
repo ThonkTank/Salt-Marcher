@@ -4,7 +4,6 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
@@ -88,11 +87,6 @@ public final class DungeonSelectionLookup {
         return parseLongPart(key.partKey(), SEGMENT_PREFIX);
     }
 
-    public static Point2i corridorCornerPoint(DungeonSelectionKey key) {
-        GridPoint2x point2x = corridorCornerPoint2x(key);
-        return point2x == null ? null : point2x.toRawPoint2i();
-    }
-
     public static GridPoint2x corridorCornerPoint2x(DungeonSelectionKey key) {
         if (key == null || key.kind() != DungeonHitKind.CORRIDOR_CORNER) {
             return null;
@@ -115,11 +109,6 @@ public final class DungeonSelectionLookup {
             return null;
         }
         return parsePoint2x(key.partKey());
-    }
-
-    public static Point2i vertex(DungeonSelectionKey key) {
-        GridPoint2x vertex2x = vertex2x(key);
-        return vertex2x == null ? null : vertex2x.toVertex().orElse(null);
     }
 
     public static CubePoint floorCell(DungeonSelectionKey key) {

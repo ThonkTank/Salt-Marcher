@@ -45,10 +45,6 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
             }
         }
 
-        public VertexSubject(Point2i vertex) {
-            this(GridPoint2x.fromVertex(vertex));
-        }
-
         @Override
         public DungeonHitKind kind() {
             return DungeonHitKind.VERTEX;
@@ -62,10 +58,6 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         @Override
         public String partKey() {
             return DungeonHitConventions.vertexPartKey(vertex2x);
-        }
-
-        public Point2i vertex() {
-            return vertex2x.toVertex().orElse(null);
         }
     }
 
@@ -234,10 +226,6 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
             point2x = Objects.requireNonNull(point2x, "point2x");
         }
 
-        public CorridorNodeSubject(Long corridorId, Long nodeId, Point2i doubledPoint) {
-            this(corridorId, nodeId, GridPoint2x.fromRaw(doubledPoint));
-        }
-
         @Override
         public DungeonHitKind kind() {
             return DungeonHitKind.CORRIDOR_NODE;
@@ -252,19 +240,11 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         public String partKey() {
             return DungeonHitConventions.nodePartKey(nodeId);
         }
-
-        public Point2i doubledPoint() {
-            return point2x.toRawPoint2i();
-        }
     }
 
     record CorridorCornerSubject(Long corridorId, Long segmentId, GridPoint2x point2x) implements DungeonHitSubject {
         public CorridorCornerSubject {
             point2x = Objects.requireNonNull(point2x, "point2x");
-        }
-
-        public CorridorCornerSubject(Long corridorId, Long segmentId, Point2i doubledPoint) {
-            this(corridorId, segmentId, GridPoint2x.fromRaw(doubledPoint));
         }
 
         @Override
@@ -281,10 +261,6 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         public String partKey() {
             return DungeonHitConventions.cornerPartKey(point2x);
         }
-
-        public Point2i doubledPoint() {
-            return point2x.toRawPoint2i();
-        }
     }
 
     record CorridorSegmentSubject(Long corridorId, Long segmentId, GridPoint2x point2x) implements DungeonHitSubject {
@@ -293,10 +269,6 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
                 throw new IllegalArgumentException("Corridor segment subjects require segmentId");
             }
             point2x = Objects.requireNonNull(point2x, "point2x");
-        }
-
-        public CorridorSegmentSubject(Long corridorId, Long segmentId, Point2i doubledPoint) {
-            this(corridorId, segmentId, GridPoint2x.fromRaw(doubledPoint));
         }
 
         @Override
@@ -312,10 +284,6 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         @Override
         public String partKey() {
             return DungeonHitConventions.segmentPartKey(segmentId);
-        }
-
-        public Point2i doubledPoint() {
-            return point2x.toRawPoint2i();
         }
     }
 
