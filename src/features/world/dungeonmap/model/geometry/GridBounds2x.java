@@ -23,10 +23,6 @@ public record GridBounds2x(int minX2, int minY2, int maxX2, int maxY2) {
         return isEmpty() ? 0 : maxY2 - minY2;
     }
 
-    public GridBounds2x translatedByCells(Point2i delta) {
-        return translatedByCells(CellCoord.fromPoint(delta));
-    }
-
     public GridBounds2x translatedByCells(CellCoord delta) {
         if (isEmpty()) {
             return this;

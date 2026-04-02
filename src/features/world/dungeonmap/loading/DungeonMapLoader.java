@@ -7,9 +7,6 @@ import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
-import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
-import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.model.objects.StructureObject;
@@ -290,7 +287,7 @@ public final class DungeonMapLoader {
                         throw new IllegalStateException("Raum " + roomId + " hat keine persistierte Strukturbeschreibung");
                     }
                     StructureObject structure = StructureObject.fromDescriptor(descriptor);
-                    if (structure.cells().isEmpty()) {
+                    if (structure.cellCoords().isEmpty()) {
                         throw new IllegalStateException("Raum " + roomId + " hydriert ohne begehbare Struktur");
                     }
                     rooms.add(Room.resolved(
@@ -375,7 +372,7 @@ public final class DungeonMapLoader {
             long mapId,
             Map<Long, Room> roomsById
     ) throws SQLException {
-        // Load direct corridor graph truth only and translate stored legacy 2x coordinates at this JDBC seam.
+        // Load direct corridor graph truth only and translate stored persisted odd/odd 2x coordinates at this JDBC seam.
         DungeonSchemaSupport.ensureCompatibility(conn);
         Map<Long, List<CorridorNode>> nodesByCorridorId = loadGrouped(conn,
                 "SELECT corridor_id, corridor_node_id, grid_x2, grid_y2, room_id, room_relative_cell_x, room_relative_cell_y, room_edge_direction"
@@ -386,7 +383,7 @@ public final class DungeonMapLoader {
                 row -> row.getLong("corridor_id"),
                 row -> new CorridorNode(
                         row.getLong("corridor_node_id"),
-                        GridPoint2x.fromLegacyRaw(row.getInt("grid_x2"), row.getInt("grid_y2")),
+                        GridPoint2x.raw(row.getInt("grid_x2") - 1, row.getInt("grid_y2") - 1),
                         nullableLong(row, "room_id"),
                         row.getObject("room_relative_cell_x") == null
                                 ? null
@@ -487,8 +484,8 @@ public final class DungeonMapLoader {
     }
 
     private static Map<Long, StructureDescriptor> loadRoomDescriptors(Connection conn, long mapId) throws SQLException {
-        Map<Long, Map<Integer, LegacyGridPoint2x>> anchorsByRoomId = new LinkedHashMap<>();
-        Map<Long, Map<Integer, Set<LegacyGridPoint2x>>> seedsByRoomId = new LinkedHashMap<>();
+        Map<Long, Map<Integer, CellCoord>> anchorsByRoomId = new LinkedHashMap<>();
+        Map<Long, Map<Integer, Set<CellCoord>>> seedsByRoomId = new LinkedHashMap<>();
         Map<Long, Map<Integer, Set<GridSegment2x>>> boundarySegmentsByRoomId = new LinkedHashMap<>();
         Map<Long, Map<Integer, Set<GridSegment2x>>> openingSegmentsByRoomId = new LinkedHashMap<>();
         try (PreparedStatement ps = conn.prepareStatement(
@@ -500,7 +497,12 @@ public final class DungeonMapLoader {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     anchorsByRoomId.computeIfAbsent(rs.getLong("room_id"), ignored -> new LinkedHashMap<>())
-                            .put(rs.getInt("level_z"), LegacyGridPoint2x.fromRaw(rs.getInt("anchor_x2"), rs.getInt("anchor_y2")));
+                            .put(rs.getInt("level_z"), requireStoredCellCenter(
+                                    rs.getInt("anchor_x2"),
+                                    rs.getInt("anchor_y2"),
+                                    "room anchor",
+                                    rs.getLong("room_id"),
+                                    rs.getInt("level_z")));
                 }
             }
         }
@@ -514,7 +516,12 @@ public final class DungeonMapLoader {
                 while (rs.next()) {
                     seedsByRoomId.computeIfAbsent(rs.getLong("room_id"), ignored -> new LinkedHashMap<>())
                             .computeIfAbsent(rs.getInt("level_z"), ignored -> new LinkedHashSet<>())
-                            .add(LegacyGridPoint2x.fromRaw(rs.getInt("seed_x2"), rs.getInt("seed_y2")));
+                            .add(requireStoredCellCenter(
+                                    rs.getInt("seed_x2"),
+                                    rs.getInt("seed_y2"),
+                                    "room fill seed",
+                                    rs.getLong("room_id"),
+                                    rs.getInt("level_z")));
                 }
             }
         }
@@ -528,32 +535,28 @@ public final class DungeonMapLoader {
                 while (rs.next()) {
                     long roomId = rs.getLong("room_id");
                     int levelZ = rs.getInt("level_z");
-                    LegacyGridSegment2x segment = new LegacyGridSegment2x(
-                            LegacyGridPoint2x.fromRaw(rs.getInt("start_x2"), rs.getInt("start_y2")),
-                            LegacyGridPoint2x.fromRaw(rs.getInt("end_x2"), rs.getInt("end_y2")));
                     Map<Long, Map<Integer, Set<GridSegment2x>>> target = "OPENING".equals(rs.getString("segment_kind"))
                             ? openingSegmentsByRoomId
                             : boundarySegmentsByRoomId;
                     target.computeIfAbsent(roomId, ignored -> new LinkedHashMap<>())
                             .computeIfAbsent(levelZ, ignored -> new LinkedHashSet<>())
-                            .addAll(GridSegment2x.fromLegacyBoundaryEdges(Set.of(segment)));
+                            .addAll(storedBoundarySteps(
+                                    rs.getInt("start_x2"),
+                                    rs.getInt("start_y2"),
+                                    rs.getInt("end_x2"),
+                                    rs.getInt("end_y2")));
                 }
             }
         }
         Map<Long, StructureDescriptor> result = new LinkedHashMap<>();
-        for (Map.Entry<Long, Map<Integer, LegacyGridPoint2x>> roomEntry : anchorsByRoomId.entrySet()) {
+        for (Map.Entry<Long, Map<Integer, CellCoord>> roomEntry : anchorsByRoomId.entrySet()) {
             Long roomId = roomEntry.getKey();
             Map<Integer, StructureDescriptor.LevelDescriptor> levels = new LinkedHashMap<>();
-            for (Map.Entry<Integer, LegacyGridPoint2x> levelEntry : roomEntry.getValue().entrySet()) {
+            for (Map.Entry<Integer, CellCoord> levelEntry : roomEntry.getValue().entrySet()) {
                 int levelZ = levelEntry.getKey();
-                CellCoord anchorCell = requireTileCenter(levelEntry.getValue(), "room anchor", roomId, levelZ);
                 levels.put(levelZ, new StructureDescriptor.LevelDescriptor(
-                        anchorCell,
-                        tileCenters(
-                                seedsByRoomId.getOrDefault(roomId, Map.of()).getOrDefault(levelZ, Set.of()),
-                                "room fill seed",
-                                roomId,
-                                levelZ),
+                        levelEntry.getValue(),
+                        seedsByRoomId.getOrDefault(roomId, Map.of()).getOrDefault(levelZ, Set.of()),
                         boundarySegmentsByRoomId.getOrDefault(roomId, Map.of()).getOrDefault(levelZ, Set.of()),
                         openingSegmentsByRoomId.getOrDefault(roomId, Map.of()).getOrDefault(levelZ, Set.of())));
             }
@@ -562,22 +565,15 @@ public final class DungeonMapLoader {
         return Map.copyOf(result);
     }
 
-    private static CellCoord requireTileCenter(LegacyGridPoint2x point, String label, long roomId, int levelZ) {
-        return point == null
-                ? new CellCoord(0, 0)
-                : point.toCellCoord().orElseThrow(() -> new IllegalArgumentException(
-                        label + " must be a tile center for room " + roomId + " at level " + levelZ));
+    private static CellCoord requireStoredCellCenter(int persistedX2, int persistedY2, String label, long roomId, int levelZ) {
+        return GridPoint2x.raw(persistedX2 - 1, persistedY2 - 1).asCell().orElseThrow(() -> new IllegalArgumentException(
+                label + " must be a tile center for room " + roomId + " at level " + levelZ));
     }
 
-    private static Set<CellCoord> tileCenters(Set<LegacyGridPoint2x> points, String label, long roomId, int levelZ) {
-        if (points == null || points.isEmpty()) {
-            return Set.of();
-        }
-        LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
-        for (LegacyGridPoint2x point : points.stream().sorted(LegacyGridPoint2x.POINT_ORDER).toList()) {
-            result.add(requireTileCenter(point, label, roomId, levelZ));
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    private static Set<GridSegment2x> storedBoundarySteps(int startX2, int startY2, int endX2, int endY2) {
+        return GridSegment2x.boundarySteps(Set.of(new GridSegment2x(
+                GridPoint2x.raw(startX2 - 1, startY2 - 1),
+                GridPoint2x.raw(endX2 - 1, endY2 - 1))));
     }
 
     private static List<RoomCluster> loadClusters(Connection conn, long mapId, List<Room> rooms) throws SQLException {
@@ -666,8 +662,8 @@ public final class DungeonMapLoader {
             return null;
         }
         List<Room> touchingRooms = new ArrayList<>();
-        for (LegacyGridSegment2x segment2x : doorComponent.door().segments2x()) {
-            for (Point2i cell : segment2x.touchingCells().stream().sorted(Point2i.POINT_ORDER).toList()) {
+        for (GridSegment2x segment2x : doorComponent.door().segments2x()) {
+            for (CellCoord cell : segment2x.touchingCells().stream().sorted(CellCoord.ORDER).toList()) {
                 Room room = roomsByPoint.get(CubePoint.at(cell, doorComponent.levelZ()));
                 if (room != null && !touchingRooms.contains(room)) {
                     touchingRooms.add(room);
@@ -713,7 +709,7 @@ public final class DungeonMapLoader {
         StringBuilder builder = new StringBuilder();
         builder.append(levelZ).append(':');
         boolean first = true;
-        for (LegacyGridSegment2x segment2x : door.segments2x().stream().sorted(LegacyGridSegment2x.SEGMENT_ORDER).toList()) {
+        for (GridSegment2x segment2x : door.segments2x().stream().sorted(GridSegment2x.ORDER).toList()) {
             if (!first) {
                 builder.append('|');
             }

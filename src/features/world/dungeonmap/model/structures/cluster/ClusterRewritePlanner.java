@@ -4,7 +4,6 @@ import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.objects.Floor;
 import features.world.dungeonmap.model.objects.StructureDescriptor;
@@ -724,7 +723,7 @@ final class ClusterRewritePlanner {
             if (room == null) {
                 continue;
             }
-            for (GridSegment2x segment2x : GridSegment2x.fromLegacyBoundaryEdges(roomWallSegments(room))) {
+            for (GridSegment2x segment2x : roomWallSegments(room)) {
                 if (isInternalSegment(clusterCells, segment2x)) {
                     result.putIfAbsent(segment2x, InternalBoundaryType.WALL);
                 }
@@ -787,8 +786,8 @@ final class ClusterRewritePlanner {
             return null;
         }
         List<Room> touchingRooms = new ArrayList<>();
-        for (LegacyGridSegment2x segment2x : doorComponent.door().segments2x()) {
-            for (CellCoord cell : segment2x.touchingCellCoords().stream().sorted(CellCoord.ORDER).toList()) {
+        for (GridSegment2x segment2x : doorComponent.door().segments2x()) {
+            for (CellCoord cell : segment2x.touchingCells().stream().sorted(CellCoord.ORDER).toList()) {
                 Room room = roomsByPoint.get(CubePoint.at(cell, doorComponent.levelZ()));
                 if (room != null && !touchingRooms.contains(room)) {
                     touchingRooms.add(room);
@@ -831,8 +830,8 @@ final class ClusterRewritePlanner {
         StringBuilder builder = new StringBuilder();
         builder.append(levelZ).append(':');
         boolean first = true;
-        for (LegacyGridSegment2x segment2x : (door == null ? List.<LegacyGridSegment2x>of() : door.segments2x()).stream()
-                .sorted(LegacyGridSegment2x.SEGMENT_ORDER)
+        for (GridSegment2x segment2x : (door == null ? List.<GridSegment2x>of() : door.segments2x()).stream()
+                .sorted(GridSegment2x.ORDER)
                 .toList()) {
             if (!first) {
                 builder.append('|');
@@ -851,7 +850,7 @@ final class ClusterRewritePlanner {
             if (connection == null || connection.door() == null) {
                 continue;
             }
-            for (GridSegment2x segment2x : GridSegment2x.fromLegacyBoundaryEdges(connection.door().segments2x())) {
+            for (GridSegment2x segment2x : connection.door().segments2x()) {
                 result.put(segment2x, InternalBoundaryType.DOOR);
             }
         }
@@ -1057,11 +1056,11 @@ final class ClusterRewritePlanner {
         return result.isEmpty() ? Map.of() : Map.copyOf(result);
     }
 
-    private static Set<LegacyGridSegment2x> roomWallSegments(Room room) {
+    private static Set<GridSegment2x> roomWallSegments(Room room) {
         if (room == null) {
             return Set.of();
         }
-        Set<LegacyGridSegment2x> result = new LinkedHashSet<>();
+        Set<GridSegment2x> result = new LinkedHashSet<>();
         for (Integer levelZ : room.structure().levels()) {
             for (Wall wall : room.structure().wallsAtLevel(levelZ)) {
                 result.addAll(wall.segments2x());

@@ -9,8 +9,7 @@ import java.util.Set;
  * Canonical doubled-grid point for the final parity contract.
  *
  * <p>Cell centers live on even/even coordinates, edge centers on mixed parity coordinates, and vertices on
- * odd/odd coordinates. During legacy freeze, productive callers still use {@link LegacyGridPoint2x} until those
- * flows are migrated onto this final contract.</p>
+ * odd/odd coordinates.</p>
  */
 public record GridPoint2x(int x2, int y2) {
 
@@ -25,15 +24,6 @@ public record GridPoint2x(int x2, int y2) {
 
     public static GridPoint2x raw(int x2, int y2) {
         return new GridPoint2x(x2, y2);
-    }
-
-    public static GridPoint2x fromLegacyRaw(int x2, int y2) {
-        return new GridPoint2x(x2 - 1, y2 - 1);
-    }
-
-    public static GridPoint2x fromLegacyRaw(LegacyGridPoint2x point) {
-        LegacyGridPoint2x resolvedPoint = Objects.requireNonNull(point, "point");
-        return fromLegacyRaw(resolvedPoint.x2(), resolvedPoint.y2());
     }
 
     public static GridPoint2x cell(CellCoord cell) {
@@ -113,10 +103,6 @@ public record GridPoint2x(int x2, int y2) {
     public int manhattanDistance2x(GridPoint2x other) {
         GridPoint2x resolvedOther = Objects.requireNonNull(other, "other");
         return Math.abs(x2 - resolvedOther.x2) + Math.abs(y2 - resolvedOther.y2);
-    }
-
-    public LegacyGridPoint2x toLegacyRaw() {
-        return LegacyGridPoint2x.fromRaw(x2 + 1, y2 + 1);
     }
 
     public long encodedKey() {

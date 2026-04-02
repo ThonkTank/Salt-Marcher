@@ -1,17 +1,14 @@
 package features.world.dungeonmap.model.geometry;
 
 import java.util.Comparator;
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Collection;
 import java.util.Set;
 
 /**
  * Canonical doubled-grid segment for the final parity contract.
- *
- * <p>During legacy freeze, productive callers still use {@link LegacyGridSegment2x} until those flows migrate to
- * this final contract.</p>
  */
 public record GridSegment2x(GridPoint2x start, GridPoint2x end) {
 
@@ -47,40 +44,6 @@ public record GridSegment2x(GridPoint2x start, GridPoint2x end) {
         };
     }
 
-    public static GridSegment2x fromLegacyBoundaryEdge(LegacyGridSegment2x segment) {
-        LegacyGridSegment2x resolvedSegment = Objects.requireNonNull(segment, "segment");
-        if (resolvedSegment.manhattanLength2() != 2) {
-            throw new IllegalArgumentException("Legacy boundary edge must have length2 == 2");
-        }
-        Set<CellCoord> touchingCells = resolvedSegment.touchingCellCoords();
-        if (touchingCells.size() != 2) {
-            throw new IllegalArgumentException("Legacy boundary edge must touch exactly two cells");
-        }
-        CellCoord baseCell = touchingCells.stream()
-                .sorted(CellCoord.ORDER)
-                .findFirst()
-                .orElseThrow();
-        CardinalDirection direction = resolvedSegment.directionFrom(baseCell);
-        if (direction == null) {
-            throw new IllegalArgumentException("Legacy boundary edge direction could not be resolved");
-        }
-        return boundaryEdge(baseCell, direction);
-    }
-
-    public static Set<GridSegment2x> fromLegacyBoundaryEdges(Collection<LegacyGridSegment2x> segments) {
-        if (segments == null || segments.isEmpty()) {
-            return Set.of();
-        }
-        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
-        for (LegacyGridSegment2x segment : segments) {
-            if (segment == null) {
-                continue;
-            }
-            result.addAll(splitLegacyBoundaryEdges(segment));
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
     public static Set<GridSegment2x> boundarySteps(Collection<GridSegment2x> segments) {
         if (segments == null || segments.isEmpty()) {
             return Set.of();
@@ -90,17 +53,6 @@ public record GridSegment2x(GridPoint2x start, GridPoint2x end) {
             if (segment != null) {
                 result.addAll(segment.boundarySteps());
             }
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
-    public static Set<LegacyGridSegment2x> toLegacyBoundaryEdges(Collection<GridSegment2x> segments) {
-        if (segments == null || segments.isEmpty()) {
-            return Set.of();
-        }
-        LinkedHashSet<LegacyGridSegment2x> result = new LinkedHashSet<>();
-        for (GridSegment2x step : boundarySteps(segments)) {
-            result.add(step.toLegacyBoundaryEdge());
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
@@ -179,25 +131,6 @@ public record GridSegment2x(GridPoint2x start, GridPoint2x end) {
                 .orElse(null);
     }
 
-    public LegacyGridSegment2x toLegacyBoundaryEdge() {
-        if (!isBoundaryEdge()) {
-            throw new IllegalArgumentException("Only boundary edges can be translated to legacy odd/odd segments");
-        }
-        CellCoord baseCell = touchingCells().stream()
-                .sorted(CellCoord.ORDER)
-                .findFirst()
-                .orElseThrow();
-        CardinalDirection direction = directionFrom(baseCell);
-        if (direction == null) {
-            throw new IllegalArgumentException("Boundary edge direction could not be resolved");
-        }
-        return LegacyGridSegment2x.betweenCellAndStep(baseCell, direction.delta());
-    }
-
-    public LegacyGridSegment2x toLegacyRaw() {
-        return new LegacyGridSegment2x(start.toLegacyRaw(), end.toLegacyRaw());
-    }
-
     public Set<GridSegment2x> boundarySteps() {
         if (length2() == 2) {
             return Set.of(this);
@@ -212,29 +145,6 @@ public record GridSegment2x(GridPoint2x start, GridPoint2x end) {
             int x2 = start.x2();
             for (int y2 = start.y2(); y2 < end.y2(); y2 += 2) {
                 result.add(new GridSegment2x(GridPoint2x.raw(x2, y2), GridPoint2x.raw(x2, y2 + 2)));
-            }
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
-    private static Set<GridSegment2x> splitLegacyBoundaryEdges(LegacyGridSegment2x segment) {
-        if (segment.manhattanLength2() == 2) {
-            return Set.of(fromLegacyBoundaryEdge(segment));
-        }
-        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
-        if (segment.isHorizontal()) {
-            int y2 = segment.start().y2();
-            for (int x2 = segment.minX2(); x2 < segment.maxX2(); x2 += 2) {
-                result.add(fromLegacyBoundaryEdge(new LegacyGridSegment2x(
-                        LegacyGridPoint2x.fromRaw(x2, y2),
-                        LegacyGridPoint2x.fromRaw(x2 + 2, y2))));
-            }
-        } else {
-            int x2 = segment.start().x2();
-            for (int y2 = segment.minY2(); y2 < segment.maxY2(); y2 += 2) {
-                result.add(fromLegacyBoundaryEdge(new LegacyGridSegment2x(
-                        LegacyGridPoint2x.fromRaw(x2, y2),
-                        LegacyGridPoint2x.fromRaw(x2, y2 + 2))));
             }
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);

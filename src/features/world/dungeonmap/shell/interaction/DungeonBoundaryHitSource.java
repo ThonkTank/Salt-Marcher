@@ -71,7 +71,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
                 if (connection == null || connection.door() == null) {
                     continue;
                 }
-                segments.addAll(GridSegment2x.fromLegacyBoundaryEdges(connection.door().segments2x()));
+                segments.addAll(connection.door().segments2x());
             }
         }
         for (Corridor corridor : corridorsAtLevel(layout, levelZ)) {
@@ -79,7 +79,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
                 if (connection == null || connection.door() == null || connection.levelZ() != levelZ) {
                     continue;
                 }
-                segments.addAll(GridSegment2x.fromLegacyBoundaryEdges(connection.door().segments2x()));
+                segments.addAll(connection.door().segments2x());
             }
         }
         return Set.copyOf(segments);
@@ -179,7 +179,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
             return List.of();
         }
         ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
-        for (GridSegment2x segment2x : GridSegment2x.fromLegacyBoundaryEdges(connection.door().segments2x())) {
+        for (GridSegment2x segment2x : connection.door().segments2x()) {
             if (segment2x == null) {
                 continue;
             }

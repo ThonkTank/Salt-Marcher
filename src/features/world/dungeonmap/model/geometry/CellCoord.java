@@ -1,11 +1,11 @@
 package features.world.dungeonmap.model.geometry;
 
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.List;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -56,26 +56,6 @@ public record CellCoord(int x, int y) {
         return (((long) x) << 32) ^ (y & 0xffffffffL);
     }
 
-    public Point2i toPoint2i() {
-        return new Point2i(x, y);
-    }
-
-    public static CellCoord fromPoint(Point2i point) {
-        return point == null ? new CellCoord(0, 0) : new CellCoord(point.x(), point.y());
-    }
-
-    public static Set<CellCoord> fromPoints(Collection<Point2i> points) {
-        LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
-        if (points != null) {
-            for (Point2i point : points) {
-                if (point != null) {
-                    result.add(fromPoint(point));
-                }
-            }
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
     public static Set<CellCoord> normalize(Collection<CellCoord> cells) {
         LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
         if (cells != null) {
@@ -99,10 +79,6 @@ public record CellCoord(int x, int y) {
                         .comparingDouble((CellCoord cell) -> squaredDistance(cell, averageX, averageY))
                         .thenComparing(ORDER))
                 .orElse(new CellCoord(0, 0));
-    }
-
-    public static Point2i bestPoint(Collection<Point2i> points) {
-        return bestCenter(fromPoints(points)).toPoint2i();
     }
 
     public static List<Set<CellCoord>> connectedComponents(Collection<CellCoord> cells) {
@@ -140,22 +116,6 @@ public record CellCoord(int x, int y) {
                 .map(CellCoord::bestCenter)
                 .sorted(ORDER)
                 .collect(LinkedHashSet::new, Set::add, Set::addAll);
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
-    public static Set<CellCoord> componentCentersOfPoints(Collection<Point2i> points) {
-        return componentCenters(fromPoints(points));
-    }
-
-    public static Set<Point2i> toPoints(Collection<CellCoord> cells) {
-        LinkedHashSet<Point2i> result = new LinkedHashSet<>();
-        if (cells != null) {
-            for (CellCoord cell : cells) {
-                if (cell != null) {
-                    result.add(cell.toPoint2i());
-                }
-            }
-        }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 

@@ -2,9 +2,6 @@ package features.world.dungeonmap.persistence;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
-import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
-import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
@@ -36,10 +33,6 @@ public final class DungeonRoomWriteRepository {
         }
     }
 
-    public long insertCluster(Connection conn, long mapId, Point2i center, int levelZ) throws SQLException {
-        return insertCluster(conn, mapId, CellCoord.fromPoint(center), levelZ);
-    }
-
     public void updateClusterMetadata(Connection conn, long clusterId, CellCoord center, int levelZ) throws SQLException {
         CellCoord resolvedCenter = center == null ? new CellCoord(0, 0) : center;
         try (PreparedStatement ps = conn.prepareStatement(
@@ -50,10 +43,6 @@ public final class DungeonRoomWriteRepository {
             ps.setLong(4, clusterId);
             ps.executeUpdate();
         }
-    }
-
-    public void updateClusterMetadata(Connection conn, long clusterId, Point2i center, int levelZ) throws SQLException {
-        updateClusterMetadata(conn, clusterId, CellCoord.fromPoint(center), levelZ);
     }
 
     public void deleteCluster(Connection conn, long clusterId) throws SQLException {
@@ -190,20 +179,18 @@ public final class DungeonRoomWriteRepository {
             for (var entry : resolvedDescriptor.levels().entrySet()) {
                 int levelZ = entry.getKey();
                 StructureDescriptor.LevelDescriptor level = entry.getValue();
-                LegacyGridPoint2x anchor2x = LegacyGridPoint2x.fromTileCenter(level.anchorCell());
                 insertLevel.setLong(1, roomId);
                 insertLevel.setInt(2, levelZ);
-                insertLevel.setInt(3, anchor2x.x2());
-                insertLevel.setInt(4, anchor2x.y2());
+                insertLevel.setInt(3, persistedCellX2(level.anchorCell()));
+                insertLevel.setInt(4, persistedCellY2(level.anchorCell()));
                 insertLevel.addBatch();
                 for (CellCoord seed : level.fillSeeds().stream()
                         .sorted(CellCoord.ORDER)
                         .toList()) {
-                    LegacyGridPoint2x seed2x = LegacyGridPoint2x.fromTileCenter(seed);
                     insertSeed.setLong(1, roomId);
                     insertSeed.setInt(2, levelZ);
-                    insertSeed.setInt(3, seed2x.x2());
-                    insertSeed.setInt(4, seed2x.y2());
+                    insertSeed.setInt(3, persistedCellX2(seed));
+                    insertSeed.setInt(4, persistedCellY2(seed));
                     insertSeed.addBatch();
                 }
                 addSegments(insertSegment, roomId, levelZ, "BOUNDARY", level.boundaryEdges());
@@ -222,16 +209,16 @@ public final class DungeonRoomWriteRepository {
             String kind,
             java.util.Collection<GridSegment2x> segments
     ) throws SQLException {
-        for (LegacyGridSegment2x persistedSegment : GridSegment2x.toLegacyBoundaryEdges(segments).stream()
-                .sorted(LegacyGridSegment2x.SEGMENT_ORDER)
+        for (GridSegment2x persistedSegment : GridSegment2x.boundarySteps(segments).stream()
+                .sorted(GridSegment2x.ORDER)
                 .toList()) {
             insertSegment.setLong(1, roomId);
             insertSegment.setInt(2, levelZ);
             insertSegment.setString(3, kind);
-            insertSegment.setInt(4, persistedSegment.start().x2());
-            insertSegment.setInt(5, persistedSegment.start().y2());
-            insertSegment.setInt(6, persistedSegment.end().x2());
-            insertSegment.setInt(7, persistedSegment.end().y2());
+            insertSegment.setInt(4, persistedSegment.start().x2() + 1);
+            insertSegment.setInt(5, persistedSegment.start().y2() + 1);
+            insertSegment.setInt(6, persistedSegment.end().x2() + 1);
+            insertSegment.setInt(7, persistedSegment.end().y2() + 1);
             insertSegment.addBatch();
         }
     }
@@ -257,6 +244,16 @@ public final class DungeonRoomWriteRepository {
             return new CellCoord(0, 0);
         }
         return level.anchorCell();
+    }
+
+    private static int persistedCellX2(CellCoord cell) {
+        CellCoord resolvedCell = cell == null ? new CellCoord(0, 0) : cell;
+        return resolvedCell.x() * 2 + 1;
+    }
+
+    private static int persistedCellY2(CellCoord cell) {
+        CellCoord resolvedCell = cell == null ? new CellCoord(0, 0) : cell;
+        return resolvedCell.y() * 2 + 1;
     }
 
 }

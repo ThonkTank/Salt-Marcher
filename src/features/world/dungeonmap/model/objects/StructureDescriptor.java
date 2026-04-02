@@ -3,7 +3,6 @@ package features.world.dungeonmap.model.objects;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.geometry.Point2i;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -39,18 +38,6 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
         return fromCellCoordsByLevel(cellsByLevel);
     }
 
-    public static StructureDescriptor fromCellsByLevel(Map<Integer, ? extends Collection<Point2i>> cellsByLevel) {
-        if (cellsByLevel == null || cellsByLevel.isEmpty()) {
-            return empty();
-        }
-        Map<Integer, Set<CellCoord>> normalized = new LinkedHashMap<>();
-        cellsByLevel.entrySet().stream()
-                .filter(entry -> entry != null && entry.getKey() != null)
-                .sorted(Map.Entry.comparingByKey())
-                .forEach(entry -> normalized.put(entry.getKey(), CellCoord.fromPoints(entry.getValue())));
-        return fromCellCoordsByLevel(normalized);
-    }
-
     public static StructureDescriptor fromCellCoordsByLevel(Map<Integer, ? extends Collection<CellCoord>> cellsByLevel) {
         if (cellsByLevel == null || cellsByLevel.isEmpty()) {
             return empty();
@@ -74,10 +61,6 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
 
     public Set<Integer> levelZs() {
         return levels.keySet();
-    }
-
-    public StructureDescriptor translatedByCells(Point2i delta, int levelDelta) {
-        return translatedByCells(CellCoord.fromPoint(delta), levelDelta);
     }
 
     public StructureDescriptor translatedByCells(CellCoord delta, int levelDelta) {
@@ -144,10 +127,6 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
             boundaryEdges = normalizeBoundaryEdges(boundaryEdges);
             fillSeeds = normalizeSeeds(fillSeeds, anchorCell, !boundaryEdges.isEmpty());
             openingEdges = normalizeOpenings(openingEdges, boundaryEdges);
-        }
-
-        public LevelDescriptor translatedByCells(Point2i delta) {
-            return translatedByCells(CellCoord.fromPoint(delta));
         }
 
         public LevelDescriptor translatedByCells(CellCoord delta) {

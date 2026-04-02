@@ -590,7 +590,7 @@ public final class Corridor {
             result.add(new CorridorConnection(
                     corridorId,
                     mapId,
-                    Door.fromSegments(List.of(boundaryEdge.toLegacyBoundaryEdge()), Door.DoorState.CLOSED),
+                    Door.fromSegments(List.of(boundaryEdge), Door.DoorState.CLOSED),
                     List.of(ConnectionEndpoint.room(node.roomId()), ConnectionEndpoint.corridor(corridorId)),
                     levelZ));
         }

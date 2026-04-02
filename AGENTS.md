@@ -72,7 +72,7 @@ Left column is a VBox (Controls takes natural height, Main fills rest — not re
 
 - `src/features/encounter/AGENTS.md` — encounter-specific interaction, generation, and combat/runtime behavior
 - `src/features/world/hexmap/AGENTS.md` — hex map and overworld-specific rendering, editing, and calendar rules
-- `src/features/world/dungeonmap/AGENTS.md` — dungeon editor architecture, model layering, and package roles
+- `src/features/world/dungeonmap/AGENTS.md` — dungeon editor architecture, canonical 2D primitive contract, model layering, and package roles
 
 ## Architecture Guidelines
 

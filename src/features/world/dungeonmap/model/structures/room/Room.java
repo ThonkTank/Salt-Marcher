@@ -1,7 +1,6 @@
 package features.world.dungeonmap.model.structures.room;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.structures.TargetKey;
@@ -110,14 +109,6 @@ public record Room(
                 name,
                 structure.movedBy(delta, levelDelta),
                 narration);
-    }
-
-    public Room movedBy(Point2i delta) {
-        return movedBy(CellCoord.fromPoint(delta));
-    }
-
-    public Room movedBy(Point2i delta, int levelDelta) {
-        return movedBy(CellCoord.fromPoint(delta), levelDelta);
     }
 
     public Room movedToLevel(int targetPrimaryLevel) {

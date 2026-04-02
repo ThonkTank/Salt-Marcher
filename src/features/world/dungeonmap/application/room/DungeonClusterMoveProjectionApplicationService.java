@@ -2,7 +2,6 @@ package features.world.dungeonmap.application.room;
 
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -21,14 +20,13 @@ public final class DungeonClusterMoveProjectionApplicationService {
             int levelDelta
     ) {
         DungeonLayout baseLayout = Objects.requireNonNull(layout, "layout");
-        Point2i pointDelta = delta == null ? null : delta.toPoint2i();
-        boolean translate = pointDelta != null && (pointDelta.x() != 0 || pointDelta.y() != 0);
+        boolean translate = delta != null && (delta.x() != 0 || delta.y() != 0);
         RoomCluster cluster = baseLayout.findCluster(clusterId);
         if (clusterId == null || cluster == null || (!translate && levelDelta == 0)) {
             return new DungeonClusterMoveProjection(baseLayout, cluster);
         }
 
-        RoomCluster movedCluster = cluster.movedBy(pointDelta, levelDelta);
+        RoomCluster movedCluster = cluster.movedBy(delta, levelDelta);
         List<RoomCluster> updatedClusters = baseLayout.clusters().stream()
                 .map(existing -> Objects.equals(clusterId, existing.clusterId()) ? movedCluster : existing)
                 .toList();

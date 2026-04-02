@@ -6,7 +6,6 @@ import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.structures.cluster.ClusterRewrite;
@@ -54,14 +53,14 @@ public final class DungeonRoomTopologyService {
     public void paint(Connection conn, long mapId, StructureDescriptor descriptor) throws SQLException {
         StructureObject structure = StructureObject.fromDescriptor(descriptor);
         for (Integer levelZ : structure.levels().stream().sorted().toList()) {
-            Set<Point2i> levelCells = structure.cellsAtLevel(levelZ);
+            Set<CellCoord> levelCells = structure.cellCoordsAtLevel(levelZ);
             if (!levelCells.isEmpty()) {
                 paintLevel(conn, mapId, levelZ, levelCells);
             }
         }
     }
 
-    private void paintLevel(Connection conn, long mapId, int levelZ, Set<Point2i> cells) throws SQLException {
+    private void paintLevel(Connection conn, long mapId, int levelZ, Set<CellCoord> cells) throws SQLException {
         DungeonLayout layout = requireLayout(conn, mapId);
         List<RoomCluster> overlappingClusters = overlappingClustersAtLevel(layout, cells, levelZ).stream()
                 .sorted(Comparator.comparing(cluster -> cluster.clusterId() == null ? Long.MAX_VALUE : cluster.clusterId()))
@@ -70,12 +69,12 @@ public final class DungeonRoomTopologyService {
             createCluster(
                     conn,
                     mapId,
-                    StructureDescriptor.fromCellsByLevel(Map.of(levelZ, cells)),
+                    StructureDescriptor.fromCellCoordsByLevel(Map.of(levelZ, cells)),
                     nextRoomName(layout, new LinkedHashSet<>()));
             return;
         }
 
-        ClusterRewrite rewrite = overlappingClusters.getFirst().applyPaint(CellCoord.fromPoints(cells), overlappingClusters, levelZ);
+        ClusterRewrite rewrite = overlappingClusters.getFirst().applyPaint(cells, overlappingClusters, levelZ);
         if (rewrite.isNoOp()) {
             return;
         }
@@ -98,14 +97,14 @@ public final class DungeonRoomTopologyService {
     public void delete(Connection conn, long mapId, StructureDescriptor descriptor) throws SQLException {
         StructureObject structure = StructureObject.fromDescriptor(descriptor);
         for (Integer levelZ : structure.levels().stream().sorted().toList()) {
-            Set<Point2i> levelCells = structure.cellsAtLevel(levelZ);
+            Set<CellCoord> levelCells = structure.cellCoordsAtLevel(levelZ);
             if (!levelCells.isEmpty()) {
                 deleteLevel(conn, mapId, levelZ, levelCells);
             }
         }
     }
 
-    private void deleteLevel(Connection conn, long mapId, int levelZ, Set<Point2i> cells) throws SQLException {
+    private void deleteLevel(Connection conn, long mapId, int levelZ, Set<CellCoord> cells) throws SQLException {
         DungeonLayout workingLayout = requireLayout(conn, mapId);
         Set<String> reservedNames = new LinkedHashSet<>();
         for (Room room : workingLayout.rooms()) {
@@ -125,7 +124,7 @@ public final class DungeonRoomTopologyService {
                 continue;
             }
             DungeonLayout layoutSnapshot = workingLayout;
-            ClusterRewrite rewrite = cluster.applyDelete(CellCoord.fromPoints(cells), () -> nextRoomName(layoutSnapshot, reservedNames), levelZ);
+            ClusterRewrite rewrite = cluster.applyDelete(cells, () -> nextRoomName(layoutSnapshot, reservedNames), levelZ);
             if (rewrite.isNoOp()) {
                 continue;
             }
@@ -139,7 +138,7 @@ public final class DungeonRoomTopologyService {
     }
 
     public void createDefaultRoom(Connection conn, long mapId) throws SQLException {
-        createCluster(conn, mapId, StructureDescriptor.fromCellsByLevel(Map.of(0, Set.of(new Point2i(0, 0)))), "Eingang");
+        createCluster(conn, mapId, StructureDescriptor.fromCellCoordsByLevel(Map.of(0, Set.of(new CellCoord(0, 0)))), "Eingang");
     }
 
     public void ensureTraversableCell(Connection conn, long mapId, CellCoord cell, int levelZ) throws SQLException {
@@ -193,7 +192,7 @@ public final class DungeonRoomTopologyService {
     private void createCluster(Connection conn, long mapId, StructureDescriptor descriptor, String roomName) throws SQLException {
         StructureObject structure = StructureObject.fromDescriptor(descriptor);
         int primaryLevel = structure.primaryLevel();
-        Point2i centerCell = structure.centerCellAtLevel(primaryLevel);
+        CellCoord centerCell = structure.centerCellCoordAtLevel(primaryLevel);
         long clusterId = roomWriteRepository.insertCluster(
                 conn,
                 mapId,
@@ -283,8 +282,8 @@ public final class DungeonRoomTopologyService {
                 .orElse(fallbackLevel);
     }
 
-    private static List<RoomCluster> overlappingClustersAtLevel(DungeonLayout layout, Set<Point2i> cells, int levelZ) {
-        return layout.overlappingClustersAtPoints(cells).stream()
+    private static List<RoomCluster> overlappingClustersAtLevel(DungeonLayout layout, Set<CellCoord> cells, int levelZ) {
+        return layout.overlappingClusters(cells).stream()
                 .filter(cluster -> cluster != null && cluster.rooms().stream()
                         .anyMatch(room -> room != null
                                 && room.structure().levels().contains(levelZ)))

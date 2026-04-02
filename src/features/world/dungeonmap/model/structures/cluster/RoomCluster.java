@@ -4,7 +4,6 @@ import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 import features.world.dungeonmap.model.objects.Floor;
 import features.world.dungeonmap.model.objects.StructureDescriptor;
@@ -55,15 +54,6 @@ public final class RoomCluster {
     public RoomCluster(
             Long clusterId,
             long mapId,
-            Point2i center,
-            List<Room> rooms
-    ) {
-        this(clusterId, mapId, CellCoord.fromPoint(center), rooms, List.of());
-    }
-
-    public RoomCluster(
-            Long clusterId,
-            long mapId,
             CellCoord center,
             List<Room> rooms,
             List<LocalConnection> localConnections
@@ -88,16 +78,6 @@ public final class RoomCluster {
         this.hasOverlappingRooms = overlapIndex.hasOverlaps();
     }
 
-    public RoomCluster(
-            Long clusterId,
-            long mapId,
-            Point2i center,
-            List<Room> rooms,
-            List<LocalConnection> localConnections
-    ) {
-        this(clusterId, mapId, CellCoord.fromPoint(center), rooms, localConnections);
-    }
-
     public Long clusterId() {
         return clusterId;
     }
@@ -108,10 +88,6 @@ public final class RoomCluster {
 
     public CellCoord center() {
         return center;
-    }
-
-    public Point2i centerPoint() {
-        return center.toPoint2i();
     }
 
     public List<Room> rooms() {
@@ -223,14 +199,6 @@ public final class RoomCluster {
                         .toList());
     }
 
-    public RoomCluster movedBy(Point2i delta) {
-        return movedBy(CellCoord.fromPoint(delta));
-    }
-
-    public RoomCluster movedBy(Point2i delta, int levelDelta) {
-        return movedBy(CellCoord.fromPoint(delta), levelDelta);
-    }
-
     public Set<CellCoord> cells() {
         return cells;
     }
@@ -330,10 +298,6 @@ public final class RoomCluster {
         return cell == null ? null : roomsByPoint.get(CubePoint.at(cell, levelZ));
     }
 
-    public Room roomAt(Point2i cell) {
-        return roomAt(cell == null ? null : CellCoord.fromPoint(cell));
-    }
-
     public Room roomAt(CubePoint point) {
         return point == null ? null : roomsByPoint.get(point);
     }
@@ -344,10 +308,6 @@ public final class RoomCluster {
 
     public boolean contains(CellCoord cell, int levelZ) {
         return roomAt(cell, levelZ) != null;
-    }
-
-    public boolean contains(Point2i cell) {
-        return contains(cell == null ? null : CellCoord.fromPoint(cell));
     }
 
     public Set<CubePoint> cubePoints() {
@@ -379,10 +339,6 @@ public final class RoomCluster {
     public Set<Long> componentContaining(CellCoord cell) {
         Room room = roomAt(cell);
         return room == null ? Set.of() : componentContaining(room.roomId());
-    }
-
-    public Set<Long> componentContaining(Point2i cell) {
-        return componentContaining(cell == null ? null : CellCoord.fromPoint(cell));
     }
 
     public boolean isConnected() {
@@ -628,7 +584,7 @@ public final class RoomCluster {
                 connection.mapId(),
                 connection.clusterId(),
                 connection.levelZ(),
-                connection.door().movedBy(delta.toPoint2i()),
+                connection.door().movedBy(delta),
                 connection.endpoints());
     }
 

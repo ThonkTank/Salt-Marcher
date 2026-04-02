@@ -30,13 +30,6 @@ public record CubePoint(int x, int y, int z) {
     public int manhattanDistanceTo(CubePoint other) {
         return other == null ? Integer.MAX_VALUE : Math.abs(x - other.x) + Math.abs(y - other.y) + Math.abs(z - other.z);
     }
-
-
-
-    public static CubePoint at(Point2i cell, int z) {
-        return at(CellCoord.fromPoint(cell), z);
-    }
-
     public static CubePoint at(CellCoord cell, int z) {
         return cell == null ? new CubePoint(0, 0, z) : new CubePoint(cell.x(), cell.y(), z);
     }

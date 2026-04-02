@@ -190,7 +190,7 @@ final class DungeonBoundaryPathPlanner {
         return cluster.localConnections().stream()
                 .filter(Objects::nonNull)
                 .filter(connection -> connection.door() != null)
-                .flatMap(connection -> GridSegment2x.fromLegacyBoundaryEdges(connection.door().segments2x()).stream())
+                .flatMap(connection -> connection.door().segments2x().stream())
                 .filter(allowedEdges::contains)
                 .sorted(GridSegment2x.ORDER)
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));

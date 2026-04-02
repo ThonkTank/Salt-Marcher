@@ -24,10 +24,6 @@ public enum CardinalDirection {
         return delta;
     }
 
-    public Point2i deltaPoint2i() {
-        return delta.toPoint2i();
-    }
-
     public String label() {
         return label;
     }
@@ -48,10 +44,6 @@ public enum CardinalDirection {
             case SOUTH -> NORTH;
             case WEST -> EAST;
         };
-    }
-
-    public String relativeLabel(Point2i absoluteDirection) {
-        return relativeLabel(CellCoord.fromPoint(absoluteDirection));
     }
 
     public String relativeLabel(CellCoord absoluteDirection) {
@@ -105,14 +97,6 @@ public enum CardinalDirection {
             }
         }
         return null;
-    }
-
-    public static CardinalDirection fromDirection(Point2i direction) {
-        return fromDirection(direction == null ? null : CellCoord.fromPoint(direction));
-    }
-
-    public static CardinalDirection fromTravel(Point2i from, Point2i to, CardinalDirection fallback) {
-        return fromTravel(CellCoord.fromPoint(from), CellCoord.fromPoint(to), fallback);
     }
 
     public static CardinalDirection fromTravel(CellCoord from, CellCoord to, CardinalDirection fallback) {
