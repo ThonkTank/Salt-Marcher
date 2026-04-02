@@ -1,7 +1,6 @@
 package features.world.dungeonmap.model.structures.corridor;
 
 import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
@@ -13,6 +12,7 @@ import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.CorridorConnection;
 import features.world.dungeonmap.model.structures.room.Room;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -253,7 +253,6 @@ public final class Corridor {
         // Keep routing/projection semantics centralized in the canonical corridor owner.
         Map<Long, Room> resolvedRooms = roomsById == null ? Map.of() : Map.copyOf(roomsById);
         Map<Long, CorridorNode> nodesById = indexNodes(nodes);
-        LinkedHashSet<CubePoint> occupiedCells = new LinkedHashSet<>();
         ArrayList<CorridorRoute> routes = new ArrayList<>();
         for (CorridorSegment segment : segments) {
             CorridorNode start = nodesById.get(segment.startNodeId());
@@ -262,42 +261,39 @@ public final class Corridor {
                 throw new IllegalArgumentException("Corridor segment references missing node");
             }
             RoutePlan routePlan = findRoute(levelZ, start, end, nodes, resolvedRooms);
-            occupiedCells.addAll(routePlan.corridorCells().stream()
-                    .map(cell -> CubePoint.at(cell, levelZ))
-                    .toList());
             routes.add(new CorridorRoute(segment.segmentId(), segment.startNodeId(), segment.endNodeId(), routePlan.path2x()));
         }
         Set<GridSegment2x> openingSegments2x = corridorOpeningSegments(levelZ, nodes, resolvedRooms);
         return new DerivedProjection(
-                compileStructure(occupiedCells, openingSegments2x),
+                compileStructure(levelZ, routes, openingSegments2x),
                 routes.isEmpty() ? List.of() : List.copyOf(routes),
                 materializeConnections(corridorId, mapId, levelZ, nodes, resolvedRooms));
     }
 
     private static StructureObject compileStructure(
-            Collection<CubePoint> occupiedCells,
+            int levelZ,
+            Collection<CorridorRoute> routes,
             Set<GridSegment2x> openingSegments2x
     ) {
-        StructureDescriptor descriptor = StructureDescriptor.fromCubePoints(occupiedCells);
-        if (descriptor.levels().isEmpty() || openingSegments2x == null || openingSegments2x.isEmpty()) {
-            return StructureObject.fromDescriptor(descriptor);
+        Set<Point2i> occupiedCells = occupiedCells(routes);
+        if (occupiedCells.isEmpty()) {
+            return StructureObject.empty();
         }
-        Map<Integer, StructureDescriptor.LevelDescriptor> levels = new LinkedHashMap<>();
-        for (Map.Entry<Integer, StructureDescriptor.LevelDescriptor> entry : descriptor.levels().entrySet()) {
-            StructureDescriptor.LevelDescriptor level = entry.getValue();
-            LinkedHashSet<GridSegment2x> validOpenings = new LinkedHashSet<>();
-            for (GridSegment2x segment2x : openingSegments2x) {
-                if (segment2x != null && level.boundarySegments2x().contains(segment2x)) {
-                    validOpenings.add(segment2x);
-                }
+        Set<GridSegment2x> boundarySegments2x = boundarySegments(occupiedCells);
+        LinkedHashSet<GridSegment2x> validOpenings = new LinkedHashSet<>();
+        for (GridSegment2x segment2x : openingSegments2x == null ? Set.<GridSegment2x>of() : openingSegments2x) {
+            if (segment2x != null && boundarySegments2x.contains(segment2x)) {
+                validOpenings.add(segment2x);
             }
-            levels.put(entry.getKey(), new StructureDescriptor.LevelDescriptor(
-                    level.anchor2x(),
-                    level.fillSeeds2x(),
-                    level.boundarySegments2x(),
-                    validOpenings));
         }
-        return StructureObject.fromDescriptor(new StructureDescriptor(levels));
+        // Corridor descriptor truth is authored directly from routed 2x paths plus room-opening segments; routing still
+        // uses cell paths internally, but shared structure geometry no longer round-trips through generic cell import.
+        StructureDescriptor descriptor = new StructureDescriptor(Map.of(levelZ, new StructureDescriptor.LevelDescriptor(
+                GridPoint2x.fromTileCenter(bestCenterCell(occupiedCells)),
+                fillSeeds2x(occupiedCells),
+                boundarySegments2x,
+                Set.copyOf(validOpenings))));
+        return StructureObject.fromDescriptor(descriptor);
     }
 
     private static Set<GridSegment2x> corridorOpeningSegments(
@@ -375,7 +371,7 @@ public final class Corridor {
                         + startAttachment.adapterCost()
                         + endAttachment.adapterCost();
                 if (bestPlan == null || totalCost < bestPlan.cost()) {
-                    bestPlan = new RoutePlan(path2x, cellRoute.cells(), totalCost);
+                    bestPlan = new RoutePlan(path2x, totalCost);
                 }
             }
         }
@@ -627,6 +623,96 @@ public final class Corridor {
         return floor.anchorCell().add(node.roomRelativeCell());
     }
 
+    private static Set<Point2i> occupiedCells(Collection<CorridorRoute> routes) {
+        LinkedHashSet<Point2i> result = new LinkedHashSet<>();
+        for (CorridorRoute route : routes == null ? List.<CorridorRoute>of() : routes) {
+            if (route == null) {
+                continue;
+            }
+            for (GridPoint2x point2x : route.path2x()) {
+                if (point2x != null) {
+                    point2x.toCellCenter().ifPresent(result::add);
+                }
+            }
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
+    private static Set<GridSegment2x> boundarySegments(Set<Point2i> occupiedCells) {
+        if (occupiedCells == null || occupiedCells.isEmpty()) {
+            return Set.of();
+        }
+        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
+        for (Point2i cell : occupiedCells) {
+            for (Point2i step : Point2i.CARDINAL_STEPS) {
+                if (!occupiedCells.contains(cell.add(step))) {
+                    result.add(GridSegment2x.betweenCellAndStep(cell, step));
+                }
+            }
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
+    private static Set<GridPoint2x> fillSeeds2x(Set<Point2i> occupiedCells) {
+        if (occupiedCells == null || occupiedCells.isEmpty()) {
+            return Set.of();
+        }
+        LinkedHashSet<GridPoint2x> result = connectedComponents(occupiedCells).stream()
+                .sorted(Comparator.comparing(Corridor::bestCenterCell, Point2i.POINT_ORDER))
+                .map(Corridor::bestCenterCell)
+                .map(GridPoint2x::fromTileCenter)
+                .collect(LinkedHashSet::new, Set::add, Set::addAll);
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
+    private static List<Set<Point2i>> connectedComponents(Set<Point2i> occupiedCells) {
+        if (occupiedCells == null || occupiedCells.isEmpty()) {
+            return List.of();
+        }
+        LinkedHashSet<Point2i> remaining = new LinkedHashSet<>(occupiedCells);
+        ArrayList<Set<Point2i>> result = new ArrayList<>();
+        while (!remaining.isEmpty()) {
+            Point2i seed = remaining.iterator().next();
+            ArrayDeque<Point2i> queue = new ArrayDeque<>();
+            LinkedHashSet<Point2i> component = new LinkedHashSet<>();
+            queue.add(seed);
+            remaining.remove(seed);
+            while (!queue.isEmpty()) {
+                Point2i current = queue.removeFirst();
+                if (!component.add(current)) {
+                    continue;
+                }
+                for (Point2i step : Point2i.CARDINAL_STEPS) {
+                    Point2i neighbor = current.add(step);
+                    if (remaining.remove(neighbor)) {
+                        queue.addLast(neighbor);
+                    }
+                }
+            }
+            result.add(Set.copyOf(component));
+        }
+        return List.copyOf(result);
+    }
+
+    private static Point2i bestCenterCell(Set<Point2i> occupiedCells) {
+        if (occupiedCells == null || occupiedCells.isEmpty()) {
+            return new Point2i(0, 0);
+        }
+        double averageX = occupiedCells.stream().mapToInt(Point2i::x).average().orElse(0.0);
+        double averageY = occupiedCells.stream().mapToInt(Point2i::y).average().orElse(0.0);
+        return occupiedCells.stream()
+                .min(Comparator
+                        .comparingDouble((Point2i cell) -> squaredDistance(cell, averageX, averageY))
+                        .thenComparing(Point2i.POINT_ORDER))
+                .orElse(new Point2i(0, 0));
+    }
+
+    private static double squaredDistance(Point2i cell, double centerX, double centerY) {
+        double deltaX = cell.x() - centerX;
+        double deltaY = cell.y() - centerY;
+        return deltaX * deltaX + deltaY * deltaY;
+    }
+
     private record DerivedProjection(
             StructureObject structure,
             List<CorridorRoute> routes,
@@ -663,10 +749,9 @@ public final class Corridor {
         }
     }
 
-    private record RoutePlan(List<GridPoint2x> path2x, List<Point2i> corridorCells, double cost) {
+    private record RoutePlan(List<GridPoint2x> path2x, double cost) {
         private RoutePlan {
             path2x = path2x == null ? List.of() : List.copyOf(path2x);
-            corridorCells = corridorCells == null ? List.of() : List.copyOf(corridorCells);
         }
     }
 
