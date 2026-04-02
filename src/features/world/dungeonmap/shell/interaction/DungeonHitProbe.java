@@ -1,7 +1,6 @@
 package features.world.dungeonmap.shell.interaction;
 
 import features.world.dungeonmap.model.geometry.GridPoint2x;
-import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import javafx.geometry.Point2D;
 
@@ -56,10 +55,10 @@ public record DungeonHitProbe(
     }
 
     public Point2D canvasPointForPoint2x(GridPoint2x point2x) {
-        LegacyGridPoint2x resolvedPoint = Objects.requireNonNull(point2x, "point2x").toLegacyRaw();
+        GridPoint2x resolvedPoint = Objects.requireNonNull(point2x, "point2x");
         return new Point2D(
-                panX + resolvedPoint.x2() * gridSizePx / 2.0,
-                panY + resolvedPoint.y2() * gridSizePx / 2.0);
+                panX + (resolvedPoint.x2() + 1) * gridSizePx / 2.0,
+                panY + (resolvedPoint.y2() + 1) * gridSizePx / 2.0);
     }
 
     private static void requireFinite(double value, String name) {

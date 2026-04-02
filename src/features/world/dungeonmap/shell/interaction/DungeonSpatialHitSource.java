@@ -40,14 +40,14 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
                 continue;
             }
             Room room = cluster.roomAt(point);
-            if (room == null || room.roomId() == null || room.structure().floorAtLevel(levelZ) == null) {
+            if (room == null || room.roomId() == null || room.structure().cellCoordsAtLevel(levelZ).isEmpty()) {
                 continue;
             }
             descriptorsByRoomId.putIfAbsent(
                     room.roomId(),
                     new DungeonHitDescriptor(
                             new DungeonHitSubject.RoomSubject(room.roomId(), room.clusterId()),
-                            List.of(new DungeonHitSurface.CellSurface(room.structure().floorAtLevel(levelZ).cellCoords(), levelZ))));
+                            List.of(new DungeonHitSurface.CellSurface(room.structure().cellCoordsAtLevel(levelZ), levelZ))));
         }
         return List.copyOf(descriptorsByRoomId.values());
     }
@@ -61,7 +61,7 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
             descriptors.add(new DungeonHitDescriptor(
                     new DungeonHitSubject.CorridorSubject(corridor.corridorId(), corridor.levelZ()),
                     List.of(new DungeonHitSurface.CellSurface(
-                            corridor.structure().floorAtLevel(probe.levelZ()).cellCoords(),
+                            corridor.structure().cellCoordsAtLevel(probe.levelZ()),
                             probe.levelZ()))));
         }
         return List.copyOf(descriptors);

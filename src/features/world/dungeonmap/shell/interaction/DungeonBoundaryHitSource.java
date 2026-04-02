@@ -132,7 +132,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
                 if (room == null || room.roomId() == null) {
                     continue;
                 }
-                for (GridSegment2x segment2x : GridSegment2x.fromLegacyBoundaryEdges(room.structure().boundarySegmentsAtLevel(levelZ))) {
+                for (GridSegment2x segment2x : room.structure().boundaryEdgesAtLevel(levelZ)) {
                     if (segment2x == null || connectionSegments.contains(segment2x)) {
                         continue;
                     }

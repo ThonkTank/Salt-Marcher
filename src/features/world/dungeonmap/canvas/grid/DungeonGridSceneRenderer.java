@@ -269,6 +269,25 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             GraphicsContext gc,
             DungeonCanvasCamera camera,
             double gridSize,
+            GridPoint2x vertex2x,
+            Color fill,
+            Color stroke,
+            double radius
+    ) {
+        double centerX = camera.panX() + (vertex2x.x2() + 1) * gridSize / 2.0;
+        double centerY = camera.panY() + (vertex2x.y2() + 1) * gridSize / 2.0;
+        double diameter = radius * 2.0;
+        gc.setFill(fill);
+        gc.fillOval(centerX - radius, centerY - radius, diameter, diameter);
+        gc.setStroke(stroke);
+        gc.setLineWidth(2.0);
+        gc.strokeOval(centerX - radius, centerY - radius, diameter, diameter);
+    }
+
+    private static void drawBoundaryVertexMarker(
+            GraphicsContext gc,
+            DungeonCanvasCamera camera,
+            double gridSize,
             LegacyGridPoint2x vertex2x,
             Color fill,
             Color stroke,
@@ -282,6 +301,19 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         gc.setStroke(stroke);
         gc.setLineWidth(2.0);
         gc.strokeOval(centerX - radius, centerY - radius, diameter, diameter);
+    }
+
+    private static void strokeSegment2x(
+            GraphicsContext gc,
+            DungeonCanvasCamera camera,
+            double gridSize,
+            GridSegment2x segment2x
+    ) {
+        double startX = camera.panX() + (segment2x.start().x2() + 1) * gridSize / 2.0;
+        double startY = camera.panY() + (segment2x.start().y2() + 1) * gridSize / 2.0;
+        double endX = camera.panX() + (segment2x.end().x2() + 1) * gridSize / 2.0;
+        double endY = camera.panY() + (segment2x.end().y2() + 1) * gridSize / 2.0;
+        gc.strokeLine(startX, startY, endX, endY);
     }
 
     private static void strokeSegment2x(
@@ -375,7 +407,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                     pass.gc(),
                     pass.camera(),
                     pass.gridSize(),
-                    node.point2x().toLegacyRaw(),
+                    node.point2x(),
                     pass.palette().highlightAccent(),
                     pass.palette().highlightStroke(),
                     Math.max(5.0, pass.gridSize() * 0.16));
@@ -386,12 +418,31 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                         pass.gc(),
                         pass.camera(),
                         pass.gridSize(),
-                        corner.toLegacyRaw(),
+                        corner,
                         pass.palette().highlightFill(),
                         pass.palette().highlightStroke(),
                         Math.max(4.0, pass.gridSize() * 0.13));
             }
         }
+    }
+
+    private static void drawCorridorHandle(
+            GraphicsContext gc,
+            DungeonCanvasCamera camera,
+            double gridSize,
+            GridPoint2x point2x,
+            Color fill,
+            Color stroke,
+            double radius
+    ) {
+        double centerX = camera.panX() + (point2x.x2() + 1) * gridSize / 2.0;
+        double centerY = camera.panY() + (point2x.y2() + 1) * gridSize / 2.0;
+        double diameter = radius * 2.0;
+        gc.setFill(fill);
+        gc.fillOval(centerX - radius, centerY - radius, diameter, diameter);
+        gc.setStroke(stroke);
+        gc.setLineWidth(1.8);
+        gc.strokeOval(centerX - radius, centerY - radius, diameter, diameter);
     }
 
     private static void drawCorridorHandle(
@@ -489,7 +540,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         if (segment2x != null) {
             pass.gc().setStroke(withOpacity(pass.palette().highlightStroke(), 0.95));
             pass.gc().setLineWidth(3.0);
-            strokeSegment2x(pass.gc(), pass.camera(), pass.gridSize(), segment2x.toLegacyRaw());
+            strokeSegment2x(pass.gc(), pass.camera(), pass.gridSize(), segment2x);
             return;
         }
         if (key.kind() == features.world.dungeonmap.shell.interaction.DungeonHitKind.CORRIDOR_NODE) {
@@ -501,7 +552,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                         pass.gc(),
                         pass.camera(),
                         pass.gridSize(),
-                        node.point2x().toLegacyRaw(),
+                        node.point2x(),
                         withOpacity(pass.palette().highlightFill(), 0.92),
                         withOpacity(pass.palette().highlightStroke(), 1.0),
                         Math.max(5.0, pass.gridSize() * 0.17));
@@ -515,7 +566,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                         pass.gc(),
                         pass.camera(),
                         pass.gridSize(),
-                        corner.toLegacyRaw(),
+                        corner,
                         withOpacity(pass.palette().highlightFill(), 0.92),
                         withOpacity(pass.palette().highlightStroke(), 1.0),
                         Math.max(4.5, pass.gridSize() * 0.14));
@@ -533,7 +584,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                         pass.gc().setStroke(withOpacity(pass.palette().highlightStroke(), 0.95));
                         pass.gc().setLineWidth(3.0);
                         for (GridSegment2x hoveredSegment : route.segments2x()) {
-                            strokeSegment2x(pass.gc(), pass.camera(), pass.gridSize(), hoveredSegment.toLegacyRaw());
+                            strokeSegment2x(pass.gc(), pass.camera(), pass.gridSize(), hoveredSegment);
                         }
                     });
             }
@@ -545,7 +596,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                     pass.gc(),
                     pass.camera(),
                     pass.gridSize(),
-                    vertex2x.toLegacyRaw(),
+                    vertex2x,
                     withOpacity(pass.palette().highlightFill(), 0.95),
                     withOpacity(pass.palette().highlightStroke(), 1.0),
                     5.0);
