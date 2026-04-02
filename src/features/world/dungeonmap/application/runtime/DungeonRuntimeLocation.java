@@ -36,21 +36,12 @@ public sealed interface DungeonRuntimeLocation
     }
 
     record Corridor(long corridorId, CellCoord anchorCell, int levelZ) implements DungeonRuntimeLocation {
-        public Corridor {
-            anchorCell = anchorCell == null ? null : anchorCell;
-        }
     }
 
     record Cell(CellCoord cell, int levelZ) implements DungeonRuntimeLocation {
-        public Cell {
-            cell = cell == null ? new CellCoord(0, 0) : cell;
-        }
     }
 
     record StairExit(long stairId, CellCoord cell, int levelZ) implements DungeonRuntimeLocation {
-        public StairExit {
-            cell = cell == null ? new CellCoord(0, 0) : cell;
-        }
     }
 
     record Transition(long transitionId) implements DungeonRuntimeLocation {

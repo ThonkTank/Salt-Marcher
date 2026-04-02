@@ -29,7 +29,7 @@ public final class DungeonRuntimeStairCatalog {
         if (layout == null || room == null || room.roomId() == null) {
             return List.of();
         }
-        return levelsForRoomSurface(room.structure(), activeCell, activeLevelZ).stream()
+        return room.structure().relevantLevels(activeCell, activeLevelZ).stream()
                 .flatMap(levelZ -> describe(layout, room.structure().cellCoordsAtLevel(levelZ), levelZ, activeCell, activeLevelZ).stream())
                 .toList();
     }
@@ -128,19 +128,4 @@ public final class DungeonRuntimeStairCatalog {
         return "Über " + stairName + " gelangt ihr zu " + target + ".";
     }
 
-    private static List<Integer> levelsForRoomSurface(
-            features.world.dungeonmap.model.objects.StructureObject structure,
-            CellCoord activeCell,
-            int activeLevelZ
-    ) {
-        if (structure == null) {
-            return List.of();
-        }
-        if (activeCell != null && structure.contains(activeCell, activeLevelZ)) {
-            return List.of(activeLevelZ);
-        }
-        return structure.levels().stream()
-                .sorted()
-                .toList();
-    }
 }

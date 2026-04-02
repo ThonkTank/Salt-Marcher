@@ -407,10 +407,6 @@ public final class DungeonLayout {
         return corridorsAtCell(cell == null ? null : CellCoord.fromPoint(cell), levelZ);
     }
 
-    public List<Corridor> corridorsAtPoint(CubePoint point) {
-        return point == null ? List.of() : corridorsAtCell(point.projectedCell(), point.z());
-    }
-
     public List<DungeonStair> stairsAtCell(CellCoord cell, int levelZ) {
         return structuresAtCell(stairIdsByLevelAndCell, cell, levelZ, this::findStair);
     }
@@ -419,20 +415,12 @@ public final class DungeonLayout {
         return stairsAtCell(cell == null ? null : CellCoord.fromPoint(cell), levelZ);
     }
 
-    public List<DungeonStair> stairsAtPoint(CubePoint point) {
-        return point == null ? List.of() : stairsAtCell(point.projectedCell(), point.z());
-    }
-
     public List<DungeonTransition> transitionsAtCell(CellCoord cell, int levelZ) {
         return structuresAtCell(transitionIdsByLevelAndCell, cell, levelZ, this::findTransition);
     }
 
     public List<DungeonTransition> transitionsAtCell(Point2i cell, int levelZ) {
         return transitionsAtCell(cell == null ? null : CellCoord.fromPoint(cell), levelZ);
-    }
-
-    public List<DungeonTransition> transitionsAtPoint(CubePoint point) {
-        return point == null ? List.of() : transitionsAtCell(point.projectedCell(), point.z());
     }
 
     public CellStructure structureAtCell(CellCoord cell) {
@@ -513,10 +501,6 @@ public final class DungeonLayout {
         return isTraversableCell(cell == null ? null : CellCoord.fromPoint(cell));
     }
 
-    public boolean isTraversableCell(CubePoint point) {
-        return point != null && isTraversableCell(point.projectedCell(), point.z());
-    }
-
     public CellCoord nearestTraversableCell(CellCoord cell) {
         if (cell == null || traversableCells.isEmpty()) {
             return null;
@@ -543,22 +527,6 @@ public final class DungeonLayout {
                         .comparingInt((CellCoord candidate) -> candidate.manhattanDistance(cell))
                         .thenComparing(CellCoord.ORDER))
                 .orElse(null);
-    }
-
-    public CubePoint nearestTraversableCell(CubePoint point) {
-        if (point == null || traversableCellsByLevel.isEmpty()) {
-            return null;
-        }
-        LevelCell nearest = traversableCellsByLevel.entrySet().stream()
-                .flatMap(entry -> entry.getValue().stream()
-                        .map(cell -> new LevelCell(entry.getKey(), cell)))
-                .min(Comparator
-                        .comparingInt((LevelCell candidate) ->
-                                candidate.cell().manhattanDistance(point.projectedCell()) + Math.abs(candidate.levelZ() - point.z()))
-                        .thenComparing(LevelCell::levelZ)
-                        .thenComparing(LevelCell::cell, CellCoord.ORDER))
-                .orElse(null);
-        return nearest == null ? null : CubePoint.at(nearest.cell(), nearest.levelZ());
     }
 
     public DungeonLayout withReplacedCluster(RoomCluster cluster) {
@@ -967,10 +935,6 @@ public final class DungeonLayout {
         }
         return Map.copyOf(result);
     }
-
     private record ConnectionSegmentKey(int levelZ, LegacyGridSegment2x segment2x) {
-    }
-
-    private record LevelCell(int levelZ, CellCoord cell) {
     }
 }

@@ -5,7 +5,6 @@ import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.objects.StructureDescriptor;
@@ -148,7 +147,7 @@ public final class DungeonRoomTopologyService {
             return;
         }
         DungeonLayout layout = requireLayout(conn, mapId);
-        if (layout.isTraversableCell(CubePoint.at(cell, levelZ))) {
+        if (layout.isTraversableCell(cell, levelZ)) {
             return;
         }
         paint(conn, mapId, StructureDescriptor.fromCellCoordsByLevel(Map.of(levelZ, Set.of(cell))));

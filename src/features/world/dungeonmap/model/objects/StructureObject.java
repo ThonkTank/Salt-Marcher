@@ -85,6 +85,15 @@ public final class StructureObject {
         return floorsByLevel.keySet();
     }
 
+    public List<Integer> relevantLevels(CellCoord focusCell, int focusLevelZ) {
+        if (focusCell != null && contains(focusCell, focusLevelZ)) {
+            return List.of(focusLevelZ);
+        }
+        return levels().stream()
+                .sorted()
+                .toList();
+    }
+
     public int primaryLevel() {
         return floorsByLevel.keySet().stream().mapToInt(Integer::intValue).min().orElse(0);
     }
