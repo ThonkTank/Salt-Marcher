@@ -1,10 +1,10 @@
 package features.world.dungeonmap.model.objects;
 
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.geometry.TileFaceShape;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Shared synthesized owner for floor, wall, and door geometry rebuilt from descriptor-native 2x truth.
+ * Shared synthesized owner for floor, wall, and door geometry rebuilt from descriptor-native cell and edge truth.
  */
 public final class StructureObject {
 
@@ -88,55 +88,74 @@ public final class StructureObject {
         return floorsByLevel.keySet().stream().mapToInt(Integer::intValue).min().orElse(0);
     }
 
-    public Point2i centerCellAtLevel(int levelZ) {
+    public CellCoord centerCellCoordAtLevel(int levelZ) {
         Floor floor = floorAtLevel(levelZ);
-        return floor == null ? null : floor.centerCell();
+        return floor == null ? null : floor.centerCellCoord();
+    }
+
+    public Point2i centerCellAtLevel(int levelZ) {
+        CellCoord centerCell = centerCellCoordAtLevel(levelZ);
+        return centerCell == null ? null : centerCell.toPoint2i();
     }
 
     public CubePoint centerPointAtLevel(int levelZ) {
-        Point2i centerCell = centerCellAtLevel(levelZ);
+        CellCoord centerCell = centerCellCoordAtLevel(levelZ);
         return centerCell == null ? null : CubePoint.at(centerCell, levelZ);
     }
 
     public Set<GridSegment2x> boundarySegmentsAtLevel(int levelZ) {
         StructureDescriptor.LevelDescriptor level = descriptor.level(levelZ);
-        return level == null ? Set.of() : level.boundarySegments2x();
+        return level == null ? Set.of() : level.boundaryEdges();
     }
 
     public Set<GridSegment2x> openingSegmentsAtLevel(int levelZ) {
         StructureDescriptor.LevelDescriptor level = descriptor.level(levelZ);
-        return level == null ? Set.of() : level.openingSegments2x();
+        return level == null ? Set.of() : level.openingEdges();
     }
 
-    public Set<Point2i> cells() {
-        LinkedHashSet<Point2i> result = new LinkedHashSet<>();
+    public Set<CellCoord> cellCoords() {
+        LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
         for (Floor floor : floorsByLevel.values()) {
-            result.addAll(floor.cells());
+            result.addAll(floor.cellCoords());
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
-    public Set<Point2i> cellsAtLevel(int levelZ) {
+    public Set<Point2i> cells() {
+        return CellCoord.toPoints(cellCoords());
+    }
+
+    public Set<CellCoord> cellCoordsAtLevel(int levelZ) {
         Floor floor = floorAtLevel(levelZ);
-        return floor == null ? Set.of() : floor.cells();
+        return floor == null ? Set.of() : floor.cellCoords();
+    }
+
+    public Set<Point2i> cellsAtLevel(int levelZ) {
+        return CellCoord.toPoints(cellCoordsAtLevel(levelZ));
     }
 
     public Set<CubePoint> cubePoints() {
         LinkedHashSet<CubePoint> result = new LinkedHashSet<>();
         for (Map.Entry<Integer, Floor> entry : floorsByLevel.entrySet()) {
-            for (Point2i cell : entry.getValue().cells()) {
+            for (CellCoord cell : entry.getValue().cellCoords()) {
                 result.add(CubePoint.at(cell, entry.getKey()));
             }
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
-    public boolean contains(Point2i cell) {
+    public boolean contains(CellCoord cell) {
         return cell != null && floorsByLevel.values().stream().anyMatch(floor -> floor.contains(cell));
     }
 
+    public boolean contains(Point2i cell) {
+        return cell != null && contains(CellCoord.fromPoint(cell));
+    }
+
     public boolean contains(CubePoint point) {
-        return point != null && contains(point.projectedCell()) && cellsAtLevel(point.z()).contains(point.projectedCell());
+        return point != null
+                && contains(point.projectedCellCoord())
+                && cellCoordsAtLevel(point.z()).contains(point.projectedCellCoord());
     }
 
     public StructureObject movedBy(Point2i delta, int levelDelta) {
@@ -144,18 +163,17 @@ public final class StructureObject {
     }
 
     private static Floor hydrateFloor(StructureDescriptor.LevelDescriptor level) {
-        Set<Point2i> filledCells = hydrateCells(level);
-        return new Floor(new TileFaceShape(filledCells), level.anchor2x());
+        return new Floor(hydrateCells(level), level.anchorCell());
     }
 
     private static List<Wall> hydrateWalls(StructureDescriptor.LevelDescriptor level) {
-        Set<GridSegment2x> wallSegments = new LinkedHashSet<>(level.boundarySegments2x());
-        wallSegments.removeAll(level.openingSegments2x());
+        Set<GridSegment2x> wallSegments = new LinkedHashSet<>(level.boundaryEdges());
+        wallSegments.removeAll(level.openingEdges());
         return wallSegments.isEmpty() ? List.of() : List.of(Wall.fromSegments(wallSegments));
     }
 
     private static List<Door> hydrateDoors(StructureDescriptor.LevelDescriptor level) {
-        List<Set<GridSegment2x>> doorComponents = connectedComponents(level.openingSegments2x());
+        List<Set<GridSegment2x>> doorComponents = connectedComponents(level.openingEdges());
         if (doorComponents.isEmpty()) {
             return List.of();
         }
@@ -166,30 +184,27 @@ public final class StructureObject {
         return List.copyOf(result);
     }
 
-    // The descriptor keeps one shared 2x boundary language; hydration flood-fills from tile-center seeds while
-    // splitting long perimeter segments into one-step GridSegment2x barriers for exact cell-to-cell blocking.
-    private static Set<Point2i> hydrateCells(StructureDescriptor.LevelDescriptor level) {
-        Set<Point2i> seeds = level.fillSeeds2x().stream()
-                .map(GridPoint2x::toCellCenter)
-                .flatMap(java.util.Optional::stream)
-                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+    // Descriptor truth stays on cell sets plus 2x boundary edges. Hydration may flood-fill from cell seeds, but it
+    // must not round-trip through any removed legacy tile or vertex wrapper geometry to recover the floor surface.
+    private static Set<CellCoord> hydrateCells(StructureDescriptor.LevelDescriptor level) {
+        Set<CellCoord> seeds = level.fillSeeds();
         if (seeds.isEmpty()) {
             return Set.of();
         }
-        Set<GridSegment2x> blockedSegments = stepBoundarySegments(level.boundarySegments2x());
+        Set<GridSegment2x> blockedSegments = stepBoundarySegments(level.boundaryEdges());
         if (blockedSegments.isEmpty()) {
             return Set.copyOf(seeds);
         }
-        CellBounds bounds = cellBounds(level.boundarySegments2x(), seeds);
-        ArrayDeque<Point2i> queue = new ArrayDeque<>(seeds);
-        LinkedHashSet<Point2i> visited = new LinkedHashSet<>();
+        CellBounds bounds = cellBounds(level.boundaryEdges(), seeds);
+        ArrayDeque<CellCoord> queue = new ArrayDeque<>(seeds);
+        LinkedHashSet<CellCoord> visited = new LinkedHashSet<>();
         while (!queue.isEmpty()) {
-            Point2i current = queue.removeFirst();
+            CellCoord current = queue.removeFirst();
             if (!bounds.contains(current) || !visited.add(current)) {
                 continue;
             }
-            for (Point2i step : Point2i.CARDINAL_STEPS) {
-                Point2i neighbor = current.add(step);
+            for (CellCoord step : CellCoord.CARDINAL_STEPS) {
+                CellCoord neighbor = current.add(step);
                 if (!bounds.contains(neighbor)
                         || blockedSegments.contains(GridSegment2x.betweenCellAndStep(current, step))) {
                     continue;
@@ -200,12 +215,12 @@ public final class StructureObject {
         return visited.isEmpty() ? Set.of() : Set.copyOf(visited);
     }
 
-    private static CellBounds cellBounds(Set<GridSegment2x> boundarySegments, Set<Point2i> seeds) {
-        int minX = seeds.stream().mapToInt(Point2i::x).min().orElse(0);
-        int maxX = seeds.stream().mapToInt(Point2i::x).max().orElse(0);
-        int minY = seeds.stream().mapToInt(Point2i::y).min().orElse(0);
-        int maxY = seeds.stream().mapToInt(Point2i::y).max().orElse(0);
-        for (GridSegment2x segment : boundarySegments) {
+    private static CellBounds cellBounds(Set<GridSegment2x> boundaryEdges, Set<CellCoord> seeds) {
+        int minX = seeds.stream().mapToInt(CellCoord::x).min().orElse(0);
+        int maxX = seeds.stream().mapToInt(CellCoord::x).max().orElse(0);
+        int minY = seeds.stream().mapToInt(CellCoord::y).min().orElse(0);
+        int maxY = seeds.stream().mapToInt(CellCoord::y).max().orElse(0);
+        for (GridSegment2x segment : boundaryEdges) {
             minX = Math.min(minX, segment.minX2() / 2);
             maxX = Math.max(maxX, (segment.maxX2() - 1) / 2);
             minY = Math.min(minY, segment.minY2() / 2);
@@ -319,7 +334,7 @@ public final class StructureObject {
     }
 
     private record CellBounds(int minX, int minY, int maxX, int maxY) {
-        private boolean contains(Point2i cell) {
+        private boolean contains(CellCoord cell) {
             return cell != null
                     && cell.x() >= minX && cell.x() <= maxX
                     && cell.y() >= minY && cell.y() <= maxY;

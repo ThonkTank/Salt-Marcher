@@ -1,6 +1,7 @@
 package features.world.dungeonmap.model.structures.corridor;
 
 import features.world.dungeonmap.model.geometry.CardinalDirection;
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
@@ -289,8 +290,8 @@ public final class Corridor {
         // Corridor descriptor truth is authored directly from routed 2x paths plus room-opening segments; routing still
         // uses cell paths internally, but shared structure geometry no longer round-trips through generic cell import.
         StructureDescriptor descriptor = new StructureDescriptor(Map.of(levelZ, new StructureDescriptor.LevelDescriptor(
-                GridPoint2x.fromTileCenter(bestCenterCell(occupiedCells)),
-                fillSeeds2x(occupiedCells),
+                CellCoord.fromPoint(bestCenterCell(occupiedCells)),
+                fillSeeds(occupiedCells),
                 boundarySegments2x,
                 Set.copyOf(validOpenings))));
         return StructureObject.fromDescriptor(descriptor);
@@ -653,14 +654,14 @@ public final class Corridor {
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
-    private static Set<GridPoint2x> fillSeeds2x(Set<Point2i> occupiedCells) {
+    private static Set<CellCoord> fillSeeds(Set<Point2i> occupiedCells) {
         if (occupiedCells == null || occupiedCells.isEmpty()) {
             return Set.of();
         }
-        LinkedHashSet<GridPoint2x> result = connectedComponents(occupiedCells).stream()
+        LinkedHashSet<CellCoord> result = connectedComponents(occupiedCells).stream()
                 .sorted(Comparator.comparing(Corridor::bestCenterCell, Point2i.POINT_ORDER))
                 .map(Corridor::bestCenterCell)
-                .map(GridPoint2x::fromTileCenter)
+                .map(CellCoord::fromPoint)
                 .collect(LinkedHashSet::new, Set::add, Set::addAll);
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }

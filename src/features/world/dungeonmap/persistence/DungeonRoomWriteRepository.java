@@ -1,5 +1,6 @@
 package features.world.dungeonmap.persistence;
 
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
@@ -180,22 +181,24 @@ public final class DungeonRoomWriteRepository {
             for (var entry : resolvedDescriptor.levels().entrySet()) {
                 int levelZ = entry.getKey();
                 StructureDescriptor.LevelDescriptor level = entry.getValue();
+                GridPoint2x anchor2x = GridPoint2x.fromTileCenter(level.anchorCell());
                 insertLevel.setLong(1, roomId);
                 insertLevel.setInt(2, levelZ);
-                insertLevel.setInt(3, level.anchor2x().x2());
-                insertLevel.setInt(4, level.anchor2x().y2());
+                insertLevel.setInt(3, anchor2x.x2());
+                insertLevel.setInt(4, anchor2x.y2());
                 insertLevel.addBatch();
-                for (GridPoint2x seed : level.fillSeeds2x().stream()
-                        .sorted(GridPoint2x.POINT_ORDER)
+                for (CellCoord seed : level.fillSeeds().stream()
+                        .sorted(CellCoord.ORDER)
                         .toList()) {
+                    GridPoint2x seed2x = GridPoint2x.fromTileCenter(seed);
                     insertSeed.setLong(1, roomId);
                     insertSeed.setInt(2, levelZ);
-                    insertSeed.setInt(3, seed.x2());
-                    insertSeed.setInt(4, seed.y2());
+                    insertSeed.setInt(3, seed2x.x2());
+                    insertSeed.setInt(4, seed2x.y2());
                     insertSeed.addBatch();
                 }
-                addSegments(insertSegment, roomId, levelZ, "BOUNDARY", level.boundarySegments2x());
-                addSegments(insertSegment, roomId, levelZ, "OPENING", level.openingSegments2x());
+                addSegments(insertSegment, roomId, levelZ, "BOUNDARY", level.boundaryEdges());
+                addSegments(insertSegment, roomId, levelZ, "OPENING", level.openingEdges());
             }
             insertLevel.executeBatch();
             insertSeed.executeBatch();
@@ -245,6 +248,6 @@ public final class DungeonRoomWriteRepository {
         if (level == null) {
             return new Point2i(0, 0);
         }
-        return level.anchor2x().toCellCenter().orElse(new Point2i(0, 0));
+        return level.anchorCell().toPoint2i();
     }
 }

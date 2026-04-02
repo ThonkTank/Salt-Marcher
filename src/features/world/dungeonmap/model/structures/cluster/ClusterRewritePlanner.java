@@ -1,5 +1,6 @@
 package features.world.dungeonmap.model.structures.cluster;
 
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
@@ -995,8 +996,8 @@ final class ClusterRewritePlanner {
             Point2i preferredAnchor = preferredAnchorsByLevel == null ? null : preferredAnchorsByLevel.get(levelZ);
             // Room rewrites author descriptor truth directly so boundary edits do not round-trip through generic cell import.
             levels.put(levelZ, new StructureDescriptor.LevelDescriptor(
-                    anchor2xForRoom(roomCells, preferredAnchor),
-                    fillSeeds2xForRoom(roomCells),
+                    anchorCellForRoom(roomCells, preferredAnchor),
+                    fillSeedsForRoom(roomCells),
                     boundarySets.walls(),
                     boundarySets.openings()));
         }
@@ -1158,21 +1159,21 @@ final class ClusterRewritePlanner {
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
-    private static GridPoint2x anchor2xForRoom(Set<Point2i> roomCells, Point2i preferredAnchor) {
+    private static CellCoord anchorCellForRoom(Set<Point2i> roomCells, Point2i preferredAnchor) {
         Point2i anchorCell = preferredAnchor != null && roomCells.contains(preferredAnchor)
                 ? preferredAnchor
                 : bestCenterCell(roomCells);
-        return GridPoint2x.fromTileCenter(anchorCell);
+        return CellCoord.fromPoint(anchorCell);
     }
 
-    private static Set<GridPoint2x> fillSeeds2xForRoom(Set<Point2i> roomCells) {
+    private static Set<CellCoord> fillSeedsForRoom(Set<Point2i> roomCells) {
         if (roomCells == null || roomCells.isEmpty()) {
             return Set.of();
         }
-        LinkedHashSet<GridPoint2x> result = connectedComponents(roomCells).stream()
+        LinkedHashSet<CellCoord> result = connectedComponents(roomCells).stream()
                 .sorted(Comparator.comparing(ClusterRewritePlanner::bestCenterCell, Point2i.POINT_ORDER))
                 .map(ClusterRewritePlanner::bestCenterCell)
-                .map(GridPoint2x::fromTileCenter)
+                .map(CellCoord::fromPoint)
                 .collect(LinkedHashSet::new, Set::add, Set::addAll);
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }

@@ -24,7 +24,11 @@ public record CubePoint(int x, int y, int z) {
     }
 
     public Point2i projectedCell() {
-        return new Point2i(x, y);
+        return projectedCellCoord().toPoint2i();
+    }
+
+    public CellCoord projectedCellCoord() {
+        return new CellCoord(x, y);
     }
 
     public int manhattanDistanceTo(CubePoint other) {
@@ -34,6 +38,10 @@ public record CubePoint(int x, int y, int z) {
 
 
     public static CubePoint at(Point2i cell, int z) {
+        return cell == null ? new CubePoint(0, 0, z) : new CubePoint(cell.x(), cell.y(), z);
+    }
+
+    public static CubePoint at(CellCoord cell, int z) {
         return cell == null ? new CubePoint(0, 0, z) : new CubePoint(cell.x(), cell.y(), z);
     }
 }

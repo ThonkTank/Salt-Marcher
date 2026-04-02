@@ -25,7 +25,11 @@ public record GridPoint2x(int x2, int y2) {
     }
 
     public static GridPoint2x fromTileCenter(Point2i cell) {
-        Point2i resolvedCell = cell == null ? new Point2i(0, 0) : cell;
+        return fromTileCenter(CellCoord.fromPoint(cell));
+    }
+
+    public static GridPoint2x fromTileCenter(CellCoord cell) {
+        CellCoord resolvedCell = cell == null ? new CellCoord(0, 0) : cell;
         return new GridPoint2x(resolvedCell.x() * 2 + 1, resolvedCell.y() * 2 + 1);
     }
 
@@ -59,10 +63,14 @@ public record GridPoint2x(int x2, int y2) {
     }
 
     public Optional<Point2i> toCellCenter() {
+        return toCellCoord().map(CellCoord::toPoint2i);
+    }
+
+    public Optional<CellCoord> toCellCoord() {
         if (!isTileCenter()) {
             return Optional.empty();
         }
-        return Optional.of(new Point2i((x2 - 1) / 2, (y2 - 1) / 2));
+        return Optional.of(new CellCoord((x2 - 1) / 2, (y2 - 1) / 2));
     }
 
     public Optional<Point2i> toVertex() {
@@ -80,7 +88,11 @@ public record GridPoint2x(int x2, int y2) {
     }
 
     public GridPoint2x translatedByCells(Point2i delta) {
-        Point2i resolvedDelta = delta == null ? new Point2i(0, 0) : delta;
+        return translatedByCells(CellCoord.fromPoint(delta));
+    }
+
+    public GridPoint2x translatedByCells(CellCoord delta) {
+        CellCoord resolvedDelta = delta == null ? new CellCoord(0, 0) : delta;
         if (resolvedDelta.x() == 0 && resolvedDelta.y() == 0) {
             return this;
         }

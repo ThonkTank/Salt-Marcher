@@ -24,10 +24,14 @@ public record GridBounds2x(int minX2, int minY2, int maxX2, int maxY2) {
     }
 
     public GridBounds2x translatedByCells(Point2i delta) {
+        return translatedByCells(CellCoord.fromPoint(delta));
+    }
+
+    public GridBounds2x translatedByCells(CellCoord delta) {
         if (isEmpty()) {
             return this;
         }
-        Point2i resolvedDelta = delta == null ? new Point2i(0, 0) : delta;
+        CellCoord resolvedDelta = delta == null ? new CellCoord(0, 0) : delta;
         if (resolvedDelta.x() == 0 && resolvedDelta.y() == 0) {
             return this;
         }

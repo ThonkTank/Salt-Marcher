@@ -3,6 +3,7 @@ package features.world.dungeonmap.loading;
 import database.DatabaseManager;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
@@ -543,15 +544,38 @@ public final class DungeonMapLoader {
             Map<Integer, StructureDescriptor.LevelDescriptor> levels = new LinkedHashMap<>();
             for (Map.Entry<Integer, GridPoint2x> levelEntry : roomEntry.getValue().entrySet()) {
                 int levelZ = levelEntry.getKey();
+                CellCoord anchorCell = requireTileCenter(levelEntry.getValue(), "room anchor", roomId, levelZ);
                 levels.put(levelZ, new StructureDescriptor.LevelDescriptor(
-                        levelEntry.getValue(),
-                        seedsByRoomId.getOrDefault(roomId, Map.of()).getOrDefault(levelZ, Set.of()),
+                        anchorCell,
+                        tileCenters(
+                                seedsByRoomId.getOrDefault(roomId, Map.of()).getOrDefault(levelZ, Set.of()),
+                                "room fill seed",
+                                roomId,
+                                levelZ),
                         boundarySegmentsByRoomId.getOrDefault(roomId, Map.of()).getOrDefault(levelZ, Set.of()),
                         openingSegmentsByRoomId.getOrDefault(roomId, Map.of()).getOrDefault(levelZ, Set.of())));
             }
             result.put(roomId, new StructureDescriptor(levels));
         }
         return Map.copyOf(result);
+    }
+
+    private static CellCoord requireTileCenter(GridPoint2x point, String label, long roomId, int levelZ) {
+        return point == null
+                ? new CellCoord(0, 0)
+                : point.toCellCoord().orElseThrow(() -> new IllegalArgumentException(
+                        label + " must be a tile center for room " + roomId + " at level " + levelZ));
+    }
+
+    private static Set<CellCoord> tileCenters(Set<GridPoint2x> points, String label, long roomId, int levelZ) {
+        if (points == null || points.isEmpty()) {
+            return Set.of();
+        }
+        LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
+        for (GridPoint2x point : points.stream().sorted(GridPoint2x.POINT_ORDER).toList()) {
+            result.add(requireTileCenter(point, label, roomId, levelZ));
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
     private static List<RoomCluster> loadClusters(Connection conn, long mapId, List<Room> rooms) throws SQLException {

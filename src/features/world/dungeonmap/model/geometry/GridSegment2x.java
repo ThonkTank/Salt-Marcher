@@ -33,10 +33,14 @@ public record GridSegment2x(GridPoint2x start, GridPoint2x end) {
     }
 
     public static GridSegment2x betweenCellAndStep(Point2i fromCell, Point2i stepDelta) {
-        Point2i origin = fromCell == null ? new Point2i(0, 0) : fromCell;
-        Point2i delta = stepDelta == null ? new Point2i(0, 0) : stepDelta;
+        return betweenCellAndStep(CellCoord.fromPoint(fromCell), CellCoord.fromPoint(stepDelta));
+    }
+
+    public static GridSegment2x betweenCellAndStep(CellCoord fromCell, CellCoord stepDelta) {
+        CellCoord origin = fromCell == null ? new CellCoord(0, 0) : fromCell;
+        CellCoord delta = stepDelta == null ? new CellCoord(0, 0) : stepDelta;
         GridPoint2x origin2x = GridPoint2x.fromRaw(origin.x() * 2, origin.y() * 2);
-        // The input Point2i stays a cell anchor; productive boundary flows remain 2x-native.
+        // The input cell stays a cell anchor; productive boundary flows remain 2x-native.
         return switch (delta.x() + "," + delta.y()) {
             case "0,-1" -> new GridSegment2x(origin2x, origin2x.offset(2, 0));
             case "1,0" -> new GridSegment2x(origin2x.offset(2, 0), origin2x.offset(2, 2));
@@ -114,6 +118,10 @@ public record GridSegment2x(GridPoint2x start, GridPoint2x end) {
     }
 
     public GridSegment2x translatedByCells(Point2i delta) {
+        return translatedByCells(CellCoord.fromPoint(delta));
+    }
+
+    public GridSegment2x translatedByCells(CellCoord delta) {
         return new GridSegment2x(start.translatedByCells(delta), end.translatedByCells(delta));
     }
 
@@ -122,20 +130,24 @@ public record GridSegment2x(GridPoint2x start, GridPoint2x end) {
     }
 
     public Set<Point2i> touchingCells() {
+        return CellCoord.toPoints(touchingCellCoords());
+    }
+
+    public Set<CellCoord> touchingCellCoords() {
         if (!start.isVertex() || !end.isVertex() || manhattanLength2() != 2) {
             return Set.of();
         }
-        LinkedHashSet<Point2i> cells = new LinkedHashSet<>();
+        LinkedHashSet<CellCoord> cells = new LinkedHashSet<>();
         if (isHorizontal()) {
             int cellX = minX2() / 2;
             int boundaryY = start.y2() / 2;
-            cells.add(new Point2i(cellX, boundaryY - 1));
-            cells.add(new Point2i(cellX, boundaryY));
+            cells.add(new CellCoord(cellX, boundaryY - 1));
+            cells.add(new CellCoord(cellX, boundaryY));
         } else {
             int boundaryX = start.x2() / 2;
             int cellY = minY2() / 2;
-            cells.add(new Point2i(boundaryX - 1, cellY));
-            cells.add(new Point2i(boundaryX, cellY));
+            cells.add(new CellCoord(boundaryX - 1, cellY));
+            cells.add(new CellCoord(boundaryX, cellY));
         }
         return Set.copyOf(cells);
     }

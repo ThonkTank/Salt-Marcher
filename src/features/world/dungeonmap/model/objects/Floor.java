@@ -1,62 +1,103 @@
 package features.world.dungeonmap.model.objects;
 
-import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileFaceShape;
+
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
- * A floor is the object-level owner of walkable cells plus explicit 2x anchor semantics.
+ * A floor owns its walkable cells directly; TileFaceShape is now only a derived compatibility surface.
  */
-public record Floor(TileFaceShape faceShape, GridPoint2x anchor2x) {
+public final class Floor {
+
+    private final Set<CellCoord> cellCoords;
+    private final CellCoord anchorCell;
 
     public static Floor empty() {
-        return new Floor(null, null);
+        return new Floor(Set.of(), null);
     }
 
-    public Floor {
-        faceShape = faceShape == null ? new TileFaceShape(Set.of()) : faceShape;
-        anchor2x = normalizeAnchor(anchor2x, faceShape);
+    public Floor(Collection<CellCoord> cellCoords, CellCoord anchorCell) {
+        Set<CellCoord> resolvedCells = normalizeCells(cellCoords);
+        this.cellCoords = resolvedCells;
+        this.anchorCell = normalizeAnchor(anchorCell, resolvedCells);
+    }
+
+    public Set<CellCoord> cellCoords() {
+        return cellCoords;
+    }
+
+    public CellCoord anchorCellCoord() {
+        return anchorCell;
     }
 
     public TileFaceShape shape2x() {
-        return faceShape;
+        return new TileFaceShape(cells());
     }
 
     public Point2i anchorCell() {
-        return anchor2x.toCellCenter().orElse(new Point2i(0, 0));
+        return anchorCell.toPoint2i();
     }
 
     public Set<Point2i> cells() {
-        return faceShape.cells();
+        return CellCoord.toPoints(cellCoords);
+    }
+
+    public CellCoord centerCellCoord() {
+        return cellCoords.isEmpty() ? null : StructureDescriptor.bestCenterCoord(cellCoords);
     }
 
     public Point2i centerCell() {
-        return cells().isEmpty() ? null : StructureDescriptor.bestCenterCell(cells());
+        CellCoord center = centerCellCoord();
+        return center == null ? null : center.toPoint2i();
+    }
+
+    public boolean contains(CellCoord cell) {
+        return cell != null && cellCoords.contains(cell);
     }
 
     public boolean contains(Point2i cell) {
-        return faceShape.contains(cell);
+        return contains(cell == null ? null : CellCoord.fromPoint(cell));
     }
 
     public Floor movedBy(Point2i delta) {
-        Point2i resolvedDelta = delta == null ? new Point2i(0, 0) : delta;
+        return movedBy(CellCoord.fromPoint(delta));
+    }
+
+    public Floor movedBy(CellCoord delta) {
+        CellCoord resolvedDelta = delta == null ? new CellCoord(0, 0) : delta;
         if (resolvedDelta.x() == 0 && resolvedDelta.y() == 0) {
             return this;
         }
-        return new Floor(faceShape.translatedByCells(resolvedDelta), anchor2x.translatedByCells(resolvedDelta));
+        LinkedHashSet<CellCoord> translated = new LinkedHashSet<>();
+        for (CellCoord cell : cellCoords) {
+            translated.add(cell.add(resolvedDelta));
+        }
+        return new Floor(translated, anchorCell.add(resolvedDelta));
     }
 
-    private static GridPoint2x normalizeAnchor(GridPoint2x anchor2x, TileFaceShape faceShape) {
-        if (anchor2x != null) {
-            if (!anchor2x.isTileCenter()) {
-                throw new IllegalArgumentException("Floor anchor must be a tile center");
-            }
-            return anchor2x;
+    private static Set<CellCoord> normalizeCells(Collection<CellCoord> cells) {
+        if (cells == null || cells.isEmpty()) {
+            return Set.of();
         }
-        if (faceShape == null || faceShape.cells().isEmpty()) {
-            return GridPoint2x.fromTileCenter(new Point2i(0, 0));
+        LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
+        cells.stream()
+                .filter(cell -> cell != null)
+                .sorted(CellCoord.ORDER)
+                .forEach(result::add);
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
+    private static CellCoord normalizeAnchor(CellCoord anchorCell, Set<CellCoord> cellCoords) {
+        if (anchorCell != null) {
+            return anchorCell;
         }
-        return GridPoint2x.fromTileCenter(StructureDescriptor.bestCenterCell(faceShape.cells()));
+        if (cellCoords == null || cellCoords.isEmpty()) {
+            return new CellCoord(0, 0);
+        }
+        return StructureDescriptor.bestCenterCoord(cellCoords);
     }
 }
