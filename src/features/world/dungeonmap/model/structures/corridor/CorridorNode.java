@@ -6,14 +6,14 @@ import features.world.dungeonmap.model.geometry.Point2i;
 
 public record CorridorNode(
         Long nodeId,
-        int gridX2,
-        int gridY2,
+        GridPoint2x point2x,
         Long roomId,
         Point2i roomRelativeCell,
         CardinalDirection roomBoundaryDirection
 ) {
 
     public CorridorNode {
+        point2x = point2x == null ? GridPoint2x.fromRaw(0, 0) : point2x;
         boolean hasRoomBinding = roomId != null || roomRelativeCell != null || roomBoundaryDirection != null;
         if (hasRoomBinding && (roomId == null || roomRelativeCell == null || roomBoundaryDirection == null)) {
             throw new IllegalArgumentException("Corridor node room binding must be all-or-none");
@@ -22,9 +22,5 @@ public record CorridorNode(
 
     public boolean isRoomBound() {
         return roomId != null;
-    }
-
-    public GridPoint2x point2x() {
-        return GridPoint2x.fromRaw(gridX2, gridY2);
     }
 }

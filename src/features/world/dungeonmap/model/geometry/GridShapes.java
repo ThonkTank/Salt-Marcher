@@ -88,30 +88,6 @@ public final class GridShapes {
         return edge(edge == null ? null : GridSegment2x.fromVertexEdge(edge));
     }
 
-    public static GridShape fromVertexPath(VertexPath path) {
-        if (path == null || path.edges().isEmpty()) {
-            return new EdgePathShape(List.of());
-        }
-        ArrayList<GridShape> chains = new ArrayList<>();
-        for (List<Point2i> chain : path.orderedChains()) {
-            ArrayList<GridPoint2x> points = new ArrayList<>();
-            for (Point2i vertex : chain) {
-                points.add(GridPoint2x.fromVertex(vertex));
-            }
-            GridShape chainShape = polyline(points);
-            if (!chainShape.isEmpty()) {
-                chains.add(chainShape);
-            }
-        }
-        if (chains.isEmpty()) {
-            return new EdgePathShape(List.of());
-        }
-        if (chains.size() == 1) {
-            return chains.getFirst();
-        }
-        return union(chains);
-    }
-
     private static List<GridPoint2x> normalizePolylinePoints(Collection<GridPoint2x> points) {
         ArrayList<GridPoint2x> result = new ArrayList<>();
         GridPoint2x previous = null;

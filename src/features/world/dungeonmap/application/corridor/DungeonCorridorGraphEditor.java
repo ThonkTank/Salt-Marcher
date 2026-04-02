@@ -35,8 +35,7 @@ public final class DungeonCorridorGraphEditor {
             }
             updatedNodes.add(new CorridorNode(
                     node.nodeId(),
-                    point2x.x2(),
-                    point2x.y2(),
+                    point2x,
                     node.roomId(),
                     node.roomRelativeCell(),
                     node.roomBoundaryDirection()));
@@ -56,7 +55,7 @@ public final class DungeonCorridorGraphEditor {
         long segmentStartId = nextSyntheticSegmentId(corridor);
         long segmentEndId = segmentStartId - 1;
         ArrayList<CorridorNode> nodes = new ArrayList<>(corridor.nodes());
-        nodes.add(new CorridorNode(nodeId, point2x.x2(), point2x.y2(), null, null, null));
+        nodes.add(new CorridorNode(nodeId, point2x, null, null, null));
         ArrayList<CorridorSegment> segments = new ArrayList<>();
         for (CorridorSegment segment : corridor.segments()) {
             if (!Objects.equals(segment.segmentId(), segmentId)) {

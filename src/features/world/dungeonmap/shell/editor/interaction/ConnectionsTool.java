@@ -285,7 +285,7 @@ public final class ConnectionsTool implements EditorTool {
         if (draft == null || point2x == null) {
             return;
         }
-        CorridorNode node = new CorridorNode(draft.nextNodeId(), point2x.x2(), point2x.y2(), null, null, null);
+        CorridorNode node = new CorridorNode(draft.nextNodeId(), point2x, null, null, null);
         CorridorSegment segment = new CorridorSegment(draft.nextSegmentId(), draft.nodes().getLast().nodeId(), node.nodeId());
         draft.nodes().add(node);
         draft.segments().add(segment);
@@ -463,8 +463,7 @@ public final class ConnectionsTool implements EditorTool {
                 .offset(hit.outwardStep().x(), hit.outwardStep().y());
         return new CorridorNode(
                 nodeId,
-                point2x.x2(),
-                point2x.y2(),
+                point2x,
                 room == null ? null : room.roomId(),
                 relativeCell,
                 CardinalDirection.fromDirection(hit.outwardStep()));

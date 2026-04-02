@@ -113,8 +113,7 @@ public final class DungeonCorridorEditService {
             }
             nodes.add(new CorridorNode(
                     persistedNodeId,
-                    node.gridX2(),
-                    node.gridY2(),
+                    node.point2x(),
                     node.roomId(),
                     node.roomRelativeCell(),
                     node.roomBoundaryDirection()));

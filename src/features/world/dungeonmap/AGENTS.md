@@ -17,9 +17,10 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `DungeonLayout` is the immutable global lookup over direct structure owners: room clusters, corridors, stairs, transitions, connections, traversable cells, and spatial indexes.
 - Corridors, stairs, and transitions are first-class persisted structures. There is no second aggregate that owns their geometry.
 - `Room` and `Corridor` expose shared surface geometry only through `StructureObject`.
-- `Corridor` keeps its node/segment graph as truth and compiles it into the same `StructureDescriptor`/`StructureObject` surface model used by rooms, including opening segments for room-bound endpoints.
+- `Corridor` keeps its node/segment graph as truth, stores node and route geometry directly as `GridPoint2x`, and compiles it into the same `StructureDescriptor`/`StructureObject` surface model used by rooms, including opening segments for room-bound endpoints.
 - Room paint/delete/boundary edits persist room-owned `StructureDescriptor` truth plus derived cluster metadata. They do not reroute or regenerate corridors or stairs.
 - Connection doors and room exit narration are level-aware. Shared boundary/door queries must keep `levelZ` together with the 2x segment instead of collapsing identical segments across floors.
+- `Wall` and `Door` are 2x-native boundary objects keyed by normalized `GridSegment2x` collections. Do not reintroduce vertex-edge wrapper geometry in productive wall/door/corridor flows.
 - Runtime presentation resolves surfaces from the same structure owners used by the editor. Do not invent runtime-only structure mirrors.
 
 ## Package Roles
@@ -27,7 +28,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `model/`
   - `geometry/` owns pure grid math and routing primitives.
   - `interaction/` owns model-side interaction seams such as `InteractiveLabelHandle`; semantic label identity lives here, not in canvas code.
-- `objects/` owns thin domain objects over geometry such as `Floor`, `Wall`, `Door`, `StructureObject`, and `StructureDescriptor`.
+- `objects/` owns thin domain objects over geometry such as `Floor`, `Wall`, `Door`, `StructureObject`, and `StructureDescriptor`. `Wall`/`Door` stay segment-based; shared boundary queries operate on `GridSegment2x`.
   - `structures/` owns first-class structures and the structure-specific subpackages `cluster`, `connection`, `corridor`, `room`, `stair`, and `transition`.
   - `DungeonLayout` stays the feature-wide lookup surface, not a second mutation owner.
 - `application/`
@@ -129,7 +130,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `Room` owns room-local truth and narration.
 - `RoomCluster` owns multi-room rewrite logic, grouping, adjacency, and cluster moves. Its aggregate cells and internal 2x boundary segments stay derived from room-owned `StructureObject`s.
 - `Connection` owns connectivity; `Door` is the boundary object exposed through that connection.
-- `Corridor` is a first-class structure with stable identity, nodes, segments, bindings, and derived geometry.
+- `Corridor` is a first-class structure with stable identity, nodes, segments, room bindings, and derived geometry. Persisted node coordinates stay 2x-native as `GridPoint2x`, and derived routes stay 2x-native as ordered `GridPoint2x` paths.
 - `DungeonStair` is a first-class structure with stable identity and explicit 3D path geometry. Exits are derived views, not persisted second truths.
 - `DungeonTransition` owns transition identity, placement anchor, destination, and optional bidirectional link. Unplaced transitions are valid; spatial queries must guard for null anchor or placement state.
 

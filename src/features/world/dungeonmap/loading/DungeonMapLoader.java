@@ -7,7 +7,6 @@ import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.model.objects.StructureObject;
@@ -384,8 +383,7 @@ public final class DungeonMapLoader {
                 row -> row.getLong("corridor_id"),
                 row -> new CorridorNode(
                         row.getLong("corridor_node_id"),
-                        row.getInt("grid_x2"),
-                        row.getInt("grid_y2"),
+                        GridPoint2x.fromRaw(row.getInt("grid_x2"), row.getInt("grid_y2")),
                         nullableLong(row, "room_id"),
                         row.getObject("room_relative_cell_x") == null
                                 ? null
@@ -642,8 +640,8 @@ public final class DungeonMapLoader {
             return null;
         }
         List<Room> touchingRooms = new ArrayList<>();
-        for (VertexEdge edge : doorComponent.door().edges()) {
-            for (Point2i cell : edge.touchingCells().stream().sorted(Point2i.POINT_ORDER).toList()) {
+        for (GridSegment2x segment2x : doorComponent.door().segments2x()) {
+            for (Point2i cell : segment2x.touchingCells().stream().sorted(Point2i.POINT_ORDER).toList()) {
                 Room room = roomsByPoint.get(CubePoint.at(cell, doorComponent.levelZ()));
                 if (room != null && !touchingRooms.contains(room)) {
                     touchingRooms.add(room);
@@ -659,7 +657,7 @@ public final class DungeonMapLoader {
                 mapId,
                 clusterId,
                 doorComponent.levelZ(),
-                new Door(doorComponent.door().edges()),
+                Door.fromSegments(doorComponent.door().segments2x(), Door.DoorState.CLOSED),
                 endpoints);
     }
 
@@ -689,14 +687,14 @@ public final class DungeonMapLoader {
         StringBuilder builder = new StringBuilder();
         builder.append(levelZ).append(':');
         boolean first = true;
-        for (VertexEdge edge : door.edges().stream().sorted(VertexEdge.EDGE_ORDER).toList()) {
+        for (GridSegment2x segment2x : door.segments2x().stream().sorted(GridSegment2x.SEGMENT_ORDER).toList()) {
             if (!first) {
                 builder.append('|');
             }
             first = false;
-            builder.append(edge.start().x()).append(',').append(edge.start().y())
+            builder.append(segment2x.start().x2()).append(',').append(segment2x.start().y2())
                     .append('-')
-                    .append(edge.end().x()).append(',').append(edge.end().y());
+                    .append(segment2x.end().x2()).append(',').append(segment2x.end().y2());
         }
         return builder.toString();
     }

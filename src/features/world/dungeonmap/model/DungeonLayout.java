@@ -4,7 +4,6 @@ import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.geometry.TileShape;
-import features.world.dungeonmap.model.geometry.VertexEdge;
 import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.structures.cluster.ClusterRewrite;
 import features.world.dungeonmap.model.structures.cluster.ClusterRewriteSplit;
@@ -59,7 +58,6 @@ public final class DungeonLayout {
     private final List<DungeonStair> stairs;
     private final List<DungeonTransition> transitions;
     private final List<Connection> connections;
-    private final Map<VertexEdge, Connection> connectionsByEdge;
     private final Map<GridSegment2x, Connection> connectionsBySegment2x;
     private final Map<ConnectionSegmentKey, Connection> connectionsBySegmentAndLevel2x;
     private final Map<ConnectionEndpoint, List<Connection>> connectionsByEndpoint;
@@ -104,7 +102,6 @@ public final class DungeonLayout {
         this.stairs = stairs == null ? List.of() : List.copyOf(stairs);
         this.transitions = transitions == null ? List.of() : List.copyOf(transitions);
         this.connections = indexConnections(this.clusters, this.corridors);
-        this.connectionsByEdge = indexConnectionsByEdge(this.connections);
         this.connectionsBySegment2x = indexConnectionsBySegment2x(this.connections);
         this.connectionsBySegmentAndLevel2x = indexConnectionsBySegmentAndLevel2x(this.connections);
         this.connectionsByEndpoint = indexConnectionsByEndpoint(this.connections);
@@ -237,18 +234,9 @@ public final class DungeonLayout {
         return corridorId == null ? null : corridorsById.get(corridorId);
     }
 
-    public Door doorAt(VertexEdge edge) {
-        Connection connection = connectionAt(edge);
-        return connection == null ? null : connection.door();
-    }
-
     public Door doorAt(GridSegment2x segment2x) {
         Connection connection = connectionAt(segment2x);
         return connection == null ? null : connection.door();
-    }
-
-    public Connection connectionAt(VertexEdge edge) {
-        return edge == null ? null : connectionsByEdge.get(edge);
     }
 
     public Connection connectionAt(GridSegment2x segment2x) {
@@ -279,16 +267,6 @@ public final class DungeonLayout {
 
     public List<Connection> connectionsForCorridor(long corridorId) {
         return connectionsFor(ConnectionEndpoint.corridor(corridorId));
-    }
-
-    public List<Door> doorsAtEdges(Set<VertexEdge> edges) {
-        if (edges == null || edges.isEmpty()) {
-            return List.of();
-        }
-        return edges.stream()
-                .map(this::doorAt)
-                .filter(Objects::nonNull)
-                .toList();
     }
 
     public List<Door> doorsAtSegments(Set<GridSegment2x> segments2x) {
@@ -576,21 +554,6 @@ public final class DungeonLayout {
                 .toList();
     }
 
-    public Set<VertexEdge> connectionEdgesForCorridorAtLevel(long corridorId, int levelZ) {
-        Corridor corridor = findCorridor(corridorId);
-        if (corridor == null) {
-            return Set.of();
-        }
-        Set<VertexEdge> result = new LinkedHashSet<>();
-        for (CorridorConnection connection : corridor.connections()) {
-            if (connection.levelZ() != levelZ || connection.door() == null) {
-                continue;
-            }
-            result.addAll(connection.door().edges());
-        }
-        return Set.copyOf(result);
-    }
-
     private static boolean corridorReachesLevel(Corridor corridor, int levelZ) {
         return corridor != null
                 && !corridor.structure().cellsAtLevel(levelZ).isEmpty();
@@ -632,19 +595,6 @@ public final class DungeonLayout {
                     .toList());
         }
         return List.copyOf(result);
-    }
-
-    private static Map<VertexEdge, Connection> indexConnectionsByEdge(List<Connection> connections) {
-        Map<VertexEdge, Connection> result = new LinkedHashMap<>();
-        for (Connection connection : connections) {
-            if (connection == null || connection.door() == null) {
-                continue;
-            }
-            for (VertexEdge edge : connection.door().edges()) {
-                result.putIfAbsent(edge, connection);
-            }
-        }
-        return Map.copyOf(result);
     }
 
     private static Map<GridSegment2x, Connection> indexConnectionsBySegment2x(List<Connection> connections) {

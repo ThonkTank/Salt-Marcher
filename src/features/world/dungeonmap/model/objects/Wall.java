@@ -2,39 +2,22 @@ package features.world.dungeonmap.model.objects;
 
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
-import features.world.dungeonmap.model.geometry.VertexEdge;
-import features.world.dungeonmap.model.geometry.VertexPath;
 
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
 
-public final class Wall extends VertexPath {
+public final class Wall {
 
     private final List<GridSegment2x> segments2x;
 
-    // A wall is a path-shaped object whose only added domain rule is that passage is always blocked.
-    public Wall(Collection<VertexEdge> edges) {
-        super(edges);
-        this.segments2x = edges().stream()
-                .map(GridSegment2x::fromVertexEdge)
-                .sorted(GridSegment2x.SEGMENT_ORDER)
-                .toList();
+    // A wall is just a normalized 2x boundary path whose domain rule is that passage is always blocked.
+    public Wall(Collection<GridSegment2x> segments) {
+        this.segments2x = normalizeSegments(segments);
     }
 
     public static Wall fromSegments(Collection<GridSegment2x> segments) {
-        ArrayList<VertexEdge> edges = new ArrayList<>();
-        if (segments != null) {
-            segments.stream()
-                    .filter(segment -> segment != null)
-                    .sorted(GridSegment2x.SEGMENT_ORDER)
-                    .forEach(segment -> segment.toVertexEdge().ifPresent(edges::add));
-        }
-        return new Wall(edges);
-    }
-
-    protected VertexPath recreate(Collection<VertexEdge> edges) {
-        return new Wall(edges);
+        return new Wall(segments);
     }
 
     public List<GridSegment2x> segments2x() {
@@ -42,14 +25,27 @@ public final class Wall extends VertexPath {
     }
 
     public Wall movedBy(Point2i delta) {
-        return (Wall) translated(delta);
-    }
-
-    public static Wall between(Point2i start, Point2i end) {
-        return new Wall(java.util.Set.of(new VertexEdge(start, end)));
+        Point2i resolvedDelta = delta == null ? new Point2i(0, 0) : delta;
+        if (resolvedDelta.x() == 0 && resolvedDelta.y() == 0) {
+            return this;
+        }
+        return new Wall(segments2x.stream()
+                .map(segment -> segment.translatedByCells(resolvedDelta))
+                .toList());
     }
 
     public boolean blocksPassage() {
         return true;
+    }
+
+    private static List<GridSegment2x> normalizeSegments(Collection<GridSegment2x> segments) {
+        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
+        if (segments != null) {
+            segments.stream()
+                    .filter(segment -> segment != null)
+                    .sorted(GridSegment2x.SEGMENT_ORDER)
+                    .forEach(result::add);
+        }
+        return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 }
