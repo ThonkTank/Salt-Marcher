@@ -283,7 +283,7 @@ public final class RoomCluster {
                 mapId,
                 clusterId == null ? 0L : clusterId,
                 ClusterRewritePlanner.normalizedRoomName(roomId, name),
-                StructureObject.fromDescriptor(StructureDescriptor.fromCellsByLevel(Map.of(0, resolvedFloor.cells()))));
+                StructureObject.fromDescriptor(ClusterRewritePlanner.descriptorForStandaloneRoom(resolvedFloor)));
     }
 
     public RoomCluster withCreatedRoom(Long roomId, String name, Floor floor) {
