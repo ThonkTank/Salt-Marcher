@@ -1,8 +1,8 @@
 package features.world.dungeonmap.shell.interaction;
 
-import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
-import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import javafx.geometry.Point2D;
 
 import java.util.Objects;
@@ -85,18 +85,18 @@ public final class DungeonHitConventions {
         return "segment:" + segmentId;
     }
 
-    public static String cornerPartKey(LegacyGridPoint2x point2x) {
-        LegacyGridPoint2x resolvedPoint = Objects.requireNonNull(point2x, "point2x");
+    public static String cornerPartKey(GridPoint2x point2x) {
+        GridPoint2x resolvedPoint = Objects.requireNonNull(point2x, "point2x");
         return "point2x:" + resolvedPoint.x2() + ":" + resolvedPoint.y2();
     }
 
-    public static String vertexPartKey(LegacyGridPoint2x vertex2x) {
-        LegacyGridPoint2x resolvedVertex = Objects.requireNonNull(vertex2x, "vertex2x");
+    public static String vertexPartKey(GridPoint2x vertex2x) {
+        GridPoint2x resolvedVertex = Objects.requireNonNull(vertex2x, "vertex2x");
         return "point2x:" + resolvedVertex.x2() + ":" + resolvedVertex.y2();
     }
 
-    public static String segment2xPartKey(LegacyGridSegment2x segment2x) {
-        LegacyGridSegment2x resolvedSegment = Objects.requireNonNull(segment2x, "segment2x");
+    public static String segment2xPartKey(GridSegment2x segment2x) {
+        GridSegment2x resolvedSegment = Objects.requireNonNull(segment2x, "segment2x");
         return "segment2x:"
                 + resolvedSegment.start().x2() + ":" + resolvedSegment.start().y2()
                 + ":" + resolvedSegment.end().x2() + ":" + resolvedSegment.end().y2();

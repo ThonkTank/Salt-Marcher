@@ -15,6 +15,6 @@ public final class DungeonFloorHitSource implements DungeonHitSource {
         }
         return List.of(new DungeonHitDescriptor(
                 new DungeonHitSubject.FloorCellSubject(probe.gridCell(), probe.levelZ()),
-                List.of(new DungeonHitSurface.TileSurface(Set.of(probe.gridCell()), probe.levelZ()))));
+                List.of(new DungeonHitSurface.CellSurface(Set.of(probe.gridCell()), probe.levelZ()))));
     }
 }

@@ -485,11 +485,11 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         if (key == null) {
             return;
         }
-        LegacyGridSegment2x segment2x = DungeonSelectionLookup.segment2x(key);
+        GridSegment2x segment2x = DungeonSelectionLookup.segment2x(key);
         if (segment2x != null) {
             pass.gc().setStroke(withOpacity(pass.palette().highlightStroke(), 0.95));
             pass.gc().setLineWidth(3.0);
-            strokeSegment2x(pass.gc(), pass.camera(), pass.gridSize(), segment2x);
+            strokeSegment2x(pass.gc(), pass.camera(), pass.gridSize(), segment2x.toLegacyRaw());
             return;
         }
         if (key.kind() == features.world.dungeonmap.shell.interaction.DungeonHitKind.CORRIDOR_NODE) {
@@ -509,13 +509,13 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             return;
         }
         if (key.kind() == features.world.dungeonmap.shell.interaction.DungeonHitKind.CORRIDOR_CORNER) {
-            LegacyGridPoint2x corner = DungeonSelectionLookup.corridorCornerPoint2x(key);
+            GridPoint2x corner = DungeonSelectionLookup.corridorCornerPoint2x(key);
             if (corner != null) {
                 drawCorridorHandle(
                         pass.gc(),
                         pass.camera(),
                         pass.gridSize(),
-                        corner,
+                        corner.toLegacyRaw(),
                         withOpacity(pass.palette().highlightFill(), 0.92),
                         withOpacity(pass.palette().highlightStroke(), 1.0),
                         Math.max(4.5, pass.gridSize() * 0.14));
@@ -539,13 +539,13 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             }
             return;
         }
-        LegacyGridPoint2x vertex2x = DungeonSelectionLookup.vertex2x(key);
+        GridPoint2x vertex2x = DungeonSelectionLookup.vertex2x(key);
         if (vertex2x != null) {
             drawBoundaryVertexMarker(
                     pass.gc(),
                     pass.camera(),
                     pass.gridSize(),
-                    vertex2x,
+                    vertex2x.toLegacyRaw(),
                     withOpacity(pass.palette().highlightFill(), 0.95),
                     withOpacity(pass.palette().highlightStroke(), 1.0),
                     5.0);

@@ -3,12 +3,12 @@ package features.world.dungeonmap.shell.interaction;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNode;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public final class DungeonCorridorGraphHitSource implements DungeonHitSource {
 
@@ -33,10 +33,9 @@ public final class DungeonCorridorGraphHitSource implements DungeonHitSource {
     private static List<DungeonHitDescriptor> nodeDescriptors(Corridor corridor, int levelZ) {
         ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
         for (CorridorNode node : corridor.persistedManualNodes()) {
-            LegacyGridPoint2x point2x = node.point2x().toLegacyRaw();
             descriptors.add(new DungeonHitDescriptor(
-                    new DungeonHitSubject.CorridorNodeSubject(corridor.corridorId(), node.nodeId(), point2x),
-                    List.of(new DungeonHitSurface.PointSurface(point2x, levelZ))));
+                    new DungeonHitSubject.CorridorNodeSubject(corridor.corridorId(), node.nodeId(), node.point2x()),
+                    List.of(new DungeonHitSurface.PointSurface(Set.of(node.point2x()), levelZ))));
         }
         return List.copyOf(descriptors);
     }
@@ -45,10 +44,9 @@ public final class DungeonCorridorGraphHitSource implements DungeonHitSource {
         ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
         for (Corridor.CorridorRoute route : corridor.routes()) {
             for (GridPoint2x cornerPoint : route.cornerPoints2x()) {
-                LegacyGridPoint2x legacyCorner = cornerPoint.toLegacyRaw();
                 descriptors.add(new DungeonHitDescriptor(
-                        new DungeonHitSubject.CorridorCornerSubject(corridor.corridorId(), route.segmentId(), legacyCorner),
-                        List.of(new DungeonHitSurface.PointSurface(legacyCorner, levelZ))));
+                        new DungeonHitSubject.CorridorCornerSubject(corridor.corridorId(), route.segmentId(), cornerPoint),
+                        List.of(new DungeonHitSurface.PointSurface(Set.of(cornerPoint), levelZ))));
             }
         }
         return List.copyOf(descriptors);
@@ -60,11 +58,8 @@ public final class DungeonCorridorGraphHitSource implements DungeonHitSource {
             if (route.segmentId() == null || route.path2x().isEmpty()) {
                 continue;
             }
-            ArrayList<DungeonHitSurface> surfaces = new ArrayList<>();
-            for (GridSegment2x segment2x : route.segments2x()) {
-                surfaces.add(new DungeonHitSurface.SegmentSurface(segment2x.toLegacyRaw(), levelZ));
-            }
-            if (surfaces.isEmpty()) {
+            Set<GridSegment2x> segments2x = Set.copyOf(route.segments2x());
+            if (segments2x.isEmpty()) {
                 continue;
             }
             descriptors.add(new DungeonHitDescriptor(
@@ -72,13 +67,13 @@ public final class DungeonCorridorGraphHitSource implements DungeonHitSource {
                             corridor.corridorId(),
                             route.segmentId(),
                             canonicalSegmentPoint(route.path2x())),
-                    surfaces));
+                    List.of(new DungeonHitSurface.SegmentSurface(segments2x, levelZ))));
         }
         return List.copyOf(descriptors);
     }
 
-    private static LegacyGridPoint2x canonicalSegmentPoint(List<GridPoint2x> path2x) {
-        return path2x.get(path2x.size() / 2).toLegacyRaw();
+    private static GridPoint2x canonicalSegmentPoint(List<GridPoint2x> path2x) {
+        return path2x.get(path2x.size() / 2);
     }
 
     private static List<Corridor> corridorsAtLevel(DungeonLayout layout, int levelZ) {

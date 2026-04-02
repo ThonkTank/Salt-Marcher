@@ -119,8 +119,8 @@ public final class SelectionTool implements EditorTool {
             corridorNodeDragSession = new CorridorNodeDragSession(
                     corridorNodeHit.corridorId(),
                     corridorNodeHit.nodeId(),
-                    GridPoint2x.fromLegacyRaw(corridorNodeHit.point2x()),
-                    GridPoint2x.fromLegacyRaw(corridorNodeHit.point2x()));
+                    corridorNodeHit.point2x(),
+                    corridorNodeHit.point2x());
             return true;
         }
         if (hit instanceof DungeonHitSubject.ClusterLabelSubject clusterLabelHit) {
@@ -157,7 +157,7 @@ public final class SelectionTool implements EditorTool {
             }
             GridPoint2x point2x = ctx == null || ctx.probe() == null
                     ? GridPoint2x.cell(event.gridCell())
-                    : GridPoint2x.fromLegacyRaw(ctx.probe().probePoint2x());
+                    : ctx.probe().probePoint2x();
             if (Objects.equals(point2x, corridorNodeDragSession.currentPoint())) {
                 return true;
             }

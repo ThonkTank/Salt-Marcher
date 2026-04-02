@@ -199,7 +199,7 @@ public final class ConnectionsTool implements EditorTool {
         if (draft != null && hit instanceof DungeonHitSubject.FloorCellSubject floorHit) {
             GridPoint2x point2x = ctx == null || ctx.probe() == null
                     ? GridPoint2x.cell(floorHit.cell())
-                    : GridPoint2x.fromLegacyRaw(ctx.probe().probePoint2x());
+                    : ctx.probe().probePoint2x();
             appendDraftNode(point2x);
             return true;
         }
@@ -210,12 +210,12 @@ public final class ConnectionsTool implements EditorTool {
         }
         if (hit instanceof DungeonHitSubject.CorridorCornerSubject cornerHit) {
             applySelection(ctx == null ? null : ctx.resolvedSelectionKey());
-            insertNode(cornerHit.corridorId(), cornerHit.segmentId(), GridPoint2x.fromLegacyRaw(cornerHit.point2x()));
+            insertNode(cornerHit.corridorId(), cornerHit.segmentId(), cornerHit.point2x());
             return true;
         }
         if (hit instanceof DungeonHitSubject.CorridorSegmentSubject segmentHit) {
             applySelection(ctx == null ? null : ctx.resolvedSelectionKey());
-            insertNode(segmentHit.corridorId(), segmentHit.segmentId(), GridPoint2x.fromLegacyRaw(segmentHit.point2x()));
+            insertNode(segmentHit.corridorId(), segmentHit.segmentId(), segmentHit.point2x());
             return true;
         }
         if (hit instanceof DungeonHitSubject.CorridorNodeSubject nodeHit) {
@@ -403,7 +403,7 @@ public final class ConnectionsTool implements EditorTool {
 
     private void applyDoorEdit(
             Long clusterId,
-            features.world.dungeonmap.model.geometry.LegacyGridSegment2x segment2x,
+            features.world.dungeonmap.model.geometry.GridSegment2x segment2x,
             boolean deleteBoundary,
             DungeonSelectionKey followUpKey
     ) {
@@ -416,7 +416,7 @@ public final class ConnectionsTool implements EditorTool {
                         mapId,
                         clusterId,
                         mapState.activeProjectionLevel(),
-                        segment2x,
+                        segment2x.toLegacyBoundaryEdge(),
                         InternalBoundaryType.DOOR,
                         deleteBoundary),
                 mapId,

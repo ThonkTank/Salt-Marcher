@@ -1,36 +1,38 @@
 package features.world.dungeonmap.shell.interaction;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
-import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
+import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
 
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.Objects;
 
-public sealed interface DungeonHitSurface permits DungeonHitSurface.TileSurface,
+public sealed interface DungeonHitSurface permits DungeonHitSurface.CellSurface,
         DungeonHitSurface.SegmentSurface,
         DungeonHitSurface.PointSurface,
         DungeonHitSurface.LabelSurface {
 
     int levelZ();
 
-    record TileSurface(Set<CellCoord> cells, int levelZ) implements DungeonHitSurface {
-        public TileSurface {
-            cells = cells == null ? Set.of() : Set.copyOf(cells);
+    record CellSurface(Set<CellCoord> cells, int levelZ) implements DungeonHitSurface {
+        public CellSurface {
+            cells = normalizedMembers(cells);
         }
     }
 
-    record SegmentSurface(LegacyGridSegment2x segment2x, int levelZ) implements DungeonHitSurface {
+    record SegmentSurface(Set<GridSegment2x> segments2x, int levelZ) implements DungeonHitSurface {
         public SegmentSurface {
-            segment2x = Objects.requireNonNull(segment2x, "segment2x");
+            segments2x = normalizedMembers(segments2x);
         }
     }
 
-    record PointSurface(LegacyGridPoint2x point2x, int levelZ) implements DungeonHitSurface {
+    record PointSurface(Set<GridPoint2x> points2x, int levelZ) implements DungeonHitSurface {
         public PointSurface {
-            point2x = Objects.requireNonNull(point2x, "point2x");
+            points2x = normalizedMembers(points2x);
         }
     }
 
@@ -39,5 +41,18 @@ public sealed interface DungeonHitSurface permits DungeonHitSurface.TileSurface,
             bounds = Objects.requireNonNull(bounds, "bounds");
             anchorPoint = Objects.requireNonNull(anchorPoint, "anchorPoint");
         }
+    }
+
+    private static <T> Set<T> normalizedMembers(Collection<T> members) {
+        if (members == null || members.isEmpty()) {
+            return Set.of();
+        }
+        LinkedHashSet<T> result = new LinkedHashSet<>();
+        for (T member : members) {
+            if (member != null) {
+                result.add(member);
+            }
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 }

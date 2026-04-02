@@ -1,5 +1,6 @@
 package features.world.dungeonmap.shell.interaction;
 
+import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import javafx.geometry.Point2D;
@@ -14,7 +15,7 @@ import java.util.Objects;
 public record DungeonHitProbe(
         Point2D canvasPoint,
         CellCoord gridCell,
-        LegacyGridPoint2x probePoint2x,
+        GridPoint2x probePoint2x,
         int levelZ,
         double panX,
         double panY,
@@ -33,7 +34,7 @@ public record DungeonHitProbe(
         }
     }
 
-    public static LegacyGridPoint2x point2xForCanvas(Point2D canvasPoint, double panX, double panY, double gridSizePx) {
+    public static GridPoint2x point2xForCanvas(Point2D canvasPoint, double panX, double panY, double gridSizePx) {
         Point2D resolvedPoint = Objects.requireNonNull(canvasPoint, "canvasPoint");
         requireFinite(panX, "panX");
         requireFinite(panY, "panY");
@@ -42,7 +43,7 @@ public record DungeonHitProbe(
             throw new IllegalArgumentException("gridSizePx must be > 0");
         }
         double halfGrid = gridSizePx / 2.0;
-        return LegacyGridPoint2x.fromRaw(
+        return GridPoint2x.fromLegacyRaw(
                 (int) Math.round((resolvedPoint.getX() - panX) / halfGrid),
                 (int) Math.round((resolvedPoint.getY() - panY) / halfGrid));
     }
@@ -54,8 +55,8 @@ public record DungeonHitProbe(
                 panY + resolvedCell.y() * gridSizePx);
     }
 
-    public Point2D canvasPointForPoint2x(LegacyGridPoint2x point2x) {
-        LegacyGridPoint2x resolvedPoint = Objects.requireNonNull(point2x, "point2x");
+    public Point2D canvasPointForPoint2x(GridPoint2x point2x) {
+        LegacyGridPoint2x resolvedPoint = Objects.requireNonNull(point2x, "point2x").toLegacyRaw();
         return new Point2D(
                 panX + resolvedPoint.x2() * gridSizePx / 2.0,
                 panY + resolvedPoint.y2() * gridSizePx / 2.0);

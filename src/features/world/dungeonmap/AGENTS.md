@@ -66,9 +66,9 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 
 - Hit collection owns raw candidates. `DungeonSelection` is event-time data only.
 - `CellCoord` is the canonical 2D cell primitive at model-owner seams, pointer events, hit probes, drag/placement helpers, and runtime tile navigation. `Point2i` remains a staged compatibility type only for older cell consumers, persisted relative-cell seams, and legacy vector/query APIs.
-- `DungeonHitProbe` carries canonical `CellCoord` tile context; shared half-step geometry for hit surfaces, boundary picks, and geometry-backed selection parts stays on `LegacyGridPoint2x` and `LegacyGridSegment2x` until the parity flip is complete.
-- `DungeonLayout` lookups and other untouched compat-facing APIs may still consume `Point2i`, but callers should convert at the edge instead of mirroring new cell ownership back onto `Point2i`. Corridor room bindings use `CellCoord`, while vertex picks and half-step hit geometry stay in `LegacyGridPoint2x`.
-- `DungeonHitSubject` and `DungeonSelectionLookup` expose geometry-backed editor/runtime selections only as `LegacyGridPoint2x` and `LegacyGridSegment2x`. Do not add raw doubled-`Point2i` or vertex mirrors back into those seams.
+- `DungeonHitProbe` carries canonical `CellCoord` tile context plus canonical `GridPoint2x` probe geometry. Cell hits use `DungeonHitSurface.CellSurface`, while shared half-step hit geometry uses set-based `PointSurface` and `SegmentSurface`.
+- `DungeonLayout` lookups and other untouched compat-facing APIs may still consume `Point2i`, but callers should convert at the edge instead of mirroring new cell ownership back onto `Point2i`. Corridor room bindings use `CellCoord`; geometry-backed picks and selections use `GridPoint2x` and `GridSegment2x`.
+- `DungeonHitSubject` and `DungeonSelectionLookup` expose geometry-backed editor/runtime selections only as `GridPoint2x` and `GridSegment2x`. Do not add raw doubled-`Point2i`, `LegacyGridPoint2x`, or `LegacyGridSegment2x` mirrors back into those seams.
 - `EditorTool.resolveHit(...)` owns tool-specific interpretation of those candidates. Do not move per-tool allowlists back into a central selector.
 - `EditorInteractionState` owns only shared editor coordination state:
   - `selectedKey`

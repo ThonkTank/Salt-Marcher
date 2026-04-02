@@ -5,6 +5,7 @@ import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
+import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
@@ -119,7 +120,7 @@ public final class BoundaryTool implements EditorTool {
             return EditorHitResolution.none();
         }
         return EditorHitResolution.part(
-                new DungeonHitSubject.VertexSubject(resolved.vertex2x()),
+                new DungeonHitSubject.VertexSubject(GridPoint2x.fromLegacyRaw(resolved.vertex2x())),
                 clusterOwnerKey(resolved.clusterId()));
     }
 
@@ -291,14 +292,14 @@ public final class BoundaryTool implements EditorTool {
                 ? null
                 : selection.firstSubjectMatching(candidate -> candidate instanceof DungeonHitSubject.VertexSubject);
         if (subject instanceof DungeonHitSubject.VertexSubject vertexSubject) {
-            return vertexSubject.vertex2x();
+            return vertexSubject.vertex2x().toLegacyRaw();
         }
         return null;
     }
 
     private static LegacyGridPoint2x selectedVertex(EditorToolContext ctx) {
         return ctx != null && ctx.resolvedSubject() instanceof DungeonHitSubject.VertexSubject vertexSubject
-                ? vertexSubject.vertex2x()
+                ? vertexSubject.vertex2x().toLegacyRaw()
                 : null;
     }
 

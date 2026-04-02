@@ -2,8 +2,8 @@ package features.world.dungeonmap.shell.interaction;
 
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
-import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
+import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
@@ -87,14 +87,14 @@ public final class DungeonSelectionLookup {
         return parseLongPart(key.partKey(), SEGMENT_PREFIX);
     }
 
-    public static LegacyGridPoint2x corridorCornerPoint2x(DungeonSelectionKey key) {
+    public static GridPoint2x corridorCornerPoint2x(DungeonSelectionKey key) {
         if (key == null || key.kind() != DungeonHitKind.CORRIDOR_CORNER) {
             return null;
         }
         return parsePoint2x(key.partKey());
     }
 
-    public static LegacyGridSegment2x segment2x(DungeonSelectionKey key) {
+    public static GridSegment2x segment2x(DungeonSelectionKey key) {
         if (key == null) {
             return null;
         }
@@ -104,7 +104,7 @@ public final class DungeonSelectionLookup {
         };
     }
 
-    public static LegacyGridPoint2x vertex2x(DungeonSelectionKey key) {
+    public static GridPoint2x vertex2x(DungeonSelectionKey key) {
         if (key == null || key.kind() != DungeonHitKind.VERTEX) {
             return null;
         }
@@ -139,7 +139,7 @@ public final class DungeonSelectionLookup {
         }
     }
 
-    private static LegacyGridPoint2x parsePoint2x(String partKey) {
+    private static GridPoint2x parsePoint2x(String partKey) {
         if (partKey == null || !partKey.startsWith(POINT2X_PREFIX)) {
             return null;
         }
@@ -152,10 +152,10 @@ public final class DungeonSelectionLookup {
         if (x == null || y == null) {
             return null;
         }
-        return LegacyGridPoint2x.fromRaw(x, y);
+        return GridPoint2x.raw(x, y);
     }
 
-    private static LegacyGridSegment2x parseSegment2x(String partKey) {
+    private static GridSegment2x parseSegment2x(String partKey) {
         if (partKey == null || !partKey.startsWith(SEGMENT2X_PREFIX)) {
             return null;
         }
@@ -170,7 +170,7 @@ public final class DungeonSelectionLookup {
         if (x1 == null || y1 == null || x2 == null || y2 == null) {
             return null;
         }
-        return new LegacyGridSegment2x(LegacyGridPoint2x.fromRaw(x1, y1), LegacyGridPoint2x.fromRaw(x2, y2));
+        return new GridSegment2x(GridPoint2x.raw(x1, y1), GridPoint2x.raw(x2, y2));
     }
 
     private static Integer parseInt(String value) {

@@ -47,7 +47,7 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
                     room.roomId(),
                     new DungeonHitDescriptor(
                             new DungeonHitSubject.RoomSubject(room.roomId(), room.clusterId()),
-                            List.of(new DungeonHitSurface.TileSurface(room.structure().floorAtLevel(levelZ).cellCoords(), levelZ))));
+                            List.of(new DungeonHitSurface.CellSurface(room.structure().floorAtLevel(levelZ).cellCoords(), levelZ))));
         }
         return List.copyOf(descriptorsByRoomId.values());
     }
@@ -60,7 +60,7 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
             }
             descriptors.add(new DungeonHitDescriptor(
                     new DungeonHitSubject.CorridorSubject(corridor.corridorId(), corridor.levelZ()),
-                    List.of(new DungeonHitSurface.TileSurface(
+                    List.of(new DungeonHitSurface.CellSurface(
                             corridor.structure().floorAtLevel(probe.levelZ()).cellCoords(),
                             probe.levelZ()))));
         }
@@ -75,7 +75,7 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
             }
             descriptors.add(new DungeonHitDescriptor(
                     new DungeonHitSubject.StairSubject(stair.stairId()),
-                    List.of(new DungeonHitSurface.TileSurface(Set.of(probe.gridCell()), probe.levelZ()))));
+                    List.of(new DungeonHitSurface.CellSurface(Set.of(probe.gridCell()), probe.levelZ()))));
         }
         return List.copyOf(descriptors);
     }
@@ -88,7 +88,7 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
             }
             descriptors.add(new DungeonHitDescriptor(
                     new DungeonHitSubject.TransitionSubject(transition.transitionId()),
-                    List.of(new DungeonHitSurface.TileSurface(
+                    List.of(new DungeonHitSurface.CellSurface(
                             Set.of(transition.anchor().projectedCell()),
                             transition.anchor().z()))));
         }
