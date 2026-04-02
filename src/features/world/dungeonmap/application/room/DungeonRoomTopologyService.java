@@ -143,7 +143,7 @@ public final class DungeonRoomTopologyService {
         createCluster(conn, mapId, StructureDescriptor.fromCellsByLevel(Map.of(0, Set.of(new Point2i(0, 0)))), "Eingang");
     }
 
-    public void ensureTraversableCell(Connection conn, long mapId, Point2i cell, int levelZ) throws SQLException {
+    public void ensureTraversableCell(Connection conn, long mapId, CellCoord cell, int levelZ) throws SQLException {
         if (cell == null) {
             return;
         }
@@ -151,11 +151,7 @@ public final class DungeonRoomTopologyService {
         if (layout.isTraversableCell(CubePoint.at(cell, levelZ))) {
             return;
         }
-        paint(conn, mapId, StructureDescriptor.fromCellsByLevel(Map.of(levelZ, Set.of(cell))));
-    }
-
-    public void ensureTraversableCell(Connection conn, long mapId, CellCoord cell, int levelZ) throws SQLException {
-        ensureTraversableCell(conn, mapId, cell == null ? null : cell.toPoint2i(), levelZ);
+        paint(conn, mapId, StructureDescriptor.fromCellCoordsByLevel(Map.of(levelZ, Set.of(cell))));
     }
 
     public void editBoundary(

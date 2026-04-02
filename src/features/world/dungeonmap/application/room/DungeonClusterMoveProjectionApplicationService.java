@@ -17,17 +17,18 @@ public final class DungeonClusterMoveProjectionApplicationService {
     public DungeonClusterMoveProjection project(
             DungeonLayout layout,
             Long clusterId,
-            Point2i delta,
+            CellCoord delta,
             int levelDelta
     ) {
         DungeonLayout baseLayout = Objects.requireNonNull(layout, "layout");
-        boolean translate = delta != null && (delta.x() != 0 || delta.y() != 0);
+        Point2i pointDelta = delta == null ? null : delta.toPoint2i();
+        boolean translate = pointDelta != null && (pointDelta.x() != 0 || pointDelta.y() != 0);
         RoomCluster cluster = baseLayout.findCluster(clusterId);
         if (clusterId == null || cluster == null || (!translate && levelDelta == 0)) {
             return new DungeonClusterMoveProjection(baseLayout, cluster);
         }
 
-        RoomCluster movedCluster = cluster.movedBy(delta, levelDelta);
+        RoomCluster movedCluster = cluster.movedBy(pointDelta, levelDelta);
         List<RoomCluster> updatedClusters = baseLayout.clusters().stream()
                 .map(existing -> Objects.equals(clusterId, existing.clusterId()) ? movedCluster : existing)
                 .toList();
@@ -43,15 +44,6 @@ public final class DungeonClusterMoveProjectionApplicationService {
         return new DungeonClusterMoveProjection(
                 provisionalLayout,
                 provisionalLayout.findCluster(clusterId));
-    }
-
-    public DungeonClusterMoveProjection project(
-            DungeonLayout layout,
-            Long clusterId,
-            CellCoord delta,
-            int levelDelta
-    ) {
-        return project(layout, clusterId, delta == null ? null : delta.toPoint2i(), levelDelta);
     }
 
     private static Map<Long, Integer> updatedClusterLevels(DungeonLayout layout, Long clusterId, int levelDelta) {

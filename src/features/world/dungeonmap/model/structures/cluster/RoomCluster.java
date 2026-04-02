@@ -291,24 +291,24 @@ public final class RoomCluster {
         return withAddedRoom(createRoom(roomId, name, floor));
     }
 
-    public Room roomAt(Point2i cell) {
-        return cell == null ? null : roomsByCell.get(cell);
+    public Room roomAt(CellCoord cell) {
+        return cell == null ? null : roomsByCell.get(cell.toPoint2i());
     }
 
-    public Room roomAt(CellCoord cell) {
-        return roomAt(cell == null ? null : cell.toPoint2i());
+    public Room roomAt(Point2i cell) {
+        return roomAt(cell == null ? null : CellCoord.fromPoint(cell));
     }
 
     public Room roomAt(CubePoint point) {
         return point == null ? null : roomsByPoint.get(point);
     }
 
-    public boolean contains(Point2i cell) {
-        return cell != null && cells.contains(cell);
+    public boolean contains(CellCoord cell) {
+        return cell != null && cells.contains(cell.toPoint2i());
     }
 
-    public boolean contains(CellCoord cell) {
-        return contains(cell == null ? null : cell.toPoint2i());
+    public boolean contains(Point2i cell) {
+        return contains(cell == null ? null : CellCoord.fromPoint(cell));
     }
 
     public Set<CubePoint> cubePoints() {

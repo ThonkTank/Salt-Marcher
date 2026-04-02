@@ -5,7 +5,6 @@ import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.persistence.DungeonRoomWriteRepository;
@@ -30,15 +29,11 @@ public final class DungeonClusterMoveService {
         this.projectionApplicationService = Objects.requireNonNull(projectionApplicationService, "projectionApplicationService");
     }
 
-    public void move(long mapId, long clusterId, Point2i delta) throws SQLException {
-        move(mapId, clusterId, delta, 0);
-    }
-
     public void move(long mapId, long clusterId, CellCoord delta) throws SQLException {
         move(mapId, clusterId, delta, 0);
     }
 
-    public void move(long mapId, long clusterId, Point2i delta, int levelDelta) throws SQLException {
+    public void move(long mapId, long clusterId, CellCoord delta, int levelDelta) throws SQLException {
         boolean translate = delta != null && (delta.x() != 0 || delta.y() != 0);
         if (!translate && levelDelta == 0) {
             return;
@@ -62,10 +57,6 @@ public final class DungeonClusterMoveService {
                 return null;
             });
         }
-    }
-
-    public void move(long mapId, long clusterId, CellCoord delta, int levelDelta) throws SQLException {
-        move(mapId, clusterId, delta == null ? null : delta.toPoint2i(), levelDelta);
     }
 
     private DungeonLayout requireLayout(Connection conn, long mapId) throws SQLException {
