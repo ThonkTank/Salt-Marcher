@@ -17,7 +17,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `DungeonLayout` is the immutable global lookup over direct structure owners: room clusters, corridors, stairs, transitions, connections, traversable cells, and spatial indexes.
 - Corridors, stairs, and transitions are first-class persisted structures. There is no second aggregate that owns their geometry.
 - `Room` and `Corridor` expose shared surface geometry only through `StructureObject`.
-- Legacy freeze is active for the old 2x parity contract: productive code currently uses `LegacyGridPoint2x` and `LegacyGridSegment2x` to preserve existing behavior, while `GridPoint2x` and `GridSegment2x` are being freed for the final parity model.
+- Legacy freeze is active for productive 2x flows: existing behavior remains preserved on `LegacyGridPoint2x` and `LegacyGridSegment2x`, while `GridPoint2x` and `GridSegment2x` already carry the final canonical parity contract for later consumer migration.
 - `Corridor` keeps its node/segment graph as truth, stores node and route geometry directly as `LegacyGridPoint2x`, and compiles it into the same `StructureDescriptor`/`StructureObject` surface model used by rooms, including opening segments for room-bound endpoints.
 - Room paint/delete/boundary edits persist room-owned `StructureDescriptor` truth plus derived cluster metadata. They do not reroute or regenerate corridors or stairs.
 - Connection doors and room exit narration are level-aware. Shared boundary/door queries must keep `levelZ` together with the 2x segment instead of collapsing identical segments across floors.
@@ -30,7 +30,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 
 - `model/`
 - `geometry/` owns pure grid math and routing primitives.
-- `geometry/` keeps canonical cell-space on `CellCoord`. During legacy freeze, all productive half-step consumers stay on `LegacyGridPoint2x`/`LegacyGridSegment2x`, leaving `GridPoint2x`/`GridSegment2x` free for the later parity flip; do not add parallel tile-area wrappers as competing geometry owners.
+- `geometry/` keeps canonical cell-space on `CellCoord` and the final doubled-grid contract on `GridPoint2x`/`GridSegment2x`. During legacy freeze, productive half-step consumers still stay on `LegacyGridPoint2x`/`LegacyGridSegment2x` until they migrate; do not add parallel tile-area wrappers as competing geometry owners.
   - `interaction/` owns model-side interaction seams such as `InteractiveLabelHandle`; semantic label identity lives here, not in canvas code.
 - `objects/` owns thin domain objects over geometry such as `Floor`, `Wall`, `Door`, `StructureObject`, and `StructureDescriptor`. `Wall`/`Door` stay segment-based; shared boundary queries operate on `LegacyGridSegment2x`.
   - `structures/` owns first-class structures and the structure-specific subpackages `cluster`, `connection`, `corridor`, `room`, `stair`, and `transition`.

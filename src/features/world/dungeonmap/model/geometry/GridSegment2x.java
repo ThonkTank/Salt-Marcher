@@ -1,25 +1,23 @@
 package features.world.dungeonmap.model.geometry;
 
 import java.util.Comparator;
-import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
 
 /**
- * Staging placeholder for the final doubled-grid segment contract.
+ * Canonical doubled-grid segment for the final parity contract.
  *
- * <p>During the legacy-freeze migration, productive callers stay on {@link LegacyGridSegment2x} so the current
- * axis-aligned odd/odd semantics remain preserved in one place. This type intentionally stays unused until the
- * later parity flip redefines the canonical {@code GridSegment2x} contract.</p>
+ * <p>During legacy freeze, productive callers still use {@link LegacyGridSegment2x} until those flows migrate to
+ * this final contract.</p>
  */
 public record GridSegment2x(GridPoint2x start, GridPoint2x end) {
 
-    public static final Comparator<GridSegment2x> SEGMENT_ORDER =
-            Comparator.comparing(GridSegment2x::start, GridPoint2x.POINT_ORDER)
-                    .thenComparing(GridSegment2x::end, GridPoint2x.POINT_ORDER);
+    public static final Comparator<GridSegment2x> ORDER =
+            Comparator.comparing(GridSegment2x::start, GridPoint2x.ORDER)
+                    .thenComparing(GridSegment2x::end, GridPoint2x.ORDER);
 
     public GridSegment2x {
-        GridPoint2x resolvedStart = start == null ? GridPoint2x.fromRaw(0, 0) : start;
+        GridPoint2x resolvedStart = start == null ? GridPoint2x.raw(0, 0) : start;
         GridPoint2x resolvedEnd = end == null ? resolvedStart : end;
         if (resolvedStart.equals(resolvedEnd)) {
             throw new IllegalArgumentException("GridSegment2x requires distinct endpoints");
@@ -27,7 +25,7 @@ public record GridSegment2x(GridPoint2x start, GridPoint2x end) {
         if (resolvedStart.x2() != resolvedEnd.x2() && resolvedStart.y2() != resolvedEnd.y2()) {
             throw new IllegalArgumentException("GridSegment2x must be axis-aligned");
         }
-        if (GridPoint2x.POINT_ORDER.compare(resolvedStart, resolvedEnd) <= 0) {
+        if (GridPoint2x.ORDER.compare(resolvedStart, resolvedEnd) <= 0) {
             start = resolvedStart;
             end = resolvedEnd;
         } else {
@@ -36,21 +34,24 @@ public record GridSegment2x(GridPoint2x start, GridPoint2x end) {
         }
     }
 
-    public static GridSegment2x betweenCellAndStep(Point2i fromCell, Point2i stepDelta) {
-        return betweenCellAndStep(CellCoord.fromPoint(fromCell), CellCoord.fromPoint(stepDelta));
-    }
-
-    public static GridSegment2x betweenCellAndStep(CellCoord fromCell, CellCoord stepDelta) {
-        CellCoord origin = fromCell == null ? new CellCoord(0, 0) : fromCell;
-        CellCoord delta = stepDelta == null ? new CellCoord(0, 0) : stepDelta;
-        GridPoint2x origin2x = GridPoint2x.fromRaw(origin.x() * 2, origin.y() * 2);
-        // The input cell stays a cell anchor; productive boundary flows remain 2x-native.
-        return switch (delta.x() + "," + delta.y()) {
-            case "0,-1" -> new GridSegment2x(origin2x, origin2x.offset(2, 0));
-            case "1,0" -> new GridSegment2x(origin2x.offset(2, 0), origin2x.offset(2, 2));
-            case "0,1" -> new GridSegment2x(origin2x.offset(0, 2), origin2x.offset(2, 2));
-            case "-1,0" -> new GridSegment2x(origin2x, origin2x.offset(0, 2));
-            default -> throw new IllegalArgumentException("Schritt ist keine Kardinalkante: " + delta);
+    public static GridSegment2x boundaryEdge(CellCoord cell, CardinalDirection dir) {
+        if (dir == null) {
+            throw new IllegalArgumentException("GridSegment2x.boundaryEdge requires a direction");
+        }
+        CellCoord resolvedCell = cell == null ? new CellCoord(0, 0) : cell;
+        return switch (dir) {
+            case NORTH -> new GridSegment2x(
+                    GridPoint2x.vertex(resolvedCell, -1, -1),
+                    GridPoint2x.vertex(resolvedCell, 1, -1));
+            case EAST -> new GridSegment2x(
+                    GridPoint2x.vertex(resolvedCell, 1, -1),
+                    GridPoint2x.vertex(resolvedCell, 1, 1));
+            case SOUTH -> new GridSegment2x(
+                    GridPoint2x.vertex(resolvedCell, -1, 1),
+                    GridPoint2x.vertex(resolvedCell, 1, 1));
+            case WEST -> new GridSegment2x(
+                    GridPoint2x.vertex(resolvedCell, -1, -1),
+                    GridPoint2x.vertex(resolvedCell, -1, 1));
         };
     }
 
@@ -62,36 +63,8 @@ public record GridSegment2x(GridPoint2x start, GridPoint2x end) {
         return start.x2() == end.x2();
     }
 
-    public int dx2() {
-        return end.x2() - start.x2();
-    }
-
-    public int dy2() {
-        return end.y2() - start.y2();
-    }
-
-    public int manhattanLength2() {
-        return Math.abs(dx2()) + Math.abs(dy2());
-    }
-
-    public int minX2() {
-        return Math.min(start.x2(), end.x2());
-    }
-
-    public int maxX2() {
-        return Math.max(start.x2(), end.x2());
-    }
-
-    public int minY2() {
-        return Math.min(start.y2(), end.y2());
-    }
-
-    public int maxY2() {
-        return Math.max(start.y2(), end.y2());
-    }
-
-    public boolean touches(GridPoint2x point) {
-        return point != null && (start.equals(point) || end.equals(point));
+    public int length2() {
+        return Math.abs(end.x2() - start.x2()) + Math.abs(end.y2() - start.y2());
     }
 
     public boolean sharesEndpoint(GridSegment2x other) {
@@ -102,11 +75,11 @@ public record GridSegment2x(GridPoint2x start, GridPoint2x end) {
         if (other == null) {
             return Optional.empty();
         }
-        if (touches(other.start)) {
-            return Optional.of(other.start);
+        if (start.equals(other.start) || start.equals(other.end)) {
+            return Optional.of(start);
         }
-        if (touches(other.end)) {
-            return Optional.of(other.end);
+        if (end.equals(other.start) || end.equals(other.end)) {
+            return Optional.of(end);
         }
         return Optional.empty();
     }
@@ -121,51 +94,38 @@ public record GridSegment2x(GridPoint2x start, GridPoint2x end) {
         return null;
     }
 
-    public GridSegment2x translatedByCells(Point2i delta) {
-        return translatedByCells(CellCoord.fromPoint(delta));
-    }
-
     public GridSegment2x translatedByCells(CellCoord delta) {
         return new GridSegment2x(start.translatedByCells(delta), end.translatedByCells(delta));
     }
 
     public GridPoint2x midpoint() {
-        return GridPoint2x.fromRaw((start.x2() + end.x2()) / 2, (start.y2() + end.y2()) / 2);
+        return GridPoint2x.raw((start.x2() + end.x2()) / 2, (start.y2() + end.y2()) / 2);
     }
 
-    public Set<Point2i> touchingCells() {
-        return CellCoord.toPoints(touchingCellCoords());
+    public boolean isBoundaryEdge() {
+        return start.isVertex() && end.isVertex() && length2() == 2;
     }
 
-    public Set<CellCoord> touchingCellCoords() {
-        if (!start.isVertex() || !end.isVertex() || manhattanLength2() != 2) {
+    public Set<CellCoord> touchingCells() {
+        if (!isBoundaryEdge()) {
             return Set.of();
         }
-        LinkedHashSet<CellCoord> cells = new LinkedHashSet<>();
-        if (isHorizontal()) {
-            int cellX = minX2() / 2;
-            int boundaryY = start.y2() / 2;
-            cells.add(new CellCoord(cellX, boundaryY - 1));
-            cells.add(new CellCoord(cellX, boundaryY));
-        } else {
-            int boundaryX = start.x2() / 2;
-            int cellY = minY2() / 2;
-            cells.add(new CellCoord(boundaryX - 1, cellY));
-            cells.add(new CellCoord(boundaryX, cellY));
-        }
-        return Set.copyOf(cells);
+        return midpoint().touchingCells();
     }
 
-    public Point2i directionFrom(Point2i cell) {
-        if (cell == null || !touchingCells().contains(cell)) {
+    public CardinalDirection directionFrom(CellCoord cell) {
+        if (cell == null) {
             return null;
         }
-        if (isHorizontal()) {
-            int cellBoundaryY = cell.y() * 2 + 1;
-            return start.y2() < cellBoundaryY ? new Point2i(0, -1) : new Point2i(0, 1);
+        Set<CellCoord> touchingCells = touchingCells();
+        if (!touchingCells.contains(cell)) {
+            return null;
         }
-        int cellBoundaryX = cell.x() * 2 + 1;
-        return start.x2() < cellBoundaryX ? new Point2i(-1, 0) : new Point2i(1, 0);
+        for (CellCoord touchingCell : touchingCells) {
+            if (!touchingCell.equals(cell)) {
+                return cell.directionTo4(touchingCell);
+            }
+        }
+        return null;
     }
-
 }
