@@ -73,11 +73,11 @@ public final class DungeonRuntimeSelectionPolicy {
     private static boolean subjectOwnsActiveTile(DungeonLayout activeMap, CubePoint activeTile, DungeonHitSubject subject) {
         return switch (subject) {
             case DungeonHitSubject.RoomSubject roomSubject -> roomOwnsActiveTile(activeMap, activeTile, roomSubject);
-            case DungeonHitSubject.CorridorSubject corridorSubject -> activeMap.corridorsAtCell(activeTile.projectedCell().toPoint2i(), activeTile.z()).stream()
+            case DungeonHitSubject.CorridorSubject corridorSubject -> activeMap.corridorsAtCell(activeTile.projectedCell(), activeTile.z()).stream()
                     .anyMatch(corridor -> corridor != null && Objects.equals(corridor.corridorId(), corridorSubject.corridorId()));
-            case DungeonHitSubject.StairSubject stairSubject -> activeMap.stairsAtCell(activeTile.projectedCell().toPoint2i(), activeTile.z()).stream()
+            case DungeonHitSubject.StairSubject stairSubject -> activeMap.stairsAtCell(activeTile.projectedCell(), activeTile.z()).stream()
                     .anyMatch(stair -> stair != null && Objects.equals(stair.stairId(), stairSubject.stairId()));
-            case DungeonHitSubject.TransitionSubject transitionSubject -> activeMap.transitionsAtCell(activeTile.projectedCell().toPoint2i(), activeTile.z()).stream()
+            case DungeonHitSubject.TransitionSubject transitionSubject -> activeMap.transitionsAtCell(activeTile.projectedCell(), activeTile.z()).stream()
                     .anyMatch(transition -> transition != null && Objects.equals(transition.transitionId(), transitionSubject.transitionId()));
             default -> false;
         };

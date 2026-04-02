@@ -1,5 +1,6 @@
 package features.world.dungeonmap.model;
 
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
@@ -340,6 +341,10 @@ public final class DungeonLayout {
         return null;
     }
 
+    public Room roomAtCell(CellCoord cell) {
+        return roomAtCell(cell == null ? null : cell.toPoint2i());
+    }
+
     public RoomCluster clusterAtCell(Point2i cell) {
         for (RoomCluster cluster : clusters) {
             if (cluster.contains(cell)) {
@@ -347,6 +352,10 @@ public final class DungeonLayout {
             }
         }
         return null;
+    }
+
+    public RoomCluster clusterAtCell(CellCoord cell) {
+        return clusterAtCell(cell == null ? null : cell.toPoint2i());
     }
 
     public List<Corridor> corridorsAtCell(Point2i cell) {
@@ -357,11 +366,19 @@ public final class DungeonLayout {
                 .toList();
     }
 
+    public List<Corridor> corridorsAtCell(CellCoord cell) {
+        return corridorsAtCell(cell == null ? null : cell.toPoint2i());
+    }
+
     public List<Corridor> corridorsAtCell(Point2i cell, int levelZ) {
         if (cell == null) {
             return List.of();
         }
         return corridorsAtPoint(CubePoint.at(cell, levelZ));
+    }
+
+    public List<Corridor> corridorsAtCell(CellCoord cell, int levelZ) {
+        return corridorsAtCell(cell == null ? null : cell.toPoint2i(), levelZ);
     }
 
     public List<Corridor> corridorsAtPoint(CubePoint point) {
@@ -379,6 +396,10 @@ public final class DungeonLayout {
         return stairsAtPoint(CubePoint.at(cell, levelZ));
     }
 
+    public List<DungeonStair> stairsAtCell(CellCoord cell, int levelZ) {
+        return stairsAtCell(cell == null ? null : cell.toPoint2i(), levelZ);
+    }
+
     public List<DungeonStair> stairsAtPoint(CubePoint point) {
         List<Long> stairIds = point == null ? List.of() : stairIdsByPoint.getOrDefault(point, List.of());
         return stairIds.stream()
@@ -392,6 +413,10 @@ public final class DungeonLayout {
             return List.of();
         }
         return transitionsAtPoint(CubePoint.at(cell, levelZ));
+    }
+
+    public List<DungeonTransition> transitionsAtCell(CellCoord cell, int levelZ) {
+        return transitionsAtCell(cell == null ? null : cell.toPoint2i(), levelZ);
     }
 
     public List<DungeonTransition> transitionsAtPoint(CubePoint point) {
@@ -431,12 +456,20 @@ public final class DungeonLayout {
         return transition == null ? null : new CellStructure.TransitionStructure(transition);
     }
 
+    public CellStructure structureAtCell(CellCoord cell) {
+        return structureAtCell(cell == null ? null : cell.toPoint2i());
+    }
+
     public Set<Point2i> traversableCells() {
         return traversableCells;
     }
 
     public boolean isTraversableCell(Point2i cell) {
         return cell != null && traversableCells.contains(cell);
+    }
+
+    public boolean isTraversableCell(CellCoord cell) {
+        return isTraversableCell(cell == null ? null : cell.toPoint2i());
     }
 
     public boolean isTraversableCell(CubePoint point) {

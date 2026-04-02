@@ -441,9 +441,9 @@ public final class ConnectionsTool implements EditorTool {
         if (projectedCluster == null) {
             return false;
         }
-        Room sourceRoom = projectedCluster.roomAt(hit.roomCell().toPoint2i());
+        Room sourceRoom = projectedCluster.roomAt(hit.roomCell());
         CellCoord oppositeCell = hit.roomCell().add(hit.outwardDirection().delta());
-        Room oppositeRoom = projectedCluster.roomAt(oppositeCell.toPoint2i());
+        Room oppositeRoom = projectedCluster.roomAt(oppositeCell);
         if (sourceRoom == null || oppositeRoom == null) {
             return false;
         }

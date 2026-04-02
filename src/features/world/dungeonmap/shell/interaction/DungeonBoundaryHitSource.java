@@ -4,7 +4,6 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
-import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.Connection;
@@ -98,13 +97,13 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
                     continue;
                 }
                 CellCoord baseCell = segment2x.touchingCellCoords().stream()
-                        .filter(cell -> cluster.contains(cell.toPoint2i()))
+                        .filter(cluster::contains)
                         .sorted(CellCoord.ORDER)
                         .findFirst()
                         .orElse(null);
                 CardinalDirection direction = baseCell == null
                         ? null
-                        : CardinalDirection.fromDirection(segment2x.directionFrom(baseCell.toPoint2i()));
+                        : segment2x.directionFrom(baseCell);
                 if (baseCell == null || direction == null) {
                     continue;
                 }
@@ -217,7 +216,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
             if (!room.structure().cellCoordsAtLevel(levelZ).contains(cell)) {
                 continue;
             }
-            CardinalDirection outwardDirection = CardinalDirection.fromDirection(segment2x.directionFrom(cell.toPoint2i()));
+            CardinalDirection outwardDirection = segment2x.directionFrom(cell);
             CellCoord opposite = outwardDirection == null ? null : cell.add(outwardDirection.delta());
             boolean exterior = opposite == null || !occupiedRoomCells.contains(opposite);
             return new RoomBoundaryGeometry(cell, outwardDirection, exterior);

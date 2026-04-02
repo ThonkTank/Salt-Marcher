@@ -151,15 +151,23 @@ public record LegacyGridSegment2x(LegacyGridPoint2x start, LegacyGridPoint2x end
         return Set.copyOf(cells);
     }
 
-    public Point2i directionFrom(Point2i cell) {
-        if (cell == null || !touchingCells().contains(cell)) {
+    public CardinalDirection directionFrom(CellCoord cell) {
+        if (cell == null || !touchingCellCoords().contains(cell)) {
             return null;
         }
         if (isHorizontal()) {
             int cellBoundaryY = cell.y() * 2 + 1;
-            return start.y2() < cellBoundaryY ? new Point2i(0, -1) : new Point2i(0, 1);
+            return start.y2() < cellBoundaryY ? CardinalDirection.NORTH : CardinalDirection.SOUTH;
         }
         int cellBoundaryX = cell.x() * 2 + 1;
-        return start.x2() < cellBoundaryX ? new Point2i(-1, 0) : new Point2i(1, 0);
+        return start.x2() < cellBoundaryX ? CardinalDirection.WEST : CardinalDirection.EAST;
+    }
+
+    public Point2i directionFrom(Point2i cell) {
+        if (cell == null) {
+            return null;
+        }
+        CardinalDirection direction = directionFrom(CellCoord.fromPoint(cell));
+        return direction == null ? null : direction.deltaPoint2i();
     }
 }

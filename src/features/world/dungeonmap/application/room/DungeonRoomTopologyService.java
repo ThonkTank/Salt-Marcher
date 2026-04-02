@@ -4,6 +4,7 @@ import database.DatabaseManager;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
@@ -151,6 +152,10 @@ public final class DungeonRoomTopologyService {
             return;
         }
         paint(conn, mapId, StructureDescriptor.fromCellsByLevel(Map.of(levelZ, Set.of(cell))));
+    }
+
+    public void ensureTraversableCell(Connection conn, long mapId, CellCoord cell, int levelZ) throws SQLException {
+        ensureTraversableCell(conn, mapId, cell == null ? null : cell.toPoint2i(), levelZ);
     }
 
     public void editBoundary(

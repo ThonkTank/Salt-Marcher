@@ -27,10 +27,6 @@ public record CubePoint(int x, int y, int z) {
         return new CellCoord(x, y);
     }
 
-    public Point2i projectedPoint2i() {
-        return projectedCell().toPoint2i();
-    }
-
     public int manhattanDistanceTo(CubePoint other) {
         return other == null ? Integer.MAX_VALUE : Math.abs(x - other.x) + Math.abs(y - other.y) + Math.abs(z - other.z);
     }

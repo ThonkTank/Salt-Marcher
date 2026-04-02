@@ -74,7 +74,7 @@ public final class DoorExitCatalog {
             if (roomCell == null) {
                 continue;
             }
-            CardinalDirection direction = CardinalDirection.fromDirection(segment2x.directionFrom(roomCell.toPoint2i()));
+            CardinalDirection direction = segment2x.directionFrom(roomCell);
             if (direction == null) {
                 continue;
             }

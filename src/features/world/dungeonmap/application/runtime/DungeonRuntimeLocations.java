@@ -257,7 +257,7 @@ final class DungeonRuntimeLocations {
         if (layout == null || preferred == null) {
             return null;
         }
-        Corridor fallback = layout.corridorsAtCell(preferred.projectedCell().toPoint2i(), preferred.z()).stream()
+        Corridor fallback = layout.corridorsAtCell(preferred.projectedCell(), preferred.z()).stream()
                 .filter(Objects::nonNull)
                 .min(java.util.Comparator.comparing(Corridor::corridorId, java.util.Comparator.nullsLast(Long::compareTo)))
                 .orElse(null);
@@ -273,7 +273,7 @@ final class DungeonRuntimeLocations {
                 .findFirst()
                 .orElse(null);
         if (stair == null && preferred != null) {
-            stair = layout.stairsAtCell(preferred.projectedCell().toPoint2i(), preferred.z()).stream()
+            stair = layout.stairsAtCell(preferred.projectedCell(), preferred.z()).stream()
                     .filter(Objects::nonNull)
                     .min(java.util.Comparator.comparing(DungeonStair::stairId, java.util.Comparator.nullsLast(Long::compareTo)))
                     .orElse(null);

@@ -44,7 +44,7 @@ public final class DungeonPlacementValidator {
         if (layout == null || cell == null) {
             return null;
         }
-        if (!layout.isTraversableCell(cell.toPoint2i())) {
+        if (!layout.isTraversableCell(cell)) {
             return new PlacementResult.Invalid(cell, level, "Zelle ist nicht begehbar.");
         }
         return new PlacementResult.Valid(cell, level);
@@ -61,7 +61,7 @@ public final class DungeonPlacementValidator {
             return traversable;
         }
 
-        boolean occupied = layout.transitionsAtCell(cell.toPoint2i(), level).stream()
+        boolean occupied = layout.transitionsAtCell(cell, level).stream()
                 .map(DungeonTransition::transitionId)
                 .filter(Objects::nonNull)
                 .anyMatch(id -> !Objects.equals(id, ignoredTransitionId));

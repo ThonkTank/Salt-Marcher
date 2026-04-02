@@ -228,11 +228,11 @@ public final class DungeonRuntimeNavigationService {
                 RoomCluster cluster = clusterAt(layout, CubePoint.at(cell, currentLevel));
                 yield cluster != null && endpoint.id().equals(cluster.clusterId());
             }
-            case CORRIDOR -> layout.corridorsAtCell(cell.toPoint2i(), currentLevel).stream()
+            case CORRIDOR -> layout.corridorsAtCell(cell, currentLevel).stream()
                     .anyMatch(corridor -> corridor != null && endpoint.id().equals(corridor.corridorId()));
-            case STAIR -> layout.stairsAtCell(cell.toPoint2i(), currentLevel).stream()
+            case STAIR -> layout.stairsAtCell(cell, currentLevel).stream()
                     .anyMatch(stair -> stair != null && endpoint.id().equals(stair.stairId()));
-            case TRANSITION -> layout.transitionsAtCell(cell.toPoint2i(), currentLevel).stream()
+            case TRANSITION -> layout.transitionsAtCell(cell, currentLevel).stream()
                     .anyMatch(transition -> transition != null && endpoint.id().equals(transition.transitionId()));
         };
     }

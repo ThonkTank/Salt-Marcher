@@ -272,7 +272,7 @@ public final class DungeonMapLoader {
                 rs -> rs.getLong("room_id"),
                 rs -> new RoomExitNarration(
                         rs.getInt("level_z"),
-                        new features.world.dungeonmap.model.geometry.CellCoord(rs.getInt("cell_x"), rs.getInt("cell_y")),
+                        new CellCoord(rs.getInt("cell_x"), rs.getInt("cell_y")),
                         DungeonPersistenceDirections.fromPersistedEdgeDirection(rs.getString("edge_direction")),
                         rs.getString("description")));
         try (PreparedStatement ps = conn.prepareStatement(

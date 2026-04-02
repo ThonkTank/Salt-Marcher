@@ -7,7 +7,6 @@ import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
 import features.world.dungeonmap.persistence.DungeonTransitionSchemaSupport;
@@ -48,7 +47,7 @@ public final class DungeonTransitionEditService {
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
                 DungeonTransitionSchemaSupport.ensureCompatibility(conn);
-                roomTopologyService.ensureTraversableCell(conn, layout.mapId(), anchorCell.toPoint2i(), levelZ);
+                roomTopologyService.ensureTraversableCell(conn, layout.mapId(), anchorCell, levelZ);
                 DungeonTransitionDestination destination = resolveDestination(conn, resolvedRequest);
                 CubePoint anchor = CubePoint.at(anchorCell, levelZ);
                 long transitionId = transitionWriteRepository.insert(conn, new DungeonTransition(
@@ -86,7 +85,7 @@ public final class DungeonTransitionEditService {
             DungeonTransactionRunner.inTransaction(conn, () -> {
                 DungeonTransitionSchemaSupport.ensureCompatibility(conn);
                 DungeonTransition transition = requireTransition(conn, transitionId);
-                roomTopologyService.ensureTraversableCell(conn, transition.mapId(), anchorCell.toPoint2i(), levelZ);
+                roomTopologyService.ensureTraversableCell(conn, transition.mapId(), anchorCell, levelZ);
                 transitionWriteRepository.updatePlacement(conn, transitionId, CubePoint.at(anchorCell, levelZ));
                 return null;
             });

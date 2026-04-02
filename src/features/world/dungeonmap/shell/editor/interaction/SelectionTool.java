@@ -212,7 +212,7 @@ public final class SelectionTool implements EditorTool {
         dragSession = null;
         if (mapId != null && clusterId != null && (delta.x() != 0 || delta.y() != 0 || levelDelta != 0)) {
             loadingService.submitReloadingWrite(
-                    () -> clusterMoveService.move(mapId, clusterId, delta.toPoint2i(), levelDelta),
+                    () -> clusterMoveService.move(mapId, clusterId, delta, levelDelta),
                     mapId,
                     null,
                     throwable -> UiErrorReporter.reportBackgroundFailure("SelectionTool.released()", throwable));
@@ -424,7 +424,7 @@ public final class SelectionTool implements EditorTool {
         return clusterMoveProjectionApplicationService.project(
                 dragSession.baseMap(),
                 dragSession.clusterId(),
-                dragSession.currentDelta().toPoint2i(),
+                dragSession.currentDelta(),
                 dragSession.currentLevel() - dragSession.startLevel()).layout();
     }
 

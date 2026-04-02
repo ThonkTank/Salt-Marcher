@@ -4,7 +4,6 @@ import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
 import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
@@ -63,7 +62,7 @@ public final class PaintTool implements EditorTool {
             clear();
             return false;
         }
-        Point2i cell = resolvedCell(ctx);
+        CellCoord cell = resolvedCell(ctx);
         if (cell == null || !sessionState.selectedTool().isRoomTool()) {
             clear();
             return false;
@@ -83,7 +82,7 @@ public final class PaintTool implements EditorTool {
         if (event == null || !event.isPrimaryButtonDown()) {
             return false;
         }
-        Point2i cell = resolvedCell(ctx);
+        CellCoord cell = resolvedCell(ctx);
         if (paintSession == null || cell == null || !sessionState.selectedTool().isRoomTool()) {
             return false;
         }
@@ -104,7 +103,7 @@ public final class PaintTool implements EditorTool {
         if (event == null) {
             return false;
         }
-        Point2i cell = resolvedCell(ctx);
+        CellCoord cell = resolvedCell(ctx);
         if (paintSession == null || cell == null) {
             return false;
         }
@@ -160,9 +159,9 @@ public final class PaintTool implements EditorTool {
         state.clearPreview();
     }
 
-    private static Point2i resolvedCell(EditorToolContext ctx) {
+    private static CellCoord resolvedCell(EditorToolContext ctx) {
         return ctx != null && ctx.resolvedSubject() instanceof DungeonHitSubject.FloorCellSubject floorCellSubject
-                ? floorCellSubject.cell().toPoint2i()
+                ? floorCellSubject.cell()
                 : null;
     }
 }
