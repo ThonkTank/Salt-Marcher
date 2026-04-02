@@ -25,6 +25,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - Tile-owned surfaces are owned as explicit `CellCoord` sets on `Floor` and other cell-surface seams. Do not reintroduce a second tile-area wrapper type just to shuttle those cells between owners.
 - `StructureDescriptor.LevelDescriptor` authors room/corridor floor truth as `anchorCell`, `fillSeeds`, `boundaryEdges`, and `openingEdges`, with room/cluster descriptors carrying canonical `GridSegment2x` boundary edges in memory. `StructureObject` hydrates floors, walls, and doors from that cell/edge truth without reconstructing removed legacy tile wrappers.
 - Room/cluster persistence keeps the existing `anchor_x2`/`seed_x2` odd/odd storage columns, but `DungeonRoomWriteRepository` and `DungeonMapLoader` must translate that storage coding to in-memory `CellCoord` plus final `GridSegment2x` instead of leaking DB parity into model owners.
+- Interactive labels, editor boundary previews, and runtime door-number overlays anchor directly on final `GridPoint2x`/`GridSegment2x`. Canvas and hit-probe seams must not round-trip those overlays through legacy odd/odd parity.
 - Runtime presentation resolves surfaces from the same structure owners used by the editor. Do not invent runtime-only structure mirrors.
 
 ## Package Roles
@@ -69,6 +70,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `DungeonHitProbe` carries canonical `CellCoord` tile context plus canonical `GridPoint2x` probe geometry. Cell hits use `DungeonHitSurface.CellSurface`, while shared half-step hit geometry uses set-based `PointSurface` and `SegmentSurface`.
 - `DungeonLayout` lookups and other untouched compat-facing APIs may still consume `Point2i`, but callers should convert at the edge instead of mirroring new cell ownership back onto `Point2i`. Corridor room bindings use `CellCoord`; geometry-backed picks and selections use `GridPoint2x` and `GridSegment2x`.
 - `DungeonHitSubject` and `DungeonSelectionLookup` expose geometry-backed editor/runtime selections only as `GridPoint2x` and `GridSegment2x`. Do not add raw doubled-`Point2i`, `LegacyGridPoint2x`, or `LegacyGridSegment2x` mirrors back into those seams.
+- `InteractiveLabelHandle`, `DungeonEditorRenderState`, and `DungeonRuntimeRenderOverlay` are display payloads on final `CellCoord`/`GridPoint2x`/`GridSegment2x` only. If a remaining owner is still legacy-frozen, convert once at that owner boundary instead of inside renderers or tools.
 - `EditorTool.resolveHit(...)` owns tool-specific interpretation of those candidates. Do not move per-tool allowlists back into a central selector.
 - `EditorInteractionState` owns only shared editor coordination state:
   - `selectedKey`
@@ -104,7 +106,8 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `DungeonCanvasWorkspace` observes `DungeonMapState` directly for active layout, level, and overlay changes.
 - Rendering is explicit and coalesced: state changes call `requestRedraw()`, `redraw()` builds one `DungeonSceneFrame`, and the grid renderer consumes that snapshot.
 - Views publish batched display-only payloads through `showEditorRenderState(...)` and `showRuntimeRenderOverlay(...)`.
-- `DungeonGridSceneRenderer` renders room and corridor floors, walls, and doors from `StructureObject` primitives. Corridor graph handles are the editor-only overlay on top of that shared structure geometry.
+- `DungeonGridSceneRenderer` renders room and corridor floors from `CellCoord` surfaces and boundaries/overlays from final `GridPoint2x`/`GridSegment2x` carried by `StructureObject`, editor previews, and runtime overlays. Do not add renderer-local legacy parity adapters.
+- Corridor graph handles are the editor-only overlay on top of that shared structure geometry.
 - The workspace owns zoom, pan, and default level scrolling:
   - zoom: mouse wheel
   - pan: middle-mouse drag

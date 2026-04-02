@@ -7,7 +7,6 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.model.objects.StructureObject;
@@ -160,11 +159,11 @@ public final class DungeonRoomTopologyService {
             long mapId,
             long clusterId,
             int levelZ,
-            LegacyGridSegment2x segment2x,
+            GridSegment2x segment2x,
             InternalBoundaryType type,
             boolean deleteBoundary
     ) throws SQLException {
-        editBoundary(conn, mapId, clusterId, levelZ, segment2x == null ? List.<LegacyGridSegment2x>of() : List.of(segment2x), type, deleteBoundary);
+        editBoundary(conn, mapId, clusterId, levelZ, segment2x == null ? List.<GridSegment2x>of() : List.of(segment2x), type, deleteBoundary);
     }
 
     public void editBoundary(
@@ -172,7 +171,7 @@ public final class DungeonRoomTopologyService {
             long mapId,
             long clusterId,
             int levelZ,
-            Collection<LegacyGridSegment2x> segments2x,
+            Collection<GridSegment2x> segments2x,
             InternalBoundaryType type,
             boolean deleteBoundary
     ) throws SQLException {
@@ -184,7 +183,7 @@ public final class DungeonRoomTopologyService {
         if (cluster == null) {
             return;
         }
-        ClusterRewrite rewrite = cluster.editBoundary(GridSegment2x.fromLegacyBoundaryEdges(segments2x), type, deleteBoundary);
+        ClusterRewrite rewrite = cluster.editBoundary(segments2x, type, deleteBoundary);
         if (rewrite == null) {
             return;
         }

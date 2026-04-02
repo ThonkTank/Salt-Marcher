@@ -416,7 +416,7 @@ public final class ConnectionsTool implements EditorTool {
                         mapId,
                         clusterId,
                         mapState.activeProjectionLevel(),
-                        segment2x.toLegacyBoundaryEdge(),
+                        segment2x,
                         InternalBoundaryType.DOOR,
                         deleteBoundary),
                 mapId,

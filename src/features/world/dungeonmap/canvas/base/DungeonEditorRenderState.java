@@ -1,8 +1,8 @@
 package features.world.dungeonmap.canvas.base;
 
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
-import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
+import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.state.EditorHover;
 
@@ -15,10 +15,10 @@ public record DungeonEditorRenderState(
         StructureObject paintPreviewStructure,
         int paintPreviewLevelZ,
         boolean paintPreviewDeleteMode,
-        Set<LegacyGridSegment2x> boundaryPreviewEdges,
-        Set<LegacyGridSegment2x> boundaryPreviewSkippedEdges,
-        LegacyGridPoint2x boundaryPreviewStartVertex2x,
-        LegacyGridPoint2x boundaryPreviewCurrentVertex2x,
+        Set<GridSegment2x> boundaryPreviewEdges,
+        Set<GridSegment2x> boundaryPreviewSkippedEdges,
+        GridPoint2x boundaryPreviewStartVertex2x,
+        GridPoint2x boundaryPreviewCurrentVertex2x,
         boolean boundaryPreviewDeleteMode
 ) {
     public DungeonEditorRenderState {

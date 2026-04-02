@@ -2,8 +2,8 @@ package features.world.dungeonmap.model.structures.cluster;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 import features.world.dungeonmap.model.objects.Floor;
@@ -182,7 +182,7 @@ public final class RoomCluster {
         return new InteractiveLabelHandle(
                 targetKey(),
                 clusterId == null ? "Cluster" : "Cluster " + clusterId,
-                LegacyGridPoint2x.fromTileCenter(CellCoord.bestCenter(cells)));
+                GridPoint2x.cell(CellCoord.bestCenter(cells)));
     }
 
     public boolean overlapsCells(Collection<CellCoord> candidateCells) {

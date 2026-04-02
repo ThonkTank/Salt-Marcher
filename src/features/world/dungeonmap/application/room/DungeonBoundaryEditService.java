@@ -2,7 +2,7 @@ package features.world.dungeonmap.application.room;
 
 import database.DatabaseManager;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
-import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 
 import java.sql.Connection;
@@ -22,18 +22,18 @@ public final class DungeonBoundaryEditService {
             long mapId,
             Long clusterId,
             int levelZ,
-            LegacyGridSegment2x segment2x,
+            GridSegment2x segment2x,
             InternalBoundaryType type,
             boolean deleteBoundary
     ) throws SQLException {
-        apply(mapId, clusterId, levelZ, segment2x == null ? java.util.List.<LegacyGridSegment2x>of() : java.util.List.of(segment2x), type, deleteBoundary);
+        apply(mapId, clusterId, levelZ, segment2x == null ? java.util.List.<GridSegment2x>of() : java.util.List.of(segment2x), type, deleteBoundary);
     }
 
     public void apply(
             long mapId,
             Long clusterId,
             int levelZ,
-            Collection<LegacyGridSegment2x> segments2x,
+            Collection<GridSegment2x> segments2x,
             InternalBoundaryType type,
             boolean deleteBoundary
     ) throws SQLException {

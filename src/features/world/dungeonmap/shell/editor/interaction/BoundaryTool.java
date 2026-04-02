@@ -4,10 +4,8 @@ import features.world.dungeonmap.application.room.DungeonBoundaryEditService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
-import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
-import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.shell.editor.DungeonEditorTool;
@@ -120,7 +118,7 @@ public final class BoundaryTool implements EditorTool {
             return EditorHitResolution.none();
         }
         return EditorHitResolution.part(
-                new DungeonHitSubject.VertexSubject(GridPoint2x.fromLegacyRaw(resolved.vertex2x())),
+                new DungeonHitSubject.VertexSubject(resolved.vertex2x()),
                 clusterOwnerKey(resolved.clusterId()));
     }
 
@@ -142,7 +140,7 @@ public final class BoundaryTool implements EditorTool {
 
     private boolean handleWallPressed(EditorToolContext ctx, boolean deleteMode) {
         DungeonLayout layout = ctx == null ? null : ctx.activeMap();
-        LegacyGridPoint2x vertex = selectedVertex(ctx);
+        GridPoint2x vertex = selectedVertex(ctx);
         DungeonSelectionKey resolvedKey = ctx == null ? null : ctx.resolvedSelectionKey();
         RoomCluster cluster = DungeonSelectionLookup.clusterOnLevel(
                 layout,
@@ -193,9 +191,9 @@ public final class BoundaryTool implements EditorTool {
             return true;
         }
 
-        Set<LegacyGridSegment2x> nextPreview = new LinkedHashSet<>(draft.previewEdges());
+        Set<GridSegment2x> nextPreview = new LinkedHashSet<>(draft.previewEdges());
         nextPreview.addAll(result.committedEdges());
-        Set<LegacyGridSegment2x> nextSkipped = new LinkedHashSet<>(draft.skippedConnectionEdges());
+        Set<GridSegment2x> nextSkipped = new LinkedHashSet<>(draft.skippedConnectionEdges());
         nextSkipped.addAll(result.skippedConnectionEdges());
         showDraft(new Draft(
                 draft.clusterId(),
@@ -204,7 +202,7 @@ public final class BoundaryTool implements EditorTool {
                 vertex,
                 nextPreview,
                 nextSkipped,
-                statusMessage(cluster, deleteMode, nextPreview, nextSkipped)));
+                statusMessage(deleteMode, nextPreview, nextSkipped)));
 
         if (!deleteMode && pathPlanner.touchesExistingWall(cluster, vertex)) {
             return finishDraft();
@@ -218,7 +216,7 @@ public final class BoundaryTool implements EditorTool {
             return false;
         }
         Long mapId = mapState.activeMapId();
-        Set<LegacyGridSegment2x> edges = currentDraft.previewEdges();
+        Set<GridSegment2x> edges = currentDraft.previewEdges();
         clear();
         if (mapId == null || edges.isEmpty()) {
             return true;
@@ -239,7 +237,7 @@ public final class BoundaryTool implements EditorTool {
 
     private ResolvedBoundaryVertex resolveBoundaryVertex(EditorToolContext ctx, boolean deleteMode) {
         DungeonLayout layout = ctx == null ? null : ctx.activeMap();
-        LegacyGridPoint2x vertex = firstVertex(ctx == null ? null : ctx.selection());
+        GridPoint2x vertex = firstVertex(ctx == null ? null : ctx.selection());
         if (layout == null || vertex == null) {
             return null;
         }
@@ -260,7 +258,7 @@ public final class BoundaryTool implements EditorTool {
         return null;
     }
 
-    private boolean isEditableCluster(Long clusterId, DungeonLayout layout, LegacyGridPoint2x vertex, boolean deleteMode) {
+    private boolean isEditableCluster(Long clusterId, DungeonLayout layout, GridPoint2x vertex, boolean deleteMode) {
         RoomCluster cluster = clusterOnActiveLevel(clusterId, layout);
         return cluster != null && pathPlanner.isEditableVertex(cluster, vertex, deleteMode);
     }
@@ -287,19 +285,19 @@ public final class BoundaryTool implements EditorTool {
         return cluster;
     }
 
-    private static LegacyGridPoint2x firstVertex(features.world.dungeonmap.shell.interaction.DungeonSelection selection) {
+    private static GridPoint2x firstVertex(features.world.dungeonmap.shell.interaction.DungeonSelection selection) {
         DungeonHitSubject subject = selection == null
                 ? null
                 : selection.firstSubjectMatching(candidate -> candidate instanceof DungeonHitSubject.VertexSubject);
         if (subject instanceof DungeonHitSubject.VertexSubject vertexSubject) {
-            return vertexSubject.vertex2x().toLegacyRaw();
+            return vertexSubject.vertex2x();
         }
         return null;
     }
 
-    private static LegacyGridPoint2x selectedVertex(EditorToolContext ctx) {
+    private static GridPoint2x selectedVertex(EditorToolContext ctx) {
         return ctx != null && ctx.resolvedSubject() instanceof DungeonHitSubject.VertexSubject vertexSubject
-                ? vertexSubject.vertex2x().toLegacyRaw()
+                ? vertexSubject.vertex2x()
                 : null;
     }
 
@@ -373,10 +371,9 @@ public final class BoundaryTool implements EditorTool {
     }
 
     private static String statusMessage(
-            RoomCluster cluster,
             boolean deleteMode,
-            Set<LegacyGridSegment2x> previewEdges,
-            Set<LegacyGridSegment2x> skippedConnectionEdges
+            Set<GridSegment2x> previewEdges,
+            Set<GridSegment2x> skippedConnectionEdges
     ) {
         if (deleteMode) {
             return previewEdges.isEmpty()
@@ -386,7 +383,7 @@ public final class BoundaryTool implements EditorTool {
         if (!skippedConnectionEdges.isEmpty()) {
             return "Pfad aktiv, Türen bleiben erhalten, Rechtsklick schließt ab";
         }
-        if (cluster != null && !previewEdges.isEmpty()) {
+        if (!previewEdges.isEmpty()) {
             return "Wandpfad aktiv, Rechtsklick oder Klick auf bestehende Wand schließt ab";
         }
         return "Pfad aktiv";
@@ -395,10 +392,10 @@ public final class BoundaryTool implements EditorTool {
     private record Draft(
             Long clusterId,
             boolean deleteMode,
-            LegacyGridPoint2x startVertex,
-            LegacyGridPoint2x currentVertex,
-            Set<LegacyGridSegment2x> previewEdges,
-            Set<LegacyGridSegment2x> skippedConnectionEdges,
+            GridPoint2x startVertex,
+            GridPoint2x currentVertex,
+            Set<GridSegment2x> previewEdges,
+            Set<GridSegment2x> skippedConnectionEdges,
             String statusMessage
     ) {
         private Draft {
@@ -410,7 +407,7 @@ public final class BoundaryTool implements EditorTool {
 
     private record ResolvedBoundaryVertex(
             Long clusterId,
-            LegacyGridPoint2x vertex2x
+            GridPoint2x vertex2x
     ) {
     }
 }

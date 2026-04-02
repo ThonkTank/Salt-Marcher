@@ -1,7 +1,7 @@
 package features.world.dungeonmap.model.structures.transition;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
+import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 import features.world.dungeonmap.model.structures.TargetKey;
 
@@ -55,7 +55,7 @@ public record DungeonTransition(
         return new InteractiveLabelHandle(
                 targetKey(),
                 label(),
-                LegacyGridPoint2x.fromTileCenter(anchor.projectedCell()));
+                GridPoint2x.cell(anchor.projectedCell()));
     }
 
     public int levelZ() {

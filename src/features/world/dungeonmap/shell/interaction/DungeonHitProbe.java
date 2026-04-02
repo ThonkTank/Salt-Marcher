@@ -42,9 +42,9 @@ public record DungeonHitProbe(
             throw new IllegalArgumentException("gridSizePx must be > 0");
         }
         double halfGrid = gridSizePx / 2.0;
-        return GridPoint2x.fromLegacyRaw(
-                (int) Math.round((resolvedPoint.getX() - panX) / halfGrid),
-                (int) Math.round((resolvedPoint.getY() - panY) / halfGrid));
+        return GridPoint2x.raw(
+                (int) Math.round((resolvedPoint.getX() - panX) / halfGrid) - 1,
+                (int) Math.round((resolvedPoint.getY() - panY) / halfGrid) - 1);
     }
 
     public Point2D canvasPointForGrid(CellCoord cell) {
