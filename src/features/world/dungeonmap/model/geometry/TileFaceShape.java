@@ -7,7 +7,7 @@ import java.util.Set;
 /**
  * Absolute tile-area shape on the dungeon cell grid.
  */
-public record TileFaceShape(Set<Point2i> cells) implements GridShape {
+public record TileFaceShape(Set<Point2i> cells) {
 
     public TileFaceShape {
         cells = normalizeCells(cells);
@@ -25,7 +25,6 @@ public record TileFaceShape(Set<Point2i> cells) implements GridShape {
         return cells.size();
     }
 
-    @Override
     public GridBounds2x bounds() {
         if (cells.isEmpty()) {
             return GridBounds2x.empty();
@@ -43,7 +42,6 @@ public record TileFaceShape(Set<Point2i> cells) implements GridShape {
         return new GridBounds2x(minX2, minY2, maxX2, maxY2);
     }
 
-    @Override
     public TileFaceShape translatedByCells(Point2i delta) {
         Point2i resolvedDelta = delta == null ? new Point2i(0, 0) : delta;
         if (resolvedDelta.x() == 0 && resolvedDelta.y() == 0) {
@@ -54,6 +52,10 @@ public record TileFaceShape(Set<Point2i> cells) implements GridShape {
             translated.add(cell.add(resolvedDelta));
         }
         return new TileFaceShape(translated);
+    }
+
+    public boolean isEmpty() {
+        return cells.isEmpty();
     }
 
     private static Set<Point2i> normalizeCells(Collection<Point2i> input) {
