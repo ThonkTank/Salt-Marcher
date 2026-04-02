@@ -2,7 +2,7 @@ package features.world.dungeonmap.application.runtime;
 
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
@@ -14,39 +14,12 @@ public final class DungeonRuntimeLabels {
     private DungeonRuntimeLabels() {
     }
 
-    public static String activeLocationLabel(DungeonLayout layout, DungeonRuntimeLocation location) {
-        if (layout == null || location == null) {
-            return "Kein Standort";
-        }
-        if (location instanceof DungeonRuntimeLocation.Tile tileLocation) {
-            return structureLabelAtTile(layout, tileLocation.tile());
-        }
-        if (location instanceof DungeonRuntimeLocation.Room roomLocation) {
-            return roomLabel(layout, roomLocation.roomId());
-        }
-        if (location instanceof DungeonRuntimeLocation.Corridor corridorLocation) {
-            Corridor corridor = layout.findCorridor(corridorLocation.corridorId());
-            return corridor == null ? "Korridor" : corridorLabel(layout, corridor.connectedRoomIds().stream());
-        }
-        if (location instanceof DungeonRuntimeLocation.StairExit stairExit) {
-            return structureLabelAtTile(layout, stairExit.tile());
-        }
-        if (location instanceof DungeonRuntimeLocation.Transition transitionLocation) {
-            DungeonTransition transition = layout.findTransition(transitionLocation.transitionId());
-            return transition == null ? "Übergang" : transition.label();
-        }
-        return "Kein Standort";
+    public static String activeLocationLabel(DungeonLayout layout, CellCoord cell, int levelZ) {
+        return structureLabelAtCell(layout, cell, levelZ);
     }
 
-    public static String tileLabel(DungeonRuntimeLocation location) {
-        if (!(location instanceof DungeonRuntimeLocation.Tile tileLocation)) {
-            return "\u2014";
-        }
-        return tileLabel(tileLocation.tile());
-    }
-
-    public static String tileLabel(CubePoint tile) {
-        return tile == null ? "\u2014" : tile.x() + ", " + tile.y() + ", z=" + tile.z();
+    public static String cellLabel(CellCoord cell, int levelZ) {
+        return cell == null ? "\u2014" : cell.x() + ", " + cell.y() + ", z=" + levelZ;
     }
 
     public static String headingLabel(CardinalDirection heading) {
@@ -54,22 +27,22 @@ public final class DungeonRuntimeLabels {
         return resolved.label();
     }
 
-    public static String structureLabelAtTile(DungeonLayout layout, CubePoint tile) {
-        if (layout == null || tile == null) {
+    public static String structureLabelAtCell(DungeonLayout layout, CellCoord cell, int levelZ) {
+        if (layout == null || cell == null) {
             return "Kein Standort";
         }
-        DungeonLayout.CellStructure structure = layout.projectedToLevel(tile.z()).structureAtCell(tile.projectedCell());
+        DungeonLayout.CellStructure structure = layout.structureAtCell(cell, levelZ);
         if (structure instanceof DungeonLayout.CellStructure.RoomStructure roomStructure) {
             return roomLabel(roomStructure.room());
         }
         if (structure instanceof DungeonLayout.CellStructure.CorridorStructure corridorStructure) {
             return corridorLabel(layout, corridorStructure.corridor());
         }
-        var stair = layout.stairsAtPoint(tile).stream().findFirst().orElse(null);
+        var stair = layout.stairsAtCell(cell, levelZ).stream().findFirst().orElse(null);
         if (stair != null) {
             return stair.label();
         }
-        DungeonTransition transition = layout.transitionsAtPoint(tile).stream().findFirst().orElse(null);
+        DungeonTransition transition = layout.transitionsAtCell(cell, levelZ).stream().findFirst().orElse(null);
         if (transition != null) {
             return transition.label();
         }
@@ -81,7 +54,7 @@ public final class DungeonRuntimeLabels {
         if (room == null) {
             return roomId == null ? "Raum" : "Raum " + roomId;
         }
-        return room.name() == null || room.name().isBlank() ? "Raum " + room.roomId() : room.name();
+        return roomLabel(room);
     }
 
     public static String roomLabel(Room room) {
@@ -91,17 +64,11 @@ public final class DungeonRuntimeLabels {
         return room.name() == null || room.name().isBlank() ? "Raum " + room.roomId() : room.name();
     }
 
-    public static Room roomForLocation(DungeonLayout layout, DungeonRuntimeLocation location) {
-        if (layout == null || location == null) {
+    public static Room roomAtCell(DungeonLayout layout, CellCoord cell, int levelZ) {
+        if (layout == null || cell == null) {
             return null;
         }
-        if (location instanceof DungeonRuntimeLocation.Room roomLocation) {
-            return roomForId(layout, roomLocation.roomId());
-        }
-        if (location instanceof DungeonRuntimeLocation.Tile tileLocation) {
-            return layout.projectedToLevel(tileLocation.tile().z()).roomAtCell(tileLocation.tile().projectedCell());
-        }
-        return null;
+        return layout.roomAtCell(cell, levelZ);
     }
 
     public static String corridorLabel(DungeonLayout layout, Corridor corridor) {

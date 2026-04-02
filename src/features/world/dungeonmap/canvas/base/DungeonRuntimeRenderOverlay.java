@@ -1,12 +1,13 @@
 package features.world.dungeonmap.canvas.base;
 
 import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.CellCoord;
 
 import java.util.List;
 
 public record DungeonRuntimeRenderOverlay(
-        CubePoint activeTile,
+        CellCoord activeCell,
+        int activeLevelZ,
         CardinalDirection heading,
         List<DungeonDoorNumberOverlay> doorNumbers
 ) {
@@ -16,6 +17,6 @@ public record DungeonRuntimeRenderOverlay(
     }
 
     public static DungeonRuntimeRenderOverlay empty() {
-        return new DungeonRuntimeRenderOverlay(null, CardinalDirection.defaultDirection(), List.of());
+        return new DungeonRuntimeRenderOverlay(null, 0, CardinalDirection.defaultDirection(), List.of());
     }
 }

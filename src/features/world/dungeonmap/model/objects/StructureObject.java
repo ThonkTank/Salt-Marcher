@@ -157,6 +157,10 @@ public final class StructureObject {
         return cell != null && floorsByLevel.values().stream().anyMatch(floor -> floor.contains(cell));
     }
 
+    public boolean contains(CellCoord cell, int levelZ) {
+        return cell != null && cellCoordsAtLevel(levelZ).contains(cell);
+    }
+
     public boolean contains(Point2i cell) {
         return cell != null && contains(CellCoord.fromPoint(cell));
     }

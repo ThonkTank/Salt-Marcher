@@ -5,8 +5,7 @@ import features.campaignstate.api.DungeonPositionRef;
 import features.campaignstate.api.DungeonPositionSummary;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.Point2i;
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
@@ -26,21 +25,24 @@ final class DungeonRuntimeLocations {
         if (position == null) {
             return null;
         }
+        Integer storedLevel = position.levelZ();
         if (position.locationType() == CampaignDungeonLocationType.TILE && position.locationKey() != null) {
-            CubePoint tile = parseTile(position.locationKey());
-            return tile == null ? null : DungeonRuntimeLocation.tile(tile);
+            return parseCellLocation(position.locationKey(), TILE_PREFIX, storedLevel);
         }
         if (position.locationType() == CampaignDungeonLocationType.STAIR_EXIT && position.locationKey() != null) {
-            CubePoint tile = parseStairTile(position.locationKey());
+            DungeonRuntimeLocation.Cell cell = parseStairCell(position.locationKey(), storedLevel);
             long stairId = parseStairId(position.locationKey());
-            return tile == null || stairId <= 0 ? null : DungeonRuntimeLocation.stairExit(stairId, tile);
+            return cell == null || stairId <= 0 ? null : DungeonRuntimeLocation.stairExit(stairId, cell.cell(), cell.levelZ());
         }
         if (position.locationType() == CampaignDungeonLocationType.TRANSITION && position.locationKey() != null) {
             Long transitionId = parseTransitionId(position.locationKey());
             return transitionId == null ? null : DungeonRuntimeLocation.transition(transitionId);
         }
         if (position.locationType() == CampaignDungeonLocationType.CORRIDOR && position.corridorId() != null) {
-            return DungeonRuntimeLocation.corridor(position.corridorId(), parseCorridorTile(position.locationKey()));
+            DungeonRuntimeLocation.Cell anchor = parseCorridorCell(position.locationKey(), storedLevel);
+            return anchor == null
+                    ? DungeonRuntimeLocation.corridor(position.corridorId())
+                    : DungeonRuntimeLocation.corridor(position.corridorId(), anchor.cell(), anchor.levelZ());
         }
         if (position.roomId() != null) {
             return DungeonRuntimeLocation.room(position.roomId());
@@ -52,45 +54,51 @@ final class DungeonRuntimeLocations {
         if (layout == null) {
             return null;
         }
-        CubePoint resolvedTile = null;
-        if (location instanceof DungeonRuntimeLocation.Tile tileLocation) {
-            resolvedTile = layout.isTraversableCell(tileLocation.tile()) ? tileLocation.tile() : null;
+        DungeonRuntimeLocation.Cell resolvedCell = null;
+        if (location instanceof DungeonRuntimeLocation.Cell cellLocation) {
+            resolvedCell = layout.isTraversableCell(cellLocation.cell(), cellLocation.levelZ()) ? cellLocation : null;
         } else if (location instanceof DungeonRuntimeLocation.StairExit stairExit) {
-            resolvedTile = stairExitAnchor(layout, stairExit.stairId(), stairExit.tile());
+            resolvedCell = stairExitAnchor(layout, stairExit.stairId(), new DungeonRuntimeLocation.Cell(stairExit.cell(), stairExit.levelZ()));
         } else if (location instanceof DungeonRuntimeLocation.Transition transitionLocation) {
-            resolvedTile = transitionAnchor(layout, transitionLocation.transitionId());
+            resolvedCell = transitionAnchor(layout, transitionLocation.transitionId());
         } else if (location instanceof DungeonRuntimeLocation.Room roomLocation) {
-            resolvedTile = roomAnchor(layout, roomLocation.roomId());
+            resolvedCell = roomAnchor(layout, roomLocation.roomId());
         } else if (location instanceof DungeonRuntimeLocation.Corridor corridorLocation) {
-            resolvedTile = corridorAnchor(layout, layout.findCorridor(corridorLocation.corridorId()), corridorLocation.anchorTile());
+            DungeonRuntimeLocation.Cell preferred = corridorLocation.anchorCell() == null
+                    ? null
+                    : new DungeonRuntimeLocation.Cell(corridorLocation.anchorCell(), corridorLocation.levelZ());
+            resolvedCell = corridorAnchor(layout, layout.findCorridor(corridorLocation.corridorId()), preferred);
         }
-        if (resolvedTile != null) {
-            return DungeonRuntimeLocation.tile(resolvedTile);
+        if (resolvedCell != null) {
+            return resolvedCell;
         }
-        CubePoint fallbackTile = layout.rooms().stream()
+        DungeonRuntimeLocation.Cell fallback = layout.rooms().stream()
                 .sorted(java.util.Comparator.comparing(room -> room.roomId() == null ? Long.MAX_VALUE : room.roomId()))
                 .map(room -> roomAnchor(layout, room.roomId()))
                 .filter(Objects::nonNull)
                 .findFirst()
                 .orElse(null);
-        return fallbackTile == null ? null : DungeonRuntimeLocation.tile(fallbackTile);
+        return fallback;
     }
 
     static boolean containsLocation(DungeonLayout layout, DungeonRuntimeLocation location) {
         if (layout == null || location == null) {
             return false;
         }
-        if (location instanceof DungeonRuntimeLocation.Tile tile) {
-            return layout.isTraversableCell(tile.tile());
+        if (location instanceof DungeonRuntimeLocation.Cell cell) {
+            return layout.isTraversableCell(cell.cell(), cell.levelZ());
         }
         if (location instanceof DungeonRuntimeLocation.StairExit stairExit) {
-            return stairExitAnchor(layout, stairExit.stairId(), stairExit.tile()) != null;
+            return stairExitAnchor(layout, stairExit.stairId(), new DungeonRuntimeLocation.Cell(stairExit.cell(), stairExit.levelZ())) != null;
         }
         if (location instanceof DungeonRuntimeLocation.Transition transition) {
             return transitionAnchor(layout, transition.transitionId()) != null;
         }
         if (location instanceof DungeonRuntimeLocation.Corridor corridor) {
-            return corridorAnchor(layout, layout.findCorridor(corridor.corridorId()), corridor.anchorTile()) != null;
+            DungeonRuntimeLocation.Cell preferred = corridor.anchorCell() == null
+                    ? null
+                    : new DungeonRuntimeLocation.Cell(corridor.anchorCell(), corridor.levelZ());
+            return corridorAnchor(layout, layout.findCorridor(corridor.corridorId()), preferred) != null;
         }
         if (location instanceof DungeonRuntimeLocation.Room room) {
             return layout.findRoom(room.roomId()) != null;
@@ -100,17 +108,24 @@ final class DungeonRuntimeLocations {
 
     static DungeonPositionRef toCampaignPosition(long mapId, DungeonRuntimeLocation location, CardinalDirection heading) {
         String headingValue = (heading == null ? CardinalDirection.defaultDirection() : heading).name();
-        if (location instanceof DungeonRuntimeLocation.Tile tile) {
-            return new DungeonPositionRef(mapId, tile.tile().z(), CampaignDungeonLocationType.TILE, null, null, formatTile(tile.tile()), headingValue);
+        if (location instanceof DungeonRuntimeLocation.Cell cell) {
+            return new DungeonPositionRef(
+                    mapId,
+                    cell.levelZ(),
+                    CampaignDungeonLocationType.TILE,
+                    null,
+                    null,
+                    formatCellLocation(TILE_PREFIX, cell.cell(), cell.levelZ()),
+                    headingValue);
         }
         if (location instanceof DungeonRuntimeLocation.StairExit stairExit) {
             return new DungeonPositionRef(
                     mapId,
-                    stairExit.tile().z(),
+                    stairExit.levelZ(),
                     CampaignDungeonLocationType.STAIR_EXIT,
                     null,
                     null,
-                    formatStairExit(stairExit.stairId(), stairExit.tile()),
+                    formatStairExit(stairExit.stairId(), stairExit.cell(), stairExit.levelZ()),
                     headingValue);
         }
         if (location instanceof DungeonRuntimeLocation.Transition transition) {
@@ -119,11 +134,11 @@ final class DungeonRuntimeLocations {
         if (location instanceof DungeonRuntimeLocation.Corridor corridor) {
             return new DungeonPositionRef(
                     mapId,
-                    corridor.anchorTile() == null ? 0 : corridor.anchorTile().z(),
+                    corridor.levelZ(),
                     CampaignDungeonLocationType.CORRIDOR,
                     null,
                     corridor.corridorId(),
-                    formatCorridor(corridor.corridorId(), corridor.anchorTile()),
+                    formatCorridor(corridor.corridorId(), corridor.anchorCell(), corridor.levelZ()),
                     headingValue);
         }
         if (location instanceof DungeonRuntimeLocation.Room room) {
@@ -132,41 +147,26 @@ final class DungeonRuntimeLocations {
         return new DungeonPositionRef(mapId, 0, null, null, null, null, headingValue);
     }
 
-    static String formatTile(CubePoint tile) {
-        return tile == null ? null : TILE_PREFIX + tile.x() + "," + tile.y() + "," + tile.z();
+    private static String formatCellLocation(String prefix, CellCoord cell, int levelZ) {
+        return cell == null ? null : prefix + cell.x() + "," + cell.y() + "," + levelZ;
     }
 
-    private static String formatStairExit(long stairId, CubePoint tile) {
-        return "stair:" + stairId + ":" + tile.x() + "," + tile.y() + "," + tile.z();
+    private static String formatStairExit(long stairId, CellCoord cell, int levelZ) {
+        return cell == null ? null : "stair:" + stairId + ":" + cell.x() + "," + cell.y() + "," + levelZ;
     }
 
-    private static String formatCorridor(long corridorId, CubePoint tile) {
-        if (tile == null) {
-            return null;
-        }
-        return CORRIDOR_PREFIX + corridorId + ":" + tile.x() + "," + tile.y() + "," + tile.z();
+    private static String formatCorridor(long corridorId, CellCoord cell, int levelZ) {
+        return cell == null ? null : CORRIDOR_PREFIX + corridorId + ":" + cell.x() + "," + cell.y() + "," + levelZ;
     }
 
-    private static CubePoint parseTile(String value) {
-        if (value == null || !value.startsWith(TILE_PREFIX)) {
+    private static DungeonRuntimeLocation.Cell parseCellLocation(String value, String prefix, Integer fallbackLevel) {
+        if (value == null || !value.startsWith(prefix)) {
             return null;
         }
-        String coordinates = value.substring(TILE_PREFIX.length());
-        String[] parts = coordinates.split(",");
-        if (parts.length != 3) {
-            return null;
-        }
-        try {
-            int x = Integer.parseInt(parts[0]);
-            int y = Integer.parseInt(parts[1]);
-            int z = Integer.parseInt(parts[2]);
-            return new CubePoint(x, y, z);
-        } catch (NumberFormatException ignored) {
-            return null;
-        }
+        return parseCellCoordinates(value.substring(prefix.length()), fallbackLevel);
     }
 
-    private static CubePoint parseStairTile(String value) {
+    private static DungeonRuntimeLocation.Cell parseStairCell(String value, Integer fallbackLevel) {
         if (value == null || !value.startsWith("stair:")) {
             return null;
         }
@@ -174,19 +174,7 @@ final class DungeonRuntimeLocations {
         if (separator <= "stair:".length() || separator >= value.length() - 1) {
             return null;
         }
-        String coordinates = value.substring(separator + 1);
-        String[] parts = coordinates.split(",");
-        if (parts.length != 3) {
-            return null;
-        }
-        try {
-            return new CubePoint(
-                    Integer.parseInt(parts[0]),
-                    Integer.parseInt(parts[1]),
-                    Integer.parseInt(parts[2]));
-        } catch (NumberFormatException ignored) {
-            return null;
-        }
+        return parseCellCoordinates(value.substring(separator + 1), fallbackLevel);
     }
 
     private static long parseStairId(String value) {
@@ -204,7 +192,7 @@ final class DungeonRuntimeLocations {
         }
     }
 
-    private static CubePoint parseCorridorTile(String value) {
+    private static DungeonRuntimeLocation.Cell parseCorridorCell(String value, Integer fallbackLevel) {
         if (value == null || !value.startsWith(CORRIDOR_PREFIX)) {
             return null;
         }
@@ -212,15 +200,23 @@ final class DungeonRuntimeLocations {
         if (separator <= CORRIDOR_PREFIX.length() || separator >= value.length() - 1) {
             return null;
         }
-        String[] parts = value.substring(separator + 1).split(",");
+        return parseCellCoordinates(value.substring(separator + 1), fallbackLevel);
+    }
+
+    private static DungeonRuntimeLocation.Cell parseCellCoordinates(String coordinates, Integer fallbackLevel) {
+        if (coordinates == null) {
+            return null;
+        }
+        String[] parts = coordinates.split(",");
         if (parts.length != 3) {
             return null;
         }
         try {
-            return new CubePoint(
-                    Integer.parseInt(parts[0]),
-                    Integer.parseInt(parts[1]),
-                    Integer.parseInt(parts[2]));
+            int x = Integer.parseInt(parts[0]);
+            int y = Integer.parseInt(parts[1]);
+            int storedLevel = Integer.parseInt(parts[2]);
+            int resolvedLevel = fallbackLevel == null ? storedLevel : fallbackLevel;
+            return new DungeonRuntimeLocation.Cell(new CellCoord(x, y), resolvedLevel);
         } catch (NumberFormatException ignored) {
             return null;
         }
@@ -241,39 +237,56 @@ final class DungeonRuntimeLocations {
         }
     }
 
-    private static CubePoint roomAnchor(DungeonLayout layout, Long roomId) {
+    private static DungeonRuntimeLocation.Cell roomAnchor(DungeonLayout layout, Long roomId) {
         Room room = layout.findRoom(roomId);
         if (room == null) {
             return null;
         }
-        CubePoint preferred = room.structure().centerPointAtLevel(layout.levelForRoom(roomId));
-        return layout.isTraversableCell(preferred) ? preferred : layout.nearestTraversableCell(preferred);
+        int levelZ = layout.levelForRoom(roomId);
+        CellCoord preferred = room.structure().centerCellCoordAtLevel(levelZ);
+        if (preferred == null) {
+            return null;
+        }
+        CellCoord resolved = layout.isTraversableCell(preferred, levelZ)
+                ? preferred
+                : layout.nearestTraversableCell(preferred, levelZ);
+        return resolved == null ? null : new DungeonRuntimeLocation.Cell(resolved, levelZ);
     }
 
-    private static CubePoint corridorAnchor(DungeonLayout layout, Corridor corridor, CubePoint preferred) {
+    private static DungeonRuntimeLocation.Cell corridorAnchor(
+            DungeonLayout layout,
+            Corridor corridor,
+            DungeonRuntimeLocation.Cell preferred
+    ) {
         if (corridor != null) {
-            return corridor.structure().centerPointAtLevel(corridor.levelZ());
+            CellCoord center = corridor.structure().centerCellCoordAtLevel(corridor.levelZ());
+            return center == null ? null : new DungeonRuntimeLocation.Cell(center, corridor.levelZ());
         }
         if (layout == null || preferred == null) {
             return null;
         }
-        Corridor fallback = layout.corridorsAtCell(preferred.projectedCell(), preferred.z()).stream()
+        Corridor fallback = layout.corridorsAtCell(preferred.cell(), preferred.levelZ()).stream()
                 .filter(Objects::nonNull)
                 .min(java.util.Comparator.comparing(Corridor::corridorId, java.util.Comparator.nullsLast(Long::compareTo)))
                 .orElse(null);
         if (fallback == null) {
             return null;
         }
-        return fallback.structure().centerPointAtLevel(fallback.levelZ());
+        CellCoord center = fallback.structure().centerCellCoordAtLevel(fallback.levelZ());
+        return center == null ? null : new DungeonRuntimeLocation.Cell(center, fallback.levelZ());
     }
 
-    private static CubePoint stairExitAnchor(DungeonLayout layout, long stairId, CubePoint preferred) {
+    private static DungeonRuntimeLocation.Cell stairExitAnchor(
+            DungeonLayout layout,
+            long stairId,
+            DungeonRuntimeLocation.Cell preferred
+    ) {
         DungeonStair stair = layout.stairs().stream()
                 .filter(candidate -> candidate != null && candidate.stairId() != null && candidate.stairId() == stairId)
                 .findFirst()
                 .orElse(null);
         if (stair == null && preferred != null) {
-            stair = layout.stairsAtCell(preferred.projectedCell(), preferred.z()).stream()
+            stair = layout.stairsAtCell(preferred.cell(), preferred.levelZ()).stream()
                     .filter(Objects::nonNull)
                     .min(java.util.Comparator.comparing(DungeonStair::stairId, java.util.Comparator.nullsLast(Long::compareTo)))
                     .orElse(null);
@@ -284,19 +297,25 @@ final class DungeonRuntimeLocations {
         DungeonStair resolvedStair = stair;
         if (preferred != null) {
             for (DungeonStairExit exit : resolvedStair.exits()) {
-                if (preferred.equals(exit.position())) {
-                    return exit.position();
+                if (exit.position().projectedCell().equals(preferred.cell())
+                        && exit.position().z() == preferred.levelZ()) {
+                    return new DungeonRuntimeLocation.Cell(exit.position().projectedCell(), exit.position().z());
                 }
             }
         }
         return resolvedStair.exits().stream()
-                .map(DungeonStairExit::position)
+                .map(exit -> new DungeonRuntimeLocation.Cell(exit.position().projectedCell(), exit.position().z()))
                 .findFirst()
-                .orElseGet(() -> resolvedStair.path().stream().findFirst().orElse(null));
+                .orElseGet(() -> resolvedStair.path().stream()
+                        .findFirst()
+                        .map(point -> new DungeonRuntimeLocation.Cell(point.projectedCell(), point.z()))
+                        .orElse(null));
     }
 
-    private static CubePoint transitionAnchor(DungeonLayout layout, long transitionId) {
+    private static DungeonRuntimeLocation.Cell transitionAnchor(DungeonLayout layout, long transitionId) {
         var transition = layout.findTransition(transitionId);
-        return transition == null ? null : transition.anchor();
+        return transition == null || transition.anchor() == null
+                ? null
+                : new DungeonRuntimeLocation.Cell(transition.anchor().projectedCell(), transition.anchor().z());
     }
 }

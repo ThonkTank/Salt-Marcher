@@ -66,9 +66,9 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 ## Concern Ownership
 
 - Hit collection owns raw candidates. `DungeonSelection` is event-time data only.
-- `CellCoord` is the canonical 2D cell primitive at model-owner seams, pointer events, hit probes, drag/placement helpers, and runtime tile navigation. `Point2i` remains a staged compatibility type only for older cell consumers, persisted relative-cell seams, and legacy vector/query APIs.
-- `DungeonHitProbe` carries canonical `CellCoord` tile context plus canonical `GridPoint2x` probe geometry. Cell hits use `DungeonHitSurface.CellSurface`, while shared half-step hit geometry uses set-based `PointSurface` and `SegmentSurface`.
-- `DungeonLayout` lookups and other untouched compat-facing APIs may still consume `Point2i`, but callers should convert at the edge instead of mirroring new cell ownership back onto `Point2i`. Corridor room bindings use `CellCoord`; geometry-backed picks and selections use `GridPoint2x` and `GridSegment2x`.
+- `CellCoord` is the canonical 2D cell primitive at model-owner seams, pointer events, hit probes, drag/placement helpers, runtime navigation, and renderer overlays. `Point2i` remains a staged compatibility type only for older cell consumers, persisted relative-cell seams, and legacy vector/query APIs.
+- `DungeonHitProbe` carries canonical `CellCoord` cell context plus canonical `GridPoint2x` probe geometry. Cell hits use `DungeonHitSurface.CellSurface`, while shared half-step hit geometry uses set-based `PointSurface` and `SegmentSurface`.
+- `DungeonLayout` owns canonical `CellCoord` lookups, traversable-cell indices, and level-aware cell queries. Keep any remaining `Point2i` overloads as edge compat only; do not mirror new cell ownership back onto `Point2i`. Corridor room bindings use `CellCoord`; geometry-backed picks and selections use `GridPoint2x` and `GridSegment2x`.
 - `DungeonHitSubject` and `DungeonSelectionLookup` expose geometry-backed editor/runtime selections only as `GridPoint2x` and `GridSegment2x`. Do not add raw doubled-`Point2i`, `LegacyGridPoint2x`, or `LegacyGridSegment2x` mirrors back into those seams.
 - `InteractiveLabelHandle`, `DungeonEditorRenderState`, and `DungeonRuntimeRenderOverlay` are display payloads on final `CellCoord`/`GridPoint2x`/`GridSegment2x` only. If a remaining owner is still legacy-frozen, convert once at that owner boundary instead of inside renderers or tools.
 - `EditorTool.resolveHit(...)` owns tool-specific interpretation of those candidates. Do not move per-tool allowlists back into a central selector.
@@ -117,10 +117,10 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 
 ## Runtime
 
-- `DungeonRuntimeInteractionController` owns drag-to-move. Press starts only when the active tile is selected; drag shows preview; release commits a move.
-- `DungeonRuntimeSelectionPolicy` selects the first runtime-selectable subject that actually owns the active tile. Runtime interaction is not driven by the primary hit candidate alone.
-- `DungeonRuntimeView` resolves the active tile first via `DungeonRuntimeLocationTileResolver`, then calls `DungeonRuntimeSurfaceResolver.resolve(layout, location, activeTile, heading)`.
-- `DungeonRuntimeSurfaceResolver` must read from direct structure owners and build one `DungeonRuntimeSurface`; room/corridor/tile/stair/transition presentation all funnel through that one surface model.
+- `DungeonRuntimeInteractionController` owns drag-to-move. Press starts only when the active cell is selected; drag shows preview; release commits a move.
+- `DungeonRuntimeSelectionPolicy` selects the first runtime-selectable subject that actually owns the active cell. Runtime interaction is not driven by the primary hit candidate alone.
+- `DungeonRuntimeView` keeps runtime presentation on `DungeonRuntimeLocation.Cell` plus projection level and calls `DungeonRuntimeSurfaceResolver.resolve(layout, activeCell, levelZ, heading)` directly.
+- `DungeonRuntimeSurfaceResolver` must read from direct structure owners and build one `DungeonRuntimeSurface`; room/corridor/cell/stair/transition presentation all funnel through that one surface model.
 - Runtime details are published through the shared `DetailsNavigator`. Do not add a parallel feature-local runtime details pane.
 - Same-map transition travel should return a resolved navigation snapshot against the current layout immediately; cross-map travel returns a snapshot for the target map and the view triggers a reload.
 

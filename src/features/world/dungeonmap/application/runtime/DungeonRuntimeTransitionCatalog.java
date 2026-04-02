@@ -2,7 +2,6 @@ package features.world.dungeonmap.application.runtime;
 
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
@@ -18,27 +17,41 @@ public final class DungeonRuntimeTransitionCatalog {
         throw new AssertionError("No instances");
     }
 
-    public static List<DungeonRuntimeTransitionDescriptor> describe(DungeonLayout layout, Room room, CubePoint activeTile) {
+    public static List<DungeonRuntimeTransitionDescriptor> describe(
+            DungeonLayout layout,
+            Room room,
+            CellCoord activeCell,
+            int activeLevelZ
+    ) {
         if (layout == null || room == null || room.roomId() == null) {
             return List.of();
         }
-        return levelsForRoomSurface(room.structure(), activeTile).stream()
+        return levelsForRoomSurface(room.structure(), activeCell, activeLevelZ).stream()
                 .flatMap(levelZ -> describe(layout, room.structure().cellCoordsAtLevel(levelZ), levelZ).stream())
                 .toList();
     }
 
-    public static List<DungeonRuntimeTransitionDescriptor> describe(DungeonLayout layout, Corridor corridor, CubePoint activeTile) {
+    public static List<DungeonRuntimeTransitionDescriptor> describe(
+            DungeonLayout layout,
+            Corridor corridor,
+            CellCoord activeCell,
+            int activeLevelZ
+    ) {
         if (layout == null || corridor == null || corridor.corridorId() == null) {
             return List.of();
         }
         return describe(layout, corridor.structure().cellCoordsAtLevel(corridor.levelZ()), corridor.levelZ());
     }
 
-    public static List<DungeonRuntimeTransitionDescriptor> describeAtTile(DungeonLayout layout, CubePoint tile) {
-        if (layout == null || tile == null) {
+    public static List<DungeonRuntimeTransitionDescriptor> describeAtCell(
+            DungeonLayout layout,
+            CellCoord cell,
+            int levelZ
+    ) {
+        if (layout == null || cell == null) {
             return List.of();
         }
-        return layout.transitionsAtPoint(tile).stream()
+        return layout.transitionsAtCell(cell, levelZ).stream()
                 .filter(transition -> transition != null && transition.transitionId() != null)
                 .sorted(Comparator.comparing(DungeonTransition::transitionId))
                 .map(transition -> new DungeonRuntimeTransitionDescriptor(
@@ -96,12 +109,16 @@ public final class DungeonRuntimeTransitionCatalog {
         return transition.label();
     }
 
-    private static List<Integer> levelsForRoomSurface(features.world.dungeonmap.model.objects.StructureObject structure, CubePoint activeTile) {
+    private static List<Integer> levelsForRoomSurface(
+            features.world.dungeonmap.model.objects.StructureObject structure,
+            CellCoord activeCell,
+            int activeLevelZ
+    ) {
         if (structure == null) {
             return List.of();
         }
-        if (activeTile != null && structure.contains(activeTile)) {
-            return List.of(activeTile.z());
+        if (activeCell != null && structure.contains(activeCell, activeLevelZ)) {
+            return List.of(activeLevelZ);
         }
         return structure.levels().stream()
                 .sorted()

@@ -2,8 +2,7 @@ package features.world.dungeonmap.shell.runtime;
 
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.structures.cluster.RoomCluster;
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.shell.interaction.DungeonDragService;
 import features.world.dungeonmap.shell.interaction.DungeonHitSnapshot;
@@ -26,7 +25,8 @@ public final class DungeonRuntimeSelectionPolicy {
             DungeonLayout activeMap,
             DungeonCanvasPointerEvent event,
             DungeonHitSnapshot snapshot,
-            CubePoint activeTile,
+            CellCoord activeCell,
+            int activeLevelZ,
             DungeonDragService.DungeonDragSession dragSession
     ) {
         Objects.requireNonNull(phase, "phase");
@@ -37,7 +37,7 @@ public final class DungeonRuntimeSelectionPolicy {
             return new DungeonSelectionDecision(selection, false, false);
         }
         return switch (phase) {
-            case PRESS -> decidePress(activeMap, event, selection, activeTile);
+            case PRESS -> decidePress(activeMap, event, selection, activeCell, activeLevelZ);
             case DRAG -> new DungeonSelectionDecision(selection, dragSession != null && event.isPrimaryButtonDown(), false);
             case RELEASE -> new DungeonSelectionDecision(selection, dragSession != null, false);
         };
@@ -47,16 +47,17 @@ public final class DungeonRuntimeSelectionPolicy {
             DungeonLayout activeMap,
             DungeonCanvasPointerEvent event,
             DungeonSelection selection,
-            CubePoint activeTile
+            CellCoord activeCell,
+            int activeLevelZ
     ) {
         if (!event.isPrimaryButton()
-                || activeTile == null
-                || activeTile.z() != selection.snapshot().probe().levelZ()
-                || !activeTile.projectedCell().equals(selection.snapshot().probe().gridCell())) {
+                || activeCell == null
+                || activeLevelZ != selection.snapshot().probe().levelZ()
+                || !activeCell.equals(selection.snapshot().probe().gridCell())) {
             return new DungeonSelectionDecision(selection, false, false);
         }
         DungeonHitSubject subject = selection.firstSubjectMatching(candidate ->
-                isRuntimeSelectable(candidate) && subjectOwnsActiveTile(activeMap, activeTile, candidate));
+                isRuntimeSelectable(candidate) && subjectOwnsActiveCell(activeMap, activeCell, activeLevelZ, candidate));
         if (subject == null) {
             return new DungeonSelectionDecision(selection, false, false);
         }
@@ -70,41 +71,31 @@ public final class DungeonRuntimeSelectionPolicy {
                 || subject instanceof DungeonHitSubject.TransitionSubject;
     }
 
-    private static boolean subjectOwnsActiveTile(DungeonLayout activeMap, CubePoint activeTile, DungeonHitSubject subject) {
+    private static boolean subjectOwnsActiveCell(
+            DungeonLayout activeMap,
+            CellCoord activeCell,
+            int activeLevelZ,
+            DungeonHitSubject subject
+    ) {
         return switch (subject) {
-            case DungeonHitSubject.RoomSubject roomSubject -> roomOwnsActiveTile(activeMap, activeTile, roomSubject);
-            case DungeonHitSubject.CorridorSubject corridorSubject -> activeMap.corridorsAtCell(activeTile.projectedCell(), activeTile.z()).stream()
+            case DungeonHitSubject.RoomSubject roomSubject -> roomOwnsActiveCell(activeMap, activeCell, activeLevelZ, roomSubject);
+            case DungeonHitSubject.CorridorSubject corridorSubject -> activeMap.corridorsAtCell(activeCell, activeLevelZ).stream()
                     .anyMatch(corridor -> corridor != null && Objects.equals(corridor.corridorId(), corridorSubject.corridorId()));
-            case DungeonHitSubject.StairSubject stairSubject -> activeMap.stairsAtCell(activeTile.projectedCell(), activeTile.z()).stream()
+            case DungeonHitSubject.StairSubject stairSubject -> activeMap.stairsAtCell(activeCell, activeLevelZ).stream()
                     .anyMatch(stair -> stair != null && Objects.equals(stair.stairId(), stairSubject.stairId()));
-            case DungeonHitSubject.TransitionSubject transitionSubject -> activeMap.transitionsAtCell(activeTile.projectedCell(), activeTile.z()).stream()
+            case DungeonHitSubject.TransitionSubject transitionSubject -> activeMap.transitionsAtCell(activeCell, activeLevelZ).stream()
                     .anyMatch(transition -> transition != null && Objects.equals(transition.transitionId(), transitionSubject.transitionId()));
             default -> false;
         };
     }
 
-    private static boolean roomOwnsActiveTile(
+    private static boolean roomOwnsActiveCell(
             DungeonLayout activeMap,
-            CubePoint activeTile,
+            CellCoord activeCell,
+            int activeLevelZ,
             DungeonHitSubject.RoomSubject roomSubject
     ) {
-        Room room = roomAt(activeMap, activeTile);
+        Room room = activeMap.roomAtCell(activeCell, activeLevelZ);
         return room != null && Objects.equals(room.roomId(), roomSubject.roomId());
-    }
-
-    private static Room roomAt(DungeonLayout activeMap, CubePoint point) {
-        if (activeMap == null || point == null) {
-            return null;
-        }
-        for (RoomCluster cluster : activeMap.clusters()) {
-            if (cluster == null) {
-                continue;
-            }
-            Room room = cluster.roomAt(point);
-            if (room != null) {
-                return room;
-            }
-        }
-        return null;
     }
 }

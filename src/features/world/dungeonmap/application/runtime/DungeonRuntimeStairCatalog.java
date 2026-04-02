@@ -23,41 +23,45 @@ public final class DungeonRuntimeStairCatalog {
     public static List<DungeonRuntimeStairDescriptor> describe(
             DungeonLayout layout,
             Room room,
-            CubePoint activeTile
+            CellCoord activeCell,
+            int activeLevelZ
     ) {
         if (layout == null || room == null || room.roomId() == null) {
             return List.of();
         }
-        return levelsForRoomSurface(room.structure(), activeTile).stream()
-                .flatMap(levelZ -> describe(layout, room.structure().cellCoordsAtLevel(levelZ), levelZ, activeTile).stream())
+        return levelsForRoomSurface(room.structure(), activeCell, activeLevelZ).stream()
+                .flatMap(levelZ -> describe(layout, room.structure().cellCoordsAtLevel(levelZ), levelZ, activeCell, activeLevelZ).stream())
                 .toList();
     }
 
     public static List<DungeonRuntimeStairDescriptor> describe(
             DungeonLayout layout,
             Corridor corridor,
-            CubePoint activeTile
+            CellCoord activeCell,
+            int activeLevelZ
     ) {
         if (layout == null || corridor == null || corridor.corridorId() == null) {
             return List.of();
         }
-        return describe(layout, corridor.structure().cellCoordsAtLevel(corridor.levelZ()), corridor.levelZ(), activeTile);
+        return describe(layout, corridor.structure().cellCoordsAtLevel(corridor.levelZ()), corridor.levelZ(), activeCell, activeLevelZ);
     }
 
     public static List<DungeonRuntimeStairDescriptor> describeAtCells(
             DungeonLayout layout,
             Set<CellCoord> surfaceCells,
             int levelZ,
-            CubePoint activeTile
+            CellCoord activeCell,
+            int activeLevelZ
     ) {
-        return describe(layout, surfaceCells, levelZ, activeTile);
+        return describe(layout, surfaceCells, levelZ, activeCell, activeLevelZ);
     }
 
     private static List<DungeonRuntimeStairDescriptor> describe(
             DungeonLayout layout,
             Set<CellCoord> surfaceCells,
             int levelZ,
-            CubePoint activeTile
+            CellCoord activeCell,
+            int activeLevelZ
     ) {
         if (layout == null || surfaceCells == null || surfaceCells.isEmpty()) {
             return List.of();
@@ -71,7 +75,7 @@ public final class DungeonRuntimeStairCatalog {
                         .anyMatch(resolvedCells::contains))
                 .sorted(Comparator.comparing(DungeonStair::label, String.CASE_INSENSITIVE_ORDER)
                         .thenComparing(DungeonStair::stairId))
-                .map(stair -> toDescriptor(stair, levelZ, resolvedCells, activeTile))
+                .map(stair -> toDescriptor(stair, levelZ, resolvedCells, activeCell, activeLevelZ))
                 .flatMap(List::stream)
                 .toList();
     }
@@ -80,7 +84,8 @@ public final class DungeonRuntimeStairCatalog {
             DungeonStair stair,
             int levelZ,
             Set<CellCoord> surfaceCells,
-            CubePoint activeTile
+            CellCoord activeCell,
+            int activeLevelZ
     ) {
         if (stair == null) {
             return List.of();
@@ -95,7 +100,9 @@ public final class DungeonRuntimeStairCatalog {
         return stair.exits().stream()
                 .filter(exit -> exit != null && exit.position() != null)
                 .filter(exit -> !originPositions.contains(exit.position()))
-                .filter(exit -> activeTile == null || !activeTile.equals(exit.position()))
+                .filter(exit -> activeCell == null
+                        || exit.position().z() != activeLevelZ
+                        || !activeCell.equals(exit.position().projectedCell()))
                 .sorted(Comparator.comparingInt((DungeonStairExit exit) -> exit.position().z())
                         .thenComparing(exit -> exit.position(), CubePoint.POINT_ORDER))
                 .map(exit -> new DungeonRuntimeStairDescriptor(
@@ -103,7 +110,7 @@ public final class DungeonRuntimeStairCatalog {
                         exit.label(),
                         destinationLabel(exit),
                         description(stair, exit),
-                        DungeonRuntimeLocation.stairExit(stair.stairId(), exit.position())))
+                        DungeonRuntimeLocation.stairExit(stair.stairId(), exit.position().projectedCell(), exit.position().z())))
                 .toList();
     }
 
@@ -121,12 +128,16 @@ public final class DungeonRuntimeStairCatalog {
         return "Über " + stairName + " gelangt ihr zu " + target + ".";
     }
 
-    private static List<Integer> levelsForRoomSurface(features.world.dungeonmap.model.objects.StructureObject structure, CubePoint activeTile) {
+    private static List<Integer> levelsForRoomSurface(
+            features.world.dungeonmap.model.objects.StructureObject structure,
+            CellCoord activeCell,
+            int activeLevelZ
+    ) {
         if (structure == null) {
             return List.of();
         }
-        if (activeTile != null && structure.contains(activeTile)) {
-            return List.of(activeTile.z());
+        if (activeCell != null && structure.contains(activeCell, activeLevelZ)) {
+            return List.of(activeLevelZ);
         }
         return structure.levels().stream()
                 .sorted()

@@ -1,31 +1,31 @@
 package features.world.dungeonmap.application.runtime;
 
-import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.CellCoord;
 
 /**
  * Runtime state should point at direct playable locations, not at editor-only sub-aggregates.
  */
 public sealed interface DungeonRuntimeLocation
-        permits DungeonRuntimeLocation.Room, DungeonRuntimeLocation.Corridor, DungeonRuntimeLocation.Tile, DungeonRuntimeLocation.StairExit, DungeonRuntimeLocation.Transition {
+        permits DungeonRuntimeLocation.Room, DungeonRuntimeLocation.Corridor, DungeonRuntimeLocation.Cell, DungeonRuntimeLocation.StairExit, DungeonRuntimeLocation.Transition {
 
     static DungeonRuntimeLocation room(long roomId) {
         return new Room(roomId);
     }
 
     static DungeonRuntimeLocation corridor(long corridorId) {
-        return new Corridor(corridorId, null);
+        return new Corridor(corridorId, null, 0);
     }
 
-    static DungeonRuntimeLocation corridor(long corridorId, CubePoint anchorTile) {
-        return new Corridor(corridorId, anchorTile);
+    static DungeonRuntimeLocation corridor(long corridorId, CellCoord anchorCell, int levelZ) {
+        return new Corridor(corridorId, anchorCell, levelZ);
     }
 
-    static DungeonRuntimeLocation tile(CubePoint tile) {
-        return new Tile(tile);
+    static DungeonRuntimeLocation cell(CellCoord cell, int levelZ) {
+        return new Cell(cell, levelZ);
     }
 
-    static DungeonRuntimeLocation stairExit(long stairId, CubePoint tile) {
-        return new StairExit(stairId, tile);
+    static DungeonRuntimeLocation stairExit(long stairId, CellCoord cell, int levelZ) {
+        return new StairExit(stairId, cell, levelZ);
     }
 
     static DungeonRuntimeLocation transition(long transitionId) {
@@ -35,21 +35,21 @@ public sealed interface DungeonRuntimeLocation
     record Room(long roomId) implements DungeonRuntimeLocation {
     }
 
-    record Corridor(long corridorId, CubePoint anchorTile) implements DungeonRuntimeLocation {
+    record Corridor(long corridorId, CellCoord anchorCell, int levelZ) implements DungeonRuntimeLocation {
         public Corridor {
-            anchorTile = anchorTile == null ? null : anchorTile;
+            anchorCell = anchorCell == null ? null : anchorCell;
         }
     }
 
-    record Tile(CubePoint tile) implements DungeonRuntimeLocation {
-        public Tile {
-            tile = tile == null ? new CubePoint(0, 0, 0) : tile;
+    record Cell(CellCoord cell, int levelZ) implements DungeonRuntimeLocation {
+        public Cell {
+            cell = cell == null ? new CellCoord(0, 0) : cell;
         }
     }
 
-    record StairExit(long stairId, CubePoint tile) implements DungeonRuntimeLocation {
+    record StairExit(long stairId, CellCoord cell, int levelZ) implements DungeonRuntimeLocation {
         public StairExit {
-            tile = tile == null ? new CubePoint(0, 0, 0) : tile;
+            cell = cell == null ? new CellCoord(0, 0) : cell;
         }
     }
 

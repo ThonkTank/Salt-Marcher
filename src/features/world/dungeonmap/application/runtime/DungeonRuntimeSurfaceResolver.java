@@ -2,7 +2,7 @@ package features.world.dungeonmap.application.runtime;
 
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
@@ -25,44 +25,25 @@ public final class DungeonRuntimeSurfaceResolver {
 
     public static DungeonRuntimeSurface resolve(
             DungeonLayout layout,
-            DungeonRuntimeLocation location,
-            CubePoint activeTile,
+            CellCoord activeCell,
+            int activeLevelZ,
             CardinalDirection heading
     ) {
-        if (layout == null || location == null || activeTile == null) {
+        if (layout == null || activeCell == null) {
             return null;
         }
-        if (location instanceof DungeonRuntimeLocation.Room roomLocation) {
-            return roomSurface(layout, layout.findRoom(roomLocation.roomId()), heading, activeTile);
-        }
-        if (location instanceof DungeonRuntimeLocation.Corridor corridorLocation) {
-            return corridorSurface(layout, layout.findCorridor(corridorLocation.corridorId()), heading, activeTile);
-        }
-        if (location instanceof DungeonRuntimeLocation.Tile
-                || location instanceof DungeonRuntimeLocation.StairExit
-                || location instanceof DungeonRuntimeLocation.Transition) {
-            return tileSurface(layout, activeTile, heading);
-        }
-        return null;
-    }
-
-    private static DungeonRuntimeSurface tileSurface(DungeonLayout layout, CubePoint tile, CardinalDirection heading) {
-        if (layout == null || tile == null) {
-            return null;
-        }
-        DungeonLayout projectedLayout = layout.projectedToLevel(tile.z());
-        DungeonLayout.CellStructure structure = projectedLayout.structureAtCell(tile.projectedCell());
+        DungeonLayout.CellStructure structure = layout.structureAtCell(activeCell, activeLevelZ);
         if (structure instanceof DungeonLayout.CellStructure.RoomStructure roomStructure) {
-            return roomSurface(layout, roomStructure.room(), heading, tile);
+            return roomSurface(layout, roomStructure.room(), heading, activeCell, activeLevelZ);
         }
         if (structure instanceof DungeonLayout.CellStructure.CorridorStructure corridorStructure) {
-            return corridorSurface(layout, corridorStructure.corridor(), heading, tile);
+            return corridorSurface(layout, corridorStructure.corridor(), heading, activeCell, activeLevelZ);
         }
         if (structure instanceof DungeonLayout.CellStructure.StairStructure stairStructure) {
-            return stairOnlySurface(layout, stairStructure.stair(), tile);
+            return stairOnlySurface(layout, stairStructure.stair(), activeCell, activeLevelZ);
         }
         if (structure instanceof DungeonLayout.CellStructure.TransitionStructure transitionStructure) {
-            return transitionOnlySurface(layout, transitionStructure.transition(), tile);
+            return transitionOnlySurface(layout, transitionStructure.transition(), activeCell, activeLevelZ);
         }
         return null;
     }
@@ -71,7 +52,8 @@ public final class DungeonRuntimeSurfaceResolver {
             DungeonLayout layout,
             Room room,
             CardinalDirection heading,
-            CubePoint activeTile
+            CellCoord activeCell,
+            int activeLevelZ
     ) {
         if (room == null || room.roomId() == null) {
             return null;
@@ -81,15 +63,16 @@ public final class DungeonRuntimeSurfaceResolver {
                 new DetailsNavigator.EntryKey("dungeon-room", layout.mapId() + ":" + room.roomId()),
                 room.narration().visualDescription(),
                 DungeonRuntimeDoorCatalog.describe(layout, room, heading),
-                DungeonRuntimeStairCatalog.describe(layout, room, activeTile),
-                DungeonRuntimeTransitionCatalog.describe(layout, room, activeTile));
+                DungeonRuntimeStairCatalog.describe(layout, room, activeCell, activeLevelZ),
+                DungeonRuntimeTransitionCatalog.describe(layout, room, activeCell, activeLevelZ));
     }
 
     private static DungeonRuntimeSurface corridorSurface(
             DungeonLayout layout,
             Corridor corridor,
             CardinalDirection heading,
-            CubePoint activeTile
+            CellCoord activeCell,
+            int activeLevelZ
     ) {
         if (layout == null || corridor == null || corridor.corridorId() == null) {
             return null;
@@ -99,14 +82,15 @@ public final class DungeonRuntimeSurfaceResolver {
                 new DetailsNavigator.EntryKey("dungeon-corridor", layout.mapId() + ":" + corridor.corridorId()),
                 "",
                 DungeonRuntimeDoorCatalog.describe(layout, corridor, heading),
-                DungeonRuntimeStairCatalog.describe(layout, corridor, activeTile),
-                DungeonRuntimeTransitionCatalog.describe(layout, corridor, activeTile));
+                DungeonRuntimeStairCatalog.describe(layout, corridor, activeCell, activeLevelZ),
+                DungeonRuntimeTransitionCatalog.describe(layout, corridor, activeCell, activeLevelZ));
     }
 
     private static DungeonRuntimeSurface stairOnlySurface(
             DungeonLayout layout,
             features.world.dungeonmap.model.structures.stair.DungeonStair stair,
-            CubePoint activeTile
+            CellCoord activeCell,
+            int activeLevelZ
     ) {
         if (layout == null || stair == null || stair.stairId() == null) {
             return null;
@@ -119,18 +103,20 @@ public final class DungeonRuntimeSurfaceResolver {
                 DungeonRuntimeStairCatalog.describeAtCells(
                         layout,
                         stair.occupiedPositions().stream()
-                                .filter(position -> position != null && position.z() == (activeTile == null ? 0 : activeTile.z()))
-                                .map(CubePoint::projectedCell)
+                                .filter(position -> position != null && position.z() == activeLevelZ)
+                                .map(position -> position.projectedCell())
                                 .collect(Collectors.toSet()),
-                        activeTile == null ? 0 : activeTile.z(),
-                        activeTile),
-                DungeonRuntimeTransitionCatalog.describeAtTile(layout, activeTile));
+                        activeLevelZ,
+                        activeCell,
+                        activeLevelZ),
+                DungeonRuntimeTransitionCatalog.describeAtCell(layout, activeCell, activeLevelZ));
     }
 
     private static DungeonRuntimeSurface transitionOnlySurface(
             DungeonLayout layout,
             DungeonTransition transition,
-            CubePoint activeTile
+            CellCoord activeCell,
+            int activeLevelZ
     ) {
         if (layout == null || transition == null || transition.transitionId() == null) {
             return null;
@@ -141,6 +127,6 @@ public final class DungeonRuntimeSurfaceResolver {
                 transition.description().isBlank() ? transition.label() : transition.description(),
                 List.of(),
                 List.of(),
-                DungeonRuntimeTransitionCatalog.describeAtTile(layout, activeTile));
+                DungeonRuntimeTransitionCatalog.describeAtCell(layout, activeCell, activeLevelZ));
     }
 }

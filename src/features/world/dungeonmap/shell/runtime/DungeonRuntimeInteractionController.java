@@ -1,13 +1,12 @@
 package features.world.dungeonmap.shell.runtime;
 
-import features.world.dungeonmap.application.runtime.DungeonRuntimeLocationTileResolver;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeonmap.canvas.base.DungeonCanvasCamera;
 import features.world.dungeonmap.canvas.base.DungeonCanvasInteractionHandler;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.canvas.base.DungeonCanvasTheme;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.shell.interaction.DungeonDragService;
 import features.world.dungeonmap.shell.interaction.DungeonHitCollector;
 import features.world.dungeonmap.shell.interaction.DungeonHitProbe;
@@ -24,7 +23,7 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
 
     private final DungeonMapState mapState;
     private final DungeonRuntimeState runtimeState;
-    private final Function<CellCoord, CellCoord> nearestTraversableTile;
+    private final Function<CellCoord, CellCoord> nearestTraversableCell;
     private final Consumer<CellCoord> previewHandler;
     private final Consumer<CellCoord> moveHandler;
     private final DungeonHitCollector hitCollector;
@@ -37,14 +36,14 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
     DungeonRuntimeInteractionController(
             DungeonMapState mapState,
             DungeonRuntimeState runtimeState,
-            Function<CellCoord, CellCoord> nearestTraversableTile,
+            Function<CellCoord, CellCoord> nearestTraversableCell,
             Consumer<CellCoord> previewHandler,
             Consumer<CellCoord> moveHandler,
             DungeonHitCollector hitCollector
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.runtimeState = Objects.requireNonNull(runtimeState, "runtimeState");
-        this.nearestTraversableTile = Objects.requireNonNull(nearestTraversableTile, "nearestTraversableTile");
+        this.nearestTraversableCell = Objects.requireNonNull(nearestTraversableCell, "nearestTraversableCell");
         this.previewHandler = Objects.requireNonNull(previewHandler, "previewHandler");
         this.moveHandler = Objects.requireNonNull(moveHandler, "moveHandler");
         this.hitCollector = Objects.requireNonNull(hitCollector, "hitCollector");
@@ -66,16 +65,21 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
                 snapshot.activeMap(),
                 event,
                 snapshot.hitSnapshot(),
-                activeTile(snapshot.activeMap()),
+                activeCell(),
+                activeLevelZ(),
                 dragSession);
         if (!decision.dispatchToTool() || !decision.beginDrag()) {
             dragSession = null;
             return false;
         }
-        CubePoint activeTile = activeTile(snapshot.activeMap());
+        CellCoord activeCell = activeCell();
+        if (activeCell == null) {
+            dragSession = null;
+            return false;
+        }
         DungeonDragService.DungeonDragResult result = dragService.begin(
                 event,
-                new DungeonDragService.DungeonDragTarget.TileDragTarget(activeTile.projectedCell()));
+                new DungeonDragService.DungeonDragTarget.TileDragTarget(activeCell));
         if (result instanceof DungeonDragService.DungeonDragResult.Started started) {
             dragSession = started.session();
             previewHandler.accept(started.session().currentCell());
@@ -99,12 +103,13 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
                 snapshot.activeMap(),
                 event,
                 snapshot.hitSnapshot(),
-                activeTile(snapshot.activeMap()),
+                activeCell(),
+                activeLevelZ(),
                 dragSession);
         if (!decision.dispatchToTool()) {
             return false;
         }
-        DungeonDragService.DungeonDragResult result = dragService.update(event, dragSession, nearestTraversableTile);
+        DungeonDragService.DungeonDragResult result = dragService.update(event, dragSession, nearestTraversableCell);
         if (result instanceof DungeonDragService.DungeonDragResult.Updated updated
                 && placementValidator.validateTraversable(
                 snapshot.activeMap(),
@@ -134,10 +139,11 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
                 snapshot.activeMap(),
                 event,
                 snapshot.hitSnapshot(),
-                activeTile(snapshot.activeMap()),
+                activeCell(),
+                activeLevelZ(),
                 currentSession);
         if (decision.dispatchToTool()) {
-            DungeonDragService.DungeonDragResult result = dragService.drop(event, currentSession, nearestTraversableTile);
+            DungeonDragService.DungeonDragResult result = dragService.drop(event, currentSession, nearestTraversableCell);
             if (result instanceof DungeonDragService.DungeonDragResult.Dropped dropped
                     && placementValidator.validateTraversable(
                     snapshot.activeMap(),
@@ -170,11 +176,18 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
         return new RuntimeContextSnapshot(activeMap, probe, hitSnapshot);
     }
 
-    private CubePoint activeTile(DungeonLayout activeMap) {
-        if (activeMap == null) {
-            return null;
-        }
-        return DungeonRuntimeLocationTileResolver.resolve(activeMap, runtimeState.activeLocation());
+    private CellCoord activeCell() {
+        DungeonRuntimeLocation.Cell location = activeCellLocation();
+        return location == null ? null : location.cell();
+    }
+
+    private int activeLevelZ() {
+        DungeonRuntimeLocation.Cell location = activeCellLocation();
+        return location == null ? mapState.activeProjectionLevel() : location.levelZ();
+    }
+
+    private DungeonRuntimeLocation.Cell activeCellLocation() {
+        return runtimeState.activeLocation() instanceof DungeonRuntimeLocation.Cell cell ? cell : null;
     }
 
     private boolean interactionEnabled() {

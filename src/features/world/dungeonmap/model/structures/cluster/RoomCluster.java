@@ -326,6 +326,10 @@ public final class RoomCluster {
         return cell == null ? null : roomsByCell.get(cell);
     }
 
+    public Room roomAt(CellCoord cell, int levelZ) {
+        return cell == null ? null : roomsByPoint.get(CubePoint.at(cell, levelZ));
+    }
+
     public Room roomAt(Point2i cell) {
         return roomAt(cell == null ? null : CellCoord.fromPoint(cell));
     }
@@ -336,6 +340,10 @@ public final class RoomCluster {
 
     public boolean contains(CellCoord cell) {
         return cell != null && cells.contains(cell);
+    }
+
+    public boolean contains(CellCoord cell, int levelZ) {
+        return roomAt(cell, levelZ) != null;
     }
 
     public boolean contains(Point2i cell) {

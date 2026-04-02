@@ -285,7 +285,7 @@ public final class DungeonRoomTopologyService {
     }
 
     private static List<RoomCluster> overlappingClustersAtLevel(DungeonLayout layout, Set<Point2i> cells, int levelZ) {
-        return layout.overlappingClusters(cells).stream()
+        return layout.overlappingClustersAtPoints(cells).stream()
                 .filter(cluster -> cluster != null && cluster.rooms().stream()
                         .anyMatch(room -> room != null
                                 && room.structure().levels().contains(levelZ)))

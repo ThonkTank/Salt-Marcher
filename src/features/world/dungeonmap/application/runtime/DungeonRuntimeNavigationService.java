@@ -6,7 +6,6 @@ import features.campaignstate.api.CampaignStateReadApi;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
@@ -51,28 +50,29 @@ public final class DungeonRuntimeNavigationService {
         return new DungeonRuntimeNavigationSnapshot(layout.mapId(), resolvedLocation, resolvedHeading);
     }
 
-    public CubePoint nearestTraversableTile(DungeonLayout layout, CubePoint preferredTile) {
+    public CellCoord nearestTraversableCell(DungeonLayout layout, CellCoord preferredCell, int preferredLevelZ) {
         if (layout == null || layout.mapId() <= 0) {
             return null;
         }
-        return layout.nearestTraversableCell(preferredTile);
+        return layout.nearestTraversableCell(preferredCell, preferredLevelZ);
     }
 
-    public DungeonRuntimeNavigationSnapshot moveToTile(
+    public DungeonRuntimeNavigationSnapshot moveToCell(
             DungeonLayout layout,
-            CubePoint fromTile,
-            CubePoint tile,
+            CellCoord fromCell,
+            CellCoord cell,
+            int levelZ,
             CardinalDirection currentHeading
     ) throws SQLException {
         if (layout == null || layout.mapId() <= 0) {
             throw new SQLException("Kein aktiver Dungeon geladen");
         }
-        CubePoint resolvedTile = nearestTraversableTile(layout, tile);
-        if (resolvedTile == null) {
+        CellCoord resolvedCell = nearestTraversableCell(layout, cell, levelZ);
+        if (resolvedCell == null) {
             throw new SQLException("Kein begehbares Dungeon-Feld gefunden");
         }
-        DungeonRuntimeLocation targetLocation = DungeonRuntimeLocation.tile(resolvedTile);
-        CardinalDirection nextHeading = CardinalDirection.fromTravel(fromTile, resolvedTile, currentHeading);
+        DungeonRuntimeLocation targetLocation = DungeonRuntimeLocation.cell(resolvedCell, levelZ);
+        CardinalDirection nextHeading = CardinalDirection.fromTravel(fromCell, resolvedCell, currentHeading);
         try (Connection conn = DatabaseManager.getConnection()) {
             CampaignStateApi.setDungeonPosition(conn, DungeonRuntimeLocations.toCampaignPosition(layout.mapId(), targetLocation, nextHeading));
         }
@@ -99,12 +99,12 @@ public final class DungeonRuntimeNavigationService {
         if (!connection.isTraversable()) {
             throw new SQLException("Verbindung ist blockiert");
         }
-        CubePoint resolvedTile = resolveConnectionTargetTile(layout, connection, descriptor, descriptor.levelZ());
-        if (resolvedTile == null) {
+        DungeonRuntimeLocation.Cell resolvedCell = resolveConnectionTargetCell(layout, connection, descriptor, descriptor.levelZ());
+        if (resolvedCell == null) {
             throw new SQLException("Ziel hinter der Verbindung ist nicht begehbar");
         }
         CardinalDirection nextHeading = descriptor.direction();
-        DungeonRuntimeLocation targetLocation = DungeonRuntimeLocation.tile(resolvedTile);
+        DungeonRuntimeLocation targetLocation = DungeonRuntimeLocation.cell(resolvedCell.cell(), resolvedCell.levelZ());
         try (Connection conn = DatabaseManager.getConnection()) {
             CampaignStateApi.setDungeonPosition(conn, DungeonRuntimeLocations.toCampaignPosition(layout.mapId(), targetLocation, nextHeading));
         }
@@ -122,11 +122,11 @@ public final class DungeonRuntimeNavigationService {
         if (stair == null || !(stair.targetLocation() instanceof DungeonRuntimeLocation.StairExit stairExit)) {
             throw new SQLException("Kein Treppenziel verfügbar");
         }
-        CubePoint resolvedTile = nearestTraversableTile(layout, stairExit.tile());
-        if (resolvedTile == null) {
+        CellCoord resolvedCell = nearestTraversableCell(layout, stairExit.cell(), stairExit.levelZ());
+        if (resolvedCell == null) {
             throw new SQLException("Treppenziel ist nicht begehbar");
         }
-        DungeonRuntimeLocation targetLocation = DungeonRuntimeLocation.stairExit(stairExit.stairId(), resolvedTile);
+        DungeonRuntimeLocation targetLocation = DungeonRuntimeLocation.stairExit(stairExit.stairId(), resolvedCell, stairExit.levelZ());
         try (Connection conn = DatabaseManager.getConnection()) {
             CampaignStateApi.setDungeonPosition(conn, DungeonRuntimeLocations.toCampaignPosition(layout.mapId(), targetLocation, currentHeading));
         }
@@ -174,7 +174,7 @@ public final class DungeonRuntimeNavigationService {
         throw new SQLException("Unbekanntes Übergangsziel");
     }
 
-    private CubePoint resolveConnectionTargetTile(
+    private DungeonRuntimeLocation.Cell resolveConnectionTargetCell(
             DungeonLayout layout,
             features.world.dungeonmap.model.structures.connection.Connection connection,
             DungeonRuntimeDoorDescriptor descriptor,
@@ -187,14 +187,14 @@ public final class DungeonRuntimeNavigationService {
         if (destination == null) {
             return null;
         }
-        CubePoint adjacentTile = resolveAdjacentEndpointTile(layout, descriptor.anchorSegment2x(), destination, currentLevel);
-        if (adjacentTile != null) {
-            return adjacentTile;
+        DungeonRuntimeLocation.Cell adjacentCell = resolveAdjacentEndpointCell(layout, descriptor.anchorSegment2x(), destination, currentLevel);
+        if (adjacentCell != null) {
+            return adjacentCell;
         }
         return resolveEndpointAnchor(layout, destination, currentLevel);
     }
 
-    private CubePoint resolveAdjacentEndpointTile(
+    private DungeonRuntimeLocation.Cell resolveAdjacentEndpointCell(
             DungeonLayout layout,
             GridSegment2x anchorSegment2x,
             ConnectionEndpoint endpoint,
@@ -207,9 +207,9 @@ public final class DungeonRuntimeNavigationService {
             if (!matchesEndpoint(layout, cell, currentLevel, endpoint)) {
                 continue;
             }
-            CubePoint resolved = nearestTraversableTile(layout, CubePoint.at(cell, currentLevel));
+            CellCoord resolved = nearestTraversableCell(layout, cell, currentLevel);
             if (resolved != null) {
-                return resolved;
+                return new DungeonRuntimeLocation.Cell(resolved, currentLevel);
             }
         }
         return null;
@@ -221,11 +221,11 @@ public final class DungeonRuntimeNavigationService {
         }
         return switch (endpoint.type()) {
             case ROOM -> {
-                Room room = roomAt(layout, CubePoint.at(cell, currentLevel));
+                Room room = layout.roomAtCell(cell, currentLevel);
                 yield room != null && endpoint.id().equals(room.roomId());
             }
             case CLUSTER -> {
-                RoomCluster cluster = clusterAt(layout, CubePoint.at(cell, currentLevel));
+                RoomCluster cluster = layout.clusterAtCell(cell, currentLevel);
                 yield cluster != null && endpoint.id().equals(cluster.clusterId());
             }
             case CORRIDOR -> layout.corridorsAtCell(cell, currentLevel).stream()
@@ -237,7 +237,7 @@ public final class DungeonRuntimeNavigationService {
         };
     }
 
-    private CubePoint resolveEndpointAnchor(DungeonLayout layout, ConnectionEndpoint endpoint, int currentLevel) {
+    private DungeonRuntimeLocation.Cell resolveEndpointAnchor(DungeonLayout layout, ConnectionEndpoint endpoint, int currentLevel) {
         if (layout == null || endpoint == null || endpoint.type() == null || endpoint.id() == null) {
             return null;
         }
@@ -248,86 +248,80 @@ public final class DungeonRuntimeNavigationService {
                     yield null;
                 }
                 var structure = room.structure();
-                CubePoint preferred = structure.levels().contains(currentLevel)
-                        ? structure.centerPointAtLevel(currentLevel)
+                int preferredLevel = structure.levels().contains(currentLevel)
+                        ? currentLevel
+                        : structure.levels().stream().sorted().findFirst().orElse(currentLevel);
+                CellCoord preferred = structure.levels().contains(preferredLevel)
+                        ? structure.centerCellCoordAtLevel(preferredLevel)
                         : structure.levels().stream()
                         .sorted()
-                        .map(structure::centerPointAtLevel)
+                        .map(structure::centerCellCoordAtLevel)
                         .findFirst()
                         .orElse(null);
-                yield nearestTraversableTile(layout, preferred);
+                CellCoord resolved = nearestTraversableCell(layout, preferred, preferredLevel);
+                yield resolved == null ? null : new DungeonRuntimeLocation.Cell(resolved, preferredLevel);
             }
             case CLUSTER -> {
                 RoomCluster cluster = layout.findCluster(endpoint.id());
                 if (cluster == null) {
                     yield null;
                 }
-                CubePoint preferred = cluster.rooms().stream()
+                DungeonRuntimeLocation.Cell preferred = cluster.rooms().stream()
                         .filter(room -> room != null && room.structure().levels().contains(currentLevel))
-                        .map(room -> room.structure().centerPointAtLevel(currentLevel))
+                        .map(room -> new DungeonRuntimeLocation.Cell(room.structure().centerCellCoordAtLevel(currentLevel), currentLevel))
                         .findFirst()
                         .orElseGet(() -> cluster.rooms().stream()
                                 .filter(room -> room != null)
                                 .flatMap(room -> room.structure().levels().stream()
                                         .sorted()
-                                        .map(room.structure()::centerPointAtLevel))
+                                        .map(levelZ -> new DungeonRuntimeLocation.Cell(
+                                                room.structure().centerCellCoordAtLevel(levelZ),
+                                                levelZ)))
                                 .findFirst()
                                 .orElse(null));
-                yield nearestTraversableTile(layout, preferred);
+                if (preferred == null || preferred.cell() == null) {
+                    yield null;
+                }
+                CellCoord resolved = nearestTraversableCell(layout, preferred.cell(), preferred.levelZ());
+                yield resolved == null ? null : new DungeonRuntimeLocation.Cell(resolved, preferred.levelZ());
             }
             case CORRIDOR -> {
                 Corridor corridor = layout.findCorridor(endpoint.id());
-                CubePoint preferred = corridor == null ? null : corridor.structure().centerPointAtLevel(corridor.levelZ());
-                yield nearestTraversableTile(layout, preferred);
+                CellCoord preferred = corridor == null ? null : corridor.structure().centerCellCoordAtLevel(corridor.levelZ());
+                CellCoord resolved = nearestTraversableCell(layout, preferred, corridor == null ? currentLevel : corridor.levelZ());
+                yield corridor == null || resolved == null ? null : new DungeonRuntimeLocation.Cell(resolved, corridor.levelZ());
             }
             case STAIR -> {
                 DungeonStair stair = layout.findStair(endpoint.id());
                 if (stair == null) {
                     yield null;
                 }
-                CubePoint preferred = stair.exits().stream()
+                DungeonRuntimeLocation.Cell preferred = stair.exits().stream()
                         .map(exit -> exit.position())
                         .filter(position -> position != null && position.z() == currentLevel)
+                        .map(position -> new DungeonRuntimeLocation.Cell(position.projectedCell(), position.z()))
                         .findFirst()
                         .orElseGet(() -> stair.exits().stream()
                                 .map(exit -> exit.position())
                                 .filter(position -> position != null)
+                                .map(position -> new DungeonRuntimeLocation.Cell(position.projectedCell(), position.z()))
                                 .findFirst()
                                 .orElse(null));
-                yield nearestTraversableTile(layout, preferred);
+                if (preferred == null) {
+                    yield null;
+                }
+                CellCoord resolved = nearestTraversableCell(layout, preferred.cell(), preferred.levelZ());
+                yield resolved == null ? null : new DungeonRuntimeLocation.Cell(resolved, preferred.levelZ());
             }
             case TRANSITION -> {
                 DungeonTransition transition = layout.findTransition(endpoint.id());
-                yield transition == null ? null : nearestTraversableTile(layout, transition.anchor());
+                if (transition == null || transition.anchor() == null) {
+                    yield null;
+                }
+                int levelZ = transition.anchor().z();
+                CellCoord resolved = nearestTraversableCell(layout, transition.anchor().projectedCell(), levelZ);
+                yield resolved == null ? null : new DungeonRuntimeLocation.Cell(resolved, levelZ);
             }
         };
-    }
-
-    private static Room roomAt(DungeonLayout layout, CubePoint point) {
-        if (layout == null || point == null) {
-            return null;
-        }
-        for (RoomCluster cluster : layout.clusters()) {
-            if (cluster == null) {
-                continue;
-            }
-            Room room = cluster.roomAt(point);
-            if (room != null) {
-                return room;
-            }
-        }
-        return null;
-    }
-
-    private static RoomCluster clusterAt(DungeonLayout layout, CubePoint point) {
-        if (layout == null || point == null) {
-            return null;
-        }
-        for (RoomCluster cluster : layout.clusters()) {
-            if (cluster != null && cluster.cubePoints().contains(point)) {
-                return cluster;
-            }
-        }
-        return null;
     }
 }
