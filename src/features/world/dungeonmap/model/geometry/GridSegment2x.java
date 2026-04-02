@@ -194,6 +194,10 @@ public record GridSegment2x(GridPoint2x start, GridPoint2x end) {
         return LegacyGridSegment2x.betweenCellAndStep(baseCell, direction.delta());
     }
 
+    public LegacyGridSegment2x toLegacyRaw() {
+        return new LegacyGridSegment2x(start.toLegacyRaw(), end.toLegacyRaw());
+    }
+
     public Set<GridSegment2x> boundarySteps() {
         if (length2() == 2) {
             return Set.of(this);

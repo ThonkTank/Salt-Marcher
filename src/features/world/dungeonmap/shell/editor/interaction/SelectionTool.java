@@ -11,7 +11,7 @@ import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
+import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
@@ -119,8 +119,8 @@ public final class SelectionTool implements EditorTool {
             corridorNodeDragSession = new CorridorNodeDragSession(
                     corridorNodeHit.corridorId(),
                     corridorNodeHit.nodeId(),
-                    corridorNodeHit.point2x(),
-                    corridorNodeHit.point2x());
+                    GridPoint2x.fromLegacyRaw(corridorNodeHit.point2x()),
+                    GridPoint2x.fromLegacyRaw(corridorNodeHit.point2x()));
             return true;
         }
         if (hit instanceof DungeonHitSubject.ClusterLabelSubject clusterLabelHit) {
@@ -155,9 +155,9 @@ public final class SelectionTool implements EditorTool {
             if (event == null || !event.isPrimaryButtonDown()) {
                 return false;
             }
-            LegacyGridPoint2x point2x = ctx == null || ctx.probe() == null
-                    ? LegacyGridPoint2x.fromTileCenter(event.gridCell())
-                    : ctx.probe().probePoint2x();
+            GridPoint2x point2x = ctx == null || ctx.probe() == null
+                    ? GridPoint2x.cell(event.gridCell())
+                    : GridPoint2x.fromLegacyRaw(ctx.probe().probePoint2x());
             if (Objects.equals(point2x, corridorNodeDragSession.currentPoint())) {
                 return true;
             }
@@ -511,10 +511,10 @@ public final class SelectionTool implements EditorTool {
     private record CorridorNodeDragSession(
             long corridorId,
             Long nodeId,
-            LegacyGridPoint2x startPoint,
-            LegacyGridPoint2x currentPoint
+            GridPoint2x startPoint,
+            GridPoint2x currentPoint
     ) {
-        private CorridorNodeDragSession withCurrentPoint(LegacyGridPoint2x currentPoint) {
+        private CorridorNodeDragSession withCurrentPoint(GridPoint2x currentPoint) {
             return new CorridorNodeDragSession(corridorId, nodeId, startPoint, currentPoint);
         }
     }

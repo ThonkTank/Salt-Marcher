@@ -1,7 +1,7 @@
 package features.world.dungeonmap.persistence;
 
 import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
+import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNode;
 import features.world.dungeonmap.model.structures.corridor.CorridorSegment;
@@ -101,8 +101,9 @@ public final class DungeonCorridorWriteRepository {
     private static void bindNode(PreparedStatement ps, long corridorId, CorridorNode node) throws SQLException {
         ps.setLong(1, requiredId(node.nodeId(), "corridor node"));
         ps.setLong(2, corridorId);
-        ps.setInt(3, node.point2x().x2());
-        ps.setInt(4, node.point2x().y2());
+        var persistedPoint = node.point2x().toLegacyRaw();
+        ps.setInt(3, persistedPoint.x2());
+        ps.setInt(4, persistedPoint.y2());
         if (node.roomId() == null) {
             ps.setObject(5, null);
             ps.setObject(6, null);
@@ -146,7 +147,7 @@ public final class DungeonCorridorWriteRepository {
         }
         result.sort(Comparator
                 .comparing((CorridorNode node) -> node.nodeId() == null ? Long.MAX_VALUE : node.nodeId())
-                .thenComparing(CorridorNode::point2x, LegacyGridPoint2x.POINT_ORDER));
+                .thenComparing(CorridorNode::point2x, GridPoint2x.ORDER));
         return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 

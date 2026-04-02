@@ -5,6 +5,7 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
 import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
@@ -374,7 +375,7 @@ public final class DungeonMapLoader {
             long mapId,
             Map<Long, Room> roomsById
     ) throws SQLException {
-        // Load direct corridor graph truth only; the corridor model derives all compatibility geometry itself.
+        // Load direct corridor graph truth only and translate stored legacy 2x coordinates at this JDBC seam.
         DungeonSchemaSupport.ensureCompatibility(conn);
         Map<Long, List<CorridorNode>> nodesByCorridorId = loadGrouped(conn,
                 "SELECT corridor_id, corridor_node_id, grid_x2, grid_y2, room_id, room_relative_cell_x, room_relative_cell_y, room_edge_direction"
@@ -385,11 +386,11 @@ public final class DungeonMapLoader {
                 row -> row.getLong("corridor_id"),
                 row -> new CorridorNode(
                         row.getLong("corridor_node_id"),
-                        LegacyGridPoint2x.fromRaw(row.getInt("grid_x2"), row.getInt("grid_y2")),
+                        GridPoint2x.fromLegacyRaw(row.getInt("grid_x2"), row.getInt("grid_y2")),
                         nullableLong(row, "room_id"),
                         row.getObject("room_relative_cell_x") == null
                                 ? null
-                                : new Point2i(row.getInt("room_relative_cell_x"), row.getInt("room_relative_cell_y")),
+                                : new CellCoord(row.getInt("room_relative_cell_x"), row.getInt("room_relative_cell_y")),
                         row.getString("room_edge_direction") == null
                                 ? null
                                 : CardinalDirection.valueOf(row.getString("room_edge_direction").trim().toUpperCase(java.util.Locale.ROOT))));

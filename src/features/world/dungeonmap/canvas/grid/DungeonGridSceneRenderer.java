@@ -10,6 +10,8 @@ import features.world.dungeonmap.canvas.base.DungeonSceneRenderer;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
 import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
@@ -373,18 +375,18 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                     pass.gc(),
                     pass.camera(),
                     pass.gridSize(),
-                    node.point2x(),
+                    node.point2x().toLegacyRaw(),
                     pass.palette().highlightAccent(),
                     pass.palette().highlightStroke(),
                     Math.max(5.0, pass.gridSize() * 0.16));
         }
         for (Corridor.CorridorRoute route : corridor.routes()) {
-            for (LegacyGridPoint2x corner : route.cornerPoints2x()) {
+            for (GridPoint2x corner : route.cornerPoints2x()) {
                 drawCorridorHandle(
                         pass.gc(),
                         pass.camera(),
                         pass.gridSize(),
-                        corner,
+                        corner.toLegacyRaw(),
                         pass.palette().highlightFill(),
                         pass.palette().highlightStroke(),
                         Math.max(4.0, pass.gridSize() * 0.13));
@@ -499,7 +501,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                         pass.gc(),
                         pass.camera(),
                         pass.gridSize(),
-                        node.point2x(),
+                        node.point2x().toLegacyRaw(),
                         withOpacity(pass.palette().highlightFill(), 0.92),
                         withOpacity(pass.palette().highlightStroke(), 1.0),
                         Math.max(5.0, pass.gridSize() * 0.17));
@@ -530,8 +532,8 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                     .ifPresent(route -> {
                         pass.gc().setStroke(withOpacity(pass.palette().highlightStroke(), 0.95));
                         pass.gc().setLineWidth(3.0);
-                        for (LegacyGridSegment2x hoveredSegment : route.segments2x()) {
-                            strokeSegment2x(pass.gc(), pass.camera(), pass.gridSize(), hoveredSegment);
+                        for (GridSegment2x hoveredSegment : route.segments2x()) {
+                            strokeSegment2x(pass.gc(), pass.camera(), pass.gridSize(), hoveredSegment.toLegacyRaw());
                         }
                     });
             }
