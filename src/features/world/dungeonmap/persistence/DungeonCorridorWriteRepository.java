@@ -1,7 +1,7 @@
 package features.world.dungeonmap.persistence;
 
 import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNode;
 import features.world.dungeonmap.model.structures.corridor.CorridorSegment;
@@ -146,7 +146,7 @@ public final class DungeonCorridorWriteRepository {
         }
         result.sort(Comparator
                 .comparing((CorridorNode node) -> node.nodeId() == null ? Long.MAX_VALUE : node.nodeId())
-                .thenComparing(CorridorNode::point2x, GridPoint2x.POINT_ORDER));
+                .thenComparing(CorridorNode::point2x, LegacyGridPoint2x.POINT_ORDER));
         return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 

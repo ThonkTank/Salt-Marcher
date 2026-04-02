@@ -1,7 +1,7 @@
 package features.world.dungeonmap.shell.interaction;
 
-import features.world.dungeonmap.model.geometry.GridPoint2x;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
+import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
@@ -37,7 +37,7 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         return new DungeonSelectionKey(kind(), targetKey(), partKey());
     }
 
-    record VertexSubject(GridPoint2x vertex2x) implements DungeonHitSubject {
+    record VertexSubject(LegacyGridPoint2x vertex2x) implements DungeonHitSubject {
         public VertexSubject {
             vertex2x = Objects.requireNonNull(vertex2x, "vertex2x");
             if (!vertex2x.isVertex()) {
@@ -80,7 +80,7 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
 
     record ClusterBoundarySubject(
             Long clusterId,
-            GridSegment2x boundarySegment2x,
+            LegacyGridSegment2x boundarySegment2x,
             InternalBoundaryType boundaryType,
             Point2i baseCell,
             Point2i direction
@@ -128,7 +128,7 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
     record RoomBoundarySubject(
             Long roomId,
             Long clusterId,
-            GridSegment2x boundarySegment2x,
+            LegacyGridSegment2x boundarySegment2x,
             Point2i roomCell,
             Point2i outwardStep,
             boolean exterior
@@ -159,7 +159,7 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
             ConnectionKind connectionKind,
             Long clusterId,
             Long corridorId,
-            GridSegment2x boundarySegment2x
+            LegacyGridSegment2x boundarySegment2x
     ) implements DungeonHitSubject {
         public ConnectionSubject {
             connectionKind = Objects.requireNonNull(connectionKind, "connectionKind");
@@ -218,7 +218,7 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         }
     }
 
-    record CorridorNodeSubject(Long corridorId, Long nodeId, GridPoint2x point2x) implements DungeonHitSubject {
+    record CorridorNodeSubject(Long corridorId, Long nodeId, LegacyGridPoint2x point2x) implements DungeonHitSubject {
         public CorridorNodeSubject {
             if (nodeId == null) {
                 throw new IllegalArgumentException("Corridor node subjects require nodeId");
@@ -242,7 +242,7 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         }
     }
 
-    record CorridorCornerSubject(Long corridorId, Long segmentId, GridPoint2x point2x) implements DungeonHitSubject {
+    record CorridorCornerSubject(Long corridorId, Long segmentId, LegacyGridPoint2x point2x) implements DungeonHitSubject {
         public CorridorCornerSubject {
             point2x = Objects.requireNonNull(point2x, "point2x");
         }
@@ -263,7 +263,7 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         }
     }
 
-    record CorridorSegmentSubject(Long corridorId, Long segmentId, GridPoint2x point2x) implements DungeonHitSubject {
+    record CorridorSegmentSubject(Long corridorId, Long segmentId, LegacyGridPoint2x point2x) implements DungeonHitSubject {
         public CorridorSegmentSubject {
             if (segmentId == null) {
                 throw new IllegalArgumentException("Corridor segment subjects require segmentId");

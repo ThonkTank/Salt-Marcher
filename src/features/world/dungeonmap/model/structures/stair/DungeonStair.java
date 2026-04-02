@@ -1,7 +1,7 @@
 package features.world.dungeonmap.model.structures.stair;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 import features.world.dungeonmap.model.structures.TargetKey;
 
@@ -134,7 +134,7 @@ public final class DungeonStair {
         return new InteractiveLabelHandle(
                 targetKey(),
                 label(),
-                GridPoint2x.fromTileCenter(anchorPoint.projectedCell()));
+                LegacyGridPoint2x.fromTileCenter(anchorPoint.projectedCell()));
     }
 
     @Override

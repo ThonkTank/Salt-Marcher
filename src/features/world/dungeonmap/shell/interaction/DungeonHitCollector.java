@@ -2,8 +2,8 @@ package features.world.dungeonmap.shell.interaction;
 
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.GridPoint2x;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
+import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import javafx.geometry.Point2D;
 
 import java.util.ArrayList;
@@ -132,13 +132,13 @@ public final class DungeonHitCollector {
         return point.distance(nearestX, nearestY);
     }
 
-    private static double distanceToSegment(GridSegment2x segment2x, DungeonHitProbe probe) {
+    private static double distanceToSegment(LegacyGridSegment2x segment2x, DungeonHitProbe probe) {
         Point2D start = probe.canvasPointForPoint2x(segment2x.start());
         Point2D end = probe.canvasPointForPoint2x(segment2x.end());
         return distanceToSegment(probe.canvasPoint(), start, end);
     }
 
-    private static double distanceToPoint(GridPoint2x point2x, DungeonHitProbe probe) {
+    private static double distanceToPoint(LegacyGridPoint2x point2x, DungeonHitProbe probe) {
         return probe.canvasPoint().distance(probe.canvasPointForPoint2x(point2x));
     }
 

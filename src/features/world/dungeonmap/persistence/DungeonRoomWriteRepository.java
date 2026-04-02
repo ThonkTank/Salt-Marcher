@@ -1,8 +1,8 @@
 package features.world.dungeonmap.persistence;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.GridPoint2x;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
+import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
@@ -181,7 +181,7 @@ public final class DungeonRoomWriteRepository {
             for (var entry : resolvedDescriptor.levels().entrySet()) {
                 int levelZ = entry.getKey();
                 StructureDescriptor.LevelDescriptor level = entry.getValue();
-                GridPoint2x anchor2x = GridPoint2x.fromTileCenter(level.anchorCell());
+                LegacyGridPoint2x anchor2x = LegacyGridPoint2x.fromTileCenter(level.anchorCell());
                 insertLevel.setLong(1, roomId);
                 insertLevel.setInt(2, levelZ);
                 insertLevel.setInt(3, anchor2x.x2());
@@ -190,7 +190,7 @@ public final class DungeonRoomWriteRepository {
                 for (CellCoord seed : level.fillSeeds().stream()
                         .sorted(CellCoord.ORDER)
                         .toList()) {
-                    GridPoint2x seed2x = GridPoint2x.fromTileCenter(seed);
+                    LegacyGridPoint2x seed2x = LegacyGridPoint2x.fromTileCenter(seed);
                     insertSeed.setLong(1, roomId);
                     insertSeed.setInt(2, levelZ);
                     insertSeed.setInt(3, seed2x.x2());
@@ -211,11 +211,11 @@ public final class DungeonRoomWriteRepository {
             long roomId,
             int levelZ,
             String kind,
-            java.util.Collection<GridSegment2x> segments
+            java.util.Collection<LegacyGridSegment2x> segments
     ) throws SQLException {
-        for (GridSegment2x segment : (segments == null ? java.util.List.<GridSegment2x>of() : segments).stream()
+        for (LegacyGridSegment2x segment : (segments == null ? java.util.List.<LegacyGridSegment2x>of() : segments).stream()
                 .filter(java.util.Objects::nonNull)
-                .sorted(GridSegment2x.SEGMENT_ORDER)
+                .sorted(LegacyGridSegment2x.SEGMENT_ORDER)
                 .toList()) {
             insertSegment.setLong(1, roomId);
             insertSegment.setInt(2, levelZ);

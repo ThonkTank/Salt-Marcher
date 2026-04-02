@@ -1,6 +1,6 @@
 package features.world.dungeonmap.model.objects;
 
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 
 import java.util.Collection;
@@ -10,18 +10,18 @@ import java.util.List;
 public final class Door {
 
     private final DoorState doorState;
-    private final List<GridSegment2x> segments2x;
+    private final List<LegacyGridSegment2x> segments2x;
 
-    public Door(Collection<GridSegment2x> segments) {
+    public Door(Collection<LegacyGridSegment2x> segments) {
         this(segments, DoorState.CLOSED);
     }
 
-    public Door(Collection<GridSegment2x> segments, DoorState doorState) {
+    public Door(Collection<LegacyGridSegment2x> segments, DoorState doorState) {
         this.doorState = doorState == null ? DoorState.CLOSED : doorState;
         this.segments2x = normalizeSegments(segments);
     }
 
-    public static Door fromSegments(Collection<GridSegment2x> segments, DoorState doorState) {
+    public static Door fromSegments(Collection<LegacyGridSegment2x> segments, DoorState doorState) {
         return new Door(segments, doorState);
     }
 
@@ -43,16 +43,16 @@ public final class Door {
         return doorState.blocksPassage();
     }
 
-    public List<GridSegment2x> segments2x() {
+    public List<LegacyGridSegment2x> segments2x() {
         return segments2x;
     }
 
-    private static List<GridSegment2x> normalizeSegments(Collection<GridSegment2x> segments) {
-        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
+    private static List<LegacyGridSegment2x> normalizeSegments(Collection<LegacyGridSegment2x> segments) {
+        LinkedHashSet<LegacyGridSegment2x> result = new LinkedHashSet<>();
         if (segments != null) {
             segments.stream()
                     .filter(segment -> segment != null)
-                    .sorted(GridSegment2x.SEGMENT_ORDER)
+                    .sorted(LegacyGridSegment2x.SEGMENT_ORDER)
                     .forEach(result::add);
         }
         return result.isEmpty() ? List.of() : List.copyOf(result);

@@ -1,8 +1,8 @@
 package features.world.dungeonmap.state;
 
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.GridPoint2x;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
+import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.objects.StructureObject;
 
 import java.util.LinkedHashSet;
@@ -20,10 +20,10 @@ public sealed interface EditorPreview permits EditorPreview.LayoutPreview, Edito
     }
 
     record BoundaryPreview(
-            Set<GridSegment2x> edges,
-            Set<GridSegment2x> skippedConnectionEdges,
-            GridPoint2x startVertex2x,
-            GridPoint2x currentVertex2x,
+            Set<LegacyGridSegment2x> edges,
+            Set<LegacyGridSegment2x> skippedConnectionEdges,
+            LegacyGridPoint2x startVertex2x,
+            LegacyGridPoint2x currentVertex2x,
             boolean deleteMode
     ) implements EditorPreview {
         public BoundaryPreview {

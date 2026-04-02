@@ -6,7 +6,7 @@ import features.campaignstate.api.CampaignStateReadApi;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
@@ -196,7 +196,7 @@ public final class DungeonRuntimeNavigationService {
 
     private CubePoint resolveAdjacentEndpointTile(
             DungeonLayout layout,
-            GridSegment2x anchorSegment2x,
+            LegacyGridSegment2x anchorSegment2x,
             ConnectionEndpoint endpoint,
             int currentLevel
     ) {

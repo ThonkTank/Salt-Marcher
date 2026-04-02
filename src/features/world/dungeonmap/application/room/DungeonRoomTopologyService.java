@@ -4,7 +4,7 @@ import database.DatabaseManager;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.objects.StructureDescriptor;
@@ -158,11 +158,11 @@ public final class DungeonRoomTopologyService {
             long mapId,
             long clusterId,
             int levelZ,
-            GridSegment2x segment2x,
+            LegacyGridSegment2x segment2x,
             InternalBoundaryType type,
             boolean deleteBoundary
     ) throws SQLException {
-        editBoundary(conn, mapId, clusterId, levelZ, segment2x == null ? List.<GridSegment2x>of() : List.of(segment2x), type, deleteBoundary);
+        editBoundary(conn, mapId, clusterId, levelZ, segment2x == null ? List.<LegacyGridSegment2x>of() : List.of(segment2x), type, deleteBoundary);
     }
 
     public void editBoundary(
@@ -170,7 +170,7 @@ public final class DungeonRoomTopologyService {
             long mapId,
             long clusterId,
             int levelZ,
-            Collection<GridSegment2x> segments2x,
+            Collection<LegacyGridSegment2x> segments2x,
             InternalBoundaryType type,
             boolean deleteBoundary
     ) throws SQLException {

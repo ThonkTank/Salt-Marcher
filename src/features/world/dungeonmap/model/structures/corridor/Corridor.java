@@ -2,8 +2,8 @@ package features.world.dungeonmap.model.structures.corridor;
 
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.GridPoint2x;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
+import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.objects.StructureDescriptor;
@@ -213,7 +213,7 @@ public final class Corridor {
         }
         result.sort(Comparator
                 .comparing((CorridorNode node) -> node.nodeId() == null ? Long.MAX_VALUE : node.nodeId())
-                .thenComparing(CorridorNode::point2x, GridPoint2x.POINT_ORDER));
+                .thenComparing(CorridorNode::point2x, LegacyGridPoint2x.POINT_ORDER));
         return List.copyOf(result);
     }
 
@@ -264,7 +264,7 @@ public final class Corridor {
             RoutePlan routePlan = findRoute(levelZ, start, end, nodes, resolvedRooms);
             routes.add(new CorridorRoute(segment.segmentId(), segment.startNodeId(), segment.endNodeId(), routePlan.path2x()));
         }
-        Set<GridSegment2x> openingSegments2x = corridorOpeningSegments(levelZ, nodes, resolvedRooms);
+        Set<LegacyGridSegment2x> openingSegments2x = corridorOpeningSegments(levelZ, nodes, resolvedRooms);
         return new DerivedProjection(
                 compileStructure(levelZ, routes, openingSegments2x),
                 routes.isEmpty() ? List.of() : List.copyOf(routes),
@@ -274,15 +274,15 @@ public final class Corridor {
     private static StructureObject compileStructure(
             int levelZ,
             Collection<CorridorRoute> routes,
-            Set<GridSegment2x> openingSegments2x
+            Set<LegacyGridSegment2x> openingSegments2x
     ) {
         Set<Point2i> occupiedCells = occupiedCells(routes);
         if (occupiedCells.isEmpty()) {
             return StructureObject.empty();
         }
-        Set<GridSegment2x> boundarySegments2x = boundarySegments(occupiedCells);
-        LinkedHashSet<GridSegment2x> validOpenings = new LinkedHashSet<>();
-        for (GridSegment2x segment2x : openingSegments2x == null ? Set.<GridSegment2x>of() : openingSegments2x) {
+        Set<LegacyGridSegment2x> boundarySegments2x = boundarySegments(occupiedCells);
+        LinkedHashSet<LegacyGridSegment2x> validOpenings = new LinkedHashSet<>();
+        for (LegacyGridSegment2x segment2x : openingSegments2x == null ? Set.<LegacyGridSegment2x>of() : openingSegments2x) {
             if (segment2x != null && boundarySegments2x.contains(segment2x)) {
                 validOpenings.add(segment2x);
             }
@@ -297,12 +297,12 @@ public final class Corridor {
         return StructureObject.fromDescriptor(descriptor);
     }
 
-    private static Set<GridSegment2x> corridorOpeningSegments(
+    private static Set<LegacyGridSegment2x> corridorOpeningSegments(
             int levelZ,
             List<CorridorNode> nodes,
             Map<Long, Room> roomsById
     ) {
-        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
+        LinkedHashSet<LegacyGridSegment2x> result = new LinkedHashSet<>();
         for (CorridorNode node : nodes) {
             if (node == null || !node.isRoomBound() || node.roomBoundaryDirection() == null) {
                 continue;
@@ -311,7 +311,7 @@ public final class Corridor {
             if (roomCell == null) {
                 continue;
             }
-            result.add(GridSegment2x.betweenCellAndStep(roomCell, node.roomBoundaryDirection().delta()));
+            result.add(LegacyGridSegment2x.betweenCellAndStep(roomCell, node.roomBoundaryDirection().delta()));
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
@@ -364,7 +364,7 @@ public final class Corridor {
                 if (cellRoute == null) {
                     continue;
                 }
-                List<GridPoint2x> path2x = assemblePath2x(
+                List<LegacyGridPoint2x> path2x = assemblePath2x(
                         startAttachment.anchorToCellPath(),
                         cellRoute.cells(),
                         endAttachment.anchorToCellPath());
@@ -391,7 +391,7 @@ public final class Corridor {
         if (node == null) {
             return List.of();
         }
-        GridPoint2x anchorPoint = node.point2x();
+        LegacyGridPoint2x anchorPoint = node.point2x();
         if (node.isRoomBound()) {
             Point2i roomCell = absoluteRoomCell(node, levelZ, roomsById);
             if (roomCell == null || node.roomBoundaryDirection() == null) {
@@ -400,7 +400,7 @@ public final class Corridor {
             Point2i exteriorCell = roomCell.add(node.roomBoundaryDirection().delta());
             return List.of(new AnchorAttachment(
                     exteriorCell,
-                    List.of(anchorPoint, GridPoint2x.fromTileCenter(exteriorCell))));
+                    List.of(anchorPoint, LegacyGridPoint2x.fromTileCenter(exteriorCell))));
         }
         if (anchorPoint.isTileCenter()) {
             return List.of(new AnchorAttachment(anchorPoint.toCellCenter().orElseThrow(), List.of(anchorPoint)));
@@ -412,7 +412,7 @@ public final class Corridor {
         List<Point2i> candidateCells = preferredCells.isEmpty() ? touchingCells : preferredCells;
         ArrayList<AnchorAttachment> attachments = new ArrayList<>();
         for (Point2i cell : candidateCells) {
-            for (List<GridPoint2x> adapterPath : adapterPaths(anchorPoint, cell)) {
+            for (List<LegacyGridPoint2x> adapterPath : adapterPaths(anchorPoint, cell)) {
                 attachments.add(new AnchorAttachment(cell, adapterPath));
             }
         }
@@ -499,25 +499,25 @@ public final class Corridor {
         return List.copyOf(path);
     }
 
-    private static List<GridPoint2x> assemblePath2x(
-            List<GridPoint2x> startAdapter,
+    private static List<LegacyGridPoint2x> assemblePath2x(
+            List<LegacyGridPoint2x> startAdapter,
             List<Point2i> cellRoute,
-            List<GridPoint2x> endAdapter
+            List<LegacyGridPoint2x> endAdapter
     ) {
-        ArrayList<GridPoint2x> result = new ArrayList<>();
+        ArrayList<LegacyGridPoint2x> result = new ArrayList<>();
         appendUnique(result, startAdapter);
-        appendUnique(result, cellRoute == null ? List.of() : cellRoute.stream().map(GridPoint2x::fromTileCenter).toList());
-        ArrayList<GridPoint2x> reversedEnd = new ArrayList<>(endAdapter == null ? List.of() : endAdapter);
+        appendUnique(result, cellRoute == null ? List.of() : cellRoute.stream().map(LegacyGridPoint2x::fromTileCenter).toList());
+        ArrayList<LegacyGridPoint2x> reversedEnd = new ArrayList<>(endAdapter == null ? List.of() : endAdapter);
         Collections.reverse(reversedEnd);
         appendUnique(result, reversedEnd);
         return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
-    private static void appendUnique(List<GridPoint2x> target, List<GridPoint2x> points) {
+    private static void appendUnique(List<LegacyGridPoint2x> target, List<LegacyGridPoint2x> points) {
         if (target == null || points == null) {
             return;
         }
-        for (GridPoint2x point : points) {
+        for (LegacyGridPoint2x point : points) {
             if (point == null) {
                 continue;
             }
@@ -528,7 +528,7 @@ public final class Corridor {
         }
     }
 
-    private static List<Point2i> touchingCells(GridPoint2x anchor) {
+    private static List<Point2i> touchingCells(LegacyGridPoint2x anchor) {
         if (anchor == null) {
             return List.of();
         }
@@ -552,19 +552,19 @@ public final class Corridor {
                 new Point2i(x2 / 2, y2 / 2));
     }
 
-    private static List<List<GridPoint2x>> adapterPaths(GridPoint2x anchorPoint, Point2i cell) {
+    private static List<List<LegacyGridPoint2x>> adapterPaths(LegacyGridPoint2x anchorPoint, Point2i cell) {
         if (anchorPoint == null || cell == null) {
             return List.of();
         }
-        GridPoint2x cellCenter = GridPoint2x.fromTileCenter(cell);
+        LegacyGridPoint2x cellCenter = LegacyGridPoint2x.fromTileCenter(cell);
         if (anchorPoint.equals(cellCenter)) {
             return List.of(List.of(anchorPoint));
         }
         if (anchorPoint.distanceTo(cellCenter) == 1) {
             return List.of(List.of(anchorPoint, cellCenter));
         }
-        GridPoint2x firstMidpoint = GridPoint2x.fromRaw(anchorPoint.x2(), cellCenter.y2());
-        GridPoint2x secondMidpoint = GridPoint2x.fromRaw(cellCenter.x2(), anchorPoint.y2());
+        LegacyGridPoint2x firstMidpoint = LegacyGridPoint2x.fromRaw(anchorPoint.x2(), cellCenter.y2());
+        LegacyGridPoint2x secondMidpoint = LegacyGridPoint2x.fromRaw(cellCenter.x2(), anchorPoint.y2());
         return List.of(
                 List.of(anchorPoint, firstMidpoint, cellCenter),
                 List.of(anchorPoint, secondMidpoint, cellCenter));
@@ -602,7 +602,7 @@ public final class Corridor {
             result.add(new CorridorConnection(
                     corridorId,
                     mapId,
-                    Door.fromSegments(List.of(GridSegment2x.betweenCellAndStep(roomCell, direction.delta())), Door.DoorState.CLOSED),
+                    Door.fromSegments(List.of(LegacyGridSegment2x.betweenCellAndStep(roomCell, direction.delta())), Door.DoorState.CLOSED),
                     List.of(ConnectionEndpoint.room(node.roomId()), ConnectionEndpoint.corridor(corridorId)),
                     levelZ));
         }
@@ -630,7 +630,7 @@ public final class Corridor {
             if (route == null) {
                 continue;
             }
-            for (GridPoint2x point2x : route.path2x()) {
+            for (LegacyGridPoint2x point2x : route.path2x()) {
                 if (point2x != null) {
                     point2x.toCellCenter().ifPresent(result::add);
                 }
@@ -639,15 +639,15 @@ public final class Corridor {
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
-    private static Set<GridSegment2x> boundarySegments(Set<Point2i> occupiedCells) {
+    private static Set<LegacyGridSegment2x> boundarySegments(Set<Point2i> occupiedCells) {
         if (occupiedCells == null || occupiedCells.isEmpty()) {
             return Set.of();
         }
-        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
+        LinkedHashSet<LegacyGridSegment2x> result = new LinkedHashSet<>();
         for (Point2i cell : occupiedCells) {
             for (Point2i step : Point2i.CARDINAL_STEPS) {
                 if (!occupiedCells.contains(cell.add(step))) {
-                    result.add(GridSegment2x.betweenCellAndStep(cell, step));
+                    result.add(LegacyGridSegment2x.betweenCellAndStep(cell, step));
                 }
             }
         }
@@ -665,7 +665,7 @@ public final class Corridor {
     ) {
     }
 
-    private record AnchorAttachment(Point2i cell, List<GridPoint2x> anchorToCellPath) {
+    private record AnchorAttachment(Point2i cell, List<LegacyGridPoint2x> anchorToCellPath) {
         private AnchorAttachment {
             cell = Objects.requireNonNull(cell, "cell");
             anchorToCellPath = anchorToCellPath == null ? List.of() : List.copyOf(anchorToCellPath);
@@ -694,7 +694,7 @@ public final class Corridor {
         }
     }
 
-    private record RoutePlan(List<GridPoint2x> path2x, double cost) {
+    private record RoutePlan(List<LegacyGridPoint2x> path2x, double cost) {
         private RoutePlan {
             path2x = path2x == null ? List.of() : List.copyOf(path2x);
         }
@@ -704,32 +704,32 @@ public final class Corridor {
             Long segmentId,
             Long startNodeId,
             Long endNodeId,
-            List<GridPoint2x> path2x
+            List<LegacyGridPoint2x> path2x
     ) {
         public CorridorRoute {
             path2x = path2x == null ? List.of() : List.copyOf(path2x);
         }
 
-        public List<GridSegment2x> segments2x() {
+        public List<LegacyGridSegment2x> segments2x() {
             if (path2x.size() < 2) {
                 return List.of();
             }
-            ArrayList<GridSegment2x> result = new ArrayList<>();
+            ArrayList<LegacyGridSegment2x> result = new ArrayList<>();
             for (int index = 1; index < path2x.size(); index++) {
-                result.add(new GridSegment2x(path2x.get(index - 1), path2x.get(index)));
+                result.add(new LegacyGridSegment2x(path2x.get(index - 1), path2x.get(index)));
             }
             return List.copyOf(result);
         }
 
-        public List<GridPoint2x> cornerPoints2x() {
+        public List<LegacyGridPoint2x> cornerPoints2x() {
             if (path2x.size() < 3) {
                 return List.of();
             }
-            ArrayList<GridPoint2x> result = new ArrayList<>();
+            ArrayList<LegacyGridPoint2x> result = new ArrayList<>();
             for (int index = 1; index < path2x.size() - 1; index++) {
-                GridPoint2x previous = path2x.get(index - 1);
-                GridPoint2x current = path2x.get(index);
-                GridPoint2x next = path2x.get(index + 1);
+                LegacyGridPoint2x previous = path2x.get(index - 1);
+                LegacyGridPoint2x current = path2x.get(index);
+                LegacyGridPoint2x next = path2x.get(index + 1);
                 int incomingDx2 = current.x2() - previous.x2();
                 int incomingDy2 = current.y2() - previous.y2();
                 int outgoingDx2 = next.x2() - current.x2();

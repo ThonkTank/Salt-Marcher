@@ -2,8 +2,8 @@ package features.world.dungeonmap.model.structures.cluster;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.GridPoint2x;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
+import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 import features.world.dungeonmap.model.objects.Floor;
@@ -131,11 +131,11 @@ public final class RoomCluster {
         return new RoomCluster(clusterId, mapId, center, projectedRooms, projectedConnections);
     }
 
-    public ClusterRewrite editBoundary(GridSegment2x segment2x, InternalBoundaryType type, boolean deleteBoundary) {
-        return editBoundary(segment2x == null ? List.<GridSegment2x>of() : List.of(segment2x), type, deleteBoundary);
+    public ClusterRewrite editBoundary(LegacyGridSegment2x segment2x, InternalBoundaryType type, boolean deleteBoundary) {
+        return editBoundary(segment2x == null ? List.<LegacyGridSegment2x>of() : List.of(segment2x), type, deleteBoundary);
     }
 
-    public ClusterRewrite editBoundary(Collection<GridSegment2x> segments2x, InternalBoundaryType type, boolean deleteBoundary) {
+    public ClusterRewrite editBoundary(Collection<LegacyGridSegment2x> segments2x, InternalBoundaryType type, boolean deleteBoundary) {
         return ClusterRewritePlanner.editBoundary(this, segments2x, type, deleteBoundary);
     }
 
@@ -159,7 +159,7 @@ public final class RoomCluster {
         return new InteractiveLabelHandle(
                 targetKey(),
                 clusterId == null ? "Cluster" : "Cluster " + clusterId,
-                GridPoint2x.fromTileCenter(CellCoord.bestPoint(cells)));
+                LegacyGridPoint2x.fromTileCenter(CellCoord.bestPoint(cells)));
     }
 
     public boolean overlaps(Collection<Point2i> candidateCells) {
@@ -232,7 +232,7 @@ public final class RoomCluster {
                 .orElse(0);
     }
 
-    public Set<GridSegment2x> outerBoundarySegments2x() {
+    public Set<LegacyGridSegment2x> outerBoundarySegments2x() {
         return boundarySegments(cells);
     }
 
@@ -365,7 +365,7 @@ public final class RoomCluster {
         return visited.equals(selected);
     }
 
-    public Map<GridSegment2x, InternalBoundaryType> internalBoundaryKinds() {
+    public Map<LegacyGridSegment2x, InternalBoundaryType> internalBoundaryKinds() {
         return ClusterRewritePlanner.internalBoundaryKinds(cells, rooms, localConnections);
     }
 
@@ -553,15 +553,15 @@ public final class RoomCluster {
         return Set.copyOf(result);
     }
 
-    private static Set<GridSegment2x> boundarySegments(Set<Point2i> cells) {
+    private static Set<LegacyGridSegment2x> boundarySegments(Set<Point2i> cells) {
         if (cells == null || cells.isEmpty()) {
             return Set.of();
         }
-        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
+        LinkedHashSet<LegacyGridSegment2x> result = new LinkedHashSet<>();
         for (Point2i cell : cells) {
             for (Point2i step : Point2i.CARDINAL_STEPS) {
                 if (!cells.contains(cell.add(step))) {
-                    result.add(GridSegment2x.betweenCellAndStep(cell, step));
+                    result.add(LegacyGridSegment2x.betweenCellAndStep(cell, step));
                 }
             }
         }

@@ -1,6 +1,6 @@
 package features.world.dungeonmap.application.room;
 
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 
 import java.util.List;
@@ -12,8 +12,8 @@ public record RoomExitDescriptor(
         Point2i outsideCell,
         Point2i direction,
         String label,
-        GridSegment2x anchorSegment2x,
-        List<GridSegment2x> openingSegments2x
+        LegacyGridSegment2x anchorSegment2x,
+        List<LegacyGridSegment2x> openingSegments2x
 ) {
     public RoomExitDescriptor {
         number = number <= 0 ? 1 : number;
@@ -23,7 +23,7 @@ public record RoomExitDescriptor(
         direction = direction == null ? new Point2i(0, -1) : direction;
         label = label == null || label.isBlank() ? "Tür " + number : label;
         anchorSegment2x = anchorSegment2x == null
-                ? GridSegment2x.betweenCellAndStep(roomCell, direction)
+                ? LegacyGridSegment2x.betweenCellAndStep(roomCell, direction)
                 : anchorSegment2x;
         openingSegments2x = openingSegments2x == null ? List.of() : List.copyOf(openingSegments2x);
     }

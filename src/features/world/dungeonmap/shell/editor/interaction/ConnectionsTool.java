@@ -7,7 +7,7 @@ import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
@@ -197,8 +197,8 @@ public final class ConnectionsTool implements EditorTool {
             return true;
         }
         if (draft != null && hit instanceof DungeonHitSubject.FloorCellSubject floorHit) {
-            GridPoint2x point2x = ctx == null || ctx.probe() == null
-                    ? GridPoint2x.fromTileCenter(floorHit.cell())
+            LegacyGridPoint2x point2x = ctx == null || ctx.probe() == null
+                    ? LegacyGridPoint2x.fromTileCenter(floorHit.cell())
                     : ctx.probe().probePoint2x();
             appendDraftNode(point2x);
             return true;
@@ -281,7 +281,7 @@ public final class ConnectionsTool implements EditorTool {
         refreshStatePane();
     }
 
-    private void appendDraftNode(GridPoint2x point2x) {
+    private void appendDraftNode(LegacyGridPoint2x point2x) {
         if (draft == null || point2x == null) {
             return;
         }
@@ -356,7 +356,7 @@ public final class ConnectionsTool implements EditorTool {
                 throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.finishDraftWithCorridorNode()", throwable));
     }
 
-    private void insertNode(Long corridorId, Long segmentId, GridPoint2x point2x) {
+    private void insertNode(Long corridorId, Long segmentId, LegacyGridPoint2x point2x) {
         Corridor corridor = mapState.activeMap().findCorridor(corridorId);
         if (corridor == null || corridor.corridorId() == null || segmentId == null || point2x == null) {
             return;
@@ -403,7 +403,7 @@ public final class ConnectionsTool implements EditorTool {
 
     private void applyDoorEdit(
             Long clusterId,
-            features.world.dungeonmap.model.geometry.GridSegment2x segment2x,
+            features.world.dungeonmap.model.geometry.LegacyGridSegment2x segment2x,
             boolean deleteBoundary,
             DungeonSelectionKey followUpKey
     ) {
@@ -459,7 +459,7 @@ public final class ConnectionsTool implements EditorTool {
             anchor = new Point2i(0, 0);
         }
         Point2i relativeCell = hit.roomCell().subtract(anchor);
-        GridPoint2x point2x = GridPoint2x.fromTileCenter(hit.roomCell())
+        LegacyGridPoint2x point2x = LegacyGridPoint2x.fromTileCenter(hit.roomCell())
                 .offset(hit.outwardStep().x(), hit.outwardStep().y());
         return new CorridorNode(
                 nodeId,

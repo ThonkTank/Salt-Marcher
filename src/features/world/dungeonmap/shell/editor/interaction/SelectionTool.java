@@ -9,7 +9,7 @@ import features.world.dungeonmap.application.room.RoomExitCatalog;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
@@ -154,8 +154,8 @@ public final class SelectionTool implements EditorTool {
             if (event == null || !event.isPrimaryButtonDown()) {
                 return false;
             }
-            GridPoint2x point2x = ctx == null || ctx.probe() == null
-                    ? GridPoint2x.fromTileCenter(event.gridCell())
+            LegacyGridPoint2x point2x = ctx == null || ctx.probe() == null
+                    ? LegacyGridPoint2x.fromTileCenter(event.gridCell())
                     : ctx.probe().probePoint2x();
             if (Objects.equals(point2x, corridorNodeDragSession.currentPoint())) {
                 return true;
@@ -510,10 +510,10 @@ public final class SelectionTool implements EditorTool {
     private record CorridorNodeDragSession(
             long corridorId,
             Long nodeId,
-            GridPoint2x startPoint,
-            GridPoint2x currentPoint
+            LegacyGridPoint2x startPoint,
+            LegacyGridPoint2x currentPoint
     ) {
-        private CorridorNodeDragSession withCurrentPoint(GridPoint2x currentPoint) {
+        private CorridorNodeDragSession withCurrentPoint(LegacyGridPoint2x currentPoint) {
             return new CorridorNodeDragSession(corridorId, nodeId, startPoint, currentPoint);
         }
     }

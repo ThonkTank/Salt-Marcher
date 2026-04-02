@@ -1,8 +1,8 @@
 package features.world.dungeonmap.shell.interaction;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.GridPoint2x;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
+import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
 
@@ -22,13 +22,13 @@ public sealed interface DungeonHitSurface permits DungeonHitSurface.TileSurface,
         }
     }
 
-    record SegmentSurface(GridSegment2x segment2x, int levelZ) implements DungeonHitSurface {
+    record SegmentSurface(LegacyGridSegment2x segment2x, int levelZ) implements DungeonHitSurface {
         public SegmentSurface {
             segment2x = Objects.requireNonNull(segment2x, "segment2x");
         }
     }
 
-    record PointSurface(GridPoint2x point2x, int levelZ) implements DungeonHitSurface {
+    record PointSurface(LegacyGridPoint2x point2x, int levelZ) implements DungeonHitSurface {
         public PointSurface {
             point2x = Objects.requireNonNull(point2x, "point2x");
         }

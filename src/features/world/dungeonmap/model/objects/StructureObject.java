@@ -2,8 +2,8 @@ package features.world.dungeonmap.model.objects;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.GridPoint2x;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
+import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 
 import java.util.ArrayDeque;
@@ -103,12 +103,12 @@ public final class StructureObject {
         return centerCell == null ? null : CubePoint.at(centerCell, levelZ);
     }
 
-    public Set<GridSegment2x> boundarySegmentsAtLevel(int levelZ) {
+    public Set<LegacyGridSegment2x> boundarySegmentsAtLevel(int levelZ) {
         StructureDescriptor.LevelDescriptor level = descriptor.level(levelZ);
         return level == null ? Set.of() : level.boundaryEdges();
     }
 
-    public Set<GridSegment2x> openingSegmentsAtLevel(int levelZ) {
+    public Set<LegacyGridSegment2x> openingSegmentsAtLevel(int levelZ) {
         StructureDescriptor.LevelDescriptor level = descriptor.level(levelZ);
         return level == null ? Set.of() : level.openingEdges();
     }
@@ -165,18 +165,18 @@ public final class StructureObject {
     }
 
     private static List<Wall> hydrateWalls(StructureDescriptor.LevelDescriptor level) {
-        Set<GridSegment2x> wallSegments = new LinkedHashSet<>(level.boundaryEdges());
+        Set<LegacyGridSegment2x> wallSegments = new LinkedHashSet<>(level.boundaryEdges());
         wallSegments.removeAll(level.openingEdges());
         return wallSegments.isEmpty() ? List.of() : List.of(Wall.fromSegments(wallSegments));
     }
 
     private static List<Door> hydrateDoors(StructureDescriptor.LevelDescriptor level) {
-        List<Set<GridSegment2x>> doorComponents = connectedComponents(level.openingEdges());
+        List<Set<LegacyGridSegment2x>> doorComponents = connectedComponents(level.openingEdges());
         if (doorComponents.isEmpty()) {
             return List.of();
         }
         ArrayList<Door> result = new ArrayList<>();
-        for (Set<GridSegment2x> component : doorComponents) {
+        for (Set<LegacyGridSegment2x> component : doorComponents) {
             result.add(Door.fromSegments(component, Door.DoorState.OPEN));
         }
         return List.copyOf(result);
@@ -189,7 +189,7 @@ public final class StructureObject {
         if (seeds.isEmpty()) {
             return Set.of();
         }
-        Set<GridSegment2x> blockedSegments = stepBoundarySegments(level.boundaryEdges());
+        Set<LegacyGridSegment2x> blockedSegments = stepBoundarySegments(level.boundaryEdges());
         if (blockedSegments.isEmpty()) {
             return Set.copyOf(seeds);
         }
@@ -204,7 +204,7 @@ public final class StructureObject {
             for (CellCoord step : CellCoord.CARDINAL_STEPS) {
                 CellCoord neighbor = current.add(step);
                 if (!bounds.contains(neighbor)
-                        || blockedSegments.contains(GridSegment2x.betweenCellAndStep(current, step))) {
+                        || blockedSegments.contains(LegacyGridSegment2x.betweenCellAndStep(current, step))) {
                     continue;
                 }
                 queue.addLast(neighbor);
@@ -213,12 +213,12 @@ public final class StructureObject {
         return visited.isEmpty() ? Set.of() : Set.copyOf(visited);
     }
 
-    private static CellBounds cellBounds(Set<GridSegment2x> boundaryEdges, Set<CellCoord> seeds) {
+    private static CellBounds cellBounds(Set<LegacyGridSegment2x> boundaryEdges, Set<CellCoord> seeds) {
         int minX = seeds.stream().mapToInt(CellCoord::x).min().orElse(0);
         int maxX = seeds.stream().mapToInt(CellCoord::x).max().orElse(0);
         int minY = seeds.stream().mapToInt(CellCoord::y).min().orElse(0);
         int maxY = seeds.stream().mapToInt(CellCoord::y).max().orElse(0);
-        for (GridSegment2x segment : boundaryEdges) {
+        for (LegacyGridSegment2x segment : boundaryEdges) {
             minX = Math.min(minX, segment.minX2() / 2);
             maxX = Math.max(maxX, (segment.maxX2() - 1) / 2);
             minY = Math.min(minY, segment.minY2() / 2);
@@ -227,10 +227,10 @@ public final class StructureObject {
         return new CellBounds(minX, minY, maxX, maxY);
     }
 
-    private static Set<GridSegment2x> stepBoundarySegments(Collection<GridSegment2x> segments) {
-        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
+    private static Set<LegacyGridSegment2x> stepBoundarySegments(Collection<LegacyGridSegment2x> segments) {
+        LinkedHashSet<LegacyGridSegment2x> result = new LinkedHashSet<>();
         if (segments != null) {
-            for (GridSegment2x segment : segments) {
+            for (LegacyGridSegment2x segment : segments) {
                 if (segment == null) {
                     continue;
                 }
@@ -240,60 +240,60 @@ public final class StructureObject {
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
-    private static Set<GridSegment2x> stepBoundarySegments(GridSegment2x segment) {
-        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
+    private static Set<LegacyGridSegment2x> stepBoundarySegments(LegacyGridSegment2x segment) {
+        LinkedHashSet<LegacyGridSegment2x> result = new LinkedHashSet<>();
         if (segment == null) {
             return Set.of();
         }
         if (segment.isHorizontal()) {
             int y2 = segment.start().y2();
             for (int x2 = segment.minX2(); x2 < segment.maxX2(); x2 += 2) {
-                result.add(new GridSegment2x(GridPoint2x.fromRaw(x2, y2), GridPoint2x.fromRaw(x2 + 2, y2)));
+                result.add(new LegacyGridSegment2x(LegacyGridPoint2x.fromRaw(x2, y2), LegacyGridPoint2x.fromRaw(x2 + 2, y2)));
             }
         } else {
             int x2 = segment.start().x2();
             for (int y2 = segment.minY2(); y2 < segment.maxY2(); y2 += 2) {
-                result.add(new GridSegment2x(GridPoint2x.fromRaw(x2, y2), GridPoint2x.fromRaw(x2, y2 + 2)));
+                result.add(new LegacyGridSegment2x(LegacyGridPoint2x.fromRaw(x2, y2), LegacyGridPoint2x.fromRaw(x2, y2 + 2)));
             }
         }
         return Set.copyOf(result);
     }
 
-    private static List<Set<GridSegment2x>> connectedComponents(Set<GridSegment2x> segments) {
+    private static List<Set<LegacyGridSegment2x>> connectedComponents(Set<LegacyGridSegment2x> segments) {
         if (segments == null || segments.isEmpty()) {
             return List.of();
         }
-        LinkedHashSet<GridSegment2x> remaining = new LinkedHashSet<>(segments.stream()
-                .sorted(GridSegment2x.SEGMENT_ORDER)
+        LinkedHashSet<LegacyGridSegment2x> remaining = new LinkedHashSet<>(segments.stream()
+                .sorted(LegacyGridSegment2x.SEGMENT_ORDER)
                 .toList());
-        ArrayList<Set<GridSegment2x>> result = new ArrayList<>();
+        ArrayList<Set<LegacyGridSegment2x>> result = new ArrayList<>();
         while (!remaining.isEmpty()) {
-            GridSegment2x seed = remaining.iterator().next();
-            ArrayDeque<GridSegment2x> queue = new ArrayDeque<>();
-            LinkedHashSet<GridSegment2x> component = new LinkedHashSet<>();
+            LegacyGridSegment2x seed = remaining.iterator().next();
+            ArrayDeque<LegacyGridSegment2x> queue = new ArrayDeque<>();
+            LinkedHashSet<LegacyGridSegment2x> component = new LinkedHashSet<>();
             queue.add(seed);
             remaining.remove(seed);
             while (!queue.isEmpty()) {
-                GridSegment2x current = queue.removeFirst();
+                LegacyGridSegment2x current = queue.removeFirst();
                 component.add(current);
-                ArrayList<GridSegment2x> attached = new ArrayList<>();
-                for (GridSegment2x candidate : remaining) {
+                ArrayList<LegacyGridSegment2x> attached = new ArrayList<>();
+                for (LegacyGridSegment2x candidate : remaining) {
                     if (current.sharesEndpoint(candidate)) {
                         attached.add(candidate);
                     }
                 }
-                attached.sort(GridSegment2x.SEGMENT_ORDER);
-                for (GridSegment2x candidate : attached) {
+                attached.sort(LegacyGridSegment2x.SEGMENT_ORDER);
+                for (LegacyGridSegment2x candidate : attached) {
                     remaining.remove(candidate);
                     queue.addLast(candidate);
                 }
             }
             result.add(Set.copyOf(component));
         }
-        result.sort(Comparator.comparing((Set<GridSegment2x> component) -> component.stream()
-                .min(GridSegment2x.SEGMENT_ORDER)
-                .orElse(new GridSegment2x(GridPoint2x.fromRaw(0, 0), GridPoint2x.fromRaw(2, 0))),
-                GridSegment2x.SEGMENT_ORDER));
+        result.sort(Comparator.comparing((Set<LegacyGridSegment2x> component) -> component.stream()
+                .min(LegacyGridSegment2x.SEGMENT_ORDER)
+                .orElse(new LegacyGridSegment2x(LegacyGridPoint2x.fromRaw(0, 0), LegacyGridPoint2x.fromRaw(2, 0))),
+                LegacyGridSegment2x.SEGMENT_ORDER));
         return List.copyOf(result);
     }
 

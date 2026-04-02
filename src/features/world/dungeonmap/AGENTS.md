@@ -17,10 +17,11 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `DungeonLayout` is the immutable global lookup over direct structure owners: room clusters, corridors, stairs, transitions, connections, traversable cells, and spatial indexes.
 - Corridors, stairs, and transitions are first-class persisted structures. There is no second aggregate that owns their geometry.
 - `Room` and `Corridor` expose shared surface geometry only through `StructureObject`.
-- `Corridor` keeps its node/segment graph as truth, stores node and route geometry directly as `GridPoint2x`, and compiles it into the same `StructureDescriptor`/`StructureObject` surface model used by rooms, including opening segments for room-bound endpoints.
+- Legacy freeze is active for the old 2x parity contract: productive code currently uses `LegacyGridPoint2x` and `LegacyGridSegment2x` to preserve existing behavior, while `GridPoint2x` and `GridSegment2x` are being freed for the final parity model.
+- `Corridor` keeps its node/segment graph as truth, stores node and route geometry directly as `LegacyGridPoint2x`, and compiles it into the same `StructureDescriptor`/`StructureObject` surface model used by rooms, including opening segments for room-bound endpoints.
 - Room paint/delete/boundary edits persist room-owned `StructureDescriptor` truth plus derived cluster metadata. They do not reroute or regenerate corridors or stairs.
 - Connection doors and room exit narration are level-aware. Shared boundary/door queries must keep `levelZ` together with the 2x segment instead of collapsing identical segments across floors.
-- `Wall` and `Door` are 2x-native boundary objects keyed by normalized `GridSegment2x` collections. Do not reintroduce vertex-edge wrapper geometry in productive wall/door/corridor flows.
+- `Wall` and `Door` are 2x-native boundary objects keyed by normalized `LegacyGridSegment2x` collections. Do not reintroduce vertex-edge wrapper geometry in productive wall/door/corridor flows.
 - Tile-owned surfaces are owned as explicit `CellCoord` sets on `Floor` and other cell-surface seams. Do not reintroduce a second tile-area wrapper type just to shuttle those cells between owners.
 - `StructureDescriptor.LevelDescriptor` authors room/corridor floor truth as `anchorCell`, `fillSeeds`, `boundaryEdges`, and `openingEdges`. `StructureObject` hydrates floors, walls, and doors from that cell/edge truth without reconstructing removed legacy tile wrappers.
 - Runtime presentation resolves surfaces from the same structure owners used by the editor. Do not invent runtime-only structure mirrors.
@@ -28,10 +29,10 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 ## Package Roles
 
 - `model/`
-  - `geometry/` owns pure grid math and routing primitives.
-  - `geometry/` keeps canonical cell-space on `CellCoord` and shared half-step primitives on `GridPoint2x`/`GridSegment2x`; do not add parallel tile-area wrappers as competing geometry owners.
+- `geometry/` owns pure grid math and routing primitives.
+- `geometry/` keeps canonical cell-space on `CellCoord`. During legacy freeze, all productive half-step consumers stay on `LegacyGridPoint2x`/`LegacyGridSegment2x`, leaving `GridPoint2x`/`GridSegment2x` free for the later parity flip; do not add parallel tile-area wrappers as competing geometry owners.
   - `interaction/` owns model-side interaction seams such as `InteractiveLabelHandle`; semantic label identity lives here, not in canvas code.
-- `objects/` owns thin domain objects over geometry such as `Floor`, `Wall`, `Door`, `StructureObject`, and `StructureDescriptor`. `Wall`/`Door` stay segment-based; shared boundary queries operate on `GridSegment2x`.
+- `objects/` owns thin domain objects over geometry such as `Floor`, `Wall`, `Door`, `StructureObject`, and `StructureDescriptor`. `Wall`/`Door` stay segment-based; shared boundary queries operate on `LegacyGridSegment2x`.
   - `structures/` owns first-class structures and the structure-specific subpackages `cluster`, `connection`, `corridor`, `room`, `stair`, and `transition`.
   - `DungeonLayout` stays the feature-wide lookup surface, not a second mutation owner.
 - `application/`
@@ -63,10 +64,10 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 ## Concern Ownership
 
 - Hit collection owns raw candidates. `DungeonSelection` is event-time data only.
-- `DungeonHitProbe`, `DungeonHitSurface`, and geometry-backed selection part keys speak the explicit 2x language (`GridPoint2x`, `GridSegment2x`). Cell coordinates remain convenience data, not the shared half-step truth.
-- `CellCoord` is the canonical 2D cell primitive at model-owner seams. `Point2i` remains a staged compatibility type for existing cell consumers and cardinal/vector math; shared half-step and boundary geometry stays in `GridPoint2x` and `GridSegment2x`.
-- `DungeonLayout`, `DungeonHitProbe`, runtime navigation, and `CorridorNode.roomRelativeCell` may keep `Point2i` only as explicit compatibility-facing cell queries or cardinal vectors. Vertex picks and half-step hit geometry stay in `GridPoint2x`.
-- `DungeonHitSubject` and `DungeonSelectionLookup` expose geometry-backed editor/runtime selections only as `GridPoint2x` and `GridSegment2x`. Do not add raw doubled-`Point2i` or vertex mirrors back into those seams.
+- `DungeonHitProbe`, `DungeonHitSurface`, and geometry-backed selection part keys speak the explicit 2x language (`LegacyGridPoint2x`, `LegacyGridSegment2x`). Cell coordinates remain convenience data, not the shared half-step truth.
+- `CellCoord` is the canonical 2D cell primitive at model-owner seams. `Point2i` remains a staged compatibility type for existing cell consumers and cardinal/vector math; legacy productive half-step and boundary geometry stays in `LegacyGridPoint2x` and `LegacyGridSegment2x` until the parity flip is complete.
+- `DungeonLayout`, `DungeonHitProbe`, runtime navigation, and `CorridorNode.roomRelativeCell` may keep `Point2i` only as explicit compatibility-facing cell queries or cardinal vectors. Vertex picks and half-step hit geometry stay in `LegacyGridPoint2x`.
+- `DungeonHitSubject` and `DungeonSelectionLookup` expose geometry-backed editor/runtime selections only as `LegacyGridPoint2x` and `LegacyGridSegment2x`. Do not add raw doubled-`Point2i` or vertex mirrors back into those seams.
 - `EditorTool.resolveHit(...)` owns tool-specific interpretation of those candidates. Do not move per-tool allowlists back into a central selector.
 - `EditorInteractionState` owns only shared editor coordination state:
   - `selectedKey`
@@ -136,7 +137,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `Room` owns room-local truth and narration.
 - `RoomCluster` owns multi-room rewrite logic, grouping, adjacency, and cluster moves. Its aggregate cells and internal 2x boundary segments stay derived from room-owned `StructureObject`s.
 - `Connection` owns connectivity; `Door` is the boundary object exposed through that connection.
-- `Corridor` is a first-class structure with stable identity, nodes, segments, room bindings, and derived geometry. Persisted node coordinates stay 2x-native as `GridPoint2x`, and derived routes stay 2x-native as ordered `GridPoint2x` paths.
+- `Corridor` is a first-class structure with stable identity, nodes, segments, room bindings, and derived geometry. Persisted node coordinates stay 2x-native as `LegacyGridPoint2x`, and derived routes stay 2x-native as ordered `LegacyGridPoint2x` paths.
 - `DungeonStair` is a first-class structure with stable identity and explicit 3D path geometry. Exits are derived views, not persisted second truths.
 - `DungeonTransition` owns transition identity, placement anchor, destination, and optional bidirectional link. Unplaced transitions are valid; spatial queries must guard for null anchor or placement state.
 

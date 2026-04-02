@@ -4,8 +4,8 @@ import features.world.dungeonmap.application.room.DungeonBoundaryEditService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.GridPoint2x;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
+import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
@@ -141,7 +141,7 @@ public final class BoundaryTool implements EditorTool {
 
     private boolean handleWallPressed(EditorToolContext ctx, boolean deleteMode) {
         DungeonLayout layout = ctx == null ? null : ctx.activeMap();
-        GridPoint2x vertex = selectedVertex(ctx);
+        LegacyGridPoint2x vertex = selectedVertex(ctx);
         DungeonSelectionKey resolvedKey = ctx == null ? null : ctx.resolvedSelectionKey();
         RoomCluster cluster = DungeonSelectionLookup.clusterOnLevel(
                 layout,
@@ -192,9 +192,9 @@ public final class BoundaryTool implements EditorTool {
             return true;
         }
 
-        Set<GridSegment2x> nextPreview = new LinkedHashSet<>(draft.previewEdges());
+        Set<LegacyGridSegment2x> nextPreview = new LinkedHashSet<>(draft.previewEdges());
         nextPreview.addAll(result.committedEdges());
-        Set<GridSegment2x> nextSkipped = new LinkedHashSet<>(draft.skippedConnectionEdges());
+        Set<LegacyGridSegment2x> nextSkipped = new LinkedHashSet<>(draft.skippedConnectionEdges());
         nextSkipped.addAll(result.skippedConnectionEdges());
         showDraft(new Draft(
                 draft.clusterId(),
@@ -217,7 +217,7 @@ public final class BoundaryTool implements EditorTool {
             return false;
         }
         Long mapId = mapState.activeMapId();
-        Set<GridSegment2x> edges = currentDraft.previewEdges();
+        Set<LegacyGridSegment2x> edges = currentDraft.previewEdges();
         clear();
         if (mapId == null || edges.isEmpty()) {
             return true;
@@ -238,7 +238,7 @@ public final class BoundaryTool implements EditorTool {
 
     private ResolvedBoundaryVertex resolveBoundaryVertex(EditorToolContext ctx, boolean deleteMode) {
         DungeonLayout layout = ctx == null ? null : ctx.activeMap();
-        GridPoint2x vertex = firstVertex(ctx == null ? null : ctx.selection());
+        LegacyGridPoint2x vertex = firstVertex(ctx == null ? null : ctx.selection());
         if (layout == null || vertex == null) {
             return null;
         }
@@ -259,7 +259,7 @@ public final class BoundaryTool implements EditorTool {
         return null;
     }
 
-    private boolean isEditableCluster(Long clusterId, DungeonLayout layout, GridPoint2x vertex, boolean deleteMode) {
+    private boolean isEditableCluster(Long clusterId, DungeonLayout layout, LegacyGridPoint2x vertex, boolean deleteMode) {
         RoomCluster cluster = clusterOnActiveLevel(clusterId, layout);
         return cluster != null && pathPlanner.isEditableVertex(cluster, vertex, deleteMode);
     }
@@ -286,7 +286,7 @@ public final class BoundaryTool implements EditorTool {
         return cluster;
     }
 
-    private static GridPoint2x firstVertex(features.world.dungeonmap.shell.interaction.DungeonSelection selection) {
+    private static LegacyGridPoint2x firstVertex(features.world.dungeonmap.shell.interaction.DungeonSelection selection) {
         DungeonHitSubject subject = selection == null
                 ? null
                 : selection.firstSubjectMatching(candidate -> candidate instanceof DungeonHitSubject.VertexSubject);
@@ -296,7 +296,7 @@ public final class BoundaryTool implements EditorTool {
         return null;
     }
 
-    private static GridPoint2x selectedVertex(EditorToolContext ctx) {
+    private static LegacyGridPoint2x selectedVertex(EditorToolContext ctx) {
         return ctx != null && ctx.resolvedSubject() instanceof DungeonHitSubject.VertexSubject vertexSubject
                 ? vertexSubject.vertex2x()
                 : null;
@@ -374,8 +374,8 @@ public final class BoundaryTool implements EditorTool {
     private static String statusMessage(
             RoomCluster cluster,
             boolean deleteMode,
-            Set<GridSegment2x> previewEdges,
-            Set<GridSegment2x> skippedConnectionEdges
+            Set<LegacyGridSegment2x> previewEdges,
+            Set<LegacyGridSegment2x> skippedConnectionEdges
     ) {
         if (deleteMode) {
             return previewEdges.isEmpty()
@@ -394,10 +394,10 @@ public final class BoundaryTool implements EditorTool {
     private record Draft(
             Long clusterId,
             boolean deleteMode,
-            GridPoint2x startVertex,
-            GridPoint2x currentVertex,
-            Set<GridSegment2x> previewEdges,
-            Set<GridSegment2x> skippedConnectionEdges,
+            LegacyGridPoint2x startVertex,
+            LegacyGridPoint2x currentVertex,
+            Set<LegacyGridSegment2x> previewEdges,
+            Set<LegacyGridSegment2x> skippedConnectionEdges,
             String statusMessage
     ) {
         private Draft {
@@ -409,7 +409,7 @@ public final class BoundaryTool implements EditorTool {
 
     private record ResolvedBoundaryVertex(
             Long clusterId,
-            GridPoint2x vertex2x
+            LegacyGridPoint2x vertex2x
     ) {
     }
 }

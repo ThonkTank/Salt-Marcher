@@ -1,6 +1,6 @@
 package features.world.dungeonmap.model.interaction;
 
-import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
 
 import java.util.Objects;
 
@@ -13,7 +13,7 @@ import java.util.Objects;
 public record InteractiveLabelHandle(
         String key,
         String label,
-        GridPoint2x anchor2x
+        LegacyGridPoint2x anchor2x
 ) {
     public InteractiveLabelHandle {
         key = normalizeKey(key);

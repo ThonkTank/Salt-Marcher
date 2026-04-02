@@ -1,7 +1,7 @@
 package features.world.dungeonmap.model;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.structures.cluster.ClusterRewrite;
@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
  * Do not move active behavior back into a second aggregate layer.
  *
  * <p>`Point2i` here stays limited to cell lookups, traversable-cell indexes, and movement vectors. Shared half-step
- * geometry belongs to `GridPoint2x` and `GridSegment2x` instead.
+ * geometry belongs to `LegacyGridPoint2x` and `LegacyGridSegment2x` instead.
  */
 public final class DungeonLayout {
 
@@ -59,7 +59,7 @@ public final class DungeonLayout {
     private final List<DungeonStair> stairs;
     private final List<DungeonTransition> transitions;
     private final List<Connection> connections;
-    private final Map<GridSegment2x, Connection> connectionsBySegment2x;
+    private final Map<LegacyGridSegment2x, Connection> connectionsBySegment2x;
     private final Map<ConnectionSegmentKey, Connection> connectionsBySegmentAndLevel2x;
     private final Map<ConnectionEndpoint, List<Connection>> connectionsByEndpoint;
     private final Map<Door, List<ConnectionEndpoint>> endpointsByDoor;
@@ -235,16 +235,16 @@ public final class DungeonLayout {
         return corridorId == null ? null : corridorsById.get(corridorId);
     }
 
-    public Door doorAt(GridSegment2x segment2x) {
+    public Door doorAt(LegacyGridSegment2x segment2x) {
         Connection connection = connectionAt(segment2x);
         return connection == null ? null : connection.door();
     }
 
-    public Connection connectionAt(GridSegment2x segment2x) {
+    public Connection connectionAt(LegacyGridSegment2x segment2x) {
         return segment2x == null ? null : connectionsBySegment2x.get(segment2x);
     }
 
-    public Connection connectionAt(int levelZ, GridSegment2x segment2x) {
+    public Connection connectionAt(int levelZ, LegacyGridSegment2x segment2x) {
         return segment2x == null ? null : connectionsBySegmentAndLevel2x.get(new ConnectionSegmentKey(levelZ, segment2x));
     }
 
@@ -270,7 +270,7 @@ public final class DungeonLayout {
         return connectionsFor(ConnectionEndpoint.corridor(corridorId));
     }
 
-    public List<Door> doorsAtSegments(Set<GridSegment2x> segments2x) {
+    public List<Door> doorsAtSegments(Set<LegacyGridSegment2x> segments2x) {
         if (segments2x == null || segments2x.isEmpty()) {
             return List.of();
         }
@@ -598,8 +598,8 @@ public final class DungeonLayout {
         return List.copyOf(result);
     }
 
-    private static Map<GridSegment2x, Connection> indexConnectionsBySegment2x(List<Connection> connections) {
-        Map<GridSegment2x, Connection> result = new LinkedHashMap<>();
+    private static Map<LegacyGridSegment2x, Connection> indexConnectionsBySegment2x(List<Connection> connections) {
+        Map<LegacyGridSegment2x, Connection> result = new LinkedHashMap<>();
         for (Connection connection : connections) {
             if (connection == null || connection.door() == null) {
                 continue;
@@ -615,7 +615,7 @@ public final class DungeonLayout {
             if (connection == null || connection.door() == null) {
                 continue;
             }
-            for (GridSegment2x segment2x : connection.door().segments2x()) {
+            for (LegacyGridSegment2x segment2x : connection.door().segments2x()) {
                 result.putIfAbsent(new ConnectionSegmentKey(connection.levelZ(), segment2x), connection);
             }
         }
@@ -839,6 +839,6 @@ public final class DungeonLayout {
         return Map.copyOf(result);
     }
 
-    private record ConnectionSegmentKey(int levelZ, GridSegment2x segment2x) {
+    private record ConnectionSegmentKey(int levelZ, LegacyGridSegment2x segment2x) {
     }
 }

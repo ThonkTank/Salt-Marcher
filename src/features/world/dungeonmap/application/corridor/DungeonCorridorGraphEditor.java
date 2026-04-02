@@ -1,7 +1,7 @@
 package features.world.dungeonmap.application.corridor;
 
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNode;
@@ -20,7 +20,7 @@ public final class DungeonCorridorGraphEditor {
         throw new AssertionError("No instances");
     }
 
-    public static Corridor withMovedNode(DungeonLayout layout, Corridor corridor, Long nodeId, GridPoint2x point2x) {
+    public static Corridor withMovedNode(DungeonLayout layout, Corridor corridor, Long nodeId, LegacyGridPoint2x point2x) {
         if (layout == null || corridor == null || nodeId == null || point2x == null) {
             return corridor;
         }
@@ -43,7 +43,7 @@ public final class DungeonCorridorGraphEditor {
         return Corridor.resolved(corridor.corridorId(), layout.mapId(), corridor.levelZ(), updatedNodes, corridor.segments(), roomsById(layout));
     }
 
-    public static Corridor withInsertedNode(DungeonLayout layout, Corridor corridor, Long segmentId, GridPoint2x point2x) {
+    public static Corridor withInsertedNode(DungeonLayout layout, Corridor corridor, Long segmentId, LegacyGridPoint2x point2x) {
         if (layout == null || corridor == null || segmentId == null || point2x == null) {
             return corridor;
         }

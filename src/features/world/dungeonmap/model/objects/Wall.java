@@ -1,6 +1,6 @@
 package features.world.dungeonmap.model.objects;
 
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 
 import java.util.Collection;
@@ -9,18 +9,18 @@ import java.util.List;
 
 public final class Wall {
 
-    private final List<GridSegment2x> segments2x;
+    private final List<LegacyGridSegment2x> segments2x;
 
     // A wall is just a normalized 2x boundary path whose domain rule is that passage is always blocked.
-    public Wall(Collection<GridSegment2x> segments) {
+    public Wall(Collection<LegacyGridSegment2x> segments) {
         this.segments2x = normalizeSegments(segments);
     }
 
-    public static Wall fromSegments(Collection<GridSegment2x> segments) {
+    public static Wall fromSegments(Collection<LegacyGridSegment2x> segments) {
         return new Wall(segments);
     }
 
-    public List<GridSegment2x> segments2x() {
+    public List<LegacyGridSegment2x> segments2x() {
         return segments2x;
     }
 
@@ -38,12 +38,12 @@ public final class Wall {
         return true;
     }
 
-    private static List<GridSegment2x> normalizeSegments(Collection<GridSegment2x> segments) {
-        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
+    private static List<LegacyGridSegment2x> normalizeSegments(Collection<LegacyGridSegment2x> segments) {
+        LinkedHashSet<LegacyGridSegment2x> result = new LinkedHashSet<>();
         if (segments != null) {
             segments.stream()
                     .filter(segment -> segment != null)
-                    .sorted(GridSegment2x.SEGMENT_ORDER)
+                    .sorted(LegacyGridSegment2x.SEGMENT_ORDER)
                     .forEach(result::add);
         }
         return result.isEmpty() ? List.of() : List.copyOf(result);

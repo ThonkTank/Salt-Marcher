@@ -1,10 +1,10 @@
 package features.world.dungeonmap.canvas.base;
 
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 
 public record DungeonDoorNumberOverlay(
         int number,
-        GridSegment2x anchorSegment2x
+        LegacyGridSegment2x anchorSegment2x
 ) {
     public DungeonDoorNumberOverlay {
         number = number <= 0 ? 1 : number;
