@@ -81,6 +81,30 @@ public record GridSegment2x(GridPoint2x start, GridPoint2x end) {
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
+    public static Set<GridSegment2x> boundarySteps(Collection<GridSegment2x> segments) {
+        if (segments == null || segments.isEmpty()) {
+            return Set.of();
+        }
+        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
+        for (GridSegment2x segment : segments) {
+            if (segment != null) {
+                result.addAll(segment.boundarySteps());
+            }
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
+    public static Set<LegacyGridSegment2x> toLegacyBoundaryEdges(Collection<GridSegment2x> segments) {
+        if (segments == null || segments.isEmpty()) {
+            return Set.of();
+        }
+        LinkedHashSet<LegacyGridSegment2x> result = new LinkedHashSet<>();
+        for (GridSegment2x step : boundarySteps(segments)) {
+            result.add(step.toLegacyBoundaryEdge());
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
     public boolean isHorizontal() {
         return start.y2() == end.y2();
     }
@@ -168,6 +192,25 @@ public record GridSegment2x(GridPoint2x start, GridPoint2x end) {
             throw new IllegalArgumentException("Boundary edge direction could not be resolved");
         }
         return LegacyGridSegment2x.betweenCellAndStep(baseCell, direction.delta());
+    }
+
+    public Set<GridSegment2x> boundarySteps() {
+        if (length2() == 2) {
+            return Set.of(this);
+        }
+        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
+        if (isHorizontal()) {
+            int y2 = start.y2();
+            for (int x2 = start.x2(); x2 < end.x2(); x2 += 2) {
+                result.add(new GridSegment2x(GridPoint2x.raw(x2, y2), GridPoint2x.raw(x2 + 2, y2)));
+            }
+        } else {
+            int x2 = start.x2();
+            for (int y2 = start.y2(); y2 < end.y2(); y2 += 2) {
+                result.add(new GridSegment2x(GridPoint2x.raw(x2, y2), GridPoint2x.raw(x2, y2 + 2)));
+            }
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
     private static Set<GridSegment2x> splitLegacyBoundaryEdges(LegacyGridSegment2x segment) {

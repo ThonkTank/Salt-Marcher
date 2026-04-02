@@ -1,6 +1,7 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
 import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
@@ -162,10 +163,11 @@ final class DungeonBoundaryPathPlanner {
         if (cluster == null) {
             return Set.of();
         }
-        return cluster.internalBoundaryKinds().entrySet().stream()
+        return GridSegment2x.toLegacyBoundaryEdges(cluster.internalBoundaryKinds().entrySet().stream()
                 .filter(entry -> entry.getValue() == InternalBoundaryType.WALL)
-                .map(entry -> entry.getKey().toLegacyBoundaryEdge())
+                .map(Map.Entry::getKey)
                 .filter(Objects::nonNull)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new))).stream()
                 .sorted(LegacyGridSegment2x.SEGMENT_ORDER)
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
     }
@@ -174,9 +176,7 @@ final class DungeonBoundaryPathPlanner {
         if (cluster == null) {
             return Set.of();
         }
-        Set<LegacyGridSegment2x> result = cluster.outerBoundarySegments2x().stream()
-                .map(segment -> segment == null ? null : segment.toLegacyBoundaryEdge())
-                .filter(Objects::nonNull)
+        Set<LegacyGridSegment2x> result = GridSegment2x.toLegacyBoundaryEdges(cluster.outerBoundarySegments2x()).stream()
                 .sorted(LegacyGridSegment2x.SEGMENT_ORDER)
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
         result.removeAll(localConnectionEdges(cluster, result));

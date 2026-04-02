@@ -235,10 +235,6 @@ public final class RoomCluster {
         return cells;
     }
 
-    public Set<Point2i> pointCells() {
-        return CellCoord.toPoints(cells);
-    }
-
     public Map<Integer, Set<CellCoord>> cellsByLevel() {
         Map<Integer, LinkedHashSet<CellCoord>> result = new LinkedHashMap<>();
         for (Room room : rooms) {

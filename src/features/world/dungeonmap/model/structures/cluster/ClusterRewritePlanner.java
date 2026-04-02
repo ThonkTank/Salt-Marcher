@@ -4,9 +4,7 @@ import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
 import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
-import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.objects.Floor;
 import features.world.dungeonmap.model.objects.StructureDescriptor;
@@ -673,10 +671,6 @@ final class ClusterRewritePlanner {
                 cluster.rooms(),
                 cluster.localConnections(),
                 persistedBoundaries(cluster.cells(), cluster.rooms(), cluster.internalBoundaryKinds()));
-    }
-
-    private static InternalBoundaryEdge toInternalBoundaryEdge(LegacyGridSegment2x segment2x, InternalBoundaryType type) {
-        return segment2x == null ? null : toInternalBoundaryEdge(GridSegment2x.fromLegacyBoundaryEdge(segment2x), type);
     }
 
     private static InternalBoundaryEdge toInternalBoundaryEdge(GridSegment2x segment2x, InternalBoundaryType type) {

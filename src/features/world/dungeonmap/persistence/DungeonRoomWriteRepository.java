@@ -3,6 +3,7 @@ package features.world.dungeonmap.persistence;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
+import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
 import features.world.dungeonmap.model.geometry.Point2i;
 import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
@@ -221,11 +222,17 @@ public final class DungeonRoomWriteRepository {
             String kind,
             java.util.Collection<GridSegment2x> segments
     ) throws SQLException {
-        for (GridSegment2x segment : (segments == null ? java.util.List.<GridSegment2x>of() : segments).stream()
-                .filter(java.util.Objects::nonNull)
-                .sorted(GridSegment2x.ORDER)
+        for (LegacyGridSegment2x persistedSegment : GridSegment2x.toLegacyBoundaryEdges(segments).stream()
+                .sorted(LegacyGridSegment2x.SEGMENT_ORDER)
                 .toList()) {
-            addBoundarySegment(insertSegment, roomId, levelZ, kind, segment);
+            insertSegment.setLong(1, roomId);
+            insertSegment.setInt(2, levelZ);
+            insertSegment.setString(3, kind);
+            insertSegment.setInt(4, persistedSegment.start().x2());
+            insertSegment.setInt(5, persistedSegment.start().y2());
+            insertSegment.setInt(6, persistedSegment.end().x2());
+            insertSegment.setInt(7, persistedSegment.end().y2());
+            insertSegment.addBatch();
         }
     }
 
@@ -252,42 +259,4 @@ public final class DungeonRoomWriteRepository {
         return level.anchorCell();
     }
 
-    private static void addBoundarySegment(
-            PreparedStatement insertSegment,
-            long roomId,
-            int levelZ,
-            String kind,
-            GridSegment2x segment
-    ) throws SQLException {
-        if (segment == null) {
-            return;
-        }
-        if (segment.length2() > 2) {
-            if (segment.isHorizontal()) {
-                int y2 = segment.start().y2();
-                for (int x2 = segment.start().x2(); x2 < segment.end().x2(); x2 += 2) {
-                    addBoundarySegment(insertSegment, roomId, levelZ, kind, new GridSegment2x(
-                            features.world.dungeonmap.model.geometry.GridPoint2x.raw(x2, y2),
-                            features.world.dungeonmap.model.geometry.GridPoint2x.raw(x2 + 2, y2)));
-                }
-            } else {
-                int x2 = segment.start().x2();
-                for (int y2 = segment.start().y2(); y2 < segment.end().y2(); y2 += 2) {
-                    addBoundarySegment(insertSegment, roomId, levelZ, kind, new GridSegment2x(
-                            features.world.dungeonmap.model.geometry.GridPoint2x.raw(x2, y2),
-                            features.world.dungeonmap.model.geometry.GridPoint2x.raw(x2, y2 + 2)));
-                }
-            }
-            return;
-        }
-        var persistedSegment = segment.toLegacyBoundaryEdge();
-        insertSegment.setLong(1, roomId);
-        insertSegment.setInt(2, levelZ);
-        insertSegment.setString(3, kind);
-        insertSegment.setInt(4, persistedSegment.start().x2());
-        insertSegment.setInt(5, persistedSegment.start().y2());
-        insertSegment.setInt(6, persistedSegment.end().x2());
-        insertSegment.setInt(7, persistedSegment.end().y2());
-        insertSegment.addBatch();
-    }
 }

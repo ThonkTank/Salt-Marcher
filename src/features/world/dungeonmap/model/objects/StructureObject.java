@@ -2,7 +2,6 @@ package features.world.dungeonmap.model.objects;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.LegacyGridPoint2x;
 import features.world.dungeonmap.model.geometry.LegacyGridSegment2x;
@@ -203,7 +202,7 @@ public final class StructureObject {
         if (seeds.isEmpty()) {
             return Set.of();
         }
-        Set<GridSegment2x> blockedSegments = stepBoundaryEdges(level.boundaryEdges());
+        Set<GridSegment2x> blockedSegments = GridSegment2x.boundarySteps(level.boundaryEdges());
         if (blockedSegments.isEmpty()) {
             return Set.copyOf(seeds);
         }
@@ -243,53 +242,8 @@ public final class StructureObject {
         return new CellBounds(minX, minY, maxX, maxY);
     }
 
-    private static Set<GridSegment2x> stepBoundaryEdges(Collection<GridSegment2x> segments) {
-        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
-        if (segments != null) {
-            for (GridSegment2x segment : segments) {
-                if (segment == null) {
-                    continue;
-                }
-                result.addAll(stepBoundaryEdges(segment));
-            }
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
-    private static Set<GridSegment2x> stepBoundaryEdges(GridSegment2x segment) {
-        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
-        if (segment == null) {
-            return Set.of();
-        }
-        if (segment.length2() == 2) {
-            return Set.of(segment);
-        }
-        if (segment.isHorizontal()) {
-            int y2 = segment.start().y2();
-            for (int x2 = segment.start().x2(); x2 < segment.end().x2(); x2 += 2) {
-                result.add(new GridSegment2x(GridPoint2x.raw(x2, y2), GridPoint2x.raw(x2 + 2, y2)));
-            }
-        } else {
-            int x2 = segment.start().x2();
-            for (int y2 = segment.start().y2(); y2 < segment.end().y2(); y2 += 2) {
-                result.add(new GridSegment2x(GridPoint2x.raw(x2, y2), GridPoint2x.raw(x2, y2 + 2)));
-            }
-        }
-        return Set.copyOf(result);
-    }
-
     private static Set<LegacyGridSegment2x> toLegacyBoundaryEdges(Collection<GridSegment2x> segments) {
-        LinkedHashSet<LegacyGridSegment2x> result = new LinkedHashSet<>();
-        if (segments != null) {
-            for (GridSegment2x segment : segments) {
-                if (segment != null) {
-                    for (GridSegment2x stepEdge : stepBoundaryEdges(segment)) {
-                        result.add(stepEdge.toLegacyBoundaryEdge());
-                    }
-                }
-            }
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+        return GridSegment2x.toLegacyBoundaryEdges(segments);
     }
 
     private static List<Set<LegacyGridSegment2x>> connectedComponents(Set<LegacyGridSegment2x> segments) {
