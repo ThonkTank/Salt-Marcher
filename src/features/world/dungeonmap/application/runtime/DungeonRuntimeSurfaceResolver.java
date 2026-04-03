@@ -24,8 +24,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -57,10 +55,10 @@ public final class DungeonRuntimeSurfaceResolver {
             return corridorSurface(layout, corridorStructure.corridor(), heading, activeCell, activeLevelZ);
         }
         if (structure instanceof DungeonLayout.CellStructure.StairStructure stairStructure) {
-            return stairOnlySurface(layout, stairStructure.stair(), activeCell, activeLevelZ);
+            return stairSurface(layout, stairStructure.stair(), activeCell, activeLevelZ);
         }
         if (structure instanceof DungeonLayout.CellStructure.TransitionStructure transitionStructure) {
-            return transitionOnlySurface(transitionStructure.transition());
+            return transitionSurface(transitionStructure.transition());
         }
         return null;
     }
@@ -72,20 +70,22 @@ public final class DungeonRuntimeSurfaceResolver {
             CellCoord activeCell,
             int activeLevelZ
     ) {
-        if (room == null || room.roomId() == null) {
+        if (layout == null || room == null || room.roomId() == null) {
             return null;
         }
-        List<DoorBundle> doors = describeDoors(layout, room, heading);
-        List<DungeonRuntimeAction> actions = new ArrayList<>();
-        actions.addAll(doorActions(doors));
-        actions.addAll(describeStairs(layout, room, activeCell, activeLevelZ));
-        actions.addAll(describeTransitions(layout, room, activeCell, activeLevelZ));
+        ArrayList<DungeonRuntimeSurface.DoorInfo> doors = new ArrayList<>();
+        ArrayList<DungeonRuntimeAction> actions = new ArrayList<>();
+        appendRoomDoors(layout, room, heading, doors, actions);
+        for (int levelZ : room.structure().relevantLevels(activeCell, activeLevelZ)) {
+            appendStructureStairs(layout, room.structure().cellCoordsAtLevel(levelZ), levelZ, activeCell, activeLevelZ, actions);
+            appendStructureTransitions(layout, room.structure().cellCoordsAtLevel(levelZ), levelZ, actions);
+        }
         return new DungeonRuntimeSurface(
                 DungeonRuntimeLabels.roomLabel(room),
                 new DetailsNavigator.EntryKey("dungeon-room", layout.mapId() + ":" + room.roomId()),
                 room.narration().visualDescription(),
-                doorInfos(doors),
-                List.copyOf(actions));
+                doors,
+                actions);
     }
 
     private static DungeonRuntimeSurface corridorSurface(
@@ -98,20 +98,26 @@ public final class DungeonRuntimeSurfaceResolver {
         if (layout == null || corridor == null || corridor.corridorId() == null) {
             return null;
         }
-        List<DoorBundle> doors = describeDoors(layout, corridor, heading);
-        List<DungeonRuntimeAction> actions = new ArrayList<>();
-        actions.addAll(doorActions(doors));
-        actions.addAll(describeStairs(layout, corridor, activeCell, activeLevelZ));
-        actions.addAll(describeTransitions(layout, corridor, activeCell, activeLevelZ));
+        ArrayList<DungeonRuntimeSurface.DoorInfo> doors = new ArrayList<>();
+        ArrayList<DungeonRuntimeAction> actions = new ArrayList<>();
+        appendCorridorDoors(layout, corridor, heading, doors, actions);
+        appendStructureStairs(
+                layout,
+                corridor.structure().cellCoordsAtLevel(corridor.levelZ()),
+                corridor.levelZ(),
+                activeCell,
+                activeLevelZ,
+                actions);
+        appendStructureTransitions(layout, corridor.structure().cellCoordsAtLevel(corridor.levelZ()), corridor.levelZ(), actions);
         return new DungeonRuntimeSurface(
                 DungeonRuntimeLabels.corridorLabel(layout, corridor),
                 new DetailsNavigator.EntryKey("dungeon-corridor", layout.mapId() + ":" + corridor.corridorId()),
                 "",
-                doorInfos(doors),
-                List.copyOf(actions));
+                doors,
+                actions);
     }
 
-    private static DungeonRuntimeSurface stairOnlySurface(
+    private static DungeonRuntimeSurface stairSurface(
             DungeonLayout layout,
             DungeonStair stair,
             CellCoord activeCell,
@@ -121,17 +127,17 @@ public final class DungeonRuntimeSurfaceResolver {
             return null;
         }
         ArrayList<DungeonRuntimeAction> actions = new ArrayList<>();
-        actions.addAll(describeStair(stair, activeCell, activeLevelZ));
-        actions.addAll(describeTransitionsAtCell(layout, activeCell, activeLevelZ));
+        appendStairActions(stair, stairOriginPositions(stair, activeCell, activeLevelZ), activeCell, activeLevelZ, actions);
+        appendTransitionActionsAtCell(layout, activeCell, activeLevelZ, actions);
         return new DungeonRuntimeSurface(
                 stair.label(),
                 new DetailsNavigator.EntryKey("dungeon-stair", layout.mapId() + ":" + stair.stairId()),
                 "Eine Treppe verbindet mehrere erschlossene Höhenstufen.",
                 List.of(),
-                List.copyOf(actions));
+                actions);
     }
 
-    private static DungeonRuntimeSurface transitionOnlySurface(DungeonTransition transition) {
+    private static DungeonRuntimeSurface transitionSurface(DungeonTransition transition) {
         if (transition == null || transition.transitionId() == null) {
             return null;
         }
@@ -140,128 +146,238 @@ public final class DungeonRuntimeSurfaceResolver {
                 new DetailsNavigator.EntryKey("dungeon-transition", transition.mapId() + ":" + transition.transitionId()),
                 transition.description().isBlank() ? transition.label() : transition.description(),
                 List.of(),
-                List.of(toTransitionAction(transition)));
+                List.of(transitionAction(transition)));
     }
 
-    private static List<DungeonRuntimeSurface.DoorInfo> doorInfos(List<DoorBundle> doors) {
-        return doors.stream()
-                .map(DoorBundle::doorInfo)
-                .toList();
-    }
-
-    private static List<DungeonRuntimeAction> doorActions(List<DoorBundle> doors) {
-        return doors.stream()
-                .map(DoorBundle::action)
-                .toList();
-    }
-
-    private static List<DoorBundle> describeDoors(
+    private static void appendRoomDoors(
             DungeonLayout layout,
             Room room,
-            CardinalDirection heading
+            CardinalDirection heading,
+            List<DungeonRuntimeSurface.DoorInfo> doors,
+            List<DungeonRuntimeAction> actions
     ) {
-        return RoomExitCatalog.describe(layout, room).stream()
-                .map(exit -> toDoorBundle(layout, room, exit, heading))
-                .toList();
+        for (RoomExitDescriptor exit : RoomExitCatalog.describe(layout, room)) {
+            String description = doorDescription(
+                    heading,
+                    exit.direction(),
+                    room.narration().exitDescription(exit.levelZ(), exit.roomCell(), exit.direction()));
+            String destinationLabel = doorDestinationLabel(
+                    layout,
+                    layout.connectionAt(exit.levelZ(), exit.anchorSegment2x()),
+                    ConnectionEndpoint.room(room.roomId()));
+            doors.add(new DungeonRuntimeSurface.DoorInfo(
+                    exit.number(),
+                    exit.anchorSegment2x(),
+                    destinationLabel,
+                    description));
+            actions.add(new DungeonRuntimeAction(
+                    doorActionLabel(exit.label(), destinationLabel),
+                    "",
+                    "Verbindung konnte nicht benutzt werden",
+                    new DungeonRuntimeAction.DoorTarget(
+                            exit.levelZ(),
+                            exit.anchorSegment2x(),
+                            exit.outsideCell(),
+                            exit.direction())));
+        }
     }
 
-    private static List<DoorBundle> describeDoors(
+    private static void appendCorridorDoors(
             DungeonLayout layout,
             Corridor corridor,
-            CardinalDirection heading
+            CardinalDirection heading,
+            List<DungeonRuntimeSurface.DoorInfo> doors,
+            List<DungeonRuntimeAction> actions
     ) {
-        return describeDoors(
+        for (RoomExitDescriptor exit : DoorExitCatalog.describe(
                 corridor.structure().cellCoordsAtLevel(corridor.levelZ()),
                 corridor.levelZ(),
-                layout.connectionsForCorridor(corridor.corridorId()),
-                heading,
-                (cell, direction) -> "",
-                exit -> doorContext(
-                        layout,
-                        layout.connectionAt(exit.levelZ(), exit.anchorSegment2x()),
-                        ConnectionEndpoint.corridor(corridor.corridorId())));
+                layout.connectionsForCorridor(corridor.corridorId()))) {
+            String description = doorDescription(heading, exit.direction(), "");
+            String destinationLabel = doorDestinationLabel(
+                    layout,
+                    layout.connectionAt(exit.levelZ(), exit.anchorSegment2x()),
+                    ConnectionEndpoint.corridor(corridor.corridorId()));
+            doors.add(new DungeonRuntimeSurface.DoorInfo(
+                    exit.number(),
+                    exit.anchorSegment2x(),
+                    destinationLabel,
+                    description));
+            actions.add(new DungeonRuntimeAction(
+                    doorActionLabel(exit.label(), destinationLabel),
+                    "",
+                    "Verbindung konnte nicht benutzt werden",
+                    new DungeonRuntimeAction.DoorTarget(
+                            exit.levelZ(),
+                            exit.anchorSegment2x(),
+                            exit.outsideCell(),
+                            exit.direction())));
+        }
     }
 
-    private static List<DoorBundle> describeDoors(
+    private static void appendStructureStairs(
+            DungeonLayout layout,
             Set<CellCoord> cells,
             int levelZ,
-            List<? extends Connection> connections,
-            CardinalDirection heading,
-            BiFunction<CellCoord, CardinalDirection, String> narrationLookup,
-            Function<RoomExitDescriptor, DoorContext> contextLookup
+            CellCoord activeCell,
+            int activeLevelZ,
+            List<DungeonRuntimeAction> actions
     ) {
-        return DoorExitCatalog.describe(cells, levelZ, connections).stream()
-                .map(exit -> {
-                    DoorContext context = contextLookup.apply(exit);
-                    return toDoorBundle(
-                            exit,
-                            heading,
-                            context.destinationLabel(),
-                            narrationLookup.apply(exit.roomCell(), exit.direction()));
-                })
-                .toList();
+        if (layout == null || cells == null || cells.isEmpty()) {
+            return;
+        }
+        Set<CellCoord> surfaceCells = Set.copyOf(cells);
+        layout.stairsAtLevel(levelZ).stream()
+                .filter(stair -> stair != null && stair.stairId() != null)
+                .filter(stair -> stair.exitsAtLevel(levelZ).stream()
+                        .map(DungeonStairExit::position)
+                        .map(CubePoint::projectedCell)
+                        .anyMatch(surfaceCells::contains))
+                .sorted(Comparator.comparing(DungeonStair::label, String.CASE_INSENSITIVE_ORDER)
+                        .thenComparing(DungeonStair::stairId))
+                .forEach(stair -> appendStairActions(
+                        stair,
+                        stairOriginPositions(stair, surfaceCells, levelZ),
+                        activeCell,
+                        activeLevelZ,
+                        actions));
     }
 
-    private static DoorBundle toDoorBundle(
+    private static void appendStairActions(
+            DungeonStair stair,
+            Set<CubePoint> originPositions,
+            CellCoord activeCell,
+            int activeLevelZ,
+            List<DungeonRuntimeAction> actions
+    ) {
+        if (stair == null || originPositions == null || originPositions.isEmpty()) {
+            return;
+        }
+        stair.exits().stream()
+                .filter(exit -> exit != null && exit.position() != null)
+                .filter(exit -> !originPositions.contains(exit.position()))
+                .filter(exit -> activeCell == null
+                        || exit.position().z() != activeLevelZ
+                        || !activeCell.equals(exit.position().projectedCell()))
+                .sorted(Comparator.comparingInt((DungeonStairExit exit) -> exit.position().z())
+                        .thenComparing(exit -> exit.position(), CubePoint.POINT_ORDER))
+                .forEach(exit -> actions.add(new DungeonRuntimeAction(
+                        stairActionLabel(stair, exit),
+                        stairDescription(stair, exit),
+                        "Treppe konnte nicht benutzt werden",
+                        new DungeonRuntimeAction.CellTarget(
+                                exit.position().projectedCell(),
+                                exit.position().z(),
+                                null))));
+    }
+
+    private static Set<CubePoint> stairOriginPositions(
+            DungeonStair stair,
+            CellCoord activeCell,
+            int activeLevelZ
+    ) {
+        if (stair == null) {
+            return Set.of();
+        }
+        Set<CubePoint> activeOrigins = stair.exits().stream()
+                .map(DungeonStairExit::position)
+                .filter(Objects::nonNull)
+                .filter(position -> position.z() == activeLevelZ)
+                .filter(position -> activeCell == null || activeCell.equals(position.projectedCell()))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        if (!activeOrigins.isEmpty()) {
+            return activeOrigins;
+        }
+        Set<CubePoint> sameLevelOrigins = stair.exits().stream()
+                .map(DungeonStairExit::position)
+                .filter(Objects::nonNull)
+                .filter(position -> position.z() == activeLevelZ)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        if (!sameLevelOrigins.isEmpty()) {
+            return sameLevelOrigins;
+        }
+        return stair.exits().stream()
+                .map(DungeonStairExit::position)
+                .filter(Objects::nonNull)
+                .limit(1)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private static Set<CubePoint> stairOriginPositions(
+            DungeonStair stair,
+            Set<CellCoord> surfaceCells,
+            int levelZ
+    ) {
+        if (stair == null || surfaceCells == null || surfaceCells.isEmpty()) {
+            return Set.of();
+        }
+        return stair.exitsAtLevel(levelZ).stream()
+                .map(DungeonStairExit::position)
+                .filter(position -> position != null && surfaceCells.contains(position.projectedCell()))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private static void appendStructureTransitions(
             DungeonLayout layout,
-            Room room,
-            RoomExitDescriptor exit,
-            CardinalDirection heading
+            Set<CellCoord> cells,
+            int levelZ,
+            List<DungeonRuntimeAction> actions
     ) {
-        String narration = room.narration().exitDescription(exit.levelZ(), exit.roomCell(), exit.direction());
-        DoorContext context = doorContext(
-                layout,
-                layout.connectionAt(exit.levelZ(), exit.anchorSegment2x()),
-                ConnectionEndpoint.room(room.roomId()));
-        return toDoorBundle(exit, heading, context.destinationLabel(), narration);
+        if (layout == null || cells == null || cells.isEmpty()) {
+            return;
+        }
+        layout.transitionsAtLevel(levelZ).stream()
+                .filter(transition -> transition.anchor() != null && cells.contains(transition.anchor().projectedCell()))
+                .sorted(Comparator.comparing(DungeonTransition::transitionId))
+                .map(DungeonRuntimeSurfaceResolver::transitionAction)
+                .forEach(actions::add);
     }
 
-    private static DoorBundle toDoorBundle(
-            RoomExitDescriptor exit,
+    private static void appendTransitionActionsAtCell(
+            DungeonLayout layout,
+            CellCoord cell,
+            int levelZ,
+            List<DungeonRuntimeAction> actions
+    ) {
+        if (layout == null || cell == null) {
+            return;
+        }
+        layout.transitionsAtCell(cell, levelZ).stream()
+                .filter(transition -> transition != null && transition.transitionId() != null)
+                .sorted(Comparator.comparing(DungeonTransition::transitionId))
+                .map(DungeonRuntimeSurfaceResolver::transitionAction)
+                .forEach(actions::add);
+    }
+
+    private static DungeonRuntimeAction transitionAction(DungeonTransition transition) {
+        return new DungeonRuntimeAction(
+                transitionActionLabel(transition),
+                transitionDescription(transition),
+                "Übergang konnte nicht benutzt werden",
+                new DungeonRuntimeAction.TransitionTarget(transition.transitionId()));
+    }
+
+    private static String doorDescription(
             CardinalDirection heading,
-            String destinationLabel,
+            CardinalDirection doorDirection,
             String narration
     ) {
         CardinalDirection resolvedHeading = heading == null ? CardinalDirection.defaultDirection() : heading;
-        String relativeLabel = resolvedHeading.relativeLabel(exit.direction().delta());
-        String resolvedNarration = narration == null ? "" : narration.trim();
-        String description = relativeDescription(relativeLabel, resolvedNarration.isBlank() ? "eine Tür" : resolvedNarration);
-        String resolvedDestination = destinationLabel == null ? "" : destinationLabel.trim();
-        return new DoorBundle(
-                new DungeonRuntimeSurface.DoorInfo(
-                        exit.number(),
-                        exit.anchorSegment2x(),
-                        resolvedDestination,
-                        description),
-                new DungeonRuntimeAction(
-                        doorActionLabel(exit.label(), resolvedDestination),
-                        description,
-                        "Verbindung konnte nicht benutzt werden",
-                        new DungeonRuntimeAction.DoorTarget(
-                                exit.levelZ(),
-                                exit.anchorSegment2x(),
-                                exit.outsideCell(),
-                                exit.direction())));
+        String relativeLabel = resolvedHeading.relativeLabel(doorDirection.delta());
+        String resolvedNarration = narration == null || narration.isBlank() ? "eine Tür" : narration.trim();
+        return relativeLabel + " ist " + resolvedNarration;
     }
 
-    private static DoorContext doorContext(
+    private static String doorDestinationLabel(
             DungeonLayout layout,
             Connection connection,
             ConnectionEndpoint activeEndpoint
     ) {
         if (layout == null || connection == null) {
-            return new DoorContext("");
+            return "";
         }
-        ConnectionEndpoint destination = activeEndpoint == null ? null : connection.oppositeOf(activeEndpoint);
-        return new DoorContext(endpointLabel(layout, destination, activeEndpoint));
-    }
-
-    private static String endpointLabel(
-            DungeonLayout layout,
-            ConnectionEndpoint destination,
-            ConnectionEndpoint activeEndpoint
-    ) {
-        if (layout == null || destination == null) {
+        ConnectionEndpoint destination = connection.oppositeOf(activeEndpoint);
+        if (destination == null) {
             return "";
         }
         if (destination.type() == ConnectionEndpointType.ROOM && destination.id() != null) {
@@ -294,137 +410,11 @@ public final class DungeonRuntimeSurfaceResolver {
         return "";
     }
 
-    private static List<DungeonRuntimeAction> describeStairs(
-            DungeonLayout layout,
-            Room room,
-            CellCoord activeCell,
-            int activeLevelZ
-    ) {
-        return room.structure().relevantLevels(activeCell, activeLevelZ).stream()
-                .flatMap(levelZ -> describeStairs(
-                        layout,
-                        room.structure().cellCoordsAtLevel(levelZ),
-                        levelZ,
-                        activeCell,
-                        activeLevelZ).stream())
-                .toList();
-    }
-
-    private static List<DungeonRuntimeAction> describeStairs(
-            DungeonLayout layout,
-            Corridor corridor,
-            CellCoord activeCell,
-            int activeLevelZ
-    ) {
-        return describeStairs(
-                layout,
-                corridor.structure().cellCoordsAtLevel(corridor.levelZ()),
-                corridor.levelZ(),
-                activeCell,
-                activeLevelZ);
-    }
-
-    private static List<DungeonRuntimeAction> describeStair(
-            DungeonStair stair,
-            CellCoord activeCell,
-            int activeLevelZ
-    ) {
-        if (stair == null) {
-            return List.of();
-        }
-        Set<CubePoint> originPositions = stair.exits().stream()
-                .map(DungeonStairExit::position)
-                .filter(Objects::nonNull)
-                .filter(position -> position.z() == activeLevelZ)
-                .filter(position -> activeCell == null || activeCell.equals(position.projectedCell()))
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-        if (originPositions.isEmpty()) {
-            originPositions = stair.exits().stream()
-                    .map(DungeonStairExit::position)
-                    .filter(Objects::nonNull)
-                    .filter(position -> position.z() == activeLevelZ)
-                    .collect(Collectors.toCollection(LinkedHashSet::new));
-        }
-        if (originPositions.isEmpty()) {
-            originPositions = stair.exits().stream()
-                    .map(DungeonStairExit::position)
-                    .filter(Objects::nonNull)
-                    .limit(1)
-                    .collect(Collectors.toCollection(LinkedHashSet::new));
-        }
-        return toStairActions(stair, originPositions, activeCell, activeLevelZ);
-    }
-
-    private static List<DungeonRuntimeAction> describeStairs(
-            DungeonLayout layout,
-            Set<CellCoord> surfaceCells,
-            int levelZ,
-            CellCoord activeCell,
-            int activeLevelZ
-    ) {
-        if (layout == null || surfaceCells == null || surfaceCells.isEmpty()) {
-            return List.of();
-        }
-        Set<CellCoord> resolvedCells = Set.copyOf(surfaceCells);
-        return layout.stairsAtLevel(levelZ).stream()
-                .filter(stair -> stair != null && stair.stairId() != null)
-                .filter(stair -> stair.exitsAtLevel(levelZ).stream()
-                        .map(DungeonStairExit::position)
-                        .map(CubePoint::projectedCell)
-                        .anyMatch(resolvedCells::contains))
-                .sorted(Comparator.comparing(DungeonStair::label, String.CASE_INSENSITIVE_ORDER)
-                        .thenComparing(DungeonStair::stairId))
-                .map(stair -> toStairActions(stair, levelZ, resolvedCells, activeCell, activeLevelZ))
-                .flatMap(List::stream)
-                .toList();
-    }
-
-    private static List<DungeonRuntimeAction> toStairActions(
-            DungeonStair stair,
-            int levelZ,
-            Set<CellCoord> surfaceCells,
-            CellCoord activeCell,
-            int activeLevelZ
-    ) {
-        if (stair == null) {
-            return List.of();
-        }
-        Set<CubePoint> originPositions = stair.exitsAtLevel(levelZ).stream()
-                .map(DungeonStairExit::position)
-                .filter(position -> position != null && surfaceCells.contains(position.projectedCell()))
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-        if (originPositions.isEmpty()) {
-            return List.of();
-        }
-        return toStairActions(stair, originPositions, activeCell, activeLevelZ);
-    }
-
-    private static List<DungeonRuntimeAction> toStairActions(
-            DungeonStair stair,
-            Set<CubePoint> originPositions,
-            CellCoord activeCell,
-            int activeLevelZ
-    ) {
-        if (stair == null || originPositions == null || originPositions.isEmpty()) {
-            return List.of();
-        }
-        return stair.exits().stream()
-                .filter(exit -> exit != null && exit.position() != null)
-                .filter(exit -> !originPositions.contains(exit.position()))
-                .filter(exit -> activeCell == null
-                        || exit.position().z() != activeLevelZ
-                        || !activeCell.equals(exit.position().projectedCell()))
-                .sorted(Comparator.comparingInt((DungeonStairExit exit) -> exit.position().z())
-                        .thenComparing(exit -> exit.position(), CubePoint.POINT_ORDER))
-                .map(exit -> new DungeonRuntimeAction(
-                        stairActionLabel(stair, exit),
-                        stairDescription(stair, exit),
-                        "Treppe konnte nicht benutzt werden",
-                        new DungeonRuntimeAction.CellTarget(
-                                exit.position().projectedCell(),
-                                exit.position().z(),
-                                null)))
-                .toList();
+    private static String doorActionLabel(String label, String destinationLabel) {
+        String resolvedLabel = label == null || label.isBlank() ? "Tür" : label.trim();
+        return destinationLabel == null || destinationLabel.isBlank()
+                ? resolvedLabel
+                : resolvedLabel + ": " + destinationLabel;
     }
 
     private static String stairActionLabel(DungeonStair stair, DungeonStairExit exit) {
@@ -445,64 +435,6 @@ public final class DungeonRuntimeSurfaceResolver {
         String stairName = stair == null ? "die Treppe" : stair.label();
         String target = stairDestinationLabel(exit);
         return "Über " + stairName + " gelangt ihr zu " + target + ".";
-    }
-
-    private static List<DungeonRuntimeAction> describeTransitions(
-            DungeonLayout layout,
-            Room room,
-            CellCoord activeCell,
-            int activeLevelZ
-    ) {
-        return room.structure().relevantLevels(activeCell, activeLevelZ).stream()
-                .flatMap(levelZ -> describeTransitions(layout, room.structure().cellCoordsAtLevel(levelZ), levelZ).stream())
-                .toList();
-    }
-
-    private static List<DungeonRuntimeAction> describeTransitions(
-            DungeonLayout layout,
-            Corridor corridor,
-            CellCoord activeCell,
-            int activeLevelZ
-    ) {
-        return describeTransitions(layout, corridor.structure().cellCoordsAtLevel(corridor.levelZ()), corridor.levelZ());
-    }
-
-    private static List<DungeonRuntimeAction> describeTransitionsAtCell(
-            DungeonLayout layout,
-            CellCoord cell,
-            int levelZ
-    ) {
-        if (layout == null || cell == null) {
-            return List.of();
-        }
-        return layout.transitionsAtCell(cell, levelZ).stream()
-                .filter(transition -> transition != null && transition.transitionId() != null)
-                .sorted(Comparator.comparing(DungeonTransition::transitionId))
-                .map(DungeonRuntimeSurfaceResolver::toTransitionAction)
-                .toList();
-    }
-
-    private static List<DungeonRuntimeAction> describeTransitions(
-            DungeonLayout layout,
-            Set<CellCoord> cells,
-            int levelZ
-    ) {
-        if (layout == null || cells == null || cells.isEmpty()) {
-            return List.of();
-        }
-        return layout.transitionsAtLevel(levelZ).stream()
-                .filter(transition -> transition.anchor() != null && cells.contains(transition.anchor().projectedCell()))
-                .sorted(Comparator.comparing(DungeonTransition::transitionId))
-                .map(DungeonRuntimeSurfaceResolver::toTransitionAction)
-                .toList();
-    }
-
-    private static DungeonRuntimeAction toTransitionAction(DungeonTransition transition) {
-        return new DungeonRuntimeAction(
-                transitionActionLabel(transition),
-                transitionDescription(transition),
-                "Übergang konnte nicht benutzt werden",
-                new DungeonRuntimeAction.TransitionTarget(transition.transitionId()));
     }
 
     private static String transitionActionLabel(DungeonTransition transition) {
@@ -543,25 +475,5 @@ public final class DungeonRuntimeSurfaceResolver {
             return transition.label() + " führt zu Übergang " + dungeon.transitionId() + " auf Dungeon " + dungeon.mapId() + ".";
         }
         return transition.label();
-    }
-
-    private static String relativeDescription(String relativeLabel, String subject) {
-        return relativeLabel + " ist " + subject;
-    }
-
-    private static String doorActionLabel(String label, String destinationLabel) {
-        String resolvedLabel = label == null || label.isBlank() ? "Tür" : label.trim();
-        return destinationLabel == null || destinationLabel.isBlank()
-                ? resolvedLabel
-                : resolvedLabel + ": " + destinationLabel;
-    }
-
-    private record DoorContext(String destinationLabel) {
-    }
-
-    private record DoorBundle(
-            DungeonRuntimeSurface.DoorInfo doorInfo,
-            DungeonRuntimeAction action
-    ) {
     }
 }

@@ -46,7 +46,6 @@ public record DungeonRuntimeAction(
     ) implements Target {
         public DoorTarget {
             anchorSegment2x = Objects.requireNonNull(anchorSegment2x, "anchorSegment2x");
-            headingOverride = headingOverride == null ? CardinalDirection.defaultDirection() : headingOverride;
         }
     }
 

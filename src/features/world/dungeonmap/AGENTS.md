@@ -147,6 +147,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 
 - `Room` owns room-local truth and narration.
 - `RoomCluster` owns multi-room rewrite logic, grouping, adjacency, and cluster moves. Its aggregate cells stay on `CellCoord`, and its internal boundary edits/metadata use final `GridSegment2x`, both derived from room-owned `StructureObject`s.
+- `RoomCluster` owns its rewrite and boundary-path semantics directly. Do not reintroduce a second public planner/helper type that mirrors cluster topology decisions from the outside.
 - `RoomCluster` derives `LocalConnection`s from its rooms; rewrite payloads must not carry a second local-connection truth in parallel.
 - `Connection` owns connectivity; `Door` is the boundary object exposed through that connection.
 - `Corridor` is a first-class structure with stable identity, nodes, segments, room bindings, and derived geometry. In memory and at persistence seams it owns canonical `GridPoint2x`/`GridSegment2x` path truth plus `CellCoord` room bindings; compatibility with the removed shifted storage format lives only in the one-time schema migration.

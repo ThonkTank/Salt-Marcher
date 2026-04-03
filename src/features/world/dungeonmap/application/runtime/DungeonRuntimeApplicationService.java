@@ -20,11 +20,9 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Owns runtime navigation, campaign-position serialization, and repair of persisted dungeon state.
+ * Owns runtime navigation, tile-only campaign-position persistence, and repair of persisted dungeon state.
  */
 public final class DungeonRuntimeApplicationService {
-
-    private static final String TILE_PREFIX = "tile:";
 
     private final DungeonLayoutRepository layoutRepository;
 
@@ -38,13 +36,9 @@ public final class DungeonRuntimeApplicationService {
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonPositionSummary storedPosition = CampaignStateReadApi.getDungeonPosition(conn)
-                    .filter(position -> position.mapId() != null && position.mapId() == layout.mapId())
+                    .filter(position -> Objects.equals(position.mapId(), layout.mapId()))
                     .orElse(null);
-            CardinalDirection storedHeading = CardinalDirection.parse(storedPosition == null ? null : storedPosition.heading());
-            StoredTile storedTile = parseStoredTile(storedPosition);
-            return storedTile == null
-                    ? defaultNavigation(layout, storedHeading)
-                    : resolveNavigation(layout, storedTile.cell(), storedTile.levelZ(), storedHeading);
+            return resolveNavigation(layout, storedPosition);
         }
     }
 
@@ -69,10 +63,9 @@ public final class DungeonRuntimeApplicationService {
         }
         CardinalDirection resolvedHeading = normalizeHeading(preferredHeading);
         CellCoord resolvedCell = nearestTraversableCell(layout, preferredCell, preferredLevelZ);
-        if (resolvedCell != null) {
-            return new DungeonRuntimeNavigationSnapshot(layout.mapId(), resolvedCell, preferredLevelZ, resolvedHeading);
-        }
-        return defaultNavigation(layout, resolvedHeading);
+        return resolvedCell == null
+                ? defaultNavigation(layout, resolvedHeading)
+                : navigationSnapshot(layout.mapId(), resolvedCell, preferredLevelZ, resolvedHeading);
     }
 
     public DungeonRuntimeNavigationSnapshot navigateToCell(
@@ -90,8 +83,7 @@ public final class DungeonRuntimeApplicationService {
             throw new SQLException("Kein begehbares Dungeon-Feld gefunden");
         }
         CardinalDirection nextHeading = CardinalDirection.fromTravel(fromCell, resolvedCell, currentHeading);
-        persistDungeonPosition(layout.mapId(), resolvedCell, levelZ, nextHeading);
-        return resolveNavigation(layout, resolvedCell, levelZ, nextHeading);
+        return persistNavigation(layout.mapId(), resolvedCell, levelZ, nextHeading);
     }
 
     public DungeonRuntimeNavigationSnapshot navigate(
@@ -124,23 +116,15 @@ public final class DungeonRuntimeApplicationService {
             CampaignStateApi.clearDungeonPosition(conn);
             return;
         }
-        CardinalDirection heading = CardinalDirection.parse(storedPosition.map(DungeonPositionSummary::heading).orElse(null));
-        StoredTile storedTile = parseStoredTile(storedPosition.orElse(null));
-        DungeonRuntimeNavigationSnapshot resolved = storedTile == null
-                ? defaultNavigation(layout, heading)
-                : resolveNavigation(layout, storedTile.cell(), storedTile.levelZ(), heading);
+        DungeonPositionSummary preferredPosition = storedPosition
+                .filter(position -> Objects.equals(position.mapId(), layout.mapId()))
+                .orElse(null);
+        DungeonRuntimeNavigationSnapshot resolved = resolveNavigation(layout, preferredPosition);
         if (resolved.mapId() == null || resolved.cell() == null) {
             CampaignStateApi.clearDungeonPosition(conn);
             return;
         }
-        DungeonPositionRef repairedPosition = toDungeonPositionRef(
-                resolved.mapId(),
-                resolved.cell(),
-                resolved.levelZ(),
-                resolved.heading());
-        if (!matchesStoredPosition(storedPosition.orElse(null), repairedPosition)) {
-            CampaignStateApi.setDungeonPosition(conn, repairedPosition);
-        }
+        CampaignStateApi.setDungeonPosition(conn, toStoredPosition(resolved));
     }
 
     private DungeonRuntimeNavigationSnapshot moveToCellTarget(
@@ -153,8 +137,7 @@ public final class DungeonRuntimeApplicationService {
             throw new SQLException("Ziel ist nicht begehbar");
         }
         CardinalDirection nextHeading = target.headingOverride() == null ? currentHeading : target.headingOverride();
-        persistDungeonPosition(layout.mapId(), resolvedCell, target.levelZ(), nextHeading);
-        return resolveNavigation(layout, resolvedCell, target.levelZ(), nextHeading);
+        return persistNavigation(layout.mapId(), resolvedCell, target.levelZ(), nextHeading);
     }
 
     private DungeonRuntimeNavigationSnapshot moveThroughDoor(
@@ -162,9 +145,6 @@ public final class DungeonRuntimeApplicationService {
             DungeonRuntimeAction.DoorTarget target,
             CardinalDirection currentHeading
     ) throws SQLException {
-        if (target.anchorSegment2x() == null) {
-            throw new SQLException("Keine Verbindung verfügbar");
-        }
         var connection = layout.connectionAt(target.levelZ(), target.anchorSegment2x());
         if (connection == null) {
             throw new SQLException("Verbindung konnte nicht aufgelöst werden");
@@ -177,8 +157,7 @@ public final class DungeonRuntimeApplicationService {
             throw new SQLException("Ziel hinter der Verbindung ist nicht begehbar");
         }
         CardinalDirection nextHeading = target.headingOverride() == null ? currentHeading : target.headingOverride();
-        persistDungeonPosition(layout.mapId(), resolvedCell, target.levelZ(), nextHeading);
-        return resolveNavigation(layout, resolvedCell, target.levelZ(), nextHeading);
+        return persistNavigation(layout.mapId(), resolvedCell, target.levelZ(), nextHeading);
     }
 
     private DungeonRuntimeNavigationSnapshot moveThroughTransition(
@@ -214,12 +193,7 @@ public final class DungeonRuntimeApplicationService {
                     targetLayout,
                     dungeon.transitionId(),
                     currentHeading);
-            persistDungeonPosition(
-                    conn,
-                    targetSnapshot.mapId(),
-                    targetSnapshot.cell(),
-                    targetSnapshot.levelZ(),
-                    targetSnapshot.heading());
+            CampaignStateApi.setDungeonPosition(conn, toStoredPosition(targetSnapshot));
             return targetSnapshot;
         }
     }
@@ -243,11 +217,18 @@ public final class DungeonRuntimeApplicationService {
         if (resolvedCell == null) {
             throw new SQLException("Ziel-Übergang ist nicht begehbar");
         }
-        return new DungeonRuntimeNavigationSnapshot(
-                layout.mapId(),
-                resolvedCell,
-                targetTransition.anchor().z(),
-                normalizeHeading(heading));
+        return navigationSnapshot(layout.mapId(), resolvedCell, targetTransition.anchor().z(), heading);
+    }
+
+    private DungeonRuntimeNavigationSnapshot resolveNavigation(
+            DungeonLayout layout,
+            DungeonPositionSummary storedPosition
+    ) {
+        return resolveNavigation(
+                layout,
+                storedCell(storedPosition),
+                storedLevel(storedPosition),
+                storedHeading(storedPosition));
     }
 
     private DungeonRuntimeNavigationSnapshot defaultNavigation(DungeonLayout layout, CardinalDirection heading) {
@@ -255,21 +236,13 @@ public final class DungeonRuntimeApplicationService {
             return DungeonRuntimeNavigationSnapshot.empty();
         }
         CubePoint fallback = layout.defaultRuntimePosition();
-        if (fallback == null) {
-            return DungeonRuntimeNavigationSnapshot.empty();
-        }
-        return new DungeonRuntimeNavigationSnapshot(
-                layout.mapId(),
-                fallback.projectedCell(),
-                fallback.z(),
-                normalizeHeading(heading));
+        return fallback == null
+                ? DungeonRuntimeNavigationSnapshot.empty()
+                : navigationSnapshot(layout.mapId(), fallback.projectedCell(), fallback.z(), heading);
     }
 
     private DungeonLayout preferredRepairLayout(Connection conn, DungeonPositionSummary storedPosition) throws SQLException {
         Long preferredMapId = storedPosition == null ? null : storedPosition.mapId();
-        if (preferredMapId == null) {
-            preferredMapId = CampaignStateReadApi.getDungeonMapId(conn).orElse(null);
-        }
         DungeonLayout layout = preferredMapId == null ? null : layoutRepository.loadLayout(conn, preferredMapId);
         return layout != null ? layout : layoutRepository.loadFirstUsableLayout(conn);
     }
@@ -281,92 +254,85 @@ public final class DungeonRuntimeApplicationService {
         return layout.nearestTraversableCell(preferredCell, preferredLevelZ);
     }
 
-    private void persistDungeonPosition(
+    private DungeonRuntimeNavigationSnapshot persistNavigation(
             long mapId,
             CellCoord cell,
             int levelZ,
             CardinalDirection heading
     ) throws SQLException {
         try (Connection conn = DatabaseManager.getConnection()) {
-            persistDungeonPosition(conn, mapId, cell, levelZ, heading);
+            CampaignStateApi.setDungeonPosition(conn, new DungeonPositionRef(
+                    mapId,
+                    levelZ,
+                    CampaignDungeonLocationType.TILE,
+                    null,
+                    null,
+                    tileLocationKey(cell),
+                    normalizeHeading(heading).name()));
         }
+        return navigationSnapshot(mapId, cell, levelZ, heading);
     }
 
-    private void persistDungeonPosition(
-            Connection conn,
-            long mapId,
-            CellCoord cell,
-            int levelZ,
-            CardinalDirection heading
-    ) throws SQLException {
-        CampaignStateApi.setDungeonPosition(conn, toDungeonPositionRef(mapId, cell, levelZ, heading));
-    }
-
-    private static DungeonPositionRef toDungeonPositionRef(
-            long mapId,
-            CellCoord cell,
-            int levelZ,
-            CardinalDirection heading
-    ) {
-        if (cell == null) {
+    private static DungeonPositionRef toStoredPosition(DungeonRuntimeNavigationSnapshot snapshot) {
+        if (snapshot == null || snapshot.mapId() == null || snapshot.cell() == null) {
             return null;
         }
         return new DungeonPositionRef(
-                mapId,
-                levelZ,
+                snapshot.mapId(),
+                snapshot.levelZ(),
                 CampaignDungeonLocationType.TILE,
                 null,
                 null,
-                formatTileLocation(cell, levelZ),
-                normalizeHeading(heading).name());
+                tileLocationKey(snapshot.cell()),
+                normalizeHeading(snapshot.heading()).name());
     }
 
-    private static StoredTile parseStoredTile(DungeonPositionSummary position) {
-        if (position == null
-                || position.locationType() != CampaignDungeonLocationType.TILE
-                || position.locationKey() == null
-                || !position.locationKey().startsWith(TILE_PREFIX)) {
+    private static CellCoord storedCell(DungeonPositionSummary storedPosition) {
+        if (storedPosition == null
+                || storedPosition.locationType() != CampaignDungeonLocationType.TILE
+                || storedPosition.locationKey() == null
+                || !storedPosition.locationKey().startsWith("tile:")) {
             return null;
         }
-        String[] parts = position.locationKey().substring(TILE_PREFIX.length()).split(",");
-        try {
-            if (parts.length == 3) {
-                return new StoredTile(
-                        new CellCoord(Integer.parseInt(parts[0]), Integer.parseInt(parts[1])),
-                        Integer.parseInt(parts[2]));
-            }
-            if (parts.length == 2 && position.levelZ() != null) {
-                return new StoredTile(
-                        new CellCoord(Integer.parseInt(parts[0]), Integer.parseInt(parts[1])),
-                        position.levelZ());
-            }
+        String coordinates = storedPosition.locationKey().substring("tile:".length());
+        int separator = coordinates.indexOf(',');
+        if (separator <= 0 || separator >= coordinates.length() - 1) {
             return null;
+        }
+        try {
+            int x = Integer.parseInt(coordinates.substring(0, separator));
+            int y = Integer.parseInt(coordinates.substring(separator + 1));
+            return new CellCoord(x, y);
         } catch (NumberFormatException ignored) {
             return null;
         }
     }
 
-    private static String formatTileLocation(CellCoord cell, int levelZ) {
-        return TILE_PREFIX + cell.x() + "," + cell.y() + "," + levelZ;
+    private static int storedLevel(DungeonPositionSummary storedPosition) {
+        return storedPosition == null || storedPosition.levelZ() == null ? 0 : storedPosition.levelZ();
     }
 
-    private static boolean matchesStoredPosition(DungeonPositionSummary stored, DungeonPositionRef repaired) {
-        if (stored == null || repaired == null) {
-            return false;
+    private static CardinalDirection storedHeading(DungeonPositionSummary storedPosition) {
+        return CardinalDirection.parse(storedPosition == null ? null : storedPosition.heading());
+    }
+
+    private static String tileLocationKey(CellCoord cell) {
+        if (cell == null) {
+            return null;
         }
-        return Objects.equals(stored.mapId(), repaired.mapId())
-                && Objects.equals(stored.levelZ(), repaired.levelZ())
-                && stored.locationType() == repaired.locationType()
-                && Objects.equals(stored.roomId(), repaired.roomId())
-                && Objects.equals(stored.corridorId(), repaired.corridorId())
-                && Objects.equals(stored.locationKey(), repaired.locationKey())
-                && Objects.equals(CardinalDirection.parse(stored.heading()).name(), repaired.heading());
+        return "tile:" + cell.x() + "," + cell.y();
+    }
+
+    private static DungeonRuntimeNavigationSnapshot navigationSnapshot(
+            long mapId,
+            CellCoord cell,
+            int levelZ,
+            CardinalDirection heading
+    ) {
+        return new DungeonRuntimeNavigationSnapshot(mapId, cell, levelZ, normalizeHeading(heading));
     }
 
     private static CardinalDirection normalizeHeading(CardinalDirection heading) {
         return heading == null ? CardinalDirection.defaultDirection() : heading;
-    }
-
-    private record StoredTile(CellCoord cell, int levelZ) {
     }
 }

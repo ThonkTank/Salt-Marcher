@@ -64,13 +64,6 @@ public final class DungeonRuntimeLabels {
         return room.name() == null || room.name().isBlank() ? "Raum " + room.roomId() : room.name();
     }
 
-    public static Room roomAtCell(DungeonLayout layout, CellCoord cell, int levelZ) {
-        if (layout == null || cell == null) {
-            return null;
-        }
-        return layout.roomAtCell(cell, levelZ);
-    }
-
     public static String corridorLabel(DungeonLayout layout, Corridor corridor) {
         if (corridor == null) {
             return "Korridor";

@@ -6,6 +6,7 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.structures.cluster.ClusterRewrite;
+import features.world.dungeonmap.model.structures.cluster.ClusterRewriteSplit;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.room.Room;
@@ -20,6 +21,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Supplier;
 
 public final class DungeonRoomTopologyService {
 
@@ -115,7 +117,9 @@ public final class DungeonRoomTopologyService {
                 continue;
             }
             DungeonLayout layoutSnapshot = workingLayout;
-            ClusterRewrite rewrite = cluster.applyDelete(cells, () -> nextRoomName(layoutSnapshot, reservedNames), levelZ);
+            ClusterRewrite rewrite = assignGeneratedRoomNames(
+                    cluster.applyDelete(cells, levelZ),
+                    () -> nextRoomName(layoutSnapshot, reservedNames));
             if (rewrite.isNoOp()) {
                 continue;
             }
@@ -129,7 +133,13 @@ public final class DungeonRoomTopologyService {
     }
 
     public void createDefaultRoom(Connection conn, long mapId) throws SQLException {
-        roomRepository.createClusterWithRoom(conn, mapId, 0, Set.of(new CellCoord(0, 0)), "Eingang");
+        DungeonLayout layout = requireLayout(conn, mapId);
+        roomRepository.createClusterWithRoom(
+                conn,
+                mapId,
+                0,
+                Set.of(new CellCoord(0, 0)),
+                nextRoomName(layout, new LinkedHashSet<>()));
     }
 
     public void ensureTraversableCell(Connection conn, long mapId, CellCoord cell, int levelZ) throws SQLException {
@@ -199,5 +209,52 @@ public final class DungeonRoomTopologyService {
             throw new SQLException("Dungeon " + mapId + " konnte nicht geladen werden");
         }
         return layout;
+    }
+
+    private static ClusterRewrite assignGeneratedRoomNames(ClusterRewrite rewrite, Supplier<String> roomNameSupplier) {
+        if (rewrite == null || roomNameSupplier == null) {
+            return rewrite;
+        }
+        List<Room> renamedRooms = assignGeneratedRoomNames(rewrite.rooms(), roomNameSupplier);
+        List<ClusterRewriteSplit> renamedSplits = rewrite.splitClusters().stream()
+                .map(split -> new ClusterRewriteSplit(
+                        split.clusterId(),
+                        split.clusterCenter(),
+                        assignGeneratedRoomNames(split.rooms(), roomNameSupplier)))
+                .toList();
+        if (renamedRooms.equals(rewrite.rooms()) && renamedSplits.equals(rewrite.splitClusters())) {
+            return rewrite;
+        }
+        return ClusterRewrite.builder(rewrite.targetClusterId(), rewrite.clusterCenter(), renamedRooms)
+                .deletedRoomIds(rewrite.deletedRoomIds())
+                .deletedClusterIds(rewrite.deletedClusterIds())
+                .splitClusters(renamedSplits)
+                .topologyChanged(rewrite.topologyChanged())
+                .build();
+    }
+
+    private static List<Room> assignGeneratedRoomNames(List<Room> rooms, Supplier<String> roomNameSupplier) {
+        if (rooms == null || rooms.isEmpty()) {
+            return List.of();
+        }
+        boolean changed = false;
+        List<Room> renamedRooms = new java.util.ArrayList<>(rooms.size());
+        for (Room room : rooms) {
+            if (room == null || room.roomId() != null || room.name() != null && !room.name().isBlank()) {
+                renamedRooms.add(room);
+                continue;
+            }
+            String generatedName = roomNameSupplier.get();
+            Room renamedRoom = Room.resolved(
+                    null,
+                    room.mapId(),
+                    room.clusterId(),
+                    generatedName == null || generatedName.isBlank() ? "Raum neu" : generatedName.trim(),
+                    room.structure(),
+                    room.narration());
+            renamedRooms.add(renamedRoom);
+            changed = true;
+        }
+        return changed ? List.copyOf(renamedRooms) : rooms;
     }
 }
