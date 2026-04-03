@@ -398,54 +398,41 @@ public final class DungeonLayout {
         return room == null ? null : findCluster(room.clusterId());
     }
 
-    public Long clusterId(DungeonSelectionRef ref) {
-        if (ref == null) {
-            return null;
-        }
-        Long directClusterId = ref.clusterOwnerId();
-        if (directClusterId != null) {
-            return directClusterId;
-        }
-        Long roomOwnerId = ref.roomOwnerId();
-        if (roomOwnerId == null) {
-            return null;
-        }
-        Room room = findRoom(roomOwnerId);
-        return room == null ? null : room.clusterId();
-    }
-
     public RoomCluster clusterOnLevel(DungeonSelectionRef ref, int levelZ) {
-        Long clusterId = clusterId(ref);
-        RoomCluster cluster = findCluster(clusterId);
+        RoomCluster cluster = switch (ref == null ? null : ref.ownerRef()) {
+            case DungeonSelectionRef.ClusterRef clusterRef -> findCluster(clusterRef.clusterId());
+            case DungeonSelectionRef.RoomRef roomRef -> clusterForRoom(roomRef.roomId());
+            case null, default -> null;
+        };
         return cluster == null ? null : cluster.projectedToLevel(levelZ);
     }
 
     public Room room(DungeonSelectionRef ref) {
-        if (ref == null || ref.roomOwnerId() == null) {
-            return null;
-        }
-        return findRoom(ref.roomOwnerId());
+        return switch (ref == null ? null : ref.ownerRef()) {
+            case DungeonSelectionRef.RoomRef roomRef -> findRoom(roomRef.roomId());
+            case null, default -> null;
+        };
     }
 
     public Corridor corridor(DungeonSelectionRef ref) {
-        if (ref == null || ref.corridorOwnerId() == null) {
-            return null;
-        }
-        return findCorridor(ref.corridorOwnerId());
+        return switch (ref == null ? null : ref.ownerRef()) {
+            case DungeonSelectionRef.CorridorRef corridorRef -> findCorridor(corridorRef.corridorId());
+            case null, default -> null;
+        };
     }
 
     public DungeonStair stair(DungeonSelectionRef ref) {
-        if (ref == null || ref.stairOwnerId() == null) {
-            return null;
-        }
-        return findStair(ref.stairOwnerId());
+        return switch (ref == null ? null : ref.ownerRef()) {
+            case DungeonSelectionRef.StairRef stairRef -> findStair(stairRef.stairId());
+            case null, default -> null;
+        };
     }
 
     public DungeonTransition transition(DungeonSelectionRef ref) {
-        if (ref == null || ref.transitionOwnerId() == null) {
-            return null;
-        }
-        return findTransition(ref.transitionOwnerId());
+        return switch (ref == null ? null : ref.ownerRef()) {
+            case DungeonSelectionRef.TransitionRef transitionRef -> findTransition(transitionRef.transitionId());
+            case null, default -> null;
+        };
     }
 
     public Room roomAtCell(CellCoord cell) {

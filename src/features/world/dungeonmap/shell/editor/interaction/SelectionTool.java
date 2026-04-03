@@ -115,7 +115,7 @@ public final class SelectionTool implements EditorTool {
             state.selectRef(resolvedSelectionRef);
             return true;
         }
-        if (hit != null && hit.ownerRef() != null) {
+        if (resolvedSelectionRef != null && resolvedSelectionRef.ownerRef() != null) {
             state.selectRef(resolvedSelectionRef);
             return true;
         }

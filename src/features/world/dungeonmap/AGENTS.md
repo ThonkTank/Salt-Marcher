@@ -46,8 +46,9 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
   - Application services orchestrate workflows and transactions; they must not keep a second interpretation of room, corridor, or runtime truth.
 - `loading/`
   - `DungeonMapLoadResolver` owns synchronous catalog scans, usable-map selection, selected-map fallback, and runtime-repair fallback order.
+  - `DungeonMapLoadResolver` must resolve preferred fallback IDs against the fresh catalog instead of reusing stale `DungeonMapCatalogEntry` objects from `DungeonMapState`.
   - `DungeonMapLoadingService` owns async loading, initial-load deduplication, stale-request suppression via `requestSequence`, and reload-after-write flows around that resolver.
-  - Loading resolution helpers stay inside `loading/`; views and state consume only `DungeonMapState`.
+  - Loading resolution helpers stay nested inside the loading owner; views and state consume only `DungeonMapState`.
 - `repository/`
   - `DungeonLayoutRepository` is the authoritative layout rehydration seam. It assembles one concrete persisted map per call and does not own UI-facing fallback policy.
   - Structure repositories (`DungeonRoomRepository`, `DungeonCorridorRepository`, `DungeonStairRepository`, `DungeonTransitionRepository`) own their direct storage reads and writes.
@@ -76,6 +77,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `DungeonLayout` owns canonical `CellCoord` lookups, traversable-cell indices, and level-aware cell queries. Corridor room bindings use `CellCoord`; geometry-backed picks and selections use `GridPoint2x` and `GridSegment2x`.
 - `DungeonHitSubject` and `DungeonSelectionRef` expose geometry-backed editor/runtime selections only as canonical ids plus final `GridPoint2x`, `GridSegment2x`, and `CubePoint`. Do not add raw doubled-cell mirrors or storage-parity mirrors back into those seams.
 - `DungeonHitKind` and `DungeonSelectionRef` are shared interaction semantics owned by `model/interaction/`, not by `shell/interaction/`.
+- `DungeonSelectionRef.ownerRef()` owns typed owner semantics. Do not mirror owner resolution back onto `DungeonHitSubject` or generic nullable owner-id helper channels.
 - `InteractiveLabelHandle` and `DungeonEditorRenderState` are display payloads on final `CellCoord`/`GridPoint2x`/`GridSegment2x` only. `DungeonRuntimeRenderOverlay` carries the active `DungeonRuntimeNavigationSnapshot` plus runtime exit markers derived from the resolved surface. Renderers and tools must not introduce storage codecs or legacy parity adapters.
 - `EditorTool.resolveHit(...)` owns tool-specific interpretation of those candidates. Do not move per-tool allowlists back into a central selector.
 - `EditorInteractionState` owns only shared editor coordination state:
@@ -104,7 +106,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `ConnectionsTool` owns door edits, corridor drafting, node insertion, and corridor deletion. Corridor graph edits use explicit 2x node/segment points, while preview layouts use `DungeonLayout` corridor replacement helpers instead of hand-built temporary layouts.
 - `TransitionTool` owns transition create/delete gestures and keeps its form state local to the tool. It should carry selected destinations directly as `DungeonTransitionDestination` plus a small local mode hint, not as parallel target-id fields that are rebuilt into destinations later.
 - `DungeonHitSnapshot.firstSubjectMatching(...)` and `orderedSubjects()` are the shared helpers for per-tool subject resolution. Prefer these over ad-hoc candidate walks.
-- Selection identity is semantic. Use owner-provided refs (`DungeonSelectionRef`, label handles, structure ids plus geometry) instead of reconstructing or parsing them in renderers.
+- Selection identity is semantic. Compare typed owner refs from `DungeonSelectionRef` instead of reconstructing owners through generic ids or parsing helpers in renderers.
 
 ## Workspace And Rendering
 

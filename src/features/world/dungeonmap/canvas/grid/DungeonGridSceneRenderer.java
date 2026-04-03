@@ -554,38 +554,51 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         if (left == null || right == null) {
             return false;
         }
-        if (Objects.equals(left, right)) {
-            return true;
-        }
-        return ownerMatches(left.roomOwnerId(), right.roomOwnerId())
-                || ownerMatches(left.clusterOwnerId(), right.clusterOwnerId())
-                || ownerMatches(left.corridorOwnerId(), right.corridorOwnerId())
-                || ownerMatches(left.stairOwnerId(), right.stairOwnerId())
-                || ownerMatches(left.transitionOwnerId(), right.transitionOwnerId());
-    }
-
-    private static boolean ownerMatches(Long leftOwnerId, Long rightOwnerId) {
-        return leftOwnerId != null && Objects.equals(leftOwnerId, rightOwnerId);
+        return Objects.equals(left, right) || left.sameOwnerAs(right);
     }
 
     private static boolean selectedCluster(DungeonSelectionRef selectedRef, Long clusterId) {
-        return selectedRef != null && clusterId != null && Objects.equals(selectedRef.clusterOwnerId(), clusterId);
+        return selectedOwner(selectedRef, clusterOwnerRef(clusterId));
     }
 
     private static boolean selectedRoom(DungeonSelectionRef selectedRef, Long roomId) {
-        return selectedRef != null && roomId != null && Objects.equals(selectedRef.roomOwnerId(), roomId);
+        return selectedOwner(selectedRef, roomOwnerRef(roomId));
     }
 
     private static boolean selectedCorridor(DungeonSelectionRef selectedRef, Long corridorId) {
-        return selectedRef != null && corridorId != null && Objects.equals(selectedRef.corridorOwnerId(), corridorId);
+        return selectedOwner(selectedRef, corridorOwnerRef(corridorId));
     }
 
     private static boolean selectedStair(DungeonSelectionRef selectedRef, Long stairId) {
-        return selectedRef != null && stairId != null && Objects.equals(selectedRef.stairOwnerId(), stairId);
+        return selectedOwner(selectedRef, stairOwnerRef(stairId));
     }
 
     private static boolean selectedTransition(DungeonSelectionRef selectedRef, Long transitionId) {
-        return selectedRef != null && transitionId != null && Objects.equals(selectedRef.transitionOwnerId(), transitionId);
+        return selectedOwner(selectedRef, transitionOwnerRef(transitionId));
+    }
+
+    private static boolean selectedOwner(DungeonSelectionRef selectedRef, DungeonSelectionRef ownerRef) {
+        return selectedRef != null && ownerRef != null && selectedRef.sameOwnerAs(ownerRef);
+    }
+
+    private static DungeonSelectionRef clusterOwnerRef(Long clusterId) {
+        return clusterId == null ? null : new DungeonSelectionRef.ClusterRef(clusterId);
+    }
+
+    private static DungeonSelectionRef roomOwnerRef(Long roomId) {
+        return roomId == null ? null : new DungeonSelectionRef.RoomRef(roomId);
+    }
+
+    private static DungeonSelectionRef corridorOwnerRef(Long corridorId) {
+        return corridorId == null ? null : new DungeonSelectionRef.CorridorRef(corridorId);
+    }
+
+    private static DungeonSelectionRef stairOwnerRef(Long stairId) {
+        return stairId == null ? null : new DungeonSelectionRef.StairRef(stairId);
+    }
+
+    private static DungeonSelectionRef transitionOwnerRef(Long transitionId) {
+        return transitionId == null ? null : new DungeonSelectionRef.TransitionRef(transitionId);
     }
 
     private static void drawHoveredRoom(StructureRenderPass pass, Room room) {

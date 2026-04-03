@@ -30,10 +30,6 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
 
     DungeonSelectionRef ref();
 
-    default DungeonSelectionRef ownerRef() {
-        return ref();
-    }
-
     record VertexSubject(GridPoint2x vertex2x) implements DungeonHitSubject {
         public VertexSubject {
             vertex2x = Objects.requireNonNull(vertex2x, "vertex2x");
@@ -50,11 +46,6 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         @Override
         public DungeonSelectionRef ref() {
             return new DungeonSelectionRef.VertexRef(vertex2x);
-        }
-
-        @Override
-        public DungeonSelectionRef ownerRef() {
-            return null;
         }
     }
 
@@ -93,11 +84,6 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         public DungeonSelectionRef ref() {
             return new DungeonSelectionRef.ClusterBoundaryRef(clusterId, boundarySegment2x);
         }
-
-        @Override
-        public DungeonSelectionRef ownerRef() {
-            return new DungeonSelectionRef.ClusterRef(clusterId);
-        }
     }
 
     record RoomSubject(Long roomId, Long clusterId) implements DungeonHitSubject {
@@ -135,11 +121,6 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         public DungeonSelectionRef ref() {
             return new DungeonSelectionRef.RoomBoundaryRef(roomId, boundarySegment2x);
         }
-
-        @Override
-        public DungeonSelectionRef ownerRef() {
-            return new DungeonSelectionRef.RoomRef(roomId);
-        }
     }
 
     record ConnectionSubject(
@@ -176,15 +157,6 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         public DungeonSelectionRef ref() {
             return new DungeonSelectionRef.ConnectionRef(connectionKind, clusterId, corridorId, boundarySegment2x);
         }
-
-        @Override
-        public DungeonSelectionRef ownerRef() {
-            return switch (connectionKind) {
-                case LOCAL -> new DungeonSelectionRef.ClusterRef(clusterId);
-                case CORRIDOR -> new DungeonSelectionRef.CorridorRef(corridorId);
-                case STAIR, TRANSITION -> null;
-            };
-        }
     }
 
     record CorridorSubject(Long corridorId, int levelZ) implements DungeonHitSubject {
@@ -216,11 +188,6 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         public DungeonSelectionRef ref() {
             return new DungeonSelectionRef.CorridorNodeRef(corridorId, nodeId, point2x);
         }
-
-        @Override
-        public DungeonSelectionRef ownerRef() {
-            return new DungeonSelectionRef.CorridorRef(corridorId);
-        }
     }
 
     record CorridorCornerSubject(Long corridorId, Long segmentId, GridPoint2x point2x) implements DungeonHitSubject {
@@ -236,11 +203,6 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         @Override
         public DungeonSelectionRef ref() {
             return new DungeonSelectionRef.CorridorCornerRef(corridorId, point2x);
-        }
-
-        @Override
-        public DungeonSelectionRef ownerRef() {
-            return new DungeonSelectionRef.CorridorRef(corridorId);
         }
     }
 
@@ -260,11 +222,6 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         @Override
         public DungeonSelectionRef ref() {
             return new DungeonSelectionRef.CorridorSegmentRef(corridorId, segmentId);
-        }
-
-        @Override
-        public DungeonSelectionRef ownerRef() {
-            return new DungeonSelectionRef.CorridorRef(corridorId);
         }
     }
 

@@ -40,7 +40,7 @@ public record EditorHitResolution(
 
     public static EditorHitResolution owner(DungeonHitSubject subject, DungeonSelectionRef resolvedRef) {
         DungeonHitSubject resolved = Objects.requireNonNull(subject, "subject");
-        DungeonSelectionRef ownerRef = resolvedRef == null ? resolved.ownerRef() : resolvedRef;
+        DungeonSelectionRef ownerRef = resolvedRef == null ? resolved.ref().ownerRef() : resolvedRef;
         return new EditorHitResolution(
                 resolved,
                 ownerRef,

@@ -1,5 +1,6 @@
 package features.world.dungeonmap.repository;
 
+import features.world.dungeonmap.catalog.application.DungeonMapCatalogEntry;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
@@ -27,13 +28,23 @@ public final class DungeonLayoutRepository {
     private final DungeonTransitionRepository transitionRepository = new DungeonTransitionRepository();
 
     public DungeonLayout loadLayout(Connection conn, long mapId) throws SQLException {
-        if (conn == null) {
-            throw new IllegalArgumentException("conn darf nicht null sein");
-        }
+        requireConnection(conn);
         String mapName = loadMapName(conn, mapId);
         if (mapName == null) {
             return null;
         }
+        return loadLayout(conn, new DungeonMapCatalogEntry(mapId, mapName));
+    }
+
+    public DungeonLayout loadLayout(Connection conn, DungeonMapCatalogEntry map) throws SQLException {
+        requireConnection(conn);
+        if (map == null || map.mapId() <= 0) {
+            return null;
+        }
+        return loadLayout(conn, map.mapId(), map.name());
+    }
+
+    private DungeonLayout loadLayout(Connection conn, long mapId, String mapName) throws SQLException {
         List<Room> rooms = roomRepository.loadRooms(conn, mapId);
         List<RoomCluster> clusters = roomRepository.loadClusters(conn, mapId, rooms);
         Map<Long, Integer> clusterLevels = roomRepository.loadClusterLevels(conn, mapId);
@@ -62,6 +73,12 @@ public final class DungeonLayoutRepository {
                 }
                 return rs.getString("name");
             }
+        }
+    }
+
+    private static void requireConnection(Connection conn) {
+        if (conn == null) {
+            throw new IllegalArgumentException("conn darf nicht null sein");
         }
     }
 }

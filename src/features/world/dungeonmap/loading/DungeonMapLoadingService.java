@@ -1,6 +1,7 @@
 package features.world.dungeonmap.loading;
 
 import database.DatabaseManager;
+import features.world.dungeonmap.catalog.application.DungeonMapCatalogEntry;
 import features.world.dungeonmap.state.DungeonMapState;
 import ui.async.UiAsyncTasks;
 
@@ -72,7 +73,7 @@ public final class DungeonMapLoadingService {
         selectMap(preferredMapId);
     }
 
-    private void startRequest(boolean initialRequest, Callable<DungeonMapLoadResolution> task) {
+    private void startRequest(boolean initialRequest, Callable<DungeonMapLoadResolver.LoadResolution> task) {
         long requestId = requestSequence.incrementAndGet();
         state.showLoading();
         UiAsyncTasks.submit(
@@ -100,25 +101,24 @@ public final class DungeonMapLoadingService {
         }
     }
 
-    private DungeonMapLoadResolution loadInitialResult() {
+    private DungeonMapLoadResolver.LoadResolution loadInitialResult() throws SQLException {
         try (Connection conn = DatabaseManager.getConnection()) {
             return loadResolver.resolveInitial(conn);
-        } catch (SQLException exception) {
-            LOGGER.log(Level.WARNING, "Dungeon-Katalog konnte nicht geladen werden", exception);
-            return new DungeonMapLoadResolution(List.of(), null, "Dungeon konnte nicht geladen werden");
         }
     }
 
-    private DungeonMapLoadResolution loadSelectedMapResult(long mapId) {
+    private DungeonMapLoadResolver.LoadResolution loadSelectedMapResult(long mapId) throws SQLException {
         try (Connection conn = DatabaseManager.getConnection()) {
-            return loadResolver.resolveSelection(conn, mapId, state.maps());
-        } catch (SQLException exception) {
-            LOGGER.log(Level.WARNING, "Dungeon konnte nicht geladen werden", exception);
-            return new DungeonMapLoadResolution(state.maps(), null, "Dungeon konnte nicht geladen werden");
+            return loadResolver.resolveSelection(conn, mapId, preferredMapIds());
         }
     }
 
-    private void applyResult(long requestId, boolean initialRequest, DungeonMapLoadResolution result, Throwable failure) {
+    private void applyResult(
+            long requestId,
+            boolean initialRequest,
+            DungeonMapLoadResolver.LoadResolution result,
+            Throwable failure
+    ) {
         if (initialRequest) {
             finishInitialLoad(initialRequestSucceeded(requestId, result, failure));
         }
@@ -130,21 +130,51 @@ public final class DungeonMapLoadingService {
             state.showLoadFailure(state.maps(), "Dungeon konnte nicht geladen werden");
             return;
         }
-        if (result == null || result.activeMap() == null) {
-            if (result != null && result.errorMessage() != null) {
-                state.showLoadFailure(result.maps(), result.errorMessage());
-                return;
-            }
-            state.showLoaded(result == null ? List.of() : result.maps(), null, null);
+        if (result == null) {
+            state.showLoadFailure(state.maps(), "Dungeon konnte nicht geladen werden");
             return;
         }
-        state.showLoaded(result.maps(), result.activeMap(), result.errorMessage());
+        if (result.activeMap() != null) {
+            state.showLoaded(result.maps(), result.activeMap(), result.errorMessage());
+            return;
+        }
+        if (initialRequest) {
+            state.showLoaded(result.maps(), null, result.errorMessage());
+            return;
+        }
+        if (result.errorMessage() != null) {
+            if (!activeMapStillExists(result.maps())) {
+                state.showLoaded(result.maps(), null, result.errorMessage());
+                return;
+            }
+            state.showLoadFailure(result.maps(), result.errorMessage());
+            return;
+        }
+        state.showLoaded(result.maps(), null, null);
     }
 
-    private boolean initialRequestSucceeded(long requestId, DungeonMapLoadResolution result, Throwable failure) {
+    private boolean initialRequestSucceeded(
+            long requestId,
+            DungeonMapLoadResolver.LoadResolution result,
+            Throwable failure
+    ) {
         return requestId == requestSequence.get()
                 && failure == null
-                && result != null
-                && (result.activeMap() != null || result.maps().isEmpty());
+                && result != null;
+    }
+
+    private List<Long> preferredMapIds() {
+        return state.maps().stream()
+                .map(map -> map.mapId())
+                .filter(mapId -> mapId > 0)
+                .toList();
+    }
+
+    private boolean activeMapStillExists(List<DungeonMapCatalogEntry> maps) {
+        Long activeMapId = state.activeMapId();
+        if (activeMapId == null) {
+            return false;
+        }
+        return maps.stream().anyMatch(map -> map.mapId() == activeMapId);
     }
 }

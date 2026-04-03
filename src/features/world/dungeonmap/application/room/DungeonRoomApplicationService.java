@@ -152,13 +152,13 @@ public final class DungeonRoomApplicationService {
     }
 
     public void createDefaultRoom(Connection conn, long mapId) throws SQLException {
-        DungeonLayout layout = requireLayout(conn, mapId);
+        // Brand-new dungeons must bootstrap their first room without rehydrating an empty layout first.
         roomRepository.createClusterWithRoom(
                 conn,
                 mapId,
                 0,
                 Set.of(new CellCoord(0, 0)),
-                nextRoomName(layout, new LinkedHashSet<>()));
+                "Raum 1");
     }
 
     public void move(long mapId, long clusterId, CellCoord delta, int levelDelta) throws SQLException {

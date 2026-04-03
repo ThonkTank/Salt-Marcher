@@ -22,58 +22,55 @@ public sealed interface DungeonSelectionRef permits
         DungeonSelectionRef.CorridorSegmentRef,
         DungeonSelectionRef.FloorCellRef {
 
-    default Long clusterOwnerId() {
+    /**
+     * Selection refs carry typed ownership directly so callers can compare semantic owners without reconstructing
+     * generic ids or parsing intermediate keys.
+     */
+    default DungeonSelectionRef ownerRef() {
         return null;
     }
 
-    default Long roomOwnerId() {
-        return null;
-    }
-
-    default Long corridorOwnerId() {
-        return null;
-    }
-
-    default Long stairOwnerId() {
-        return null;
-    }
-
-    default Long transitionOwnerId() {
-        return null;
+    default boolean sameOwnerAs(DungeonSelectionRef other) {
+        if (other == null) {
+            return false;
+        }
+        DungeonSelectionRef leftOwner = ownerRef();
+        DungeonSelectionRef rightOwner = other.ownerRef();
+        return leftOwner != null && Objects.equals(leftOwner, rightOwner);
     }
 
     record ClusterRef(Long clusterId) implements DungeonSelectionRef {
         @Override
-        public Long clusterOwnerId() {
-            return clusterId;
+        public DungeonSelectionRef ownerRef() {
+            return clusterId == null ? null : this;
         }
     }
 
     record RoomRef(Long roomId) implements DungeonSelectionRef {
         @Override
-        public Long roomOwnerId() {
-            return roomId;
+        public DungeonSelectionRef ownerRef() {
+            return roomId == null ? null : this;
         }
     }
 
     record CorridorRef(Long corridorId) implements DungeonSelectionRef {
         @Override
-        public Long corridorOwnerId() {
-            return corridorId;
+        public DungeonSelectionRef ownerRef() {
+            return corridorId == null ? null : this;
         }
     }
 
     record StairRef(Long stairId) implements DungeonSelectionRef {
         @Override
-        public Long stairOwnerId() {
-            return stairId;
+        public DungeonSelectionRef ownerRef() {
+            return stairId == null ? null : this;
         }
     }
 
     record TransitionRef(Long transitionId) implements DungeonSelectionRef {
         @Override
-        public Long transitionOwnerId() {
-            return transitionId;
+        public DungeonSelectionRef ownerRef() {
+            return transitionId == null ? null : this;
         }
     }
 
@@ -89,8 +86,8 @@ public sealed interface DungeonSelectionRef permits
         }
 
         @Override
-        public Long clusterOwnerId() {
-            return clusterId;
+        public DungeonSelectionRef ownerRef() {
+            return clusterId == null ? null : new ClusterRef(clusterId);
         }
     }
 
@@ -100,8 +97,8 @@ public sealed interface DungeonSelectionRef permits
         }
 
         @Override
-        public Long roomOwnerId() {
-            return roomId;
+        public DungeonSelectionRef ownerRef() {
+            return roomId == null ? null : new RoomRef(roomId);
         }
     }
 
@@ -117,13 +114,12 @@ public sealed interface DungeonSelectionRef permits
         }
 
         @Override
-        public Long clusterOwnerId() {
-            return connectionKind == ConnectionKind.LOCAL ? clusterId : null;
-        }
-
-        @Override
-        public Long corridorOwnerId() {
-            return connectionKind == ConnectionKind.CORRIDOR ? corridorId : null;
+        public DungeonSelectionRef ownerRef() {
+            return switch (connectionKind) {
+                case LOCAL -> clusterId == null ? null : new ClusterRef(clusterId);
+                case CORRIDOR -> corridorId == null ? null : new CorridorRef(corridorId);
+                case STAIR, TRANSITION -> null;
+            };
         }
     }
 
@@ -133,8 +129,8 @@ public sealed interface DungeonSelectionRef permits
         }
 
         @Override
-        public Long corridorOwnerId() {
-            return corridorId;
+        public DungeonSelectionRef ownerRef() {
+            return corridorId == null ? null : new CorridorRef(corridorId);
         }
     }
 
@@ -144,15 +140,15 @@ public sealed interface DungeonSelectionRef permits
         }
 
         @Override
-        public Long corridorOwnerId() {
-            return corridorId;
+        public DungeonSelectionRef ownerRef() {
+            return corridorId == null ? null : new CorridorRef(corridorId);
         }
     }
 
     record CorridorSegmentRef(Long corridorId, Long segmentId) implements DungeonSelectionRef {
         @Override
-        public Long corridorOwnerId() {
-            return corridorId;
+        public DungeonSelectionRef ownerRef() {
+            return corridorId == null ? null : new CorridorRef(corridorId);
         }
     }
 

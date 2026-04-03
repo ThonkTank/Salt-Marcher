@@ -26,8 +26,17 @@ public final class DungeonMapCatalogService {
     public long createMap(String name) throws SQLException {
         try (Connection conn = DatabaseManager.getConnection()) {
             return DungeonTransactionRunner.inTransaction(conn, () -> {
-                long mapId = DungeonMapCatalogRepository.insertMap(conn, name);
-                roomApplicationService.createDefaultRoom(conn, mapId);
+                long mapId;
+                try {
+                    mapId = DungeonMapCatalogRepository.insertMap(conn, name);
+                } catch (SQLException exception) {
+                    throw new SQLException("Dungeon map insert failed", exception);
+                }
+                try {
+                    roomApplicationService.createDefaultRoom(conn, mapId);
+                } catch (SQLException | RuntimeException exception) {
+                    throw new SQLException("Default room bootstrap failed for dungeon " + mapId, exception);
+                }
                 return mapId;
             });
         }

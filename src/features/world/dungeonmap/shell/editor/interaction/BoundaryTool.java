@@ -243,7 +243,8 @@ public final class BoundaryTool implements EditorTool {
             return new ResolvedBoundaryVertex(draftClusterId, vertex);
         }
 
-        Long selectedClusterId = layout.clusterId(state.selectedRef());
+        RoomCluster selectedCluster = layout.clusterOnLevel(state.selectedRef(), mapState.activeProjectionLevel());
+        Long selectedClusterId = selectedCluster == null ? null : selectedCluster.clusterId();
         if (isEditableCluster(selectedClusterId, layout, vertex, deleteMode)) {
             return new ResolvedBoundaryVertex(selectedClusterId, vertex);
         }
