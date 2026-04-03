@@ -258,26 +258,40 @@ public final class Corridor {
         ArrayList<CorridorNode> updatedNodes = new ArrayList<>(nodes.size());
         boolean changed = false;
         for (CorridorNode node : nodes) {
-            if (node == null || !node.isRoomBound() || !movedRoomIds.contains(node.roomId())) {
-                updatedNodes.add(node);
-                continue;
-            }
-            CorridorNode updatedNode;
-            if (levelDelta != 0) {
-                updatedNode = new CorridorNode(node.nodeId(), node.point2x(), null, null, null);
-            } else {
-                CellCoord movedCell = node.roomCell().add(delta);
+            CorridorNode updatedNode = node;
+            if (shouldRebindNode(node, movedRoomIds)) {
+                if (levelDelta != 0) {
+                    updatedNode = new CorridorNode(node.nodeId(), node.point2x(), null, null, null);
+                } else {
+                    CellCoord movedCell = node.roomCell().add(delta);
+                    updatedNode = new CorridorNode(
+                            node.nodeId(),
+                            GridPoint2x.edgeCenter(movedCell, node.roomBoundaryDirection()),
+                            node.roomId(),
+                            movedCell,
+                            node.roomBoundaryDirection());
+                }
+            } else if (node != null && translate && levelDelta == 0 && !node.isRoomBound()) {
+                // Move previews and persisted cluster moves use the same free-node seed so the later room-relative
+                // rebind step starts from corridor geometry that already follows the moved room instead of pinning
+                // manual nodes to stale absolute anchors.
                 updatedNode = new CorridorNode(
                         node.nodeId(),
-                        GridPoint2x.edgeCenter(movedCell, node.roomBoundaryDirection()),
-                        node.roomId(),
-                        movedCell,
-                        node.roomBoundaryDirection());
+                        node.point2x().translatedByCells(delta),
+                        null,
+                        null,
+                        null);
             }
             updatedNodes.add(updatedNode);
-            changed |= !updatedNode.equals(node);
+            changed |= !Objects.equals(updatedNode, node);
         }
-        return changed ? resolvedAgainst(layout, updatedNodes, segments) : this;
+        if (!changed) {
+            return this;
+        }
+        Corridor adjustedCorridor = resolvedAgainst(layout, updatedNodes, segments);
+        return levelDelta == 0 && translate
+                ? adjustedCorridor.reboundFreeNodesFrom(this, layout)
+                : adjustedCorridor;
     }
 
     public void validateRoomBindingsForRewrite(DungeonLayout layout, Set<Long> affectedRoomIds) {
@@ -413,6 +427,331 @@ public final class Corridor {
             return this;
         }
         return layout.resolveCorridor(corridorId, levelZ, updatedNodes, updatedSegments);
+    }
+
+    private Corridor reboundFreeNodesFrom(Corridor originalCorridor, DungeonLayout layout) {
+        if (layout == null || originalCorridor == null) {
+            return this;
+        }
+        List<CorridorNode> originalFreeNodes = originalCorridor.persistedManualNodes();
+        if (originalFreeNodes.isEmpty()) {
+            return this;
+        }
+
+        RouteGraph originalGraph = RouteGraph.from(originalCorridor);
+        RouteGraph candidateGraph = RouteGraph.from(this);
+        List<FreeNodeRebindDescriptor> originalDescriptors = describeFreeNodes(originalFreeNodes, originalGraph);
+        List<RebindCandidate> candidates = describeRebindCandidates(candidateGraph);
+        if (originalDescriptors.isEmpty() || candidates.isEmpty()) {
+            return this;
+        }
+
+        Map<RebindSignatureKey, List<FreeNodeRebindDescriptor>> originalsBySignature = groupFreeNodesBySignature(originalDescriptors);
+        Map<RebindSignatureKey, List<RebindCandidate>> candidatesBySignature = groupCandidatesBySignature(candidates);
+        Map<RebindDegreeKey, List<RebindCandidate>> candidatesByDegree = groupCandidatesByDegree(candidates);
+        Map<Long, GridPoint2x> currentFreePoints = currentFreePointsByNodeId();
+
+        LinkedHashMap<Long, GridPoint2x> reboundPointsByNodeId = new LinkedHashMap<>();
+        LinkedHashSet<GridPoint2x> usedCandidatePoints = new LinkedHashSet<>();
+        ArrayList<FreeNodeRebindDescriptor> unresolvedDescriptors = new ArrayList<>();
+
+        for (Map.Entry<RebindSignatureKey, List<FreeNodeRebindDescriptor>> entry : originalsBySignature.entrySet()) {
+            List<FreeNodeRebindDescriptor> originals = entry.getValue();
+            List<RebindCandidate> availableCandidates = availableCandidates(candidatesBySignature.get(entry.getKey()), usedCandidatePoints);
+            int matchedCount = Math.min(originals.size(), availableCandidates.size());
+            for (int index = 0; index < matchedCount; index++) {
+                assignCandidate(reboundPointsByNodeId, usedCandidatePoints, originals.get(index), availableCandidates.get(index));
+            }
+            for (int index = matchedCount; index < originals.size(); index++) {
+                unresolvedDescriptors.add(originals.get(index));
+            }
+        }
+
+        if (!unresolvedDescriptors.isEmpty()) {
+            Map<RebindDegreeKey, List<FreeNodeRebindDescriptor>> unresolvedByDegree = groupFreeNodesByDegree(unresolvedDescriptors);
+            for (Map.Entry<RebindDegreeKey, List<FreeNodeRebindDescriptor>> entry : unresolvedByDegree.entrySet()) {
+                List<FreeNodeRebindDescriptor> unresolved = entry.getValue();
+                List<RebindCandidate> availableCandidates = availableCandidates(candidatesByDegree.get(entry.getKey()), usedCandidatePoints);
+                int matchedCount = Math.min(unresolved.size(), availableCandidates.size());
+                for (int index = 0; index < matchedCount; index++) {
+                    assignCandidate(reboundPointsByNodeId, usedCandidatePoints, unresolved.get(index), availableCandidates.get(index));
+                }
+                for (int index = matchedCount; index < unresolved.size(); index++) {
+                    assignFallbackCandidate(
+                            reboundPointsByNodeId,
+                            usedCandidatePoints,
+                            unresolved.get(index),
+                            currentFreePoints,
+                            candidatesByDegree);
+                }
+            }
+        }
+
+        ArrayList<CorridorNode> reboundNodes = new ArrayList<>(nodes.size());
+        boolean changed = false;
+        for (CorridorNode node : nodes) {
+            if (node == null || node.isRoomBound() || node.nodeId() == null) {
+                reboundNodes.add(node);
+                continue;
+            }
+            GridPoint2x reboundPoint = reboundPointsByNodeId.get(node.nodeId());
+            if (reboundPoint == null || reboundPoint.equals(node.point2x())) {
+                reboundNodes.add(node);
+                continue;
+            }
+            reboundNodes.add(new CorridorNode(node.nodeId(), reboundPoint, null, null, null));
+            changed = true;
+        }
+        return changed ? resolvedAgainst(layout, reboundNodes, segments) : this;
+    }
+
+    private Map<Long, GridPoint2x> currentFreePointsByNodeId() {
+        LinkedHashMap<Long, GridPoint2x> result = new LinkedHashMap<>();
+        for (CorridorNode node : persistedManualNodes()) {
+            result.put(node.nodeId(), node.point2x());
+        }
+        return result.isEmpty() ? Map.of() : Map.copyOf(result);
+    }
+
+    private static void assignCandidate(
+            Map<Long, GridPoint2x> reboundPointsByNodeId,
+            Set<GridPoint2x> usedCandidatePoints,
+            FreeNodeRebindDescriptor descriptor,
+            RebindCandidate candidate
+    ) {
+        if (reboundPointsByNodeId == null || usedCandidatePoints == null || descriptor == null || candidate == null) {
+            return;
+        }
+        usedCandidatePoints.add(candidate.point2x());
+        reboundPointsByNodeId.put(descriptor.nodeId(), candidate.point2x());
+    }
+
+    private static void assignFallbackCandidate(
+            Map<Long, GridPoint2x> reboundPointsByNodeId,
+            Set<GridPoint2x> usedCandidatePoints,
+            FreeNodeRebindDescriptor descriptor,
+            Map<Long, GridPoint2x> currentFreePoints,
+            Map<RebindDegreeKey, List<RebindCandidate>> candidatesByDegree
+    ) {
+        if (reboundPointsByNodeId == null || usedCandidatePoints == null || descriptor == null) {
+            return;
+        }
+        GridPoint2x currentPoint = currentFreePoints == null ? null : currentFreePoints.get(descriptor.nodeId());
+        if (currentPoint != null && usedCandidatePoints.add(currentPoint)) {
+            reboundPointsByNodeId.put(descriptor.nodeId(), currentPoint);
+            return;
+        }
+        RebindCandidate fallbackCandidate = firstAvailableCandidate(
+                candidatesByDegree == null ? null : candidatesByDegree.get(descriptor.degreeKey()),
+                usedCandidatePoints);
+        if (fallbackCandidate != null) {
+            usedCandidatePoints.add(fallbackCandidate.point2x());
+            reboundPointsByNodeId.put(descriptor.nodeId(), fallbackCandidate.point2x());
+            return;
+        }
+        if (currentPoint != null) {
+            reboundPointsByNodeId.put(descriptor.nodeId(), currentPoint);
+            return;
+        }
+        reboundPointsByNodeId.put(descriptor.nodeId(), descriptor.point2x());
+    }
+
+    private static List<FreeNodeRebindDescriptor> describeFreeNodes(List<CorridorNode> freeNodes, RouteGraph graph) {
+        if (freeNodes == null || freeNodes.isEmpty() || graph == null) {
+            return List.of();
+        }
+        ArrayList<FreeNodeRebindDescriptor> result = new ArrayList<>();
+        for (CorridorNode node : freeNodes) {
+            if (node == null || node.nodeId() == null) {
+                continue;
+            }
+            NodeRebindShape shape = nodeRebindShape(graph, node.point2x());
+            result.add(new FreeNodeRebindDescriptor(
+                    node.nodeId(),
+                    node.point2x(),
+                    shape.signatureKey(),
+                    shape.degreeKey(),
+                    graph.distanceVector(node.point2x())));
+        }
+        result.sort(Corridor::compareFreeNodeDescriptors);
+        return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
+    private static List<RebindCandidate> describeRebindCandidates(RouteGraph graph) {
+        if (graph == null || graph.adjacency().isEmpty()) {
+            return List.of();
+        }
+        ArrayList<RebindCandidate> result = new ArrayList<>();
+        for (GridPoint2x point2x : graph.points()) {
+            if (point2x == null || graph.roomBoundPoints().contains(point2x)) {
+                continue;
+            }
+            NodeRebindShape shape = nodeRebindShape(graph, point2x);
+            result.add(new RebindCandidate(
+                    point2x,
+                    shape.signatureKey(),
+                    shape.degreeKey(),
+                    graph.distanceVector(point2x)));
+        }
+        result.sort(Corridor::compareCandidates);
+        return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
+    private static NodeRebindShape nodeRebindShape(RouteGraph graph, GridPoint2x point2x) {
+        int degree = graph == null || point2x == null ? 0 : graph.degree(point2x);
+        RebindDegreeKey degreeKey = new RebindDegreeKey(point2x == null ? GridPoint2x.Kind.CELL : point2x.kind(), degree);
+        return new NodeRebindShape(degreeKey, new RebindSignatureKey(degreeKey, armSignature(graph, point2x)));
+    }
+
+    private static ArmSignature armSignature(RouteGraph graph, GridPoint2x point2x) {
+        if (graph == null || point2x == null) {
+            return new ArmSignature(List.of());
+        }
+        ArrayList<ArmSignatureEntry> entries = new ArrayList<>();
+        for (GridPoint2x neighbor : graph.neighborsOf(point2x)) {
+            CardinalDirection direction = travelDirection(point2x, neighbor);
+            if (direction == null) {
+                continue;
+            }
+            int length2 = edgeCost(point2x, neighbor);
+            GridPoint2x previous = point2x;
+            GridPoint2x current = neighbor;
+            while (true) {
+                ArrayList<GridPoint2x> forwardNeighbors = new ArrayList<>();
+                for (GridPoint2x candidate : graph.neighborsOf(current)) {
+                    if (!candidate.equals(previous)) {
+                        forwardNeighbors.add(candidate);
+                    }
+                }
+                if (graph.roomBoundPoints().contains(current) || graph.degree(current) != 2 || forwardNeighbors.size() != 1) {
+                    break;
+                }
+                GridPoint2x next = forwardNeighbors.getFirst();
+                CardinalDirection nextDirection = travelDirection(current, next);
+                if (nextDirection != direction) {
+                    break;
+                }
+                length2 += edgeCost(current, next);
+                previous = current;
+                current = next;
+            }
+            entries.add(new ArmSignatureEntry(direction, length2));
+        }
+        entries.sort(Comparator
+                .comparingInt((ArmSignatureEntry entry) -> entry.direction().code())
+                .thenComparingInt(ArmSignatureEntry::length2));
+        return new ArmSignature(entries.isEmpty() ? List.of() : List.copyOf(entries));
+    }
+
+    private static CardinalDirection travelDirection(GridPoint2x from, GridPoint2x to) {
+        if (from == null || to == null) {
+            return null;
+        }
+        return CardinalDirection.fromDirection(new CellCoord(
+                Integer.compare(to.x2(), from.x2()),
+                Integer.compare(to.y2(), from.y2())));
+    }
+
+    private static int edgeCost(GridPoint2x start, GridPoint2x end) {
+        return start == null || end == null ? Integer.MAX_VALUE : start.manhattanDistance2x(end);
+    }
+
+    private static Map<RebindSignatureKey, List<FreeNodeRebindDescriptor>> groupFreeNodesBySignature(List<FreeNodeRebindDescriptor> descriptors) {
+        LinkedHashMap<RebindSignatureKey, List<FreeNodeRebindDescriptor>> grouped = new LinkedHashMap<>();
+        for (FreeNodeRebindDescriptor descriptor : descriptors == null ? List.<FreeNodeRebindDescriptor>of() : descriptors) {
+            grouped.computeIfAbsent(descriptor.signatureKey(), ignored -> new ArrayList<>()).add(descriptor);
+        }
+        return immutableGroupedMap(grouped);
+    }
+
+    private static Map<RebindDegreeKey, List<FreeNodeRebindDescriptor>> groupFreeNodesByDegree(List<FreeNodeRebindDescriptor> descriptors) {
+        LinkedHashMap<RebindDegreeKey, List<FreeNodeRebindDescriptor>> grouped = new LinkedHashMap<>();
+        for (FreeNodeRebindDescriptor descriptor : descriptors == null ? List.<FreeNodeRebindDescriptor>of() : descriptors) {
+            grouped.computeIfAbsent(descriptor.degreeKey(), ignored -> new ArrayList<>()).add(descriptor);
+        }
+        return immutableGroupedMap(grouped);
+    }
+
+    private static Map<RebindSignatureKey, List<RebindCandidate>> groupCandidatesBySignature(List<RebindCandidate> candidates) {
+        LinkedHashMap<RebindSignatureKey, List<RebindCandidate>> grouped = new LinkedHashMap<>();
+        for (RebindCandidate candidate : candidates == null ? List.<RebindCandidate>of() : candidates) {
+            grouped.computeIfAbsent(candidate.signatureKey(), ignored -> new ArrayList<>()).add(candidate);
+        }
+        return immutableGroupedMap(grouped);
+    }
+
+    private static Map<RebindDegreeKey, List<RebindCandidate>> groupCandidatesByDegree(List<RebindCandidate> candidates) {
+        LinkedHashMap<RebindDegreeKey, List<RebindCandidate>> grouped = new LinkedHashMap<>();
+        for (RebindCandidate candidate : candidates == null ? List.<RebindCandidate>of() : candidates) {
+            grouped.computeIfAbsent(candidate.degreeKey(), ignored -> new ArrayList<>()).add(candidate);
+        }
+        return immutableGroupedMap(grouped);
+    }
+
+    private static <K, V> Map<K, List<V>> immutableGroupedMap(Map<K, List<V>> grouped) {
+        if (grouped == null || grouped.isEmpty()) {
+            return Map.of();
+        }
+        LinkedHashMap<K, List<V>> result = new LinkedHashMap<>();
+        for (Map.Entry<K, List<V>> entry : grouped.entrySet()) {
+            result.put(entry.getKey(), List.copyOf(entry.getValue()));
+        }
+        return Map.copyOf(result);
+    }
+
+    private static List<RebindCandidate> availableCandidates(List<RebindCandidate> candidates, Set<GridPoint2x> usedCandidatePoints) {
+        if (candidates == null || candidates.isEmpty()) {
+            return List.of();
+        }
+        return candidates.stream()
+                .filter(candidate -> candidate != null && !usedCandidatePoints.contains(candidate.point2x()))
+                .toList();
+    }
+
+    private static RebindCandidate firstAvailableCandidate(List<RebindCandidate> candidates, Set<GridPoint2x> usedCandidatePoints) {
+        if (candidates == null || candidates.isEmpty()) {
+            return null;
+        }
+        for (RebindCandidate candidate : candidates) {
+            if (candidate != null && !usedCandidatePoints.contains(candidate.point2x())) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    private static int compareFreeNodeDescriptors(FreeNodeRebindDescriptor left, FreeNodeRebindDescriptor right) {
+        int distanceCompare = compareDistanceVectors(left.distanceVector(), right.distanceVector());
+        if (distanceCompare != 0) {
+            return distanceCompare;
+        }
+        int pointCompare = GridPoint2x.ORDER.compare(left.point2x(), right.point2x());
+        if (pointCompare != 0) {
+            return pointCompare;
+        }
+        return Long.compare(left.nodeId() == null ? Long.MAX_VALUE : left.nodeId(), right.nodeId() == null ? Long.MAX_VALUE : right.nodeId());
+    }
+
+    private static int compareCandidates(RebindCandidate left, RebindCandidate right) {
+        int distanceCompare = compareDistanceVectors(left.distanceVector(), right.distanceVector());
+        if (distanceCompare != 0) {
+            return distanceCompare;
+        }
+        return GridPoint2x.ORDER.compare(left.point2x(), right.point2x());
+    }
+
+    private static int compareDistanceVectors(List<Integer> left, List<Integer> right) {
+        int leftSize = left == null ? 0 : left.size();
+        int rightSize = right == null ? 0 : right.size();
+        int size = Math.max(leftSize, rightSize);
+        for (int index = 0; index < size; index++) {
+            int leftValue = index < leftSize ? left.get(index) : Integer.MAX_VALUE;
+            int rightValue = index < rightSize ? right.get(index) : Integer.MAX_VALUE;
+            if (leftValue != rightValue) {
+                return Integer.compare(leftValue, rightValue);
+            }
+        }
+        return 0;
     }
 
     private static Map<Long, Room> indexRoomsById(Collection<Room> rooms) {
@@ -803,6 +1142,57 @@ public final class Corridor {
         return current == null || end == null ? 0.0d : current.manhattanDistance(end);
     }
 
+    private static Map<GridPoint2x, List<Integer>> indexDistanceVectors(
+            Map<GridPoint2x, Set<GridPoint2x>> adjacency,
+            List<RouteEndpoint> endpoints
+    ) {
+        if (adjacency == null || adjacency.isEmpty()) {
+            return Map.of();
+        }
+        List<RouteEndpoint> resolvedEndpoints = endpoints == null ? List.of() : List.copyOf(endpoints);
+        ArrayList<Map<GridPoint2x, Integer>> endpointDistances = new ArrayList<>(resolvedEndpoints.size());
+        for (RouteEndpoint endpoint : resolvedEndpoints) {
+            endpointDistances.add(shortestPointDistances(adjacency, endpoint.point2x()));
+        }
+        LinkedHashMap<GridPoint2x, List<Integer>> result = new LinkedHashMap<>();
+        for (GridPoint2x point2x : adjacency.keySet()) {
+            ArrayList<Integer> distanceVector = new ArrayList<>(endpointDistances.size());
+            for (Map<GridPoint2x, Integer> distanceMap : endpointDistances) {
+                distanceVector.add(distanceMap.getOrDefault(point2x, Integer.MAX_VALUE));
+            }
+            result.put(point2x, distanceVector.isEmpty() ? List.of() : List.copyOf(distanceVector));
+        }
+        return result.isEmpty() ? Map.of() : Map.copyOf(result);
+    }
+
+    private static Map<GridPoint2x, Integer> shortestPointDistances(
+            Map<GridPoint2x, Set<GridPoint2x>> adjacency,
+            GridPoint2x start
+    ) {
+        if (adjacency == null || adjacency.isEmpty() || start == null || !adjacency.containsKey(start)) {
+            return Map.of();
+        }
+        PriorityQueue<PointDistance> frontier = new PriorityQueue<>(Comparator.comparingInt(PointDistance::distance2));
+        Map<GridPoint2x, Integer> bestDistances = new HashMap<>();
+        frontier.add(new PointDistance(start, 0));
+        bestDistances.put(start, 0);
+        while (!frontier.isEmpty()) {
+            PointDistance current = frontier.poll();
+            if (current.distance2() > bestDistances.getOrDefault(current.point2x(), Integer.MAX_VALUE)) {
+                continue;
+            }
+            for (GridPoint2x neighbor : adjacency.getOrDefault(current.point2x(), Set.of())) {
+                int nextDistance = current.distance2() + edgeCost(current.point2x(), neighbor);
+                if (nextDistance >= bestDistances.getOrDefault(neighbor, Integer.MAX_VALUE)) {
+                    continue;
+                }
+                bestDistances.put(neighbor, nextDistance);
+                frontier.add(new PointDistance(neighbor, nextDistance));
+            }
+        }
+        return bestDistances.isEmpty() ? Map.of() : Map.copyOf(bestDistances);
+    }
+
     private static double turnPenalty(CellCoord start, CellCoord end) {
         int cellDistance = Math.max(1, start.manhattanDistance(end));
         return Math.max(0.15d, Math.min(0.75d, 0.75d / Math.sqrt(cellDistance)));
@@ -958,6 +1348,151 @@ public final class Corridor {
             CardinalDirection direction,
             GridPoint2x anchorPoint
     ) {
+    }
+
+    private record RouteGraph(
+            Map<GridPoint2x, Set<GridPoint2x>> adjacency,
+            Set<GridPoint2x> roomBoundPoints,
+            Map<GridPoint2x, List<Integer>> distanceVectors
+    ) {
+        private RouteGraph {
+            adjacency = adjacency == null ? Map.of() : Map.copyOf(adjacency);
+            roomBoundPoints = roomBoundPoints == null ? Set.of() : Set.copyOf(roomBoundPoints);
+            distanceVectors = distanceVectors == null ? Map.of() : Map.copyOf(distanceVectors);
+        }
+
+        private static RouteGraph from(Corridor corridor) {
+            if (corridor == null) {
+                return new RouteGraph(Map.of(), Set.of(), Map.of());
+            }
+            LinkedHashMap<GridPoint2x, Set<GridPoint2x>> adjacency = new LinkedHashMap<>();
+            for (CorridorRoute route : corridor.routes()) {
+                List<GridPoint2x> path2x = route == null ? List.of() : route.path2x();
+                for (int index = 1; index < path2x.size(); index++) {
+                    GridPoint2x previous = path2x.get(index - 1);
+                    GridPoint2x current = path2x.get(index);
+                    if (previous == null || current == null || previous.equals(current)) {
+                        continue;
+                    }
+                    adjacency.computeIfAbsent(previous, ignored -> new LinkedHashSet<>()).add(current);
+                    adjacency.computeIfAbsent(current, ignored -> new LinkedHashSet<>()).add(previous);
+                }
+            }
+
+            LinkedHashSet<GridPoint2x> roomBoundPoints = new LinkedHashSet<>();
+            ArrayList<RouteEndpoint> endpoints = new ArrayList<>();
+            for (CorridorNode node : corridor.nodes()) {
+                if (node == null || !node.isRoomBound()) {
+                    continue;
+                }
+                roomBoundPoints.add(node.point2x());
+                endpoints.add(new RouteEndpoint(node.roomId(), node.nodeId(), node.point2x()));
+            }
+            endpoints.sort(Comparator
+                    .comparing((RouteEndpoint endpoint) -> endpoint.roomId() == null ? Long.MAX_VALUE : endpoint.roomId())
+                    .thenComparing(endpoint -> endpoint.nodeId() == null ? Long.MAX_VALUE : endpoint.nodeId())
+                    .thenComparing(RouteEndpoint::point2x, GridPoint2x.ORDER));
+
+            LinkedHashMap<GridPoint2x, Set<GridPoint2x>> immutableAdjacency = new LinkedHashMap<>();
+            for (Map.Entry<GridPoint2x, Set<GridPoint2x>> entry : adjacency.entrySet()) {
+                immutableAdjacency.put(entry.getKey(), Set.copyOf(entry.getValue()));
+            }
+            return new RouteGraph(
+                    immutableAdjacency,
+                    roomBoundPoints,
+                    indexDistanceVectors(immutableAdjacency, endpoints));
+        }
+
+        private List<GridPoint2x> points() {
+            return adjacency.keySet().stream()
+                    .sorted(GridPoint2x.ORDER)
+                    .toList();
+        }
+
+        private List<GridPoint2x> neighborsOf(GridPoint2x point2x) {
+            return adjacency.getOrDefault(point2x, Set.of()).stream()
+                    .sorted(GridPoint2x.ORDER)
+                    .toList();
+        }
+
+        private int degree(GridPoint2x point2x) {
+            return adjacency.getOrDefault(point2x, Set.of()).size();
+        }
+
+        private List<Integer> distanceVector(GridPoint2x point2x) {
+            return distanceVectors.getOrDefault(point2x, List.of());
+        }
+    }
+
+    private record RouteEndpoint(Long roomId, Long nodeId, GridPoint2x point2x) {
+    }
+
+    private record NodeRebindShape(
+            RebindDegreeKey degreeKey,
+            RebindSignatureKey signatureKey
+    ) {
+    }
+
+    private record RebindDegreeKey(
+            GridPoint2x.Kind kind,
+            int degree
+    ) {
+    }
+
+    private record RebindSignatureKey(
+            RebindDegreeKey degreeKey,
+            ArmSignature armSignature
+    ) {
+    }
+
+    private record ArmSignature(List<ArmSignatureEntry> entries) {
+        private ArmSignature {
+            entries = entries == null ? List.of() : List.copyOf(entries);
+        }
+    }
+
+    private record ArmSignatureEntry(
+            CardinalDirection direction,
+            int length2
+    ) {
+        private ArmSignatureEntry {
+            direction = Objects.requireNonNull(direction, "direction");
+        }
+    }
+
+    private record FreeNodeRebindDescriptor(
+            Long nodeId,
+            GridPoint2x point2x,
+            RebindSignatureKey signatureKey,
+            RebindDegreeKey degreeKey,
+            List<Integer> distanceVector
+    ) {
+        private FreeNodeRebindDescriptor {
+            point2x = Objects.requireNonNull(point2x, "point2x");
+            signatureKey = Objects.requireNonNull(signatureKey, "signatureKey");
+            degreeKey = Objects.requireNonNull(degreeKey, "degreeKey");
+            distanceVector = distanceVector == null ? List.of() : List.copyOf(distanceVector);
+        }
+    }
+
+    private record RebindCandidate(
+            GridPoint2x point2x,
+            RebindSignatureKey signatureKey,
+            RebindDegreeKey degreeKey,
+            List<Integer> distanceVector
+    ) {
+        private RebindCandidate {
+            point2x = Objects.requireNonNull(point2x, "point2x");
+            signatureKey = Objects.requireNonNull(signatureKey, "signatureKey");
+            degreeKey = Objects.requireNonNull(degreeKey, "degreeKey");
+            distanceVector = distanceVector == null ? List.of() : List.copyOf(distanceVector);
+        }
+    }
+
+    private record PointDistance(GridPoint2x point2x, int distance2) {
+        private PointDistance {
+            point2x = Objects.requireNonNull(point2x, "point2x");
+        }
     }
 
     private record AnchorAttachment(CellCoord cell, List<GridPoint2x> anchorToCellPath) {

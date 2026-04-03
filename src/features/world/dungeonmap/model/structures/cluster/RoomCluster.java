@@ -891,7 +891,6 @@ public final class RoomCluster {
                 result.add(resolvedRoom(
                         cluster,
                         candidate.cellsByLevel(),
-                        clusterCells,
                         boundaryKinds,
                         candidate.preferredAnchorsByLevel(),
                         candidate.roomId(),
@@ -958,20 +957,19 @@ public final class RoomCluster {
         private static Room resolvedRoom(
                 RoomCluster cluster,
                 Map<Integer, Set<CellCoord>> roomCellsByLevel,
-                Set<CellCoord> clusterCells,
                 Map<GridSegment2x, InternalBoundaryType> boundaryKinds,
                 Map<Integer, CellCoord> preferredAnchorsByLevel,
                 Long roomId,
                 String roomName,
                 RoomNarration narration
         ) {
-            StructureDescriptor descriptor = descriptorForRoom(roomCellsByLevel, clusterCells, boundaryKinds, preferredAnchorsByLevel);
+            StructureDescriptor descriptor = descriptorForRoom(roomCellsByLevel, boundaryKinds, preferredAnchorsByLevel);
             return Room.resolved(
                     roomId,
                     cluster.mapId(),
                     cluster.clusterId() == null ? 0L : cluster.clusterId(),
                     roomName,
-                    StructureObject.fromDescriptor(descriptor),
+                    validatedStructureForRoom(roomCellsByLevel, descriptor),
                     narration);
         }
 
@@ -1172,12 +1170,11 @@ public final class RoomCluster {
 
         private static StructureDescriptor descriptorForRoom(
                 Map<Integer, Set<CellCoord>> roomCellsByLevel,
-                Set<CellCoord> clusterCells,
                 Map<GridSegment2x, InternalBoundaryType> boundaryKinds,
                 Map<Integer, CellCoord> preferredAnchorsByLevel
         ) {
+            StructureDescriptor baseDescriptor = StructureDescriptor.fromCellCoordsByLevel(roomCellsByLevel);
             Map<Integer, StructureDescriptor.LevelDescriptor> levels = new LinkedHashMap<>();
-            Set<CellCoord> resolvedClusterCells = normalizeCells(clusterCells);
             for (Map.Entry<Integer, Set<CellCoord>> entry : (roomCellsByLevel == null ? Map.<Integer, Set<CellCoord>>of() : roomCellsByLevel).entrySet().stream()
                     .sorted(Map.Entry.comparingByKey())
                     .toList()) {
@@ -1186,19 +1183,34 @@ public final class RoomCluster {
                 if (levelZ == null || roomCells.isEmpty()) {
                     continue;
                 }
-                BoundarySets boundarySets = boundarySetsForRoom(
-                        roomCells,
-                        resolvedClusterCells.isEmpty() ? roomCells : resolvedClusterCells,
-                        boundaryKinds);
+                StructureDescriptor.LevelDescriptor baseLevel = baseDescriptor.level(levelZ);
+                if (baseLevel == null || baseLevel.boundaryEdges().isEmpty()) {
+                    continue;
+                }
                 CellCoord preferredAnchor = preferredAnchorsByLevel == null ? null : preferredAnchorsByLevel.get(levelZ);
-                // Room rewrites author descriptor truth directly so boundary edits do not round-trip through generic cell import.
+                // Room rewrites must stay on the same canonical cell -> descriptor path as ordinary room creation.
+                // Only opening segments are layered on afterward so rewrites cannot persist a floor shape that
+                // hydrates differently from the authored room cells.
                 levels.put(levelZ, new StructureDescriptor.LevelDescriptor(
                         anchorCellForRoom(roomCells, preferredAnchor),
-                        fillSeedsForRoom(roomCells),
-                        boundarySets.walls(),
-                        boundarySets.openings()));
+                        baseLevel.fillSeeds(),
+                        baseLevel.boundaryEdges(),
+                        openingEdgesForRoom(baseLevel.boundaryEdges(), boundaryKinds)));
             }
             return new StructureDescriptor(levels);
+        }
+
+        private static StructureObject validatedStructureForRoom(
+                Map<Integer, Set<CellCoord>> intendedRoomCellsByLevel,
+                StructureDescriptor descriptor
+        ) {
+            StructureObject structure = StructureObject.fromDescriptor(descriptor);
+            Map<Integer, Set<CellCoord>> expected = immutableCellsByLevel(intendedRoomCellsByLevel);
+            Map<Integer, Set<CellCoord>> hydrated = structureCellsByLevel(structure);
+            if (!hydrated.equals(expected)) {
+                throw new IllegalStateException("Room rewrite descriptor changed the authored floor cells");
+            }
+            return structure;
         }
 
         private static Map<Integer, CellCoord> preferredAnchors(List<Room> sourceRooms) {
@@ -1345,6 +1357,20 @@ public final class RoomCluster {
             return CellCoord.componentCenters(roomCells);
         }
 
+        private static Map<Integer, Set<CellCoord>> structureCellsByLevel(StructureObject structure) {
+            if (structure == null || structure.levels().isEmpty()) {
+                return Map.of();
+            }
+            Map<Integer, Set<CellCoord>> result = new LinkedHashMap<>();
+            for (Integer levelZ : structure.levels().stream().sorted().toList()) {
+                Set<CellCoord> cells = normalizeCells(structure.cellCoordsAtLevel(levelZ));
+                if (!cells.isEmpty()) {
+                    result.put(levelZ, cells);
+                }
+            }
+            return result.isEmpty() ? Map.of() : Map.copyOf(result);
+        }
+
         private static boolean contains(Set<CellCoord> cells, CellCoord cell) {
             return cell != null && cells != null && cells.contains(cell);
         }
@@ -1433,7 +1459,6 @@ public final class RoomCluster {
             return resolvedRoom(
                     cluster,
                     roomCellsByLevel,
-                    cluster.cells(),
                     boundaryKinds,
                     preferredAnchorsByLevel,
                     roomId,
@@ -1451,45 +1476,21 @@ public final class RoomCluster {
             return normalizedRoomName(null, null);
         }
 
-        private static BoundarySets boundarySetsForRoom(
-                Set<CellCoord> roomCells,
-                Set<CellCoord> clusterCells,
+        private static Set<GridSegment2x> openingEdgesForRoom(
+                Set<GridSegment2x> boundaryEdges,
                 Map<GridSegment2x, InternalBoundaryType> boundaryKinds
         ) {
-            Set<GridSegment2x> wallSegments = new LinkedHashSet<>();
-            Set<GridSegment2x> connectionSegments = new LinkedHashSet<>();
-            if (roomCells == null || roomCells.isEmpty() || clusterCells == null || clusterCells.isEmpty()) {
-                return new BoundarySets(Set.of(), Set.of());
+            if (boundaryEdges == null || boundaryEdges.isEmpty() || boundaryKinds == null || boundaryKinds.isEmpty()) {
+                return Set.of();
             }
-            for (CellCoord cell : roomCells) {
-                for (CellCoord step : CellCoord.CARDINAL_STEPS) {
-                    CellCoord neighbor = cell.add(step);
-                    if (roomCells.contains(neighbor)) {
-                        continue;
-                    }
-                    GridSegment2x segment2x = GridSegment2x.boundaryEdge(cell, cell.directionTo4(neighbor));
-                    if (!clusterCells.contains(neighbor)) {
-                        wallSegments.add(segment2x);
-                        continue;
-                    }
-                    InternalBoundaryType resolvedType = boundaryKinds == null
-                            ? InternalBoundaryType.WALL
-                            : boundaryKinds.getOrDefault(segment2x, InternalBoundaryType.WALL);
-                    if (resolvedType == InternalBoundaryType.DOOR) {
-                        connectionSegments.add(segment2x);
-                    } else {
-                        wallSegments.add(segment2x);
-                    }
-                }
-            }
-            return new BoundarySets(Set.copyOf(wallSegments), Set.copyOf(connectionSegments));
+            return boundaryEdges.stream()
+                    .filter(segment2x -> boundaryKinds.get(segment2x) == InternalBoundaryType.DOOR)
+                    .sorted(GridSegment2x.ORDER)
+                    .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
         }
 
         private static boolean isBlocked(Set<GridSegment2x> barriers, CellCoord cell, CellCoord step) {
             return barriers != null && barriers.contains(GridSegment2x.boundaryEdge(cell, cell.directionTo4(cell.add(step))));
-        }
-
-        private record BoundarySets(Set<GridSegment2x> walls, Set<GridSegment2x> openings) {
         }
 
         private record RoomRewriteCandidate(

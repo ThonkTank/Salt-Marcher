@@ -174,7 +174,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - Legacy dungeon storage compatibility is intentionally unsupported. Current code works only against the current schema and should fail fast on broken or stale rows instead of normalizing them at runtime.
 - Room geometry is loaded directly from persisted room-owned `StructureDescriptor` rows.
 - New dungeons start with a neutral default room (`Raum n`), not an implicit entrance concept.
-- Cluster move previews and persisted cluster moves share the same explicit corridor rewrite rule: horizontal room-bound endpoints move with their rooms, level moves detach those bindings in place.
+- Cluster move previews and persisted cluster moves share the same explicit corridor rewrite rule: horizontal room-bound endpoints move with their rooms, free nodes seed from the same horizontal delta and then rebind room-relatively on the rerouted corridor graph, and level moves detach room bindings in place.
 - Storage model:
   - clusters: membership owner plus derived `center_x`, `center_y`, `level_z` metadata only
   - rooms: `dungeon_rooms` row plus per-level descriptor tables `dungeon_room_levels`, `dungeon_room_level_seeds`, and `dungeon_room_level_segments`
