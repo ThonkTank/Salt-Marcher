@@ -4,10 +4,10 @@ import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationSnapshot;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.shell.interaction.DungeonDragService;
 import features.world.dungeonmap.shell.interaction.DungeonHitSnapshot;
-import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
 
 import java.util.Objects;
 
@@ -50,32 +50,32 @@ public final class DungeonRuntimeSelectionPolicy {
                 || !activeCell.equals(snapshot.probe().gridCell())) {
             return false;
         }
-        DungeonHitSubject subject = snapshot.firstSubjectMatching(candidate ->
-                isRuntimeSelectable(candidate) && subjectOwnsActiveCell(activeMap, activeCell, activeLevelZ, candidate));
-        return subject != null;
+        DungeonSelectionRef ref = snapshot.firstRefMatching(candidate ->
+                isRuntimeSelectable(candidate) && refOwnsActiveCell(activeMap, activeCell, activeLevelZ, candidate));
+        return ref != null;
     }
 
-    private static boolean isRuntimeSelectable(DungeonHitSubject subject) {
-        return subject instanceof DungeonHitSubject.RoomSubject
-                || subject instanceof DungeonHitSubject.CorridorSubject
-                || subject instanceof DungeonHitSubject.StairSubject
-                || subject instanceof DungeonHitSubject.TransitionSubject;
+    private static boolean isRuntimeSelectable(DungeonSelectionRef ref) {
+        return ref instanceof DungeonSelectionRef.RoomRef
+                || ref instanceof DungeonSelectionRef.CorridorRef
+                || ref instanceof DungeonSelectionRef.StairRef
+                || ref instanceof DungeonSelectionRef.TransitionRef;
     }
 
-    private static boolean subjectOwnsActiveCell(
+    private static boolean refOwnsActiveCell(
             DungeonLayout activeMap,
             CellCoord activeCell,
             int activeLevelZ,
-            DungeonHitSubject subject
+            DungeonSelectionRef ref
     ) {
-        return switch (subject) {
-            case DungeonHitSubject.RoomSubject roomSubject -> roomOwnsActiveCell(activeMap, activeCell, activeLevelZ, roomSubject);
-            case DungeonHitSubject.CorridorSubject corridorSubject -> activeMap.corridorsAtCell(activeCell, activeLevelZ).stream()
-                    .anyMatch(corridor -> corridor != null && Objects.equals(corridor.corridorId(), corridorSubject.corridorId()));
-            case DungeonHitSubject.StairSubject stairSubject -> activeMap.stairsAtCell(activeCell, activeLevelZ).stream()
-                    .anyMatch(stair -> stair != null && Objects.equals(stair.stairId(), stairSubject.stairId()));
-            case DungeonHitSubject.TransitionSubject transitionSubject -> activeMap.transitionsAtCell(activeCell, activeLevelZ).stream()
-                    .anyMatch(transition -> transition != null && Objects.equals(transition.transitionId(), transitionSubject.transitionId()));
+        return switch (ref) {
+            case DungeonSelectionRef.RoomRef roomRef -> roomOwnsActiveCell(activeMap, activeCell, activeLevelZ, roomRef);
+            case DungeonSelectionRef.CorridorRef corridorRef -> activeMap.corridorsAtCell(activeCell, activeLevelZ).stream()
+                    .anyMatch(corridor -> corridor != null && Objects.equals(corridor.corridorId(), corridorRef.corridorId()));
+            case DungeonSelectionRef.StairRef stairRef -> activeMap.stairsAtCell(activeCell, activeLevelZ).stream()
+                    .anyMatch(stair -> stair != null && Objects.equals(stair.stairId(), stairRef.stairId()));
+            case DungeonSelectionRef.TransitionRef transitionRef -> activeMap.transitionsAtCell(activeCell, activeLevelZ).stream()
+                    .anyMatch(transition -> transition != null && Objects.equals(transition.transitionId(), transitionRef.transitionId()));
             default -> false;
         };
     }
@@ -84,9 +84,9 @@ public final class DungeonRuntimeSelectionPolicy {
             DungeonLayout activeMap,
             CellCoord activeCell,
             int activeLevelZ,
-            DungeonHitSubject.RoomSubject roomSubject
+            DungeonSelectionRef.RoomRef roomRef
     ) {
         Room room = activeMap.roomAtCell(activeCell, activeLevelZ);
-        return room != null && Objects.equals(room.roomId(), roomSubject.roomId());
+        return room != null && Objects.equals(room.roomId(), roomRef.roomId());
     }
 }

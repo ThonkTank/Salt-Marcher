@@ -134,7 +134,7 @@ public final class DungeonRoomApplicationService {
                 continue;
             }
             DungeonLayout layoutSnapshot = workingLayout;
-            List<RoomCluster> finalClusters = assignGeneratedRoomNames(
+            List<RoomCluster> finalClusters = assignGeneratedClusterRoomNames(
                     cluster.applyDelete(cells, levelZ),
                     () -> nextRoomName(layoutSnapshot, reservedNames));
             if (finalClusters == null) {
@@ -322,7 +322,7 @@ public final class DungeonRoomApplicationService {
         }
     }
 
-    private static List<RoomCluster> assignGeneratedRoomNames(List<RoomCluster> clusters, Supplier<String> roomNameSupplier) {
+    private static List<RoomCluster> assignGeneratedClusterRoomNames(List<RoomCluster> clusters, Supplier<String> roomNameSupplier) {
         if (clusters == null || roomNameSupplier == null) {
             return clusters;
         }
@@ -333,7 +333,7 @@ public final class DungeonRoomApplicationService {
                 renamedClusters.add(null);
                 continue;
             }
-            List<Room> renamedRooms = assignGeneratedRoomNames(cluster.rooms(), roomNameSupplier);
+            List<Room> renamedRooms = assignGeneratedNamesToRooms(cluster.rooms(), roomNameSupplier);
             if (renamedRooms.equals(cluster.rooms())) {
                 renamedClusters.add(cluster);
                 continue;
@@ -344,7 +344,7 @@ public final class DungeonRoomApplicationService {
         return changed ? List.copyOf(renamedClusters) : clusters;
     }
 
-    private static List<Room> assignGeneratedRoomNames(List<Room> rooms, Supplier<String> roomNameSupplier) {
+    private static List<Room> assignGeneratedNamesToRooms(List<Room> rooms, Supplier<String> roomNameSupplier) {
         if (rooms == null || rooms.isEmpty()) {
             return List.of();
         }

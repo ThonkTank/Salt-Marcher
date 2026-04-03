@@ -75,9 +75,9 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `CellCoord` is the canonical 2D cell primitive at model-owner seams, pointer events, hit probes, drag/placement helpers, runtime navigation, and renderer overlays.
 - `DungeonHitProbe` carries canonical `CellCoord` cell context plus canonical `GridPoint2x` probe geometry. Cell hits use `DungeonHitSurface.CellSurface`, while shared half-step hit geometry uses set-based `PointSurface` and `SegmentSurface`.
 - `DungeonLayout` owns canonical `CellCoord` lookups, traversable-cell indices, and level-aware cell queries. Corridor room bindings use `CellCoord`; geometry-backed picks and selections use `GridPoint2x` and `GridSegment2x`.
-- `DungeonHitSubject` and `DungeonSelectionRef` expose geometry-backed editor/runtime selections only as canonical ids plus final `GridPoint2x`, `GridSegment2x`, and `CubePoint`. Do not add raw doubled-cell mirrors or storage-parity mirrors back into those seams.
+- `DungeonSelectionRef` is the shared hit/hover/selection seam. It exposes geometry-backed editor/runtime selections only as canonical ids plus final `GridPoint2x`, `GridSegment2x`, and `CubePoint`. Do not add raw doubled-cell mirrors or storage-parity mirrors back into that seam.
 - `DungeonHitKind` and `DungeonSelectionRef` are shared interaction semantics owned by `model/interaction/`, not by `shell/interaction/`.
-- `DungeonSelectionRef.ownerRef()` owns typed owner semantics. Do not mirror owner resolution back onto `DungeonHitSubject` or generic nullable owner-id helper channels.
+- `DungeonSelectionRef.ownerRef()` owns typed owner semantics. Do not mirror owner resolution back into shell-local wrapper hierarchies or generic nullable owner-id helper channels.
 - `InteractiveLabelHandle` and `DungeonEditorRenderState` are display payloads on final `CellCoord`/`GridPoint2x`/`GridSegment2x` only. `DungeonRuntimeRenderOverlay` carries the active `DungeonRuntimeNavigationSnapshot` plus runtime exit markers derived from the resolved surface. Renderers and tools must not introduce storage codecs or legacy parity adapters.
 - `EditorTool.resolveHit(...)` owns tool-specific interpretation of those candidates. Do not move per-tool allowlists back into a central selector.
 - `EditorInteractionState` owns only shared editor coordination state:
@@ -96,16 +96,16 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
   1. collect `DungeonHitSnapshot`
   2. ask the active tool to `resolveHit(...)`
   3. store hover from `EditorHitResolution`
-  4. dispatch `pressed`, `dragged`, or `released` with an `EditorToolContext` that carries the resolved subject and ref
+  4. dispatch `pressed`, `dragged`, or `released` with an `EditorToolContext` that carries the resolved hit ref and selection ref
 - `EditorTool` implementations own gesture meaning. Shared state is justified only when multiple collaborators need it.
 - Tool responsibilities:
 - `SelectionTool` owns semantic selection plus cluster-drag and corridor-node drag gestures.
 - `RoomNarrationPane` owns the room narration editor UI for the current selection; `SelectionTool` no longer embeds that form logic.
-- `PaintTool` owns room paint/delete sessions from resolved `FloorCellSubject` hits and publishes paint previews as `CellCoord` sets, not hydrierten room structures.
+- `PaintTool` owns room paint/delete sessions from resolved `FloorCellRef` hits and publishes paint previews as `CellCoord` sets, not hydrierten room structures.
 - `BoundaryTool` owns wall-path drafting. Draft state stays local to the tool; shared state exposes only boundary preview geometry.
 - `ConnectionsTool` owns door edits, corridor drafting, node insertion, and corridor deletion. Corridor graph edits use explicit 2x node/segment points, while preview layouts use `DungeonLayout` corridor replacement helpers instead of hand-built temporary layouts.
 - `TransitionTool` owns transition create/delete gestures and keeps its form state local to the tool. It should carry selected destinations directly as `DungeonTransitionDestination` plus a small local mode hint, not as parallel target-id fields that are rebuilt into destinations later.
-- `DungeonHitSnapshot.firstSubjectMatching(...)` and `orderedSubjects()` are the shared helpers for per-tool subject resolution. Prefer these over ad-hoc candidate walks.
+- `DungeonHitSnapshot.firstRefMatching(...)` and `orderedRefs()` are the shared helpers for per-tool hit resolution. Prefer these over ad-hoc candidate walks.
 - Selection identity is semantic. Compare typed owner refs from `DungeonSelectionRef` instead of reconstructing owners through generic ids or parsing helpers in renderers.
 
 ## Workspace And Rendering

@@ -8,12 +8,12 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
+import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNode;
 import features.world.dungeonmap.model.structures.corridor.CorridorSegment;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.shell.editor.EditorCards;
-import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
 import features.world.dungeonmap.state.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
@@ -97,7 +97,7 @@ public final class ConnectionsTool implements EditorTool {
         if (event == null || !event.isPrimaryButton()) {
             return false;
         }
-        DungeonHitSubject hit = ctx == null ? null : ctx.resolvedSubject();
+        DungeonSelectionRef hit = ctx == null ? null : ctx.hitRef();
         if (sessionState.selectedTool() == DungeonEditorTool.CONNECTIONS_DELETE) {
             return handleDeletePressed(ctx, ctx.activeMap(), hit);
         }
@@ -116,33 +116,34 @@ public final class ConnectionsTool implements EditorTool {
 
     @Override
     public EditorHitResolution resolveHit(EditorToolContext ctx, EditorToolPhase phase) {
-        DungeonHitSubject subject = resolvedSubject(
+        DungeonSelectionRef hitRef = resolvedHitRef(
                 ctx == null ? null : ctx.snapshot(),
                 ctx == null ? null : ctx.activeMap(),
                 ctx == null || ctx.probe() == null ? mapState.activeProjectionLevel() : ctx.probe().levelZ());
-        if (subject == null
+        if (hitRef == null
                 && draft != null
                 && sessionState.selectedTool() == DungeonEditorTool.CONNECTIONS
                 && ctx != null
                 && ctx.probe() != null) {
-            subject = new DungeonHitSubject.FloorCellSubject(ctx.probe().gridCell(), ctx.probe().levelZ());
+            hitRef = new DungeonSelectionRef.FloorCellRef(
+                    features.world.dungeonmap.model.geometry.CubePoint.at(ctx.probe().gridCell(), ctx.probe().levelZ()));
         }
-        if (subject == null) {
+        if (hitRef == null) {
             return EditorHitResolution.none();
         }
-        if (subject instanceof DungeonHitSubject.RoomBoundarySubject
-                || subject instanceof DungeonHitSubject.ConnectionSubject
-                || subject instanceof DungeonHitSubject.CorridorNodeSubject
-                || subject instanceof DungeonHitSubject.CorridorCornerSubject
-                || subject instanceof DungeonHitSubject.CorridorSegmentSubject
-                || subject instanceof DungeonHitSubject.FloorCellSubject) {
-            return EditorHitResolution.part(subject);
+        if (hitRef instanceof DungeonSelectionRef.RoomBoundaryRef
+                || hitRef instanceof DungeonSelectionRef.ConnectionRef
+                || hitRef instanceof DungeonSelectionRef.CorridorNodeRef
+                || hitRef instanceof DungeonSelectionRef.CorridorCornerRef
+                || hitRef instanceof DungeonSelectionRef.CorridorSegmentRef
+                || hitRef instanceof DungeonSelectionRef.FloorCellRef) {
+            return EditorHitResolution.part(hitRef);
         }
-        if (subject instanceof DungeonHitSubject.RoomSubject
-                || subject instanceof DungeonHitSubject.CorridorSubject) {
-            return EditorHitResolution.owner(subject);
+        if (hitRef instanceof DungeonSelectionRef.RoomRef
+                || hitRef instanceof DungeonSelectionRef.CorridorRef) {
+            return EditorHitResolution.owner(hitRef);
         }
-        return EditorHitResolution.subjectOnly(subject);
+        return EditorHitResolution.ref(hitRef);
     }
 
     @Override
@@ -172,73 +173,78 @@ public final class ConnectionsTool implements EditorTool {
         refreshCallback = callback == null ? () -> { } : callback;
     }
 
-    private boolean handleConnectionsPressed(EditorToolContext ctx, DungeonLayout layout, DungeonHitSubject hit) {
+    private boolean handleConnectionsPressed(EditorToolContext ctx, DungeonLayout layout, DungeonSelectionRef hit) {
         if (layout == null || hit == null) {
             return false;
         }
-        if (hit instanceof DungeonHitSubject.RoomBoundarySubject roomBoundaryHit) {
-            if (isEditableDoorBoundary(roomBoundaryHit, layout, ctx.probe().levelZ())) {
+        int levelZ = ctx == null || ctx.probe() == null ? mapState.activeProjectionLevel() : ctx.probe().levelZ();
+        if (hit instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundaryHit) {
+            DungeonLayout.RoomBoundaryDescription boundary = layout.describeRoomBoundary(roomBoundaryHit, levelZ);
+            if (boundary == null) {
+                return false;
+            }
+            if (isEditableDoorBoundary(roomBoundaryHit, boundary, layout, levelZ)) {
                 applySelection(ctx == null ? null : ctx.resolvedRef());
                 applyDoorEdit(
-                        roomBoundaryHit.clusterId(),
+                        boundary.clusterId(),
                         roomBoundaryHit.boundarySegment2x(),
                         false,
                         ctx == null ? null : ctx.resolvedRef());
                 return true;
             }
-            if (!roomBoundaryHit.exterior()) {
+            if (!boundary.exterior()) {
                 return false;
             }
             applySelection(ctx == null ? null : ctx.resolvedRef());
             if (draft == null) {
-                startDraft(roomBoundaryHit);
+                startDraft(roomBoundaryHit, boundary);
                 return true;
             }
-            finishDraftWithRoom(roomBoundaryHit);
+            finishDraftWithRoom(roomBoundaryHit, boundary);
             return true;
         }
-        if (draft != null && hit instanceof DungeonHitSubject.FloorCellSubject floorHit) {
+        if (draft != null && hit instanceof DungeonSelectionRef.FloorCellRef floorHit) {
             GridPoint2x point2x = ctx == null || ctx.probe() == null
-                    ? GridPoint2x.cell(floorHit.cell())
+                    ? GridPoint2x.cell(floorHit.cell().projectedCell())
                     : ctx.probe().probePoint2x();
             appendDraftNode(point2x);
             return true;
         }
-        if (draft != null && hit instanceof DungeonHitSubject.CorridorNodeSubject corridorNodeHit) {
+        if (draft != null && hit instanceof DungeonSelectionRef.CorridorNodeRef corridorNodeHit) {
             applySelection(ctx == null ? null : ctx.resolvedRef());
             finishDraftWithCorridorNode(corridorNodeHit);
             return true;
         }
-        if (hit instanceof DungeonHitSubject.CorridorCornerSubject cornerHit) {
+        if (hit instanceof DungeonSelectionRef.CorridorCornerRef cornerHit) {
             applySelection(ctx == null ? null : ctx.resolvedRef());
             insertNode(cornerHit.corridorId(), cornerHit.segmentId(), cornerHit.point2x());
             return true;
         }
-        if (hit instanceof DungeonHitSubject.CorridorSegmentSubject segmentHit) {
+        if (hit instanceof DungeonSelectionRef.CorridorSegmentRef segmentHit) {
             applySelection(ctx == null ? null : ctx.resolvedRef());
             insertNode(segmentHit.corridorId(), segmentHit.segmentId(), segmentHit.point2x());
             return true;
         }
-        if (hit instanceof DungeonHitSubject.CorridorNodeSubject nodeHit) {
+        if (hit instanceof DungeonSelectionRef.CorridorNodeRef) {
             applySelection(ctx == null ? null : ctx.resolvedRef());
             return true;
         }
-        if (hit instanceof DungeonHitSubject.ConnectionSubject connectionHit) {
+        if (hit instanceof DungeonSelectionRef.ConnectionRef) {
             applySelection(ctx == null ? null : ctx.resolvedRef());
             return true;
         }
-        if (hit instanceof DungeonHitSubject.RoomSubject roomHit) {
+        if (hit instanceof DungeonSelectionRef.RoomRef) {
             applySelection(ctx == null ? null : ctx.resolvedRef());
             return true;
         }
         return false;
     }
 
-    private boolean handleDeletePressed(EditorToolContext ctx, DungeonLayout layout, DungeonHitSubject hit) {
+    private boolean handleDeletePressed(EditorToolContext ctx, DungeonLayout layout, DungeonSelectionRef hit) {
         if (layout == null || hit == null) {
             return false;
         }
-        if (hit instanceof DungeonHitSubject.ConnectionSubject connectionHit
+        if (hit instanceof DungeonSelectionRef.ConnectionRef connectionHit
                 && connectionHit.connectionKind() == features.world.dungeonmap.model.structures.connection.ConnectionKind.LOCAL) {
             applySelection(ctx == null ? null : ctx.resolvedRef());
             applyDoorEdit(
@@ -268,9 +274,12 @@ public final class ConnectionsTool implements EditorTool {
         return false;
     }
 
-    private void startDraft(DungeonHitSubject.RoomBoundarySubject hit) {
+    private void startDraft(
+            DungeonSelectionRef.RoomBoundaryRef hit,
+            DungeonLayout.RoomBoundaryDescription boundary
+    ) {
         long firstNodeId = -1L;
-        CorridorNode startNode = roomBoundaryNode(hit, firstNodeId);
+        CorridorNode startNode = roomBoundaryNode(hit, boundary, firstNodeId);
         draft = new CorridorBuildDraft(
                 new ArrayList<>(List.of(startNode)),
                 new ArrayList<>(),
@@ -293,11 +302,14 @@ public final class ConnectionsTool implements EditorTool {
         showDraftPreview();
     }
 
-    private void finishDraftWithRoom(DungeonHitSubject.RoomBoundarySubject hit) {
-        if (draft == null || hit == null) {
+    private void finishDraftWithRoom(
+            DungeonSelectionRef.RoomBoundaryRef hit,
+            DungeonLayout.RoomBoundaryDescription boundary
+    ) {
+        if (draft == null || hit == null || boundary == null) {
             return;
         }
-        CorridorNode endNode = roomBoundaryNode(hit, draft.nextNodeId());
+        CorridorNode endNode = roomBoundaryNode(hit, boundary, draft.nextNodeId());
         ArrayList<CorridorNode> nodes = new ArrayList<>(draft.nodes());
         nodes.add(endNode);
         ArrayList<CorridorSegment> segments = new ArrayList<>(draft.segments());
@@ -316,7 +328,7 @@ public final class ConnectionsTool implements EditorTool {
                 throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.finishDraftWithRoom()", throwable));
     }
 
-    private void finishDraftWithCorridorNode(DungeonHitSubject.CorridorNodeSubject hit) {
+    private void finishDraftWithCorridorNode(DungeonSelectionRef.CorridorNodeRef hit) {
         if (draft == null || hit == null || hit.nodeId() == null || hit.corridorId() == null) {
             return;
         }
@@ -424,29 +436,34 @@ public final class ConnectionsTool implements EditorTool {
     }
 
     private boolean isEditableDoorBoundary(
-            DungeonHitSubject.RoomBoundarySubject hit,
+            DungeonSelectionRef.RoomBoundaryRef hit,
+            DungeonLayout.RoomBoundaryDescription boundary,
             DungeonLayout layout,
             int levelZ
     ) {
-        if (hit == null || layout == null || hit.clusterId() == null) {
+        if (hit == null || boundary == null || layout == null || boundary.clusterId() == null) {
             return false;
         }
-        if (hit.exterior()) {
+        if (boundary.exterior()) {
             return false;
         }
-        var cluster = layout.findCluster(hit.clusterId());
-        var projectedCluster = cluster == null ? null : cluster.projectedToLevel(levelZ);
+        RoomCluster cluster = layout.findCluster(boundary.clusterId());
+        RoomCluster projectedCluster = cluster == null ? null : cluster.projectedToLevel(levelZ);
         return projectedCluster != null && projectedCluster.canCreateDoor(hit.boundarySegment2x());
     }
 
-    private static CorridorNode roomBoundaryNode(DungeonHitSubject.RoomBoundarySubject hit, long nodeId) {
-        GridPoint2x point2x = GridPoint2x.edgeCenter(hit.roomCell(), hit.outwardDirection());
+    private static CorridorNode roomBoundaryNode(
+            DungeonSelectionRef.RoomBoundaryRef hit,
+            DungeonLayout.RoomBoundaryDescription boundary,
+            long nodeId
+    ) {
+        GridPoint2x point2x = GridPoint2x.edgeCenter(boundary.roomCell(), boundary.outwardDirection());
         return new CorridorNode(
                 nodeId,
                 point2x,
                 hit.roomId(),
-                hit.roomCell(),
-                hit.outwardDirection());
+                boundary.roomCell(),
+                boundary.outwardDirection());
     }
 
     private void showDraftPreview() {
@@ -475,21 +492,21 @@ public final class ConnectionsTool implements EditorTool {
         return mapState.activeMap().findCorridor(corridorId);
     }
 
-    private static Long corridorId(DungeonHitSubject hit) {
-        return switch (hit) {
-            case DungeonHitSubject.CorridorSubject corridorSubject -> corridorSubject.corridorId();
-            case DungeonHitSubject.CorridorNodeSubject corridorNodeSubject -> corridorNodeSubject.corridorId();
-            case DungeonHitSubject.CorridorCornerSubject corridorCornerSubject -> corridorCornerSubject.corridorId();
-            case DungeonHitSubject.CorridorSegmentSubject corridorSegmentSubject -> corridorSegmentSubject.corridorId();
-            case DungeonHitSubject.ConnectionSubject connectionSubject ->
-                    connectionSubject.connectionKind() == features.world.dungeonmap.model.structures.connection.ConnectionKind.CORRIDOR
-                            ? connectionSubject.corridorId()
+    private static Long corridorId(DungeonSelectionRef ref) {
+        return switch (ref) {
+            case DungeonSelectionRef.CorridorRef corridorRef -> corridorRef.corridorId();
+            case DungeonSelectionRef.CorridorNodeRef corridorNodeRef -> corridorNodeRef.corridorId();
+            case DungeonSelectionRef.CorridorCornerRef corridorCornerRef -> corridorCornerRef.corridorId();
+            case DungeonSelectionRef.CorridorSegmentRef corridorSegmentRef -> corridorSegmentRef.corridorId();
+            case DungeonSelectionRef.ConnectionRef connectionRef ->
+                    connectionRef.connectionKind() == features.world.dungeonmap.model.structures.connection.ConnectionKind.CORRIDOR
+                            ? connectionRef.corridorId()
                             : null;
             default -> null;
         };
     }
 
-    private DungeonHitSubject resolvedSubject(
+    private DungeonSelectionRef resolvedHitRef(
             features.world.dungeonmap.shell.interaction.DungeonHitSnapshot snapshot,
             DungeonLayout layout,
             int levelZ
@@ -497,75 +514,91 @@ public final class ConnectionsTool implements EditorTool {
         if (snapshot == null) {
             return null;
         }
-        List<DungeonHitSubject> subjects = snapshot.orderedSubjects();
-        if (subjects.isEmpty()) {
+        List<DungeonSelectionRef> refs = snapshot.orderedRefs();
+        if (refs.isEmpty()) {
             return null;
         }
         if (sessionState.selectedTool() == DungeonEditorTool.CONNECTIONS_DELETE) {
-            return resolveDeleteSubject(subjects);
+            return resolveDeleteRef(refs);
         }
-        return resolveCreateSubject(subjects, layout, levelZ);
+        return resolveCreateRef(refs, layout, levelZ);
     }
 
-    private DungeonHitSubject resolveCreateSubject(List<DungeonHitSubject> subjects, DungeonLayout layout, int levelZ) {
+    private DungeonSelectionRef resolveCreateRef(List<DungeonSelectionRef> refs, DungeonLayout layout, int levelZ) {
         if (draft == null) {
-            DungeonHitSubject editableDoor = firstMatching(subjects, subject -> subject instanceof DungeonHitSubject.RoomBoundarySubject roomBoundary
-                    && isEditableDoorBoundary(roomBoundary, layout, levelZ));
+            DungeonSelectionRef editableDoor = firstMatching(refs, ref ->
+                    ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundary
+                            && isEditableDoorBoundary(
+                            roomBoundary,
+                            layout == null ? null : layout.describeRoomBoundary(roomBoundary, levelZ),
+                            layout,
+                            levelZ));
             if (editableDoor != null) {
                 return editableDoor;
             }
-            DungeonHitSubject exteriorBoundary = firstMatching(subjects, subject -> subject instanceof DungeonHitSubject.RoomBoundarySubject roomBoundary
-                    && roomBoundary.exterior());
+            DungeonSelectionRef exteriorBoundary = firstMatching(refs, ref ->
+                    ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundary
+                            && isExteriorBoundary(layout, roomBoundary, levelZ));
             if (exteriorBoundary != null) {
                 return exteriorBoundary;
             }
-            DungeonHitSubject graphHandle = firstMatching(subjects, subject ->
-                    subject instanceof DungeonHitSubject.CorridorNodeSubject
-                            || subject instanceof DungeonHitSubject.CorridorCornerSubject
-                            || subject instanceof DungeonHitSubject.CorridorSegmentSubject);
+            DungeonSelectionRef graphHandle = firstMatching(refs, ref ->
+                    ref instanceof DungeonSelectionRef.CorridorNodeRef
+                            || ref instanceof DungeonSelectionRef.CorridorCornerRef
+                            || ref instanceof DungeonSelectionRef.CorridorSegmentRef);
             if (graphHandle != null) {
                 return graphHandle;
             }
-            return firstMatching(subjects, subject ->
-                    subject instanceof DungeonHitSubject.ConnectionSubject
-                            || subject instanceof DungeonHitSubject.RoomSubject
-                            || subject instanceof DungeonHitSubject.CorridorSubject);
+            return firstMatching(refs, ref ->
+                    ref instanceof DungeonSelectionRef.ConnectionRef
+                            || ref instanceof DungeonSelectionRef.RoomRef
+                            || ref instanceof DungeonSelectionRef.CorridorRef);
         }
-        DungeonHitSubject finishBoundary = firstMatching(subjects, subject -> subject instanceof DungeonHitSubject.RoomBoundarySubject roomBoundary
-                && roomBoundary.exterior());
+        DungeonSelectionRef finishBoundary = firstMatching(refs, ref ->
+                ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundary
+                        && isExteriorBoundary(layout, roomBoundary, levelZ));
         if (finishBoundary != null) {
             return finishBoundary;
         }
-        DungeonHitSubject branchNode = firstMatching(subjects, subject -> subject instanceof DungeonHitSubject.CorridorNodeSubject);
+        DungeonSelectionRef branchNode = firstMatching(refs, ref -> ref instanceof DungeonSelectionRef.CorridorNodeRef);
         if (branchNode != null) {
             return branchNode;
         }
-        DungeonHitSubject floorCell = firstMatching(subjects, subject -> subject instanceof DungeonHitSubject.FloorCellSubject);
+        DungeonSelectionRef floorCell = firstMatching(refs, ref -> ref instanceof DungeonSelectionRef.FloorCellRef);
         if (floorCell != null) {
             return floorCell;
         }
-        return firstMatching(subjects, subject ->
-                subject instanceof DungeonHitSubject.ConnectionSubject
-                        || subject instanceof DungeonHitSubject.RoomSubject
-                        || subject instanceof DungeonHitSubject.CorridorSubject);
+        return firstMatching(refs, ref ->
+                ref instanceof DungeonSelectionRef.ConnectionRef
+                        || ref instanceof DungeonSelectionRef.RoomRef
+                        || ref instanceof DungeonSelectionRef.CorridorRef);
     }
 
-    private static DungeonHitSubject resolveDeleteSubject(List<DungeonHitSubject> subjects) {
-        DungeonHitSubject localConnection = firstMatching(subjects, subject -> subject instanceof DungeonHitSubject.ConnectionSubject connection
-                && connection.connectionKind() == features.world.dungeonmap.model.structures.connection.ConnectionKind.LOCAL);
+    private static DungeonSelectionRef resolveDeleteRef(List<DungeonSelectionRef> refs) {
+        DungeonSelectionRef localConnection = firstMatching(refs, ref ->
+                ref instanceof DungeonSelectionRef.ConnectionRef connection
+                        && connection.connectionKind() == features.world.dungeonmap.model.structures.connection.ConnectionKind.LOCAL);
         if (localConnection != null) {
             return localConnection;
         }
-        return firstMatching(subjects, subject -> corridorId(subject) != null);
+        return firstMatching(refs, ref -> corridorId(ref) != null);
     }
 
-    private static DungeonHitSubject firstMatching(List<DungeonHitSubject> subjects, java.util.function.Predicate<DungeonHitSubject> predicate) {
-        if (subjects == null || predicate == null) {
+    private static boolean isExteriorBoundary(DungeonLayout layout, DungeonSelectionRef.RoomBoundaryRef ref, int levelZ) {
+        DungeonLayout.RoomBoundaryDescription boundary = layout == null ? null : layout.describeRoomBoundary(ref, levelZ);
+        return boundary != null && boundary.exterior();
+    }
+
+    private static DungeonSelectionRef firstMatching(
+            List<DungeonSelectionRef> refs,
+            java.util.function.Predicate<DungeonSelectionRef> predicate
+    ) {
+        if (refs == null || predicate == null) {
             return null;
         }
-        for (DungeonHitSubject subject : subjects) {
-            if (subject != null && predicate.test(subject)) {
-                return subject;
+        for (DungeonSelectionRef ref : refs) {
+            if (ref != null && predicate.test(ref)) {
+                return ref;
             }
         }
         return null;
