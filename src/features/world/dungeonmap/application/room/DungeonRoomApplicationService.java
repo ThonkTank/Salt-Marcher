@@ -7,6 +7,7 @@ import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
+import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
 import features.world.dungeonmap.repository.DungeonCorridorRepository;
@@ -111,7 +112,7 @@ public final class DungeonRoomApplicationService {
             return;
         }
 
-        roomRepository.replaceClusters(conn, mapId, overlappingClusters, List.of(mergedCluster));
+        persistClusterRewrite(conn, mapId, layout, overlappingClusters, List.of(mergedCluster));
     }
 
     public void deleteCells(Connection conn, long mapId, int levelZ, Set<CellCoord> cells) throws SQLException {
@@ -140,7 +141,7 @@ public final class DungeonRoomApplicationService {
             if (finalClusters == null) {
                 continue;
             }
-            roomRepository.replaceClusters(conn, mapId, List.of(cluster), finalClusters);
+            persistClusterRewrite(conn, mapId, workingLayout, List.of(cluster), finalClusters);
             workingLayout = requireLayout(conn, mapId);
         }
     }
@@ -215,7 +216,7 @@ public final class DungeonRoomApplicationService {
             return;
         }
 
-        roomRepository.replaceClusters(conn, mapId, List.of(cluster), List.of(updatedCluster));
+        persistClusterRewrite(conn, mapId, layout, List.of(cluster), List.of(updatedCluster));
     }
 
     private void editDoor(
@@ -307,6 +308,27 @@ public final class DungeonRoomApplicationService {
         return cluster;
     }
 
+    private void persistClusterRewrite(
+            Connection conn,
+            long mapId,
+            DungeonLayout originalLayout,
+            List<RoomCluster> originalClusters,
+            List<RoomCluster> finalClusters
+    ) throws SQLException {
+        if (conn == null || originalLayout == null) {
+            return;
+        }
+        Set<Long> affectedRoomIds = affectedRoomIds(originalClusters);
+        DungeonLayout rewrittenLayout = originalLayout.withReplacedClusters(originalClusters, finalClusters);
+        validateRoomRewriteCorridors(originalLayout, rewrittenLayout, affectedRoomIds);
+        roomRepository.replaceClusters(conn, mapId, originalClusters, finalClusters);
+        if (affectedRoomIds.isEmpty()) {
+            return;
+        }
+        DungeonLayout persistedRoomLayout = loadRoomRewriteLayout(conn, originalLayout, mapId);
+        persistReboundCorridors(conn, originalLayout, persistedRoomLayout, affectedRoomIds);
+    }
+
     private void persistUpdatedCorridors(Connection conn, DungeonLayout originalLayout, DungeonLayout movedLayout) throws SQLException {
         if (conn == null || originalLayout == null || movedLayout == null) {
             return;
@@ -320,6 +342,76 @@ public final class DungeonRoomApplicationService {
                 corridorRepository.save(conn, movedCorridor, movedLayout);
             }
         }
+    }
+
+    private void validateRoomRewriteCorridors(
+            DungeonLayout originalLayout,
+            DungeonLayout rewrittenLayout,
+            Set<Long> affectedRoomIds
+    ) {
+        if (originalLayout == null || rewrittenLayout == null || affectedRoomIds == null || affectedRoomIds.isEmpty()) {
+            return;
+        }
+        for (Corridor corridor : originalLayout.corridors()) {
+            if (corridor != null && touchesAffectedRooms(corridor, affectedRoomIds)) {
+                corridor.validateRoomBindingsForRewrite(rewrittenLayout, affectedRoomIds);
+            }
+        }
+    }
+
+    private void persistReboundCorridors(
+            Connection conn,
+            DungeonLayout originalLayout,
+            DungeonLayout rewrittenRoomLayout,
+            Set<Long> affectedRoomIds
+    ) throws SQLException {
+        if (conn == null || originalLayout == null || rewrittenRoomLayout == null || affectedRoomIds == null || affectedRoomIds.isEmpty()) {
+            return;
+        }
+        for (Corridor originalCorridor : originalLayout.corridors()) {
+            if (originalCorridor == null || originalCorridor.corridorId() == null || !touchesAffectedRooms(originalCorridor, affectedRoomIds)) {
+                continue;
+            }
+            Corridor reboundCorridor = originalCorridor.reboundRoomBindings(rewrittenRoomLayout, affectedRoomIds);
+            if (reboundCorridor != originalCorridor) {
+                corridorRepository.save(conn, reboundCorridor, rewrittenRoomLayout);
+            }
+        }
+    }
+
+    private DungeonLayout loadRoomRewriteLayout(Connection conn, DungeonLayout originalLayout, long mapId) throws SQLException {
+        List<Room> rooms = roomRepository.loadRooms(conn, mapId);
+        List<RoomCluster> clusters = roomRepository.loadClusters(conn, mapId, rooms);
+        return new DungeonLayout(
+                mapId,
+                originalLayout == null ? null : originalLayout.name(),
+                originalLayout == null ? List.of() : originalLayout.corridors(),
+                clusters,
+                originalLayout == null ? List.of() : originalLayout.stairs(),
+                originalLayout == null ? List.of() : originalLayout.transitions(),
+                roomRepository.loadClusterLevels(conn, mapId));
+    }
+
+    private static boolean touchesAffectedRooms(Corridor corridor, Set<Long> affectedRoomIds) {
+        if (corridor == null || affectedRoomIds == null || affectedRoomIds.isEmpty()) {
+            return false;
+        }
+        return corridor.connectedRoomIds().stream().anyMatch(affectedRoomIds::contains);
+    }
+
+    private static Set<Long> affectedRoomIds(List<RoomCluster> clusters) {
+        LinkedHashSet<Long> result = new LinkedHashSet<>();
+        for (RoomCluster cluster : clusters == null ? List.<RoomCluster>of() : clusters) {
+            if (cluster == null) {
+                continue;
+            }
+            for (Room room : cluster.rooms()) {
+                if (room != null && room.roomId() != null) {
+                    result.add(room.roomId());
+                }
+            }
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
     private static List<RoomCluster> assignGeneratedClusterRoomNames(List<RoomCluster> clusters, Supplier<String> roomNameSupplier) {

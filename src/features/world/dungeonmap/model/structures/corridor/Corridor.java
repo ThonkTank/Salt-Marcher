@@ -280,6 +280,48 @@ public final class Corridor {
         return changed ? resolvedAgainst(layout, updatedNodes, segments) : this;
     }
 
+    public void validateRoomBindingsForRewrite(DungeonLayout layout, Set<Long> affectedRoomIds) {
+        if (layout == null || affectedRoomIds == null || affectedRoomIds.isEmpty()) {
+            return;
+        }
+        for (CorridorNode node : nodes) {
+            if (shouldRebindNode(node, affectedRoomIds)) {
+                resolveRoomRewriteBinding(layout, levelZ, node, false);
+            }
+        }
+    }
+
+    public Corridor reboundRoomBindings(DungeonLayout layout, Set<Long> affectedRoomIds) {
+        if (layout == null || affectedRoomIds == null || affectedRoomIds.isEmpty()) {
+            return this;
+        }
+        ArrayList<CorridorNode> updatedNodes = new ArrayList<>(nodes.size());
+        boolean changed = false;
+        for (CorridorNode node : nodes) {
+            if (!shouldRebindNode(node, affectedRoomIds)) {
+                updatedNodes.add(node);
+                continue;
+            }
+            RoomRewriteBinding binding = resolveRoomRewriteBinding(layout, levelZ, node, true);
+            CorridorNode updatedNode = new CorridorNode(
+                    node.nodeId(),
+                    binding.anchorPoint(),
+                    binding.roomId(),
+                    binding.roomCell(),
+                    binding.direction());
+            updatedNodes.add(updatedNode);
+            changed |= !updatedNode.equals(node);
+        }
+        if (!changed) {
+            return this;
+        }
+        Corridor reboundCorridor = resolvedAgainst(layout, updatedNodes, segments);
+        if (!reboundCorridor.routes().equals(routes)) {
+            throw new IllegalArgumentException("Corridor room rewrite may not reroute corridor");
+        }
+        return reboundCorridor;
+    }
+
     public Corridor branchedFrom(
             DungeonLayout layout,
             Long attachNodeId,
@@ -801,6 +843,50 @@ public final class Corridor {
         return roomCell == null || direction == null ? null : GridPoint2x.edgeCenter(roomCell, direction);
     }
 
+    private static boolean shouldRebindNode(CorridorNode node, Set<Long> affectedRoomIds) {
+        return node != null
+                && node.isRoomBound()
+                && node.roomId() != null
+                && affectedRoomIds != null
+                && affectedRoomIds.contains(node.roomId());
+    }
+
+    private static RoomRewriteBinding resolveRoomRewriteBinding(
+            DungeonLayout layout,
+            int levelZ,
+            CorridorNode node,
+            boolean requirePersistedRoomId
+    ) {
+        if (layout == null || node == null || !node.isRoomBound()) {
+            throw new IllegalArgumentException("Corridor room rewrite requires a room-bound node");
+        }
+        CellCoord roomCell = node.roomCell();
+        CardinalDirection direction = node.roomBoundaryDirection();
+        if (roomCell == null || direction == null) {
+            throw new IllegalArgumentException("Corridor room-bound node could not be resolved");
+        }
+        Room reboundRoom = layout.roomAtCell(roomCell, levelZ);
+        if (reboundRoom == null) {
+            throw new IllegalArgumentException("Corridor node no longer references a room cell at level " + levelZ);
+        }
+        GridSegment2x boundaryEdge = GridSegment2x.boundaryEdge(roomCell, direction);
+        if (!reboundRoom.structure().boundaryEdgesAtLevel(levelZ).contains(boundaryEdge)) {
+            throw new IllegalArgumentException("Corridor node no longer references an exterior room boundary at level " + levelZ);
+        }
+        CellCoord exteriorCell = roomCell.add(direction.delta());
+        if (layout.roomAtCell(exteriorCell, levelZ) != null) {
+            throw new IllegalArgumentException("Corridor node no longer references an exterior room boundary at level " + levelZ);
+        }
+        if (requirePersistedRoomId && reboundRoom.roomId() == null) {
+            throw new IllegalArgumentException("Corridor node rebound requires a persisted room id at level " + levelZ);
+        }
+        return new RoomRewriteBinding(
+                reboundRoom.roomId(),
+                roomCell,
+                direction,
+                GridPoint2x.edgeCenter(roomCell, direction));
+    }
+
     private static GridSegment2x roomBoundaryEdge(CorridorNode node, int levelZ, Map<Long, Room> roomsById) {
         CellCoord roomCell = boundRoomCell(node, levelZ, roomsById);
         CardinalDirection direction = node == null ? null : node.roomBoundaryDirection();
@@ -863,6 +949,14 @@ public final class Corridor {
             StructureObject structure,
             List<CorridorRoute> routes,
             List<CorridorConnection> connections
+    ) {
+    }
+
+    private record RoomRewriteBinding(
+            Long roomId,
+            CellCoord roomCell,
+            CardinalDirection direction,
+            GridPoint2x anchorPoint
     ) {
     }
 

@@ -636,6 +636,60 @@ public final class DungeonLayout {
     }
 
     /**
+     * Room rewrite workflows validate corridor bindings against the exact post-rewrite cluster projection before any
+     * rows are committed, so the room owner needs a direct "replace these clusters with these final owners" layout seam.
+     */
+    public DungeonLayout withReplacedClusters(List<RoomCluster> originalClusters, List<RoomCluster> finalClusters) {
+        List<RoomCluster> resolvedOriginalClusters = normalizedClusters(originalClusters);
+        List<RoomCluster> resolvedFinalClusters = normalizedClusters(finalClusters);
+        if (resolvedOriginalClusters.isEmpty() && resolvedFinalClusters.isEmpty()) {
+            return this;
+        }
+
+        Set<Long> replacedClusterIds = resolvedOriginalClusters.stream()
+                .map(RoomCluster::clusterId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        Map<Long, RoomCluster> replacementsById = new LinkedHashMap<>();
+        ArrayList<RoomCluster> appendedClusters = new ArrayList<>();
+        for (RoomCluster cluster : resolvedFinalClusters) {
+            if (cluster == null) {
+                continue;
+            }
+            if (cluster.clusterId() == null) {
+                appendedClusters.add(cluster);
+            } else {
+                replacementsById.put(cluster.clusterId(), cluster);
+            }
+        }
+
+        ArrayList<RoomCluster> updatedClusters = new ArrayList<>(clusters.size() + resolvedFinalClusters.size());
+        for (RoomCluster existing : clusters) {
+            if (existing == null || existing.clusterId() == null || !replacedClusterIds.contains(existing.clusterId())) {
+                updatedClusters.add(existing);
+                continue;
+            }
+            RoomCluster replacement = replacementsById.remove(existing.clusterId());
+            if (replacement != null) {
+                updatedClusters.add(replacement);
+            }
+        }
+        updatedClusters.addAll(replacementsById.values());
+        updatedClusters.addAll(appendedClusters);
+
+        LinkedHashMap<Long, Integer> updatedClusterLevels = new LinkedHashMap<>(clusterLevelsById);
+        for (Long clusterId : replacedClusterIds) {
+            updatedClusterLevels.remove(clusterId);
+        }
+        for (RoomCluster cluster : resolvedFinalClusters) {
+            if (cluster != null && cluster.clusterId() != null) {
+                updatedClusterLevels.put(cluster.clusterId(), cluster.primaryLevel());
+            }
+        }
+        return new DungeonLayout(mapId, name, corridors, updatedClusters, stairs, transitions, updatedClusterLevels);
+    }
+
+    /**
      * Corridor graph edits resolve against the layout that already owns room bindings and connection context; callers
      * should not keep re-threading room collections through separate helper seams.
      */
@@ -763,6 +817,27 @@ public final class DungeonLayout {
     private static boolean corridorReachesLevel(Corridor corridor, int levelZ) {
         return corridor != null
                 && !corridor.structure().cellCoordsAtLevel(levelZ).isEmpty();
+    }
+
+    private static List<RoomCluster> normalizedClusters(List<RoomCluster> clusters) {
+        if (clusters == null || clusters.isEmpty()) {
+            return List.of();
+        }
+        ArrayList<RoomCluster> result = new ArrayList<>();
+        Set<Long> seenClusterIds = new LinkedHashSet<>();
+        for (RoomCluster cluster : clusters) {
+            if (cluster == null) {
+                continue;
+            }
+            if (cluster.clusterId() == null) {
+                result.add(cluster);
+                continue;
+            }
+            if (seenClusterIds.add(cluster.clusterId())) {
+                result.add(cluster);
+            }
+        }
+        return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
     private static Map<Long, Room> indexRooms(List<RoomCluster> clusters) {
