@@ -8,19 +8,17 @@ import java.util.List;
 public record ClusterRewriteSplit(
         Long clusterId,
         CellCoord clusterCenter,
-        List<Room> rooms,
-        List<InternalBoundaryEdge> persistedBoundaries
+        List<Room> rooms
 ) {
     public ClusterRewriteSplit {
         rooms = rooms == null ? List.of() : List.copyOf(rooms);
-        persistedBoundaries = persistedBoundaries == null ? List.of() : List.copyOf(persistedBoundaries);
     }
 
     public ClusterRewriteSplit withClusterId(Long clusterId) {
         List<Room> reassignedRooms = rooms.stream()
                 .map(room -> reassignCluster(room, clusterId))
                 .toList();
-        return new ClusterRewriteSplit(clusterId, clusterCenter, reassignedRooms, persistedBoundaries);
+        return new ClusterRewriteSplit(clusterId, clusterCenter, reassignedRooms);
     }
 
     private static Room reassignCluster(Room room, Long clusterId) {

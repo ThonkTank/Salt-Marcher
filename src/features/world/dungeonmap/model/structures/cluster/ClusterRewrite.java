@@ -13,7 +13,6 @@ public record ClusterRewrite(
         Long targetClusterId,
         CellCoord clusterCenter,
         List<Room> rooms,
-        List<InternalBoundaryEdge> persistedBoundaries,
         Set<Long> deletedRoomIds,
         Map<Long, Long> replacedRoomIds,
         Set<Long> mergedRoomIds,
@@ -25,7 +24,6 @@ public record ClusterRewrite(
     // Null-intolerant: use builder() or unchanged() factories which handle null gracefully.
     public ClusterRewrite {
         rooms = List.copyOf(rooms);
-        persistedBoundaries = List.copyOf(persistedBoundaries);
         deletedRoomIds = Set.copyOf(deletedRoomIds);
         replacedRoomIds = Map.copyOf(replacedRoomIds);
         mergedRoomIds = Set.copyOf(mergedRoomIds);
@@ -37,19 +35,17 @@ public record ClusterRewrite(
     public static Builder builder(
             Long targetClusterId,
             CellCoord clusterCenter,
-            List<Room> rooms,
-            List<InternalBoundaryEdge> persistedBoundaries
+            List<Room> rooms
     ) {
-        return new Builder(targetClusterId, clusterCenter, rooms, persistedBoundaries);
+        return new Builder(targetClusterId, clusterCenter, rooms);
     }
 
     public static ClusterRewrite unchanged(
             Long targetClusterId,
             CellCoord clusterCenter,
-            List<Room> rooms,
-            List<InternalBoundaryEdge> persistedBoundaries
+            List<Room> rooms
     ) {
-        return builder(targetClusterId, clusterCenter, rooms, persistedBoundaries).build();
+        return builder(targetClusterId, clusterCenter, rooms).build();
     }
 
     public boolean deletesCluster() {
@@ -90,7 +86,7 @@ public record ClusterRewrite(
     }
 
     public ClusterRewrite withSplitClusters(List<ClusterRewriteSplit> splitClusters) {
-        return builder(targetClusterId, clusterCenter, rooms, persistedBoundaries)
+        return builder(targetClusterId, clusterCenter, rooms)
                 .deletedRoomIds(deletedRoomIds)
                 .replacedRoomIds(replacedRoomIds)
                 .mergedRoomIds(mergedRoomIds)
@@ -105,7 +101,6 @@ public record ClusterRewrite(
         private final Long targetClusterId;
         private final CellCoord clusterCenter;
         private final List<Room> rooms;
-        private final List<InternalBoundaryEdge> persistedBoundaries;
         private Set<Long> deletedRoomIds = Set.of();
         private Map<Long, Long> replacedRoomIds = Map.of();
         private Set<Long> mergedRoomIds = Set.of();
@@ -117,13 +112,11 @@ public record ClusterRewrite(
         private Builder(
                 Long targetClusterId,
                 CellCoord clusterCenter,
-                List<Room> rooms,
-                List<InternalBoundaryEdge> persistedBoundaries
+                List<Room> rooms
         ) {
             this.targetClusterId = targetClusterId;
             this.clusterCenter = clusterCenter;
             this.rooms = rooms == null ? List.of() : List.copyOf(rooms);
-            this.persistedBoundaries = persistedBoundaries == null ? List.of() : List.copyOf(persistedBoundaries);
         }
 
         public Builder deletedRoomIds(Set<Long> deletedRoomIds) {
@@ -168,7 +161,6 @@ public record ClusterRewrite(
                     targetClusterId,
                     clusterCenter,
                     rooms,
-                    persistedBoundaries,
                     deletedRoomIds,
                     replacedRoomIds,
                     mergedRoomIds,

@@ -45,10 +45,10 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
   - `support/` owns transaction helpers.
   - Application services orchestrate workflows and transactions; they must not keep a second interpretation of room, corridor, or runtime truth.
 - `loading/`
-  - `DungeonMapLoadingService` owns async loading, initial-load deduplication, stale-request suppression via `requestSequence`, and reload-after-write flows.
+  - `DungeonMapLoadingService` owns async loading, map-selection fallback policy, initial-load deduplication, stale-request suppression via `requestSequence`, and reload-after-write flows.
   - `DungeonMapLoadResult` is the loading boundary payload consumed by state and views.
 - `repository/`
-  - `DungeonLayoutRepository` is the authoritative layout rehydration seam and catalog-selection read owner.
+  - `DungeonLayoutRepository` is the authoritative layout rehydration seam. It assembles one concrete persisted map per call and does not own UI-facing fallback policy.
   - Structure repositories (`DungeonRoomRepository`, `DungeonCorridorRepository`, `DungeonStairRepository`, `DungeonTransitionRepository`) own their direct storage reads and writes.
   - `DungeonStorageSupport` owns dungeon schema readiness and one-time geometry compatibility migration.
 - `catalog/`
@@ -156,8 +156,8 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 
 ## Loading And Persistence
 
-- `DungeonLayoutRepository` is the authoritative rehydration path. It loads catalog entries, delegates structure reads to the focused repositories, skips unusable maps, and falls back to the first usable map when necessary.
-- `DungeonLayoutRepository.selectMap(...)` should load the requested map directly and only fall back when that concrete target is unusable; full-catalog usable-layout scans are for initial load, not every selection change.
+- `DungeonLayoutRepository` is the authoritative rehydration path for one concrete persisted map. It delegates structure reads to the focused repositories and does not return loading-layer fallback payloads.
+- `DungeonMapLoadingService` owns catalog reads, initial-load usable-map scans, and selected-map fallback. Full-catalog usable-layout scans are for initial load, not every selection change.
 - `DungeonStorageSupport.ensureReady(...)` is the single schema-compatibility gate for dungeon startup, feature reads, and writes. Do not reintroduce per-structure schema helpers.
 - Room geometry is loaded directly from persisted room-owned `StructureDescriptor` rows.
 - Storage model:

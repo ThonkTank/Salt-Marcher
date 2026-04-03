@@ -1,6 +1,5 @@
 package features.world.dungeonmap.model.structures.cluster;
 
-import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
@@ -95,8 +94,7 @@ final class ClusterRewritePlanner {
         return ClusterRewrite.builder(
                         cluster.clusterId(),
                         CellCoord.bestCenter(mergedClusterCells),
-                        rewrittenRooms,
-                        persistedBoundaries(mergedClusterCells, rewrittenRooms, previousBoundaryKinds))
+                        rewrittenRooms)
                 .deletedRoomIds(deletedRoomIds)
                 .replacedRoomIds(replacedRoomIds)
                 .mergedRoomIds(mergedRoomIds.size() > 1 ? mergedRoomIds : Set.of())
@@ -123,7 +121,6 @@ final class ClusterRewritePlanner {
             return ClusterRewrite.builder(
                             cluster.clusterId(),
                             cluster.center(),
-                            List.of(),
                             List.of())
                     .deletedRoomIds(cluster.roomIds())
                     .deletedClusterIds(Set.of(cluster.clusterId()))
@@ -204,8 +201,7 @@ final class ClusterRewritePlanner {
         return ClusterRewrite.builder(
                         cluster.clusterId(),
                         retainedCluster.clusterCenter(),
-                        retainedCluster.rooms(),
-                        retainedCluster.persistedBoundaries())
+                        retainedCluster.rooms())
                 .deletedRoomIds(deletedRoomIds)
                 .splitFragmentsBySourceRoomId(splitFragmentsBySourceRoomId)
                 .splitClusters(splitClusters)
@@ -263,8 +259,7 @@ final class ClusterRewritePlanner {
         return ClusterRewrite.builder(
                         cluster.clusterId(),
                         cluster.center(),
-                        rewrittenRooms,
-                        persistedBoundaries(cluster.cells(), rewrittenRooms, updatedBoundaryKinds))
+                        rewrittenRooms)
                 .deletedRoomIds(merge.deletedRoomIds())
                 .replacedRoomIds(merge.replacedRoomIds())
                 .mergedRoomIds(merge.mergedRoomIds())
@@ -548,8 +543,7 @@ final class ClusterRewritePlanner {
                     return new ClusterRewriteSplit(
                             null,
                             CellCoord.bestCenter(componentCells),
-                            componentRooms,
-                            persistedBoundaries(componentCells, componentRooms, boundaryKinds));
+                            componentRooms);
                 })
                 .toList();
     }
@@ -562,17 +556,6 @@ final class ClusterRewritePlanner {
                 .filter(room -> room != null && !disjoint(room.structure().cellCoords(), componentCells))
                 .sorted(Comparator.comparing(Room::roomId, Comparator.nullsLast(Long::compareTo))
                         .thenComparing(room -> room.structure().centerCellCoordAtLevel(room.structure().primaryLevel()), CellCoord.ORDER))
-                .toList();
-    }
-
-    static List<InternalBoundaryEdge> persistedBoundaries(
-            Set<CellCoord> clusterCells,
-            List<Room> rooms,
-            Map<GridSegment2x, InternalBoundaryType> boundaryKinds
-    ) {
-        return computeInternalBoundaries(clusterCells, rooms, boundaryKinds).entrySet().stream()
-                .map(entry -> toInternalBoundaryEdge(entry.getKey(), entry.getValue()))
-                .filter(java.util.Objects::nonNull)
                 .toList();
     }
 
@@ -628,23 +611,7 @@ final class ClusterRewritePlanner {
         return ClusterRewrite.unchanged(
                 cluster.clusterId(),
                 cluster.center(),
-                cluster.rooms(),
-                persistedBoundaries(cluster.cells(), cluster.rooms(), cluster.internalBoundaryKinds()));
-    }
-
-    private static InternalBoundaryEdge toInternalBoundaryEdge(GridSegment2x segment2x, InternalBoundaryType type) {
-        if (segment2x == null) {
-            return null;
-        }
-        List<CellCoord> touchingCells = segment2x.touchingCells().stream()
-                .sorted(CellCoord.ORDER)
-                .toList();
-        if (touchingCells.size() != 2) {
-            return null;
-        }
-        CellCoord baseCell = touchingCells.getFirst();
-        CardinalDirection direction = segment2x.directionFrom(baseCell);
-        return direction == null ? null : new InternalBoundaryEdge(baseCell, direction, type);
+                cluster.rooms());
     }
 
     private static boolean isInternalSegment(Set<CellCoord> clusterCells, GridSegment2x segment2x) {

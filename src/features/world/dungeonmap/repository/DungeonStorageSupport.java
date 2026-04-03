@@ -151,10 +151,6 @@ public final class DungeonStorageSupport {
         DungeonGeometryParityMigration.migrateIfNeeded(conn);
     }
 
-    public static void ensureCompatibility(Connection conn) throws SQLException {
-        ensureReady(conn);
-    }
-
     private static void addColumnIfMissing(Statement stmt, String table, String columnDefinition) throws SQLException {
         try {
             stmt.execute("ALTER TABLE " + table + " ADD COLUMN " + columnDefinition);

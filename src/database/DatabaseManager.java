@@ -323,7 +323,6 @@ public final class DatabaseManager {
                     + "radius     INTEGER"
                     + ")");
 
-            DungeonStorageSupport.createSchema(stmt);
             EncounterSchemaSupport.createSchema(stmt);
 
             stmt.execute("CREATE TABLE IF NOT EXISTS factions ("
@@ -559,7 +558,6 @@ public final class DatabaseManager {
             ensureSpellCompatibility(conn);
             ensureEncounterAnalysisColumns(conn);
             ensureLootTableCompatibility(conn);
-            ensureDungeonNarrationCompatibility(conn);
             EncounterSchemaSupport.ensureCompatibility(conn);
             // Dungeon data must survive normal app restarts. Explicit dungeon schema
             // resets remain a manual development action, never part of startup.
@@ -904,21 +902,6 @@ public final class DatabaseManager {
         try (Statement stmt = conn.createStatement()) {
             createLootTableSchema(stmt);
             createLootTableIndexes(stmt);
-        }
-    }
-
-    private static void ensureDungeonNarrationCompatibility(Connection conn) throws SQLException {
-        ensureColumn(conn, "dungeon_rooms", "visual_description", "TEXT");
-        try (Statement stmt = conn.createStatement()) {
-            stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_room_exit_descriptions ("
-                    + "room_id          INTEGER NOT NULL REFERENCES dungeon_rooms(room_id) ON DELETE CASCADE,"
-                    + "cell_x           INTEGER NOT NULL,"
-                    + "cell_y           INTEGER NOT NULL,"
-                    + "edge_direction   TEXT NOT NULL,"
-                    + "description      TEXT,"
-                    + "sort_order       INTEGER NOT NULL DEFAULT 0,"
-                    + "PRIMARY KEY (room_id, cell_x, cell_y, edge_direction)"
-                    + ")");
         }
     }
 
