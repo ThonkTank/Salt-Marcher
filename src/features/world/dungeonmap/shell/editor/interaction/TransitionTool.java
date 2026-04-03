@@ -241,7 +241,7 @@ public final class TransitionTool implements EditorTool {
             state.clearSelection();
             return false;
         }
-        state.selectRef(ctx == null ? null : ctx.resolvedSelectionRef());
+        state.selectRef(ctx == null ? null : ctx.resolvedRef());
         loadingService.submitMutation(
                 () -> {
                     transitionEditService.delete(transition.transitionId());

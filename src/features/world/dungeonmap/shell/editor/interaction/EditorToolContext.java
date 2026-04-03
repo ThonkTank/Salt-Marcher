@@ -20,15 +20,4 @@ public record EditorToolContext(
     public EditorToolContext {
         activeMap = activeMap == null ? DungeonLayout.empty() : activeMap;
     }
-
-    public EditorToolContext withResolved(DungeonHitSubject subject, DungeonSelectionRef ref) {
-        return new EditorToolContext(event, activeMap, probe, snapshot, subject, ref, state);
-    }
-
-    public DungeonSelectionRef resolvedSelectionRef() {
-        if (resolvedRef != null) {
-            return resolvedRef;
-        }
-        return resolvedSubject == null ? null : resolvedSubject.ref();
-    }
 }

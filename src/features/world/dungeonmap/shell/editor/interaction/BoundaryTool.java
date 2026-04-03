@@ -139,7 +139,7 @@ public final class BoundaryTool implements EditorTool {
     private boolean handleWallPressed(EditorToolContext ctx, boolean deleteMode) {
         DungeonLayout layout = ctx == null ? null : ctx.activeMap();
         GridPoint2x vertex = selectedVertex(ctx);
-        DungeonSelectionRef resolvedRef = ctx == null ? null : ctx.resolvedSelectionRef();
+        DungeonSelectionRef resolvedRef = ctx == null ? null : ctx.resolvedRef();
         RoomCluster cluster = layout == null ? null : layout.clusterOnLevel(resolvedRef, mapState.activeProjectionLevel());
         if (layout == null || vertex == null || cluster == null || cluster.clusterId() == null) {
             if (activeBoundaryDraftClusterId() == null) {

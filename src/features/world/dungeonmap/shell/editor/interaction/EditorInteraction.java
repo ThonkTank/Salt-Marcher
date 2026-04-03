@@ -141,8 +141,17 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
         EditorHitResolution resolution = activeTool == null
                 ? EditorHitResolution.none()
                 : activeTool.resolveHit(baseContext, phase);
-        state.showHover(phase == EditorToolPhase.HOVER ? resolution.hover() : state.hovered());
-        return baseContext.withResolved(resolution.subject(), resolution.resolvedRef());
+        if (phase == EditorToolPhase.HOVER) {
+            state.showHover(resolution.hover());
+        }
+        return new EditorToolContext(
+                baseContext.event(),
+                baseContext.activeMap(),
+                baseContext.probe(),
+                baseContext.snapshot(),
+                resolution.subject(),
+                resolution.resolvedRef(),
+                baseContext.state());
     }
 
     private EditorToolContext collect(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {

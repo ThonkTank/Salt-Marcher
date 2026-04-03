@@ -107,7 +107,7 @@ public final class SelectionTool implements EditorTool {
             return false;
         }
         DungeonHitSubject hit = ctx == null ? null : ctx.resolvedSubject();
-        DungeonSelectionRef resolvedSelectionRef = ctx == null ? null : ctx.resolvedSelectionRef();
+        DungeonSelectionRef resolvedSelectionRef = ctx == null ? null : ctx.resolvedRef();
         clear();
         if (hit instanceof DungeonHitSubject.CorridorNodeSubject corridorNodeHit
                 && corridorNodeHit.corridorId() != null

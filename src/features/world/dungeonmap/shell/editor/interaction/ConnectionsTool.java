@@ -181,18 +181,18 @@ public final class ConnectionsTool implements EditorTool {
         }
         if (hit instanceof DungeonHitSubject.RoomBoundarySubject roomBoundaryHit) {
             if (isEditableDoorBoundary(roomBoundaryHit, layout, ctx.probe().levelZ())) {
-                applySelection(ctx == null ? null : ctx.resolvedSelectionRef());
+                applySelection(ctx == null ? null : ctx.resolvedRef());
                 applyDoorEdit(
                         roomBoundaryHit.clusterId(),
                         roomBoundaryHit.boundarySegment2x(),
                         false,
-                        ctx == null ? null : ctx.resolvedSelectionRef());
+                        ctx == null ? null : ctx.resolvedRef());
                 return true;
             }
             if (!roomBoundaryHit.exterior()) {
                 return false;
             }
-            applySelection(ctx == null ? null : ctx.resolvedSelectionRef());
+            applySelection(ctx == null ? null : ctx.resolvedRef());
             if (draft == null) {
                 startDraft(roomBoundaryHit, layout);
                 return true;
@@ -208,30 +208,30 @@ public final class ConnectionsTool implements EditorTool {
             return true;
         }
         if (draft != null && hit instanceof DungeonHitSubject.CorridorNodeSubject corridorNodeHit) {
-            applySelection(ctx == null ? null : ctx.resolvedSelectionRef());
+            applySelection(ctx == null ? null : ctx.resolvedRef());
             finishDraftWithCorridorNode(corridorNodeHit, layout);
             return true;
         }
         if (hit instanceof DungeonHitSubject.CorridorCornerSubject cornerHit) {
-            applySelection(ctx == null ? null : ctx.resolvedSelectionRef());
+            applySelection(ctx == null ? null : ctx.resolvedRef());
             insertNode(cornerHit.corridorId(), cornerHit.segmentId(), cornerHit.point2x());
             return true;
         }
         if (hit instanceof DungeonHitSubject.CorridorSegmentSubject segmentHit) {
-            applySelection(ctx == null ? null : ctx.resolvedSelectionRef());
+            applySelection(ctx == null ? null : ctx.resolvedRef());
             insertNode(segmentHit.corridorId(), segmentHit.segmentId(), segmentHit.point2x());
             return true;
         }
         if (hit instanceof DungeonHitSubject.CorridorNodeSubject nodeHit) {
-            applySelection(ctx == null ? null : ctx.resolvedSelectionRef());
+            applySelection(ctx == null ? null : ctx.resolvedRef());
             return true;
         }
         if (hit instanceof DungeonHitSubject.ConnectionSubject connectionHit) {
-            applySelection(ctx == null ? null : ctx.resolvedSelectionRef());
+            applySelection(ctx == null ? null : ctx.resolvedRef());
             return true;
         }
         if (hit instanceof DungeonHitSubject.RoomSubject roomHit) {
-            applySelection(ctx == null ? null : ctx.resolvedSelectionRef());
+            applySelection(ctx == null ? null : ctx.resolvedRef());
             return true;
         }
         return false;
@@ -243,7 +243,7 @@ public final class ConnectionsTool implements EditorTool {
         }
         if (hit instanceof DungeonHitSubject.ConnectionSubject connectionHit
                 && connectionHit.connectionKind() == features.world.dungeonmap.model.structures.connection.ConnectionKind.LOCAL) {
-            applySelection(ctx == null ? null : ctx.resolvedSelectionRef());
+            applySelection(ctx == null ? null : ctx.resolvedRef());
             applyDoorEdit(
                     connectionHit.clusterId(),
                     connectionHit.boundarySegment2x(),
@@ -253,7 +253,7 @@ public final class ConnectionsTool implements EditorTool {
         }
         Long corridorId = corridorId(hit);
         if (corridorId != null) {
-            applySelection(ctx == null ? null : ctx.resolvedSelectionRef());
+            applySelection(ctx == null ? null : ctx.resolvedRef());
             Long mapId = mapState.activeMapId();
             if (mapId == null) {
                 return true;
