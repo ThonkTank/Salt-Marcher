@@ -559,9 +559,9 @@ public final class DatabaseManager {
             ensureEncounterAnalysisColumns(conn);
             ensureLootTableCompatibility(conn);
             EncounterSchemaSupport.ensureCompatibility(conn);
-            // Dungeon data must survive normal app restarts. Explicit dungeon schema
-            // resets remain a manual development action, never part of startup.
-            DungeonStorageSupport.ensureReady(conn);
+            // Dungeon startup creates only the current schema. Older dungeon storage shapes are unsupported and must
+            // be reset explicitly instead of being upgraded in-place at runtime.
+            DungeonStorageSupport.createSchema(stmt);
             CampaignStateSchemaSupport.ensureCompatibility(conn);
             dropLegacyRoleColumns(conn);
 

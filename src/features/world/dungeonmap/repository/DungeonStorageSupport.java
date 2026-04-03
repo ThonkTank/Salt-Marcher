@@ -1,6 +1,5 @@
 package features.world.dungeonmap.repository;
 
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -136,64 +135,4 @@ public final class DungeonStorageSupport {
                 + "linked_transition_id     INTEGER REFERENCES dungeon_transitions(transition_id) ON DELETE SET NULL"
                 + ")");
     }
-
-    public static void ensureReady(Connection conn) throws SQLException {
-        try (Statement stmt = conn.createStatement()) {
-            createSchema(stmt);
-            addColumnIfMissing(stmt, "dungeon_rooms", "visual_description TEXT");
-            addColumnIfMissing(stmt, "dungeon_rooms", "component_x INTEGER NOT NULL DEFAULT 0");
-            addColumnIfMissing(stmt, "dungeon_rooms", "component_y INTEGER NOT NULL DEFAULT 0");
-            addColumnIfMissing(stmt, "dungeon_rooms", "level_z INTEGER NOT NULL DEFAULT 0");
-            addColumnIfMissing(stmt, "dungeon_corridors", "level_z INTEGER NOT NULL DEFAULT 0");
-            addColumnIfMissing(stmt, "dungeon_stairs", "name TEXT");
-            addColumnIfMissing(stmt, "dungeon_room_exit_descriptions", "level_z INTEGER NOT NULL DEFAULT 0");
-        }
-        DungeonGeometryParityMigration.migrateIfNeeded(conn);
-    }
-
-    private static void addColumnIfMissing(Statement stmt, String table, String columnDefinition) throws SQLException {
-        try {
-            stmt.execute("ALTER TABLE " + table + " ADD COLUMN " + columnDefinition);
-        } catch (SQLException ex) {
-            String message = ex.getMessage();
-            if (message == null || !message.toLowerCase(java.util.Locale.ROOT).contains("duplicate column name")) {
-                throw ex;
-            }
-        }
-    }
-
-    public static void resetSchema(Connection conn) throws SQLException {
-        try (Statement stmt = conn.createStatement()) {
-            stmt.execute("PRAGMA foreign_keys = OFF");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_segments");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_nodes");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_endpoint_binding_targets");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_endpoint_bindings");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_points");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_connection_endpoints");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_connections");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_path_nodes");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_room_level_segments");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_room_level_seeds");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_room_levels");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_room_floors");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_room_cluster_edges");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_room_cluster_vertices");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_room_exit_descriptions");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_waypoints");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_door_overrides");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_members");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_corridors");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_rooms");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_room_clusters");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_stair_exits");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_stair_path_nodes");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_stairs");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_transitions");
-            stmt.execute("DROP TABLE IF EXISTS dungeon_maps");
-            stmt.execute("PRAGMA foreign_keys = ON");
-            createSchema(stmt);
-        }
-    }
-
 }

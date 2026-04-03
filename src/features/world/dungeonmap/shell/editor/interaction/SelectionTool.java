@@ -1,7 +1,7 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
 import features.world.dungeonmap.application.corridor.DungeonCorridorApplicationService;
-import features.world.dungeonmap.application.room.DungeonClusterMoveService;
+import features.world.dungeonmap.application.room.DungeonRoomApplicationService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
@@ -25,7 +25,7 @@ public final class SelectionTool implements EditorTool {
 
     private final DungeonMapState mapState;
     private final DungeonMapLoadingService loadingService;
-    private final DungeonClusterMoveService clusterMoveService;
+    private final DungeonRoomApplicationService roomApplicationService;
     private final DungeonCorridorApplicationService corridorApplicationService;
     private final EditorInteractionState state;
     private final RoomNarrationPane roomNarrationPane;
@@ -41,14 +41,14 @@ public final class SelectionTool implements EditorTool {
     public SelectionTool(
             DungeonMapState mapState,
             DungeonMapLoadingService loadingService,
-            DungeonClusterMoveService clusterMoveService,
+            DungeonRoomApplicationService roomApplicationService,
             DungeonCorridorApplicationService corridorApplicationService,
             RoomNarrationPane roomNarrationPane,
             EditorInteractionState state
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
-        this.clusterMoveService = Objects.requireNonNull(clusterMoveService, "clusterMoveService");
+        this.roomApplicationService = Objects.requireNonNull(roomApplicationService, "roomApplicationService");
         this.corridorApplicationService = Objects.requireNonNull(corridorApplicationService, "corridorApplicationService");
         this.roomNarrationPane = Objects.requireNonNull(roomNarrationPane, "roomNarrationPane");
         this.state = Objects.requireNonNull(state, "state");
@@ -187,7 +187,7 @@ public final class SelectionTool implements EditorTool {
         if (mapId != null && clusterId != null && (delta.x() != 0 || delta.y() != 0 || levelDelta != 0)) {
             loadingService.submitMutation(
                     () -> {
-                        clusterMoveService.move(mapId, clusterId, delta, levelDelta);
+                        roomApplicationService.move(mapId, clusterId, delta, levelDelta);
                         return mapId;
                     },
                     updatedMapId -> updatedMapId,

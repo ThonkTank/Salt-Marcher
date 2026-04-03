@@ -5,9 +5,7 @@ import features.world.dungeonmap.application.corridor.DungeonCorridorApplication
 import features.world.dungeonmap.application.runtime.DungeonRuntimeApplicationService;
 import features.world.dungeonmap.application.transition.DungeonTransitionApplicationService;
 import features.world.dungeonmap.application.transition.TransitionTargetCatalogApplicationService;
-import features.world.dungeonmap.application.room.DungeonClusterMoveService;
-import features.world.dungeonmap.application.room.DungeonRoomNarrationService;
-import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
+import features.world.dungeonmap.application.room.DungeonRoomApplicationService;
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.repository.DungeonCorridorRepository;
@@ -45,19 +43,15 @@ public final class DungeonMapModule {
         DungeonRoomRepository roomRepository = new DungeonRoomRepository();
         DungeonCorridorRepository corridorRepository = new DungeonCorridorRepository();
         DungeonTransitionRepository transitionRepository = new DungeonTransitionRepository();
-        DungeonRoomNarrationService roomNarrationService = new DungeonRoomNarrationService(roomRepository);
-        DungeonRoomTopologyService roomTopologyService = new DungeonRoomTopologyService(
+        DungeonRoomApplicationService roomApplicationService = new DungeonRoomApplicationService(
                 layoutRepository,
                 roomRepository);
-        DungeonTransitionApplicationService transitionApplicationService = new DungeonTransitionApplicationService(roomTopologyService, transitionRepository);
+        DungeonTransitionApplicationService transitionApplicationService = new DungeonTransitionApplicationService(roomApplicationService, transitionRepository);
         DungeonRuntimeApplicationService runtimeApplicationService = new DungeonRuntimeApplicationService(layoutRepository);
         DungeonMapCatalogService mapCatalogService = new DungeonMapCatalogService(
-                roomTopologyService,
+                roomApplicationService,
                 runtimeApplicationService);
         DungeonCorridorApplicationService corridorApplicationService = new DungeonCorridorApplicationService(layoutRepository, corridorRepository);
-        DungeonClusterMoveService clusterMoveService = new DungeonClusterMoveService(
-                layoutRepository,
-                roomRepository);
         DungeonMapState state = new DungeonMapState();
         DungeonMapLoadingService loadingService = new DungeonMapLoadingService(
                 layoutRepository,
@@ -67,7 +61,7 @@ public final class DungeonMapModule {
         RoomNarrationPane roomNarrationPane = new RoomNarrationPane(
                 state,
                 loadingService,
-                roomNarrationService,
+                roomApplicationService,
                 editorInteractionState);
         DungeonHitCollector hitCollector = new DungeonHitCollector();
         TransitionTargetCatalogApplicationService transitionTargetCatalogApplicationService = new TransitionTargetCatalogApplicationService(transitionRepository);
@@ -75,7 +69,7 @@ public final class DungeonMapModule {
                 new SelectionTool(
                         state,
                         loadingService,
-                        clusterMoveService,
+                        roomApplicationService,
                         corridorApplicationService,
                         roomNarrationPane,
                         editorInteractionState),
@@ -83,19 +77,19 @@ public final class DungeonMapModule {
                         state,
                         loadingService,
                         editorSessionState,
-                        roomTopologyService,
+                        roomApplicationService,
                         editorInteractionState),
                 new BoundaryTool(
                         state,
                         loadingService,
                         editorSessionState,
-                        roomTopologyService,
+                        roomApplicationService,
                         editorInteractionState),
                 new ConnectionsTool(
                         state,
                         loadingService,
                         editorSessionState,
-                        roomTopologyService,
+                        roomApplicationService,
                         corridorApplicationService,
                         editorInteractionState),
                 new TransitionTool(

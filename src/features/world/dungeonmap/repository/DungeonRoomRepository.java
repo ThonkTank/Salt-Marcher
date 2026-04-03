@@ -167,7 +167,7 @@ public final class DungeonRoomRepository {
         persistRooms(conn, cluster.mapId(), cluster.clusterId(), cluster.rooms());
     }
 
-    public long insertCluster(Connection conn, long mapId, CellCoord center, int levelZ) throws SQLException {
+    private long insertCluster(Connection conn, long mapId, CellCoord center, int levelZ) throws SQLException {
         CellCoord resolvedCenter = center == null ? new CellCoord(0, 0) : center;
         try (PreparedStatement ps = conn.prepareStatement(
                 "INSERT INTO dungeon_room_clusters(dungeon_map_id, center_x, center_y, level_z) VALUES(?,?,?,?)",
@@ -186,7 +186,7 @@ public final class DungeonRoomRepository {
         }
     }
 
-    public void updateClusterMetadata(Connection conn, long clusterId, CellCoord center, int levelZ) throws SQLException {
+    private void updateClusterMetadata(Connection conn, long clusterId, CellCoord center, int levelZ) throws SQLException {
         CellCoord resolvedCenter = center == null ? new CellCoord(0, 0) : center;
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE dungeon_room_clusters SET center_x=?, center_y=?, level_z=? WHERE cluster_id=?")) {
@@ -198,7 +198,7 @@ public final class DungeonRoomRepository {
         }
     }
 
-    public void deleteCluster(Connection conn, long clusterId) throws SQLException {
+    private void deleteCluster(Connection conn, long clusterId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "DELETE FROM dungeon_room_clusters WHERE cluster_id=?")) {
             ps.setLong(1, clusterId);
@@ -206,7 +206,7 @@ public final class DungeonRoomRepository {
         }
     }
 
-    public long insertRoom(
+    private long insertRoom(
             Connection conn,
             long mapId,
             long clusterId,
@@ -237,7 +237,7 @@ public final class DungeonRoomRepository {
         }
     }
 
-    public void updateRoom(
+    private void updateRoom(
             Connection conn,
             long roomId,
             String name,
@@ -289,7 +289,7 @@ public final class DungeonRoomRepository {
         }
     }
 
-    public void reassignRoomCluster(Connection conn, long roomId, long clusterId) throws SQLException {
+    private void reassignRoomCluster(Connection conn, long roomId, long clusterId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE dungeon_rooms SET cluster_id=? WHERE room_id=?")) {
             ps.setLong(1, clusterId);
@@ -298,7 +298,7 @@ public final class DungeonRoomRepository {
         }
     }
 
-    public void deleteRoom(Connection conn, long roomId) throws SQLException {
+    private void deleteRoom(Connection conn, long roomId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "DELETE FROM dungeon_rooms WHERE room_id=?")) {
             ps.setLong(1, roomId);
@@ -306,7 +306,7 @@ public final class DungeonRoomRepository {
         }
     }
 
-    public void replaceRoomDescriptor(Connection conn, long roomId, StructureDescriptor descriptor) throws SQLException {
+    private void replaceRoomDescriptor(Connection conn, long roomId, StructureDescriptor descriptor) throws SQLException {
         StructureDescriptor resolvedDescriptor = requiredDescriptor(descriptor);
         try (PreparedStatement deleteSegments = conn.prepareStatement(
                 "DELETE FROM dungeon_room_level_segments WHERE room_id=?");

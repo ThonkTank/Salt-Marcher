@@ -88,7 +88,15 @@ public final class DungeonCorridorRepository {
         return persisted;
     }
 
-    public long insertCorridor(Connection conn, long mapId, Corridor corridor) throws SQLException {
+    public void delete(Connection conn, long corridorId) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "DELETE FROM dungeon_corridors WHERE corridor_id=?")) {
+            ps.setLong(1, corridorId);
+            ps.executeUpdate();
+        }
+    }
+
+    private long insertCorridor(Connection conn, long mapId, Corridor corridor) throws SQLException {
         Corridor resolvedCorridor = Objects.requireNonNull(corridor, "corridor");
         try (PreparedStatement ps = conn.prepareStatement(
                 "INSERT INTO dungeon_corridors(dungeon_map_id, level_z) VALUES(?, ?)",
@@ -105,7 +113,7 @@ public final class DungeonCorridorRepository {
         }
     }
 
-    public void updateCorridor(Connection conn, long corridorId, Corridor corridor) throws SQLException {
+    private void updateCorridor(Connection conn, long corridorId, Corridor corridor) throws SQLException {
         Corridor resolvedCorridor = Objects.requireNonNull(corridor, "corridor");
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE dungeon_corridors SET level_z=? WHERE corridor_id=?")) {
@@ -115,7 +123,7 @@ public final class DungeonCorridorRepository {
         }
     }
 
-    public void replaceNodes(Connection conn, long corridorId, List<CorridorNode> nodes, DungeonLayout layout, int levelZ) throws SQLException {
+    private void replaceNodes(Connection conn, long corridorId, List<CorridorNode> nodes, DungeonLayout layout, int levelZ) throws SQLException {
         try (PreparedStatement delete = conn.prepareStatement(
                 "DELETE FROM dungeon_corridor_nodes WHERE corridor_id=?")) {
             delete.setLong(1, corridorId);
@@ -134,7 +142,7 @@ public final class DungeonCorridorRepository {
         }
     }
 
-    public void replaceSegments(Connection conn, long corridorId, List<CorridorSegment> segments) throws SQLException {
+    private void replaceSegments(Connection conn, long corridorId, List<CorridorSegment> segments) throws SQLException {
         try (PreparedStatement delete = conn.prepareStatement(
                 "DELETE FROM dungeon_corridor_segments WHERE corridor_id=?")) {
             delete.setLong(1, corridorId);
@@ -150,14 +158,6 @@ public final class DungeonCorridorRepository {
                 insert.addBatch();
             }
             insert.executeBatch();
-        }
-    }
-
-    public void deleteCorridor(Connection conn, long corridorId) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement(
-                "DELETE FROM dungeon_corridors WHERE corridor_id=?")) {
-            ps.setLong(1, corridorId);
-            ps.executeUpdate();
         }
     }
 

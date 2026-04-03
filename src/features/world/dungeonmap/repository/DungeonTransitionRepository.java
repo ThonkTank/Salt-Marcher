@@ -96,7 +96,12 @@ public final class DungeonTransitionRepository {
         }
     }
 
-    public void updateTargetTransition(Connection conn, long transitionId, Long targetTransitionId) throws SQLException {
+    public void linkPair(Connection conn, long transitionId, long counterpartId) throws SQLException {
+        updateTargetTransition(conn, transitionId, counterpartId);
+        updateLinkedTransition(conn, transitionId, counterpartId);
+    }
+
+    private void updateTargetTransition(Connection conn, long transitionId, Long targetTransitionId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE dungeon_transitions SET target_transition_id=? WHERE transition_id=?")) {
             if (targetTransitionId == null) {
@@ -109,7 +114,7 @@ public final class DungeonTransitionRepository {
         }
     }
 
-    public void updateLinkedTransition(Connection conn, long transitionId, Long linkedTransitionId) throws SQLException {
+    private void updateLinkedTransition(Connection conn, long transitionId, Long linkedTransitionId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE dungeon_transitions SET linked_transition_id=? WHERE transition_id=?")) {
             if (linkedTransitionId == null) {
@@ -120,11 +125,6 @@ public final class DungeonTransitionRepository {
             ps.setLong(2, transitionId);
             ps.executeUpdate();
         }
-    }
-
-    public void linkPair(Connection conn, long transitionId, long counterpartId) throws SQLException {
-        updateTargetTransition(conn, transitionId, counterpartId);
-        updateLinkedTransition(conn, transitionId, counterpartId);
     }
 
     public void clearLinksTo(Connection conn, long transitionId) throws SQLException {
@@ -174,18 +174,15 @@ public final class DungeonTransitionRepository {
 
     private static DungeonTransitionDestination mapDestination(ResultSet rs) throws SQLException {
         String destinationType = rs.getString("destination_type");
-        // Keep reading older rows that stored the nested record simple name before the canonical discriminator key.
-        if (DungeonTransitionDestination.DungeonMapDestination.class.getSimpleName().equals(destinationType)) {
-            destinationType = "DUNGEON_MAP";
-        }
-        if ("DUNGEON_MAP".equals(destinationType)) {
-            return new DungeonTransitionDestination.DungeonMapDestination(
+        return switch (destinationType) {
+            case "DUNGEON_MAP" -> new DungeonTransitionDestination.DungeonMapDestination(
                     rs.getLong("target_dungeon_map_id"),
                     nullableLong(rs, "target_transition_id"));
-        }
-        return new DungeonTransitionDestination.OverworldTileDestination(
-                rs.getLong("target_overworld_map_id"),
-                rs.getLong("target_overworld_tile_id"));
+            case "OVERWORLD_TILE" -> new DungeonTransitionDestination.OverworldTileDestination(
+                    rs.getLong("target_overworld_map_id"),
+                    rs.getLong("target_overworld_tile_id"));
+            default -> throw new SQLException("Unbekannter dungeon transition destination_type: " + destinationType);
+        };
     }
 
     private static void bindTransition(PreparedStatement ps, DungeonTransition transition) throws SQLException {

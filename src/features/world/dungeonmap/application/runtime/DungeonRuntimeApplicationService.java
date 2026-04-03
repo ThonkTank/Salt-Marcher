@@ -4,6 +4,8 @@ import database.DatabaseManager;
 import features.campaignstate.api.CampaignStateApi;
 import features.campaignstate.api.CampaignStateReadApi;
 import features.campaignstate.api.DungeonTilePosition;
+import features.world.dungeonmap.catalog.application.DungeonMapCatalogEntry;
+import features.world.dungeonmap.catalog.persistence.DungeonMapCatalogRepository;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
@@ -181,9 +183,14 @@ public final class DungeonRuntimeApplicationService {
             throw new SQLException("Ziel-Übergang ist noch nicht platziert");
         }
         try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonLayout targetLayout = dungeon.mapId() == layout.mapId()
-                    ? layout
-                    : layoutRepository.loadLayout(conn, dungeon.mapId());
+            DungeonLayout targetLayout;
+            try {
+                targetLayout = dungeon.mapId() == layout.mapId()
+                        ? layout
+                        : layoutRepository.loadLayout(conn, dungeon.mapId());
+            } catch (RuntimeException exception) {
+                throw new SQLException("Ziel-Dungeon konnte nicht geladen werden", exception);
+            }
             if (targetLayout == null || targetLayout.mapId() <= 0) {
                 throw new SQLException("Ziel-Dungeon konnte nicht geladen werden");
             }
@@ -241,8 +248,31 @@ public final class DungeonRuntimeApplicationService {
 
     private DungeonLayout preferredRepairLayout(Connection conn, DungeonTilePosition storedPosition) throws SQLException {
         Long preferredMapId = storedPosition == null ? null : storedPosition.mapId();
-        DungeonLayout layout = preferredMapId == null ? null : layoutRepository.loadLayout(conn, preferredMapId);
-        return layout != null ? layout : layoutRepository.loadFirstUsableLayout(conn);
+        DungeonLayout layout = tryLoadLayout(conn, preferredMapId);
+        if (layout != null) {
+            return layout;
+        }
+        for (DungeonMapCatalogEntry map : DungeonMapCatalogRepository.listMaps(conn)) {
+            if (map == null) {
+                continue;
+            }
+            layout = tryLoadLayout(conn, map.mapId());
+            if (layout != null) {
+                return layout;
+            }
+        }
+        return null;
+    }
+
+    private DungeonLayout tryLoadLayout(Connection conn, Long mapId) throws SQLException {
+        if (mapId == null || mapId <= 0) {
+            return null;
+        }
+        try {
+            return layoutRepository.loadLayout(conn, mapId);
+        } catch (RuntimeException exception) {
+            return null;
+        }
     }
 
     private CellCoord nearestTraversableCell(DungeonLayout layout, CellCoord preferredCell, int preferredLevelZ) {

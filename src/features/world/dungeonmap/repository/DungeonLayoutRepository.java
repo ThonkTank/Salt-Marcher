@@ -1,7 +1,6 @@
 package features.world.dungeonmap.repository;
 
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogEntry;
-import features.world.dungeonmap.catalog.persistence.DungeonMapCatalogRepository;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
@@ -9,6 +8,8 @@ import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
@@ -30,49 +31,10 @@ public final class DungeonLayoutRepository {
         if (conn == null) {
             throw new IllegalArgumentException("conn darf nicht null sein");
         }
-        DungeonStorageSupport.ensureReady(conn);
-        List<DungeonMapCatalogEntry> maps = DungeonMapCatalogRepository.listMaps(conn);
-        DungeonMapCatalogEntry map = findMap(maps, mapId);
+        DungeonMapCatalogEntry map = loadMap(conn, mapId);
         if (map == null) {
             return null;
         }
-        try {
-            return loadLayout(conn, map);
-        } catch (RuntimeException exception) {
-            return null;
-        }
-    }
-
-    public DungeonLayout loadLayout(Connection conn, DungeonMapCatalogEntry map) throws SQLException {
-        if (conn == null) {
-            throw new IllegalArgumentException("conn darf nicht null sein");
-        }
-        DungeonStorageSupport.ensureReady(conn);
-        if (map == null) {
-            return null;
-        }
-        return loadLayoutOrThrow(conn, map);
-    }
-
-    public DungeonLayout loadFirstUsableLayout(Connection conn) throws SQLException {
-        if (conn == null) {
-            throw new IllegalArgumentException("conn darf nicht null sein");
-        }
-        DungeonStorageSupport.ensureReady(conn);
-        for (DungeonMapCatalogEntry map : DungeonMapCatalogRepository.listMaps(conn)) {
-            if (map == null) {
-                continue;
-            }
-            try {
-                return loadLayoutOrThrow(conn, map);
-            } catch (RuntimeException exception) {
-                // Loading workflows own the user-facing fallback message. The repository only skips unusable maps here.
-            }
-        }
-        return null;
-    }
-
-    private DungeonLayout loadLayoutOrThrow(Connection conn, DungeonMapCatalogEntry map) throws SQLException {
         List<Room> rooms = roomRepository.loadRooms(conn, map.mapId());
         List<RoomCluster> clusters = roomRepository.loadClusters(conn, map.mapId(), rooms);
         Map<Long, Integer> clusterLevels = roomRepository.loadClusterLevels(conn, map.mapId());
@@ -88,12 +50,21 @@ public final class DungeonLayoutRepository {
                 clusterLevels);
     }
 
-    private static DungeonMapCatalogEntry findMap(List<DungeonMapCatalogEntry> maps, long mapId) {
-        for (DungeonMapCatalogEntry map : maps) {
-            if (map.mapId() == mapId) {
-                return map;
+    private static DungeonMapCatalogEntry loadMap(Connection conn, long mapId) throws SQLException {
+        if (mapId <= 0) {
+            return null;
+        }
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT dungeon_map_id, name FROM dungeon_maps WHERE dungeon_map_id=?")) {
+            ps.setLong(1, mapId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    return null;
+                }
+                return new DungeonMapCatalogEntry(
+                        rs.getLong("dungeon_map_id"),
+                        rs.getString("name"));
             }
         }
-        return null;
     }
 }

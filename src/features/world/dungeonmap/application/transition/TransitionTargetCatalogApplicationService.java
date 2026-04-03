@@ -26,7 +26,6 @@ public final class TransitionTargetCatalogApplicationService {
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             return transitionRepository.loadPlacedByMap(conn, mapId).stream()
-                    .filter(transition -> transition != null && transition.transitionId() != null && transition.anchor() != null)
                     .map(transition -> new TransitionDestinationOption(
                             new DungeonTransitionDestination.DungeonMapDestination(mapId, transition.transitionId()),
                             dungeonTransitionLabel(transition)))

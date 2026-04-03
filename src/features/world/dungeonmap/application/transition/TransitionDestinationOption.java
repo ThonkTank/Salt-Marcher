@@ -10,18 +10,9 @@ public record TransitionDestinationOption(
 ) {
     public TransitionDestinationOption {
         destination = Objects.requireNonNull(destination, "destination");
-        label = label == null || label.isBlank() ? defaultLabel(destination) : label.trim();
-    }
-
-    private static String defaultLabel(DungeonTransitionDestination destination) {
-        if (destination instanceof DungeonTransitionDestination.OverworldTileDestination overworld) {
-            return "Overworld-Feld " + overworld.tileId();
+        if (label == null || label.isBlank()) {
+            throw new IllegalArgumentException("label darf nicht leer sein");
         }
-        if (destination instanceof DungeonTransitionDestination.DungeonMapDestination dungeon) {
-            return dungeon.transitionId() == null
-                    ? "Dungeon " + dungeon.mapId()
-                    : "Dungeon " + dungeon.mapId() + " · Übergang " + dungeon.transitionId();
-        }
-        return "Übergangsziel";
+        label = label.trim();
     }
 }

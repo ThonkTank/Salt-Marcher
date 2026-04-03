@@ -10,6 +10,7 @@ import features.world.dungeonmap.model.structures.cluster.ClusterRewriteSplit;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.model.structures.room.RoomNarration;
 import features.world.dungeonmap.repository.DungeonLayoutRepository;
 import features.world.dungeonmap.repository.DungeonRoomRepository;
 
@@ -23,12 +24,18 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
-public final class DungeonRoomTopologyService {
+/**
+ * Central room/cluster workflow owner for editor-visible room mutations.
+ *
+ * <p>Paint, delete, boundary edits, cluster moves, narration writes, and traversability bootstrap all converge
+ * here so tools and neighboring application flows do not keep parallel room workflow owners alive.
+ */
+public final class DungeonRoomApplicationService {
 
     private final DungeonLayoutRepository layoutRepository;
     private final DungeonRoomRepository roomRepository;
 
-    public DungeonRoomTopologyService(
+    public DungeonRoomApplicationService(
             DungeonLayoutRepository layoutRepository,
             DungeonRoomRepository roomRepository
     ) {
@@ -150,6 +157,31 @@ public final class DungeonRoomTopologyService {
                 nextRoomName(layout, new LinkedHashSet<>()));
     }
 
+    public void move(long mapId, long clusterId, CellCoord delta, int levelDelta) throws SQLException {
+        boolean translate = delta != null && (delta.x() != 0 || delta.y() != 0);
+        if (!translate && levelDelta == 0) {
+            return;
+        }
+        try (Connection conn = DatabaseManager.getConnection()) {
+            DungeonTransactionRunner.inTransaction(conn, () -> {
+                DungeonLayout layout = requireLayout(conn, mapId);
+                RoomCluster cluster = requireCluster(layout.withMovedCluster(clusterId, delta, levelDelta), clusterId);
+                roomRepository.saveMovedCluster(conn, cluster);
+                return null;
+            });
+        }
+    }
+
+    public void saveNarration(long roomId, RoomNarration narration) throws SQLException {
+        if (roomId <= 0) {
+            throw new SQLException("Raum fehlt");
+        }
+        try (Connection conn = DatabaseManager.getConnection()) {
+            DungeonTransactionRunner.inTransaction(conn,
+                    () -> roomRepository.replaceRoomNarration(conn, roomId, narration));
+        }
+    }
+
     public void ensureTraversableCell(Connection conn, long mapId, CellCoord cell, int levelZ) throws SQLException {
         if (cell == null) {
             return;
@@ -265,6 +297,14 @@ public final class DungeonRoomTopologyService {
             throw new SQLException("Dungeon " + mapId + " konnte nicht geladen werden");
         }
         return layout;
+    }
+
+    private static RoomCluster requireCluster(DungeonLayout layout, long clusterId) throws SQLException {
+        RoomCluster cluster = layout == null ? null : layout.findCluster(clusterId);
+        if (cluster == null) {
+            throw new SQLException("Cluster " + clusterId + " existiert nicht");
+        }
+        return cluster;
     }
 
     private static ClusterRewrite assignGeneratedRoomNames(ClusterRewrite rewrite, Supplier<String> roomNameSupplier) {

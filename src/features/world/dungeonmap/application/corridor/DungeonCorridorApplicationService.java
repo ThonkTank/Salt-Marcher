@@ -125,7 +125,7 @@ public final class DungeonCorridorApplicationService {
                 if (layout.findCorridor(corridorId) == null) {
                     return;
                 }
-                corridorRepository.deleteCorridor(conn, corridorId);
+                corridorRepository.delete(conn, corridorId);
             });
         }
     }

@@ -8,7 +8,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 
 ## Composition Root
 
-- `bootstrap/DungeonMapModule` is the only feature composition root. It wires one shared `DungeonMapState`, `DungeonEditorSessionState`, `EditorInteractionState`, `DungeonHitCollector`, loading services, edit services, and exposes `DungeonRuntimeView` plus `DungeonEditorView`.
+- `bootstrap/DungeonMapModule` is the only feature composition root. It wires one shared `DungeonMapState`, `DungeonEditorSessionState`, `EditorInteractionState`, `DungeonHitCollector`, loading services, one `DungeonRoomApplicationService`, corridor/transition application services, and exposes `DungeonRuntimeView` plus `DungeonEditorView`.
 - Both views extend `shell/AbstractDungeonMapView`. That base class owns the view-local `DungeonCanvasWorkspace` and calls `DungeonMapLoadingService.ensureLoaded()` from `onShow()`.
 - `DungeonViewMode` currently exposes the `GRID` projection. Additional modes must preserve the same direct-owner semantics across editor, runtime, and documentation.
 
@@ -38,7 +38,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
   - `structures/` owns first-class structures and the structure-specific subpackages `cluster`, `connection`, `corridor`, `room`, `stair`, and `transition`.
   - `DungeonLayout` stays the feature-wide lookup surface, not a second mutation owner.
 - `application/`
-  - `room/` owns room topology, boundary edits, cluster moves, room narration, and exit catalogs.
+  - `room/` owns room topology, boundary edits, cluster moves, room narration, and exit catalogs through the central `DungeonRoomApplicationService` workflow seam plus smaller room-local helpers such as `RoomExitCatalog`.
   - `corridor/` owns corridor graph workflow orchestration for create, branch, insert, move, delete, while canonical graph transforms stay on `Corridor` and persistence-specific id assignment stays on `DungeonCorridorRepository`.
   - `runtime/` owns cell-only navigation, TILE persistence, surface resolution, labels, flat runtime actions, and runtime state repair.
   - `transition/` owns transition create/place/delete flows and transition target lookup.
@@ -50,7 +50,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `repository/`
   - `DungeonLayoutRepository` is the authoritative layout rehydration seam. It assembles one concrete persisted map per call and does not own UI-facing fallback policy.
   - Structure repositories (`DungeonRoomRepository`, `DungeonCorridorRepository`, `DungeonStairRepository`, `DungeonTransitionRepository`) own their direct storage reads and writes.
-  - `DungeonStorageSupport` owns dungeon schema readiness and one-time geometry compatibility migration.
+  - `DungeonStorageSupport` owns current dungeon schema DDL only. `DatabaseManager.setupDatabase()` creates it once at startup; feature reads and writes do not run schema or compatibility checks.
 - `catalog/`
   - Map create/rename/delete lives here with feature-local application and persistence code.
   - `DungeonMapCatalogEntry` is the shared catalog summary. Loading, state, and shell may consume it, but catalog owns the type.
@@ -159,11 +159,12 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 ## Loading And Persistence
 
 - `DungeonLayoutRepository` is the authoritative rehydration path for one concrete persisted map. It delegates structure reads to the focused repositories and does not return loading-layer fallback payloads.
+- `DungeonRoomApplicationService` is the single room workflow owner. Selection, paint, boundary, movement, narration, and transition placement should all call that seam instead of splitting room writes across parallel services.
 - `DungeonRoomRepository` owns the concrete write ordering for cluster rewrites and moved clusters. Application workflows decide the rewrite, repository code decides insert/update/delete order.
 - `DungeonCorridorRepository` owns corridor row writes, synthetic-to-persistent id assignment, node/segment replacement order, and the codec between persisted relative room-binding columns and in-memory absolute room cells. Application workflows should not keep a second persistence-id mapper or room-binding codec.
 - `DungeonTransitionRepository` owns dungeon-side transition lookups and writes, including placed-target queries and dungeon-map existence checks. Overworld target discovery stays at the `WorldReadApi` boundary instead of leaking `hex_tiles` SQL into dungeon application workflows.
 - `DungeonMapLoadingService` owns catalog reads, initial-load usable-map scans, and selected-map fallback. Full-catalog usable-layout scans are for initial load, not every selection change.
-- `DungeonStorageSupport.ensureReady(...)` is the single schema-compatibility gate for dungeon startup, feature reads, and writes. Do not reintroduce per-structure schema helpers.
+- Legacy dungeon storage compatibility is intentionally unsupported. Current code works only against the current schema and should fail fast on broken or stale rows instead of normalizing them at runtime.
 - Room geometry is loaded directly from persisted room-owned `StructureDescriptor` rows.
 - New dungeons start with a neutral default room (`Raum n`), not an implicit entrance concept.
 - Storage model:

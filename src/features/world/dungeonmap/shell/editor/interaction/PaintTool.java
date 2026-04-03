@@ -1,6 +1,6 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
-import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
+import features.world.dungeonmap.application.room.DungeonRoomApplicationService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.geometry.CellCoord;
@@ -21,7 +21,7 @@ public final class PaintTool implements EditorTool {
     private final DungeonMapState mapState;
     private final DungeonMapLoadingService loadingService;
     private final DungeonEditorSessionState sessionState;
-    private final DungeonRoomTopologyService roomTopologyService;
+    private final DungeonRoomApplicationService roomApplicationService;
     private final EditorInteractionState state;
 
     private RoomPaintSession paintSession;
@@ -30,13 +30,13 @@ public final class PaintTool implements EditorTool {
             DungeonMapState mapState,
             DungeonMapLoadingService loadingService,
             DungeonEditorSessionState sessionState,
-            DungeonRoomTopologyService roomTopologyService,
+            DungeonRoomApplicationService roomApplicationService,
             EditorInteractionState state
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
         this.sessionState = Objects.requireNonNull(sessionState, "sessionState");
-        this.roomTopologyService = Objects.requireNonNull(roomTopologyService, "roomTopologyService");
+        this.roomApplicationService = Objects.requireNonNull(roomApplicationService, "roomApplicationService");
         this.state = Objects.requireNonNull(state, "state");
     }
 
@@ -117,9 +117,9 @@ public final class PaintTool implements EditorTool {
         loadingService.submitMutation(
                 () -> {
                     if (finishedSession.deleteMode()) {
-                        roomTopologyService.deleteCells(mapId, activeLevel, cells);
+                        roomApplicationService.deleteCells(mapId, activeLevel, cells);
                     } else {
-                        roomTopologyService.paintCells(mapId, activeLevel, cells);
+                        roomApplicationService.paintCells(mapId, activeLevel, cells);
                     }
                     return mapId;
                 },

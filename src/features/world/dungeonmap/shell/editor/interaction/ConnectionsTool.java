@@ -1,7 +1,7 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
 import features.world.dungeonmap.application.corridor.DungeonCorridorApplicationService;
-import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
+import features.world.dungeonmap.application.room.DungeonRoomApplicationService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
@@ -36,7 +36,7 @@ public final class ConnectionsTool implements EditorTool {
     private final DungeonMapState mapState;
     private final DungeonMapLoadingService loadingService;
     private final DungeonEditorSessionState sessionState;
-    private final DungeonRoomTopologyService roomTopologyService;
+    private final DungeonRoomApplicationService roomApplicationService;
     private final DungeonCorridorApplicationService corridorApplicationService;
     private final EditorInteractionState state;
     private final Label statusLabel = new Label();
@@ -54,14 +54,14 @@ public final class ConnectionsTool implements EditorTool {
             DungeonMapState mapState,
             DungeonMapLoadingService loadingService,
             DungeonEditorSessionState sessionState,
-            DungeonRoomTopologyService roomTopologyService,
+            DungeonRoomApplicationService roomApplicationService,
             DungeonCorridorApplicationService corridorApplicationService,
             EditorInteractionState state
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
         this.sessionState = Objects.requireNonNull(sessionState, "sessionState");
-        this.roomTopologyService = Objects.requireNonNull(roomTopologyService, "roomTopologyService");
+        this.roomApplicationService = Objects.requireNonNull(roomApplicationService, "roomApplicationService");
         this.corridorApplicationService = Objects.requireNonNull(corridorApplicationService, "corridorApplicationService");
         this.state = Objects.requireNonNull(state, "state");
         statusLabel.setWrapText(true);
@@ -404,13 +404,13 @@ public final class ConnectionsTool implements EditorTool {
         loadingService.submitMutation(
                 () -> {
                     if (deleteBoundary) {
-                        roomTopologyService.deleteDoor(
+                        roomApplicationService.deleteDoor(
                                 mapId,
                                 clusterId,
                                 mapState.activeProjectionLevel(),
                                 List.of(segment2x));
                     } else {
-                        roomTopologyService.createDoor(
+                        roomApplicationService.createDoor(
                                 mapId,
                                 clusterId,
                                 mapState.activeProjectionLevel(),

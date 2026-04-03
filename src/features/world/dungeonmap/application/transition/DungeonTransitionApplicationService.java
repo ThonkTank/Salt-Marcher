@@ -2,13 +2,12 @@ package features.world.dungeonmap.application.transition;
 
 import database.DatabaseManager;
 import features.world.api.WorldReadApi;
-import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
+import features.world.dungeonmap.application.room.DungeonRoomApplicationService;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
-import features.world.dungeonmap.repository.DungeonStorageSupport;
 import features.world.dungeonmap.repository.DungeonTransitionRepository;
 
 import java.sql.Connection;
@@ -23,14 +22,14 @@ import java.util.Objects;
  */
 public final class DungeonTransitionApplicationService {
 
-    private final DungeonRoomTopologyService roomTopologyService;
+    private final DungeonRoomApplicationService roomApplicationService;
     private final DungeonTransitionRepository transitionRepository;
 
     public DungeonTransitionApplicationService(
-            DungeonRoomTopologyService roomTopologyService,
+            DungeonRoomApplicationService roomApplicationService,
             DungeonTransitionRepository transitionRepository
     ) {
-        this.roomTopologyService = Objects.requireNonNull(roomTopologyService, "roomTopologyService");
+        this.roomApplicationService = Objects.requireNonNull(roomApplicationService, "roomApplicationService");
         this.transitionRepository = Objects.requireNonNull(transitionRepository, "transitionRepository");
     }
 
@@ -48,7 +47,6 @@ public final class DungeonTransitionApplicationService {
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                DungeonStorageSupport.ensureReady(conn);
                 transitionRepository.clearLinksTo(conn, transitionId);
                 transitionRepository.delete(conn, transitionId);
                 return null;
@@ -69,8 +67,7 @@ public final class DungeonTransitionApplicationService {
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                DungeonStorageSupport.ensureReady(conn);
-                roomTopologyService.ensureTraversableCell(conn, layout.mapId(), anchor.projectedCell(), anchor.z());
+                roomApplicationService.ensureTraversableCell(conn, layout.mapId(), anchor.projectedCell(), anchor.z());
                 DungeonTransitionDestination destination = requireDestination(conn, intent.destination(), intent.bidirectional());
                 long transitionId = transitionRepository.insert(conn, new DungeonTransition(
                         null,
@@ -104,9 +101,8 @@ public final class DungeonTransitionApplicationService {
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                DungeonStorageSupport.ensureReady(conn);
                 DungeonTransition transition = requireTransition(conn, transitionId);
-                roomTopologyService.ensureTraversableCell(conn, transition.mapId(), anchor.projectedCell(), anchor.z());
+                roomApplicationService.ensureTraversableCell(conn, transition.mapId(), anchor.projectedCell(), anchor.z());
                 transitionRepository.updatePlacement(conn, transitionId, anchor);
                 return null;
             });
@@ -129,18 +125,11 @@ public final class DungeonTransitionApplicationService {
             if (overworld.tileId() <= 0) {
                 throw new SQLException("Overworld-Zielfeld fehlt");
             }
-            if (!WorldReadApi.overworldTileExists(overworld.tileId())) {
+            Long resolvedMapId = WorldReadApi.findOverworldMapIdForTile(conn, overworld.tileId());
+            if (resolvedMapId == null || resolvedMapId <= 0) {
                 throw new SQLException("Overworld-Zielfeld existiert nicht");
             }
-            long mapId = overworld.mapId();
-            if (mapId <= 0) {
-                Long resolvedMapId = WorldReadApi.findOverworldMapIdForTile(overworld.tileId());
-                if (resolvedMapId == null || resolvedMapId <= 0) {
-                    throw new SQLException("Overworld-Zielfeld existiert nicht");
-                }
-                mapId = resolvedMapId;
-            }
-            return new DungeonTransitionDestination.OverworldTileDestination(mapId, overworld.tileId());
+            return new DungeonTransitionDestination.OverworldTileDestination(resolvedMapId, overworld.tileId());
         }
         if (!(destination instanceof DungeonTransitionDestination.DungeonMapDestination dungeon)) {
             throw new SQLException("Übergangsziel fehlt");

@@ -1,6 +1,6 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
-import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
+import features.world.dungeonmap.application.room.DungeonRoomApplicationService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
@@ -30,7 +30,7 @@ public final class BoundaryTool implements EditorTool {
     private final DungeonMapState mapState;
     private final DungeonMapLoadingService loadingService;
     private final DungeonEditorSessionState sessionState;
-    private final DungeonRoomTopologyService roomTopologyService;
+    private final DungeonRoomApplicationService roomApplicationService;
     private final EditorInteractionState state;
     private final Label statusLabel = new Label("Kein Wandpfad aktiv");
     private final VBox statusCard = EditorCards.card("Wandpfad", statusLabel);
@@ -43,13 +43,13 @@ public final class BoundaryTool implements EditorTool {
             DungeonMapState mapState,
             DungeonMapLoadingService loadingService,
             DungeonEditorSessionState sessionState,
-            DungeonRoomTopologyService roomTopologyService,
+            DungeonRoomApplicationService roomApplicationService,
             EditorInteractionState state
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
         this.sessionState = Objects.requireNonNull(sessionState, "sessionState");
-        this.roomTopologyService = Objects.requireNonNull(roomTopologyService, "roomTopologyService");
+        this.roomApplicationService = Objects.requireNonNull(roomApplicationService, "roomApplicationService");
         this.state = Objects.requireNonNull(state, "state");
         this.statusLabel.setWrapText(true);
     }
@@ -216,7 +216,7 @@ public final class BoundaryTool implements EditorTool {
         }
         loadingService.submitMutation(
                 () -> {
-                    roomTopologyService.editBoundary(
+                    roomApplicationService.editBoundary(
                             mapId,
                             currentDraft.clusterId(),
                             mapState.activeProjectionLevel(),

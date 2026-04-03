@@ -143,7 +143,16 @@ public final class DungeonMapLoadingService {
                         "Dungeon " + mapId + " existiert nicht mehr");
             }
             try {
-                return new LoadResult(maps, layoutRepository.loadLayout(conn, requestedMap), null);
+                DungeonLayout layout = layoutRepository.loadLayout(conn, requestedMap.mapId());
+                if (layout != null) {
+                    return new LoadResult(maps, layout, null);
+                }
+                return fallbackResult(
+                        conn,
+                        maps,
+                        state.maps(),
+                        Set.of(requestedMap.mapId()),
+                        "Dungeon " + requestedMap.name() + " existiert nicht mehr");
             } catch (RuntimeException exception) {
                 return fallbackResult(
                         conn,
@@ -201,7 +210,11 @@ public final class DungeonMapLoadingService {
                 continue;
             }
             try {
-                DungeonLayout layout = layoutRepository.loadLayout(conn, map);
+                DungeonLayout layout = layoutRepository.loadLayout(conn, map.mapId());
+                if (layout == null) {
+                    failuresByMap.put(map, "Layout fehlt");
+                    continue;
+                }
                 usableMaps.add(map);
                 layoutsById.put(map.mapId(), layout);
             } catch (RuntimeException exception) {
@@ -225,7 +238,11 @@ public final class DungeonMapLoadingService {
         String message = primaryMessage;
         for (DungeonMapCatalogEntry fallbackMap : fallbackCandidates(maps, fallbackMaps, excludedMapIds)) {
             try {
-                return new LoadResult(maps, layoutRepository.loadLayout(conn, fallbackMap), message);
+                DungeonLayout layout = layoutRepository.loadLayout(conn, fallbackMap.mapId());
+                if (layout != null) {
+                    return new LoadResult(maps, layout, message);
+                }
+                message = combineMessages(message, fallbackMap.name() + " (Layout fehlt)");
             } catch (RuntimeException exception) {
                 message = combineMessages(
                         message,

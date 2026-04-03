@@ -1,6 +1,6 @@
 package features.world.dungeonmap.shell.editor;
 
-import features.world.dungeonmap.application.room.DungeonRoomNarrationService;
+import features.world.dungeonmap.application.room.DungeonRoomApplicationService;
 import features.world.dungeonmap.application.room.RoomExitCatalog;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
@@ -29,7 +29,7 @@ public final class RoomNarrationPane {
 
     private final DungeonMapState mapState;
     private final DungeonMapLoadingService loadingService;
-    private final DungeonRoomNarrationService roomNarrationService;
+    private final DungeonRoomApplicationService roomApplicationService;
     private final EditorInteractionState editorState;
     private final VBox narrationContent = new VBox(8);
     private final VBox narrationCard = EditorCards.card("Raumbeschreibung", narrationContent);
@@ -39,12 +39,12 @@ public final class RoomNarrationPane {
     public RoomNarrationPane(
             DungeonMapState mapState,
             DungeonMapLoadingService loadingService,
-            DungeonRoomNarrationService roomNarrationService,
+            DungeonRoomApplicationService roomApplicationService,
             EditorInteractionState editorState
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
-        this.roomNarrationService = Objects.requireNonNull(roomNarrationService, "roomNarrationService");
+        this.roomApplicationService = Objects.requireNonNull(roomApplicationService, "roomApplicationService");
         this.editorState = Objects.requireNonNull(editorState, "editorState");
     }
 
@@ -143,7 +143,7 @@ public final class RoomNarrationPane {
         setRoomNarrationSaveState(card.roomId(), true, "Speichert...");
         loadingService.submitMutation(
                 () -> {
-                    roomNarrationService.saveNarration(card.roomId(), new RoomNarration(visualArea.getText(), exitNarrations));
+                    roomApplicationService.saveNarration(card.roomId(), new RoomNarration(visualArea.getText(), exitNarrations));
                     return mapState.activeMapId();
                 },
                 updatedMapId -> updatedMapId,
