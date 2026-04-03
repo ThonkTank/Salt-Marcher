@@ -53,6 +53,7 @@ public final class DungeonMapModule {
                 layoutRepository,
                 loadResolver);
         DungeonMapCatalogService mapCatalogService = new DungeonMapCatalogService(
+                layoutRepository,
                 roomApplicationService,
                 runtimeApplicationService);
         DungeonCorridorApplicationService corridorApplicationService = new DungeonCorridorApplicationService(layoutRepository, corridorRepository);
