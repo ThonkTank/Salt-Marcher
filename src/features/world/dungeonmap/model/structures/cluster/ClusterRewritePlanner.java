@@ -83,12 +83,6 @@ final class ClusterRewritePlanner {
 
         List<ReconciledRoom> reconciledRooms = reconciledRooms(cluster, mergedClusterCells, candidates, previousBoundaryKinds);
         List<Room> rewrittenRooms = rooms(reconciledRooms);
-        Map<Long, Long> replacedRoomIds = new LinkedHashMap<>();
-        for (Long mergedRoomId : mergedRoomIds) {
-            if (!mergedRoomId.equals(retainedRoom.roomId())) {
-                replacedRoomIds.put(mergedRoomId, retainedRoom.roomId());
-            }
-        }
         Set<Long> deletedRoomIds = new LinkedHashSet<>(mergedRoomIds);
         deletedRoomIds.remove(retainedRoom.roomId());
         return ClusterRewrite.builder(
@@ -96,8 +90,6 @@ final class ClusterRewritePlanner {
                         CellCoord.bestCenter(mergedClusterCells),
                         rewrittenRooms)
                 .deletedRoomIds(deletedRoomIds)
-                .replacedRoomIds(replacedRoomIds)
-                .mergedRoomIds(mergedRoomIds.size() > 1 ? mergedRoomIds : Set.of())
                 .deletedClusterIds(deletedClusterIds)
                 .topologyChanged(true)
                 .build();
@@ -131,7 +123,6 @@ final class ClusterRewritePlanner {
         Map<GridSegment2x, InternalBoundaryType> previousBoundaryKinds = cluster.internalBoundaryKinds();
         List<RoomRewriteCandidate> candidates = new ArrayList<>();
         Set<Long> deletedRoomIds = new LinkedHashSet<>();
-        Map<Long, List<RoomRewriteCandidate>> fragmentsBySourceRoomId = new LinkedHashMap<>();
         for (Room room : cluster.rooms()) {
             if (room == null || room.roomId() == null) {
                 continue;
@@ -155,16 +146,13 @@ final class ClusterRewritePlanner {
                 continue;
             }
             if (components.isEmpty()) {
-                RoomRewriteCandidate retainedCandidate = RoomRewriteCandidate.keep(
+                candidates.add(RoomRewriteCandidate.keep(
                         room.roomId(),
                         room.name(),
                         remainingRoomCellsByLevel,
-                        roomAnchorsByLevel(room));
-                candidates.add(retainedCandidate);
-                fragmentsBySourceRoomId.put(room.roomId(), List.of(retainedCandidate));
+                        roomAnchorsByLevel(room)));
                 continue;
             }
-            List<RoomRewriteCandidate> sourceFragments = new ArrayList<>();
             for (int index = 0; index < components.size(); index++) {
                 Set<CellCoord> component = components.get(index);
                 Map<Integer, Set<CellCoord>> fragmentCellsByLevel = index == 0
@@ -178,17 +166,12 @@ final class ClusterRewritePlanner {
                         ? RoomRewriteCandidate.keep(room.roomId(), roomName, fragmentCellsByLevel, roomAnchorsByLevel(room))
                         : RoomRewriteCandidate.create(room.roomId(), roomName, fragmentCellsByLevel, roomAnchorsByLevel(room));
                 candidates.add(candidate);
-                sourceFragments.add(candidate);
             }
-            fragmentsBySourceRoomId.put(room.roomId(), List.copyOf(sourceFragments));
         }
 
         Set<CellCoord> rewrittenClusterCells = flattenCells(remainingCellsByLevel);
         List<ReconciledRoom> reconciledRooms = reconciledRooms(cluster, rewrittenClusterCells, candidates, previousBoundaryKinds);
         List<Room> rewrittenRooms = rooms(reconciledRooms);
-        Map<Long, List<Room>> splitFragmentsBySourceRoomId = resolvedFragmentsBySourceRoomId(
-                fragmentsBySourceRoomId,
-                reconciledRooms);
         List<ClusterRewriteSplit> componentClusters = deleteRewriteClusters(
                 cluster,
                 rewrittenClusterCells,
@@ -203,7 +186,6 @@ final class ClusterRewritePlanner {
                         retainedCluster.clusterCenter(),
                         retainedCluster.rooms())
                 .deletedRoomIds(deletedRoomIds)
-                .splitFragmentsBySourceRoomId(splitFragmentsBySourceRoomId)
                 .splitClusters(splitClusters)
                 .topologyChanged(true)
                 .build();
@@ -261,8 +243,6 @@ final class ClusterRewritePlanner {
                         cluster.center(),
                         rewrittenRooms)
                 .deletedRoomIds(merge.deletedRoomIds())
-                .replacedRoomIds(merge.replacedRoomIds())
-                .mergedRoomIds(merge.mergedRoomIds())
                 .topologyChanged(true)
                 .build();
     }
@@ -499,8 +479,6 @@ final class ClusterRewritePlanner {
 
     static BoundaryMergeResult computeMergeMetadata(RoomCluster cluster, List<Room> rewrittenRooms) {
         Set<Long> deletedRoomIds = new LinkedHashSet<>();
-        Map<Long, Long> replacedRoomIds = new LinkedHashMap<>();
-        Set<Long> mergedRoomIds = new LinkedHashSet<>();
         for (Room rewrittenRoom : rewrittenRooms) {
             if (rewrittenRoom == null) {
                 continue;
@@ -514,14 +492,12 @@ final class ClusterRewritePlanner {
                 if (sourceRoom == null || sourceRoom.roomId() == null) {
                     continue;
                 }
-                mergedRoomIds.add(sourceRoom.roomId());
-                replacedRoomIds.put(sourceRoom.roomId(), replacementRoomId);
                 if (!sourceRoom.roomId().equals(replacementRoomId)) {
                     deletedRoomIds.add(sourceRoom.roomId());
                 }
             }
         }
-        return new BoundaryMergeResult(deletedRoomIds, replacedRoomIds, mergedRoomIds);
+        return new BoundaryMergeResult(deletedRoomIds);
     }
 
     static List<ClusterRewriteSplit> deleteRewriteClusters(
@@ -565,30 +541,6 @@ final class ClusterRewritePlanner {
             List<LocalConnection> localConnections
     ) {
         return computeInternalBoundaries(clusterCells, rooms, boundaryKinds(localConnections));
-    }
-
-    static Map<Long, List<Room>> resolvedFragmentsBySourceRoomId(
-            Map<Long, List<RoomRewriteCandidate>> candidatesBySourceRoomId,
-            List<ReconciledRoom> reconciledRooms
-    ) {
-        if (candidatesBySourceRoomId == null || candidatesBySourceRoomId.isEmpty()) {
-            return Map.of();
-        }
-        Map<RoomRewriteCandidate, Room> roomByCandidate = new LinkedHashMap<>();
-        for (ReconciledRoom reconciledRoom : reconciledRooms == null ? List.<ReconciledRoom>of() : reconciledRooms) {
-            if (reconciledRoom != null && reconciledRoom.candidate() != null && reconciledRoom.room() != null) {
-                roomByCandidate.put(reconciledRoom.candidate(), reconciledRoom.room());
-            }
-        }
-        Map<Long, List<Room>> result = new LinkedHashMap<>();
-        for (Map.Entry<Long, List<RoomRewriteCandidate>> entry : candidatesBySourceRoomId.entrySet()) {
-            List<Room> resolved = entry.getValue().stream()
-                    .map(roomByCandidate::get)
-                    .filter(java.util.Objects::nonNull)
-                    .toList();
-            result.put(entry.getKey(), resolved);
-        }
-        return Map.copyOf(result);
     }
 
     private static List<RoomCluster> normalizedClusters(List<RoomCluster> clusters) {
@@ -704,9 +656,7 @@ final class ClusterRewritePlanner {
     }
 
     record BoundaryMergeResult(
-            Set<Long> deletedRoomIds,
-            Map<Long, Long> replacedRoomIds,
-            Set<Long> mergedRoomIds
+            Set<Long> deletedRoomIds
     ) {
     }
 

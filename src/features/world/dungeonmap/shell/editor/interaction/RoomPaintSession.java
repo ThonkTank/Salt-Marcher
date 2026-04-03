@@ -1,11 +1,8 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.objects.StructureDescriptor;
-import features.world.dungeonmap.model.objects.StructureObject;
 
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Set;
 
 public record RoomPaintSession(
@@ -28,17 +25,6 @@ public record RoomPaintSession(
             }
         }
         return cells.isEmpty() ? Set.of() : Set.copyOf(cells);
-    }
-
-    public StructureDescriptor previewDescriptor(int levelZ) {
-        Set<CellCoord> cells = previewCells();
-        return cells.isEmpty()
-                ? StructureDescriptor.empty()
-                : StructureDescriptor.fromCellCoordsByLevel(Map.of(levelZ, cells));
-    }
-
-    public StructureObject previewStructure(int levelZ) {
-        return StructureObject.fromDescriptor(previewDescriptor(levelZ));
     }
 
     public RoomPaintSession withEndCell(CellCoord endCell) {

@@ -107,9 +107,9 @@ public final class DungeonRuntimeApplicationService {
         }
         CardinalDirection resolvedHeading = normalizeHeading(currentHeading);
         return switch (action.target()) {
-            case DungeonRuntimeAction.Target.CellTarget cellTarget -> moveToCellTarget(layout, cellTarget, resolvedHeading);
-            case DungeonRuntimeAction.Target.DoorTarget doorTarget -> moveThroughDoor(layout, doorTarget, resolvedHeading);
-            case DungeonRuntimeAction.Target.TransitionTarget transitionTarget ->
+            case DungeonRuntimeAction.CellTarget cellTarget -> moveToCellTarget(layout, cellTarget, resolvedHeading);
+            case DungeonRuntimeAction.DoorTarget doorTarget -> moveThroughDoor(layout, doorTarget, resolvedHeading);
+            case DungeonRuntimeAction.TransitionTarget transitionTarget ->
                     moveThroughTransition(layout, transitionTarget.transitionId(), resolvedHeading);
         };
     }
@@ -145,7 +145,7 @@ public final class DungeonRuntimeApplicationService {
 
     private DungeonRuntimeNavigationSnapshot moveToCellTarget(
             DungeonLayout layout,
-            DungeonRuntimeAction.Target.CellTarget target,
+            DungeonRuntimeAction.CellTarget target,
             CardinalDirection currentHeading
     ) throws SQLException {
         CellCoord resolvedCell = nearestTraversableCell(layout, target.cell(), target.levelZ());
@@ -159,7 +159,7 @@ public final class DungeonRuntimeApplicationService {
 
     private DungeonRuntimeNavigationSnapshot moveThroughDoor(
             DungeonLayout layout,
-            DungeonRuntimeAction.Target.DoorTarget target,
+            DungeonRuntimeAction.DoorTarget target,
             CardinalDirection currentHeading
     ) throws SQLException {
         if (target.anchorSegment2x() == null) {

@@ -5,6 +5,8 @@ import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.model.objects.StructureObject;
+import features.world.dungeonmap.model.structures.cluster.ClusterRewrite;
+import features.world.dungeonmap.model.structures.cluster.ClusterRewriteSplit;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
@@ -95,6 +97,74 @@ public final class DungeonRoomRepository {
         return loadLevelMap(conn,
                 "SELECT cluster_id AS entity_id, level_z FROM dungeon_room_clusters WHERE dungeon_map_id=?",
                 mapId);
+    }
+
+    public void createClusterWithRoom(
+            Connection conn,
+            long mapId,
+            int levelZ,
+            Set<CellCoord> cells,
+            String roomName
+    ) throws SQLException {
+        Set<CellCoord> resolvedCells = cells == null ? Set.of() : Set.copyOf(cells);
+        if (resolvedCells.isEmpty()) {
+            return;
+        }
+        long clusterId = insertCluster(conn, mapId, CellCoord.bestCenter(resolvedCells), levelZ);
+        insertRoom(
+                conn,
+                mapId,
+                clusterId,
+                roomName,
+                StructureDescriptor.fromCellCoordsByLevel(Map.of(levelZ, resolvedCells)));
+    }
+
+    public ClusterRewrite saveClusterRewrite(Connection conn, long mapId, ClusterRewrite rewrite, int fallbackLevel) throws SQLException {
+        if (rewrite == null || rewrite.targetClusterId() == null) {
+            return rewrite;
+        }
+        for (Long roomId : rewrite.deletedRoomIds()) {
+            if (roomId != null) {
+                deleteRoom(conn, roomId);
+            }
+        }
+        if (rewrite.deletesCluster()) {
+            deleteCluster(conn, rewrite.targetClusterId());
+            return rewrite;
+        }
+        List<ClusterRewriteSplit> realizedSplitClusters = new ArrayList<>();
+        for (ClusterRewriteSplit splitCluster : rewrite.splitClusters()) {
+            long splitClusterId = insertCluster(
+                    conn,
+                    mapId,
+                    splitCluster.clusterCenter(),
+                    primaryLevel(splitCluster.rooms(), fallbackLevel));
+            realizedSplitClusters.add(splitCluster.withClusterId(splitClusterId));
+        }
+        ClusterRewrite realizedRewrite = rewrite.withSplitClusters(realizedSplitClusters);
+        updateClusterMetadata(
+                conn,
+                realizedRewrite.targetClusterId(),
+                realizedRewrite.clusterCenter(),
+                primaryLevel(realizedRewrite.rooms(), fallbackLevel));
+        persistRooms(conn, mapId, realizedRewrite.targetClusterId(), realizedRewrite.rooms());
+        for (ClusterRewriteSplit splitCluster : realizedRewrite.splitClusters()) {
+            persistRooms(conn, mapId, splitCluster.clusterId(), splitCluster.rooms());
+        }
+        for (Long deletedClusterId : realizedRewrite.deletedClusterIds()) {
+            if (deletedClusterId != null && !deletedClusterId.equals(realizedRewrite.targetClusterId())) {
+                deleteCluster(conn, deletedClusterId);
+            }
+        }
+        return realizedRewrite;
+    }
+
+    public void saveMovedCluster(Connection conn, RoomCluster cluster) throws SQLException {
+        if (cluster == null || cluster.clusterId() == null) {
+            return;
+        }
+        updateClusterMetadata(conn, cluster.clusterId(), cluster.center(), cluster.primaryLevel());
+        persistRooms(conn, cluster.mapId(), cluster.clusterId(), cluster.rooms());
     }
 
     public long insertCluster(Connection conn, long mapId, CellCoord center, int levelZ) throws SQLException {
@@ -306,6 +376,25 @@ public final class DungeonRoomRepository {
         }
     }
 
+    private void persistRooms(Connection conn, long mapId, long clusterId, List<Room> rooms) throws SQLException {
+        for (Room room : rooms == null ? List.<Room>of() : rooms) {
+            if (room == null) {
+                continue;
+            }
+            if (room.roomId() == null) {
+                insertRoom(
+                        conn,
+                        mapId,
+                        clusterId,
+                        room.name(),
+                        room.structure().descriptor());
+                continue;
+            }
+            reassignRoomCluster(conn, room.roomId(), clusterId);
+            updateRoom(conn, room.roomId(), room.name(), room.structure().descriptor());
+        }
+    }
+
     private static StructureDescriptor requiredDescriptor(StructureDescriptor descriptor) {
         StructureDescriptor resolvedDescriptor = descriptor == null ? StructureDescriptor.empty() : descriptor;
         if (resolvedDescriptor.levels().isEmpty()) {
@@ -419,6 +508,15 @@ public final class DungeonRoomRepository {
             result.put(roomId, new StructureDescriptor(levels));
         }
         return result.isEmpty() ? Map.of() : Map.copyOf(result);
+    }
+
+    private static int primaryLevel(List<Room> rooms, int fallbackLevel) {
+        return (rooms == null ? List.<Room>of() : rooms).stream()
+                .filter(java.util.Objects::nonNull)
+                .flatMap(room -> room.structure().levels().stream())
+                .mapToInt(Integer::intValue)
+                .min()
+                .orElse(fallbackLevel);
     }
 
     private static Map<Long, Integer> loadLevelMap(Connection conn, String sql, long mapId) throws SQLException {

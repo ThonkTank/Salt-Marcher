@@ -2,7 +2,7 @@ package features.world.dungeonmap.shell.editor.interaction;
 
 import features.world.dungeonmap.application.corridor.DungeonCorridorEditService;
 import features.world.dungeonmap.application.corridor.DungeonCorridorGraphEditor;
-import features.world.dungeonmap.application.room.DungeonBoundaryEditService;
+import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
@@ -39,7 +39,7 @@ public final class ConnectionsTool implements EditorTool {
     private final DungeonMapState mapState;
     private final DungeonMapLoadingService loadingService;
     private final DungeonEditorSessionState sessionState;
-    private final DungeonBoundaryEditService boundaryEditService;
+    private final DungeonRoomTopologyService roomTopologyService;
     private final DungeonCorridorEditService corridorEditService;
     private final EditorInteractionState state;
     private final Label statusLabel = new Label();
@@ -57,14 +57,14 @@ public final class ConnectionsTool implements EditorTool {
             DungeonMapState mapState,
             DungeonMapLoadingService loadingService,
             DungeonEditorSessionState sessionState,
-            DungeonBoundaryEditService boundaryEditService,
+            DungeonRoomTopologyService roomTopologyService,
             DungeonCorridorEditService corridorEditService,
             EditorInteractionState state
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
         this.sessionState = Objects.requireNonNull(sessionState, "sessionState");
-        this.boundaryEditService = Objects.requireNonNull(boundaryEditService, "boundaryEditService");
+        this.roomTopologyService = Objects.requireNonNull(roomTopologyService, "roomTopologyService");
         this.corridorEditService = Objects.requireNonNull(corridorEditService, "corridorEditService");
         this.state = Objects.requireNonNull(state, "state");
         statusLabel.setWrapText(true);
@@ -432,13 +432,13 @@ public final class ConnectionsTool implements EditorTool {
         }
         loadingService.submitMutation(
                 () -> {
-                    boundaryEditService.apply(
-                        mapId,
-                        clusterId,
-                        mapState.activeProjectionLevel(),
-                        segment2x,
-                        InternalBoundaryType.DOOR,
-                        deleteBoundary);
+                    roomTopologyService.editBoundary(
+                            mapId,
+                            clusterId,
+                            mapState.activeProjectionLevel(),
+                            List.of(segment2x),
+                            InternalBoundaryType.DOOR,
+                            deleteBoundary);
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,

@@ -13,7 +13,6 @@ public final class EditorInteractionState {
     private DungeonSelectionRef selectedRef;
     private EditorHover hovered;
     private EditorPreview activePreview;
-    private EditorDraft activeDraft;
 
     public DungeonSelectionRef selectedRef() {
         return selectedRef;
@@ -61,23 +60,6 @@ public final class EditorInteractionState {
             return;
         }
         activePreview = null;
-        notifyListeners();
-    }
-
-    public EditorDraft activeDraft() {
-        return activeDraft;
-    }
-
-    public void showDraft(EditorDraft draft) {
-        activeDraft = draft;
-        notifyListeners();
-    }
-
-    public void clearDraft() {
-        if (activeDraft == null) {
-            return;
-        }
-        activeDraft = null;
         notifyListeners();
     }
 

@@ -964,19 +964,17 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
     private static void drawPaintPreview(
             GraphicsContext gc,
             DungeonCanvasCamera camera,
-            StructureObject previewStructure,
-            int levelZ,
+            Set<CellCoord> previewCells,
             boolean deleteMode
     ) {
-        WalkableSurface surface = walkableSurface(previewStructure, levelZ);
-        if (surface.tiles().isEmpty()) {
+        if (previewCells == null || previewCells.isEmpty()) {
             return;
         }
         double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
         gc.setFill(deleteMode ? DungeonCanvasTheme.DELETE_PREVIEW_FILL : DungeonCanvasTheme.PAINT_PREVIEW_FILL);
         gc.setStroke(deleteMode ? DungeonCanvasTheme.DELETE_PREVIEW_STROKE : DungeonCanvasTheme.PAINT_PREVIEW_STROKE);
         gc.setLineWidth(1.5);
-        for (CellCoord tile : surface.tiles()) {
+        for (CellCoord tile : previewCells) {
             double x = camera.panX() + tile.x() * gridSize;
             double y = camera.panY() + tile.y() * gridSize;
             gc.fillRect(x, y, gridSize, gridSize);
@@ -1191,8 +1189,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 drawPaintPreview(
                         gc,
                         frame.camera(),
-                        paintPreview.structure(),
-                        paintPreview.levelZ(),
+                        paintPreview.cells(),
                         paintPreview.deleteMode());
             }
             if (editor.preview() instanceof EditorPreview.BoundaryPreview boundaryPreview) {

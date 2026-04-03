@@ -17,16 +17,13 @@ public final class DungeonClusterMoveService {
 
     private final DungeonLayoutRepository layoutRepository;
     private final DungeonRoomRepository roomRepository;
-    private final DungeonClusterMoveProjectionApplicationService projectionApplicationService;
 
     public DungeonClusterMoveService(
             DungeonLayoutRepository layoutRepository,
-            DungeonRoomRepository roomRepository,
-            DungeonClusterMoveProjectionApplicationService projectionApplicationService
+            DungeonRoomRepository roomRepository
     ) {
         this.layoutRepository = Objects.requireNonNull(layoutRepository, "layoutRepository");
         this.roomRepository = Objects.requireNonNull(roomRepository, "roomRepository");
-        this.projectionApplicationService = Objects.requireNonNull(projectionApplicationService, "projectionApplicationService");
     }
 
     public void move(long mapId, long clusterId, CellCoord delta) throws SQLException {
@@ -41,19 +38,8 @@ public final class DungeonClusterMoveService {
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
                 DungeonLayout layout = requireLayout(conn, mapId);
-                DungeonClusterMoveProjection projection = projectionApplicationService.project(layout, clusterId, delta, levelDelta);
-                RoomCluster cluster = requireCluster(projection.layout(), clusterId);
-                roomRepository.updateClusterMetadata(
-                        conn,
-                        clusterId,
-                        cluster.center(),
-                        cluster.primaryLevel());
-                for (Room room : cluster.rooms()) {
-                    if (room == null || room.roomId() == null) {
-                        continue;
-                    }
-                    roomRepository.updateRoom(conn, room.roomId(), room.name(), room.structure().descriptor());
-                }
+                RoomCluster cluster = requireCluster(layout.withMovedCluster(clusterId, delta, levelDelta), clusterId);
+                roomRepository.saveMovedCluster(conn, cluster);
                 return null;
             });
         }

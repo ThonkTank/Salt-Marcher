@@ -5,10 +5,7 @@ import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.objects.StructureDescriptor;
-import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.structures.cluster.ClusterRewrite;
-import features.world.dungeonmap.model.structures.cluster.ClusterRewriteSplit;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.room.Room;
@@ -21,7 +18,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -38,39 +34,56 @@ public final class DungeonRoomTopologyService {
         this.roomRepository = Objects.requireNonNull(roomRepository, "roomRepository");
     }
 
-    public void paint(long mapId, StructureDescriptor descriptor) throws SQLException {
-        if (descriptor == null || descriptor.levels().isEmpty()) {
+    public void paintCells(long mapId, int levelZ, Set<CellCoord> cells) throws SQLException {
+        if (cells == null || cells.isEmpty()) {
             return;
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                paint(conn, mapId, descriptor);
+                paintCells(conn, mapId, levelZ, cells);
                 return null;
             });
         }
     }
 
-    public void paint(Connection conn, long mapId, StructureDescriptor descriptor) throws SQLException {
-        StructureObject structure = StructureObject.fromDescriptor(descriptor);
-        for (Integer levelZ : structure.levels().stream().sorted().toList()) {
-            Set<CellCoord> levelCells = structure.cellCoordsAtLevel(levelZ);
-            if (!levelCells.isEmpty()) {
-                paintLevel(conn, mapId, levelZ, levelCells);
-            }
+    public void deleteCells(long mapId, int levelZ, Set<CellCoord> cells) throws SQLException {
+        if (cells == null || cells.isEmpty()) {
+            return;
+        }
+        try (Connection conn = DatabaseManager.getConnection()) {
+            DungeonTransactionRunner.inTransaction(conn, () -> {
+                deleteCells(conn, mapId, levelZ, cells);
+                return null;
+            });
         }
     }
 
-    private void paintLevel(Connection conn, long mapId, int levelZ, Set<CellCoord> cells) throws SQLException {
+    public void editBoundary(
+            long mapId,
+            long clusterId,
+            int levelZ,
+            Collection<GridSegment2x> segments2x,
+            InternalBoundaryType type,
+            boolean deleteBoundary
+    ) throws SQLException {
+        if (segments2x == null || segments2x.isEmpty()) {
+            return;
+        }
+        try (Connection conn = DatabaseManager.getConnection()) {
+            DungeonTransactionRunner.inTransaction(conn, () -> {
+                editBoundary(conn, mapId, clusterId, levelZ, segments2x, type, deleteBoundary);
+                return null;
+            });
+        }
+    }
+
+    public void paintCells(Connection conn, long mapId, int levelZ, Set<CellCoord> cells) throws SQLException {
         DungeonLayout layout = requireLayout(conn, mapId);
         List<RoomCluster> overlappingClusters = overlappingClustersAtLevel(layout, cells, levelZ).stream()
                 .sorted(Comparator.comparing(cluster -> cluster.clusterId() == null ? Long.MAX_VALUE : cluster.clusterId()))
                 .toList();
         if (overlappingClusters.isEmpty()) {
-            createCluster(
-                    conn,
-                    mapId,
-                    StructureDescriptor.fromCellCoordsByLevel(Map.of(levelZ, cells)),
-                    nextRoomName(layout, new LinkedHashSet<>()));
+            roomRepository.createClusterWithRoom(conn, mapId, levelZ, cells, nextRoomName(layout, new LinkedHashSet<>()));
             return;
         }
 
@@ -79,32 +92,10 @@ public final class DungeonRoomTopologyService {
             return;
         }
 
-        persistClusterRewrite(conn, mapId, rewrite, levelZ);
+        roomRepository.saveClusterRewrite(conn, mapId, rewrite, levelZ);
     }
 
-    public void delete(long mapId, StructureDescriptor descriptor) throws SQLException {
-        if (descriptor == null || descriptor.levels().isEmpty()) {
-            return;
-        }
-        try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonTransactionRunner.inTransaction(conn, () -> {
-                delete(conn, mapId, descriptor);
-                return null;
-            });
-        }
-    }
-
-    public void delete(Connection conn, long mapId, StructureDescriptor descriptor) throws SQLException {
-        StructureObject structure = StructureObject.fromDescriptor(descriptor);
-        for (Integer levelZ : structure.levels().stream().sorted().toList()) {
-            Set<CellCoord> levelCells = structure.cellCoordsAtLevel(levelZ);
-            if (!levelCells.isEmpty()) {
-                deleteLevel(conn, mapId, levelZ, levelCells);
-            }
-        }
-    }
-
-    private void deleteLevel(Connection conn, long mapId, int levelZ, Set<CellCoord> cells) throws SQLException {
+    public void deleteCells(Connection conn, long mapId, int levelZ, Set<CellCoord> cells) throws SQLException {
         DungeonLayout workingLayout = requireLayout(conn, mapId);
         Set<String> reservedNames = new LinkedHashSet<>();
         for (Room room : workingLayout.rooms()) {
@@ -128,7 +119,7 @@ public final class DungeonRoomTopologyService {
             if (rewrite.isNoOp()) {
                 continue;
             }
-            ClusterRewrite persistedRewrite = persistClusterRewrite(
+            ClusterRewrite persistedRewrite = roomRepository.saveClusterRewrite(
                     conn,
                     mapId,
                     rewrite,
@@ -138,7 +129,7 @@ public final class DungeonRoomTopologyService {
     }
 
     public void createDefaultRoom(Connection conn, long mapId) throws SQLException {
-        createCluster(conn, mapId, StructureDescriptor.fromCellCoordsByLevel(Map.of(0, Set.of(new CellCoord(0, 0)))), "Eingang");
+        roomRepository.createClusterWithRoom(conn, mapId, 0, Set.of(new CellCoord(0, 0)), "Eingang");
     }
 
     public void ensureTraversableCell(Connection conn, long mapId, CellCoord cell, int levelZ) throws SQLException {
@@ -149,7 +140,7 @@ public final class DungeonRoomTopologyService {
         if (layout.isTraversableCell(cell, levelZ)) {
             return;
         }
-        paint(conn, mapId, StructureDescriptor.fromCellCoordsByLevel(Map.of(levelZ, Set.of(cell))));
+        paintCells(conn, mapId, levelZ, Set.of(cell));
     }
 
     public void editBoundary(
@@ -186,100 +177,7 @@ public final class DungeonRoomTopologyService {
             return;
         }
 
-        persistClusterRewrite(conn, mapId, rewrite, layout.levelForCluster(rewrite.targetClusterId()));
-    }
-
-    private void createCluster(Connection conn, long mapId, StructureDescriptor descriptor, String roomName) throws SQLException {
-        StructureObject structure = StructureObject.fromDescriptor(descriptor);
-        int primaryLevel = structure.primaryLevel();
-        CellCoord centerCell = structure.centerCellCoordAtLevel(primaryLevel);
-        long clusterId = roomRepository.insertCluster(
-                conn,
-                mapId,
-                centerCell,
-                primaryLevel);
-        roomRepository.insertRoom(
-                conn,
-                mapId,
-                clusterId,
-                roomName,
-                descriptor);
-    }
-
-    private ClusterRewrite persistClusterRewrite(Connection conn, long mapId, ClusterRewrite rewrite, int levelZ) throws SQLException {
-        if (rewrite == null || rewrite.targetClusterId() == null) {
-            return rewrite;
-        }
-        for (Long roomId : rewrite.deletedRoomIds()) {
-            if (roomId != null) {
-                roomRepository.deleteRoom(conn, roomId);
-            }
-        }
-        if (rewrite.deletesCluster()) {
-            roomRepository.deleteCluster(conn, rewrite.targetClusterId());
-            return rewrite;
-        }
-        List<ClusterRewriteSplit> realizedSplitClusters = new java.util.ArrayList<>();
-        for (ClusterRewriteSplit splitCluster : rewrite.splitClusters()) {
-            long splitClusterId = roomRepository.insertCluster(
-                    conn,
-                    mapId,
-                    splitCluster.clusterCenter(),
-                    primaryLevel(splitCluster.rooms(), levelZ));
-            realizedSplitClusters.add(splitCluster.withClusterId(splitClusterId));
-        }
-        ClusterRewrite realizedRewrite = rewrite.withSplitClusters(realizedSplitClusters);
-        roomRepository.updateClusterMetadata(
-                conn,
-                realizedRewrite.targetClusterId(),
-                realizedRewrite.clusterCenter(),
-                primaryLevel(realizedRewrite.rooms(), levelZ));
-        persistRooms(conn, mapId, realizedRewrite.targetClusterId(), realizedRewrite.rooms());
-        for (ClusterRewriteSplit splitCluster : realizedRewrite.splitClusters()) {
-            persistRooms(conn, mapId, splitCluster.clusterId(), splitCluster.rooms());
-        }
-        for (Long deletedClusterId : realizedRewrite.deletedClusterIds()) {
-            if (deletedClusterId != null && !deletedClusterId.equals(realizedRewrite.targetClusterId())) {
-                roomRepository.deleteCluster(conn, deletedClusterId);
-            }
-        }
-        return realizedRewrite;
-    }
-
-    private void persistRooms(
-            Connection conn,
-            long mapId,
-            long clusterId,
-            List<Room> rooms
-    ) throws SQLException {
-        for (Room room : rooms) {
-            if (room == null) {
-                continue;
-            }
-            if (room.roomId() == null) {
-                long roomId = roomRepository.insertRoom(
-                        conn,
-                        mapId,
-                        clusterId,
-                        room.name(),
-                        room.structure().descriptor());
-                if (roomId <= 0) {
-                    throw new SQLException("Raum konnte nicht angelegt werden");
-                }
-                continue;
-            }
-            roomRepository.reassignRoomCluster(conn, room.roomId(), clusterId);
-            roomRepository.updateRoom(conn, room.roomId(), room.name(), room.structure().descriptor());
-        }
-    }
-
-    private static int primaryLevel(List<Room> rooms, int fallbackLevel) {
-        return (rooms == null ? List.<Room>of() : rooms).stream()
-                .filter(Objects::nonNull)
-                .flatMap(room -> room.structure().levels().stream())
-                .mapToInt(Integer::intValue)
-                .min()
-                .orElse(fallbackLevel);
+        roomRepository.saveClusterRewrite(conn, mapId, rewrite, layout.levelForCluster(rewrite.targetClusterId()));
     }
 
     private static List<RoomCluster> overlappingClustersAtLevel(DungeonLayout layout, Set<CellCoord> cells, int levelZ) {

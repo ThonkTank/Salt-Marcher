@@ -4,7 +4,6 @@ import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
 import features.world.dungeonmap.state.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
@@ -70,7 +69,7 @@ public final class PaintTool implements EditorTool {
         state.clearSelection();
         paintSession = new RoomPaintSession(cell, cell, sessionState.selectedTool() == DungeonEditorTool.ROOM_DELETE);
         state.showPreview(new EditorPreview.PaintPreview(
-                paintSession.previewStructure(mapState.activeProjectionLevel()),
+                paintSession.previewCells(),
                 mapState.activeProjectionLevel(),
                 paintSession.deleteMode()));
         return true;
@@ -91,7 +90,7 @@ public final class PaintTool implements EditorTool {
         }
         paintSession = paintSession.withEndCell(cell);
         state.showPreview(new EditorPreview.PaintPreview(
-                paintSession.previewStructure(mapState.activeProjectionLevel()),
+                paintSession.previewCells(),
                 mapState.activeProjectionLevel(),
                 paintSession.deleteMode()));
         return true;
@@ -109,18 +108,18 @@ public final class PaintTool implements EditorTool {
         }
         RoomPaintSession finishedSession = paintSession.withEndCell(cell);
         int activeLevel = mapState.activeProjectionLevel();
-        StructureDescriptor descriptor = finishedSession.previewDescriptor(activeLevel);
+        Set<CellCoord> cells = finishedSession.previewCells();
         clear();
         Long mapId = mapState.activeMapId();
-        if (mapId == null || descriptor.levels().isEmpty()) {
+        if (mapId == null || cells.isEmpty()) {
             return true;
         }
         loadingService.submitMutation(
                 () -> {
                     if (finishedSession.deleteMode()) {
-                        roomTopologyService.delete(mapId, descriptor);
+                        roomTopologyService.deleteCells(mapId, activeLevel, cells);
                     } else {
-                        roomTopologyService.paint(mapId, descriptor);
+                        roomTopologyService.paintCells(mapId, activeLevel, cells);
                     }
                     return mapId;
                 },

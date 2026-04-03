@@ -1,6 +1,6 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
-import features.world.dungeonmap.application.room.DungeonBoundaryEditService;
+import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
@@ -14,7 +14,6 @@ import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
 import features.world.dungeonmap.state.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
-import features.world.dungeonmap.state.EditorDraft;
 import features.world.dungeonmap.state.EditorInteractionState;
 import features.world.dungeonmap.state.EditorPreview;
 import javafx.scene.Node;
@@ -31,9 +30,8 @@ public final class BoundaryTool implements EditorTool {
     private final DungeonMapState mapState;
     private final DungeonMapLoadingService loadingService;
     private final DungeonEditorSessionState sessionState;
-    private final DungeonBoundaryEditService boundaryEditService;
+    private final DungeonRoomTopologyService roomTopologyService;
     private final EditorInteractionState state;
-    private final DungeonBoundaryPathPlanner pathPlanner = new DungeonBoundaryPathPlanner();
     private final Label statusLabel = new Label("Kein Wandpfad aktiv");
     private final VBox statusCard = EditorCards.card("Wandpfad", statusLabel);
 
@@ -45,13 +43,13 @@ public final class BoundaryTool implements EditorTool {
             DungeonMapState mapState,
             DungeonMapLoadingService loadingService,
             DungeonEditorSessionState sessionState,
-            DungeonBoundaryEditService boundaryEditService,
+            DungeonRoomTopologyService roomTopologyService,
             EditorInteractionState state
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
         this.sessionState = Objects.requireNonNull(sessionState, "sessionState");
-        this.boundaryEditService = Objects.requireNonNull(boundaryEditService, "boundaryEditService");
+        this.roomTopologyService = Objects.requireNonNull(roomTopologyService, "roomTopologyService");
         this.state = Objects.requireNonNull(state, "state");
         this.statusLabel.setWrapText(true);
     }
@@ -169,9 +167,9 @@ public final class BoundaryTool implements EditorTool {
             return true;
         }
 
-        DungeonBoundaryPathPlanner.PathResult result = deleteMode
-                ? pathPlanner.findDeletePath(cluster, draft.currentVertex(), vertex)
-                : pathPlanner.findCreatePath(cluster, draft.currentVertex(), vertex);
+        RoomCluster.BoundaryPath result = deleteMode
+                ? cluster.findDeleteBoundaryPath(draft.currentVertex(), vertex)
+                : cluster.findCreateBoundaryPath(draft.currentVertex(), vertex);
         if (!result.hasRoute()) {
             showDraft(new Draft(
                     draft.clusterId(),
@@ -199,7 +197,7 @@ public final class BoundaryTool implements EditorTool {
                 nextSkipped,
                 statusMessage(deleteMode, nextPreview, nextSkipped)));
 
-        if (!deleteMode && pathPlanner.touchesExistingWall(cluster, vertex)) {
+        if (!deleteMode && cluster.touchesExistingWall(vertex)) {
             return finishDraft();
         }
         return true;
@@ -218,13 +216,13 @@ public final class BoundaryTool implements EditorTool {
         }
         loadingService.submitMutation(
                 () -> {
-                    boundaryEditService.apply(
-                        mapId,
-                        currentDraft.clusterId(),
-                        mapState.activeProjectionLevel(),
-                        edges,
-                        InternalBoundaryType.WALL,
-                        currentDraft.deleteMode());
+                    roomTopologyService.editBoundary(
+                            mapId,
+                            currentDraft.clusterId(),
+                            mapState.activeProjectionLevel(),
+                            edges,
+                            InternalBoundaryType.WALL,
+                            currentDraft.deleteMode());
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,
@@ -259,18 +257,11 @@ public final class BoundaryTool implements EditorTool {
 
     private boolean isEditableCluster(Long clusterId, DungeonLayout layout, GridPoint2x vertex, boolean deleteMode) {
         RoomCluster cluster = clusterOnActiveLevel(clusterId, layout);
-        return cluster != null && pathPlanner.isEditableVertex(cluster, vertex, deleteMode);
+        return cluster != null && cluster.isEditableBoundaryVertex(vertex, deleteMode);
     }
 
     private Long activeBoundaryDraftClusterId() {
-        if (draft != null && draft.clusterId() != null) {
-            return draft.clusterId();
-        }
-        EditorDraft activeDraft = state.activeDraft();
-        if (activeDraft instanceof EditorDraft.BoundaryDraft boundaryDraft) {
-            return boundaryDraft.clusterId();
-        }
-        return null;
+        return draft == null ? null : draft.clusterId();
     }
 
     private RoomCluster clusterOnActiveLevel(Long clusterId, DungeonLayout layout) {
@@ -309,7 +300,6 @@ public final class BoundaryTool implements EditorTool {
 
     private void showDraft(Draft nextDraft) {
         draft = nextDraft;
-        state.showDraft(new EditorDraft.BoundaryDraft(nextDraft.clusterId(), nextDraft.statusMessage()));
         state.showPreview(new EditorPreview.BoundaryPreview(
                 nextDraft.previewEdges(),
                 nextDraft.skippedConnectionEdges(),
@@ -321,7 +311,6 @@ public final class BoundaryTool implements EditorTool {
 
     private void clear() {
         draft = null;
-        state.clearDraft();
         state.clearPreview();
         refreshStatePane();
     }

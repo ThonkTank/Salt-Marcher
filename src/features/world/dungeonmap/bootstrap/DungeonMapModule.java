@@ -5,9 +5,7 @@ import features.world.dungeonmap.application.corridor.DungeonCorridorEditService
 import features.world.dungeonmap.application.runtime.DungeonRuntimeApplicationService;
 import features.world.dungeonmap.application.transition.DungeonTransitionEditService;
 import features.world.dungeonmap.application.transition.DungeonTransitionTargetCatalogService;
-import features.world.dungeonmap.application.room.DungeonClusterMoveProjectionApplicationService;
 import features.world.dungeonmap.application.room.DungeonClusterMoveService;
-import features.world.dungeonmap.application.room.DungeonBoundaryEditService;
 import features.world.dungeonmap.application.room.DungeonRoomNarrationService;
 import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
@@ -17,6 +15,7 @@ import features.world.dungeonmap.repository.DungeonLayoutRepository;
 import features.world.dungeonmap.repository.DungeonRoomRepository;
 import features.world.dungeonmap.repository.DungeonTransitionRepository;
 import features.world.dungeonmap.shell.editor.DungeonEditorView;
+import features.world.dungeonmap.shell.editor.RoomNarrationPane;
 import features.world.dungeonmap.shell.editor.interaction.BoundaryTool;
 import features.world.dungeonmap.shell.editor.interaction.ConnectionsTool;
 import features.world.dungeonmap.shell.editor.interaction.EditorInteraction;
@@ -55,20 +54,21 @@ public final class DungeonMapModule {
         DungeonMapCatalogService mapCatalogService = new DungeonMapCatalogService(
                 roomTopologyService,
                 runtimeApplicationService);
-        DungeonBoundaryEditService boundaryEditService = new DungeonBoundaryEditService(roomTopologyService);
         DungeonCorridorEditService corridorEditService = new DungeonCorridorEditService(layoutRepository, corridorRepository);
-        DungeonClusterMoveProjectionApplicationService clusterMoveProjectionApplicationService =
-                new DungeonClusterMoveProjectionApplicationService();
         DungeonClusterMoveService clusterMoveService = new DungeonClusterMoveService(
                 layoutRepository,
-                roomRepository,
-                clusterMoveProjectionApplicationService);
+                roomRepository);
         DungeonMapState state = new DungeonMapState();
         DungeonMapLoadingService loadingService = new DungeonMapLoadingService(
                 layoutRepository,
                 state);
         DungeonEditorSessionState editorSessionState = new DungeonEditorSessionState();
         EditorInteractionState editorInteractionState = new EditorInteractionState();
+        RoomNarrationPane roomNarrationPane = new RoomNarrationPane(
+                state,
+                loadingService,
+                roomNarrationService,
+                editorInteractionState);
         DungeonHitCollector hitCollector = new DungeonHitCollector();
         DungeonTransitionTargetCatalogService transitionTargetCatalogService = new DungeonTransitionTargetCatalogService();
         List<EditorTool> editorTools = List.of(
@@ -76,9 +76,8 @@ public final class DungeonMapModule {
                         state,
                         loadingService,
                         clusterMoveService,
-                        clusterMoveProjectionApplicationService,
                         corridorEditService,
-                        roomNarrationService,
+                        roomNarrationPane,
                         editorInteractionState),
                 new PaintTool(
                         state,
@@ -90,13 +89,13 @@ public final class DungeonMapModule {
                         state,
                         loadingService,
                         editorSessionState,
-                        boundaryEditService,
+                        roomTopologyService,
                         editorInteractionState),
                 new ConnectionsTool(
                         state,
                         loadingService,
                         editorSessionState,
-                        boundaryEditService,
+                        roomTopologyService,
                         corridorEditService,
                         editorInteractionState),
                 new TransitionTool(

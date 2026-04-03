@@ -1,9 +1,9 @@
 package features.world.dungeonmap.state;
 
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.objects.StructureObject;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -13,9 +13,9 @@ public sealed interface EditorPreview permits EditorPreview.LayoutPreview, Edito
     record LayoutPreview(DungeonLayout layout) implements EditorPreview {
     }
 
-    record PaintPreview(StructureObject structure, int levelZ, boolean deleteMode) implements EditorPreview {
+    record PaintPreview(Set<CellCoord> cells, int levelZ, boolean deleteMode) implements EditorPreview {
         public PaintPreview {
-            structure = structure == null ? StructureObject.empty() : structure;
+            cells = cells == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(cells));
         }
     }
 

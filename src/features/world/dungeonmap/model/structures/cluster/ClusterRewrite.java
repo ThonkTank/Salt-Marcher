@@ -14,10 +14,7 @@ public record ClusterRewrite(
         CellCoord clusterCenter,
         List<Room> rooms,
         Set<Long> deletedRoomIds,
-        Map<Long, Long> replacedRoomIds,
-        Set<Long> mergedRoomIds,
         Set<Long> deletedClusterIds,
-        Map<Long, List<Room>> splitFragmentsBySourceRoomId,
         List<ClusterRewriteSplit> splitClusters,
         boolean topologyChanged
 ) {
@@ -25,10 +22,7 @@ public record ClusterRewrite(
     public ClusterRewrite {
         rooms = List.copyOf(rooms);
         deletedRoomIds = Set.copyOf(deletedRoomIds);
-        replacedRoomIds = Map.copyOf(replacedRoomIds);
-        mergedRoomIds = Set.copyOf(mergedRoomIds);
         deletedClusterIds = Set.copyOf(deletedClusterIds);
-        splitFragmentsBySourceRoomId = immutableRoomLists(splitFragmentsBySourceRoomId);
         splitClusters = List.copyOf(splitClusters);
     }
 
@@ -56,42 +50,14 @@ public record ClusterRewrite(
         return !topologyChanged
                 && !deletesCluster()
                 && deletedRoomIds.isEmpty()
-                && replacedRoomIds.isEmpty()
-                && mergedRoomIds.isEmpty()
                 && deletedClusterIds.isEmpty()
-                && splitFragmentsBySourceRoomId.isEmpty()
                 && splitClusters.isEmpty();
-    }
-
-    public Set<Long> affectedClusterIds() {
-        Set<Long> result = new LinkedHashSet<>(deletedClusterIds);
-        if (targetClusterId != null) {
-            result.add(targetClusterId);
-        }
-        return Set.copyOf(result);
-    }
-
-    public Set<Long> affectedRoomIds() {
-        Set<Long> result = new LinkedHashSet<>(deletedRoomIds);
-        result.addAll(replacedRoomIds.keySet());
-        result.addAll(mergedRoomIds);
-        for (ClusterRewriteSplit splitCluster : splitClusters) {
-            for (Room room : splitCluster.rooms()) {
-                if (room != null && room.roomId() != null) {
-                    result.add(room.roomId());
-                }
-            }
-        }
-        return Set.copyOf(result);
     }
 
     public ClusterRewrite withSplitClusters(List<ClusterRewriteSplit> splitClusters) {
         return builder(targetClusterId, clusterCenter, rooms)
                 .deletedRoomIds(deletedRoomIds)
-                .replacedRoomIds(replacedRoomIds)
-                .mergedRoomIds(mergedRoomIds)
                 .deletedClusterIds(deletedClusterIds)
-                .splitFragmentsBySourceRoomId(splitFragmentsBySourceRoomId)
                 .splitClusters(splitClusters)
                 .topologyChanged(topologyChanged)
                 .build();
@@ -102,10 +68,7 @@ public record ClusterRewrite(
         private final CellCoord clusterCenter;
         private final List<Room> rooms;
         private Set<Long> deletedRoomIds = Set.of();
-        private Map<Long, Long> replacedRoomIds = Map.of();
-        private Set<Long> mergedRoomIds = Set.of();
         private Set<Long> deletedClusterIds = Set.of();
-        private Map<Long, List<Room>> splitFragmentsBySourceRoomId = Map.of();
         private List<ClusterRewriteSplit> splitClusters = List.of();
         private boolean topologyChanged;
 
@@ -124,25 +87,8 @@ public record ClusterRewrite(
             return this;
         }
 
-        public Builder replacedRoomIds(Map<Long, Long> replacedRoomIds) {
-            this.replacedRoomIds = replacedRoomIds == null ? Map.of() : Map.copyOf(replacedRoomIds);
-            return this;
-        }
-
-        public Builder mergedRoomIds(Set<Long> mergedRoomIds) {
-            this.mergedRoomIds = mergedRoomIds == null ? Set.of() : Set.copyOf(mergedRoomIds);
-            return this;
-        }
-
         public Builder deletedClusterIds(Set<Long> deletedClusterIds) {
             this.deletedClusterIds = deletedClusterIds == null ? Set.of() : Set.copyOf(deletedClusterIds);
-            return this;
-        }
-
-        public Builder splitFragmentsBySourceRoomId(Map<Long, List<Room>> splitFragmentsBySourceRoomId) {
-            this.splitFragmentsBySourceRoomId = splitFragmentsBySourceRoomId == null
-                    ? Map.of()
-                    : immutableRoomLists(splitFragmentsBySourceRoomId);
             return this;
         }
 
@@ -162,25 +108,9 @@ public record ClusterRewrite(
                     clusterCenter,
                     rooms,
                     deletedRoomIds,
-                    replacedRoomIds,
-                    mergedRoomIds,
                     deletedClusterIds,
-                    splitFragmentsBySourceRoomId,
                     splitClusters,
                     topologyChanged);
         }
-    }
-
-    private static Map<Long, List<Room>> immutableRoomLists(Map<Long, List<Room>> source) {
-        if (source == null || source.isEmpty()) {
-            return Map.of();
-        }
-        Map<Long, List<Room>> result = new LinkedHashMap<>();
-        for (Map.Entry<Long, List<Room>> entry : source.entrySet()) {
-            if (entry.getKey() != null) {
-                result.put(entry.getKey(), entry.getValue() == null ? List.of() : List.copyOf(entry.getValue()));
-            }
-        }
-        return Map.copyOf(result);
     }
 }

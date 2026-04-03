@@ -1,6 +1,7 @@
 package features.world.dungeonmap.model.structures.cluster;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
@@ -21,6 +22,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -150,6 +152,54 @@ public final class RoomCluster {
                 rooms.stream()
                         .map(room -> room == null ? null : room.movedBy(resolvedDelta, levelDelta))
                         .toList());
+    }
+
+    public BoundaryPath findCreateBoundaryPath(GridPoint2x start, GridPoint2x goal) {
+        if (start == null || goal == null) {
+            return BoundaryPath.empty();
+        }
+        Set<GridSegment2x> traversableEdges = internalClusterEdges();
+        Set<GridSegment2x> localConnectionEdges = localConnectionEdges(traversableEdges);
+        List<GridSegment2x> route = shortestPath(start, goal, traversableEdges);
+        if (route.isEmpty()) {
+            return BoundaryPath.empty();
+        }
+        Set<GridSegment2x> committedEdges = new LinkedHashSet<>(route);
+        committedEdges.removeAll(localConnectionEdges);
+        Set<GridSegment2x> skippedConnectionEdges = new LinkedHashSet<>(route);
+        skippedConnectionEdges.retainAll(localConnectionEdges);
+        return new BoundaryPath(route, committedEdges, skippedConnectionEdges);
+    }
+
+    public BoundaryPath findDeleteBoundaryPath(GridPoint2x start, GridPoint2x goal) {
+        if (start == null || goal == null) {
+            return BoundaryPath.empty();
+        }
+        List<GridSegment2x> route = shortestPath(start, goal, internalWallEdges());
+        if (route.isEmpty()) {
+            return BoundaryPath.empty();
+        }
+        return new BoundaryPath(route, new LinkedHashSet<>(route), Set.of());
+    }
+
+    public boolean touchesExistingWall(GridPoint2x vertex) {
+        if (vertex == null) {
+            return false;
+        }
+        for (GridSegment2x edge : existingWallEdges()) {
+            if (edge.start().equals(vertex) || edge.end().equals(vertex)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean isEditableBoundaryVertex(GridPoint2x vertex, boolean deleteMode) {
+        if (vertex == null) {
+            return false;
+        }
+        Set<GridSegment2x> edges = deleteMode ? internalWallEdges() : internalClusterEdges();
+        return edges.stream().anyMatch(edge -> edge.start().equals(vertex) || edge.end().equals(vertex));
     }
 
     public Set<CellCoord> cells() {
@@ -513,6 +563,120 @@ public final class RoomCluster {
         return Set.copyOf(result);
     }
 
+    private Set<GridSegment2x> existingWallEdges() {
+        Set<GridSegment2x> edges = new LinkedHashSet<>(internalWallEdges());
+        edges.addAll(outerWallEdges());
+        return Set.copyOf(edges);
+    }
+
+    private Set<GridSegment2x> internalClusterEdges() {
+        Set<GridSegment2x> result = new LinkedHashSet<>();
+        for (CellCoord cell : cells) {
+            for (CellCoord step : CellCoord.CARDINAL_STEPS) {
+                CellCoord neighbor = cell.add(step);
+                if (!contains(neighbor) || CellCoord.ORDER.compare(cell, neighbor) >= 0) {
+                    continue;
+                }
+                CardinalDirection direction = CardinalDirection.fromDirection(step);
+                if (direction != null) {
+                    result.add(GridSegment2x.boundaryEdge(cell, direction));
+                }
+            }
+        }
+        return Set.copyOf(result);
+    }
+
+    private Set<GridSegment2x> internalWallEdges() {
+        return internalBoundaryKinds().entrySet().stream()
+                .filter(entry -> entry.getValue() == InternalBoundaryType.WALL)
+                .map(Map.Entry::getKey)
+                .filter(Objects::nonNull)
+                .sorted(GridSegment2x.ORDER)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private Set<GridSegment2x> outerWallEdges() {
+        Set<GridSegment2x> result = outerBoundarySegments2x().stream()
+                .sorted(GridSegment2x.ORDER)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        result.removeAll(localConnectionEdges(result));
+        return Set.copyOf(result);
+    }
+
+    private Set<GridSegment2x> localConnectionEdges(Set<GridSegment2x> allowedEdges) {
+        if (allowedEdges == null || allowedEdges.isEmpty()) {
+            return Set.of();
+        }
+        return localConnections.stream()
+                .filter(Objects::nonNull)
+                .filter(connection -> connection.door() != null)
+                .flatMap(connection -> connection.door().segments2x().stream())
+                .filter(allowedEdges::contains)
+                .sorted(GridSegment2x.ORDER)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private static List<GridSegment2x> shortestPath(GridPoint2x start, GridPoint2x goal, Set<GridSegment2x> traversableEdges) {
+        if (start == null || goal == null || traversableEdges == null || traversableEdges.isEmpty()) {
+            return List.of();
+        }
+        if (Objects.equals(start, goal)) {
+            return List.of();
+        }
+        Map<GridPoint2x, Set<GridPoint2x>> adjacency = adjacency(traversableEdges);
+        if (!adjacency.containsKey(start) || !adjacency.containsKey(goal)) {
+            return List.of();
+        }
+        ArrayDeque<GridPoint2x> queue = new ArrayDeque<>();
+        Map<GridPoint2x, GridPoint2x> previous = new LinkedHashMap<>();
+        queue.add(start);
+        previous.put(start, null);
+        while (!queue.isEmpty()) {
+            GridPoint2x current = queue.removeFirst();
+            if (current.equals(goal)) {
+                break;
+            }
+            for (GridPoint2x neighbor : adjacency.getOrDefault(current, Set.of()).stream().sorted(GridPoint2x.ORDER).toList()) {
+                if (previous.containsKey(neighbor)) {
+                    continue;
+                }
+                previous.put(neighbor, current);
+                queue.addLast(neighbor);
+            }
+        }
+        if (!previous.containsKey(goal)) {
+            return List.of();
+        }
+        ArrayList<GridSegment2x> path = new ArrayList<>();
+        GridPoint2x current = goal;
+        while (!Objects.equals(current, start)) {
+            GridPoint2x parent = previous.get(current);
+            if (parent == null) {
+                return List.of();
+            }
+            path.add(new GridSegment2x(parent, current));
+            current = parent;
+        }
+        java.util.Collections.reverse(path);
+        return List.copyOf(path);
+    }
+
+    private static Map<GridPoint2x, Set<GridPoint2x>> adjacency(Collection<GridSegment2x> edges) {
+        Map<GridPoint2x, Set<GridPoint2x>> result = new LinkedHashMap<>();
+        for (GridSegment2x edge : edges == null ? List.<GridSegment2x>of() : edges) {
+            if (edge == null) {
+                continue;
+            }
+            result.computeIfAbsent(edge.start(), ignored -> new LinkedHashSet<>()).add(edge.end());
+            result.computeIfAbsent(edge.end(), ignored -> new LinkedHashSet<>()).add(edge.start());
+        }
+        Map<GridPoint2x, Set<GridPoint2x>> immutable = new LinkedHashMap<>();
+        for (Map.Entry<GridPoint2x, Set<GridPoint2x>> entry : result.entrySet()) {
+            immutable.put(entry.getKey(), Set.copyOf(entry.getValue()));
+        }
+        return Map.copyOf(immutable);
+    }
+
     private static Set<GridSegment2x> boundarySegments(Set<CellCoord> cells) {
         if (cells == null || cells.isEmpty()) {
             return Set.of();
@@ -629,5 +793,25 @@ public final class RoomCluster {
     }
 
     private record OverlapIndex(Map<CellCoord, Room> roomsByCell, boolean hasOverlaps) {
+    }
+
+    public record BoundaryPath(
+            List<GridSegment2x> routeEdges,
+            Set<GridSegment2x> committedEdges,
+            Set<GridSegment2x> skippedConnectionEdges
+    ) {
+        public BoundaryPath {
+            routeEdges = routeEdges == null ? List.of() : List.copyOf(routeEdges);
+            committedEdges = committedEdges == null ? Set.of() : Set.copyOf(committedEdges);
+            skippedConnectionEdges = skippedConnectionEdges == null ? Set.of() : Set.copyOf(skippedConnectionEdges);
+        }
+
+        public static BoundaryPath empty() {
+            return new BoundaryPath(List.of(), Set.of(), Set.of());
+        }
+
+        public boolean hasRoute() {
+            return !routeEdges.isEmpty();
+        }
     }
 }

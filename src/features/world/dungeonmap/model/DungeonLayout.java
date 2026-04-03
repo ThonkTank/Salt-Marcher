@@ -569,6 +569,21 @@ public final class DungeonLayout {
         return new DungeonLayout(mapId, name, corridors, updatedClusters, stairs, transitions, clusterLevelsById);
     }
 
+    public DungeonLayout withMovedCluster(Long clusterId, CellCoord delta, int levelDelta) {
+        RoomCluster cluster = findCluster(clusterId);
+        boolean translate = delta != null && (delta.x() != 0 || delta.y() != 0);
+        if (clusterId == null || cluster == null || (!translate && levelDelta == 0)) {
+            return this;
+        }
+        RoomCluster movedCluster = cluster.movedBy(delta, levelDelta);
+        List<RoomCluster> updatedClusters = clusters.stream()
+                .map(existing -> Objects.equals(clusterId, existing.clusterId()) ? movedCluster : existing)
+                .toList();
+        LinkedHashMap<Long, Integer> updatedClusterLevels = new LinkedHashMap<>(clusterLevelsById);
+        updatedClusterLevels.put(clusterId, levelForCluster(clusterId) + levelDelta);
+        return new DungeonLayout(mapId, name, corridors, updatedClusters, stairs, transitions, updatedClusterLevels);
+    }
+
     public DungeonLayout applying(ClusterRewrite rewrite) {
         if (rewrite == null || rewrite.targetClusterId() == null) {
             return this;

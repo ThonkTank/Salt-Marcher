@@ -38,15 +38,15 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
   - `structures/` owns first-class structures and the structure-specific subpackages `cluster`, `connection`, `corridor`, `room`, `stair`, and `transition`.
   - `DungeonLayout` stays the feature-wide lookup surface, not a second mutation owner.
 - `application/`
-  - `room/` owns room topology, boundary edits, cluster move projection and persistence, room narration, and exit catalogs.
+  - `room/` owns room topology, boundary edits, cluster moves, room narration, and exit catalogs.
   - `corridor/` owns corridor graph editing and persistence orchestration.
-  - `runtime/` owns navigation, location serialization, surface resolution, labels, the unified runtime action catalog, and runtime state repair.
+  - `runtime/` owns cell-only navigation, TILE persistence, surface resolution, labels, flat runtime actions, and runtime state repair.
   - `transition/` owns transition create/place/delete flows and transition target lookup.
   - `support/` owns transaction helpers.
   - Application services orchestrate workflows and transactions; they must not keep a second interpretation of room, corridor, or runtime truth.
 - `loading/`
   - `DungeonMapLoadingService` owns async loading, map-selection fallback policy, initial-load deduplication, stale-request suppression via `requestSequence`, and reload-after-write flows.
-  - `DungeonMapLoadResult` is the loading boundary payload consumed by state and views.
+  - Loading result helpers stay private to `DungeonMapLoadingService`; views and state consume only `DungeonMapState`.
 - `repository/`
   - `DungeonLayoutRepository` is the authoritative layout rehydration seam. It assembles one concrete persisted map per call and does not own UI-facing fallback policy.
   - Structure repositories (`DungeonRoomRepository`, `DungeonCorridorRepository`, `DungeonStairRepository`, `DungeonTransitionRepository`) own their direct storage reads and writes.
@@ -81,11 +81,10 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
   - `selectedRef`
   - `hovered` as `EditorHover`
   - `activePreview`
-  - `activeDraft`
 - `DungeonEditorSessionState` owns the shared selected tool and active view mode. Do not make it depend on shell- or canvas-owned enums.
 - `EditorHover` is explicit render intent: `EditorHoverScope.OWNER` highlights the owning target, `PART` highlights the concrete part. Hover is not just "the current selection ref".
 - `DungeonMapState` owns loaded map/catalog data, projection level, overlay settings, loading flags, and mutation-pending state.
-- `DungeonRuntimeState` owns persisted location, drag preview location, heading, and loading/moving error flags.
+- `DungeonRuntimeState` owns persisted cell, drag-preview cell, active level, heading, and loading/moving error flags.
 - Preview is never commit state. Reload is the authoritative rebuild after a successful write, not a repair step for partial semantics.
 
 ## Editor Interaction
@@ -98,8 +97,9 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `EditorTool` implementations own gesture meaning. Shared state is justified only when multiple collaborators need it.
 - Tool responsibilities:
 - `SelectionTool` owns semantic selection plus cluster-drag and corridor-node drag gestures.
-- `PaintTool` owns room paint/delete sessions from resolved `FloorCellSubject` hits.
-- `BoundaryTool` owns wall-path drafting. Shared state exposes only boundary preview and lightweight status; the shared preview payload is 2x render geometry, not commit truth.
+- `RoomNarrationPane` owns the room narration editor UI for the current selection; `SelectionTool` no longer embeds that form logic.
+- `PaintTool` owns room paint/delete sessions from resolved `FloorCellSubject` hits and publishes paint previews as `CellCoord` sets, not hydrierten room structures.
+- `BoundaryTool` owns wall-path drafting. Draft state stays local to the tool; shared state exposes only boundary preview geometry.
 - `ConnectionsTool` owns door edits, corridor drafting, node insertion, and corridor deletion. Corridor graph edits use explicit 2x node/segment points.
   - `TransitionTool` owns transition create/delete gestures and keeps its form state local to the tool.
 - `DungeonHitSnapshot.firstSubjectMatching(...)` and `orderedSubjects()` are the shared helpers for per-tool subject resolution. Prefer these over ad-hoc candidate walks.
@@ -111,6 +111,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - Rendering is explicit and coalesced: state changes call `requestRedraw()`, `redraw()` builds one `DungeonSceneFrame`, and the grid renderer consumes that snapshot.
 - Views publish batched display-only payloads through `showEditorRenderState(...)` and `showRuntimeRenderOverlay(...)`.
 - `DungeonGridSceneRenderer` renders room and corridor floors from `CellCoord` surfaces and boundaries/overlays from final `GridPoint2x`/`GridSegment2x` carried by `StructureObject`, editor previews, and runtime overlays. Do not add renderer-local legacy parity adapters.
+- Paint previews are direct `CellCoord` overlays. Do not rebuild a temporary `StructureObject` just to render painted tiles.
 - Corridor graph handles are the editor-only overlay on top of that shared structure geometry.
 - The workspace owns zoom, pan, and default level scrolling:
   - zoom: mouse wheel
@@ -123,10 +124,10 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 
 - `DungeonRuntimeInteractionController` owns drag-to-move. Press starts only when the active cell is selected; drag shows preview; release commits a move.
 - `DungeonRuntimeSelectionPolicy` selects the first runtime-selectable subject that actually owns the active cell. Runtime interaction is not driven by the primary hit candidate alone.
-- `DungeonRuntimeApplicationService` is the single runtime workflow owner. It loads persisted navigation, resolves runtime locations against the active layout, executes cell/action travel, persists campaign position, and repairs stored runtime state after catalog mutations.
-- `DungeonRuntimeView` keeps runtime presentation on `DungeonRuntimeLocation.Cell` plus projection level and calls `DungeonRuntimeSurfaceResolver.resolve(layout, activeCell, levelZ, heading)` directly.
-- `DungeonRuntimeSurfaceResolver` must read from direct structure owners and build one `DungeonRuntimeSurface`; room/corridor/cell/stair/transition presentation all funnel through that one surface model.
-- `DungeonRuntimeActionCatalog` is the only seam that expands a runtime surface into concrete door/stair/transition actions. Do not re-split that action list into parallel public catalogs.
+- `DungeonRuntimeApplicationService` is the single runtime workflow owner. It loads persisted navigation, resolves cells against the active layout, executes cell/action travel, persists campaign position as `TILE`, and repairs stored runtime state after catalog mutations.
+- Persisted dungeon runtime positions are `TILE`-only. Stored `ROOM`, `CORRIDOR`, `STAIR_EXIT`, and `TRANSITION` compatibility values are not runtime truth; they fall back to the layout default room/traversable cell and get rewritten as `TILE`.
+- `DungeonRuntimeView` keeps runtime presentation on active `CellCoord` plus projection level and calls `DungeonRuntimeSurfaceResolver.resolve(layout, activeCell, levelZ, heading)` directly.
+- `DungeonRuntimeSurfaceResolver` is the only seam that expands a runtime surface into door overlays plus flat door/stair/transition actions. Do not re-split that public surface into parallel catalogs.
 - Runtime details are published through the shared `DetailsNavigator`. Do not add a parallel feature-local runtime details pane.
 - Same-map transition travel should return a resolved navigation snapshot against the current layout immediately; cross-map travel returns a snapshot for the target map, the view loads that map, and then applies the pending snapshot directly instead of re-reading campaign state first.
 
@@ -155,6 +156,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 ## Loading And Persistence
 
 - `DungeonLayoutRepository` is the authoritative rehydration path for one concrete persisted map. It delegates structure reads to the focused repositories and does not return loading-layer fallback payloads.
+- `DungeonRoomRepository` owns the concrete write ordering for cluster rewrites and moved clusters. Application workflows decide the rewrite, repository code decides insert/update/delete order.
 - `DungeonMapLoadingService` owns catalog reads, initial-load usable-map scans, and selected-map fallback. Full-catalog usable-layout scans are for initial load, not every selection change.
 - `DungeonStorageSupport.ensureReady(...)` is the single schema-compatibility gate for dungeon startup, feature reads, and writes. Do not reintroduce per-structure schema helpers.
 - Room geometry is loaded directly from persisted room-owned `StructureDescriptor` rows.
@@ -166,6 +168,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
   - transitions: `dungeon_transitions` with nullable placement coordinates and destination discriminator
 - A room must have persisted descriptor rows. Maps with missing room descriptors are rejected during load.
 - Write flows should persist in one transaction and then reload through `DungeonMapLoadingService.submitMutation(...)`; map switches should go through `selectMap(...)`.
+- Cluster move previews are built directly from `DungeonLayout.withMovedCluster(...)`; do not reintroduce a second projection wrapper type around the provisional layout.
 
 ## Guardrails
 

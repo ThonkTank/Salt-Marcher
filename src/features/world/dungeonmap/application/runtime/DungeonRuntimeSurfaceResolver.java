@@ -60,7 +60,7 @@ public final class DungeonRuntimeSurfaceResolver {
             return stairOnlySurface(layout, stairStructure.stair(), activeCell, activeLevelZ);
         }
         if (structure instanceof DungeonLayout.CellStructure.TransitionStructure transitionStructure) {
-            return transitionOnlySurface(layout, transitionStructure.transition());
+            return transitionOnlySurface(transitionStructure.transition());
         }
         return null;
     }
@@ -237,7 +237,7 @@ public final class DungeonRuntimeSurfaceResolver {
                         doorActionLabel(exit.label(), resolvedDestination),
                         description,
                         "Verbindung konnte nicht benutzt werden",
-                        new DungeonRuntimeAction.Target.DoorTarget(
+                        new DungeonRuntimeAction.DoorTarget(
                                 exit.levelZ(),
                                 exit.anchorSegment2x(),
                                 exit.outsideCell(),
@@ -420,7 +420,7 @@ public final class DungeonRuntimeSurfaceResolver {
                         stairActionLabel(stair, exit),
                         stairDescription(stair, exit),
                         "Treppe konnte nicht benutzt werden",
-                        new DungeonRuntimeAction.Target.CellTarget(
+                        new DungeonRuntimeAction.CellTarget(
                                 exit.position().projectedCell(),
                                 exit.position().z(),
                                 null)))
@@ -502,7 +502,7 @@ public final class DungeonRuntimeSurfaceResolver {
                 transitionActionLabel(transition),
                 transitionDescription(transition),
                 "Übergang konnte nicht benutzt werden",
-                new DungeonRuntimeAction.Target.TransitionTarget(transition.transitionId()));
+                new DungeonRuntimeAction.TransitionTarget(transition.transitionId()));
     }
 
     private static String transitionActionLabel(DungeonTransition transition) {
