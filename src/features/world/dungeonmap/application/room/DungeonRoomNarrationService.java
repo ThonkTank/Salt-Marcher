@@ -3,7 +3,7 @@ package features.world.dungeonmap.application.room;
 import database.DatabaseManager;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
-import features.world.dungeonmap.persistence.DungeonRoomWriteRepository;
+import features.world.dungeonmap.repository.DungeonRoomRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -11,10 +11,10 @@ import java.util.Objects;
 
 public final class DungeonRoomNarrationService {
 
-    private final DungeonRoomWriteRepository roomWriteRepository;
+    private final DungeonRoomRepository roomRepository;
 
-    public DungeonRoomNarrationService(DungeonRoomWriteRepository roomWriteRepository) {
-        this.roomWriteRepository = Objects.requireNonNull(roomWriteRepository, "roomWriteRepository");
+    public DungeonRoomNarrationService(DungeonRoomRepository roomRepository) {
+        this.roomRepository = Objects.requireNonNull(roomRepository, "roomRepository");
     }
 
     public void saveNarration(long roomId, RoomNarration narration) throws SQLException {
@@ -23,7 +23,7 @@ public final class DungeonRoomNarrationService {
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn,
-                    () -> roomWriteRepository.replaceRoomNarration(conn, roomId, narration));
+                    () -> roomRepository.replaceRoomNarration(conn, roomId, narration));
         }
     }
 }

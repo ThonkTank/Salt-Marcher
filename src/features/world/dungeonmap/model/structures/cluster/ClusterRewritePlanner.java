@@ -96,7 +96,6 @@ final class ClusterRewritePlanner {
                         cluster.clusterId(),
                         CellCoord.bestCenter(mergedClusterCells),
                         rewrittenRooms,
-                        localConnections(cluster.mapId(), cluster.clusterId(), rewrittenRooms),
                         persistedBoundaries(mergedClusterCells, rewrittenRooms, previousBoundaryKinds))
                 .deletedRoomIds(deletedRoomIds)
                 .replacedRoomIds(replacedRoomIds)
@@ -124,7 +123,6 @@ final class ClusterRewritePlanner {
             return ClusterRewrite.builder(
                             cluster.clusterId(),
                             cluster.center(),
-                            List.of(),
                             List.of(),
                             List.of())
                     .deletedRoomIds(cluster.roomIds())
@@ -207,7 +205,6 @@ final class ClusterRewritePlanner {
                         cluster.clusterId(),
                         retainedCluster.clusterCenter(),
                         retainedCluster.rooms(),
-                        retainedCluster.localConnections(),
                         retainedCluster.persistedBoundaries())
                 .deletedRoomIds(deletedRoomIds)
                 .splitFragmentsBySourceRoomId(splitFragmentsBySourceRoomId)
@@ -267,7 +264,6 @@ final class ClusterRewritePlanner {
                         cluster.clusterId(),
                         cluster.center(),
                         rewrittenRooms,
-                        localConnections(cluster.mapId(), cluster.clusterId(), rewrittenRooms),
                         persistedBoundaries(cluster.cells(), rewrittenRooms, updatedBoundaryKinds))
                 .deletedRoomIds(merge.deletedRoomIds())
                 .replacedRoomIds(merge.replacedRoomIds())
@@ -553,7 +549,6 @@ final class ClusterRewritePlanner {
                             null,
                             CellCoord.bestCenter(componentCells),
                             componentRooms,
-                            localConnections(cluster.mapId(), null, componentRooms),
                             persistedBoundaries(componentCells, componentRooms, boundaryKinds));
                 })
                 .toList();
@@ -579,40 +574,6 @@ final class ClusterRewritePlanner {
                 .map(entry -> toInternalBoundaryEdge(entry.getKey(), entry.getValue()))
                 .filter(java.util.Objects::nonNull)
                 .toList();
-    }
-
-    static List<LocalConnection> localConnections(
-            long mapId,
-            Long clusterId,
-            List<Room> rooms
-    ) {
-        if (rooms == null || rooms.isEmpty()) {
-            return List.of();
-        }
-        long resolvedClusterId = clusterId == null ? 0L : clusterId;
-        Map<CubePoint, Room> roomsByPoint = roomsByPoint(rooms);
-        Map<String, DoorComponent> doorsByKey = new LinkedHashMap<>();
-        for (Room room : rooms) {
-            if (room == null) {
-                continue;
-            }
-            for (Integer levelZ : room.structure().levels()) {
-                for (Door door : room.structure().doorsAtLevel(levelZ)) {
-                    if (door == null) {
-                        continue;
-                    }
-                    doorsByKey.putIfAbsent(doorKey(levelZ, door), new DoorComponent(levelZ, door));
-                }
-            }
-        }
-        List<LocalConnection> result = new ArrayList<>();
-        for (DoorComponent doorComponent : doorsByKey.values()) {
-            LocalConnection connection = localConnectionForDoor(doorComponent, mapId, resolvedClusterId, roomsByPoint);
-            if (connection != null) {
-                result.add(connection);
-            }
-        }
-        return List.copyOf(result);
     }
 
     static Map<GridSegment2x, InternalBoundaryType> internalBoundaryKinds(
@@ -668,7 +629,6 @@ final class ClusterRewritePlanner {
                 cluster.clusterId(),
                 cluster.center(),
                 cluster.rooms(),
-                cluster.localConnections(),
                 persistedBoundaries(cluster.cells(), cluster.rooms(), cluster.internalBoundaryKinds()));
     }
 
@@ -763,87 +723,6 @@ final class ClusterRewritePlanner {
                 : name.trim();
     }
 
-    private static Map<CubePoint, Room> roomsByPoint(List<Room> rooms) {
-        Map<CubePoint, Room> result = new LinkedHashMap<>();
-        for (Room room : rooms == null ? List.<Room>of() : rooms) {
-            if (room == null) {
-                continue;
-            }
-            for (CubePoint point : room.structure().cubePoints()) {
-                result.putIfAbsent(point, room);
-            }
-        }
-        return Map.copyOf(result);
-    }
-
-    private static LocalConnection localConnectionForDoor(
-            DoorComponent doorComponent,
-            long mapId,
-            long clusterId,
-            Map<CubePoint, Room> roomsByPoint
-    ) {
-        if (doorComponent == null || doorComponent.door() == null) {
-            return null;
-        }
-        List<Room> touchingRooms = new ArrayList<>();
-        for (GridSegment2x segment2x : doorComponent.door().segments2x()) {
-            for (CellCoord cell : segment2x.touchingCells().stream().sorted(CellCoord.ORDER).toList()) {
-                Room room = roomsByPoint.get(CubePoint.at(cell, doorComponent.levelZ()));
-                if (room != null && !touchingRooms.contains(room)) {
-                    touchingRooms.add(room);
-                }
-            }
-        }
-        List<ConnectionEndpoint> endpoints = endpointsForDoor(clusterId, touchingRooms);
-        if (endpoints.size() != 2) {
-            return null;
-        }
-        return new LocalConnection(
-                null,
-                mapId,
-                clusterId,
-                doorComponent.levelZ(),
-                Door.fromSegments(doorComponent.door().segments2x(), doorComponent.door().doorState()),
-                endpoints);
-    }
-
-    private static List<ConnectionEndpoint> endpointsForDoor(long clusterId, List<Room> touchingRooms) {
-        if (touchingRooms == null || touchingRooms.isEmpty()) {
-            return List.of();
-        }
-        if (touchingRooms.size() >= 2) {
-            Room leftRoom = touchingRooms.getFirst();
-            Room rightRoom = touchingRooms.get(1);
-            if (leftRoom.roomId() == null || rightRoom.roomId() == null || sameRoomId(leftRoom, rightRoom)) {
-                return List.of();
-            }
-            return List.of(ConnectionEndpoint.room(leftRoom.roomId()), ConnectionEndpoint.room(rightRoom.roomId()));
-        }
-        Room room = touchingRooms.getFirst();
-        if (room.roomId() == null) {
-            return List.of();
-        }
-        return List.of(ConnectionEndpoint.room(room.roomId()), ConnectionEndpoint.cluster(clusterId));
-    }
-
-    private static String doorKey(int levelZ, Door door) {
-        StringBuilder builder = new StringBuilder();
-        builder.append(levelZ).append(':');
-        boolean first = true;
-        for (GridSegment2x segment2x : (door == null ? List.<GridSegment2x>of() : door.segments2x()).stream()
-                .sorted(GridSegment2x.ORDER)
-                .toList()) {
-            if (!first) {
-                builder.append('|');
-            }
-            first = false;
-            builder.append(segment2x.start().x2()).append(',').append(segment2x.start().y2())
-                    .append('-')
-                    .append(segment2x.end().x2()).append(',').append(segment2x.end().y2());
-        }
-        return builder.toString();
-    }
-
     private static Map<GridSegment2x, InternalBoundaryType> boundaryKinds(List<LocalConnection> localConnections) {
         Map<GridSegment2x, InternalBoundaryType> result = new LinkedHashMap<>();
         for (LocalConnection connection : localConnections == null ? List.<LocalConnection>of() : localConnections) {
@@ -865,9 +744,6 @@ final class ClusterRewritePlanner {
     }
 
     record BoundarySets(Set<GridSegment2x> walls, Set<GridSegment2x> openings) {
-    }
-
-    private record DoorComponent(int levelZ, Door door) {
     }
 
     record RoomRewriteCandidate(

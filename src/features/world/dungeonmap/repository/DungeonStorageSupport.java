@@ -1,4 +1,4 @@
-package features.world.dungeonmap.persistence;
+package features.world.dungeonmap.repository;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -10,9 +10,9 @@ import java.sql.Statement;
  * <p>When behavior changes, this schema should continue to point at the real owners instead of keeping parallel
  * compatibility state alive.
  */
-public final class DungeonSchemaSupport {
+public final class DungeonStorageSupport {
 
-    private DungeonSchemaSupport() {
+    private DungeonStorageSupport() {
         throw new AssertionError("No instances");
     }
 
@@ -121,9 +121,23 @@ public final class DungeonSchemaSupport {
                 + "cell_z           INTEGER NOT NULL,"
                 + "PRIMARY KEY (stair_id, sort_order)"
                 + ")");
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_transitions ("
+                + "transition_id            INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + "dungeon_map_id           INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
+                + "description              TEXT,"
+                + "cell_x                   INTEGER,"
+                + "cell_y                   INTEGER,"
+                + "level_z                  INTEGER,"
+                + "destination_type         TEXT NOT NULL,"
+                + "target_overworld_map_id  INTEGER REFERENCES hex_maps(map_id) ON DELETE SET NULL,"
+                + "target_overworld_tile_id INTEGER REFERENCES hex_tiles(tile_id) ON DELETE SET NULL,"
+                + "target_dungeon_map_id    INTEGER REFERENCES dungeon_maps(dungeon_map_id) ON DELETE SET NULL,"
+                + "target_transition_id     INTEGER REFERENCES dungeon_transitions(transition_id) ON DELETE SET NULL,"
+                + "linked_transition_id     INTEGER REFERENCES dungeon_transitions(transition_id) ON DELETE SET NULL"
+                + ")");
     }
 
-    public static void ensureCompatibility(Connection conn) throws SQLException {
+    public static void ensureReady(Connection conn) throws SQLException {
         try (Statement stmt = conn.createStatement()) {
             createSchema(stmt);
             addColumnIfMissing(stmt, "dungeon_rooms", "visual_description TEXT");
@@ -135,6 +149,10 @@ public final class DungeonSchemaSupport {
             addColumnIfMissing(stmt, "dungeon_room_exit_descriptions", "level_z INTEGER NOT NULL DEFAULT 0");
         }
         DungeonGeometryParityMigration.migrateIfNeeded(conn);
+    }
+
+    public static void ensureCompatibility(Connection conn) throws SQLException {
+        ensureReady(conn);
     }
 
     private static void addColumnIfMissing(Statement stmt, String table, String columnDefinition) throws SQLException {
@@ -175,6 +193,7 @@ public final class DungeonSchemaSupport {
             stmt.execute("DROP TABLE IF EXISTS dungeon_stair_exits");
             stmt.execute("DROP TABLE IF EXISTS dungeon_stair_path_nodes");
             stmt.execute("DROP TABLE IF EXISTS dungeon_stairs");
+            stmt.execute("DROP TABLE IF EXISTS dungeon_transitions");
             stmt.execute("DROP TABLE IF EXISTS dungeon_maps");
             stmt.execute("PRAGMA foreign_keys = ON");
             createSchema(stmt);

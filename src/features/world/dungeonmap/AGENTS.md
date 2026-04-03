@@ -45,10 +45,12 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
   - `support/` owns transaction helpers.
   - Application services orchestrate workflows and transactions; they must not keep a second interpretation of room, corridor, or runtime truth.
 - `loading/`
-  - `DungeonMapLoader` performs JDBC reads, schema compatibility checks, and layout rehydration.
   - `DungeonMapLoadingService` owns async loading, initial-load deduplication, stale-request suppression via `requestSequence`, and reload-after-write flows.
-- `persistence/`
-  - Write-side repositories and schema helpers only. Storage writes stay here; feature code must not write SQL anywhere else.
+  - `DungeonMapLoadResult` is the loading boundary payload consumed by state and views.
+- `repository/`
+  - `DungeonLayoutRepository` is the authoritative layout rehydration seam and catalog-selection read owner.
+  - Structure repositories (`DungeonRoomRepository`, `DungeonCorridorRepository`, `DungeonStairRepository`, `DungeonTransitionRepository`) own their direct storage reads and writes.
+  - `DungeonStorageSupport` owns dungeon schema readiness and one-time geometry compatibility migration.
 - `catalog/`
   - Map create/rename/delete lives here with feature-local application and persistence code.
   - `DungeonMapCatalogEntry` is the shared catalog summary. Loading, state, and shell may consume it, but catalog owns the type.
@@ -146,6 +148,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 
 - `Room` owns room-local truth and narration.
 - `RoomCluster` owns multi-room rewrite logic, grouping, adjacency, and cluster moves. Its aggregate cells stay on `CellCoord`, and its internal boundary edits/metadata use final `GridSegment2x`, both derived from room-owned `StructureObject`s.
+- `RoomCluster` derives `LocalConnection`s from its rooms; rewrite payloads must not carry a second local-connection truth in parallel.
 - `Connection` owns connectivity; `Door` is the boundary object exposed through that connection.
 - `Corridor` is a first-class structure with stable identity, nodes, segments, room bindings, and derived geometry. In memory and at persistence seams it owns canonical `GridPoint2x`/`GridSegment2x` path truth plus `CellCoord` room bindings; compatibility with the removed shifted storage format lives only in the one-time schema migration.
 - `DungeonStair` is a first-class structure with stable identity and explicit 3D path geometry. Exits are derived views, not persisted second truths.
@@ -153,8 +156,9 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 
 ## Loading And Persistence
 
-- `DungeonMapLoader` is the only authoritative rehydration path. It loads catalog entries, reconstructs layouts from direct structure tables, skips unusable maps, and falls back to the first usable map when necessary.
-- `DungeonMapLoader.selectMap(...)` should load the requested map directly and only fall back when that concrete target is unusable; full-catalog usable-layout scans are for initial load, not every selection change.
+- `DungeonLayoutRepository` is the authoritative rehydration path. It loads catalog entries, delegates structure reads to the focused repositories, skips unusable maps, and falls back to the first usable map when necessary.
+- `DungeonLayoutRepository.selectMap(...)` should load the requested map directly and only fall back when that concrete target is unusable; full-catalog usable-layout scans are for initial load, not every selection change.
+- `DungeonStorageSupport.ensureReady(...)` is the single schema-compatibility gate for dungeon startup, feature reads, and writes. Do not reintroduce per-structure schema helpers.
 - Room geometry is loaded directly from persisted room-owned `StructureDescriptor` rows.
 - Storage model:
   - clusters: membership owner plus derived `center_x`, `center_y`, `level_z` metadata only

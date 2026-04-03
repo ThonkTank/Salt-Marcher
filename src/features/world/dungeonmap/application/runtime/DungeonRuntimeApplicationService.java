@@ -4,7 +4,6 @@ import database.DatabaseManager;
 import features.campaignstate.api.CampaignStateApi;
 import features.campaignstate.api.CampaignStateReadApi;
 import features.campaignstate.api.DungeonPositionSummary;
-import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
@@ -16,6 +15,7 @@ import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
+import features.world.dungeonmap.repository.DungeonLayoutRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -27,10 +27,10 @@ import java.util.Optional;
  */
 public final class DungeonRuntimeApplicationService {
 
-    private final DungeonMapLoader mapLoader;
+    private final DungeonLayoutRepository layoutRepository;
 
-    public DungeonRuntimeApplicationService(DungeonMapLoader mapLoader) {
-        this.mapLoader = Objects.requireNonNull(mapLoader, "mapLoader");
+    public DungeonRuntimeApplicationService(DungeonLayoutRepository layoutRepository) {
+        this.layoutRepository = Objects.requireNonNull(layoutRepository, "layoutRepository");
     }
 
     public DungeonRuntimeNavigationSnapshot loadNavigation(DungeonLayout layout) throws SQLException {
@@ -203,10 +203,10 @@ public final class DungeonRuntimeApplicationService {
     public void repairStoredRuntimeState(Connection conn) throws SQLException {
         Optional<Long> preferredMapId = CampaignStateReadApi.getDungeonMapId(conn);
         DungeonLayout layout = preferredMapId.isPresent()
-                ? mapLoader.loadLayout(conn, preferredMapId.orElseThrow())
+                ? layoutRepository.loadLayout(conn, preferredMapId.orElseThrow())
                 : null;
         if (layout == null) {
-            layout = mapLoader.loadFirstUsableLayout(conn);
+            layout = layoutRepository.loadFirstUsableLayout(conn);
         }
         if (layout == null) {
             CampaignStateApi.clearDungeonPosition(conn);

@@ -1,5 +1,6 @@
 package features.world.dungeonmap.loading;
 
+import features.world.dungeonmap.repository.DungeonLayoutRepository;
 import features.world.dungeonmap.state.DungeonMapState;
 import ui.async.UiAsyncTasks;
 
@@ -16,7 +17,7 @@ public final class DungeonMapLoadingService {
 
     private static final Logger LOGGER = Logger.getLogger(DungeonMapLoadingService.class.getName());
 
-    private final DungeonMapLoader loader;
+    private final DungeonLayoutRepository loader;
     private final DungeonMapState state;
     private final AtomicLong requestSequence = new AtomicLong();
 
@@ -24,7 +25,7 @@ public final class DungeonMapLoadingService {
     private volatile boolean initialized;
     private volatile boolean initialLoadInFlight;
 
-    public DungeonMapLoadingService(DungeonMapLoader loader, DungeonMapState state) {
+    public DungeonMapLoadingService(DungeonLayoutRepository loader, DungeonMapState state) {
         this.loader = loader;
         this.state = state;
     }

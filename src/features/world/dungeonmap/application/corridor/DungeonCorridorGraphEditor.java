@@ -5,12 +5,9 @@ import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNode;
 import features.world.dungeonmap.model.structures.corridor.CorridorSegment;
-import features.world.dungeonmap.model.structures.room.Room;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 public final class DungeonCorridorGraphEditor {
@@ -39,7 +36,7 @@ public final class DungeonCorridorGraphEditor {
                     node.roomRelativeCell(),
                     node.roomBoundaryDirection()));
         }
-        return Corridor.resolved(corridor.corridorId(), layout.mapId(), corridor.levelZ(), updatedNodes, corridor.segments(), roomsById(layout));
+        return Corridor.resolved(corridor.corridorId(), layout.mapId(), corridor.levelZ(), updatedNodes, corridor.segments(), layout.rooms());
     }
 
     public static Corridor withInsertedNode(DungeonLayout layout, Corridor corridor, Long segmentId, GridPoint2x point2x) {
@@ -64,7 +61,7 @@ public final class DungeonCorridorGraphEditor {
             segments.add(new CorridorSegment(segmentStartId, segment.startNodeId(), nodeId));
             segments.add(new CorridorSegment(segmentEndId, nodeId, segment.endNodeId()));
         }
-        return Corridor.resolved(corridor.corridorId(), layout.mapId(), corridor.levelZ(), nodes, segments, roomsById(layout));
+        return Corridor.resolved(corridor.corridorId(), layout.mapId(), corridor.levelZ(), nodes, segments, layout.rooms());
     }
 
     public static Corridor withDeletedNode(DungeonLayout layout, Corridor corridor, Long nodeId) {
@@ -97,7 +94,7 @@ public final class DungeonCorridorGraphEditor {
             Long secondNeighbor = touching.getLast().startNodeId().equals(nodeId) ? touching.getLast().endNodeId() : touching.getLast().startNodeId();
             segments.add(new CorridorSegment(nextSyntheticSegmentId(corridor), firstNeighbor, secondNeighbor));
         }
-        return Corridor.resolved(corridor.corridorId(), layout.mapId(), corridor.levelZ(), nodes, segments, roomsById(layout));
+        return Corridor.resolved(corridor.corridorId(), layout.mapId(), corridor.levelZ(), nodes, segments, layout.rooms());
     }
 
     public static Corridor withBranch(
@@ -125,20 +122,7 @@ public final class DungeonCorridorGraphEditor {
                 segments.add(segment);
             }
         }
-        return Corridor.resolved(corridor.corridorId(), layout.mapId(), corridor.levelZ(), nodes, segments, roomsById(layout));
-    }
-
-    public static Map<Long, Room> roomsById(DungeonLayout layout) {
-        Map<Long, Room> roomsById = new LinkedHashMap<>();
-        if (layout == null) {
-            return Map.of();
-        }
-        for (Room room : layout.rooms()) {
-            if (room != null && room.roomId() != null) {
-                roomsById.put(room.roomId(), room);
-            }
-        }
-        return roomsById.isEmpty() ? Map.of() : Map.copyOf(roomsById);
+        return Corridor.resolved(corridor.corridorId(), layout.mapId(), corridor.levelZ(), nodes, segments, layout.rooms());
     }
 
     public static long nextSyntheticNodeId(Corridor corridor) {

@@ -3,7 +3,7 @@ package database;
 import features.campaignstate.repository.CampaignStateSchemaSupport;
 import features.encounter.repository.EncounterSchemaSupport;
 import features.partyanalysis.model.AnalysisModelVersion;
-import features.world.dungeonmap.persistence.DungeonSchemaSupport;
+import features.world.dungeonmap.repository.DungeonStorageSupport;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -323,7 +323,7 @@ public final class DatabaseManager {
                     + "radius     INTEGER"
                     + ")");
 
-            DungeonSchemaSupport.createSchema(stmt);
+            DungeonStorageSupport.createSchema(stmt);
             EncounterSchemaSupport.createSchema(stmt);
 
             stmt.execute("CREATE TABLE IF NOT EXISTS factions ("
@@ -563,9 +563,7 @@ public final class DatabaseManager {
             EncounterSchemaSupport.ensureCompatibility(conn);
             // Dungeon data must survive normal app restarts. Explicit dungeon schema
             // resets remain a manual development action, never part of startup.
-            try (Statement dungeonStmt = conn.createStatement()) {
-                DungeonSchemaSupport.createSchema(dungeonStmt);
-            }
+            DungeonStorageSupport.ensureReady(conn);
             CampaignStateSchemaSupport.ensureCompatibility(conn);
             dropLegacyRoleColumns(conn);
 

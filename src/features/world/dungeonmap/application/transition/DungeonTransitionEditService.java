@@ -9,8 +9,8 @@ import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
-import features.world.dungeonmap.persistence.DungeonTransitionSchemaSupport;
-import features.world.dungeonmap.persistence.DungeonTransitionWriteRepository;
+import features.world.dungeonmap.repository.DungeonStorageSupport;
+import features.world.dungeonmap.repository.DungeonTransitionRepository;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -21,14 +21,14 @@ import java.util.Objects;
 public final class DungeonTransitionEditService {
 
     private final DungeonRoomTopologyService roomTopologyService;
-    private final DungeonTransitionWriteRepository transitionWriteRepository;
+    private final DungeonTransitionRepository transitionRepository;
 
     public DungeonTransitionEditService(
             DungeonRoomTopologyService roomTopologyService,
-            DungeonTransitionWriteRepository transitionWriteRepository
+            DungeonTransitionRepository transitionRepository
     ) {
         this.roomTopologyService = Objects.requireNonNull(roomTopologyService, "roomTopologyService");
-        this.transitionWriteRepository = Objects.requireNonNull(transitionWriteRepository, "transitionWriteRepository");
+        this.transitionRepository = Objects.requireNonNull(transitionRepository, "transitionRepository");
     }
 
     public void create(
@@ -46,28 +46,27 @@ public final class DungeonTransitionEditService {
         DungeonTransitionEditRequest resolvedRequest = requireRequest(request);
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                DungeonTransitionSchemaSupport.ensureCompatibility(conn);
+                DungeonStorageSupport.ensureReady(conn);
                 roomTopologyService.ensureTraversableCell(conn, layout.mapId(), anchorCell, levelZ);
                 DungeonTransitionDestination destination = resolveDestination(conn, resolvedRequest);
-                CubePoint anchor = CubePoint.at(anchorCell, levelZ);
-                long transitionId = transitionWriteRepository.insert(conn, new DungeonTransition(
+                long transitionId = transitionRepository.insert(conn, new DungeonTransition(
                         null,
                         layout.mapId(),
                         resolvedRequest.description(),
-                        anchor,
+                        CubePoint.at(anchorCell, levelZ),
                         destination,
                         null));
                 if (resolvedRequest.bidirectional()
                         && destination instanceof DungeonTransitionDestination.DungeonMapDestination dungeonDestination) {
-                    long counterpartId = transitionWriteRepository.insert(conn, new DungeonTransition(
+                    long counterpartId = transitionRepository.insert(conn, new DungeonTransition(
                             null,
                             dungeonDestination.mapId(),
                             resolvedRequest.description(),
                             null,
                             new DungeonTransitionDestination.DungeonMapDestination(layout.mapId(), transitionId),
                             transitionId));
-                    transitionWriteRepository.updateTargetTransition(conn, transitionId, counterpartId);
-                    transitionWriteRepository.updateLinkedTransition(conn, transitionId, counterpartId);
+                    transitionRepository.updateTargetTransition(conn, transitionId, counterpartId);
+                    transitionRepository.updateLinkedTransition(conn, transitionId, counterpartId);
                 }
                 return null;
             });
@@ -83,10 +82,10 @@ public final class DungeonTransitionEditService {
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                DungeonTransitionSchemaSupport.ensureCompatibility(conn);
+                DungeonStorageSupport.ensureReady(conn);
                 DungeonTransition transition = requireTransition(conn, transitionId);
                 roomTopologyService.ensureTraversableCell(conn, transition.mapId(), anchorCell, levelZ);
-                transitionWriteRepository.updatePlacement(conn, transitionId, CubePoint.at(anchorCell, levelZ));
+                transitionRepository.updatePlacement(conn, transitionId, CubePoint.at(anchorCell, levelZ));
                 return null;
             });
         }
@@ -98,9 +97,9 @@ public final class DungeonTransitionEditService {
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                DungeonTransitionSchemaSupport.ensureCompatibility(conn);
-                transitionWriteRepository.clearLinksTo(conn, transitionId);
-                transitionWriteRepository.delete(conn, transitionId);
+                DungeonStorageSupport.ensureReady(conn);
+                transitionRepository.clearLinksTo(conn, transitionId);
+                transitionRepository.delete(conn, transitionId);
                 return null;
             });
         }
@@ -203,44 +202,11 @@ public final class DungeonTransitionEditService {
         }
     }
 
-    private static DungeonTransition requireTransition(Connection conn, Long transitionId) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT transition_id, dungeon_map_id, description, cell_x, cell_y, level_z, destination_type,"
-                        + " target_overworld_map_id, target_overworld_tile_id, target_dungeon_map_id,"
-                        + " target_transition_id, linked_transition_id"
-                        + " FROM dungeon_transitions WHERE transition_id=?")) {
-            ps.setLong(1, transitionId == null ? -1L : transitionId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) {
-                    throw new SQLException("Übergang existiert nicht");
-                }
-                CubePoint anchor = rs.getObject("cell_x") == null
-                        ? null
-                        : new CubePoint(rs.getInt("cell_x"), rs.getInt("cell_y"), rs.getInt("level_z"));
-                DungeonTransitionDestination destination;
-                String destinationType = rs.getString("destination_type");
-                if ("DUNGEON_MAP".equals(destinationType)) {
-                    long destinationMapId = rs.getLong("target_dungeon_map_id");
-                    Long targetTransitionId = nullableLong(rs, "target_transition_id");
-                    destination = new DungeonTransitionDestination.DungeonMapDestination(destinationMapId, targetTransitionId);
-                } else {
-                    destination = new DungeonTransitionDestination.OverworldTileDestination(
-                            rs.getLong("target_overworld_map_id"),
-                            rs.getLong("target_overworld_tile_id"));
-                }
-                return new DungeonTransition(
-                        rs.getLong("transition_id"),
-                        rs.getLong("dungeon_map_id"),
-                        rs.getString("description"),
-                        anchor,
-                        destination,
-                        nullableLong(rs, "linked_transition_id"));
-            }
+    private DungeonTransition requireTransition(Connection conn, Long transitionId) throws SQLException {
+        DungeonTransition transition = transitionRepository.find(conn, transitionId == null ? -1L : transitionId);
+        if (transition == null) {
+            throw new SQLException("Übergang existiert nicht");
         }
-    }
-
-    private static Long nullableLong(ResultSet rs, String column) throws SQLException {
-        long value = rs.getLong(column);
-        return rs.wasNull() ? null : value;
+        return transition;
     }
 }

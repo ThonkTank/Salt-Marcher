@@ -57,6 +57,17 @@ public final class Corridor {
         return new Corridor(corridorId, mapId, levelZ, nodes, segments, roomsById);
     }
 
+    public static Corridor resolved(
+            Long corridorId,
+            long mapId,
+            int levelZ,
+            List<CorridorNode> nodes,
+            List<CorridorSegment> segments,
+            Collection<Room> rooms
+    ) {
+        return new Corridor(corridorId, mapId, levelZ, nodes, segments, indexRoomsById(rooms));
+    }
+
     public static Corridor planned(
             long mapId,
             int levelZ,
@@ -65,6 +76,16 @@ public final class Corridor {
             Map<Long, Room> roomsById
     ) {
         return new Corridor(null, mapId, levelZ, nodes, segments, roomsById);
+    }
+
+    public static Corridor planned(
+            long mapId,
+            int levelZ,
+            List<CorridorNode> nodes,
+            List<CorridorSegment> segments,
+            Collection<Room> rooms
+    ) {
+        return new Corridor(null, mapId, levelZ, nodes, segments, indexRoomsById(rooms));
     }
 
     private Corridor(
@@ -89,6 +110,10 @@ public final class Corridor {
 
     public Corridor withIdentity(Long corridorId, long mapId, Map<Long, Room> roomsById) {
         return new Corridor(corridorId, mapId, levelZ, nodes, segments, roomsById);
+    }
+
+    public Corridor withIdentity(Long corridorId, long mapId, Collection<Room> rooms) {
+        return new Corridor(corridorId, mapId, levelZ, nodes, segments, indexRoomsById(rooms));
     }
 
     public Long corridorId() {
@@ -186,6 +211,19 @@ public final class Corridor {
         return nodes.stream()
                 .filter(node -> node.nodeId() != null && !node.isRoomBound())
                 .toList();
+    }
+
+    private static Map<Long, Room> indexRoomsById(Collection<Room> rooms) {
+        if (rooms == null || rooms.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, Room> result = new LinkedHashMap<>();
+        for (Room room : rooms) {
+            if (room != null && room.roomId() != null) {
+                result.put(room.roomId(), room);
+            }
+        }
+        return result.isEmpty() ? Map.of() : Map.copyOf(result);
     }
 
     private static List<CorridorNode> normalizeNodes(int levelZ, List<CorridorNode> nodes, Map<Long, Room> roomsById) {

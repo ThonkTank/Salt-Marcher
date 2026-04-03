@@ -314,7 +314,7 @@ public final class ConnectionsTool implements EditorTool {
                 mapState.activeProjectionLevel(),
                 nodes,
                 segments,
-                DungeonCorridorGraphEditor.roomsById(mapState.activeMap()));
+                mapState.activeMap().rooms());
         Long mapId = mapState.activeMapId();
         if (mapId == null) {
             return;
@@ -497,7 +497,7 @@ public final class ConnectionsTool implements EditorTool {
                 mapState.activeProjectionLevel(),
                 draft.nodes(),
                 draft.segments(),
-                DungeonCorridorGraphEditor.roomsById(mapState.activeMap()));
+                mapState.activeMap().rooms());
         DungeonLayout previewLayout = new DungeonLayout(
                 mapState.activeMap().mapId(),
                 mapState.activeMap().name(),

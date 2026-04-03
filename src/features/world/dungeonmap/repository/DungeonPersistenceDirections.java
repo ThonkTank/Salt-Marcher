@@ -1,4 +1,4 @@
-package features.world.dungeonmap.persistence;
+package features.world.dungeonmap.repository;
 
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 

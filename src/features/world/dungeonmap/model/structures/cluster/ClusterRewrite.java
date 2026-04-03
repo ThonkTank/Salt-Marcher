@@ -1,7 +1,6 @@
 package features.world.dungeonmap.model.structures.cluster;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.structures.connection.LocalConnection;
 import features.world.dungeonmap.model.structures.room.Room;
 
 import java.util.LinkedHashMap;
@@ -14,7 +13,6 @@ public record ClusterRewrite(
         Long targetClusterId,
         CellCoord clusterCenter,
         List<Room> rooms,
-        List<LocalConnection> localConnections,
         List<InternalBoundaryEdge> persistedBoundaries,
         Set<Long> deletedRoomIds,
         Map<Long, Long> replacedRoomIds,
@@ -27,7 +25,6 @@ public record ClusterRewrite(
     // Null-intolerant: use builder() or unchanged() factories which handle null gracefully.
     public ClusterRewrite {
         rooms = List.copyOf(rooms);
-        localConnections = localConnections == null ? List.of() : List.copyOf(localConnections);
         persistedBoundaries = List.copyOf(persistedBoundaries);
         deletedRoomIds = Set.copyOf(deletedRoomIds);
         replacedRoomIds = Map.copyOf(replacedRoomIds);
@@ -41,20 +38,18 @@ public record ClusterRewrite(
             Long targetClusterId,
             CellCoord clusterCenter,
             List<Room> rooms,
-            List<LocalConnection> localConnections,
             List<InternalBoundaryEdge> persistedBoundaries
     ) {
-        return new Builder(targetClusterId, clusterCenter, rooms, localConnections, persistedBoundaries);
+        return new Builder(targetClusterId, clusterCenter, rooms, persistedBoundaries);
     }
 
     public static ClusterRewrite unchanged(
             Long targetClusterId,
             CellCoord clusterCenter,
             List<Room> rooms,
-            List<LocalConnection> localConnections,
             List<InternalBoundaryEdge> persistedBoundaries
     ) {
-        return builder(targetClusterId, clusterCenter, rooms, localConnections, persistedBoundaries).build();
+        return builder(targetClusterId, clusterCenter, rooms, persistedBoundaries).build();
     }
 
     public boolean deletesCluster() {
@@ -95,7 +90,7 @@ public record ClusterRewrite(
     }
 
     public ClusterRewrite withSplitClusters(List<ClusterRewriteSplit> splitClusters) {
-        return builder(targetClusterId, clusterCenter, rooms, localConnections, persistedBoundaries)
+        return builder(targetClusterId, clusterCenter, rooms, persistedBoundaries)
                 .deletedRoomIds(deletedRoomIds)
                 .replacedRoomIds(replacedRoomIds)
                 .mergedRoomIds(mergedRoomIds)
@@ -110,7 +105,6 @@ public record ClusterRewrite(
         private final Long targetClusterId;
         private final CellCoord clusterCenter;
         private final List<Room> rooms;
-        private final List<LocalConnection> localConnections;
         private final List<InternalBoundaryEdge> persistedBoundaries;
         private Set<Long> deletedRoomIds = Set.of();
         private Map<Long, Long> replacedRoomIds = Map.of();
@@ -124,13 +118,11 @@ public record ClusterRewrite(
                 Long targetClusterId,
                 CellCoord clusterCenter,
                 List<Room> rooms,
-                List<LocalConnection> localConnections,
                 List<InternalBoundaryEdge> persistedBoundaries
         ) {
             this.targetClusterId = targetClusterId;
             this.clusterCenter = clusterCenter;
             this.rooms = rooms == null ? List.of() : List.copyOf(rooms);
-            this.localConnections = localConnections == null ? List.of() : List.copyOf(localConnections);
             this.persistedBoundaries = persistedBoundaries == null ? List.of() : List.copyOf(persistedBoundaries);
         }
 
@@ -176,7 +168,6 @@ public record ClusterRewrite(
                     targetClusterId,
                     clusterCenter,
                     rooms,
-                    localConnections,
                     persistedBoundaries,
                     deletedRoomIds,
                     replacedRoomIds,

@@ -1,10 +1,12 @@
-package features.world.dungeonmap.persistence;
+package features.world.dungeonmap.repository;
 
 import features.world.dungeonmap.model.geometry.CardinalDirection;
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNode;
 import features.world.dungeonmap.model.structures.corridor.CorridorSegment;
+import features.world.dungeonmap.model.structures.room.Room;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -13,10 +15,65 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
-public final class DungeonCorridorWriteRepository {
+public final class DungeonCorridorRepository {
+
+    public List<Corridor> loadByMap(Connection conn, long mapId, List<Room> rooms) throws SQLException {
+        Map<Long, Room> roomsById = indexRoomsById(rooms);
+        Map<Long, List<CorridorNode>> nodesByCorridorId = loadGrouped(
+                conn,
+                "SELECT corridor_id, corridor_node_id, grid_x2, grid_y2, room_id, room_relative_cell_x, room_relative_cell_y, room_edge_direction"
+                        + " FROM dungeon_corridor_nodes"
+                        + " WHERE corridor_id IN (SELECT corridor_id FROM dungeon_corridors WHERE dungeon_map_id=?)"
+                        + " ORDER BY corridor_id, corridor_node_id",
+                mapId,
+                row -> row.getLong("corridor_id"),
+                row -> new CorridorNode(
+                        row.getLong("corridor_node_id"),
+                        GridPoint2x.raw(row.getInt("grid_x2"), row.getInt("grid_y2")),
+                        nullableLong(row, "room_id"),
+                        row.getObject("room_relative_cell_x") == null
+                                ? null
+                                : new CellCoord(row.getInt("room_relative_cell_x"), row.getInt("room_relative_cell_y")),
+                        row.getString("room_edge_direction") == null
+                                ? null
+                                : CardinalDirection.valueOf(row.getString("room_edge_direction").trim().toUpperCase(java.util.Locale.ROOT))));
+        Map<Long, List<CorridorSegment>> segmentsByCorridorId = loadGrouped(
+                conn,
+                "SELECT corridor_id, corridor_segment_id, start_node_id, end_node_id"
+                        + " FROM dungeon_corridor_segments"
+                        + " WHERE corridor_id IN (SELECT corridor_id FROM dungeon_corridors WHERE dungeon_map_id=?)"
+                        + " ORDER BY corridor_id, corridor_segment_id",
+                mapId,
+                row -> row.getLong("corridor_id"),
+                row -> new CorridorSegment(
+                        row.getLong("corridor_segment_id"),
+                        row.getLong("start_node_id"),
+                        row.getLong("end_node_id")));
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT corridor_id, dungeon_map_id, level_z"
+                        + " FROM dungeon_corridors WHERE dungeon_map_id=? ORDER BY corridor_id")) {
+            ps.setLong(1, mapId);
+            try (ResultSet rs = ps.executeQuery()) {
+                List<Corridor> result = new ArrayList<>();
+                while (rs.next()) {
+                    long corridorId = rs.getLong("corridor_id");
+                    result.add(Corridor.resolved(
+                            corridorId,
+                            rs.getLong("dungeon_map_id"),
+                            rs.getInt("level_z"),
+                            nodesByCorridorId.getOrDefault(corridorId, List.of()),
+                            segmentsByCorridorId.getOrDefault(corridorId, List.of()),
+                            roomsById));
+                }
+                return result.isEmpty() ? List.of() : List.copyOf(result);
+            }
+        }
+    }
 
     public long nextNodeId(Connection conn) throws SQLException {
         return nextId(conn, "dungeon_corridor_nodes", "corridor_node_id");
@@ -165,5 +222,53 @@ public final class DungeonCorridorWriteRepository {
                 .thenComparing(CorridorSegment::startNodeId)
                 .thenComparing(CorridorSegment::endNodeId));
         return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
+    private static Map<Long, Room> indexRoomsById(List<Room> rooms) {
+        if (rooms == null || rooms.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, Room> result = new LinkedHashMap<>();
+        for (Room room : rooms) {
+            if (room != null && room.roomId() != null) {
+                result.put(room.roomId(), room);
+            }
+        }
+        return result.isEmpty() ? Map.of() : Map.copyOf(result);
+    }
+
+    private static <K, V> Map<K, List<V>> loadGrouped(
+            Connection conn,
+            String sql,
+            long mapId,
+            ResultSetMapper<K> keyExtractor,
+            ResultSetMapper<V> valueExtractor
+    ) throws SQLException {
+        Map<K, List<V>> result = new LinkedHashMap<>();
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, mapId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    K key = keyExtractor.map(rs);
+                    V value = valueExtractor.map(rs);
+                    if (value != null) {
+                        result.computeIfAbsent(key, ignored -> new ArrayList<>()).add(value);
+                    } else {
+                        result.computeIfAbsent(key, ignored -> new ArrayList<>());
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    private static Long nullableLong(ResultSet rs, String column) throws SQLException {
+        long value = rs.getLong(column);
+        return rs.wasNull() ? null : value;
+    }
+
+    @FunctionalInterface
+    private interface ResultSetMapper<T> {
+        T map(ResultSet rs) throws SQLException;
     }
 }

@@ -1,5 +1,9 @@
 package features.world.dungeonmap.catalog.persistence;
 
+import features.world.dungeonmap.catalog.application.DungeonMapCatalogEntry;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -9,6 +13,20 @@ public final class DungeonMapCatalogRepository {
 
     private DungeonMapCatalogRepository() {
         throw new AssertionError("No instances");
+    }
+
+    public static List<DungeonMapCatalogEntry> listMaps(Connection conn) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT dungeon_map_id, name FROM dungeon_maps ORDER BY dungeon_map_id");
+             ResultSet rs = ps.executeQuery()) {
+            List<DungeonMapCatalogEntry> result = new ArrayList<>();
+            while (rs.next()) {
+                result.add(new DungeonMapCatalogEntry(
+                        rs.getLong("dungeon_map_id"),
+                        rs.getString("name")));
+            }
+            return List.copyOf(result);
+        }
     }
 
     public static long insertMap(Connection conn, String name) throws SQLException {

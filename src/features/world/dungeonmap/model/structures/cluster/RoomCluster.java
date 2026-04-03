@@ -5,10 +5,12 @@ import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
+import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.objects.Floor;
 import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.structures.TargetKey;
+import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.LocalConnection;
 import features.world.dungeonmap.model.structures.room.Room;
 
@@ -48,18 +50,7 @@ public final class RoomCluster {
             CellCoord center,
             List<Room> rooms
     ) {
-        this(clusterId, mapId, center, rooms, List.of());
-    }
-
-    public RoomCluster(
-            Long clusterId,
-            long mapId,
-            CellCoord center,
-            List<Room> rooms,
-            List<LocalConnection> localConnections
-    ) {
         List<Room> resolvedRooms = rooms == null ? List.of() : List.copyOf(rooms);
-        List<LocalConnection> resolvedLocalConnections = localConnections == null ? List.of() : List.copyOf(localConnections);
         Map<Long, Room> resolvedRoomsById = indexRoomsById(resolvedRooms);
         OverlapIndex overlapIndex = indexRoomsByCell(resolvedRooms);
 
@@ -67,7 +58,7 @@ public final class RoomCluster {
         this.mapId = mapId;
         this.center = center == null ? new CellCoord(0, 0) : center;
         this.rooms = resolvedRooms;
-        this.localConnections = resolvedLocalConnections;
+        this.localConnections = deriveLocalConnections(mapId, clusterId, resolvedRooms);
         this.cells = indexCells(resolvedRooms);
         this.roomsById = resolvedRoomsById;
         this.roomsByCell = overlapIndex.roomsByCell();
@@ -99,21 +90,7 @@ public final class RoomCluster {
     }
 
     public RoomCluster withRooms(List<Room> rooms) {
-        List<Room> resolvedRooms = rooms == null ? List.of() : List.copyOf(rooms);
-        long resolvedClusterId = clusterId == null ? 0L : clusterId;
-        return new RoomCluster(
-                clusterId,
-                mapId,
-                center,
-                resolvedRooms,
-                ClusterRewritePlanner.localConnections(
-                        mapId,
-                        resolvedClusterId,
-                        resolvedRooms));
-    }
-
-    public RoomCluster withRoomsAndLocalConnections(List<Room> rooms, List<LocalConnection> localConnections) {
-        return new RoomCluster(clusterId, mapId, center, rooms, localConnections);
+        return new RoomCluster(clusterId, mapId, center, rooms);
     }
 
     public RoomCluster projectedToLevel(int levelZ) {
@@ -124,10 +101,7 @@ public final class RoomCluster {
         if (projectedRooms.isEmpty()) {
             return null;
         }
-        List<LocalConnection> projectedConnections = localConnections.stream()
-                .filter(connection -> connection != null && connection.levelZ() == levelZ)
-                .toList();
-        return new RoomCluster(clusterId, mapId, center, projectedRooms, projectedConnections);
+        return new RoomCluster(clusterId, mapId, center, projectedRooms);
     }
 
     public ClusterRewrite editBoundary(GridSegment2x segment2x, InternalBoundaryType type, boolean deleteBoundary) {
@@ -193,9 +167,6 @@ public final class RoomCluster {
                 center.add(resolvedDelta),
                 rooms.stream()
                         .map(room -> room == null ? null : room.movedBy(resolvedDelta, levelDelta))
-                        .toList(),
-                localConnections.stream()
-                        .map(connection -> movedConnection(connection, resolvedDelta))
                         .toList());
     }
 
@@ -575,17 +546,104 @@ public final class RoomCluster {
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
-    private static LocalConnection movedConnection(LocalConnection connection, CellCoord delta) {
-        if (connection == null || delta == null || connection.door() == null) {
-            return connection;
+    public static List<LocalConnection> deriveLocalConnections(long mapId, Long clusterId, List<Room> rooms) {
+        if (rooms == null || rooms.isEmpty()) {
+            return List.of();
+        }
+        long resolvedClusterId = clusterId == null ? 0L : clusterId;
+        Map<CubePoint, Room> roomsByPoint = indexRoomsByPoint(rooms);
+        Map<String, DoorComponent> doorsByKey = new LinkedHashMap<>();
+        for (Room room : rooms) {
+            if (room == null) {
+                continue;
+            }
+            for (Integer levelZ : room.structure().levels()) {
+                for (Door door : room.structure().doorsAtLevel(levelZ)) {
+                    if (door != null) {
+                        doorsByKey.putIfAbsent(doorKey(levelZ, door), new DoorComponent(levelZ, door));
+                    }
+                }
+            }
+        }
+        List<LocalConnection> result = new ArrayList<>();
+        for (DoorComponent doorComponent : doorsByKey.values()) {
+            LocalConnection connection = localConnectionForDoor(doorComponent, mapId, resolvedClusterId, roomsByPoint);
+            if (connection != null) {
+                result.add(connection);
+            }
+        }
+        return List.copyOf(result);
+    }
+
+    private static LocalConnection localConnectionForDoor(
+            DoorComponent doorComponent,
+            long mapId,
+            long clusterId,
+            Map<CubePoint, Room> roomsByPoint
+    ) {
+        if (doorComponent == null || doorComponent.door() == null) {
+            return null;
+        }
+        List<Room> touchingRooms = new ArrayList<>();
+        for (GridSegment2x segment2x : doorComponent.door().segments2x()) {
+            for (CellCoord cell : segment2x.touchingCells().stream().sorted(CellCoord.ORDER).toList()) {
+                Room room = roomsByPoint.get(CubePoint.at(cell, doorComponent.levelZ()));
+                if (room != null && !touchingRooms.contains(room)) {
+                    touchingRooms.add(room);
+                }
+            }
+        }
+        List<ConnectionEndpoint> endpoints = endpointsForDoor(clusterId, touchingRooms);
+        if (endpoints.size() != 2) {
+            return null;
         }
         return new LocalConnection(
-                connection.connectionId(),
-                connection.mapId(),
-                connection.clusterId(),
-                connection.levelZ(),
-                connection.door().movedBy(delta),
-                connection.endpoints());
+                null,
+                mapId,
+                clusterId,
+                doorComponent.levelZ(),
+                Door.fromSegments(doorComponent.door().segments2x(), doorComponent.door().doorState()),
+                endpoints);
+    }
+
+    private static List<ConnectionEndpoint> endpointsForDoor(long clusterId, List<Room> touchingRooms) {
+        if (touchingRooms == null || touchingRooms.isEmpty()) {
+            return List.of();
+        }
+        if (touchingRooms.size() >= 2) {
+            Room leftRoom = touchingRooms.getFirst();
+            Room rightRoom = touchingRooms.get(1);
+            if (leftRoom.roomId() == null || rightRoom.roomId() == null || leftRoom.roomId().equals(rightRoom.roomId())) {
+                return List.of();
+            }
+            return List.of(ConnectionEndpoint.room(leftRoom.roomId()), ConnectionEndpoint.room(rightRoom.roomId()));
+        }
+        Room room = touchingRooms.getFirst();
+        if (room.roomId() == null) {
+            return List.of();
+        }
+        return List.of(ConnectionEndpoint.room(room.roomId()), ConnectionEndpoint.cluster(clusterId));
+    }
+
+    private static String doorKey(int levelZ, Door door) {
+        StringBuilder builder = new StringBuilder();
+        builder.append(levelZ).append(':');
+        boolean first = true;
+        for (GridSegment2x segment2x : (door == null ? List.<GridSegment2x>of() : door.segments2x()).stream()
+                .sorted(GridSegment2x.ORDER)
+                .toList()) {
+            if (!first) {
+                builder.append('|');
+            }
+            first = false;
+            builder.append(segment2x.start().x2()).append(',').append(segment2x.start().y2())
+                    .append('-')
+                    .append(segment2x.end().x2()).append(',').append(segment2x.end().y2());
+        }
+        return builder.toString();
+    }
+
+    private record DoorComponent(int levelZ, Door door) {
     }
 
     private record OverlapIndex(Map<CellCoord, Room> roomsByCell, boolean hasOverlaps) {

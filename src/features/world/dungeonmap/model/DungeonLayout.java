@@ -511,8 +511,7 @@ public final class DungeonLayout {
                             rewrite.targetClusterId(),
                             mapId,
                             rewrite.clusterCenter(),
-                            rewrite.rooms(),
-                            rewrite.localConnections()));
+                            rewrite.rooms()));
                     replacedTarget = true;
                 }
                 continue;
@@ -524,16 +523,14 @@ public final class DungeonLayout {
                     rewrite.targetClusterId(),
                     mapId,
                     rewrite.clusterCenter(),
-                    rewrite.rooms(),
-                    rewrite.localConnections()));
+                    rewrite.rooms()));
         }
         for (ClusterRewriteSplit splitCluster : rewrite.splitClusters()) {
             updatedClusters.add(new RoomCluster(
                     splitCluster.clusterId(),
                     mapId,
                     splitCluster.clusterCenter(),
-                    splitCluster.rooms(),
-                    splitCluster.localConnections()));
+                    splitCluster.rooms()));
         }
         Map<Long, Integer> updatedClusterLevels = new LinkedHashMap<>(clusterLevelsById);
         int targetLevel = levelForCluster(rewrite.targetClusterId());

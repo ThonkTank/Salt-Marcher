@@ -2,7 +2,6 @@ package features.world.dungeonmap.application.room;
 
 import database.DatabaseManager;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
-import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
@@ -13,7 +12,8 @@ import features.world.dungeonmap.model.structures.cluster.ClusterRewriteSplit;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.persistence.DungeonRoomWriteRepository;
+import features.world.dungeonmap.repository.DungeonLayoutRepository;
+import features.world.dungeonmap.repository.DungeonRoomRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -27,15 +27,15 @@ import java.util.Set;
 
 public final class DungeonRoomTopologyService {
 
-    private final DungeonMapLoader mapLoader;
-    private final DungeonRoomWriteRepository roomWriteRepository;
+    private final DungeonLayoutRepository layoutRepository;
+    private final DungeonRoomRepository roomRepository;
 
     public DungeonRoomTopologyService(
-            DungeonMapLoader mapLoader,
-            DungeonRoomWriteRepository roomWriteRepository
+            DungeonLayoutRepository layoutRepository,
+            DungeonRoomRepository roomRepository
     ) {
-        this.mapLoader = Objects.requireNonNull(mapLoader, "mapLoader");
-        this.roomWriteRepository = Objects.requireNonNull(roomWriteRepository, "roomWriteRepository");
+        this.layoutRepository = Objects.requireNonNull(layoutRepository, "layoutRepository");
+        this.roomRepository = Objects.requireNonNull(roomRepository, "roomRepository");
     }
 
     public void paint(long mapId, StructureDescriptor descriptor) throws SQLException {
@@ -193,12 +193,12 @@ public final class DungeonRoomTopologyService {
         StructureObject structure = StructureObject.fromDescriptor(descriptor);
         int primaryLevel = structure.primaryLevel();
         CellCoord centerCell = structure.centerCellCoordAtLevel(primaryLevel);
-        long clusterId = roomWriteRepository.insertCluster(
+        long clusterId = roomRepository.insertCluster(
                 conn,
                 mapId,
                 centerCell,
                 primaryLevel);
-        roomWriteRepository.insertRoom(
+        roomRepository.insertRoom(
                 conn,
                 mapId,
                 clusterId,
@@ -212,16 +212,16 @@ public final class DungeonRoomTopologyService {
         }
         for (Long roomId : rewrite.deletedRoomIds()) {
             if (roomId != null) {
-                roomWriteRepository.deleteRoom(conn, roomId);
+                roomRepository.deleteRoom(conn, roomId);
             }
         }
         if (rewrite.deletesCluster()) {
-            roomWriteRepository.deleteCluster(conn, rewrite.targetClusterId());
+            roomRepository.deleteCluster(conn, rewrite.targetClusterId());
             return rewrite;
         }
         List<ClusterRewriteSplit> realizedSplitClusters = new java.util.ArrayList<>();
         for (ClusterRewriteSplit splitCluster : rewrite.splitClusters()) {
-            long splitClusterId = roomWriteRepository.insertCluster(
+            long splitClusterId = roomRepository.insertCluster(
                     conn,
                     mapId,
                     splitCluster.clusterCenter(),
@@ -229,7 +229,7 @@ public final class DungeonRoomTopologyService {
             realizedSplitClusters.add(splitCluster.withClusterId(splitClusterId));
         }
         ClusterRewrite realizedRewrite = rewrite.withSplitClusters(realizedSplitClusters);
-        roomWriteRepository.updateClusterMetadata(
+        roomRepository.updateClusterMetadata(
                 conn,
                 realizedRewrite.targetClusterId(),
                 realizedRewrite.clusterCenter(),
@@ -240,7 +240,7 @@ public final class DungeonRoomTopologyService {
         }
         for (Long deletedClusterId : realizedRewrite.deletedClusterIds()) {
             if (deletedClusterId != null && !deletedClusterId.equals(realizedRewrite.targetClusterId())) {
-                roomWriteRepository.deleteCluster(conn, deletedClusterId);
+                roomRepository.deleteCluster(conn, deletedClusterId);
             }
         }
         return realizedRewrite;
@@ -257,7 +257,7 @@ public final class DungeonRoomTopologyService {
                 continue;
             }
             if (room.roomId() == null) {
-                long roomId = roomWriteRepository.insertRoom(
+                long roomId = roomRepository.insertRoom(
                         conn,
                         mapId,
                         clusterId,
@@ -268,8 +268,8 @@ public final class DungeonRoomTopologyService {
                 }
                 continue;
             }
-            roomWriteRepository.reassignRoomCluster(conn, room.roomId(), clusterId);
-            roomWriteRepository.updateRoom(conn, room.roomId(), room.name(), room.structure().descriptor());
+            roomRepository.reassignRoomCluster(conn, room.roomId(), clusterId);
+            roomRepository.updateRoom(conn, room.roomId(), room.name(), room.structure().descriptor());
         }
     }
 
@@ -308,7 +308,7 @@ public final class DungeonRoomTopologyService {
     }
 
     private DungeonLayout requireLayout(Connection conn, long mapId) throws SQLException {
-        DungeonLayout layout = mapLoader.loadLayout(conn, mapId);
+        DungeonLayout layout = layoutRepository.loadLayout(conn, mapId);
         if (layout == null) {
             throw new SQLException("Dungeon " + mapId + " konnte nicht geladen werden");
         }

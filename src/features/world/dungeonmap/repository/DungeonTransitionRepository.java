@@ -1,4 +1,4 @@
-package features.world.dungeonmap.persistence;
+package features.world.dungeonmap.repository;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
@@ -9,8 +9,40 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 
-public final class DungeonTransitionWriteRepository {
+public final class DungeonTransitionRepository {
+
+    public List<DungeonTransition> loadByMap(Connection conn, long mapId) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT transition_id, dungeon_map_id, description, cell_x, cell_y, level_z, destination_type,"
+                        + " target_overworld_map_id, target_overworld_tile_id, target_dungeon_map_id,"
+                        + " target_transition_id, linked_transition_id"
+                        + " FROM dungeon_transitions WHERE dungeon_map_id=? ORDER BY transition_id")) {
+            ps.setLong(1, mapId);
+            try (ResultSet rs = ps.executeQuery()) {
+                List<DungeonTransition> result = new ArrayList<>();
+                while (rs.next()) {
+                    result.add(mapTransition(rs));
+                }
+                return result.isEmpty() ? List.of() : List.copyOf(result);
+            }
+        }
+    }
+
+    public DungeonTransition find(Connection conn, long transitionId) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT transition_id, dungeon_map_id, description, cell_x, cell_y, level_z, destination_type,"
+                        + " target_overworld_map_id, target_overworld_tile_id, target_dungeon_map_id,"
+                        + " target_transition_id, linked_transition_id"
+                        + " FROM dungeon_transitions WHERE transition_id=?")) {
+            ps.setLong(1, transitionId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? mapTransition(rs) : null;
+            }
+        }
+    }
 
     public long insert(Connection conn, DungeonTransition transition) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
@@ -96,6 +128,34 @@ public final class DungeonTransitionWriteRepository {
         }
     }
 
+    private static DungeonTransition mapTransition(ResultSet rs) throws SQLException {
+        CubePoint anchor = rs.getObject("cell_x") == null
+                ? null
+                : new CubePoint(rs.getInt("cell_x"), rs.getInt("cell_y"), rs.getInt("level_z"));
+        return new DungeonTransition(
+                rs.getLong("transition_id"),
+                rs.getLong("dungeon_map_id"),
+                rs.getString("description"),
+                anchor,
+                mapDestination(rs),
+                nullableLong(rs, "linked_transition_id"));
+    }
+
+    private static DungeonTransitionDestination mapDestination(ResultSet rs) throws SQLException {
+        String destinationType = rs.getString("destination_type");
+        if (DungeonTransitionDestination.DungeonMapDestination.class.getSimpleName().equals(destinationType)) {
+            destinationType = "DUNGEON_MAP";
+        }
+        if ("DUNGEON_MAP".equals(destinationType)) {
+            return new DungeonTransitionDestination.DungeonMapDestination(
+                    rs.getLong("target_dungeon_map_id"),
+                    nullableLong(rs, "target_transition_id"));
+        }
+        return new DungeonTransitionDestination.OverworldTileDestination(
+                rs.getLong("target_overworld_map_id"),
+                rs.getLong("target_overworld_tile_id"));
+    }
+
     private static void bindTransition(PreparedStatement ps, DungeonTransition transition) throws SQLException {
         if (transition == null) {
             throw new IllegalArgumentException("transition darf nicht null sein");
@@ -139,5 +199,10 @@ public final class DungeonTransitionWriteRepository {
         } else {
             ps.setLong(11, transition.linkedTransitionId());
         }
+    }
+
+    private static Long nullableLong(ResultSet rs, String column) throws SQLException {
+        long value = rs.getLong(column);
+        return rs.wasNull() ? null : value;
     }
 }

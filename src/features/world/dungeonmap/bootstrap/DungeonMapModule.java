@@ -11,11 +11,11 @@ import features.world.dungeonmap.application.room.DungeonBoundaryEditService;
 import features.world.dungeonmap.application.room.DungeonRoomNarrationService;
 import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
-import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
-import features.world.dungeonmap.persistence.DungeonCorridorWriteRepository;
-import features.world.dungeonmap.persistence.DungeonTransitionWriteRepository;
-import features.world.dungeonmap.persistence.DungeonRoomWriteRepository;
+import features.world.dungeonmap.repository.DungeonCorridorRepository;
+import features.world.dungeonmap.repository.DungeonLayoutRepository;
+import features.world.dungeonmap.repository.DungeonRoomRepository;
+import features.world.dungeonmap.repository.DungeonTransitionRepository;
 import features.world.dungeonmap.shell.editor.DungeonEditorView;
 import features.world.dungeonmap.shell.editor.interaction.BoundaryTool;
 import features.world.dungeonmap.shell.editor.interaction.ConnectionsTool;
@@ -42,30 +42,30 @@ public final class DungeonMapModule {
 
     public DungeonMapModule(DetailsNavigator detailsNavigator, WorldTravelSurface travelSurface) {
         Objects.requireNonNull(detailsNavigator, "detailsNavigator");
-        DungeonMapLoader mapLoader = new DungeonMapLoader();
-        DungeonRoomWriteRepository roomWriteRepository = new DungeonRoomWriteRepository();
-        DungeonCorridorWriteRepository corridorWriteRepository = new DungeonCorridorWriteRepository();
-        DungeonTransitionWriteRepository transitionWriteRepository = new DungeonTransitionWriteRepository();
-        DungeonRoomNarrationService roomNarrationService = new DungeonRoomNarrationService(roomWriteRepository);
+        DungeonLayoutRepository layoutRepository = new DungeonLayoutRepository();
+        DungeonRoomRepository roomRepository = new DungeonRoomRepository();
+        DungeonCorridorRepository corridorRepository = new DungeonCorridorRepository();
+        DungeonTransitionRepository transitionRepository = new DungeonTransitionRepository();
+        DungeonRoomNarrationService roomNarrationService = new DungeonRoomNarrationService(roomRepository);
         DungeonRoomTopologyService roomTopologyService = new DungeonRoomTopologyService(
-                mapLoader,
-                roomWriteRepository);
-        DungeonTransitionEditService transitionEditService = new DungeonTransitionEditService(roomTopologyService, transitionWriteRepository);
-        DungeonRuntimeApplicationService runtimeApplicationService = new DungeonRuntimeApplicationService(mapLoader);
+                layoutRepository,
+                roomRepository);
+        DungeonTransitionEditService transitionEditService = new DungeonTransitionEditService(roomTopologyService, transitionRepository);
+        DungeonRuntimeApplicationService runtimeApplicationService = new DungeonRuntimeApplicationService(layoutRepository);
         DungeonMapCatalogService mapCatalogService = new DungeonMapCatalogService(
                 roomTopologyService,
                 runtimeApplicationService);
         DungeonBoundaryEditService boundaryEditService = new DungeonBoundaryEditService(roomTopologyService);
-        DungeonCorridorEditService corridorEditService = new DungeonCorridorEditService(mapLoader, corridorWriteRepository);
+        DungeonCorridorEditService corridorEditService = new DungeonCorridorEditService(layoutRepository, corridorRepository);
         DungeonClusterMoveProjectionApplicationService clusterMoveProjectionApplicationService =
                 new DungeonClusterMoveProjectionApplicationService();
         DungeonClusterMoveService clusterMoveService = new DungeonClusterMoveService(
-                mapLoader,
-                roomWriteRepository,
+                layoutRepository,
+                roomRepository,
                 clusterMoveProjectionApplicationService);
         DungeonMapState state = new DungeonMapState();
         DungeonMapLoadingService loadingService = new DungeonMapLoadingService(
-                mapLoader,
+                layoutRepository,
                 state);
         DungeonEditorSessionState editorSessionState = new DungeonEditorSessionState();
         EditorInteractionState editorInteractionState = new EditorInteractionState();

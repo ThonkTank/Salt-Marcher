@@ -2,12 +2,12 @@ package features.world.dungeonmap.application.corridor;
 
 import database.DatabaseManager;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
-import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNode;
 import features.world.dungeonmap.model.structures.corridor.CorridorSegment;
-import features.world.dungeonmap.persistence.DungeonCorridorWriteRepository;
+import features.world.dungeonmap.repository.DungeonCorridorRepository;
+import features.world.dungeonmap.repository.DungeonLayoutRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -19,15 +19,15 @@ import java.util.Objects;
 
 public final class DungeonCorridorEditService {
 
-    private final DungeonMapLoader mapLoader;
-    private final DungeonCorridorWriteRepository corridorWriteRepository;
+    private final DungeonLayoutRepository layoutRepository;
+    private final DungeonCorridorRepository corridorRepository;
 
     public DungeonCorridorEditService(
-            DungeonMapLoader mapLoader,
-            DungeonCorridorWriteRepository corridorWriteRepository
+            DungeonLayoutRepository layoutRepository,
+            DungeonCorridorRepository corridorRepository
     ) {
-        this.mapLoader = Objects.requireNonNull(mapLoader, "mapLoader");
-        this.corridorWriteRepository = Objects.requireNonNull(corridorWriteRepository, "corridorWriteRepository");
+        this.layoutRepository = Objects.requireNonNull(layoutRepository, "layoutRepository");
+        this.corridorRepository = Objects.requireNonNull(corridorRepository, "corridorRepository");
     }
 
     public long create(long mapId, Corridor corridor) throws SQLException {
@@ -38,9 +38,9 @@ public final class DungeonCorridorEditService {
             return DungeonTransactionRunner.inTransaction(conn, () -> {
                 DungeonLayout layout = requireLayout(conn, mapId);
                 Corridor persisted = assignPersistentIds(corridor, layout, conn);
-                long corridorId = corridorWriteRepository.insertCorridor(conn, mapId, persisted);
-                corridorWriteRepository.replaceNodes(conn, corridorId, persisted.nodes());
-                corridorWriteRepository.replaceSegments(conn, corridorId, persisted.segments());
+                long corridorId = corridorRepository.insertCorridor(conn, mapId, persisted);
+                corridorRepository.replaceNodes(conn, corridorId, persisted.nodes());
+                corridorRepository.replaceSegments(conn, corridorId, persisted.segments());
                 return corridorId;
             });
         }
@@ -57,9 +57,9 @@ public final class DungeonCorridorEditService {
                     throw new SQLException("Corridor " + corridor.corridorId() + " existiert nicht");
                 }
                 Corridor persisted = assignPersistentIds(corridor, layout, conn);
-                corridorWriteRepository.updateCorridor(conn, corridor.corridorId(), persisted);
-                corridorWriteRepository.replaceNodes(conn, corridor.corridorId(), persisted.nodes());
-                corridorWriteRepository.replaceSegments(conn, corridor.corridorId(), persisted.segments());
+                corridorRepository.updateCorridor(conn, corridor.corridorId(), persisted);
+                corridorRepository.replaceNodes(conn, corridor.corridorId(), persisted.nodes());
+                corridorRepository.replaceSegments(conn, corridor.corridorId(), persisted.segments());
             });
         }
     }
@@ -85,13 +85,13 @@ public final class DungeonCorridorEditService {
                 if (layout.findCorridor(corridorId) == null) {
                     return;
                 }
-                corridorWriteRepository.deleteCorridor(conn, corridorId);
+                corridorRepository.deleteCorridor(conn, corridorId);
             });
         }
     }
 
     private DungeonLayout requireLayout(Connection conn, long mapId) throws SQLException {
-        DungeonLayout layout = mapLoader.loadLayout(conn, mapId);
+        DungeonLayout layout = layoutRepository.loadLayout(conn, mapId);
         if (layout == null) {
             throw new SQLException("Dungeon " + mapId + " konnte nicht geladen werden");
         }
@@ -99,8 +99,8 @@ public final class DungeonCorridorEditService {
     }
 
     private Corridor assignPersistentIds(Corridor corridor, DungeonLayout layout, Connection conn) throws SQLException {
-        long nextNodeId = corridorWriteRepository.nextNodeId(conn);
-        long nextSegmentId = corridorWriteRepository.nextSegmentId(conn);
+        long nextNodeId = corridorRepository.nextNodeId(conn);
+        long nextSegmentId = corridorRepository.nextSegmentId(conn);
         Map<Long, Long> syntheticNodeIds = new LinkedHashMap<>();
         ArrayList<CorridorNode> nodes = new ArrayList<>();
         for (CorridorNode node : corridor.nodes()) {
@@ -134,9 +134,7 @@ public final class DungeonCorridorEditService {
                 corridor.levelZ(),
                 nodes,
                 segments,
-                layout.rooms().stream()
-                        .filter(room -> room != null && room.roomId() != null)
-                        .collect(java.util.stream.Collectors.toMap(room -> room.roomId(), room -> room, (left, right) -> left, LinkedHashMap::new)));
+                layout.rooms());
     }
 
     private static Long remapNodeId(Long nodeId, Map<Long, Long> syntheticNodeIds) {

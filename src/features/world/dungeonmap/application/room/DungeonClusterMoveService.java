@@ -2,12 +2,12 @@ package features.world.dungeonmap.application.room;
 
 import database.DatabaseManager;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
-import features.world.dungeonmap.loading.DungeonMapLoader;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.persistence.DungeonRoomWriteRepository;
+import features.world.dungeonmap.repository.DungeonLayoutRepository;
+import features.world.dungeonmap.repository.DungeonRoomRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -15,17 +15,17 @@ import java.util.Objects;
 
 public final class DungeonClusterMoveService {
 
-    private final DungeonMapLoader mapLoader;
-    private final DungeonRoomWriteRepository roomWriteRepository;
+    private final DungeonLayoutRepository layoutRepository;
+    private final DungeonRoomRepository roomRepository;
     private final DungeonClusterMoveProjectionApplicationService projectionApplicationService;
 
     public DungeonClusterMoveService(
-            DungeonMapLoader mapLoader,
-            DungeonRoomWriteRepository roomWriteRepository,
+            DungeonLayoutRepository layoutRepository,
+            DungeonRoomRepository roomRepository,
             DungeonClusterMoveProjectionApplicationService projectionApplicationService
     ) {
-        this.mapLoader = Objects.requireNonNull(mapLoader, "mapLoader");
-        this.roomWriteRepository = Objects.requireNonNull(roomWriteRepository, "roomWriteRepository");
+        this.layoutRepository = Objects.requireNonNull(layoutRepository, "layoutRepository");
+        this.roomRepository = Objects.requireNonNull(roomRepository, "roomRepository");
         this.projectionApplicationService = Objects.requireNonNull(projectionApplicationService, "projectionApplicationService");
     }
 
@@ -43,7 +43,7 @@ public final class DungeonClusterMoveService {
                 DungeonLayout layout = requireLayout(conn, mapId);
                 DungeonClusterMoveProjection projection = projectionApplicationService.project(layout, clusterId, delta, levelDelta);
                 RoomCluster cluster = requireCluster(projection.layout(), clusterId);
-                roomWriteRepository.updateClusterMetadata(
+                roomRepository.updateClusterMetadata(
                         conn,
                         clusterId,
                         cluster.center(),
@@ -52,7 +52,7 @@ public final class DungeonClusterMoveService {
                     if (room == null || room.roomId() == null) {
                         continue;
                     }
-                    roomWriteRepository.updateRoom(conn, room.roomId(), room.name(), room.structure().descriptor());
+                    roomRepository.updateRoom(conn, room.roomId(), room.name(), room.structure().descriptor());
                 }
                 return null;
             });
@@ -60,7 +60,7 @@ public final class DungeonClusterMoveService {
     }
 
     private DungeonLayout requireLayout(Connection conn, long mapId) throws SQLException {
-        var layout = mapLoader.loadLayout(conn, mapId);
+        var layout = layoutRepository.loadLayout(conn, mapId);
         if (layout == null) {
             throw new SQLException("Dungeon " + mapId + " konnte nicht geladen werden");
         }
