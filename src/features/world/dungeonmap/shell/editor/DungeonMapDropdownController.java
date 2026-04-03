@@ -46,7 +46,7 @@ public final class DungeonMapDropdownController {
                 ignored -> mapDropdown.hide(),
                 throwable -> {
                     UiErrorReporter.reportBackgroundFailure("DungeonMapDropdownController.createMap()", throwable);
-                    mapDropdown.showError("Dungeon konnte nicht erstellt werden.");
+                    mapDropdown.showError(failureMessage("Dungeon konnte nicht erstellt werden", throwable));
                 });
     }
 
@@ -64,7 +64,7 @@ public final class DungeonMapDropdownController {
                 ignored -> mapDropdown.hide(),
                 throwable -> {
                     UiErrorReporter.reportBackgroundFailure("DungeonMapDropdownController.updateMap()", throwable);
-                    mapDropdown.showError("Dungeon konnte nicht gespeichert werden.");
+                    mapDropdown.showError(failureMessage("Dungeon konnte nicht gespeichert werden", throwable));
                 });
     }
 
@@ -85,8 +85,47 @@ public final class DungeonMapDropdownController {
                 ignored -> mapDropdown.hide(),
                 throwable -> {
                     UiErrorReporter.reportBackgroundFailure("DungeonMapDropdownController.deleteMap()", throwable);
-                    mapDropdown.showError("Dungeon konnte nicht geloescht werden.");
+                    mapDropdown.showError(failureMessage("Dungeon konnte nicht geloescht werden", throwable));
                 });
+    }
+
+    // Dropdown mutation errors should surface the deepest available cause because workflow wrappers
+    // otherwise hide the actionable failure behind generic "konnte nicht ..." summaries.
+    private static String failureMessage(String summary, Throwable throwable) {
+        String detail = deepestFailureDetail(throwable);
+        if (detail == null) {
+            return summary + ".";
+        }
+        return summary + ": " + detail;
+    }
+
+    private static String deepestFailureDetail(Throwable throwable) {
+        String detail = null;
+        for (Throwable cause = throwable; cause != null; cause = cause.getCause()) {
+            String message = normalizedMessage(cause.getMessage());
+            if (message != null) {
+                detail = message;
+            }
+        }
+        if (detail != null) {
+            return detail;
+        }
+        if (throwable == null) {
+            return null;
+        }
+        String type = normalizedMessage(throwable.getClass().getSimpleName());
+        return type == null ? null : type;
+    }
+
+    private static String normalizedMessage(String message) {
+        if (message == null) {
+            return null;
+        }
+        String normalized = message
+                .replace('\r', ' ')
+                .replace('\n', ' ')
+                .strip();
+        return normalized.isBlank() ? null : normalized;
     }
 
     public record EditRequest(DungeonMapCatalogEntry map, Node anchor) {
