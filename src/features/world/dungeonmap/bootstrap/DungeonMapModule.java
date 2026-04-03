@@ -2,10 +2,9 @@ package features.world.dungeonmap.bootstrap;
 
 import features.world.api.WorldTravelSurface;
 import features.world.dungeonmap.application.corridor.DungeonCorridorApplicationService;
+import features.world.dungeonmap.application.room.DungeonRoomApplicationService;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeApplicationService;
 import features.world.dungeonmap.application.transition.DungeonTransitionApplicationService;
-import features.world.dungeonmap.application.transition.TransitionTargetCatalogApplicationService;
-import features.world.dungeonmap.application.room.DungeonRoomApplicationService;
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.repository.DungeonCorridorRepository;
@@ -45,6 +44,7 @@ public final class DungeonMapModule {
         DungeonTransitionRepository transitionRepository = new DungeonTransitionRepository();
         DungeonRoomApplicationService roomApplicationService = new DungeonRoomApplicationService(
                 layoutRepository,
+                corridorRepository,
                 roomRepository);
         DungeonTransitionApplicationService transitionApplicationService = new DungeonTransitionApplicationService(roomApplicationService, transitionRepository);
         DungeonRuntimeApplicationService runtimeApplicationService = new DungeonRuntimeApplicationService(layoutRepository);
@@ -64,7 +64,6 @@ public final class DungeonMapModule {
                 roomApplicationService,
                 editorInteractionState);
         DungeonHitCollector hitCollector = new DungeonHitCollector();
-        TransitionTargetCatalogApplicationService transitionTargetCatalogApplicationService = new TransitionTargetCatalogApplicationService(transitionRepository);
         List<EditorTool> editorTools = List.of(
                 new SelectionTool(
                         state,
@@ -97,7 +96,6 @@ public final class DungeonMapModule {
                         loadingService,
                         editorSessionState,
                         transitionApplicationService,
-                        transitionTargetCatalogApplicationService,
                         editorInteractionState));
         EditorInteraction editorInteraction = new EditorInteraction(
                 state,

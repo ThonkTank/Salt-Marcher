@@ -1,10 +1,10 @@
 package features.world.dungeonmap.application.transition;
 
 import database.DatabaseManager;
+import features.world.api.OverworldTransitionTargetSummary;
 import features.world.api.WorldReadApi;
 import features.world.dungeonmap.application.room.DungeonRoomApplicationService;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
-import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
@@ -12,13 +12,14 @@ import features.world.dungeonmap.repository.DungeonTransitionRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Objects;
 
 /**
- * Transition commits accept either a fully resolved destination or a prepared transition id.
+ * Single transition workflow owner for target lookup plus create/place/delete writes.
  *
- * <p>The tool owns temporary form state. This application seam owns only validation, paired-transition write order,
- * and reload-worthy transition persistence.
+ * <p>The tool keeps temporary form state locally. This seam accepts only current-model destinations or prepared
+ * transition ids, validates them, and persists paired dungeon transitions in one transaction.
  */
 public final class DungeonTransitionApplicationService {
 
@@ -33,12 +34,17 @@ public final class DungeonTransitionApplicationService {
         this.transitionRepository = Objects.requireNonNull(transitionRepository, "transitionRepository");
     }
 
-    public void commit(DungeonLayout layout, CubePoint anchor, TransitionPlacementIntent intent) throws SQLException {
-        if (intent instanceof TransitionPlacementIntent.PlacePrepared prepared) {
-            placePrepared(prepared.transitionId(), anchor);
-            return;
+    public List<DungeonTransition> loadDungeonTargets(long mapId) throws SQLException {
+        if (mapId <= 0) {
+            return List.of();
         }
-        create(layout, anchor, requireCreateIntent(intent));
+        try (Connection conn = DatabaseManager.getConnection()) {
+            return transitionRepository.loadPlacedByMap(conn, mapId);
+        }
+    }
+
+    public List<OverworldTransitionTargetSummary> loadOverworldTargets() throws SQLException {
+        return WorldReadApi.loadOverworldTransitionTargets();
     }
 
     public void delete(long transitionId) throws SQLException {
@@ -54,12 +60,14 @@ public final class DungeonTransitionApplicationService {
         }
     }
 
-    private void create(
-            DungeonLayout layout,
+    public void create(
+            long mapId,
             CubePoint anchor,
-            TransitionPlacementIntent.Create intent
+            String description,
+            DungeonTransitionDestination destination,
+            boolean bidirectional
     ) throws SQLException {
-        if (layout == null || layout.mapId() <= 0) {
+        if (mapId <= 0) {
             throw new SQLException("Kein aktiver Dungeon geladen");
         }
         if (anchor == null) {
@@ -67,23 +75,23 @@ public final class DungeonTransitionApplicationService {
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                roomApplicationService.ensureTraversableCell(conn, layout.mapId(), anchor.projectedCell(), anchor.z());
-                DungeonTransitionDestination destination = requireDestination(conn, intent.destination(), intent.bidirectional());
+                roomApplicationService.ensureTraversableCell(conn, mapId, anchor.projectedCell(), anchor.z());
+                DungeonTransitionDestination validatedDestination = requireDestination(conn, destination, bidirectional);
                 long transitionId = transitionRepository.insert(conn, new DungeonTransition(
                         null,
-                        layout.mapId(),
-                        intent.description(),
+                        mapId,
+                        description,
                         anchor,
-                        destination,
+                        validatedDestination,
                         null));
-                if (intent.bidirectional()
-                        && destination instanceof DungeonTransitionDestination.DungeonMapDestination dungeonDestination) {
+                if (bidirectional
+                        && validatedDestination instanceof DungeonTransitionDestination.DungeonMapDestination dungeonDestination) {
                     long counterpartId = transitionRepository.insert(conn, new DungeonTransition(
                             null,
                             dungeonDestination.mapId(),
-                            intent.description(),
+                            description,
                             null,
-                            new DungeonTransitionDestination.DungeonMapDestination(layout.mapId(), transitionId),
+                            new DungeonTransitionDestination.DungeonMapDestination(mapId, transitionId),
                             transitionId));
                     transitionRepository.linkPair(conn, transitionId, counterpartId);
                 }
@@ -92,7 +100,7 @@ public final class DungeonTransitionApplicationService {
         }
     }
 
-    private void placePrepared(long transitionId, CubePoint anchor) throws SQLException {
+    public void placePrepared(long transitionId, CubePoint anchor) throws SQLException {
         if (transitionId <= 0) {
             throw new SQLException("Kein vorbereiteter Übergang gewählt");
         }
@@ -109,13 +117,6 @@ public final class DungeonTransitionApplicationService {
         }
     }
 
-    private TransitionPlacementIntent.Create requireCreateIntent(TransitionPlacementIntent intent) throws SQLException {
-        if (!(intent instanceof TransitionPlacementIntent.Create createIntent) || createIntent.destination() == null) {
-            throw new SQLException("Übergangsziel fehlt");
-        }
-        return createIntent;
-    }
-
     private DungeonTransitionDestination requireDestination(
             Connection conn,
             DungeonTransitionDestination destination,
@@ -125,7 +126,7 @@ public final class DungeonTransitionApplicationService {
             if (overworld.tileId() <= 0) {
                 throw new SQLException("Overworld-Zielfeld fehlt");
             }
-            Long resolvedMapId = WorldReadApi.findOverworldMapIdForTile(conn, overworld.tileId());
+            Long resolvedMapId = WorldReadApi.findOverworldMapIdForTile(overworld.tileId());
             if (resolvedMapId == null || resolvedMapId <= 0) {
                 throw new SQLException("Overworld-Zielfeld existiert nicht");
             }

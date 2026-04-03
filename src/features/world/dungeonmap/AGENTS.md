@@ -41,7 +41,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
   - `room/` owns room topology, boundary edits, cluster moves, and room narration through the central `DungeonRoomApplicationService` workflow seam.
   - `corridor/` owns corridor graph workflow orchestration for create, branch, insert, move, delete, while canonical graph transforms stay on `Corridor` and persistence-specific id assignment stays on `DungeonCorridorRepository`.
   - `runtime/` owns cell-only navigation, TILE persistence, runtime surface resolution, surface refs/exits, flat runtime actions, and runtime state repair.
-  - `transition/` owns transition create/place/delete flows and transition target lookup.
+  - `transition/` owns transition create/place/delete flows plus transition target lookup through one `DungeonTransitionApplicationService`. Do not split read options into a second application owner.
   - `support/` owns transaction helpers.
   - Application services orchestrate workflows and transactions; they must not keep a second interpretation of room, corridor, or runtime truth.
 - `loading/`
@@ -155,19 +155,20 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `Corridor` is a first-class structure with stable identity, nodes, segments, room bindings, and derived geometry. In memory and at persistence seams it owns canonical `GridPoint2x`/`GridSegment2x` path truth plus `CellCoord` room bindings, and it owns its direct graph transforms (`move`, `insert`, `delete`, `branch`) instead of delegating them to a second public graph-editor helper.
 - `DungeonStair` is a first-class structure with stable identity and explicit 3D path geometry. Exits are derived views, not persisted second truths.
 - `DungeonTransition` owns transition identity, placement anchor, destination, and optional bidirectional link. Unplaced transitions are valid; spatial queries must guard for null anchor or placement state.
-- Transition commits should carry direct `DungeonTransitionDestination` truth plus a small placement intent. Do not reintroduce request DTOs that decompose the destination back into enum-and-id fields before writing.
+- Transition workflows should call `DungeonTransitionApplicationService` directly with either a direct `DungeonTransitionDestination` or a prepared transition id. Do not reintroduce request DTOs or catalog option types that decompose the destination back into enum-and-id fields before writing.
 
 ## Loading And Persistence
 
 - `DungeonLayoutRepository` is the authoritative rehydration path for one concrete persisted map. It delegates structure reads to the focused repositories and does not return loading-layer fallback payloads.
 - `DungeonRoomApplicationService` is the single room workflow owner. Selection, paint, boundary, movement, narration, and transition placement should all call that seam instead of splitting room writes across parallel services.
 - `DungeonRoomRepository` owns the concrete write ordering for cluster rewrites and moved clusters. Application workflows decide the rewrite, repository code decides insert/update/delete order.
-- `DungeonCorridorRepository` owns corridor row writes, synthetic-to-persistent id assignment, node/segment replacement order, and the codec between persisted relative room-binding columns and in-memory absolute room cells. Application workflows should not keep a second persistence-id mapper or room-binding codec.
-- `DungeonTransitionRepository` owns dungeon-side transition lookups and writes, including placed-target queries and dungeon-map existence checks. Overworld target discovery stays at the `WorldReadApi` boundary instead of leaking `hex_tiles` SQL into dungeon application workflows.
+- `DungeonCorridorRepository` owns corridor row writes, synthetic-to-persistent id assignment, node/segment replacement order, and direct persistence of absolute room-bound endpoint cells. Room-bound corridor endpoints move or detach explicitly in room workflows and previews instead of hiding behind a storage codec.
+- `DungeonTransitionRepository` owns dungeon-side transition lookups and writes, including placed-target queries and dungeon-map existence checks. Overworld target discovery stays at the `WorldReadApi` boundary, and that public API remains connection-owning instead of leaking JDBC through cross-feature callers.
 - `DungeonMapLoadingService` owns catalog reads, initial-load usable-map scans, and selected-map fallback. Full-catalog usable-layout scans are for initial load, not every selection change.
 - Legacy dungeon storage compatibility is intentionally unsupported. Current code works only against the current schema and should fail fast on broken or stale rows instead of normalizing them at runtime.
 - Room geometry is loaded directly from persisted room-owned `StructureDescriptor` rows.
 - New dungeons start with a neutral default room (`Raum n`), not an implicit entrance concept.
+- Cluster move previews and persisted cluster moves share the same explicit corridor rewrite rule: horizontal room-bound endpoints move with their rooms, level moves detach those bindings in place.
 - Storage model:
   - clusters: membership owner plus derived `center_x`, `center_y`, `level_z` metadata only
   - rooms: `dungeon_rooms` row plus per-level descriptor tables `dungeon_room_levels`, `dungeon_room_level_seeds`, and `dungeon_room_level_segments`

@@ -600,7 +600,7 @@ public final class Corridor {
             return List.of();
         }
         if (node.isRoomBound()) {
-            CellCoord roomCell = absoluteRoomCell(node, levelZ, roomsById);
+            CellCoord roomCell = boundRoomCell(node, levelZ, roomsById);
             GridPoint2x anchorPoint = roomAnchorPoint(node, levelZ, roomsById);
             if (roomCell == null || anchorPoint == null || node.roomBoundaryDirection() == null) {
                 throw new IllegalArgumentException("Corridor room-bound node could not be resolved");
@@ -796,18 +796,18 @@ public final class Corridor {
     }
 
     private static GridPoint2x roomAnchorPoint(CorridorNode node, int levelZ, Map<Long, Room> roomsById) {
-        CellCoord roomCell = absoluteRoomCell(node, levelZ, roomsById);
+        CellCoord roomCell = boundRoomCell(node, levelZ, roomsById);
         CardinalDirection direction = node == null ? null : node.roomBoundaryDirection();
         return roomCell == null || direction == null ? null : GridPoint2x.edgeCenter(roomCell, direction);
     }
 
     private static GridSegment2x roomBoundaryEdge(CorridorNode node, int levelZ, Map<Long, Room> roomsById) {
-        CellCoord roomCell = absoluteRoomCell(node, levelZ, roomsById);
+        CellCoord roomCell = boundRoomCell(node, levelZ, roomsById);
         CardinalDirection direction = node == null ? null : node.roomBoundaryDirection();
         return roomCell == null || direction == null ? null : GridSegment2x.boundaryEdge(roomCell, direction);
     }
 
-    private static CellCoord absoluteRoomCell(CorridorNode node, int levelZ, Map<Long, Room> roomsById) {
+    private static CellCoord boundRoomCell(CorridorNode node, int levelZ, Map<Long, Room> roomsById) {
         if (node == null || !node.isRoomBound()) {
             return null;
         }

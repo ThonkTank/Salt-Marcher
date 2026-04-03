@@ -2,6 +2,7 @@ package features.world.api;
 
 import database.DatabaseManager;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -49,9 +50,9 @@ public final class WorldReadApi {
         if (tileId <= 0) {
             return null;
         }
-        try (var conn = DatabaseManager.getConnection();
+        try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(
-                "SELECT map_id FROM hex_tiles WHERE tile_id=?")) {
+                     "SELECT map_id FROM hex_tiles WHERE tile_id=?")) {
             ps.setLong(1, tileId);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? rs.getLong(1) : null;

@@ -11,6 +11,7 @@ import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
+import features.world.dungeonmap.repository.DungeonCorridorRepository;
 import features.world.dungeonmap.repository.DungeonLayoutRepository;
 import features.world.dungeonmap.repository.DungeonRoomRepository;
 
@@ -33,13 +34,16 @@ import java.util.function.Supplier;
 public final class DungeonRoomApplicationService {
 
     private final DungeonLayoutRepository layoutRepository;
+    private final DungeonCorridorRepository corridorRepository;
     private final DungeonRoomRepository roomRepository;
 
     public DungeonRoomApplicationService(
             DungeonLayoutRepository layoutRepository,
+            DungeonCorridorRepository corridorRepository,
             DungeonRoomRepository roomRepository
     ) {
         this.layoutRepository = Objects.requireNonNull(layoutRepository, "layoutRepository");
+        this.corridorRepository = Objects.requireNonNull(corridorRepository, "corridorRepository");
         this.roomRepository = Objects.requireNonNull(roomRepository, "roomRepository");
     }
 
@@ -319,7 +323,7 @@ public final class DungeonRoomApplicationService {
             }
             var movedCorridor = movedLayout.findCorridor(originalCorridor.corridorId());
             if (movedCorridor != null && movedCorridor != originalCorridor) {
-                new features.world.dungeonmap.repository.DungeonCorridorRepository().save(conn, movedCorridor, movedLayout);
+                corridorRepository.save(conn, movedCorridor, movedLayout);
             }
         }
     }
