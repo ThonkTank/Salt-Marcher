@@ -33,7 +33,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `model/`
 - `geometry/` owns pure grid math and routing primitives.
 - `geometry/` keeps canonical cell-space on `CellCoord` and the final doubled-grid contract on `GridPoint2x`/`GridSegment2x`. Do not add secondary tile-area wrappers or old-parity bridge types as competing geometry owners.
-  - `interaction/` owns model-side interaction seams such as `InteractiveLabelHandle`; semantic label identity lives here, not in canvas code.
+  - `interaction/` owns model-side interaction seams such as `InteractiveLabelHandle`, `DungeonHitKind`, and `DungeonSelectionKey`; semantic label and selection identity live here, not in canvas or shell code.
 - `objects/` owns thin domain objects over geometry such as `Floor`, `Wall`, `Door`, `StructureObject`, and `StructureDescriptor`. `Wall`/`Door` stay segment-based; shared boundary queries operate on `GridSegment2x`.
   - `structures/` owns first-class structures and the structure-specific subpackages `cluster`, `connection`, `corridor`, `room`, `stair`, and `transition`.
   - `DungeonLayout` stays the feature-wide lookup surface, not a second mutation owner.
@@ -51,6 +51,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
   - Write-side repositories and schema helpers only. Storage writes stay here; feature code must not write SQL anywhere else.
 - `catalog/`
   - Map create/rename/delete lives here with feature-local application and persistence code.
+  - `DungeonMapCatalogEntry` is the shared catalog summary. Loading, state, and shell may consume it, but catalog owns the type.
 - `canvas/`
   - `canvas/base/` owns workspace, camera, pointer events, theme, view mode, render payloads, and scene frame assembly.
   - `canvas/grid/` owns the grid renderer and interactive label drawing.
@@ -62,6 +63,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
   - `runtime/` owns runtime view, runtime interaction controller, and runtime selection policy.
 - `state/`
   - Observable cross-class runtime/editor state only. If a transient concern is private to one tool, keep it on the tool.
+  - Session enums such as `DungeonViewMode` and `DungeonEditorTool` belong here when `DungeonEditorSessionState` is the shared owner.
 
 ## Concern Ownership
 
@@ -70,6 +72,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `DungeonHitProbe` carries canonical `CellCoord` cell context plus canonical `GridPoint2x` probe geometry. Cell hits use `DungeonHitSurface.CellSurface`, while shared half-step hit geometry uses set-based `PointSurface` and `SegmentSurface`.
 - `DungeonLayout` owns canonical `CellCoord` lookups, traversable-cell indices, and level-aware cell queries. Corridor room bindings use `CellCoord`; geometry-backed picks and selections use `GridPoint2x` and `GridSegment2x`.
 - `DungeonHitSubject` and `DungeonSelectionLookup` expose geometry-backed editor/runtime selections only as `GridPoint2x` and `GridSegment2x`. Do not add raw doubled-cell mirrors or storage-parity mirrors back into those seams.
+- `DungeonHitKind` and `DungeonSelectionKey` are shared interaction semantics owned by `model/interaction/`, not by `shell/interaction/`.
 - `InteractiveLabelHandle`, `DungeonEditorRenderState`, and `DungeonRuntimeRenderOverlay` are display payloads on final `CellCoord`/`GridPoint2x`/`GridSegment2x` only. Renderers and tools must not introduce storage codecs or legacy parity adapters.
 - `EditorTool.resolveHit(...)` owns tool-specific interpretation of those candidates. Do not move per-tool allowlists back into a central selector.
 - `EditorInteractionState` owns only shared editor coordination state:
@@ -77,6 +80,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
   - `hovered` as `EditorHover`
   - `activePreview`
   - `activeDraft`
+- `DungeonEditorSessionState` owns the shared selected tool and active view mode. Do not make it depend on shell- or canvas-owned enums.
 - `EditorHover` is explicit render intent: `EditorHoverScope.OWNER` highlights the owning target, `PART` highlights the concrete part. Hover is not just "the current selection key".
 - `DungeonMapState` owns loaded map/catalog data, projection level, overlay settings, loading flags, and mutation-pending state.
 - `DungeonRuntimeState` owns persisted location, drag preview location, heading, and loading/moving error flags.

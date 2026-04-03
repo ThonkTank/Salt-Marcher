@@ -1,6 +1,6 @@
 package features.world.dungeonmap.state;
 
-import features.world.dungeonmap.shell.interaction.DungeonSelectionKey;
+import features.world.dungeonmap.model.interaction.DungeonSelectionKey;
 
 import java.util.Objects;
 

@@ -4,15 +4,17 @@ import features.world.dungeonmap.canvas.base.DungeonCanvasCamera;
 import features.world.dungeonmap.canvas.base.DungeonCanvasInteractionHandler;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.canvas.base.DungeonCanvasTheme;
-import features.world.dungeonmap.canvas.base.DungeonViewMode;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.shell.editor.DungeonEditorTool;
+import features.world.dungeonmap.model.interaction.DungeonSelectionKey;
 import features.world.dungeonmap.shell.interaction.DungeonHitCollector;
 import features.world.dungeonmap.shell.interaction.DungeonHitProbe;
 import features.world.dungeonmap.shell.interaction.DungeonHitSnapshot;
+import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
 import features.world.dungeonmap.shell.interaction.DungeonSelection;
+import features.world.dungeonmap.state.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
+import features.world.dungeonmap.state.DungeonViewMode;
 import features.world.dungeonmap.state.EditorInteractionState;
 import javafx.scene.Node;
 
@@ -177,8 +179,8 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
             DungeonCanvasPointerEvent event,
             EditorContextSnapshot snapshot,
             DungeonSelection selection,
-            features.world.dungeonmap.shell.interaction.DungeonHitSubject resolvedSubject,
-            features.world.dungeonmap.shell.interaction.DungeonSelectionKey resolvedKey
+            DungeonHitSubject resolvedSubject,
+            DungeonSelectionKey resolvedKey
     ) {
         return new EditorToolContext(
                 event,

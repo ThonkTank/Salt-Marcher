@@ -1,6 +1,6 @@
 package features.world.dungeonmap.shell.editor;
 
-import features.world.dungeonmap.loading.DungeonMapCatalogEntry;
+import features.world.dungeonmap.catalog.application.DungeonMapCatalogEntry;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Button;

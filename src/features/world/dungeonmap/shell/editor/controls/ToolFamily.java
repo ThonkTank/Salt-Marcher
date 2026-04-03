@@ -1,6 +1,6 @@
 package features.world.dungeonmap.shell.editor.controls;
 
-import features.world.dungeonmap.shell.editor.DungeonEditorTool;
+import features.world.dungeonmap.state.DungeonEditorTool;
 
 enum ToolFamily {
     ROOM(DungeonEditorTool.ROOM_PAINT, DungeonEditorTool.ROOM_DELETE),

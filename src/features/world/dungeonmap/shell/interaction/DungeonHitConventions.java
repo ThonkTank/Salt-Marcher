@@ -3,6 +3,7 @@ package features.world.dungeonmap.shell.interaction;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.interaction.DungeonHitKind;
 import javafx.geometry.Point2D;
 
 import java.util.Objects;

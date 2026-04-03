@@ -1,6 +1,7 @@
 package features.world.dungeonmap.loading;
 
 import database.DatabaseManager;
+import features.world.dungeonmap.catalog.application.DungeonMapCatalogEntry;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;

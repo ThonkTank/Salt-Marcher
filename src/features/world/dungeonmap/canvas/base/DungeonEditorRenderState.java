@@ -3,8 +3,8 @@ package features.world.dungeonmap.canvas.base;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.interaction.DungeonSelectionKey;
 import features.world.dungeonmap.model.objects.StructureObject;
-import features.world.dungeonmap.shell.interaction.DungeonSelectionKey;
 import features.world.dungeonmap.state.EditorHover;
 import features.world.dungeonmap.state.EditorPreview;
 

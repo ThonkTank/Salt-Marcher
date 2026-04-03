@@ -8,6 +8,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 
+import java.util.List;
 import java.util.function.Consumer;
 
 public final class DungeonRuntimeSurfacePresenter {
@@ -26,18 +27,9 @@ public final class DungeonRuntimeSurfacePresenter {
             box.getChildren().add(text("Keine Beschreibung verfügbar"));
             return box;
         }
-        var doors = surface.actions().stream()
-                .filter(DungeonRuntimeDoorDescriptor.class::isInstance)
-                .map(DungeonRuntimeDoorDescriptor.class::cast)
-                .toList();
-        var stairs = surface.actions().stream()
-                .filter(DungeonRuntimeStairDescriptor.class::isInstance)
-                .map(DungeonRuntimeStairDescriptor.class::cast)
-                .toList();
-        var transitions = surface.actions().stream()
-                .filter(DungeonRuntimeTransitionDescriptor.class::isInstance)
-                .map(DungeonRuntimeTransitionDescriptor.class::cast)
-                .toList();
+        var doors = collectActions(surface, DungeonRuntimeDoorDescriptor.class);
+        var stairs = collectActions(surface, DungeonRuntimeStairDescriptor.class);
+        var transitions = collectActions(surface, DungeonRuntimeTransitionDescriptor.class);
         VBox descriptionBlock = new VBox(2);
         descriptionBlock.getChildren().add(text(valueOrDash(surface.visualDescription())));
         if (!doors.isEmpty()) {
@@ -49,43 +41,48 @@ public final class DungeonRuntimeSurfacePresenter {
         box.getChildren().addAll(
                 sectionTitle("Visueller Eindruck"),
                 descriptionBlock);
-        box.getChildren().add(sectionTitle("Treppen"));
-        if (stairs.isEmpty()) {
-            box.getChildren().add(text("—"));
-        } else {
-            for (DungeonRuntimeStairDescriptor stair : stairs) {
-                Button button = new Button(stair.displayLabel());
-                button.setMaxWidth(Double.MAX_VALUE);
-                button.setOnAction(event -> {
-                    if (onActionSelected != null) {
-                        onActionSelected.accept(stair);
-                    }
-                });
-                box.getChildren().add(button);
-                if (stair.description() != null && !stair.description().isBlank()) {
-                    box.getChildren().add(text(stair.description()));
-                }
-            }
-        }
-        box.getChildren().add(sectionTitle("Übergänge"));
-        if (transitions.isEmpty()) {
-            box.getChildren().add(text("—"));
-        } else {
-            for (DungeonRuntimeTransitionDescriptor transition : transitions) {
-                Button button = new Button(transition.displayLabel());
-                button.setMaxWidth(Double.MAX_VALUE);
-                button.setOnAction(event -> {
-                    if (onActionSelected != null) {
-                        onActionSelected.accept(transition);
-                    }
-                });
-                box.getChildren().add(button);
-                if (transition.description() != null && !transition.description().isBlank()) {
-                    box.getChildren().add(text(transition.description()));
-                }
-            }
-        }
+        appendActionButtons(box, "Treppen", stairs, onActionSelected);
+        appendActionButtons(box, "Übergänge", transitions, onActionSelected);
         return box;
+    }
+
+    private static <T extends DungeonRuntimeAction> List<T> collectActions(
+            DungeonRuntimeSurface surface,
+            Class<T> type
+    ) {
+        if (surface == null || type == null) {
+            return List.of();
+        }
+        return surface.actions().stream()
+                .filter(type::isInstance)
+                .map(type::cast)
+                .toList();
+    }
+
+    private static void appendActionButtons(
+            VBox box,
+            String title,
+            List<? extends DungeonRuntimeAction> actions,
+            Consumer<DungeonRuntimeAction> onActionSelected
+    ) {
+        box.getChildren().add(sectionTitle(title));
+        if (actions == null || actions.isEmpty()) {
+            box.getChildren().add(text("—"));
+            return;
+        }
+        for (DungeonRuntimeAction action : actions) {
+            Button button = new Button(action.displayLabel());
+            button.setMaxWidth(Double.MAX_VALUE);
+            button.setOnAction(event -> {
+                if (onActionSelected != null) {
+                    onActionSelected.accept(action);
+                }
+            });
+            box.getChildren().add(button);
+            if (action.description() != null && !action.description().isBlank()) {
+                box.getChildren().add(text(action.description()));
+            }
+        }
     }
 
     private static Label sectionTitle(String text) {

@@ -100,16 +100,11 @@ public final class DungeonRuntimeApplicationService {
             CardinalDirection currentHeading,
             int currentLevel
     ) throws SQLException {
-        if (action instanceof DungeonRuntimeDoorDescriptor door) {
-            return moveThroughConnection(layout, door, currentLevel);
-        }
-        if (action instanceof DungeonRuntimeStairDescriptor stair) {
-            return moveThroughStair(layout, stair, currentHeading);
-        }
-        if (action instanceof DungeonRuntimeTransitionDescriptor transition) {
-            return moveThroughTransition(layout, transition, currentHeading);
-        }
-        throw new IllegalStateException("Unbekannte Runtime-Aktion: " + action.getClass().getSimpleName());
+        return switch (action) {
+            case DungeonRuntimeDoorDescriptor door -> moveThroughConnection(layout, door, currentLevel);
+            case DungeonRuntimeStairDescriptor stair -> moveThroughStair(layout, stair, currentHeading);
+            case DungeonRuntimeTransitionDescriptor transition -> moveThroughTransition(layout, transition, currentHeading);
+        };
     }
 
     private CellCoord nearestTraversableCell(DungeonLayout layout, CellCoord preferredCell, int preferredLevelZ) {
@@ -306,90 +301,6 @@ public final class DungeonRuntimeApplicationService {
     }
 
     private DungeonRuntimeLocation.Cell resolveEndpointAnchor(DungeonLayout layout, ConnectionEndpoint endpoint, int currentLevel) {
-        if (layout == null || endpoint == null || endpoint.type() == null || endpoint.id() == null) {
-            return null;
-        }
-        return switch (endpoint.type()) {
-            case ROOM -> {
-                Room room = layout.findRoom(endpoint.id());
-                if (room == null) {
-                    yield null;
-                }
-                var structure = room.structure();
-                int preferredLevel = structure.levels().contains(currentLevel)
-                        ? currentLevel
-                        : structure.levels().stream().sorted().findFirst().orElse(currentLevel);
-                CellCoord preferred = structure.levels().contains(preferredLevel)
-                        ? structure.centerCellCoordAtLevel(preferredLevel)
-                        : structure.levels().stream()
-                        .sorted()
-                        .map(structure::centerCellCoordAtLevel)
-                        .findFirst()
-                        .orElse(null);
-                CellCoord resolved = nearestTraversableCell(layout, preferred, preferredLevel);
-                yield resolved == null ? null : new DungeonRuntimeLocation.Cell(resolved, preferredLevel);
-            }
-            case CLUSTER -> {
-                RoomCluster cluster = layout.findCluster(endpoint.id());
-                if (cluster == null) {
-                    yield null;
-                }
-                DungeonRuntimeLocation.Cell preferred = cluster.rooms().stream()
-                        .filter(room -> room != null && room.structure().levels().contains(currentLevel))
-                        .map(room -> new DungeonRuntimeLocation.Cell(room.structure().centerCellCoordAtLevel(currentLevel), currentLevel))
-                        .findFirst()
-                        .orElseGet(() -> cluster.rooms().stream()
-                                .filter(room -> room != null)
-                                .flatMap(room -> room.structure().levels().stream()
-                                        .sorted()
-                                        .map(levelZ -> new DungeonRuntimeLocation.Cell(
-                                                room.structure().centerCellCoordAtLevel(levelZ),
-                                                levelZ)))
-                                .findFirst()
-                                .orElse(null));
-                if (preferred == null || preferred.cell() == null) {
-                    yield null;
-                }
-                CellCoord resolved = nearestTraversableCell(layout, preferred.cell(), preferred.levelZ());
-                yield resolved == null ? null : new DungeonRuntimeLocation.Cell(resolved, preferred.levelZ());
-            }
-            case CORRIDOR -> {
-                Corridor corridor = layout.findCorridor(endpoint.id());
-                CellCoord preferred = corridor == null ? null : corridor.structure().centerCellCoordAtLevel(corridor.levelZ());
-                CellCoord resolved = nearestTraversableCell(layout, preferred, corridor == null ? currentLevel : corridor.levelZ());
-                yield corridor == null || resolved == null ? null : new DungeonRuntimeLocation.Cell(resolved, corridor.levelZ());
-            }
-            case STAIR -> {
-                DungeonStair stair = layout.findStair(endpoint.id());
-                if (stair == null) {
-                    yield null;
-                }
-                DungeonRuntimeLocation.Cell preferred = stair.exits().stream()
-                        .map(exit -> exit.position())
-                        .filter(position -> position != null && position.z() == currentLevel)
-                        .map(position -> new DungeonRuntimeLocation.Cell(position.projectedCell(), position.z()))
-                        .findFirst()
-                        .orElseGet(() -> stair.exits().stream()
-                                .map(exit -> exit.position())
-                                .filter(position -> position != null)
-                                .map(position -> new DungeonRuntimeLocation.Cell(position.projectedCell(), position.z()))
-                                .findFirst()
-                                .orElse(null));
-                if (preferred == null) {
-                    yield null;
-                }
-                CellCoord resolved = nearestTraversableCell(layout, preferred.cell(), preferred.levelZ());
-                yield resolved == null ? null : new DungeonRuntimeLocation.Cell(resolved, preferred.levelZ());
-            }
-            case TRANSITION -> {
-                DungeonTransition transition = layout.findTransition(endpoint.id());
-                if (transition == null || transition.anchor() == null) {
-                    yield null;
-                }
-                int levelZ = transition.anchor().z();
-                CellCoord resolved = nearestTraversableCell(layout, transition.anchor().projectedCell(), levelZ);
-                yield resolved == null ? null : new DungeonRuntimeLocation.Cell(resolved, levelZ);
-            }
-        };
+        return DungeonRuntimeLocations.resolveEndpointAnchor(layout, endpoint, currentLevel);
     }
 }

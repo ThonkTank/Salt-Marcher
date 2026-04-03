@@ -1,6 +1,6 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
-import features.world.dungeonmap.shell.editor.DungeonEditorTool;
+import features.world.dungeonmap.state.DungeonEditorTool;
 import javafx.scene.Node;
 
 import java.util.Set;

@@ -1,4 +1,4 @@
-package features.world.dungeonmap.shell.editor;
+package features.world.dungeonmap.state;
 
 public enum DungeonEditorTool {
     SELECT("Auswahl"),

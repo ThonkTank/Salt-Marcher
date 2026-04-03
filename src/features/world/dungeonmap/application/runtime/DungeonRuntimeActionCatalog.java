@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -80,15 +81,7 @@ public final class DungeonRuntimeActionCatalog {
             return List.of();
         }
         ArrayList<DungeonRuntimeAction> actions = new ArrayList<>();
-        actions.addAll(describeStairsAtCells(
-                layout,
-                stair.occupiedPositions().stream()
-                        .filter(position -> position != null && position.z() == activeLevelZ)
-                        .map(position -> position.projectedCell())
-                        .collect(Collectors.toSet()),
-                activeLevelZ,
-                activeCell,
-                activeLevelZ));
+        actions.addAll(describeStair(stair, activeCell, activeLevelZ));
         actions.addAll(describeTransitionsAtCell(layout, activeCell, activeLevelZ));
         return List.copyOf(actions);
     }
@@ -102,7 +95,7 @@ public final class DungeonRuntimeActionCatalog {
         if (layout == null || transition == null || transition.transitionId() == null) {
             return List.of();
         }
-        return List.copyOf(describeTransitionsAtCell(layout, activeCell, activeLevelZ));
+        return List.of(toTransitionDescriptor(transition));
     }
 
     private static List<DungeonRuntimeDoorDescriptor> describeDoors(
@@ -242,14 +235,35 @@ public final class DungeonRuntimeActionCatalog {
                 activeLevelZ);
     }
 
-    private static List<DungeonRuntimeStairDescriptor> describeStairsAtCells(
-            DungeonLayout layout,
-            Set<CellCoord> surfaceCells,
-            int levelZ,
+    private static List<DungeonRuntimeStairDescriptor> describeStair(
+            DungeonStair stair,
             CellCoord activeCell,
             int activeLevelZ
     ) {
-        return describeStairs(layout, surfaceCells, levelZ, activeCell, activeLevelZ);
+        if (stair == null) {
+            return List.of();
+        }
+        Set<CubePoint> originPositions = stair.exits().stream()
+                .map(DungeonStairExit::position)
+                .filter(Objects::nonNull)
+                .filter(position -> position.z() == activeLevelZ)
+                .filter(position -> activeCell == null || activeCell.equals(position.projectedCell()))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        if (originPositions.isEmpty()) {
+            originPositions = stair.exits().stream()
+                    .map(DungeonStairExit::position)
+                    .filter(Objects::nonNull)
+                    .filter(position -> position.z() == activeLevelZ)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+        }
+        if (originPositions.isEmpty()) {
+            originPositions = stair.exits().stream()
+                    .map(DungeonStairExit::position)
+                    .filter(Objects::nonNull)
+                    .limit(1)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+        }
+        return toStairDescriptors(stair, originPositions, activeCell, activeLevelZ);
     }
 
     private static List<DungeonRuntimeStairDescriptor> describeStairs(
@@ -291,6 +305,18 @@ public final class DungeonRuntimeActionCatalog {
                 .filter(position -> position != null && surfaceCells.contains(position.projectedCell()))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
         if (originPositions.isEmpty()) {
+            return List.of();
+        }
+        return toStairDescriptors(stair, originPositions, activeCell, activeLevelZ);
+    }
+
+    private static List<DungeonRuntimeStairDescriptor> toStairDescriptors(
+            DungeonStair stair,
+            Set<CubePoint> originPositions,
+            CellCoord activeCell,
+            int activeLevelZ
+    ) {
+        if (stair == null || originPositions == null || originPositions.isEmpty()) {
             return List.of();
         }
         return stair.exits().stream()
@@ -374,12 +400,16 @@ public final class DungeonRuntimeActionCatalog {
         return layout.transitionsAtLevel(levelZ).stream()
                 .filter(transition -> transition.anchor() != null && cells.contains(transition.anchor().projectedCell()))
                 .sorted(Comparator.comparing(DungeonTransition::transitionId))
-                .map(transition -> new DungeonRuntimeTransitionDescriptor(
-                        transition.transitionId(),
-                        transition.label(),
-                        transitionDestinationLabel(transition.destination()),
-                        transitionDescription(transition)))
+                .map(DungeonRuntimeActionCatalog::toTransitionDescriptor)
                 .toList();
+    }
+
+    private static DungeonRuntimeTransitionDescriptor toTransitionDescriptor(DungeonTransition transition) {
+        return new DungeonRuntimeTransitionDescriptor(
+                transition.transitionId(),
+                transition.label(),
+                transitionDestinationLabel(transition.destination()),
+                transitionDescription(transition));
     }
 
     private static String transitionDestinationLabel(DungeonTransitionDestination destination) {

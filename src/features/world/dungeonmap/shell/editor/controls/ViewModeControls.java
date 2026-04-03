@@ -1,6 +1,6 @@
 package features.world.dungeonmap.shell.editor.controls;
 
-import features.world.dungeonmap.canvas.base.DungeonViewMode;
+import features.world.dungeonmap.state.DungeonViewMode;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;

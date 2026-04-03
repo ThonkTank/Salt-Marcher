@@ -13,7 +13,9 @@ import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.interaction.DungeonHitKind;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
+import features.world.dungeonmap.model.interaction.DungeonSelectionKey;
 import features.world.dungeonmap.model.objects.Floor;
 import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
@@ -22,7 +24,6 @@ import features.world.dungeonmap.model.structures.corridor.CorridorNode;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
-import features.world.dungeonmap.shell.interaction.DungeonSelectionKey;
 import features.world.dungeonmap.shell.interaction.DungeonSelectionLookup;
 import features.world.dungeonmap.state.EditorHover;
 import javafx.scene.canvas.GraphicsContext;
@@ -490,7 +491,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             strokeSegment2x(pass.gc(), pass.camera(), pass.gridSize(), segment2x);
             return;
         }
-        if (key.kind() == features.world.dungeonmap.shell.interaction.DungeonHitKind.CORRIDOR_NODE) {
+        if (key.kind() == DungeonHitKind.CORRIDOR_NODE) {
             Corridor corridor = DungeonSelectionLookup.corridor(pass.projected(), key);
             Long nodeId = DungeonSelectionLookup.corridorNodeId(key);
             CorridorNode node = corridor == null ? null : corridor.findNode(nodeId);
@@ -506,7 +507,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             }
             return;
         }
-        if (key.kind() == features.world.dungeonmap.shell.interaction.DungeonHitKind.CORRIDOR_CORNER) {
+        if (key.kind() == DungeonHitKind.CORRIDOR_CORNER) {
             GridPoint2x corner = DungeonSelectionLookup.corridorCornerPoint2x(key);
             if (corner != null) {
                 drawCorridorHandle(
@@ -520,7 +521,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             }
             return;
         }
-        if (key.kind() == features.world.dungeonmap.shell.interaction.DungeonHitKind.CORRIDOR_SEGMENT) {
+        if (key.kind() == DungeonHitKind.CORRIDOR_SEGMENT) {
             Corridor corridor = DungeonSelectionLookup.corridor(pass.projected(), key);
             Long segmentId = DungeonSelectionLookup.corridorSegmentId(key);
             if (corridor != null && segmentId != null) {

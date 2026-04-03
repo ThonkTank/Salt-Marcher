@@ -1,4 +1,4 @@
-package features.world.dungeonmap.shell.interaction;
+package features.world.dungeonmap.model.interaction;
 
 public enum DungeonHitKind {
     VERTEX,

@@ -1,4 +1,4 @@
-package features.world.dungeonmap.loading;
+package features.world.dungeonmap.catalog.application;
 
 public record DungeonMapCatalogEntry(
         long mapId,

@@ -1,5 +1,7 @@
 package features.world.dungeonmap.shell.interaction;
 
+import features.world.dungeonmap.model.interaction.DungeonHitKind;
+
 import java.util.List;
 import java.util.Objects;
 

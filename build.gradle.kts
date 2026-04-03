@@ -779,7 +779,7 @@ val checkFeatureApiBoundaryConvention by tasks.registering {
 
 val checkDungeonEditorArchitectureConvention by tasks.registering {
     group = "verification"
-    description = "Fail when dungeon editor UI packages reach through forbidden architecture boundaries."
+    description = "Fail when dungeonmap packages drift across forbidden architecture boundaries."
     val importPattern = Regex("""^\s*import\s+([a-zA-Z0-9_.]+);""", RegexOption.MULTILINE)
     val projectRoot = layout.projectDirectory.asFile.toPath()
 
@@ -806,97 +806,65 @@ val checkDungeonEditorArchitectureConvention by tasks.registering {
                 .sorted()
         }
 
-        val sharedBoundaryOffenders = packageBoundaryOffenders(
-            "src/features/world/dungeonmap/shared",
+        val legacyPackageOffenders = packageBoundaryOffenders(
+            "src/features/world/dungeonmap",
             listOf(
                 "features.world.dungeonmap.editor.",
-                "features.world.dungeonmap.runtime.")
+                "features.world.dungeonmap.runtime.",
+                "features.world.dungeonmap.shared.")
         )
 
-        val allowedEditorRuntimeImports = setOf(
-            "features.world.dungeonmap.runtime.model.DungeonRuntimeLocation")
-        val editorRuntimeOffenders = packageBoundaryOffenders(
-            "src/features/world/dungeonmap/editor",
-            listOf("features.world.dungeonmap.runtime.")
-        ).filter { entry -> allowedEditorRuntimeImports.none { entry.endsWith(it) } }
-
-        val editorApplicationUiOffenders = packageBoundaryOffenders(
-            "src/features/world/dungeonmap/editor/application",
-            listOf("features.world.dungeonmap.editor.ui.")
+        val modelBoundaryOffenders = packageBoundaryOffenders(
+            "src/features/world/dungeonmap/model",
+            listOf(
+                "features.world.dungeonmap.application.",
+                "features.world.dungeonmap.loading.",
+                "features.world.dungeonmap.persistence.",
+                "features.world.dungeonmap.state.",
+                "features.world.dungeonmap.shell.",
+                "features.world.dungeonmap.canvas.",
+                "features.world.dungeonmap.catalog.",
+                "features.world.dungeonmap.bootstrap.")
         )
 
-        val allowedRuntimeEditorPaths = setOf(
-            "src/features/world/dungeonmap/runtime/ui/DungeonView.java")
-        val runtimeEditorOffenders = fileTree("src/features/world/dungeonmap/runtime") {
-            include("**/*.java")
-        }.files
-            .filter { sourceFile ->
-                val path = projectRoot.relativize(sourceFile.toPath()).toString().replace('\\', '/')
-                path !in allowedRuntimeEditorPaths
-            }
-            .flatMap { sourceFile ->
-                val path = projectRoot.relativize(sourceFile.toPath()).toString().replace('\\', '/')
-                importedPackages(sourceFile)
-                    .filter { imported -> imported.startsWith("features.world.dungeonmap.editor.") }
-                    .map { imported -> "$path -> $imported" }
-            }
-            .sorted()
+        val applicationUiOffenders = packageBoundaryOffenders(
+            "src/features/world/dungeonmap/application",
+            listOf(
+                "features.world.dungeonmap.shell.",
+                "features.world.dungeonmap.canvas.",
+                "features.world.dungeonmap.bootstrap.")
+        )
 
-        val workspaceImplementationRoot = "src/features/world/dungeonmap/editor/ui/workspace/pane/"
-        val allowedWorkspaceImplementationPaths = setOf(
-            "src/features/world/dungeonmap/editor/ui/workspace/surface/DungeonEditorSplitWorkspace.java",
-            "src/features/world/dungeonmap/editor/ui/workspace/surface/DungeonEditorWorkspaceBridge.java",
-            "src/features/world/dungeonmap/editor/ui/workspace/surface/DungeonEditorPaneGroup.java",
-            "src/features/world/dungeonmap/editor/ui/workspace/surface/DungeonEditorPaneInteractionForwarder.java")
+        val stateBoundaryOffenders = packageBoundaryOffenders(
+            "src/features/world/dungeonmap/state",
+            listOf(
+                "features.world.dungeonmap.shell.",
+                "features.world.dungeonmap.canvas.",
+                "features.world.dungeonmap.persistence.",
+                "features.world.dungeonmap.bootstrap.")
+        )
 
-        val internalImportOffenders = fileTree("src/features/world/dungeonmap/editor") {
-            include("**/*.java")
-        }.files
-            .flatMap { sourceFile ->
-                val path = projectRoot.relativize(sourceFile.toPath()).toString().replace('\\', '/')
-                if (path in allowedWorkspaceImplementationPaths
-                    || path.startsWith(workspaceImplementationRoot)) {
-                    emptyList()
-                } else {
-                    importedPackages(sourceFile)
-                        .asSequence()
-                        .filter { imported ->
-                            imported.startsWith("features.world.dungeonmap.editor.ui.workspace.pane.")
-                        }
-                        .map { imported -> "$path -> $imported" }
-                        .toList()
-                }
-            }
-            .sorted()
-
-        if (sharedBoundaryOffenders.isNotEmpty()
-            || editorRuntimeOffenders.isNotEmpty()
-            || editorApplicationUiOffenders.isNotEmpty()
-            || runtimeEditorOffenders.isNotEmpty()
-            || internalImportOffenders.isNotEmpty()
+        if (legacyPackageOffenders.isNotEmpty()
+            || modelBoundaryOffenders.isNotEmpty()
+            || applicationUiOffenders.isNotEmpty()
+            || stateBoundaryOffenders.isNotEmpty()
         ) {
             val messages = mutableListOf<String>()
-            if (sharedBoundaryOffenders.isNotEmpty()) {
-                messages += "Shared dungeon packages must not depend on editor/runtime packages:\n" +
-                    sharedBoundaryOffenders.joinToString(separator = "\n") { " - $it" }
+            if (legacyPackageOffenders.isNotEmpty()) {
+                messages += "Dungeonmap must not depend on the removed editor/runtime/shared package split:\n" +
+                    legacyPackageOffenders.joinToString(separator = "\n") { " - $it" }
             }
-            if (editorRuntimeOffenders.isNotEmpty()) {
-                messages += "Editor packages must not import runtime packages directly:\n" +
-                    editorRuntimeOffenders.joinToString(separator = "\n") { " - $it" }
+            if (modelBoundaryOffenders.isNotEmpty()) {
+                messages += "Dungeon model packages must not import higher-layer dungeon packages:\n" +
+                    modelBoundaryOffenders.joinToString(separator = "\n") { " - $it" }
             }
-            if (editorApplicationUiOffenders.isNotEmpty()) {
-                messages += "Editor application packages must not import editor UI packages directly:\n" +
-                    editorApplicationUiOffenders.joinToString(separator = "\n") { " - $it" }
+            if (applicationUiOffenders.isNotEmpty()) {
+                messages += "Dungeon application packages must not import shell/canvas/bootstrap packages:\n" +
+                    applicationUiOffenders.joinToString(separator = "\n") { " - $it" }
             }
-            if (runtimeEditorOffenders.isNotEmpty()) {
-                messages += "Runtime packages must not import editor packages directly:\n" +
-                    runtimeEditorOffenders.joinToString(separator = "\n") { " - $it" }
-            }
-            if (internalImportOffenders.isNotEmpty()) {
-                messages += "Editor packages may not import workspace implementation packages directly.\n" +
-                    "Route editor-facing workspace access through the workspace surface; only SplitWorkspace and the surface implementation files may depend on workspace.pane.* packages.\n" +
-                    "Offending imports:\n" +
-                    internalImportOffenders.joinToString(separator = "\n") { " - $it" }
+            if (stateBoundaryOffenders.isNotEmpty()) {
+                messages += "Dungeon state packages must not import shell/canvas/persistence/bootstrap packages:\n" +
+                    stateBoundaryOffenders.joinToString(separator = "\n") { " - $it" }
             }
             throw GradleException(messages.joinToString(separator = "\n\n"))
         }

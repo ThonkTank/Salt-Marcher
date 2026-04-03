@@ -1,7 +1,7 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
+import features.world.dungeonmap.model.interaction.DungeonSelectionKey;
 import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
-import features.world.dungeonmap.shell.interaction.DungeonSelectionKey;
 import features.world.dungeonmap.state.EditorHover;
 import features.world.dungeonmap.state.EditorHoverScope;
 

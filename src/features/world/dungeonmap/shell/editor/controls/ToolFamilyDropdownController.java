@@ -1,6 +1,6 @@
 package features.world.dungeonmap.shell.editor.controls;
 
-import features.world.dungeonmap.shell.editor.DungeonEditorTool;
+import features.world.dungeonmap.state.DungeonEditorTool;
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.geometry.Insets;

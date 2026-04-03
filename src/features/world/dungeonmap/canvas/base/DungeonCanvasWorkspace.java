@@ -3,6 +3,7 @@ package features.world.dungeonmap.canvas.base;
 import features.world.dungeonmap.canvas.grid.DungeonGridSceneRenderer;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.state.DungeonViewMode;
 import features.world.dungeonmap.state.DungeonLevelOverlaySettings;
 import features.world.dungeonmap.state.DungeonMapState;
 import javafx.application.Platform;

@@ -1,5 +1,6 @@
 package features.world.dungeonmap.loading;
 
+import features.world.dungeonmap.catalog.application.DungeonMapCatalogEntry;
 import features.world.dungeonmap.model.DungeonLayout;
 
 import java.util.List;

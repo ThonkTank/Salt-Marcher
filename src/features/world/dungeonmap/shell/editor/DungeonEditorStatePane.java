@@ -1,5 +1,6 @@
 package features.world.dungeonmap.shell.editor;
 
+import features.world.dungeonmap.state.DungeonEditorTool;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;

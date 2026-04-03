@@ -1,4 +1,4 @@
-package features.world.dungeonmap.canvas.base;
+package features.world.dungeonmap.state;
 
 /**
  * The editor currently has one supported projection. Additional modes should be added only when they preserve the

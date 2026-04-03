@@ -14,7 +14,6 @@ import features.world.dungeonmap.application.runtime.DungeonRuntimeSurfacePresen
 import features.world.dungeonmap.application.runtime.DungeonRuntimeSurfaceResolver;
 import features.world.dungeonmap.canvas.base.DungeonDoorNumberOverlay;
 import features.world.dungeonmap.canvas.base.DungeonRuntimeRenderOverlay;
-import features.world.dungeonmap.canvas.base.DungeonViewMode;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
@@ -23,6 +22,7 @@ import features.world.dungeonmap.shell.controls.DungeonLevelOverlayControls;
 import features.world.dungeonmap.shell.interaction.DungeonHitCollector;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.DungeonRuntimeState;
+import features.world.dungeonmap.state.DungeonViewMode;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -321,16 +321,11 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
     }
 
     private static String actionFailureMessage(DungeonRuntimeAction action) {
-        if (action instanceof DungeonRuntimeDoorDescriptor) {
-            return "Verbindung konnte nicht benutzt werden";
-        }
-        if (action instanceof DungeonRuntimeStairDescriptor) {
-            return "Treppe konnte nicht benutzt werden";
-        }
-        if (action instanceof DungeonRuntimeTransitionDescriptor) {
-            return "Übergang konnte nicht benutzt werden";
-        }
-        return "Aktion konnte nicht ausgeführt werden";
+        return switch (action) {
+            case DungeonRuntimeDoorDescriptor ignored -> "Verbindung konnte nicht benutzt werden";
+            case DungeonRuntimeStairDescriptor ignored -> "Treppe konnte nicht benutzt werden";
+            case DungeonRuntimeTransitionDescriptor ignored -> "Übergang konnte nicht benutzt werden";
+        };
     }
 
     private void applyNavigationSnapshot(DungeonRuntimeNavigationSnapshot snapshot) {

@@ -1,8 +1,5 @@
 package features.world.dungeonmap.state;
 
-import features.world.dungeonmap.canvas.base.DungeonViewMode;
-import features.world.dungeonmap.shell.editor.DungeonEditorTool;
-
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 

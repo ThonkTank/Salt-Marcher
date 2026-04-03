@@ -32,7 +32,7 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
         DungeonMapDropdownController mapDropdownController = new DungeonMapDropdownController(
                 mapCatalogService,
                 loadingService,
-                mapState::activeMapId);
+                mapState);
 
         // Editor interaction state → one batched render payload for the workspace
         interactionState.addListener(() -> refreshEditorRenderState(interactionState));

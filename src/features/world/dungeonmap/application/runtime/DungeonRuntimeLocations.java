@@ -6,6 +6,8 @@ import features.campaignstate.api.DungeonPositionSummary;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.model.structures.cluster.RoomCluster;
+import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
@@ -79,6 +81,23 @@ final class DungeonRuntimeLocations {
                 .findFirst()
                 .orElse(null);
         return fallback;
+    }
+
+    static DungeonRuntimeLocation.Cell resolveEndpointAnchor(
+            DungeonLayout layout,
+            ConnectionEndpoint endpoint,
+            int preferredLevelZ
+    ) {
+        if (layout == null || endpoint == null || endpoint.type() == null || endpoint.id() == null) {
+            return null;
+        }
+        return switch (endpoint.type()) {
+            case ROOM -> roomAnchor(layout, endpoint.id(), preferredLevelZ);
+            case CLUSTER -> clusterAnchor(layout, layout.findCluster(endpoint.id()), preferredLevelZ);
+            case CORRIDOR -> corridorAnchor(layout, layout.findCorridor(endpoint.id()), preferredLevelZ);
+            case STAIR -> stairAnchor(layout, layout.findStair(endpoint.id()), preferredLevelZ);
+            case TRANSITION -> transitionAnchor(layout, endpoint.id());
+        };
     }
 
     static DungeonPositionRef toCampaignPosition(long mapId, DungeonRuntimeLocation location, CardinalDirection heading) {
@@ -213,19 +232,49 @@ final class DungeonRuntimeLocations {
     }
 
     private static DungeonRuntimeLocation.Cell roomAnchor(DungeonLayout layout, Long roomId) {
+        return roomAnchor(layout, roomId, layout.levelForRoom(roomId));
+    }
+
+    private static DungeonRuntimeLocation.Cell roomAnchor(
+            DungeonLayout layout,
+            Long roomId,
+            int preferredLevelZ
+    ) {
         Room room = layout.findRoom(roomId);
         if (room == null) {
             return null;
         }
-        int levelZ = layout.levelForRoom(roomId);
+        int levelZ = room.structure().levels().contains(preferredLevelZ)
+                ? preferredLevelZ
+                : layout.levelForRoom(roomId);
         CellCoord preferred = room.structure().centerCellCoordAtLevel(levelZ);
-        if (preferred == null) {
+        return traversableCell(layout, preferred, levelZ);
+    }
+
+    private static DungeonRuntimeLocation.Cell clusterAnchor(
+            DungeonLayout layout,
+            RoomCluster cluster,
+            int preferredLevelZ
+    ) {
+        if (layout == null || cluster == null) {
             return null;
         }
-        CellCoord resolved = layout.isTraversableCell(preferred, levelZ)
-                ? preferred
-                : layout.nearestTraversableCell(preferred, levelZ);
-        return resolved == null ? null : new DungeonRuntimeLocation.Cell(resolved, levelZ);
+        DungeonRuntimeLocation.Cell preferred = cluster.rooms().stream()
+                .filter(room -> room != null && room.structure().levels().contains(preferredLevelZ))
+                .map(room -> new DungeonRuntimeLocation.Cell(
+                        room.structure().centerCellCoordAtLevel(preferredLevelZ),
+                        preferredLevelZ))
+                .findFirst()
+                .orElseGet(() -> cluster.rooms().stream()
+                        .filter(Objects::nonNull)
+                        .flatMap(room -> room.structure().levels().stream()
+                                .sorted()
+                                .map(levelZ -> new DungeonRuntimeLocation.Cell(
+                                        room.structure().centerCellCoordAtLevel(levelZ),
+                                        levelZ)))
+                        .findFirst()
+                        .orElse(null));
+        return preferred == null ? null : traversableCell(layout, preferred.cell(), preferred.levelZ());
     }
 
     private static DungeonRuntimeLocation.Cell corridorAnchor(
@@ -235,7 +284,7 @@ final class DungeonRuntimeLocations {
     ) {
         if (corridor != null) {
             CellCoord center = corridor.structure().centerCellCoordAtLevel(corridor.levelZ());
-            return center == null ? null : new DungeonRuntimeLocation.Cell(center, corridor.levelZ());
+            return traversableCell(layout, center, corridor.levelZ());
         }
         if (layout == null || preferred == null) {
             return null;
@@ -248,7 +297,30 @@ final class DungeonRuntimeLocations {
             return null;
         }
         CellCoord center = fallback.structure().centerCellCoordAtLevel(fallback.levelZ());
-        return center == null ? null : new DungeonRuntimeLocation.Cell(center, fallback.levelZ());
+        return traversableCell(layout, center, fallback.levelZ());
+    }
+
+    private static DungeonRuntimeLocation.Cell corridorAnchor(
+            DungeonLayout layout,
+            Corridor corridor,
+            int preferredLevelZ
+    ) {
+        if (corridor != null) {
+            CellCoord center = corridor.structure().centerCellCoordAtLevel(corridor.levelZ());
+            return traversableCell(layout, center, corridor.levelZ());
+        }
+        if (layout == null) {
+            return null;
+        }
+        Corridor fallback = layout.corridors().stream()
+                .filter(candidate -> candidate != null && candidate.levelZ() == preferredLevelZ)
+                .min(java.util.Comparator.comparing(Corridor::corridorId, java.util.Comparator.nullsLast(Long::compareTo)))
+                .orElse(null);
+        if (fallback == null) {
+            return null;
+        }
+        CellCoord center = fallback.structure().centerCellCoordAtLevel(fallback.levelZ());
+        return traversableCell(layout, center, fallback.levelZ());
     }
 
     private static DungeonRuntimeLocation.Cell stairExitAnchor(
@@ -274,23 +346,62 @@ final class DungeonRuntimeLocations {
             for (DungeonStairExit exit : resolvedStair.exits()) {
                 if (exit.position().projectedCell().equals(preferred.cell())
                         && exit.position().z() == preferred.levelZ()) {
-                    return new DungeonRuntimeLocation.Cell(exit.position().projectedCell(), exit.position().z());
+                    return traversableCell(layout, exit.position().projectedCell(), exit.position().z());
                 }
             }
         }
         return resolvedStair.exits().stream()
-                .map(exit -> new DungeonRuntimeLocation.Cell(exit.position().projectedCell(), exit.position().z()))
+                .map(exit -> traversableCell(layout, exit.position().projectedCell(), exit.position().z()))
+                .filter(Objects::nonNull)
                 .findFirst()
                 .orElseGet(() -> resolvedStair.path().stream()
+                        .map(point -> traversableCell(layout, point.projectedCell(), point.z()))
+                        .filter(Objects::nonNull)
                         .findFirst()
-                        .map(point -> new DungeonRuntimeLocation.Cell(point.projectedCell(), point.z()))
                         .orElse(null));
+    }
+
+    private static DungeonRuntimeLocation.Cell stairAnchor(
+            DungeonLayout layout,
+            DungeonStair stair,
+            int preferredLevelZ
+    ) {
+        if (layout == null || stair == null) {
+            return null;
+        }
+        DungeonRuntimeLocation.Cell preferred = stair.exits().stream()
+                .map(DungeonStairExit::position)
+                .filter(Objects::nonNull)
+                .filter(position -> position.z() == preferredLevelZ)
+                .map(position -> new DungeonRuntimeLocation.Cell(position.projectedCell(), position.z()))
+                .findFirst()
+                .orElseGet(() -> stair.exits().stream()
+                        .map(DungeonStairExit::position)
+                        .filter(Objects::nonNull)
+                        .map(position -> new DungeonRuntimeLocation.Cell(position.projectedCell(), position.z()))
+                        .findFirst()
+                        .orElse(null));
+        return preferred == null ? null : traversableCell(layout, preferred.cell(), preferred.levelZ());
     }
 
     private static DungeonRuntimeLocation.Cell transitionAnchor(DungeonLayout layout, long transitionId) {
         var transition = layout.findTransition(transitionId);
         return transition == null || transition.anchor() == null
                 ? null
-                : new DungeonRuntimeLocation.Cell(transition.anchor().projectedCell(), transition.anchor().z());
+                : traversableCell(layout, transition.anchor().projectedCell(), transition.anchor().z());
+    }
+
+    private static DungeonRuntimeLocation.Cell traversableCell(
+            DungeonLayout layout,
+            CellCoord preferredCell,
+            int levelZ
+    ) {
+        if (layout == null || preferredCell == null) {
+            return null;
+        }
+        CellCoord resolved = layout.isTraversableCell(preferredCell, levelZ)
+                ? preferredCell
+                : layout.nearestTraversableCell(preferredCell, levelZ);
+        return resolved == null ? null : new DungeonRuntimeLocation.Cell(resolved, levelZ);
     }
 }

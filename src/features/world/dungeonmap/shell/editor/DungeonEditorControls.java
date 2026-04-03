@@ -1,13 +1,14 @@
 package features.world.dungeonmap.shell.editor;
 
-import features.world.dungeonmap.canvas.base.DungeonViewMode;
-import features.world.dungeonmap.loading.DungeonMapCatalogEntry;
+import features.world.dungeonmap.catalog.application.DungeonMapCatalogEntry;
 import features.world.dungeonmap.shell.editor.controls.MapControls;
 import features.world.dungeonmap.shell.editor.controls.ToolControls;
 import features.world.dungeonmap.shell.editor.controls.ToolFamilyDropdownController;
 import features.world.dungeonmap.shell.editor.controls.ViewModeControls;
+import features.world.dungeonmap.state.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonLevelOverlayMode;
 import features.world.dungeonmap.state.DungeonLevelOverlaySettings;
+import features.world.dungeonmap.state.DungeonViewMode;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Label;

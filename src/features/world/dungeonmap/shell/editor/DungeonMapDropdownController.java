@@ -1,29 +1,29 @@
 package features.world.dungeonmap.shell.editor;
 
+import features.world.dungeonmap.catalog.application.DungeonMapCatalogEntry;
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
-import features.world.dungeonmap.loading.DungeonMapCatalogEntry;
+import features.world.dungeonmap.state.DungeonMapState;
 import javafx.scene.Node;
 import ui.async.UiErrorReporter;
 
 import java.util.Objects;
-import java.util.function.Supplier;
 
 public final class DungeonMapDropdownController {
 
     private final DungeonMapCatalogService mapCatalogService;
     private final DungeonMapLoadingService loadingService;
-    private final Supplier<Long> activeMapIdSupplier;
+    private final DungeonMapState mapState;
     private final DungeonMapEditorDropdown mapDropdown = new DungeonMapEditorDropdown();
 
     public DungeonMapDropdownController(
             DungeonMapCatalogService mapCatalogService,
             DungeonMapLoadingService loadingService,
-            Supplier<Long> activeMapIdSupplier
+            DungeonMapState mapState
     ) {
         this.mapCatalogService = Objects.requireNonNull(mapCatalogService, "mapCatalogService");
         this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
-        this.activeMapIdSupplier = Objects.requireNonNull(activeMapIdSupplier, "activeMapIdSupplier");
+        this.mapState = Objects.requireNonNull(mapState, "mapState");
     }
 
     public void showCreate(Node anchor) {
@@ -74,7 +74,7 @@ public final class DungeonMapDropdownController {
         }
         long mapId = map.mapId();
         mapDropdown.setBusy(true);
-        Long activeMapId = activeMapIdSupplier.get();
+        Long activeMapId = mapState.activeMapId();
         Long preferredMapId = Objects.equals(mapId, activeMapId) ? null : activeMapId;
         loadingService.submitMutation(
                 () -> {
