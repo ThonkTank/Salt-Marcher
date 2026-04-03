@@ -1,8 +1,6 @@
 package features.campaignstate.repository;
 
-import features.campaignstate.api.CampaignDungeonLocationType;
-import features.campaignstate.api.DungeonPositionSummary;
-import features.campaignstate.api.DungeonPositionRef;
+import features.campaignstate.api.DungeonTilePosition;
 import features.campaignstate.model.CampaignState;
 
 import java.sql.Connection;
@@ -33,8 +31,8 @@ public final class CampaignStateRepository {
         }
         try (PreparedStatement ps = conn.prepareStatement(
                 "INSERT INTO campaign_state(campaign_id, map_id, party_tile_id, calendar_id,"
-                        + " current_epoch_day, current_phase_id, current_weather, notes, dungeon_map_id, dungeon_level_z, dungeon_location_type, dungeon_room_id, dungeon_corridor_id, dungeon_location_key, dungeon_heading)"
-                        + " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+                        + " current_epoch_day, current_phase_id, current_weather, notes, dungeon_map_id, dungeon_level_z, dungeon_cell_x, dungeon_cell_y, dungeon_heading)"
+                        + " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)"
                         + " ON CONFLICT(campaign_id) DO UPDATE SET"
                         + "   map_id=excluded.map_id,"
                         + "   party_tile_id=excluded.party_tile_id,"
@@ -45,10 +43,8 @@ public final class CampaignStateRepository {
                         + "   notes=excluded.notes,"
                         + "   dungeon_map_id=excluded.dungeon_map_id,"
                         + "   dungeon_level_z=excluded.dungeon_level_z,"
-                        + "   dungeon_location_type=excluded.dungeon_location_type,"
-                        + "   dungeon_room_id=excluded.dungeon_room_id,"
-                        + "   dungeon_corridor_id=excluded.dungeon_corridor_id,"
-                        + "   dungeon_location_key=excluded.dungeon_location_key,"
+                        + "   dungeon_cell_x=excluded.dungeon_cell_x,"
+                        + "   dungeon_cell_y=excluded.dungeon_cell_y,"
                         + "   dungeon_heading=excluded.dungeon_heading")) {
             ps.setLong(1, state.CampaignId);
             setNullableLong(ps, 2, state.MapId);
@@ -59,12 +55,10 @@ public final class CampaignStateRepository {
             ps.setString(7, state.CurrentWeather);
             ps.setString(8, state.Notes);
             setNullableLong(ps, 9, state.DungeonMapId);
-            ps.setInt(10, state.DungeonLevelZ == null ? 0 : state.DungeonLevelZ);
-            ps.setString(11, state.DungeonLocationType);
-            setNullableLong(ps, 12, state.DungeonRoomId);
-            setNullableLong(ps, 13, state.DungeonCorridorId);
-            ps.setString(14, state.DungeonLocationKey);
-            ps.setString(15, state.DungeonHeading);
+            setNullableInteger(ps, 10, state.DungeonLevelZ);
+            setNullableInteger(ps, 11, state.DungeonCellX);
+            setNullableInteger(ps, 12, state.DungeonCellY);
+            ps.setString(13, state.DungeonHeading);
             ps.executeUpdate();
         }
     }
@@ -95,47 +89,40 @@ public final class CampaignStateRepository {
         }
     }
 
-    public static Optional<DungeonPositionSummary> getDungeonPosition(Connection conn) throws SQLException {
+    public static Optional<DungeonTilePosition> getDungeonTilePosition(Connection conn) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT dungeon_map_id, dungeon_level_z, dungeon_location_type, dungeon_room_id, dungeon_corridor_id, dungeon_location_key, dungeon_heading FROM campaign_state WHERE campaign_id=1");
+                "SELECT dungeon_map_id, dungeon_level_z, dungeon_cell_x, dungeon_cell_y, dungeon_heading"
+                        + " FROM campaign_state WHERE campaign_id=1");
              ResultSet rs = ps.executeQuery()) {
             if (!rs.next()) {
                 return Optional.empty();
             }
             Long mapId = getNullableLong(rs, "dungeon_map_id");
-            Integer levelZ = rs.getInt("dungeon_level_z");
-            String locationTypeValue = rs.getString("dungeon_location_type");
-            Long roomId = getNullableLong(rs, "dungeon_room_id");
-            Long corridorId = getNullableLong(rs, "dungeon_corridor_id");
-            String locationKey = rs.getString("dungeon_location_key");
-            String heading = rs.getString("dungeon_heading");
-            CampaignDungeonLocationType locationType = parseLocationType(locationTypeValue, roomId, corridorId, locationKey);
-            if (mapId == null && levelZ == 0 && locationType == null && roomId == null && corridorId == null && locationKey == null && heading == null) {
+            Integer levelZ = getNullableInteger(rs, "dungeon_level_z");
+            Integer cellX = getNullableInteger(rs, "dungeon_cell_x");
+            Integer cellY = getNullableInteger(rs, "dungeon_cell_y");
+            String heading = normalizeString(rs.getString("dungeon_heading"));
+            if (mapId == null && levelZ == null && cellX == null && cellY == null && heading == null) {
                 return Optional.empty();
             }
-            return Optional.of(new DungeonPositionSummary(mapId, levelZ, locationType, roomId, corridorId, locationKey, heading));
+            return Optional.of(new DungeonTilePosition(mapId, levelZ, cellX, cellY, heading));
         }
     }
 
-    public static void setDungeonPosition(Connection conn, DungeonPositionRef position) throws SQLException {
+    public static void setDungeonTilePosition(Connection conn, DungeonTilePosition position) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE campaign_state SET dungeon_map_id=?, dungeon_level_z=?, dungeon_location_type=?, dungeon_room_id=?, dungeon_corridor_id=?, dungeon_location_key=?, dungeon_heading=? WHERE campaign_id=1")) {
+                "UPDATE campaign_state SET dungeon_map_id=?, dungeon_level_z=?, dungeon_cell_x=?, dungeon_cell_y=?, dungeon_heading=? WHERE campaign_id=1")) {
             setNullableLong(ps, 1, position == null ? null : position.mapId());
-            ps.setInt(2, position == null || position.levelZ() == null ? 0 : position.levelZ());
-            ps.setString(3, position == null || position.locationType() == null ? null : position.locationType().name());
-            setNullableLong(ps, 4, position != null && position.locationType() == CampaignDungeonLocationType.ROOM ? position.roomId() : null);
-            setNullableLong(ps, 5, position != null && position.locationType() == CampaignDungeonLocationType.CORRIDOR ? position.corridorId() : null);
-            ps.setString(6, position == null
-                    || position.locationType() == CampaignDungeonLocationType.ROOM
-                    ? null
-                    : position.locationKey());
-            ps.setString(7, position == null ? null : position.heading());
+            setNullableInteger(ps, 2, position == null ? null : position.levelZ());
+            setNullableInteger(ps, 3, position == null ? null : position.cellX());
+            setNullableInteger(ps, 4, position == null ? null : position.cellY());
+            ps.setString(5, position == null ? null : position.heading());
             ps.executeUpdate();
         }
     }
 
     public static void clearDungeonPosition(Connection conn) throws SQLException {
-        setDungeonPosition(conn, null);
+        setDungeonTilePosition(conn, null);
     }
 
     /** @throws IllegalArgumentException if days is not positive */
@@ -217,46 +204,11 @@ public final class CampaignStateRepository {
         s.Notes = rs.getString("notes");
         long dungeonMapId = rs.getLong("dungeon_map_id");
         s.DungeonMapId = rs.wasNull() ? null : dungeonMapId;
-        s.DungeonLevelZ = rs.getInt("dungeon_level_z");
-        s.DungeonLocationType = rs.getString("dungeon_location_type");
-        long dungeonRoomId = rs.getLong("dungeon_room_id");
-        s.DungeonRoomId = rs.wasNull() ? null : dungeonRoomId;
-        long dungeonCorridorId = rs.getLong("dungeon_corridor_id");
-        s.DungeonCorridorId = rs.wasNull() ? null : dungeonCorridorId;
-        s.DungeonLocationKey = rs.getString("dungeon_location_key");
-        s.DungeonHeading = rs.getString("dungeon_heading");
+        s.DungeonLevelZ = getNullableInteger(rs, "dungeon_level_z");
+        s.DungeonCellX = getNullableInteger(rs, "dungeon_cell_x");
+        s.DungeonCellY = getNullableInteger(rs, "dungeon_cell_y");
+        s.DungeonHeading = normalizeString(rs.getString("dungeon_heading"));
         return s;
-    }
-
-    private static CampaignDungeonLocationType parseLocationType(String value, Long roomId, Long corridorId, String locationKey) {
-        if (value != null && !value.isBlank()) {
-            try {
-                return CampaignDungeonLocationType.valueOf(value);
-            } catch (IllegalArgumentException ignored) {
-                if (roomId != null) {
-                    return CampaignDungeonLocationType.ROOM;
-                }
-                if (corridorId != null) {
-                    return CampaignDungeonLocationType.CORRIDOR;
-                }
-                if (locationKey == null || locationKey.isBlank()) {
-                    return null;
-                }
-                return locationKey.startsWith("tile:")
-                        ? CampaignDungeonLocationType.TILE
-                        : null;
-            }
-        }
-        if (locationKey != null && !locationKey.isBlank()) {
-            return locationKey.startsWith("tile:") ? CampaignDungeonLocationType.TILE : null;
-        }
-        if (corridorId != null) {
-            return CampaignDungeonLocationType.CORRIDOR;
-        }
-        if (roomId != null) {
-            return CampaignDungeonLocationType.ROOM;
-        }
-        return null;
     }
 
     private static void setNullableLong(PreparedStatement ps, int idx, Long value) throws SQLException {
@@ -264,8 +216,22 @@ public final class CampaignStateRepository {
         else ps.setNull(idx, java.sql.Types.BIGINT);
     }
 
+    private static void setNullableInteger(PreparedStatement ps, int idx, Integer value) throws SQLException {
+        if (value != null) ps.setInt(idx, value);
+        else ps.setNull(idx, java.sql.Types.INTEGER);
+    }
+
     private static Long getNullableLong(ResultSet rs, String column) throws SQLException {
         long value = rs.getLong(column);
         return rs.wasNull() ? null : value;
+    }
+
+    private static Integer getNullableInteger(ResultSet rs, String column) throws SQLException {
+        int value = rs.getInt(column);
+        return rs.wasNull() ? null : value;
+    }
+
+    private static String normalizeString(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 }

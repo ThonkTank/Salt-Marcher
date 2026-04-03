@@ -1,5 +1,6 @@
 package features.world.dungeonmap.model.structures.corridor;
 
+import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
@@ -156,6 +157,118 @@ public final class Corridor {
         return connections;
     }
 
+    public Corridor movedNode(DungeonLayout layout, Long nodeId, GridPoint2x point2x) {
+        if (layout == null || nodeId == null || point2x == null) {
+            return this;
+        }
+        ArrayList<CorridorNode> updatedNodes = new ArrayList<>();
+        for (CorridorNode node : nodes) {
+            if (node == null) {
+                continue;
+            }
+            if (!nodeId.equals(node.nodeId())) {
+                updatedNodes.add(node);
+                continue;
+            }
+            updatedNodes.add(new CorridorNode(
+                    node.nodeId(),
+                    point2x,
+                    node.roomId(),
+                    node.roomRelativeCell(),
+                    node.roomBoundaryDirection()));
+        }
+        return resolvedAgainst(layout, updatedNodes, segments);
+    }
+
+    public Corridor insertedNode(DungeonLayout layout, Long segmentId, GridPoint2x point2x) {
+        if (layout == null || segmentId == null || point2x == null) {
+            return this;
+        }
+        CorridorSegment target = findSegment(segmentId);
+        if (target == null) {
+            return this;
+        }
+        long nodeId = nextSyntheticNodeId();
+        long segmentStartId = nextSyntheticSegmentId();
+        long segmentEndId = segmentStartId - 1;
+        ArrayList<CorridorNode> updatedNodes = new ArrayList<>(nodes);
+        updatedNodes.add(new CorridorNode(nodeId, point2x, null, null, null));
+        ArrayList<CorridorSegment> updatedSegments = new ArrayList<>();
+        for (CorridorSegment segment : segments) {
+            if (!Objects.equals(segment.segmentId(), segmentId)) {
+                updatedSegments.add(segment);
+                continue;
+            }
+            updatedSegments.add(new CorridorSegment(segmentStartId, segment.startNodeId(), nodeId));
+            updatedSegments.add(new CorridorSegment(segmentEndId, nodeId, segment.endNodeId()));
+        }
+        return resolvedAgainst(layout, updatedNodes, updatedSegments);
+    }
+
+    public Corridor deletedNode(DungeonLayout layout, Long nodeId) {
+        if (layout == null || nodeId == null) {
+            return this;
+        }
+        CorridorNode removed = findNode(nodeId);
+        if (removed == null || removed.isRoomBound()) {
+            return this;
+        }
+        List<CorridorSegment> touchingSegments = segmentsForNode(nodeId);
+        if (touchingSegments.isEmpty() || touchingSegments.size() > 2) {
+            return this;
+        }
+        ArrayList<CorridorNode> updatedNodes = new ArrayList<>();
+        for (CorridorNode node : nodes) {
+            if (node != null && !nodeId.equals(node.nodeId())) {
+                updatedNodes.add(node);
+            }
+        }
+        ArrayList<CorridorSegment> updatedSegments = new ArrayList<>();
+        for (CorridorSegment segment : segments) {
+            if (segment == null || nodeId.equals(segment.startNodeId()) || nodeId.equals(segment.endNodeId())) {
+                continue;
+            }
+            updatedSegments.add(segment);
+        }
+        if (touchingSegments.size() == 2) {
+            Long firstNeighbor = touchingSegments.getFirst().startNodeId().equals(nodeId)
+                    ? touchingSegments.getFirst().endNodeId()
+                    : touchingSegments.getFirst().startNodeId();
+            Long secondNeighbor = touchingSegments.getLast().startNodeId().equals(nodeId)
+                    ? touchingSegments.getLast().endNodeId()
+                    : touchingSegments.getLast().startNodeId();
+            updatedSegments.add(new CorridorSegment(nextSyntheticSegmentId(), firstNeighbor, secondNeighbor));
+        }
+        return resolvedAgainst(layout, updatedNodes, updatedSegments);
+    }
+
+    public Corridor branchedFrom(
+            DungeonLayout layout,
+            Long attachNodeId,
+            List<CorridorNode> branchNodes,
+            List<CorridorSegment> branchSegments
+    ) {
+        if (layout == null || attachNodeId == null || branchNodes == null || branchSegments == null) {
+            return this;
+        }
+        if (findNode(attachNodeId) == null) {
+            return this;
+        }
+        ArrayList<CorridorNode> updatedNodes = new ArrayList<>(nodes);
+        for (CorridorNode node : branchNodes) {
+            if (node != null) {
+                updatedNodes.add(node);
+            }
+        }
+        ArrayList<CorridorSegment> updatedSegments = new ArrayList<>(segments);
+        for (CorridorSegment segment : branchSegments) {
+            if (segment != null) {
+                updatedSegments.add(segment);
+            }
+        }
+        return resolvedAgainst(layout, updatedNodes, updatedSegments);
+    }
+
     public boolean connectsRoom(Long roomId) {
         return roomId != null && connectedRoomIds().contains(roomId);
     }
@@ -193,6 +306,33 @@ public final class Corridor {
         return nodes.stream()
                 .filter(node -> node.nodeId() != null && !node.isRoomBound())
                 .toList();
+    }
+
+    public long nextSyntheticNodeId() {
+        long min = -1L;
+        for (CorridorNode node : nodes) {
+            if (node != null && node.nodeId() != null) {
+                min = Math.min(min, node.nodeId());
+            }
+        }
+        return min <= 0 ? min - 1 : -1L;
+    }
+
+    public long nextSyntheticSegmentId() {
+        long min = -1L;
+        for (CorridorSegment segment : segments) {
+            if (segment != null && segment.segmentId() != null) {
+                min = Math.min(min, segment.segmentId());
+            }
+        }
+        return min <= 0 ? min - 1 : -1L;
+    }
+
+    private Corridor resolvedAgainst(DungeonLayout layout, List<CorridorNode> updatedNodes, List<CorridorSegment> updatedSegments) {
+        if (layout == null) {
+            return this;
+        }
+        return Corridor.resolved(corridorId, layout.mapId(), levelZ, updatedNodes, updatedSegments, layout.rooms());
     }
 
     private static Map<Long, Room> indexRoomsById(Collection<Room> rooms) {

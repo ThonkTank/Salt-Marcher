@@ -6,7 +6,8 @@
 
 `features.world` owns world navigation surfaces and consumes world-session state through
 `features.campaignstate.api`.
-`features.campaignstate` owns the `campaign_state` schema and persists both overworld and dungeon position.
+`features.campaignstate` owns the `campaign_state` schema and persists both overworld position and tile-only
+dungeon runtime position.
 
 Reusable world-feature UI building blocks shared by runtime and editor surfaces belong in the
 feature's `ui/shared` package rather than an editor-only package. Editor-facing application

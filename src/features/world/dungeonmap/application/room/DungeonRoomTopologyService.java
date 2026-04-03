@@ -79,6 +79,14 @@ public final class DungeonRoomTopologyService {
         }
     }
 
+    public void createDoor(long mapId, long clusterId, int levelZ, Collection<GridSegment2x> segments2x) throws SQLException {
+        editDoor(mapId, clusterId, levelZ, segments2x, false);
+    }
+
+    public void deleteDoor(long mapId, long clusterId, int levelZ, Collection<GridSegment2x> segments2x) throws SQLException {
+        editDoor(mapId, clusterId, levelZ, segments2x, true);
+    }
+
     public void paintCells(Connection conn, long mapId, int levelZ, Set<CellCoord> cells) throws SQLException {
         DungeonLayout layout = requireLayout(conn, mapId);
         List<RoomCluster> overlappingClusters = overlappingClustersAtLevel(layout, cells, levelZ).stream()
@@ -175,6 +183,54 @@ public final class DungeonRoomTopologyService {
             return;
         }
 
+        roomRepository.saveClusterRewrite(conn, mapId, rewrite, layout.levelForCluster(rewrite.targetClusterId()));
+    }
+
+    private void editDoor(
+            long mapId,
+            long clusterId,
+            int levelZ,
+            Collection<GridSegment2x> segments2x,
+            boolean deleteDoor
+    ) throws SQLException {
+        if (segments2x == null || segments2x.isEmpty()) {
+            return;
+        }
+        try (Connection conn = DatabaseManager.getConnection()) {
+            DungeonTransactionRunner.inTransaction(conn, () -> {
+                editDoor(conn, mapId, clusterId, levelZ, segments2x, deleteDoor);
+                return null;
+            });
+        }
+    }
+
+    private void editDoor(
+            Connection conn,
+            long mapId,
+            long clusterId,
+            int levelZ,
+            Collection<GridSegment2x> segments2x,
+            boolean deleteDoor
+    ) throws SQLException {
+        DungeonLayout layout = requireLayout(conn, mapId);
+        RoomCluster cluster = layout.findCluster(clusterId);
+        RoomCluster projectedCluster = cluster == null ? null : cluster.projectedToLevel(levelZ);
+        if (projectedCluster == null) {
+            return;
+        }
+        List<GridSegment2x> editableSegments = segments2x.stream()
+                .filter(Objects::nonNull)
+                .filter(segment2x -> deleteDoor
+                        ? projectedCluster.canDeleteDoor(segment2x)
+                        : projectedCluster.canCreateDoor(segment2x))
+                .toList();
+        if (editableSegments.isEmpty()) {
+            return;
+        }
+        ClusterRewrite rewrite = cluster.editBoundary(editableSegments, InternalBoundaryType.DOOR, deleteDoor);
+        if (rewrite == null) {
+            return;
+        }
         roomRepository.saveClusterRewrite(conn, mapId, rewrite, layout.levelForCluster(rewrite.targetClusterId()));
     }
 

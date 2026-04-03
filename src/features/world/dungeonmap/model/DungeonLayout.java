@@ -569,6 +569,45 @@ public final class DungeonLayout {
         return new DungeonLayout(mapId, name, corridors, updatedClusters, stairs, transitions, clusterLevelsById);
     }
 
+    public DungeonLayout withAddedCorridor(Corridor corridor) {
+        if (corridor == null) {
+            return this;
+        }
+        ArrayList<Corridor> updatedCorridors = new ArrayList<>(corridors);
+        updatedCorridors.add(corridor);
+        return withCorridors(updatedCorridors);
+    }
+
+    public DungeonLayout withUpdatedCorridor(Corridor corridor) {
+        if (corridor == null || corridor.corridorId() == null) {
+            return this;
+        }
+        boolean replaced = false;
+        ArrayList<Corridor> updatedCorridors = new ArrayList<>(corridors.size());
+        for (Corridor existing : corridors) {
+            if (existing != null && Objects.equals(existing.corridorId(), corridor.corridorId())) {
+                updatedCorridors.add(corridor);
+                replaced = true;
+            } else {
+                updatedCorridors.add(existing);
+            }
+        }
+        if (!replaced) {
+            updatedCorridors.add(corridor);
+        }
+        return withCorridors(updatedCorridors);
+    }
+
+    public DungeonLayout withRemovedCorridor(Long corridorId) {
+        if (corridorId == null) {
+            return this;
+        }
+        List<Corridor> updatedCorridors = corridors.stream()
+                .filter(corridor -> corridor == null || !Objects.equals(corridor.corridorId(), corridorId))
+                .toList();
+        return updatedCorridors.size() == corridors.size() ? this : withCorridors(updatedCorridors);
+    }
+
     public DungeonLayout withMovedCluster(Long clusterId, CellCoord delta, int levelDelta) {
         RoomCluster cluster = findCluster(clusterId);
         boolean translate = delta != null && (delta.x() != 0 || delta.y() != 0);
@@ -630,6 +669,10 @@ public final class DungeonLayout {
             updatedClusterLevels.put(splitCluster.clusterId(), targetLevel);
         }
         return new DungeonLayout(mapId, name, corridors, updatedClusters, stairs, transitions, updatedClusterLevels);
+    }
+
+    private DungeonLayout withCorridors(List<Corridor> updatedCorridors) {
+        return new DungeonLayout(mapId, name, updatedCorridors, clusters, stairs, transitions, clusterLevelsById);
     }
 
     public DungeonLayout projectedToLevel(int levelZ) {

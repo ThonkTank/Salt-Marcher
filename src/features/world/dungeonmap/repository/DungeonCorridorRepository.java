@@ -14,6 +14,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -75,12 +76,20 @@ public final class DungeonCorridorRepository {
         }
     }
 
-    public long nextNodeId(Connection conn) throws SQLException {
-        return nextId(conn, "dungeon_corridor_nodes", "corridor_node_id");
-    }
-
-    public long nextSegmentId(Connection conn) throws SQLException {
-        return nextId(conn, "dungeon_corridor_segments", "corridor_segment_id");
+    public Corridor save(Connection conn, long mapId, Corridor corridor, Collection<Room> rooms) throws SQLException {
+        // Corridor persistence realizes synthetic editor ids here so application workflows only coordinate validation
+        // and transaction scope, not row-identity bookkeeping.
+        Corridor persisted = assignPersistentIds(conn, mapId, corridor, rooms);
+        Long corridorId = persisted.corridorId();
+        if (corridorId == null) {
+            corridorId = insertCorridor(conn, mapId, persisted);
+            persisted = persisted.withIdentity(corridorId, mapId, rooms);
+        } else {
+            updateCorridor(conn, corridorId, persisted);
+        }
+        replaceNodes(conn, corridorId, persisted.nodes());
+        replaceSegments(conn, corridorId, persisted.segments());
+        return persisted;
     }
 
     public long insertCorridor(Connection conn, long mapId, Corridor corridor) throws SQLException {
@@ -153,6 +162,53 @@ public final class DungeonCorridorRepository {
             ps.setLong(1, corridorId);
             ps.executeUpdate();
         }
+    }
+
+    private Corridor assignPersistentIds(Connection conn, long mapId, Corridor corridor, Collection<Room> rooms) throws SQLException {
+        Corridor resolvedCorridor = Objects.requireNonNull(corridor, "corridor");
+        long nextNodeId = nextId(conn, "dungeon_corridor_nodes", "corridor_node_id");
+        long nextSegmentId = nextId(conn, "dungeon_corridor_segments", "corridor_segment_id");
+        Map<Long, Long> syntheticNodeIds = new LinkedHashMap<>();
+        ArrayList<CorridorNode> nodes = new ArrayList<>();
+        for (CorridorNode node : resolvedCorridor.nodes()) {
+            Long persistedNodeId = node.nodeId();
+            if (persistedNodeId == null || persistedNodeId <= 0) {
+                persistedNodeId = nextNodeId++;
+            }
+            if (node.nodeId() != null && node.nodeId() <= 0) {
+                syntheticNodeIds.put(node.nodeId(), persistedNodeId);
+            }
+            nodes.add(new CorridorNode(
+                    persistedNodeId,
+                    node.point2x(),
+                    node.roomId(),
+                    node.roomRelativeCell(),
+                    node.roomBoundaryDirection()));
+        }
+        ArrayList<CorridorSegment> segments = new ArrayList<>();
+        for (CorridorSegment segment : resolvedCorridor.segments()) {
+            Long startNodeId = remapNodeId(segment.startNodeId(), syntheticNodeIds);
+            Long endNodeId = remapNodeId(segment.endNodeId(), syntheticNodeIds);
+            Long persistedSegmentId = segment.segmentId();
+            if (persistedSegmentId == null || persistedSegmentId <= 0) {
+                persistedSegmentId = nextSegmentId++;
+            }
+            segments.add(new CorridorSegment(persistedSegmentId, startNodeId, endNodeId));
+        }
+        return Corridor.resolved(
+                resolvedCorridor.corridorId(),
+                mapId,
+                resolvedCorridor.levelZ(),
+                nodes,
+                segments,
+                rooms);
+    }
+
+    private static Long remapNodeId(Long nodeId, Map<Long, Long> syntheticNodeIds) {
+        if (nodeId == null) {
+            return null;
+        }
+        return syntheticNodeIds.getOrDefault(nodeId, nodeId);
     }
 
     private static void bindNode(PreparedStatement ps, long corridorId, CorridorNode node) throws SQLException {

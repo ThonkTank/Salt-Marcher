@@ -109,6 +109,30 @@ public final class RoomCluster {
         return Topology.editBoundary(this, segments2x, type, deleteBoundary);
     }
 
+    public boolean canCreateDoor(GridSegment2x boundarySegment2x) {
+        // Door eligibility belongs to the cluster owner so editor tools do not become the only source of boundary
+        // semantics for local room-to-room connections.
+        if (boundarySegment2x == null || internalBoundaryKinds().get(boundarySegment2x) == InternalBoundaryType.DOOR) {
+            return false;
+        }
+        Set<CellCoord> touchingCells = boundarySegment2x.touchingCells();
+        if (touchingCells.size() != 2 || !cells.containsAll(touchingCells)) {
+            return false;
+        }
+        List<CellCoord> orderedCells = touchingCells.stream().sorted(CellCoord.ORDER).toList();
+        Room left = roomAt(orderedCells.getFirst());
+        Room right = roomAt(orderedCells.getLast());
+        return left != null
+                && right != null
+                && left.roomId() != null
+                && right.roomId() != null
+                && !left.roomId().equals(right.roomId());
+    }
+
+    public boolean canDeleteDoor(GridSegment2x boundarySegment2x) {
+        return boundarySegment2x != null && internalBoundaryKinds().get(boundarySegment2x) == InternalBoundaryType.DOOR;
+    }
+
     public InteractiveLabelHandle labelHandle() {
         return new InteractiveLabelHandle(
                 new DungeonSelectionRef.ClusterRef(clusterId),

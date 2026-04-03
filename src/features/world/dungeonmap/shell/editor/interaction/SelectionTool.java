@@ -1,7 +1,6 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
-import features.world.dungeonmap.application.corridor.DungeonCorridorEditService;
-import features.world.dungeonmap.application.corridor.DungeonCorridorGraphEditor;
+import features.world.dungeonmap.application.corridor.DungeonCorridorApplicationService;
 import features.world.dungeonmap.application.room.DungeonClusterMoveService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
@@ -17,10 +16,8 @@ import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.EditorInteractionState;
 import features.world.dungeonmap.state.EditorPreview;
 import javafx.scene.Node;
-import ui.async.UiAsyncTasks;
 import ui.async.UiErrorReporter;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -29,7 +26,7 @@ public final class SelectionTool implements EditorTool {
     private final DungeonMapState mapState;
     private final DungeonMapLoadingService loadingService;
     private final DungeonClusterMoveService clusterMoveService;
-    private final DungeonCorridorEditService corridorEditService;
+    private final DungeonCorridorApplicationService corridorApplicationService;
     private final EditorInteractionState state;
     private final RoomNarrationPane roomNarrationPane;
 
@@ -45,14 +42,14 @@ public final class SelectionTool implements EditorTool {
             DungeonMapState mapState,
             DungeonMapLoadingService loadingService,
             DungeonClusterMoveService clusterMoveService,
-            DungeonCorridorEditService corridorEditService,
+            DungeonCorridorApplicationService corridorApplicationService,
             RoomNarrationPane roomNarrationPane,
             EditorInteractionState state
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
         this.clusterMoveService = Objects.requireNonNull(clusterMoveService, "clusterMoveService");
-        this.corridorEditService = Objects.requireNonNull(corridorEditService, "corridorEditService");
+        this.corridorApplicationService = Objects.requireNonNull(corridorApplicationService, "corridorApplicationService");
         this.roomNarrationPane = Objects.requireNonNull(roomNarrationPane, "roomNarrationPane");
         this.state = Objects.requireNonNull(state, "state");
         this.state.addListener(this::refreshNarrationContext);
@@ -165,14 +162,10 @@ public final class SelectionTool implements EditorTool {
             if (!Objects.equals(current.startPoint(), current.currentPoint()) && mapState.activeMapId() != null) {
                 Corridor corridor = mapState.activeMap().findCorridor(current.corridorId());
                 if (corridor != null) {
-                    Corridor updated = DungeonCorridorGraphEditor.withMovedNode(
-                            mapState.activeMap(),
-                            corridor,
-                            current.nodeId(),
-                            current.currentPoint());
+                    Corridor updated = corridor.movedNode(mapState.activeMap(), current.nodeId(), current.currentPoint());
                     loadingService.submitMutation(
                             () -> {
-                                corridorEditService.update(mapState.activeMapId(), updated);
+                                corridorApplicationService.update(mapState.activeMapId(), updated);
                                 return mapState.activeMapId();
                             },
                             updatedMapId -> updatedMapId,
@@ -308,25 +301,9 @@ public final class SelectionTool implements EditorTool {
         if (corridor == null) {
             return null;
         }
-        Corridor updated = DungeonCorridorGraphEditor.withMovedNode(
-                mapState.activeMap(),
-                corridor,
-                corridorNodeDragSession.nodeId(),
-                corridorNodeDragSession.currentPoint());
-        return new DungeonLayout(
-                mapState.activeMap().mapId(),
-                mapState.activeMap().name(),
-                mapState.activeMap().corridors().stream()
-                        .map(existing -> existing != null && Objects.equals(existing.corridorId(), updated.corridorId()) ? updated : existing)
-                        .toList(),
-                mapState.activeMap().clusters(),
-                mapState.activeMap().stairs(),
-                mapState.activeMap().transitions(),
-                mapState.activeMap().clusters().stream()
-                        .filter(cluster -> cluster != null && cluster.clusterId() != null)
-                        .collect(java.util.stream.Collectors.toMap(
-                                cluster -> cluster.clusterId(),
-                                cluster -> mapState.activeMap().levelForCluster(cluster.clusterId()))))
+        Corridor updated = corridor.movedNode(mapState.activeMap(), corridorNodeDragSession.nodeId(), corridorNodeDragSession.currentPoint());
+        return mapState.activeMap()
+                .withUpdatedCorridor(updated)
                 .projectedToLevel(mapState.activeProjectionLevel());
     }
 
