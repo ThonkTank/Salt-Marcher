@@ -4,8 +4,7 @@ import database.DatabaseManager;
 import features.campaignstate.api.CampaignStateApi;
 import features.campaignstate.api.CampaignStateReadApi;
 import features.campaignstate.api.DungeonTilePosition;
-import features.world.dungeonmap.catalog.application.DungeonMapCatalogEntry;
-import features.world.dungeonmap.catalog.persistence.DungeonMapCatalogRepository;
+import features.world.dungeonmap.loading.DungeonMapLoadResolver;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
@@ -25,9 +24,14 @@ import java.util.Optional;
 public final class DungeonRuntimeApplicationService {
 
     private final DungeonLayoutRepository layoutRepository;
+    private final DungeonMapLoadResolver loadResolver;
 
-    public DungeonRuntimeApplicationService(DungeonLayoutRepository layoutRepository) {
+    public DungeonRuntimeApplicationService(
+            DungeonLayoutRepository layoutRepository,
+            DungeonMapLoadResolver loadResolver
+    ) {
         this.layoutRepository = Objects.requireNonNull(layoutRepository, "layoutRepository");
+        this.loadResolver = Objects.requireNonNull(loadResolver, "loadResolver");
     }
 
     public DungeonRuntimeNavigationSnapshot loadNavigation(DungeonLayout layout) throws SQLException {
@@ -112,7 +116,8 @@ public final class DungeonRuntimeApplicationService {
             throw new IllegalArgumentException("conn darf nicht null sein");
         }
         Optional<DungeonTilePosition> storedPosition = CampaignStateReadApi.getDungeonTilePosition(conn);
-        DungeonLayout layout = preferredRepairLayout(conn, storedPosition.orElse(null));
+        Long preferredMapId = storedPosition.map(DungeonTilePosition::mapId).orElse(null);
+        DungeonLayout layout = loadResolver.resolveRepairLayout(conn, preferredMapId);
         if (layout == null || layout.mapId() <= 0) {
             CampaignStateApi.clearDungeonPosition(conn);
             return;
@@ -250,35 +255,6 @@ public final class DungeonRuntimeApplicationService {
         return fallback == null
                 ? DungeonRuntimeNavigationSnapshot.empty()
                 : navigationSnapshot(layout.mapId(), fallback.projectedCell(), fallback.z(), heading);
-    }
-
-    private DungeonLayout preferredRepairLayout(Connection conn, DungeonTilePosition storedPosition) throws SQLException {
-        Long preferredMapId = storedPosition == null ? null : storedPosition.mapId();
-        DungeonLayout layout = tryLoadLayout(conn, preferredMapId);
-        if (layout != null) {
-            return layout;
-        }
-        for (DungeonMapCatalogEntry map : DungeonMapCatalogRepository.listMaps(conn)) {
-            if (map == null) {
-                continue;
-            }
-            layout = tryLoadLayout(conn, map.mapId());
-            if (layout != null) {
-                return layout;
-            }
-        }
-        return null;
-    }
-
-    private DungeonLayout tryLoadLayout(Connection conn, Long mapId) throws SQLException {
-        if (mapId == null || mapId <= 0) {
-            return null;
-        }
-        try {
-            return layoutRepository.loadLayout(conn, mapId);
-        } catch (RuntimeException exception) {
-            return null;
-        }
     }
 
     private CellCoord nearestTraversableCell(DungeonLayout layout, CellCoord preferredCell, int preferredLevelZ) {

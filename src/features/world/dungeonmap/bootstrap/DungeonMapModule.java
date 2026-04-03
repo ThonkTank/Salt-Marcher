@@ -6,6 +6,7 @@ import features.world.dungeonmap.application.room.DungeonRoomApplicationService;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeApplicationService;
 import features.world.dungeonmap.application.transition.DungeonTransitionApplicationService;
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
+import features.world.dungeonmap.loading.DungeonMapLoadResolver;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.repository.DungeonCorridorRepository;
 import features.world.dungeonmap.repository.DungeonLayoutRepository;
@@ -42,19 +43,22 @@ public final class DungeonMapModule {
         DungeonRoomRepository roomRepository = new DungeonRoomRepository();
         DungeonCorridorRepository corridorRepository = new DungeonCorridorRepository();
         DungeonTransitionRepository transitionRepository = new DungeonTransitionRepository();
+        DungeonMapLoadResolver loadResolver = new DungeonMapLoadResolver(layoutRepository);
         DungeonRoomApplicationService roomApplicationService = new DungeonRoomApplicationService(
                 layoutRepository,
                 corridorRepository,
                 roomRepository);
         DungeonTransitionApplicationService transitionApplicationService = new DungeonTransitionApplicationService(roomApplicationService, transitionRepository);
-        DungeonRuntimeApplicationService runtimeApplicationService = new DungeonRuntimeApplicationService(layoutRepository);
+        DungeonRuntimeApplicationService runtimeApplicationService = new DungeonRuntimeApplicationService(
+                layoutRepository,
+                loadResolver);
         DungeonMapCatalogService mapCatalogService = new DungeonMapCatalogService(
                 roomApplicationService,
                 runtimeApplicationService);
         DungeonCorridorApplicationService corridorApplicationService = new DungeonCorridorApplicationService(layoutRepository, corridorRepository);
         DungeonMapState state = new DungeonMapState();
         DungeonMapLoadingService loadingService = new DungeonMapLoadingService(
-                layoutRepository,
+                loadResolver,
                 state);
         DungeonEditorSessionState editorSessionState = new DungeonEditorSessionState();
         EditorInteractionState editorInteractionState = new EditorInteractionState();

@@ -45,8 +45,9 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
   - `support/` owns transaction helpers.
   - Application services orchestrate workflows and transactions; they must not keep a second interpretation of room, corridor, or runtime truth.
 - `loading/`
-  - `DungeonMapLoadingService` owns async loading, map-selection fallback policy, initial-load deduplication, stale-request suppression via `requestSequence`, and reload-after-write flows.
-  - Loading result helpers stay private to `DungeonMapLoadingService`; views and state consume only `DungeonMapState`.
+  - `DungeonMapLoadResolver` owns synchronous catalog scans, usable-map selection, selected-map fallback, and runtime-repair fallback order.
+  - `DungeonMapLoadingService` owns async loading, initial-load deduplication, stale-request suppression via `requestSequence`, and reload-after-write flows around that resolver.
+  - Loading resolution helpers stay inside `loading/`; views and state consume only `DungeonMapState`.
 - `repository/`
   - `DungeonLayoutRepository` is the authoritative layout rehydration seam. It assembles one concrete persisted map per call and does not own UI-facing fallback policy.
   - Structure repositories (`DungeonRoomRepository`, `DungeonCorridorRepository`, `DungeonStairRepository`, `DungeonTransitionRepository`) own their direct storage reads and writes.
@@ -130,6 +131,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `DungeonRuntimeSurfaceResolver` is the only seam that expands runtime context into a `DungeonRuntimeSurface`. It owns runtime exits plus non-exit actions, but it must not depend on shell-owned inspector or travel types.
 - Runtime details are published through the shared `DetailsNavigator`. Do not add a parallel feature-local runtime details pane.
 - Same-map transition travel should return a resolved navigation snapshot against the current layout immediately; cross-map travel returns a snapshot for the target map, the loading flow selects that map, and runtime resolves the pending snapshot directly instead of re-reading campaign state first.
+- Runtime repair must resolve preferred/first-usable maps through `DungeonMapLoadResolver`, not by reading `DungeonMapCatalogRepository` directly from `application/runtime`.
 
 ## Model Layering
 
@@ -164,7 +166,8 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `DungeonRoomRepository` owns the concrete write ordering for cluster rewrites and moved clusters. Application workflows decide the rewrite, repository code decides insert/update/delete order.
 - `DungeonCorridorRepository` owns corridor row writes, synthetic-to-persistent id assignment, node/segment replacement order, and direct persistence of absolute room-bound endpoint cells. Room-bound corridor endpoints move or detach explicitly in room workflows and previews instead of hiding behind a storage codec.
 - `DungeonTransitionRepository` owns dungeon-side transition lookups and writes, including placed-target queries and dungeon-map existence checks. Overworld target discovery stays at the `WorldReadApi` boundary, and that public API remains connection-owning instead of leaking JDBC through cross-feature callers.
-- `DungeonMapLoadingService` owns catalog reads, initial-load usable-map scans, and selected-map fallback. Full-catalog usable-layout scans are for initial load, not every selection change.
+- `DungeonMapLoadResolver` owns catalog reads, initial-load usable-map scans, selected-map fallback, and runtime-repair map selection. Full-catalog usable-layout scans are for initial load, not every selection change.
+- `DungeonMapLoadingService` owns async orchestration and state updates around `DungeonMapLoadResolver`; it must not grow a second copy of the resolver's selection policy.
 - Legacy dungeon storage compatibility is intentionally unsupported. Current code works only against the current schema and should fail fast on broken or stale rows instead of normalizing them at runtime.
 - Room geometry is loaded directly from persisted room-owned `StructureDescriptor` rows.
 - New dungeons start with a neutral default room (`Raum n`), not an implicit entrance concept.
