@@ -6,6 +6,12 @@ This file defines hex map and overworld-specific operating constraints for agent
 
 This file covers the overworld hex map, map editor, shared hex rendering, and the calendar behavior that is specific to this feature area. Do not promote these details into the root `AGENTS.md`; they are local feature rules.
 
+## Public Boundary
+
+| Public API | Internal | Allowed consumers |
+| --- | --- | --- |
+| `features.world.hexmap.api` | `model`, `repository`, `service`, `ui` | `features.world.api` |
+
 ## Feature Architecture
 
 The feature shares one hex renderer across read-only runtime and editing workflows. Preserve that shared rendering model instead of forking parallel canvases for small behavior differences.

@@ -10,6 +10,11 @@ This file covers the encounter feature: encounter building, generation, difficul
 
 Builder mode (`EncounterRosterPane`) and combat mode (`CombatTrackerPane`) are two states of one encounter workflow. Changes must preserve live difficulty feedback across both modes and keep the canonical encounter state coherent across the mode switch.
 
+### Boundary Ownership
+
+- Encounter builder and combat code should depend on local ports plus adapters in `internal/wiring`.
+- Direct calls into other feature APIs belong in those adapters, not in encounter application or combat services.
+
 ### App Wiring
 
 - `EncounterViewCallbacks` passes `shell::refreshToolbar`, `shell::refreshPanels`, `shell.getShowStatBlockHandler()`, and `shell.getSceneRegistry()` into the feature
@@ -32,6 +37,12 @@ Treat this wiring as part of the encounter feature contract with the shell. Do n
 - In combat mode, the sliders are hidden rather than conditionally redefined as a second control model
 
 ### Generator Invariants
+
+- `EncounterBuilderService` owns request normalization and cross-feature enrichment before calling the generator.
+- Generator search policies stay pure/static and receive already-normalized requests plus resolved analysis data.
+- `EncounterResultAssembler` is the single generator-internal factory for `GenerationResult` variants.
+- Public generator entrypoints may accept a nullable `GenerationContext`, but they normalize it once before passing it deeper.
+- `EncounterConstraintPolicy` exposes one public API per concept: state evaluation, completion checks, and reachability checks.
 
 `EncounterGenerator` is a 3-phase algorithm:
 

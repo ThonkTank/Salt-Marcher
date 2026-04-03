@@ -70,9 +70,20 @@ Left column is a VBox (Controls takes natural height, Main fills rest — not re
 
 ### Feature-Local AGENTS Files
 
+- `src/features/campaignstate/AGENTS.md` — `campaign_state` ownership and campaign-state boundary rules
+- `src/features/creatures/AGENTS.md` — creatures platform ownership and reusable creature UI/API boundary rules
 - `src/features/encounter/AGENTS.md` — encounter-specific interaction, generation, and combat/runtime behavior
+- `src/features/encountertable/AGENTS.md` — encounter-table boundary and consumer-ownership rules
+- `src/features/items/AGENTS.md` — item API ownership and reusable item-catalog UI boundary rules
+- `src/features/loottable/AGENTS.md` — loot-table ownership and item-catalog composition rules
+- `src/features/party/AGENTS.md` — party feature public-boundary rules
+- `src/features/partyanalysis/AGENTS.md` — party-analysis public-boundary rules
+- `src/features/world/AGENTS.md` — world feature boundary and shared world-UI rules
 - `src/features/world/hexmap/AGENTS.md` — hex map and overworld-specific rendering, editing, and calendar rules
 - `src/features/world/dungeonmap/AGENTS.md` — dungeon editor architecture, canonical 2D primitive contract, model layering, and package roles
+
+Non-feature local rules may also live under shared or tooling directories such as `src/shared/AGENTS.md` and
+`sync/AGENTS.md` when those directories need durable agent guidance.
 
 ## Architecture Guidelines
 

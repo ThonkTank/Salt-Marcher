@@ -18,7 +18,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `DungeonLayout` is the immutable global lookup over direct structure owners: room clusters, corridors, stairs, transitions, connections, traversable cells, and spatial indexes.
 - Corridors, stairs, and transitions are first-class persisted structures. There is no second aggregate that owns their geometry.
 - `Room` and `Corridor` expose shared surface geometry only through `StructureObject`.
-- `Corridor` keeps its node/segment graph as truth, stores node and route geometry directly as final `GridPoint2x`/`GridSegment2x`, and compiles it into the same `StructureDescriptor`/`StructureObject` surface model used by rooms, including opening segments for room-bound endpoints.
+- `Corridor` keeps its node/segment graph as truth, stores node and route geometry directly as final `GridPoint2x`/`GridSegment2x`, keeps room-bound endpoints on absolute `CellCoord` room cells in memory, and compiles that graph into the same `StructureDescriptor`/`StructureObject` surface model used by rooms, including opening segments for room-bound endpoints.
 - Room paint/delete/boundary edits persist room-owned `StructureDescriptor` truth plus derived cluster metadata. They do not reroute or regenerate corridors or stairs.
 - Connection doors and room exit narration are level-aware. Shared boundary/door queries must keep `levelZ` together with the 2x segment instead of collapsing identical segments across floors.
 - `Wall` and `Door` are 2x-native boundary objects keyed by normalized `GridSegment2x` collections. Do not reintroduce vertex-edge wrapper geometry in productive wall/door flows.
@@ -39,7 +39,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
   - `DungeonLayout` stays the feature-wide lookup surface, not a second mutation owner.
 - `application/`
   - `room/` owns room topology, boundary edits, cluster moves, room narration, and exit catalogs.
-  - `corridor/` owns corridor graph workflow orchestration; canonical graph transforms stay on `Corridor`, and persistence-specific id assignment stays on `DungeonCorridorRepository`.
+  - `corridor/` owns corridor graph workflow orchestration for create, branch, insert, move, delete, while canonical graph transforms stay on `Corridor` and persistence-specific id assignment stays on `DungeonCorridorRepository`.
   - `runtime/` owns cell-only navigation, TILE persistence, surface resolution, labels, flat runtime actions, and runtime state repair.
   - `transition/` owns transition create/place/delete flows and transition target lookup.
   - `support/` owns transaction helpers.
@@ -159,7 +159,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 
 - `DungeonLayoutRepository` is the authoritative rehydration path for one concrete persisted map. It delegates structure reads to the focused repositories and does not return loading-layer fallback payloads.
 - `DungeonRoomRepository` owns the concrete write ordering for cluster rewrites and moved clusters. Application workflows decide the rewrite, repository code decides insert/update/delete order.
-- `DungeonCorridorRepository` owns corridor row writes, synthetic-to-persistent id assignment, and node/segment replacement order. Application workflows should not keep a second persistence-id mapper.
+- `DungeonCorridorRepository` owns corridor row writes, synthetic-to-persistent id assignment, node/segment replacement order, and the codec between persisted relative room-binding columns and in-memory absolute room cells. Application workflows should not keep a second persistence-id mapper or room-binding codec.
 - `DungeonMapLoadingService` owns catalog reads, initial-load usable-map scans, and selected-map fallback. Full-catalog usable-layout scans are for initial load, not every selection change.
 - `DungeonStorageSupport.ensureReady(...)` is the single schema-compatibility gate for dungeon startup, feature reads, and writes. Do not reintroduce per-structure schema helpers.
 - Room geometry is loaded directly from persisted room-owned `StructureDescriptor` rows.

@@ -174,7 +174,7 @@ public final class Corridor {
                     node.nodeId(),
                     point2x,
                     node.roomId(),
-                    node.roomRelativeCell(),
+                    node.roomCell(),
                     node.roomBoundaryDirection()));
         }
         return resolvedAgainst(layout, updatedNodes, segments);
@@ -332,7 +332,7 @@ public final class Corridor {
         if (layout == null) {
             return this;
         }
-        return Corridor.resolved(corridorId, layout.mapId(), levelZ, updatedNodes, updatedSegments, layout.rooms());
+        return layout.resolveCorridor(corridorId, levelZ, updatedNodes, updatedSegments);
     }
 
     private static Map<Long, Room> indexRoomsById(Collection<Room> rooms) {
@@ -465,7 +465,7 @@ public final class Corridor {
         GridPoint2x anchorPoint = roomAnchorPoint(node, levelZ, roomsById);
         return anchorPoint.equals(node.point2x())
                 ? node
-                : new CorridorNode(node.nodeId(), anchorPoint, node.roomId(), node.roomRelativeCell(), node.roomBoundaryDirection());
+                : new CorridorNode(node.nodeId(), anchorPoint, node.roomId(), node.roomCell(), node.roomBoundaryDirection());
     }
 
     private static Set<GridSegment2x> corridorOpeningSegments(
@@ -781,7 +781,10 @@ public final class Corridor {
         if (floor == null) {
             throw new IllegalArgumentException("Corridor node references room without floor at level " + levelZ);
         }
-        return floor.anchorCellCoord().add(node.roomRelativeCell());
+        if (!room.structure().cellCoordsAtLevel(levelZ).contains(node.roomCell())) {
+            throw new IllegalArgumentException("Corridor node references cell outside room at level " + levelZ);
+        }
+        return node.roomCell();
     }
 
     private static Set<CellCoord> occupiedCells(Collection<CorridorRoute> routes) {

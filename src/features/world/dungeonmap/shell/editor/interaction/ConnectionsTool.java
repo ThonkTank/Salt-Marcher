@@ -191,10 +191,10 @@ public final class ConnectionsTool implements EditorTool {
             }
             applySelection(ctx == null ? null : ctx.resolvedRef());
             if (draft == null) {
-                startDraft(roomBoundaryHit, layout);
+                startDraft(roomBoundaryHit);
                 return true;
             }
-            finishDraftWithRoom(roomBoundaryHit, layout);
+            finishDraftWithRoom(roomBoundaryHit);
             return true;
         }
         if (draft != null && hit instanceof DungeonHitSubject.FloorCellSubject floorHit) {
@@ -206,7 +206,7 @@ public final class ConnectionsTool implements EditorTool {
         }
         if (draft != null && hit instanceof DungeonHitSubject.CorridorNodeSubject corridorNodeHit) {
             applySelection(ctx == null ? null : ctx.resolvedRef());
-            finishDraftWithCorridorNode(corridorNodeHit, layout);
+            finishDraftWithCorridorNode(corridorNodeHit);
             return true;
         }
         if (hit instanceof DungeonHitSubject.CorridorCornerSubject cornerHit) {
@@ -268,13 +268,9 @@ public final class ConnectionsTool implements EditorTool {
         return false;
     }
 
-    private void startDraft(DungeonHitSubject.RoomBoundarySubject hit, DungeonLayout layout) {
+    private void startDraft(DungeonHitSubject.RoomBoundarySubject hit) {
         long firstNodeId = -1L;
-        Room room = layout.findRoom(hit.roomId());
-        if (room == null) {
-            return;
-        }
-        CorridorNode startNode = roomBoundaryNode(room, hit, firstNodeId);
+        CorridorNode startNode = roomBoundaryNode(hit, firstNodeId);
         draft = new CorridorBuildDraft(
                 new ArrayList<>(List.of(startNode)),
                 new ArrayList<>(),
@@ -297,31 +293,21 @@ public final class ConnectionsTool implements EditorTool {
         showDraftPreview();
     }
 
-    private void finishDraftWithRoom(DungeonHitSubject.RoomBoundarySubject hit, DungeonLayout layout) {
+    private void finishDraftWithRoom(DungeonHitSubject.RoomBoundarySubject hit) {
         if (draft == null || hit == null) {
             return;
         }
-        Room room = layout.findRoom(hit.roomId());
-        if (room == null) {
-            return;
-        }
-        CorridorNode endNode = roomBoundaryNode(room, hit, draft.nextNodeId());
+        CorridorNode endNode = roomBoundaryNode(hit, draft.nextNodeId());
         ArrayList<CorridorNode> nodes = new ArrayList<>(draft.nodes());
         nodes.add(endNode);
         ArrayList<CorridorSegment> segments = new ArrayList<>(draft.segments());
         segments.add(new CorridorSegment(draft.nextSegmentId(), nodes.get(nodes.size() - 2).nodeId(), endNode.nodeId()));
-        Corridor planned = Corridor.planned(
-                mapState.activeMap().mapId(),
-                mapState.activeProjectionLevel(),
-                nodes,
-                segments,
-                mapState.activeMap().rooms());
         Long mapId = mapState.activeMapId();
         if (mapId == null) {
             return;
         }
         loadingService.submitMutation(
-                () -> corridorApplicationService.create(mapId, planned),
+                () -> corridorApplicationService.create(mapId, mapState.activeProjectionLevel(), nodes, segments),
                 createdId -> mapId,
                 createdId -> {
                     clearDraft();
@@ -330,30 +316,25 @@ public final class ConnectionsTool implements EditorTool {
                 throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.finishDraftWithRoom()", throwable));
     }
 
-    private void finishDraftWithCorridorNode(DungeonHitSubject.CorridorNodeSubject hit, DungeonLayout layout) {
+    private void finishDraftWithCorridorNode(DungeonHitSubject.CorridorNodeSubject hit) {
         if (draft == null || hit == null || hit.nodeId() == null || hit.corridorId() == null) {
-            return;
-        }
-        Corridor corridor = layout.findCorridor(hit.corridorId());
-        if (corridor == null) {
             return;
         }
         ArrayList<CorridorSegment> branchSegments = new ArrayList<>(draft.segments());
         branchSegments.add(new CorridorSegment(draft.nextSegmentId(), draft.nodes().getLast().nodeId(), hit.nodeId()));
-        Corridor updated = corridor.branchedFrom(mapState.activeMap(), hit.nodeId(), draft.nodes(), branchSegments);
         Long mapId = mapState.activeMapId();
         if (mapId == null) {
             return;
         }
         loadingService.submitMutation(
                 () -> {
-                    corridorApplicationService.update(mapId, updated);
+                    corridorApplicationService.branch(mapId, hit.corridorId(), hit.nodeId(), draft.nodes(), branchSegments);
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,
                 ignored -> {
                     clearDraft();
-                    state.selectRef(corridorOwnerRef(updated.corridorId()));
+                    state.selectRef(corridorOwnerRef(hit.corridorId()));
                 },
                 throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.finishDraftWithCorridorNode()", throwable));
     }
@@ -363,18 +344,17 @@ public final class ConnectionsTool implements EditorTool {
         if (corridor == null || corridor.corridorId() == null || segmentId == null || point2x == null) {
             return;
         }
-        Corridor updated = corridor.insertedNode(mapState.activeMap(), segmentId, point2x);
         Long mapId = mapState.activeMapId();
         if (mapId == null) {
             return;
         }
         loadingService.submitMutation(
                 () -> {
-                    corridorApplicationService.update(mapId, updated);
+                    corridorApplicationService.insertNode(mapId, corridor.corridorId(), segmentId, point2x);
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,
-                ignored -> state.selectRef(corridorOwnerRef(updated.corridorId())),
+                ignored -> state.selectRef(corridorOwnerRef(corridor.corridorId())),
                 throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.insertNode()", throwable));
     }
 
@@ -385,14 +365,13 @@ public final class ConnectionsTool implements EditorTool {
         if (corridor == null || mapId == null || selectedNodeId == null) {
             return;
         }
-        Corridor updated = corridor.deletedNode(mapState.activeMap(), selectedNodeId);
         loadingService.submitMutation(
                 () -> {
-                    corridorApplicationService.update(mapId, updated);
+                    corridorApplicationService.deleteNode(mapId, corridor.corridorId(), selectedNodeId);
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,
-                ignored -> state.selectRef(corridorOwnerRef(updated.corridorId())),
+                ignored -> state.selectRef(corridorOwnerRef(corridor.corridorId())),
                 throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.deleteSelectedNode()", throwable));
     }
 
@@ -460,20 +439,13 @@ public final class ConnectionsTool implements EditorTool {
         return projectedCluster != null && projectedCluster.canCreateDoor(hit.boundarySegment2x());
     }
 
-    private CorridorNode roomBoundaryNode(Room room, DungeonHitSubject.RoomBoundarySubject hit, long nodeId) {
-        CellCoord anchor = room == null || room.structure().floorAtLevel(mapState.activeProjectionLevel()) == null
-                ? new CellCoord(0, 0)
-                : room.structure().floorAtLevel(mapState.activeProjectionLevel()).anchorCellCoord();
-        if (anchor == null) {
-            anchor = new CellCoord(0, 0);
-        }
-        CellCoord relativeCell = hit.roomCell().subtract(anchor);
+    private static CorridorNode roomBoundaryNode(DungeonHitSubject.RoomBoundarySubject hit, long nodeId) {
         GridPoint2x point2x = GridPoint2x.edgeCenter(hit.roomCell(), hit.outwardDirection());
         return new CorridorNode(
                 nodeId,
                 point2x,
-                room == null ? null : room.roomId(),
-                relativeCell,
+                hit.roomId(),
+                hit.roomCell(),
                 hit.outwardDirection());
     }
 
@@ -483,12 +455,7 @@ public final class ConnectionsTool implements EditorTool {
             refreshStatePane();
             return;
         }
-        Corridor preview = Corridor.planned(
-                mapState.activeMap().mapId(),
-                mapState.activeProjectionLevel(),
-                draft.nodes(),
-                draft.segments(),
-                mapState.activeMap().rooms());
+        Corridor preview = mapState.activeMap().planCorridor(mapState.activeProjectionLevel(), draft.nodes(), draft.segments());
         DungeonLayout previewLayout = mapState.activeMap().withAddedCorridor(preview);
         state.showPreview(new EditorPreview.LayoutPreview(previewLayout.projectedToLevel(mapState.activeProjectionLevel())));
         refreshStatePane();

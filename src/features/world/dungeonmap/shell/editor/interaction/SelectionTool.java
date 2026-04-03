@@ -159,22 +159,19 @@ public final class SelectionTool implements EditorTool {
             CorridorNodeDragSession current = corridorNodeDragSession;
             corridorNodeDragSession = null;
             state.clearPreview();
-            if (!Objects.equals(current.startPoint(), current.currentPoint()) && mapState.activeMapId() != null) {
-                Corridor corridor = mapState.activeMap().findCorridor(current.corridorId());
-                if (corridor != null) {
-                    Corridor updated = corridor.movedNode(mapState.activeMap(), current.nodeId(), current.currentPoint());
-                    loadingService.submitMutation(
-                            () -> {
-                                corridorApplicationService.update(mapState.activeMapId(), updated);
-                                return mapState.activeMapId();
-                            },
-                            updatedMapId -> updatedMapId,
-                            ignored -> state.selectRef(corridorNodeRef(
-                                    current.corridorId(),
-                                    current.nodeId(),
-                                    current.currentPoint())),
-                            throwable -> UiErrorReporter.reportBackgroundFailure("SelectionTool.released()", throwable));
-                }
+            Long mapId = mapState.activeMapId();
+            if (!Objects.equals(current.startPoint(), current.currentPoint()) && mapId != null) {
+                loadingService.submitMutation(
+                        () -> {
+                            corridorApplicationService.moveNode(mapId, current.corridorId(), current.nodeId(), current.currentPoint());
+                            return mapId;
+                        },
+                        updatedMapId -> updatedMapId,
+                        ignored -> state.selectRef(corridorNodeRef(
+                                current.corridorId(),
+                                current.nodeId(),
+                                current.currentPoint())),
+                        throwable -> UiErrorReporter.reportBackgroundFailure("SelectionTool.released()", throwable));
             }
             return true;
         }

@@ -7,21 +7,21 @@ import features.world.dungeonmap.model.geometry.GridPoint2x;
 import java.util.Objects;
 
 /**
- * Corridor routing geometry stays in `point2x`; `roomRelativeCell` remains the room-local cell binding for room-bound
- * endpoints and is not a 2x mirror.
+ * Corridor routing geometry stays in `point2x`; room-bound endpoints keep their absolute room cell in memory and rely
+ * on repository codecs for the persisted relative columns.
  */
 public record CorridorNode(
         Long nodeId,
         GridPoint2x point2x,
         Long roomId,
-        CellCoord roomRelativeCell,
+        CellCoord roomCell,
         CardinalDirection roomBoundaryDirection
 ) {
 
     public CorridorNode {
         point2x = Objects.requireNonNull(point2x, "point2x");
-        boolean hasRoomBinding = roomId != null || roomRelativeCell != null || roomBoundaryDirection != null;
-        if (hasRoomBinding && (roomId == null || roomRelativeCell == null || roomBoundaryDirection == null)) {
+        boolean hasRoomBinding = roomId != null || roomCell != null || roomBoundaryDirection != null;
+        if (hasRoomBinding && (roomId == null || roomCell == null || roomBoundaryDirection == null)) {
             throw new IllegalArgumentException("Corridor node room binding must be all-or-none");
         }
     }

@@ -11,6 +11,8 @@ import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.Connection;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
+import features.world.dungeonmap.model.structures.corridor.CorridorNode;
+import features.world.dungeonmap.model.structures.corridor.CorridorSegment;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
@@ -567,6 +569,18 @@ public final class DungeonLayout {
                 .map(existing -> cluster.clusterId().equals(existing.clusterId()) ? cluster : existing)
                 .toList();
         return new DungeonLayout(mapId, name, corridors, updatedClusters, stairs, transitions, clusterLevelsById);
+    }
+
+    /**
+     * Corridor graph edits resolve against the layout that already owns room bindings and connection context; callers
+     * should not keep re-threading room collections through separate helper seams.
+     */
+    public Corridor planCorridor(int levelZ, List<CorridorNode> nodes, List<CorridorSegment> segments) {
+        return Corridor.planned(mapId, levelZ, nodes, segments, rooms());
+    }
+
+    public Corridor resolveCorridor(Long corridorId, int levelZ, List<CorridorNode> nodes, List<CorridorSegment> segments) {
+        return Corridor.resolved(corridorId, mapId, levelZ, nodes, segments, rooms());
     }
 
     public DungeonLayout withAddedCorridor(Corridor corridor) {
