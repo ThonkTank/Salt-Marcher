@@ -10,6 +10,8 @@ import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.CorridorConnection;
+import features.world.dungeonmap.model.structures.connection.DoorExitCatalog;
+import features.world.dungeonmap.model.structures.connection.RoomExitDescriptor;
 import features.world.dungeonmap.model.structures.room.Room;
 
 import java.util.ArrayDeque;
@@ -155,6 +157,16 @@ public final class Corridor {
 
     public List<CorridorConnection> connections() {
         return connections;
+    }
+
+    public List<RoomExitDescriptor> describeExits(DungeonLayout layout) {
+        if (layout == null || corridorId == null) {
+            return List.of();
+        }
+        return DoorExitCatalog.describe(
+                structure.cellCoordsAtLevel(levelZ),
+                levelZ,
+                layout.connectionsForCorridor(corridorId));
     }
 
     public Corridor movedNode(DungeonLayout layout, Long nodeId, GridPoint2x point2x) {

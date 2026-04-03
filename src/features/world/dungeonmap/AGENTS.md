@@ -40,7 +40,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `application/`
   - `room/` owns room topology, boundary edits, cluster moves, and room narration through the central `DungeonRoomApplicationService` workflow seam.
   - `corridor/` owns corridor graph workflow orchestration for create, branch, insert, move, delete, while canonical graph transforms stay on `Corridor` and persistence-specific id assignment stays on `DungeonCorridorRepository`.
-  - `runtime/` owns cell-only navigation, TILE persistence, surface resolution, labels, flat runtime actions, and runtime state repair.
+  - `runtime/` owns cell-only navigation, TILE persistence, runtime surface resolution, surface refs/exits, flat runtime actions, and runtime state repair.
   - `transition/` owns transition create/place/delete flows and transition target lookup.
   - `support/` owns transaction helpers.
   - Application services orchestrate workflows and transactions; they must not keep a second interpretation of room, corridor, or runtime truth.
@@ -62,7 +62,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
   - `editor/` owns the editor view, controls, state pane, dropdowns, and tool coordinator wiring.
   - `editor/interaction/` owns editor tool implementations plus the tool-resolution pipeline.
   - `interaction/` owns shared hit probing, hit sources, hit snapshots, placement validation, and drag helpers used by editor and runtime.
-  - `runtime/` owns runtime view, runtime interaction controller, and runtime selection policy.
+  - `runtime/` owns runtime view, runtime interaction controller, runtime selection policy, and runtime-specific surface panes.
 - `state/`
   - Observable cross-class runtime/editor state only. If a transient concern is private to one tool, keep it on the tool.
   - Session enums such as `DungeonViewMode` and `DungeonEditorTool` belong here when `DungeonEditorSessionState` is the shared owner.
@@ -75,7 +75,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `DungeonLayout` owns canonical `CellCoord` lookups, traversable-cell indices, and level-aware cell queries. Corridor room bindings use `CellCoord`; geometry-backed picks and selections use `GridPoint2x` and `GridSegment2x`.
 - `DungeonHitSubject` and `DungeonSelectionRef` expose geometry-backed editor/runtime selections only as canonical ids plus final `GridPoint2x`, `GridSegment2x`, and `CubePoint`. Do not add raw doubled-cell mirrors or storage-parity mirrors back into those seams.
 - `DungeonHitKind` and `DungeonSelectionRef` are shared interaction semantics owned by `model/interaction/`, not by `shell/interaction/`.
-- `InteractiveLabelHandle` and `DungeonEditorRenderState` are display payloads on final `CellCoord`/`GridPoint2x`/`GridSegment2x` only. `DungeonRuntimeRenderOverlay` carries the active `DungeonRuntimeNavigationSnapshot` plus door-number overlays. Renderers and tools must not introduce storage codecs or legacy parity adapters.
+- `InteractiveLabelHandle` and `DungeonEditorRenderState` are display payloads on final `CellCoord`/`GridPoint2x`/`GridSegment2x` only. `DungeonRuntimeRenderOverlay` carries the active `DungeonRuntimeNavigationSnapshot` plus runtime exit markers derived from the resolved surface. Renderers and tools must not introduce storage codecs or legacy parity adapters.
 - `EditorTool.resolveHit(...)` owns tool-specific interpretation of those candidates. Do not move per-tool allowlists back into a central selector.
 - `EditorInteractionState` owns only shared editor coordination state:
   - `selectedRef`
@@ -126,8 +126,8 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `DungeonRuntimeSelectionPolicy` selects the first runtime-selectable subject that actually owns the active cell. Runtime interaction is not driven by the primary hit candidate alone.
 - `DungeonRuntimeApplicationService` is the single runtime workflow owner. It loads persisted navigation, resolves cells against the active layout, executes cell/action travel, persists campaign position as `TILE`, and repairs stored runtime state after catalog mutations.
 - Persisted dungeon runtime positions are `TILE`-only end to end. Do not reintroduce `ROOM`, `CORRIDOR`, `STAIR_EXIT`, `TRANSITION`, or string-encoded tile compatibility shapes at the campaign-state boundary.
-- `DungeonRuntimeView` is shell wiring over `DungeonRuntimeState`; cross-map continuation lives in the shared pending navigation snapshot instead of a view-local copy, and runtime presentation resolves from the active navigation snapshot instead of duplicating active cell/level fields in the view.
-- `DungeonRuntimeSurfaceResolver` is the only seam that expands a runtime surface into door overlays plus flat door/stair/transition actions. Do not re-split that public surface into parallel catalogs.
+- `DungeonRuntimeView` is shell wiring over `DungeonRuntimeState`; cross-map continuation lives in the shared pending navigation snapshot instead of a view-local copy, and the view publishes overlay, inspector, and travel surfaces directly from one resolved `DungeonRuntimeSurface` plus the active navigation snapshot.
+- `DungeonRuntimeSurfaceResolver` is the only seam that expands runtime context into a `DungeonRuntimeSurface`. It owns runtime exits plus non-exit actions, but it must not depend on shell-owned inspector or travel types.
 - Runtime details are published through the shared `DetailsNavigator`. Do not add a parallel feature-local runtime details pane.
 - Same-map transition travel should return a resolved navigation snapshot against the current layout immediately; cross-map travel returns a snapshot for the target map, the loading flow selects that map, and runtime resolves the pending snapshot directly instead of re-reading campaign state first.
 
@@ -151,7 +151,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `RoomCluster` derives `LocalConnection`s from its rooms; rewrite payloads must not carry a second local-connection truth in parallel.
 - `RoomCluster` owns door editability on internal boundaries. Do not leave door-create/delete validation only in editor tools.
 - `Connection` owns connectivity; `Door` is the boundary object exposed through that connection.
-- Model-side exit descriptors and door/room exit catalogs belong with room/connection truth, not under runtime or room application workflows.
+- Model-side exit descriptors and low-level door exit catalogs belong with room/connection truth, not under runtime or room application workflows. `Room` and `Corridor` should expose their public exit descriptions directly instead of routing runtime/editor callers through a second public room-exit helper owner.
 - `Corridor` is a first-class structure with stable identity, nodes, segments, room bindings, and derived geometry. In memory and at persistence seams it owns canonical `GridPoint2x`/`GridSegment2x` path truth plus `CellCoord` room bindings, and it owns its direct graph transforms (`move`, `insert`, `delete`, `branch`) instead of delegating them to a second public graph-editor helper.
 - `DungeonStair` is a first-class structure with stable identity and explicit 3D path geometry. Exits are derived views, not persisted second truths.
 - `DungeonTransition` owns transition identity, placement anchor, destination, and optional bidirectional link. Unplaced transitions are valid; spatial queries must guard for null anchor or placement state.

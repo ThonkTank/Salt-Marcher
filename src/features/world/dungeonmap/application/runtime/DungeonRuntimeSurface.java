@@ -1,34 +1,35 @@
 package features.world.dungeonmap.application.runtime;
 
-import features.world.dungeonmap.model.geometry.GridSegment2x;
-import ui.shell.DetailsNavigator;
-
 import java.util.List;
 
 public record DungeonRuntimeSurface(
         String title,
-        DetailsNavigator.EntryKey entryKey,
+        DungeonRuntimeSurfaceRef ref,
         String visualDescription,
-        List<DoorInfo> doors,
+        List<DungeonRuntimeExit> exits,
         List<DungeonRuntimeAction> actions
 ) {
     public DungeonRuntimeSurface {
         title = title == null || title.isBlank() ? "Dungeon" : title;
         visualDescription = visualDescription == null ? "" : visualDescription.trim();
-        doors = doors == null ? List.of() : List.copyOf(doors);
+        exits = exits == null ? List.of() : List.copyOf(exits);
         actions = actions == null ? List.of() : List.copyOf(actions);
     }
 
-    public record DoorInfo(
-            int number,
-            GridSegment2x anchorSegment2x,
-            String destinationLabel,
-            String description
-    ) {
-        public DoorInfo {
-            number = number <= 0 ? 1 : number;
-            destinationLabel = destinationLabel == null ? "" : destinationLabel.trim();
-            description = description == null ? "" : description.trim();
+    /**
+     * Runtime exits are the single descriptive truth for numbered doorways. Overlay markers, inspector copy, and
+     * travel actions should derive from these exits instead of rebuilding parallel door payloads at each UI sink.
+     */
+    public List<DungeonRuntimeAction> availableActions() {
+        if (exits.isEmpty()) {
+            return actions;
         }
+        if (actions.isEmpty()) {
+            return exits.stream().map(DungeonRuntimeExit::action).toList();
+        }
+        var result = new java.util.ArrayList<DungeonRuntimeAction>(exits.size() + actions.size());
+        exits.stream().map(DungeonRuntimeExit::action).forEach(result::add);
+        result.addAll(actions);
+        return List.copyOf(result);
     }
 }

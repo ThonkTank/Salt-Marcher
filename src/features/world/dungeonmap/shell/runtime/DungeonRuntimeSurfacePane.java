@@ -1,7 +1,9 @@
-package features.world.dungeonmap.application.runtime;
+package features.world.dungeonmap.shell.runtime;
 
+import features.world.dungeonmap.application.runtime.DungeonRuntimeAction;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeExit;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeSurface;
 import javafx.geometry.Insets;
-import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
@@ -11,45 +13,39 @@ import javafx.scene.text.TextFlow;
 import java.util.List;
 import java.util.function.Consumer;
 
-public final class DungeonRuntimeSurfacePresenter {
+public final class DungeonRuntimeSurfacePane extends VBox {
 
-    private DungeonRuntimeSurfacePresenter() {
-        throw new AssertionError("No instances");
-    }
-
-    public static Node buildNode(
+    public DungeonRuntimeSurfacePane(
             DungeonRuntimeSurface surface,
             Consumer<DungeonRuntimeAction> onActionSelected
     ) {
-        VBox box = new VBox(8);
-        box.setPadding(new Insets(12));
+        super(8);
+        setPadding(new Insets(12));
         if (surface == null) {
-            box.getChildren().add(text("Keine Beschreibung verfügbar"));
-            return box;
+            getChildren().add(text("Keine Beschreibung verfügbar"));
+            return;
         }
-        box.getChildren().addAll(
+        getChildren().addAll(
                 sectionTitle("Visueller Eindruck"),
                 text(valueOrDash(surface.visualDescription())));
-        box.getChildren().add(sectionTitle("Durchgänge"));
-        if (surface.doors().isEmpty()) {
-            box.getChildren().add(text("—"));
+        getChildren().add(sectionTitle("Durchgänge"));
+        if (surface.exits().isEmpty()) {
+            getChildren().add(text("—"));
         } else {
-            for (DungeonRuntimeSurface.DoorInfo door : surface.doors()) {
-                box.getChildren().add(doorLine(door));
+            for (DungeonRuntimeExit exit : surface.exits()) {
+                getChildren().add(exitLine(exit));
             }
         }
-        appendActionButtons(box, surface.actions(), onActionSelected);
-        return box;
+        appendActionButtons(surface.availableActions(), onActionSelected);
     }
 
-    private static void appendActionButtons(
-            VBox box,
+    private void appendActionButtons(
             List<DungeonRuntimeAction> actions,
             Consumer<DungeonRuntimeAction> onActionSelected
     ) {
-        box.getChildren().add(sectionTitle("Aktionen"));
+        getChildren().add(sectionTitle("Aktionen"));
         if (actions == null || actions.isEmpty()) {
-            box.getChildren().add(text("—"));
+            getChildren().add(text("—"));
             return;
         }
         for (DungeonRuntimeAction action : actions) {
@@ -60,9 +56,9 @@ public final class DungeonRuntimeSurfacePresenter {
                     onActionSelected.accept(action);
                 }
             });
-            box.getChildren().add(button);
+            getChildren().add(button);
             if (action.description() != null && !action.description().isBlank()) {
-                box.getChildren().add(text(action.description()));
+                getChildren().add(text(action.description()));
             }
         }
     }
@@ -79,23 +75,23 @@ public final class DungeonRuntimeSurfacePresenter {
         return label;
     }
 
-    private static TextFlow doorLine(DungeonRuntimeSurface.DoorInfo door) {
-        Text prefix = new Text(doorDescriptionPrefix(door) + " ");
+    private static TextFlow exitLine(DungeonRuntimeExit exit) {
+        Text prefix = new Text(exitDescriptionPrefix(exit) + " ");
         prefix.setStyle("-fx-fill: -sm-text-muted;");
 
-        Text description = new Text(valueOrDash(door.description()));
+        Text description = new Text(valueOrDash(exit.description()));
         description.setStyle("-fx-fill: -sm-text-primary;");
         TextFlow flow = new TextFlow(prefix, description);
         flow.setLineSpacing(2);
         return flow;
     }
 
-    private static String doorDescriptionPrefix(DungeonRuntimeSurface.DoorInfo door) {
-        String destination = door.destinationLabel();
+    private static String exitDescriptionPrefix(DungeonRuntimeExit exit) {
+        String destination = exit.destinationLabel();
         if (destination == null || destination.isBlank()) {
-            return "[" + door.number() + "]";
+            return "[" + exit.number() + "]";
         }
-        return "[" + door.number() + ": " + destination + "]";
+        return "[" + exit.number() + ": " + destination + "]";
     }
 
     private static String valueOrDash(String value) {

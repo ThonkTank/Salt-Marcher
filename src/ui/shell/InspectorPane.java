@@ -678,7 +678,7 @@ public class InspectorPane extends VBox implements DetailsNavigator {
     ) implements HistoryEntry {
         @Override
         public Object entryKey() {
-            return new DetailsNavigator.EntryKey("content", entryKey);
+            return entryKey;
         }
 
         @Override

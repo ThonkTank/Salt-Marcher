@@ -129,44 +129,37 @@ public class TravelPane extends VBox implements WorldTravelSurface {
     }
 
     @Override
-    public void showDungeonTravel(
-            String mapName,
-            String areaLabel,
-            String tileLabel,
-            String headingLabel,
-            String statusLabel,
-            List<DungeonDoorAction> doorActions,
-            Runnable centerAction
-    ) {
-        String resolvedArea = areaLabel == null || areaLabel.isBlank() ? "Kein Standort" : areaLabel;
+    public void showDungeonTravel(DungeonTravelPresentation presentation) {
+        DungeonTravelPresentation resolvedPresentation = presentation == null
+                ? new DungeonTravelPresentation(null, null, null, null, null, null, null)
+                : presentation;
+        String resolvedArea = resolvedPresentation.areaLabel();
         iconLabel.setText("D");
-        this.locationLabel.setText(mapName == null || mapName.isBlank() ? "Dungeon" : mapName);
+        this.locationLabel.setText(resolvedPresentation.mapName());
         statusBadge.setText("Dungeon");
         contextLabel.setText(resolvedArea);
         detailKeyOne.setText("Bereich");
         detailValueOne.setText(resolvedArea);
         detailKeyTwo.setText("Feld");
-        detailValueTwo.setText(tileLabel == null || tileLabel.isBlank() ? "\u2014" : tileLabel);
+        detailValueTwo.setText(resolvedPresentation.cellLabel());
         detailKeyThree.setText("Blick");
-        detailValueThree.setText(headingLabel == null || headingLabel.isBlank() ? "\u2014" : headingLabel);
+        detailValueThree.setText(resolvedPresentation.headingLabel());
         sectionHeader.setText("Interaktion");
-        sectionValue.setText(statusLabel == null || statusLabel.isBlank()
-                ? "Token im Dungeon auf ein begehbares Feld ziehen"
-                : statusLabel);
-        rebuildDoorActions(doorActions);
+        sectionValue.setText(resolvedPresentation.statusLabel());
+        rebuildTravelActions(resolvedPresentation.actions());
         actionButton.setText("Ansicht zentrieren");
-        actionButton.setVisible(centerAction != null);
-        actionButton.setManaged(centerAction != null);
+        actionButton.setVisible(resolvedPresentation.centerAction() != null);
+        actionButton.setManaged(resolvedPresentation.centerAction() != null);
         actionButton.setOnAction(event -> {
-            if (centerAction != null) {
-                centerAction.run();
+            if (resolvedPresentation.centerAction() != null) {
+                resolvedPresentation.centerAction().run();
             }
         });
     }
 
-    private void rebuildDoorActions(List<DungeonDoorAction> doorActions) {
+    private void rebuildTravelActions(List<DungeonTravelAction> actions) {
         actionItems.getChildren().clear();
-        List<DungeonDoorAction> resolvedActions = doorActions == null ? List.of() : doorActions;
+        List<DungeonTravelAction> resolvedActions = actions == null ? List.of() : actions;
         if (resolvedActions.isEmpty()) {
             Label hint = new Label("Token im Dungeon auf ein begehbares Feld ziehen");
             hint.getStyleClass().add("travel-placeholder");
@@ -174,7 +167,7 @@ public class TravelPane extends VBox implements WorldTravelSurface {
             actionItems.getChildren().add(hint);
             return;
         }
-        for (DungeonDoorAction action : resolvedActions) {
+        for (DungeonTravelAction action : resolvedActions) {
             if (action == null) {
                 continue;
             }

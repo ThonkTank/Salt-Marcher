@@ -2,7 +2,6 @@ package features.world.dungeonmap.canvas.grid;
 
 import features.world.dungeonmap.canvas.base.DungeonCanvasCamera;
 import features.world.dungeonmap.canvas.base.DungeonCanvasTheme;
-import features.world.dungeonmap.canvas.base.DungeonDoorNumberOverlay;
 import features.world.dungeonmap.canvas.base.DungeonEditorRenderState;
 import features.world.dungeonmap.canvas.base.DungeonRuntimeRenderOverlay;
 import features.world.dungeonmap.canvas.base.DungeonSceneFrame;
@@ -858,11 +857,11 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             DungeonCanvasCamera camera,
             DungeonRuntimeRenderOverlay runtime
     ) {
-        if (runtime == null || runtime.doorNumbers().isEmpty()) {
+        if (runtime == null || runtime.exitMarkers().isEmpty()) {
             return;
         }
         double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
-        for (DungeonDoorNumberOverlay doorNumber : runtime.doorNumbers()) {
+        for (DungeonRuntimeRenderOverlay.ExitMarker doorNumber : runtime.exitMarkers()) {
             drawDoorNumber(gc, camera, gridSize, doorNumber);
         }
     }
@@ -871,7 +870,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             GraphicsContext gc,
             DungeonCanvasCamera camera,
             double gridSize,
-            DungeonDoorNumberOverlay doorNumber
+            DungeonRuntimeRenderOverlay.ExitMarker doorNumber
     ) {
         if (doorNumber == null || doorNumber.anchorSegment2x() == null) {
             return;

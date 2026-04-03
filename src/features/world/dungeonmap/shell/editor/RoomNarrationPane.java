@@ -6,7 +6,6 @@ import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.model.structures.room.RoomExitCatalog;
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
 import features.world.dungeonmap.state.DungeonMapState;
@@ -81,7 +80,7 @@ public final class RoomNarrationPane {
                 room.roomId() == null ? 0L : room.roomId(),
                 room.name(),
                 room.narration().visualDescription(),
-                RoomExitCatalog.describe(mapState.activeMap(), room).stream()
+                room.describeExits(mapState.activeMap()).stream()
                         .map(exit -> new RoomExitCard(
                                 exit.label(),
                                 exit.levelZ(),
