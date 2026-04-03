@@ -1,15 +1,15 @@
 package features.world.dungeonmap.state;
 
-import features.world.dungeonmap.model.interaction.DungeonSelectionKey;
+import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 
 import java.util.Objects;
 
 public record EditorHover(
-        DungeonSelectionKey key,
+        DungeonSelectionRef ref,
         EditorHoverScope scope
 ) {
     public EditorHover {
-        key = Objects.requireNonNull(key, "key");
+        ref = Objects.requireNonNull(ref, "ref");
         scope = Objects.requireNonNull(scope, "scope");
     }
 }

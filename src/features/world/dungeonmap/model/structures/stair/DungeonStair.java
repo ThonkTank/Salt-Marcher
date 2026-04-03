@@ -2,8 +2,8 @@ package features.world.dungeonmap.model.structures.stair;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
-import features.world.dungeonmap.model.structures.TargetKey;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,8 +25,6 @@ import java.util.Set;
  * editor/application code. The persisted domain truth must stay this explicit path.
  */
 public final class DungeonStair {
-
-    private static final String TARGET_KEY_PREFIX = "stair:";
 
     private final Long stairId;
     private final long mapId;
@@ -82,27 +80,11 @@ public final class DungeonStair {
         return exits;
     }
 
-    public String targetKey() {
-        return targetKey(stairId);
-    }
-
-    public static String targetKey(Long stairId) {
-        return TargetKey.of(TARGET_KEY_PREFIX, stairId).value();
-    }
-
     public String label() {
         if (name != null) {
             return name;
         }
         return stairId == null ? "Treppe neu" : "Treppe " + stairId;
-    }
-
-    public static boolean isTargetKey(String targetKey) {
-        return TargetKey.matches(targetKey, TARGET_KEY_PREFIX);
-    }
-
-    public static Long stairIdFromKey(String targetKey) {
-        return TargetKey.parseId(targetKey, TARGET_KEY_PREFIX);
     }
 
     public Set<Integer> reachableLevels() {
@@ -132,7 +114,7 @@ public final class DungeonStair {
             return null;
         }
         return new InteractiveLabelHandle(
-                targetKey(),
+                new DungeonSelectionRef.StairRef(stairId),
                 label(),
                 GridPoint2x.cell(anchorPoint.projectedCell()));
     }

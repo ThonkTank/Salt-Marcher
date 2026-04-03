@@ -138,15 +138,10 @@ public final class PaintTool implements EditorTool {
 
     @Override
     public EditorHitResolution resolveHit(EditorToolContext ctx, EditorToolPhase phase) {
-        if (ctx == null || !sessionState.selectedTool().isRoomTool()) {
+        if (ctx == null || !sessionState.selectedTool().isRoomTool() || ctx.probe() == null) {
             return EditorHitResolution.none();
         }
-        DungeonHitSubject subject = ctx.selection() == null
-                ? null
-                : ctx.selection().firstSubjectMatching(candidate -> candidate instanceof DungeonHitSubject.FloorCellSubject);
-        if (!(subject instanceof DungeonHitSubject.FloorCellSubject)) {
-            return EditorHitResolution.none();
-        }
+        DungeonHitSubject subject = new DungeonHitSubject.FloorCellSubject(ctx.probe().gridCell(), ctx.probe().levelZ());
         return phase == EditorToolPhase.HOVER
                 ? EditorHitResolution.none()
                 : EditorHitResolution.subjectOnly(subject);

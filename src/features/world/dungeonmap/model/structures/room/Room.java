@@ -3,7 +3,6 @@ package features.world.dungeonmap.model.structures.room;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.model.objects.StructureObject;
-import features.world.dungeonmap.model.structures.TargetKey;
 
 import java.util.Map;
 import java.util.Set;
@@ -16,8 +15,6 @@ public record Room(
         StructureObject structure,
         RoomNarration narration
 ) {
-    private static final String TARGET_KEY_PREFIX = "room:";
-
     public static Room create(
             Long roomId,
             long mapId,
@@ -79,22 +76,6 @@ public record Room(
 
     public Room withNarration(RoomNarration narration) {
         return new Room(roomId, mapId, clusterId, name, structure, narration);
-    }
-
-    public String targetKey() {
-        return targetKey(roomId);
-    }
-
-    public static String targetKey(Long roomId) {
-        return TargetKey.of(TARGET_KEY_PREFIX, roomId).value();
-    }
-
-    public static boolean isTargetKey(String targetKey) {
-        return TargetKey.matches(targetKey, TARGET_KEY_PREFIX);
-    }
-
-    public static Long roomIdFromKey(String targetKey) {
-        return TargetKey.parseId(targetKey, TARGET_KEY_PREFIX);
     }
 
     public Room movedBy(CellCoord delta) {

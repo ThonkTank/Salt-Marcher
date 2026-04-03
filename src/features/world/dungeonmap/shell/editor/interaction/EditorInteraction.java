@@ -5,12 +5,9 @@ import features.world.dungeonmap.canvas.base.DungeonCanvasInteractionHandler;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.canvas.base.DungeonCanvasTheme;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.interaction.DungeonSelectionKey;
 import features.world.dungeonmap.shell.interaction.DungeonHitCollector;
 import features.world.dungeonmap.shell.interaction.DungeonHitProbe;
 import features.world.dungeonmap.shell.interaction.DungeonHitSnapshot;
-import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
-import features.world.dungeonmap.shell.interaction.DungeonSelection;
 import features.world.dungeonmap.state.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
@@ -30,7 +27,6 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
     private final EditorInteractionState state;
     private final Map<DungeonEditorTool, EditorTool> toolsByEnum;
     private final DungeonHitCollector hitCollector;
-    private final DungeonEditorSelectionPolicy selectionPolicy = new DungeonEditorSelectionPolicy();
     private EditorTool activeTool;
     private Runnable toolStateChanged = () -> { };
 
@@ -52,25 +48,14 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
 
     @Override
     public boolean handlePressed(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
-        if (!interactionEnabled()) {
+        if (!interactionEnabled() || activeTool == null || !dispatchAllowed(EditorToolPhase.PRESS, event)) {
             return false;
         }
-        if (activeTool == null) {
+        EditorToolContext context = collect(event, camera);
+        if (context == null) {
             return false;
         }
-        EditorContextSnapshot snapshot = collect(event, camera);
-        if (snapshot == null) {
-            return false;
-        }
-        var decision = selectionPolicy.select(
-                DungeonEditorSelectionPolicy.EditorInteractionPhase.PRESS,
-                event,
-                snapshot.hitSnapshot());
-        if (!decision.dispatchToTool()) {
-            return false;
-        }
-        ResolvedToolContext resolved = resolve(event, snapshot, decision.selection(), EditorToolPhase.PRESS);
-        return activeTool.pressed(resolved.context());
+        return activeTool.pressed(resolve(context, EditorToolPhase.PRESS));
     }
 
     @Override
@@ -79,59 +64,36 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
             state.clearHover();
             return;
         }
-        EditorContextSnapshot snapshot = collect(event, camera);
-        if (snapshot == null) {
+        EditorToolContext context = collect(event, camera);
+        if (context == null) {
             state.clearHover();
             return;
         }
-        DungeonSelection selection = selectionFor(snapshot.hitSnapshot());
-        state.showHover(resolve(event, snapshot, selection, EditorToolPhase.HOVER).resolution().hover());
+        resolve(context, EditorToolPhase.HOVER);
     }
 
     @Override
     public boolean handleDragged(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
-        if (!interactionEnabled()) {
+        if (!interactionEnabled() || activeTool == null || !dispatchAllowed(EditorToolPhase.DRAG, event)) {
             return false;
         }
-        if (activeTool == null) {
+        EditorToolContext context = collect(event, camera);
+        if (context == null) {
             return false;
         }
-        EditorContextSnapshot snapshot = collect(event, camera);
-        if (snapshot == null) {
-            return false;
-        }
-        var decision = selectionPolicy.select(
-                DungeonEditorSelectionPolicy.EditorInteractionPhase.DRAG,
-                event,
-                snapshot.hitSnapshot());
-        if (!decision.dispatchToTool()) {
-            return false;
-        }
-        ResolvedToolContext resolved = resolve(event, snapshot, decision.selection(), EditorToolPhase.DRAG);
-        return activeTool.dragged(resolved.context());
+        return activeTool.dragged(resolve(context, EditorToolPhase.DRAG));
     }
 
     @Override
     public boolean handleReleased(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
-        if (!interactionEnabled()) {
+        if (!interactionEnabled() || activeTool == null || !dispatchAllowed(EditorToolPhase.RELEASE, event)) {
             return false;
         }
-        if (activeTool == null) {
+        EditorToolContext context = collect(event, camera);
+        if (context == null) {
             return false;
         }
-        EditorContextSnapshot snapshot = collect(event, camera);
-        if (snapshot == null) {
-            return false;
-        }
-        var decision = selectionPolicy.select(
-                DungeonEditorSelectionPolicy.EditorInteractionPhase.RELEASE,
-                event,
-                snapshot.hitSnapshot());
-        if (!decision.dispatchToTool()) {
-            return false;
-        }
-        ResolvedToolContext resolved = resolve(event, snapshot, decision.selection(), EditorToolPhase.RELEASE);
-        return activeTool.released(resolved.context());
+        return activeTool.released(resolve(context, EditorToolPhase.RELEASE));
     }
 
     @Override
@@ -175,40 +137,15 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
         return sessionState.viewMode() == DungeonViewMode.GRID && !mapState.busy();
     }
 
-    private EditorToolContext contextFor(
-            DungeonCanvasPointerEvent event,
-            EditorContextSnapshot snapshot,
-            DungeonSelection selection,
-            DungeonHitSubject resolvedSubject,
-            DungeonSelectionKey resolvedKey
-    ) {
-        return new EditorToolContext(
-                event,
-                snapshot.activeMap(),
-                snapshot.probe(),
-                snapshot.hitSnapshot(),
-                selection,
-                resolvedSubject,
-                resolvedKey,
-                state);
-    }
-
-    private ResolvedToolContext resolve(
-            DungeonCanvasPointerEvent event,
-            EditorContextSnapshot snapshot,
-            DungeonSelection selection,
-            EditorToolPhase phase
-    ) {
-        EditorToolContext baseContext = contextFor(event, snapshot, selection, null, null);
+    private EditorToolContext resolve(EditorToolContext baseContext, EditorToolPhase phase) {
         EditorHitResolution resolution = activeTool == null
                 ? EditorHitResolution.none()
                 : activeTool.resolveHit(baseContext, phase);
-        return new ResolvedToolContext(
-                contextFor(event, snapshot, selection, resolution.subject(), resolution.resolvedKey()),
-                resolution);
+        state.showHover(phase == EditorToolPhase.HOVER ? resolution.hover() : state.hovered());
+        return baseContext.withResolved(resolution.subject(), resolution.resolvedRef());
     }
 
-    private EditorContextSnapshot collect(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
+    private EditorToolContext collect(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
         if (event == null || event.canvasPoint() == null || event.gridCell() == null || camera == null) {
             return null;
         }
@@ -224,11 +161,19 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
                 camera.panY(),
                 gridSize);
         DungeonHitSnapshot hitSnapshot = hitCollector.collect(activeMap, probe);
-        return new EditorContextSnapshot(activeMap, camera, probe, hitSnapshot);
+        return new EditorToolContext(event, activeMap, probe, hitSnapshot, null, null, state);
     }
 
-    private static DungeonSelection selectionFor(DungeonHitSnapshot snapshot) {
-        return new DungeonSelection(snapshot, snapshot == null ? List.of() : snapshot.candidates());
+    private static boolean dispatchAllowed(EditorToolPhase phase, DungeonCanvasPointerEvent event) {
+        if (event == null) {
+            return false;
+        }
+        return switch (phase) {
+            case HOVER -> true;
+            case PRESS -> event.isPrimaryButton() || event.isSecondaryButton();
+            case DRAG -> event.isPrimaryButtonDown();
+            case RELEASE -> true;
+        };
     }
 
     private static Map<DungeonEditorTool, EditorTool> buildToolMap(List<EditorTool> tools) {
@@ -245,17 +190,4 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
         return Map.copyOf(toolsByEnum);
     }
 
-    private record EditorContextSnapshot(
-            DungeonLayout activeMap,
-            DungeonCanvasCamera camera,
-            DungeonHitProbe probe,
-            DungeonHitSnapshot hitSnapshot
-    ) {
-    }
-
-    private record ResolvedToolContext(
-            EditorToolContext context,
-            EditorHitResolution resolution
-    ) {
-    }
 }

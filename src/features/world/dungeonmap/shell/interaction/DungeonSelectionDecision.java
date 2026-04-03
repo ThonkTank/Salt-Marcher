@@ -3,12 +3,12 @@ package features.world.dungeonmap.shell.interaction;
 import java.util.Objects;
 
 public record DungeonSelectionDecision(
-        DungeonSelection selection,
+        DungeonHitSnapshot snapshot,
         boolean dispatchToTool,
         boolean beginDrag
 ) {
 
     public DungeonSelectionDecision {
-        selection = Objects.requireNonNull(selection, "selection");
+        snapshot = Objects.requireNonNull(snapshot, "snapshot");
     }
 }

@@ -2,17 +2,13 @@ package features.world.dungeonmap.shell.interaction;
 
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.interaction.DungeonHitKind;
-import features.world.dungeonmap.model.interaction.DungeonSelectionKey;
+import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
-import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.ConnectionKind;
-import features.world.dungeonmap.model.structures.corridor.Corridor;
-import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.model.structures.stair.DungeonStair;
-import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 
 import java.util.Objects;
 
@@ -32,12 +28,10 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
 
     DungeonHitKind kind();
 
-    String targetKey();
+    DungeonSelectionRef ref();
 
-    String partKey();
-
-    default DungeonSelectionKey selectionKey() {
-        return new DungeonSelectionKey(kind(), targetKey(), partKey());
+    default DungeonSelectionRef ownerRef() {
+        return ref();
     }
 
     record VertexSubject(GridPoint2x vertex2x) implements DungeonHitSubject {
@@ -54,13 +48,13 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         }
 
         @Override
-        public String targetKey() {
-            return "";
+        public DungeonSelectionRef ref() {
+            return new DungeonSelectionRef.VertexRef(vertex2x);
         }
 
         @Override
-        public String partKey() {
-            return DungeonHitConventions.vertexPartKey(vertex2x);
+        public DungeonSelectionRef ownerRef() {
+            return null;
         }
     }
 
@@ -71,13 +65,8 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         }
 
         @Override
-        public String targetKey() {
-            return RoomCluster.targetKey(clusterId);
-        }
-
-        @Override
-        public String partKey() {
-            return DungeonHitConventions.labelPartKey();
+        public DungeonSelectionRef ref() {
+            return new DungeonSelectionRef.ClusterRef(clusterId);
         }
     }
 
@@ -101,13 +90,13 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         }
 
         @Override
-        public String targetKey() {
-            return RoomCluster.targetKey(clusterId);
+        public DungeonSelectionRef ref() {
+            return new DungeonSelectionRef.ClusterBoundaryRef(clusterId, boundarySegment2x);
         }
 
         @Override
-        public String partKey() {
-            return DungeonHitConventions.segment2xPartKey(boundarySegment2x);
+        public DungeonSelectionRef ownerRef() {
+            return new DungeonSelectionRef.ClusterRef(clusterId);
         }
     }
 
@@ -118,13 +107,8 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         }
 
         @Override
-        public String targetKey() {
-            return Room.targetKey(roomId);
-        }
-
-        @Override
-        public String partKey() {
-            return DungeonHitConventions.noPartKey();
+        public DungeonSelectionRef ref() {
+            return new DungeonSelectionRef.RoomRef(roomId);
         }
     }
 
@@ -148,13 +132,13 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         }
 
         @Override
-        public String targetKey() {
-            return Room.targetKey(roomId);
+        public DungeonSelectionRef ref() {
+            return new DungeonSelectionRef.RoomBoundaryRef(roomId, boundarySegment2x);
         }
 
         @Override
-        public String partKey() {
-            return DungeonHitConventions.segment2xPartKey(boundarySegment2x);
+        public DungeonSelectionRef ownerRef() {
+            return new DungeonSelectionRef.RoomRef(roomId);
         }
     }
 
@@ -189,18 +173,17 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         }
 
         @Override
-        public String targetKey() {
-            return switch (connectionKind) {
-                case LOCAL -> RoomCluster.targetKey(clusterId);
-                case CORRIDOR -> Corridor.targetKey(corridorId);
-                case STAIR, TRANSITION -> throw new IllegalStateException(
-                        "Unsupported connection kind for ConnectionSubject: " + connectionKind);
-            };
+        public DungeonSelectionRef ref() {
+            return new DungeonSelectionRef.ConnectionRef(connectionKind, clusterId, corridorId, boundarySegment2x);
         }
 
         @Override
-        public String partKey() {
-            return DungeonHitConventions.segment2xPartKey(boundarySegment2x);
+        public DungeonSelectionRef ownerRef() {
+            return switch (connectionKind) {
+                case LOCAL -> new DungeonSelectionRef.ClusterRef(clusterId);
+                case CORRIDOR -> new DungeonSelectionRef.CorridorRef(corridorId);
+                case STAIR, TRANSITION -> null;
+            };
         }
     }
 
@@ -211,13 +194,8 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         }
 
         @Override
-        public String targetKey() {
-            return Corridor.targetKey(corridorId);
-        }
-
-        @Override
-        public String partKey() {
-            return DungeonHitConventions.noPartKey();
+        public DungeonSelectionRef ref() {
+            return new DungeonSelectionRef.CorridorRef(corridorId);
         }
     }
 
@@ -235,13 +213,13 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         }
 
         @Override
-        public String targetKey() {
-            return Corridor.targetKey(corridorId);
+        public DungeonSelectionRef ref() {
+            return new DungeonSelectionRef.CorridorNodeRef(corridorId, nodeId, point2x);
         }
 
         @Override
-        public String partKey() {
-            return DungeonHitConventions.nodePartKey(nodeId);
+        public DungeonSelectionRef ownerRef() {
+            return new DungeonSelectionRef.CorridorRef(corridorId);
         }
     }
 
@@ -256,13 +234,13 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         }
 
         @Override
-        public String targetKey() {
-            return Corridor.targetKey(corridorId);
+        public DungeonSelectionRef ref() {
+            return new DungeonSelectionRef.CorridorCornerRef(corridorId, point2x);
         }
 
         @Override
-        public String partKey() {
-            return DungeonHitConventions.cornerPartKey(point2x);
+        public DungeonSelectionRef ownerRef() {
+            return new DungeonSelectionRef.CorridorRef(corridorId);
         }
     }
 
@@ -280,13 +258,13 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         }
 
         @Override
-        public String targetKey() {
-            return Corridor.targetKey(corridorId);
+        public DungeonSelectionRef ref() {
+            return new DungeonSelectionRef.CorridorSegmentRef(corridorId, segmentId);
         }
 
         @Override
-        public String partKey() {
-            return DungeonHitConventions.segmentPartKey(segmentId);
+        public DungeonSelectionRef ownerRef() {
+            return new DungeonSelectionRef.CorridorRef(corridorId);
         }
     }
 
@@ -297,13 +275,8 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         }
 
         @Override
-        public String targetKey() {
-            return DungeonStair.targetKey(stairId);
-        }
-
-        @Override
-        public String partKey() {
-            return DungeonHitConventions.noPartKey();
+        public DungeonSelectionRef ref() {
+            return new DungeonSelectionRef.StairRef(stairId);
         }
     }
 
@@ -314,13 +287,8 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         }
 
         @Override
-        public String targetKey() {
-            return DungeonTransition.targetKey(transitionId);
-        }
-
-        @Override
-        public String partKey() {
-            return DungeonHitConventions.noPartKey();
+        public DungeonSelectionRef ref() {
+            return new DungeonSelectionRef.TransitionRef(transitionId);
         }
     }
 
@@ -335,13 +303,8 @@ public sealed interface DungeonHitSubject permits DungeonHitSubject.VertexSubjec
         }
 
         @Override
-        public String targetKey() {
-            return "";
-        }
-
-        @Override
-        public String partKey() {
-            return DungeonHitConventions.cellPartKey(cell, levelZ);
+        public DungeonSelectionRef ref() {
+            return new DungeonSelectionRef.FloorCellRef(CubePoint.at(cell, levelZ));
         }
     }
 }

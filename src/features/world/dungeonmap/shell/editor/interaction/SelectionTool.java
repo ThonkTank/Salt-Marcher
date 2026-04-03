@@ -12,17 +12,14 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
-import features.world.dungeonmap.model.interaction.DungeonHitKind;
-import features.world.dungeonmap.model.interaction.DungeonSelectionKey;
+import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
 import features.world.dungeonmap.shell.editor.EditorCards;
-import features.world.dungeonmap.shell.interaction.DungeonHitConventions;
 import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
-import features.world.dungeonmap.shell.interaction.DungeonSelectionLookup;
 import features.world.dungeonmap.state.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.EditorInteractionState;
@@ -110,12 +107,12 @@ public final class SelectionTool implements EditorTool {
             return false;
         }
         DungeonHitSubject hit = ctx == null ? null : ctx.resolvedSubject();
-        DungeonSelectionKey resolvedSelectionKey = ctx == null ? null : ctx.resolvedSelectionKey();
+        DungeonSelectionRef resolvedSelectionRef = ctx == null ? null : ctx.resolvedSelectionRef();
         clear();
         if (hit instanceof DungeonHitSubject.CorridorNodeSubject corridorNodeHit
                 && corridorNodeHit.corridorId() != null
                 && corridorNodeHit.nodeId() != null) {
-            state.selectKey(resolvedSelectionKey);
+            state.selectRef(resolvedSelectionRef);
             corridorNodeDragSession = new CorridorNodeDragSession(
                     corridorNodeHit.corridorId(),
                     corridorNodeHit.nodeId(),
@@ -124,7 +121,7 @@ public final class SelectionTool implements EditorTool {
             return true;
         }
         if (hit instanceof DungeonHitSubject.ClusterLabelSubject clusterLabelHit) {
-            state.selectKey(resolvedSelectionKey);
+            state.selectRef(resolvedSelectionRef);
             dragSession = ClusterDragSession.start(
                     clusterLabelHit.clusterId(),
                     mapState.activeMap(),
@@ -133,15 +130,15 @@ public final class SelectionTool implements EditorTool {
             return true;
         }
         if (hit instanceof DungeonHitSubject.StairSubject) {
-            state.selectKey(resolvedSelectionKey);
+            state.selectRef(resolvedSelectionRef);
             return true;
         }
         if (hit instanceof DungeonHitSubject.TransitionSubject) {
-            state.selectKey(resolvedSelectionKey);
+            state.selectRef(resolvedSelectionRef);
             return true;
         }
-        if (hit != null && !hit.targetKey().isBlank()) {
-            state.selectKey(resolvedSelectionKey);
+        if (hit != null && hit.ownerRef() != null) {
+            state.selectRef(resolvedSelectionRef);
             return true;
         }
         state.clearSelection();
@@ -198,7 +195,10 @@ public final class SelectionTool implements EditorTool {
                                 return mapState.activeMapId();
                             },
                             updatedMapId -> updatedMapId,
-                            ignored -> state.selectKey(corridorNodeKey(current.corridorId(), current.nodeId())),
+                            ignored -> state.selectRef(corridorNodeRef(
+                                    current.corridorId(),
+                                    current.nodeId(),
+                                    current.currentPoint())),
                             throwable -> UiErrorReporter.reportBackgroundFailure("SelectionTool.released()", throwable));
                 }
             }
@@ -232,7 +232,7 @@ public final class SelectionTool implements EditorTool {
         if (activeTool != DungeonEditorTool.SELECT) {
             return EditorHitResolution.none();
         }
-        DungeonHitSubject subject = resolvedSubject(ctx == null ? null : ctx.selection());
+        DungeonHitSubject subject = resolvedSubject(ctx == null ? null : ctx.snapshot());
         if (subject == null) {
             return EditorHitResolution.none();
         }
@@ -386,14 +386,11 @@ public final class SelectionTool implements EditorTool {
     }
 
     private RoomCluster selectedCluster() {
-        return DungeonSelectionLookup.clusterOnLevel(
-                mapState.activeMap(),
-                state.selectedKey(),
-                mapState.activeProjectionLevel());
+        return mapState.activeMap().clusterOnLevel(state.selectedRef(), mapState.activeProjectionLevel());
     }
 
     private Room selectedRoom() {
-        return DungeonSelectionLookup.room(mapState.activeMap(), state.selectedKey());
+        return mapState.activeMap().room(state.selectedRef());
     }
 
     private void clear() {
@@ -402,11 +399,11 @@ public final class SelectionTool implements EditorTool {
         state.clearPreview();
     }
 
-    private static DungeonHitSubject resolvedSubject(features.world.dungeonmap.shell.interaction.DungeonSelection selection) {
-        if (selection == null) {
+    private static DungeonHitSubject resolvedSubject(features.world.dungeonmap.shell.interaction.DungeonHitSnapshot snapshot) {
+        if (snapshot == null) {
             return null;
         }
-        return selection.firstSubjectMatching(SelectionTool::isRelevantSubject);
+        return snapshot.firstSubjectMatching(SelectionTool::isRelevantSubject);
     }
 
     private static boolean isRelevantSubject(DungeonHitSubject subject) {
@@ -420,11 +417,8 @@ public final class SelectionTool implements EditorTool {
                 || subject instanceof DungeonHitSubject.TransitionSubject;
     }
 
-    private static DungeonSelectionKey corridorNodeKey(long corridorId, Long nodeId) {
-        return new DungeonSelectionKey(
-                DungeonHitKind.CORRIDOR_NODE,
-                Corridor.targetKey(corridorId),
-                DungeonHitConventions.nodePartKey(nodeId));
+    private static DungeonSelectionRef corridorNodeRef(long corridorId, Long nodeId, GridPoint2x point2x) {
+        return new DungeonSelectionRef.CorridorNodeRef(corridorId, nodeId, point2x);
     }
 
     private DungeonLayout previewMap() {

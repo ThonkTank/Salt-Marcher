@@ -355,7 +355,9 @@ public final class DungeonCanvasWorkspace extends BorderPane {
     }
 
     private DungeonLayout renderedMapModel() {
-        DungeonLayout base = editorRenderState.previewLayout() == null ? mapModel : editorRenderState.previewLayout();
+        DungeonLayout base = editorRenderState.preview() instanceof features.world.dungeonmap.state.EditorPreview.LayoutPreview layoutPreview
+                ? layoutPreview.layout()
+                : mapModel;
         DungeonLayout resolved = base == null ? DungeonLayout.empty() : base;
         return resolved;
     }

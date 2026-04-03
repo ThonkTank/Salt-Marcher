@@ -7,7 +7,6 @@ import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.model.objects.StructureObject;
-import features.world.dungeonmap.model.structures.TargetKey;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.CorridorConnection;
 import features.world.dungeonmap.model.structures.room.Room;
@@ -34,7 +33,6 @@ import java.util.Set;
  */
 public final class Corridor {
 
-    private static final String TARGET_KEY_PREFIX = "corridor:";
     private static final int ROUTE_MARGIN = 4;
 
     private final Long corridorId;
@@ -118,22 +116,6 @@ public final class Corridor {
 
     public Long corridorId() {
         return corridorId;
-    }
-
-    public String targetKey() {
-        return targetKey(corridorId);
-    }
-
-    public static String targetKey(Long corridorId) {
-        return TargetKey.of(TARGET_KEY_PREFIX, corridorId).value();
-    }
-
-    public static boolean isTargetKey(String targetKey) {
-        return TargetKey.matches(targetKey, TARGET_KEY_PREFIX);
-    }
-
-    public static Long corridorIdFromKey(String targetKey) {
-        return TargetKey.parseId(targetKey, TARGET_KEY_PREFIX);
     }
 
     public long mapId() {

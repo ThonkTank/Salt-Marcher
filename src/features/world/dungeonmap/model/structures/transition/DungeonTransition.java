@@ -2,8 +2,8 @@ package features.world.dungeonmap.model.structures.transition;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
-import features.world.dungeonmap.model.structures.TargetKey;
 
 public record DungeonTransition(
         Long transitionId,
@@ -13,31 +13,12 @@ public record DungeonTransition(
         DungeonTransitionDestination destination,
         Long linkedTransitionId
 ) {
-
-    private static final String TARGET_KEY_PREFIX = "transition:";
-
     public DungeonTransition {
         description = description == null ? "" : description.trim();
     }
 
     public String label() {
         return "Übergang " + (transitionId == null ? "neu" : transitionId);
-    }
-
-    public String targetKey() {
-        return targetKey(transitionId);
-    }
-
-    public static String targetKey(Long transitionId) {
-        return TargetKey.of(TARGET_KEY_PREFIX, transitionId).value();
-    }
-
-    public static boolean isTargetKey(String targetKey) {
-        return TargetKey.matches(targetKey, TARGET_KEY_PREFIX);
-    }
-
-    public static Long transitionIdFromKey(String targetKey) {
-        return TargetKey.parseId(targetKey, TARGET_KEY_PREFIX);
     }
 
     public boolean isPlaced() {
@@ -53,7 +34,7 @@ public record DungeonTransition(
             return null;
         }
         return new InteractiveLabelHandle(
-                targetKey(),
+                new DungeonSelectionRef.TransitionRef(transitionId),
                 label(),
                 GridPoint2x.cell(anchor.projectedCell()));
     }

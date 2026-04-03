@@ -3,6 +3,7 @@ package features.world.dungeonmap.model;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.structures.cluster.ClusterRewrite;
 import features.world.dungeonmap.model.structures.cluster.ClusterRewriteSplit;
@@ -330,6 +331,59 @@ public final class DungeonLayout {
     public RoomCluster clusterForRoom(Long roomId) {
         Room room = findRoom(roomId);
         return room == null ? null : findCluster(room.clusterId());
+    }
+
+    public Long clusterId(DungeonSelectionRef ref) {
+        if (ref == null) {
+            return null;
+        }
+        Long directClusterId = ref.clusterOwnerId();
+        if (directClusterId != null) {
+            return directClusterId;
+        }
+        Long roomOwnerId = ref.roomOwnerId();
+        if (roomOwnerId == null) {
+            return null;
+        }
+        Room room = findRoom(roomOwnerId);
+        return room == null ? null : room.clusterId();
+    }
+
+    public RoomCluster clusterOnLevel(DungeonSelectionRef ref, int levelZ) {
+        Long clusterId = clusterId(ref);
+        RoomCluster cluster = findCluster(clusterId);
+        if (cluster == null || levelForCluster(clusterId) != levelZ) {
+            return null;
+        }
+        return cluster;
+    }
+
+    public Room room(DungeonSelectionRef ref) {
+        if (ref == null || ref.roomOwnerId() == null) {
+            return null;
+        }
+        return findRoom(ref.roomOwnerId());
+    }
+
+    public Corridor corridor(DungeonSelectionRef ref) {
+        if (ref == null || ref.corridorOwnerId() == null) {
+            return null;
+        }
+        return findCorridor(ref.corridorOwnerId());
+    }
+
+    public DungeonStair stair(DungeonSelectionRef ref) {
+        if (ref == null || ref.stairOwnerId() == null) {
+            return null;
+        }
+        return findStair(ref.stairOwnerId());
+    }
+
+    public DungeonTransition transition(DungeonSelectionRef ref) {
+        if (ref == null || ref.transitionOwnerId() == null) {
+            return null;
+        }
+        return findTransition(ref.transitionOwnerId());
     }
 
     public Room roomAtCell(CellCoord cell) {

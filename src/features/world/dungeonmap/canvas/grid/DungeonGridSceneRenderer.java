@@ -13,9 +13,8 @@ import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.interaction.DungeonHitKind;
+import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
-import features.world.dungeonmap.model.interaction.DungeonSelectionKey;
 import features.world.dungeonmap.model.objects.Floor;
 import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
@@ -24,8 +23,8 @@ import features.world.dungeonmap.model.structures.corridor.CorridorNode;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
-import features.world.dungeonmap.shell.interaction.DungeonSelectionLookup;
 import features.world.dungeonmap.state.EditorHover;
+import features.world.dungeonmap.state.EditorPreview;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -114,14 +113,13 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         Set<GridSegment2x> selectedRoomDoorSegments = new LinkedHashSet<>();
         for (RoomCluster cluster : mapModel.clusters()) {
             InteractiveLabelHandle handle = cluster.labelHandle();
-            boolean selectedCluster = handle != null && Objects.equals(handle.key(), pass.selectedTargetKey());
+            boolean selectedCluster = selectedCluster(pass.selectedRef(), cluster.clusterId());
             for (Room room : cluster.rooms()) {
                 WalkableSurface surface = walkableSurface(room.structure(), pass.projectionLevel());
                 if (surface.tiles().isEmpty()) {
                     continue;
                 }
-                boolean selectedRoom = Room.isTargetKey(pass.selectedTargetKey())
-                        && Objects.equals(room.roomId(), Room.roomIdFromKey(pass.selectedTargetKey()));
+                boolean selectedRoom = selectedRoom(pass.selectedRef(), room.roomId());
                 fillRoomTiles(gc, pass.camera(), pass.gridSize(), surface.tiles());
                 strokeRoomTiles(gc, pass.camera(), pass.gridSize(), surface.tiles(), pass.palette().roomStroke(), 1.0);
                 if (selectedCluster || selectedRoom) {
@@ -319,7 +317,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         for (RoomCluster cluster : pass.projected().clusters()) {
             InteractiveLabelHandle handle = cluster.labelHandle();
             javafx.geometry.Rectangle2D bounds = DungeonGridInteractiveLabels.bounds(handle, pass.camera(), pass.gridSize());
-            boolean selected = handle != null && Objects.equals(handle.key(), pass.selectedTargetKey());
+            boolean selected = selectedCluster(pass.selectedRef(), cluster.clusterId());
             gc.setFill(selected ? DungeonCanvasTheme.GRAPH_NODE_FILL : DungeonCanvasTheme.LABEL_FILL);
             gc.fillRoundRect(bounds.getMinX(), bounds.getMinY(), bounds.getWidth(), bounds.getHeight(), 14, 14);
             gc.setStroke(selected ? DungeonCanvasTheme.ROOM_SELECTED_WALL_STROKE : DungeonCanvasTheme.LABEL_BORDER);
@@ -338,7 +336,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             if (corridor == null) {
                 continue;
             }
-            boolean selected = Objects.equals(corridor.targetKey(), pass.selectedTargetKey());
+            boolean selected = selectedCorridor(pass.selectedRef(), corridor.corridorId());
             WalkableSurface surface = walkableSurface(corridor.structure(), pass.projectionLevel());
             if (surface.tiles().isEmpty() && surface.doorSegments().isEmpty()) {
                 continue;
@@ -429,129 +427,120 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             return;
         }
         if (hovered.scope().showsTarget()) {
-            drawHoveredTarget(pass, hovered.key());
+            drawHoveredTarget(pass, hovered.ref());
         }
         if (hovered.scope().showsPart()) {
-            drawHoveredPart(pass, hovered.key());
+            drawHoveredPart(pass, hovered.ref());
         }
     }
 
-    private static void drawHoveredTarget(StructureRenderPass pass, DungeonSelectionKey key) {
-        if (key == null) {
+    private static void drawHoveredTarget(StructureRenderPass pass, DungeonSelectionRef ref) {
+        if (ref == null || sameOwner(pass.selectedRef(), ref)) {
             return;
         }
-        String targetKey = key.targetKey();
-        if (targetKey == null || targetKey.isBlank() || Objects.equals(targetKey, pass.selectedTargetKey())) {
+        Room room = pass.projected().room(ref);
+        if (room != null) {
+            drawHoveredRoom(pass, room);
             return;
         }
-        if (Room.isTargetKey(targetKey)) {
-            Room room = DungeonSelectionLookup.room(pass.projected(), key);
-            if (room != null) {
-                drawHoveredRoom(pass, room);
-            }
+        Corridor corridor = pass.projected().corridor(ref);
+        if (corridor != null) {
+            drawHoveredCorridor(pass, corridor);
             return;
         }
-        if (Corridor.isTargetKey(targetKey)) {
-            Corridor corridor = DungeonSelectionLookup.corridor(pass.projected(), key);
-            if (corridor != null) {
-                drawHoveredCorridor(pass, corridor);
-            }
+        RoomCluster cluster = pass.projected().clusterOnLevel(ref, pass.projectionLevel());
+        if (cluster != null) {
+            drawHoveredCluster(pass, cluster);
             return;
         }
-        if (RoomCluster.isTargetKey(targetKey)) {
-            RoomCluster cluster = DungeonSelectionLookup.clusterOnLevel(pass.projected(), key, pass.projectionLevel());
-            if (cluster != null) {
-                drawHoveredCluster(pass, cluster);
-            }
+        DungeonStair stair = pass.projected().stair(ref);
+        if (stair != null) {
+            drawHoveredStair(pass, stair);
             return;
         }
-        if (DungeonStair.isTargetKey(targetKey)) {
-            DungeonStair stair = DungeonSelectionLookup.stair(pass.projected(), key);
-            if (stair != null) {
-                drawHoveredStair(pass, stair);
-            }
-            return;
-        }
-        if (DungeonTransition.isTargetKey(targetKey)) {
-            DungeonTransition transition = DungeonSelectionLookup.transition(pass.projected(), key);
-            if (transition != null) {
-                drawHoveredTransition(pass, transition);
-            }
+        DungeonTransition transition = pass.projected().transition(ref);
+        if (transition != null) {
+            drawHoveredTransition(pass, transition);
         }
     }
 
-    private static void drawHoveredPart(StructureRenderPass pass, DungeonSelectionKey key) {
-        if (key == null) {
-            return;
-        }
-        GridSegment2x segment2x = DungeonSelectionLookup.segment2x(key);
-        if (segment2x != null) {
+    private static void drawHoveredPart(StructureRenderPass pass, DungeonSelectionRef ref) {
+        if (ref instanceof DungeonSelectionRef.ClusterBoundaryRef clusterBoundaryRef) {
             pass.gc().setStroke(withOpacity(pass.palette().highlightStroke(), 0.95));
             pass.gc().setLineWidth(3.0);
-            strokeSegment2x(pass.gc(), pass.camera(), pass.gridSize(), segment2x);
+            strokeSegment2x(pass.gc(), pass.camera(), pass.gridSize(), clusterBoundaryRef.boundarySegment2x());
             return;
         }
-        if (key.kind() == DungeonHitKind.CORRIDOR_NODE) {
-            Corridor corridor = DungeonSelectionLookup.corridor(pass.projected(), key);
-            Long nodeId = DungeonSelectionLookup.corridorNodeId(key);
-            CorridorNode node = corridor == null ? null : corridor.findNode(nodeId);
-            if (node != null) {
+        if (ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundaryRef) {
+            pass.gc().setStroke(withOpacity(pass.palette().highlightStroke(), 0.95));
+            pass.gc().setLineWidth(3.0);
+            strokeSegment2x(pass.gc(), pass.camera(), pass.gridSize(), roomBoundaryRef.boundarySegment2x());
+            return;
+        }
+        if (ref instanceof DungeonSelectionRef.ConnectionRef connectionRef) {
+            pass.gc().setStroke(withOpacity(pass.palette().highlightStroke(), 0.95));
+            pass.gc().setLineWidth(3.0);
+            strokeSegment2x(pass.gc(), pass.camera(), pass.gridSize(), connectionRef.boundarySegment2x());
+            return;
+        }
+        if (ref instanceof DungeonSelectionRef.CorridorNodeRef corridorNodeRef) {
+            Corridor corridor = pass.projected().corridor(corridorNodeRef);
+            CorridorNode node = corridor == null ? null : corridor.findNode(corridorNodeRef.nodeId());
+            GridPoint2x point2x = node == null ? corridorNodeRef.point2x() : node.point2x();
+            if (point2x != null) {
                 drawCorridorHandle(
                         pass.gc(),
                         pass.camera(),
                         pass.gridSize(),
-                        node.point2x(),
+                        point2x,
                         withOpacity(pass.palette().highlightFill(), 0.92),
                         withOpacity(pass.palette().highlightStroke(), 1.0),
                         Math.max(5.0, pass.gridSize() * 0.17));
             }
             return;
         }
-        if (key.kind() == DungeonHitKind.CORRIDOR_CORNER) {
-            GridPoint2x corner = DungeonSelectionLookup.corridorCornerPoint2x(key);
-            if (corner != null) {
-                drawCorridorHandle(
-                        pass.gc(),
-                        pass.camera(),
-                        pass.gridSize(),
-                        corner,
-                        withOpacity(pass.palette().highlightFill(), 0.92),
-                        withOpacity(pass.palette().highlightStroke(), 1.0),
-                        Math.max(4.5, pass.gridSize() * 0.14));
-            }
+        if (ref instanceof DungeonSelectionRef.CorridorCornerRef corridorCornerRef) {
+            drawCorridorHandle(
+                    pass.gc(),
+                    pass.camera(),
+                    pass.gridSize(),
+                    corridorCornerRef.point2x(),
+                    withOpacity(pass.palette().highlightFill(), 0.92),
+                    withOpacity(pass.palette().highlightStroke(), 1.0),
+                    Math.max(4.5, pass.gridSize() * 0.14));
             return;
         }
-        if (key.kind() == DungeonHitKind.CORRIDOR_SEGMENT) {
-            Corridor corridor = DungeonSelectionLookup.corridor(pass.projected(), key);
-            Long segmentId = DungeonSelectionLookup.corridorSegmentId(key);
+        if (ref instanceof DungeonSelectionRef.CorridorSegmentRef corridorSegmentRef) {
+            Corridor corridor = pass.projected().corridor(corridorSegmentRef);
+            Long segmentId = corridorSegmentRef.segmentId();
             if (corridor != null && segmentId != null) {
                 corridor.routes().stream()
                         .filter(route -> Objects.equals(route.segmentId(), segmentId))
-                    .findFirst()
-                    .ifPresent(route -> {
-                        pass.gc().setStroke(withOpacity(pass.palette().highlightStroke(), 0.95));
-                        pass.gc().setLineWidth(3.0);
-                        for (GridSegment2x hoveredSegment : route.segments2x()) {
-                            strokeSegment2x(pass.gc(), pass.camera(), pass.gridSize(), hoveredSegment);
-                        }
-                    });
+                        .findFirst()
+                        .ifPresent(route -> {
+                            pass.gc().setStroke(withOpacity(pass.palette().highlightStroke(), 0.95));
+                            pass.gc().setLineWidth(3.0);
+                            for (GridSegment2x hoveredSegment : route.segments2x()) {
+                                strokeSegment2x(pass.gc(), pass.camera(), pass.gridSize(), hoveredSegment);
+                            }
+                        });
             }
             return;
         }
-        GridPoint2x vertex2x = DungeonSelectionLookup.vertex2x(key);
-        if (vertex2x != null) {
+        if (ref instanceof DungeonSelectionRef.VertexRef vertexRef) {
             drawBoundaryVertexMarker(
                     pass.gc(),
                     pass.camera(),
                     pass.gridSize(),
-                    vertex2x,
+                    vertexRef.vertex2x(),
                     withOpacity(pass.palette().highlightFill(), 0.95),
                     withOpacity(pass.palette().highlightStroke(), 1.0),
                     5.0);
             return;
         }
-        CubePoint floorCell = DungeonSelectionLookup.floorCell(key);
-        if (floorCell != null && floorCell.z() == pass.projectionLevel()) {
+        if (ref instanceof DungeonSelectionRef.FloorCellRef floorCellRef
+                && floorCellRef.cell().z() == pass.projectionLevel()) {
+            CubePoint floorCell = floorCellRef.cell();
             double x = pass.camera().panX() + floorCell.x() * pass.gridSize();
             double y = pass.camera().panY() + floorCell.y() * pass.gridSize();
             pass.gc().setFill(withOpacity(pass.palette().highlightFill(), 0.28));
@@ -560,6 +549,44 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             pass.gc().setLineWidth(2.0);
             pass.gc().strokeRect(x, y, pass.gridSize(), pass.gridSize());
         }
+    }
+
+    private static boolean sameOwner(DungeonSelectionRef left, DungeonSelectionRef right) {
+        if (left == null || right == null) {
+            return false;
+        }
+        if (Objects.equals(left, right)) {
+            return true;
+        }
+        return ownerMatches(left.roomOwnerId(), right.roomOwnerId())
+                || ownerMatches(left.clusterOwnerId(), right.clusterOwnerId())
+                || ownerMatches(left.corridorOwnerId(), right.corridorOwnerId())
+                || ownerMatches(left.stairOwnerId(), right.stairOwnerId())
+                || ownerMatches(left.transitionOwnerId(), right.transitionOwnerId());
+    }
+
+    private static boolean ownerMatches(Long leftOwnerId, Long rightOwnerId) {
+        return leftOwnerId != null && Objects.equals(leftOwnerId, rightOwnerId);
+    }
+
+    private static boolean selectedCluster(DungeonSelectionRef selectedRef, Long clusterId) {
+        return selectedRef != null && clusterId != null && Objects.equals(selectedRef.clusterOwnerId(), clusterId);
+    }
+
+    private static boolean selectedRoom(DungeonSelectionRef selectedRef, Long roomId) {
+        return selectedRef != null && roomId != null && Objects.equals(selectedRef.roomOwnerId(), roomId);
+    }
+
+    private static boolean selectedCorridor(DungeonSelectionRef selectedRef, Long corridorId) {
+        return selectedRef != null && corridorId != null && Objects.equals(selectedRef.corridorOwnerId(), corridorId);
+    }
+
+    private static boolean selectedStair(DungeonSelectionRef selectedRef, Long stairId) {
+        return selectedRef != null && stairId != null && Objects.equals(selectedRef.stairOwnerId(), stairId);
+    }
+
+    private static boolean selectedTransition(DungeonSelectionRef selectedRef, Long transitionId) {
+        return selectedRef != null && transitionId != null && Objects.equals(selectedRef.transitionOwnerId(), transitionId);
     }
 
     private static void drawHoveredRoom(StructureRenderPass pass, Room room) {
@@ -623,7 +650,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             if (stair == null) {
                 continue;
             }
-            boolean selected = Objects.equals(stair.targetKey(), pass.selectedTargetKey());
+            boolean selected = selectedStair(pass.selectedRef(), stair.stairId());
             gc.setFill(selected ? pass.palette().highlightFill() : pass.palette().stairFill());
             gc.setStroke(selected ? pass.palette().highlightStroke() : pass.palette().stairStroke());
             gc.setLineWidth(selected ? 2.5 : 1.8);
@@ -694,7 +721,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 projected,
                 frame.camera(),
                 frame.editorMode(),
-                frame.editor().selectedKey() == null ? null : frame.editor().selectedKey().targetKey(),
+                frame.editor().selectedRef(),
                 null,
                 overlay.level(),
                 palette,
@@ -814,7 +841,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             double centerX = pass.camera().panX() + (transition.anchor().x() + 0.5) * pass.gridSize();
             double centerY = pass.camera().panY() + (transition.anchor().y() + 0.5) * pass.gridSize();
             double radius = Math.max(8.0, pass.gridSize() * 0.24);
-            boolean selected = Objects.equals(transition.targetKey(), pass.selectedTargetKey());
+            boolean selected = selectedTransition(pass.selectedRef(), transition.transitionId());
             gc.setFill(selected ? pass.palette().highlightAccent() : pass.palette().transitionFill());
             gc.fillRoundRect(centerX - radius, centerY - radius, radius * 2, radius * 2, 8, 8);
             gc.setStroke(selected ? pass.palette().highlightStroke() : pass.palette().transitionStroke());
@@ -982,7 +1009,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             DungeonCanvasCamera camera,
             double gridSize,
             boolean editorMode,
-            String selectedTargetKey,
+            DungeonSelectionRef selectedRef,
             EditorHover hovered,
             int projectionLevel,
             LayerPalette palette,
@@ -993,7 +1020,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 DungeonLayout projected,
                 DungeonCanvasCamera camera,
                 boolean editorMode,
-                String selectedTargetKey,
+                DungeonSelectionRef selectedRef,
                 EditorHover hovered,
                 int projectionLevel,
                 LayerPalette palette,
@@ -1005,7 +1032,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                     camera,
                     DungeonCanvasTheme.BASE_GRID * camera.zoom(),
                     editorMode,
-                    selectedTargetKey,
+                    selectedRef,
                     hovered,
                     projectionLevel,
                     palette,
@@ -1122,7 +1149,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                     frame.projectedLayout(),
                     frame.camera(),
                     frame.editorMode(),
-                    frame.editor().selectedKey() == null ? null : frame.editor().selectedKey().targetKey(),
+                    frame.editor().selectedRef(),
                     frame.editor().hovered(),
                     frame.projectionLevel(),
                     LayerPalette.current(frame.editorMode()),
@@ -1160,21 +1187,25 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 return;
             }
             DungeonEditorRenderState editor = frame.editor();
-            drawPaintPreview(
-                    gc,
-                    frame.camera(),
-                    editor.paintPreviewStructure(),
-                    editor.paintPreviewLevelZ(),
-                    editor.paintPreviewDeleteMode());
-            drawBoundaryPreview(
-                    gc,
-                    frame.camera(),
-                    DungeonCanvasTheme.BASE_GRID * frame.camera().zoom(),
-                    editor.boundaryPreviewEdges(),
-                    editor.boundaryPreviewSkippedEdges(),
-                    editor.boundaryPreviewStartVertex2x(),
-                    editor.boundaryPreviewCurrentVertex2x(),
-                    editor.boundaryPreviewDeleteMode());
+            if (editor.preview() instanceof EditorPreview.PaintPreview paintPreview) {
+                drawPaintPreview(
+                        gc,
+                        frame.camera(),
+                        paintPreview.structure(),
+                        paintPreview.levelZ(),
+                        paintPreview.deleteMode());
+            }
+            if (editor.preview() instanceof EditorPreview.BoundaryPreview boundaryPreview) {
+                drawBoundaryPreview(
+                        gc,
+                        frame.camera(),
+                        DungeonCanvasTheme.BASE_GRID * frame.camera().zoom(),
+                        boundaryPreview.edges(),
+                        boundaryPreview.skippedConnectionEdges(),
+                        boundaryPreview.startVertex2x(),
+                        boundaryPreview.currentVertex2x(),
+                        boundaryPreview.deleteMode());
+            }
         }
     }
 

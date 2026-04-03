@@ -99,8 +99,8 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
     }
 
     private void refreshEditorRenderState(EditorInteractionState interactionState) {
-        workspace().showEditorRenderState(DungeonEditorRenderState.from(
-                interactionState.selectedKey(),
+        workspace().showEditorRenderState(new DungeonEditorRenderState(
+                interactionState.selectedRef(),
                 interactionState.hovered(),
                 interactionState.activePreview()));
     }

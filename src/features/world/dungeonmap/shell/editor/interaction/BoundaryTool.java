@@ -6,13 +6,11 @@ import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.interaction.DungeonHitKind;
-import features.world.dungeonmap.model.interaction.DungeonSelectionKey;
+import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.shell.editor.EditorCards;
 import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
-import features.world.dungeonmap.shell.interaction.DungeonSelectionLookup;
 import features.world.dungeonmap.state.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
@@ -119,7 +117,7 @@ public final class BoundaryTool implements EditorTool {
         }
         return EditorHitResolution.part(
                 new DungeonHitSubject.VertexSubject(resolved.vertex2x()),
-                clusterOwnerKey(resolved.clusterId()));
+                clusterOwnerRef(resolved.clusterId()));
     }
 
     @Override
@@ -141,19 +139,16 @@ public final class BoundaryTool implements EditorTool {
     private boolean handleWallPressed(EditorToolContext ctx, boolean deleteMode) {
         DungeonLayout layout = ctx == null ? null : ctx.activeMap();
         GridPoint2x vertex = selectedVertex(ctx);
-        DungeonSelectionKey resolvedKey = ctx == null ? null : ctx.resolvedSelectionKey();
-        RoomCluster cluster = DungeonSelectionLookup.clusterOnLevel(
-                layout,
-                resolvedKey,
-                mapState.activeProjectionLevel());
+        DungeonSelectionRef resolvedRef = ctx == null ? null : ctx.resolvedSelectionRef();
+        RoomCluster cluster = layout == null ? null : layout.clusterOnLevel(resolvedRef, mapState.activeProjectionLevel());
         if (layout == null || vertex == null || cluster == null || cluster.clusterId() == null) {
             if (activeBoundaryDraftClusterId() == null) {
                 state.clearSelection();
             }
             return false;
         }
-        if (!Objects.equals(state.selectedKey(), resolvedKey)) {
-            state.selectKey(resolvedKey);
+        if (!Objects.equals(state.selectedRef(), resolvedRef)) {
+            state.selectRef(resolvedRef);
         }
 
         if (draft == null || !Objects.equals(draft.clusterId(), cluster.clusterId())) {
@@ -241,7 +236,7 @@ public final class BoundaryTool implements EditorTool {
 
     private ResolvedBoundaryVertex resolveBoundaryVertex(EditorToolContext ctx, boolean deleteMode) {
         DungeonLayout layout = ctx == null ? null : ctx.activeMap();
-        GridPoint2x vertex = firstVertex(ctx == null ? null : ctx.selection());
+        GridPoint2x vertex = firstVertex(ctx == null ? null : ctx.snapshot());
         if (layout == null || vertex == null) {
             return null;
         }
@@ -250,12 +245,12 @@ public final class BoundaryTool implements EditorTool {
             return new ResolvedBoundaryVertex(draftClusterId, vertex);
         }
 
-        Long selectedClusterId = DungeonSelectionLookup.clusterId(layout, state.selectedKey());
+        Long selectedClusterId = layout.clusterId(state.selectedRef());
         if (isEditableCluster(selectedClusterId, layout, vertex, deleteMode)) {
             return new ResolvedBoundaryVertex(selectedClusterId, vertex);
         }
 
-        Long boundaryClusterId = boundaryClusterId(ctx == null ? null : ctx.selection());
+        Long boundaryClusterId = boundaryClusterId(ctx == null ? null : ctx.snapshot());
         if (isEditableCluster(boundaryClusterId, layout, vertex, deleteMode)) {
             return new ResolvedBoundaryVertex(boundaryClusterId, vertex);
         }
@@ -289,10 +284,10 @@ public final class BoundaryTool implements EditorTool {
         return cluster;
     }
 
-    private static GridPoint2x firstVertex(features.world.dungeonmap.shell.interaction.DungeonSelection selection) {
-        DungeonHitSubject subject = selection == null
+    private static GridPoint2x firstVertex(features.world.dungeonmap.shell.interaction.DungeonHitSnapshot snapshot) {
+        DungeonHitSubject subject = snapshot == null
                 ? null
-                : selection.firstSubjectMatching(candidate -> candidate instanceof DungeonHitSubject.VertexSubject);
+                : snapshot.firstSubjectMatching(candidate -> candidate instanceof DungeonHitSubject.VertexSubject);
         if (subject instanceof DungeonHitSubject.VertexSubject vertexSubject) {
             return vertexSubject.vertex2x();
         }
@@ -305,11 +300,11 @@ public final class BoundaryTool implements EditorTool {
                 : null;
     }
 
-    private static Long boundaryClusterId(features.world.dungeonmap.shell.interaction.DungeonSelection selection) {
-        if (selection == null) {
+    private static Long boundaryClusterId(features.world.dungeonmap.shell.interaction.DungeonHitSnapshot snapshot) {
+        if (snapshot == null) {
             return null;
         }
-        DungeonHitSubject subject = selection.firstSubjectMatching(candidate ->
+        DungeonHitSubject subject = snapshot.firstSubjectMatching(candidate ->
                 candidate instanceof DungeonHitSubject.ClusterBoundarySubject
                         || candidate instanceof DungeonHitSubject.RoomBoundarySubject);
         return clusterIdFromBoundarySubject(subject);
@@ -342,14 +337,11 @@ public final class BoundaryTool implements EditorTool {
         };
     }
 
-    private static DungeonSelectionKey clusterOwnerKey(Long clusterId) {
+    private static DungeonSelectionRef clusterOwnerRef(Long clusterId) {
         if (clusterId == null) {
             return null;
         }
-        return new DungeonSelectionKey(
-                DungeonHitKind.CLUSTER_LABEL,
-                RoomCluster.targetKey(clusterId),
-                "");
+        return new DungeonSelectionRef.ClusterRef(clusterId);
     }
 
     private void refreshStatePane() {

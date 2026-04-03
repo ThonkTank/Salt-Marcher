@@ -4,12 +4,12 @@ import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.objects.Floor;
 import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.model.objects.StructureObject;
-import features.world.dungeonmap.model.structures.TargetKey;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.LocalConnection;
 import features.world.dungeonmap.model.structures.room.Room;
@@ -25,8 +25,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 public final class RoomCluster {
-
-    private static final String TARGET_KEY_PREFIX = "cluster:";
 
     private final Long clusterId;
     private final long mapId;
@@ -112,25 +110,9 @@ public final class RoomCluster {
         return ClusterRewritePlanner.editBoundary(this, segments2x, type, deleteBoundary);
     }
 
-    public String targetKey() {
-        return targetKey(clusterId);
-    }
-
-    public static String targetKey(Long clusterId) {
-        return TargetKey.of(TARGET_KEY_PREFIX, clusterId).value();
-    }
-
-    public static boolean isTargetKey(String targetKey) {
-        return TargetKey.matches(targetKey, TARGET_KEY_PREFIX);
-    }
-
-    public static Long clusterIdFromKey(String targetKey) {
-        return TargetKey.parseId(targetKey, TARGET_KEY_PREFIX);
-    }
-
     public InteractiveLabelHandle labelHandle() {
         return new InteractiveLabelHandle(
-                targetKey(),
+                new DungeonSelectionRef.ClusterRef(clusterId),
                 clusterId == null ? "Cluster" : "Cluster " + clusterId,
                 GridPoint2x.cell(CellCoord.bestCenter(cells)));
     }

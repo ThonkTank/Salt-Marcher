@@ -1,6 +1,6 @@
 package features.world.dungeonmap.state;
 
-import features.world.dungeonmap.model.interaction.DungeonSelectionKey;
+import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 
 import java.util.List;
 import java.util.Objects;
@@ -10,25 +10,25 @@ public final class EditorInteractionState {
 
     private final List<Runnable> listeners = new CopyOnWriteArrayList<>();
 
-    private DungeonSelectionKey selectedKey;
+    private DungeonSelectionRef selectedRef;
     private EditorHover hovered;
     private EditorPreview activePreview;
     private EditorDraft activeDraft;
 
-    public DungeonSelectionKey selectedKey() {
-        return selectedKey;
+    public DungeonSelectionRef selectedRef() {
+        return selectedRef;
     }
 
-    public void selectKey(DungeonSelectionKey key) {
-        if (Objects.equals(selectedKey, key)) {
+    public void selectRef(DungeonSelectionRef ref) {
+        if (Objects.equals(selectedRef, ref)) {
             return;
         }
-        selectedKey = key;
+        selectedRef = ref;
         notifyListeners();
     }
 
     public void clearSelection() {
-        selectKey(null);
+        selectRef(null);
     }
 
     public EditorHover hovered() {

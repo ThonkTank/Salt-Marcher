@@ -2,8 +2,6 @@ package features.world.dungeonmap.shell.interaction;
 
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
@@ -24,32 +22,21 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
         }
 
         ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
-        CubePoint point = CubePoint.at(probe.gridCell(), probe.levelZ());
-
-        descriptors.addAll(roomDescriptors(layout, point, probe.levelZ()));
+        descriptors.addAll(roomDescriptors(layout, probe));
         descriptors.addAll(corridorDescriptors(layout, probe));
         descriptors.addAll(stairDescriptors(layout, probe));
         descriptors.addAll(transitionDescriptors(layout, probe));
         return List.copyOf(descriptors);
     }
 
-    private static List<DungeonHitDescriptor> roomDescriptors(DungeonLayout layout, CubePoint point, int levelZ) {
-        Map<Long, DungeonHitDescriptor> descriptorsByRoomId = new LinkedHashMap<>();
-        for (RoomCluster cluster : layout.clusters()) {
-            if (cluster == null) {
-                continue;
-            }
-            Room room = cluster.roomAt(point);
-            if (room == null || room.roomId() == null || room.structure().cellCoordsAtLevel(levelZ).isEmpty()) {
-                continue;
-            }
-            descriptorsByRoomId.putIfAbsent(
-                    room.roomId(),
-                    new DungeonHitDescriptor(
-                            new DungeonHitSubject.RoomSubject(room.roomId(), room.clusterId()),
-                            List.of(new DungeonHitSurface.CellSurface(room.structure().cellCoordsAtLevel(levelZ), levelZ))));
+    private static List<DungeonHitDescriptor> roomDescriptors(DungeonLayout layout, DungeonHitProbe probe) {
+        Room room = layout.roomAtCell(probe.gridCell(), probe.levelZ());
+        if (room == null || room.roomId() == null || room.structure().cellCoordsAtLevel(probe.levelZ()).isEmpty()) {
+            return List.of();
         }
-        return List.copyOf(descriptorsByRoomId.values());
+        return List.of(new DungeonHitDescriptor(
+                new DungeonHitSubject.RoomSubject(room.roomId(), room.clusterId()),
+                List.of(new DungeonHitSurface.CellSurface(room.structure().cellCoordsAtLevel(probe.levelZ()), probe.levelZ()))));
     }
 
     private static List<DungeonHitDescriptor> corridorDescriptors(DungeonLayout layout, DungeonHitProbe probe) {

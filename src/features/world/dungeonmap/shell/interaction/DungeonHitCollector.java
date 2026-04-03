@@ -15,8 +15,8 @@ public final class DungeonHitCollector {
     private static final Comparator<DungeonHitCandidate> CANDIDATE_ORDER =
             Comparator.comparingLong(DungeonHitCandidate::effectivePriority).reversed()
                     .thenComparingDouble(DungeonHitCandidate::distancePx)
-                    .thenComparing(candidate -> candidate.descriptor().subject().targetKey())
-                    .thenComparing(candidate -> candidate.descriptor().subject().partKey());
+                    .thenComparing(candidate -> String.valueOf(candidate.descriptor().subject().ownerRef()))
+                    .thenComparing(candidate -> String.valueOf(candidate.descriptor().subject().ref()));
 
     private final List<DungeonHitSource> sources;
 
@@ -26,8 +26,7 @@ public final class DungeonHitCollector {
                 new DungeonBoundaryHitSource(),
                 new DungeonCorridorGraphHitSource(),
                 new DungeonLabelHitSource(),
-                new DungeonVertexHitSource(),
-                new DungeonFloorHitSource()));
+                new DungeonVertexHitSource()));
     }
 
     public DungeonHitCollector(List<DungeonHitSource> sources) {

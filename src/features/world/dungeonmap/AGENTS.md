@@ -33,7 +33,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `model/`
 - `geometry/` owns pure grid math and routing primitives.
 - `geometry/` keeps canonical cell-space on `CellCoord` and the final doubled-grid contract on `GridPoint2x`/`GridSegment2x`. Do not add secondary tile-area wrappers or old-parity bridge types as competing geometry owners.
-  - `interaction/` owns model-side interaction seams such as `InteractiveLabelHandle`, `DungeonHitKind`, and `DungeonSelectionKey`; semantic label and selection identity live here, not in canvas or shell code.
+  - `interaction/` owns model-side interaction seams such as `InteractiveLabelHandle`, `DungeonHitKind`, and `DungeonSelectionRef`; semantic label and selection identity live here, not in canvas or shell code.
 - `objects/` owns thin domain objects over geometry such as `Floor`, `Wall`, `Door`, `StructureObject`, and `StructureDescriptor`. `Wall`/`Door` stay segment-based; shared boundary queries operate on `GridSegment2x`.
   - `structures/` owns first-class structures and the structure-specific subpackages `cluster`, `connection`, `corridor`, `room`, `stair`, and `transition`.
   - `DungeonLayout` stays the feature-wide lookup surface, not a second mutation owner.
@@ -61,7 +61,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `shell/`
   - `editor/` owns the editor view, controls, state pane, dropdowns, and tool coordinator wiring.
   - `editor/interaction/` owns editor tool implementations plus the tool-resolution pipeline.
-  - `interaction/` owns shared hit probing, hit sources, selection objects, placement validation, and drag helpers used by editor and runtime.
+  - `interaction/` owns shared hit probing, hit sources, hit snapshots, placement validation, and drag helpers used by editor and runtime.
   - `runtime/` owns runtime view, runtime interaction controller, and runtime selection policy.
 - `state/`
   - Observable cross-class runtime/editor state only. If a transient concern is private to one tool, keep it on the tool.
@@ -69,34 +69,32 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 
 ## Concern Ownership
 
-- Hit collection owns raw candidates. `DungeonSelection` is event-time data only.
+- Hit collection owns raw candidates. `DungeonHitSnapshot` is the shared event-time selection surface.
 - `CellCoord` is the canonical 2D cell primitive at model-owner seams, pointer events, hit probes, drag/placement helpers, runtime navigation, and renderer overlays.
 - `DungeonHitProbe` carries canonical `CellCoord` cell context plus canonical `GridPoint2x` probe geometry. Cell hits use `DungeonHitSurface.CellSurface`, while shared half-step hit geometry uses set-based `PointSurface` and `SegmentSurface`.
 - `DungeonLayout` owns canonical `CellCoord` lookups, traversable-cell indices, and level-aware cell queries. Corridor room bindings use `CellCoord`; geometry-backed picks and selections use `GridPoint2x` and `GridSegment2x`.
-- `DungeonHitSubject` and `DungeonSelectionLookup` expose geometry-backed editor/runtime selections only as `GridPoint2x` and `GridSegment2x`. Do not add raw doubled-cell mirrors or storage-parity mirrors back into those seams.
-- `DungeonHitKind` and `DungeonSelectionKey` are shared interaction semantics owned by `model/interaction/`, not by `shell/interaction/`.
+- `DungeonHitSubject` and `DungeonSelectionRef` expose geometry-backed editor/runtime selections only as canonical ids plus final `GridPoint2x`, `GridSegment2x`, and `CubePoint`. Do not add raw doubled-cell mirrors or storage-parity mirrors back into those seams.
+- `DungeonHitKind` and `DungeonSelectionRef` are shared interaction semantics owned by `model/interaction/`, not by `shell/interaction/`.
 - `InteractiveLabelHandle`, `DungeonEditorRenderState`, and `DungeonRuntimeRenderOverlay` are display payloads on final `CellCoord`/`GridPoint2x`/`GridSegment2x` only. Renderers and tools must not introduce storage codecs or legacy parity adapters.
 - `EditorTool.resolveHit(...)` owns tool-specific interpretation of those candidates. Do not move per-tool allowlists back into a central selector.
 - `EditorInteractionState` owns only shared editor coordination state:
-  - `selectedKey`
+  - `selectedRef`
   - `hovered` as `EditorHover`
   - `activePreview`
   - `activeDraft`
 - `DungeonEditorSessionState` owns the shared selected tool and active view mode. Do not make it depend on shell- or canvas-owned enums.
-- `EditorHover` is explicit render intent: `EditorHoverScope.OWNER` highlights the owning target, `PART` highlights the concrete part. Hover is not just "the current selection key".
+- `EditorHover` is explicit render intent: `EditorHoverScope.OWNER` highlights the owning target, `PART` highlights the concrete part. Hover is not just "the current selection ref".
 - `DungeonMapState` owns loaded map/catalog data, projection level, overlay settings, loading flags, and mutation-pending state.
 - `DungeonRuntimeState` owns persisted location, drag preview location, heading, and loading/moving error flags.
 - Preview is never commit state. Reload is the authoritative rebuild after a successful write, not a repair step for partial semantics.
 
 ## Editor Interaction
 
-- `DungeonEditorSelectionPolicy` only gates raw input phases. It must not encode tool semantics.
 - `EditorInteraction` runs the canonical editor pipeline:
   1. collect `DungeonHitSnapshot`
-  2. build `DungeonSelection`
-  3. ask the active tool to `resolveHit(...)`
-  4. store hover from `EditorHitResolution`
-  5. dispatch `pressed`, `dragged`, or `released` with an `EditorToolContext` that carries the resolved subject
+  2. ask the active tool to `resolveHit(...)`
+  3. store hover from `EditorHitResolution`
+  4. dispatch `pressed`, `dragged`, or `released` with an `EditorToolContext` that carries the resolved subject and ref
 - `EditorTool` implementations own gesture meaning. Shared state is justified only when multiple collaborators need it.
 - Tool responsibilities:
 - `SelectionTool` owns semantic selection plus cluster-drag and corridor-node drag gestures.
@@ -104,8 +102,8 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `BoundaryTool` owns wall-path drafting. Shared state exposes only boundary preview and lightweight status; the shared preview payload is 2x render geometry, not commit truth.
 - `ConnectionsTool` owns door edits, corridor drafting, node insertion, and corridor deletion. Corridor graph edits use explicit 2x node/segment points.
   - `TransitionTool` owns transition create/delete gestures and keeps its form state local to the tool.
-- `DungeonSelection.firstSubjectMatching(...)` and `orderedSubjects()` are the shared helpers for per-tool subject resolution. Prefer these over ad-hoc candidate walks.
-- Selection identity is semantic. Use owner-provided keys (`DungeonSelectionKey`, label handles, structure ids) instead of reconstructing or parsing them in renderers.
+- `DungeonHitSnapshot.firstSubjectMatching(...)` and `orderedSubjects()` are the shared helpers for per-tool subject resolution. Prefer these over ad-hoc candidate walks.
+- Selection identity is semantic. Use owner-provided refs (`DungeonSelectionRef`, label handles, structure ids plus geometry) instead of reconstructing or parsing them in renderers.
 
 ## Workspace And Rendering
 
@@ -119,7 +117,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
   - pan: middle-mouse drag
   - level change: Ctrl+scroll or interaction-captured scroll, then `levelScrolled(int)` is sent to the active interaction handler
 - Runtime may replace the default level-scroll handler to clamp to reachable levels.
-- `DungeonEditorRenderState` is display-only. It carries selected target key, explicit hover state, and previews, including 2x boundary preview segments/points. Do not put workflow state into render payloads.
+- `DungeonEditorRenderState` is display-only. It carries selected ref, explicit hover state, and previews, including 2x boundary preview segments/points. Do not put workflow state into render payloads.
 
 ## Runtime
 
