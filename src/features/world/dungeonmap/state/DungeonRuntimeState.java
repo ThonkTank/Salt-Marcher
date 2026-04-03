@@ -1,8 +1,8 @@
 package features.world.dungeonmap.state;
 
-import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationSnapshot;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
+import features.world.dungeonmap.model.geometry.CellCoord;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -11,16 +11,22 @@ public final class DungeonRuntimeState {
 
     private final List<Runnable> listeners = new CopyOnWriteArrayList<>();
 
-    private DungeonRuntimeLocation persistedLocation;
-    private DungeonRuntimeLocation previewLocation;
+    private CellCoord persistedCell;
+    private int persistedLevelZ;
+    private CellCoord previewCell;
+    private int previewLevelZ;
     private CardinalDirection heading = CardinalDirection.defaultDirection();
     private boolean loading;
     private boolean dragging;
     private boolean moving;
     private String errorMessage;
 
-    public DungeonRuntimeLocation activeLocation() {
-        return previewLocation == null ? persistedLocation : previewLocation;
+    public CellCoord activeCell() {
+        return previewCell == null ? persistedCell : previewCell;
+    }
+
+    public int activeLevelZ() {
+        return previewCell == null ? persistedLevelZ : previewLevelZ;
     }
 
     public boolean loading() {
@@ -53,16 +59,17 @@ public final class DungeonRuntimeState {
         loading = true;
         dragging = false;
         moving = false;
-        previewLocation = null;
+        previewCell = null;
         errorMessage = null;
         notifyListeners();
     }
 
-    public void showDragPreview(DungeonRuntimeLocation location) {
-        if (location == null) {
+    public void showDragPreview(CellCoord cell, int levelZ) {
+        if (cell == null) {
             return;
         }
-        previewLocation = location;
+        previewCell = cell;
+        previewLevelZ = levelZ;
         dragging = true;
         moving = false;
         errorMessage = null;
@@ -70,13 +77,13 @@ public final class DungeonRuntimeState {
     }
 
     public void clearDragPreview() {
-        previewLocation = null;
+        previewCell = null;
         dragging = false;
         notifyListeners();
     }
 
     public void showMoveInProgress() {
-        previewLocation = null;
+        previewCell = null;
         dragging = false;
         moving = true;
         errorMessage = null;
@@ -84,9 +91,10 @@ public final class DungeonRuntimeState {
     }
 
     public void showNavigation(DungeonRuntimeNavigationSnapshot snapshot) {
-        persistedLocation = snapshot == null ? null : snapshot.activeLocation();
+        persistedCell = snapshot == null ? null : snapshot.cell();
+        persistedLevelZ = snapshot == null ? 0 : snapshot.levelZ();
         heading = snapshot == null || snapshot.heading() == null ? CardinalDirection.defaultDirection() : snapshot.heading();
-        previewLocation = null;
+        previewCell = null;
         loading = false;
         dragging = false;
         moving = false;
@@ -96,7 +104,7 @@ public final class DungeonRuntimeState {
 
     public void showFailure(String errorMessage) {
         loading = false;
-        previewLocation = null;
+        previewCell = null;
         dragging = false;
         moving = false;
         this.errorMessage = errorMessage == null || errorMessage.isBlank()
@@ -106,8 +114,10 @@ public final class DungeonRuntimeState {
     }
 
     public void clear() {
-        persistedLocation = null;
-        previewLocation = null;
+        persistedCell = null;
+        persistedLevelZ = 0;
+        previewCell = null;
+        previewLevelZ = 0;
         heading = CardinalDirection.defaultDirection();
         loading = false;
         dragging = false;

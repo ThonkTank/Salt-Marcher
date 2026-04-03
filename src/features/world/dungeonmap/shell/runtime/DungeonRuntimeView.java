@@ -3,12 +3,8 @@ package features.world.dungeonmap.shell.runtime;
 import features.world.api.WorldTravelSurface;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeAction;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeApplicationService;
-import features.world.dungeonmap.application.runtime.DungeonRuntimeDoorDescriptor;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLabels;
-import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationSnapshot;
-import features.world.dungeonmap.application.runtime.DungeonRuntimeStairDescriptor;
-import features.world.dungeonmap.application.runtime.DungeonRuntimeTransitionDescriptor;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeSurface;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeSurfacePresenter;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeSurfaceResolver;
@@ -187,7 +183,8 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         }
         applyNavigationSnapshot(runtimeApplicationService.resolveNavigation(
                 state().activeMap(),
-                runtimeState.activeLocation(),
+                runtimeState.activeCell(),
+                runtimeState.activeLevelZ(),
                 runtimeState.heading()));
     }
 
@@ -217,7 +214,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
             runtimeState.clearDragPreview();
             return;
         }
-        runtimeState.showDragPreview(DungeonRuntimeLocation.cell(cell, state().activeProjectionLevel()));
+        runtimeState.showDragPreview(cell, state().activeProjectionLevel());
     }
 
     private void movePartyToCell(CellCoord cell) {
@@ -301,7 +298,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
     }
 
     private WorldTravelSurface.DungeonDoorAction toTravelAction(DungeonRuntimeAction action) {
-        return new WorldTravelSurface.DungeonDoorAction(action.displayLabel(), () -> triggerRuntimeAction(action));
+        return new WorldTravelSurface.DungeonDoorAction(action.label(), () -> triggerRuntimeAction(action));
     }
 
     private void triggerRuntimeAction(DungeonRuntimeAction action) {
@@ -309,23 +306,14 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
             return;
         }
         var layout = state().activeMap();
-        int currentLevel = activeCell() != null ? activeLevelZ() : state().activeProjectionLevel();
         runtimeState.showMoveInProgress();
         UiAsyncTasks.submit(
-                () -> runtimeApplicationService.navigate(layout, action, runtimeState.heading(), currentLevel),
+                () -> runtimeApplicationService.navigate(layout, action, runtimeState.heading()),
                 this::applyNavigationSnapshot,
                 failure -> {
                     System.err.println("DungeonRuntimeView.triggerRuntimeAction(): " + failure.getMessage());
-                    runtimeState.showFailure(actionFailureMessage(action));
+                    runtimeState.showFailure(action.failureMessage());
                 });
-    }
-
-    private static String actionFailureMessage(DungeonRuntimeAction action) {
-        return switch (action) {
-            case DungeonRuntimeDoorDescriptor ignored -> "Verbindung konnte nicht benutzt werden";
-            case DungeonRuntimeStairDescriptor ignored -> "Treppe konnte nicht benutzt werden";
-            case DungeonRuntimeTransitionDescriptor ignored -> "Übergang konnte nicht benutzt werden";
-        };
     }
 
     private void applyNavigationSnapshot(DungeonRuntimeNavigationSnapshot snapshot) {
@@ -337,8 +325,8 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         }
         pendingNavigationSnapshot = null;
         runtimeState.showNavigation(snapshot);
-        if (runtimeState.activeLocation() instanceof DungeonRuntimeLocation.Cell cellLocation) {
-            state().setReachableProjectionLevel(cellLocation.levelZ());
+        if (snapshot != null && snapshot.cell() != null) {
+            state().setReachableProjectionLevel(snapshot.levelZ());
         }
     }
 
@@ -362,32 +350,28 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
     }
 
     private RuntimePresentation resolveRuntimePresentation() {
-        DungeonRuntimeLocation location = runtimeState.activeLocation();
+        CellCoord activeCell = runtimeState.activeCell();
+        int activeLevelZ = runtimeState.activeLevelZ();
         var layout = state().activeMap();
         CardinalDirection heading = runtimeState.heading();
-        if (location == null || layout == null) {
-            return RuntimePresentation.empty();
-        }
-        if (!(location instanceof DungeonRuntimeLocation.Cell cellLocation)) {
+        if (activeCell == null || layout == null) {
             return RuntimePresentation.empty();
         }
         DungeonRuntimeSurface surface = DungeonRuntimeSurfaceResolver.resolve(
                 layout,
-                cellLocation.cell(),
-                cellLocation.levelZ(),
+                activeCell,
+                activeLevelZ,
                 heading);
         List<DungeonDoorNumberOverlay> doorNumbers = surface == null
                 ? List.of()
-                : surface.actions().stream()
-                        .filter(DungeonRuntimeDoorDescriptor.class::isInstance)
-                        .map(DungeonRuntimeDoorDescriptor.class::cast)
+                : surface.doors().stream()
                         .map(door -> new DungeonDoorNumberOverlay(door.number(), door.anchorSegment2x()))
                         .toList();
         return new RuntimePresentation(
                 surface,
-                cellLocation.cell(),
-                cellLocation.levelZ(),
-                new DungeonRuntimeRenderOverlay(cellLocation.cell(), cellLocation.levelZ(), heading, doorNumbers));
+                activeCell,
+                activeLevelZ,
+                new DungeonRuntimeRenderOverlay(activeCell, activeLevelZ, heading, doorNumbers));
     }
 
     private static Label sectionLabel(String text) {

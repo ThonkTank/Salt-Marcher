@@ -10,7 +10,6 @@ import features.world.dungeonmap.model.structures.connection.Connection;
 import features.world.dungeonmap.model.structures.connection.ConnectionKind;
 import features.world.dungeonmap.model.structures.connection.CorridorConnection;
 import features.world.dungeonmap.model.structures.connection.LocalConnection;
-import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 
 import java.util.ArrayList;
@@ -27,60 +26,24 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
             return List.of();
         }
 
+        DungeonLayout projectedLayout = layout.projectedToLevel(probe.levelZ());
         ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
-        List<RoomCluster> projectedClusters = projectedClusters(layout, probe.levelZ());
-        Set<CellCoord> occupiedRoomCells = occupiedRoomCells(projectedClusters);
-        Set<GridSegment2x> connectionSegments = connectionSegments(projectedClusters, layout, probe.levelZ());
+        List<RoomCluster> projectedClusters = projectedLayout.clusters();
+        Set<GridSegment2x> connectionSegments = connectionSegments(projectedLayout.connections());
 
         descriptors.addAll(clusterBoundaryDescriptors(projectedClusters, probe.levelZ()));
-        descriptors.addAll(roomBoundaryDescriptors(projectedClusters, occupiedRoomCells, connectionSegments, probe.levelZ()));
-        descriptors.addAll(connectionDescriptors(projectedClusters, layout, probe.levelZ()));
+        descriptors.addAll(roomBoundaryDescriptors(projectedClusters, projectedLayout, connectionSegments, probe.levelZ()));
+        descriptors.addAll(connectionDescriptors(projectedLayout.connections(), probe.levelZ()));
         return List.copyOf(descriptors);
     }
 
-    private static List<RoomCluster> projectedClusters(DungeonLayout layout, int levelZ) {
-        ArrayList<RoomCluster> clusters = new ArrayList<>();
-        for (RoomCluster cluster : layout.clusters()) {
-            if (cluster == null) {
+    private static Set<GridSegment2x> connectionSegments(List<Connection> connections) {
+        LinkedHashSet<GridSegment2x> segments = new LinkedHashSet<>();
+        for (Connection connection : connections) {
+            if (connection == null || connection.door() == null) {
                 continue;
             }
-            RoomCluster projected = cluster.projectedToLevel(levelZ);
-            if (projected != null) {
-                clusters.add(projected);
-            }
-        }
-        return List.copyOf(clusters);
-    }
-
-    private static Set<CellCoord> occupiedRoomCells(List<RoomCluster> projectedClusters) {
-        LinkedHashSet<CellCoord> cells = new LinkedHashSet<>();
-        for (RoomCluster cluster : projectedClusters) {
-            for (Room room : cluster.rooms()) {
-                if (room != null) {
-                    cells.addAll(room.structure().cellCoords());
-                }
-            }
-        }
-        return Set.copyOf(cells);
-    }
-
-    private static Set<GridSegment2x> connectionSegments(List<RoomCluster> projectedClusters, DungeonLayout layout, int levelZ) {
-        LinkedHashSet<GridSegment2x> segments = new LinkedHashSet<>();
-        for (RoomCluster cluster : projectedClusters) {
-            for (var connection : cluster.localConnections()) {
-                if (connection == null || connection.door() == null) {
-                    continue;
-                }
-                segments.addAll(connection.door().segments2x());
-            }
-        }
-        for (Corridor corridor : corridorsAtLevel(layout, levelZ)) {
-            for (var connection : corridor.connections()) {
-                if (connection == null || connection.door() == null || connection.levelZ() != levelZ) {
-                    continue;
-                }
-                segments.addAll(connection.door().segments2x());
-            }
+            segments.addAll(connection.door().segments2x());
         }
         return Set.copyOf(segments);
     }
@@ -122,7 +85,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
 
     private static List<DungeonHitDescriptor> roomBoundaryDescriptors(
             List<RoomCluster> projectedClusters,
-            Set<CellCoord> occupiedRoomCells,
+            DungeonLayout projectedLayout,
             Set<GridSegment2x> connectionSegments,
             int levelZ
     ) {
@@ -136,7 +99,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
                     if (segment2x == null || connectionSegments.contains(segment2x)) {
                         continue;
                     }
-                    RoomBoundaryGeometry geometry = roomBoundaryGeometry(room, occupiedRoomCells, segment2x, levelZ);
+                    RoomBoundaryGeometry geometry = roomBoundaryGeometry(room, projectedLayout, segment2x, levelZ);
                     if (geometry == null) {
                         continue;
                     }
@@ -156,20 +119,12 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
     }
 
     private static List<DungeonHitDescriptor> connectionDescriptors(
-            List<RoomCluster> projectedClusters,
-            DungeonLayout layout,
+            List<Connection> connections,
             int levelZ
     ) {
         ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
-        for (RoomCluster cluster : projectedClusters) {
-            for (LocalConnection connection : cluster.localConnections()) {
-                descriptors.addAll(connectionDescriptors(connection, levelZ));
-            }
-        }
-        for (Corridor corridor : corridorsAtLevel(layout, levelZ)) {
-            for (CorridorConnection connection : corridor.connections()) {
-                descriptors.addAll(connectionDescriptors(connection, connection.levelZ()));
-            }
+        for (Connection connection : connections) {
+            descriptors.addAll(connectionDescriptors(connection, levelZ));
         }
         return List.copyOf(descriptors);
     }
@@ -192,22 +147,13 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
         return List.copyOf(descriptors);
     }
 
-    private static List<Corridor> corridorsAtLevel(DungeonLayout layout, int levelZ) {
-        if (layout == null) {
-            return List.of();
-        }
-        return layout.corridors().stream()
-                .filter(corridor -> corridor != null && corridor.levelZ() == levelZ)
-                .toList();
-    }
-
     private static RoomBoundaryGeometry roomBoundaryGeometry(
             Room room,
-            Set<CellCoord> occupiedRoomCells,
+            DungeonLayout projectedLayout,
             GridSegment2x segment2x,
             int levelZ
     ) {
-        if (room == null || segment2x == null) {
+        if (room == null || projectedLayout == null || segment2x == null) {
             return null;
         }
         // Boundary hits expose the owning room cell plus outward cardinal step for tool semantics,
@@ -218,7 +164,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
             }
             CardinalDirection outwardDirection = segment2x.directionFrom(cell);
             CellCoord opposite = outwardDirection == null ? null : cell.add(outwardDirection.delta());
-            boolean exterior = opposite == null || !occupiedRoomCells.contains(opposite);
+            boolean exterior = opposite == null || projectedLayout.roomAtCell(opposite, levelZ) == null;
             return new RoomBoundaryGeometry(cell, outwardDirection, exterior);
         }
         return null;

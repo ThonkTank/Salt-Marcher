@@ -1,6 +1,5 @@
 package features.world.dungeonmap.shell.runtime;
 
-import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeonmap.canvas.base.DungeonCanvasCamera;
 import features.world.dungeonmap.canvas.base.DungeonCanvasInteractionHandler;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
@@ -177,17 +176,11 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
     }
 
     private CellCoord activeCell() {
-        DungeonRuntimeLocation.Cell location = activeCellLocation();
-        return location == null ? null : location.cell();
+        return runtimeState.activeCell();
     }
 
     private int activeLevelZ() {
-        DungeonRuntimeLocation.Cell location = activeCellLocation();
-        return location == null ? mapState.activeProjectionLevel() : location.levelZ();
-    }
-
-    private DungeonRuntimeLocation.Cell activeCellLocation() {
-        return runtimeState.activeLocation() instanceof DungeonRuntimeLocation.Cell cell ? cell : null;
+        return runtimeState.activeCell() == null ? mapState.activeProjectionLevel() : runtimeState.activeLevelZ();
     }
 
     private boolean interactionEnabled() {

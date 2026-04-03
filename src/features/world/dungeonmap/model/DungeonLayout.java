@@ -162,6 +162,32 @@ public final class DungeonLayout {
         return reachableLevels.isEmpty() ? 0 : reachableLevels.getFirst();
     }
 
+    public CubePoint defaultRuntimePosition() {
+        Room defaultRoom = rooms().stream()
+                .filter(room -> room != null && room.roomId() != null)
+                .sorted(Comparator.comparing(Room::roomId))
+                .findFirst()
+                .orElse(null);
+        if (defaultRoom != null) {
+            int levelZ = defaultRoom.structure().primaryLevel();
+            CellCoord preferred = defaultRoom.structure().centerCellCoordAtLevel(levelZ);
+            CellCoord resolved = nearestTraversableCell(preferred, levelZ);
+            if (resolved != null) {
+                return CubePoint.at(resolved, levelZ);
+            }
+        }
+        for (int levelZ : reachableLevels) {
+            CellCoord fallback = traversableCellsByLevel.getOrDefault(levelZ, Set.of()).stream()
+                    .sorted(CellCoord.ORDER)
+                    .findFirst()
+                    .orElse(null);
+            if (fallback != null) {
+                return CubePoint.at(fallback, levelZ);
+            }
+        }
+        return null;
+    }
+
     public Map<Long, Corridor> corridorsById() {
         return corridorsById;
     }
@@ -352,10 +378,7 @@ public final class DungeonLayout {
     public RoomCluster clusterOnLevel(DungeonSelectionRef ref, int levelZ) {
         Long clusterId = clusterId(ref);
         RoomCluster cluster = findCluster(clusterId);
-        if (cluster == null || levelForCluster(clusterId) != levelZ) {
-            return null;
-        }
-        return cluster;
+        return cluster == null ? null : cluster.projectedToLevel(levelZ);
     }
 
     public Room room(DungeonSelectionRef ref) {

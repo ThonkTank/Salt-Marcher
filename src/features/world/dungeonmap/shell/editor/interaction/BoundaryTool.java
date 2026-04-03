@@ -278,10 +278,7 @@ public final class BoundaryTool implements EditorTool {
             return null;
         }
         RoomCluster cluster = layout.findCluster(clusterId);
-        if (cluster == null || layout.levelForCluster(clusterId) != mapState.activeProjectionLevel()) {
-            return null;
-        }
-        return cluster;
+        return cluster == null ? null : cluster.projectedToLevel(mapState.activeProjectionLevel());
     }
 
     private static GridPoint2x firstVertex(features.world.dungeonmap.shell.interaction.DungeonHitSnapshot snapshot) {

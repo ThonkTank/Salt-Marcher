@@ -18,8 +18,9 @@ public final class DungeonCorridorGraphHitSource implements DungeonHitSource {
             return List.of();
         }
 
+        DungeonLayout projectedLayout = layout.projectedToLevel(probe.levelZ());
         ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
-        for (Corridor corridor : corridorsAtLevel(layout, probe.levelZ())) {
+        for (Corridor corridor : projectedLayout.corridors()) {
             if (corridor == null || corridor.corridorId() == null) {
                 continue;
             }
@@ -76,12 +77,4 @@ public final class DungeonCorridorGraphHitSource implements DungeonHitSource {
         return path2x.get(path2x.size() / 2);
     }
 
-    private static List<Corridor> corridorsAtLevel(DungeonLayout layout, int levelZ) {
-        if (layout == null) {
-            return List.of();
-        }
-        return layout.corridors().stream()
-                .filter(corridor -> corridor != null && corridor.levelZ() == levelZ)
-                .toList();
-    }
 }

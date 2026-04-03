@@ -18,16 +18,13 @@ public final class DungeonLabelHitSource implements DungeonHitSource {
             return List.of();
         }
 
+        DungeonLayout projectedLayout = layout.projectedToLevel(probe.levelZ());
         ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
-        for (RoomCluster cluster : layout.clusters()) {
+        for (RoomCluster cluster : projectedLayout.clusters()) {
             if (cluster == null || cluster.clusterId() == null) {
                 continue;
             }
-            RoomCluster projected = cluster.projectedToLevel(probe.levelZ());
-            if (projected == null) {
-                continue;
-            }
-            InteractiveLabelHandle handle = projected.labelHandle();
+            InteractiveLabelHandle handle = cluster.labelHandle();
             Point2D anchorPoint = DungeonGridInteractiveLabels.anchorPoint(
                     handle,
                     probe.panX(),
