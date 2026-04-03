@@ -65,7 +65,7 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
             dragSession = null;
             return false;
         }
-        CellCoord activeCell = runtimeState.activeCell();
+        CellCoord activeCell = runtimeState.activeNavigation().cell();
         if (activeCell == null) {
             dragSession = null;
             return false;
@@ -162,6 +162,6 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
 
     private DungeonRuntimeNavigationSnapshot navigationAt(CellCoord cell, int levelZ) {
         Long mapId = mapState.activeMapId();
-        return new DungeonRuntimeNavigationSnapshot(mapId, cell, levelZ, runtimeState.heading());
+        return new DungeonRuntimeNavigationSnapshot(mapId, cell, levelZ, runtimeState.activeNavigation().heading());
     }
 }

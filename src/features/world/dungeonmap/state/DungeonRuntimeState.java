@@ -1,9 +1,6 @@
 package features.world.dungeonmap.state;
 
 import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationSnapshot;
-import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.geometry.CellCoord;
-
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -23,24 +20,12 @@ public final class DungeonRuntimeState {
         return persistedNavigation;
     }
 
-    public DungeonRuntimeNavigationSnapshot previewNavigation() {
-        return previewNavigation;
-    }
-
     public DungeonRuntimeNavigationSnapshot pendingNavigation() {
         return pendingNavigation;
     }
 
     public DungeonRuntimeNavigationSnapshot activeNavigation() {
         return previewNavigation != null ? previewNavigation : persistedNavigation;
-    }
-
-    public CellCoord activeCell() {
-        return activeNavigation().cell();
-    }
-
-    public int activeLevelZ() {
-        return activeNavigation().levelZ();
     }
 
     public boolean loading() {
@@ -53,10 +38,6 @@ public final class DungeonRuntimeState {
 
     public boolean moving() {
         return moving;
-    }
-
-    public CardinalDirection heading() {
-        return activeNavigation().heading();
     }
 
     public String errorMessage() {

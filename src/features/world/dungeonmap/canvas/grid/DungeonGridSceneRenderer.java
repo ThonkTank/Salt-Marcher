@@ -775,11 +775,11 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             DungeonRuntimeRenderOverlay runtime,
             int projectionLevel
     ) {
-        if (runtime == null || runtime.activeCell() == null) {
+        if (runtime == null || runtime.navigation() == null || runtime.navigation().cell() == null) {
             return;
         }
-        CellCoord activeCell = runtime.activeCell();
-        if (activeCell == null || runtime.activeLevelZ() != projectionLevel) {
+        CellCoord activeCell = runtime.navigation().cell();
+        if (activeCell == null || runtime.navigation().levelZ() != projectionLevel) {
             return;
         }
         double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
@@ -787,7 +787,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         double centerY = camera.panY() + (activeCell.y() + 0.5) * gridSize;
         double outerRadius = Math.max(7.5, gridSize * 0.26);
         double innerRadius = Math.max(3.2, outerRadius * 0.42);
-        CardinalDirection resolvedHeading = runtime.heading();
+        CardinalDirection resolvedHeading = runtime.navigation().heading();
         double forwardX = resolvedHeading.delta().x();
         double forwardY = resolvedHeading.delta().y();
         double sideX = -forwardY;
