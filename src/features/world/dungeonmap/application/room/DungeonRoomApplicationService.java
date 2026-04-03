@@ -165,8 +165,10 @@ public final class DungeonRoomApplicationService {
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
                 DungeonLayout layout = requireLayout(conn, mapId);
-                RoomCluster cluster = requireCluster(layout.withMovedCluster(clusterId, delta, levelDelta), clusterId);
+                DungeonLayout movedLayout = layout.withMovedCluster(clusterId, delta, levelDelta);
+                RoomCluster cluster = requireCluster(movedLayout, clusterId);
                 roomRepository.saveMovedCluster(conn, cluster);
+                persistUpdatedCorridors(conn, layout, movedLayout);
                 return null;
             });
         }
@@ -305,6 +307,21 @@ public final class DungeonRoomApplicationService {
             throw new SQLException("Cluster " + clusterId + " existiert nicht");
         }
         return cluster;
+    }
+
+    private void persistUpdatedCorridors(Connection conn, DungeonLayout originalLayout, DungeonLayout movedLayout) throws SQLException {
+        if (conn == null || originalLayout == null || movedLayout == null) {
+            return;
+        }
+        for (var originalCorridor : originalLayout.corridors()) {
+            if (originalCorridor == null || originalCorridor.corridorId() == null) {
+                continue;
+            }
+            var movedCorridor = movedLayout.findCorridor(originalCorridor.corridorId());
+            if (movedCorridor != null && movedCorridor != originalCorridor) {
+                new features.world.dungeonmap.repository.DungeonCorridorRepository().save(conn, movedCorridor, movedLayout);
+            }
+        }
     }
 
     private static ClusterRewrite assignGeneratedRoomNames(ClusterRewrite rewrite, Supplier<String> roomNameSupplier) {

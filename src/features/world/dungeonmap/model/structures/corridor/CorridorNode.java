@@ -7,8 +7,8 @@ import features.world.dungeonmap.model.geometry.GridPoint2x;
 import java.util.Objects;
 
 /**
- * Corridor routing geometry stays in `point2x`; room-bound endpoints keep their absolute room cell in memory and rely
- * on repository codecs for the persisted relative columns.
+ * Corridor routing geometry stays in `point2x`; room-bound endpoints keep their absolute room cell directly in memory
+ * and in storage.
  */
 public record CorridorNode(
         Long nodeId,

@@ -1,13 +1,9 @@
 package features.world.dungeonmap.model.structures.room;
 
-import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.model.objects.StructureObject;
-import features.world.dungeonmap.model.structures.connection.DoorExitCatalog;
-import features.world.dungeonmap.model.structures.connection.RoomExitDescriptor;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -80,19 +76,6 @@ public record Room(
 
     public Room withNarration(RoomNarration narration) {
         return new Room(roomId, mapId, clusterId, name, structure, narration);
-    }
-
-    public List<RoomExitDescriptor> describeExits(DungeonLayout layout) {
-        if (layout == null || roomId == null) {
-            return List.of();
-        }
-        return structure.levels().stream()
-                .sorted()
-                .flatMap(levelZ -> DoorExitCatalog.describe(
-                        structure.cellCoordsAtLevel(levelZ),
-                        levelZ,
-                        layout.connectionsForRoom(roomId)).stream())
-                .toList();
     }
 
     public Room movedBy(CellCoord delta) {

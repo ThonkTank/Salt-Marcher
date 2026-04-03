@@ -29,7 +29,7 @@ public final class DungeonCorridorRepository {
         Map<Long, List<CorridorNode>> nodesByCorridorId = loadGrouped(
                 conn,
                 "SELECT node.corridor_id, node.corridor_node_id, node.grid_x2, node.grid_y2, corridor.level_z, "
-                        + "node.room_id, node.room_relative_cell_x, node.room_relative_cell_y, node.room_edge_direction"
+                        + "node.room_id, node.room_cell_x, node.room_cell_y, node.room_edge_direction"
                         + " FROM dungeon_corridor_nodes node"
                         + " JOIN dungeon_corridors corridor ON corridor.corridor_id=node.corridor_id"
                         + " WHERE corridor.dungeon_map_id=?"
@@ -132,7 +132,7 @@ public final class DungeonCorridorRepository {
         Map<Long, Room> roomsById = indexRoomsById(Objects.requireNonNull(layout, "layout").rooms());
         try (PreparedStatement insert = conn.prepareStatement(
                 "INSERT INTO dungeon_corridor_nodes("
-                        + "corridor_node_id, corridor_id, grid_x2, grid_y2, room_id, room_relative_cell_x, room_relative_cell_y, room_edge_direction"
+                        + "corridor_node_id, corridor_id, grid_x2, grid_y2, room_id, room_cell_x, room_cell_y, room_edge_direction"
                         + ") VALUES(?,?,?,?,?,?,?,?)")) {
             for (CorridorNode node : sanitizedNodes(nodes)) {
                 bindNode(insert, corridorId, node, roomsById, levelZ);
@@ -219,10 +219,10 @@ public final class DungeonCorridorRepository {
             ps.setObject(7, null);
             ps.setObject(8, null);
         } else {
-            CellCoord relativeRoomCell = relativeRoomCell(node, roomsById, levelZ);
+            CellCoord roomCell = requiredRoomCell(node, roomsById, levelZ);
             ps.setLong(5, node.roomId());
-            ps.setInt(6, relativeRoomCell.x());
-            ps.setInt(7, relativeRoomCell.y());
+            ps.setInt(6, roomCell.x());
+            ps.setInt(7, roomCell.y());
             ps.setString(8, node.roomBoundaryDirection().name());
         }
     }
@@ -293,14 +293,9 @@ public final class DungeonCorridorRepository {
 
     private static CorridorNode corridorNodeFromRow(ResultSet row, Map<Long, Room> roomsById) throws SQLException {
         Long roomId = nullableLong(row, "room_id");
-        CellCoord roomCell = null;
-        if (roomId != null && row.getObject("room_relative_cell_x") != null) {
-            Room room = roomsById.get(roomId);
-            roomCell = absoluteRoomCell(
-                    room,
-                    row.getInt("level_z"),
-                    new CellCoord(row.getInt("room_relative_cell_x"), row.getInt("room_relative_cell_y")));
-        }
+        CellCoord roomCell = roomId != null && row.getObject("room_cell_x") != null
+                ? new CellCoord(row.getInt("room_cell_x"), row.getInt("room_cell_y"))
+                : null;
         return new CorridorNode(
                 row.getLong("corridor_node_id"),
                 GridPoint2x.raw(row.getInt("grid_x2"), row.getInt("grid_y2")),
@@ -311,18 +306,7 @@ public final class DungeonCorridorRepository {
                         : CardinalDirection.valueOf(row.getString("room_edge_direction").trim().toUpperCase(java.util.Locale.ROOT)));
     }
 
-    private static CellCoord absoluteRoomCell(Room room, int levelZ, CellCoord relativeRoomCell) throws SQLException {
-        if (room == null || relativeRoomCell == null) {
-            return null;
-        }
-        var floor = room.structure().floorAtLevel(levelZ);
-        if (floor == null) {
-            throw new SQLException("Corridor node references room without floor at level " + levelZ);
-        }
-        return floor.anchorCellCoord().add(relativeRoomCell);
-    }
-
-    private static CellCoord relativeRoomCell(CorridorNode node, Map<Long, Room> roomsById, int levelZ) throws SQLException {
+    private static CellCoord requiredRoomCell(CorridorNode node, Map<Long, Room> roomsById, int levelZ) throws SQLException {
         if (node == null || !node.isRoomBound()) {
             return null;
         }
@@ -337,7 +321,7 @@ public final class DungeonCorridorRepository {
         if (!room.structure().cellCoordsAtLevel(levelZ).contains(node.roomCell())) {
             throw new SQLException("Corridor node references cell outside room at level " + levelZ);
         }
-        return node.roomCell().subtract(floor.anchorCellCoord());
+        return node.roomCell();
     }
 
     private static <K, V> Map<K, List<V>> loadGrouped(

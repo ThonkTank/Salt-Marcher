@@ -1,6 +1,5 @@
 package features.world.dungeonmap.repository;
 
-import features.world.dungeonmap.catalog.application.DungeonMapCatalogEntry;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
@@ -31,26 +30,26 @@ public final class DungeonLayoutRepository {
         if (conn == null) {
             throw new IllegalArgumentException("conn darf nicht null sein");
         }
-        DungeonMapCatalogEntry map = loadMap(conn, mapId);
-        if (map == null) {
+        String mapName = loadMapName(conn, mapId);
+        if (mapName == null) {
             return null;
         }
-        List<Room> rooms = roomRepository.loadRooms(conn, map.mapId());
-        List<RoomCluster> clusters = roomRepository.loadClusters(conn, map.mapId(), rooms);
-        Map<Long, Integer> clusterLevels = roomRepository.loadClusterLevels(conn, map.mapId());
-        List<Corridor> corridors = corridorRepository.loadByMap(conn, map.mapId(), rooms);
-        List<DungeonStair> stairs = stairRepository.loadByMap(conn, map.mapId(), clusters, corridors);
+        List<Room> rooms = roomRepository.loadRooms(conn, mapId);
+        List<RoomCluster> clusters = roomRepository.loadClusters(conn, mapId, rooms);
+        Map<Long, Integer> clusterLevels = roomRepository.loadClusterLevels(conn, mapId);
+        List<Corridor> corridors = corridorRepository.loadByMap(conn, mapId, rooms);
+        List<DungeonStair> stairs = stairRepository.loadByMap(conn, mapId, clusters, corridors);
         return new DungeonLayout(
-                map.mapId(),
-                map.name(),
+                mapId,
+                mapName,
                 corridors,
                 clusters,
                 stairs,
-                transitionRepository.loadByMap(conn, map.mapId()),
+                transitionRepository.loadByMap(conn, mapId),
                 clusterLevels);
     }
 
-    private static DungeonMapCatalogEntry loadMap(Connection conn, long mapId) throws SQLException {
+    private static String loadMapName(Connection conn, long mapId) throws SQLException {
         if (mapId <= 0) {
             return null;
         }
@@ -61,9 +60,7 @@ public final class DungeonLayoutRepository {
                 if (!rs.next()) {
                     return null;
                 }
-                return new DungeonMapCatalogEntry(
-                        rs.getLong("dungeon_map_id"),
-                        rs.getString("name"));
+                return rs.getString("name");
             }
         }
     }

@@ -10,6 +10,8 @@ import features.world.dungeonmap.model.structures.cluster.ClusterRewriteSplit;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.Connection;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
+import features.world.dungeonmap.model.structures.connection.DoorExitCatalog;
+import features.world.dungeonmap.model.structures.connection.RoomExitDescriptor;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNode;
 import features.world.dungeonmap.model.structures.corridor.CorridorSegment;
@@ -310,6 +312,29 @@ public final class DungeonLayout {
 
     public List<Connection> connectionsForCorridor(long corridorId) {
         return connectionsFor(ConnectionEndpoint.corridor(corridorId));
+    }
+
+    public List<RoomExitDescriptor> describeRoomExits(Room room) {
+        if (room == null || room.roomId() == null) {
+            return List.of();
+        }
+        return room.structure().levels().stream()
+                .sorted()
+                .flatMap(levelZ -> DoorExitCatalog.describe(
+                        room.structure().cellCoordsAtLevel(levelZ),
+                        levelZ,
+                        connectionsForRoom(room.roomId())).stream())
+                .toList();
+    }
+
+    public List<RoomExitDescriptor> describeCorridorExits(Corridor corridor) {
+        if (corridor == null || corridor.corridorId() == null) {
+            return List.of();
+        }
+        return DoorExitCatalog.describe(
+                corridor.structure().cellCoordsAtLevel(corridor.levelZ()),
+                corridor.levelZ(),
+                connectionsForCorridor(corridor.corridorId()));
     }
 
     public List<Door> doorsAtSegments(Set<GridSegment2x> segments2x) {
@@ -646,7 +671,33 @@ public final class DungeonLayout {
                 .toList();
         LinkedHashMap<Long, Integer> updatedClusterLevels = new LinkedHashMap<>(clusterLevelsById);
         updatedClusterLevels.put(clusterId, levelForCluster(clusterId) + levelDelta);
-        return new DungeonLayout(mapId, name, corridors, updatedClusters, stairs, transitions, updatedClusterLevels);
+        DungeonLayout movedLayout = new DungeonLayout(
+                mapId,
+                name,
+                corridors,
+                updatedClusters,
+                stairs,
+                transitions,
+                updatedClusterLevels);
+        Set<Long> movedRoomIds = cluster.rooms().stream()
+                .filter(room -> room != null && room.roomId() != null)
+                .map(Room::roomId)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        if (movedRoomIds.isEmpty()) {
+            return movedLayout;
+        }
+        ArrayList<Corridor> updatedCorridors = new ArrayList<>(corridors.size());
+        boolean corridorsChanged = false;
+        for (Corridor corridor : corridors) {
+            Corridor updatedCorridor = corridor == null
+                    ? null
+                    : corridor.adjustedForMovedRooms(movedLayout, movedRoomIds, delta, levelDelta);
+            updatedCorridors.add(updatedCorridor);
+            corridorsChanged |= updatedCorridor != corridor;
+        }
+        return corridorsChanged
+                ? new DungeonLayout(mapId, name, updatedCorridors, updatedClusters, stairs, transitions, updatedClusterLevels)
+                : movedLayout;
     }
 
     public DungeonLayout applying(ClusterRewrite rewrite) {

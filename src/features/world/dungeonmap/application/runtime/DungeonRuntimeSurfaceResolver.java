@@ -154,7 +154,7 @@ public final class DungeonRuntimeSurfaceResolver {
             CardinalDirection heading,
             List<DungeonRuntimeExit> exits
     ) {
-        for (RoomExitDescriptor exit : room.describeExits(layout)) {
+        for (RoomExitDescriptor exit : layout.describeRoomExits(room)) {
             String description = doorDescription(
                     heading,
                     exit.direction(),
@@ -188,7 +188,7 @@ public final class DungeonRuntimeSurfaceResolver {
             CardinalDirection heading,
             List<DungeonRuntimeExit> exits
     ) {
-        for (RoomExitDescriptor exit : corridor.describeExits(layout)) {
+        for (RoomExitDescriptor exit : layout.describeCorridorExits(corridor)) {
             String description = doorDescription(heading, exit.direction(), "");
             String destinationLabel = doorDestinationLabel(
                     layout,

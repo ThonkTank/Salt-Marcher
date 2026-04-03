@@ -10,8 +10,6 @@ import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.CorridorConnection;
-import features.world.dungeonmap.model.structures.connection.DoorExitCatalog;
-import features.world.dungeonmap.model.structures.connection.RoomExitDescriptor;
 import features.world.dungeonmap.model.structures.room.Room;
 
 import java.util.ArrayDeque;
@@ -159,16 +157,6 @@ public final class Corridor {
         return connections;
     }
 
-    public List<RoomExitDescriptor> describeExits(DungeonLayout layout) {
-        if (layout == null || corridorId == null) {
-            return List.of();
-        }
-        return DoorExitCatalog.describe(
-                structure.cellCoordsAtLevel(levelZ),
-                levelZ,
-                layout.connectionsForCorridor(corridorId));
-    }
-
     public Corridor movedNode(DungeonLayout layout, Long nodeId, GridPoint2x point2x) {
         if (layout == null || nodeId == null || point2x == null) {
             return this;
@@ -252,6 +240,44 @@ public final class Corridor {
             updatedSegments.add(new CorridorSegment(nextSyntheticSegmentId(), firstNeighbor, secondNeighbor));
         }
         return resolvedAgainst(layout, updatedNodes, updatedSegments);
+    }
+
+    public Corridor adjustedForMovedRooms(
+            DungeonLayout layout,
+            Set<Long> movedRoomIds,
+            CellCoord delta,
+            int levelDelta
+    ) {
+        if (layout == null || movedRoomIds == null || movedRoomIds.isEmpty()) {
+            return this;
+        }
+        boolean translate = delta != null && (delta.x() != 0 || delta.y() != 0);
+        if (!translate && levelDelta == 0) {
+            return this;
+        }
+        ArrayList<CorridorNode> updatedNodes = new ArrayList<>(nodes.size());
+        boolean changed = false;
+        for (CorridorNode node : nodes) {
+            if (node == null || !node.isRoomBound() || !movedRoomIds.contains(node.roomId())) {
+                updatedNodes.add(node);
+                continue;
+            }
+            CorridorNode updatedNode;
+            if (levelDelta != 0) {
+                updatedNode = new CorridorNode(node.nodeId(), node.point2x(), null, null, null);
+            } else {
+                CellCoord movedCell = node.roomCell().add(delta);
+                updatedNode = new CorridorNode(
+                        node.nodeId(),
+                        GridPoint2x.edgeCenter(movedCell, node.roomBoundaryDirection()),
+                        node.roomId(),
+                        movedCell,
+                        node.roomBoundaryDirection());
+            }
+            updatedNodes.add(updatedNode);
+            changed |= !updatedNode.equals(node);
+        }
+        return changed ? resolvedAgainst(layout, updatedNodes, segments) : this;
     }
 
     public Corridor branchedFrom(

@@ -80,7 +80,7 @@ public final class RoomNarrationPane {
                 room.roomId() == null ? 0L : room.roomId(),
                 room.name(),
                 room.narration().visualDescription(),
-                room.describeExits(mapState.activeMap()).stream()
+                mapState.activeMap().describeRoomExits(room).stream()
                         .map(exit -> new RoomExitCard(
                                 exit.label(),
                                 exit.levelZ(),

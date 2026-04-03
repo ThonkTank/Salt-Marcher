@@ -2,7 +2,6 @@ package features.world.api;
 
 import database.DatabaseManager;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -50,17 +49,8 @@ public final class WorldReadApi {
         if (tileId <= 0) {
             return null;
         }
-        try (Connection conn = DatabaseManager.getConnection();
-             ) {
-            return findOverworldMapIdForTile(conn, tileId);
-        }
-    }
-
-    public static Long findOverworldMapIdForTile(Connection conn, long tileId) throws SQLException {
-        if (conn == null || tileId <= 0) {
-            return null;
-        }
-        try (PreparedStatement ps = conn.prepareStatement(
+        try (var conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(
                 "SELECT map_id FROM hex_tiles WHERE tile_id=?")) {
             ps.setLong(1, tileId);
             try (ResultSet rs = ps.executeQuery()) {
