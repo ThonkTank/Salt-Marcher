@@ -1,10 +1,8 @@
-package features.world.dungeonmap.application.room;
+package features.world.dungeonmap.model.structures.connection;
 
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.structures.connection.Connection;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;

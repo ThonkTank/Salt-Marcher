@@ -46,7 +46,7 @@ public final class DungeonRuntimeApplicationService {
             DungeonLayout layout,
             DungeonRuntimeNavigationSnapshot snapshot
     ) {
-        if (snapshot == null) {
+        if (snapshot == null || snapshot.isEmpty()) {
             return defaultNavigation(layout, CardinalDirection.defaultDirection());
         }
         return resolveNavigation(layout, snapshot.cell(), snapshot.levelZ(), snapshot.heading());
@@ -70,10 +70,9 @@ public final class DungeonRuntimeApplicationService {
 
     public DungeonRuntimeNavigationSnapshot navigateToCell(
             DungeonLayout layout,
-            CellCoord fromCell,
+            DungeonRuntimeNavigationSnapshot currentNavigation,
             CellCoord cell,
-            int levelZ,
-            CardinalDirection currentHeading
+            int levelZ
     ) throws SQLException {
         if (layout == null || layout.mapId() <= 0) {
             throw new SQLException("Kein aktiver Dungeon geladen");
@@ -82,14 +81,17 @@ public final class DungeonRuntimeApplicationService {
         if (resolvedCell == null) {
             throw new SQLException("Kein begehbares Dungeon-Feld gefunden");
         }
-        CardinalDirection nextHeading = CardinalDirection.fromTravel(fromCell, resolvedCell, currentHeading);
+        CardinalDirection nextHeading = CardinalDirection.fromTravel(
+                currentNavigation == null ? null : currentNavigation.cell(),
+                resolvedCell,
+                navigationHeading(currentNavigation));
         return persistNavigation(layout.mapId(), resolvedCell, levelZ, nextHeading);
     }
 
     public DungeonRuntimeNavigationSnapshot navigate(
             DungeonLayout layout,
-            DungeonRuntimeAction action,
-            CardinalDirection currentHeading
+            DungeonRuntimeNavigationSnapshot currentNavigation,
+            DungeonRuntimeAction action
     ) throws SQLException {
         if (layout == null || layout.mapId() <= 0) {
             throw new SQLException("Kein aktiver Dungeon geladen");
@@ -97,12 +99,11 @@ public final class DungeonRuntimeApplicationService {
         if (action == null || action.target() == null) {
             throw new SQLException("Keine Aktion verfügbar");
         }
-        CardinalDirection resolvedHeading = normalizeHeading(currentHeading);
         return switch (action.target()) {
-            case DungeonRuntimeAction.CellTarget cellTarget -> moveToCellTarget(layout, cellTarget, resolvedHeading);
-            case DungeonRuntimeAction.DoorTarget doorTarget -> moveThroughDoor(layout, doorTarget, resolvedHeading);
+            case DungeonRuntimeAction.CellTarget cellTarget -> moveToCellTarget(layout, cellTarget, currentNavigation);
+            case DungeonRuntimeAction.DoorTarget doorTarget -> moveThroughDoor(layout, doorTarget, currentNavigation);
             case DungeonRuntimeAction.TransitionTarget transitionTarget ->
-                    moveThroughTransition(layout, transitionTarget.transitionId(), resolvedHeading);
+                    moveThroughTransition(layout, transitionTarget.transitionId(), navigationHeading(currentNavigation));
         };
     }
 
@@ -130,34 +131,39 @@ public final class DungeonRuntimeApplicationService {
     private DungeonRuntimeNavigationSnapshot moveToCellTarget(
             DungeonLayout layout,
             DungeonRuntimeAction.CellTarget target,
-            CardinalDirection currentHeading
+            DungeonRuntimeNavigationSnapshot currentNavigation
     ) throws SQLException {
         CellCoord resolvedCell = nearestTraversableCell(layout, target.cell(), target.levelZ());
         if (resolvedCell == null) {
             throw new SQLException("Ziel ist nicht begehbar");
         }
-        CardinalDirection nextHeading = target.headingOverride() == null ? currentHeading : target.headingOverride();
+        CardinalDirection nextHeading = target.headingOverride() == null
+                ? navigationHeading(currentNavigation)
+                : target.headingOverride();
         return persistNavigation(layout.mapId(), resolvedCell, target.levelZ(), nextHeading);
     }
 
     private DungeonRuntimeNavigationSnapshot moveThroughDoor(
             DungeonLayout layout,
             DungeonRuntimeAction.DoorTarget target,
-            CardinalDirection currentHeading
+            DungeonRuntimeNavigationSnapshot currentNavigation
     ) throws SQLException {
-        var connection = layout.connectionAt(target.levelZ(), target.anchorSegment2x());
+        DungeonRuntimeAction.CellTarget destination = target.destination();
+        var connection = layout.connectionAt(destination.levelZ(), target.anchorSegment2x());
         if (connection == null) {
             throw new SQLException("Verbindung konnte nicht aufgelöst werden");
         }
         if (!connection.isTraversable()) {
             throw new SQLException("Verbindung ist blockiert");
         }
-        CellCoord resolvedCell = nearestTraversableCell(layout, target.targetCellHint(), target.levelZ());
+        CellCoord resolvedCell = nearestTraversableCell(layout, destination.cell(), destination.levelZ());
         if (resolvedCell == null) {
             throw new SQLException("Ziel hinter der Verbindung ist nicht begehbar");
         }
-        CardinalDirection nextHeading = target.headingOverride() == null ? currentHeading : target.headingOverride();
-        return persistNavigation(layout.mapId(), resolvedCell, target.levelZ(), nextHeading);
+        CardinalDirection nextHeading = destination.headingOverride() == null
+                ? navigationHeading(currentNavigation)
+                : destination.headingOverride();
+        return persistNavigation(layout.mapId(), resolvedCell, destination.levelZ(), nextHeading);
     }
 
     private DungeonRuntimeNavigationSnapshot moveThroughTransition(
@@ -335,5 +341,9 @@ public final class DungeonRuntimeApplicationService {
 
     private static CardinalDirection normalizeHeading(CardinalDirection heading) {
         return heading == null ? CardinalDirection.defaultDirection() : heading;
+    }
+
+    private static CardinalDirection navigationHeading(DungeonRuntimeNavigationSnapshot navigation) {
+        return normalizeHeading(navigation == null ? null : navigation.heading());
     }
 }

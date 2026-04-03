@@ -1,17 +1,17 @@
 package features.world.dungeonmap.application.runtime;
 
-import features.world.dungeonmap.application.room.DoorExitCatalog;
-import features.world.dungeonmap.application.room.RoomExitCatalog;
-import features.world.dungeonmap.application.room.RoomExitDescriptor;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.structures.connection.Connection;
+import features.world.dungeonmap.model.structures.connection.DoorExitCatalog;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpointType;
+import features.world.dungeonmap.model.structures.connection.RoomExitDescriptor;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.model.structures.room.RoomExitCatalog;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.stair.DungeonStairExit;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
@@ -40,10 +40,11 @@ public final class DungeonRuntimeSurfaceResolver {
 
     public static DungeonRuntimeSurface resolve(
             DungeonLayout layout,
-            CellCoord activeCell,
-            int activeLevelZ,
-            CardinalDirection heading
+            DungeonRuntimeNavigationSnapshot navigation
     ) {
+        CellCoord activeCell = navigation == null ? null : navigation.cell();
+        int activeLevelZ = navigation == null ? 0 : navigation.levelZ();
+        CardinalDirection heading = navigation == null ? CardinalDirection.defaultDirection() : navigation.heading();
         if (layout == null || activeCell == null) {
             return null;
         }
@@ -175,10 +176,11 @@ public final class DungeonRuntimeSurfaceResolver {
                     "",
                     "Verbindung konnte nicht benutzt werden",
                     new DungeonRuntimeAction.DoorTarget(
-                            exit.levelZ(),
                             exit.anchorSegment2x(),
-                            exit.outsideCell(),
-                            exit.direction())));
+                            new DungeonRuntimeAction.CellTarget(
+                                    exit.outsideCell(),
+                                    exit.levelZ(),
+                                    exit.direction()))));
         }
     }
 
@@ -208,10 +210,11 @@ public final class DungeonRuntimeSurfaceResolver {
                     "",
                     "Verbindung konnte nicht benutzt werden",
                     new DungeonRuntimeAction.DoorTarget(
-                            exit.levelZ(),
                             exit.anchorSegment2x(),
-                            exit.outsideCell(),
-                            exit.direction())));
+                            new DungeonRuntimeAction.CellTarget(
+                                    exit.outsideCell(),
+                                    exit.levelZ(),
+                                    exit.direction()))));
         }
     }
 

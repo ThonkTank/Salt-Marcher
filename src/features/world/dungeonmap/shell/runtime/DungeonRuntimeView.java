@@ -11,8 +11,6 @@ import features.world.dungeonmap.application.runtime.DungeonRuntimeSurfaceResolv
 import features.world.dungeonmap.canvas.base.DungeonDoorNumberOverlay;
 import features.world.dungeonmap.canvas.base.DungeonRuntimeRenderOverlay;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
-import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.shell.AbstractDungeonMapView;
 import features.world.dungeonmap.shell.controls.DungeonLevelOverlayControls;
 import features.world.dungeonmap.shell.interaction.DungeonHitCollector;
@@ -50,9 +48,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
     private final Runnable mapStateListener = this::onMapStateChanged;
     private long runtimeRequestSequence;
     private Long runtimeMapId;
-    private DungeonRuntimeNavigationSnapshot pendingNavigationSnapshot;
     private DetailsNavigator.EntryKey lastPublishedSurfaceKey;
-    private RuntimePresentation runtimePresentation = RuntimePresentation.empty();
 
     public DungeonRuntimeView(
             String title,
@@ -75,8 +71,8 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
                 state,
                 runtimeState,
                 cell -> state.activeMap().nearestTraversableCell(cell, state.activeProjectionLevel()),
-                this::previewPartyCell,
-                this::movePartyToCell,
+                this::previewPartyNavigation,
+                this::movePartyToNavigation,
                 hitCollector));
         workspace().setOnLevelScrollRequested(delta ->
                 state.setReachableProjectionLevel(state.activeProjectionLevel() + delta));
@@ -146,8 +142,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
     }
 
     private void refreshRuntimeUi() {
-        runtimePresentation = resolveRuntimePresentation();
-        publishRuntimePresentation(runtimePresentation);
+        publishRuntimePresentation(resolveRuntimePresentation());
         refreshLabels();
     }
 
@@ -158,24 +153,23 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         }
         if (state().activeMap().mapId() <= 0) {
             runtimeMapId = null;
-            pendingNavigationSnapshot = null;
             lastPublishedSurfaceKey = null;
             runtimeState.clear();
             return;
         }
         state().setReachableProjectionLevel(state().activeProjectionLevel());
-        if (pendingNavigationSnapshot != null
-                && !Objects.equals(pendingNavigationSnapshot.mapId(), state().activeMapId())
+        if (runtimeState.pendingNavigation() != null
+                && !Objects.equals(runtimeState.pendingNavigation().mapId(), state().activeMapId())
                 && !state().loading()) {
-            pendingNavigationSnapshot = null;
+            runtimeState.clearPendingNavigation();
         }
         if (!Objects.equals(runtimeMapId, state().activeMapId())) {
             runtimeMapId = state().activeMapId();
             lastPublishedSurfaceKey = null;
-            if (pendingNavigationSnapshot != null && Objects.equals(pendingNavigationSnapshot.mapId(), runtimeMapId)) {
-                DungeonRuntimeNavigationSnapshot snapshot = pendingNavigationSnapshot;
-                pendingNavigationSnapshot = null;
-                applyNavigationSnapshot(runtimeApplicationService.resolveNavigation(state().activeMap(), snapshot));
+            if (runtimeState.pendingNavigation() != null && Objects.equals(runtimeState.pendingNavigation().mapId(), runtimeMapId)) {
+                applyNavigationSnapshot(runtimeApplicationService.resolveNavigation(
+                        state().activeMap(),
+                        runtimeState.pendingNavigation()));
                 return;
             }
             loadRuntimeNavigation();
@@ -183,9 +177,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         }
         applyNavigationSnapshot(runtimeApplicationService.resolveNavigation(
                 state().activeMap(),
-                runtimeState.activeCell(),
-                runtimeState.activeLevelZ(),
-                runtimeState.heading()));
+                runtimeState.activeNavigation()));
     }
 
     private void loadRuntimeNavigation() {
@@ -209,16 +201,20 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
                 });
     }
 
-    private void previewPartyCell(CellCoord cell) {
-        if (cell == null) {
+    private void previewPartyNavigation(DungeonRuntimeNavigationSnapshot navigation) {
+        if (navigation == null || navigation.cell() == null) {
             runtimeState.clearDragPreview();
             return;
         }
-        runtimeState.showDragPreview(cell, state().activeProjectionLevel());
+        runtimeState.showDragPreview(navigation);
     }
 
-    private void movePartyToCell(CellCoord cell) {
-        if (runtimeState.loading() || runtimeState.moving() || state().activeMap().mapId() <= 0) {
+    private void movePartyToNavigation(DungeonRuntimeNavigationSnapshot navigation) {
+        if (runtimeState.loading()
+                || runtimeState.moving()
+                || state().activeMap().mapId() <= 0
+                || navigation == null
+                || navigation.cell() == null) {
             return;
         }
         var layout = state().activeMap();
@@ -226,23 +222,14 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         UiAsyncTasks.submit(
                 () -> runtimeApplicationService.navigateToCell(
                         layout,
-                        activeCell(),
-                        cell,
-                        state().activeProjectionLevel(),
-                        runtimeState.heading()),
+                        runtimeState.persistedNavigation(),
+                        navigation.cell(),
+                        navigation.levelZ()),
                 this::applyNavigationSnapshot,
                 failure -> {
-                    System.err.println("DungeonRuntimeView.movePartyToCell(): " + failure.getMessage());
+                    System.err.println("DungeonRuntimeView.movePartyToNavigation(): " + failure.getMessage());
                     runtimeState.showFailure("Standort konnte nicht gespeichert werden");
                 });
-    }
-
-    private CellCoord activeCell() {
-        return runtimePresentation.activeCell();
-    }
-
-    private int activeLevelZ() {
-        return runtimePresentation.activeLevelZ();
     }
 
     private String runtimeStatusText() {
@@ -272,16 +259,15 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         if (travelSurface == null) {
             return;
         }
+        DungeonRuntimeSurface surface = presentation == null ? null : presentation.surface();
+        DungeonRuntimeNavigationSnapshot navigation = presentation == null
+                ? DungeonRuntimeNavigationSnapshot.empty()
+                : presentation.navigation();
         travelSurface.showDungeonTravel(
                 state().activeMap().name(),
-                DungeonRuntimeLabels.activeLocationLabel(
-                        state().activeMap(),
-                        presentation == null ? null : presentation.activeCell(),
-                        presentation == null ? state().activeProjectionLevel() : presentation.activeLevelZ()),
-                DungeonRuntimeLabels.cellLabel(
-                        presentation == null ? null : presentation.activeCell(),
-                        presentation == null ? state().activeProjectionLevel() : presentation.activeLevelZ()),
-                DungeonRuntimeLabels.headingLabel(runtimeState.heading()),
+                surface == null ? "Kein Standort" : surface.title(),
+                DungeonRuntimeLabels.cellLabel(navigation.cell(), navigation.levelZ()),
+                DungeonRuntimeLabels.headingLabel(navigation.heading()),
                 runtimeStatusText(),
                 travelActions(presentation),
                 workspace()::resetView);
@@ -308,7 +294,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         var layout = state().activeMap();
         runtimeState.showMoveInProgress();
         UiAsyncTasks.submit(
-                () -> runtimeApplicationService.navigate(layout, action, runtimeState.heading()),
+                () -> runtimeApplicationService.navigate(layout, runtimeState.persistedNavigation(), action),
                 this::applyNavigationSnapshot,
                 failure -> {
                     System.err.println("DungeonRuntimeView.triggerRuntimeAction(): " + failure.getMessage());
@@ -318,12 +304,10 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
 
     private void applyNavigationSnapshot(DungeonRuntimeNavigationSnapshot snapshot) {
         if (snapshot != null && snapshot.mapId() != null && !Objects.equals(snapshot.mapId(), state().activeMapId())) {
-            pendingNavigationSnapshot = snapshot;
-            runtimeState.showLoading();
+            runtimeState.showPendingNavigation(snapshot);
             loadingService().selectMap(snapshot.mapId());
             return;
         }
-        pendingNavigationSnapshot = null;
         runtimeState.showNavigation(snapshot);
         if (snapshot != null && snapshot.cell() != null) {
             state().setReachableProjectionLevel(snapshot.levelZ());
@@ -350,18 +334,12 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
     }
 
     private RuntimePresentation resolveRuntimePresentation() {
-        CellCoord activeCell = runtimeState.activeCell();
-        int activeLevelZ = runtimeState.activeLevelZ();
+        DungeonRuntimeNavigationSnapshot navigation = runtimeState.activeNavigation();
         var layout = state().activeMap();
-        CardinalDirection heading = runtimeState.heading();
-        if (activeCell == null || layout == null) {
+        if (layout == null || navigation == null || navigation.isEmpty()) {
             return RuntimePresentation.empty();
         }
-        DungeonRuntimeSurface surface = DungeonRuntimeSurfaceResolver.resolve(
-                layout,
-                activeCell,
-                activeLevelZ,
-                heading);
+        DungeonRuntimeSurface surface = DungeonRuntimeSurfaceResolver.resolve(layout, navigation);
         List<DungeonDoorNumberOverlay> doorNumbers = surface == null
                 ? List.of()
                 : surface.doors().stream()
@@ -369,9 +347,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
                         .toList();
         return new RuntimePresentation(
                 surface,
-                activeCell,
-                activeLevelZ,
-                new DungeonRuntimeRenderOverlay(activeCell, activeLevelZ, heading, doorNumbers));
+                new DungeonRuntimeRenderOverlay(navigation, doorNumbers));
     }
 
     private static Label sectionLabel(String text) {
@@ -382,16 +358,18 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
 
     private record RuntimePresentation(
             DungeonRuntimeSurface surface,
-            CellCoord activeCell,
-            int activeLevelZ,
             DungeonRuntimeRenderOverlay overlay
     ) {
         private RuntimePresentation {
             overlay = overlay == null ? DungeonRuntimeRenderOverlay.empty() : overlay;
         }
 
+        private DungeonRuntimeNavigationSnapshot navigation() {
+            return overlay.navigation();
+        }
+
         private static RuntimePresentation empty() {
-            return new RuntimePresentation(null, null, 0, DungeonRuntimeRenderOverlay.empty());
+            return new RuntimePresentation(null, DungeonRuntimeRenderOverlay.empty());
         }
     }
 }

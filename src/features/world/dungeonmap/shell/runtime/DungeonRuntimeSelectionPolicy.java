@@ -1,46 +1,43 @@
 package features.world.dungeonmap.shell.runtime;
 
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationSnapshot;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.shell.interaction.DungeonDragService;
 import features.world.dungeonmap.shell.interaction.DungeonHitSnapshot;
 import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
-import features.world.dungeonmap.shell.interaction.DungeonSelectionDecision;
 
 import java.util.Objects;
 
 public final class DungeonRuntimeSelectionPolicy {
 
-    public enum RuntimeInteractionPhase {
-        PRESS,
-        DRAG,
-        RELEASE
-    }
-
-    public DungeonSelectionDecision select(
-            RuntimeInteractionPhase phase,
+    public boolean canBeginDrag(
             DungeonLayout activeMap,
             DungeonCanvasPointerEvent event,
             DungeonHitSnapshot snapshot,
-            CellCoord activeCell,
-            int activeLevelZ,
-            DungeonDragService.DungeonDragSession dragSession
+            DungeonRuntimeNavigationSnapshot activeNavigation
     ) {
-        Objects.requireNonNull(phase, "phase");
         DungeonHitSnapshot resolvedSnapshot = Objects.requireNonNull(snapshot, "snapshot");
-        if (activeMap == null || event == null) {
-            return new DungeonSelectionDecision(resolvedSnapshot, false, false);
+        if (activeMap == null || event == null || activeNavigation == null || activeNavigation.isEmpty()) {
+            return false;
         }
-        return switch (phase) {
-            case PRESS -> decidePress(activeMap, event, resolvedSnapshot, activeCell, activeLevelZ);
-            case DRAG -> new DungeonSelectionDecision(resolvedSnapshot, dragSession != null && event.isPrimaryButtonDown(), false);
-            case RELEASE -> new DungeonSelectionDecision(resolvedSnapshot, dragSession != null, false);
-        };
+        return decidePress(activeMap, event, resolvedSnapshot, activeNavigation.cell(), activeNavigation.levelZ());
     }
 
-    private static DungeonSelectionDecision decidePress(
+    public boolean canContinueDrag(
+            DungeonCanvasPointerEvent event,
+            DungeonDragService.DungeonDragSession dragSession
+    ) {
+        return dragSession != null && event != null && event.isPrimaryButtonDown();
+    }
+
+    public boolean canDrop(DungeonDragService.DungeonDragSession dragSession) {
+        return dragSession != null;
+    }
+
+    private static boolean decidePress(
             DungeonLayout activeMap,
             DungeonCanvasPointerEvent event,
             DungeonHitSnapshot snapshot,
@@ -51,14 +48,11 @@ public final class DungeonRuntimeSelectionPolicy {
                 || activeCell == null
                 || activeLevelZ != snapshot.probe().levelZ()
                 || !activeCell.equals(snapshot.probe().gridCell())) {
-            return new DungeonSelectionDecision(snapshot, false, false);
+            return false;
         }
         DungeonHitSubject subject = snapshot.firstSubjectMatching(candidate ->
                 isRuntimeSelectable(candidate) && subjectOwnsActiveCell(activeMap, activeCell, activeLevelZ, candidate));
-        if (subject == null) {
-            return new DungeonSelectionDecision(snapshot, false, false);
-        }
-        return new DungeonSelectionDecision(snapshot, true, true);
+        return subject != null;
     }
 
     private static boolean isRuntimeSelectable(DungeonHitSubject subject) {

@@ -5,17 +5,12 @@ import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 
 import java.util.stream.Stream;
 
 public final class DungeonRuntimeLabels {
 
     private DungeonRuntimeLabels() {
-    }
-
-    public static String activeLocationLabel(DungeonLayout layout, CellCoord cell, int levelZ) {
-        return structureLabelAtCell(layout, cell, levelZ);
     }
 
     public static String cellLabel(CellCoord cell, int levelZ) {
@@ -25,28 +20,6 @@ public final class DungeonRuntimeLabels {
     public static String headingLabel(CardinalDirection heading) {
         CardinalDirection resolved = heading == null ? CardinalDirection.defaultDirection() : heading;
         return resolved.label();
-    }
-
-    public static String structureLabelAtCell(DungeonLayout layout, CellCoord cell, int levelZ) {
-        if (layout == null || cell == null) {
-            return "Kein Standort";
-        }
-        DungeonLayout.CellStructure structure = layout.structureAtCell(cell, levelZ);
-        if (structure instanceof DungeonLayout.CellStructure.RoomStructure roomStructure) {
-            return roomLabel(roomStructure.room());
-        }
-        if (structure instanceof DungeonLayout.CellStructure.CorridorStructure corridorStructure) {
-            return corridorLabel(layout, corridorStructure.corridor());
-        }
-        var stair = layout.stairsAtCell(cell, levelZ).stream().findFirst().orElse(null);
-        if (stair != null) {
-            return stair.label();
-        }
-        DungeonTransition transition = layout.transitionsAtCell(cell, levelZ).stream().findFirst().orElse(null);
-        if (transition != null) {
-            return transition.label();
-        }
-        return "Kein Standort";
     }
 
     public static String roomLabel(DungeonLayout layout, Long roomId) {

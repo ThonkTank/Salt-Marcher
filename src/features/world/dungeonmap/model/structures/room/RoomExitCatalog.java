@@ -1,7 +1,8 @@
-package features.world.dungeonmap.application.room;
+package features.world.dungeonmap.model.structures.room;
 
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.model.structures.connection.DoorExitCatalog;
+import features.world.dungeonmap.model.structures.connection.RoomExitDescriptor;
 
 import java.util.List;
 

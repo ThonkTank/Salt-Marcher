@@ -39,13 +39,12 @@ public record DungeonRuntimeAction(
     }
 
     public record DoorTarget(
-            int levelZ,
             GridSegment2x anchorSegment2x,
-            CellCoord targetCellHint,
-            CardinalDirection headingOverride
+            CellTarget destination
     ) implements Target {
         public DoorTarget {
             anchorSegment2x = Objects.requireNonNull(anchorSegment2x, "anchorSegment2x");
+            destination = Objects.requireNonNull(destination, "destination");
         }
     }
 

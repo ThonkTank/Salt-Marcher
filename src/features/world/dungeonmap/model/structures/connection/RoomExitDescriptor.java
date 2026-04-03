@@ -1,4 +1,4 @@
-package features.world.dungeonmap.application.room;
+package features.world.dungeonmap.model.structures.connection;
 
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;

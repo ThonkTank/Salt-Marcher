@@ -11,22 +11,36 @@ public final class DungeonRuntimeState {
 
     private final List<Runnable> listeners = new CopyOnWriteArrayList<>();
 
-    private CellCoord persistedCell;
-    private int persistedLevelZ;
-    private CellCoord previewCell;
-    private int previewLevelZ;
-    private CardinalDirection heading = CardinalDirection.defaultDirection();
+    private DungeonRuntimeNavigationSnapshot persistedNavigation = DungeonRuntimeNavigationSnapshot.empty();
+    private DungeonRuntimeNavigationSnapshot previewNavigation;
+    private DungeonRuntimeNavigationSnapshot pendingNavigation;
     private boolean loading;
     private boolean dragging;
     private boolean moving;
     private String errorMessage;
 
+    public DungeonRuntimeNavigationSnapshot persistedNavigation() {
+        return persistedNavigation;
+    }
+
+    public DungeonRuntimeNavigationSnapshot previewNavigation() {
+        return previewNavigation;
+    }
+
+    public DungeonRuntimeNavigationSnapshot pendingNavigation() {
+        return pendingNavigation;
+    }
+
+    public DungeonRuntimeNavigationSnapshot activeNavigation() {
+        return previewNavigation != null ? previewNavigation : persistedNavigation;
+    }
+
     public CellCoord activeCell() {
-        return previewCell == null ? persistedCell : previewCell;
+        return activeNavigation().cell();
     }
 
     public int activeLevelZ() {
-        return previewCell == null ? persistedLevelZ : previewLevelZ;
+        return activeNavigation().levelZ();
     }
 
     public boolean loading() {
@@ -42,7 +56,7 @@ public final class DungeonRuntimeState {
     }
 
     public CardinalDirection heading() {
-        return heading == null ? CardinalDirection.defaultDirection() : heading;
+        return activeNavigation().heading();
     }
 
     public String errorMessage() {
@@ -59,17 +73,16 @@ public final class DungeonRuntimeState {
         loading = true;
         dragging = false;
         moving = false;
-        previewCell = null;
+        previewNavigation = null;
         errorMessage = null;
         notifyListeners();
     }
 
-    public void showDragPreview(CellCoord cell, int levelZ) {
-        if (cell == null) {
+    public void showDragPreview(DungeonRuntimeNavigationSnapshot snapshot) {
+        if (snapshot == null || snapshot.cell() == null) {
             return;
         }
-        previewCell = cell;
-        previewLevelZ = levelZ;
+        previewNavigation = snapshot;
         dragging = true;
         moving = false;
         errorMessage = null;
@@ -77,24 +90,41 @@ public final class DungeonRuntimeState {
     }
 
     public void clearDragPreview() {
-        previewCell = null;
+        previewNavigation = null;
         dragging = false;
         notifyListeners();
     }
 
     public void showMoveInProgress() {
-        previewCell = null;
+        previewNavigation = null;
         dragging = false;
         moving = true;
         errorMessage = null;
         notifyListeners();
     }
 
+    public void showPendingNavigation(DungeonRuntimeNavigationSnapshot snapshot) {
+        pendingNavigation = snapshot == null ? null : snapshot;
+        previewNavigation = null;
+        loading = true;
+        dragging = false;
+        moving = false;
+        errorMessage = null;
+        notifyListeners();
+    }
+
+    public void clearPendingNavigation() {
+        if (pendingNavigation == null) {
+            return;
+        }
+        pendingNavigation = null;
+        notifyListeners();
+    }
+
     public void showNavigation(DungeonRuntimeNavigationSnapshot snapshot) {
-        persistedCell = snapshot == null ? null : snapshot.cell();
-        persistedLevelZ = snapshot == null ? 0 : snapshot.levelZ();
-        heading = snapshot == null || snapshot.heading() == null ? CardinalDirection.defaultDirection() : snapshot.heading();
-        previewCell = null;
+        persistedNavigation = snapshot == null ? DungeonRuntimeNavigationSnapshot.empty() : snapshot;
+        previewNavigation = null;
+        pendingNavigation = null;
         loading = false;
         dragging = false;
         moving = false;
@@ -104,7 +134,8 @@ public final class DungeonRuntimeState {
 
     public void showFailure(String errorMessage) {
         loading = false;
-        previewCell = null;
+        previewNavigation = null;
+        pendingNavigation = null;
         dragging = false;
         moving = false;
         this.errorMessage = errorMessage == null || errorMessage.isBlank()
@@ -114,11 +145,9 @@ public final class DungeonRuntimeState {
     }
 
     public void clear() {
-        persistedCell = null;
-        persistedLevelZ = 0;
-        previewCell = null;
-        previewLevelZ = 0;
-        heading = CardinalDirection.defaultDirection();
+        persistedNavigation = DungeonRuntimeNavigationSnapshot.empty();
+        previewNavigation = null;
+        pendingNavigation = null;
         loading = false;
         dragging = false;
         moving = false;

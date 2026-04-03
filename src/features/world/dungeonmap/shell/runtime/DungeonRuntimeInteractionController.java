@@ -4,6 +4,7 @@ import features.world.dungeonmap.canvas.base.DungeonCanvasCamera;
 import features.world.dungeonmap.canvas.base.DungeonCanvasInteractionHandler;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.canvas.base.DungeonCanvasTheme;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationSnapshot;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.shell.interaction.DungeonDragService;
@@ -23,8 +24,8 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
     private final DungeonMapState mapState;
     private final DungeonRuntimeState runtimeState;
     private final Function<CellCoord, CellCoord> nearestTraversableCell;
-    private final Consumer<CellCoord> previewHandler;
-    private final Consumer<CellCoord> moveHandler;
+    private final Consumer<DungeonRuntimeNavigationSnapshot> previewHandler;
+    private final Consumer<DungeonRuntimeNavigationSnapshot> moveHandler;
     private final DungeonHitCollector hitCollector;
     private final DungeonRuntimeSelectionPolicy selectionPolicy = new DungeonRuntimeSelectionPolicy();
     private final DungeonDragService dragService = new DungeonDragService();
@@ -36,8 +37,8 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
             DungeonMapState mapState,
             DungeonRuntimeState runtimeState,
             Function<CellCoord, CellCoord> nearestTraversableCell,
-            Consumer<CellCoord> previewHandler,
-            Consumer<CellCoord> moveHandler,
+            Consumer<DungeonRuntimeNavigationSnapshot> previewHandler,
+            Consumer<DungeonRuntimeNavigationSnapshot> moveHandler,
             DungeonHitCollector hitCollector
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
@@ -54,24 +55,17 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
             dragSession = null;
             return false;
         }
-        RuntimeContextSnapshot snapshot = collect(event, camera);
-        if (snapshot == null) {
+        DungeonHitSnapshot hitSnapshot = collect(event, camera);
+        if (hitSnapshot == null) {
             dragSession = null;
             return false;
         }
-        var decision = selectionPolicy.select(
-                DungeonRuntimeSelectionPolicy.RuntimeInteractionPhase.PRESS,
-                snapshot.activeMap(),
-                event,
-                snapshot.hitSnapshot(),
-                activeCell(),
-                activeLevelZ(),
-                dragSession);
-        if (!decision.dispatchToTool() || !decision.beginDrag()) {
+        DungeonLayout activeMap = activeMap();
+        if (!selectionPolicy.canBeginDrag(activeMap, event, hitSnapshot, runtimeState.activeNavigation())) {
             dragSession = null;
             return false;
         }
-        CellCoord activeCell = activeCell();
+        CellCoord activeCell = runtimeState.activeCell();
         if (activeCell == null) {
             dragSession = null;
             return false;
@@ -81,7 +75,7 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
                 new DungeonDragService.DungeonDragTarget.TileDragTarget(activeCell));
         if (result instanceof DungeonDragService.DungeonDragResult.Started started) {
             dragSession = started.session();
-            previewHandler.accept(started.session().currentCell());
+            previewHandler.accept(navigationAt(started.session().currentCell(), hitSnapshot.probe().levelZ()));
             return true;
         }
         dragSession = null;
@@ -93,29 +87,21 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
         if (dragSession == null || event == null) {
             return false;
         }
-        RuntimeContextSnapshot snapshot = collect(event, camera);
-        if (snapshot == null) {
+        DungeonHitSnapshot hitSnapshot = collect(event, camera);
+        if (hitSnapshot == null) {
             return false;
         }
-        var decision = selectionPolicy.select(
-                DungeonRuntimeSelectionPolicy.RuntimeInteractionPhase.DRAG,
-                snapshot.activeMap(),
-                event,
-                snapshot.hitSnapshot(),
-                activeCell(),
-                activeLevelZ(),
-                dragSession);
-        if (!decision.dispatchToTool()) {
+        if (!selectionPolicy.canContinueDrag(event, dragSession)) {
             return false;
         }
         DungeonDragService.DungeonDragResult result = dragService.update(event, dragSession, nearestTraversableCell);
         if (result instanceof DungeonDragService.DungeonDragResult.Updated updated
                 && placementValidator.validateTraversable(
-                snapshot.activeMap(),
+                activeMap(),
                 updated.session().currentCell(),
-                snapshot.probe().levelZ()) instanceof DungeonPlacementValidator.PlacementResult.Valid valid) {
+                hitSnapshot.probe().levelZ()) instanceof DungeonPlacementValidator.PlacementResult.Valid valid) {
             dragSession = updated.session();
-            previewHandler.accept(valid.cell());
+            previewHandler.accept(navigationAt(valid.cell(), hitSnapshot.probe().levelZ()));
             return true;
         }
         return false;
@@ -126,29 +112,21 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
         if (dragSession == null || event == null) {
             return false;
         }
-        RuntimeContextSnapshot snapshot = collect(event, camera);
+        DungeonHitSnapshot hitSnapshot = collect(event, camera);
         DungeonDragService.DungeonDragSession currentSession = dragSession;
         dragSession = null;
-        if (snapshot == null) {
+        if (hitSnapshot == null) {
             runtimeState.clearDragPreview();
             return false;
         }
-        var decision = selectionPolicy.select(
-                DungeonRuntimeSelectionPolicy.RuntimeInteractionPhase.RELEASE,
-                snapshot.activeMap(),
-                event,
-                snapshot.hitSnapshot(),
-                activeCell(),
-                activeLevelZ(),
-                currentSession);
-        if (decision.dispatchToTool()) {
+        if (selectionPolicy.canDrop(currentSession)) {
             DungeonDragService.DungeonDragResult result = dragService.drop(event, currentSession, nearestTraversableCell);
             if (result instanceof DungeonDragService.DungeonDragResult.Dropped dropped
                     && placementValidator.validateTraversable(
-                    snapshot.activeMap(),
+                    activeMap(),
                     dropped.session().currentCell(),
-                    snapshot.probe().levelZ()) instanceof DungeonPlacementValidator.PlacementResult.Valid valid) {
-                moveHandler.accept(valid.cell());
+                    hitSnapshot.probe().levelZ()) instanceof DungeonPlacementValidator.PlacementResult.Valid valid) {
+                moveHandler.accept(navigationAt(valid.cell(), hitSnapshot.probe().levelZ()));
                 return true;
             }
         }
@@ -156,12 +134,11 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
         return false;
     }
 
-    private RuntimeContextSnapshot collect(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
+    private DungeonHitSnapshot collect(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
         if (event == null || event.canvasPoint() == null || event.gridCell() == null || camera == null) {
             return null;
         }
-        DungeonLayout layout = mapState.activeMap();
-        DungeonLayout activeMap = layout == null ? DungeonLayout.empty() : layout;
+        DungeonLayout activeMap = activeMap();
         double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
         DungeonHitProbe probe = new DungeonHitProbe(
                 event.canvasPoint(),
@@ -171,26 +148,20 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
                 camera.panX(),
                 camera.panY(),
                 gridSize);
-        DungeonHitSnapshot hitSnapshot = hitCollector.collect(activeMap, probe);
-        return new RuntimeContextSnapshot(activeMap, probe, hitSnapshot);
-    }
-
-    private CellCoord activeCell() {
-        return runtimeState.activeCell();
-    }
-
-    private int activeLevelZ() {
-        return runtimeState.activeCell() == null ? mapState.activeProjectionLevel() : runtimeState.activeLevelZ();
+        return hitCollector.collect(activeMap, probe);
     }
 
     private boolean interactionEnabled() {
         return !mapState.busy() && !runtimeState.loading() && !runtimeState.moving();
     }
 
-    private record RuntimeContextSnapshot(
-            DungeonLayout activeMap,
-            DungeonHitProbe probe,
-            DungeonHitSnapshot hitSnapshot
-    ) {
+    private DungeonLayout activeMap() {
+        DungeonLayout layout = mapState.activeMap();
+        return layout == null ? DungeonLayout.empty() : layout;
+    }
+
+    private DungeonRuntimeNavigationSnapshot navigationAt(CellCoord cell, int levelZ) {
+        Long mapId = mapState.activeMapId();
+        return new DungeonRuntimeNavigationSnapshot(mapId, cell, levelZ, runtimeState.heading());
     }
 }
