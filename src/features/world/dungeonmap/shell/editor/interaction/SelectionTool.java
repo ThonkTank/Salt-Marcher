@@ -37,6 +37,9 @@ public final class SelectionTool implements EditorTool {
     private CorridorNodeDragSession corridorNodeDragSession;
     private DungeonEditorTool activeTool;
     private Runnable refreshCallback = () -> { };
+    private DungeonSelectionRef previousNarrationSelectionRef;
+    private DungeonLayout previousNarrationMap;
+    private int previousNarrationLevel = Integer.MIN_VALUE;
 
     public SelectionTool(
             DungeonMapState mapState,
@@ -52,8 +55,8 @@ public final class SelectionTool implements EditorTool {
         this.corridorEditService = Objects.requireNonNull(corridorEditService, "corridorEditService");
         this.roomNarrationPane = Objects.requireNonNull(roomNarrationPane, "roomNarrationPane");
         this.state = Objects.requireNonNull(state, "state");
-        this.state.addListener(this::refreshStatePane);
-        this.mapState.addListener(this::refreshStatePane);
+        this.state.addListener(this::refreshNarrationContext);
+        this.mapState.addListener(this::refreshNarrationContext);
     }
 
     @Override
@@ -64,6 +67,9 @@ public final class SelectionTool implements EditorTool {
     @Override
     public void activate(DungeonEditorTool tool) {
         activeTool = tool;
+        previousNarrationSelectionRef = null;
+        previousNarrationMap = null;
+        previousNarrationLevel = Integer.MIN_VALUE;
         refreshStatePane();
     }
 
@@ -239,6 +245,21 @@ public final class SelectionTool implements EditorTool {
 
     private void refreshStatePane() {
         refreshCallback.run();
+    }
+
+    private void refreshNarrationContext() {
+        DungeonSelectionRef selectedRef = state.selectedRef();
+        DungeonLayout activeMap = mapState.activeMap();
+        int projectionLevel = mapState.activeProjectionLevel();
+        if (Objects.equals(selectedRef, previousNarrationSelectionRef)
+                && activeMap == previousNarrationMap
+                && projectionLevel == previousNarrationLevel) {
+            return;
+        }
+        previousNarrationSelectionRef = selectedRef;
+        previousNarrationMap = activeMap;
+        previousNarrationLevel = projectionLevel;
+        refreshStatePane();
     }
 
     private void clear() {

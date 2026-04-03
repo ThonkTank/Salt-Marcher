@@ -148,18 +148,6 @@ public final class DungeonRoomTopologyService {
             long mapId,
             long clusterId,
             int levelZ,
-            GridSegment2x segment2x,
-            InternalBoundaryType type,
-            boolean deleteBoundary
-    ) throws SQLException {
-        editBoundary(conn, mapId, clusterId, levelZ, segment2x == null ? List.<GridSegment2x>of() : List.of(segment2x), type, deleteBoundary);
-    }
-
-    public void editBoundary(
-            Connection conn,
-            long mapId,
-            long clusterId,
-            int levelZ,
             Collection<GridSegment2x> segments2x,
             InternalBoundaryType type,
             boolean deleteBoundary

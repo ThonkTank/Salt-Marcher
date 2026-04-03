@@ -8,23 +8,24 @@ import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 import features.world.dungeonmap.model.objects.Door;
-import features.world.dungeonmap.model.objects.Floor;
 import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.model.objects.StructureObject;
+import features.world.dungeonmap.model.objects.Wall;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.LocalConnection;
 import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.model.structures.room.RoomNarration;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Supplier;
 
 public final class RoomCluster {
 
@@ -109,7 +110,7 @@ public final class RoomCluster {
     }
 
     public ClusterRewrite editBoundary(Collection<GridSegment2x> segments2x, InternalBoundaryType type, boolean deleteBoundary) {
-        return ClusterRewritePlanner.editBoundary(this, segments2x, type, deleteBoundary);
+        return Topology.editBoundary(this, segments2x, type, deleteBoundary);
     }
 
     public InteractiveLabelHandle labelHandle() {
@@ -250,49 +251,6 @@ public final class RoomCluster {
         return roomId != null && roomsById.containsKey(roomId);
     }
 
-    public RoomCluster withAddedRoom(Room room) {
-        if (room == null) {
-            return this;
-        }
-        List<Room> updated = new ArrayList<>();
-        boolean replaced = false;
-        for (Room existing : rooms) {
-            if (!ClusterRewritePlanner.sameRoomId(existing, room)) {
-                updated.add(existing);
-                continue;
-            }
-            updated.add(roomForCluster(room));
-            replaced = true;
-        }
-        if (!replaced) {
-            updated.add(roomForCluster(room));
-        }
-        return withRooms(updated);
-    }
-
-    public RoomCluster withRemovedRoom(Long roomId) {
-        if (roomId == null || !containsRoom(roomId)) {
-            return this;
-        }
-        return withRooms(rooms.stream()
-                .filter(room -> room == null || !roomId.equals(room.roomId()))
-                .toList());
-    }
-
-    public Room createRoom(Long roomId, String name, Floor floor) {
-        Floor resolvedFloor = floor == null ? Floor.empty() : floor;
-        return Room.create(
-                roomId,
-                mapId,
-                clusterId == null ? 0L : clusterId,
-                ClusterRewritePlanner.normalizedRoomName(roomId, name),
-                StructureObject.fromDescriptor(ClusterRewritePlanner.descriptorForStandaloneRoom(resolvedFloor)));
-    }
-
-    public RoomCluster withCreatedRoom(Long roomId, String name, Floor floor) {
-        return withAddedRoom(createRoom(roomId, name, floor));
-    }
-
     public Room roomAt(CellCoord cell) {
         return cell == null ? null : roomsByCell.get(cell);
     }
@@ -376,15 +334,15 @@ public final class RoomCluster {
     }
 
     public Map<GridSegment2x, InternalBoundaryType> internalBoundaryKinds() {
-        return ClusterRewritePlanner.internalBoundaryKinds(cells, rooms, localConnections);
+        return Topology.internalBoundaryKinds(cells, rooms, localConnections);
     }
 
     public ClusterRewrite applyPaint(Set<CellCoord> paintCells, List<RoomCluster> overlappingClusters, int paintLevel) {
-        return ClusterRewritePlanner.applyPaint(this, paintCells, overlappingClusters, paintLevel);
+        return Topology.applyPaint(this, paintCells, overlappingClusters, paintLevel);
     }
 
-    public ClusterRewrite applyDelete(Set<CellCoord> deletedCells, Supplier<String> roomNameSupplier, int deleteLevel) {
-        return ClusterRewritePlanner.applyDelete(this, deletedCells, roomNameSupplier, deleteLevel);
+    public ClusterRewrite applyDelete(Set<CellCoord> deletedCells, int deleteLevel) {
+        return Topology.applyDelete(this, deletedCells, deleteLevel);
     }
 
     private static Map<Long, Room> indexRoomsById(List<Room> rooms) {

@@ -26,10 +26,6 @@ public final class DungeonClusterMoveService {
         this.roomRepository = Objects.requireNonNull(roomRepository, "roomRepository");
     }
 
-    public void move(long mapId, long clusterId, CellCoord delta) throws SQLException {
-        move(mapId, clusterId, delta, 0);
-    }
-
     public void move(long mapId, long clusterId, CellCoord delta, int levelDelta) throws SQLException {
         boolean translate = delta != null && (delta.x() != 0 || delta.y() != 0);
         if (!translate && levelDelta == 0) {
