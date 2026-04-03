@@ -78,6 +78,14 @@ public record Room(
         return new Room(roomId, mapId, clusterId, name, structure, narration);
     }
 
+    public Room withName(String name) {
+        return new Room(roomId, mapId, clusterId, name, structure, narration);
+    }
+
+    public Room withClusterId(long clusterId) {
+        return new Room(roomId, mapId, clusterId, name, structure, narration);
+    }
+
     public Room movedBy(CellCoord delta) {
         return movedBy(delta, 0);
     }

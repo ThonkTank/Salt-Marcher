@@ -5,8 +5,6 @@ import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.structures.cluster.ClusterRewrite;
-import features.world.dungeonmap.model.structures.cluster.ClusterRewriteSplit;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.room.Room;
@@ -108,12 +106,12 @@ public final class DungeonRoomApplicationService {
             return;
         }
 
-        ClusterRewrite rewrite = overlappingClusters.getFirst().applyPaint(cells, overlappingClusters, levelZ);
-        if (rewrite.isNoOp()) {
+        RoomCluster mergedCluster = overlappingClusters.getFirst().applyPaint(cells, overlappingClusters, levelZ);
+        if (mergedCluster == null) {
             return;
         }
 
-        roomRepository.saveClusterRewrite(conn, mapId, rewrite, levelZ);
+        roomRepository.replaceClusters(conn, mapId, overlappingClusters, List.of(mergedCluster));
     }
 
     public void deleteCells(Connection conn, long mapId, int levelZ, Set<CellCoord> cells) throws SQLException {
@@ -136,18 +134,14 @@ public final class DungeonRoomApplicationService {
                 continue;
             }
             DungeonLayout layoutSnapshot = workingLayout;
-            ClusterRewrite rewrite = assignGeneratedRoomNames(
+            List<RoomCluster> finalClusters = assignGeneratedRoomNames(
                     cluster.applyDelete(cells, levelZ),
                     () -> nextRoomName(layoutSnapshot, reservedNames));
-            if (rewrite.isNoOp()) {
+            if (finalClusters == null) {
                 continue;
             }
-            ClusterRewrite persistedRewrite = roomRepository.saveClusterRewrite(
-                    conn,
-                    mapId,
-                    rewrite,
-                    workingLayout.levelForCluster(rewrite.targetClusterId()));
-            workingLayout = workingLayout.applying(persistedRewrite);
+            roomRepository.replaceClusters(conn, mapId, List.of(cluster), finalClusters);
+            workingLayout = requireLayout(conn, mapId);
         }
     }
 
@@ -216,12 +210,12 @@ public final class DungeonRoomApplicationService {
         if (cluster == null) {
             return;
         }
-        ClusterRewrite rewrite = cluster.editBoundary(segments2x, type, deleteBoundary);
-        if (rewrite == null) {
+        RoomCluster updatedCluster = cluster.editBoundary(segments2x, type, deleteBoundary);
+        if (updatedCluster == null) {
             return;
         }
 
-        roomRepository.saveClusterRewrite(conn, mapId, rewrite, layout.levelForCluster(rewrite.targetClusterId()));
+        roomRepository.replaceClusters(conn, mapId, List.of(cluster), List.of(updatedCluster));
     }
 
     private void editDoor(
@@ -265,11 +259,11 @@ public final class DungeonRoomApplicationService {
         if (editableSegments.isEmpty()) {
             return;
         }
-        ClusterRewrite rewrite = cluster.editBoundary(editableSegments, InternalBoundaryType.DOOR, deleteDoor);
-        if (rewrite == null) {
+        RoomCluster updatedCluster = cluster.editBoundary(editableSegments, InternalBoundaryType.DOOR, deleteDoor);
+        if (updatedCluster == null) {
             return;
         }
-        roomRepository.saveClusterRewrite(conn, mapId, rewrite, layout.levelForCluster(rewrite.targetClusterId()));
+        roomRepository.replaceClusters(conn, mapId, List.of(cluster), List.of(updatedCluster));
     }
 
     private static List<RoomCluster> overlappingClustersAtLevel(DungeonLayout layout, Set<CellCoord> cells, int levelZ) {
@@ -328,26 +322,26 @@ public final class DungeonRoomApplicationService {
         }
     }
 
-    private static ClusterRewrite assignGeneratedRoomNames(ClusterRewrite rewrite, Supplier<String> roomNameSupplier) {
-        if (rewrite == null || roomNameSupplier == null) {
-            return rewrite;
+    private static List<RoomCluster> assignGeneratedRoomNames(List<RoomCluster> clusters, Supplier<String> roomNameSupplier) {
+        if (clusters == null || roomNameSupplier == null) {
+            return clusters;
         }
-        List<Room> renamedRooms = assignGeneratedRoomNames(rewrite.rooms(), roomNameSupplier);
-        List<ClusterRewriteSplit> renamedSplits = rewrite.splitClusters().stream()
-                .map(split -> new ClusterRewriteSplit(
-                        split.clusterId(),
-                        split.clusterCenter(),
-                        assignGeneratedRoomNames(split.rooms(), roomNameSupplier)))
-                .toList();
-        if (renamedRooms.equals(rewrite.rooms()) && renamedSplits.equals(rewrite.splitClusters())) {
-            return rewrite;
+        boolean changed = false;
+        List<RoomCluster> renamedClusters = new java.util.ArrayList<>(clusters.size());
+        for (RoomCluster cluster : clusters) {
+            if (cluster == null) {
+                renamedClusters.add(null);
+                continue;
+            }
+            List<Room> renamedRooms = assignGeneratedRoomNames(cluster.rooms(), roomNameSupplier);
+            if (renamedRooms.equals(cluster.rooms())) {
+                renamedClusters.add(cluster);
+                continue;
+            }
+            renamedClusters.add(new RoomCluster(cluster.clusterId(), cluster.mapId(), cluster.center(), renamedRooms));
+            changed = true;
         }
-        return ClusterRewrite.builder(rewrite.targetClusterId(), rewrite.clusterCenter(), renamedRooms)
-                .deletedRoomIds(rewrite.deletedRoomIds())
-                .deletedClusterIds(rewrite.deletedClusterIds())
-                .splitClusters(renamedSplits)
-                .topologyChanged(rewrite.topologyChanged())
-                .build();
+        return changed ? List.copyOf(renamedClusters) : clusters;
     }
 
     private static List<Room> assignGeneratedRoomNames(List<Room> rooms, Supplier<String> roomNameSupplier) {
@@ -362,13 +356,8 @@ public final class DungeonRoomApplicationService {
                 continue;
             }
             String generatedName = roomNameSupplier.get();
-            Room renamedRoom = Room.resolved(
-                    null,
-                    room.mapId(),
-                    room.clusterId(),
-                    generatedName == null || generatedName.isBlank() ? "Raum neu" : generatedName.trim(),
-                    room.structure(),
-                    room.narration());
+            Room renamedRoom = room.withName(
+                    generatedName == null || generatedName.isBlank() ? "Raum neu" : generatedName.trim());
             renamedRooms.add(renamedRoom);
             changed = true;
         }

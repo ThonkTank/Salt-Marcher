@@ -5,8 +5,6 @@ import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.model.objects.StructureObject;
-import features.world.dungeonmap.model.structures.cluster.ClusterRewrite;
-import features.world.dungeonmap.model.structures.cluster.ClusterRewriteSplit;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
@@ -119,44 +117,52 @@ public final class DungeonRoomRepository {
                 StructureDescriptor.fromCellCoordsByLevel(Map.of(levelZ, resolvedCells)));
     }
 
-    public ClusterRewrite saveClusterRewrite(Connection conn, long mapId, ClusterRewrite rewrite, int fallbackLevel) throws SQLException {
-        if (rewrite == null || rewrite.targetClusterId() == null) {
-            return rewrite;
+    /**
+     * Realizes the room workflow's final cluster owners directly instead of replaying a second rewrite payload.
+     */
+    public void replaceClusters(
+            Connection conn,
+            long mapId,
+            List<RoomCluster> originalClusters,
+            List<RoomCluster> finalClusters
+    ) throws SQLException {
+        List<RoomCluster> resolvedOriginalClusters = normalizedClusters(originalClusters);
+        List<RoomCluster> resolvedFinalClusters = normalizedClusters(finalClusters);
+        if (resolvedOriginalClusters.isEmpty() && resolvedFinalClusters.isEmpty()) {
+            return;
         }
-        for (Long roomId : rewrite.deletedRoomIds()) {
-            if (roomId != null) {
+
+        Set<Long> finalRoomIds = roomIds(resolvedFinalClusters);
+        for (Long roomId : roomIds(resolvedOriginalClusters)) {
+            if (roomId != null && !finalRoomIds.contains(roomId)) {
                 deleteRoom(conn, roomId);
             }
         }
-        if (rewrite.deletesCluster()) {
-            deleteCluster(conn, rewrite.targetClusterId());
-            return rewrite;
-        }
-        List<ClusterRewriteSplit> realizedSplitClusters = new ArrayList<>();
-        for (ClusterRewriteSplit splitCluster : rewrite.splitClusters()) {
-            long splitClusterId = insertCluster(
-                    conn,
-                    mapId,
-                    splitCluster.clusterCenter(),
-                    primaryLevel(splitCluster.rooms(), fallbackLevel));
-            realizedSplitClusters.add(splitCluster.withClusterId(splitClusterId));
-        }
-        ClusterRewrite realizedRewrite = rewrite.withSplitClusters(realizedSplitClusters);
-        updateClusterMetadata(
-                conn,
-                realizedRewrite.targetClusterId(),
-                realizedRewrite.clusterCenter(),
-                primaryLevel(realizedRewrite.rooms(), fallbackLevel));
-        persistRooms(conn, mapId, realizedRewrite.targetClusterId(), realizedRewrite.rooms());
-        for (ClusterRewriteSplit splitCluster : realizedRewrite.splitClusters()) {
-            persistRooms(conn, mapId, splitCluster.clusterId(), splitCluster.rooms());
-        }
-        for (Long deletedClusterId : realizedRewrite.deletedClusterIds()) {
-            if (deletedClusterId != null && !deletedClusterId.equals(realizedRewrite.targetClusterId())) {
-                deleteCluster(conn, deletedClusterId);
+
+        Set<Long> retainedClusterIds = new LinkedHashSet<>();
+        for (RoomCluster cluster : resolvedFinalClusters) {
+            if (cluster == null || cluster.clusterId() == null) {
+                continue;
             }
+            retainedClusterIds.add(cluster.clusterId());
+            updateClusterMetadata(conn, cluster.clusterId(), cluster.center(), cluster.primaryLevel());
+            persistRooms(conn, mapId, cluster.clusterId(), cluster.rooms());
         }
-        return realizedRewrite;
+
+        for (RoomCluster cluster : resolvedFinalClusters) {
+            if (cluster == null || cluster.clusterId() != null) {
+                continue;
+            }
+            long clusterId = insertCluster(conn, mapId, cluster.center(), cluster.primaryLevel());
+            persistRooms(conn, mapId, clusterId, cluster.rooms());
+        }
+
+        for (RoomCluster cluster : resolvedOriginalClusters) {
+            if (cluster == null || cluster.clusterId() == null || retainedClusterIds.contains(cluster.clusterId())) {
+                continue;
+            }
+            deleteCluster(conn, cluster.clusterId());
+        }
     }
 
     public void saveMovedCluster(Connection conn, RoomCluster cluster) throws SQLException {
@@ -510,15 +516,6 @@ public final class DungeonRoomRepository {
         return result.isEmpty() ? Map.of() : Map.copyOf(result);
     }
 
-    private static int primaryLevel(List<Room> rooms, int fallbackLevel) {
-        return (rooms == null ? List.<Room>of() : rooms).stream()
-                .filter(java.util.Objects::nonNull)
-                .flatMap(room -> room.structure().levels().stream())
-                .mapToInt(Integer::intValue)
-                .min()
-                .orElse(fallbackLevel);
-    }
-
     private static Map<Long, Integer> loadLevelMap(Connection conn, String sql, long mapId) throws SQLException {
         Map<Long, Integer> result = new LinkedHashMap<>();
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -580,6 +577,42 @@ public final class DungeonRoomRepository {
 
     private static String normalizedRoomName(long roomId, String name) {
         return name == null || name.isBlank() ? "Raum " + roomId : name.trim();
+    }
+
+    private static List<RoomCluster> normalizedClusters(List<RoomCluster> clusters) {
+        if (clusters == null || clusters.isEmpty()) {
+            return List.of();
+        }
+        List<RoomCluster> result = new ArrayList<>();
+        Set<Long> seenClusterIds = new LinkedHashSet<>();
+        for (RoomCluster cluster : clusters) {
+            if (cluster == null) {
+                continue;
+            }
+            if (cluster.clusterId() == null) {
+                result.add(cluster);
+                continue;
+            }
+            if (seenClusterIds.add(cluster.clusterId())) {
+                result.add(cluster);
+            }
+        }
+        return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
+    private static Set<Long> roomIds(List<RoomCluster> clusters) {
+        LinkedHashSet<Long> result = new LinkedHashSet<>();
+        for (RoomCluster cluster : clusters == null ? List.<RoomCluster>of() : clusters) {
+            if (cluster == null) {
+                continue;
+            }
+            for (Room room : cluster.rooms()) {
+                if (room != null && room.roomId() != null) {
+                    result.add(room.roomId());
+                }
+            }
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
     @FunctionalInterface

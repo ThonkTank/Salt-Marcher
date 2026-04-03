@@ -90,6 +90,21 @@ public final class RoomCluster {
         return localConnections;
     }
 
+    public RoomCluster withRooms(List<Room> rooms) {
+        return new RoomCluster(clusterId, mapId, center, rooms);
+    }
+
+    public RoomCluster withClusterId(Long clusterId) {
+        long resolvedClusterId = clusterId == null ? (this.clusterId == null ? 0L : this.clusterId) : clusterId;
+        return new RoomCluster(
+                clusterId,
+                mapId,
+                center,
+                rooms.stream()
+                        .map(room -> room == null ? null : room.withClusterId(resolvedClusterId))
+                        .toList());
+    }
+
     public RoomCluster projectedToLevel(int levelZ) {
         List<Room> projectedRooms = rooms.stream()
                 .map(room -> projectRoomToLevel(room, levelZ))
@@ -101,11 +116,11 @@ public final class RoomCluster {
         return new RoomCluster(clusterId, mapId, center, projectedRooms);
     }
 
-    public ClusterRewrite editBoundary(GridSegment2x segment2x, InternalBoundaryType type, boolean deleteBoundary) {
+    public RoomCluster editBoundary(GridSegment2x segment2x, InternalBoundaryType type, boolean deleteBoundary) {
         return editBoundary(segment2x == null ? List.<GridSegment2x>of() : List.of(segment2x), type, deleteBoundary);
     }
 
-    public ClusterRewrite editBoundary(Collection<GridSegment2x> segments2x, InternalBoundaryType type, boolean deleteBoundary) {
+    public RoomCluster editBoundary(Collection<GridSegment2x> segments2x, InternalBoundaryType type, boolean deleteBoundary) {
         return Topology.editBoundary(this, segments2x, type, deleteBoundary);
     }
 
@@ -357,11 +372,11 @@ public final class RoomCluster {
         return Topology.internalBoundaryKinds(cells, rooms, localConnections);
     }
 
-    public ClusterRewrite applyPaint(Set<CellCoord> paintCells, List<RoomCluster> overlappingClusters, int paintLevel) {
+    public RoomCluster applyPaint(Set<CellCoord> paintCells, List<RoomCluster> overlappingClusters, int paintLevel) {
         return Topology.applyPaint(this, paintCells, overlappingClusters, paintLevel);
     }
 
-    public ClusterRewrite applyDelete(Set<CellCoord> deletedCells, int deleteLevel) {
+    public List<RoomCluster> applyDelete(Set<CellCoord> deletedCells, int deleteLevel) {
         return Topology.applyDelete(this, deletedCells, deleteLevel);
     }
 
@@ -662,9 +677,9 @@ public final class RoomCluster {
         private Topology() {
         }
 
-        static ClusterRewrite applyPaint(RoomCluster cluster, Set<CellCoord> paintCells, List<RoomCluster> overlappingClusters, int paintLevel) {
+        static RoomCluster applyPaint(RoomCluster cluster, Set<CellCoord> paintCells, List<RoomCluster> overlappingClusters, int paintLevel) {
             if (cluster == null || paintCells == null || paintCells.isEmpty()) {
-                return unchangedRewrite(cluster);
+                return null;
             }
             List<RoomCluster> resolvedClusters = normalizedClusters(overlappingClusters);
             List<Room> touchedRooms = resolvedClusters.stream()
@@ -673,7 +688,7 @@ public final class RoomCluster {
                     .sorted(Comparator.comparing(room -> room.roomId() == null ? Long.MAX_VALUE : room.roomId()))
                     .toList();
             if (touchedRooms.isEmpty()) {
-                return unchangedRewrite(cluster);
+                return null;
             }
 
             Room retainedRoom = touchedRooms.getFirst();
@@ -690,13 +705,9 @@ public final class RoomCluster {
             Set<CellCoord> mergedClusterCells = new LinkedHashSet<>(paintCells);
             Map<GridSegment2x, InternalBoundaryType> previousBoundaryKinds = new LinkedHashMap<>();
             List<RoomRewriteCandidate> candidates = new ArrayList<>();
-            Set<Long> deletedClusterIds = new LinkedHashSet<>();
             for (RoomCluster overlappingCluster : resolvedClusters) {
                 mergedClusterCells.addAll(overlappingCluster.cells());
                 previousBoundaryKinds.putAll(overlappingCluster.internalBoundaryKinds());
-                if (overlappingCluster.clusterId() != null && !overlappingCluster.clusterId().equals(cluster.clusterId())) {
-                    deletedClusterIds.add(overlappingCluster.clusterId());
-                }
                 for (Room room : overlappingCluster.rooms()) {
                     if (room == null || room.roomId() == null || mergedRoomIds.contains(room.roomId())) {
                         continue;
@@ -715,26 +726,21 @@ public final class RoomCluster {
                     roomAnchorsByLevel(retainedRoom)));
 
             List<Room> rewrittenRooms = reconciledRooms(cluster, mergedClusterCells, candidates, previousBoundaryKinds);
-            Set<Long> deletedRoomIds = new LinkedHashSet<>(mergedRoomIds);
-            deletedRoomIds.remove(retainedRoom.roomId());
-            return ClusterRewrite.builder(
-                            cluster.clusterId(),
-                            CellCoord.bestCenter(mergedClusterCells),
-                            rewrittenRooms)
-                    .deletedRoomIds(deletedRoomIds)
-                    .deletedClusterIds(deletedClusterIds)
-                    .topologyChanged(true)
-                    .build();
+            return new RoomCluster(
+                    cluster.clusterId(),
+                    cluster.mapId(),
+                    CellCoord.bestCenter(mergedClusterCells),
+                    rewrittenRooms);
         }
 
-        static ClusterRewrite applyDelete(RoomCluster cluster, Set<CellCoord> deletedCells, int deleteLevel) {
+        static List<RoomCluster> applyDelete(RoomCluster cluster, Set<CellCoord> deletedCells, int deleteLevel) {
             if (cluster == null || deletedCells == null || deletedCells.isEmpty()) {
-                return unchangedRewrite(cluster);
+                return null;
             }
             Map<Integer, Set<CellCoord>> remainingCellsByLevel = mutableClusterCellsByLevel(cluster);
             Set<CellCoord> remainingDeleteLevelCells = new LinkedHashSet<>(remainingCellsByLevel.getOrDefault(deleteLevel, Set.of()));
             if (!remainingDeleteLevelCells.removeAll(deletedCells)) {
-                return unchangedRewrite(cluster);
+                return null;
             }
             if (remainingDeleteLevelCells.isEmpty()) {
                 remainingCellsByLevel.remove(deleteLevel);
@@ -742,19 +748,11 @@ public final class RoomCluster {
                 remainingCellsByLevel.put(deleteLevel, Set.copyOf(remainingDeleteLevelCells));
             }
             if (remainingCellsByLevel.isEmpty()) {
-                return ClusterRewrite.builder(
-                                cluster.clusterId(),
-                                cluster.center(),
-                                List.of())
-                        .deletedRoomIds(cluster.roomIds())
-                        .deletedClusterIds(Set.of(cluster.clusterId()))
-                        .topologyChanged(true)
-                        .build();
+                return List.of();
             }
 
             Map<GridSegment2x, InternalBoundaryType> previousBoundaryKinds = cluster.internalBoundaryKinds();
             List<RoomRewriteCandidate> candidates = new ArrayList<>();
-            Set<Long> deletedRoomIds = new LinkedHashSet<>();
             for (Room room : cluster.rooms()) {
                 if (room == null || room.roomId() == null) {
                     continue;
@@ -774,7 +772,6 @@ public final class RoomCluster {
                                 .thenComparing(CellCoord::bestCenter, CellCoord.ORDER))
                         .toList();
                 if (remainingRoomCellsByLevel.isEmpty()) {
-                    deletedRoomIds.add(room.roomId());
                     continue;
                 }
                 if (components.isEmpty()) {
@@ -800,26 +797,20 @@ public final class RoomCluster {
 
             Set<CellCoord> rewrittenClusterCells = flattenCells(remainingCellsByLevel);
             List<Room> rewrittenRooms = reconciledRooms(cluster, rewrittenClusterCells, candidates, previousBoundaryKinds);
-            List<ClusterRewriteSplit> componentClusters = deleteRewriteClusters(
+            List<RoomCluster> componentClusters = deleteClusters(
                     cluster,
                     rewrittenClusterCells,
-                    rewrittenRooms,
-                    previousBoundaryKinds);
-            ClusterRewriteSplit retainedCluster = componentClusters.getFirst().withClusterId(cluster.clusterId());
-            List<ClusterRewriteSplit> splitClusters = componentClusters.stream()
-                    .skip(1)
-                    .toList();
-            return ClusterRewrite.builder(
-                            cluster.clusterId(),
-                            retainedCluster.clusterCenter(),
-                            retainedCluster.rooms())
-                    .deletedRoomIds(deletedRoomIds)
-                    .splitClusters(splitClusters)
-                    .topologyChanged(true)
-                    .build();
+                    rewrittenRooms);
+            if (componentClusters.isEmpty()) {
+                return List.of();
+            }
+            ArrayList<RoomCluster> finalClusters = new ArrayList<>(componentClusters.size());
+            finalClusters.add(componentClusters.getFirst().withClusterId(cluster.clusterId()));
+            finalClusters.addAll(componentClusters.stream().skip(1).toList());
+            return List.copyOf(finalClusters);
         }
 
-        static ClusterRewrite editBoundary(RoomCluster cluster, Collection<GridSegment2x> segments2x, InternalBoundaryType type, boolean deleteBoundary) {
+        static RoomCluster editBoundary(RoomCluster cluster, Collection<GridSegment2x> segments2x, InternalBoundaryType type, boolean deleteBoundary) {
             if (cluster == null || segments2x == null || segments2x.isEmpty()) {
                 return null;
             }
@@ -865,14 +856,11 @@ public final class RoomCluster {
             }
 
             List<Room> rewrittenRooms = rewriteRoomsForBoundaryKinds(cluster, updatedBoundaryKinds);
-            BoundaryMergeResult merge = computeMergeMetadata(cluster, rewrittenRooms);
-            return ClusterRewrite.builder(
-                            cluster.clusterId(),
-                            cluster.center(),
-                            rewrittenRooms)
-                    .deletedRoomIds(merge.deletedRoomIds())
-                    .topologyChanged(true)
-                    .build();
+            return new RoomCluster(
+                    cluster.clusterId(),
+                    cluster.mapId(),
+                    cluster.center(),
+                    rewrittenRooms);
         }
 
         static Map<GridSegment2x, InternalBoundaryType> internalBoundaryKinds(
@@ -987,34 +975,10 @@ public final class RoomCluster {
                     narration);
         }
 
-        private static BoundaryMergeResult computeMergeMetadata(RoomCluster cluster, List<Room> rewrittenRooms) {
-            Set<Long> deletedRoomIds = new LinkedHashSet<>();
-            for (Room rewrittenRoom : rewrittenRooms) {
-                if (rewrittenRoom == null) {
-                    continue;
-                }
-                List<Room> sourceRooms = roomsForCells(cluster, rewrittenRoom.structure().cellCoords());
-                if (sourceRooms.size() <= 1) {
-                    continue;
-                }
-                Long replacementRoomId = rewrittenRoom.roomId();
-                for (Room sourceRoom : sourceRooms) {
-                    if (sourceRoom == null || sourceRoom.roomId() == null) {
-                        continue;
-                    }
-                    if (!sourceRoom.roomId().equals(replacementRoomId)) {
-                        deletedRoomIds.add(sourceRoom.roomId());
-                    }
-                }
-            }
-            return new BoundaryMergeResult(deletedRoomIds);
-        }
-
-        private static List<ClusterRewriteSplit> deleteRewriteClusters(
+        private static List<RoomCluster> deleteClusters(
                 RoomCluster cluster,
                 Set<CellCoord> rewrittenClusterCells,
-                List<Room> rewrittenRooms,
-                Map<GridSegment2x, InternalBoundaryType> boundaryKinds
+                List<Room> rewrittenRooms
         ) {
             if (cluster == null || rewrittenClusterCells == null || rewrittenClusterCells.isEmpty()) {
                 return List.of();
@@ -1022,12 +986,13 @@ public final class RoomCluster {
             return connectedComponents(rewrittenClusterCells).stream()
                     .sorted(Comparator
                             .comparing((Set<CellCoord> component) -> !component.contains(cluster.center()))
-                            .thenComparingInt(component -> CellCoord.bestCenter(component).manhattanDistance(cluster.center()))
-                            .thenComparing(CellCoord::bestCenter, CellCoord.ORDER))
+                    .thenComparingInt(component -> CellCoord.bestCenter(component).manhattanDistance(cluster.center()))
+                    .thenComparing(CellCoord::bestCenter, CellCoord.ORDER))
                     .map(componentCells -> {
                         List<Room> componentRooms = roomsForDeleteComponent(componentCells, rewrittenRooms);
-                        return new ClusterRewriteSplit(
+                        return new RoomCluster(
                                 null,
+                                cluster.mapId(),
                                 CellCoord.bestCenter(componentCells),
                                 componentRooms);
                     })
@@ -1056,16 +1021,6 @@ public final class RoomCluster {
                 }
             }
             return List.copyOf(result.values());
-        }
-
-        private static ClusterRewrite unchangedRewrite(RoomCluster cluster) {
-            if (cluster == null) {
-                return null;
-            }
-            return ClusterRewrite.unchanged(
-                    cluster.clusterId(),
-                    cluster.center(),
-                    cluster.rooms());
         }
 
         private static boolean isInternalSegment(Set<CellCoord> clusterCells, GridSegment2x segment2x) {
@@ -1532,9 +1487,6 @@ public final class RoomCluster {
 
         private static boolean isBlocked(Set<GridSegment2x> barriers, CellCoord cell, CellCoord step) {
             return barriers != null && barriers.contains(GridSegment2x.boundaryEdge(cell, cell.directionTo4(cell.add(step))));
-        }
-
-        private record BoundaryMergeResult(Set<Long> deletedRoomIds) {
         }
 
         private record BoundarySets(Set<GridSegment2x> walls, Set<GridSegment2x> openings) {
