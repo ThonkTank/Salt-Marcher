@@ -1,20 +1,19 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
-import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
 import features.world.dungeonmap.state.EditorHover;
 import features.world.dungeonmap.state.EditorHoverScope;
 
 import java.util.Objects;
 
 public record EditorHitResolution(
-        DungeonHitSubject subject,
+        DungeonSelectionRef hitRef,
         DungeonSelectionRef resolvedRef,
         EditorHover hover
 ) {
     public EditorHitResolution {
-        if (hover != null && subject == null) {
-            throw new IllegalArgumentException("hover requires a subject");
+        if (hover != null && hitRef == null) {
+            throw new IllegalArgumentException("hover requires a hit ref");
         }
     }
 
@@ -22,40 +21,40 @@ public record EditorHitResolution(
         return new EditorHitResolution(null, null, null);
     }
 
-    public static EditorHitResolution subjectOnly(DungeonHitSubject subject) {
-        return subjectOnly(subject, null);
+    public static EditorHitResolution ref(DungeonSelectionRef ref) {
+        return ref(ref, null);
     }
 
-    public static EditorHitResolution subjectOnly(DungeonHitSubject subject, DungeonSelectionRef resolvedRef) {
-        DungeonHitSubject resolvedSubject = Objects.requireNonNull(subject, "subject");
+    public static EditorHitResolution ref(DungeonSelectionRef hitRef, DungeonSelectionRef resolvedRef) {
+        DungeonSelectionRef resolvedHitRef = Objects.requireNonNull(hitRef, "hitRef");
         return new EditorHitResolution(
-                resolvedSubject,
-                resolvedRef == null ? resolvedSubject.ref() : resolvedRef,
+                resolvedHitRef,
+                resolvedRef == null ? resolvedHitRef : resolvedRef,
                 null);
     }
 
-    public static EditorHitResolution owner(DungeonHitSubject subject) {
-        return owner(subject, null);
+    public static EditorHitResolution owner(DungeonSelectionRef hitRef) {
+        return owner(hitRef, null);
     }
 
-    public static EditorHitResolution owner(DungeonHitSubject subject, DungeonSelectionRef resolvedRef) {
-        DungeonHitSubject resolved = Objects.requireNonNull(subject, "subject");
-        DungeonSelectionRef ownerRef = resolvedRef == null ? resolved.ref().ownerRef() : resolvedRef;
+    public static EditorHitResolution owner(DungeonSelectionRef hitRef, DungeonSelectionRef resolvedRef) {
+        DungeonSelectionRef resolvedHitRef = Objects.requireNonNull(hitRef, "hitRef");
+        DungeonSelectionRef ownerRef = resolvedRef == null ? resolvedHitRef.ownerRef() : resolvedRef;
         return new EditorHitResolution(
-                resolved,
+                resolvedHitRef,
                 ownerRef,
                 ownerRef == null ? null : new EditorHover(ownerRef, EditorHoverScope.OWNER));
     }
 
-    public static EditorHitResolution part(DungeonHitSubject subject) {
-        return part(subject, null);
+    public static EditorHitResolution part(DungeonSelectionRef hitRef) {
+        return part(hitRef, null);
     }
 
-    public static EditorHitResolution part(DungeonHitSubject subject, DungeonSelectionRef resolvedRef) {
-        DungeonHitSubject resolved = Objects.requireNonNull(subject, "subject");
+    public static EditorHitResolution part(DungeonSelectionRef hitRef, DungeonSelectionRef resolvedRef) {
+        DungeonSelectionRef resolvedHitRef = Objects.requireNonNull(hitRef, "hitRef");
         return new EditorHitResolution(
-                resolved,
-                resolvedRef == null ? resolved.ref() : resolvedRef,
-                new EditorHover(resolved.ref(), EditorHoverScope.PART));
+                resolvedHitRef,
+                resolvedRef == null ? resolvedHitRef : resolvedRef,
+                new EditorHover(resolvedHitRef, EditorHoverScope.PART));
     }
 }

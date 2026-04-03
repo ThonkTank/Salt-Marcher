@@ -1,5 +1,7 @@
 package features.world.dungeonmap.shell.interaction;
 
+import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -21,20 +23,20 @@ public record DungeonHitSnapshot(
         return candidates.isEmpty();
     }
 
-    public List<DungeonHitSubject> orderedSubjects() {
+    public List<DungeonSelectionRef> orderedRefs() {
         return candidates.stream()
-                .map(candidate -> candidate.descriptor().subject())
+                .map(candidate -> candidate.descriptor().ref())
                 .filter(Objects::nonNull)
                 .toList();
     }
 
-    public DungeonHitSubject firstSubjectMatching(Predicate<DungeonHitSubject> predicate) {
+    public DungeonSelectionRef firstRefMatching(Predicate<DungeonSelectionRef> predicate) {
         if (predicate == null) {
             return null;
         }
-        for (DungeonHitSubject subject : orderedSubjects()) {
-            if (predicate.test(subject)) {
-                return subject;
+        for (DungeonSelectionRef ref : orderedRefs()) {
+            if (predicate.test(ref)) {
+                return ref;
             }
         }
         return null;

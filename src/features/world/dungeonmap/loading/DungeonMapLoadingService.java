@@ -109,12 +109,7 @@ public final class DungeonMapLoadingService {
 
     private DungeonMapLoadResolver.LoadResolution loadSelectedMapResult(long mapId) throws SQLException {
         try (Connection conn = DatabaseManager.getConnection()) {
-            try {
-                return loadResolver.resolveSelection(conn, mapId, preferredMapIds());
-            } catch (SQLException exception) {
-                LOGGER.log(Level.WARNING, "Dungeon " + mapId + " konnte nicht geladen werden", exception);
-                throw exception;
-            }
+            return loadResolver.resolveSelection(conn, mapId, preferredMapIds());
         }
     }
 

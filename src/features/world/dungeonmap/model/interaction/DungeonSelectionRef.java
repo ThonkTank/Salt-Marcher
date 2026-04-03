@@ -23,6 +23,28 @@ public sealed interface DungeonSelectionRef permits
         DungeonSelectionRef.FloorCellRef {
 
     /**
+     * Selection refs are the single interaction seam for hit collection, hover, and persisted selection state.
+     * Hit ordering still keys off the concrete ref variant instead of a parallel shell-only subject hierarchy.
+     */
+    default DungeonHitKind kind() {
+        return switch (this) {
+            case ClusterRef ignored -> DungeonHitKind.CLUSTER_LABEL;
+            case RoomRef ignored -> DungeonHitKind.ROOM;
+            case CorridorRef ignored -> DungeonHitKind.CORRIDOR;
+            case StairRef ignored -> DungeonHitKind.STAIR;
+            case TransitionRef ignored -> DungeonHitKind.TRANSITION;
+            case VertexRef ignored -> DungeonHitKind.VERTEX;
+            case ClusterBoundaryRef ignored -> DungeonHitKind.CLUSTER_BOUNDARY;
+            case RoomBoundaryRef ignored -> DungeonHitKind.ROOM_BOUNDARY;
+            case ConnectionRef ignored -> DungeonHitKind.CONNECTION;
+            case CorridorNodeRef ignored -> DungeonHitKind.CORRIDOR_NODE;
+            case CorridorCornerRef ignored -> DungeonHitKind.CORRIDOR_CORNER;
+            case CorridorSegmentRef ignored -> DungeonHitKind.CORRIDOR_SEGMENT;
+            case FloorCellRef ignored -> DungeonHitKind.FLOOR_CELL;
+        };
+    }
+
+    /**
      * Selection refs carry typed ownership directly so callers can compare semantic owners without reconstructing
      * generic ids or parsing intermediate keys.
      */
@@ -134,8 +156,11 @@ public sealed interface DungeonSelectionRef permits
         }
     }
 
-    record CorridorCornerRef(Long corridorId, GridPoint2x point2x) implements DungeonSelectionRef {
+    record CorridorCornerRef(Long corridorId, Long segmentId, GridPoint2x point2x) implements DungeonSelectionRef {
         public CorridorCornerRef {
+            if (segmentId == null) {
+                throw new IllegalArgumentException("Corridor corner refs require segmentId");
+            }
             point2x = Objects.requireNonNull(point2x, "point2x");
         }
 
@@ -145,7 +170,14 @@ public sealed interface DungeonSelectionRef permits
         }
     }
 
-    record CorridorSegmentRef(Long corridorId, Long segmentId) implements DungeonSelectionRef {
+    record CorridorSegmentRef(Long corridorId, Long segmentId, GridPoint2x point2x) implements DungeonSelectionRef {
+        public CorridorSegmentRef {
+            if (segmentId == null) {
+                throw new IllegalArgumentException("Corridor segment refs require segmentId");
+            }
+            point2x = Objects.requireNonNull(point2x, "point2x");
+        }
+
         @Override
         public DungeonSelectionRef ownerRef() {
             return corridorId == null ? null : new CorridorRef(corridorId);

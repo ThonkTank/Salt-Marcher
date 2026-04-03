@@ -149,7 +149,7 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
                 baseContext.activeMap(),
                 baseContext.probe(),
                 baseContext.snapshot(),
-                resolution.subject(),
+                resolution.hitRef(),
                 resolution.resolvedRef(),
                 baseContext.state());
     }

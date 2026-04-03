@@ -4,7 +4,8 @@ import features.world.dungeonmap.application.room.DungeonRoomApplicationService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
+import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.state.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
@@ -140,10 +141,10 @@ public final class PaintTool implements EditorTool {
         if (ctx == null || !sessionState.selectedTool().isRoomTool() || ctx.probe() == null) {
             return EditorHitResolution.none();
         }
-        DungeonHitSubject subject = new DungeonHitSubject.FloorCellSubject(ctx.probe().gridCell(), ctx.probe().levelZ());
+        DungeonSelectionRef ref = new DungeonSelectionRef.FloorCellRef(CubePoint.at(ctx.probe().gridCell(), ctx.probe().levelZ()));
         return phase == EditorToolPhase.HOVER
                 ? EditorHitResolution.none()
-                : EditorHitResolution.subjectOnly(subject);
+                : EditorHitResolution.ref(ref);
     }
 
     @Override
@@ -156,8 +157,8 @@ public final class PaintTool implements EditorTool {
     }
 
     private static CellCoord resolvedCell(EditorToolContext ctx) {
-        return ctx != null && ctx.resolvedSubject() instanceof DungeonHitSubject.FloorCellSubject floorCellSubject
-                ? floorCellSubject.cell()
+        return ctx != null && ctx.hitRef() instanceof DungeonSelectionRef.FloorCellRef floorCellRef
+                ? floorCellRef.cell().projectedCell()
                 : null;
     }
 }

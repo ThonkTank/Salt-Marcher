@@ -150,9 +150,9 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 ### Key structure rules
 
 - `Room` owns room-local truth and narration.
-- `RoomCluster` owns multi-room rewrite logic, grouping, adjacency, and cluster moves. Its aggregate cells stay on `CellCoord`, and its internal boundary edits/metadata use final `GridSegment2x`, both derived from room-owned `StructureObject`s.
-- `RoomCluster` owns its rewrite and boundary-path semantics directly. Do not reintroduce a second public planner/helper type that mirrors cluster topology decisions from the outside.
-- `RoomCluster` derives `LocalConnection`s from its rooms; rewrite payloads must not carry a second local-connection truth in parallel.
+- `RoomCluster` owns multi-room topology, grouping, adjacency, paint/delete/boundary mutation semantics, and cluster moves. Its aggregate cells stay on `CellCoord`, and its internal boundary edits/metadata use final `GridSegment2x`, both derived from room-owned `StructureObject`s.
+- `RoomCluster` owns its mutation and boundary-path semantics directly. Do not reintroduce a second public planner/helper type or diff payload that mirrors cluster topology decisions from the outside.
+- `RoomCluster` derives `LocalConnection`s from its rooms; final cluster owners must not carry a second local-connection truth in parallel.
 - `RoomCluster` owns door editability on internal boundaries. Do not leave door-create/delete validation only in editor tools.
 - `Connection` owns connectivity; `Door` is the boundary object exposed through that connection.
 - Model-side exit descriptors and low-level door exit catalogs belong with room/connection truth, not under runtime or room application workflows. Public room/corridor exit-description queries live on `DungeonLayout`, the shared owner of structure lookup plus connection context; do not route runtime/editor callers through a second public room-exit helper owner.
@@ -165,7 +165,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 
 - `DungeonLayoutRepository` is the authoritative rehydration path for one concrete persisted map. It delegates structure reads to the focused repositories and does not return loading-layer fallback payloads.
 - `DungeonRoomApplicationService` is the single room workflow owner. Selection, paint, boundary, movement, narration, and transition placement should all call that seam instead of splitting room writes across parallel services.
-- `DungeonRoomRepository` owns the concrete write ordering for cluster rewrites and moved clusters. Application workflows decide the rewrite, repository code decides insert/update/delete order.
+- `DungeonRoomRepository` owns the concrete write ordering for replacing original clusters with final cluster owners, plus moved clusters. Application workflows decide the final owners, repository code decides insert/update/delete order.
 - `DungeonCorridorRepository` owns corridor row writes, synthetic-to-persistent id assignment, node/segment replacement order, and direct persistence of absolute room-bound endpoint cells. Room-bound corridor endpoints move or detach explicitly in room workflows and previews instead of hiding behind a storage codec.
 - `DungeonTransitionRepository` owns dungeon-side transition lookups and writes, including placed-target queries and dungeon-map existence checks. Overworld target discovery stays at the `WorldReadApi` boundary, and that public API remains connection-owning instead of leaking JDBC through cross-feature callers.
 - `DungeonMapLoadResolver` owns catalog reads, initial-load usable-map scans, selected-map fallback, and runtime-repair map selection. Full-catalog usable-layout scans are for initial load, not every selection change.
@@ -173,7 +173,6 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - Legacy dungeon storage compatibility is intentionally unsupported. Current code works only against the current schema and should fail fast on broken or stale rows instead of normalizing them at runtime.
 - Room geometry is loaded directly from persisted room-owned `StructureDescriptor` rows.
 - New dungeons start with a neutral default room (`Raum n`), not an implicit entrance concept.
-- New-dungeon creation is atomic with respect to rehydration: the create transaction must verify that the freshly bootstrapped map can be loaded through `DungeonLayoutRepository` before commit instead of leaving behind a persisted-but-unloadable map.
 - Cluster move previews and persisted cluster moves share the same explicit corridor rewrite rule: horizontal room-bound endpoints move with their rooms, level moves detach those bindings in place.
 - Storage model:
   - clusters: membership owner plus derived `center_x`, `center_y`, `level_z` metadata only

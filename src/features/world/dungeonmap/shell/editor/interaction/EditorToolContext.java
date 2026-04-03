@@ -5,7 +5,6 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.shell.interaction.DungeonHitProbe;
 import features.world.dungeonmap.shell.interaction.DungeonHitSnapshot;
-import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
 import features.world.dungeonmap.state.EditorInteractionState;
 
 public record EditorToolContext(
@@ -13,7 +12,7 @@ public record EditorToolContext(
         DungeonLayout activeMap,
         DungeonHitProbe probe,
         DungeonHitSnapshot snapshot,
-        DungeonHitSubject resolvedSubject,
+        DungeonSelectionRef hitRef,
         DungeonSelectionRef resolvedRef,
         EditorInteractionState state
 ) {

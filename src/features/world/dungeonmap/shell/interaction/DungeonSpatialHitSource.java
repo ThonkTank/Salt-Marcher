@@ -2,6 +2,7 @@ package features.world.dungeonmap.shell.interaction;
 
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
@@ -35,7 +36,7 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
             return List.of();
         }
         return List.of(new DungeonHitDescriptor(
-                new DungeonHitSubject.RoomSubject(room.roomId(), room.clusterId()),
+                new DungeonSelectionRef.RoomRef(room.roomId()),
                 List.of(new DungeonHitSurface.CellSurface(room.structure().cellCoordsAtLevel(probe.levelZ()), probe.levelZ()))));
     }
 
@@ -46,7 +47,7 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
                 continue;
             }
             descriptors.add(new DungeonHitDescriptor(
-                    new DungeonHitSubject.CorridorSubject(corridor.corridorId(), corridor.levelZ()),
+                    new DungeonSelectionRef.CorridorRef(corridor.corridorId()),
                     List.of(new DungeonHitSurface.CellSurface(
                             corridor.structure().cellCoordsAtLevel(probe.levelZ()),
                             probe.levelZ()))));
@@ -61,7 +62,7 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
                 continue;
             }
             descriptors.add(new DungeonHitDescriptor(
-                    new DungeonHitSubject.StairSubject(stair.stairId()),
+                    new DungeonSelectionRef.StairRef(stair.stairId()),
                     List.of(new DungeonHitSurface.CellSurface(Set.of(probe.gridCell()), probe.levelZ()))));
         }
         return List.copyOf(descriptors);
@@ -74,7 +75,7 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
                 continue;
             }
             descriptors.add(new DungeonHitDescriptor(
-                    new DungeonHitSubject.TransitionSubject(transition.transitionId()),
+                    new DungeonSelectionRef.TransitionRef(transition.transitionId()),
                     List.of(new DungeonHitSurface.CellSurface(
                             Set.of(transition.anchor().projectedCell()),
                             transition.anchor().z()))));

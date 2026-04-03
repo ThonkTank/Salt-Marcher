@@ -7,10 +7,10 @@ import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
 import features.world.dungeonmap.shell.editor.EditorCards;
-import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonMapState;
@@ -145,14 +145,14 @@ public final class TransitionTool implements EditorTool {
             if (phase == EditorToolPhase.HOVER || ctx == null || ctx.probe() == null) {
                 return EditorHitResolution.none();
             }
-            return EditorHitResolution.subjectOnly(
-                    new DungeonHitSubject.FloorCellSubject(ctx.probe().gridCell(), ctx.probe().levelZ()));
+            return EditorHitResolution.ref(
+                    new DungeonSelectionRef.FloorCellRef(CubePoint.at(ctx.probe().gridCell(), ctx.probe().levelZ())));
         }
         if (tool == DungeonEditorTool.TRANSITION_DELETE) {
-            DungeonHitSubject subject = ctx == null || ctx.snapshot() == null
+            DungeonSelectionRef ref = ctx == null || ctx.snapshot() == null
                     ? null
-                    : ctx.snapshot().firstSubjectMatching(candidate -> candidate instanceof DungeonHitSubject.TransitionSubject);
-            return subject == null ? EditorHitResolution.none() : EditorHitResolution.owner(subject);
+                    : ctx.snapshot().firstRefMatching(candidate -> candidate instanceof DungeonSelectionRef.TransitionRef);
+            return ref == null ? EditorHitResolution.none() : EditorHitResolution.owner(ref);
         }
         return EditorHitResolution.none();
     }
@@ -211,10 +211,8 @@ public final class TransitionTool implements EditorTool {
         if (mapId == null || event == null || event.gridCell() == null) {
             return false;
         }
-        DungeonHitSubject.TransitionSubject transitionSubject = selectedTransitionSubject(ctx == null ? null : ctx.resolvedSubject());
-        DungeonTransition transition = transitionSubject == null
-                ? null
-                : mapState.activeMap().findTransition(transitionSubject.transitionId());
+        DungeonSelectionRef.TransitionRef transitionRef = selectedTransitionRef(ctx == null ? null : ctx.hitRef());
+        DungeonTransition transition = transitionRef == null ? null : mapState.activeMap().findTransition(transitionRef.transitionId());
         if (transition == null || transition.transitionId() == null) {
             state.clearSelection();
             return false;
@@ -705,15 +703,15 @@ public final class TransitionTool implements EditorTool {
                 && dungeon.transitionId() > 0;
     }
 
-    private static DungeonHitSubject.TransitionSubject selectedTransitionSubject(DungeonHitSubject subject) {
-        return subject instanceof DungeonHitSubject.TransitionSubject transitionSubject
-                ? transitionSubject
+    private static DungeonSelectionRef.TransitionRef selectedTransitionRef(DungeonSelectionRef ref) {
+        return ref instanceof DungeonSelectionRef.TransitionRef transitionRef
+                ? transitionRef
                 : null;
     }
 
     private static CellCoord selectedFloorCell(EditorToolContext ctx) {
-        return ctx != null && ctx.resolvedSubject() instanceof DungeonHitSubject.FloorCellSubject floorCellSubject
-                ? floorCellSubject.cell()
+        return ctx != null && ctx.hitRef() instanceof DungeonSelectionRef.FloorCellRef floorCellRef
+                ? floorCellRef.cell().projectedCell()
                 : null;
     }
 

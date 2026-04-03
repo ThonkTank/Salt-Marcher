@@ -2,6 +2,7 @@ package features.world.dungeonmap.shell.interaction;
 
 import features.world.dungeonmap.canvas.grid.DungeonGridInteractiveLabels;
 import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import javafx.geometry.Point2D;
@@ -36,7 +37,7 @@ public final class DungeonLabelHitSource implements DungeonHitSource {
                     probe.panY(),
                     probe.gridSizePx());
             descriptors.add(new DungeonHitDescriptor(
-                    new DungeonHitSubject.ClusterLabelSubject(cluster.clusterId()),
+                    new DungeonSelectionRef.ClusterRef(cluster.clusterId()),
                     List.of(new DungeonHitSurface.LabelSurface(bounds, anchorPoint, probe.levelZ()))));
         }
         return List.copyOf(descriptors);

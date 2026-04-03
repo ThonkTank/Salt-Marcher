@@ -10,7 +10,6 @@ import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.shell.editor.RoomNarrationPane;
-import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
 import features.world.dungeonmap.state.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.EditorInteractionState;
@@ -84,10 +83,10 @@ public final class SelectionTool implements EditorTool {
             clear();
             return false;
         }
-        DungeonHitSubject hit = ctx == null ? null : ctx.resolvedSubject();
+        DungeonSelectionRef hit = ctx == null ? null : ctx.hitRef();
         DungeonSelectionRef resolvedSelectionRef = ctx == null ? null : ctx.resolvedRef();
         clear();
-        if (hit instanceof DungeonHitSubject.CorridorNodeSubject corridorNodeHit
+        if (hit instanceof DungeonSelectionRef.CorridorNodeRef corridorNodeHit
                 && corridorNodeHit.corridorId() != null
                 && corridorNodeHit.nodeId() != null) {
             state.selectRef(resolvedSelectionRef);
@@ -98,7 +97,7 @@ public final class SelectionTool implements EditorTool {
                     corridorNodeHit.point2x());
             return true;
         }
-        if (hit instanceof DungeonHitSubject.ClusterLabelSubject clusterLabelHit) {
+        if (hit instanceof DungeonSelectionRef.ClusterRef clusterLabelHit) {
             state.selectRef(resolvedSelectionRef);
             dragSession = ClusterDragSession.start(
                     clusterLabelHit.clusterId(),
@@ -107,11 +106,11 @@ public final class SelectionTool implements EditorTool {
                     mapState.activeProjectionLevel());
             return true;
         }
-        if (hit instanceof DungeonHitSubject.StairSubject) {
+        if (hit instanceof DungeonSelectionRef.StairRef) {
             state.selectRef(resolvedSelectionRef);
             return true;
         }
-        if (hit instanceof DungeonHitSubject.TransitionSubject) {
+        if (hit instanceof DungeonSelectionRef.TransitionRef) {
             state.selectRef(resolvedSelectionRef);
             return true;
         }
@@ -203,14 +202,14 @@ public final class SelectionTool implements EditorTool {
         if (activeTool != DungeonEditorTool.SELECT) {
             return EditorHitResolution.none();
         }
-        DungeonHitSubject subject = resolvedSubject(ctx == null ? null : ctx.snapshot());
-        if (subject == null) {
+        DungeonSelectionRef ref = resolvedHitRef(ctx == null ? null : ctx.snapshot());
+        if (ref == null) {
             return EditorHitResolution.none();
         }
-        if (subject instanceof DungeonHitSubject.CorridorNodeSubject) {
-            return EditorHitResolution.part(subject);
+        if (ref instanceof DungeonSelectionRef.CorridorNodeRef) {
+            return EditorHitResolution.part(ref);
         }
-        return EditorHitResolution.owner(subject);
+        return EditorHitResolution.owner(ref);
     }
 
     @Override
@@ -258,22 +257,22 @@ public final class SelectionTool implements EditorTool {
         state.clearPreview();
     }
 
-    private static DungeonHitSubject resolvedSubject(features.world.dungeonmap.shell.interaction.DungeonHitSnapshot snapshot) {
+    private static DungeonSelectionRef resolvedHitRef(features.world.dungeonmap.shell.interaction.DungeonHitSnapshot snapshot) {
         if (snapshot == null) {
             return null;
         }
-        return snapshot.firstSubjectMatching(SelectionTool::isRelevantSubject);
+        return snapshot.firstRefMatching(SelectionTool::isRelevantRef);
     }
 
-    private static boolean isRelevantSubject(DungeonHitSubject subject) {
-        return subject instanceof DungeonHitSubject.CorridorNodeSubject
-                || subject instanceof DungeonHitSubject.ClusterLabelSubject
-                || subject instanceof DungeonHitSubject.RoomSubject
-                || subject instanceof DungeonHitSubject.RoomBoundarySubject
-                || subject instanceof DungeonHitSubject.ConnectionSubject
-                || subject instanceof DungeonHitSubject.CorridorSubject
-                || subject instanceof DungeonHitSubject.StairSubject
-                || subject instanceof DungeonHitSubject.TransitionSubject;
+    private static boolean isRelevantRef(DungeonSelectionRef ref) {
+        return ref instanceof DungeonSelectionRef.CorridorNodeRef
+                || ref instanceof DungeonSelectionRef.ClusterRef
+                || ref instanceof DungeonSelectionRef.RoomRef
+                || ref instanceof DungeonSelectionRef.RoomBoundaryRef
+                || ref instanceof DungeonSelectionRef.ConnectionRef
+                || ref instanceof DungeonSelectionRef.CorridorRef
+                || ref instanceof DungeonSelectionRef.StairRef
+                || ref instanceof DungeonSelectionRef.TransitionRef;
     }
 
     private static DungeonSelectionRef corridorNodeRef(long corridorId, Long nodeId, GridPoint2x point2x) {

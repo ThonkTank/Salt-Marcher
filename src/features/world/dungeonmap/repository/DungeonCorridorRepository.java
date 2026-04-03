@@ -33,7 +33,7 @@ public final class DungeonCorridorRepository {
                         + " FROM dungeon_corridor_nodes node"
                         + " JOIN dungeon_corridors corridor ON corridor.corridor_id=node.corridor_id"
                         + " WHERE corridor.dungeon_map_id=?"
-                        + " ORDER BY corridor_id, corridor_node_id",
+                        + " ORDER BY node.corridor_id, node.corridor_node_id",
                 mapId,
                 row -> row.getLong("corridor_id"),
                 row -> corridorNodeFromRow(row, roomsById));

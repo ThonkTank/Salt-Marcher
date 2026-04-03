@@ -4,6 +4,7 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.Connection;
@@ -71,12 +72,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
                     continue;
                 }
                 descriptors.add(new DungeonHitDescriptor(
-                        new DungeonHitSubject.ClusterBoundarySubject(
-                                cluster.clusterId(),
-                                segment,
-                                entry.getValue(),
-                                baseCell,
-                                direction),
+                        new DungeonSelectionRef.ClusterBoundaryRef(cluster.clusterId(), segment),
                         List.of(new DungeonHitSurface.SegmentSurface(Set.of(segment), levelZ))));
             }
         }
@@ -99,18 +95,12 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
                     if (segment2x == null || connectionSegments.contains(segment2x)) {
                         continue;
                     }
-                    RoomBoundaryGeometry geometry = roomBoundaryGeometry(room, projectedLayout, segment2x, levelZ);
-                    if (geometry == null) {
+                    DungeonSelectionRef.RoomBoundaryRef ref = new DungeonSelectionRef.RoomBoundaryRef(room.roomId(), segment2x);
+                    if (projectedLayout.describeRoomBoundary(ref, levelZ) == null) {
                         continue;
                     }
                     descriptors.add(new DungeonHitDescriptor(
-                            new DungeonHitSubject.RoomBoundarySubject(
-                                    room.roomId(),
-                                    room.clusterId(),
-                                    segment2x,
-                                    geometry.roomCell(),
-                                    geometry.outwardDirection(),
-                                    geometry.exterior()),
+                            ref,
                             List.of(new DungeonHitSurface.SegmentSurface(Set.of(segment2x), levelZ))));
                 }
             }
@@ -141,35 +131,9 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
             Long clusterId = connection instanceof LocalConnection localConnection ? localConnection.clusterId() : null;
             Long corridorId = connection instanceof CorridorConnection corridorConnection ? corridorConnection.corridorId() : null;
             descriptors.add(new DungeonHitDescriptor(
-                    new DungeonHitSubject.ConnectionSubject(connection.kind(), clusterId, corridorId, segment2x),
+                    new DungeonSelectionRef.ConnectionRef(connection.kind(), clusterId, corridorId, segment2x),
                     List.of(new DungeonHitSurface.SegmentSurface(Set.of(segment2x), levelZ))));
         }
         return List.copyOf(descriptors);
-    }
-
-    private static RoomBoundaryGeometry roomBoundaryGeometry(
-            Room room,
-            DungeonLayout projectedLayout,
-            GridSegment2x segment2x,
-            int levelZ
-    ) {
-        if (room == null || projectedLayout == null || segment2x == null) {
-            return null;
-        }
-        // Boundary hits expose the owning room cell plus outward cardinal step for tool semantics,
-        // while the shared boundary itself stays on the 2x segment.
-        for (CellCoord cell : segment2x.touchingCells().stream().sorted(CellCoord.ORDER).toList()) {
-            if (!room.structure().cellCoordsAtLevel(levelZ).contains(cell)) {
-                continue;
-            }
-            CardinalDirection outwardDirection = segment2x.directionFrom(cell);
-            CellCoord opposite = outwardDirection == null ? null : cell.add(outwardDirection.delta());
-            boolean exterior = opposite == null || projectedLayout.roomAtCell(opposite, levelZ) == null;
-            return new RoomBoundaryGeometry(cell, outwardDirection, exterior);
-        }
-        return null;
-    }
-
-    private record RoomBoundaryGeometry(CellCoord roomCell, CardinalDirection outwardDirection, boolean exterior) {
     }
 }

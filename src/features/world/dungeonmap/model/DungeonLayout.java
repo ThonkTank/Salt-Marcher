@@ -1,12 +1,11 @@
 package features.world.dungeonmap.model;
 
+import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.objects.Door;
-import features.world.dungeonmap.model.structures.cluster.ClusterRewrite;
-import features.world.dungeonmap.model.structures.cluster.ClusterRewriteSplit;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.Connection;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
@@ -52,6 +51,20 @@ public final class DungeonLayout {
         }
 
         record TransitionStructure(DungeonTransition transition) implements CellStructure {
+        }
+    }
+
+    public record RoomBoundaryDescription(
+            Long clusterId,
+            Room room,
+            CellCoord roomCell,
+            CardinalDirection outwardDirection,
+            boolean exterior
+    ) {
+        public RoomBoundaryDescription {
+            room = Objects.requireNonNull(room, "room");
+            roomCell = Objects.requireNonNull(roomCell, "roomCell");
+            outwardDirection = Objects.requireNonNull(outwardDirection, "outwardDirection");
         }
     }
 
@@ -435,6 +448,33 @@ public final class DungeonLayout {
         };
     }
 
+    /**
+     * Room-boundary refs stay as stable owner/segment identity. Gesture-time facts like the touched room cell,
+     * outward step, and exterior-vs-interior meaning are derived from the current layout projection.
+     */
+    public RoomBoundaryDescription describeRoomBoundary(DungeonSelectionRef.RoomBoundaryRef ref, int levelZ) {
+        if (ref == null) {
+            return null;
+        }
+        Room room = room(ref);
+        if (room == null || ref.boundarySegment2x() == null) {
+            return null;
+        }
+        for (CellCoord cell : ref.boundarySegment2x().touchingCells().stream().sorted(CellCoord.ORDER).toList()) {
+            if (!room.structure().cellCoordsAtLevel(levelZ).contains(cell)) {
+                continue;
+            }
+            CardinalDirection outwardDirection = ref.boundarySegment2x().directionFrom(cell);
+            if (outwardDirection == null) {
+                continue;
+            }
+            CellCoord opposite = outwardDirection == null ? null : cell.add(outwardDirection.delta());
+            boolean exterior = opposite == null || roomAtCell(opposite, levelZ) == null;
+            return new RoomBoundaryDescription(room.clusterId(), room, cell, outwardDirection, exterior);
+        }
+        return null;
+    }
+
     public Room roomAtCell(CellCoord cell) {
         for (RoomCluster cluster : clusters) {
             if (cluster.contains(cell)) {
@@ -685,54 +725,6 @@ public final class DungeonLayout {
         return corridorsChanged
                 ? new DungeonLayout(mapId, name, updatedCorridors, updatedClusters, stairs, transitions, updatedClusterLevels)
                 : movedLayout;
-    }
-
-    public DungeonLayout applying(ClusterRewrite rewrite) {
-        if (rewrite == null || rewrite.targetClusterId() == null) {
-            return this;
-        }
-        List<RoomCluster> updatedClusters = new ArrayList<>();
-        boolean replacedTarget = false;
-        for (RoomCluster cluster : clusters) {
-            if (cluster == null || cluster.clusterId() == null) {
-                continue;
-            }
-            if (rewrite.deletedClusterIds().contains(cluster.clusterId())) {
-                continue;
-            }
-            if (rewrite.targetClusterId().equals(cluster.clusterId())) {
-                if (!rewrite.deletesCluster()) {
-                    updatedClusters.add(new RoomCluster(
-                            rewrite.targetClusterId(),
-                            mapId,
-                            rewrite.clusterCenter(),
-                            rewrite.rooms()));
-                    replacedTarget = true;
-                }
-                continue;
-            }
-            updatedClusters.add(cluster);
-        }
-        if (!rewrite.deletesCluster() && !replacedTarget) {
-            updatedClusters.add(new RoomCluster(
-                    rewrite.targetClusterId(),
-                    mapId,
-                    rewrite.clusterCenter(),
-                    rewrite.rooms()));
-        }
-        for (ClusterRewriteSplit splitCluster : rewrite.splitClusters()) {
-            updatedClusters.add(new RoomCluster(
-                    splitCluster.clusterId(),
-                    mapId,
-                    splitCluster.clusterCenter(),
-                    splitCluster.rooms()));
-        }
-        Map<Long, Integer> updatedClusterLevels = new LinkedHashMap<>(clusterLevelsById);
-        int targetLevel = levelForCluster(rewrite.targetClusterId());
-        for (ClusterRewriteSplit splitCluster : rewrite.splitClusters()) {
-            updatedClusterLevels.put(splitCluster.clusterId(), targetLevel);
-        }
-        return new DungeonLayout(mapId, name, corridors, updatedClusters, stairs, transitions, updatedClusterLevels);
     }
 
     private DungeonLayout withCorridors(List<Corridor> updatedCorridors) {

@@ -1,17 +1,18 @@
 package features.world.dungeonmap.shell.interaction;
 
 import features.world.dungeonmap.model.interaction.DungeonHitKind;
+import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 
 import java.util.List;
 import java.util.Objects;
 
 public record DungeonHitDescriptor(
-        DungeonHitSubject subject,
+        DungeonSelectionRef ref,
         List<DungeonHitSurface> surfaces
 ) {
 
     public DungeonHitDescriptor {
-        subject = Objects.requireNonNull(subject, "subject");
+        ref = Objects.requireNonNull(ref, "ref");
         surfaces = surfaces == null ? List.of() : List.copyOf(surfaces);
         if (surfaces.isEmpty()) {
             throw new IllegalArgumentException("Hit descriptors require at least one surface");
@@ -22,6 +23,6 @@ public record DungeonHitDescriptor(
     }
 
     public DungeonHitKind kind() {
-        return subject.kind();
+        return ref.kind();
     }
 }
