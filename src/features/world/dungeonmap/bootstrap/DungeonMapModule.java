@@ -3,8 +3,8 @@ package features.world.dungeonmap.bootstrap;
 import features.world.api.WorldTravelSurface;
 import features.world.dungeonmap.application.corridor.DungeonCorridorApplicationService;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeApplicationService;
-import features.world.dungeonmap.application.transition.DungeonTransitionEditService;
-import features.world.dungeonmap.application.transition.DungeonTransitionTargetCatalogService;
+import features.world.dungeonmap.application.transition.DungeonTransitionApplicationService;
+import features.world.dungeonmap.application.transition.TransitionTargetCatalogApplicationService;
 import features.world.dungeonmap.application.room.DungeonClusterMoveService;
 import features.world.dungeonmap.application.room.DungeonRoomNarrationService;
 import features.world.dungeonmap.application.room.DungeonRoomTopologyService;
@@ -49,7 +49,7 @@ public final class DungeonMapModule {
         DungeonRoomTopologyService roomTopologyService = new DungeonRoomTopologyService(
                 layoutRepository,
                 roomRepository);
-        DungeonTransitionEditService transitionEditService = new DungeonTransitionEditService(roomTopologyService, transitionRepository);
+        DungeonTransitionApplicationService transitionApplicationService = new DungeonTransitionApplicationService(roomTopologyService, transitionRepository);
         DungeonRuntimeApplicationService runtimeApplicationService = new DungeonRuntimeApplicationService(layoutRepository);
         DungeonMapCatalogService mapCatalogService = new DungeonMapCatalogService(
                 roomTopologyService,
@@ -70,7 +70,7 @@ public final class DungeonMapModule {
                 roomNarrationService,
                 editorInteractionState);
         DungeonHitCollector hitCollector = new DungeonHitCollector();
-        DungeonTransitionTargetCatalogService transitionTargetCatalogService = new DungeonTransitionTargetCatalogService();
+        TransitionTargetCatalogApplicationService transitionTargetCatalogApplicationService = new TransitionTargetCatalogApplicationService(transitionRepository);
         List<EditorTool> editorTools = List.of(
                 new SelectionTool(
                         state,
@@ -102,8 +102,8 @@ public final class DungeonMapModule {
                         state,
                         loadingService,
                         editorSessionState,
-                        transitionEditService,
-                        transitionTargetCatalogService,
+                        transitionApplicationService,
+                        transitionTargetCatalogApplicationService,
                         editorInteractionState));
         EditorInteraction editorInteraction = new EditorInteraction(
                 state,

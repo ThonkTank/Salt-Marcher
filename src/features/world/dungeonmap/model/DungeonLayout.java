@@ -156,6 +156,18 @@ public final class DungeonLayout {
         return transitions;
     }
 
+    public List<DungeonTransition> placedTransitions() {
+        return transitions.stream()
+                .filter(transition -> transition != null && transition.isPlaced())
+                .toList();
+    }
+
+    public List<DungeonTransition> preparedTransitions() {
+        return transitions.stream()
+                .filter(transition -> transition != null && !transition.isPlaced())
+                .toList();
+    }
+
     public List<Integer> reachableLevels() {
         return reachableLevels;
     }

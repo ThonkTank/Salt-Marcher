@@ -45,4 +45,32 @@ public final class WorldReadApi {
             return List.copyOf(result);
         }
     }
+
+    public static boolean overworldTileExists(long tileId) throws SQLException {
+        if (tileId <= 0) {
+            return false;
+        }
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(
+                     "SELECT 1 FROM hex_tiles WHERE tile_id=?")) {
+            ps.setLong(1, tileId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
+    public static Long findOverworldMapIdForTile(long tileId) throws SQLException {
+        if (tileId <= 0) {
+            return null;
+        }
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(
+                     "SELECT map_id FROM hex_tiles WHERE tile_id=?")) {
+            ps.setLong(1, tileId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getLong(1) : null;
+            }
+        }
+    }
 }

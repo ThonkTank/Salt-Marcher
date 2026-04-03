@@ -1,20 +1,20 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
-import features.world.api.OverworldTransitionTargetSummary;
-import features.world.api.WorldReadApi;
-import features.world.dungeonmap.application.transition.DungeonTransitionEditRequest;
-import features.world.dungeonmap.application.transition.DungeonTransitionEditService;
+import features.world.dungeonmap.application.transition.DungeonTransitionApplicationService;
+import features.world.dungeonmap.application.transition.TransitionDestinationOption;
+import features.world.dungeonmap.application.transition.TransitionPlacementIntent;
+import features.world.dungeonmap.application.transition.TransitionTargetCatalogApplicationService;
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogEntry;
-import features.world.dungeonmap.application.transition.DungeonTransitionTargetCatalogService;
-import features.world.dungeonmap.application.transition.DungeonTransitionTargetSummary;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
+import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
 import features.world.dungeonmap.shell.editor.EditorCards;
 import features.world.dungeonmap.shell.interaction.DungeonHitSubject;
-import features.world.dungeonmap.state.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
+import features.world.dungeonmap.state.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.EditorInteractionState;
 import javafx.collections.FXCollections;
@@ -39,15 +39,15 @@ public final class TransitionTool implements EditorTool {
     private final DungeonMapState mapState;
     private final DungeonMapLoadingService loadingService;
     private final DungeonEditorSessionState sessionState;
-    private final DungeonTransitionEditService transitionEditService;
-    private final DungeonTransitionTargetCatalogService targetCatalogService;
+    private final DungeonTransitionApplicationService transitionApplicationService;
+    private final TransitionTargetCatalogApplicationService targetCatalogApplicationService;
     private final EditorInteractionState state;
     private final TextArea transitionDescriptionArea = new TextArea();
-    private final ComboBox<DungeonTransitionEditRequest.DestinationType> transitionDestinationTypeBox = new ComboBox<>();
+    private final ComboBox<TransitionDestinationMode> transitionDestinationModeBox = new ComboBox<>();
     private final CheckBox transitionBidirectionalBox = new CheckBox("Zweiseitig");
     private final ComboBox<DungeonMapCatalogEntry> transitionTargetMapBox = new ComboBox<>();
-    private final ComboBox<DungeonTransitionTargetSummary> transitionTargetTransitionBox = new ComboBox<>();
-    private final ComboBox<OverworldTransitionTargetSummary> transitionTargetOverworldBox = new ComboBox<>();
+    private final ComboBox<TransitionDestinationOption> transitionTargetTransitionBox = new ComboBox<>();
+    private final ComboBox<TransitionDestinationOption> transitionTargetOverworldBox = new ComboBox<>();
     private final FlowPane preparedTransitionButtons = new FlowPane();
     private final Label transitionSummaryLabel = new Label("Kein Übergang gewählt");
     private final Label transitionStatusLabel = new Label();
@@ -55,7 +55,7 @@ public final class TransitionTool implements EditorTool {
             "Übergänge",
             transitionSummaryLabel,
             transitionDescriptionArea,
-            transitionDestinationTypeBox,
+            transitionDestinationModeBox,
             transitionBidirectionalBox,
             transitionTargetMapBox,
             transitionTargetTransitionBox,
@@ -63,23 +63,21 @@ public final class TransitionTool implements EditorTool {
             preparedTransitionButtons,
             transitionStatusLabel);
 
-    private List<DungeonTransitionTargetSummary> targetTransitions = List.of();
-    private List<OverworldTransitionTargetSummary> overworldTargets = List.of();
-    private Long loadedTargetTransitionMapId;
+    private List<TransitionDestinationOption> dungeonTargetOptions = List.of();
+    private List<TransitionDestinationOption> overworldTargetOptions = List.of();
+    private Long loadedDungeonTargetMapId;
     private boolean overworldTargetsLoaded;
-    private long targetTransitionRequestSequence;
+    private long dungeonTargetRequestSequence;
     private long overworldTargetRequestSequence;
     private Long previousMapId;
     private DungeonEditorTool activeTool;
     private Runnable refreshCallback = () -> { };
     private boolean syncingTransitionFields;
     private String description = "";
-    private DungeonTransitionEditRequest.DestinationType destinationType = DungeonTransitionEditRequest.DestinationType.OVERWORLD_TILE;
+    private TransitionDestinationMode destinationMode = TransitionDestinationMode.OVERWORLD;
     private boolean bidirectional;
-    private Long targetDungeonMapId;
-    private Long targetTransitionId;
-    private Long targetOverworldMapId;
-    private Long targetOverworldTileId;
+    private Long selectedDungeonMapId;
+    private DungeonTransitionDestination selectedDestination;
     private Long preparedTransitionId;
     private String placementError;
 
@@ -87,15 +85,15 @@ public final class TransitionTool implements EditorTool {
             DungeonMapState mapState,
             DungeonMapLoadingService loadingService,
             DungeonEditorSessionState sessionState,
-            DungeonTransitionEditService transitionEditService,
-            DungeonTransitionTargetCatalogService targetCatalogService,
+            DungeonTransitionApplicationService transitionApplicationService,
+            TransitionTargetCatalogApplicationService targetCatalogApplicationService,
             EditorInteractionState state
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
         this.sessionState = Objects.requireNonNull(sessionState, "sessionState");
-        this.transitionEditService = Objects.requireNonNull(transitionEditService, "transitionEditService");
-        this.targetCatalogService = Objects.requireNonNull(targetCatalogService, "targetCatalogService");
+        this.transitionApplicationService = Objects.requireNonNull(transitionApplicationService, "transitionApplicationService");
+        this.targetCatalogApplicationService = Objects.requireNonNull(targetCatalogApplicationService, "targetCatalogApplicationService");
         this.state = Objects.requireNonNull(state, "state");
         initializeStatePane();
         this.mapState.addListener(this::refreshFromMapState);
@@ -119,8 +117,7 @@ public final class TransitionTool implements EditorTool {
     public void deactivate() {
         activeTool = null;
         clearPlacementError();
-        invalidateTargetCache();
-        clear();
+        invalidateDungeonTargetCache();
         refreshStatePane();
     }
 
@@ -190,31 +187,13 @@ public final class TransitionTool implements EditorTool {
         }
         clearPlacementError();
         state.clearSelection();
-        if (preparedTransitionId != null && preparedTransitionId > 0) {
-            loadingService.submitMutation(
-                    () -> {
-                        transitionEditService.placePrepared(
-                            preparedTransitionId,
-                            cell,
-                            mapState.activeProjectionLevel());
-                        return mapId;
-                    },
-                    updatedMapId -> updatedMapId,
-                    ignored -> {
-                    },
-                    throwable -> {
-                        showPlacementError(throwable == null ? "Übergang konnte nicht platziert werden" : throwable.getMessage());
-                        UiErrorReporter.reportBackgroundFailure("TransitionTool.handleCreatePressed()", throwable);
-                    });
-            return true;
-        }
+        CubePoint anchor = CubePoint.at(cell, mapState.activeProjectionLevel());
         loadingService.submitMutation(
                 () -> {
-                    transitionEditService.create(
-                        mapState.activeMap(),
-                        cell,
-                        mapState.activeProjectionLevel(),
-                        createRequest());
+                    transitionApplicationService.commit(
+                            mapState.activeMap(),
+                            anchor,
+                            placementIntent());
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,
@@ -230,7 +209,7 @@ public final class TransitionTool implements EditorTool {
     private boolean handleDeletePressed(EditorToolContext ctx) {
         DungeonCanvasPointerEvent event = ctx == null ? null : ctx.event();
         Long mapId = mapState.activeMapId();
-        if (mapId == null || event.gridCell() == null) {
+        if (mapId == null || event == null || event.gridCell() == null) {
             return false;
         }
         DungeonHitSubject.TransitionSubject transitionSubject = selectedTransitionSubject(ctx == null ? null : ctx.resolvedSubject());
@@ -244,7 +223,7 @@ public final class TransitionTool implements EditorTool {
         state.selectRef(ctx == null ? null : ctx.resolvedRef());
         loadingService.submitMutation(
                 () -> {
-                    transitionEditService.delete(transition.transitionId());
+                    transitionApplicationService.delete(transition.transitionId());
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,
@@ -253,37 +232,27 @@ public final class TransitionTool implements EditorTool {
         return true;
     }
 
-    private void clear() {
-        clearPlacementError();
-    }
-
     private void initializeStatePane() {
         transitionDescriptionArea.setPromptText("Beschreibung");
         transitionDescriptionArea.setWrapText(true);
         transitionDescriptionArea.setPrefRowCount(3);
         transitionTargetTransitionBox.setPromptText("Ziel-Übergang");
         transitionTargetOverworldBox.setPromptText("Overworld-Ziel");
-        transitionDestinationTypeBox.setItems(FXCollections.observableArrayList(DungeonTransitionEditRequest.DestinationType.values()));
-        transitionDestinationTypeBox.setConverter(new javafx.util.StringConverter<>() {
+        transitionDestinationModeBox.setItems(FXCollections.observableArrayList(TransitionDestinationMode.values()));
+        transitionDestinationModeBox.setConverter(new javafx.util.StringConverter<>() {
             @Override
-            public String toString(DungeonTransitionEditRequest.DestinationType value) {
-                if (value == null) {
-                    return "";
-                }
-                return switch (value) {
-                    case OVERWORLD_TILE -> "Overworld";
-                    case DUNGEON_MAP -> "Dungeon";
-                };
+            public String toString(TransitionDestinationMode value) {
+                return value == null ? "" : value.label;
             }
 
             @Override
-            public DungeonTransitionEditRequest.DestinationType fromString(String string) {
+            public TransitionDestinationMode fromString(String string) {
                 return null;
             }
         });
-        transitionDestinationTypeBox.valueProperty().addListener((obs, oldValue, newValue) -> {
+        transitionDestinationModeBox.valueProperty().addListener((obs, oldValue, newValue) -> {
             if (!syncingTransitionFields) {
-                setDestinationType(newValue);
+                setDestinationMode(newValue);
             }
         });
         transitionBidirectionalBox.selectedProperty().addListener((obs, oldValue, newValue) -> {
@@ -304,41 +273,39 @@ public final class TransitionTool implements EditorTool {
         });
         transitionTargetMapBox.valueProperty().addListener((obs, oldValue, newValue) -> {
             if (!syncingTransitionFields) {
-                setTargetDungeonMapId(newValue == null ? null : newValue.mapId());
+                setSelectedDungeonMapId(newValue == null ? null : newValue.mapId());
             }
         });
         transitionTargetTransitionBox.setConverter(new javafx.util.StringConverter<>() {
             @Override
-            public String toString(DungeonTransitionTargetSummary summary) {
-                return summary == null ? "" : summary.label();
+            public String toString(TransitionDestinationOption option) {
+                return option == null ? "" : option.label();
             }
 
             @Override
-            public DungeonTransitionTargetSummary fromString(String string) {
+            public TransitionDestinationOption fromString(String string) {
                 return null;
             }
         });
         transitionTargetTransitionBox.valueProperty().addListener((obs, oldValue, newValue) -> {
             if (!syncingTransitionFields) {
-                setTargetTransitionId(newValue == null ? null : newValue.transitionId());
+                setSelectedDungeonTargetOption(newValue);
             }
         });
         transitionTargetOverworldBox.setConverter(new javafx.util.StringConverter<>() {
             @Override
-            public String toString(OverworldTransitionTargetSummary summary) {
-                return summary == null ? "" : summary.label();
+            public String toString(TransitionDestinationOption option) {
+                return option == null ? "" : option.label();
             }
 
             @Override
-            public OverworldTransitionTargetSummary fromString(String string) {
+            public TransitionDestinationOption fromString(String string) {
                 return null;
             }
         });
         transitionTargetOverworldBox.valueProperty().addListener((obs, oldValue, newValue) -> {
             if (!syncingTransitionFields) {
-                setOverworldTarget(
-                        newValue == null ? null : newValue.mapId(),
-                        newValue == null ? null : newValue.tileId());
+                setSelectedOverworldOption(newValue);
             }
         });
         transitionDescriptionArea.textProperty().addListener((obs, oldValue, newValue) -> {
@@ -353,10 +320,21 @@ public final class TransitionTool implements EditorTool {
 
     private void refreshFromMapState() {
         boolean mapChanged = !Objects.equals(previousMapId, mapState.activeMapId());
-        if (mapChanged) {
-            invalidateTargetCache();
-        }
         previousMapId = mapState.activeMapId();
+        if (mapChanged) {
+            invalidateDungeonTargetCache();
+            if (preparedTransitionId != null
+                    && mapState.activeMap().preparedTransitions().stream()
+                    .noneMatch(transition -> transition != null && Objects.equals(transition.transitionId(), preparedTransitionId))) {
+                preparedTransitionId = null;
+            }
+            if (Objects.equals(selectedDungeonMapId, mapState.activeMapId())) {
+                selectedDungeonMapId = null;
+                if (destinationMode == TransitionDestinationMode.DUNGEON) {
+                    selectedDestination = null;
+                }
+            }
+        }
         refreshTransitionTargetOptions();
         refreshStatePane();
     }
@@ -388,11 +366,11 @@ public final class TransitionTool implements EditorTool {
     private void renderCreateCard() {
         transitionSummaryLabel.setText(transitionSummary());
         syncFields();
-        boolean dungeonTarget = destinationType == DungeonTransitionEditRequest.DestinationType.DUNGEON_MAP;
+        boolean dungeonTarget = destinationMode == TransitionDestinationMode.DUNGEON;
         setCreateControlsVisible(
                 dungeonTarget,
                 dungeonTarget && !bidirectional,
-                destinationType == DungeonTransitionEditRequest.DestinationType.OVERWORLD_TILE);
+                destinationMode == TransitionDestinationMode.OVERWORLD);
         renderPreparedTransitionButtons(preparedTransitionCards(), preparedTransitionId);
         String status = displayStatus();
         transitionStatusLabel.setText(status == null ? "" : status);
@@ -401,34 +379,27 @@ public final class TransitionTool implements EditorTool {
     private void syncFields() {
         syncingTransitionFields = true;
         transitionDescriptionArea.setText(description == null ? "" : description);
-        transitionDestinationTypeBox.setValue(destinationType);
+        transitionDestinationModeBox.setValue(destinationMode);
         transitionBidirectionalBox.setSelected(bidirectional);
         List<DungeonMapCatalogEntry> maps = targetMapChoices();
         transitionTargetMapBox.setItems(FXCollections.observableArrayList(maps));
         transitionTargetMapBox.setValue(maps.stream()
-                .filter(map -> map != null && Objects.equals(map.mapId(), targetDungeonMapId))
+                .filter(map -> map != null && Objects.equals(map.mapId(), selectedDungeonMapId))
                 .findFirst()
                 .orElse(null));
-        transitionTargetTransitionBox.setItems(FXCollections.observableArrayList(targetTransitions));
-        transitionTargetTransitionBox.setValue(targetTransitions.stream()
-                .filter(target -> target != null && Objects.equals(target.transitionId(), targetTransitionId))
-                .findFirst()
-                .orElse(null));
-        transitionTargetOverworldBox.setItems(FXCollections.observableArrayList(overworldTargets));
-        transitionTargetOverworldBox.setValue(overworldTargets.stream()
-                .filter(target -> target != null
-                        && target.mapId() == (targetOverworldMapId == null ? -1L : targetOverworldMapId)
-                        && target.tileId() == (targetOverworldTileId == null ? -1L : targetOverworldTileId))
-                .findFirst()
-                .orElse(null));
+        transitionTargetTransitionBox.setItems(FXCollections.observableArrayList(dungeonTargetOptions));
+        transitionTargetTransitionBox.setValue(selectedDungeonTargetOption());
+        transitionTargetOverworldBox.setItems(FXCollections.observableArrayList(overworldTargetOptions));
+        transitionTargetOverworldBox.setValue(selectedOverworldOption());
         syncingTransitionFields = false;
     }
 
     private void setCreateControlsVisible(boolean showDungeonTargetControls, boolean showTargetTransitionBox, boolean showOverworldTargetBox) {
-        transitionDescriptionArea.setManaged(activeTool == DungeonEditorTool.TRANSITION_CREATE);
-        transitionDescriptionArea.setVisible(activeTool == DungeonEditorTool.TRANSITION_CREATE);
-        transitionDestinationTypeBox.setManaged(activeTool == DungeonEditorTool.TRANSITION_CREATE);
-        transitionDestinationTypeBox.setVisible(activeTool == DungeonEditorTool.TRANSITION_CREATE);
+        boolean creating = activeTool == DungeonEditorTool.TRANSITION_CREATE;
+        transitionDescriptionArea.setManaged(creating);
+        transitionDescriptionArea.setVisible(creating);
+        transitionDestinationModeBox.setManaged(creating);
+        transitionDestinationModeBox.setVisible(creating);
         transitionTargetMapBox.setManaged(showDungeonTargetControls);
         transitionTargetMapBox.setVisible(showDungeonTargetControls);
         transitionBidirectionalBox.setManaged(showDungeonTargetControls);
@@ -437,8 +408,8 @@ public final class TransitionTool implements EditorTool {
         transitionTargetTransitionBox.setVisible(showTargetTransitionBox);
         transitionTargetOverworldBox.setManaged(showOverworldTargetBox);
         transitionTargetOverworldBox.setVisible(showOverworldTargetBox);
-        preparedTransitionButtons.setManaged(activeTool == DungeonEditorTool.TRANSITION_CREATE);
-        preparedTransitionButtons.setVisible(activeTool == DungeonEditorTool.TRANSITION_CREATE);
+        preparedTransitionButtons.setManaged(creating);
+        preparedTransitionButtons.setVisible(creating);
     }
 
     private void renderPreparedTransitionButtons(List<PreparedTransitionCard> preparedTransitions, Long selectedId) {
@@ -462,57 +433,57 @@ public final class TransitionTool implements EditorTool {
             refreshStatePane();
             return;
         }
-        if (destinationType == DungeonTransitionEditRequest.DestinationType.OVERWORLD_TILE) {
+        if (destinationMode == TransitionDestinationMode.OVERWORLD) {
             loadOverworldTargetsIfNeeded();
-            if (!targetTransitions.isEmpty() || loadedTargetTransitionMapId != null) {
-                targetTransitions = List.of();
-                loadedTargetTransitionMapId = null;
+            if (!dungeonTargetOptions.isEmpty() || loadedDungeonTargetMapId != null) {
+                dungeonTargetOptions = List.of();
+                loadedDungeonTargetMapId = null;
             }
             refreshStatePane();
             return;
         }
         if (bidirectional) {
-            if (!targetTransitions.isEmpty() || loadedTargetTransitionMapId != null) {
-                targetTransitions = List.of();
-                loadedTargetTransitionMapId = null;
+            if (!dungeonTargetOptions.isEmpty() || loadedDungeonTargetMapId != null) {
+                dungeonTargetOptions = List.of();
+                loadedDungeonTargetMapId = null;
             }
             refreshStatePane();
             return;
         }
-        Long targetMapId = targetDungeonMapId;
+        Long targetMapId = selectedDungeonMapId;
         if (targetMapId == null || targetMapId <= 0) {
-            if (!targetTransitions.isEmpty() || loadedTargetTransitionMapId != null) {
-                targetTransitions = List.of();
-                loadedTargetTransitionMapId = null;
+            if (!dungeonTargetOptions.isEmpty() || loadedDungeonTargetMapId != null) {
+                dungeonTargetOptions = List.of();
+                loadedDungeonTargetMapId = null;
             }
             refreshStatePane();
             return;
         }
-        if (Objects.equals(loadedTargetTransitionMapId, targetMapId)) {
+        if (Objects.equals(loadedDungeonTargetMapId, targetMapId)) {
             refreshStatePane();
             return;
         }
-        long requestId = ++targetTransitionRequestSequence;
+        long requestId = ++dungeonTargetRequestSequence;
         UiAsyncTasks.submit(
-                () -> targetCatalogService.loadPlacedTargets(targetMapId),
+                () -> targetCatalogApplicationService.loadDungeonTargetOptions(targetMapId),
                 results -> {
-                    if (requestId != targetTransitionRequestSequence
-                            || !Objects.equals(targetDungeonMapId, targetMapId)
+                    if (requestId != dungeonTargetRequestSequence
+                            || !Objects.equals(selectedDungeonMapId, targetMapId)
                             || bidirectional
-                            || destinationType != DungeonTransitionEditRequest.DestinationType.DUNGEON_MAP) {
+                            || destinationMode != TransitionDestinationMode.DUNGEON) {
                         return;
                     }
-                    targetTransitions = results == null ? List.of() : results;
-                    loadedTargetTransitionMapId = targetMapId;
-                    boolean selectionStillValid = targetTransitions.stream()
-                            .anyMatch(target -> target != null && Objects.equals(target.transitionId(), targetTransitionId));
-                    if (!selectionStillValid && targetTransitionId != null) {
-                        setTargetTransitionId(null);
-                        return;
+                    dungeonTargetOptions = results == null ? List.of() : results;
+                    loadedDungeonTargetMapId = targetMapId;
+                    if (selectedDungeonTargetOption() == null
+                            && selectedDestination instanceof DungeonTransitionDestination.DungeonMapDestination dungeon
+                            && dungeon.transitionId() != null
+                            && Objects.equals(dungeon.mapId(), targetMapId)) {
+                        selectedDestination = new DungeonTransitionDestination.DungeonMapDestination(targetMapId, null);
                     }
                     refreshStatePane();
                 },
-                throwable -> UiErrorReporter.reportBackgroundFailure("TransitionTool.loadTargetTransitions()", throwable));
+                throwable -> UiErrorReporter.reportBackgroundFailure("TransitionTool.loadDungeonTargetOptions()", throwable));
     }
 
     private void loadOverworldTargetsIfNeeded() {
@@ -521,13 +492,13 @@ public final class TransitionTool implements EditorTool {
         }
         long requestId = ++overworldTargetRequestSequence;
         UiAsyncTasks.submit(
-                WorldReadApi::loadOverworldTransitionTargets,
+                targetCatalogApplicationService::loadOverworldTargetOptions,
                 results -> {
                     if (requestId != overworldTargetRequestSequence
-                            || destinationType != DungeonTransitionEditRequest.DestinationType.OVERWORLD_TILE) {
+                            || destinationMode != TransitionDestinationMode.OVERWORLD) {
                         return;
                     }
-                    overworldTargets = results == null ? List.of() : results;
+                    overworldTargetOptions = results == null ? List.of() : results;
                     overworldTargetsLoaded = true;
                     refreshStatePane();
                 },
@@ -542,8 +513,8 @@ public final class TransitionTool implements EditorTool {
     }
 
     private List<PreparedTransitionCard> preparedTransitionCards() {
-        return mapState.activeMap().transitions().stream()
-                .filter(transition -> transition != null && transition.transitionId() != null && !transition.isPlaced())
+        return mapState.activeMap().preparedTransitions().stream()
+                .filter(transition -> transition != null && transition.transitionId() != null)
                 .sorted(Comparator.comparing(DungeonTransition::transitionId))
                 .map(transition -> new PreparedTransitionCard(transition.transitionId(), transition.label()))
                 .toList();
@@ -553,15 +524,15 @@ public final class TransitionTool implements EditorTool {
         if (preparedTransitionId != null && preparedTransitionId > 0) {
             return "Vorbereitet: Übergang " + preparedTransitionId;
         }
-        return switch (destinationType) {
-            case OVERWORLD_TILE -> "Overworld-Übergang";
-            case DUNGEON_MAP -> bidirectional ? "Dungeon-Übergang (zweiseitig)" : "Dungeon-Übergang";
+        return switch (destinationMode) {
+            case OVERWORLD -> "Overworld-Übergang";
+            case DUNGEON -> bidirectional ? "Dungeon-Übergang (zweiseitig)" : "Dungeon-Übergang";
         };
     }
 
-    private void invalidateTargetCache() {
-        targetTransitions = List.of();
-        loadedTargetTransitionMapId = null;
+    private void invalidateDungeonTargetCache() {
+        dungeonTargetOptions = List.of();
+        loadedDungeonTargetMapId = null;
     }
 
     private void setDescription(String description) {
@@ -574,19 +545,15 @@ public final class TransitionTool implements EditorTool {
         refreshStatePane();
     }
 
-    private void setDestinationType(DungeonTransitionEditRequest.DestinationType destinationType) {
-        DungeonTransitionEditRequest.DestinationType next = destinationType == null
-                ? DungeonTransitionEditRequest.DestinationType.OVERWORLD_TILE
-                : destinationType;
-        if (this.destinationType == next) {
+    private void setDestinationMode(TransitionDestinationMode destinationMode) {
+        TransitionDestinationMode next = destinationMode == null ? TransitionDestinationMode.OVERWORLD : destinationMode;
+        if (this.destinationMode == next) {
             return;
         }
-        this.destinationType = next;
+        this.destinationMode = next;
         preparedTransitionId = null;
-        targetTransitionId = null;
-        targetDungeonMapId = null;
-        targetOverworldMapId = null;
-        targetOverworldTileId = null;
+        selectedDungeonMapId = null;
+        selectedDestination = null;
         placementError = null;
         refreshTransitionTargetOptions();
     }
@@ -596,39 +563,45 @@ public final class TransitionTool implements EditorTool {
             return;
         }
         this.bidirectional = bidirectional;
-        if (bidirectional) {
-            targetTransitionId = null;
+        if (destinationMode == TransitionDestinationMode.DUNGEON && selectedDungeonMapId != null) {
+            selectedDestination = new DungeonTransitionDestination.DungeonMapDestination(
+                    selectedDungeonMapId,
+                    bidirectional ? null : selectedDungeonTransitionId());
         }
         placementError = null;
         refreshTransitionTargetOptions();
     }
 
-    private void setTargetDungeonMapId(Long targetDungeonMapId) {
-        if (Objects.equals(this.targetDungeonMapId, targetDungeonMapId)) {
+    private void setSelectedDungeonMapId(Long selectedDungeonMapId) {
+        if (Objects.equals(this.selectedDungeonMapId, selectedDungeonMapId)) {
             return;
         }
-        this.targetDungeonMapId = targetDungeonMapId;
-        targetTransitionId = null;
+        this.selectedDungeonMapId = selectedDungeonMapId;
+        selectedDestination = selectedDungeonMapId == null
+                ? null
+                : new DungeonTransitionDestination.DungeonMapDestination(selectedDungeonMapId, bidirectional ? null : null);
         placementError = null;
         refreshTransitionTargetOptions();
     }
 
-    private void setTargetTransitionId(Long targetTransitionId) {
-        if (Objects.equals(this.targetTransitionId, targetTransitionId)) {
+    private void setSelectedDungeonTargetOption(TransitionDestinationOption option) {
+        DungeonTransitionDestination next = option == null
+                ? (selectedDungeonMapId == null ? null : new DungeonTransitionDestination.DungeonMapDestination(selectedDungeonMapId, bidirectional ? null : null))
+                : option.destination();
+        if (Objects.equals(selectedDestination, next)) {
             return;
         }
-        this.targetTransitionId = targetTransitionId;
+        selectedDestination = next;
         placementError = null;
         refreshStatePane();
     }
 
-    private void setOverworldTarget(Long targetOverworldMapId, Long targetOverworldTileId) {
-        if (Objects.equals(this.targetOverworldMapId, targetOverworldMapId)
-                && Objects.equals(this.targetOverworldTileId, targetOverworldTileId)) {
+    private void setSelectedOverworldOption(TransitionDestinationOption option) {
+        DungeonTransitionDestination next = option == null ? null : option.destination();
+        if (Objects.equals(selectedDestination, next)) {
             return;
         }
-        this.targetOverworldMapId = targetOverworldMapId;
-        this.targetOverworldTileId = targetOverworldTileId;
+        selectedDestination = next;
         placementError = null;
         refreshStatePane();
     }
@@ -666,27 +639,56 @@ public final class TransitionTool implements EditorTool {
         if (preparedTransitionId != null) {
             return "Vorbereiteten Übergang platzieren";
         }
-        return switch (destinationType) {
-            case OVERWORLD_TILE -> targetOverworldTileId == null || targetOverworldTileId <= 0
-                    ? "Overworld-Ziel wählen"
-                    : "Zum Platzieren Feld anklicken";
-            case DUNGEON_MAP -> targetDungeonMapId == null || targetDungeonMapId <= 0
+        return switch (destinationMode) {
+            case OVERWORLD -> selectedDestination instanceof DungeonTransitionDestination.OverworldTileDestination
+                    ? "Zum Platzieren Feld anklicken"
+                    : "Overworld-Ziel wählen";
+            case DUNGEON -> selectedDungeonMapId == null || selectedDungeonMapId <= 0
                     ? "Zielkarte wählen"
-                    : bidirectional || (targetTransitionId != null && targetTransitionId > 0)
+                    : bidirectional || hasSelectedDungeonTarget()
                     ? "Zum Platzieren Feld anklicken"
                     : "Ziel-Übergang wählen";
         };
     }
 
-    private DungeonTransitionEditRequest createRequest() {
-        return new DungeonTransitionEditRequest(
-                description,
-                destinationType,
-                targetDungeonMapId,
-                targetTransitionId,
-                targetOverworldMapId,
-                targetOverworldTileId,
-                bidirectional);
+    private TransitionPlacementIntent placementIntent() {
+        if (preparedTransitionId != null && preparedTransitionId > 0) {
+            return new TransitionPlacementIntent.PlacePrepared(preparedTransitionId);
+        }
+        return new TransitionPlacementIntent.Create(description, selectedDestination, bidirectional);
+    }
+
+    private TransitionDestinationOption selectedDungeonTargetOption() {
+        if (!(selectedDestination instanceof DungeonTransitionDestination.DungeonMapDestination dungeon)
+                || dungeon.transitionId() == null) {
+            return null;
+        }
+        return dungeonTargetOptions.stream()
+                .filter(option -> option != null && option.destination().equals(selectedDestination))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private TransitionDestinationOption selectedOverworldOption() {
+        if (!(selectedDestination instanceof DungeonTransitionDestination.OverworldTileDestination)) {
+            return null;
+        }
+        return overworldTargetOptions.stream()
+                .filter(option -> option != null && option.destination().equals(selectedDestination))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private Long selectedDungeonTransitionId() {
+        return selectedDestination instanceof DungeonTransitionDestination.DungeonMapDestination dungeon
+                ? dungeon.transitionId()
+                : null;
+    }
+
+    private boolean hasSelectedDungeonTarget() {
+        return selectedDestination instanceof DungeonTransitionDestination.DungeonMapDestination dungeon
+                && dungeon.transitionId() != null
+                && dungeon.transitionId() > 0;
     }
 
     private static DungeonHitSubject.TransitionSubject selectedTransitionSubject(DungeonHitSubject subject) {
@@ -703,6 +705,17 @@ public final class TransitionTool implements EditorTool {
 
     private static String transitionLabel(Long transitionId) {
         return transitionId == null ? "Übergang" : "Übergang " + transitionId;
+    }
+
+    private enum TransitionDestinationMode {
+        OVERWORLD("Overworld"),
+        DUNGEON("Dungeon");
+
+        private final String label;
+
+        TransitionDestinationMode(String label) {
+            this.label = label;
+        }
     }
 
     private record PreparedTransitionCard(long transitionId, String label) {

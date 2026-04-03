@@ -14,12 +14,31 @@ import java.util.List;
 
 public final class DungeonTransitionRepository {
 
+    private static final String SELECT_COLUMNS =
+            "SELECT transition_id, dungeon_map_id, description, cell_x, cell_y, level_z, destination_type,"
+                    + " target_overworld_map_id, target_overworld_tile_id, target_dungeon_map_id,"
+                    + " target_transition_id, linked_transition_id";
+
     public List<DungeonTransition> loadByMap(Connection conn, long mapId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT transition_id, dungeon_map_id, description, cell_x, cell_y, level_z, destination_type,"
-                        + " target_overworld_map_id, target_overworld_tile_id, target_dungeon_map_id,"
-                        + " target_transition_id, linked_transition_id"
-                        + " FROM dungeon_transitions WHERE dungeon_map_id=? ORDER BY transition_id")) {
+                SELECT_COLUMNS + " FROM dungeon_transitions WHERE dungeon_map_id=? ORDER BY transition_id")) {
+            ps.setLong(1, mapId);
+            try (ResultSet rs = ps.executeQuery()) {
+                List<DungeonTransition> result = new ArrayList<>();
+                while (rs.next()) {
+                    result.add(mapTransition(rs));
+                }
+                return result.isEmpty() ? List.of() : List.copyOf(result);
+            }
+        }
+    }
+
+    public List<DungeonTransition> loadPlacedByMap(Connection conn, long mapId) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                SELECT_COLUMNS
+                        + " FROM dungeon_transitions"
+                        + " WHERE dungeon_map_id=? AND cell_x IS NOT NULL AND cell_y IS NOT NULL AND level_z IS NOT NULL"
+                        + " ORDER BY transition_id")) {
             ps.setLong(1, mapId);
             try (ResultSet rs = ps.executeQuery()) {
                 List<DungeonTransition> result = new ArrayList<>();
@@ -33,10 +52,7 @@ public final class DungeonTransitionRepository {
 
     public DungeonTransition find(Connection conn, long transitionId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT transition_id, dungeon_map_id, description, cell_x, cell_y, level_z, destination_type,"
-                        + " target_overworld_map_id, target_overworld_tile_id, target_dungeon_map_id,"
-                        + " target_transition_id, linked_transition_id"
-                        + " FROM dungeon_transitions WHERE transition_id=?")) {
+                SELECT_COLUMNS + " FROM dungeon_transitions WHERE transition_id=?")) {
             ps.setLong(1, transitionId);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? mapTransition(rs) : null;
@@ -106,6 +122,11 @@ public final class DungeonTransitionRepository {
         }
     }
 
+    public void linkPair(Connection conn, long transitionId, long counterpartId) throws SQLException {
+        updateTargetTransition(conn, transitionId, counterpartId);
+        updateLinkedTransition(conn, transitionId, counterpartId);
+    }
+
     public void clearLinksTo(Connection conn, long transitionId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE dungeon_transitions"
@@ -117,6 +138,16 @@ public final class DungeonTransitionRepository {
             ps.setLong(3, transitionId);
             ps.setLong(4, transitionId);
             ps.executeUpdate();
+        }
+    }
+
+    public boolean dungeonMapExists(Connection conn, long mapId) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT 1 FROM dungeon_maps WHERE dungeon_map_id=?")) {
+            ps.setLong(1, mapId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
         }
     }
 
@@ -143,6 +174,7 @@ public final class DungeonTransitionRepository {
 
     private static DungeonTransitionDestination mapDestination(ResultSet rs) throws SQLException {
         String destinationType = rs.getString("destination_type");
+        // Keep reading older rows that stored the nested record simple name before the canonical discriminator key.
         if (DungeonTransitionDestination.DungeonMapDestination.class.getSimpleName().equals(destinationType)) {
             destinationType = "DUNGEON_MAP";
         }

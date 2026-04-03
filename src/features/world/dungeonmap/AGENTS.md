@@ -101,7 +101,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `PaintTool` owns room paint/delete sessions from resolved `FloorCellSubject` hits and publishes paint previews as `CellCoord` sets, not hydrierten room structures.
 - `BoundaryTool` owns wall-path drafting. Draft state stays local to the tool; shared state exposes only boundary preview geometry.
 - `ConnectionsTool` owns door edits, corridor drafting, node insertion, and corridor deletion. Corridor graph edits use explicit 2x node/segment points, while preview layouts use `DungeonLayout` corridor replacement helpers instead of hand-built temporary layouts.
-  - `TransitionTool` owns transition create/delete gestures and keeps its form state local to the tool.
+- `TransitionTool` owns transition create/delete gestures and keeps its form state local to the tool. It should carry selected destinations directly as `DungeonTransitionDestination` plus a small local mode hint, not as parallel target-id fields that are rebuilt into destinations later.
 - `DungeonHitSnapshot.firstSubjectMatching(...)` and `orderedSubjects()` are the shared helpers for per-tool subject resolution. Prefer these over ad-hoc candidate walks.
 - Selection identity is semantic. Use owner-provided refs (`DungeonSelectionRef`, label handles, structure ids plus geometry) instead of reconstructing or parsing them in renderers.
 
@@ -154,12 +154,14 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `Corridor` is a first-class structure with stable identity, nodes, segments, room bindings, and derived geometry. In memory and at persistence seams it owns canonical `GridPoint2x`/`GridSegment2x` path truth plus `CellCoord` room bindings, and it owns its direct graph transforms (`move`, `insert`, `delete`, `branch`) instead of delegating them to a second public graph-editor helper.
 - `DungeonStair` is a first-class structure with stable identity and explicit 3D path geometry. Exits are derived views, not persisted second truths.
 - `DungeonTransition` owns transition identity, placement anchor, destination, and optional bidirectional link. Unplaced transitions are valid; spatial queries must guard for null anchor or placement state.
+- Transition commits should carry direct `DungeonTransitionDestination` truth plus a small placement intent. Do not reintroduce request DTOs that decompose the destination back into enum-and-id fields before writing.
 
 ## Loading And Persistence
 
 - `DungeonLayoutRepository` is the authoritative rehydration path for one concrete persisted map. It delegates structure reads to the focused repositories and does not return loading-layer fallback payloads.
 - `DungeonRoomRepository` owns the concrete write ordering for cluster rewrites and moved clusters. Application workflows decide the rewrite, repository code decides insert/update/delete order.
 - `DungeonCorridorRepository` owns corridor row writes, synthetic-to-persistent id assignment, node/segment replacement order, and the codec between persisted relative room-binding columns and in-memory absolute room cells. Application workflows should not keep a second persistence-id mapper or room-binding codec.
+- `DungeonTransitionRepository` owns dungeon-side transition lookups and writes, including placed-target queries and dungeon-map existence checks. Overworld target discovery stays at the `WorldReadApi` boundary instead of leaking `hex_tiles` SQL into dungeon application workflows.
 - `DungeonMapLoadingService` owns catalog reads, initial-load usable-map scans, and selected-map fallback. Full-catalog usable-layout scans are for initial load, not every selection change.
 - `DungeonStorageSupport.ensureReady(...)` is the single schema-compatibility gate for dungeon startup, feature reads, and writes. Do not reintroduce per-structure schema helpers.
 - Room geometry is loaded directly from persisted room-owned `StructureDescriptor` rows.
