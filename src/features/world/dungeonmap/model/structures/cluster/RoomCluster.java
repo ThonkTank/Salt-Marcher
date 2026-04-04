@@ -725,7 +725,7 @@ public final class RoomCluster {
                     mergedRoomCellsByLevel,
                     roomAnchorsByLevel(retainedRoom)));
 
-            List<Room> rewrittenRooms = reconciledRooms(cluster, mergedClusterCells, candidates, previousBoundaryKinds);
+            List<Room> rewrittenRooms = reconciledRooms(cluster, candidates, previousBoundaryKinds);
             return new RoomCluster(
                     cluster.clusterId(),
                     cluster.mapId(),
@@ -768,7 +768,7 @@ public final class RoomCluster {
                 }
                 List<Set<CellCoord>> components = connectedComponents(remainingRoomDeleteLevelCells).stream()
                         .sorted(Comparator
-                                .comparing((Set<CellCoord> component) -> !contains(component, preferredAnchor(existingDeleteLevelCells, roomAnchorsByLevel(room).get(deleteLevel))))
+                                .comparing((Set<CellCoord> component) -> !contains(component, anchorCell(existingDeleteLevelCells, roomAnchorsByLevel(room).get(deleteLevel))))
                                 .thenComparing(CellCoord::bestCenter, CellCoord.ORDER))
                         .toList();
                 if (remainingRoomCellsByLevel.isEmpty()) {
@@ -796,7 +796,7 @@ public final class RoomCluster {
             }
 
             Set<CellCoord> rewrittenClusterCells = flattenCells(remainingCellsByLevel);
-            List<Room> rewrittenRooms = reconciledRooms(cluster, rewrittenClusterCells, candidates, previousBoundaryKinds);
+            List<Room> rewrittenRooms = reconciledRooms(cluster, candidates, previousBoundaryKinds);
             List<RoomCluster> componentClusters = deleteClusters(
                     cluster,
                     rewrittenClusterCells,
@@ -873,11 +873,10 @@ public final class RoomCluster {
 
         private static List<Room> reconciledRooms(
                 RoomCluster cluster,
-                Set<CellCoord> clusterCells,
                 List<RoomRewriteCandidate> candidates,
                 Map<GridSegment2x, InternalBoundaryType> previousKinds
         ) {
-            if (cluster == null || clusterCells == null || clusterCells.isEmpty()) {
+            if (cluster == null || cluster.cells().isEmpty()) {
                 return List.of();
             }
             Map<GridSegment2x, InternalBoundaryType> boundaryKinds = previousKinds == null ? Map.of() : Map.copyOf(previousKinds);
@@ -1192,7 +1191,7 @@ public final class RoomCluster {
                 // Only opening segments are layered on afterward so rewrites cannot persist a floor shape that
                 // hydrates differently from the authored room cells.
                 levels.put(levelZ, new StructureDescriptor.LevelDescriptor(
-                        anchorCellForRoom(roomCells, preferredAnchor),
+                        anchorCell(roomCells, preferredAnchor),
                         baseLevel.fillSeeds(),
                         baseLevel.boundaryEdges(),
                         openingEdgesForRoom(baseLevel.boundaryEdges(), boundaryKinds)));
@@ -1347,14 +1346,10 @@ public final class RoomCluster {
             return CellCoord.normalize(input);
         }
 
-        private static CellCoord anchorCellForRoom(Set<CellCoord> roomCells, CellCoord preferredAnchor) {
+        private static CellCoord anchorCell(Set<CellCoord> roomCells, CellCoord preferredAnchor) {
             return preferredAnchor != null && roomCells.contains(preferredAnchor)
                     ? preferredAnchor
                     : CellCoord.bestCenter(roomCells);
-        }
-
-        private static Set<CellCoord> fillSeedsForRoom(Set<CellCoord> roomCells) {
-            return CellCoord.componentCenters(roomCells);
         }
 
         private static Map<Integer, Set<CellCoord>> structureCellsByLevel(StructureObject structure) {
@@ -1373,13 +1368,6 @@ public final class RoomCluster {
 
         private static boolean contains(Set<CellCoord> cells, CellCoord cell) {
             return cell != null && cells != null && cells.contains(cell);
-        }
-
-        private static CellCoord preferredAnchor(Set<CellCoord> roomCells, CellCoord preferredAnchor) {
-            if (preferredAnchor != null && contains(roomCells, preferredAnchor)) {
-                return preferredAnchor;
-            }
-            return roomCells == null || roomCells.isEmpty() ? null : CellCoord.bestCenter(roomCells);
         }
 
         private static Set<GridSegment2x> barriersForBoundaryKinds(Map<GridSegment2x, InternalBoundaryType> boundaryKinds) {

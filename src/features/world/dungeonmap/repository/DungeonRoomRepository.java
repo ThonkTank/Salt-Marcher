@@ -489,13 +489,12 @@ public final class DungeonRoomRepository {
                     Map<Long, Map<Integer, Set<GridSegment2x>>> target = "OPENING".equals(rs.getString("segment_kind"))
                             ? openingSegmentsByRoomId
                             : boundarySegmentsByRoomId;
+                    // Room segments are already persisted as stepwise boundary edges.
                     target.computeIfAbsent(roomId, ignored -> new LinkedHashMap<>())
                             .computeIfAbsent(levelZ, ignored -> new LinkedHashSet<>())
-                            .addAll(storedBoundarySteps(
-                                    rs.getInt("start_x2"),
-                                    rs.getInt("start_y2"),
-                                    rs.getInt("end_x2"),
-                                    rs.getInt("end_y2")));
+                            .add(new GridSegment2x(
+                                    GridPoint2x.raw(rs.getInt("start_x2"), rs.getInt("start_y2")),
+                                    GridPoint2x.raw(rs.getInt("end_x2"), rs.getInt("end_y2"))));
                 }
             }
         }
@@ -532,12 +531,6 @@ public final class DungeonRoomRepository {
     private static CellCoord requireStoredCellCenter(int persistedX2, int persistedY2, String label, long roomId, int levelZ) {
         return GridPoint2x.raw(persistedX2, persistedY2).asCell().orElseThrow(() -> new IllegalArgumentException(
                 label + " must be a tile center for room " + roomId + " at level " + levelZ));
-    }
-
-    private static Set<GridSegment2x> storedBoundarySteps(int startX2, int startY2, int endX2, int endY2) {
-        return GridSegment2x.boundarySteps(Set.of(new GridSegment2x(
-                GridPoint2x.raw(startX2, startY2),
-                GridPoint2x.raw(endX2, endY2))));
     }
 
     private static Map<Long, List<Room>> roomsByClusterId(List<Room> rooms) {
