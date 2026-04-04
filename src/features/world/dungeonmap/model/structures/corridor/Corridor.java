@@ -101,6 +101,7 @@ public final class Corridor {
         this.levelZ = levelZ;
         this.nodes = normalizeNodes(levelZ, nodes, resolvedRooms);
         this.segments = normalizeSegments(segments);
+        validateTopology(this.nodes, this.segments);
         DerivedProjection projection = deriveProjection(corridorId, mapId, levelZ, this.nodes, this.segments, resolvedRooms);
         this.structure = projection.structure();
         this.routes = projection.routes();
@@ -161,85 +162,107 @@ public final class Corridor {
         if (layout == null || nodeId == null || point2x == null) {
             return this;
         }
-        ArrayList<CorridorNode> updatedNodes = new ArrayList<>();
+        ArrayList<CorridorNode> updatedNodes = new ArrayList<>(nodes.size());
+        boolean changed = false;
         for (CorridorNode node : nodes) {
             if (node == null) {
                 continue;
             }
-            if (!nodeId.equals(node.nodeId())) {
-                updatedNodes.add(node);
-                continue;
+            CorridorNode updatedNode = node;
+            if (nodeId.equals(node.nodeId()) && !node.isRoomBound()) {
+                updatedNode = new CorridorNode(node.nodeId(), point2x, null, null, null);
             }
-            updatedNodes.add(new CorridorNode(
-                    node.nodeId(),
-                    point2x,
-                    node.roomId(),
-                    node.roomCell(),
-                    node.roomBoundaryDirection()));
+            updatedNodes.add(updatedNode);
+            changed |= !Objects.equals(updatedNode, node);
         }
-        return resolvedAgainst(layout, updatedNodes, segments);
+        return changed ? resolvedAgainst(layout, updatedNodes, segments) : this;
     }
 
-    public Corridor insertedNode(DungeonLayout layout, Long segmentId, GridPoint2x point2x) {
-        if (layout == null || segmentId == null || point2x == null) {
+    public Corridor promotedTileNode(DungeonLayout layout, CellCoord tileCell) {
+        if (layout == null || tileCell == null) {
             return this;
         }
+        GridPoint2x tilePoint = GridPoint2x.cell(tileCell);
+        CorridorNode existingNode = findFreeNodeAtPoint(tilePoint);
+        if (existingNode != null) {
+            return this;
+        }
+        long newNodeId = nextSyntheticNodeId();
+        long nextSyntheticSegmentId = nextSyntheticSegmentId();
+        ArrayList<CorridorNode> updatedNodes = new ArrayList<>(nodes);
+        updatedNodes.add(new CorridorNode(newNodeId, tilePoint, null, null, null));
+        ArrayList<CorridorSegment> updatedSegments = new ArrayList<>();
+        LinkedHashSet<String> seenEdges = new LinkedHashSet<>();
+        boolean changed = false;
+        for (CorridorSegment segment : segments) {
+            CorridorRoute route = routeForSegment(this, segment == null ? null : segment.segmentId());
+            if (segment == null || route == null || !route.path2x().contains(tilePoint)) {
+                addUniqueSegment(updatedSegments, seenEdges, segment);
+                continue;
+            }
+            changed = true;
+            addUniqueSegment(updatedSegments, seenEdges, new CorridorSegment(segment.segmentId(), segment.startNodeId(), newNodeId));
+            addUniqueSegment(updatedSegments, seenEdges, new CorridorSegment(nextSyntheticSegmentId--, newNodeId, segment.endNodeId()));
+        }
+        if (!changed) {
+            throw new IllegalArgumentException("Corridor tile is not on a routable corridor segment");
+        }
+        return resolvedAgainst(layout, updatedNodes, updatedSegments);
+    }
+
+    public Corridor promotedTileNodeAndMoved(DungeonLayout layout, CellCoord tileCell, GridPoint2x point2x) {
+        if (layout == null || tileCell == null || point2x == null) {
+            return this;
+        }
+        Corridor promoted = promotedTileNode(layout, tileCell);
+        CorridorNode promotedNode = promoted.findFreeNodeAtPoint(GridPoint2x.cell(tileCell));
+        if (promotedNode == null || Objects.equals(promotedNode.point2x(), point2x)) {
+            return promoted;
+        }
+        return promoted.movedNode(layout, promotedNode.nodeId(), point2x);
+    }
+
+    public Corridor attachedRoomNodeAtTile(DungeonLayout layout, CorridorNode roomNode, CellCoord tileCell) {
+        if (layout == null || roomNode == null || !roomNode.isRoomBound() || tileCell == null) {
+            return this;
+        }
+        GridSegment2x boundarySegment2x = roomBoundaryEdge(roomNode);
+        if (boundarySegment2x != null && findRoomBoundNodeAtBoundary(boundarySegment2x) != null) {
+            return this;
+        }
+        Corridor promoted = promotedTileNode(layout, tileCell);
+        CorridorNode attachNode = promoted.findFreeNodeAtPoint(GridPoint2x.cell(tileCell));
+        if (attachNode == null) {
+            throw new IllegalArgumentException("Corridor tile did not resolve to a fixed node");
+        }
+        long newNodeId = promoted.nextSyntheticNodeId();
+        long newSegmentId = promoted.nextSyntheticSegmentId();
+        ArrayList<CorridorNode> updatedNodes = new ArrayList<>(promoted.nodes);
+        updatedNodes.add(new CorridorNode(
+                newNodeId,
+                roomNode.point2x(),
+                roomNode.roomId(),
+                roomNode.roomCell(),
+                roomNode.roomBoundaryDirection()));
+        ArrayList<CorridorSegment> updatedSegments = new ArrayList<>(promoted.segments);
+        updatedSegments.add(new CorridorSegment(newSegmentId, attachNode.nodeId(), newNodeId));
+        return promoted.resolvedAgainst(layout, updatedNodes, updatedSegments);
+    }
+
+    public CorridorTopologyUpdate deletedSegment(Long segmentId) {
         CorridorSegment target = findSegment(segmentId);
         if (target == null) {
-            return this;
+            return CorridorTopologyUpdate.unchanged();
         }
-        long nodeId = nextSyntheticNodeId();
-        long segmentStartId = nextSyntheticSegmentId();
-        long segmentEndId = segmentStartId - 1;
-        ArrayList<CorridorNode> updatedNodes = new ArrayList<>(nodes);
-        updatedNodes.add(new CorridorNode(nodeId, point2x, null, null, null));
-        ArrayList<CorridorSegment> updatedSegments = new ArrayList<>();
-        for (CorridorSegment segment : segments) {
-            if (!Objects.equals(segment.segmentId(), segmentId)) {
-                updatedSegments.add(segment);
-                continue;
-            }
-            updatedSegments.add(new CorridorSegment(segmentStartId, segment.startNodeId(), nodeId));
-            updatedSegments.add(new CorridorSegment(segmentEndId, nodeId, segment.endNodeId()));
-        }
-        return resolvedAgainst(layout, updatedNodes, updatedSegments);
+        return topologyAfterRemoval(Set.of(), Set.of(segmentId));
     }
 
-    public Corridor deletedNode(DungeonLayout layout, Long nodeId) {
-        if (layout == null || nodeId == null) {
-            return this;
-        }
+    public CorridorTopologyUpdate deletedNode(Long nodeId) {
         CorridorNode removed = findNode(nodeId);
-        if (removed == null || removed.isRoomBound()) {
-            return this;
+        if (removed == null) {
+            return CorridorTopologyUpdate.unchanged();
         }
-        List<CorridorSegment> touchingSegments = segmentsForNode(nodeId);
-        if (touchingSegments.isEmpty() || touchingSegments.size() > 2) {
-            return this;
-        }
-        ArrayList<CorridorNode> updatedNodes = new ArrayList<>();
-        for (CorridorNode node : nodes) {
-            if (node != null && !nodeId.equals(node.nodeId())) {
-                updatedNodes.add(node);
-            }
-        }
-        ArrayList<CorridorSegment> updatedSegments = new ArrayList<>();
-        for (CorridorSegment segment : segments) {
-            if (segment == null || nodeId.equals(segment.startNodeId()) || nodeId.equals(segment.endNodeId())) {
-                continue;
-            }
-            updatedSegments.add(segment);
-        }
-        if (touchingSegments.size() == 2) {
-            Long firstNeighbor = touchingSegments.getFirst().startNodeId().equals(nodeId)
-                    ? touchingSegments.getFirst().endNodeId()
-                    : touchingSegments.getFirst().startNodeId();
-            Long secondNeighbor = touchingSegments.getLast().startNodeId().equals(nodeId)
-                    ? touchingSegments.getLast().endNodeId()
-                    : touchingSegments.getLast().startNodeId();
-            updatedSegments.add(new CorridorSegment(nextSyntheticSegmentId(), firstNeighbor, secondNeighbor));
-        }
-        return resolvedAgainst(layout, updatedNodes, updatedSegments);
+        return topologyAfterRemoval(Set.of(nodeId), Set.of());
     }
 
     public Corridor adjustedForMovedRooms(
@@ -278,10 +301,7 @@ public final class Corridor {
         if (!changed) {
             return this;
         }
-        Corridor adjustedCorridor = resolvedAgainst(layout, updatedNodes, segments);
-        return levelDelta == 0 && translate
-                ? adjustedCorridor.reboundFreeNodesAfterRoomMove(this, layout)
-                : adjustedCorridor;
+        return resolvedAgainst(layout, updatedNodes, segments);
     }
 
     public void validateRoomBindingsForRewrite(DungeonLayout layout, Set<Long> affectedRoomIds) {
@@ -326,33 +346,6 @@ public final class Corridor {
         return reboundCorridor;
     }
 
-    public Corridor branchedFrom(
-            DungeonLayout layout,
-            Long attachNodeId,
-            List<CorridorNode> branchNodes,
-            List<CorridorSegment> branchSegments
-    ) {
-        if (layout == null || attachNodeId == null || branchNodes == null || branchSegments == null) {
-            return this;
-        }
-        if (findNode(attachNodeId) == null) {
-            return this;
-        }
-        ArrayList<CorridorNode> updatedNodes = new ArrayList<>(nodes);
-        for (CorridorNode node : branchNodes) {
-            if (node != null) {
-                updatedNodes.add(node);
-            }
-        }
-        ArrayList<CorridorSegment> updatedSegments = new ArrayList<>(segments);
-        for (CorridorSegment segment : branchSegments) {
-            if (segment != null) {
-                updatedSegments.add(segment);
-            }
-        }
-        return resolvedAgainst(layout, updatedNodes, updatedSegments);
-    }
-
     public boolean connectsRoom(Long roomId) {
         return roomId != null && connectedRoomIds().contains(roomId);
     }
@@ -363,6 +356,27 @@ public final class Corridor {
         }
         return nodes.stream()
                 .filter(node -> nodeId.equals(node.nodeId()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    public CorridorNode findFreeNodeAtPoint(GridPoint2x point2x) {
+        if (point2x == null) {
+            return null;
+        }
+        return nodes.stream()
+                .filter(node -> node != null && !node.isRoomBound() && point2x.equals(node.point2x()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    public CorridorNode findRoomBoundNodeAtBoundary(GridSegment2x boundarySegment2x) {
+        if (boundarySegment2x == null) {
+            return null;
+        }
+        return nodes.stream()
+                .filter(CorridorNode::isRoomBound)
+                .filter(node -> boundarySegment2x.equals(roomBoundaryEdge(node)))
                 .findFirst()
                 .orElse(null);
     }
@@ -417,16 +431,6 @@ public final class Corridor {
             return this;
         }
         return layout.resolveCorridor(corridorId, levelZ, updatedNodes, updatedSegments);
-    }
-
-    private Corridor reboundFreeNodesAfterRoomMove(Corridor originalCorridor, DungeonLayout layout) {
-        if (layout == null || originalCorridor == null || originalCorridor.persistedManualNodes().isEmpty()) {
-            return this;
-        }
-        // Room moves must re-solve free nodes from the rerouted corridor topology instead of dragging their stale
-        // absolute coordinates across the map.
-        Corridor reboundStructural = rebindStructuralFreeNodes(originalCorridor, layout);
-        return reboundStructural.repairDegree2Chains(originalCorridor, layout);
     }
 
     private Corridor rebindStructuralFreeNodes(Corridor originalCorridor, DungeonLayout layout) {
@@ -1263,6 +1267,157 @@ public final class Corridor {
         return 0;
     }
 
+    private CorridorTopologyUpdate topologyAfterRemoval(Set<Long> removedNodeIds, Set<Long> removedSegmentIds) {
+        LinkedHashSet<Long> resolvedNodeIds = removedNodeIds == null
+                ? new LinkedHashSet<>()
+                : new LinkedHashSet<>(removedNodeIds);
+        LinkedHashSet<Long> resolvedSegmentIds = removedSegmentIds == null
+                ? new LinkedHashSet<>()
+                : new LinkedHashSet<>(removedSegmentIds);
+        ArrayList<CorridorSegment> remainingSegments = new ArrayList<>();
+        for (CorridorSegment segment : segments) {
+            if (segment == null
+                    || resolvedSegmentIds.contains(segment.segmentId())
+                    || resolvedNodeIds.contains(segment.startNodeId())
+                    || resolvedNodeIds.contains(segment.endNodeId())) {
+                continue;
+            }
+            remainingSegments.add(segment);
+        }
+        boolean changed = remainingSegments.size() != segments.size() || !resolvedNodeIds.isEmpty();
+        if (!changed) {
+            return CorridorTopologyUpdate.unchanged();
+        }
+        return new CorridorTopologyUpdate(true, corridorComponents(remainingSegments, resolvedNodeIds));
+    }
+
+    private List<CorridorComponent> corridorComponents(List<CorridorSegment> remainingSegments, Set<Long> removedNodeIds) {
+        if (remainingSegments == null || remainingSegments.isEmpty()) {
+            return List.of();
+        }
+        LinkedHashMap<Long, List<CorridorSegment>> segmentsByNodeId = new LinkedHashMap<>();
+        for (CorridorSegment segment : remainingSegments) {
+            segmentsByNodeId.computeIfAbsent(segment.startNodeId(), ignored -> new ArrayList<>()).add(segment);
+            segmentsByNodeId.computeIfAbsent(segment.endNodeId(), ignored -> new ArrayList<>()).add(segment);
+        }
+        ArrayList<CorridorComponent> result = new ArrayList<>();
+        LinkedHashSet<Long> visitedNodeIds = new LinkedHashSet<>();
+        for (CorridorNode startNode : nodes) {
+            if (startNode == null
+                    || startNode.nodeId() == null
+                    || (removedNodeIds != null && removedNodeIds.contains(startNode.nodeId()))
+                    || !segmentsByNodeId.containsKey(startNode.nodeId())
+                    || !visitedNodeIds.add(startNode.nodeId())) {
+                continue;
+            }
+            LinkedHashSet<Long> componentNodeIds = new LinkedHashSet<>();
+            ArrayDeque<Long> frontier = new ArrayDeque<>();
+            frontier.add(startNode.nodeId());
+            while (!frontier.isEmpty()) {
+                Long currentNodeId = frontier.removeFirst();
+                componentNodeIds.add(currentNodeId);
+                for (CorridorSegment segment : segmentsByNodeId.getOrDefault(currentNodeId, List.of())) {
+                    Long otherNodeId = otherNodeId(segment, currentNodeId);
+                    if (otherNodeId != null && visitedNodeIds.add(otherNodeId)) {
+                        frontier.addLast(otherNodeId);
+                    }
+                }
+            }
+
+            ArrayList<CorridorNode> componentNodes = new ArrayList<>();
+            for (CorridorNode node : nodes) {
+                if (node != null && componentNodeIds.contains(node.nodeId())) {
+                    componentNodes.add(node);
+                }
+            }
+            ArrayList<CorridorSegment> componentSegments = new ArrayList<>();
+            for (CorridorSegment segment : remainingSegments) {
+                if (componentNodeIds.contains(segment.startNodeId()) && componentNodeIds.contains(segment.endNodeId())) {
+                    componentSegments.add(segment);
+                }
+            }
+            if (!componentSegments.isEmpty()) {
+                result.add(new CorridorComponent(componentNodes, componentSegments));
+            }
+        }
+        return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
+    private static void validateTopology(List<CorridorNode> nodes, List<CorridorSegment> segments) {
+        Map<Long, CorridorNode> nodesById = indexNodes(nodes);
+        LinkedHashMap<Long, Integer> degreeByNodeId = new LinkedHashMap<>();
+        for (CorridorNode node : nodes == null ? List.<CorridorNode>of() : nodes) {
+            if (node == null || node.nodeId() == null) {
+                throw new IllegalArgumentException("Corridor nodes require stable ids");
+            }
+            degreeByNodeId.put(node.nodeId(), 0);
+        }
+        for (CorridorSegment segment : segments == null ? List.<CorridorSegment>of() : segments) {
+            if (!nodesById.containsKey(segment.startNodeId()) || !nodesById.containsKey(segment.endNodeId())) {
+                throw new IllegalArgumentException("Corridor segment references missing node");
+            }
+            degreeByNodeId.computeIfPresent(segment.startNodeId(), (ignored, degree) -> degree + 1);
+            degreeByNodeId.computeIfPresent(segment.endNodeId(), (ignored, degree) -> degree + 1);
+        }
+        Long startNodeId = null;
+        for (CorridorNode node : nodes == null ? List.<CorridorNode>of() : nodes) {
+            int degree = degreeByNodeId.getOrDefault(node.nodeId(), 0);
+            if (degree <= 0) {
+                throw new IllegalArgumentException("Corridor nodes may not be isolated");
+            }
+            if (node.isRoomBound() && degree != 1) {
+                throw new IllegalArgumentException("Room-bound corridor nodes must have degree 1");
+            }
+            if (startNodeId == null) {
+                startNodeId = node.nodeId();
+            }
+        }
+        validateConnectedGraph(segments, degreeByNodeId.keySet(), startNodeId);
+    }
+
+    private static void validateConnectedGraph(List<CorridorSegment> segments, Set<Long> nodeIds, Long startNodeId) {
+        if (segments == null || segments.isEmpty() || nodeIds == null || nodeIds.isEmpty() || startNodeId == null) {
+            return;
+        }
+        LinkedHashMap<Long, List<Long>> adjacency = new LinkedHashMap<>();
+        for (Long nodeId : nodeIds) {
+            adjacency.put(nodeId, new ArrayList<>());
+        }
+        for (CorridorSegment segment : segments) {
+            adjacency.computeIfAbsent(segment.startNodeId(), ignored -> new ArrayList<>()).add(segment.endNodeId());
+            adjacency.computeIfAbsent(segment.endNodeId(), ignored -> new ArrayList<>()).add(segment.startNodeId());
+        }
+        LinkedHashSet<Long> visitedNodeIds = new LinkedHashSet<>();
+        ArrayDeque<Long> frontier = new ArrayDeque<>();
+        frontier.add(startNodeId);
+        visitedNodeIds.add(startNodeId);
+        while (!frontier.isEmpty()) {
+            Long nodeId = frontier.removeFirst();
+            for (Long neighborNodeId : adjacency.getOrDefault(nodeId, List.of())) {
+                if (visitedNodeIds.add(neighborNodeId)) {
+                    frontier.addLast(neighborNodeId);
+                }
+            }
+        }
+        if (visitedNodeIds.size() != nodeIds.size()) {
+            throw new IllegalArgumentException("Corridor graph must stay connected");
+        }
+    }
+
+    private static void addUniqueSegment(
+            List<CorridorSegment> target,
+            Set<String> seenEdges,
+            CorridorSegment segment
+    ) {
+        if (target == null || seenEdges == null || segment == null) {
+            return;
+        }
+        String edgeKey = segment.startNodeId() + ":" + segment.endNodeId();
+        if (seenEdges.add(edgeKey)) {
+            target.add(segment);
+        }
+    }
+
     private static Map<Long, Room> indexRoomsById(Collection<Room> rooms) {
         if (rooms == null || rooms.isEmpty()) {
             return Map.of();
@@ -1735,6 +1890,13 @@ public final class Corridor {
                 GridPoint2x.edgeCenter(roomCell, direction));
     }
 
+    private static GridSegment2x roomBoundaryEdge(CorridorNode node) {
+        if (node == null || node.roomCell() == null || node.roomBoundaryDirection() == null) {
+            return null;
+        }
+        return GridSegment2x.boundaryEdge(node.roomCell(), node.roomBoundaryDirection());
+    }
+
     private static GridSegment2x roomBoundaryEdge(CorridorNode node, int levelZ, Map<Long, Room> roomsById) {
         CellCoord roomCell = boundRoomCell(node, levelZ, roomsById);
         CardinalDirection direction = node == null ? null : node.roomBoundaryDirection();
@@ -1798,6 +1960,23 @@ public final class Corridor {
             List<CorridorRoute> routes,
             List<CorridorConnection> connections
     ) {
+    }
+
+    public record CorridorTopologyUpdate(boolean changed, List<CorridorComponent> components) {
+        public CorridorTopologyUpdate {
+            components = components == null ? List.of() : List.copyOf(components);
+        }
+
+        public static CorridorTopologyUpdate unchanged() {
+            return new CorridorTopologyUpdate(false, List.of());
+        }
+    }
+
+    public record CorridorComponent(List<CorridorNode> nodes, List<CorridorSegment> segments) {
+        public CorridorComponent {
+            nodes = nodes == null ? List.of() : List.copyOf(nodes);
+            segments = segments == null ? List.of() : List.copyOf(segments);
+        }
     }
 
     private record RoomRewriteBinding(

@@ -482,6 +482,18 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             strokeSegment2x(pass.gc(), pass.camera(), pass.gridSize(), connectionRef.boundarySegment2x());
             return;
         }
+        if (ref instanceof DungeonSelectionRef.CorridorTileRef corridorTileRef
+                && corridorTileRef.cell().z() == pass.projectionLevel()) {
+            CubePoint tile = corridorTileRef.cell();
+            double x = pass.camera().panX() + tile.x() * pass.gridSize();
+            double y = pass.camera().panY() + tile.y() * pass.gridSize();
+            pass.gc().setFill(withOpacity(pass.palette().highlightFill(), 0.28));
+            pass.gc().fillRect(x, y, pass.gridSize(), pass.gridSize());
+            pass.gc().setStroke(withOpacity(pass.palette().highlightStroke(), 0.95));
+            pass.gc().setLineWidth(2.0);
+            pass.gc().strokeRect(x, y, pass.gridSize(), pass.gridSize());
+            return;
+        }
         if (ref instanceof DungeonSelectionRef.CorridorNodeRef corridorNodeRef) {
             Corridor corridor = pass.projected().corridor(corridorNodeRef);
             CorridorNode node = corridor == null ? null : corridor.findNode(corridorNodeRef.nodeId());

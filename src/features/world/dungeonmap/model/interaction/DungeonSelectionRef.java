@@ -17,6 +17,7 @@ public sealed interface DungeonSelectionRef permits
         DungeonSelectionRef.ClusterBoundaryRef,
         DungeonSelectionRef.RoomBoundaryRef,
         DungeonSelectionRef.ConnectionRef,
+        DungeonSelectionRef.CorridorTileRef,
         DungeonSelectionRef.CorridorNodeRef,
         DungeonSelectionRef.CorridorCornerRef,
         DungeonSelectionRef.CorridorSegmentRef,
@@ -37,6 +38,7 @@ public sealed interface DungeonSelectionRef permits
             case ClusterBoundaryRef ignored -> DungeonHitKind.CLUSTER_BOUNDARY;
             case RoomBoundaryRef ignored -> DungeonHitKind.ROOM_BOUNDARY;
             case ConnectionRef ignored -> DungeonHitKind.CONNECTION;
+            case CorridorTileRef ignored -> DungeonHitKind.CORRIDOR_TILE;
             case CorridorNodeRef ignored -> DungeonHitKind.CORRIDOR_NODE;
             case CorridorCornerRef ignored -> DungeonHitKind.CORRIDOR_CORNER;
             case CorridorSegmentRef ignored -> DungeonHitKind.CORRIDOR_SEGMENT;
@@ -142,6 +144,18 @@ public sealed interface DungeonSelectionRef permits
                 case CORRIDOR -> corridorId == null ? null : new CorridorRef(corridorId);
                 case STAIR, TRANSITION -> null;
             };
+        }
+    }
+
+    record CorridorTileRef(Long corridorId, CubePoint cell, GridPoint2x point2x) implements DungeonSelectionRef {
+        public CorridorTileRef {
+            cell = Objects.requireNonNull(cell, "cell");
+            point2x = Objects.requireNonNull(point2x, "point2x");
+        }
+
+        @Override
+        public DungeonSelectionRef ownerRef() {
+            return corridorId == null ? null : new CorridorRef(corridorId);
         }
     }
 

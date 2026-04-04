@@ -19,6 +19,7 @@ public final class DungeonHitConventions {
     public static final long CLUSTER_BOUNDARY_PRIORITY = 45L;
     public static final long ROOM_BOUNDARY_PRIORITY = 40L;
     public static final long ROOM_PRIORITY = 20L;
+    public static final long CORRIDOR_TILE_PRIORITY = 18L;
     public static final long CORRIDOR_PRIORITY = 15L;
     public static final long FLOOR_CELL_PRIORITY = 10L;
 
@@ -38,6 +39,7 @@ public final class DungeonHitConventions {
             case CLUSTER_BOUNDARY -> CLUSTER_BOUNDARY_PRIORITY;
             case ROOM_BOUNDARY -> ROOM_BOUNDARY_PRIORITY;
             case ROOM -> ROOM_PRIORITY;
+            case CORRIDOR_TILE -> CORRIDOR_TILE_PRIORITY;
             case CORRIDOR -> CORRIDOR_PRIORITY;
             case FLOOR_CELL -> FLOOR_CELL_PRIORITY;
         };

@@ -26,7 +26,6 @@ public final class DungeonCorridorGraphHitSource implements DungeonHitSource {
                 continue;
             }
             descriptors.addAll(nodeDescriptors(corridor, probe.levelZ()));
-            descriptors.addAll(cornerDescriptors(corridor, probe.levelZ()));
             descriptors.addAll(segmentDescriptors(corridor, probe.levelZ()));
         }
         return List.copyOf(descriptors);
@@ -38,21 +37,6 @@ public final class DungeonCorridorGraphHitSource implements DungeonHitSource {
             descriptors.add(new DungeonHitDescriptor(
                     new DungeonSelectionRef.CorridorNodeRef(corridor.corridorId(), node.nodeId(), node.point2x()),
                     List.of(new DungeonHitSurface.PointSurface(Set.of(node.point2x()), levelZ))));
-        }
-        return List.copyOf(descriptors);
-    }
-
-    private static List<DungeonHitDescriptor> cornerDescriptors(Corridor corridor, int levelZ) {
-        ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
-        for (Corridor.CorridorRoute route : corridor.routes()) {
-            if (route.segmentId() == null) {
-                continue;
-            }
-            for (GridPoint2x cornerPoint : route.cornerPoints2x()) {
-                descriptors.add(new DungeonHitDescriptor(
-                        new DungeonSelectionRef.CorridorCornerRef(corridor.corridorId(), route.segmentId(), cornerPoint),
-                        List.of(new DungeonHitSurface.PointSurface(Set.of(cornerPoint), levelZ))));
-            }
         }
         return List.copyOf(descriptors);
     }

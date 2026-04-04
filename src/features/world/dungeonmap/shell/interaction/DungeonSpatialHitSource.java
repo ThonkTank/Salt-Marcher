@@ -47,6 +47,12 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
                 continue;
             }
             descriptors.add(new DungeonHitDescriptor(
+                    new DungeonSelectionRef.CorridorTileRef(
+                            corridor.corridorId(),
+                            features.world.dungeonmap.model.geometry.CubePoint.at(probe.gridCell(), probe.levelZ()),
+                            features.world.dungeonmap.model.geometry.GridPoint2x.cell(probe.gridCell())),
+                    List.of(new DungeonHitSurface.CellSurface(Set.of(probe.gridCell()), probe.levelZ()))));
+            descriptors.add(new DungeonHitDescriptor(
                     new DungeonSelectionRef.CorridorRef(corridor.corridorId()),
                     List.of(new DungeonHitSurface.CellSurface(
                             corridor.structure().cellCoordsAtLevel(probe.levelZ()),

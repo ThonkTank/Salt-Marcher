@@ -6,26 +6,22 @@ import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
+import features.world.dungeonmap.model.structures.connection.ConnectionKind;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
-import features.world.dungeonmap.model.structures.corridor.CorridorNode;
-import features.world.dungeonmap.model.structures.corridor.CorridorSegment;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.shell.editor.EditorCards;
 import features.world.dungeonmap.state.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.EditorInteractionState;
-import features.world.dungeonmap.state.EditorPreview;
 import javafx.scene.Node;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import ui.async.UiErrorReporter;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -42,11 +38,9 @@ public final class ConnectionsTool implements EditorTool {
     private final Label statusLabel = new Label();
     private final Label selectionLabel = new Label();
     private final Label connectedRoomsLabel = new Label();
-    private final Button deleteNodeButton = new Button("Node löschen");
-    private final Button deleteCorridorButton = new Button("Korridor löschen");
-    private final VBox card = EditorCards.card("Connections", statusLabel, selectionLabel, connectedRoomsLabel, deleteNodeButton, deleteCorridorButton);
+    private final VBox card = EditorCards.card("Connections", statusLabel, selectionLabel, connectedRoomsLabel);
 
-    private CorridorBuildDraft draft;
+    private PendingEndpoint pendingEndpoint;
     private DungeonEditorTool activeTool;
     private Runnable refreshCallback = () -> { };
 
@@ -67,8 +61,6 @@ public final class ConnectionsTool implements EditorTool {
         statusLabel.setWrapText(true);
         selectionLabel.setWrapText(true);
         connectedRoomsLabel.setWrapText(true);
-        deleteNodeButton.setOnAction(event -> deleteSelectedNode());
-        deleteCorridorButton.setOnAction(event -> deleteSelectedCorridor());
         this.state.addListener(this::refreshStatePane);
         this.mapState.addListener(this::refreshStatePane);
     }
@@ -81,13 +73,16 @@ public final class ConnectionsTool implements EditorTool {
     @Override
     public void activate(DungeonEditorTool tool) {
         activeTool = tool;
+        if (tool == DungeonEditorTool.CONNECTIONS_DELETE) {
+            clearPendingEndpoint();
+        }
         refreshStatePane();
     }
 
     @Override
     public void deactivate() {
         activeTool = null;
-        clearDraft();
+        clearPendingEndpoint();
         refreshStatePane();
     }
 
@@ -98,10 +93,11 @@ public final class ConnectionsTool implements EditorTool {
             return false;
         }
         DungeonSelectionRef hit = ctx == null ? null : ctx.hitRef();
+        DungeonLayout layout = ctx == null ? null : ctx.activeMap();
         if (sessionState.selectedTool() == DungeonEditorTool.CONNECTIONS_DELETE) {
-            return handleDeletePressed(ctx, ctx.activeMap(), hit);
+            return handleDeletePressed(ctx, layout, hit);
         }
-        return handleConnectionsPressed(ctx, ctx.activeMap(), hit);
+        return handleConnectionsPressed(ctx, layout, hit);
     }
 
     @Override
@@ -120,27 +116,17 @@ public final class ConnectionsTool implements EditorTool {
                 ctx == null ? null : ctx.snapshot(),
                 ctx == null ? null : ctx.activeMap(),
                 ctx == null || ctx.probe() == null ? mapState.activeProjectionLevel() : ctx.probe().levelZ());
-        if (hitRef == null
-                && draft != null
-                && sessionState.selectedTool() == DungeonEditorTool.CONNECTIONS
-                && ctx != null
-                && ctx.probe() != null) {
-            hitRef = new DungeonSelectionRef.FloorCellRef(
-                    features.world.dungeonmap.model.geometry.CubePoint.at(ctx.probe().gridCell(), ctx.probe().levelZ()));
-        }
         if (hitRef == null) {
             return EditorHitResolution.none();
         }
         if (hitRef instanceof DungeonSelectionRef.RoomBoundaryRef
                 || hitRef instanceof DungeonSelectionRef.ConnectionRef
+                || hitRef instanceof DungeonSelectionRef.CorridorTileRef
                 || hitRef instanceof DungeonSelectionRef.CorridorNodeRef
-                || hitRef instanceof DungeonSelectionRef.CorridorCornerRef
-                || hitRef instanceof DungeonSelectionRef.CorridorSegmentRef
-                || hitRef instanceof DungeonSelectionRef.FloorCellRef) {
+                || hitRef instanceof DungeonSelectionRef.CorridorSegmentRef) {
             return EditorHitResolution.part(hitRef);
         }
-        if (hitRef instanceof DungeonSelectionRef.RoomRef
-                || hitRef instanceof DungeonSelectionRef.CorridorRef) {
+        if (hitRef instanceof DungeonSelectionRef.RoomRef || hitRef instanceof DungeonSelectionRef.CorridorRef) {
             return EditorHitResolution.owner(hitRef);
         }
         return EditorHitResolution.ref(hitRef);
@@ -152,19 +138,9 @@ public final class ConnectionsTool implements EditorTool {
             return null;
         }
         Corridor corridor = selectedCorridor();
-        Long selectedNodeId = selectedNodeId();
-        statusLabel.setText(draft == null ? "Kein offener Corridor-Build" : draft.statusMessage());
-        if (corridor == null) {
-            selectionLabel.setText("Innenwand: Tür. Außenwand: Corridor-Start.");
-            connectedRoomsLabel.setText("");
-            deleteNodeButton.setVisible(false);
-            deleteCorridorButton.setVisible(false);
-            return card;
-        }
+        statusLabel.setText(statusText());
         selectionLabel.setText(selectionText(corridor));
         connectedRoomsLabel.setText(connectedRoomsText(corridor));
-        deleteNodeButton.setVisible(selectedNodeId != null && corridor.findNode(selectedNodeId) != null);
-        deleteCorridorButton.setVisible(corridor.corridorId() != null);
         return card;
     }
 
@@ -185,55 +161,44 @@ public final class ConnectionsTool implements EditorTool {
             }
             if (isEditableDoorBoundary(roomBoundaryHit, boundary, layout, levelZ)) {
                 applySelection(ctx == null ? null : ctx.resolvedRef());
-                applyDoorEdit(
-                        boundary.clusterId(),
-                        roomBoundaryHit.boundarySegment2x(),
-                        false,
-                        ctx == null ? null : ctx.resolvedRef());
+                applyDoorEdit(boundary.clusterId(), roomBoundaryHit.boundarySegment2x(), false, ctx == null ? null : ctx.resolvedRef());
                 return true;
             }
             if (!boundary.exterior()) {
                 return false;
             }
             applySelection(ctx == null ? null : ctx.resolvedRef());
-            if (draft == null) {
-                startDraft(roomBoundaryHit, boundary);
+            CorridorEndpoint endpoint = corridorEndpoint(roomBoundaryHit, boundary);
+            if (pendingEndpoint instanceof PendingTile pendingTile) {
+                attachDoorToTile(endpoint, pendingTile);
                 return true;
             }
-            finishDraftWithRoom(roomBoundaryHit, boundary);
+            if (pendingEndpoint instanceof PendingDoor pendingDoor) {
+                createDoorToDoor(pendingDoor.endpoint(), endpoint);
+                return true;
+            }
+            pendingEndpoint = new PendingDoor(endpoint);
+            refreshStatePane();
             return true;
         }
-        if (draft != null && hit instanceof DungeonSelectionRef.FloorCellRef floorHit) {
-            GridPoint2x point2x = ctx == null || ctx.probe() == null
-                    ? GridPoint2x.cell(floorHit.cell().projectedCell())
-                    : ctx.probe().probePoint2x();
-            appendDraftNode(point2x);
-            return true;
-        }
-        if (draft != null && hit instanceof DungeonSelectionRef.CorridorNodeRef corridorNodeHit) {
+        if (hit instanceof DungeonSelectionRef.CorridorTileRef corridorTileHit) {
             applySelection(ctx == null ? null : ctx.resolvedRef());
-            finishDraftWithCorridorNode(corridorNodeHit);
+            PendingTile pendingTile = new PendingTile(
+                    corridorTileHit.corridorId(),
+                    corridorTileHit.cell().projectedCell());
+            if (pendingEndpoint instanceof PendingDoor pendingDoor) {
+                attachDoorToTile(pendingDoor.endpoint(), pendingTile);
+                return true;
+            }
+            pendingEndpoint = pendingTile;
+            refreshStatePane();
             return true;
         }
-        if (hit instanceof DungeonSelectionRef.CorridorCornerRef cornerHit) {
-            applySelection(ctx == null ? null : ctx.resolvedRef());
-            insertNode(cornerHit.corridorId(), cornerHit.segmentId(), cornerHit.point2x());
-            return true;
-        }
-        if (hit instanceof DungeonSelectionRef.CorridorSegmentRef segmentHit) {
-            applySelection(ctx == null ? null : ctx.resolvedRef());
-            insertNode(segmentHit.corridorId(), segmentHit.segmentId(), segmentHit.point2x());
-            return true;
-        }
-        if (hit instanceof DungeonSelectionRef.CorridorNodeRef) {
-            applySelection(ctx == null ? null : ctx.resolvedRef());
-            return true;
-        }
-        if (hit instanceof DungeonSelectionRef.ConnectionRef) {
-            applySelection(ctx == null ? null : ctx.resolvedRef());
-            return true;
-        }
-        if (hit instanceof DungeonSelectionRef.RoomRef) {
+        if (hit instanceof DungeonSelectionRef.ConnectionRef
+                || hit instanceof DungeonSelectionRef.CorridorRef
+                || hit instanceof DungeonSelectionRef.RoomRef
+                || hit instanceof DungeonSelectionRef.CorridorNodeRef
+                || hit instanceof DungeonSelectionRef.CorridorSegmentRef) {
             applySelection(ctx == null ? null : ctx.resolvedRef());
             return true;
         }
@@ -245,7 +210,7 @@ public final class ConnectionsTool implements EditorTool {
             return false;
         }
         if (hit instanceof DungeonSelectionRef.ConnectionRef connectionHit
-                && connectionHit.connectionKind() == features.world.dungeonmap.model.structures.connection.ConnectionKind.LOCAL) {
+                && connectionHit.connectionKind() == ConnectionKind.LOCAL) {
             applySelection(ctx == null ? null : ctx.resolvedRef());
             applyDoorEdit(
                     connectionHit.clusterId(),
@@ -254,158 +219,135 @@ public final class ConnectionsTool implements EditorTool {
                     clusterOwnerRef(connectionHit.clusterId()));
             return true;
         }
-        Long corridorId = corridorId(hit);
-        if (corridorId != null) {
+        if (hit instanceof DungeonSelectionRef.ConnectionRef connectionHit
+                && connectionHit.connectionKind() == ConnectionKind.CORRIDOR
+                && connectionHit.corridorId() != null) {
             applySelection(ctx == null ? null : ctx.resolvedRef());
-            Long mapId = mapState.activeMapId();
-            if (mapId == null) {
-                return true;
-            }
-            loadingService.submitMutation(
-                () -> {
-                    corridorApplicationService.delete(mapId, corridorId);
-                    return mapId;
-                },
-                updatedMapId -> updatedMapId,
-                ignored -> state.clearSelection(),
-                throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.handleDeletePressed()", throwable));
+            deleteCorridorDoor(connectionHit.corridorId(), connectionHit.boundarySegment2x());
+            return true;
+        }
+        if (hit instanceof DungeonSelectionRef.CorridorNodeRef corridorNodeHit
+                && corridorNodeHit.corridorId() != null
+                && corridorNodeHit.nodeId() != null) {
+            applySelection(ctx == null ? null : ctx.resolvedRef());
+            deleteCorridorNode(corridorNodeHit.corridorId(), corridorNodeHit.nodeId());
+            return true;
+        }
+        if (hit instanceof DungeonSelectionRef.CorridorSegmentRef corridorSegmentHit
+                && corridorSegmentHit.corridorId() != null
+                && corridorSegmentHit.segmentId() != null) {
+            applySelection(ctx == null ? null : ctx.resolvedRef());
+            deleteCorridorSegment(corridorSegmentHit.corridorId(), corridorSegmentHit.segmentId());
             return true;
         }
         return false;
     }
 
-    private void startDraft(
-            DungeonSelectionRef.RoomBoundaryRef hit,
-            DungeonLayout.RoomBoundaryDescription boundary
-    ) {
-        long firstNodeId = -1L;
-        CorridorNode startNode = roomBoundaryNode(hit, boundary, firstNodeId);
-        draft = new CorridorBuildDraft(
-                new ArrayList<>(List.of(startNode)),
-                new ArrayList<>(),
-                firstNodeId - 1,
-                -1L,
-                "Corridor gestartet. Freies Feld, weitere Außenwand oder Corridor-Node anklicken.");
-        state.clearPreview();
-        refreshStatePane();
-    }
-
-    private void appendDraftNode(GridPoint2x point2x) {
-        if (draft == null || point2x == null) {
+    private void createDoorToDoor(CorridorEndpoint start, CorridorEndpoint end) {
+        if (start == null || end == null) {
             return;
         }
-        CorridorNode node = new CorridorNode(draft.nextNodeId(), point2x, null, null, null);
-        CorridorSegment segment = new CorridorSegment(draft.nextSegmentId(), draft.nodes().getLast().nodeId(), node.nodeId());
-        draft.nodes().add(node);
-        draft.segments().add(segment);
-        draft = draft.advance("Node hinzugefügt. Weitere Außenwand, freies Feld oder Corridor-Node anklicken.");
-        showDraftPreview();
-    }
-
-    private void finishDraftWithRoom(
-            DungeonSelectionRef.RoomBoundaryRef hit,
-            DungeonLayout.RoomBoundaryDescription boundary
-    ) {
-        if (draft == null || hit == null || boundary == null) {
-            return;
-        }
-        CorridorNode endNode = roomBoundaryNode(hit, boundary, draft.nextNodeId());
-        ArrayList<CorridorNode> nodes = new ArrayList<>(draft.nodes());
-        nodes.add(endNode);
-        ArrayList<CorridorSegment> segments = new ArrayList<>(draft.segments());
-        segments.add(new CorridorSegment(draft.nextSegmentId(), nodes.get(nodes.size() - 2).nodeId(), endNode.nodeId()));
         Long mapId = mapState.activeMapId();
         if (mapId == null) {
             return;
         }
         loadingService.submitMutation(
-                () -> corridorApplicationService.create(mapId, mapState.activeProjectionLevel(), nodes, segments),
+                () -> corridorApplicationService.createDoorToDoor(new DungeonCorridorApplicationService.CreateDoorToDoorRequest(
+                        mapId,
+                        mapState.activeProjectionLevel(),
+                        start.asRequestEndpoint(),
+                        end.asRequestEndpoint())),
                 createdId -> mapId,
                 createdId -> {
-                    clearDraft();
+                    clearPendingEndpoint();
                     state.selectRef(corridorOwnerRef(createdId));
                 },
-                throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.finishDraftWithRoom()", throwable));
+                throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.createDoorToDoor()", throwable));
     }
 
-    private void finishDraftWithCorridorNode(DungeonSelectionRef.CorridorNodeRef hit) {
-        if (draft == null || hit == null || hit.nodeId() == null || hit.corridorId() == null) {
+    private void attachDoorToTile(CorridorEndpoint endpoint, PendingTile pendingTile) {
+        if (endpoint == null || pendingTile == null || pendingTile.corridorId() == null || pendingTile.tileCell() == null) {
             return;
         }
-        ArrayList<CorridorSegment> branchSegments = new ArrayList<>(draft.segments());
-        branchSegments.add(new CorridorSegment(draft.nextSegmentId(), draft.nodes().getLast().nodeId(), hit.nodeId()));
         Long mapId = mapState.activeMapId();
         if (mapId == null) {
             return;
         }
         loadingService.submitMutation(
                 () -> {
-                    corridorApplicationService.branch(mapId, hit.corridorId(), hit.nodeId(), draft.nodes(), branchSegments);
+                    corridorApplicationService.attachDoorToCorridorTile(new DungeonCorridorApplicationService.AttachDoorToCorridorTileRequest(
+                            mapId,
+                            pendingTile.corridorId(),
+                            mapState.activeProjectionLevel(),
+                            endpoint.asRequestEndpoint(),
+                            pendingTile.tileCell()));
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,
                 ignored -> {
-                    clearDraft();
-                    state.selectRef(corridorOwnerRef(hit.corridorId()));
+                    clearPendingEndpoint();
+                    state.selectRef(corridorOwnerRef(pendingTile.corridorId()));
                 },
-                throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.finishDraftWithCorridorNode()", throwable));
+                throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.attachDoorToTile()", throwable));
     }
 
-    private void insertNode(Long corridorId, Long segmentId, GridPoint2x point2x) {
-        Corridor corridor = mapState.activeMap().findCorridor(corridorId);
-        if (corridor == null || corridor.corridorId() == null || segmentId == null || point2x == null) {
-            return;
-        }
+    private void deleteCorridorNode(Long corridorId, Long nodeId) {
         Long mapId = mapState.activeMapId();
-        if (mapId == null) {
+        if (mapId == null || corridorId == null || nodeId == null) {
             return;
         }
         loadingService.submitMutation(
                 () -> {
-                    corridorApplicationService.insertNode(mapId, corridor.corridorId(), segmentId, point2x);
-                    return mapId;
-                },
-                updatedMapId -> updatedMapId,
-                ignored -> state.selectRef(corridorOwnerRef(corridor.corridorId())),
-                throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.insertNode()", throwable));
-    }
-
-    private void deleteSelectedNode() {
-        Corridor corridor = selectedCorridor();
-        Long mapId = mapState.activeMapId();
-        Long selectedNodeId = selectedNodeId();
-        if (corridor == null || mapId == null || selectedNodeId == null) {
-            return;
-        }
-        loadingService.submitMutation(
-                () -> {
-                    corridorApplicationService.deleteNode(mapId, corridor.corridorId(), selectedNodeId);
-                    return mapId;
-                },
-                updatedMapId -> updatedMapId,
-                ignored -> state.selectRef(corridorOwnerRef(corridor.corridorId())),
-                throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.deleteSelectedNode()", throwable));
-    }
-
-    private void deleteSelectedCorridor() {
-        Corridor corridor = selectedCorridor();
-        Long mapId = mapState.activeMapId();
-        if (corridor == null || corridor.corridorId() == null || mapId == null) {
-            return;
-        }
-        loadingService.submitMutation(
-                () -> {
-                    corridorApplicationService.delete(mapId, corridor.corridorId());
+                    corridorApplicationService.deleteNode(new DungeonCorridorApplicationService.DeleteCorridorNodeRequest(
+                            mapId,
+                            corridorId,
+                            nodeId));
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,
                 ignored -> state.clearSelection(),
-                throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.deleteSelectedCorridor()", throwable));
+                throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.deleteCorridorNode()", throwable));
+    }
+
+    private void deleteCorridorSegment(Long corridorId, Long segmentId) {
+        Long mapId = mapState.activeMapId();
+        if (mapId == null || corridorId == null || segmentId == null) {
+            return;
+        }
+        loadingService.submitMutation(
+                () -> {
+                    corridorApplicationService.deleteSegment(new DungeonCorridorApplicationService.DeleteCorridorSegmentRequest(
+                            mapId,
+                            corridorId,
+                            segmentId));
+                    return mapId;
+                },
+                updatedMapId -> updatedMapId,
+                ignored -> state.clearSelection(),
+                throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.deleteCorridorSegment()", throwable));
+    }
+
+    private void deleteCorridorDoor(Long corridorId, GridSegment2x boundarySegment2x) {
+        Long mapId = mapState.activeMapId();
+        if (mapId == null || corridorId == null || boundarySegment2x == null) {
+            return;
+        }
+        loadingService.submitMutation(
+                () -> {
+                    corridorApplicationService.deleteDoor(new DungeonCorridorApplicationService.DeleteCorridorDoorRequest(
+                            mapId,
+                            corridorId,
+                            boundarySegment2x));
+                    return mapId;
+                },
+                updatedMapId -> updatedMapId,
+                ignored -> state.clearSelection(),
+                throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.deleteCorridorDoor()", throwable));
     }
 
     private void applyDoorEdit(
             Long clusterId,
-            features.world.dungeonmap.model.geometry.GridSegment2x segment2x,
+            GridSegment2x segment2x,
             boolean deleteBoundary,
             DungeonSelectionRef followUpRef
     ) {
@@ -452,60 +394,6 @@ public final class ConnectionsTool implements EditorTool {
         return projectedCluster != null && projectedCluster.canCreateDoor(hit.boundarySegment2x());
     }
 
-    private static CorridorNode roomBoundaryNode(
-            DungeonSelectionRef.RoomBoundaryRef hit,
-            DungeonLayout.RoomBoundaryDescription boundary,
-            long nodeId
-    ) {
-        GridPoint2x point2x = GridPoint2x.edgeCenter(boundary.roomCell(), boundary.outwardDirection());
-        return new CorridorNode(
-                nodeId,
-                point2x,
-                hit.roomId(),
-                boundary.roomCell(),
-                boundary.outwardDirection());
-    }
-
-    private void showDraftPreview() {
-        if (draft == null || draft.segments().isEmpty()) {
-            state.clearPreview();
-            refreshStatePane();
-            return;
-        }
-        Corridor preview = mapState.activeMap().planCorridor(mapState.activeProjectionLevel(), draft.nodes(), draft.segments());
-        DungeonLayout previewLayout = mapState.activeMap().withAddedCorridor(preview);
-        state.showPreview(new EditorPreview.LayoutPreview(previewLayout.projectedToLevel(mapState.activeProjectionLevel())));
-        refreshStatePane();
-    }
-
-    private void clearDraft() {
-        draft = null;
-        state.clearPreview();
-        refreshStatePane();
-    }
-
-    private Corridor selectedCorridor() {
-        Long corridorId = selectedCorridorId();
-        if (corridorId == null) {
-            return null;
-        }
-        return mapState.activeMap().findCorridor(corridorId);
-    }
-
-    private static Long corridorId(DungeonSelectionRef ref) {
-        return switch (ref) {
-            case DungeonSelectionRef.CorridorRef corridorRef -> corridorRef.corridorId();
-            case DungeonSelectionRef.CorridorNodeRef corridorNodeRef -> corridorNodeRef.corridorId();
-            case DungeonSelectionRef.CorridorCornerRef corridorCornerRef -> corridorCornerRef.corridorId();
-            case DungeonSelectionRef.CorridorSegmentRef corridorSegmentRef -> corridorSegmentRef.corridorId();
-            case DungeonSelectionRef.ConnectionRef connectionRef ->
-                    connectionRef.connectionKind() == features.world.dungeonmap.model.structures.connection.ConnectionKind.CORRIDOR
-                            ? connectionRef.corridorId()
-                            : null;
-            default -> null;
-        };
-    }
-
     private DungeonSelectionRef resolvedHitRef(
             features.world.dungeonmap.shell.interaction.DungeonHitSnapshot snapshot,
             DungeonLayout layout,
@@ -525,7 +413,7 @@ public final class ConnectionsTool implements EditorTool {
     }
 
     private DungeonSelectionRef resolveCreateRef(List<DungeonSelectionRef> refs, DungeonLayout layout, int levelZ) {
-        if (draft == null) {
+        if (pendingEndpoint == null) {
             DungeonSelectionRef editableDoor = firstMatching(refs, ref ->
                     ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundary
                             && isEditableDoorBoundary(
@@ -542,31 +430,40 @@ public final class ConnectionsTool implements EditorTool {
             if (exteriorBoundary != null) {
                 return exteriorBoundary;
             }
-            DungeonSelectionRef graphHandle = firstMatching(refs, ref ->
-                    ref instanceof DungeonSelectionRef.CorridorNodeRef
-                            || ref instanceof DungeonSelectionRef.CorridorCornerRef
-                            || ref instanceof DungeonSelectionRef.CorridorSegmentRef);
-            if (graphHandle != null) {
-                return graphHandle;
+            DungeonSelectionRef corridorTile = firstMatching(refs, ref -> ref instanceof DungeonSelectionRef.CorridorTileRef);
+            if (corridorTile != null) {
+                return corridorTile;
             }
             return firstMatching(refs, ref ->
                     ref instanceof DungeonSelectionRef.ConnectionRef
                             || ref instanceof DungeonSelectionRef.RoomRef
                             || ref instanceof DungeonSelectionRef.CorridorRef);
         }
-        DungeonSelectionRef finishBoundary = firstMatching(refs, ref ->
+        if (pendingEndpoint instanceof PendingDoor) {
+            DungeonSelectionRef corridorTile = firstMatching(refs, ref -> ref instanceof DungeonSelectionRef.CorridorTileRef);
+            if (corridorTile != null) {
+                return corridorTile;
+            }
+            DungeonSelectionRef exteriorBoundary = firstMatching(refs, ref ->
+                    ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundary
+                            && isExteriorBoundary(layout, roomBoundary, levelZ));
+            if (exteriorBoundary != null) {
+                return exteriorBoundary;
+            }
+            return firstMatching(refs, ref ->
+                    ref instanceof DungeonSelectionRef.ConnectionRef
+                            || ref instanceof DungeonSelectionRef.RoomRef
+                            || ref instanceof DungeonSelectionRef.CorridorRef);
+        }
+        DungeonSelectionRef exteriorBoundary = firstMatching(refs, ref ->
                 ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundary
                         && isExteriorBoundary(layout, roomBoundary, levelZ));
-        if (finishBoundary != null) {
-            return finishBoundary;
+        if (exteriorBoundary != null) {
+            return exteriorBoundary;
         }
-        DungeonSelectionRef branchNode = firstMatching(refs, ref -> ref instanceof DungeonSelectionRef.CorridorNodeRef);
-        if (branchNode != null) {
-            return branchNode;
-        }
-        DungeonSelectionRef floorCell = firstMatching(refs, ref -> ref instanceof DungeonSelectionRef.FloorCellRef);
-        if (floorCell != null) {
-            return floorCell;
+        DungeonSelectionRef corridorTile = firstMatching(refs, ref -> ref instanceof DungeonSelectionRef.CorridorTileRef);
+        if (corridorTile != null) {
+            return corridorTile;
         }
         return firstMatching(refs, ref ->
                 ref instanceof DungeonSelectionRef.ConnectionRef
@@ -577,11 +474,21 @@ public final class ConnectionsTool implements EditorTool {
     private static DungeonSelectionRef resolveDeleteRef(List<DungeonSelectionRef> refs) {
         DungeonSelectionRef localConnection = firstMatching(refs, ref ->
                 ref instanceof DungeonSelectionRef.ConnectionRef connection
-                        && connection.connectionKind() == features.world.dungeonmap.model.structures.connection.ConnectionKind.LOCAL);
+                        && connection.connectionKind() == ConnectionKind.LOCAL);
         if (localConnection != null) {
             return localConnection;
         }
-        return firstMatching(refs, ref -> corridorId(ref) != null);
+        DungeonSelectionRef corridorDoor = firstMatching(refs, ref ->
+                ref instanceof DungeonSelectionRef.ConnectionRef connection
+                        && connection.connectionKind() == ConnectionKind.CORRIDOR);
+        if (corridorDoor != null) {
+            return corridorDoor;
+        }
+        DungeonSelectionRef corridorNode = firstMatching(refs, ref -> ref instanceof DungeonSelectionRef.CorridorNodeRef);
+        if (corridorNode != null) {
+            return corridorNode;
+        }
+        return firstMatching(refs, ref -> ref instanceof DungeonSelectionRef.CorridorSegmentRef);
     }
 
     private static boolean isExteriorBoundary(DungeonLayout layout, DungeonSelectionRef.RoomBoundaryRef ref, int levelZ) {
@@ -610,9 +517,13 @@ public final class ConnectionsTool implements EditorTool {
         }
     }
 
-    private Long selectedCorridorId() {
-        Corridor corridor = mapState.activeMap().corridor(state.selectedRef());
-        return corridor == null ? null : corridor.corridorId();
+    private void clearPendingEndpoint() {
+        pendingEndpoint = null;
+        refreshStatePane();
+    }
+
+    private Corridor selectedCorridor() {
+        return mapState.activeMap().corridor(state.selectedRef());
     }
 
     private Long selectedNodeId() {
@@ -627,7 +538,32 @@ public final class ConnectionsTool implements EditorTool {
                 : null;
     }
 
+    private String statusText() {
+        if (activeTool == DungeonEditorTool.CONNECTIONS_DELETE) {
+            return "Segment, Node oder Corridor-Tür anklicken.";
+        }
+        return switch (pendingEndpoint) {
+            case PendingDoor ignored -> "Jetzt Außenwand oder Corridor-Tile anklicken.";
+            case PendingTile ignored -> "Jetzt Außenwand anklicken.";
+            case null -> "Außenwand oder Corridor-Tile anklicken.";
+        };
+    }
+
     private String selectionText(Corridor corridor) {
+        if (activeTool == DungeonEditorTool.CONNECTIONS_DELETE) {
+            Long selectedNodeId = selectedNodeId();
+            if (selectedNodeId != null) {
+                return "Löschen: Node " + selectedNodeId;
+            }
+            Long selectedSegmentId = selectedSegmentId();
+            if (selectedSegmentId != null) {
+                return "Löschen: Segment " + selectedSegmentId;
+            }
+            if (state.selectedRef() instanceof DungeonSelectionRef.ConnectionRef connectionRef
+                    && connectionRef.connectionKind() == ConnectionKind.CORRIDOR) {
+                return "Löschen: Corridor-Tür";
+            }
+        }
         Long selectedNodeId = selectedNodeId();
         if (selectedNodeId != null) {
             return "Gewählter Node: " + selectedNodeId;
@@ -635,6 +571,12 @@ public final class ConnectionsTool implements EditorTool {
         Long selectedSegmentId = selectedSegmentId();
         if (selectedSegmentId != null) {
             return "Gewähltes Segment: " + selectedSegmentId;
+        }
+        if (pendingEndpoint instanceof PendingDoor pendingDoor) {
+            return "Start: " + roomName(pendingDoor.endpoint().roomId());
+        }
+        if (pendingEndpoint instanceof PendingTile pendingTile) {
+            return "Start-Tile: " + pendingTile.tileCell().x() + "," + pendingTile.tileCell().y();
         }
         return corridor == null ? "Kein Corridor gewählt" : "Gewählter Corridor: " + corridor.corridorId();
     }
@@ -644,12 +586,14 @@ public final class ConnectionsTool implements EditorTool {
             return "";
         }
         String rooms = corridor.connectedRoomIds().stream()
-                .map(roomId -> {
-                    Room room = mapState.activeMap().findRoom(roomId);
-                    return room == null ? "Raum " + roomId : room.name();
-                })
+                .map(this::roomName)
                 .collect(Collectors.joining(", "));
         return rooms.isBlank() ? "" : "Verbunden: " + rooms;
+    }
+
+    private String roomName(Long roomId) {
+        Room room = roomId == null ? null : mapState.activeMap().findRoom(roomId);
+        return room == null ? "Raum " + roomId : room.name();
     }
 
     private void refreshStatePane() {
@@ -658,29 +602,33 @@ public final class ConnectionsTool implements EditorTool {
         }
     }
 
-    private record CorridorBuildDraft(
-            ArrayList<CorridorNode> nodes,
-            ArrayList<CorridorSegment> segments,
-            long nextNodeId,
-            long nextSegmentId,
-            String statusMessage
+    private static CorridorEndpoint corridorEndpoint(
+            DungeonSelectionRef.RoomBoundaryRef hit,
+            DungeonLayout.RoomBoundaryDescription boundary
     ) {
-        private CorridorBuildDraft advance(String statusMessage) {
-            return new CorridorBuildDraft(nodes, segments, nextNodeId - 1, nextSegmentId - 1, statusMessage);
-        }
+        return new CorridorEndpoint(hit.roomId(), boundary.roomCell(), boundary.outwardDirection());
     }
 
     private static DungeonSelectionRef corridorOwnerRef(Long corridorId) {
-        if (corridorId == null) {
-            return null;
-        }
-        return new DungeonSelectionRef.CorridorRef(corridorId);
+        return corridorId == null ? null : new DungeonSelectionRef.CorridorRef(corridorId);
     }
 
     private static DungeonSelectionRef clusterOwnerRef(Long clusterId) {
-        if (clusterId == null) {
-            return null;
+        return clusterId == null ? null : new DungeonSelectionRef.ClusterRef(clusterId);
+    }
+
+    private sealed interface PendingEndpoint permits PendingDoor, PendingTile {
+    }
+
+    private record PendingDoor(CorridorEndpoint endpoint) implements PendingEndpoint {
+    }
+
+    private record PendingTile(Long corridorId, CellCoord tileCell) implements PendingEndpoint {
+    }
+
+    private record CorridorEndpoint(Long roomId, CellCoord roomCell, features.world.dungeonmap.model.geometry.CardinalDirection outwardDirection) {
+        private DungeonCorridorApplicationService.CorridorDoorEndpoint asRequestEndpoint() {
+            return new DungeonCorridorApplicationService.CorridorDoorEndpoint(roomId, roomCell, outwardDirection);
         }
-        return new DungeonSelectionRef.ClusterRef(clusterId);
     }
 }

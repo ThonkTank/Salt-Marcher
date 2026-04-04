@@ -18,7 +18,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `DungeonLayout` is the immutable global lookup over direct structure owners: room clusters, corridors, stairs, transitions, connections, traversable cells, and spatial indexes.
 - Corridors, stairs, and transitions are first-class persisted structures. There is no second aggregate that owns their geometry.
 - `Room` and `Corridor` expose shared surface geometry only through `StructureObject`.
-- `Corridor` keeps its node/segment graph as truth, stores node and route geometry directly as final `GridPoint2x`/`GridSegment2x`, keeps room-bound endpoints on absolute `CellCoord` room cells in memory, and compiles that graph into the same `StructureDescriptor`/`StructureObject` surface model used by rooms, including opening segments for room-bound endpoints.
+- `Corridor` keeps its node/segment graph as truth, stores node and route geometry directly as final `GridPoint2x`/`GridSegment2x`, keeps room-bound endpoints on absolute `CellCoord` room cells in memory, and compiles that graph into the same `StructureDescriptor`/`StructureObject` surface model used by rooms, including opening segments for room-bound endpoints. Junction nodes are explicit authored state: door-to-corridor attachments and tile-drags may create them, but routing itself must not invent extra nodes.
 - Room paint/delete/boundary edits persist room-owned `StructureDescriptor` truth plus derived cluster metadata. They do not reroute or regenerate corridors or stairs.
 - Connection doors and room exit narration are level-aware. Shared boundary/door queries must keep `levelZ` together with the 2x segment instead of collapsing identical segments across floors.
 - `Wall` and `Door` are 2x-native boundary objects keyed by normalized `GridSegment2x` collections. Do not reintroduce vertex-edge wrapper geometry in productive wall/door flows.
@@ -39,7 +39,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
   - `DungeonLayout` stays the feature-wide lookup surface, not a second mutation owner.
 - `application/`
   - `room/` owns room topology, boundary edits, cluster moves, and room narration through the central `DungeonRoomApplicationService` workflow seam.
-  - `corridor/` owns corridor graph workflow orchestration for create, branch, insert, move, delete, while canonical graph transforms stay on `Corridor` and persistence-specific id assignment stays on `DungeonCorridorRepository`.
+  - `corridor/` owns corridor graph workflow orchestration for door-to-door create, door-to-tile attach, tile-node promotion, node move, and local delete/split, while canonical graph transforms stay on `Corridor` and persistence-specific id assignment stays on `DungeonCorridorRepository`.
   - `runtime/` owns cell-only navigation, TILE persistence, runtime surface resolution, surface refs/exits, flat runtime actions, and runtime state repair.
   - `transition/` owns transition create/place/delete flows plus transition target lookup through one `DungeonTransitionApplicationService`. Do not split read options into a second application owner.
   - `support/` owns transaction helpers.
@@ -99,11 +99,11 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
   4. dispatch `pressed`, `dragged`, or `released` with an `EditorToolContext` that carries the resolved hit ref and selection ref
 - `EditorTool` implementations own gesture meaning. Shared state is justified only when multiple collaborators need it.
 - Tool responsibilities:
-- `SelectionTool` owns semantic selection plus cluster-drag and corridor-node drag gestures.
+- `SelectionTool` owns semantic selection plus cluster-drag and corridor-node drag gestures. Dragging a plain corridor tile first promotes that tile to an explicit node and then hands the drag to that new node; a simple click on a corridor tile must not create state.
 - `RoomNarrationPane` owns the room narration editor UI for the current selection; `SelectionTool` no longer embeds that form logic.
 - `PaintTool` owns room paint/delete sessions from resolved `FloorCellRef` hits and publishes paint previews as `CellCoord` sets, not hydrierten room structures.
 - `BoundaryTool` owns wall-path drafting. Draft state stays local to the tool; shared state exposes only boundary preview geometry.
-- `ConnectionsTool` owns door edits, corridor drafting, node insertion, and corridor deletion. Corridor graph edits use explicit 2x node/segment points, while preview layouts use `DungeonLayout` corridor replacement helpers instead of hand-built temporary layouts.
+- `ConnectionsTool` owns door edits plus the two-click corridor authoring flow: `door <-> door` creates a fresh corridor, `door <-> corridor tile` attaches another room to an existing corridor, and delete mode removes corridor segments, explicit nodes, or corridor-bound doors. It must not restore freehand waypoint drafting or corner-insert gestures.
 - `TransitionTool` owns transition create/delete gestures and keeps its form state local to the tool. It should carry selected destinations directly as `DungeonTransitionDestination` plus a small local mode hint, not as parallel target-id fields that are rebuilt into destinations later.
 - `DungeonHitSnapshot.firstRefMatching(...)` and `orderedRefs()` are the shared helpers for per-tool hit resolution. Prefer these over ad-hoc candidate walks.
 - Selection identity is semantic. Compare typed owner refs from `DungeonSelectionRef` instead of reconstructing owners through generic ids or parsing helpers in renderers.
@@ -156,7 +156,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `RoomCluster` owns door editability on internal boundaries. Do not leave door-create/delete validation only in editor tools.
 - `Connection` owns connectivity; `Door` is the boundary object exposed through that connection.
 - Model-side exit descriptors and low-level door exit catalogs belong with room/connection truth, not under runtime or room application workflows. Public room/corridor exit-description queries live on `DungeonLayout`, the shared owner of structure lookup plus connection context; do not route runtime/editor callers through a second public room-exit helper owner.
-- `Corridor` is a first-class structure with stable identity, nodes, segments, room bindings, and derived geometry. In memory and at persistence seams it owns canonical `GridPoint2x`/`GridSegment2x` path truth plus `CellCoord` room bindings, and it owns its direct graph transforms (`move`, `insert`, `delete`, `branch`) instead of delegating them to a second public graph-editor helper.
+- `Corridor` is a first-class structure with stable identity, nodes, segments, room bindings, and derived geometry. In memory and at persistence seams it owns canonical `GridPoint2x`/`GridSegment2x` path truth plus `CellCoord` room bindings, and it owns its direct graph transforms (`attach`, `promote tile`, `move`, `delete segment`, `delete node`) instead of delegating them to a second public graph-editor helper.
 - `DungeonStair` is a first-class structure with stable identity and explicit 3D path geometry. Exits are derived views, not persisted second truths.
 - `DungeonTransition` owns transition identity, placement anchor, destination, and optional bidirectional link. Unplaced transitions are valid; spatial queries must guard for null anchor or placement state.
 - Transition workflows should call `DungeonTransitionApplicationService` directly with either a direct `DungeonTransitionDestination` or a prepared transition id. Do not reintroduce request DTOs or catalog option types that decompose the destination back into enum-and-id fields before writing.
@@ -174,7 +174,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - Legacy dungeon storage compatibility is intentionally unsupported. Current code works only against the current schema and should fail fast on broken or stale rows instead of normalizing them at runtime.
 - Room geometry is loaded directly from persisted room-owned `StructureDescriptor` rows.
 - New dungeons start with a neutral default room (`Raum n`), not an implicit entrance concept.
-- Cluster move previews and persisted cluster moves share the same explicit corridor rewrite rule: horizontal room-bound endpoints move with their rooms, then free corridor nodes rebind from the rerouted corridor topology instead of following a raw delta; structural free nodes must match back onto the new junction topology, degree-2 free nodes may be redistributed with local insert/delete repair along the rerouted anchor chains, and level moves detach room bindings in place.
+- Cluster move previews and persisted cluster moves share the same explicit corridor rewrite rule: horizontal room-bound endpoints move with their rooms and reroute only their adjacent segments, explicit free nodes keep their absolute positions, and level moves detach room bindings in place.
 - Storage model:
   - clusters: membership owner plus derived `center_x`, `center_y`, `level_z` metadata only
   - rooms: `dungeon_rooms` row plus per-level descriptor tables `dungeon_room_levels`, `dungeon_room_level_seeds`, and `dungeon_room_level_segments`

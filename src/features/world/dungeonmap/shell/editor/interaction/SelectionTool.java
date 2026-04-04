@@ -31,6 +31,7 @@ public final class SelectionTool implements EditorTool {
 
     private ClusterDragSession dragSession;
     private CorridorNodeDragSession corridorNodeDragSession;
+    private CorridorTileDragSession corridorTileDragSession;
     private DungeonEditorTool activeTool;
     private Runnable refreshCallback = () -> { };
     private DungeonSelectionRef previousNarrationSelectionRef;
@@ -97,6 +98,16 @@ public final class SelectionTool implements EditorTool {
                     corridorNodeHit.point2x());
             return true;
         }
+        if (hit instanceof DungeonSelectionRef.CorridorTileRef corridorTileHit
+                && corridorTileHit.corridorId() != null) {
+            state.selectRef(resolvedSelectionRef);
+            corridorTileDragSession = new CorridorTileDragSession(
+                    corridorTileHit.corridorId(),
+                    corridorTileHit.cell().projectedCell(),
+                    corridorTileHit.point2x(),
+                    corridorTileHit.point2x());
+            return true;
+        }
         if (hit instanceof DungeonSelectionRef.ClusterRef clusterLabelHit) {
             state.selectRef(resolvedSelectionRef);
             dragSession = ClusterDragSession.start(
@@ -139,6 +150,20 @@ public final class SelectionTool implements EditorTool {
             state.showPreview(new EditorPreview.LayoutPreview(previewCorridorMap()));
             return true;
         }
+        if (corridorTileDragSession != null) {
+            if (event == null || !event.isPrimaryButtonDown()) {
+                return false;
+            }
+            GridPoint2x point2x = ctx == null || ctx.probe() == null
+                    ? GridPoint2x.cell(event.gridCell())
+                    : ctx.probe().probePoint2x();
+            if (Objects.equals(point2x, corridorTileDragSession.currentPoint())) {
+                return true;
+            }
+            corridorTileDragSession = corridorTileDragSession.withCurrentPoint(point2x);
+            state.showPreview(new EditorPreview.LayoutPreview(previewCorridorTileMap()));
+            return true;
+        }
         if (dragSession == null || event == null || !event.isPrimaryButtonDown()) {
             return false;
         }
@@ -162,7 +187,11 @@ public final class SelectionTool implements EditorTool {
             if (!Objects.equals(current.startPoint(), current.currentPoint()) && mapId != null) {
                 loadingService.submitMutation(
                         () -> {
-                            corridorApplicationService.moveNode(mapId, current.corridorId(), current.nodeId(), current.currentPoint());
+                            corridorApplicationService.moveNode(new DungeonCorridorApplicationService.MoveCorridorNodeRequest(
+                                    mapId,
+                                    current.corridorId(),
+                                    current.nodeId(),
+                                    current.currentPoint()));
                             return mapId;
                         },
                         updatedMapId -> updatedMapId,
@@ -170,6 +199,29 @@ public final class SelectionTool implements EditorTool {
                                 current.corridorId(),
                                 current.nodeId(),
                                 current.currentPoint())),
+                        throwable -> UiErrorReporter.reportBackgroundFailure("SelectionTool.released()", throwable));
+            }
+            return true;
+        }
+        if (corridorTileDragSession != null) {
+            CorridorTileDragSession current = corridorTileDragSession;
+            corridorTileDragSession = null;
+            state.clearPreview();
+            Long mapId = mapState.activeMapId();
+            if (!Objects.equals(current.startPoint(), current.currentPoint()) && mapId != null) {
+                loadingService.submitMutation(
+                        () -> {
+                            corridorApplicationService.promoteTileNodeAndMove(
+                                    new DungeonCorridorApplicationService.PromoteCorridorTileNodeRequest(
+                                            mapId,
+                                            current.corridorId(),
+                                            mapState.activeProjectionLevel(),
+                                            current.tileCell(),
+                                            current.currentPoint()));
+                            return mapId;
+                        },
+                        updatedMapId -> updatedMapId,
+                        ignored -> state.selectRef(new DungeonSelectionRef.CorridorRef(current.corridorId())),
                         throwable -> UiErrorReporter.reportBackgroundFailure("SelectionTool.released()", throwable));
             }
             return true;
@@ -207,6 +259,9 @@ public final class SelectionTool implements EditorTool {
             return EditorHitResolution.none();
         }
         if (ref instanceof DungeonSelectionRef.CorridorNodeRef) {
+            return EditorHitResolution.part(ref);
+        }
+        if (ref instanceof DungeonSelectionRef.CorridorTileRef) {
             return EditorHitResolution.part(ref);
         }
         return EditorHitResolution.owner(ref);
@@ -254,6 +309,7 @@ public final class SelectionTool implements EditorTool {
     private void clear() {
         dragSession = null;
         corridorNodeDragSession = null;
+        corridorTileDragSession = null;
         state.clearPreview();
     }
 
@@ -266,6 +322,7 @@ public final class SelectionTool implements EditorTool {
 
     private static boolean isRelevantRef(DungeonSelectionRef ref) {
         return ref instanceof DungeonSelectionRef.CorridorNodeRef
+                || ref instanceof DungeonSelectionRef.CorridorTileRef
                 || ref instanceof DungeonSelectionRef.ClusterRef
                 || ref instanceof DungeonSelectionRef.RoomRef
                 || ref instanceof DungeonSelectionRef.RoomBoundaryRef
@@ -298,6 +355,23 @@ public final class SelectionTool implements EditorTool {
             return null;
         }
         Corridor updated = corridor.movedNode(mapState.activeMap(), corridorNodeDragSession.nodeId(), corridorNodeDragSession.currentPoint());
+        return mapState.activeMap()
+                .withUpdatedCorridor(updated)
+                .projectedToLevel(mapState.activeProjectionLevel());
+    }
+
+    private DungeonLayout previewCorridorTileMap() {
+        if (corridorTileDragSession == null) {
+            return null;
+        }
+        Corridor corridor = mapState.activeMap().findCorridor(corridorTileDragSession.corridorId());
+        if (corridor == null) {
+            return null;
+        }
+        Corridor updated = corridor.promotedTileNodeAndMoved(
+                mapState.activeMap(),
+                corridorTileDragSession.tileCell(),
+                corridorTileDragSession.currentPoint());
         return mapState.activeMap()
                 .withUpdatedCorridor(updated)
                 .projectedToLevel(mapState.activeProjectionLevel());
@@ -337,6 +411,17 @@ public final class SelectionTool implements EditorTool {
     ) {
         private CorridorNodeDragSession withCurrentPoint(GridPoint2x currentPoint) {
             return new CorridorNodeDragSession(corridorId, nodeId, startPoint, currentPoint);
+        }
+    }
+
+    private record CorridorTileDragSession(
+            long corridorId,
+            CellCoord tileCell,
+            GridPoint2x startPoint,
+            GridPoint2x currentPoint
+    ) {
+        private CorridorTileDragSession withCurrentPoint(GridPoint2x currentPoint) {
+            return new CorridorTileDragSession(corridorId, tileCell, startPoint, currentPoint);
         }
     }
 }
