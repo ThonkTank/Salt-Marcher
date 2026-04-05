@@ -157,9 +157,10 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 
 ### Key structure rules
 
-- `Room` owns room identity, narration, per-level anchors, and derived room topology only.
+- `Room` owns room identity, narration, and per-level anchors only. It does not cache or expose topology.
 - `RoomCluster` owns canonical cluster structure, multi-room topology, grouping, adjacency, paint/delete/boundary mutation semantics, and cluster moves. Its aggregate cells stay on `CellCoord`, and its internal/exterior boundary edits use final `GridSegment2x`.
 - `RoomCluster` owns its mutation and boundary-path semantics directly. Do not reintroduce a second public planner/helper type or diff payload that mirrors cluster topology decisions from the outside.
+- `RoomCluster` may derive private room partitions from its `StructureObject` plus room metadata for queries, but that partition remains read-only and never becomes persistent or mutation truth.
 - `RoomCluster`, `Corridor`, and transition-local placements all emit the same concrete `DungeonConnection`; do not reintroduce parallel `LocalConnection`, `CorridorConnection`, or `TransitionConnection` model types.
 - `RoomCluster` owns door editability and local door moves on internal boundaries. Do not leave local door create/delete/move validation only in editor tools.
 - `Connection` owns connectivity; `Door` is the boundary object exposed through that connection.

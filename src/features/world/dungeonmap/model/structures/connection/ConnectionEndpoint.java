@@ -14,10 +14,6 @@ public record ConnectionEndpoint(ConnectionEndpointType type, Long id) {
         return new ConnectionEndpoint(ConnectionEndpointType.CORRIDOR, corridorId);
     }
 
-    public static ConnectionEndpoint stair(Long stairId) {
-        return new ConnectionEndpoint(ConnectionEndpointType.STAIR, stairId);
-    }
-
     public static ConnectionEndpoint transition(Long transitionId) {
         return new ConnectionEndpoint(ConnectionEndpointType.TRANSITION, transitionId);
     }

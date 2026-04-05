@@ -33,6 +33,7 @@ Use it together with the parent `dungeonmap/AGENTS.md` and the repository root `
 
 - `Room` owns room identity, narration, and per-level anchors only. It does not cache or expose topology.
 - `RoomCluster` owns canonical cluster structure, multi-room topology, adjacency, paint/delete/boundary mutation semantics, cluster moves, and derived local connections.
+- `RoomCluster` may keep a private room partition derived from cluster structure plus room metadata for lookup queries, but that partition is read-only and must not become persistence or mutation truth.
 - Room-surface queries such as cells, floors, boundaries, openings, and centers must resolve through `RoomCluster` or `DungeonLayout`, not directly from `Room`.
 - Room paint/delete/boundary/floor edits mutate cluster-owned `StructureDescriptor` truth plus room metadata. They do not reroute or regenerate corridors or stairs.
 - `Connection` owns connectivity, entry resolution, occupied-position projection, and passive physical carrier data. `Door` is the boundary object exposed through door-shaped connections.

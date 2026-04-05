@@ -9,7 +9,6 @@ import features.world.dungeonmap.model.structures.connection.ConnectionEndpointT
 import features.world.dungeonmap.model.structures.connection.RoomExitDescriptor;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 
 import java.util.Objects;
@@ -108,10 +107,6 @@ final class DungeonRuntimeExitFactory {
                     .distinct()
                     .reduce((left, right) -> left + ", " + right)
                     .orElse("");
-        }
-        if (destination.type() == ConnectionEndpointType.STAIR && destination.id() != null) {
-            DungeonStair stair = layout.findStair(destination.id());
-            return stair == null ? "Treppe" : stair.label();
         }
         if (destination.type() == ConnectionEndpointType.TRANSITION && destination.id() != null) {
             DungeonTransition transition = layout.findTransition(destination.id());
