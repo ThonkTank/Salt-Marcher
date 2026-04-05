@@ -1,19 +1,21 @@
 package features.world.dungeonmap.model.objects;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.model.geometry.EdgeShape;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 
-public final class Wall {
+public final class Wall extends EdgeShape {
 
     private final List<GridSegment2x> segments2x;
 
     // A wall is just a normalized 2x boundary path whose domain rule is that passage is always blocked.
     public Wall(Collection<GridSegment2x> segments) {
-        this.segments2x = normalizeSegments(segments);
+        super(normalizeBoundarySegments(segments));
+        this.segments2x = normalizeBoundarySegments(segments);
     }
 
     public static Wall fromSegments(Collection<GridSegment2x> segments) {
@@ -38,7 +40,7 @@ public final class Wall {
         return true;
     }
 
-    private static List<GridSegment2x> normalizeSegments(Collection<GridSegment2x> segments) {
+    private static List<GridSegment2x> normalizeBoundarySegments(Collection<GridSegment2x> segments) {
         LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
         for (GridSegment2x segment : GridSegment2x.boundarySteps(segments).stream()
                 .sorted(GridSegment2x.ORDER)

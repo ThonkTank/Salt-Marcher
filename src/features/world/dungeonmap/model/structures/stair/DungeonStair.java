@@ -1,7 +1,9 @@
 package features.world.dungeonmap.model.structures.stair;
 
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 
@@ -23,7 +25,7 @@ import java.util.Set;
  * <p>If later editing wants templates, radius, direction, or other generation inputs, those belong in
  * editor/application code. The persisted structure truth must stay this explicit path plus its authored stop levels.
  */
-public final class DungeonStair {
+public final class DungeonStair extends TileShape {
 
     private final Long stairId;
     private final long mapId;
@@ -41,6 +43,7 @@ public final class DungeonStair {
             List<CubePoint> path,
             Set<Integer> stopLevels
     ) {
+        super(TileShape.fromCubePoints(path));
         this.stairId = stairId;
         this.mapId = mapId;
         this.name = normalizeName(name);
@@ -229,6 +232,20 @@ public final class DungeonStair {
             result.add(node.z());
         }
         return Collections.unmodifiableSet(result);
+    }
+
+    public DungeonStair movedBy(CellCoord delta, int levelDelta) {
+        CellCoord resolvedDelta = delta == null ? new CellCoord(0, 0) : delta;
+        if ((resolvedDelta.x() == 0 && resolvedDelta.y() == 0) && levelDelta == 0) {
+            return this;
+        }
+        List<CubePoint> translatedPath = path.stream()
+                .map(point -> CubePoint.at(point.projectedCell().add(resolvedDelta), point.z() + levelDelta))
+                .toList();
+        Set<Integer> translatedStops = stopLevels.stream()
+                .map(stopLevel -> stopLevel + levelDelta)
+                .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
+        return resolved(stairId, mapId, name, translatedPath, translatedStops);
     }
 
     private static String normalizeName(String name) {

@@ -1,13 +1,14 @@
 package features.world.dungeonmap.model.objects;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.model.geometry.EdgeShape;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 
-public final class Door {
+public final class Door extends EdgeShape {
 
     private final DoorState doorState;
     private final List<GridSegment2x> segments2x;
@@ -17,8 +18,9 @@ public final class Door {
     }
 
     public Door(Collection<GridSegment2x> segments, DoorState doorState) {
+        super(normalizeBoundarySegments(segments));
         this.doorState = doorState == null ? DoorState.CLOSED : doorState;
-        this.segments2x = normalizeSegments(segments);
+        this.segments2x = normalizeBoundarySegments(segments);
     }
 
     public static Door fromSegments(Collection<GridSegment2x> segments, DoorState doorState) {
@@ -47,7 +49,7 @@ public final class Door {
         return segments2x;
     }
 
-    private static List<GridSegment2x> normalizeSegments(Collection<GridSegment2x> segments) {
+    private static List<GridSegment2x> normalizeBoundarySegments(Collection<GridSegment2x> segments) {
         LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
         for (GridSegment2x segment : GridSegment2x.boundarySteps(segments).stream()
                 .sorted(GridSegment2x.ORDER)

@@ -1,6 +1,7 @@
 package features.world.dungeonmap.model.objects;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.model.geometry.TileShape;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -9,7 +10,7 @@ import java.util.Set;
 /**
  * A floor owns its walkable cells directly.
  */
-public final class Floor {
+public final class Floor extends TileShape {
 
     private final Set<CellCoord> cellCoords;
     private final CellCoord anchorCell;
@@ -19,6 +20,7 @@ public final class Floor {
     }
 
     public Floor(Collection<CellCoord> cellCoords, CellCoord anchorCell) {
+        super(cellCoords);
         Set<CellCoord> resolvedCells = normalizeCells(cellCoords);
         this.cellCoords = resolvedCells;
         this.anchorCell = normalizeAnchor(anchorCell, resolvedCells);

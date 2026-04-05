@@ -662,8 +662,12 @@ public final class DungeonRoomApplicationService {
                             stairCarrier.maxLevelZ(),
                             stairCarrier.dimension1(),
                             stairCarrier.dimension2(),
-                            stairCarrier.path(),
-                            stairCarrier.stopLevels()),
+                            DungeonStair.resolved(
+                                    null,
+                                    localConnection.mapId(),
+                                    null,
+                                    stairCarrier.path(),
+                                    stairCarrier.stopLevels())),
                     List.of(ConnectionEndpoint.room(reboundRoom.roomId()), ConnectionEndpoint.transition(transition.transitionId())));
         }
         return localConnection;

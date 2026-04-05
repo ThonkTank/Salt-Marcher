@@ -7,7 +7,7 @@ Use it together with the parent `dungeonmap/AGENTS.md` and the repository root `
 
 `geometry/ -> interaction/ + objects/ -> structures/ -> DungeonLayout`
 
-- `geometry/` owns reusable grid math with no dungeon semantics.
+- `geometry/` owns reusable grid math plus the canonical reusable `TileShape`/`EdgeShape` carriers.
 - `interaction/` owns model-side selection, hit, and label descriptors that other layers may consume but not reinterpret.
 - `objects/` owns thin domain objects over geometry.
 - `structures/` owns dungeon semantics and structure-local behavior.
@@ -15,12 +15,11 @@ Use it together with the parent `dungeonmap/AGENTS.md` and the repository root `
 
 ## Geometry And Surface Contract
 
-- `CellCoord` is the canonical cell-space primitive. `GridPoint2x` and `GridSegment2x` are the canonical doubled-grid primitives.
+- `CellCoord` is the canonical cell-space primitive. `GridPoint2x` and `GridSegment2x` are the canonical doubled-grid primitives. `TileShape` and `EdgeShape` are the only model-side geometry carriers built from them.
 - Do not add offset codecs, parity bridge types, or secondary tile-area wrappers at model or persistence seams.
-- `Wall` and `Door` are segment-based boundary objects keyed by normalized `GridSegment2x` collections.
-- Cell-owned surfaces stay as explicit `CellCoord` sets on `Floor` and related seams.
-- `StructureDescriptor.LevelDescriptor` authors cluster/corridor floor truth as `anchorCell`, `fillSeeds`, `boundaryEdges`, and `openingEdges`.
-- `StructureObject` hydrates floors, walls, and doors from that cell/edge truth without rebuilding alternate wrapper geometry.
+- `Floor` and `DungeonStair` extend `TileShape`; `Wall` and `Door` extend `EdgeShape`.
+- `StructureDescriptor.LevelDescriptor` authors cluster/corridor truth through `surfaceShape`, `boundaryShape`, `openingShape`, and an optional floor `TileShape`, while `fillSeeds` remain authored metadata for persistence and flood-fill reconstruction.
+- `StructureObject` hydrates floors, walls, and doors from that shape truth and may expose raw cell/edge projections only as compatibility views.
 - Room and cluster persistence keep the existing `anchor_x2` and `seed_x2` column names, but their values are canonical raw 2x coordinates.
 
 ## Interaction Seams
@@ -42,5 +41,5 @@ Use it together with the parent `dungeonmap/AGENTS.md` and the repository root `
 - `Corridor` is a first-class structure with stable identity, nodes, segments, room bindings, derived geometry, and direct graph transforms.
 - Corridor room-bound endpoints keep absolute `CellCoord` room cells in memory. The graph compiles into the same `StructureDescriptor` and `StructureObject` surface model used by cluster-derived rooms, including opening segments for room-bound endpoints and persisted free boundary doors.
 - Junction nodes are explicit authored state. Routing must not invent extra nodes.
-- `DungeonStair` is a first-class structure with stable identity, explicit 3D path geometry, and authored stop levels. Exits are derived views from that path.
+- `DungeonStair` is a first-class structure with stable identity, explicit 3D path geometry, authored stop levels, and direct `TileShape` ownership over occupied cells. Exits are derived views from that path.
 - `DungeonTransition` owns transition identity, destination, optional bidirectional link, and an optional placed `DungeonConnection`. Unplaced transitions are valid and spatial queries must handle absent local connections.

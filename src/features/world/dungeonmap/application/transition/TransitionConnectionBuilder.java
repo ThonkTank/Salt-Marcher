@@ -12,6 +12,7 @@ import features.world.dungeonmap.model.structures.connection.DoorConnectionCarri
 import features.world.dungeonmap.model.structures.connection.DungeonConnection;
 import features.world.dungeonmap.model.structures.connection.StairConnectionCarrier;
 import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 
 import java.util.LinkedHashSet;
@@ -93,6 +94,12 @@ public final class TransitionConnectionBuilder {
         }
         StairDraftResolver.ResolvedStairDraft resolvedDraft =
                 StairDraftResolver.resolveDraft(layout, mapId, stairDraft, allowSingleStop);
+        DungeonStair stair = DungeonStair.resolved(
+                null,
+                mapId,
+                null,
+                resolvedDraft.path(),
+                resolvedDraft.stopLevels());
         StairConnectionCarrier carrier = new StairConnectionCarrier(
                 resolvedDraft.draft().anchorCell(),
                 resolvedDraft.draft().anchorLevelZ(),
@@ -102,8 +109,7 @@ public final class TransitionConnectionBuilder {
                 resolvedDraft.draft().maxLevelZ(),
                 resolvedDraft.draft().dimension1(),
                 resolvedDraft.draft().dimension2(),
-                resolvedDraft.path(),
-                resolvedDraft.stopLevels());
+                stair);
         DungeonConnection candidate = new DungeonConnection(
                 ConnectionKind.TRANSITION,
                 transitionId,

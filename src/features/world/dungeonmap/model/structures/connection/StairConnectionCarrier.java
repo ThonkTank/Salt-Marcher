@@ -3,6 +3,7 @@ package features.world.dungeonmap.model.structures.connection;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.stair.StairShape;
 
 import java.util.LinkedHashSet;
@@ -19,22 +20,28 @@ public record StairConnectionCarrier(
         int maxLevelZ,
         int dimension1,
         int dimension2,
-        List<CubePoint> path,
-        Set<Integer> stopLevels
+        DungeonStair stair
 ) implements ConnectionCarrier {
 
     public StairConnectionCarrier {
         anchorCell = Objects.requireNonNull(anchorCell, "anchorCell");
         shape = shape == null ? StairShape.LADDER : shape;
         direction = direction == null ? CardinalDirection.defaultDirection() : direction;
-        path = path == null ? List.of() : List.copyOf(path.stream().filter(Objects::nonNull).toList());
-        stopLevels = stopLevels == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(stopLevels));
-        if (path.isEmpty()) {
+        stair = Objects.requireNonNull(stair, "stair");
+        if (stair.path().isEmpty()) {
             throw new IllegalArgumentException("Transition stair path fehlt");
         }
     }
 
+    public List<CubePoint> path() {
+        return stair.path();
+    }
+
+    public Set<Integer> stopLevels() {
+        return stair.stopLevels();
+    }
+
     public Set<CubePoint> pathPositions() {
-        return Set.copyOf(new LinkedHashSet<>(path));
+        return Set.copyOf(new LinkedHashSet<>(stair.occupiedPositions()));
     }
 }
