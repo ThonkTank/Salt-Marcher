@@ -32,9 +32,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.FlowPane;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -83,11 +81,28 @@ public final class ConnectionsTool implements EditorTool {
     private final Button stairApplyButton = new Button("Übernehmen");
     private final Button stairCancelButton = new Button("Abbrechen");
     private final Label stairStatusLabel = new Label();
-    private final GridPane stairFormGrid = new GridPane();
+    private final VBox stairNameBlock = fieldBlock(stairNameInputLabel, stairNameField);
+    private final VBox stairShapeBlock = fieldBlock(stairShapeInputLabel, stairShapeBox);
+    private final VBox stairDirectionBlock = fieldBlock(stairDirectionInputLabel, stairDirectionBox);
+    private final VBox stairDimension1Block = fieldBlock(stairDimension1Label, stairDimension1Field);
+    private final VBox stairDimension2Block = fieldBlock(stairDimension2Label, stairDimension2Field);
     private final HBox stairExitLevelRow = new HBox(6, stairExitLevelField, stairAddExitButton);
+    private final VBox stairExitLevelBlock = fieldBlock(stairExitLevelInputLabel, stairExitLevelRow);
+    private final VBox stairExitChipsBlock = fieldBlock(stairExitChipsLabel, stairExitChips);
+    private final HBox stairShapeRow = fieldRow(stairShapeBlock);
+    private final HBox stairDirectionDimensionRow = fieldRow(stairDirectionBlock, stairDimension1Block);
+    private final HBox stairDimension2Row = fieldRow(stairDimension2Block);
+    private final VBox stairFieldsBox = new VBox(
+            8,
+            stairNameBlock,
+            stairShapeRow,
+            stairDirectionDimensionRow,
+            stairDimension2Row,
+            stairExitLevelBlock,
+            stairExitChipsBlock);
     private final Region stairActionSpacer = new Region();
     private final HBox stairActionRow = new HBox(6, stairActionSpacer, stairApplyButton, stairCancelButton);
-    private final VBox stairFormBox = new VBox(8, stairFormGrid, stairActionRow);
+    private final VBox stairFormBox = new VBox(8, stairFieldsBox, stairActionRow);
     private final VBox connectionCard = EditorCards.card("Connections", connectionBox);
     private final VBox stairCard = EditorCards.card("Treppe", stairSummaryLabel, stairAnchorLabel, stairFormBox, stairStatusLabel);
 
@@ -240,11 +255,12 @@ public final class ConnectionsTool implements EditorTool {
         stairExitChips.setVgap(6);
         stairExitChips.setMaxWidth(Double.MAX_VALUE);
         stairFormBox.setFillWidth(true);
+        stairFieldsBox.setFillWidth(true);
         stairCard.setFillWidth(true);
         stairActionRow.getStyleClass().add("editor-action-row");
         HBox.setHgrow(stairActionSpacer, Priority.ALWAYS);
         HBox.setHgrow(stairExitLevelField, Priority.ALWAYS);
-        configureStairFormGrid();
+        stairExitLevelRow.setMaxWidth(Double.MAX_VALUE);
         stairShapeBox.setItems(FXCollections.observableArrayList(StairShape.values()));
         stairShapeBox.setConverter(new javafx.util.StringConverter<>() {
             @Override
@@ -300,56 +316,6 @@ public final class ConnectionsTool implements EditorTool {
         stairCancelButton.setOnAction(event -> cancelStairDraft());
     }
 
-    private void configureStairFormGrid() {
-        stairFormGrid.setHgap(8);
-        stairFormGrid.setVgap(6);
-        stairFormGrid.setMaxWidth(Double.MAX_VALUE);
-        ColumnConstraints labelColumn = new ColumnConstraints();
-        ColumnConstraints valueColumn = new ColumnConstraints();
-        ColumnConstraints secondaryLabelColumn = new ColumnConstraints();
-        ColumnConstraints secondaryValueColumn = new ColumnConstraints();
-        valueColumn.setHgrow(Priority.ALWAYS);
-        secondaryValueColumn.setHgrow(Priority.ALWAYS);
-        stairFormGrid.getColumnConstraints().setAll(labelColumn, valueColumn, secondaryLabelColumn, secondaryValueColumn);
-
-        configureStretchField(stairNameField);
-        configureStretchField(stairShapeBox);
-        configureStretchField(stairDirectionBox);
-        configureStretchField(stairDimension1Field);
-        configureStretchField(stairDimension2Field);
-        configureStretchField(stairExitLevelRow);
-        configureStretchField(stairExitChips);
-
-        stairFormGrid.add(stairNameInputLabel, 0, 0);
-        stairFormGrid.add(stairNameField, 1, 0, 3, 1);
-
-        stairFormGrid.add(stairShapeInputLabel, 0, 1);
-        stairFormGrid.add(stairShapeBox, 1, 1);
-        stairFormGrid.add(stairDirectionInputLabel, 2, 1);
-        stairFormGrid.add(stairDirectionBox, 3, 1);
-
-        stairFormGrid.add(stairDimension1Label, 0, 2);
-        stairFormGrid.add(stairDimension1Field, 1, 2);
-        stairFormGrid.add(stairDimension2Label, 2, 2);
-        stairFormGrid.add(stairDimension2Field, 3, 2);
-
-        stairFormGrid.add(stairExitLevelInputLabel, 0, 3);
-        stairFormGrid.add(stairExitLevelRow, 1, 3, 3, 1);
-
-        stairFormGrid.add(stairExitChipsLabel, 0, 4);
-        stairFormGrid.add(stairExitChips, 1, 4, 3, 1);
-    }
-
-    private static void configureStretchField(Node node) {
-        if (node == null) {
-            return;
-        }
-        if (node instanceof Region region) {
-            region.setMaxWidth(Double.MAX_VALUE);
-        }
-        GridPane.setHgrow(node, Priority.ALWAYS);
-    }
-
     private void renderConnectionPane(Connection connection, Corridor corridor) {
         if (connection != null) {
             connectionSummaryLabel.setText(connectionSummaryText(connection));
@@ -376,12 +342,7 @@ public final class ConnectionsTool implements EditorTool {
         stairFormBox.setManaged(createMode);
         stairFormBox.setVisible(createMode);
         StairShape shape = currentStairShape();
-        boolean showDirection = shape.needsDirection();
-        stairDirectionInputLabel.setManaged(showDirection);
-        stairDirectionInputLabel.setVisible(showDirection);
-        stairDirectionBox.setManaged(showDirection);
-        stairDirectionBox.setVisible(showDirection);
-        configureDimensionFields(shape);
+        updateStairFieldLayout(shape);
         renderExitChips();
         stairExitLevelField.setDisable(stairDraftLoading || !createMode || stairAnchorCell == null);
         stairAddExitButton.setDisable(stairDraftLoading || !createMode || stairAnchorCell == null);
@@ -390,8 +351,9 @@ public final class ConnectionsTool implements EditorTool {
         stairStatusLabel.setText(stairStatusText(resolution));
     }
 
-    private void configureDimensionFields(StairShape shape) {
+    private void updateStairFieldLayout(StairShape shape) {
         StairShape resolvedShape = shape == null ? StairShape.LADDER : shape;
+        boolean showDirection = resolvedShape.needsDirection();
         boolean showDimension1 = resolvedShape.needsSideLength() || resolvedShape.needsDimensions() || resolvedShape.needsRadius();
         boolean showDimension2 = resolvedShape.needsDimensions();
         stairDimension1Label.setText(switch (resolvedShape) {
@@ -401,14 +363,11 @@ public final class ConnectionsTool implements EditorTool {
             case LADDER, STRAIGHT -> "";
         });
         stairDimension2Label.setText(resolvedShape == StairShape.RECTANGULAR ? "Tiefe" : "");
-        stairDimension1Label.setManaged(showDimension1);
-        stairDimension1Label.setVisible(showDimension1);
-        stairDimension1Field.setManaged(showDimension1);
-        stairDimension1Field.setVisible(showDimension1);
-        stairDimension2Label.setManaged(showDimension2);
-        stairDimension2Label.setVisible(showDimension2);
-        stairDimension2Field.setManaged(showDimension2);
-        stairDimension2Field.setVisible(showDimension2);
+        setNodeVisibility(stairDirectionBlock, showDirection);
+        setNodeVisibility(stairDimension1Block, showDimension1);
+        setNodeVisibility(stairDimension2Block, showDimension2);
+        setNodeVisibility(stairDirectionDimensionRow, showDirection || showDimension1);
+        setNodeVisibility(stairDimension2Row, showDimension2);
         stairDimension1Field.setPromptText(showDimension1 ? stairDimension1Label.getText() : "");
         stairDimension2Field.setPromptText(showDimension2 ? stairDimension2Label.getText() : "");
     }
@@ -1493,9 +1452,57 @@ public final class ConnectionsTool implements EditorTool {
         return new CorridorEndpoint(hit.roomId(), boundary.roomCell(), boundary.outwardDirection());
     }
 
+    private static VBox fieldBlock(Label label, Node field) {
+        VBox block = new VBox(3, label, field);
+        block.setFillWidth(true);
+        block.setMaxWidth(Double.MAX_VALUE);
+        block.setMinWidth(0);
+        HBox.setHgrow(block, Priority.ALWAYS);
+        configureGrowingRegion(field);
+        return block;
+    }
+
+    private static HBox fieldRow(Node... blocks) {
+        HBox row = new HBox(8);
+        row.setFillHeight(true);
+        row.setMaxWidth(Double.MAX_VALUE);
+        row.setMinWidth(0);
+        for (Node block : blocks) {
+            if (block == null) {
+                continue;
+            }
+            if (block instanceof Region region) {
+                region.setMaxWidth(Double.MAX_VALUE);
+                region.setMinWidth(0);
+            }
+            HBox.setHgrow(block, Priority.ALWAYS);
+            row.getChildren().add(block);
+        }
+        return row;
+    }
+
+    private static void setNodeVisibility(Node node, boolean visible) {
+        if (node == null) {
+            return;
+        }
+        node.setManaged(visible);
+        node.setVisible(visible);
+    }
+
+    private static void configureGrowingRegion(Node node) {
+        if (!(node instanceof Region region)) {
+            return;
+        }
+        region.setMaxWidth(Double.MAX_VALUE);
+        region.setMinWidth(0);
+    }
+
     private static Label fieldLabel(String text) {
         Label label = new Label(text);
         label.getStyleClass().add("text-muted");
+        label.setWrapText(true);
+        label.setMaxWidth(Double.MAX_VALUE);
+        label.setMinWidth(0);
         return label;
     }
 
