@@ -1331,10 +1331,6 @@ public final class ConnectionsTool implements EditorTool {
         return stairDraftLoading || stairDraftId != null || stairAnchorCell != null;
     }
 
-    private boolean stairPaneVisible() {
-        return stairFlowActive() || state.selectedRef() instanceof DungeonSelectionRef.StairRef;
-    }
-
     private void ensureSelectedStairLoaded() {
         if (pendingEndpoint != null || stairFlowActive()) {
             return;
