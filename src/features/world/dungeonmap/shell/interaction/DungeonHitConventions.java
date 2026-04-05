@@ -21,7 +21,9 @@ public final class DungeonHitConventions {
     public static final long ROOM_PRIORITY = 20L;
     public static final long CORRIDOR_TILE_PRIORITY = 18L;
     public static final long CORRIDOR_PRIORITY = 15L;
+    public static final long ROOM_CELL_PRIORITY = 12L;
     public static final long FLOOR_CELL_PRIORITY = 10L;
+    public static final long GRID_CELL_PRIORITY = 5L;
 
     private DungeonHitConventions() {
     }
@@ -41,7 +43,9 @@ public final class DungeonHitConventions {
             case ROOM -> ROOM_PRIORITY;
             case CORRIDOR_TILE -> CORRIDOR_TILE_PRIORITY;
             case CORRIDOR -> CORRIDOR_PRIORITY;
+            case ROOM_CELL -> ROOM_CELL_PRIORITY;
             case FLOOR_CELL -> FLOOR_CELL_PRIORITY;
+            case GRID_CELL -> GRID_CELL_PRIORITY;
         };
     }
 

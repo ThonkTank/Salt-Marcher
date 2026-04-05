@@ -21,6 +21,8 @@ public sealed interface DungeonSelectionRef permits
         DungeonSelectionRef.CorridorNodeRef,
         DungeonSelectionRef.CorridorCornerRef,
         DungeonSelectionRef.CorridorSegmentRef,
+        DungeonSelectionRef.GridCellRef,
+        DungeonSelectionRef.RoomCellRef,
         DungeonSelectionRef.FloorCellRef {
 
     /**
@@ -42,6 +44,8 @@ public sealed interface DungeonSelectionRef permits
             case CorridorNodeRef ignored -> DungeonHitKind.CORRIDOR_NODE;
             case CorridorCornerRef ignored -> DungeonHitKind.CORRIDOR_CORNER;
             case CorridorSegmentRef ignored -> DungeonHitKind.CORRIDOR_SEGMENT;
+            case GridCellRef ignored -> DungeonHitKind.GRID_CELL;
+            case RoomCellRef ignored -> DungeonHitKind.ROOM_CELL;
             case FloorCellRef ignored -> DungeonHitKind.FLOOR_CELL;
         };
     }
@@ -195,6 +199,23 @@ public sealed interface DungeonSelectionRef permits
         @Override
         public DungeonSelectionRef ownerRef() {
             return corridorId == null ? null : new CorridorRef(corridorId);
+        }
+    }
+
+    record GridCellRef(CubePoint cell) implements DungeonSelectionRef {
+        public GridCellRef {
+            cell = Objects.requireNonNull(cell, "cell");
+        }
+    }
+
+    record RoomCellRef(Long roomId, CubePoint cell) implements DungeonSelectionRef {
+        public RoomCellRef {
+            cell = Objects.requireNonNull(cell, "cell");
+        }
+
+        @Override
+        public DungeonSelectionRef ownerRef() {
+            return roomId == null ? null : new RoomRef(roomId);
         }
     }
 

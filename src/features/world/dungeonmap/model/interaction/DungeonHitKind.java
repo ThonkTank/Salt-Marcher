@@ -14,5 +14,7 @@ public enum DungeonHitKind {
     CORRIDOR_SEGMENT,
     STAIR,
     TRANSITION,
+    GRID_CELL,
+    ROOM_CELL,
     FLOOR_CELL
 }

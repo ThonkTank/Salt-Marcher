@@ -83,6 +83,40 @@ public final class DungeonStairApplicationService {
         }
     }
 
+    public void moveStair(MoveStairRequest request) throws SQLException {
+        MoveStairRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        requireMapId(resolvedRequest.mapId());
+        if (resolvedRequest.stairId() <= 0) {
+            throw new IllegalArgumentException("Treppe fehlt");
+        }
+        StairDraft resolvedDraft = Objects.requireNonNull(resolvedRequest.draft(), "draft");
+        if ((resolvedRequest.delta() == null || (resolvedRequest.delta().x() == 0 && resolvedRequest.delta().y() == 0))
+                && resolvedRequest.levelDelta() == 0) {
+            return;
+        }
+        try (Connection conn = DatabaseManager.getConnection()) {
+            DungeonTransactionRunner.inTransaction(conn, () -> {
+                DungeonLayout layout = requireLayout(conn, resolvedRequest.mapId());
+                if (layout.findStair(resolvedRequest.stairId()) == null) {
+                    throw new SQLException("Treppe " + resolvedRequest.stairId() + " existiert nicht");
+                }
+                StairDraft movedDraft = StairDraftResolver.shiftedDraft(
+                        resolvedDraft,
+                        resolvedRequest.delta(),
+                        resolvedRequest.levelDelta());
+                DungeonStair stair = StairDraftResolver.resolveCommitted(
+                        layout,
+                        resolvedRequest.stairId(),
+                        resolvedRequest.mapId(),
+                        movedDraft);
+                stairRepository.updateStair(conn, resolvedRequest.stairId(), stair, toEditorData(movedDraft));
+                stairRepository.replacePathNodes(conn, resolvedRequest.stairId(), stair.path());
+                stairRepository.replaceStopLevels(conn, resolvedRequest.stairId(), stair.stopLevels());
+                return null;
+            });
+        }
+    }
+
     public void deleteStair(DeleteStairRequest request) throws SQLException {
         DeleteStairRequest resolvedRequest = Objects.requireNonNull(request, "request");
         requireMapId(resolvedRequest.mapId());
@@ -200,6 +234,9 @@ public final class DungeonStairApplicationService {
     }
 
     public record UpdateStairRequest(long mapId, long stairId, StairDraft draft) {
+    }
+
+    public record MoveStairRequest(long mapId, long stairId, StairDraft draft, CellCoord delta, int levelDelta) {
     }
 
     public record DeleteStairRequest(long mapId, long stairId) {

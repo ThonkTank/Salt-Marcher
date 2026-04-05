@@ -38,6 +38,29 @@ public final class StairDraftResolver {
         return resolve(layout, stairId, mapId, draft, false);
     }
 
+    public static DungeonStairApplicationService.StairDraft shiftedDraft(
+            DungeonStairApplicationService.StairDraft draft,
+            CellCoord delta,
+            int levelDelta
+    ) {
+        DungeonStairApplicationService.StairDraft resolvedDraft = Objects.requireNonNull(draft, "draft");
+        CellCoord resolvedDelta = delta == null ? new CellCoord(0, 0) : delta;
+        return new DungeonStairApplicationService.StairDraft(
+                resolvedDraft.name(),
+                resolvedDraft.anchorCell().add(resolvedDelta),
+                resolvedDraft.anchorLevelZ() + levelDelta,
+                resolvedDraft.shape(),
+                resolvedDraft.direction(),
+                resolvedDraft.minLevelZ() + levelDelta,
+                resolvedDraft.maxLevelZ() + levelDelta,
+                resolvedDraft.dimension1(),
+                resolvedDraft.dimension2(),
+                resolvedDraft.stopLevels().stream()
+                        .map(level -> level == null ? null : level + levelDelta)
+                        .filter(Objects::nonNull)
+                        .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new)));
+    }
+
     private static DungeonStair resolve(
             DungeonLayout layout,
             Long stairId,

@@ -86,6 +86,10 @@ public record Room(
         return new Room(roomId, mapId, clusterId, name, structure, narration);
     }
 
+    public Room withStructure(StructureObject structure) {
+        return new Room(roomId, mapId, clusterId, name, structure, narration);
+    }
+
     public Room movedBy(CellCoord delta) {
         return movedBy(delta, 0);
     }

@@ -71,6 +71,14 @@ public final class DungeonSelectionHighlightResolver {
             case DungeonSelectionRef.CorridorSegmentRef corridorSegmentRef -> corridorSegmentSurfaces(layout, corridorSegmentRef, levelZ);
             case DungeonSelectionRef.VertexRef vertexRef ->
                     List.of(new DungeonHitSurface.PointSurface(Set.of(vertexRef.vertex2x()), levelZ));
+            case DungeonSelectionRef.GridCellRef gridCellRef ->
+                    gridCellRef.cell().z() == levelZ
+                            ? List.of(new DungeonHitSurface.CellSurface(Set.of(gridCellRef.cell().projectedCell()), levelZ))
+                            : List.of();
+            case DungeonSelectionRef.RoomCellRef roomCellRef ->
+                    roomCellRef.cell().z() == levelZ
+                            ? List.of(new DungeonHitSurface.CellSurface(Set.of(roomCellRef.cell().projectedCell()), levelZ))
+                            : List.of();
             case DungeonSelectionRef.FloorCellRef floorCellRef ->
                     floorCellRef.cell().z() == levelZ
                             ? List.of(new DungeonHitSurface.CellSurface(Set.of(floorCellRef.cell().projectedCell()), levelZ))

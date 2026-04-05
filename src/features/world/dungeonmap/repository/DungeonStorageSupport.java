@@ -95,6 +95,14 @@ public final class DungeonStorageSupport {
                 + "FOREIGN KEY(room_id, level_z) REFERENCES dungeon_room_levels(room_id, level_z) ON DELETE CASCADE,"
                 + "CHECK(segment_kind IN ('BOUNDARY','OPENING'))"
                 + ")");
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_room_level_floor_cells ("
+                + "room_id          INTEGER NOT NULL,"
+                + "level_z          INTEGER NOT NULL,"
+                + "cell_x2          INTEGER NOT NULL,"
+                + "cell_y2          INTEGER NOT NULL,"
+                + "PRIMARY KEY (room_id, level_z, cell_x2, cell_y2),"
+                + "FOREIGN KEY(room_id, level_z) REFERENCES dungeon_room_levels(room_id, level_z) ON DELETE CASCADE"
+                + ")");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_room_exit_descriptions ("
                 + "room_id          INTEGER NOT NULL REFERENCES dungeon_rooms(room_id) ON DELETE CASCADE,"
                 + "level_z          INTEGER NOT NULL DEFAULT 0,"

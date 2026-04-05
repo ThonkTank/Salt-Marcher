@@ -21,12 +21,13 @@ import java.util.Set;
 public final class StructureObject {
 
     private final StructureDescriptor descriptor;
+    private final Map<Integer, Set<CellCoord>> surfaceCellsByLevel;
     private final Map<Integer, Floor> floorsByLevel;
     private final Map<Integer, List<Wall>> wallsByLevel;
     private final Map<Integer, List<Door>> doorsByLevel;
 
     public static StructureObject empty() {
-        return new StructureObject(StructureDescriptor.empty(), Map.of(), Map.of(), Map.of());
+        return new StructureObject(StructureDescriptor.empty(), Map.of(), Map.of(), Map.of(), Map.of());
     }
 
     public static StructureObject fromDescriptor(StructureDescriptor descriptor) {
@@ -34,17 +35,20 @@ public final class StructureObject {
         if (resolvedDescriptor.levels().isEmpty()) {
             return empty();
         }
+        Map<Integer, Set<CellCoord>> surfaceCells = new LinkedHashMap<>();
         Map<Integer, Floor> floors = new LinkedHashMap<>();
         Map<Integer, List<Wall>> walls = new LinkedHashMap<>();
         Map<Integer, List<Door>> doors = new LinkedHashMap<>();
         for (Map.Entry<Integer, StructureDescriptor.LevelDescriptor> entry : resolvedDescriptor.levels().entrySet()) {
             int levelZ = entry.getKey();
             StructureDescriptor.LevelDescriptor level = entry.getValue();
+            Set<CellCoord> hydratedSurfaceCells = hydrateSurfaceCells(level);
+            surfaceCells.put(levelZ, hydratedSurfaceCells);
             floors.put(levelZ, hydrateFloor(level));
             walls.put(levelZ, hydrateWalls(level));
             doors.put(levelZ, hydrateDoors(level));
         }
-        return new StructureObject(resolvedDescriptor, floors, walls, doors);
+        return new StructureObject(resolvedDescriptor, surfaceCells, floors, walls, doors);
     }
 
     public static StructureObject fromCubePoints(Collection<CubePoint> cubePoints) {
@@ -53,11 +57,13 @@ public final class StructureObject {
 
     private StructureObject(
             StructureDescriptor descriptor,
+            Map<Integer, Set<CellCoord>> surfaceCellsByLevel,
             Map<Integer, Floor> floorsByLevel,
             Map<Integer, List<Wall>> wallsByLevel,
             Map<Integer, List<Door>> doorsByLevel
     ) {
         this.descriptor = descriptor == null ? StructureDescriptor.empty() : descriptor;
+        this.surfaceCellsByLevel = normalizedSurfaceCells(surfaceCellsByLevel);
         this.floorsByLevel = normalizedFloors(floorsByLevel);
         this.wallsByLevel = normalizedObjectsByLevel(wallsByLevel);
         this.doorsByLevel = normalizedObjectsByLevel(doorsByLevel);
@@ -80,7 +86,7 @@ public final class StructureObject {
     }
 
     public Set<Integer> levels() {
-        return floorsByLevel.keySet();
+        return descriptor.levelZs();
     }
 
     public List<Integer> relevantLevels(CellCoord focusCell, int focusLevelZ) {
@@ -93,12 +99,15 @@ public final class StructureObject {
     }
 
     public int primaryLevel() {
-        return floorsByLevel.keySet().stream().mapToInt(Integer::intValue).min().orElse(0);
+        return descriptor.levelZs().stream().mapToInt(Integer::intValue).min().orElse(0);
     }
 
     public CellCoord centerCellCoordAtLevel(int levelZ) {
         Floor floor = floorAtLevel(levelZ);
-        return floor == null ? null : floor.centerCellCoord();
+        if (floor != null && !floor.cellCoords().isEmpty()) {
+            return floor.centerCellCoord();
+        }
+        return surfaceCenterCellCoordAtLevel(levelZ);
     }
 
     public CubePoint centerPointAtLevel(int levelZ) {
@@ -118,21 +127,25 @@ public final class StructureObject {
 
     public Set<CellCoord> cellCoords() {
         LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
-        for (Floor floor : floorsByLevel.values()) {
-            result.addAll(floor.cellCoords());
+        for (Set<CellCoord> cells : surfaceCellsByLevel.values()) {
+            result.addAll(cells);
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
     public Set<CellCoord> cellCoordsAtLevel(int levelZ) {
+        return surfaceCellsByLevel.getOrDefault(levelZ, Set.of());
+    }
+
+    public Set<CellCoord> floorCellCoordsAtLevel(int levelZ) {
         Floor floor = floorAtLevel(levelZ);
         return floor == null ? Set.of() : floor.cellCoords();
     }
 
     public Set<CubePoint> cubePoints() {
         LinkedHashSet<CubePoint> result = new LinkedHashSet<>();
-        for (Map.Entry<Integer, Floor> entry : floorsByLevel.entrySet()) {
-            for (CellCoord cell : entry.getValue().cellCoords()) {
+        for (Map.Entry<Integer, Set<CellCoord>> entry : surfaceCellsByLevel.entrySet()) {
+            for (CellCoord cell : entry.getValue()) {
                 result.add(CubePoint.at(cell, entry.getKey()));
             }
         }
@@ -140,7 +153,7 @@ public final class StructureObject {
     }
 
     public boolean contains(CellCoord cell) {
-        return cell != null && floorsByLevel.values().stream().anyMatch(floor -> floor.contains(cell));
+        return cell != null && surfaceCellsByLevel.values().stream().anyMatch(cells -> cells.contains(cell));
     }
 
     public boolean contains(CellCoord cell, int levelZ) {
@@ -151,12 +164,26 @@ public final class StructureObject {
         return point != null && cellCoordsAtLevel(point.z()).contains(point.projectedCell());
     }
 
+    public boolean hasFloorCell(CellCoord cell, int levelZ) {
+        return cell != null && floorCellCoordsAtLevel(levelZ).contains(cell);
+    }
+
+    public CellCoord anchorCellCoordAtLevel(int levelZ) {
+        StructureDescriptor.LevelDescriptor level = descriptor.level(levelZ);
+        return level == null ? null : level.anchorCell();
+    }
+
+    public CellCoord surfaceCenterCellCoordAtLevel(int levelZ) {
+        Set<CellCoord> surfaceCells = cellCoordsAtLevel(levelZ);
+        return surfaceCells.isEmpty() ? null : CellCoord.bestCenter(surfaceCells);
+    }
+
     public StructureObject movedBy(CellCoord delta, int levelDelta) {
         return fromDescriptor(descriptor.translatedByCells(delta, levelDelta));
     }
 
     private static Floor hydrateFloor(StructureDescriptor.LevelDescriptor level) {
-        return new Floor(hydrateCells(level), level.anchorCell());
+        return new Floor(level.floorCells(), level.anchorCell());
     }
 
     private static List<Wall> hydrateWalls(StructureDescriptor.LevelDescriptor level) {
@@ -179,7 +206,7 @@ public final class StructureObject {
 
     // Descriptor truth stays on cell sets plus 2x boundary edges. Hydration may flood-fill from cell seeds, but it
     // must not round-trip through any removed legacy tile or vertex wrapper geometry to recover the floor surface.
-    private static Set<CellCoord> hydrateCells(StructureDescriptor.LevelDescriptor level) {
+    private static Set<CellCoord> hydrateSurfaceCells(StructureDescriptor.LevelDescriptor level) {
         Set<CellCoord> seeds = level.fillSeeds();
         if (seeds.isEmpty()) {
             return Set.of();
@@ -271,6 +298,18 @@ public final class StructureObject {
                 .filter(entry -> entry != null && entry.getKey() != null && entry.getValue() != null)
                 .sorted(Map.Entry.comparingByKey())
                 .forEach(entry -> result.put(entry.getKey(), entry.getValue()));
+        return result.isEmpty() ? Map.of() : Map.copyOf(result);
+    }
+
+    private static Map<Integer, Set<CellCoord>> normalizedSurfaceCells(Map<Integer, Set<CellCoord>> surfaceCellsByLevel) {
+        if (surfaceCellsByLevel == null || surfaceCellsByLevel.isEmpty()) {
+            return Map.of();
+        }
+        Map<Integer, Set<CellCoord>> result = new LinkedHashMap<>();
+        surfaceCellsByLevel.entrySet().stream()
+                .filter(entry -> entry != null && entry.getKey() != null)
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(entry -> result.put(entry.getKey(), CellCoord.normalize(entry.getValue())));
         return result.isEmpty() ? Map.of() : Map.copyOf(result);
     }
 
