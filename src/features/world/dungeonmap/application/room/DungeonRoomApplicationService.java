@@ -230,12 +230,12 @@ public final class DungeonRoomApplicationService {
             if (room == null || room.roomId() == null) {
                 continue;
             }
-            Set<CellCoord> requestedCells = intersect(room.structure().cellCoordsAtLevel(levelZ), cells);
+            Set<CellCoord> requestedCells = intersect(workingLayout.roomCellsAtLevel(room, levelZ), cells);
             if (requestedCells.isEmpty()) {
                 continue;
             }
             if (deleteFloor) {
-                Set<CellCoord> removedFloorCells = intersect(room.structure().floorCellCoordsAtLevel(levelZ), requestedCells);
+                Set<CellCoord> removedFloorCells = intersect(workingLayout.roomFloorCellsAtLevel(room, levelZ), requestedCells);
                 if (removedFloorCells.isEmpty()) {
                     continue;
                 }
@@ -403,7 +403,7 @@ public final class DungeonRoomApplicationService {
         return layout.overlappingClusters(cells).stream()
                 .filter(cluster -> cluster != null && cluster.rooms().stream()
                         .anyMatch(room -> room != null
-                                && room.structure().levels().contains(levelZ)))
+                                && layout.roomLevels(room).contains(levelZ)))
                 .toList();
     }
 
@@ -414,7 +414,7 @@ public final class DungeonRoomApplicationService {
         return layout.rooms().stream()
                 .filter(room -> room != null
                         && room.roomId() != null
-                        && !intersect(room.structure().cellCoordsAtLevel(levelZ), cells).isEmpty())
+                        && !intersect(layout.roomCellsAtLevel(room, levelZ), cells).isEmpty())
                 .sorted(Comparator.comparing(Room::roomId))
                 .toList();
     }
@@ -686,7 +686,7 @@ public final class DungeonRoomApplicationService {
             }
             var direction = boundarySegment2x.directionFrom(cell);
             if (direction == null
-                    || !room.structure().boundaryEdgesAtLevel(levelZ).contains(boundarySegment2x)
+                    || !layout.roomBoundaryEdgesAtLevel(room, levelZ).contains(boundarySegment2x)
                     || layout.roomAtCell(cell.add(direction.delta()), levelZ) != null) {
                 continue;
             }
@@ -796,7 +796,12 @@ public final class DungeonRoomApplicationService {
                 renamedClusters.add(cluster);
                 continue;
             }
-            renamedClusters.add(new RoomCluster(cluster.clusterId(), cluster.mapId(), cluster.center(), renamedRooms));
+            renamedClusters.add(new RoomCluster(
+                    cluster.clusterId(),
+                    cluster.mapId(),
+                    cluster.center(),
+                    cluster.structure(),
+                    renamedRooms));
             changed = true;
         }
         return changed ? List.copyOf(renamedClusters) : clusters;

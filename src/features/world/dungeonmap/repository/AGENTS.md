@@ -13,7 +13,7 @@ Use it together with the parent `dungeonmap/AGENTS.md` and the repository root `
 
 - `DungeonRoomRepository` owns concrete write ordering for replacing original clusters with final cluster owners, plus moved-cluster persistence.
 - Room rewrite workflows must validate and rebind affected room-bound corridor endpoints from stable `roomCell` plus exterior boundary before commit. The same rule applies to room-bound transition doors and stair anchors. Split/merge flows must not leave persisted corridor or transition bindings pointing at stale `roomId`s.
-- `DungeonCorridorRepository` owns corridor row writes, synthetic-to-persistent id assignment, node/segment replacement order, direct persistence of absolute room-bound endpoint cells, and persisted free corridor boundary doors.
+- `DungeonCorridorRepository` owns corridor row writes, synthetic-to-persistent id assignment, node/segment replacement order, direct persistence of absolute room-bound endpoint cells, and persisted free corridor boundary doors. It validates room-bound endpoint cells against the current cluster-owned room surfaces exposed by `DungeonLayout`.
 - `DungeonStairRepository` owns stair row writes, ordered path-node persistence, authored stop-level persistence, and editor reopen metadata. Stair generation policy stays out of the repository.
 - `DungeonTransitionRepository` owns dungeon-side transition lookups and writes, including placed-target queries, transition-local `DungeonConnection` carrier persistence, and dungeon-map existence checks. Overworld target discovery stays at the `WorldReadApi` boundary.
 

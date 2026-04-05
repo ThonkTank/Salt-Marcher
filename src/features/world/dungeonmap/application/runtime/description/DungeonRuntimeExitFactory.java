@@ -109,9 +109,6 @@ final class DungeonRuntimeExitFactory {
                     .reduce((left, right) -> left + ", " + right)
                     .orElse("");
         }
-        if (destination.type() == ConnectionEndpointType.CLUSTER && destination.id() != null) {
-            return "Raumverbund " + destination.id();
-        }
         if (destination.type() == ConnectionEndpointType.STAIR && destination.id() != null) {
             DungeonStair stair = layout.findStair(destination.id());
             return stair == null ? "Treppe" : stair.label();

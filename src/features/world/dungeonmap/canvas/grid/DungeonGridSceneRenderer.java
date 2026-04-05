@@ -116,7 +116,10 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             InteractiveLabelHandle handle = cluster.labelHandle();
             boolean selectedCluster = selectedCluster(pass.selectedRef(), cluster.clusterId());
             for (Room room : cluster.rooms()) {
-                WalkableSurface surface = walkableSurface(room.structure(), pass.projectionLevel());
+                WalkableSurface surface = walkableSurface(
+                        cluster.roomFloorCellsAtLevel(room, pass.projectionLevel()),
+                        cluster.roomBoundaryEdgesAtLevel(room, pass.projectionLevel()),
+                        cluster.roomOpeningEdgesAtLevel(room, pass.projectionLevel()));
                 boolean selectedRoom = selectedRoom(pass.selectedRef(), room.roomId());
                 if (!surface.tiles().isEmpty()) {
                     fillRoomTiles(gc, pass.camera(), pass.gridSize(), surface.tiles());
@@ -138,7 +141,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                             room.name(),
                             pass.camera(),
                             pass.gridSize(),
-                            room.structure().anchorCellCoordAtLevel(pass.projectionLevel()));
+                            cluster.roomAnchorCellAtLevel(room, pass.projectionLevel()));
                     gc.setFill(pass.palette().roomFill());
                 }
                 if (selectedCluster || selectedRoom) {
@@ -956,14 +959,25 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         if (structure == null) {
             return WalkableSurface.empty();
         }
-        if (structure.boundaryEdgesAtLevel(levelZ).isEmpty() && structure.floorCellCoordsAtLevel(levelZ).isEmpty()) {
+        return walkableSurface(
+                structure.floorCellCoordsAtLevel(levelZ),
+                structure.boundaryEdgesAtLevel(levelZ),
+                structure.openingEdgesAtLevel(levelZ));
+    }
+
+    private static WalkableSurface walkableSurface(
+            Set<CellCoord> tiles,
+            Set<GridSegment2x> boundarySegments,
+            Set<GridSegment2x> doorSegments
+    ) {
+        if ((boundarySegments == null || boundarySegments.isEmpty()) && (tiles == null || tiles.isEmpty())) {
             return WalkableSurface.empty();
         }
-        Set<CellCoord> tiles = structure.floorCellCoordsAtLevel(levelZ);
-        Set<GridSegment2x> doorSegments = structure.openingEdgesAtLevel(levelZ);
-        Set<GridSegment2x> wallSegments = new LinkedHashSet<>(structure.boundaryEdgesAtLevel(levelZ));
-        wallSegments.removeAll(doorSegments);
-        return new WalkableSurface(tiles, Set.copyOf(wallSegments), Set.copyOf(doorSegments));
+        Set<CellCoord> resolvedTiles = tiles == null ? Set.of() : Set.copyOf(tiles);
+        Set<GridSegment2x> resolvedDoors = doorSegments == null ? Set.of() : Set.copyOf(doorSegments);
+        Set<GridSegment2x> wallSegments = new LinkedHashSet<>(boundarySegments == null ? Set.<GridSegment2x>of() : boundarySegments);
+        wallSegments.removeAll(resolvedDoors);
+        return new WalkableSurface(resolvedTiles, Set.copyOf(wallSegments), resolvedDoors);
     }
 
     private static void drawPaintPreview(

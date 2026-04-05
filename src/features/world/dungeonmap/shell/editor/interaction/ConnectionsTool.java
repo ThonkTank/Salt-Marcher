@@ -1380,7 +1380,6 @@ public final class ConnectionsTool implements EditorTool {
         }
         return switch (endpoint.type()) {
             case ROOM -> roomName(endpoint.id());
-            case CLUSTER -> "Cluster " + endpoint.id();
             case CORRIDOR -> corridorLabel(endpoint.id());
             case STAIR -> stairLabel(endpoint.id());
             case TRANSITION -> transitionLabel(endpoint.id());

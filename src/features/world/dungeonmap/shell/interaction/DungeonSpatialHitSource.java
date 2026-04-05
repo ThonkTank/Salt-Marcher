@@ -32,12 +32,13 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
 
     private static List<DungeonHitDescriptor> roomDescriptors(DungeonLayout layout, DungeonHitProbe probe) {
         Room room = layout.roomAtCell(probe.gridCell(), probe.levelZ());
-        if (room == null || room.roomId() == null || room.structure().cellCoordsAtLevel(probe.levelZ()).isEmpty()) {
+        Set<CellCoord> roomCells = room == null ? Set.of() : layout.roomCellsAtLevel(room, probe.levelZ());
+        if (room == null || room.roomId() == null || roomCells.isEmpty()) {
             return List.of();
         }
         return List.of(new DungeonHitDescriptor(
                 new DungeonSelectionRef.RoomRef(room.roomId()),
-                List.of(new DungeonHitSurface.CellSurface(room.structure().cellCoordsAtLevel(probe.levelZ()), probe.levelZ()))));
+                List.of(new DungeonHitSurface.CellSurface(roomCells, probe.levelZ()))));
     }
 
     private static List<DungeonHitDescriptor> corridorDescriptors(DungeonLayout layout, DungeonHitProbe probe) {

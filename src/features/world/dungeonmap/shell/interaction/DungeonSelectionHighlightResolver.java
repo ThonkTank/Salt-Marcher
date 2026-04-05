@@ -36,8 +36,8 @@ public final class DungeonSelectionHighlightResolver {
             return resolveOwnerSurfaces(layout, ownerRef, levelZ);
         }
         return switch (ownerRef == null ? ref : ownerRef) {
-            case DungeonSelectionRef.ClusterRef clusterRef -> clusterOwnerSurfaces(layout.findCluster(clusterRef.clusterId()), levelZ);
-            case DungeonSelectionRef.RoomRef roomRef -> roomOwnerSurfaces(layout.findRoom(roomRef.roomId()), levelZ);
+            case DungeonSelectionRef.ClusterRef clusterRef -> clusterOwnerSurfaces(layout, layout.findCluster(clusterRef.clusterId()), levelZ);
+            case DungeonSelectionRef.RoomRef roomRef -> roomOwnerSurfaces(layout, layout.findRoom(roomRef.roomId()), levelZ);
             case DungeonSelectionRef.CorridorRef corridorRef -> corridorOwnerSurfaces(layout.findCorridor(corridorRef.corridorId()), levelZ);
             case DungeonSelectionRef.StairRef stairRef -> stairOwnerSurfaces(layout.findStair(stairRef.stairId()), levelZ);
             case DungeonSelectionRef.TransitionRef transitionRef -> transitionOwnerSurfaces(layout.findTransition(transitionRef.transitionId()), levelZ);
@@ -87,24 +87,24 @@ public final class DungeonSelectionHighlightResolver {
         };
     }
 
-    private static List<DungeonHitSurface> clusterOwnerSurfaces(RoomCluster cluster, int levelZ) {
+    private static List<DungeonHitSurface> clusterOwnerSurfaces(DungeonLayout layout, RoomCluster cluster, int levelZ) {
         if (cluster == null) {
             return List.of();
         }
         LinkedHashSet<CellCoord> cells = new LinkedHashSet<>();
         for (Room room : cluster.rooms()) {
             if (room != null) {
-                cells.addAll(room.structure().cellCoordsAtLevel(levelZ));
+                cells.addAll(layout.roomCellsAtLevel(room, levelZ));
             }
         }
         return cells.isEmpty() ? List.of() : List.of(new DungeonHitSurface.CellSurface(cells, levelZ));
     }
 
-    private static List<DungeonHitSurface> roomOwnerSurfaces(Room room, int levelZ) {
+    private static List<DungeonHitSurface> roomOwnerSurfaces(DungeonLayout layout, Room room, int levelZ) {
         if (room == null) {
             return List.of();
         }
-        Set<CellCoord> cells = room.structure().cellCoordsAtLevel(levelZ);
+        Set<CellCoord> cells = layout.roomCellsAtLevel(room, levelZ);
         return cells.isEmpty() ? List.of() : List.of(new DungeonHitSurface.CellSurface(cells, levelZ));
     }
 

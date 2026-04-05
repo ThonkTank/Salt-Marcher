@@ -31,10 +31,12 @@ Use it together with the parent `dungeonmap/AGENTS.md` and the repository root `
 
 ## Structure Ownership
 
-- `Room` owns room identity, narration, per-level anchors, and derived room topology only.
+- `Room` owns room identity, narration, and per-level anchors only. It does not cache or expose topology.
 - `RoomCluster` owns canonical cluster structure, multi-room topology, adjacency, paint/delete/boundary mutation semantics, cluster moves, and derived local connections.
+- Room-surface queries such as cells, floors, boundaries, openings, and centers must resolve through `RoomCluster` or `DungeonLayout`, not directly from `Room`.
 - Room paint/delete/boundary/floor edits mutate cluster-owned `StructureDescriptor` truth plus room metadata. They do not reroute or regenerate corridors or stairs.
 - `Connection` owns connectivity, entry resolution, occupied-position projection, and passive physical carrier data. `Door` is the boundary object exposed through door-shaped connections.
+- Local cluster connections are room-to-room only. Exterior room openings are plain structure openings and do not get synthetic cluster endpoints.
 - Level-aware exit descriptors and door catalogs stay with room/connection truth. Public exit-description queries live on `DungeonLayout`.
 - `Corridor` is a first-class structure with stable identity, nodes, segments, room bindings, derived geometry, and direct graph transforms.
 - Corridor room-bound endpoints keep absolute `CellCoord` room cells in memory. The graph compiles into the same `StructureDescriptor` and `StructureObject` surface model used by cluster-derived rooms, including opening segments for room-bound endpoints and persisted free boundary doors.

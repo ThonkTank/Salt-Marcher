@@ -8,7 +8,6 @@ import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNode;
 import features.world.dungeonmap.model.structures.corridor.CorridorSegment;
-import features.world.dungeonmap.model.structures.room.Room;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -16,7 +15,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -27,8 +25,9 @@ import java.util.Set;
 
 public final class DungeonCorridorRepository {
 
-    public List<Corridor> loadByMap(Connection conn, long mapId, List<Room> rooms) throws SQLException {
-        Map<Long, Room> roomsById = indexRoomsById(rooms);
+    public List<Corridor> loadByMap(Connection conn, DungeonLayout roomLayout) throws SQLException {
+        DungeonLayout resolvedLayout = Objects.requireNonNull(roomLayout, "roomLayout");
+        long mapId = resolvedLayout.mapId();
         Map<Long, List<CorridorNode>> nodesByCorridorId = loadGrouped(
                 conn,
                 "SELECT node.corridor_id, node.corridor_node_id, node.grid_x2, node.grid_y2, corridor.level_z, "
@@ -39,7 +38,7 @@ public final class DungeonCorridorRepository {
                         + " ORDER BY node.corridor_id, node.corridor_node_id",
                 mapId,
                 row -> row.getLong("corridor_id"),
-                row -> corridorNodeFromRow(row, roomsById));
+                DungeonCorridorRepository::corridorNodeFromRow);
         Map<Long, List<CorridorSegment>> segmentsByCorridorId = loadGrouped(
                 conn,
                 "SELECT corridor_id, corridor_segment_id, start_node_id, end_node_id"
@@ -62,13 +61,12 @@ public final class DungeonCorridorRepository {
                 while (rs.next()) {
                     long corridorId = rs.getLong("corridor_id");
                     result.add(Corridor.resolved(
+                            resolvedLayout,
                             corridorId,
-                            rs.getLong("dungeon_map_id"),
                             rs.getInt("level_z"),
                             nodesByCorridorId.getOrDefault(corridorId, List.of()),
                             segmentsByCorridorId.getOrDefault(corridorId, List.of()),
-                            boundaryDoorsByCorridorId.getOrDefault(corridorId, Set.of()),
-                            roomsById));
+                            boundaryDoorsByCorridorId.getOrDefault(corridorId, Set.of())));
                 }
                 return result.isEmpty() ? List.of() : List.copyOf(result);
             }
@@ -140,13 +138,13 @@ public final class DungeonCorridorRepository {
             delete.setLong(1, corridorId);
             delete.executeUpdate();
         }
-        Map<Long, Room> roomsById = indexRoomsById(Objects.requireNonNull(layout, "layout").rooms());
+        DungeonLayout resolvedLayout = Objects.requireNonNull(layout, "layout");
         try (PreparedStatement insert = conn.prepareStatement(
                 "INSERT INTO dungeon_corridor_nodes("
                         + "corridor_node_id, corridor_id, grid_x2, grid_y2, room_id, room_cell_x, room_cell_y, room_edge_direction"
                         + ") VALUES(?,?,?,?,?,?,?,?)")) {
             for (CorridorNode node : sanitizedNodes(nodes)) {
-                bindNode(insert, corridorId, node, roomsById, levelZ);
+                bindNode(insert, corridorId, node, resolvedLayout, levelZ);
                 insert.addBatch();
             }
             insert.executeBatch();
@@ -248,7 +246,7 @@ public final class DungeonCorridorRepository {
             PreparedStatement ps,
             long corridorId,
             CorridorNode node,
-            Map<Long, Room> roomsById,
+            DungeonLayout layout,
             int levelZ
     ) throws SQLException {
         ps.setLong(1, requiredId(node.nodeId(), "corridor node"));
@@ -261,7 +259,7 @@ public final class DungeonCorridorRepository {
             ps.setObject(7, null);
             ps.setObject(8, null);
         } else {
-            CellCoord roomCell = requiredRoomCell(node, roomsById, levelZ);
+            CellCoord roomCell = requiredRoomCell(node, layout, levelZ);
             ps.setLong(5, node.roomId());
             ps.setInt(6, roomCell.x());
             ps.setInt(7, roomCell.y());
@@ -320,20 +318,7 @@ public final class DungeonCorridorRepository {
         return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
-    private static Map<Long, Room> indexRoomsById(Collection<Room> rooms) {
-        if (rooms == null || rooms.isEmpty()) {
-            return Map.of();
-        }
-        Map<Long, Room> result = new LinkedHashMap<>();
-        for (Room room : rooms) {
-            if (room != null && room.roomId() != null) {
-                result.put(room.roomId(), room);
-            }
-        }
-        return result.isEmpty() ? Map.of() : Map.copyOf(result);
-    }
-
-    private static CorridorNode corridorNodeFromRow(ResultSet row, Map<Long, Room> roomsById) throws SQLException {
+    private static CorridorNode corridorNodeFromRow(ResultSet row) throws SQLException {
         Long roomId = nullableLong(row, "room_id");
         CellCoord roomCell = roomId != null && row.getObject("room_cell_x") != null
                 ? new CellCoord(row.getInt("room_cell_x"), row.getInt("room_cell_y"))
@@ -348,21 +333,21 @@ public final class DungeonCorridorRepository {
                         : CardinalDirection.valueOf(row.getString("room_edge_direction").trim().toUpperCase(java.util.Locale.ROOT)));
     }
 
-    private static CellCoord requiredRoomCell(CorridorNode node, Map<Long, Room> roomsById, int levelZ) throws SQLException {
+    private static CellCoord requiredRoomCell(CorridorNode node, DungeonLayout layout, int levelZ) throws SQLException {
         if (node == null || !node.isRoomBound()) {
             return null;
         }
-        Room room = roomsById.get(node.roomId());
+        var room = layout == null ? null : layout.findRoom(node.roomId());
         if (room == null) {
             throw new SQLException("Corridor node references missing room " + node.roomId());
         }
-        if (room.structure().floorAtLevel(levelZ) == null) {
+        if (layout.roomFloorCellsAtLevel(room, levelZ).isEmpty()) {
             throw new SQLException("Corridor node references room without floor at level " + levelZ);
         }
-        if (!room.structure().cellCoordsAtLevel(levelZ).contains(node.roomCell())) {
+        if (!layout.roomCellsAtLevel(room, levelZ).contains(node.roomCell())) {
             throw new SQLException("Corridor node references cell outside room at level " + levelZ);
         }
-        if (!room.structure().hasFloorCell(node.roomCell(), levelZ)) {
+        if (!layout.roomHasFloorCell(room, node.roomCell(), levelZ)) {
             throw new SQLException("Corridor node references room cell without floor at level " + levelZ);
         }
         return node.roomCell();

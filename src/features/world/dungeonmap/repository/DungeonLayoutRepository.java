@@ -47,10 +47,8 @@ public final class DungeonLayoutRepository {
         List<Room> roomMetadata = roomRepository.loadRooms(conn, mapId);
         List<RoomCluster> clusters = roomRepository.loadClusters(conn, mapId, roomMetadata);
         Map<Long, Integer> clusterLevels = roomRepository.loadClusterLevels(conn, mapId);
-        List<Room> rooms = clusters.stream()
-                .flatMap(cluster -> cluster.rooms().stream())
-                .toList();
-        List<Corridor> corridors = corridorRepository.loadByMap(conn, mapId, rooms);
+        DungeonLayout roomLayout = new DungeonLayout(mapId, mapName, List.of(), clusters, List.of(), List.of(), clusterLevels);
+        List<Corridor> corridors = corridorRepository.loadByMap(conn, roomLayout);
         return new DungeonLayout(
                 mapId,
                 mapName,

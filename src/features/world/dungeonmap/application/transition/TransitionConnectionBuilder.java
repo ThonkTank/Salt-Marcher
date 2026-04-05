@@ -47,9 +47,7 @@ public final class TransitionConnectionBuilder {
                 throw new IllegalArgumentException("Tür-Übergänge benötigen eine freie Raum-Außenwand");
             }
             if (occupiedByOtherConnection(
-                    layout.connectionAt(levelZ, roomBoundary.boundarySegment2x()),
-                    ConnectionEndpoint.room(roomBoundary.roomId()),
-                    boundary.clusterId())) {
+                    layout.connectionAt(levelZ, roomBoundary.boundarySegment2x()))) {
                 throw new IllegalArgumentException("An dieser Grenze existiert bereits eine Verbindung");
             }
             return transitionDoorConnection(
@@ -173,16 +171,8 @@ public final class TransitionConnectionBuilder {
     }
 
     private static boolean occupiedByOtherConnection(
-            features.world.dungeonmap.model.structures.connection.Connection existingConnection,
-            ConnectionEndpoint expectedRoomEndpoint,
-            Long expectedClusterId
+            features.world.dungeonmap.model.structures.connection.Connection existingConnection
     ) {
-        if (existingConnection == null) {
-            return false;
-        }
-        return existingConnection.kind() != ConnectionKind.LOCAL
-                || !existingConnection.endpoints().contains(expectedRoomEndpoint)
-                || expectedClusterId == null
-                || !existingConnection.endpoints().contains(ConnectionEndpoint.cluster(expectedClusterId));
+        return existingConnection != null;
     }
 }

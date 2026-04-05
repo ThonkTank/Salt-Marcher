@@ -55,7 +55,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
                 if (room == null || room.roomId() == null) {
                     continue;
                 }
-                for (GridSegment2x segment2x : room.structure().boundaryEdgesAtLevel(levelZ)) {
+                for (GridSegment2x segment2x : projectedLayout.roomBoundaryEdgesAtLevel(room, levelZ)) {
                     if (segment2x == null || connectionSegments.contains(segment2x)) {
                         continue;
                     }
