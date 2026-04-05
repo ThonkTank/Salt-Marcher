@@ -30,11 +30,8 @@ public final class DungeonStair extends TileShape {
     private final Long stairId;
     private final long mapId;
     private final String name;
-    private final List<CubePoint> path;
     private final Set<Integer> stopLevels;
     private final List<DungeonStairExit> exits;
-    private final Set<CubePoint> occupiedPositions;
-    private final Set<Integer> reachableLevels;
 
     private DungeonStair(
             Long stairId,
@@ -43,15 +40,22 @@ public final class DungeonStair extends TileShape {
             List<CubePoint> path,
             Set<Integer> stopLevels
     ) {
-        super(TileShape.fromCubePoints(path));
+        this(stairId, mapId, name, TileShape.fromPath(normalizePath(path)), stopLevels);
+    }
+
+    private DungeonStair(
+            Long stairId,
+            long mapId,
+            String name,
+            TileShape pathShape,
+            Set<Integer> stopLevels
+    ) {
+        super(pathShape);
         this.stairId = stairId;
         this.mapId = mapId;
         this.name = normalizeName(name);
-        this.path = normalizePath(path);
-        this.stopLevels = normalizeStopLevels(this.path, stopLevels);
-        this.exits = deriveExits(this.path, this.stopLevels);
-        this.occupiedPositions = Collections.unmodifiableSet(new LinkedHashSet<>(this.path));
-        this.reachableLevels = deriveReachableLevels(this.path);
+        this.stopLevels = normalizeStopLevels(path(), stopLevels);
+        this.exits = deriveExits(path(), this.stopLevels);
     }
 
     public static DungeonStair resolved(
@@ -62,6 +66,16 @@ public final class DungeonStair extends TileShape {
             Set<Integer> stopLevels
     ) {
         return new DungeonStair(stairId, mapId, name, path, stopLevels);
+    }
+
+    public static DungeonStair resolved(
+            Long stairId,
+            long mapId,
+            String name,
+            TileShape pathShape,
+            Set<Integer> stopLevels
+    ) {
+        return new DungeonStair(stairId, mapId, name, pathShape, stopLevels);
     }
 
     public Long stairId() {
@@ -77,7 +91,7 @@ public final class DungeonStair extends TileShape {
     }
 
     public List<CubePoint> path() {
-        return path;
+        return pathPoints();
     }
 
     public Set<Integer> stopLevels() {
@@ -96,11 +110,11 @@ public final class DungeonStair extends TileShape {
     }
 
     public Set<Integer> reachableLevels() {
-        return reachableLevels;
+        return levels();
     }
 
     public Set<CubePoint> occupiedPositions() {
-        return occupiedPositions;
+        return pathPointSet();
     }
 
     public List<DungeonStairExit> exitsAtLevel(int levelZ) {
@@ -114,7 +128,7 @@ public final class DungeonStair extends TileShape {
                 .map(DungeonStairExit::position)
                 .filter(position -> position.z() == levelZ)
                 .findFirst()
-                .orElseGet(() -> path.stream()
+                .orElseGet(() -> path().stream()
                         .filter(position -> position.z() == levelZ)
                         .findFirst()
                         .orElse(null));
@@ -138,13 +152,13 @@ public final class DungeonStair extends TileShape {
         return mapId == stair.mapId
                 && Objects.equals(stairId, stair.stairId)
                 && Objects.equals(name, stair.name)
-                && Objects.equals(path, stair.path)
+                && Objects.equals(path(), stair.path())
                 && Objects.equals(stopLevels, stair.stopLevels);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(stairId, mapId, name, path, stopLevels);
+        return Objects.hash(stairId, mapId, name, path(), stopLevels);
     }
 
     @Override
@@ -152,7 +166,7 @@ public final class DungeonStair extends TileShape {
         return "DungeonStair[stairId=" + stairId
                 + ", mapId=" + mapId
                 + ", name=" + name
-                + ", path=" + path
+                + ", path=" + path()
                 + ", stopLevels=" + stopLevels
                 + "]";
     }
@@ -226,20 +240,12 @@ public final class DungeonStair extends TileShape {
                 .toList();
     }
 
-    private static Set<Integer> deriveReachableLevels(List<CubePoint> path) {
-        LinkedHashSet<Integer> result = new LinkedHashSet<>();
-        for (CubePoint node : path) {
-            result.add(node.z());
-        }
-        return Collections.unmodifiableSet(result);
-    }
-
     public DungeonStair movedBy(CellCoord delta, int levelDelta) {
         CellCoord resolvedDelta = delta == null ? new CellCoord(0, 0) : delta;
         if ((resolvedDelta.x() == 0 && resolvedDelta.y() == 0) && levelDelta == 0) {
             return this;
         }
-        List<CubePoint> translatedPath = path.stream()
+        List<CubePoint> translatedPath = path().stream()
                 .map(point -> CubePoint.at(point.projectedCell().add(resolvedDelta), point.z() + levelDelta))
                 .toList();
         Set<Integer> translatedStops = stopLevels.stream()

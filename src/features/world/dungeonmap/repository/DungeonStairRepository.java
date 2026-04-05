@@ -3,8 +3,9 @@ package features.world.dungeonmap.repository;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.TileShapeKind;
+import features.world.dungeonmap.model.geometry.TileShapeSpec;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
-import features.world.dungeonmap.model.structures.stair.StairShape;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -22,8 +23,8 @@ import java.util.Set;
 /**
  * Persists only the canonical stair owner fields plus the editor-reopen metadata that generated that path.
  *
- * <p>The persisted stair structure remains the explicit ordered path plus authored stop levels. Shape, direction,
- * anchor, and dimension fields are editor metadata used to reopen and edit a stair without reverse-engineering it
+ * <p>The persisted stair structure remains the explicit ordered path plus authored stop levels. Anchor and the
+ * generic shape-spec fields are editor metadata used to reopen and edit a stair without reverse-engineering it
  * from the path.
  */
 public final class DungeonStairRepository {
@@ -32,18 +33,14 @@ public final class DungeonStairRepository {
             String name,
             CellCoord anchorCell,
             int anchorLevelZ,
-            StairShape shape,
-            CardinalDirection direction,
+            TileShapeSpec shapeSpec,
             int minLevelZ,
             int maxLevelZ,
-            int dimension1,
-            int dimension2,
             Set<Integer> stopLevels
     ) {
         public StairEditorData {
             anchorCell = Objects.requireNonNull(anchorCell, "anchorCell");
-            shape = Objects.requireNonNull(shape, "shape");
-            direction = Objects.requireNonNull(direction, "direction");
+            shapeSpec = shapeSpec == null ? TileShapeSpec.defaultSpec() : shapeSpec;
             stopLevels = stopLevels == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(stopLevels));
         }
     }
@@ -85,8 +82,8 @@ public final class DungeonStairRepository {
         }
         Set<Integer> stopLevels = loadStopLevels(conn, stairId);
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT name, anchor_cell_x, anchor_cell_y, anchor_level_z, shape, direction_code, "
-                        + "dimension1, dimension2, min_level_z, max_level_z"
+                "SELECT name, anchor_cell_x, anchor_cell_y, anchor_level_z, shape_kind, shape_direction_code, "
+                        + "shape_param1, shape_param2, min_level_z, max_level_z"
                         + " FROM dungeon_stairs WHERE dungeon_map_id=? AND stair_id=?")) {
             ps.setLong(1, mapId);
             ps.setLong(2, stairId);
@@ -98,12 +95,13 @@ public final class DungeonStairRepository {
                         rs.getString("name"),
                         new CellCoord(rs.getInt("anchor_cell_x"), rs.getInt("anchor_cell_y")),
                         rs.getInt("anchor_level_z"),
-                        StairShape.parse(rs.getString("shape")),
-                        CardinalDirection.fromCode(rs.getInt("direction_code")),
+                        new TileShapeSpec(
+                                TileShapeKind.parse(rs.getString("shape_kind")),
+                                CardinalDirection.fromCode(rs.getInt("shape_direction_code")),
+                                rs.getInt("shape_param1"),
+                                rs.getInt("shape_param2")),
                         rs.getInt("min_level_z"),
                         rs.getInt("max_level_z"),
-                        rs.getInt("dimension1"),
-                        rs.getInt("dimension2"),
                         stopLevels);
             }
         }
@@ -120,7 +118,7 @@ public final class DungeonStairRepository {
         try (PreparedStatement ps = conn.prepareStatement(
                 "INSERT INTO dungeon_stairs("
                         + "dungeon_map_id, name, anchor_cell_x, anchor_cell_y, anchor_level_z, "
-                        + "shape, direction_code, dimension1, dimension2, min_level_z, max_level_z"
+                        + "shape_kind, shape_direction_code, shape_param1, shape_param2, min_level_z, max_level_z"
                         + ") VALUES(?,?,?,?,?,?,?,?,?,?,?)",
                 Statement.RETURN_GENERATED_KEYS)) {
             bindEditorColumns(ps, mapId, resolvedStair, resolvedEditorData);
@@ -145,16 +143,16 @@ public final class DungeonStairRepository {
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE dungeon_stairs SET "
                         + "name=?, anchor_cell_x=?, anchor_cell_y=?, anchor_level_z=?, "
-                        + "shape=?, direction_code=?, dimension1=?, dimension2=?, min_level_z=?, max_level_z=? "
+                        + "shape_kind=?, shape_direction_code=?, shape_param1=?, shape_param2=?, min_level_z=?, max_level_z=? "
                         + "WHERE stair_id=?")) {
             ps.setString(1, resolvedStair.name());
             ps.setInt(2, resolvedEditorData.anchorCell().x());
             ps.setInt(3, resolvedEditorData.anchorCell().y());
             ps.setInt(4, resolvedEditorData.anchorLevelZ());
-            ps.setString(5, resolvedEditorData.shape().name());
-            ps.setInt(6, resolvedEditorData.direction().code());
-            ps.setInt(7, resolvedEditorData.dimension1());
-            ps.setInt(8, resolvedEditorData.dimension2());
+            ps.setString(5, resolvedEditorData.shapeSpec().kind().name());
+            ps.setInt(6, resolvedEditorData.shapeSpec().direction().code());
+            ps.setInt(7, resolvedEditorData.shapeSpec().parameter1());
+            ps.setInt(8, resolvedEditorData.shapeSpec().parameter2());
             ps.setInt(9, resolvedEditorData.minLevelZ());
             ps.setInt(10, resolvedEditorData.maxLevelZ());
             ps.setLong(11, stairId);
@@ -223,10 +221,10 @@ public final class DungeonStairRepository {
         ps.setInt(3, editorData.anchorCell().x());
         ps.setInt(4, editorData.anchorCell().y());
         ps.setInt(5, editorData.anchorLevelZ());
-        ps.setString(6, editorData.shape().name());
-        ps.setInt(7, editorData.direction().code());
-        ps.setInt(8, editorData.dimension1());
-        ps.setInt(9, editorData.dimension2());
+        ps.setString(6, editorData.shapeSpec().kind().name());
+        ps.setInt(7, editorData.shapeSpec().direction().code());
+        ps.setInt(8, editorData.shapeSpec().parameter1());
+        ps.setInt(9, editorData.shapeSpec().parameter2());
         ps.setInt(10, editorData.minLevelZ());
         ps.setInt(11, editorData.maxLevelZ());
     }

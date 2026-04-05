@@ -5,6 +5,8 @@ import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.geometry.TileShapeKind;
+import features.world.dungeonmap.model.geometry.TileShapeSpec;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpointType;
 import features.world.dungeonmap.model.structures.connection.ConnectionKind;
@@ -12,7 +14,6 @@ import features.world.dungeonmap.model.structures.connection.DoorConnectionCarri
 import features.world.dungeonmap.model.structures.connection.DungeonConnection;
 import features.world.dungeonmap.model.structures.connection.StairConnectionCarrier;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
-import features.world.dungeonmap.model.structures.stair.StairShape;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
 import features.world.dungeonmap.model.objects.Door;
@@ -34,8 +35,8 @@ public final class DungeonTransitionRepository {
     private static final String SELECT_COLUMNS =
             "SELECT transition_id, dungeon_map_id, description, placement_type,"
                     + " door_level_z, door_start_x2, door_start_y2, door_end_x2, door_end_y2, door_endpoint_type, door_endpoint_id,"
-                    + " stair_anchor_cell_x, stair_anchor_cell_y, stair_anchor_level_z, stair_shape, stair_direction_code,"
-                    + " stair_dimension1, stair_dimension2, stair_min_level_z, stair_max_level_z,"
+                    + " stair_anchor_cell_x, stair_anchor_cell_y, stair_anchor_level_z, stair_shape_kind, stair_shape_direction_code,"
+                    + " stair_shape_param1, stair_shape_param2, stair_min_level_z, stair_max_level_z,"
                     + " destination_type, target_overworld_map_id, target_overworld_tile_id, target_dungeon_map_id,"
                     + " target_transition_id, linked_transition_id";
 
@@ -104,8 +105,8 @@ public final class DungeonTransitionRepository {
                     "INSERT INTO dungeon_transitions("
                             + "transition_id, dungeon_map_id, description, placement_type,"
                             + "door_level_z, door_start_x2, door_start_y2, door_end_x2, door_end_y2, door_endpoint_type, door_endpoint_id,"
-                            + "stair_anchor_cell_x, stair_anchor_cell_y, stair_anchor_level_z, stair_shape, stair_direction_code,"
-                            + "stair_dimension1, stair_dimension2, stair_min_level_z, stair_max_level_z,"
+                            + "stair_anchor_cell_x, stair_anchor_cell_y, stair_anchor_level_z, stair_shape_kind, stair_shape_direction_code,"
+                            + "stair_shape_param1, stair_shape_param2, stair_min_level_z, stair_max_level_z,"
                             + "destination_type, target_overworld_map_id, target_overworld_tile_id, target_dungeon_map_id,"
                             + "target_transition_id, linked_transition_id"
                             + ") VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")) {
@@ -120,8 +121,8 @@ public final class DungeonTransitionRepository {
                 "INSERT INTO dungeon_transitions("
                         + "dungeon_map_id, description, placement_type,"
                         + "door_level_z, door_start_x2, door_start_y2, door_end_x2, door_end_y2, door_endpoint_type, door_endpoint_id,"
-                        + "stair_anchor_cell_x, stair_anchor_cell_y, stair_anchor_level_z, stair_shape, stair_direction_code,"
-                        + "stair_dimension1, stair_dimension2, stair_min_level_z, stair_max_level_z,"
+                        + "stair_anchor_cell_x, stair_anchor_cell_y, stair_anchor_level_z, stair_shape_kind, stair_shape_direction_code,"
+                        + "stair_shape_param1, stair_shape_param2, stair_min_level_z, stair_max_level_z,"
                         + "destination_type, target_overworld_map_id, target_overworld_tile_id, target_dungeon_map_id,"
                         + "target_transition_id, linked_transition_id"
                         + ") VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
@@ -144,8 +145,8 @@ public final class DungeonTransitionRepository {
                 "UPDATE dungeon_transitions SET "
                         + "placement_type=?,"
                         + "door_level_z=?, door_start_x2=?, door_start_y2=?, door_end_x2=?, door_end_y2=?, door_endpoint_type=?, door_endpoint_id=?,"
-                        + "stair_anchor_cell_x=?, stair_anchor_cell_y=?, stair_anchor_level_z=?, stair_shape=?, stair_direction_code=?,"
-                        + "stair_dimension1=?, stair_dimension2=?, stair_min_level_z=?, stair_max_level_z=? "
+                        + "stair_anchor_cell_x=?, stair_anchor_cell_y=?, stair_anchor_level_z=?, stair_shape_kind=?, stair_shape_direction_code=?,"
+                        + "stair_shape_param1=?, stair_shape_param2=?, stair_min_level_z=?, stair_max_level_z=? "
                         + "WHERE transition_id=?")) {
             bindLocalConnection(ps, localConnection);
             ps.setLong(18, transitionId);
@@ -324,12 +325,13 @@ public final class DungeonTransitionRepository {
                     new StairConnectionCarrier(
                             new CellCoord(rs.getInt("stair_anchor_cell_x"), rs.getInt("stair_anchor_cell_y")),
                             rs.getInt("stair_anchor_level_z"),
-                            StairShape.parse(rs.getString("stair_shape")),
-                            CardinalDirection.fromCode(rs.getInt("stair_direction_code")),
+                            new TileShapeSpec(
+                                    TileShapeKind.parse(rs.getString("stair_shape_kind")),
+                                    CardinalDirection.fromCode(rs.getInt("stair_shape_direction_code")),
+                                    rs.getInt("stair_shape_param1"),
+                                    rs.getInt("stair_shape_param2")),
                             rs.getInt("stair_min_level_z"),
                             rs.getInt("stair_max_level_z"),
-                            rs.getInt("stair_dimension1"),
-                            rs.getInt("stair_dimension2"),
                             DungeonStair.resolved(null, mapId, null, pathNodes, stopLevels)),
                     List.of(ConnectionEndpoint.transition(transitionId)));
             default -> throw new SQLException("Unbekannter dungeon transition placement_type: " + placementType);
@@ -419,10 +421,10 @@ public final class DungeonTransitionRepository {
             ps.setInt(startIndex + 8, stairCarrier.anchorCell().x());
             ps.setInt(startIndex + 9, stairCarrier.anchorCell().y());
             ps.setInt(startIndex + 10, stairCarrier.anchorLevelZ());
-            ps.setString(startIndex + 11, stairCarrier.shape().name());
-            ps.setInt(startIndex + 12, stairCarrier.direction().code());
-            ps.setInt(startIndex + 13, stairCarrier.dimension1());
-            ps.setInt(startIndex + 14, stairCarrier.dimension2());
+            ps.setString(startIndex + 11, stairCarrier.shapeSpec().kind().name());
+            ps.setInt(startIndex + 12, stairCarrier.shapeSpec().direction().code());
+            ps.setInt(startIndex + 13, stairCarrier.shapeSpec().parameter1());
+            ps.setInt(startIndex + 14, stairCarrier.shapeSpec().parameter2());
             ps.setInt(startIndex + 15, stairCarrier.minLevelZ());
             ps.setInt(startIndex + 16, stairCarrier.maxLevelZ());
             return;

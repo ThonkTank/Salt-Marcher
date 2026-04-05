@@ -656,12 +656,9 @@ public final class DungeonRoomApplicationService {
                     new StairConnectionCarrier(
                             stairCarrier.anchorCell(),
                             stairCarrier.anchorLevelZ(),
-                            stairCarrier.shape(),
-                            stairCarrier.direction(),
+                            stairCarrier.shapeSpec(),
                             stairCarrier.minLevelZ(),
                             stairCarrier.maxLevelZ(),
-                            stairCarrier.dimension1(),
-                            stairCarrier.dimension2(),
                             DungeonStair.resolved(
                                     null,
                                     localConnection.mapId(),

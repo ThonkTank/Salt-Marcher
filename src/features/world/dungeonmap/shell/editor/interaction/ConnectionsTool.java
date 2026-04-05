@@ -12,6 +12,8 @@ import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.geometry.TileShapeKind;
+import features.world.dungeonmap.model.geometry.TileShapeSpec;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.Connection;
@@ -20,7 +22,6 @@ import features.world.dungeonmap.model.structures.connection.ConnectionKind;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
-import features.world.dungeonmap.model.structures.stair.StairShape;
 import features.world.dungeonmap.shell.editor.EditorCards;
 import features.world.dungeonmap.state.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
@@ -72,7 +73,7 @@ public final class ConnectionsTool implements EditorTool {
     private final Label stairExitLevelInputLabel = fieldLabel("Exit-Level");
     private final Label stairExitChipsLabel = fieldLabel("Exits");
     private final TextField stairNameField = new TextField();
-    private final ComboBox<StairShape> stairShapeBox = new ComboBox<>();
+    private final ComboBox<TileShapeKind> stairShapeBox = new ComboBox<>();
     private final ComboBox<CardinalDirection> stairDirectionBox = new ComboBox<>();
     private final TextField stairDimension1Field = new TextField();
     private final TextField stairDimension2Field = new TextField();
@@ -265,15 +266,15 @@ public final class ConnectionsTool implements EditorTool {
         HBox.setHgrow(stairActionSpacer, Priority.ALWAYS);
         HBox.setHgrow(stairExitLevelField, Priority.ALWAYS);
         stairExitLevelRow.setMaxWidth(Double.MAX_VALUE);
-        stairShapeBox.setItems(FXCollections.observableArrayList(StairShape.values()));
+        stairShapeBox.setItems(FXCollections.observableArrayList(TileShapeKind.values()));
         stairShapeBox.setConverter(new javafx.util.StringConverter<>() {
             @Override
-            public String toString(StairShape value) {
+            public String toString(TileShapeKind value) {
                 return value == null ? "" : value.label();
             }
 
             @Override
-            public StairShape fromString(String string) {
+            public TileShapeKind fromString(String string) {
                 return null;
             }
         });
@@ -345,8 +346,8 @@ public final class ConnectionsTool implements EditorTool {
         stairAnchorLabel.setText(stairAnchorText());
         stairFormBox.setManaged(createMode);
         stairFormBox.setVisible(createMode);
-        StairShape shape = currentStairShape();
-        updateStairFieldLayout(shape);
+        TileShapeKind shapeKind = currentStairShape();
+        updateStairFieldLayout(shapeKind);
         renderExitChips();
         stairExitLevelField.setDisable(stairDraftLoading || !createMode || stairAnchorCell == null);
         stairAddExitButton.setDisable(stairDraftLoading || !createMode || stairAnchorCell == null);
@@ -355,18 +356,13 @@ public final class ConnectionsTool implements EditorTool {
         stairStatusLabel.setText(stairStatusText(resolution));
     }
 
-    private void updateStairFieldLayout(StairShape shape) {
-        StairShape resolvedShape = shape == null ? StairShape.LADDER : shape;
+    private void updateStairFieldLayout(TileShapeKind shapeKind) {
+        TileShapeKind resolvedShape = shapeKind == null ? TileShapeKind.STACK : shapeKind;
         boolean showDirection = resolvedShape.needsDirection();
-        boolean showDimension1 = resolvedShape.needsSideLength() || resolvedShape.needsDimensions() || resolvedShape.needsRadius();
-        boolean showDimension2 = resolvedShape.needsDimensions();
-        stairDimension1Label.setText(switch (resolvedShape) {
-            case SQUARE -> "Seitenlänge";
-            case RECTANGULAR -> "Breite";
-            case CIRCULAR -> "Radius";
-            case LADDER, STRAIGHT -> "";
-        });
-        stairDimension2Label.setText(resolvedShape == StairShape.RECTANGULAR ? "Tiefe" : "");
+        boolean showDimension1 = resolvedShape.needsParameter1();
+        boolean showDimension2 = resolvedShape.needsParameter2();
+        stairDimension1Label.setText(showDimension1 ? resolvedShape.parameter1Label() : "");
+        stairDimension2Label.setText(showDimension2 ? resolvedShape.parameter2Label() : "");
         setNodeVisibility(stairDirectionBlock, showDirection);
         setNodeVisibility(stairDimension1Block, showDimension1);
         setNodeVisibility(stairDimension2Block, showDimension2);
@@ -628,10 +624,7 @@ public final class ConnectionsTool implements EditorTool {
         clearStairStatusOverride();
         setStairFields(
                 suggestedStairName(),
-                StairShape.LADDER,
-                CardinalDirection.defaultDirection(),
-                2,
-                2,
+                TileShapeSpec.defaultSpec(),
                 stairStopLevels);
         refreshStairPreview();
         refreshStatePane();
@@ -673,10 +666,7 @@ public final class ConnectionsTool implements EditorTool {
                     clearStairStatusOverride();
                     setStairFields(
                             spec.name(),
-                            spec.shape(),
-                            spec.direction(),
-                            spec.dimension1(),
-                            spec.dimension2(),
+                            spec.shapeSpec(),
                             spec.stopLevels());
                     lastResolvedStair = mapState.activeMap().findStair(spec.stairId());
                     if (preferredAnchorLevel == null || !selectStairAnchorLevel(preferredAnchorLevel)) {
@@ -698,18 +688,16 @@ public final class ConnectionsTool implements EditorTool {
 
     private void setStairFields(
             String name,
-            StairShape shape,
-            CardinalDirection direction,
-            int dimension1,
-            int dimension2,
+            TileShapeSpec shapeSpec,
             Set<Integer> stopLevels
     ) {
+        TileShapeSpec resolvedShapeSpec = shapeSpec == null ? TileShapeSpec.defaultSpec() : shapeSpec;
         syncingStairFields = true;
         stairNameField.setText(name == null ? "" : name);
-        stairShapeBox.setValue(shape == null ? StairShape.LADDER : shape);
-        stairDirectionBox.setValue(direction == null ? CardinalDirection.defaultDirection() : direction);
-        stairDimension1Field.setText(Integer.toString(dimension1));
-        stairDimension2Field.setText(Integer.toString(dimension2));
+        stairShapeBox.setValue(resolvedShapeSpec.kind());
+        stairDirectionBox.setValue(resolvedShapeSpec.direction());
+        stairDimension1Field.setText(Integer.toString(resolvedShapeSpec.parameter1()));
+        stairDimension2Field.setText(Integer.toString(resolvedShapeSpec.parameter2()));
         stairExitLevelField.clear();
         stairStopLevels.clear();
         for (Integer stopLevel : stopLevels == null ? Set.<Integer>of() : stopLevels) {
@@ -798,7 +786,7 @@ public final class ConnectionsTool implements EditorTool {
         clearStairStatusOverride();
         syncingStairFields = true;
         stairNameField.setText("");
-        stairShapeBox.setValue(StairShape.LADDER);
+        stairShapeBox.setValue(TileShapeKind.STACK);
         stairDirectionBox.setValue(CardinalDirection.defaultDirection());
         stairExitLevelField.setText("");
         stairDimension1Field.setText("2");
@@ -841,10 +829,11 @@ public final class ConnectionsTool implements EditorTool {
         if (stairAnchorCell == null || stairAnchorLevelZ == null) {
             return new StairDraftResolution(null, null, "Raum-Floor-Tile anklicken.");
         }
-        StairShape shape = currentStairShape();
+        TileShapeKind shape = currentStairShape();
         CardinalDirection direction = currentDirection();
-        int dimension1 = resolvedDimension(stairDimension1Field.getText(), shape.needsSideLength() || shape.needsDimensions() || shape.needsRadius());
-        int dimension2 = resolvedDimension(stairDimension2Field.getText(), shape.needsDimensions());
+        int dimension1 = resolvedDimension(stairDimension1Field.getText(), shape.needsParameter1());
+        int dimension2 = resolvedDimension(stairDimension2Field.getText(), shape.needsParameter2());
+        TileShapeSpec shapeSpec = new TileShapeSpec(shape, direction, dimension1, dimension2);
         // The UI authors only exit chips; the actual stair span is always the lowest/highest authored exit.
         LinkedHashSet<Integer> stopLevels = stairStopLevels.stream()
                 .filter(Objects::nonNull)
@@ -857,12 +846,9 @@ public final class ConnectionsTool implements EditorTool {
                 normalizedName(stairNameField.getText()),
                 stairAnchorCell,
                 stairAnchorLevelZ,
-                shape,
-                direction,
+                shapeSpec,
                 minLevel,
                 maxLevel,
-                dimension1,
-                dimension2,
                 stopLevels);
         Long mapId = mapState.activeMapId();
         DungeonLayout layout = mapState.activeMap();
@@ -904,9 +890,9 @@ public final class ConnectionsTool implements EditorTool {
         }
     }
 
-    private StairShape currentStairShape() {
-        StairShape shape = stairShapeBox.getValue();
-        return shape == null ? StairShape.LADDER : shape;
+    private TileShapeKind currentStairShape() {
+        TileShapeKind shape = stairShapeBox.getValue();
+        return shape == null ? TileShapeKind.STACK : shape;
     }
 
     private CardinalDirection currentDirection() {
@@ -1475,10 +1461,7 @@ public final class ConnectionsTool implements EditorTool {
         clearStairStatusOverride();
         setStairFields(
                 draft.name(),
-                draft.shape(),
-                draft.direction(),
-                draft.dimension1(),
-                draft.dimension2(),
+                draft.shapeSpec(),
                 draft.stopLevels());
         lastResolvedStair = null;
         state.clearPreview();

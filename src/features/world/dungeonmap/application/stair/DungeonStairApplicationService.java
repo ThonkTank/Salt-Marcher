@@ -3,10 +3,9 @@ package features.world.dungeonmap.application.stair;
 import database.DatabaseManager;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.model.geometry.TileShapeSpec;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
-import features.world.dungeonmap.model.structures.stair.StairShape;
 import features.world.dungeonmap.repository.DungeonLayoutRepository;
 import features.world.dungeonmap.repository.DungeonStairRepository;
 
@@ -153,12 +152,9 @@ public final class DungeonStairApplicationService {
                     editorData.name(),
                     editorData.anchorCell(),
                     editorData.anchorLevelZ(),
-                    editorData.shape(),
-                    editorData.direction(),
+                    editorData.shapeSpec(),
                     editorData.minLevelZ(),
                     editorData.maxLevelZ(),
-                    editorData.dimension1(),
-                    editorData.dimension2(),
                     editorData.stopLevels());
         }
     }
@@ -186,12 +182,9 @@ public final class DungeonStairApplicationService {
                 StairNameGenerator.nextName(layout),
                 draft.anchorCell(),
                 draft.anchorLevelZ(),
-                draft.shape(),
-                draft.direction(),
+                draft.shapeSpec(),
                 draft.minLevelZ(),
                 draft.maxLevelZ(),
-                draft.dimension1(),
-                draft.dimension2(),
                 draft.stopLevels());
     }
 
@@ -200,12 +193,9 @@ public final class DungeonStairApplicationService {
                 draft.name(),
                 draft.anchorCell(),
                 draft.anchorLevelZ(),
-                draft.shape(),
-                draft.direction(),
+                draft.shapeSpec(),
                 draft.minLevelZ(),
                 draft.maxLevelZ(),
-                draft.dimension1(),
-                draft.dimension2(),
                 draft.stopLevels());
     }
 
@@ -213,18 +203,14 @@ public final class DungeonStairApplicationService {
             String name,
             CellCoord anchorCell,
             int anchorLevelZ,
-            StairShape shape,
-            CardinalDirection direction,
+            TileShapeSpec shapeSpec,
             int minLevelZ,
             int maxLevelZ,
-            int dimension1,
-            int dimension2,
             Set<Integer> stopLevels
     ) {
         public StairDraft {
             anchorCell = Objects.requireNonNull(anchorCell, "anchorCell");
-            shape = shape == null ? StairShape.LADDER : shape;
-            direction = direction == null ? CardinalDirection.defaultDirection() : direction;
+            shapeSpec = shapeSpec == null ? TileShapeSpec.defaultSpec() : shapeSpec;
             stopLevels = stopLevels == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(stopLevels));
             name = name == null || name.isBlank() ? null : name.trim();
         }
@@ -250,18 +236,14 @@ public final class DungeonStairApplicationService {
             String name,
             CellCoord anchorCell,
             int anchorLevelZ,
-            StairShape shape,
-            CardinalDirection direction,
+            TileShapeSpec shapeSpec,
             int minLevelZ,
             int maxLevelZ,
-            int dimension1,
-            int dimension2,
             Set<Integer> stopLevels
     ) {
         public LoadedStairEditorSpec {
             anchorCell = Objects.requireNonNull(anchorCell, "anchorCell");
-            shape = shape == null ? StairShape.LADDER : shape;
-            direction = direction == null ? CardinalDirection.defaultDirection() : direction;
+            shapeSpec = shapeSpec == null ? TileShapeSpec.defaultSpec() : shapeSpec;
             stopLevels = stopLevels == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(stopLevels));
             name = name == null || name.isBlank() ? null : name.trim();
         }

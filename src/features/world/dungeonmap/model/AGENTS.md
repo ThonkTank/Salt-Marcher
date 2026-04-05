@@ -7,7 +7,7 @@ Use it together with the parent `dungeonmap/AGENTS.md` and the repository root `
 
 `geometry/ -> interaction/ + objects/ -> structures/ -> DungeonLayout`
 
-- `geometry/` owns reusable grid math plus the canonical reusable `TileShape`/`EdgeShape` carriers.
+- `geometry/` owns reusable grid math plus the canonical reusable `TileShape`/`EdgeShape` carriers and the generic `TileShapeKind`/`TileShapeSpec` catalog used to author reusable path-based shapes.
 - `interaction/` owns model-side selection, hit, and label descriptors that other layers may consume but not reinterpret.
 - `objects/` owns thin domain objects over geometry.
 - `structures/` owns dungeon semantics and structure-local behavior.
@@ -16,6 +16,7 @@ Use it together with the parent `dungeonmap/AGENTS.md` and the repository root `
 ## Geometry And Surface Contract
 
 - `CellCoord` is the canonical cell-space primitive. `GridPoint2x` and `GridSegment2x` are the canonical doubled-grid primitives. `TileShape` and `EdgeShape` are the only model-side geometry carriers built from them.
+- `TileShape` may own both unordered occupied cells and one ordered 3D path. Reusable generated forms are authored through `TileShapeSpec` and `TileShapeKind`, not through stair-local enums or generators.
 - Do not add offset codecs, parity bridge types, or secondary tile-area wrappers at model or persistence seams.
 - `Floor` and `DungeonStair` extend `TileShape`; `Wall` and `Door` extend `EdgeShape`.
 - `StructureDescriptor.LevelDescriptor` authors cluster/corridor truth through `surfaceShape`, `boundaryShape`, `openingShape`, and an optional floor `TileShape`, while `fillSeeds` remain authored metadata for persistence and flood-fill reconstruction.
@@ -41,5 +42,5 @@ Use it together with the parent `dungeonmap/AGENTS.md` and the repository root `
 - `Corridor` is a first-class structure with stable identity, nodes, segments, room bindings, derived geometry, and direct graph transforms.
 - Corridor room-bound endpoints keep absolute `CellCoord` room cells in memory. The graph compiles into the same `StructureDescriptor` and `StructureObject` surface model used by cluster-derived rooms, including opening segments for room-bound endpoints and persisted free boundary doors.
 - Junction nodes are explicit authored state. Routing must not invent extra nodes.
-- `DungeonStair` is a first-class structure with stable identity, explicit 3D path geometry, authored stop levels, and direct `TileShape` ownership over occupied cells. Exits are derived views from that path.
+- `DungeonStair` is a first-class structure with stable identity, authored stop levels, and direct `TileShape` ownership over its ordered occupied path plus occupied cells. Exits are derived views from that path.
 - `DungeonTransition` owns transition identity, destination, optional bidirectional link, and an optional placed `DungeonConnection`. Unplaced transitions are valid and spatial queries must handle absent local connections.

@@ -21,6 +21,10 @@ public class EdgeShape {
         return new EdgeShape(Map.of());
     }
 
+    public static EdgeShape fromBoundarySegments(Collection<GridSegment2x> segments2x) {
+        return new EdgeShape(normalizeBoundarySegments(segments2x));
+    }
+
     public EdgeShape(Collection<GridSegment2x> segments2x) {
         this(singleLevelMap(0, segments2x));
     }
@@ -113,6 +117,16 @@ public class EdgeShape {
                 .sorted(GridSegment2x.ORDER)
                 .forEach(result::add);
         return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
+    protected static List<GridSegment2x> normalizeBoundarySegments(Collection<GridSegment2x> segments) {
+        List<GridSegment2x> normalized = normalizeSegments(GridSegment2x.boundarySteps(segments));
+        for (GridSegment2x segment : normalized) {
+            if (!segment.isBoundaryEdge()) {
+                throw new IllegalArgumentException("Boundary segments must be boundary edges");
+            }
+        }
+        return normalized;
     }
 
     protected static Map<Integer, List<GridSegment2x>> normalizeSegmentsByLevel(

@@ -2,12 +2,10 @@ package features.world.dungeonmap.application.stair;
 
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
-import features.world.dungeonmap.model.structures.stair.StairPathGenerator;
-import features.world.dungeonmap.model.geometry.CubePoint;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -78,24 +76,19 @@ public final class StairDraftResolver {
                 throw new IllegalArgumentException("Treppenstopps liegen außerhalb der Treppenspanne");
             }
         }
-        String validationMessage = resolvedDraft.shape()
-                .validateDimensions(resolvedDraft.dimension1(), resolvedDraft.dimension2())
-                .orElse(null);
+        String validationMessage = resolvedDraft.shapeSpec().validate().orElse(null);
         if (validationMessage != null) {
             throw new IllegalArgumentException(validationMessage);
         }
         validateAnchor(resolvedLayout, resolvedDraft.anchorCell(), resolvedDraft.anchorLevelZ());
         return new ResolvedStairDraft(
                 resolvedDraft,
-                StairPathGenerator.generateAnchoredPath(
-                        resolvedDraft.shape(),
+                TileShape.generate(
+                        resolvedDraft.shapeSpec(),
                         resolvedDraft.anchorCell(),
                         resolvedDraft.anchorLevelZ(),
-                        resolvedDraft.direction(),
                         resolvedDraft.minLevelZ(),
-                        resolvedDraft.maxLevelZ(),
-                        resolvedDraft.dimension1(),
-                        resolvedDraft.dimension2()),
+                        resolvedDraft.maxLevelZ()),
                 resolvedDraft.stopLevels());
     }
 
@@ -110,12 +103,9 @@ public final class StairDraftResolver {
                 resolvedDraft.name(),
                 resolvedDraft.anchorCell().add(resolvedDelta),
                 resolvedDraft.anchorLevelZ() + levelDelta,
-                resolvedDraft.shape(),
-                resolvedDraft.direction(),
+                resolvedDraft.shapeSpec(),
                 resolvedDraft.minLevelZ() + levelDelta,
                 resolvedDraft.maxLevelZ() + levelDelta,
-                resolvedDraft.dimension1(),
-                resolvedDraft.dimension2(),
                 resolvedDraft.stopLevels().stream()
                         .map(level -> level == null ? null : level + levelDelta)
                         .filter(Objects::nonNull)
@@ -132,7 +122,7 @@ public final class StairDraftResolver {
                 stairId,
                 mapId,
                 resolution.draft().name(),
-                resolution.path(),
+                resolution.shape(),
                 resolution.stopLevels());
     }
 
@@ -145,12 +135,12 @@ public final class StairDraftResolver {
 
     public record ResolvedStairDraft(
             DungeonStairApplicationService.StairDraft draft,
-            List<CubePoint> path,
+            TileShape shape,
             Set<Integer> stopLevels
     ) {
         public ResolvedStairDraft {
             draft = Objects.requireNonNull(draft, "draft");
-            path = List.copyOf(path == null ? List.<CubePoint>of() : path);
+            shape = shape == null ? TileShape.empty() : shape;
             stopLevels = Set.copyOf(stopLevels == null ? Set.<Integer>of() : stopLevels);
         }
     }

@@ -98,17 +98,14 @@ public final class TransitionConnectionBuilder {
                 null,
                 mapId,
                 null,
-                resolvedDraft.path(),
+                resolvedDraft.shape(),
                 resolvedDraft.stopLevels());
         StairConnectionCarrier carrier = new StairConnectionCarrier(
                 resolvedDraft.draft().anchorCell(),
                 resolvedDraft.draft().anchorLevelZ(),
-                resolvedDraft.draft().shape(),
-                resolvedDraft.draft().direction(),
+                resolvedDraft.draft().shapeSpec(),
                 resolvedDraft.draft().minLevelZ(),
                 resolvedDraft.draft().maxLevelZ(),
-                resolvedDraft.draft().dimension1(),
-                resolvedDraft.draft().dimension2(),
                 stair);
         DungeonConnection candidate = new DungeonConnection(
                 ConnectionKind.TRANSITION,
