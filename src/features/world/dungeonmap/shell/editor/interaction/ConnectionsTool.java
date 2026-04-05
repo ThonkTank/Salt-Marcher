@@ -693,13 +693,13 @@ public final class ConnectionsTool implements EditorTool {
         stairAnchorCell = null;
         stairAnchorLevelZ = null;
         stairStopLevels.clear();
+        lastResolvedStair = null;
         clearStairStatusOverride();
         syncingStairFields = true;
         stairNameField.setText("");
         stairShapeBox.setValue(StairShape.LADDER);
         stairDirectionBox.setValue(CardinalDirection.defaultDirection());
-        stairMinLevelField.setText("");
-        stairMaxLevelField.setText("");
+        stairExitLevelField.setText("");
         stairDimension1Field.setText("2");
         stairDimension2Field.setText("2");
         syncingStairFields = false;
@@ -728,6 +728,7 @@ public final class ConnectionsTool implements EditorTool {
             state.clearPreview();
             return;
         }
+        lastResolvedStair = previewStair;
         DungeonLayout layout = mapState.activeMap();
         DungeonLayout previewLayout = stairDraftId == null
                 ? layout.withAddedStair(previewStair)
@@ -739,24 +740,17 @@ public final class ConnectionsTool implements EditorTool {
         if (stairAnchorCell == null || stairAnchorLevelZ == null) {
             return new StairDraftResolution(null, null, "Raum-Floor-Tile anklicken.");
         }
-        Integer minLevel = parseInteger(stairMinLevelField.getText());
-        if (minLevel == null) {
-            return new StairDraftResolution(null, null, "Min z ist ungültig");
-        }
-        Integer maxLevel = parseInteger(stairMaxLevelField.getText());
-        if (maxLevel == null) {
-            return new StairDraftResolution(null, null, "Max z ist ungültig");
-        }
-        if (minLevel > maxLevel) {
-            return new StairDraftResolution(null, null, "Treppenspanne ist ungültig");
-        }
         StairShape shape = currentStairShape();
         CardinalDirection direction = currentDirection();
         int dimension1 = resolvedDimension(stairDimension1Field.getText(), shape.needsSideLength() || shape.needsDimensions() || shape.needsRadius());
         int dimension2 = resolvedDimension(stairDimension2Field.getText(), shape.needsDimensions());
         LinkedHashSet<Integer> stopLevels = stairStopLevels.stream()
-                .filter(level -> level != null && level >= minLevel && level <= maxLevel)
+                .filter(Objects::nonNull)
+                .sorted()
                 .collect(Collectors.toCollection(LinkedHashSet::new));
+        stopLevels.add(stairAnchorLevelZ);
+        int minLevel = stopLevels.stream().min(Integer::compareTo).orElse(stairAnchorLevelZ);
+        int maxLevel = stopLevels.stream().max(Integer::compareTo).orElse(stairAnchorLevelZ);
         DungeonStairApplicationService.StairDraft draft = new DungeonStairApplicationService.StairDraft(
                 normalizedName(stairNameField.getText()),
                 stairAnchorCell,
@@ -777,8 +771,9 @@ public final class ConnectionsTool implements EditorTool {
             DungeonStair previewStair = allowSingleStop
                     ? StairDraftResolver.resolvePreview(layout, stairDraftId, mapId, draft)
                     : StairDraftResolver.resolveCommitted(layout, stairDraftId, mapId, draft);
+            lastResolvedStair = previewStair;
             String status = stopLevels.size() < 2
-                    ? "Mindestens eine weitere Ebene wählen"
+                    ? "Mindestens einen weiteren Exit hinzufügen"
                     : stairDraftDirty
                     ? "Zum Speichern Übernehmen."
                     : "Treppe geladen.";
