@@ -14,7 +14,6 @@ public sealed interface DungeonSelectionRef permits
         DungeonSelectionRef.StairRef,
         DungeonSelectionRef.TransitionRef,
         DungeonSelectionRef.VertexRef,
-        DungeonSelectionRef.ClusterBoundaryRef,
         DungeonSelectionRef.RoomBoundaryRef,
         DungeonSelectionRef.ConnectionRef,
         DungeonSelectionRef.CorridorTileRef,
@@ -35,7 +34,6 @@ public sealed interface DungeonSelectionRef permits
             case StairRef ignored -> DungeonHitKind.STAIR;
             case TransitionRef ignored -> DungeonHitKind.TRANSITION;
             case VertexRef ignored -> DungeonHitKind.VERTEX;
-            case ClusterBoundaryRef ignored -> DungeonHitKind.CLUSTER_BOUNDARY;
             case RoomBoundaryRef ignored -> DungeonHitKind.ROOM_BOUNDARY;
             case ConnectionRef ignored -> DungeonHitKind.CONNECTION;
             case CorridorTileRef ignored -> DungeonHitKind.CORRIDOR_TILE;
@@ -101,17 +99,6 @@ public sealed interface DungeonSelectionRef permits
     record VertexRef(GridPoint2x vertex2x) implements DungeonSelectionRef {
         public VertexRef {
             vertex2x = Objects.requireNonNull(vertex2x, "vertex2x");
-        }
-    }
-
-    record ClusterBoundaryRef(Long clusterId, GridSegment2x boundarySegment2x) implements DungeonSelectionRef {
-        public ClusterBoundaryRef {
-            boundarySegment2x = Objects.requireNonNull(boundarySegment2x, "boundarySegment2x");
-        }
-
-        @Override
-        public DungeonSelectionRef ownerRef() {
-            return clusterId == null ? null : new ClusterRef(clusterId);
         }
     }
 

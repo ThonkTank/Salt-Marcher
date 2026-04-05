@@ -3,7 +3,6 @@ package features.world.dungeonmap.model.interaction;
 public enum DungeonHitKind {
     VERTEX,
     CLUSTER_LABEL,
-    CLUSTER_BOUNDARY,
     ROOM,
     ROOM_BOUNDARY,
     CONNECTION,

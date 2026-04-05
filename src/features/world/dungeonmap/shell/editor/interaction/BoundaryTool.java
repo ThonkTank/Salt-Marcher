@@ -297,10 +297,12 @@ public final class BoundaryTool implements EditorTool {
         if (snapshot == null || layout == null) {
             return null;
         }
-        DungeonSelectionRef ref = snapshot.firstRefMatching(candidate ->
-                candidate instanceof DungeonSelectionRef.ClusterBoundaryRef
-                        || candidate instanceof DungeonSelectionRef.RoomBoundaryRef);
-        return clusterIdFromBoundaryRef(layout, ref, levelZ);
+        DungeonSelectionRef ref = snapshot.firstRefMatching(candidate -> candidate instanceof DungeonSelectionRef.RoomBoundaryRef);
+        if (!(ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundaryRef)) {
+            return null;
+        }
+        DungeonLayout.RoomBoundaryDescription description = layout.describeRoomBoundary(roomBoundaryRef, levelZ);
+        return description == null ? null : description.clusterId();
     }
 
     private void showDraft(Draft nextDraft) {
@@ -318,17 +320,6 @@ public final class BoundaryTool implements EditorTool {
         draft = null;
         state.clearPreview();
         refreshStatePane();
-    }
-
-    private static Long clusterIdFromBoundaryRef(DungeonLayout layout, DungeonSelectionRef ref, int levelZ) {
-        return switch (ref) {
-            case DungeonSelectionRef.ClusterBoundaryRef clusterBoundaryRef -> clusterBoundaryRef.clusterId();
-            case DungeonSelectionRef.RoomBoundaryRef roomBoundaryRef -> {
-                DungeonLayout.RoomBoundaryDescription description = layout.describeRoomBoundary(roomBoundaryRef, levelZ);
-                yield description == null ? null : description.clusterId();
-            }
-            default -> null;
-        };
     }
 
     private static DungeonSelectionRef clusterOwnerRef(Long clusterId) {

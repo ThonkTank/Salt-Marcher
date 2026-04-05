@@ -1,14 +1,10 @@
 package features.world.dungeonmap.shell.interaction;
 
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
-import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.Connection;
-import features.world.dungeonmap.model.structures.connection.ConnectionKind;
 import features.world.dungeonmap.model.structures.connection.CorridorConnection;
 import features.world.dungeonmap.model.structures.connection.LocalConnection;
 import features.world.dungeonmap.model.structures.room.Room;
@@ -16,7 +12,6 @@ import features.world.dungeonmap.model.structures.room.Room;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 public final class DungeonBoundaryHitSource implements DungeonHitSource {
@@ -32,7 +27,6 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
         List<RoomCluster> projectedClusters = projectedLayout.clusters();
         Set<GridSegment2x> connectionSegments = connectionSegments(projectedLayout.connections());
 
-        descriptors.addAll(clusterBoundaryDescriptors(projectedClusters, probe.levelZ()));
         descriptors.addAll(roomBoundaryDescriptors(projectedClusters, projectedLayout, connectionSegments, probe.levelZ()));
         descriptors.addAll(connectionDescriptors(projectedLayout.connections(), probe.levelZ()));
         return List.copyOf(descriptors);
@@ -47,36 +41,6 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
             segments.addAll(connection.door().segments2x());
         }
         return Set.copyOf(segments);
-    }
-
-    private static List<DungeonHitDescriptor> clusterBoundaryDescriptors(List<RoomCluster> projectedClusters, int levelZ) {
-        ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
-        for (RoomCluster cluster : projectedClusters) {
-            if (cluster.clusterId() == null) {
-                continue;
-            }
-            for (Map.Entry<GridSegment2x, InternalBoundaryType> entry : cluster.internalBoundaryKinds().entrySet()) {
-                GridSegment2x segment = entry.getKey();
-                if (segment == null) {
-                    continue;
-                }
-                CellCoord baseCell = segment.touchingCells().stream()
-                        .filter(cluster::contains)
-                        .sorted(CellCoord.ORDER)
-                        .findFirst()
-                        .orElse(null);
-                CardinalDirection direction = baseCell == null
-                        ? null
-                        : segment.directionFrom(baseCell);
-                if (baseCell == null || direction == null) {
-                    continue;
-                }
-                descriptors.add(new DungeonHitDescriptor(
-                        new DungeonSelectionRef.ClusterBoundaryRef(cluster.clusterId(), segment),
-                        List.of(new DungeonHitSurface.SegmentSurface(Set.of(segment), levelZ))));
-            }
-        }
-        return List.copyOf(descriptors);
     }
 
     private static List<DungeonHitDescriptor> roomBoundaryDescriptors(

@@ -464,12 +464,6 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
     }
 
     private static void drawHoveredPart(StructureRenderPass pass, DungeonSelectionRef ref) {
-        if (ref instanceof DungeonSelectionRef.ClusterBoundaryRef clusterBoundaryRef) {
-            pass.gc().setStroke(withOpacity(pass.palette().highlightStroke(), 0.95));
-            pass.gc().setLineWidth(3.0);
-            strokeSegment2x(pass.gc(), pass.camera(), pass.gridSize(), clusterBoundaryRef.boundarySegment2x());
-            return;
-        }
         if (ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundaryRef) {
             drawHoveredDoorPart(pass, roomBoundaryRef.boundarySegment2x());
             return;
