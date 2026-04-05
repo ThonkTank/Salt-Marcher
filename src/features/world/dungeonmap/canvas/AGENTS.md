@@ -15,6 +15,7 @@ Use it together with the parent `dungeonmap/AGENTS.md` and the repository root `
 - Rendering is explicit and coalesced: state changes request redraw, redraw builds one `DungeonSceneFrame`, and the renderer consumes that snapshot.
 - Editor and runtime views pass display-only render payloads into the workspace. Workflow state does not belong in render payloads.
 - `DungeonGridSceneRenderer` renders room and corridor floors from `CellCoord` surfaces and boundaries/overlays from final `GridPoint2x` and `GridSegment2x` carried by `StructureObject`, editor previews, and runtime overlays.
+- Editor hover rendering resolves generic `DungeonHitSurface` overlays through `DungeonSelectionHighlightResolver`; do not rebuild hover geometry from ref variants directly in the renderer.
 - Paint previews are direct `CellCoord` overlays. Do not build temporary `StructureObject`s just to render them.
 - Corridor graph handles are an editor-only overlay on top of shared structure geometry.
 - `DungeonEditorRenderState` is display-only and carries selection, hover, and preview geometry only.

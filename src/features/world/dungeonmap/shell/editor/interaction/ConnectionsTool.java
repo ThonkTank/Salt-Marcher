@@ -32,13 +32,17 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.scene.control.ToggleButton;
+import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import ui.async.UiAsyncTasks;
 import ui.async.UiErrorReporter;
 
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
@@ -60,32 +64,30 @@ public final class ConnectionsTool implements EditorTool {
     private final VBox connectionBox = new VBox(6, connectionSummaryLabel, connectionDetailLabel, connectionMetaLabel);
 
     private final Label stairSummaryLabel = new Label("Keine Treppe gewählt");
-    private final Label stairAnchorLabel = new Label("Kein Treppenstart");
+    private final Label stairAnchorLabel = new Label("Kein Treppenanker");
+    private final Label stairNameInputLabel = fieldLabel("Name");
+    private final Label stairShapeInputLabel = fieldLabel("Form");
+    private final Label stairDirectionInputLabel = fieldLabel("Richtung");
+    private final Label stairDimension1Label = fieldLabel("Maß");
+    private final Label stairDimension2Label = fieldLabel("Maß");
+    private final Label stairExitLevelInputLabel = fieldLabel("Exit-Level");
+    private final Label stairExitChipsLabel = fieldLabel("Exits");
     private final TextField stairNameField = new TextField();
     private final ComboBox<StairShape> stairShapeBox = new ComboBox<>();
     private final ComboBox<CardinalDirection> stairDirectionBox = new ComboBox<>();
     private final TextField stairDimension1Field = new TextField();
     private final TextField stairDimension2Field = new TextField();
-    private final TextField stairMinLevelField = new TextField();
-    private final TextField stairMaxLevelField = new TextField();
-    private final FlowPane stairStopButtons = new FlowPane();
+    private final TextField stairExitLevelField = new TextField();
+    private final Button stairAddExitButton = new Button("Hinzufügen");
+    private final FlowPane stairExitChips = new FlowPane();
     private final Button stairApplyButton = new Button("Übernehmen");
     private final Button stairCancelButton = new Button("Abbrechen");
     private final Label stairStatusLabel = new Label();
-    private final Label stairStopLabel = new Label("Verbindungen");
-    private final HBox stairLevelRow = new HBox(6, new Label("Min z"), stairMinLevelField, new Label("Max z"), stairMaxLevelField);
-    private final HBox stairDimensionRow = new HBox(6, stairDimension1Field, stairDimension2Field);
-    private final HBox stairActionRow = new HBox(6, stairApplyButton, stairCancelButton);
-    private final VBox stairFormBox = new VBox(
-            6,
-            stairNameField,
-            stairShapeBox,
-            stairDirectionBox,
-            stairDimensionRow,
-            stairLevelRow,
-            stairStopLabel,
-            stairStopButtons,
-            stairActionRow);
+    private final GridPane stairFormGrid = new GridPane();
+    private final HBox stairExitLevelRow = new HBox(6, stairExitLevelField, stairAddExitButton);
+    private final Region stairActionSpacer = new Region();
+    private final HBox stairActionRow = new HBox(6, stairActionSpacer, stairApplyButton, stairCancelButton);
+    private final VBox stairFormBox = new VBox(8, stairFormGrid, stairActionRow);
     private final VBox connectionCard = EditorCards.card("Connections", connectionBox);
     private final VBox stairCard = EditorCards.card("Treppe", stairSummaryLabel, stairAnchorLabel, stairFormBox, stairStatusLabel);
 
@@ -103,6 +105,7 @@ public final class ConnectionsTool implements EditorTool {
     private boolean stairDraftLoading;
     private long stairLoadRequestSequence;
     private String stairStatusOverride;
+    private DungeonStair lastResolvedStair;
 
     public ConnectionsTool(
             DungeonMapState mapState,
@@ -230,9 +233,17 @@ public final class ConnectionsTool implements EditorTool {
         stairSummaryLabel.setWrapText(true);
         stairAnchorLabel.setWrapText(true);
         stairStatusLabel.setWrapText(true);
-        stairStopButtons.setHgap(6);
-        stairStopButtons.setVgap(6);
-        stairNameField.setPromptText("Name");
+        stairStatusLabel.getStyleClass().add("text-muted");
+        stairNameField.setPromptText("Treppenname");
+        stairExitLevelField.setPromptText("z");
+        stairExitChips.setHgap(6);
+        stairExitChips.setVgap(6);
+        stairExitChips.setMaxWidth(Double.MAX_VALUE);
+        stairFormBox.setFillWidth(true);
+        stairCard.setFillWidth(true);
+        HBox.setHgrow(stairActionSpacer, Priority.ALWAYS);
+        HBox.setHgrow(stairExitLevelField, Priority.ALWAYS);
+        configureStairFormGrid();
         stairShapeBox.setItems(FXCollections.observableArrayList(StairShape.values()));
         stairShapeBox.setConverter(new javafx.util.StringConverter<>() {
             @Override
@@ -259,41 +270,81 @@ public final class ConnectionsTool implements EditorTool {
         });
         stairShapeBox.valueProperty().addListener((obs, oldValue, newValue) -> {
             if (!syncingStairFields) {
-                onStairFieldChanged(false);
+                onStairFieldChanged();
             }
         });
         stairDirectionBox.valueProperty().addListener((obs, oldValue, newValue) -> {
             if (!syncingStairFields) {
-                onStairFieldChanged(false);
-            }
-        });
-        stairNameField.textProperty().addListener((obs, oldValue, newValue) -> {
-            if (!syncingStairFields) {
-                onStairFieldChanged(false);
+                onStairFieldChanged();
             }
         });
         stairDimension1Field.textProperty().addListener((obs, oldValue, newValue) -> {
             if (!syncingStairFields) {
-                onStairFieldChanged(false);
+                onStairFieldChanged();
             }
         });
         stairDimension2Field.textProperty().addListener((obs, oldValue, newValue) -> {
             if (!syncingStairFields) {
-                onStairFieldChanged(false);
+                onStairFieldChanged();
             }
         });
-        stairMinLevelField.textProperty().addListener((obs, oldValue, newValue) -> {
+        stairNameField.textProperty().addListener((obs, oldValue, newValue) -> {
             if (!syncingStairFields) {
-                onStairFieldChanged(true);
+                onStairFieldChanged();
             }
         });
-        stairMaxLevelField.textProperty().addListener((obs, oldValue, newValue) -> {
-            if (!syncingStairFields) {
-                onStairFieldChanged(true);
-            }
-        });
+        stairExitLevelField.setOnAction(event -> addExitLevel());
+        stairAddExitButton.setOnAction(event -> addExitLevel());
         stairApplyButton.setOnAction(event -> commitStairDraft());
         stairCancelButton.setOnAction(event -> cancelStairDraft());
+    }
+
+    private void configureStairFormGrid() {
+        stairFormGrid.setHgap(8);
+        stairFormGrid.setVgap(6);
+        stairFormGrid.setMaxWidth(Double.MAX_VALUE);
+        ColumnConstraints labelColumn = new ColumnConstraints();
+        ColumnConstraints valueColumn = new ColumnConstraints();
+        ColumnConstraints secondaryLabelColumn = new ColumnConstraints();
+        ColumnConstraints secondaryValueColumn = new ColumnConstraints();
+        valueColumn.setHgrow(Priority.ALWAYS);
+        secondaryValueColumn.setHgrow(Priority.ALWAYS);
+        stairFormGrid.getColumnConstraints().setAll(labelColumn, valueColumn, secondaryLabelColumn, secondaryValueColumn);
+
+        configureStretchField(stairNameField);
+        configureStretchField(stairShapeBox);
+        configureStretchField(stairDirectionBox);
+        configureStretchField(stairDimension1Field);
+        configureStretchField(stairDimension2Field);
+
+        stairFormGrid.add(stairNameInputLabel, 0, 0);
+        stairFormGrid.add(stairNameField, 1, 0, 3, 1);
+
+        stairFormGrid.add(stairShapeInputLabel, 0, 1);
+        stairFormGrid.add(stairShapeBox, 1, 1);
+        stairFormGrid.add(stairDirectionInputLabel, 2, 1);
+        stairFormGrid.add(stairDirectionBox, 3, 1);
+
+        stairFormGrid.add(stairDimension1Label, 0, 2);
+        stairFormGrid.add(stairDimension1Field, 1, 2);
+        stairFormGrid.add(stairDimension2Label, 2, 2);
+        stairFormGrid.add(stairDimension2Field, 3, 2);
+
+        stairFormGrid.add(stairExitLevelInputLabel, 0, 3);
+        stairFormGrid.add(stairExitLevelRow, 1, 3, 3, 1);
+
+        stairFormGrid.add(stairExitChipsLabel, 0, 4);
+        stairFormGrid.add(stairExitChips, 1, 4, 3, 1);
+    }
+
+    private static void configureStretchField(Node node) {
+        if (node == null) {
+            return;
+        }
+        if (node instanceof Region region) {
+            region.setMaxWidth(Double.MAX_VALUE);
+        }
+        GridPane.setHgrow(node, Priority.ALWAYS);
     }
 
     private void renderConnectionPane(Connection connection, Corridor corridor) {
@@ -323,10 +374,14 @@ public final class ConnectionsTool implements EditorTool {
         stairFormBox.setVisible(createMode);
         StairShape shape = currentStairShape();
         boolean showDirection = shape.needsDirection();
+        stairDirectionInputLabel.setManaged(showDirection);
+        stairDirectionInputLabel.setVisible(showDirection);
         stairDirectionBox.setManaged(showDirection);
         stairDirectionBox.setVisible(showDirection);
         configureDimensionFields(shape);
-        renderStopButtons();
+        renderExitChips();
+        stairExitLevelField.setDisable(stairDraftLoading || !createMode || stairAnchorCell == null);
+        stairAddExitButton.setDisable(stairDraftLoading || !createMode || stairAnchorCell == null);
         stairApplyButton.setDisable(!createMode || stairDraftLoading || stairAnchorCell == null);
         stairCancelButton.setDisable(stairDraftLoading || (stairAnchorCell == null && stairDraftId == null));
         stairStatusLabel.setText(stairStatusText(resolution));
@@ -336,68 +391,60 @@ public final class ConnectionsTool implements EditorTool {
         StairShape resolvedShape = shape == null ? StairShape.LADDER : shape;
         boolean showDimension1 = resolvedShape.needsSideLength() || resolvedShape.needsDimensions() || resolvedShape.needsRadius();
         boolean showDimension2 = resolvedShape.needsDimensions();
-        stairDimension1Field.setManaged(showDimension1);
-        stairDimension1Field.setVisible(showDimension1);
-        stairDimension2Field.setManaged(showDimension2);
-        stairDimension2Field.setVisible(showDimension2);
-        stairDimensionRow.setManaged(showDimension1 || showDimension2);
-        stairDimensionRow.setVisible(showDimension1 || showDimension2);
-        stairDimension1Field.setPromptText(switch (resolvedShape) {
+        stairDimension1Label.setText(switch (resolvedShape) {
             case SQUARE -> "Seitenlänge";
             case RECTANGULAR -> "Breite";
             case CIRCULAR -> "Radius";
             case LADDER, STRAIGHT -> "";
         });
-        stairDimension2Field.setPromptText(resolvedShape == StairShape.RECTANGULAR ? "Tiefe" : "");
+        stairDimension2Label.setText(resolvedShape == StairShape.RECTANGULAR ? "Tiefe" : "");
+        stairDimension1Label.setManaged(showDimension1);
+        stairDimension1Label.setVisible(showDimension1);
+        stairDimension1Field.setManaged(showDimension1);
+        stairDimension1Field.setVisible(showDimension1);
+        stairDimension2Label.setManaged(showDimension2);
+        stairDimension2Label.setVisible(showDimension2);
+        stairDimension2Field.setManaged(showDimension2);
+        stairDimension2Field.setVisible(showDimension2);
+        stairDimension1Field.setPromptText(showDimension1 ? stairDimension1Label.getText() : "");
+        stairDimension2Field.setPromptText(showDimension2 ? stairDimension2Label.getText() : "");
     }
 
-    private void renderStopButtons() {
-        stairStopButtons.getChildren().clear();
-        Integer minLevel = parseInteger(stairMinLevelField.getText());
-        Integer maxLevel = parseInteger(stairMaxLevelField.getText());
-        if (minLevel == null || maxLevel == null || minLevel > maxLevel) {
-            return;
-        }
-        stairStopLevels.removeIf(level -> level == null || level < minLevel || level > maxLevel);
-        if (stairAnchorLevelZ != null && stairAnchorLevelZ >= minLevel && stairAnchorLevelZ <= maxLevel) {
-            stairStopLevels.add(stairAnchorLevelZ);
-        }
-        for (int level = minLevel; level <= maxLevel; level++) {
-            ToggleButton button = new ToggleButton("z=" + level);
-            button.setSelected(stairStopLevels.contains(level));
-            boolean anchorLevel = Objects.equals(stairAnchorLevelZ, level);
-            button.setDisable(anchorLevel || stairDraftLoading || activeTool != DungeonEditorTool.CONNECTIONS);
-            if (anchorLevel && !button.getStyleClass().contains("selected")) {
-                button.getStyleClass().add("selected");
+    private void renderExitChips() {
+        stairExitChips.getChildren().clear();
+        for (Integer level : sortedStopLevels()) {
+            if (level == null) {
+                continue;
             }
-            int buttonLevel = level;
-            button.setOnAction(event -> toggleStopLevel(buttonLevel, button.isSelected()));
-            stairStopButtons.getChildren().add(button);
+            boolean anchorLevel = Objects.equals(stairAnchorLevelZ, level);
+            HBox chip = new HBox(2);
+            chip.getStyleClass().addAll("chip", anchorLevel ? "chip-type" : "chip-cr");
+            Label label = new Label(anchorLevel ? "z=" + level + " · Anker" : "z=" + level);
+            chip.getChildren().add(label);
+            if (activeTool == DungeonEditorTool.CONNECTIONS && !stairDraftLoading) {
+                chip.setOnMouseClicked(event -> selectStairAnchorLevel(level));
+            } else {
+                chip.setOnMouseClicked(null);
+            }
+            if (!anchorLevel && activeTool == DungeonEditorTool.CONNECTIONS) {
+                Button remove = new Button("\u00d7");
+                remove.getStyleClass().addAll("flat", "compact", "chip-remove-btn");
+                remove.setAccessibleText("Entfernen: Exit z=" + level);
+                remove.setDisable(stairDraftLoading);
+                remove.setOnAction(event -> removeExitLevel(level));
+                chip.getChildren().add(remove);
+            }
+            stairExitChips.getChildren().add(chip);
         }
     }
 
-    private void toggleStopLevel(int level, boolean selected) {
-        clearStairStatusOverride();
-        if (selected) {
-            stairStopLevels.add(level);
-        } else {
-            stairStopLevels.remove(level);
-        }
-        stairDraftDirty = true;
-        refreshStairPreview();
-        refreshStatePane();
-    }
-
-    private void onStairFieldChanged(boolean rebuildStops) {
+    private void onStairFieldChanged() {
         clearStairStatusOverride();
         if (stairAnchorCell == null || stairDraftLoading) {
             refreshStatePane();
             return;
         }
         stairDraftDirty = true;
-        if (rebuildStops) {
-            renderStopButtons();
-        }
         refreshStairPreview();
         refreshStatePane();
     }
@@ -423,7 +470,12 @@ public final class ConnectionsTool implements EditorTool {
         if (hit instanceof DungeonSelectionRef.StairRef stairRef && stairRef.stairId() != null) {
             clearPendingEndpoint();
             state.selectRef(stairOwnerRef(stairRef.stairId()));
-            loadStairEditor(stairRef.stairId());
+            Integer preferredAnchorLevel = preferredAnchorLevel(stairRef.stairId(), ctx);
+            if (stairFlowActive() && Objects.equals(stairDraftId, stairRef.stairId())) {
+                selectStairAnchorLevel(preferredAnchorLevel);
+            } else {
+                loadStairEditor(stairRef.stairId(), preferredAnchorLevel);
+            }
             return true;
         }
         if (!(hit instanceof DungeonSelectionRef.FloorCellRef floorCellRef)) {
@@ -475,8 +527,6 @@ public final class ConnectionsTool implements EditorTool {
                 null,
                 StairShape.LADDER,
                 CardinalDirection.defaultDirection(),
-                levelZ,
-                levelZ,
                 2,
                 2,
                 stairStopLevels);
@@ -484,7 +534,7 @@ public final class ConnectionsTool implements EditorTool {
         refreshStatePane();
     }
 
-    private void loadStairEditor(long stairId) {
+    private void loadStairEditor(long stairId, Integer preferredAnchorLevel) {
         Long mapId = mapState.activeMapId();
         if (mapId == null || stairId <= 0) {
             return;
@@ -522,13 +572,16 @@ public final class ConnectionsTool implements EditorTool {
                             spec.name(),
                             spec.shape(),
                             spec.direction(),
-                            spec.minLevelZ(),
-                            spec.maxLevelZ(),
                             spec.dimension1(),
                             spec.dimension2(),
                             spec.stopLevels());
-                    state.clearPreview();
-                    refreshStatePane();
+                    lastResolvedStair = mapState.activeMap().findStair(spec.stairId());
+                    if (preferredAnchorLevel != null) {
+                        selectStairAnchorLevel(preferredAnchorLevel);
+                    } else {
+                        state.clearPreview();
+                        refreshStatePane();
+                    }
                 },
                 throwable -> {
                     if (requestId != stairLoadRequestSequence) {
@@ -536,6 +589,7 @@ public final class ConnectionsTool implements EditorTool {
                     }
                     stairDraftLoading = false;
                     stairStatusOverride = "Treppendaten konnten nicht geladen werden";
+                    lastResolvedStair = null;
                     UiErrorReporter.reportBackgroundFailure("ConnectionsTool.loadStairEditor()", throwable);
                     refreshStatePane();
                 });
@@ -545,8 +599,6 @@ public final class ConnectionsTool implements EditorTool {
             String name,
             StairShape shape,
             CardinalDirection direction,
-            int minLevel,
-            int maxLevel,
             int dimension1,
             int dimension2,
             Set<Integer> stopLevels
@@ -555,17 +607,16 @@ public final class ConnectionsTool implements EditorTool {
         stairNameField.setText(name == null ? "" : name);
         stairShapeBox.setValue(shape == null ? StairShape.LADDER : shape);
         stairDirectionBox.setValue(direction == null ? CardinalDirection.defaultDirection() : direction);
-        stairMinLevelField.setText(Integer.toString(minLevel));
-        stairMaxLevelField.setText(Integer.toString(maxLevel));
         stairDimension1Field.setText(Integer.toString(dimension1));
         stairDimension2Field.setText(Integer.toString(dimension2));
+        stairExitLevelField.clear();
         stairStopLevels.clear();
         for (Integer stopLevel : stopLevels == null ? Set.<Integer>of() : stopLevels) {
             if (stopLevel != null) {
                 stairStopLevels.add(stopLevel);
             }
         }
-        if (stairAnchorLevelZ != null && stairAnchorLevelZ >= minLevel && stairAnchorLevelZ <= maxLevel) {
+        if (stairAnchorLevelZ != null) {
             stairStopLevels.add(stairAnchorLevelZ);
         }
         syncingStairFields = false;

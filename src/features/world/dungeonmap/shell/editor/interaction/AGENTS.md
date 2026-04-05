@@ -5,7 +5,8 @@ Use it together with `shell/AGENTS.md`, the parent `dungeonmap/AGENTS.md`, and t
 
 ## Editor Pipeline
 
-- `EditorInteraction` runs the canonical editor pipeline: collect the shared hit snapshot, let the active tool interpret it, store hover intent, then dispatch press/drag/release with an `EditorToolContext`.
+- `EditorInteraction` runs the canonical editor pipeline: collect the shared hit snapshot, ask the active tool for ordered interaction capabilities, execute the first matching capability, store hover intent, then dispatch press/drag/release with an `EditorToolContext`.
+- `EditorTool.interactionCapabilities(...)` is the tool-owned declaration of "what this tool reacts to". Hover, hit resolution, and click handling must stay aligned through that one ordered capability list.
 - `EditorTool` implementations own gesture meaning. Promote state into shared containers only when multiple collaborators truly need it.
 
 ## Tool Ownership

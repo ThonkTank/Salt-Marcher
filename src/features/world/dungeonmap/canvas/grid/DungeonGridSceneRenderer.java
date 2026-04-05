@@ -22,6 +22,8 @@ import features.world.dungeonmap.model.structures.corridor.CorridorNode;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
+import features.world.dungeonmap.shell.interaction.DungeonHitSurface;
+import features.world.dungeonmap.shell.interaction.DungeonSelectionHighlightResolver;
 import features.world.dungeonmap.state.EditorHover;
 import features.world.dungeonmap.state.EditorPreview;
 import javafx.scene.canvas.GraphicsContext;
@@ -429,7 +431,13 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             drawHoveredTarget(pass, hovered.ref());
         }
         if (hovered.scope().showsPart()) {
-            drawHoveredPart(pass, hovered.ref());
+            drawHighlightSurfaces(
+                    pass,
+                    DungeonSelectionHighlightResolver.resolvePartSurfaces(
+                            pass.projected(),
+                            hovered.ref(),
+                            pass.projectionLevel()),
+                    true);
         }
     }
 
@@ -437,140 +445,13 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         if (ref == null || sameOwner(pass.selectedRef(), ref)) {
             return;
         }
-        Room room = pass.projected().room(ref);
-        if (room != null) {
-            drawHoveredRoom(pass, room);
-            return;
-        }
-        Corridor corridor = pass.projected().corridor(ref);
-        if (corridor != null) {
-            drawHoveredCorridor(pass, corridor);
-            return;
-        }
-        RoomCluster cluster = pass.projected().clusterOnLevel(ref, pass.projectionLevel());
-        if (cluster != null) {
-            drawHoveredCluster(pass, cluster);
-            return;
-        }
-        DungeonStair stair = pass.projected().stair(ref);
-        if (stair != null) {
-            drawHoveredStair(pass, stair);
-            return;
-        }
-        DungeonTransition transition = pass.projected().transition(ref);
-        if (transition != null) {
-            drawHoveredTransition(pass, transition);
-        }
-    }
-
-    private static void drawHoveredPart(StructureRenderPass pass, DungeonSelectionRef ref) {
-        if (ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundaryRef) {
-            drawHoveredDoorPart(pass, roomBoundaryRef.boundarySegment2x());
-            return;
-        }
-        if (ref instanceof DungeonSelectionRef.CorridorBoundaryRef corridorBoundaryRef) {
-            drawHoveredDoorPart(pass, corridorBoundaryRef.boundarySegment2x());
-            return;
-        }
-        if (ref instanceof DungeonSelectionRef.ConnectionRef connectionRef) {
-            drawHoveredDoorPart(pass, connectionRef.boundarySegment2x());
-            return;
-        }
-        if (ref instanceof DungeonSelectionRef.CorridorTileRef corridorTileRef
-                && corridorTileRef.cell().z() == pass.projectionLevel()) {
-            CubePoint tile = corridorTileRef.cell();
-            double x = pass.camera().panX() + tile.x() * pass.gridSize();
-            double y = pass.camera().panY() + tile.y() * pass.gridSize();
-            pass.gc().setFill(withOpacity(pass.palette().highlightFill(), 0.28));
-            pass.gc().fillRect(x, y, pass.gridSize(), pass.gridSize());
-            pass.gc().setStroke(withOpacity(pass.palette().highlightStroke(), 0.95));
-            pass.gc().setLineWidth(2.0);
-            pass.gc().strokeRect(x, y, pass.gridSize(), pass.gridSize());
-            return;
-        }
-        if (ref instanceof DungeonSelectionRef.CorridorNodeRef corridorNodeRef) {
-            Corridor corridor = pass.projected().corridor(corridorNodeRef);
-            CorridorNode node = corridor == null ? null : corridor.findNode(corridorNodeRef.nodeId());
-            GridPoint2x point2x = node == null ? corridorNodeRef.point2x() : node.point2x();
-            if (point2x != null) {
-                drawCorridorHandle(
-                        pass.gc(),
-                        pass.camera(),
-                        pass.gridSize(),
-                        point2x,
-                        withOpacity(pass.palette().highlightFill(), 0.92),
-                        withOpacity(pass.palette().highlightStroke(), 1.0),
-                        Math.max(5.0, pass.gridSize() * 0.17));
-            }
-            return;
-        }
-        if (ref instanceof DungeonSelectionRef.CorridorCornerRef corridorCornerRef) {
-            drawCorridorHandle(
-                    pass.gc(),
-                    pass.camera(),
-                    pass.gridSize(),
-                    corridorCornerRef.point2x(),
-                    withOpacity(pass.palette().highlightFill(), 0.92),
-                    withOpacity(pass.palette().highlightStroke(), 1.0),
-                    Math.max(4.5, pass.gridSize() * 0.14));
-            return;
-        }
-        if (ref instanceof DungeonSelectionRef.CorridorSegmentRef corridorSegmentRef) {
-            Corridor corridor = pass.projected().corridor(corridorSegmentRef);
-            Long segmentId = corridorSegmentRef.segmentId();
-            if (corridor != null && segmentId != null) {
-                corridor.routes().stream()
-                        .filter(route -> Objects.equals(route.segmentId(), segmentId))
-                        .findFirst()
-                        .ifPresent(route -> {
-                            pass.gc().setStroke(withOpacity(pass.palette().highlightStroke(), 0.95));
-                            pass.gc().setLineWidth(3.0);
-                            for (GridSegment2x hoveredSegment : route.segments2x()) {
-                                strokeSegment2x(pass.gc(), pass.camera(), pass.gridSize(), hoveredSegment);
-                            }
-                        });
-            }
-            return;
-        }
-        if (ref instanceof DungeonSelectionRef.VertexRef vertexRef) {
-            drawBoundaryVertexMarker(
-                    pass.gc(),
-                    pass.camera(),
-                    pass.gridSize(),
-                    vertexRef.vertex2x(),
-                    withOpacity(pass.palette().highlightFill(), 0.95),
-                    withOpacity(pass.palette().highlightStroke(), 1.0),
-                    5.0);
-            return;
-        }
-        if (ref instanceof DungeonSelectionRef.FloorCellRef floorCellRef
-                && floorCellRef.cell().z() == pass.projectionLevel()) {
-            CubePoint floorCell = floorCellRef.cell();
-            double x = pass.camera().panX() + floorCell.x() * pass.gridSize();
-            double y = pass.camera().panY() + floorCell.y() * pass.gridSize();
-            pass.gc().setFill(withOpacity(pass.palette().highlightFill(), 0.28));
-            pass.gc().fillRect(x, y, pass.gridSize(), pass.gridSize());
-            pass.gc().setStroke(withOpacity(pass.palette().highlightStroke(), 0.95));
-            pass.gc().setLineWidth(2.0);
-            pass.gc().strokeRect(x, y, pass.gridSize(), pass.gridSize());
-        }
-    }
-
-    private static void drawHoveredDoorPart(StructureRenderPass pass, GridSegment2x boundarySegment2x) {
-        if (pass == null || boundarySegment2x == null) {
-            return;
-        }
-        pass.gc().setStroke(withOpacity(pass.palette().highlightStroke(), 0.95));
-        pass.gc().setLineWidth(3.0);
-        strokeSegment2x(pass.gc(), pass.camera(), pass.gridSize(), boundarySegment2x);
-        drawDoorMarker(
-                pass.gc(),
-                pass.camera(),
-                pass.gridSize(),
-                boundarySegment2x,
-                withOpacity(pass.palette().highlightFill(), 0.95),
-                withOpacity(pass.palette().highlightStroke(), 1.0),
-                3.0);
+        drawHighlightSurfaces(
+                pass,
+                DungeonSelectionHighlightResolver.resolveOwnerSurfaces(
+                        pass.projected(),
+                        ref,
+                        pass.projectionLevel()),
+                false);
     }
 
     private static boolean sameOwner(DungeonSelectionRef left, DungeonSelectionRef right) {
@@ -624,56 +505,85 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         return transitionId == null ? null : new DungeonSelectionRef.TransitionRef(transitionId);
     }
 
-    private static void drawHoveredRoom(StructureRenderPass pass, Room room) {
-        WalkableSurface surface = walkableSurface(room.structure(), pass.projectionLevel());
-        if (surface.tiles().isEmpty()) {
+    private static void drawHighlightSurfaces(
+            StructureRenderPass pass,
+            List<DungeonHitSurface> surfaces,
+            boolean partHighlight
+    ) {
+        if (pass == null || surfaces == null || surfaces.isEmpty()) {
             return;
         }
-        pass.gc().setFill(withOpacity(pass.palette().highlightFill(), 0.2));
-        fillRoomTiles(pass.gc(), pass.camera(), pass.gridSize(), surface.tiles());
-        strokeRoomTiles(pass.gc(), pass.camera(), pass.gridSize(), surface.tiles(), withOpacity(pass.palette().highlightStroke(), 0.75), 1.6);
-    }
-
-    private static void drawHoveredCorridor(StructureRenderPass pass, Corridor corridor) {
-        WalkableSurface surface = walkableSurface(corridor.structure(), pass.projectionLevel());
-        if (surface.tiles().isEmpty()) {
-            return;
-        }
-        pass.gc().setFill(withOpacity(pass.palette().highlightFill(), 0.22));
-        fillRoomTiles(pass.gc(), pass.camera(), pass.gridSize(), surface.tiles());
-        strokeRoomTiles(pass.gc(), pass.camera(), pass.gridSize(), surface.tiles(), withOpacity(pass.palette().highlightStroke(), 0.78), 1.6);
-    }
-
-    private static void drawHoveredCluster(StructureRenderPass pass, RoomCluster cluster) {
-        for (Room room : cluster.rooms()) {
-            if (room != null) {
-                drawHoveredRoom(pass, room);
+        for (DungeonHitSurface surface : surfaces) {
+            switch (surface) {
+                case DungeonHitSurface.CellSurface cellSurface -> drawHighlightedCells(pass, cellSurface.cells(), partHighlight);
+                case DungeonHitSurface.SegmentSurface segmentSurface -> drawHighlightedSegments(pass, segmentSurface.segments2x(), partHighlight);
+                case DungeonHitSurface.PointSurface pointSurface -> drawHighlightedPoints(pass, pointSurface.points2x(), partHighlight);
+                case DungeonHitSurface.LabelSurface ignored -> {
+                }
             }
         }
     }
 
-    private static void drawHoveredStair(StructureRenderPass pass, DungeonStair stair) {
-        pass.gc().setStroke(withOpacity(pass.palette().highlightStroke(), 0.9));
-        pass.gc().setLineWidth(2.4);
-        for (var node : stair.path()) {
-            if (node.z() != pass.projectionLevel()) {
-                continue;
+    private static void drawHighlightedCells(
+            StructureRenderPass pass,
+            Collection<CellCoord> cells,
+            boolean partHighlight
+    ) {
+        if (cells == null || cells.isEmpty()) {
+            return;
+        }
+        double fillOpacity = partHighlight ? 0.28 : 0.2;
+        double strokeOpacity = partHighlight ? 0.95 : 0.75;
+        double lineWidth = partHighlight ? 2.0 : 1.6;
+        pass.gc().setFill(withOpacity(pass.palette().highlightFill(), fillOpacity));
+        fillRoomTiles(pass.gc(), pass.camera(), pass.gridSize(), cells);
+        strokeRoomTiles(
+                pass.gc(),
+                pass.camera(),
+                pass.gridSize(),
+                cells,
+                withOpacity(pass.palette().highlightStroke(), strokeOpacity),
+                lineWidth);
+    }
+
+    private static void drawHighlightedSegments(
+            StructureRenderPass pass,
+            Collection<GridSegment2x> segments,
+            boolean partHighlight
+    ) {
+        if (segments == null || segments.isEmpty()) {
+            return;
+        }
+        pass.gc().setStroke(withOpacity(pass.palette().highlightStroke(), partHighlight ? 0.95 : 0.82));
+        pass.gc().setLineWidth(partHighlight ? 3.0 : 2.4);
+        for (GridSegment2x segment : segments) {
+            if (segment != null) {
+                strokeSegment2x(pass.gc(), pass.camera(), pass.gridSize(), segment);
             }
-            double x = pass.camera().panX() + node.x() * pass.gridSize();
-            double y = pass.camera().panY() + node.y() * pass.gridSize();
-            pass.gc().strokeRoundRect(x + pass.gridSize() * 0.15, y + pass.gridSize() * 0.15, pass.gridSize() * 0.7, pass.gridSize() * 0.7, 10, 10);
         }
     }
 
-    private static void drawHoveredTransition(StructureRenderPass pass, DungeonTransition transition) {
-        if (!transition.isPlaced() || transition.anchor().z() != pass.projectionLevel()) {
+    private static void drawHighlightedPoints(
+            StructureRenderPass pass,
+            Collection<GridPoint2x> points,
+            boolean partHighlight
+    ) {
+        if (points == null || points.isEmpty()) {
             return;
         }
-        double x = pass.camera().panX() + transition.anchor().x() * pass.gridSize();
-        double y = pass.camera().panY() + transition.anchor().y() * pass.gridSize();
-        pass.gc().setStroke(withOpacity(pass.palette().highlightStroke(), 0.95));
-        pass.gc().setLineWidth(2.4);
-        pass.gc().strokeRoundRect(x + pass.gridSize() * 0.12, y + pass.gridSize() * 0.12, pass.gridSize() * 0.76, pass.gridSize() * 0.76, 10, 10);
+        double radius = partHighlight ? Math.max(5.0, pass.gridSize() * 0.17) : Math.max(4.5, pass.gridSize() * 0.14);
+        for (GridPoint2x point : points) {
+            if (point != null) {
+                drawCorridorHandle(
+                        pass.gc(),
+                        pass.camera(),
+                        pass.gridSize(),
+                        point,
+                        withOpacity(pass.palette().highlightFill(), partHighlight ? 0.92 : 0.86),
+                        withOpacity(pass.palette().highlightStroke(), 1.0),
+                        radius);
+            }
+        }
     }
 
     private static void drawStairs(StructureRenderPass pass) {

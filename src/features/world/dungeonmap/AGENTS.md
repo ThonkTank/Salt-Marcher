@@ -81,8 +81,9 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - Free corridor wall hits should resolve through `CorridorBoundaryRef` only. Tools that need corridor-cell context on those walls must derive it from `DungeonLayout.describeCorridorBoundary(...)` instead of rebuilding wall semantics locally.
 - `DungeonHitKind` and `DungeonSelectionRef` are shared interaction semantics owned by `model/interaction/`, not by `shell/interaction/`.
 - `DungeonSelectionRef.ownerRef()` owns typed owner semantics. Do not mirror owner resolution back into shell-local wrapper hierarchies or generic nullable owner-id helper channels.
+- `DungeonSelectionHighlightResolver` is the shared `DungeonSelectionRef -> DungeonHitSurface` seam for editor hover/highlight rendering. Keep that geometry translation out of `DungeonGridSceneRenderer` and out of tool code.
 - `InteractiveLabelHandle` and `DungeonEditorRenderState` are display payloads on final `CellCoord`/`GridPoint2x`/`GridSegment2x` only. `DungeonRuntimeRenderOverlay` carries the active `DungeonRuntimeNavigationSnapshot` plus runtime exit markers derived from the resolved runtime description. Renderers and tools must not introduce storage codecs or legacy parity adapters.
-- `EditorTool.resolveHit(...)` owns tool-specific interpretation of those candidates. Do not move per-tool allowlists back into a central selector.
+- `EditorTool.interactionCapabilities(...)` owns tool-specific interpretation of those candidates. `EditorInteraction` executes those ordered capabilities, but the tool remains the owner of what counts as interactive.
 - `EditorInteractionState` owns only shared editor coordination state:
   - `selectedRef`
   - `hovered` as `EditorHover`
@@ -97,9 +98,10 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 
 - `EditorInteraction` runs the canonical editor pipeline:
   1. collect `DungeonHitSnapshot`
-  2. ask the active tool to `resolveHit(...)`
-  3. store hover from `EditorHitResolution`
-  4. dispatch `pressed`, `dragged`, or `released` with an `EditorToolContext` that carries the resolved hit ref and selection ref
+  2. ask the active tool for ordered `interactionCapabilities(...)`
+  3. execute the first matching capability into `EditorHitResolution`
+  4. store hover from that resolved capability
+  5. dispatch `pressed`, `dragged`, or `released` with an `EditorToolContext` that carries the resolved hit ref and selection ref
 - `EditorTool` implementations own gesture meaning. Shared state is justified only when multiple collaborators need it.
 - Tool responsibilities:
 - `SelectionTool` owns semantic selection plus cluster-drag, door-drag, and corridor-node drag gestures. Dragging a plain corridor tile first promotes that tile to an explicit node and then hands the drag to that new node; dragging a connection door reuses `ConnectionRef` as the source and `RoomBoundaryRef` as the drop target, and a simple click on a corridor tile must not create state.
