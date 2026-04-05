@@ -78,6 +78,18 @@ public final class DungeonLayout {
         }
     }
 
+    public record ConnectionSurfaceDescription(
+            ConnectionEndpoint endpoint,
+            CellCoord localCell,
+            CardinalDirection outwardDirection
+    ) {
+        public ConnectionSurfaceDescription {
+            endpoint = Objects.requireNonNull(endpoint, "endpoint");
+            localCell = Objects.requireNonNull(localCell, "localCell");
+            outwardDirection = Objects.requireNonNull(outwardDirection, "outwardDirection");
+        }
+    }
+
     private static final DungeonLayout EMPTY = new DungeonLayout(0L, "Kein Dungeon", List.of(), List.of(), List.of(), List.of(), Map.of());
 
     private final long mapId;
@@ -146,7 +158,7 @@ public final class DungeonLayout {
         this.corridorIdsByLevelAndCell = indexCorridorIdsByLevelAndCell(this.corridors);
         this.stairIdsByLevelAndCell = indexStairIdsByLevelAndCell(this.stairs);
         this.transitionIdsByLevelAndCell = indexTransitionIdsByLevelAndCell();
-        this.traversableCells = indexTraversableCells(this.clusters, this.corridors, this.transitions);
+        this.traversableCells = indexTraversableCells(this.clusters, this.corridors, this.stairs, this.transitions);
         this.traversableCellsByLevel = indexTraversableCellsByLevel(this.clusters, this.corridors, this.stairs, this.transitions);
         this.reachableLevels = indexReachableLevels(this.traversableCellsByLevel);
     }
@@ -496,21 +508,44 @@ public final class DungeonLayout {
         if (ref == null || ref.boundarySegment2x() == null) {
             return null;
         }
-        Corridor corridor = corridor(ref);
-        if (corridor == null
-                || !corridor.structure().boundaryEdgesAtLevel(levelZ).contains(ref.boundarySegment2x())
-                || corridor.structure().openingEdgesAtLevel(levelZ).contains(ref.boundarySegment2x())
+        CorridorBoundaryDescription boundary = connectedCorridorBoundary(ref, levelZ);
+        if (boundary == null
+                || boundary.corridor().structure().openingEdgesAtLevel(levelZ).contains(ref.boundarySegment2x())
                 || connectionAt(levelZ, ref.boundarySegment2x()) != null) {
             return null;
         }
-        List<CellCoord> corridorCells = ref.boundarySegment2x().touchingCells().stream()
-                .filter(cell -> corridor.structure().cellCoordsAtLevel(levelZ).contains(cell))
-                .sorted(CellCoord.ORDER)
-                .toList();
-        if (corridorCells.size() != 1) {
+        return boundary;
+    }
+
+    public ConnectionSurfaceDescription describeConnectionSurface(
+            ConnectionEndpoint endpoint,
+            GridSegment2x boundarySegment2x,
+            int levelZ
+    ) {
+        if (endpoint == null || boundarySegment2x == null) {
             return null;
         }
-        return new CorridorBoundaryDescription(corridor, corridorCells.getFirst());
+        return switch (endpoint.type()) {
+            case ROOM -> {
+                RoomBoundaryDescription boundary = describeRoomBoundary(
+                        new DungeonSelectionRef.RoomBoundaryRef(endpoint.id(), boundarySegment2x),
+                        levelZ);
+                yield boundary == null ? null : new ConnectionSurfaceDescription(
+                        endpoint,
+                        boundary.roomCell(),
+                        boundary.outwardDirection());
+            }
+            case CORRIDOR -> {
+                CorridorBoundaryDescription boundary = connectedCorridorBoundary(
+                        new DungeonSelectionRef.CorridorBoundaryRef(endpoint.id(), boundarySegment2x),
+                        levelZ);
+                CardinalDirection outwardDirection = boundary == null ? null : boundarySegment2x.directionFrom(boundary.corridorCell());
+                yield boundary == null || outwardDirection == null
+                        ? null
+                        : new ConnectionSurfaceDescription(endpoint, boundary.corridorCell(), outwardDirection);
+            }
+            default -> null;
+        };
     }
 
     public Room roomAtCell(CellCoord cell) {
@@ -535,6 +570,27 @@ public final class DungeonLayout {
     public Room roomWithFloorAtCell(CellCoord cell, int levelZ) {
         Room room = roomAtCell(cell, levelZ);
         return room != null && room.structure().hasFloorCell(cell, levelZ) ? room : null;
+    }
+
+    private CorridorBoundaryDescription connectedCorridorBoundary(
+            DungeonSelectionRef.CorridorBoundaryRef ref,
+            int levelZ
+    ) {
+        if (ref == null || ref.boundarySegment2x() == null) {
+            return null;
+        }
+        Corridor corridor = corridor(ref);
+        if (corridor == null || !corridor.structure().boundaryEdgesAtLevel(levelZ).contains(ref.boundarySegment2x())) {
+            return null;
+        }
+        List<CellCoord> corridorCells = ref.boundarySegment2x().touchingCells().stream()
+                .filter(cell -> corridor.structure().cellCoordsAtLevel(levelZ).contains(cell))
+                .sorted(CellCoord.ORDER)
+                .toList();
+        if (corridorCells.size() != 1) {
+            return null;
+        }
+        return new CorridorBoundaryDescription(corridor, corridorCells.getFirst());
     }
 
     public RoomCluster clusterAtCell(CellCoord cell) {
@@ -1009,7 +1065,7 @@ public final class DungeonLayout {
                     .toList());
         }
         for (DungeonTransition transition : transitions) {
-            Connection connection = transition == null ? null : transition.asConnection();
+            Connection connection = transition == null ? null : transition.localConnection();
             if (connection != null) {
                 result.add(connection);
             }
@@ -1131,6 +1187,7 @@ public final class DungeonLayout {
     private static Set<CellCoord> indexTraversableCells(
             List<RoomCluster> clusters,
             List<Corridor> corridors,
+            List<DungeonStair> stairs,
             List<DungeonTransition> transitions
     ) {
         Set<CellCoord> result = new LinkedHashSet<>();
@@ -1151,11 +1208,18 @@ public final class DungeonLayout {
                 result.addAll(corridor.structure().cellCoords());
             }
         }
+        for (DungeonStair stair : stairs) {
+            if (stair != null) {
+                stair.occupiedPositions().stream()
+                        .map(CubePoint::projectedCell)
+                        .forEach(result::add);
+            }
+        }
         for (DungeonTransition transition : transitions) {
-            if (transition == null || transition.stairPlacement() == null) {
+            if (transition == null || transition.localConnection() == null || transition.localConnection().stairCarrier() == null) {
                 continue;
             }
-            transition.stairPlacement().occupiedPositions().stream()
+            transition.localConnection().stairCarrier().path().stream()
                     .map(CubePoint::projectedCell)
                     .forEach(result::add);
         }
@@ -1201,10 +1265,10 @@ public final class DungeonLayout {
             }
         }
         for (DungeonTransition transition : transitions) {
-            if (transition == null || transition.stairPlacement() == null) {
+            if (transition == null || transition.localConnection() == null || transition.localConnection().stairCarrier() == null) {
                 continue;
             }
-            for (CubePoint point : transition.stairPlacement().occupiedPositions()) {
+            for (CubePoint point : transition.localConnection().stairCarrier().path()) {
                 if (point != null) {
                     mutable.computeIfAbsent(point.z(), ignored -> new LinkedHashSet<>())
                             .add(point.projectedCell());
@@ -1280,7 +1344,7 @@ public final class DungeonLayout {
             if (transition == null || transition.transitionId() == null || !transition.isPlaced()) {
                 continue;
             }
-            for (CubePoint point : transition.occupiedPositions(this)) {
+            for (CubePoint point : transition.localConnection().occupiedPositions(this)) {
                 if (point == null) {
                     continue;
                 }

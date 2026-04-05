@@ -12,7 +12,9 @@ import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.objects.Wall;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
-import features.world.dungeonmap.model.structures.connection.LocalConnection;
+import features.world.dungeonmap.model.structures.connection.ConnectionKind;
+import features.world.dungeonmap.model.structures.connection.DoorConnectionCarrier;
+import features.world.dungeonmap.model.structures.connection.DungeonConnection;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
 
@@ -34,7 +36,7 @@ public final class RoomCluster {
     private final CellCoord center;
     // A cluster manages room grouping/runtime lookup, but room truth lives in the rooms.
     private final List<Room> rooms;
-    private final List<LocalConnection> localConnections;
+    private final List<DungeonConnection> localConnections;
     private final Set<CellCoord> cells;
     private final Map<Long, Room> roomsById;
     private final Map<CellCoord, Room> roomsByCell;
@@ -86,7 +88,7 @@ public final class RoomCluster {
         return rooms;
     }
 
-    public List<LocalConnection> localConnections() {
+    public List<DungeonConnection> localConnections() {
         return localConnections;
     }
 
@@ -933,7 +935,7 @@ public final class RoomCluster {
         static Map<GridSegment2x, InternalBoundaryType> internalBoundaryKinds(
                 Set<CellCoord> clusterCells,
                 List<Room> rooms,
-                List<LocalConnection> localConnections
+                List<DungeonConnection> localConnections
         ) {
             return computeInternalBoundaries(clusterCells, rooms, boundaryKinds(localConnections));
         }
@@ -1147,9 +1149,9 @@ public final class RoomCluster {
                     : name.trim();
         }
 
-        private static Map<GridSegment2x, InternalBoundaryType> boundaryKinds(List<LocalConnection> localConnections) {
+        private static Map<GridSegment2x, InternalBoundaryType> boundaryKinds(List<DungeonConnection> localConnections) {
             Map<GridSegment2x, InternalBoundaryType> result = new LinkedHashMap<>();
-            for (LocalConnection connection : localConnections == null ? List.<LocalConnection>of() : localConnections) {
+            for (DungeonConnection connection : localConnections == null ? List.<DungeonConnection>of() : localConnections) {
                 if (connection == null || connection.door() == null) {
                     continue;
                 }
@@ -1687,7 +1689,7 @@ public final class RoomCluster {
         }
     }
 
-    public static List<LocalConnection> deriveLocalConnections(long mapId, Long clusterId, List<Room> rooms) {
+    public static List<DungeonConnection> deriveLocalConnections(long mapId, Long clusterId, List<Room> rooms) {
         if (rooms == null || rooms.isEmpty()) {
             return List.of();
         }
@@ -1706,9 +1708,9 @@ public final class RoomCluster {
                 }
             }
         }
-        List<LocalConnection> result = new ArrayList<>();
+        List<DungeonConnection> result = new ArrayList<>();
         for (DoorComponent doorComponent : doorsByKey.values()) {
-            LocalConnection connection = localConnectionForDoor(doorComponent, mapId, resolvedClusterId, roomsByPoint);
+            DungeonConnection connection = localConnectionForDoor(doorComponent, mapId, resolvedClusterId, roomsByPoint);
             if (connection != null) {
                 result.add(connection);
             }
@@ -1716,7 +1718,7 @@ public final class RoomCluster {
         return List.copyOf(result);
     }
 
-    private static LocalConnection localConnectionForDoor(
+    private static DungeonConnection localConnectionForDoor(
             DoorComponent doorComponent,
             long mapId,
             long clusterId,
@@ -1738,12 +1740,14 @@ public final class RoomCluster {
         if (endpoints.size() != 2) {
             return null;
         }
-        return new LocalConnection(
-                null,
-                mapId,
+        return new DungeonConnection(
+                ConnectionKind.LOCAL,
                 clusterId,
+                mapId,
                 doorComponent.levelZ(),
-                Door.fromSegments(doorComponent.door().segments2x(), doorComponent.door().doorState()),
+                new DoorConnectionCarrier(
+                        Door.fromSegments(doorComponent.door().segments2x(), doorComponent.door().doorState()),
+                        doorComponent.door().segments2x().stream().sorted(GridSegment2x.ORDER).findFirst().orElse(null)),
                 endpoints);
     }
 

@@ -15,13 +15,13 @@ import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 import features.world.dungeonmap.model.objects.StructureObject;
+import features.world.dungeonmap.model.structures.connection.StairConnectionCarrier;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNode;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
-import features.world.dungeonmap.model.structures.transition.DungeonTransitionPlacement;
 import features.world.dungeonmap.shell.interaction.DungeonHitSurface;
 import features.world.dungeonmap.shell.interaction.DungeonSelectionHighlightResolver;
 import features.world.dungeonmap.state.EditorHover;
@@ -790,7 +790,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 continue;
             }
             boolean selected = selectedTransition(pass.selectedRef(), transition.transitionId());
-            if (transition.doorPlacement() != null) {
+            if (transition.localConnection() != null && transition.localConnection().doorCarrier() != null) {
                 drawDoorTransition(pass, transition, selected);
                 continue;
             }
@@ -800,11 +800,13 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
     }
 
     private static void drawDoorTransition(StructureRenderPass pass, DungeonTransition transition, boolean selected) {
-        if (transition.doorPlacement() == null || transition.doorPlacement().levelZ() != pass.projectionLevel()) {
+        if (transition.localConnection() == null
+                || transition.localConnection().doorCarrier() == null
+                || transition.localConnection().levelZ() != pass.projectionLevel()) {
             return;
         }
         GraphicsContext gc = pass.gc();
-        GridSegment2x segment2x = transition.doorPlacement().boundarySegment2x();
+        GridSegment2x segment2x = transition.localConnection().anchorSegment2x();
         double centerX = pass.camera().panX() + (segment2x.midpoint().x2() + 1) * pass.gridSize() / 2.0;
         double centerY = pass.camera().panY() + (segment2x.midpoint().y2() + 1) * pass.gridSize() / 2.0;
         double radius = Math.max(7.0, pass.gridSize() * 0.18);
@@ -818,7 +820,9 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
     }
 
     private static void drawStairTransition(StructureRenderPass pass, DungeonTransition transition, boolean selected) {
-        DungeonTransitionPlacement.StairPlacement stairPlacement = transition.stairPlacement();
+        StairConnectionCarrier stairPlacement = transition.localConnection() == null
+                ? null
+                : transition.localConnection().stairCarrier();
         if (stairPlacement == null) {
             return;
         }

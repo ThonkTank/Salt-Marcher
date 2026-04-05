@@ -569,7 +569,8 @@ public final class DungeonRoomApplicationService {
         for (DungeonTransition transition : layout.transitionsAtLevel(levelZ)) {
             if (transition != null
                     && transition.transitionId() != null
-                    && transition.occupiedPositions(layout).stream()
+                    && transition.localConnection() != null
+                    && transition.localConnection().occupiedPositions(layout).stream()
                     .filter(point -> point != null && point.z() == levelZ)
                     .map(point -> point.projectedCell())
                     .anyMatch(removedFloorCells::contains)) {

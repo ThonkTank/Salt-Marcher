@@ -223,7 +223,9 @@ public final class DungeonRuntimeApplicationService {
             throw new SQLException("Ziel-Übergang konnte nicht aufgelöst werden");
         }
         DungeonTransition targetTransition = layout.findTransition(transitionId);
-        CubePoint entryPoint = targetTransition == null ? null : targetTransition.entryPoint(layout);
+        CubePoint entryPoint = targetTransition == null || targetTransition.localConnection() == null
+                ? null
+                : targetTransition.localConnection().entryPoint(layout);
         if (targetTransition == null || entryPoint == null) {
             throw new SQLException("Ziel-Übergang ist nicht platziert");
         }
@@ -234,7 +236,7 @@ public final class DungeonRuntimeApplicationService {
         if (resolvedCell == null) {
             throw new SQLException("Ziel-Übergang ist nicht begehbar");
         }
-        CardinalDirection resolvedHeading = targetTransition.entryHeading(layout);
+        CardinalDirection resolvedHeading = targetTransition.localConnection().entryHeading(layout);
         return navigationSnapshot(layout.mapId(), resolvedCell, entryPoint.z(), resolvedHeading == null ? heading : resolvedHeading);
     }
 

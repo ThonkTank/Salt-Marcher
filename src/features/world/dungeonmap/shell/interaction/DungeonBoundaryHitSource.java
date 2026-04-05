@@ -5,8 +5,6 @@ import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.Connection;
-import features.world.dungeonmap.model.structures.connection.CorridorConnection;
-import features.world.dungeonmap.model.structures.connection.LocalConnection;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 
@@ -94,10 +92,8 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
             if (segment2x == null) {
                 continue;
             }
-            Long clusterId = connection instanceof LocalConnection localConnection ? localConnection.clusterId() : null;
-            Long corridorId = connection instanceof CorridorConnection corridorConnection ? corridorConnection.corridorId() : null;
             descriptors.add(new DungeonHitDescriptor(
-                    new DungeonSelectionRef.ConnectionRef(connection.kind(), clusterId, corridorId, segment2x),
+                    new DungeonSelectionRef.ConnectionRef(connection.kind(), connection.ownerId(), segment2x),
                     List.of(new DungeonHitSurface.SegmentSurface(Set.of(segment2x), levelZ))));
         }
         return List.copyOf(descriptors);

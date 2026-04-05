@@ -2,8 +2,8 @@ package features.world.dungeonmap.shell.editor.interaction;
 
 import features.world.api.OverworldTransitionTargetSummary;
 import features.world.dungeonmap.application.stair.DungeonStairApplicationService;
-import features.world.dungeonmap.application.stair.StairDraftResolver;
 import features.world.dungeonmap.application.transition.DungeonTransitionApplicationService;
+import features.world.dungeonmap.application.transition.TransitionConnectionBuilder;
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogEntry;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
@@ -12,10 +12,10 @@ import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
+import features.world.dungeonmap.model.structures.connection.DungeonConnection;
 import features.world.dungeonmap.model.structures.stair.StairShape;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
-import features.world.dungeonmap.model.structures.transition.DungeonTransitionPlacement;
 import features.world.dungeonmap.shell.editor.EditorCards;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonEditorTool;
@@ -622,12 +622,13 @@ public final class TransitionTool implements EditorTool {
     private boolean handleDoorCreatePressed(EditorToolContext ctx) {
         DungeonLayout layout = ctx == null ? null : ctx.activeMap();
         int levelZ = ctx == null || ctx.probe() == null ? mapState.activeProjectionLevel() : ctx.probe().levelZ();
-        DungeonTransitionPlacement.DoorPlacement placement = ConnectionSurfaceSupport.transitionDoorPlacement(
-                layout,
-                ctx == null ? null : ctx.hitRef(),
-                levelZ);
+        DungeonSelectionRef sourceRef = ctx == null ? null : ctx.hitRef();
         Long mapId = mapState.activeMapId();
-        if (mapId == null || placement == null) {
+        boolean validSource = sourceRef instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundary
+                && ConnectionSurfaceSupport.isExteriorRoomBoundary(layout, roomBoundary, levelZ)
+                || sourceRef instanceof DungeonSelectionRef.CorridorBoundaryRef corridorBoundary
+                && ConnectionSurfaceSupport.isAvailableCorridorBoundary(layout, corridorBoundary, levelZ);
+        if (mapId == null || !validSource) {
             return false;
         }
         clearPlacementError();
@@ -637,9 +638,9 @@ public final class TransitionTool implements EditorTool {
         loadingService.submitMutation(
                 () -> {
                     if (placingPrepared) {
-                        transitionApplicationService.placePrepared(selectedPreparedTransitionId, placement);
+                        transitionApplicationService.placePrepared(selectedPreparedTransitionId, sourceRef, levelZ);
                     } else {
-                        transitionApplicationService.create(mapId, description, selectedDestination, bidirectional, placement);
+                        transitionApplicationService.create(mapId, description, selectedDestination, bidirectional, sourceRef, levelZ);
                     }
                     return mapId;
                 },
@@ -758,12 +759,12 @@ public final class TransitionTool implements EditorTool {
             return;
         }
         TransitionStairDraftResolution resolution = resolveCurrentStairDraft(true);
-        DungeonTransitionPlacement.StairPlacement placement = resolution.placement();
-        if (placement == null) {
+        DungeonConnection localConnection = resolution.localConnection();
+        if (localConnection == null) {
             state.clearPreview();
             return;
         }
-        DungeonTransition previewTransition = previewTransitionForPlacement(placement);
+        DungeonTransition previewTransition = previewTransitionForConnection(localConnection);
         if (previewTransition == null) {
             state.clearPreview();
             return;
@@ -845,30 +846,25 @@ public final class TransitionTool implements EditorTool {
             return new TransitionStairDraftResolution(null, null, "Kein aktiver Dungeon geladen");
         }
         try {
-            StairDraftResolver.ResolvedStairDraft resolvedDraft = StairDraftResolver.resolveDraft(layout, mapId, draft, allowSingleStop);
-            DungeonTransitionPlacement.StairPlacement placement = new DungeonTransitionPlacement.StairPlacement(
-                    resolvedDraft.draft().anchorCell(),
-                    resolvedDraft.draft().anchorLevelZ(),
-                    resolvedDraft.draft().shape(),
-                    resolvedDraft.draft().direction(),
-                    resolvedDraft.draft().minLevelZ(),
-                    resolvedDraft.draft().maxLevelZ(),
-                    resolvedDraft.draft().dimension1(),
-                    resolvedDraft.draft().dimension2(),
-                    resolvedDraft.path(),
-                    resolvedDraft.stopLevels());
+            DungeonConnection localConnection = TransitionConnectionBuilder.buildStairConnection(
+                    layout,
+                    mapId,
+                    preparedTransitionId,
+                    draft,
+                    allowSingleStop,
+                    preparedTransitionId);
             String status = stopLevels.size() < 2
                     ? "Mindestens einen weiteren Exit hinzufügen"
                     : "Zum Speichern Übernehmen.";
-            return new TransitionStairDraftResolution(draft, placement, status);
+            return new TransitionStairDraftResolution(draft, localConnection, status);
         } catch (IllegalArgumentException ex) {
             return new TransitionStairDraftResolution(null, null, ex.getMessage());
         }
     }
 
-    private DungeonTransition previewTransitionForPlacement(DungeonTransitionPlacement placement) {
+    private DungeonTransition previewTransitionForConnection(DungeonConnection localConnection) {
         Long mapId = mapState.activeMapId();
-        if (mapId == null || placement == null) {
+        if (mapId == null || localConnection == null) {
             return null;
         }
         DungeonTransition base = preparedTransition();
@@ -876,7 +872,7 @@ public final class TransitionTool implements EditorTool {
                 base == null ? null : base.transitionId(),
                 mapId,
                 base == null ? description : base.description(),
-                placement,
+                localConnection,
                 base == null ? selectedDestination : base.destination(),
                 base == null ? null : base.linkedTransitionId());
     }
@@ -1280,11 +1276,11 @@ public final class TransitionTool implements EditorTool {
         if (transition.description() != null && !transition.description().isBlank()) {
             label.append(" · ").append(transition.description());
         }
-        if (transition.doorPlacement() != null) {
+        if (transition.localConnection() != null && transition.localConnection().doorCarrier() != null) {
             label.append(" · Tür");
-        } else if (transition.stairPlacement() != null) {
+        } else if (transition.localConnection() != null && transition.localConnection().stairCarrier() != null) {
             label.append(" · Treppe");
-            label.append(" · z=").append(transition.stairPlacement().anchorLevelZ());
+            label.append(" · z=").append(transition.localConnection().stairCarrier().anchorLevelZ());
         }
         return label.toString();
     }
@@ -1392,7 +1388,7 @@ public final class TransitionTool implements EditorTool {
 
     private record TransitionStairDraftResolution(
             DungeonStairApplicationService.StairDraft draft,
-            DungeonTransitionPlacement.StairPlacement placement,
+            DungeonConnection localConnection,
             String validationMessage
     ) {
         private TransitionStairDraftResolution {

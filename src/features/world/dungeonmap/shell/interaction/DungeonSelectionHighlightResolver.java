@@ -129,15 +129,17 @@ public final class DungeonSelectionHighlightResolver {
     }
 
     private static List<DungeonHitSurface> transitionOwnerSurfaces(DungeonTransition transition, int levelZ) {
-        if (transition == null || transition.placement() == null) {
+        if (transition == null || transition.localConnection() == null) {
             return List.of();
         }
-        if (transition.doorPlacement() != null) {
-            return transition.doorPlacement().levelZ() == levelZ
-                    ? List.of(new DungeonHitSurface.SegmentSurface(Set.of(transition.doorPlacement().boundarySegment2x()), levelZ))
+        if (transition.localConnection().doorCarrier() != null) {
+            return transition.localConnection().levelZ() == levelZ
+                    ? List.of(new DungeonHitSurface.SegmentSurface(Set.of(transition.localConnection().anchorSegment2x()), levelZ))
                     : List.of();
         }
-        Set<CellCoord> cells = transition.placement().occupiedPositions().stream()
+        Set<CellCoord> cells = transition.localConnection().stairCarrier() == null
+                ? Set.of()
+                : transition.localConnection().stairCarrier().path().stream()
                 .filter(point -> point != null && point.z() == levelZ)
                 .map(point -> point.projectedCell())
                 .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));

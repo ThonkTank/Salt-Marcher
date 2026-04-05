@@ -1022,7 +1022,7 @@ public final class ConnectionsTool implements EditorTool {
         if (hit instanceof DungeonSelectionRef.ConnectionRef connectionHit
                 && connectionHit.connectionKind() == ConnectionKind.LOCAL) {
             applyDoorEdit(
-                    connectionHit.clusterId(),
+                    connectionHit.ownerId(),
                     connectionHit.boundarySegment2x(),
                     true,
                     null);
@@ -1030,8 +1030,8 @@ public final class ConnectionsTool implements EditorTool {
         }
         if (hit instanceof DungeonSelectionRef.ConnectionRef connectionHit
                 && connectionHit.connectionKind() == ConnectionKind.CORRIDOR
-                && connectionHit.corridorId() != null) {
-            deleteCorridorDoor(connectionHit.corridorId(), connectionHit.boundarySegment2x());
+                && connectionHit.ownerId() != null) {
+            deleteCorridorDoor(connectionHit.ownerId(), connectionHit.boundarySegment2x());
             return true;
         }
         if (hit instanceof DungeonSelectionRef.CorridorNodeRef corridorNodeHit
@@ -1578,7 +1578,7 @@ public final class ConnectionsTool implements EditorTool {
     private static DungeonSelectionRef localConnectionRef(Long clusterId, GridSegment2x boundarySegment2x) {
         return clusterId == null || boundarySegment2x == null
                 ? null
-                : new DungeonSelectionRef.ConnectionRef(ConnectionKind.LOCAL, clusterId, null, boundarySegment2x);
+                : new DungeonSelectionRef.ConnectionRef(ConnectionKind.LOCAL, clusterId, boundarySegment2x);
     }
 
     private static DungeonSelectionRef stairOwnerRef(Long stairId) {

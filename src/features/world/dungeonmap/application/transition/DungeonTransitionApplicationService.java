@@ -4,15 +4,13 @@ import database.DatabaseManager;
 import features.world.api.OverworldTransitionTargetSummary;
 import features.world.api.WorldReadApi;
 import features.world.dungeonmap.application.stair.DungeonStairApplicationService;
-import features.world.dungeonmap.application.stair.StairDraftResolver;
 import features.world.dungeonmap.application.room.DungeonRoomApplicationService;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
+import features.world.dungeonmap.model.structures.connection.DungeonConnection;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
-import features.world.dungeonmap.model.structures.transition.DungeonTransitionPlacement;
 import features.world.dungeonmap.repository.DungeonLayoutRepository;
 import features.world.dungeonmap.repository.DungeonTransitionRepository;
 
@@ -74,9 +72,10 @@ public final class DungeonTransitionApplicationService {
             String description,
             DungeonTransitionDestination destination,
             boolean bidirectional,
-            DungeonTransitionPlacement.DoorPlacement placement
+            DungeonSelectionRef sourceRef,
+            int levelZ
     ) throws SQLException {
-        createTransition(mapId, description, destination, bidirectional, placement);
+        createDoorTransition(mapId, description, destination, bidirectional, sourceRef, levelZ);
     }
 
     public void createStair(
@@ -86,31 +85,35 @@ public final class DungeonTransitionApplicationService {
             boolean bidirectional,
             DungeonStairApplicationService.StairDraft stairDraft
     ) throws SQLException {
-        createTransition(mapId, description, destination, bidirectional, stairPlacement(mapId, stairDraft));
+        createStairTransition(mapId, description, destination, bidirectional, stairDraft);
     }
 
-    private void createTransition(
+    private void createDoorTransition(
             long mapId,
             String description,
             DungeonTransitionDestination destination,
             boolean bidirectional,
-            DungeonTransitionPlacement placement
+            DungeonSelectionRef sourceRef,
+            int levelZ
     ) throws SQLException {
         if (mapId <= 0) {
             throw new SQLException("Kein aktiver Dungeon geladen");
         }
-        if (placement == null) {
+        if (!(sourceRef instanceof DungeonSelectionRef.RoomBoundaryRef
+                || sourceRef instanceof DungeonSelectionRef.CorridorBoundaryRef)) {
             throw new SQLException("Übergangs-Platzierung fehlt");
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                DungeonTransitionPlacement validatedPlacement = requirePlacement(conn, mapId, placement, null);
+                DungeonLayout layout = requireLayout(conn, mapId);
                 DungeonTransitionDestination validatedDestination = requireDestination(conn, destination, bidirectional);
-                long transitionId = transitionRepository.insert(conn, new DungeonTransition(
-                        null,
+                long reservedTransitionId = transitionRepository.nextTransitionId(conn);
+                DungeonConnection localConnection = requireDoorConnection(layout, mapId, reservedTransitionId, sourceRef, levelZ);
+                long insertedTransitionId = transitionRepository.insert(conn, new DungeonTransition(
+                        reservedTransitionId,
                         mapId,
                         description,
-                        validatedPlacement,
+                        localConnection,
                         validatedDestination,
                         null));
                 if (bidirectional
@@ -120,145 +123,135 @@ public final class DungeonTransitionApplicationService {
                             dungeonDestination.mapId(),
                             description,
                             null,
-                            new DungeonTransitionDestination.DungeonMapDestination(mapId, transitionId),
-                            transitionId));
-                    transitionRepository.linkPair(conn, transitionId, counterpartId);
+                            new DungeonTransitionDestination.DungeonMapDestination(mapId, insertedTransitionId),
+                            insertedTransitionId));
+                    transitionRepository.linkPair(conn, insertedTransitionId, counterpartId);
                 }
                 return null;
             });
         }
     }
 
-    public void placePrepared(long transitionId, DungeonTransitionPlacement.DoorPlacement placement) throws SQLException {
-        placePreparedTransition(transitionId, placement);
+    private void createStairTransition(
+            long mapId,
+            String description,
+            DungeonTransitionDestination destination,
+            boolean bidirectional,
+            DungeonStairApplicationService.StairDraft stairDraft
+    ) throws SQLException {
+        if (mapId <= 0) {
+            throw new SQLException("Kein aktiver Dungeon geladen");
+        }
+        if (stairDraft == null) {
+            throw new SQLException("Treppen-Platzierung fehlt");
+        }
+        try (Connection conn = DatabaseManager.getConnection()) {
+            DungeonTransactionRunner.inTransaction(conn, () -> {
+                DungeonLayout layout = requireLayout(conn, mapId);
+                DungeonTransitionDestination validatedDestination = requireDestination(conn, destination, bidirectional);
+                long reservedTransitionId = transitionRepository.nextTransitionId(conn);
+                DungeonConnection localConnection = requireStairConnection(layout, mapId, reservedTransitionId, stairDraft, null);
+                long insertedTransitionId = transitionRepository.insert(conn, new DungeonTransition(
+                        reservedTransitionId,
+                        mapId,
+                        description,
+                        localConnection,
+                        validatedDestination,
+                        null));
+                if (bidirectional
+                        && validatedDestination instanceof DungeonTransitionDestination.DungeonMapDestination dungeonDestination) {
+                    long counterpartId = transitionRepository.insert(conn, new DungeonTransition(
+                            null,
+                            dungeonDestination.mapId(),
+                            description,
+                            null,
+                            new DungeonTransitionDestination.DungeonMapDestination(mapId, insertedTransitionId),
+                            insertedTransitionId));
+                    transitionRepository.linkPair(conn, insertedTransitionId, counterpartId);
+                }
+                return null;
+            });
+        }
+    }
+
+    public void placePrepared(long transitionId, DungeonSelectionRef sourceRef, int levelZ) throws SQLException {
+        if (transitionId <= 0) {
+            throw new SQLException("Kein vorbereiteter Übergang gewählt");
+        }
+        if (!(sourceRef instanceof DungeonSelectionRef.RoomBoundaryRef
+                || sourceRef instanceof DungeonSelectionRef.CorridorBoundaryRef)) {
+            throw new SQLException("Übergangs-Platzierung fehlt");
+        }
+        try (Connection conn = DatabaseManager.getConnection()) {
+            DungeonTransactionRunner.inTransaction(conn, () -> {
+                DungeonTransition transition = requireTransition(conn, transitionId);
+                DungeonLayout layout = requireLayout(conn, transition.mapId());
+                transitionRepository.updateLocalConnection(
+                        conn,
+                        transitionId,
+                        requireDoorConnection(layout, transition.mapId(), transitionId, sourceRef, levelZ));
+                return null;
+            });
+        }
     }
 
     public void placePreparedStair(long transitionId, DungeonStairApplicationService.StairDraft stairDraft) throws SQLException {
         if (transitionId <= 0) {
             throw new SQLException("Kein vorbereiteter Übergang gewählt");
         }
-        try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonTransition transition = requireTransition(conn, transitionId);
-            DungeonTransitionPlacement placement = stairPlacement(transition.mapId(), stairDraft);
-            placePreparedTransition(transitionId, placement);
-        }
-    }
-
-    private void placePreparedTransition(long transitionId, DungeonTransitionPlacement placement) throws SQLException {
-        if (transitionId <= 0) {
-            throw new SQLException("Kein vorbereiteter Übergang gewählt");
-        }
-        if (placement == null) {
-            throw new SQLException("Übergangs-Platzierung fehlt");
+        if (stairDraft == null) {
+            throw new SQLException("Treppen-Platzierung fehlt");
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
                 DungeonTransition transition = requireTransition(conn, transitionId);
-                transitionRepository.updatePlacement(
+                DungeonLayout layout = requireLayout(conn, transition.mapId());
+                transitionRepository.updateLocalConnection(
                         conn,
                         transitionId,
-                        requirePlacement(conn, transition.mapId(), placement, transitionId));
+                        requireStairConnection(layout, transition.mapId(), transitionId, stairDraft, transitionId));
                 return null;
             });
         }
     }
 
-    private DungeonTransitionPlacement stairPlacement(
-            long mapId,
-            DungeonStairApplicationService.StairDraft stairDraft
-    ) throws SQLException {
-        if (stairDraft == null) {
-            throw new SQLException("Treppen-Platzierung fehlt");
-        }
-        try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonLayout layout = requireLayout(conn, mapId);
-            StairDraftResolver.ResolvedStairDraft resolvedDraft = StairDraftResolver.resolveDraft(layout, mapId, stairDraft, false);
-            return new DungeonTransitionPlacement.StairPlacement(
-                    resolvedDraft.draft().anchorCell(),
-                    resolvedDraft.draft().anchorLevelZ(),
-                    resolvedDraft.draft().shape(),
-                    resolvedDraft.draft().direction(),
-                    resolvedDraft.draft().minLevelZ(),
-                    resolvedDraft.draft().maxLevelZ(),
-                    resolvedDraft.draft().dimension1(),
-                    resolvedDraft.draft().dimension2(),
-                    resolvedDraft.path(),
-                    resolvedDraft.stopLevels());
-        }
-    }
-
-    private DungeonTransitionPlacement requirePlacement(
-            Connection conn,
-            long mapId,
-            DungeonTransitionPlacement placement,
-            Long ignoredTransitionId
-    ) throws SQLException {
-        DungeonLayout layout = requireLayout(conn, mapId);
-        if (placement instanceof DungeonTransitionPlacement.DoorPlacement doorPlacement) {
-            return requireDoorPlacement(layout, doorPlacement, ignoredTransitionId);
-        }
-        if (placement instanceof DungeonTransitionPlacement.StairPlacement stairPlacement) {
-            ensureStairCellsFree(layout, stairPlacement, ignoredTransitionId);
-            return stairPlacement;
-        }
-        throw new SQLException("Unbekannte Übergangs-Platzierung");
-    }
-
-    private DungeonTransitionPlacement.DoorPlacement requireDoorPlacement(
+    private DungeonConnection requireDoorConnection(
             DungeonLayout layout,
-            DungeonTransitionPlacement.DoorPlacement placement,
-            Long ignoredTransitionId
+            long mapId,
+            Long transitionId,
+            DungeonSelectionRef sourceRef,
+            int levelZ
     ) throws SQLException {
-        if (layout == null || placement == null) {
+        if (layout == null || sourceRef == null) {
             throw new SQLException("Tür-Platzierung fehlt");
         }
-        switch (placement.sourceEndpoint().type()) {
-            case ROOM -> {
-                DungeonLayout.RoomBoundaryDescription boundary = layout.describeRoomBoundary(
-                        new DungeonSelectionRef.RoomBoundaryRef(placement.sourceEndpoint().id(), placement.boundarySegment2x()),
-                        placement.levelZ());
-                if (boundary == null || !boundary.exterior()) {
-                    throw new SQLException("Tür-Übergänge benötigen eine freie Raum-Außenwand");
-                }
-            }
-            case CORRIDOR -> {
-                DungeonLayout.CorridorBoundaryDescription boundary = layout.describeCorridorBoundary(
-                        new DungeonSelectionRef.CorridorBoundaryRef(placement.sourceEndpoint().id(), placement.boundarySegment2x()),
-                        placement.levelZ());
-                if (boundary == null) {
-                    throw new SQLException("Tür-Übergänge benötigen eine freie Corridor-Grenze");
-                }
-            }
-            default -> throw new SQLException("Tür-Übergänge unterstützen nur Raum- oder Corridor-Grenzen");
+        try {
+            return TransitionConnectionBuilder.buildDoorConnection(layout, mapId, transitionId, sourceRef, levelZ);
+        } catch (IllegalArgumentException ex) {
+            throw new SQLException(ex.getMessage(), ex);
         }
-        if (layout.connectionAt(placement.levelZ(), placement.boundarySegment2x()) != null) {
-            throw new SQLException("An dieser Grenze existiert bereits eine Verbindung");
-        }
-        boolean occupied = layout.transitions().stream()
-                .filter(DungeonTransition::isPlaced)
-                .filter(transition -> !Objects.equals(transition.transitionId(), ignoredTransitionId))
-                .map(DungeonTransition::doorPlacement)
-                .filter(Objects::nonNull)
-                .anyMatch(existing -> existing.levelZ() == placement.levelZ()
-                        && existing.boundarySegment2x().equals(placement.boundarySegment2x()));
-        if (occupied) {
-            throw new SQLException("An dieser Grenze existiert bereits ein Übergang");
-        }
-        return placement;
     }
 
-    private void ensureStairCellsFree(
+    private DungeonConnection requireStairConnection(
             DungeonLayout layout,
-            DungeonTransitionPlacement.StairPlacement stairPlacement,
+            long mapId,
+            Long transitionId,
+            DungeonStairApplicationService.StairDraft stairDraft,
             Long ignoredTransitionId
     ) throws SQLException {
-        boolean occupied = layout.transitions().stream()
-                .filter(DungeonTransition::isPlaced)
-                .filter(transition -> !Objects.equals(transition.transitionId(), ignoredTransitionId))
-                .flatMap(transition -> transition.placement() == null ? java.util.stream.Stream.<CubePoint>of() : transition.placement().occupiedPositions().stream())
-                .anyMatch(stairPlacement.occupiedPositions()::contains);
-        if (occupied) {
-            throw new SQLException("Ein anderer Übergang belegt bereits Teile dieser Treppe");
+        if (layout == null || stairDraft == null) {
+            throw new SQLException("Treppen-Platzierung fehlt");
+        }
+        try {
+            return TransitionConnectionBuilder.buildStairConnection(
+                    layout,
+                    mapId,
+                    transitionId,
+                    stairDraft,
+                    false,
+                    ignoredTransitionId);
+        } catch (IllegalArgumentException ex) {
+            throw new SQLException(ex.getMessage(), ex);
         }
     }
 

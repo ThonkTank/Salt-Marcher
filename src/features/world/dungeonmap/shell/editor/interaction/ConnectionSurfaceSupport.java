@@ -2,8 +2,6 @@ package features.world.dungeonmap.shell.editor.interaction;
 
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
-import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
-import features.world.dungeonmap.model.structures.transition.DungeonTransitionPlacement;
 
 public final class ConnectionSurfaceSupport {
 
@@ -26,29 +24,5 @@ public final class ConnectionSurfaceSupport {
             int levelZ
     ) {
         return layout != null && ref != null && layout.describeCorridorBoundary(ref, levelZ) != null;
-    }
-
-    public static DungeonTransitionPlacement.DoorPlacement transitionDoorPlacement(
-            DungeonLayout layout,
-            DungeonSelectionRef ref,
-            int levelZ
-    ) {
-        if (ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundary
-                && isExteriorRoomBoundary(layout, roomBoundary, levelZ)
-                && roomBoundary.roomId() != null) {
-            return new DungeonTransitionPlacement.DoorPlacement(
-                    ConnectionEndpoint.room(roomBoundary.roomId()),
-                    roomBoundary.boundarySegment2x(),
-                    levelZ);
-        }
-        if (ref instanceof DungeonSelectionRef.CorridorBoundaryRef corridorBoundary
-                && isAvailableCorridorBoundary(layout, corridorBoundary, levelZ)
-                && corridorBoundary.corridorId() != null) {
-            return new DungeonTransitionPlacement.DoorPlacement(
-                    ConnectionEndpoint.corridor(corridorBoundary.corridorId()),
-                    corridorBoundary.boundarySegment2x(),
-                    levelZ);
-        }
-        return null;
     }
 }

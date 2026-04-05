@@ -10,7 +10,9 @@ import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
-import features.world.dungeonmap.model.structures.connection.CorridorConnection;
+import features.world.dungeonmap.model.structures.connection.ConnectionKind;
+import features.world.dungeonmap.model.structures.connection.DoorConnectionCarrier;
+import features.world.dungeonmap.model.structures.connection.DungeonConnection;
 import features.world.dungeonmap.model.structures.room.Room;
 
 import java.util.ArrayDeque;
@@ -44,7 +46,7 @@ public final class Corridor {
     private final List<CorridorSegment> segments;
     private final StructureObject structure;
     private final List<CorridorRoute> routes;
-    private final List<CorridorConnection> connections;
+    private final List<DungeonConnection> connections;
 
     public static Corridor resolved(
             Long corridorId,
@@ -155,7 +157,7 @@ public final class Corridor {
         return routes;
     }
 
-    public List<CorridorConnection> connections() {
+    public List<DungeonConnection> connections() {
         return connections;
     }
 
@@ -1058,7 +1060,7 @@ public final class Corridor {
         return Math.max(0.15d, Math.min(0.75d, 0.75d / Math.sqrt(cellDistance)));
     }
 
-    private static List<CorridorConnection> materializeConnections(
+    private static List<DungeonConnection> materializeConnections(
             Long corridorId,
             long mapId,
             int levelZ,
@@ -1068,7 +1070,7 @@ public final class Corridor {
         if (corridorId == null) {
             return List.of();
         }
-        ArrayList<CorridorConnection> result = new ArrayList<>();
+        ArrayList<DungeonConnection> result = new ArrayList<>();
         for (CorridorNode node : nodes) {
             if (!node.isRoomBound()) {
                 continue;
@@ -1077,12 +1079,15 @@ public final class Corridor {
             if (boundaryEdge == null) {
                 throw new IllegalArgumentException("Corridor room-bound node could not be resolved");
             }
-            result.add(new CorridorConnection(
+            result.add(new DungeonConnection(
+                    ConnectionKind.CORRIDOR,
                     corridorId,
                     mapId,
-                    Door.fromSegments(List.of(boundaryEdge), Door.DoorState.CLOSED),
-                    List.of(ConnectionEndpoint.room(node.roomId()), ConnectionEndpoint.corridor(corridorId)),
-                    levelZ));
+                    levelZ,
+                    new DoorConnectionCarrier(
+                            Door.fromSegments(List.of(boundaryEdge), Door.DoorState.CLOSED),
+                            boundaryEdge),
+                    List.of(ConnectionEndpoint.room(node.roomId()), ConnectionEndpoint.corridor(corridorId))));
         }
         return result.isEmpty() ? List.of() : List.copyOf(result);
     }
@@ -1218,7 +1223,7 @@ public final class Corridor {
     private record DerivedProjection(
             StructureObject structure,
             List<CorridorRoute> routes,
-            List<CorridorConnection> connections
+            List<DungeonConnection> connections
     ) {
     }
 

@@ -579,7 +579,6 @@ public final class SelectionTool implements EditorTool {
                 ignored -> state.selectRef(new DungeonSelectionRef.ConnectionRef(
                         ConnectionKind.LOCAL,
                         session.clusterId(),
-                        null,
                         session.targetBoundaryRef().boundarySegment2x())),
                 throwable -> UiErrorReporter.reportBackgroundFailure("SelectionTool.commitLocalDoorMove()", throwable));
     }
@@ -608,7 +607,6 @@ public final class SelectionTool implements EditorTool {
                 updatedMapId -> updatedMapId,
                 ignored -> state.selectRef(new DungeonSelectionRef.ConnectionRef(
                         ConnectionKind.CORRIDOR,
-                        null,
                         session.corridorId(),
                         session.targetBoundaryRef().boundarySegment2x())),
                 throwable -> UiErrorReporter.reportBackgroundFailure("SelectionTool.commitCorridorDoorMove()", throwable));
@@ -775,18 +773,24 @@ public final class SelectionTool implements EditorTool {
             DungeonLayout baseMap,
             int levelZ,
             ConnectionKind connectionKind,
-            Long clusterId,
-            Long corridorId,
+            Long ownerId,
             GridSegment2x sourceBoundarySegment2x,
             DungeonSelectionRef.RoomBoundaryRef targetBoundaryRef
     ) {
+        private Long clusterId() {
+            return connectionKind == ConnectionKind.LOCAL ? ownerId : null;
+        }
+
+        private Long corridorId() {
+            return connectionKind == ConnectionKind.CORRIDOR ? ownerId : null;
+        }
+
         private DoorDragSession withTargetBoundaryRef(DungeonSelectionRef.RoomBoundaryRef targetBoundaryRef) {
             return new DoorDragSession(
                     baseMap,
                     levelZ,
                     connectionKind,
-                    clusterId,
-                    corridorId,
+                    ownerId,
                     sourceBoundarySegment2x,
                     targetBoundaryRef);
         }
@@ -800,8 +804,7 @@ public final class SelectionTool implements EditorTool {
                     baseMap,
                     levelZ,
                     sourceRef.connectionKind(),
-                    sourceRef.clusterId(),
-                    sourceRef.corridorId(),
+                    sourceRef.ownerId(),
                     sourceRef.boundarySegment2x(),
                     null);
         }

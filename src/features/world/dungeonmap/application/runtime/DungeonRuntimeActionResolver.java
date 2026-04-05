@@ -258,12 +258,14 @@ public final class DungeonRuntimeActionResolver {
         }
         layout.transitionsAtLevel(levelZ).stream()
                 .filter(transition -> transition != null)
-                .filter(transition -> transition.occupiedPositions(layout).stream()
+                .map(transition -> transition.localConnection() == null ? null : java.util.Map.entry(transition, transition.localConnection()))
+                .filter(Objects::nonNull)
+                .filter(entry -> entry.getValue().occupiedPositions(layout).stream()
                         .filter(point -> point != null && point.z() == levelZ)
                         .map(CubePoint::projectedCell)
                         .anyMatch(cells::contains))
-                .sorted(Comparator.comparing(DungeonTransition::transitionId))
-                .map(DungeonRuntimeActionResolver::transitionAction)
+                .sorted(Comparator.comparing(entry -> entry.getKey().transitionId()))
+                .map(entry -> transitionAction(entry.getKey()))
                 .forEach(actions::add);
     }
 

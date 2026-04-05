@@ -34,10 +34,10 @@ Use it together with the parent `dungeonmap/AGENTS.md` and the repository root `
 - `Room` owns room-local truth and narration.
 - `RoomCluster` owns multi-room topology, adjacency, paint/delete/boundary mutation semantics, cluster moves, and derived local connections.
 - Room paint/delete/boundary edits mutate room-owned `StructureDescriptor` truth plus derived cluster metadata. They do not reroute or regenerate corridors or stairs.
-- `Connection` owns connectivity. `Door` is the boundary object exposed through that connection.
+- `Connection` owns connectivity, entry resolution, occupied-position projection, and passive physical carrier data. `Door` is the boundary object exposed through door-shaped connections.
 - Level-aware exit descriptors and door catalogs stay with room/connection truth. Public exit-description queries live on `DungeonLayout`.
 - `Corridor` is a first-class structure with stable identity, nodes, segments, room bindings, derived geometry, and direct graph transforms.
 - Corridor room-bound endpoints keep absolute `CellCoord` room cells in memory. The graph compiles into the same `StructureDescriptor` and `StructureObject` surface model used by rooms, including opening segments for room-bound endpoints.
 - Junction nodes are explicit authored state. Routing must not invent extra nodes.
 - `DungeonStair` is a first-class structure with stable identity, explicit 3D path geometry, and authored stop levels. Exits are derived views from that path.
-- `DungeonTransition` owns transition identity, typed placement (`DoorPlacement` or `StairPlacement`), destination, and optional bidirectional link. Unplaced transitions are valid and spatial queries must handle absent placement.
+- `DungeonTransition` owns transition identity, destination, optional bidirectional link, and an optional placed `DungeonConnection`. Unplaced transitions are valid and spatial queries must handle absent local connections.

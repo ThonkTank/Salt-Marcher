@@ -132,8 +132,7 @@ public sealed interface DungeonSelectionRef permits
 
     record ConnectionRef(
             ConnectionKind connectionKind,
-            Long clusterId,
-            Long corridorId,
+            Long ownerId,
             GridSegment2x boundarySegment2x
     ) implements DungeonSelectionRef {
         public ConnectionRef {
@@ -144,9 +143,10 @@ public sealed interface DungeonSelectionRef permits
         @Override
         public DungeonSelectionRef ownerRef() {
             return switch (connectionKind) {
-                case LOCAL -> clusterId == null ? null : new ClusterRef(clusterId);
-                case CORRIDOR -> corridorId == null ? null : new CorridorRef(corridorId);
-                case STAIR, TRANSITION -> null;
+                case LOCAL -> ownerId == null ? null : new ClusterRef(ownerId);
+                case CORRIDOR -> ownerId == null ? null : new CorridorRef(ownerId);
+                case STAIR -> ownerId == null ? null : new StairRef(ownerId);
+                case TRANSITION -> ownerId == null ? null : new TransitionRef(ownerId);
             };
         }
     }

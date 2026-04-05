@@ -77,21 +77,21 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
     private static List<DungeonHitDescriptor> transitionDescriptors(DungeonLayout layout, DungeonHitProbe probe) {
         ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
         for (DungeonTransition transition : layout.transitionsAtLevel(probe.levelZ())) {
-            if (transition == null || transition.transitionId() == null || transition.placement() == null) {
+            if (transition == null || transition.transitionId() == null || transition.localConnection() == null) {
                 continue;
             }
-            if (transition.doorPlacement() != null) {
-                if (!transition.doorPlacement().boundarySegment2x().touchingCells().contains(probe.gridCell())) {
+            if (transition.localConnection().doorCarrier() != null) {
+                if (!transition.localConnection().anchorSegment2x().touchingCells().contains(probe.gridCell())) {
                     continue;
                 }
                 descriptors.add(new DungeonHitDescriptor(
                         new DungeonSelectionRef.TransitionRef(transition.transitionId()),
                         List.of(new DungeonHitSurface.SegmentSurface(
-                                Set.of(transition.doorPlacement().boundarySegment2x()),
-                                transition.doorPlacement().levelZ()))));
+                                Set.of(transition.localConnection().anchorSegment2x()),
+                                transition.localConnection().levelZ()))));
                 continue;
             }
-            Set<CellCoord> occupiedCells = transition.placement().occupiedPositions().stream()
+            Set<CellCoord> occupiedCells = transition.localConnection().occupiedPositions(layout).stream()
                     .filter(point -> point != null && point.z() == probe.levelZ())
                     .map(point -> point.projectedCell())
                     .filter(cell -> cell.equals(probe.gridCell()))
