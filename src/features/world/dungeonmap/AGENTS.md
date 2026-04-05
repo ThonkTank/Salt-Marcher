@@ -40,6 +40,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `application/`
   - `room/` owns room topology, boundary edits, local door moves, cluster moves, and room narration through the central `DungeonRoomApplicationService` workflow seam.
   - `corridor/` owns corridor graph workflow orchestration for door-to-door create, door-to-tile attach, corridor-door moves, tile-node promotion, node move, and local delete/split, while canonical graph transforms stay on `Corridor` and persistence-specific id assignment stays on `DungeonCorridorRepository`.
+  - `stair/` owns stair create/update/delete flows plus reopen metadata loading. It validates room-floor anchors, authored stop levels, and generates the canonical ordered stair path from editor inputs without moving that generation policy into `DungeonStairRepository`.
   - `runtime/` owns cell-only navigation, TILE persistence, runtime surface resolution, surface refs/exits, flat runtime actions, and runtime state repair.
   - `transition/` owns transition create/place/delete flows plus transition target lookup through one `DungeonTransitionApplicationService`. Do not split read options into a second application owner.
   - `support/` owns transaction helpers.
@@ -103,7 +104,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `RoomNarrationPane` owns the room narration editor UI for the current selection; `SelectionTool` no longer embeds that form logic.
 - `PaintTool` owns room paint/delete sessions from resolved `FloorCellRef` hits and publishes paint previews as `CellCoord` sets, not hydrierten room structures.
 - `BoundaryTool` owns wall-path drafting. In delete mode it may remove local door segments as part of one internal barrier path; draft state stays local to the tool and shared state exposes only boundary preview geometry.
-- `ConnectionsTool` owns door edits plus the two-click corridor authoring flow: `door <-> door` creates a fresh corridor, `door <-> corridor tile` attaches another room to an existing corridor, and delete mode removes corridor segments, explicit nodes, or corridor-bound doors. It must not restore freehand waypoint drafting or corner-insert gestures.
+- `ConnectionsTool` owns door edits plus the two-click corridor authoring flow: `door <-> door` creates a fresh corridor, `door <-> corridor tile` attaches another room to an existing corridor, and delete mode removes corridor segments, explicit nodes, or corridor-bound doors. The same tool also owns the local `Treppen` mode in the state pane: room-floor clicks start stair drafts, stair clicks reopen existing authored specs, and delete mode removes whole stairs. It must not restore freehand waypoint drafting or corner-insert gestures.
 - `TransitionTool` owns transition create/delete gestures and keeps its form state local to the tool. It should carry selected destinations directly as `DungeonTransitionDestination` plus a small local mode hint, not as parallel target-id fields that are rebuilt into destinations later.
 - `DungeonHitSnapshot.firstRefMatching(...)` and `orderedRefs()` are the shared helpers for per-tool hit resolution. Prefer these over ad-hoc candidate walks.
 - Selection identity is semantic. Compare typed owner refs from `DungeonSelectionRef` instead of reconstructing owners through generic ids or parsing helpers in renderers.
@@ -157,7 +158,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `Connection` owns connectivity; `Door` is the boundary object exposed through that connection.
 - Model-side exit descriptors and low-level door exit catalogs belong with room/connection truth, not under runtime or room application workflows. Public room/corridor exit-description queries live on `DungeonLayout`, the shared owner of structure lookup plus connection context; do not route runtime/editor callers through a second public room-exit helper owner.
 - `Corridor` is a first-class structure with stable identity, nodes, segments, room bindings, and derived geometry. In memory and at persistence seams it owns canonical `GridPoint2x`/`GridSegment2x` path truth plus `CellCoord` room bindings, and it owns its direct graph transforms (`attach`, `move door`, `promote tile`, `move node`, `delete segment`, `delete node`) instead of delegating them to a second public graph-editor helper.
-- `DungeonStair` is a first-class structure with stable identity and explicit 3D path geometry. Exits are derived views, not persisted second truths.
+- `DungeonStair` is a first-class structure with stable identity, explicit 3D path geometry, and authored stop levels. Exits are derived views from that path plus stop levels, not persisted second truths.
 - `DungeonTransition` owns transition identity, placement anchor, destination, and optional bidirectional link. Unplaced transitions are valid; spatial queries must guard for null anchor or placement state.
 - Transition workflows should call `DungeonTransitionApplicationService` directly with either a direct `DungeonTransitionDestination` or a prepared transition id. Do not reintroduce request DTOs or catalog option types that decompose the destination back into enum-and-id fields before writing.
 
@@ -167,6 +168,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `DungeonRoomApplicationService` is the single room workflow owner. Selection, paint, boundary, movement, narration, and transition placement should all call that seam instead of splitting room writes across parallel services.
 - `DungeonRoomRepository` owns the concrete write ordering for replacing original clusters with final cluster owners, plus moved clusters. Application workflows decide the final owners, repository code decides insert/update/delete order.
 - `DungeonCorridorRepository` owns corridor row writes, synthetic-to-persistent id assignment, node/segment replacement order, and direct persistence of absolute room-bound endpoint cells. Room-bound corridor endpoints move or detach explicitly in room workflows and previews instead of hiding behind a storage codec.
+- `DungeonStairRepository` owns stair row writes, ordered path-node persistence, authored stop-level persistence, and editor reopen metadata columns. It does not infer exits from room/corridor occupancy and it does not become a second owner of stair generation rules.
 - Room rewrite workflows must validate and rebind affected room-bound corridor endpoints from their stable `roomCell` + exterior boundary before commit. Split/merge operations must never leave a persisted corridor node pointing at a stale `roomId`; if the same boundary no longer resolves to exactly one exterior room, the room mutation is invalid.
 - `DungeonTransitionRepository` owns dungeon-side transition lookups and writes, including placed-target queries and dungeon-map existence checks. Overworld target discovery stays at the `WorldReadApi` boundary, and that public API remains connection-owning instead of leaking JDBC through cross-feature callers.
 - `DungeonMapLoadResolver` owns catalog reads, initial-load usable-map scans, selected-map fallback, and runtime-repair map selection. Full-catalog usable-layout scans are for initial load, not every selection change.
@@ -179,7 +181,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
   - clusters: membership owner plus derived `center_x`, `center_y`, `level_z` metadata only
   - rooms: `dungeon_rooms` row plus per-level descriptor tables `dungeon_room_levels`, `dungeon_room_level_seeds`, and `dungeon_room_level_segments`
   - corridors: stable corridor identity plus node/segment tables
-  - stairs: stable stair identity plus ordered 3D path nodes
+  - stairs: stable stair identity plus ordered 3D path nodes, authored stop levels, and persisted editor reopen metadata for anchor/shape/direction/dimensions
   - transitions: `dungeon_transitions` with nullable placement coordinates and destination discriminator
 - A room must have persisted descriptor rows. Maps with missing room descriptors are rejected during load.
 - Write flows should persist in one transaction and then reload through `DungeonMapLoadingService.submitMutation(...)`; map switches should go through `selectMap(...)`.

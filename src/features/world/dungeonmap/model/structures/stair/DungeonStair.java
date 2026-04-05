@@ -8,7 +8,6 @@ import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
@@ -18,11 +17,11 @@ import java.util.Set;
  * Canonical stair truth for dungeonmap.
  *
  * <p>A stair is exactly one continuous ordered 3D line with a fixed 1:1 climb between successive levels.
- * It is not a graph, it does not branch, and exits are not persisted. Exits are disposable read projections
- * derived from the path nodes that currently intersect occupied room/corridor floor cells.
+ * It is not a graph and it does not branch. Exits are disposable read projections derived from the explicit
+ * path plus the authored stop levels that the editor exposes as usable stair connections.
  *
  * <p>If later editing wants templates, radius, direction, or other generation inputs, those belong in
- * editor/application code. The persisted domain truth must stay this explicit path.
+ * editor/application code. The persisted structure truth must stay this explicit path plus its authored stop levels.
  */
 public final class DungeonStair {
 
@@ -30,6 +29,7 @@ public final class DungeonStair {
     private final long mapId;
     private final String name;
     private final List<CubePoint> path;
+    private final Set<Integer> stopLevels;
     private final List<DungeonStairExit> exits;
     private final Set<CubePoint> occupiedPositions;
     private final Set<Integer> reachableLevels;
@@ -39,13 +39,14 @@ public final class DungeonStair {
             long mapId,
             String name,
             List<CubePoint> path,
-            Set<CubePoint> occupiedFloorPositions
+            Set<Integer> stopLevels
     ) {
         this.stairId = stairId;
         this.mapId = mapId;
         this.name = normalizeName(name);
         this.path = normalizePath(path);
-        this.exits = deriveExits(this.path, occupiedFloorPositions);
+        this.stopLevels = normalizeStopLevels(this.path, stopLevels);
+        this.exits = deriveExits(this.path, this.stopLevels);
         this.occupiedPositions = Collections.unmodifiableSet(new LinkedHashSet<>(this.path));
         this.reachableLevels = deriveReachableLevels(this.path);
     }
@@ -55,9 +56,9 @@ public final class DungeonStair {
             long mapId,
             String name,
             List<CubePoint> path,
-            Set<CubePoint> occupiedFloorPositions
+            Set<Integer> stopLevels
     ) {
-        return new DungeonStair(stairId, mapId, name, path, occupiedFloorPositions);
+        return new DungeonStair(stairId, mapId, name, path, stopLevels);
     }
 
     public Long stairId() {
@@ -74,6 +75,10 @@ public final class DungeonStair {
 
     public List<CubePoint> path() {
         return path;
+    }
+
+    public Set<Integer> stopLevels() {
+        return stopLevels;
     }
 
     public List<DungeonStairExit> exits() {
@@ -130,12 +135,13 @@ public final class DungeonStair {
         return mapId == stair.mapId
                 && Objects.equals(stairId, stair.stairId)
                 && Objects.equals(name, stair.name)
-                && Objects.equals(path, stair.path);
+                && Objects.equals(path, stair.path)
+                && Objects.equals(stopLevels, stair.stopLevels);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(stairId, mapId, name, path);
+        return Objects.hash(stairId, mapId, name, path, stopLevels);
     }
 
     @Override
@@ -144,6 +150,7 @@ public final class DungeonStair {
                 + ", mapId=" + mapId
                 + ", name=" + name
                 + ", path=" + path
+                + ", stopLevels=" + stopLevels
                 + "]";
     }
 
@@ -157,7 +164,7 @@ public final class DungeonStair {
         if (result.isEmpty()) {
             throw new IllegalArgumentException("Treppenpfad fehlt");
         }
-        HashSet<Integer> seenLevels = new HashSet<>();
+        LinkedHashSet<Integer> seenLevels = new LinkedHashSet<>();
         CubePoint previous = null;
         for (CubePoint current : result) {
             // The intended model is one stair node per reached z-level.
@@ -179,16 +186,33 @@ public final class DungeonStair {
         return List.copyOf(result);
     }
 
+    private static Set<Integer> normalizeStopLevels(List<CubePoint> path, Set<Integer> stopLevels) {
+        LinkedHashSet<Integer> reachableLevels = new LinkedHashSet<>();
+        for (CubePoint node : path) {
+            reachableLevels.add(node.z());
+        }
+        LinkedHashSet<Integer> normalizedStops = new LinkedHashSet<>();
+        for (Integer stopLevel : stopLevels == null ? Set.<Integer>of() : stopLevels) {
+            if (stopLevel != null) {
+                if (!reachableLevels.contains(stopLevel)) {
+                    throw new IllegalArgumentException("Treppenstopp liegt außerhalb des Treppenpfads");
+                }
+                normalizedStops.add(stopLevel);
+            }
+        }
+        if (normalizedStops.isEmpty()) {
+            throw new IllegalArgumentException("Treppenstopps fehlen");
+        }
+        return Collections.unmodifiableSet(normalizedStops);
+    }
+
     private static List<DungeonStairExit> deriveExits(
             List<CubePoint> path,
-            Set<CubePoint> occupiedFloorPositions
+            Set<Integer> stopLevels
     ) {
-        Set<CubePoint> occupiedFloors = occupiedFloorPositions == null ? Set.of() : Set.copyOf(occupiedFloorPositions);
         LinkedHashSet<CubePoint> exitPositions = new LinkedHashSet<>();
         for (CubePoint node : path) {
-            // Exits are not authored separately. They exist only where the explicit stair path
-            // currently touches reachable room/corridor floor occupancy.
-            if (occupiedFloors.contains(node)) {
+            if (stopLevels.contains(node.z())) {
                 exitPositions.add(node);
             }
         }

@@ -4,6 +4,7 @@ import features.world.api.WorldTravelSurface;
 import features.world.dungeonmap.application.corridor.DungeonCorridorApplicationService;
 import features.world.dungeonmap.application.room.DungeonRoomApplicationService;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeApplicationService;
+import features.world.dungeonmap.application.stair.DungeonStairApplicationService;
 import features.world.dungeonmap.application.transition.DungeonTransitionApplicationService;
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
 import features.world.dungeonmap.loading.DungeonMapLoadResolver;
@@ -11,6 +12,7 @@ import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.repository.DungeonCorridorRepository;
 import features.world.dungeonmap.repository.DungeonLayoutRepository;
 import features.world.dungeonmap.repository.DungeonRoomRepository;
+import features.world.dungeonmap.repository.DungeonStairRepository;
 import features.world.dungeonmap.repository.DungeonTransitionRepository;
 import features.world.dungeonmap.shell.editor.DungeonEditorView;
 import features.world.dungeonmap.shell.editor.RoomNarrationPane;
@@ -42,12 +44,16 @@ public final class DungeonMapModule {
         DungeonLayoutRepository layoutRepository = new DungeonLayoutRepository();
         DungeonRoomRepository roomRepository = new DungeonRoomRepository();
         DungeonCorridorRepository corridorRepository = new DungeonCorridorRepository();
+        DungeonStairRepository stairRepository = new DungeonStairRepository();
         DungeonTransitionRepository transitionRepository = new DungeonTransitionRepository();
         DungeonMapLoadResolver loadResolver = new DungeonMapLoadResolver(layoutRepository);
         DungeonRoomApplicationService roomApplicationService = new DungeonRoomApplicationService(
                 layoutRepository,
                 corridorRepository,
                 roomRepository);
+        DungeonStairApplicationService stairApplicationService = new DungeonStairApplicationService(
+                layoutRepository,
+                stairRepository);
         DungeonTransitionApplicationService transitionApplicationService = new DungeonTransitionApplicationService(roomApplicationService, transitionRepository);
         DungeonRuntimeApplicationService runtimeApplicationService = new DungeonRuntimeApplicationService(
                 layoutRepository,
@@ -94,6 +100,7 @@ public final class DungeonMapModule {
                         editorSessionState,
                         roomApplicationService,
                         corridorApplicationService,
+                        stairApplicationService,
                         editorInteractionState),
                 new TransitionTool(
                         state,

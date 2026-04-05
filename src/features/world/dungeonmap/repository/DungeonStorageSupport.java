@@ -108,10 +108,20 @@ public final class DungeonStorageSupport {
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_stairs ("
                 + "stair_id         INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + "dungeon_map_id   INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
-                + "name             TEXT"
+                + "name             TEXT,"
+                + "anchor_cell_x    INTEGER NOT NULL,"
+                + "anchor_cell_y    INTEGER NOT NULL,"
+                + "anchor_level_z   INTEGER NOT NULL,"
+                + "shape            TEXT NOT NULL,"
+                + "direction_code   INTEGER NOT NULL DEFAULT 0,"
+                + "dimension1       INTEGER NOT NULL DEFAULT 0,"
+                + "dimension2       INTEGER NOT NULL DEFAULT 0,"
+                + "min_level_z      INTEGER NOT NULL,"
+                + "max_level_z      INTEGER NOT NULL,"
+                + "CHECK(shape IN ('LADDER','STRAIGHT','SQUARE','RECTANGULAR','CIRCULAR'))"
                 + ")");
         // Ordered path nodes are the canonical persisted stair geometry.
-        // Exits are intentionally absent from the schema and must be re-derived after load.
+        // Exits are intentionally absent from the schema and must be re-derived from the path plus authored stop levels.
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_stair_path_nodes ("
                 + "stair_id         INTEGER NOT NULL REFERENCES dungeon_stairs(stair_id) ON DELETE CASCADE,"
                 + "sort_order       INTEGER NOT NULL,"
@@ -119,6 +129,11 @@ public final class DungeonStorageSupport {
                 + "cell_y           INTEGER NOT NULL,"
                 + "cell_z           INTEGER NOT NULL,"
                 + "PRIMARY KEY (stair_id, sort_order)"
+                + ")");
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_stair_stop_levels ("
+                + "stair_id         INTEGER NOT NULL REFERENCES dungeon_stairs(stair_id) ON DELETE CASCADE,"
+                + "level_z          INTEGER NOT NULL,"
+                + "PRIMARY KEY (stair_id, level_z)"
                 + ")");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_transitions ("
                 + "transition_id            INTEGER PRIMARY KEY AUTOINCREMENT,"

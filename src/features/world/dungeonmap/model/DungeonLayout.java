@@ -740,6 +740,45 @@ public final class DungeonLayout {
         return updatedCorridors.size() == corridors.size() ? this : withCorridors(updatedCorridors);
     }
 
+    public DungeonLayout withAddedStair(DungeonStair stair) {
+        if (stair == null) {
+            return this;
+        }
+        ArrayList<DungeonStair> updatedStairs = new ArrayList<>(stairs);
+        updatedStairs.add(stair);
+        return withStairs(updatedStairs);
+    }
+
+    public DungeonLayout withUpdatedStair(DungeonStair stair) {
+        if (stair == null || stair.stairId() == null) {
+            return this;
+        }
+        boolean replaced = false;
+        ArrayList<DungeonStair> updatedStairs = new ArrayList<>(stairs.size());
+        for (DungeonStair existing : stairs) {
+            if (existing != null && Objects.equals(existing.stairId(), stair.stairId())) {
+                updatedStairs.add(stair);
+                replaced = true;
+            } else {
+                updatedStairs.add(existing);
+            }
+        }
+        if (!replaced) {
+            updatedStairs.add(stair);
+        }
+        return withStairs(updatedStairs);
+    }
+
+    public DungeonLayout withRemovedStair(Long stairId) {
+        if (stairId == null) {
+            return this;
+        }
+        List<DungeonStair> updatedStairs = stairs.stream()
+                .filter(stair -> stair == null || !Objects.equals(stair.stairId(), stairId))
+                .toList();
+        return updatedStairs.size() == stairs.size() ? this : withStairs(updatedStairs);
+    }
+
     public DungeonLayout withMovedCluster(Long clusterId, CellCoord delta, int levelDelta) {
         RoomCluster cluster = findCluster(clusterId);
         boolean translate = delta != null && (delta.x() != 0 || delta.y() != 0);
@@ -783,6 +822,10 @@ public final class DungeonLayout {
 
     private DungeonLayout withCorridors(List<Corridor> updatedCorridors) {
         return new DungeonLayout(mapId, name, updatedCorridors, clusters, stairs, transitions, clusterLevelsById);
+    }
+
+    private DungeonLayout withStairs(List<DungeonStair> updatedStairs) {
+        return new DungeonLayout(mapId, name, corridors, clusters, updatedStairs, transitions, clusterLevelsById);
     }
 
     public DungeonLayout projectedToLevel(int levelZ) {

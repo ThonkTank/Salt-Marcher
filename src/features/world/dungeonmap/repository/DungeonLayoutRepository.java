@@ -5,7 +5,6 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.model.structures.stair.DungeonStair;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -49,13 +48,12 @@ public final class DungeonLayoutRepository {
         List<RoomCluster> clusters = roomRepository.loadClusters(conn, mapId, rooms);
         Map<Long, Integer> clusterLevels = roomRepository.loadClusterLevels(conn, mapId);
         List<Corridor> corridors = corridorRepository.loadByMap(conn, mapId, rooms);
-        List<DungeonStair> stairs = stairRepository.loadByMap(conn, mapId, clusters, corridors);
         return new DungeonLayout(
                 mapId,
                 mapName,
                 corridors,
                 clusters,
-                stairs,
+                stairRepository.loadByMap(conn, mapId),
                 transitionRepository.loadByMap(conn, mapId),
                 clusterLevels);
     }

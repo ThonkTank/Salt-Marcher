@@ -27,6 +27,19 @@ public final class StairPathGenerator {
             int dimension1,
             int dimension2
     ) {
+        return generateAnchoredPath(shape, anchor, minZ, direction, minZ, maxZ, dimension1, dimension2);
+    }
+
+    public static List<CubePoint> generateAnchoredPath(
+            StairShape shape,
+            CellCoord anchor,
+            int anchorLevelZ,
+            CardinalDirection direction,
+            int minZ,
+            int maxZ,
+            int dimension1,
+            int dimension2
+    ) {
         // This helper may generate a whole-stair replacement path for editor/application workflows,
         // but the generated path itself is the only domain truth that may be persisted.
         StairShape resolvedShape = Objects.requireNonNull(shape, "shape");
@@ -37,24 +50,44 @@ public final class StairPathGenerator {
         if (maxZ < minZ) {
             throw new IllegalArgumentException("maxZ darf nicht kleiner als minZ sein");
         }
+        if (anchorLevelZ < minZ || anchorLevelZ > maxZ) {
+            throw new IllegalArgumentException("Anker-Ebene liegt außerhalb der Treppenspanne");
+        }
         String validationMessage = resolvedShape.validateDimensions(dimension1, dimension2).orElse(null);
         if (validationMessage != null) {
             throw new IllegalArgumentException(validationMessage);
         }
         int stepCount = maxZ - minZ + 1;
-        List<CellCoord> projectedPath = switch (resolvedShape) {
-            case LADDER -> ladderPath(anchor, stepCount);
-            case STRAIGHT -> straightPath(anchor, resolvedDirection, stepCount);
-            case SQUARE -> spiralPath(anchor, resolvedDirection, stepCount, dimension1, dimension1);
-            case RECTANGULAR -> spiralPath(anchor, resolvedDirection, stepCount, dimension1, dimension2);
-            case CIRCULAR -> circularPath(anchor, resolvedDirection, stepCount, dimension1);
-        };
+        List<CellCoord> relativePath = projectedPath(resolvedShape, new CellCoord(0, 0), resolvedDirection, stepCount, dimension1, dimension2);
+        int anchorIndex = anchorLevelZ - minZ;
+        CellCoord relativeAnchor = relativePath.get(anchorIndex);
+        CellCoord offset = anchor.subtract(relativeAnchor);
+        List<CellCoord> projectedPath = relativePath.stream()
+                .map(cell -> cell.add(offset))
+                .toList();
         validateEdgeConnectivity(projectedPath);
         ArrayList<CubePoint> result = new ArrayList<>(projectedPath.size());
         for (int index = 0; index < projectedPath.size(); index++) {
             result.add(CubePoint.at(projectedPath.get(index), minZ + index));
         }
         return List.copyOf(result);
+    }
+
+    private static List<CellCoord> projectedPath(
+            StairShape shape,
+            CellCoord anchor,
+            CardinalDirection direction,
+            int stepCount,
+            int dimension1,
+            int dimension2
+    ) {
+        return switch (shape) {
+            case LADDER -> ladderPath(anchor, stepCount);
+            case STRAIGHT -> straightPath(anchor, direction, stepCount);
+            case SQUARE -> spiralPath(anchor, direction, stepCount, dimension1, dimension1);
+            case RECTANGULAR -> spiralPath(anchor, direction, stepCount, dimension1, dimension2);
+            case CIRCULAR -> circularPath(anchor, direction, stepCount, dimension1);
+        };
     }
 
     private static List<CellCoord> ladderPath(CellCoord anchor, int stepCount) {
