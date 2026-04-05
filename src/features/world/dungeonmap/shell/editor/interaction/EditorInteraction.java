@@ -140,7 +140,7 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
     private EditorToolContext resolve(EditorToolContext baseContext, EditorToolPhase phase) {
         EditorHitResolution resolution = activeTool == null
                 ? EditorHitResolution.none()
-                : activeTool.resolveHit(baseContext, phase);
+                : resolveCapabilities(baseContext, phase);
         if (phase == EditorToolPhase.HOVER) {
             state.showHover(resolution.hover());
         }
@@ -152,6 +152,22 @@ public final class EditorInteraction implements DungeonCanvasInteractionHandler 
                 resolution.hitRef(),
                 resolution.resolvedRef(),
                 baseContext.state());
+    }
+
+    private EditorHitResolution resolveCapabilities(EditorToolContext baseContext, EditorToolPhase phase) {
+        if (activeTool == null) {
+            return EditorHitResolution.none();
+        }
+        for (EditorInteractionCapability capability : activeTool.interactionCapabilities(baseContext, phase)) {
+            if (capability == null) {
+                continue;
+            }
+            EditorHitResolution resolution = capability.resolve(baseContext);
+            if (resolution.hitRef() != null) {
+                return resolution;
+            }
+        }
+        return EditorHitResolution.none();
     }
 
     private EditorToolContext collect(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {

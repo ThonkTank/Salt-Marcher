@@ -183,22 +183,13 @@ public final class ConnectionsTool implements EditorTool {
     }
 
     @Override
-    public EditorHitResolution resolveHit(EditorToolContext ctx, EditorToolPhase phase) {
-        DungeonSelectionRef hitRef = resolvedHitRef(ctx);
-        if (hitRef == null) {
-            return EditorHitResolution.none();
+    public List<EditorInteractionCapability> interactionCapabilities(EditorToolContext ctx, EditorToolPhase phase) {
+        if (activeTool == null || ctx == null) {
+            return List.of();
         }
-        if (hitRef instanceof DungeonSelectionRef.RoomBoundaryRef
-                || hitRef instanceof DungeonSelectionRef.CorridorBoundaryRef
-                || hitRef instanceof DungeonSelectionRef.ConnectionRef
-                || hitRef instanceof DungeonSelectionRef.CorridorNodeRef
-                || hitRef instanceof DungeonSelectionRef.CorridorSegmentRef) {
-            return EditorHitResolution.part(hitRef);
-        }
-        if (hitRef instanceof DungeonSelectionRef.CorridorRef || hitRef instanceof DungeonSelectionRef.StairRef) {
-            return EditorHitResolution.owner(hitRef);
-        }
-        return EditorHitResolution.ref(hitRef);
+        return activeTool == DungeonEditorTool.CONNECTIONS_DELETE
+                ? deleteCapabilities()
+                : createCapabilities(ctx);
     }
 
     @Override
@@ -1070,106 +1061,57 @@ public final class ConnectionsTool implements EditorTool {
         return projectedCluster != null && projectedCluster.canCreateDoor(hit.boundarySegment2x());
     }
 
-    private DungeonSelectionRef resolvedHitRef(EditorToolContext ctx) {
-        if (ctx == null) {
-            return null;
-        }
-        features.world.dungeonmap.shell.interaction.DungeonHitSnapshot snapshot = ctx.snapshot();
-        List<DungeonSelectionRef> refs = snapshot == null ? List.of() : snapshot.orderedRefs();
-        int levelZ = ctx.probe() == null ? mapState.activeProjectionLevel() : ctx.probe().levelZ();
+    private List<EditorInteractionCapability> createCapabilities(EditorToolContext ctx) {
         DungeonLayout layout = ctx.activeMap();
-        if (activeTool == DungeonEditorTool.CONNECTIONS_DELETE) {
-            return resolveDeleteRef(refs);
-        }
-        DungeonSelectionRef resolved = resolveCreateRef(refs, layout, levelZ);
-        if (resolved != null) {
-            return resolved;
-        }
-        if (pendingEndpoint != null || stairFlowActive() || ctx.probe() == null || layout == null) {
-            return null;
-        }
-        CellCoord gridCell = ctx.probe().gridCell();
-        return layout.roomAtCell(gridCell, levelZ) == null
-                ? null
-                : new DungeonSelectionRef.FloorCellRef(CubePoint.at(gridCell, levelZ));
-    }
-
-    private DungeonSelectionRef resolveCreateRef(List<DungeonSelectionRef> refs, DungeonLayout layout, int levelZ) {
+        int levelZ = ctx.probe() == null ? mapState.activeProjectionLevel() : ctx.probe().levelZ();
         if (stairFlowActive()) {
-            return null;
+            return List.of();
         }
         if (pendingEndpoint == null) {
-            DungeonSelectionRef editableDoor = firstMatching(refs, ref ->
-                    ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundary
-                            && isEditableDoorBoundary(
-                            roomBoundary,
-                            layout == null ? null : layout.describeRoomBoundary(roomBoundary, levelZ),
-                            layout,
-                            levelZ));
-            if (editableDoor != null) {
-                return editableDoor;
-            }
-            DungeonSelectionRef corridorBoundary = firstMatching(refs, ref ->
-                    ref instanceof DungeonSelectionRef.CorridorBoundaryRef corridorBoundaryRef
-                            && isAvailableCorridorBoundary(layout, corridorBoundaryRef, levelZ));
-            if (corridorBoundary != null) {
-                return corridorBoundary;
-            }
-            DungeonSelectionRef exteriorBoundary = firstMatching(refs, ref ->
-                    ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundary
-                            && isExteriorBoundary(layout, roomBoundary, levelZ));
-            if (exteriorBoundary != null) {
-                return exteriorBoundary;
-            }
-            DungeonSelectionRef stair = firstMatching(refs, ref -> ref instanceof DungeonSelectionRef.StairRef);
-            if (stair != null) {
-                return stair;
-            }
-            DungeonSelectionRef connection = firstMatching(refs, ref -> ref instanceof DungeonSelectionRef.ConnectionRef);
-            if (connection != null) {
-                return connection;
-            }
-            return firstMatching(refs, ref -> ref instanceof DungeonSelectionRef.CorridorRef);
+            return List.of(
+                    EditorCapabilities.part(ref ->
+                            ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundary
+                                    && isEditableDoorBoundary(
+                                    roomBoundary,
+                                    layout == null ? null : layout.describeRoomBoundary(roomBoundary, levelZ),
+                                    layout,
+                                    levelZ)),
+                    EditorCapabilities.part(ref ->
+                            ref instanceof DungeonSelectionRef.CorridorBoundaryRef corridorBoundaryRef
+                                    && isAvailableCorridorBoundary(layout, corridorBoundaryRef, levelZ)),
+                    EditorCapabilities.part(ref ->
+                            ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundary
+                                    && isExteriorBoundary(layout, roomBoundary, levelZ)),
+                    EditorCapabilities.owner(ref -> ref instanceof DungeonSelectionRef.StairRef),
+                    EditorCapabilities.part(ref -> ref instanceof DungeonSelectionRef.ConnectionRef),
+                    EditorCapabilities.owner(ref -> ref instanceof DungeonSelectionRef.CorridorRef),
+                    EditorCapabilities.partFallback(this::roomFloorRef));
         }
         if (pendingEndpoint instanceof PendingRoomBoundary) {
-            DungeonSelectionRef corridorBoundary = firstMatching(refs, ref ->
-                    ref instanceof DungeonSelectionRef.CorridorBoundaryRef corridorBoundaryRef
-                            && isAvailableCorridorBoundary(layout, corridorBoundaryRef, levelZ));
-            if (corridorBoundary != null) {
-                return corridorBoundary;
-            }
-            DungeonSelectionRef exteriorBoundary = firstMatching(refs, ref ->
-                    ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundary
-                            && isExteriorBoundary(layout, roomBoundary, levelZ));
-            return exteriorBoundary;
+            return List.of(
+                    EditorCapabilities.part(ref ->
+                            ref instanceof DungeonSelectionRef.CorridorBoundaryRef corridorBoundaryRef
+                                    && isAvailableCorridorBoundary(layout, corridorBoundaryRef, levelZ)),
+                    EditorCapabilities.part(ref ->
+                            ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundary
+                                    && isExteriorBoundary(layout, roomBoundary, levelZ)));
         }
-        return firstMatching(refs, ref ->
+        return List.of(EditorCapabilities.part(ref ->
                 ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundary
-                        && isExteriorBoundary(layout, roomBoundary, levelZ));
+                        && isExteriorBoundary(layout, roomBoundary, levelZ)));
     }
 
-    private static DungeonSelectionRef resolveDeleteRef(List<DungeonSelectionRef> refs) {
-        DungeonSelectionRef stair = firstMatching(refs, ref -> ref instanceof DungeonSelectionRef.StairRef);
-        if (stair != null) {
-            return stair;
-        }
-        DungeonSelectionRef localConnection = firstMatching(refs, ref ->
-                ref instanceof DungeonSelectionRef.ConnectionRef connection
-                        && connection.connectionKind() == ConnectionKind.LOCAL);
-        if (localConnection != null) {
-            return localConnection;
-        }
-        DungeonSelectionRef corridorDoor = firstMatching(refs, ref ->
-                ref instanceof DungeonSelectionRef.ConnectionRef connection
-                        && connection.connectionKind() == ConnectionKind.CORRIDOR);
-        if (corridorDoor != null) {
-            return corridorDoor;
-        }
-        DungeonSelectionRef corridorNode = firstMatching(refs, ref -> ref instanceof DungeonSelectionRef.CorridorNodeRef);
-        if (corridorNode != null) {
-            return corridorNode;
-        }
-        return firstMatching(refs, ref -> ref instanceof DungeonSelectionRef.CorridorSegmentRef);
+    private List<EditorInteractionCapability> deleteCapabilities() {
+        return List.of(
+                EditorCapabilities.owner(ref -> ref instanceof DungeonSelectionRef.StairRef),
+                EditorCapabilities.part(ref ->
+                        ref instanceof DungeonSelectionRef.ConnectionRef connection
+                                && connection.connectionKind() == ConnectionKind.LOCAL),
+                EditorCapabilities.part(ref ->
+                        ref instanceof DungeonSelectionRef.ConnectionRef connection
+                                && connection.connectionKind() == ConnectionKind.CORRIDOR),
+                EditorCapabilities.part(ref -> ref instanceof DungeonSelectionRef.CorridorNodeRef),
+                EditorCapabilities.part(ref -> ref instanceof DungeonSelectionRef.CorridorSegmentRef));
     }
 
     private static boolean isExteriorBoundary(DungeonLayout layout, DungeonSelectionRef.RoomBoundaryRef ref, int levelZ) {
@@ -1185,25 +1127,23 @@ public final class ConnectionsTool implements EditorTool {
         return layout != null && ref != null && layout.describeCorridorBoundary(ref, levelZ) != null;
     }
 
-    private static DungeonSelectionRef firstMatching(
-            List<DungeonSelectionRef> refs,
-            java.util.function.Predicate<DungeonSelectionRef> predicate
-    ) {
-        if (refs == null || predicate == null) {
-            return null;
-        }
-        for (DungeonSelectionRef ref : refs) {
-            if (ref != null && predicate.test(ref)) {
-                return ref;
-            }
-        }
-        return null;
-    }
-
     private void applySelection(DungeonSelectionRef resolvedRef) {
         if (resolvedRef != null) {
             state.selectRef(resolvedRef);
         }
+    }
+
+    private DungeonSelectionRef roomFloorRef(EditorToolContext ctx) {
+        if (ctx == null || pendingEndpoint != null || stairFlowActive() || ctx.probe() == null) {
+            return null;
+        }
+        DungeonLayout layout = ctx.activeMap();
+        int levelZ = ctx.probe().levelZ();
+        CellCoord gridCell = ctx.probe().gridCell();
+        if (layout == null || layout.roomAtCell(gridCell, levelZ) == null) {
+            return null;
+        }
+        return new DungeonSelectionRef.FloorCellRef(CubePoint.at(gridCell, levelZ));
     }
 
     private boolean cancelActiveCreateFlow() {

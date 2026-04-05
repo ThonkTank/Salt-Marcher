@@ -14,6 +14,7 @@ import features.world.dungeonmap.state.EditorPreview;
 import javafx.scene.Node;
 import ui.async.UiErrorReporter;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -137,14 +138,11 @@ public final class PaintTool implements EditorTool {
     }
 
     @Override
-    public EditorHitResolution resolveHit(EditorToolContext ctx, EditorToolPhase phase) {
+    public List<EditorInteractionCapability> interactionCapabilities(EditorToolContext ctx, EditorToolPhase phase) {
         if (ctx == null || !sessionState.selectedTool().isRoomTool() || ctx.probe() == null) {
-            return EditorHitResolution.none();
+            return List.of();
         }
-        DungeonSelectionRef ref = new DungeonSelectionRef.FloorCellRef(CubePoint.at(ctx.probe().gridCell(), ctx.probe().levelZ()));
-        return phase == EditorToolPhase.HOVER
-                ? EditorHitResolution.none()
-                : EditorHitResolution.ref(ref);
+        return List.of(EditorCapabilities.partFallback(this::floorCellRef));
     }
 
     @Override
@@ -160,5 +158,12 @@ public final class PaintTool implements EditorTool {
         return ctx != null && ctx.hitRef() instanceof DungeonSelectionRef.FloorCellRef floorCellRef
                 ? floorCellRef.cell().projectedCell()
                 : null;
+    }
+
+    private DungeonSelectionRef floorCellRef(EditorToolContext ctx) {
+        if (ctx == null || ctx.probe() == null) {
+            return null;
+        }
+        return new DungeonSelectionRef.FloorCellRef(CubePoint.at(ctx.probe().gridCell(), ctx.probe().levelZ()));
     }
 }

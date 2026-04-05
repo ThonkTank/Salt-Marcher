@@ -288,25 +288,20 @@ public final class SelectionTool implements EditorTool {
     }
 
     @Override
-    public EditorHitResolution resolveHit(EditorToolContext ctx, EditorToolPhase phase) {
+    public List<EditorInteractionCapability> interactionCapabilities(EditorToolContext ctx, EditorToolPhase phase) {
         if (activeTool != DungeonEditorTool.SELECT) {
-            return EditorHitResolution.none();
+            return List.of();
         }
-        DungeonSelectionRef ref = resolvedHitRef(ctx == null ? null : ctx.snapshot());
-        if (ref == null) {
-            return EditorHitResolution.none();
-        }
-        if (ref instanceof DungeonSelectionRef.CorridorNodeRef
-                || ref instanceof DungeonSelectionRef.CorridorTileRef
-                || ref instanceof DungeonSelectionRef.ConnectionRef) {
-            return EditorHitResolution.part(ref);
-        }
-        if (doorDragSession != null
-                && ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundaryRef
-                && isValidDoorTarget(roomBoundaryRef, doorDragSession)) {
-            return EditorHitResolution.part(ref);
-        }
-        return EditorHitResolution.owner(ref);
+        return List.of(
+                EditorCapabilities.part(candidate ->
+                        doorDragSession != null
+                                && candidate instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundaryRef
+                                && isValidDoorTarget(roomBoundaryRef, doorDragSession)),
+                EditorCapabilities.part(candidate ->
+                        candidate instanceof DungeonSelectionRef.CorridorNodeRef
+                                || candidate instanceof DungeonSelectionRef.CorridorTileRef
+                                || candidate instanceof DungeonSelectionRef.ConnectionRef),
+                EditorCapabilities.owner(SelectionTool::isRelevantRef));
     }
 
     @Override
@@ -354,13 +349,6 @@ public final class SelectionTool implements EditorTool {
         corridorTileDragSession = null;
         doorDragSession = null;
         state.clearPreview();
-    }
-
-    private static DungeonSelectionRef resolvedHitRef(features.world.dungeonmap.shell.interaction.DungeonHitSnapshot snapshot) {
-        if (snapshot == null) {
-            return null;
-        }
-        return snapshot.firstRefMatching(SelectionTool::isRelevantRef);
     }
 
     private static boolean isRelevantRef(DungeonSelectionRef ref) {

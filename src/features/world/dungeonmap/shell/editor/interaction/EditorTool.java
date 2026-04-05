@@ -3,6 +3,7 @@ package features.world.dungeonmap.shell.editor.interaction;
 import features.world.dungeonmap.state.DungeonEditorTool;
 import javafx.scene.Node;
 
+import java.util.List;
 import java.util.Set;
 
 public sealed interface EditorTool
@@ -20,7 +21,7 @@ public sealed interface EditorTool
 
     boolean released(EditorToolContext ctx);
 
-    EditorHitResolution resolveHit(EditorToolContext ctx, EditorToolPhase phase);
+    List<EditorInteractionCapability> interactionCapabilities(EditorToolContext ctx, EditorToolPhase phase);
 
     default void levelScrolled(int delta) {
     }

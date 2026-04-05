@@ -139,22 +139,18 @@ public final class TransitionTool implements EditorTool {
     }
 
     @Override
-    public EditorHitResolution resolveHit(EditorToolContext ctx, EditorToolPhase phase) {
+    public List<EditorInteractionCapability> interactionCapabilities(EditorToolContext ctx, EditorToolPhase phase) {
         DungeonEditorTool tool = sessionState.selectedTool();
         if (tool == DungeonEditorTool.TRANSITION_CREATE) {
-            if (phase == EditorToolPhase.HOVER || ctx == null || ctx.probe() == null) {
-                return EditorHitResolution.none();
+            if (ctx == null || ctx.probe() == null) {
+                return List.of();
             }
-            return EditorHitResolution.ref(
-                    new DungeonSelectionRef.FloorCellRef(CubePoint.at(ctx.probe().gridCell(), ctx.probe().levelZ())));
+            return List.of(EditorCapabilities.partFallback(this::floorCellRef));
         }
         if (tool == DungeonEditorTool.TRANSITION_DELETE) {
-            DungeonSelectionRef ref = ctx == null || ctx.snapshot() == null
-                    ? null
-                    : ctx.snapshot().firstRefMatching(candidate -> candidate instanceof DungeonSelectionRef.TransitionRef);
-            return ref == null ? EditorHitResolution.none() : EditorHitResolution.owner(ref);
+            return List.of(EditorCapabilities.owner(candidate -> candidate instanceof DungeonSelectionRef.TransitionRef));
         }
-        return EditorHitResolution.none();
+        return List.of();
     }
 
     @Override
@@ -171,6 +167,13 @@ public final class TransitionTool implements EditorTool {
     @Override
     public void setRefreshCallback(Runnable callback) {
         refreshCallback = callback == null ? () -> { } : callback;
+    }
+
+    private DungeonSelectionRef floorCellRef(EditorToolContext ctx) {
+        if (ctx == null || ctx.probe() == null) {
+            return null;
+        }
+        return new DungeonSelectionRef.FloorCellRef(CubePoint.at(ctx.probe().gridCell(), ctx.probe().levelZ()));
     }
 
     private boolean handleCreatePressed(EditorToolContext ctx) {
