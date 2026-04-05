@@ -154,7 +154,7 @@ public final class SelectionTool implements EditorTool {
             if (event == null || !event.isPrimaryButtonDown()) {
                 return false;
             }
-            DungeonSelectionRef.RoomBoundaryRef targetBoundaryRef = currentDoorTargetRef(ctx);
+            DungeonSelectionRef.RoomBoundaryRef targetBoundaryRef = currentDoorTargetRef(ctx, doorDragSession);
             if (Objects.equals(targetBoundaryRef, doorDragSession.targetBoundaryRef())) {
                 return true;
             }
@@ -211,7 +211,7 @@ public final class SelectionTool implements EditorTool {
     public boolean released(EditorToolContext ctx) {
         DungeonCanvasPointerEvent event = ctx == null ? null : ctx.event();
         if (doorDragSession != null) {
-            DoorDragSession current = doorDragSession.withTargetBoundaryRef(currentDoorTargetRef(ctx));
+            DoorDragSession current = doorDragSession.withTargetBoundaryRef(currentDoorTargetRef(ctx, doorDragSession));
             doorDragSession = null;
             state.clearPreview();
             commitDoorMove(current);
@@ -301,7 +301,9 @@ public final class SelectionTool implements EditorTool {
                 || ref instanceof DungeonSelectionRef.ConnectionRef) {
             return EditorHitResolution.part(ref);
         }
-        if (doorDragSession != null && ref instanceof DungeonSelectionRef.RoomBoundaryRef) {
+        if (doorDragSession != null
+                && ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundaryRef
+                && isValidDoorTarget(roomBoundaryRef, doorDragSession)) {
             return EditorHitResolution.part(ref);
         }
         return EditorHitResolution.owner(ref);
@@ -542,10 +544,24 @@ public final class SelectionTool implements EditorTool {
                 throwable -> UiErrorReporter.reportBackgroundFailure("SelectionTool.commitCorridorDoorMove()", throwable));
     }
 
-    private static DungeonSelectionRef.RoomBoundaryRef currentDoorTargetRef(EditorToolContext ctx) {
-        return ctx != null && ctx.hitRef() instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundaryRef
-                ? roomBoundaryRef
-                : null;
+    private DungeonSelectionRef.RoomBoundaryRef currentDoorTargetRef(
+            EditorToolContext ctx,
+            DoorDragSession session
+    ) {
+        if (ctx == null || session == null || !(ctx.hitRef() instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundaryRef)) {
+            return null;
+        }
+        return isValidDoorTarget(roomBoundaryRef, session) ? roomBoundaryRef : null;
+    }
+
+    private boolean isValidDoorTarget(
+            DungeonSelectionRef.RoomBoundaryRef roomBoundaryRef,
+            DoorDragSession session
+    ) {
+        if (roomBoundaryRef == null || session == null) {
+            return false;
+        }
+        return previewDoorMap(session.withTargetBoundaryRef(roomBoundaryRef)) != null;
     }
 
     private static CorridorNode corridorDoorNode(DungeonLayout.RoomBoundaryDescription boundary) {

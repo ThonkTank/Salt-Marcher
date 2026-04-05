@@ -471,15 +471,11 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             return;
         }
         if (ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundaryRef) {
-            pass.gc().setStroke(withOpacity(pass.palette().highlightStroke(), 0.95));
-            pass.gc().setLineWidth(3.0);
-            strokeSegment2x(pass.gc(), pass.camera(), pass.gridSize(), roomBoundaryRef.boundarySegment2x());
+            drawHoveredDoorPart(pass, roomBoundaryRef.boundarySegment2x());
             return;
         }
         if (ref instanceof DungeonSelectionRef.ConnectionRef connectionRef) {
-            pass.gc().setStroke(withOpacity(pass.palette().highlightStroke(), 0.95));
-            pass.gc().setLineWidth(3.0);
-            strokeSegment2x(pass.gc(), pass.camera(), pass.gridSize(), connectionRef.boundarySegment2x());
+            drawHoveredDoorPart(pass, connectionRef.boundarySegment2x());
             return;
         }
         if (ref instanceof DungeonSelectionRef.CorridorTileRef corridorTileRef
@@ -560,6 +556,23 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             pass.gc().setLineWidth(2.0);
             pass.gc().strokeRect(x, y, pass.gridSize(), pass.gridSize());
         }
+    }
+
+    private static void drawHoveredDoorPart(StructureRenderPass pass, GridSegment2x boundarySegment2x) {
+        if (pass == null || boundarySegment2x == null) {
+            return;
+        }
+        pass.gc().setStroke(withOpacity(pass.palette().highlightStroke(), 0.95));
+        pass.gc().setLineWidth(3.0);
+        strokeSegment2x(pass.gc(), pass.camera(), pass.gridSize(), boundarySegment2x);
+        drawDoorMarker(
+                pass.gc(),
+                pass.camera(),
+                pass.gridSize(),
+                boundarySegment2x,
+                withOpacity(pass.palette().highlightFill(), 0.95),
+                withOpacity(pass.palette().highlightStroke(), 1.0),
+                3.0);
     }
 
     private static boolean sameOwner(DungeonSelectionRef left, DungeonSelectionRef right) {
