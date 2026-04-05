@@ -5,6 +5,7 @@ import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.model.objects.StructureObject;
@@ -285,6 +286,27 @@ public final class Corridor {
         ArrayList<CorridorSegment> updatedSegments = new ArrayList<>(promoted.segments);
         updatedSegments.add(new CorridorSegment(newSegmentId, attachNode.nodeId(), newNodeId));
         return promoted.resolvedAgainst(layout, updatedNodes, updatedSegments);
+    }
+
+    /**
+     * Wall-based attach picks the unique corridor cell behind that boundary so the editor does not own
+     * corridor-boundary-to-tile translation policy.
+     */
+    public Corridor attachedRoomNodeAtBoundary(
+            DungeonLayout layout,
+            CorridorNode roomNode,
+            GridSegment2x boundarySegment2x
+    ) {
+        if (layout == null || roomNode == null || !roomNode.isRoomBound() || boundarySegment2x == null) {
+            return this;
+        }
+        DungeonLayout.CorridorBoundaryDescription boundary = layout.describeCorridorBoundary(
+                new DungeonSelectionRef.CorridorBoundaryRef(corridorId, boundarySegment2x),
+                levelZ);
+        if (boundary == null || !Objects.equals(boundary.corridor().corridorId(), corridorId)) {
+            throw new IllegalArgumentException("Corridor attachment target must be a free corridor wall");
+        }
+        return attachedRoomNodeAtTile(layout, roomNode, boundary.corridorCell());
     }
 
     public CorridorTopologyUpdate deletedSegment(Long segmentId) {

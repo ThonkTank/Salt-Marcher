@@ -56,19 +56,23 @@ public final class DungeonCorridorApplicationService {
         }
     }
 
-    public void attachDoorToCorridorTile(AttachDoorToCorridorTileRequest request) throws SQLException {
-        AttachDoorToCorridorTileRequest resolvedRequest = Objects.requireNonNull(request, "request");
-        if (resolvedRequest.mapId() <= 0 || resolvedRequest.corridorId() <= 0 || resolvedRequest.endpoint() == null || resolvedRequest.tileCell() == null) {
-            throw new IllegalArgumentException("Door-to-tile corridor attachment requires mapId, corridorId, door endpoint, and tile");
+    public void attachDoorToCorridorBoundary(AttachDoorToCorridorBoundaryRequest request) throws SQLException {
+        AttachDoorToCorridorBoundaryRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        if (resolvedRequest.mapId() <= 0
+                || resolvedRequest.corridorId() <= 0
+                || resolvedRequest.endpoint() == null
+                || resolvedRequest.boundarySegment2x() == null) {
+            throw new IllegalArgumentException(
+                    "Door-to-boundary corridor attachment requires mapId, corridorId, door endpoint, and boundary");
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
                 DungeonLayout layout = requireLayout(conn, resolvedRequest.mapId());
                 Corridor corridor = requireCorridor(layout, resolvedRequest.corridorId());
-                Corridor updated = corridor.attachedRoomNodeAtTile(
+                Corridor updated = corridor.attachedRoomNodeAtBoundary(
                         layout,
                         roomBoundaryNode(corridor.nextSyntheticNodeId(), resolvedRequest.endpoint()),
-                        resolvedRequest.tileCell());
+                        resolvedRequest.boundarySegment2x());
                 if (updated != corridor) {
                     corridorRepository.save(conn, updated, layout);
                 }
@@ -257,12 +261,11 @@ public final class DungeonCorridorApplicationService {
     ) {
     }
 
-    public record AttachDoorToCorridorTileRequest(
+    public record AttachDoorToCorridorBoundaryRequest(
             long mapId,
             long corridorId,
-            int levelZ,
             CorridorDoorEndpoint endpoint,
-            CellCoord tileCell
+            GridSegment2x boundarySegment2x
     ) {
     }
 

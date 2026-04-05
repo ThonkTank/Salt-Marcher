@@ -68,6 +68,16 @@ public final class DungeonLayout {
         }
     }
 
+    public record CorridorBoundaryDescription(
+            Corridor corridor,
+            CellCoord corridorCell
+    ) {
+        public CorridorBoundaryDescription {
+            corridor = Objects.requireNonNull(corridor, "corridor");
+            corridorCell = Objects.requireNonNull(corridorCell, "corridorCell");
+        }
+    }
+
     private static final DungeonLayout EMPTY = new DungeonLayout(0L, "Kein Dungeon", List.of(), List.of(), List.of(), List.of(), Map.of());
 
     private final long mapId;
@@ -473,6 +483,34 @@ public final class DungeonLayout {
             return new RoomBoundaryDescription(room.clusterId(), room, cell, outwardDirection, exterior);
         }
         return null;
+    }
+
+    /**
+     * Corridor-boundary refs remain tool-facing identity only. The layout resolves the touched corridor cell so
+     * wall-based attach flows do not rebuild that boundary semantics in shell code.
+     */
+    public CorridorBoundaryDescription describeCorridorBoundary(
+            DungeonSelectionRef.CorridorBoundaryRef ref,
+            int levelZ
+    ) {
+        if (ref == null || ref.boundarySegment2x() == null) {
+            return null;
+        }
+        Corridor corridor = corridor(ref);
+        if (corridor == null
+                || !corridor.structure().boundaryEdgesAtLevel(levelZ).contains(ref.boundarySegment2x())
+                || corridor.structure().openingEdgesAtLevel(levelZ).contains(ref.boundarySegment2x())
+                || connectionAt(levelZ, ref.boundarySegment2x()) != null) {
+            return null;
+        }
+        List<CellCoord> corridorCells = ref.boundarySegment2x().touchingCells().stream()
+                .filter(cell -> corridor.structure().cellCoordsAtLevel(levelZ).contains(cell))
+                .sorted(CellCoord.ORDER)
+                .toList();
+        if (corridorCells.size() != 1) {
+            return null;
+        }
+        return new CorridorBoundaryDescription(corridor, corridorCells.getFirst());
     }
 
     public Room roomAtCell(CellCoord cell) {

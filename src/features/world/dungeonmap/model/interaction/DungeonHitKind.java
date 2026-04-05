@@ -5,6 +5,7 @@ public enum DungeonHitKind {
     CLUSTER_LABEL,
     ROOM,
     ROOM_BOUNDARY,
+    CORRIDOR_BOUNDARY,
     CONNECTION,
     CORRIDOR,
     CORRIDOR_TILE,

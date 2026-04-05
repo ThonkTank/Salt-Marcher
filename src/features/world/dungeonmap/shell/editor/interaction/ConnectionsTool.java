@@ -13,6 +13,8 @@ import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
+import features.world.dungeonmap.model.structures.connection.Connection;
+import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionKind;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
@@ -47,17 +49,15 @@ public final class ConnectionsTool implements EditorTool {
 
     private final DungeonMapState mapState;
     private final DungeonMapLoadingService loadingService;
-    private final DungeonEditorSessionState sessionState;
     private final DungeonRoomApplicationService roomApplicationService;
     private final DungeonCorridorApplicationService corridorApplicationService;
     private final DungeonStairApplicationService stairApplicationService;
     private final EditorInteractionState state;
 
-    private final ComboBox<ConnectionsMode> modeBox = new ComboBox<>();
-    private final Label statusLabel = new Label();
-    private final Label selectionLabel = new Label();
-    private final Label connectedRoomsLabel = new Label();
-    private final VBox corridorBox = new VBox(6, statusLabel, selectionLabel, connectedRoomsLabel);
+    private final Label connectionSummaryLabel = new Label();
+    private final Label connectionDetailLabel = new Label();
+    private final Label connectionMetaLabel = new Label();
+    private final VBox connectionBox = new VBox(6, connectionSummaryLabel, connectionDetailLabel, connectionMetaLabel);
 
     private final Label stairSummaryLabel = new Label("Keine Treppe gewählt");
     private final Label stairAnchorLabel = new Label("Kein Treppenstart");
@@ -86,14 +86,12 @@ public final class ConnectionsTool implements EditorTool {
             stairStopLabel,
             stairStopButtons,
             stairActionRow);
-    private final VBox stairBox = new VBox(6, stairSummaryLabel, stairAnchorLabel, stairFormBox, stairStatusLabel);
-    private final VBox card = EditorCards.card("Connections", modeBox, corridorBox, stairBox);
+    private final VBox connectionCard = EditorCards.card("Connections", connectionBox);
+    private final VBox stairCard = EditorCards.card("Treppe", stairSummaryLabel, stairAnchorLabel, stairFormBox, stairStatusLabel);
 
     private PendingEndpoint pendingEndpoint;
-    private ConnectionsMode connectionsMode = ConnectionsMode.CONNECTIONS;
     private DungeonEditorTool activeTool;
     private Runnable refreshCallback = () -> { };
-    private boolean syncingModeField;
     private boolean syncingStairFields;
     private Long previousMapId;
 
@@ -117,7 +115,7 @@ public final class ConnectionsTool implements EditorTool {
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
-        this.sessionState = Objects.requireNonNull(sessionState, "sessionState");
+        Objects.requireNonNull(sessionState, "sessionState");
         this.roomApplicationService = Objects.requireNonNull(roomApplicationService, "roomApplicationService");
         this.corridorApplicationService = Objects.requireNonNull(corridorApplicationService, "corridorApplicationService");
         this.stairApplicationService = Objects.requireNonNull(stairApplicationService, "stairApplicationService");
@@ -138,8 +136,9 @@ public final class ConnectionsTool implements EditorTool {
         activeTool = tool;
         if (tool == DungeonEditorTool.CONNECTIONS_DELETE) {
             pendingEndpoint = null;
+            clearStairDraftState(false);
             state.clearPreview();
-        } else if (connectionsMode == ConnectionsMode.STAIR) {
+        } else if (stairFlowActive()) {
             refreshStairPreview();
         }
         refreshStatePane();
@@ -156,20 +155,21 @@ public final class ConnectionsTool implements EditorTool {
     @Override
     public boolean pressed(EditorToolContext ctx) {
         DungeonCanvasPointerEvent event = ctx == null ? null : ctx.event();
-        if (event == null || !event.isPrimaryButton()) {
+        if (event == null) {
             return false;
         }
-        if (connectionsMode == ConnectionsMode.STAIR) {
-            return activeTool == DungeonEditorTool.CONNECTIONS_DELETE
-                    ? handleStairDeletePressed(ctx)
-                    : handleStairCreatePressed(ctx);
+        if (activeTool == DungeonEditorTool.CONNECTIONS && event.isSecondaryButton()) {
+            return cancelActiveCreateFlow();
+        }
+        if (!event.isPrimaryButton()) {
+            return false;
         }
         DungeonSelectionRef hit = ctx == null ? null : ctx.hitRef();
         DungeonLayout layout = ctx == null ? null : ctx.activeMap();
-        if (sessionState.selectedTool() == DungeonEditorTool.CONNECTIONS_DELETE) {
+        if (activeTool == DungeonEditorTool.CONNECTIONS_DELETE) {
             return handleDeletePressed(ctx, layout, hit);
         }
-        return handleConnectionsPressed(ctx, layout, hit);
+        return handleCreatePressed(ctx, layout, hit);
     }
 
     @Override
@@ -184,24 +184,18 @@ public final class ConnectionsTool implements EditorTool {
 
     @Override
     public EditorHitResolution resolveHit(EditorToolContext ctx, EditorToolPhase phase) {
-        if (connectionsMode == ConnectionsMode.STAIR) {
-            return resolveStairHit(ctx);
-        }
-        DungeonSelectionRef hitRef = resolvedHitRef(
-                ctx == null ? null : ctx.snapshot(),
-                ctx == null ? null : ctx.activeMap(),
-                ctx == null || ctx.probe() == null ? mapState.activeProjectionLevel() : ctx.probe().levelZ());
+        DungeonSelectionRef hitRef = resolvedHitRef(ctx);
         if (hitRef == null) {
             return EditorHitResolution.none();
         }
         if (hitRef instanceof DungeonSelectionRef.RoomBoundaryRef
+                || hitRef instanceof DungeonSelectionRef.CorridorBoundaryRef
                 || hitRef instanceof DungeonSelectionRef.ConnectionRef
-                || hitRef instanceof DungeonSelectionRef.CorridorTileRef
                 || hitRef instanceof DungeonSelectionRef.CorridorNodeRef
                 || hitRef instanceof DungeonSelectionRef.CorridorSegmentRef) {
             return EditorHitResolution.part(hitRef);
         }
-        if (hitRef instanceof DungeonSelectionRef.RoomRef || hitRef instanceof DungeonSelectionRef.CorridorRef) {
+        if (hitRef instanceof DungeonSelectionRef.CorridorRef || hitRef instanceof DungeonSelectionRef.StairRef) {
             return EditorHitResolution.owner(hitRef);
         }
         return EditorHitResolution.ref(hitRef);
@@ -212,15 +206,25 @@ public final class ConnectionsTool implements EditorTool {
         if (activeTool == null) {
             return null;
         }
-        syncModeField();
-        renderCorridorPane();
-        renderStairPane();
-        boolean stairMode = connectionsMode == ConnectionsMode.STAIR;
-        corridorBox.setManaged(!stairMode);
-        corridorBox.setVisible(!stairMode);
-        stairBox.setManaged(stairMode);
-        stairBox.setVisible(stairMode);
-        return card;
+        ensureSelectedStairLoaded();
+        if (activeTool == DungeonEditorTool.CONNECTIONS && stairPaneVisible()) {
+            renderStairPane();
+            return stairCard;
+        }
+        if (pendingEndpoint != null) {
+            return null;
+        }
+        Connection selectedConnection = selectedConnection();
+        if (selectedConnection != null) {
+            renderConnectionPane(selectedConnection, null);
+            return connectionCard;
+        }
+        Corridor selectedCorridor = selectedCorridor();
+        if (selectedCorridor != null) {
+            renderConnectionPane(null, selectedCorridor);
+            return connectionCard;
+        }
+        return null;
     }
 
     @Override
@@ -229,9 +233,9 @@ public final class ConnectionsTool implements EditorTool {
     }
 
     private void initializeStatePane() {
-        statusLabel.setWrapText(true);
-        selectionLabel.setWrapText(true);
-        connectedRoomsLabel.setWrapText(true);
+        connectionSummaryLabel.setWrapText(true);
+        connectionDetailLabel.setWrapText(true);
+        connectionMetaLabel.setWrapText(true);
         stairSummaryLabel.setWrapText(true);
         stairAnchorLabel.setWrapText(true);
         stairStatusLabel.setWrapText(true);
@@ -260,23 +264,6 @@ public final class ConnectionsTool implements EditorTool {
             @Override
             public CardinalDirection fromString(String string) {
                 return null;
-            }
-        });
-        modeBox.setItems(FXCollections.observableArrayList(ConnectionsMode.values()));
-        modeBox.setConverter(new javafx.util.StringConverter<>() {
-            @Override
-            public String toString(ConnectionsMode value) {
-                return value == null ? "" : value.label();
-            }
-
-            @Override
-            public ConnectionsMode fromString(String string) {
-                return null;
-            }
-        });
-        modeBox.valueProperty().addListener((obs, oldValue, newValue) -> {
-            if (!syncingModeField) {
-                setConnectionsMode(newValue);
             }
         });
         stairShapeBox.valueProperty().addListener((obs, oldValue, newValue) -> {
@@ -318,11 +305,22 @@ public final class ConnectionsTool implements EditorTool {
         stairCancelButton.setOnAction(event -> cancelStairDraft());
     }
 
-    private void renderCorridorPane() {
-        Corridor corridor = selectedCorridor();
-        statusLabel.setText(statusText());
-        selectionLabel.setText(selectionText(corridor));
-        connectedRoomsLabel.setText(connectedRoomsText(corridor));
+    private void renderConnectionPane(Connection connection, Corridor corridor) {
+        if (connection != null) {
+            connectionSummaryLabel.setText(connectionSummaryText(connection));
+            connectionDetailLabel.setText(connectionEndpointsText(connection));
+            connectionMetaLabel.setText(connectionSegmentText());
+            return;
+        }
+        if (corridor == null) {
+            connectionSummaryLabel.setText("");
+            connectionDetailLabel.setText("");
+            connectionMetaLabel.setText("");
+            return;
+        }
+        connectionSummaryLabel.setText(corridorLabel(corridor.corridorId()));
+        connectionDetailLabel.setText("Nodes: " + corridor.nodes().size() + " · Segmente: " + corridor.segments().size());
+        connectionMetaLabel.setText(connectedRoomsText(corridor));
     }
 
     private void renderStairPane() {
@@ -340,7 +338,7 @@ public final class ConnectionsTool implements EditorTool {
         renderStopButtons();
         stairApplyButton.setDisable(!createMode || stairDraftLoading || stairAnchorCell == null);
         stairCancelButton.setDisable(stairDraftLoading || (stairAnchorCell == null && stairDraftId == null));
-        stairStatusLabel.setText(stairStatusText(resolution, createMode));
+        stairStatusLabel.setText(stairStatusText(resolution));
     }
 
     private void configureDimensionFields(StairShape shape) {
@@ -399,33 +397,6 @@ public final class ConnectionsTool implements EditorTool {
         refreshStatePane();
     }
 
-    private void syncModeField() {
-        syncingModeField = true;
-        modeBox.setValue(connectionsMode);
-        syncingModeField = false;
-    }
-
-    private void setConnectionsMode(ConnectionsMode mode) {
-        ConnectionsMode next = mode == null ? ConnectionsMode.CONNECTIONS : mode;
-        if (connectionsMode == next) {
-            syncModeField();
-            return;
-        }
-        connectionsMode = next;
-        clearStairStatusOverride();
-        if (next == ConnectionsMode.CONNECTIONS) {
-            clearStairDraftState(false);
-        } else {
-            pendingEndpoint = null;
-        }
-        if (activeTool == DungeonEditorTool.CONNECTIONS && next == ConnectionsMode.STAIR) {
-            refreshStairPreview();
-        } else {
-            state.clearPreview();
-        }
-        refreshStatePane();
-    }
-
     private void onStairFieldChanged(boolean rebuildStops) {
         clearStairStatusOverride();
         if (stairAnchorCell == null || stairDraftLoading) {
@@ -450,43 +421,25 @@ public final class ConnectionsTool implements EditorTool {
         if (stairDraftId != null && mapState.activeMap().findStair(stairDraftId) == null) {
             clearStairDraftState(false);
         }
-        if (activeTool == DungeonEditorTool.CONNECTIONS && connectionsMode == ConnectionsMode.STAIR) {
+        if (activeTool == DungeonEditorTool.CONNECTIONS && stairFlowActive()) {
             refreshStairPreview();
         }
         refreshStatePane();
     }
 
-    private EditorHitResolution resolveStairHit(EditorToolContext ctx) {
-        features.world.dungeonmap.shell.interaction.DungeonHitSnapshot snapshot = ctx == null ? null : ctx.snapshot();
-        DungeonSelectionRef stairRef = snapshot == null
-                ? null
-                : snapshot.firstRefMatching(candidate -> candidate instanceof DungeonSelectionRef.StairRef);
-        if (stairRef != null) {
-            return EditorHitResolution.owner(stairRef);
-        }
-        if (activeTool == DungeonEditorTool.CONNECTIONS_DELETE || ctx == null || ctx.probe() == null) {
-            return EditorHitResolution.none();
-        }
-        DungeonLayout layout = ctx.activeMap();
-        CellCoord gridCell = ctx.probe().gridCell();
-        int levelZ = ctx.probe().levelZ();
-        if (layout == null || layout.roomAtCell(gridCell, levelZ) == null) {
-            return EditorHitResolution.none();
-        }
-        return EditorHitResolution.part(new DungeonSelectionRef.FloorCellRef(CubePoint.at(gridCell, levelZ)));
-    }
-
     private boolean handleStairCreatePressed(EditorToolContext ctx) {
         DungeonSelectionRef hit = ctx == null ? null : ctx.hitRef();
         if (hit instanceof DungeonSelectionRef.StairRef stairRef && stairRef.stairId() != null) {
-            applySelection(ctx == null ? null : ctx.resolvedRef());
+            clearPendingEndpoint();
+            state.selectRef(stairOwnerRef(stairRef.stairId()));
             loadStairEditor(stairRef.stairId());
             return true;
         }
         if (!(hit instanceof DungeonSelectionRef.FloorCellRef floorCellRef)) {
             return false;
         }
-        applySelection(ctx == null ? null : ctx.resolvedRef());
+        clearPendingEndpoint();
+        state.clearSelection();
         startNewStair(floorCellRef.cell().projectedCell(), floorCellRef.cell().z());
         return true;
     }
@@ -545,6 +498,7 @@ public final class ConnectionsTool implements EditorTool {
         if (mapId == null || stairId <= 0) {
             return;
         }
+        pendingEndpoint = null;
         stairDraftLoading = true;
         stairDraftDirty = false;
         stairDraftId = stairId;
@@ -557,7 +511,7 @@ public final class ConnectionsTool implements EditorTool {
                         new DungeonStairApplicationService.LoadStairEditorSpecRequest(mapId, stairId)),
                 spec -> {
                     if (requestId != stairLoadRequestSequence
-                            || connectionsMode != ConnectionsMode.STAIR
+                            || activeTool != DungeonEditorTool.CONNECTIONS
                             || !Objects.equals(mapState.activeMapId(), mapId)) {
                         return;
                     }
@@ -718,8 +672,7 @@ public final class ConnectionsTool implements EditorTool {
     }
 
     private void refreshStairPreview() {
-        if (connectionsMode != ConnectionsMode.STAIR
-                || activeTool != DungeonEditorTool.CONNECTIONS
+        if (activeTool != DungeonEditorTool.CONNECTIONS
                 || stairDraftLoading
                 || stairAnchorCell == null
                 || !stairDraftDirty) {
@@ -826,15 +779,10 @@ public final class ConnectionsTool implements EditorTool {
         if (stairDraftLoading) {
             return "Treppendaten werden geladen";
         }
-        if (activeTool == DungeonEditorTool.CONNECTIONS_DELETE) {
-            return state.selectedRef() instanceof DungeonSelectionRef.StairRef stairRef && stairRef.stairId() != null
-                    ? "Löschen: Treppe " + stairRef.stairId()
-                    : "Treppe löschen";
-        }
         if (stairDraftId != null) {
-            return "Bearbeiten: Treppe " + stairDraftId;
+            return "Bearbeiten: " + stairLabel(stairDraftId);
         }
-        return stairAnchorCell == null ? "Neue Treppe" : "Neue Treppe";
+        return "Neue Treppe";
     }
 
     private String stairAnchorText() {
@@ -844,17 +792,21 @@ public final class ConnectionsTool implements EditorTool {
         return "Start: " + stairAnchorCell.x() + "," + stairAnchorCell.y() + " · z=" + stairAnchorLevelZ;
     }
 
-    private String stairStatusText(StairDraftResolution resolution, boolean createMode) {
+    private String stairStatusText(StairDraftResolution resolution) {
         if (stairStatusOverride != null && !stairStatusOverride.isBlank()) {
             return stairStatusOverride;
         }
         if (stairDraftLoading) {
             return "Treppendaten werden geladen";
         }
-        if (!createMode) {
-            return "Treppe anklicken.";
-        }
         return resolution.validationMessage();
+    }
+
+    private boolean handleCreatePressed(EditorToolContext ctx, DungeonLayout layout, DungeonSelectionRef hit) {
+        if (hit instanceof DungeonSelectionRef.StairRef || hit instanceof DungeonSelectionRef.FloorCellRef) {
+            return handleStairCreatePressed(ctx);
+        }
+        return handleConnectionsPressed(ctx, layout, hit);
     }
 
     private boolean handleConnectionsPressed(EditorToolContext ctx, DungeonLayout layout, DungeonSelectionRef hit) {
@@ -868,45 +820,53 @@ public final class ConnectionsTool implements EditorTool {
                 return false;
             }
             if (isEditableDoorBoundary(roomBoundaryHit, boundary, layout, levelZ)) {
-                applySelection(ctx == null ? null : ctx.resolvedRef());
-                applyDoorEdit(boundary.clusterId(), roomBoundaryHit.boundarySegment2x(), false, ctx == null ? null : ctx.resolvedRef());
+                clearPendingEndpoint();
+                applyDoorEdit(
+                        boundary.clusterId(),
+                        roomBoundaryHit.boundarySegment2x(),
+                        false,
+                        localConnectionRef(boundary.clusterId(), roomBoundaryHit.boundarySegment2x()));
                 return true;
             }
             if (!boundary.exterior()) {
                 return false;
             }
-            applySelection(ctx == null ? null : ctx.resolvedRef());
             CorridorEndpoint endpoint = corridorEndpoint(roomBoundaryHit, boundary);
-            if (pendingEndpoint instanceof PendingTile pendingTile) {
-                attachDoorToTile(endpoint, pendingTile);
+            if (pendingEndpoint instanceof PendingCorridorBoundary pendingCorridorBoundary) {
+                attachDoorToBoundary(endpoint, pendingCorridorBoundary);
                 return true;
             }
-            if (pendingEndpoint instanceof PendingDoor pendingDoor) {
-                createDoorToDoor(pendingDoor.endpoint(), endpoint);
+            if (pendingEndpoint instanceof PendingRoomBoundary pendingRoomBoundary) {
+                if (Objects.equals(pendingRoomBoundary.boundarySegment2x(), roomBoundaryHit.boundarySegment2x())) {
+                    return true;
+                }
+                createDoorToDoor(pendingRoomBoundary.endpoint(), endpoint);
                 return true;
             }
-            pendingEndpoint = new PendingDoor(endpoint);
-            refreshStatePane();
+            startPendingEndpoint(new PendingRoomBoundary(endpoint, roomBoundaryHit.boundarySegment2x()));
             return true;
         }
-        if (hit instanceof DungeonSelectionRef.CorridorTileRef corridorTileHit) {
-            applySelection(ctx == null ? null : ctx.resolvedRef());
-            PendingTile pendingTile = new PendingTile(
-                    corridorTileHit.corridorId(),
-                    corridorTileHit.cell().projectedCell());
-            if (pendingEndpoint instanceof PendingDoor pendingDoor) {
-                attachDoorToTile(pendingDoor.endpoint(), pendingTile);
+        if (hit instanceof DungeonSelectionRef.CorridorBoundaryRef corridorBoundaryHit) {
+            if (layout.describeCorridorBoundary(corridorBoundaryHit, levelZ) == null) {
+                return false;
+            }
+            if (pendingEndpoint instanceof PendingRoomBoundary pendingRoomBoundary) {
+                attachDoorToBoundary(
+                        pendingRoomBoundary.endpoint(),
+                        new PendingCorridorBoundary(corridorBoundaryHit.corridorId(), corridorBoundaryHit.boundarySegment2x()));
                 return true;
             }
-            pendingEndpoint = pendingTile;
-            refreshStatePane();
+            if (pendingEndpoint != null) {
+                return false;
+            }
+            startPendingEndpoint(new PendingCorridorBoundary(
+                    corridorBoundaryHit.corridorId(),
+                    corridorBoundaryHit.boundarySegment2x()));
             return true;
         }
         if (hit instanceof DungeonSelectionRef.ConnectionRef
-                || hit instanceof DungeonSelectionRef.CorridorRef
-                || hit instanceof DungeonSelectionRef.RoomRef
-                || hit instanceof DungeonSelectionRef.CorridorNodeRef
-                || hit instanceof DungeonSelectionRef.CorridorSegmentRef) {
+                || hit instanceof DungeonSelectionRef.CorridorRef) {
+            clearPendingEndpoint();
             applySelection(ctx == null ? null : ctx.resolvedRef());
             return true;
         }
@@ -914,37 +874,36 @@ public final class ConnectionsTool implements EditorTool {
     }
 
     private boolean handleDeletePressed(EditorToolContext ctx, DungeonLayout layout, DungeonSelectionRef hit) {
+        if (hit instanceof DungeonSelectionRef.StairRef) {
+            return handleStairDeletePressed(ctx);
+        }
         if (layout == null || hit == null) {
             return false;
         }
         if (hit instanceof DungeonSelectionRef.ConnectionRef connectionHit
                 && connectionHit.connectionKind() == ConnectionKind.LOCAL) {
-            applySelection(ctx == null ? null : ctx.resolvedRef());
             applyDoorEdit(
                     connectionHit.clusterId(),
                     connectionHit.boundarySegment2x(),
                     true,
-                    clusterOwnerRef(connectionHit.clusterId()));
+                    null);
             return true;
         }
         if (hit instanceof DungeonSelectionRef.ConnectionRef connectionHit
                 && connectionHit.connectionKind() == ConnectionKind.CORRIDOR
                 && connectionHit.corridorId() != null) {
-            applySelection(ctx == null ? null : ctx.resolvedRef());
             deleteCorridorDoor(connectionHit.corridorId(), connectionHit.boundarySegment2x());
             return true;
         }
         if (hit instanceof DungeonSelectionRef.CorridorNodeRef corridorNodeHit
                 && corridorNodeHit.corridorId() != null
                 && corridorNodeHit.nodeId() != null) {
-            applySelection(ctx == null ? null : ctx.resolvedRef());
             deleteCorridorNode(corridorNodeHit.corridorId(), corridorNodeHit.nodeId());
             return true;
         }
         if (hit instanceof DungeonSelectionRef.CorridorSegmentRef corridorSegmentHit
                 && corridorSegmentHit.corridorId() != null
                 && corridorSegmentHit.segmentId() != null) {
-            applySelection(ctx == null ? null : ctx.resolvedRef());
             deleteCorridorSegment(corridorSegmentHit.corridorId(), corridorSegmentHit.segmentId());
             return true;
         }
@@ -973,8 +932,11 @@ public final class ConnectionsTool implements EditorTool {
                 throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.createDoorToDoor()", throwable));
     }
 
-    private void attachDoorToTile(CorridorEndpoint endpoint, PendingTile pendingTile) {
-        if (endpoint == null || pendingTile == null || pendingTile.corridorId() == null || pendingTile.tileCell() == null) {
+    private void attachDoorToBoundary(CorridorEndpoint endpoint, PendingCorridorBoundary pendingCorridorBoundary) {
+        if (endpoint == null
+                || pendingCorridorBoundary == null
+                || pendingCorridorBoundary.corridorId() == null
+                || pendingCorridorBoundary.boundarySegment2x() == null) {
             return;
         }
         Long mapId = mapState.activeMapId();
@@ -983,20 +945,20 @@ public final class ConnectionsTool implements EditorTool {
         }
         loadingService.submitMutation(
                 () -> {
-                    corridorApplicationService.attachDoorToCorridorTile(new DungeonCorridorApplicationService.AttachDoorToCorridorTileRequest(
+                    corridorApplicationService.attachDoorToCorridorBoundary(
+                            new DungeonCorridorApplicationService.AttachDoorToCorridorBoundaryRequest(
                             mapId,
-                            pendingTile.corridorId(),
-                            mapState.activeProjectionLevel(),
+                            pendingCorridorBoundary.corridorId(),
                             endpoint.asRequestEndpoint(),
-                            pendingTile.tileCell()));
+                            pendingCorridorBoundary.boundarySegment2x()));
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,
                 ignored -> {
                     clearPendingEndpoint();
-                    state.selectRef(corridorOwnerRef(pendingTile.corridorId()));
+                    state.selectRef(corridorOwnerRef(pendingCorridorBoundary.corridorId()));
                 },
-                throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.attachDoorToTile()", throwable));
+                throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.attachDoorToBoundary()", throwable));
     }
 
     private void deleteCorridorNode(Long corridorId, Long nodeId) {
@@ -1081,7 +1043,13 @@ public final class ConnectionsTool implements EditorTool {
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,
-                ignored -> state.selectRef(followUpRef),
+                ignored -> {
+                    if (followUpRef != null) {
+                        state.selectRef(followUpRef);
+                    } else {
+                        state.clearSelection();
+                    }
+                },
                 throwable -> UiErrorReporter.reportBackgroundFailure("ConnectionsTool.applyDoorEdit()", throwable));
     }
 
@@ -1102,25 +1070,34 @@ public final class ConnectionsTool implements EditorTool {
         return projectedCluster != null && projectedCluster.canCreateDoor(hit.boundarySegment2x());
     }
 
-    private DungeonSelectionRef resolvedHitRef(
-            features.world.dungeonmap.shell.interaction.DungeonHitSnapshot snapshot,
-            DungeonLayout layout,
-            int levelZ
-    ) {
-        if (snapshot == null) {
+    private DungeonSelectionRef resolvedHitRef(EditorToolContext ctx) {
+        if (ctx == null) {
             return null;
         }
-        List<DungeonSelectionRef> refs = snapshot.orderedRefs();
-        if (refs.isEmpty()) {
-            return null;
-        }
-        if (sessionState.selectedTool() == DungeonEditorTool.CONNECTIONS_DELETE) {
+        features.world.dungeonmap.shell.interaction.DungeonHitSnapshot snapshot = ctx.snapshot();
+        List<DungeonSelectionRef> refs = snapshot == null ? List.of() : snapshot.orderedRefs();
+        int levelZ = ctx.probe() == null ? mapState.activeProjectionLevel() : ctx.probe().levelZ();
+        DungeonLayout layout = ctx.activeMap();
+        if (activeTool == DungeonEditorTool.CONNECTIONS_DELETE) {
             return resolveDeleteRef(refs);
         }
-        return resolveCreateRef(refs, layout, levelZ);
+        DungeonSelectionRef resolved = resolveCreateRef(refs, layout, levelZ);
+        if (resolved != null) {
+            return resolved;
+        }
+        if (pendingEndpoint != null || stairFlowActive() || ctx.probe() == null || layout == null) {
+            return null;
+        }
+        CellCoord gridCell = ctx.probe().gridCell();
+        return layout.roomAtCell(gridCell, levelZ) == null
+                ? null
+                : new DungeonSelectionRef.FloorCellRef(CubePoint.at(gridCell, levelZ));
     }
 
     private DungeonSelectionRef resolveCreateRef(List<DungeonSelectionRef> refs, DungeonLayout layout, int levelZ) {
+        if (stairFlowActive()) {
+            return null;
+        }
         if (pendingEndpoint == null) {
             DungeonSelectionRef editableDoor = firstMatching(refs, ref ->
                     ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundary
@@ -1132,25 +1109,11 @@ public final class ConnectionsTool implements EditorTool {
             if (editableDoor != null) {
                 return editableDoor;
             }
-            DungeonSelectionRef exteriorBoundary = firstMatching(refs, ref ->
-                    ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundary
-                            && isExteriorBoundary(layout, roomBoundary, levelZ));
-            if (exteriorBoundary != null) {
-                return exteriorBoundary;
-            }
-            DungeonSelectionRef corridorTile = firstMatching(refs, ref -> ref instanceof DungeonSelectionRef.CorridorTileRef);
-            if (corridorTile != null) {
-                return corridorTile;
-            }
-            return firstMatching(refs, ref ->
-                    ref instanceof DungeonSelectionRef.ConnectionRef
-                            || ref instanceof DungeonSelectionRef.RoomRef
-                            || ref instanceof DungeonSelectionRef.CorridorRef);
-        }
-        if (pendingEndpoint instanceof PendingDoor) {
-            DungeonSelectionRef corridorTile = firstMatching(refs, ref -> ref instanceof DungeonSelectionRef.CorridorTileRef);
-            if (corridorTile != null) {
-                return corridorTile;
+            DungeonSelectionRef corridorBoundary = firstMatching(refs, ref ->
+                    ref instanceof DungeonSelectionRef.CorridorBoundaryRef corridorBoundaryRef
+                            && isAvailableCorridorBoundary(layout, corridorBoundaryRef, levelZ));
+            if (corridorBoundary != null) {
+                return corridorBoundary;
             }
             DungeonSelectionRef exteriorBoundary = firstMatching(refs, ref ->
                     ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundary
@@ -1158,28 +1121,38 @@ public final class ConnectionsTool implements EditorTool {
             if (exteriorBoundary != null) {
                 return exteriorBoundary;
             }
-            return firstMatching(refs, ref ->
-                    ref instanceof DungeonSelectionRef.ConnectionRef
-                            || ref instanceof DungeonSelectionRef.RoomRef
-                            || ref instanceof DungeonSelectionRef.CorridorRef);
+            DungeonSelectionRef stair = firstMatching(refs, ref -> ref instanceof DungeonSelectionRef.StairRef);
+            if (stair != null) {
+                return stair;
+            }
+            DungeonSelectionRef connection = firstMatching(refs, ref -> ref instanceof DungeonSelectionRef.ConnectionRef);
+            if (connection != null) {
+                return connection;
+            }
+            return firstMatching(refs, ref -> ref instanceof DungeonSelectionRef.CorridorRef);
         }
-        DungeonSelectionRef exteriorBoundary = firstMatching(refs, ref ->
-                ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundary
-                        && isExteriorBoundary(layout, roomBoundary, levelZ));
-        if (exteriorBoundary != null) {
+        if (pendingEndpoint instanceof PendingRoomBoundary) {
+            DungeonSelectionRef corridorBoundary = firstMatching(refs, ref ->
+                    ref instanceof DungeonSelectionRef.CorridorBoundaryRef corridorBoundaryRef
+                            && isAvailableCorridorBoundary(layout, corridorBoundaryRef, levelZ));
+            if (corridorBoundary != null) {
+                return corridorBoundary;
+            }
+            DungeonSelectionRef exteriorBoundary = firstMatching(refs, ref ->
+                    ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundary
+                            && isExteriorBoundary(layout, roomBoundary, levelZ));
             return exteriorBoundary;
         }
-        DungeonSelectionRef corridorTile = firstMatching(refs, ref -> ref instanceof DungeonSelectionRef.CorridorTileRef);
-        if (corridorTile != null) {
-            return corridorTile;
-        }
         return firstMatching(refs, ref ->
-                ref instanceof DungeonSelectionRef.ConnectionRef
-                        || ref instanceof DungeonSelectionRef.RoomRef
-                        || ref instanceof DungeonSelectionRef.CorridorRef);
+                ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundary
+                        && isExteriorBoundary(layout, roomBoundary, levelZ));
     }
 
     private static DungeonSelectionRef resolveDeleteRef(List<DungeonSelectionRef> refs) {
+        DungeonSelectionRef stair = firstMatching(refs, ref -> ref instanceof DungeonSelectionRef.StairRef);
+        if (stair != null) {
+            return stair;
+        }
         DungeonSelectionRef localConnection = firstMatching(refs, ref ->
                 ref instanceof DungeonSelectionRef.ConnectionRef connection
                         && connection.connectionKind() == ConnectionKind.LOCAL);
@@ -1204,6 +1177,14 @@ public final class ConnectionsTool implements EditorTool {
         return boundary != null && boundary.exterior();
     }
 
+    private static boolean isAvailableCorridorBoundary(
+            DungeonLayout layout,
+            DungeonSelectionRef.CorridorBoundaryRef ref,
+            int levelZ
+    ) {
+        return layout != null && ref != null && layout.describeCorridorBoundary(ref, levelZ) != null;
+    }
+
     private static DungeonSelectionRef firstMatching(
             List<DungeonSelectionRef> refs,
             java.util.function.Predicate<DungeonSelectionRef> predicate
@@ -1225,68 +1206,110 @@ public final class ConnectionsTool implements EditorTool {
         }
     }
 
+    private boolean cancelActiveCreateFlow() {
+        if (pendingEndpoint != null) {
+            pendingEndpoint = null;
+            state.clearSelection();
+            state.clearPreview();
+            refreshStatePane();
+            return true;
+        }
+        if (stairFlowActive()) {
+            cancelStairDraft();
+            return true;
+        }
+        return false;
+    }
+
+    private void startPendingEndpoint(PendingEndpoint endpoint) {
+        pendingEndpoint = endpoint;
+        state.clearSelection();
+        state.clearPreview();
+        refreshStatePane();
+    }
+
     private void clearPendingEndpoint() {
         pendingEndpoint = null;
         refreshStatePane();
+    }
+
+    private Connection selectedConnection() {
+        DungeonSelectionRef.ConnectionRef connectionRef = selectedConnectionRef();
+        return connectionRef == null
+                ? null
+                : mapState.activeMap().connectionAt(mapState.activeProjectionLevel(), connectionRef.boundarySegment2x());
+    }
+
+    private DungeonSelectionRef.ConnectionRef selectedConnectionRef() {
+        return state.selectedRef() instanceof DungeonSelectionRef.ConnectionRef connectionRef ? connectionRef : null;
     }
 
     private Corridor selectedCorridor() {
         return mapState.activeMap().corridor(state.selectedRef());
     }
 
-    private Long selectedNodeId() {
-        return state.selectedRef() instanceof DungeonSelectionRef.CorridorNodeRef corridorNodeRef
-                ? corridorNodeRef.nodeId()
-                : null;
+    private boolean stairFlowActive() {
+        return stairDraftLoading || stairDraftId != null || stairAnchorCell != null;
     }
 
-    private Long selectedSegmentId() {
-        return state.selectedRef() instanceof DungeonSelectionRef.CorridorSegmentRef corridorSegmentRef
-                ? corridorSegmentRef.segmentId()
-                : null;
+    private boolean stairPaneVisible() {
+        return stairFlowActive() || state.selectedRef() instanceof DungeonSelectionRef.StairRef;
     }
 
-    private String statusText() {
-        if (activeTool == DungeonEditorTool.CONNECTIONS_DELETE) {
-            return "Segment, Node oder Corridor-Tür anklicken.";
+    private void ensureSelectedStairLoaded() {
+        if (activeTool != DungeonEditorTool.CONNECTIONS || pendingEndpoint != null || stairFlowActive()) {
+            return;
         }
-        return switch (pendingEndpoint) {
-            case PendingDoor ignored -> "Jetzt Außenwand oder Corridor-Tile anklicken.";
-            case PendingTile ignored -> "Jetzt Außenwand anklicken.";
-            case null -> "Außenwand oder Corridor-Tile anklicken.";
+        if (state.selectedRef() instanceof DungeonSelectionRef.StairRef stairRef && stairRef.stairId() != null) {
+            loadStairEditor(stairRef.stairId());
+        }
+    }
+
+    private String connectionSummaryText(Connection connection) {
+        if (connection == null) {
+            return "";
+        }
+        return switch (connection.kind()) {
+            case LOCAL -> "Tür";
+            case CORRIDOR -> "Corridor-Tür";
+            case STAIR -> "Treppen-Verbindung";
+            case TRANSITION -> "Übergang";
         };
     }
 
-    private String selectionText(Corridor corridor) {
-        if (activeTool == DungeonEditorTool.CONNECTIONS_DELETE) {
-            Long selectedNodeId = selectedNodeId();
-            if (selectedNodeId != null) {
-                return "Löschen: Node " + selectedNodeId;
-            }
-            Long selectedSegmentId = selectedSegmentId();
-            if (selectedSegmentId != null) {
-                return "Löschen: Segment " + selectedSegmentId;
-            }
-            if (state.selectedRef() instanceof DungeonSelectionRef.ConnectionRef connectionRef
-                    && connectionRef.connectionKind() == ConnectionKind.CORRIDOR) {
-                return "Löschen: Corridor-Tür";
-            }
+    private String connectionEndpointsText(Connection connection) {
+        if (connection == null) {
+            return "";
         }
-        Long selectedNodeId = selectedNodeId();
-        if (selectedNodeId != null) {
-            return "Gewählter Node: " + selectedNodeId;
+        return connection.endpoints().stream()
+                .map(this::endpointLabel)
+                .filter(label -> label != null && !label.isBlank())
+                .collect(Collectors.joining(", "));
+    }
+
+    private String connectionSegmentText() {
+        DungeonSelectionRef.ConnectionRef connectionRef = selectedConnectionRef();
+        if (connectionRef == null || connectionRef.boundarySegment2x() == null) {
+            return "";
         }
-        Long selectedSegmentId = selectedSegmentId();
-        if (selectedSegmentId != null) {
-            return "Gewähltes Segment: " + selectedSegmentId;
+        GridSegment2x segment2x = connectionRef.boundarySegment2x();
+        return "Segment: "
+                + segment2x.start().x2() + "," + segment2x.start().y2()
+                + " → "
+                + segment2x.end().x2() + "," + segment2x.end().y2();
+    }
+
+    private String endpointLabel(ConnectionEndpoint endpoint) {
+        if (endpoint == null) {
+            return "";
         }
-        if (pendingEndpoint instanceof PendingDoor pendingDoor) {
-            return "Start: " + roomName(pendingDoor.endpoint().roomId());
-        }
-        if (pendingEndpoint instanceof PendingTile pendingTile) {
-            return "Start-Tile: " + pendingTile.tileCell().x() + "," + pendingTile.tileCell().y();
-        }
-        return corridor == null ? "Kein Corridor gewählt" : "Gewählter Corridor: " + corridor.corridorId();
+        return switch (endpoint.type()) {
+            case ROOM -> roomName(endpoint.id());
+            case CLUSTER -> "Cluster " + endpoint.id();
+            case CORRIDOR -> corridorLabel(endpoint.id());
+            case STAIR -> stairLabel(endpoint.id());
+            case TRANSITION -> transitionLabel(endpoint.id());
+        };
     }
 
     private String connectedRoomsText(Corridor corridor) {
@@ -1301,11 +1324,28 @@ public final class ConnectionsTool implements EditorTool {
 
     private String roomName(Long roomId) {
         Room room = roomId == null ? null : mapState.activeMap().findRoom(roomId);
-        return room == null ? "Raum " + roomId : room.name();
+        return room == null || room.name() == null || room.name().isBlank()
+                ? "Raum " + roomId
+                : room.name();
+    }
+
+    private String corridorLabel(Long corridorId) {
+        return corridorId == null ? "Corridor" : "Corridor " + corridorId;
+    }
+
+    private String stairLabel(Long stairId) {
+        DungeonStair stair = stairId == null ? null : mapState.activeMap().findStair(stairId);
+        return stair == null ? "Treppe " + stairId : stair.label();
+    }
+
+    private String transitionLabel(Long transitionId) {
+        var transition = transitionId == null ? null : mapState.activeMap().findTransition(transitionId);
+        return transition == null ? "Übergang " + transitionId : transition.label();
     }
 
     private void refreshStatePane() {
         if (activeTool != null) {
+            ensureSelectedStairLoaded();
             refreshCallback.run();
         }
     }
@@ -1325,21 +1365,29 @@ public final class ConnectionsTool implements EditorTool {
         return corridorId == null ? null : new DungeonSelectionRef.CorridorRef(corridorId);
     }
 
-    private static DungeonSelectionRef clusterOwnerRef(Long clusterId) {
-        return clusterId == null ? null : new DungeonSelectionRef.ClusterRef(clusterId);
+    private static DungeonSelectionRef localConnectionRef(Long clusterId, GridSegment2x boundarySegment2x) {
+        return clusterId == null || boundarySegment2x == null
+                ? null
+                : new DungeonSelectionRef.ConnectionRef(ConnectionKind.LOCAL, clusterId, null, boundarySegment2x);
     }
 
     private static DungeonSelectionRef stairOwnerRef(Long stairId) {
         return stairId == null ? null : new DungeonSelectionRef.StairRef(stairId);
     }
 
-    private sealed interface PendingEndpoint permits PendingDoor, PendingTile {
+    private sealed interface PendingEndpoint permits PendingRoomBoundary, PendingCorridorBoundary {
     }
 
-    private record PendingDoor(CorridorEndpoint endpoint) implements PendingEndpoint {
+    private record PendingRoomBoundary(
+            CorridorEndpoint endpoint,
+            GridSegment2x boundarySegment2x
+    ) implements PendingEndpoint {
     }
 
-    private record PendingTile(Long corridorId, CellCoord tileCell) implements PendingEndpoint {
+    private record PendingCorridorBoundary(
+            Long corridorId,
+            GridSegment2x boundarySegment2x
+    ) implements PendingEndpoint {
     }
 
     private record CorridorEndpoint(Long roomId, CellCoord roomCell, CardinalDirection outwardDirection) {
@@ -1353,20 +1401,5 @@ public final class ConnectionsTool implements EditorTool {
             DungeonStair previewStair,
             String validationMessage
     ) {
-    }
-
-    private enum ConnectionsMode {
-        CONNECTIONS("Verbindungen"),
-        STAIR("Treppen");
-
-        private final String label;
-
-        ConnectionsMode(String label) {
-            this.label = label;
-        }
-
-        public String label() {
-            return label;
-        }
     }
 }

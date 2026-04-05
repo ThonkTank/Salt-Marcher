@@ -468,6 +468,10 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             drawHoveredDoorPart(pass, roomBoundaryRef.boundarySegment2x());
             return;
         }
+        if (ref instanceof DungeonSelectionRef.CorridorBoundaryRef corridorBoundaryRef) {
+            drawHoveredDoorPart(pass, corridorBoundaryRef.boundarySegment2x());
+            return;
+        }
         if (ref instanceof DungeonSelectionRef.ConnectionRef connectionRef) {
             drawHoveredDoorPart(pass, connectionRef.boundarySegment2x());
             return;

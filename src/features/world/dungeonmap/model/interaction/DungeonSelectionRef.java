@@ -15,6 +15,7 @@ public sealed interface DungeonSelectionRef permits
         DungeonSelectionRef.TransitionRef,
         DungeonSelectionRef.VertexRef,
         DungeonSelectionRef.RoomBoundaryRef,
+        DungeonSelectionRef.CorridorBoundaryRef,
         DungeonSelectionRef.ConnectionRef,
         DungeonSelectionRef.CorridorTileRef,
         DungeonSelectionRef.CorridorNodeRef,
@@ -35,6 +36,7 @@ public sealed interface DungeonSelectionRef permits
             case TransitionRef ignored -> DungeonHitKind.TRANSITION;
             case VertexRef ignored -> DungeonHitKind.VERTEX;
             case RoomBoundaryRef ignored -> DungeonHitKind.ROOM_BOUNDARY;
+            case CorridorBoundaryRef ignored -> DungeonHitKind.CORRIDOR_BOUNDARY;
             case ConnectionRef ignored -> DungeonHitKind.CONNECTION;
             case CorridorTileRef ignored -> DungeonHitKind.CORRIDOR_TILE;
             case CorridorNodeRef ignored -> DungeonHitKind.CORRIDOR_NODE;
@@ -110,6 +112,17 @@ public sealed interface DungeonSelectionRef permits
         @Override
         public DungeonSelectionRef ownerRef() {
             return roomId == null ? null : new RoomRef(roomId);
+        }
+    }
+
+    record CorridorBoundaryRef(Long corridorId, GridSegment2x boundarySegment2x) implements DungeonSelectionRef {
+        public CorridorBoundaryRef {
+            boundarySegment2x = Objects.requireNonNull(boundarySegment2x, "boundarySegment2x");
+        }
+
+        @Override
+        public DungeonSelectionRef ownerRef() {
+            return corridorId == null ? null : new CorridorRef(corridorId);
         }
     }
 

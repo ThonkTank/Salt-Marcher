@@ -16,6 +16,7 @@ public final class DungeonHitConventions {
     public static final long CORRIDOR_CORNER_PRIORITY = 70L;
     public static final long CORRIDOR_SEGMENT_PRIORITY = 60L;
     public static final long CONNECTION_PRIORITY = 50L;
+    public static final long CORRIDOR_BOUNDARY_PRIORITY = 45L;
     public static final long ROOM_BOUNDARY_PRIORITY = 40L;
     public static final long ROOM_PRIORITY = 20L;
     public static final long CORRIDOR_TILE_PRIORITY = 18L;
@@ -35,6 +36,7 @@ public final class DungeonHitConventions {
             case CORRIDOR_CORNER -> CORRIDOR_CORNER_PRIORITY;
             case CORRIDOR_SEGMENT -> CORRIDOR_SEGMENT_PRIORITY;
             case CONNECTION -> CONNECTION_PRIORITY;
+            case CORRIDOR_BOUNDARY -> CORRIDOR_BOUNDARY_PRIORITY;
             case ROOM_BOUNDARY -> ROOM_BOUNDARY_PRIORITY;
             case ROOM -> ROOM_PRIORITY;
             case CORRIDOR_TILE -> CORRIDOR_TILE_PRIORITY;
