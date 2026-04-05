@@ -157,7 +157,7 @@ public final class BoundaryTool implements EditorTool {
                     Set.of(),
                     Set.of(),
                     deleteMode
-                            ? "Start auf Innenwand gewählt, nächsten Eckpunkt anklicken"
+                            ? "Start auf Innenwand oder Tür gewählt, nächsten Eckpunkt anklicken"
                             : "Start-Eckpunkt gewählt, nächsten Eckpunkt anklicken"));
             return true;
         }
@@ -178,7 +178,7 @@ public final class BoundaryTool implements EditorTool {
                     draft.previewEdges(),
                     draft.skippedConnectionEdges(),
                     deleteMode
-                            ? "Pfad kann nur entlang bestehender Innenwände verlaufen"
+                            ? "Pfad kann nur entlang bestehender Innenwände oder Türen verlaufen"
                             : "Zwischen diesen Eckpunkten gibt es keinen gültigen Pfad"));
             return true;
         }
@@ -355,7 +355,7 @@ public final class BoundaryTool implements EditorTool {
             return "Eckpunkte anklicken, Rechtsklick schließt ab";
         }
         if (activeTool == DungeonEditorTool.CLUSTER_WALL_DELETE) {
-            return "Eckpunkte auf bestehender Innenwand anklicken, Rechtsklick schließt ab";
+            return "Eckpunkte auf bestehender Innenwand oder Tür anklicken, Rechtsklick schließt ab";
         }
         return null;
     }
@@ -368,7 +368,7 @@ public final class BoundaryTool implements EditorTool {
         if (deleteMode) {
             return previewEdges.isEmpty()
                     ? "Nur Außenwände getroffen, nichts zu löschen"
-                    : "Innenwandpfad aktiv, Rechtsklick schließt ab";
+                    : "Innenwand-/Türpfad aktiv, Rechtsklick schließt ab";
         }
         if (!skippedConnectionEdges.isEmpty()) {
             return "Pfad aktiv, Türen bleiben erhalten, Rechtsklick schließt ab";

@@ -216,7 +216,7 @@ public final class RoomCluster {
         if (start == null || goal == null) {
             return BoundaryPath.empty();
         }
-        List<GridSegment2x> route = shortestPath(start, goal, internalWallEdges());
+        List<GridSegment2x> route = shortestPath(start, goal, deletableInternalBoundaryEdges());
         if (route.isEmpty()) {
             return BoundaryPath.empty();
         }
@@ -239,7 +239,7 @@ public final class RoomCluster {
         if (vertex == null) {
             return false;
         }
-        Set<GridSegment2x> edges = deleteMode ? internalWallEdges() : internalClusterEdges();
+        Set<GridSegment2x> edges = deleteMode ? deletableInternalBoundaryEdges() : internalClusterEdges();
         return edges.stream().anyMatch(edge -> edge.start().equals(vertex) || edge.end().equals(vertex));
     }
 
@@ -574,6 +574,17 @@ public final class RoomCluster {
     private Set<GridSegment2x> internalWallEdges() {
         return internalBoundaryKinds().entrySet().stream()
                 .filter(entry -> entry.getValue() == InternalBoundaryType.WALL)
+                .map(Map.Entry::getKey)
+                .filter(Objects::nonNull)
+                .sorted(GridSegment2x.ORDER)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private Set<GridSegment2x> deletableInternalBoundaryEdges() {
+        // Wall-delete treats existing local doors as removable internal barriers so a visible door segment does not
+        // make the path look inert to the editor user.
+        return internalBoundaryKinds().entrySet().stream()
+                .filter(entry -> entry.getValue() == InternalBoundaryType.WALL || entry.getValue() == InternalBoundaryType.DOOR)
                 .map(Map.Entry::getKey)
                 .filter(Objects::nonNull)
                 .sorted(GridSegment2x.ORDER)
