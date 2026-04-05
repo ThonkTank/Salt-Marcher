@@ -1,8 +1,8 @@
 package features.world.dungeonmap.shell.runtime;
 
 import features.world.dungeonmap.application.runtime.DungeonRuntimeAction;
-import features.world.dungeonmap.application.runtime.DungeonRuntimeExit;
-import features.world.dungeonmap.application.runtime.DungeonRuntimeSurface;
+import features.world.dungeonmap.application.runtime.description.DungeonRuntimeDescription;
+import features.world.dungeonmap.application.runtime.description.DungeonRuntimeExit;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -13,30 +13,30 @@ import javafx.scene.text.TextFlow;
 import java.util.List;
 import java.util.function.Consumer;
 
-public final class DungeonRuntimeSurfacePane extends VBox {
+public final class DungeonRuntimeDescriptionPane extends VBox {
 
-    public DungeonRuntimeSurfacePane(
-            DungeonRuntimeSurface surface,
+    public DungeonRuntimeDescriptionPane(
+            DungeonRuntimeDescription description,
             Consumer<DungeonRuntimeAction> onActionSelected
     ) {
         super(8);
         setPadding(new Insets(12));
-        if (surface == null) {
+        if (description == null) {
             getChildren().add(text("Keine Beschreibung verfügbar"));
             return;
         }
         getChildren().addAll(
-                sectionTitle("Visueller Eindruck"),
-                text(valueOrDash(surface.visualDescription())));
+                sectionTitle("Beschreibung"),
+                text(valueOrDash(description.description())));
         getChildren().add(sectionTitle("Durchgänge"));
-        if (surface.exits().isEmpty()) {
+        if (description.exits().isEmpty()) {
             getChildren().add(text("—"));
         } else {
-            for (DungeonRuntimeExit exit : surface.exits()) {
+            for (DungeonRuntimeExit exit : description.exits()) {
                 getChildren().add(exitLine(exit));
             }
         }
-        appendActionButtons(surface.availableActions(), onActionSelected);
+        appendActionButtons(description.availableActions(), onActionSelected);
     }
 
     private void appendActionButtons(

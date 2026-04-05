@@ -1,17 +1,19 @@
-package features.world.dungeonmap.application.runtime;
+package features.world.dungeonmap.application.runtime.description;
+
+import features.world.dungeonmap.application.runtime.DungeonRuntimeAction;
 
 import java.util.List;
 
-public record DungeonRuntimeSurface(
+public record DungeonRuntimeDescription(
         String title,
-        DungeonRuntimeSurfaceRef ref,
-        String visualDescription,
+        DungeonRuntimeDescriptionRef ref,
+        String description,
         List<DungeonRuntimeExit> exits,
         List<DungeonRuntimeAction> actions
 ) {
-    public DungeonRuntimeSurface {
+    public DungeonRuntimeDescription {
         title = title == null || title.isBlank() ? "Dungeon" : title;
-        visualDescription = visualDescription == null ? "" : visualDescription.trim();
+        description = description == null ? "" : description.trim();
         exits = exits == null ? List.of() : List.copyOf(exits);
         actions = actions == null ? List.of() : List.copyOf(actions);
     }

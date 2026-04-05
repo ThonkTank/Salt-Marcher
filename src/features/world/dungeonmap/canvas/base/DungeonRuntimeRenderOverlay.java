@@ -1,7 +1,7 @@
 package features.world.dungeonmap.canvas.base;
 
 import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationSnapshot;
-import features.world.dungeonmap.application.runtime.DungeonRuntimeSurface;
+import features.world.dungeonmap.application.runtime.description.DungeonRuntimeDescription;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 
 import java.util.List;
@@ -17,11 +17,11 @@ public record DungeonRuntimeRenderOverlay(
 
     public static DungeonRuntimeRenderOverlay from(
             DungeonRuntimeNavigationSnapshot navigation,
-            DungeonRuntimeSurface surface
+            DungeonRuntimeDescription description
     ) {
-        List<ExitMarker> exitMarkers = surface == null
+        List<ExitMarker> exitMarkers = description == null
                 ? List.of()
-                : surface.exits().stream()
+                : description.exits().stream()
                         .map(exit -> new ExitMarker(exit.number(), exit.anchorSegment2x()))
                         .toList();
         return new DungeonRuntimeRenderOverlay(navigation, exitMarkers);

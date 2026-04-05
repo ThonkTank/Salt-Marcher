@@ -1,5 +1,6 @@
-package features.world.dungeonmap.application.runtime;
+package features.world.dungeonmap.application.runtime.description;
 
+import features.world.dungeonmap.application.runtime.DungeonRuntimeAction;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 
 import java.util.Objects;
