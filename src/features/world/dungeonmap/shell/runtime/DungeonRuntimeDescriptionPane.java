@@ -17,6 +17,7 @@ public final class DungeonRuntimeDescriptionPane extends VBox {
 
     public DungeonRuntimeDescriptionPane(
             DungeonRuntimeDescription description,
+            List<DungeonRuntimeAction> actions,
             Consumer<DungeonRuntimeAction> onActionSelected
     ) {
         super(8);
@@ -36,7 +37,7 @@ public final class DungeonRuntimeDescriptionPane extends VBox {
                 getChildren().add(exitLine(exit));
             }
         }
-        appendActionButtons(description.availableActions(), onActionSelected);
+        appendActionButtons(actions, onActionSelected);
     }
 
     private void appendActionButtons(

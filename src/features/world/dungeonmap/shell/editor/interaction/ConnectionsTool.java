@@ -241,6 +241,7 @@ public final class ConnectionsTool implements EditorTool {
         stairExitChips.setMaxWidth(Double.MAX_VALUE);
         stairFormBox.setFillWidth(true);
         stairCard.setFillWidth(true);
+        stairActionRow.getStyleClass().add("editor-action-row");
         HBox.setHgrow(stairActionSpacer, Priority.ALWAYS);
         HBox.setHgrow(stairExitLevelField, Priority.ALWAYS);
         configureStairFormGrid();
@@ -316,6 +317,8 @@ public final class ConnectionsTool implements EditorTool {
         configureStretchField(stairDirectionBox);
         configureStretchField(stairDimension1Field);
         configureStretchField(stairDimension2Field);
+        configureStretchField(stairExitLevelRow);
+        configureStretchField(stairExitChips);
 
         stairFormGrid.add(stairNameInputLabel, 0, 0);
         stairFormGrid.add(stairNameField, 1, 0, 3, 1);
@@ -431,6 +434,7 @@ public final class ConnectionsTool implements EditorTool {
                 remove.getStyleClass().addAll("flat", "compact", "chip-remove-btn");
                 remove.setAccessibleText("Entfernen: Exit z=" + level);
                 remove.setDisable(stairDraftLoading);
+                remove.setOnMouseClicked(event -> event.consume());
                 remove.setOnAction(event -> removeExitLevel(level));
                 chip.getChildren().add(remove);
             }
@@ -449,6 +453,146 @@ public final class ConnectionsTool implements EditorTool {
         refreshStatePane();
     }
 
+    private void addExitLevel() {
+        clearStairStatusOverride();
+        if (stairAnchorCell == null || stairDraftLoading) {
+            refreshStatePane();
+            return;
+        }
+        Integer level = parseInteger(stairExitLevelField.getText());
+        if (level == null) {
+            stairStatusOverride = "Exit-Level ist ungültig";
+            refreshStatePane();
+            return;
+        }
+        if (!stairStopLevels.add(level)) {
+            stairStatusOverride = "Exit z=" + level + " ist bereits vorhanden";
+            refreshStatePane();
+            return;
+        }
+        stairExitLevelField.clear();
+        stairDraftDirty = true;
+        refreshStairPreview();
+        refreshStatePane();
+    }
+
+    private void removeExitLevel(int level) {
+        clearStairStatusOverride();
+        if (Objects.equals(stairAnchorLevelZ, level)) {
+            refreshStatePane();
+            return;
+        }
+        if (!stairStopLevels.remove(level)) {
+            refreshStatePane();
+            return;
+        }
+        stairDraftDirty = true;
+        refreshStairPreview();
+        refreshStatePane();
+    }
+
+    private boolean selectStairAnchorLevel(Integer level) {
+        if (level == null || stairDraftLoading || stairAnchorCell == null || stairAnchorLevelZ == null) {
+            return false;
+        }
+        DungeonStair stair = resolvedStairForAnchorSelection();
+        CubePoint anchorPoint = exitPointAtLevel(stair, level);
+        if (anchorPoint == null) {
+            return false;
+        }
+        if (Objects.equals(stairAnchorLevelZ, level) && Objects.equals(stairAnchorCell, anchorPoint.projectedCell())) {
+            return false;
+        }
+        clearStairStatusOverride();
+        stairAnchorCell = anchorPoint.projectedCell();
+        stairAnchorLevelZ = level;
+        stairStopLevels.add(level);
+        stairDraftDirty = true;
+        refreshStairPreview();
+        refreshStatePane();
+        return true;
+    }
+
+    private DungeonStair resolvedStairForAnchorSelection() {
+        StairDraftResolution resolution = resolveCurrentStairDraft(true);
+        if (resolution.previewStair() != null) {
+            return resolution.previewStair();
+        }
+        return lastResolvedStair;
+    }
+
+    private Integer preferredAnchorLevel(Long stairId, EditorToolContext ctx) {
+        DungeonStair stair = displayedStair(stairId);
+        CubePoint clickedPoint = clickedPoint(ctx);
+        if (stair == null || clickedPoint == null) {
+            return null;
+        }
+        for (var exit : stair.exits()) {
+            if (Objects.equals(exit.position(), clickedPoint)) {
+                return exit.position().z();
+            }
+        }
+        return stair.exits().stream()
+                .min(Comparator
+                        .comparingInt((features.world.dungeonmap.model.structures.stair.DungeonStairExit exit) ->
+                                stairExitDistance(clickedPoint, exit.position()))
+                        .thenComparingInt(exit -> stairExitTieRank(stairId, exit.position().z()))
+                        .thenComparingInt(exit -> exit.position().z()))
+                .map(exit -> exit.position().z())
+                .orElse(null);
+    }
+
+    private DungeonStair displayedStair(Long stairId) {
+        if (stairId == null) {
+            return null;
+        }
+        if (Objects.equals(stairDraftId, stairId) && stairFlowActive()) {
+            DungeonStair preview = resolvedStairForAnchorSelection();
+            if (preview != null) {
+                return preview;
+            }
+        }
+        return mapState.activeMap().findStair(stairId);
+    }
+
+    private static CubePoint clickedPoint(EditorToolContext ctx) {
+        if (ctx == null || ctx.probe() == null) {
+            return null;
+        }
+        return CubePoint.at(ctx.probe().gridCell(), ctx.probe().levelZ());
+    }
+
+    private static CubePoint exitPointAtLevel(DungeonStair stair, int level) {
+        if (stair == null) {
+            return null;
+        }
+        return stair.exits().stream()
+                .map(exit -> exit.position())
+                .filter(position -> position.z() == level)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private int stairExitTieRank(Long stairId, int level) {
+        return Objects.equals(stairDraftId, stairId) && Objects.equals(stairAnchorLevelZ, level) ? 0 : 1;
+    }
+
+    private static int stairExitDistance(CubePoint clickedPoint, CubePoint exitPoint) {
+        if (clickedPoint == null || exitPoint == null) {
+            return Integer.MAX_VALUE;
+        }
+        return Math.abs(clickedPoint.x() - exitPoint.x())
+                + Math.abs(clickedPoint.y() - exitPoint.y())
+                + Math.abs(clickedPoint.z() - exitPoint.z());
+    }
+
+    private List<Integer> sortedStopLevels() {
+        return stairStopLevels.stream()
+                .filter(Objects::nonNull)
+                .sorted()
+                .toList();
+    }
+
     private void refreshFromMapState() {
         boolean mapChanged = !Objects.equals(previousMapId, mapState.activeMapId());
         previousMapId = mapState.activeMapId();
@@ -456,8 +600,11 @@ public final class ConnectionsTool implements EditorTool {
             pendingEndpoint = null;
             clearStairDraftState(false);
         }
-        if (stairDraftId != null && mapState.activeMap().findStair(stairDraftId) == null) {
+        DungeonStair persistedStair = stairDraftId == null ? null : mapState.activeMap().findStair(stairDraftId);
+        if (stairDraftId != null && persistedStair == null) {
             clearStairDraftState(false);
+        } else if (!stairDraftDirty) {
+            lastResolvedStair = persistedStair;
         }
         if (activeTool == DungeonEditorTool.CONNECTIONS && stairFlowActive()) {
             refreshStairPreview();
@@ -576,9 +723,7 @@ public final class ConnectionsTool implements EditorTool {
                             spec.dimension2(),
                             spec.stopLevels());
                     lastResolvedStair = mapState.activeMap().findStair(spec.stairId());
-                    if (preferredAnchorLevel != null) {
-                        selectStairAnchorLevel(preferredAnchorLevel);
-                    } else {
+                    if (preferredAnchorLevel == null || !selectStairAnchorLevel(preferredAnchorLevel)) {
                         state.clearPreview();
                         refreshStatePane();
                     }
@@ -744,6 +889,7 @@ public final class ConnectionsTool implements EditorTool {
         CardinalDirection direction = currentDirection();
         int dimension1 = resolvedDimension(stairDimension1Field.getText(), shape.needsSideLength() || shape.needsDimensions() || shape.needsRadius());
         int dimension2 = resolvedDimension(stairDimension2Field.getText(), shape.needsDimensions());
+        // The UI authors only exit chips; the actual stair span is always the lowest/highest authored exit.
         LinkedHashSet<Integer> stopLevels = stairStopLevels.stream()
                 .filter(Objects::nonNull)
                 .sorted()
@@ -824,9 +970,9 @@ public final class ConnectionsTool implements EditorTool {
 
     private String stairAnchorText() {
         if (stairAnchorCell == null || stairAnchorLevelZ == null) {
-            return "Kein Treppenstart";
+            return "Kein Treppenanker";
         }
-        return "Start: " + stairAnchorCell.x() + "," + stairAnchorCell.y() + " · z=" + stairAnchorLevelZ;
+        return "Anker: z=" + stairAnchorLevelZ + " · " + stairAnchorCell.x() + "," + stairAnchorCell.y();
     }
 
     private String stairStatusText(StairDraftResolution resolution) {
@@ -1111,7 +1257,11 @@ public final class ConnectionsTool implements EditorTool {
         DungeonLayout layout = ctx.activeMap();
         int levelZ = ctx.probe() == null ? mapState.activeProjectionLevel() : ctx.probe().levelZ();
         if (stairFlowActive()) {
-            return List.of();
+            return stairDraftId == null
+                    ? List.of()
+                    : List.of(EditorCapabilities.owner(ref ->
+                            ref instanceof DungeonSelectionRef.StairRef stairRef
+                                    && Objects.equals(stairRef.stairId(), stairDraftId)));
         }
         if (pendingEndpoint == null) {
             return List.of(
@@ -1247,7 +1397,7 @@ public final class ConnectionsTool implements EditorTool {
             return;
         }
         if (state.selectedRef() instanceof DungeonSelectionRef.StairRef stairRef && stairRef.stairId() != null) {
-            loadStairEditor(stairRef.stairId());
+            loadStairEditor(stairRef.stairId(), null);
         }
     }
 
@@ -1341,6 +1491,12 @@ public final class ConnectionsTool implements EditorTool {
             DungeonLayout.RoomBoundaryDescription boundary
     ) {
         return new CorridorEndpoint(hit.roomId(), boundary.roomCell(), boundary.outwardDirection());
+    }
+
+    private static Label fieldLabel(String text) {
+        Label label = new Label(text);
+        label.getStyleClass().add("text-muted");
+        return label;
     }
 
     private static String normalizedName(String value) {

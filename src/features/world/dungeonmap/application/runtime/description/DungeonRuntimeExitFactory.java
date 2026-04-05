@@ -1,6 +1,6 @@
 package features.world.dungeonmap.application.runtime.description;
 
-import features.world.dungeonmap.application.runtime.DungeonRuntimeAction;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.structures.connection.Connection;
@@ -19,39 +19,34 @@ final class DungeonRuntimeExitFactory {
     }
 
     static DungeonRuntimeExit roomExit(
-            DungeonLayout layout,
-            Room room,
-            CardinalDirection heading,
+            DungeonRuntimeLocation location,
             RoomExitDescriptor exit
     ) {
+        Room room = location == null ? null : location.room();
         String narration = room == null || room.roomId() == null || exit == null
                 ? ""
                 : room.narration().exitDescription(exit.levelZ(), exit.roomCell(), exit.direction());
         return create(
-                layout,
-                heading,
+                location,
                 exit,
                 room == null || room.roomId() == null ? null : ConnectionEndpoint.room(room.roomId()),
                 narration);
     }
 
     static DungeonRuntimeExit corridorExit(
-            DungeonLayout layout,
-            Corridor corridor,
-            CardinalDirection heading,
+            DungeonRuntimeLocation location,
             RoomExitDescriptor exit
     ) {
+        Corridor corridor = location == null ? null : location.corridor();
         return create(
-                layout,
-                heading,
+                location,
                 exit,
                 corridor == null || corridor.corridorId() == null ? null : ConnectionEndpoint.corridor(corridor.corridorId()),
                 "");
     }
 
     private static DungeonRuntimeExit create(
-            DungeonLayout layout,
-            CardinalDirection heading,
+            DungeonRuntimeLocation location,
             RoomExitDescriptor exit,
             ConnectionEndpoint activeEndpoint,
             String narration
@@ -59,26 +54,20 @@ final class DungeonRuntimeExitFactory {
         if (exit == null) {
             return null;
         }
+        DungeonLayout layout = location == null ? null : location.layout();
         String destinationLabel = doorDestinationLabel(
                 layout,
                 layout == null ? null : layout.connectionAt(exit.levelZ(), exit.anchorSegment2x()),
                 activeEndpoint);
-        DungeonRuntimeAction action = new DungeonRuntimeAction(
-                doorActionLabel(exit.label(), destinationLabel),
-                "",
-                "Verbindung konnte nicht benutzt werden",
-                new DungeonRuntimeAction.DoorTarget(
-                        exit.anchorSegment2x(),
-                        new DungeonRuntimeAction.CellTarget(
-                                exit.outsideCell(),
-                                exit.levelZ(),
-                                exit.direction())));
         return new DungeonRuntimeExit(
+                exit.label(),
                 exit.number(),
                 exit.anchorSegment2x(),
                 destinationLabel,
-                doorDescription(heading, exit.direction(), narration),
-                action);
+                doorDescription(location == null ? null : location.heading(), exit.direction(), narration),
+                exit.outsideCell(),
+                exit.levelZ(),
+                exit.direction());
     }
 
     private static String doorDescription(
@@ -132,13 +121,6 @@ final class DungeonRuntimeExitFactory {
             return transition == null ? "Übergang" : transition.label();
         }
         return "";
-    }
-
-    private static String doorActionLabel(String label, String destinationLabel) {
-        String resolvedLabel = label == null || label.isBlank() ? "Tür" : label.trim();
-        return destinationLabel == null || destinationLabel.isBlank()
-                ? resolvedLabel
-                : resolvedLabel + ": " + destinationLabel;
     }
 
     private static String roomLabel(DungeonLayout layout, Long roomId) {

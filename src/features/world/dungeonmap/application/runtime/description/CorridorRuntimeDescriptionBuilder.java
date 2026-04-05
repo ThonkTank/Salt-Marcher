@@ -1,13 +1,10 @@
 package features.world.dungeonmap.application.runtime.description;
 
-import features.world.dungeonmap.application.runtime.DungeonRuntimeAction;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 
-import java.util.ArrayList;
 import java.util.List;
 
 final class CorridorRuntimeDescriptionBuilder {
@@ -16,39 +13,21 @@ final class CorridorRuntimeDescriptionBuilder {
         throw new AssertionError("No instances");
     }
 
-    static DungeonRuntimeDescription build(
-            DungeonLayout layout,
-            Corridor corridor,
-            CardinalDirection heading,
-            CellCoord activeCell,
-            int activeLevelZ
-    ) {
+    static DungeonRuntimeDescription build(DungeonRuntimeLocation location) {
+        DungeonLayout layout = location == null ? null : location.layout();
+        Corridor corridor = location == null ? null : location.corridor();
         if (layout == null || corridor == null || corridor.corridorId() == null) {
             return null;
         }
         List<DungeonRuntimeExit> exits = layout.describeCorridorExits(corridor).stream()
-                .map(exit -> DungeonRuntimeExitFactory.corridorExit(layout, corridor, heading, exit))
+                .map(exit -> DungeonRuntimeExitFactory.corridorExit(location, exit))
                 .filter(java.util.Objects::nonNull)
                 .toList();
-        ArrayList<DungeonRuntimeAction> actions = new ArrayList<>();
-        StairRuntimeDescriptionBuilder.appendStructureStairs(
-                layout,
-                corridor.structure().cellCoordsAtLevel(corridor.levelZ()),
-                corridor.levelZ(),
-                activeCell,
-                activeLevelZ,
-                actions);
-        TransitionRuntimeDescriptionBuilder.appendStructureTransitions(
-                layout,
-                corridor.structure().cellCoordsAtLevel(corridor.levelZ()),
-                corridor.levelZ(),
-                actions);
         return new DungeonRuntimeDescription(
                 corridorLabel(layout, corridor),
-                DungeonRuntimeDescriptionRef.corridor(layout.mapId(), corridor.corridorId()),
+                location.ownerRef(),
                 "",
-                exits,
-                actions);
+                exits);
     }
 
     private static String corridorLabel(DungeonLayout layout, Corridor corridor) {

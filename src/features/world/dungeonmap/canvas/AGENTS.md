@@ -19,7 +19,7 @@ Use it together with the parent `dungeonmap/AGENTS.md` and the repository root `
 - Paint previews are direct `CellCoord` overlays. Do not build temporary `StructureObject`s just to render them.
 - Corridor graph handles are an editor-only overlay on top of shared structure geometry.
 - `DungeonEditorRenderState` is display-only and carries selection, hover, and preview geometry only.
-- `DungeonRuntimeRenderOverlay` carries the active navigation snapshot plus runtime exit markers derived from the resolved runtime description.
+- `DungeonRuntimeRenderOverlay` carries the active navigation snapshot plus runtime exit markers derived from the resolved runtime description. Canvas does not interpret runtime actions or reparse runtime ownership.
 
 ## Workspace Interaction
 

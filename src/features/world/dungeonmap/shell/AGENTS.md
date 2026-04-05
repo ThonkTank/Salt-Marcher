@@ -32,5 +32,6 @@ For editor tool responsibilities, also read `shell/editor/interaction/AGENTS.md`
 
 - `DungeonRuntimeInteractionController` owns drag-to-move: press begins only when the active cell is selected, drag shows preview, and release commits the move.
 - `DungeonRuntimeSelectionPolicy` chooses the first runtime-selectable subject that actually owns the active cell. Runtime interaction is not driven by the top raw hit candidate alone.
+- `DungeonRuntimeView` resolves one shared `DungeonRuntimeLocation` per refresh pass, then branches into read-only description and executable action assembly. Do not rebuild layout parsing separately for overlay, inspector, and travel sinks.
 - Runtime details are published through the shared `DetailsNavigator`. Do not add a parallel feature-local runtime details pane.
 - Cross-map continuation lives in shared pending navigation snapshot state, not in a runtime view-local copy.

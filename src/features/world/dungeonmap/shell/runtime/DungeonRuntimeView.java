@@ -2,15 +2,17 @@ package features.world.dungeonmap.shell.runtime;
 
 import features.world.api.WorldTravelSurface;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeAction;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeActionResolver;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeApplicationService;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationSnapshot;
 import features.world.dungeonmap.application.runtime.description.DungeonRuntimeDescription;
-import features.world.dungeonmap.application.runtime.description.DungeonRuntimeDescriptionRef;
 import features.world.dungeonmap.application.runtime.description.DungeonRuntimeDescriptionResolver;
 import features.world.dungeonmap.canvas.base.DungeonRuntimeRenderOverlay;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.shell.AbstractDungeonMapView;
 import features.world.dungeonmap.shell.controls.DungeonLevelOverlayControls;
 import features.world.dungeonmap.shell.interaction.DungeonHitCollector;
@@ -48,7 +50,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
     private final Runnable mapStateListener = this::onMapStateChanged;
     private long runtimeRequestSequence;
     private Long runtimeMapId;
-    private DungeonRuntimeDescriptionRef lastPublishedDescriptionRef;
+    private DungeonSelectionRef lastPublishedOwnerRef;
 
     public DungeonRuntimeView(
             String title,
@@ -142,10 +144,12 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
     }
 
     private void refreshRuntimeUi() {
-        DungeonRuntimeDescription description = resolveRuntimeDescription();
+        DungeonRuntimeLocation location = resolveRuntimeLocation();
+        DungeonRuntimeDescription description = DungeonRuntimeDescriptionResolver.resolve(location);
+        List<DungeonRuntimeAction> actions = DungeonRuntimeActionResolver.resolve(location, description);
         workspace().showRuntimeRenderOverlay(DungeonRuntimeRenderOverlay.from(runtimeState.activeNavigation(), description));
-        refreshTravelPane(description);
-        publishRuntimeDetails(description);
+        refreshTravelPane(description, actions);
+        publishRuntimeDetails(description, actions);
         refreshLabels();
     }
 
@@ -156,7 +160,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         }
         if (state().activeMap().mapId() <= 0) {
             runtimeMapId = null;
-            lastPublishedDescriptionRef = null;
+            lastPublishedOwnerRef = null;
             runtimeState.clear();
             return;
         }
@@ -168,7 +172,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         }
         if (!Objects.equals(runtimeMapId, state().activeMapId())) {
             runtimeMapId = state().activeMapId();
-            lastPublishedDescriptionRef = null;
+            lastPublishedOwnerRef = null;
             if (runtimeState.pendingNavigation() != null && Objects.equals(runtimeState.pendingNavigation().mapId(), runtimeMapId)) {
                 applyNavigationSnapshot(runtimeApplicationService.resolveNavigation(
                         state().activeMap(),
@@ -251,7 +255,10 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         return "Token auf der Karte ziehen";
     }
 
-    private void refreshTravelPane(DungeonRuntimeDescription description) {
+    private void refreshTravelPane(
+            DungeonRuntimeDescription description,
+            List<DungeonRuntimeAction> actions
+    ) {
         if (travelSurface == null) {
             return;
         }
@@ -262,15 +269,15 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
                 cellLabel(navigation.cell(), navigation.levelZ()),
                 headingLabel(navigation.heading()),
                 runtimeStatusText(),
-                travelActions(description),
+                travelActions(actions),
                 workspace()::resetView));
     }
 
-    private List<WorldTravelSurface.DungeonTravelAction> travelActions(DungeonRuntimeDescription description) {
-        if (description == null) {
+    private List<WorldTravelSurface.DungeonTravelAction> travelActions(List<DungeonRuntimeAction> actions) {
+        if (actions == null || actions.isEmpty()) {
             return List.of();
         }
-        return description.availableActions().stream()
+        return actions.stream()
                 .map(this::toTravelAction)
                 .toList();
     }
@@ -306,31 +313,35 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         }
     }
 
-    private void publishRuntimeDetails(DungeonRuntimeDescription description) {
+    private void publishRuntimeDetails(
+            DungeonRuntimeDescription description,
+            List<DungeonRuntimeAction> actions
+    ) {
         if (runtimeState.loading() || runtimeState.moving() || runtimeState.dragging()) {
             return;
         }
-        if (description == null || description.ref() == null) {
+        if (description == null || description.ownerRef() == null) {
             return;
         }
-        DetailsNavigator.EntryKey entryKey = new DetailsNavigator.EntryKey("dungeon-runtime", description.ref());
+        DetailsNavigator.EntryKey entryKey = new DetailsNavigator.EntryKey("dungeon-runtime", description.ownerRef());
         boolean refreshCurrentCard = detailsNavigator.isShowing(entryKey);
-        if (!refreshCurrentCard && Objects.equals(lastPublishedDescriptionRef, description.ref())) {
+        if (!refreshCurrentCard && Objects.equals(lastPublishedOwnerRef, description.ownerRef())) {
             return;
         }
-        lastPublishedDescriptionRef = description.ref();
+        lastPublishedOwnerRef = description.ownerRef();
         detailsNavigator.showContent(description.title(), entryKey, () -> new DungeonRuntimeDescriptionPane(
                 description,
+                actions,
                 this::triggerRuntimeAction));
     }
 
-    private DungeonRuntimeDescription resolveRuntimeDescription() {
+    private DungeonRuntimeLocation resolveRuntimeLocation() {
         DungeonRuntimeNavigationSnapshot navigation = runtimeState.activeNavigation();
         var layout = state().activeMap();
         if (layout == null || navigation == null || navigation.isEmpty()) {
             return null;
         }
-        return DungeonRuntimeDescriptionResolver.resolve(layout, navigation);
+        return DungeonRuntimeLocation.resolve(layout, navigation);
     }
 
     private static Label sectionLabel(String text) {

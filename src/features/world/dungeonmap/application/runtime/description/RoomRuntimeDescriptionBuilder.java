@@ -1,12 +1,9 @@
 package features.world.dungeonmap.application.runtime.description;
 
-import features.world.dungeonmap.application.runtime.DungeonRuntimeAction;
+import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.structures.room.Room;
 
-import java.util.ArrayList;
 import java.util.List;
 
 final class RoomRuntimeDescriptionBuilder {
@@ -15,41 +12,21 @@ final class RoomRuntimeDescriptionBuilder {
         throw new AssertionError("No instances");
     }
 
-    static DungeonRuntimeDescription build(
-            DungeonLayout layout,
-            Room room,
-            CardinalDirection heading,
-            CellCoord activeCell,
-            int activeLevelZ
-    ) {
+    static DungeonRuntimeDescription build(DungeonRuntimeLocation location) {
+        DungeonLayout layout = location == null ? null : location.layout();
+        Room room = location == null ? null : location.room();
         if (layout == null || room == null || room.roomId() == null) {
             return null;
         }
         List<DungeonRuntimeExit> exits = layout.describeRoomExits(room).stream()
-                .map(exit -> DungeonRuntimeExitFactory.roomExit(layout, room, heading, exit))
+                .map(exit -> DungeonRuntimeExitFactory.roomExit(location, exit))
                 .filter(java.util.Objects::nonNull)
                 .toList();
-        ArrayList<DungeonRuntimeAction> actions = new ArrayList<>();
-        for (int levelZ : room.structure().relevantLevels(activeCell, activeLevelZ)) {
-            StairRuntimeDescriptionBuilder.appendStructureStairs(
-                    layout,
-                    room.structure().cellCoordsAtLevel(levelZ),
-                    levelZ,
-                    activeCell,
-                    activeLevelZ,
-                    actions);
-            TransitionRuntimeDescriptionBuilder.appendStructureTransitions(
-                    layout,
-                    room.structure().cellCoordsAtLevel(levelZ),
-                    levelZ,
-                    actions);
-        }
         return new DungeonRuntimeDescription(
                 roomLabel(room),
-                DungeonRuntimeDescriptionRef.room(layout.mapId(), room.roomId()),
+                location.ownerRef(),
                 room.narration().visualDescription(),
-                exits,
-                actions);
+                exits);
     }
 
     private static String roomLabel(Room room) {

@@ -16,6 +16,7 @@ Use it together with `shell/AGENTS.md`, the parent `dungeonmap/AGENTS.md`, and t
 - `PaintTool` owns room paint/delete sessions from resolved `FloorCellRef` hits and publishes previews as `CellCoord` sets, not temporary structures.
 - `BoundaryTool` owns wall-path drafting. Delete mode may remove local door segments as part of one barrier path. Draft state stays local and shared state exposes only preview geometry.
 - `ConnectionsTool` owns door edits, surface-driven corridor authoring, corridor graph delete gestures, and stair draft/edit UX.
+- Stair editing in `ConnectionsTool` authors exit levels as explicit local UI state; the currently selected exit is the active stair anchor and every preview/commit replan must derive from that anchor instead of a hidden min/max range control.
 - Create semantics stay surface-driven: interior editable room walls create local doors, `room exterior wall <-> room exterior wall` creates a corridor, `room exterior wall <-> free corridor wall` attaches another room to an existing corridor, room-floor clicks start stair drafts, and existing doors/corridors/stairs are selected directly.
 - Pending wall flows and open stair drafts stay tool-local, are cancelled with right click, and do not justify filler state-pane hints while no connection instance is selected.
 - Stair validation and path resolution stay in `application/stair/`, even when the UI for stair forms and previews lives on `ConnectionsTool`.
