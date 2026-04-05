@@ -51,21 +51,27 @@ public final class DungeonMapModule {
         DungeonRoomApplicationService roomApplicationService = new DungeonRoomApplicationService(
                 layoutRepository,
                 corridorRepository,
-                roomRepository);
+                roomRepository,
+                transitionRepository);
         DungeonStairApplicationService stairApplicationService = new DungeonStairApplicationService(
                 layoutRepository,
                 stairRepository);
         DungeonTransitionApplicationService transitionApplicationService = new DungeonTransitionApplicationService(
                 layoutRepository,
                 roomApplicationService,
-                transitionRepository);
+                transitionRepository,
+                roomRepository,
+                corridorRepository);
         DungeonRuntimeApplicationService runtimeApplicationService = new DungeonRuntimeApplicationService(
                 layoutRepository,
                 loadResolver);
         DungeonMapCatalogService mapCatalogService = new DungeonMapCatalogService(
                 roomApplicationService,
                 runtimeApplicationService);
-        DungeonCorridorApplicationService corridorApplicationService = new DungeonCorridorApplicationService(layoutRepository, corridorRepository);
+        DungeonCorridorApplicationService corridorApplicationService = new DungeonCorridorApplicationService(
+                layoutRepository,
+                corridorRepository,
+                roomRepository);
         DungeonMapState state = new DungeonMapState();
         DungeonMapLoadingService loadingService = new DungeonMapLoadingService(
                 loadResolver,

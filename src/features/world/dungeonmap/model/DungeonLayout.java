@@ -796,8 +796,27 @@ public final class DungeonLayout {
         return Corridor.planned(mapId, levelZ, nodes, segments, rooms());
     }
 
+    public Corridor planCorridor(
+            int levelZ,
+            List<CorridorNode> nodes,
+            List<CorridorSegment> segments,
+            Set<GridSegment2x> boundaryDoorSegments
+    ) {
+        return Corridor.planned(mapId, levelZ, nodes, segments, boundaryDoorSegments, rooms());
+    }
+
     public Corridor resolveCorridor(Long corridorId, int levelZ, List<CorridorNode> nodes, List<CorridorSegment> segments) {
         return Corridor.resolved(corridorId, mapId, levelZ, nodes, segments, rooms());
+    }
+
+    public Corridor resolveCorridor(
+            Long corridorId,
+            int levelZ,
+            List<CorridorNode> nodes,
+            List<CorridorSegment> segments,
+            Set<GridSegment2x> boundaryDoorSegments
+    ) {
+        return Corridor.resolved(corridorId, mapId, levelZ, nodes, segments, boundaryDoorSegments, rooms());
     }
 
     public DungeonLayout withAddedCorridor(Corridor corridor) {
@@ -1046,31 +1065,62 @@ public final class DungeonLayout {
             List<DungeonTransition> transitions
     ) {
         List<Connection> result = new ArrayList<>();
-        for (RoomCluster cluster : clusters) {
-            if (cluster == null) {
-                continue;
-            }
-            result.addAll(cluster.localConnections().stream()
-                    .filter(Objects::nonNull)
-                    .map(Connection.class::cast)
-                    .toList());
-        }
+        Set<ConnectionSegmentKey> explicitDoorSegments = new LinkedHashSet<>();
         for (Corridor corridor : corridors) {
             if (corridor == null) {
                 continue;
             }
-            result.addAll(corridor.connections().stream()
+            for (Connection connection : corridor.connections().stream()
                     .filter(Objects::nonNull)
                     .map(Connection.class::cast)
-                    .toList());
+                    .toList()) {
+                result.add(connection);
+                registerDoorSegments(explicitDoorSegments, connection);
+            }
         }
         for (DungeonTransition transition : transitions) {
             Connection connection = transition == null ? null : transition.localConnection();
             if (connection != null) {
                 result.add(connection);
+                registerDoorSegments(explicitDoorSegments, connection);
+            }
+        }
+        for (RoomCluster cluster : clusters) {
+            if (cluster == null) {
+                continue;
+            }
+            for (Connection connection : cluster.localConnections().stream()
+                    .filter(Objects::nonNull)
+                    .map(Connection.class::cast)
+                    .toList()) {
+                if (connectionUsesAnyDoorSegment(connection, explicitDoorSegments)) {
+                    continue;
+                }
+                result.add(connection);
             }
         }
         return List.copyOf(result);
+    }
+
+    private static boolean connectionUsesAnyDoorSegment(Connection connection, Set<ConnectionSegmentKey> occupiedSegments) {
+        if (connection == null || connection.door() == null || occupiedSegments == null || occupiedSegments.isEmpty()) {
+            return false;
+        }
+        for (GridSegment2x segment2x : connection.door().segments2x()) {
+            if (occupiedSegments.contains(new ConnectionSegmentKey(connection.levelZ(), segment2x))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static void registerDoorSegments(Set<ConnectionSegmentKey> occupiedSegments, Connection connection) {
+        if (occupiedSegments == null || connection == null || connection.door() == null) {
+            return;
+        }
+        for (GridSegment2x segment2x : connection.door().segments2x()) {
+            occupiedSegments.add(new ConnectionSegmentKey(connection.levelZ(), segment2x));
+        }
     }
 
     private static Map<GridSegment2x, Connection> indexConnectionsBySegment2x(List<Connection> connections) {

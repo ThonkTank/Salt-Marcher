@@ -4,6 +4,7 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNode;
 import features.world.dungeonmap.model.structures.corridor.CorridorSegment;
@@ -18,9 +19,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 public final class DungeonCorridorRepository {
 
@@ -49,6 +52,7 @@ public final class DungeonCorridorRepository {
                         row.getLong("corridor_segment_id"),
                         row.getLong("start_node_id"),
                         row.getLong("end_node_id")));
+        Map<Long, Set<GridSegment2x>> boundaryDoorsByCorridorId = loadBoundaryDoorsByCorridorId(conn, mapId);
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT corridor_id, dungeon_map_id, level_z"
                         + " FROM dungeon_corridors WHERE dungeon_map_id=? ORDER BY corridor_id")) {
@@ -63,6 +67,7 @@ public final class DungeonCorridorRepository {
                             rs.getInt("level_z"),
                             nodesByCorridorId.getOrDefault(corridorId, List.of()),
                             segmentsByCorridorId.getOrDefault(corridorId, List.of()),
+                            boundaryDoorsByCorridorId.getOrDefault(corridorId, Set.of()),
                             roomsById));
                 }
                 return result.isEmpty() ? List.of() : List.copyOf(result);
@@ -79,12 +84,18 @@ public final class DungeonCorridorRepository {
         Long corridorId = persisted.corridorId();
         if (corridorId == null) {
             corridorId = insertCorridor(conn, mapId, persisted);
-            persisted = resolvedLayout.resolveCorridor(corridorId, persisted.levelZ(), persisted.nodes(), persisted.segments());
+            persisted = resolvedLayout.resolveCorridor(
+                    corridorId,
+                    persisted.levelZ(),
+                    persisted.nodes(),
+                    persisted.segments(),
+                    persisted.boundaryDoorSegments());
         } else {
             updateCorridor(conn, corridorId, persisted);
         }
         replaceNodes(conn, corridorId, persisted.nodes(), resolvedLayout, persisted.levelZ());
         replaceSegments(conn, corridorId, persisted.segments());
+        replaceBoundaryDoors(conn, corridorId, persisted.boundaryDoorSegments());
         return persisted;
     }
 
@@ -161,6 +172,32 @@ public final class DungeonCorridorRepository {
         }
     }
 
+    private void replaceBoundaryDoors(Connection conn, long corridorId, Set<GridSegment2x> boundaryDoorSegments) throws SQLException {
+        try (PreparedStatement delete = conn.prepareStatement(
+                "DELETE FROM dungeon_corridor_boundary_doors WHERE corridor_id=?")) {
+            delete.setLong(1, corridorId);
+            delete.executeUpdate();
+        }
+        if (boundaryDoorSegments == null || boundaryDoorSegments.isEmpty()) {
+            return;
+        }
+        try (PreparedStatement insert = conn.prepareStatement(
+                "INSERT INTO dungeon_corridor_boundary_doors(corridor_id, start_x2, start_y2, end_x2, end_y2)"
+                        + " VALUES(?,?,?,?,?)")) {
+            for (GridSegment2x segment2x : GridSegment2x.boundarySteps(boundaryDoorSegments).stream()
+                    .sorted(GridSegment2x.ORDER)
+                    .toList()) {
+                insert.setLong(1, corridorId);
+                insert.setInt(2, segment2x.start().x2());
+                insert.setInt(3, segment2x.start().y2());
+                insert.setInt(4, segment2x.end().x2());
+                insert.setInt(5, segment2x.end().y2());
+                insert.addBatch();
+            }
+            insert.executeBatch();
+        }
+    }
+
     private Corridor assignPersistentIds(Connection conn, Corridor corridor, DungeonLayout layout) throws SQLException {
         Corridor resolvedCorridor = Objects.requireNonNull(corridor, "corridor");
         long nextNodeId = nextId(conn, "dungeon_corridor_nodes", "corridor_node_id");
@@ -192,7 +229,12 @@ public final class DungeonCorridorRepository {
             }
             segments.add(new CorridorSegment(persistedSegmentId, startNodeId, endNodeId));
         }
-        return layout.resolveCorridor(resolvedCorridor.corridorId(), resolvedCorridor.levelZ(), nodes, segments);
+        return layout.resolveCorridor(
+                resolvedCorridor.corridorId(),
+                resolvedCorridor.levelZ(),
+                nodes,
+                segments,
+                resolvedCorridor.boundaryDoorSegments());
     }
 
     private static Long remapNodeId(Long nodeId, Map<Long, Long> syntheticNodeIds) {
@@ -324,6 +366,30 @@ public final class DungeonCorridorRepository {
             throw new SQLException("Corridor node references room cell without floor at level " + levelZ);
         }
         return node.roomCell();
+    }
+
+    private static Map<Long, Set<GridSegment2x>> loadBoundaryDoorsByCorridorId(Connection conn, long mapId) throws SQLException {
+        Map<Long, LinkedHashSet<GridSegment2x>> mutable = new LinkedHashMap<>();
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT corridor_id, start_x2, start_y2, end_x2, end_y2"
+                        + " FROM dungeon_corridor_boundary_doors"
+                        + " WHERE corridor_id IN (SELECT corridor_id FROM dungeon_corridors WHERE dungeon_map_id=?)"
+                        + " ORDER BY corridor_id, start_y2, start_x2, end_y2, end_x2")) {
+            ps.setLong(1, mapId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    mutable.computeIfAbsent(rs.getLong("corridor_id"), ignored -> new LinkedHashSet<>())
+                            .add(new GridSegment2x(
+                                    GridPoint2x.raw(rs.getInt("start_x2"), rs.getInt("start_y2")),
+                                    GridPoint2x.raw(rs.getInt("end_x2"), rs.getInt("end_y2"))));
+                }
+            }
+        }
+        Map<Long, Set<GridSegment2x>> result = new LinkedHashMap<>();
+        for (Map.Entry<Long, LinkedHashSet<GridSegment2x>> entry : mutable.entrySet()) {
+            result.put(entry.getKey(), Set.copyOf(entry.getValue()));
+        }
+        return result.isEmpty() ? Map.of() : Map.copyOf(result);
     }
 
     private static <K, V> Map<K, List<V>> loadGrouped(

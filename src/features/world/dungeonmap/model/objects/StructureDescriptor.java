@@ -98,6 +98,16 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
         return new StructureDescriptor(updatedLevels);
     }
 
+    public StructureDescriptor withOpeningEdgesAtLevel(int levelZ, Collection<GridSegment2x> openingEdges) {
+        LevelDescriptor level = level(levelZ);
+        if (level == null) {
+            return this;
+        }
+        Map<Integer, LevelDescriptor> updatedLevels = new LinkedHashMap<>(levels);
+        updatedLevels.put(levelZ, level.withOpeningEdges(openingEdges));
+        return new StructureDescriptor(updatedLevels);
+    }
+
     private static Map<Integer, LevelDescriptor> normalizeLevels(Map<Integer, LevelDescriptor> levels) {
         if (levels == null || levels.isEmpty()) {
             return Map.of();
@@ -199,6 +209,10 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
 
         public LevelDescriptor withFloorCells(Collection<CellCoord> floorCells) {
             return new LevelDescriptor(anchorCell, fillSeeds, boundaryEdges, openingEdges, normalizeCellSet(floorCells));
+        }
+
+        public LevelDescriptor withOpeningEdges(Collection<GridSegment2x> openingEdges) {
+            return new LevelDescriptor(anchorCell, fillSeeds, boundaryEdges, normalizeOpenings(openingEdges, boundaryEdges), floorCells);
         }
 
         public boolean isEmpty() {

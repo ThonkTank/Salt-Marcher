@@ -46,7 +46,10 @@ public final class TransitionConnectionBuilder {
             if (boundary == null || !boundary.exterior()) {
                 throw new IllegalArgumentException("Tür-Übergänge benötigen eine freie Raum-Außenwand");
             }
-            if (layout.connectionAt(levelZ, roomBoundary.boundarySegment2x()) != null) {
+            if (occupiedByOtherConnection(
+                    layout.connectionAt(levelZ, roomBoundary.boundarySegment2x()),
+                    ConnectionEndpoint.room(roomBoundary.roomId()),
+                    boundary.clusterId())) {
                 throw new IllegalArgumentException("An dieser Grenze existiert bereits eine Verbindung");
             }
             return transitionDoorConnection(
@@ -57,12 +60,14 @@ public final class TransitionConnectionBuilder {
                     ConnectionEndpoint.room(roomBoundary.roomId()));
         }
         if (sourceRef instanceof DungeonSelectionRef.CorridorBoundaryRef corridorBoundary) {
-            DungeonLayout.CorridorBoundaryDescription boundary = layout.describeCorridorBoundary(corridorBoundary, levelZ);
-            if (boundary == null) {
-                throw new IllegalArgumentException("Tür-Übergänge benötigen eine freie Corridor-Grenze");
-            }
             if (layout.connectionAt(levelZ, corridorBoundary.boundarySegment2x()) != null) {
                 throw new IllegalArgumentException("An dieser Grenze existiert bereits eine Verbindung");
+            }
+            if (layout.describeConnectionSurface(
+                    ConnectionEndpoint.corridor(corridorBoundary.corridorId()),
+                    corridorBoundary.boundarySegment2x(),
+                    levelZ) == null) {
+                throw new IllegalArgumentException("Tür-Übergänge benötigen eine freie Corridor-Grenze");
             }
             return transitionDoorConnection(
                     transitionId,
@@ -165,5 +170,19 @@ public final class TransitionConnectionBuilder {
         if (occupied) {
             throw new IllegalArgumentException("Ein anderer Übergang belegt bereits Teile dieser Treppe");
         }
+    }
+
+    private static boolean occupiedByOtherConnection(
+            features.world.dungeonmap.model.structures.connection.Connection existingConnection,
+            ConnectionEndpoint expectedRoomEndpoint,
+            Long expectedClusterId
+    ) {
+        if (existingConnection == null) {
+            return false;
+        }
+        return existingConnection.kind() != ConnectionKind.LOCAL
+                || !existingConnection.endpoints().contains(expectedRoomEndpoint)
+                || expectedClusterId == null
+                || !existingConnection.endpoints().contains(ConnectionEndpoint.cluster(expectedClusterId));
     }
 }

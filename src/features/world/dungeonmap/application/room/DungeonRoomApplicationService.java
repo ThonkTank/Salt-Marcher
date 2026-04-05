@@ -7,6 +7,10 @@ import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
+import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
+import features.world.dungeonmap.model.structures.connection.DoorConnectionCarrier;
+import features.world.dungeonmap.model.structures.connection.DungeonConnection;
+import features.world.dungeonmap.model.structures.connection.StairConnectionCarrier;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNode;
 import features.world.dungeonmap.model.structures.room.Room;
@@ -17,6 +21,7 @@ import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.repository.DungeonCorridorRepository;
 import features.world.dungeonmap.repository.DungeonLayoutRepository;
 import features.world.dungeonmap.repository.DungeonRoomRepository;
+import features.world.dungeonmap.repository.DungeonTransitionRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -39,15 +44,18 @@ public final class DungeonRoomApplicationService {
     private final DungeonLayoutRepository layoutRepository;
     private final DungeonCorridorRepository corridorRepository;
     private final DungeonRoomRepository roomRepository;
+    private final DungeonTransitionRepository transitionRepository;
 
     public DungeonRoomApplicationService(
             DungeonLayoutRepository layoutRepository,
             DungeonCorridorRepository corridorRepository,
-            DungeonRoomRepository roomRepository
+            DungeonRoomRepository roomRepository,
+            DungeonTransitionRepository transitionRepository
     ) {
         this.layoutRepository = Objects.requireNonNull(layoutRepository, "layoutRepository");
         this.corridorRepository = Objects.requireNonNull(corridorRepository, "corridorRepository");
         this.roomRepository = Objects.requireNonNull(roomRepository, "roomRepository");
+        this.transitionRepository = Objects.requireNonNull(transitionRepository, "transitionRepository");
     }
 
     public void paintCells(long mapId, int levelZ, Set<CellCoord> cells) throws SQLException {
@@ -211,12 +219,13 @@ public final class DungeonRoomApplicationService {
         if (cells == null || cells.isEmpty()) {
             return;
         }
-        DungeonLayout layout = requireLayout(conn, mapId);
-        List<Room> affectedRooms = overlappingRoomsAtLevel(layout, cells, levelZ);
+        DungeonLayout workingLayout = requireLayout(conn, mapId);
+        List<Room> affectedRooms = overlappingRoomsAtLevel(workingLayout, cells, levelZ);
         if (affectedRooms.isEmpty()) {
             return;
         }
-        List<Room> updatedRooms = new java.util.ArrayList<>();
+
+        java.util.Map<Long, Set<CellCoord>> requestedByClusterId = new java.util.LinkedHashMap<>();
         for (Room room : affectedRooms) {
             if (room == null || room.roomId() == null) {
                 continue;
@@ -225,25 +234,43 @@ public final class DungeonRoomApplicationService {
             if (requestedCells.isEmpty()) {
                 continue;
             }
-            Set<CellCoord> currentFloorCells = new LinkedHashSet<>(room.structure().floorCellCoordsAtLevel(levelZ));
-            Set<CellCoord> nextFloorCells = new LinkedHashSet<>(currentFloorCells);
             if (deleteFloor) {
-                Set<CellCoord> removedFloorCells = intersect(currentFloorCells, requestedCells);
+                Set<CellCoord> removedFloorCells = intersect(room.structure().floorCellCoordsAtLevel(levelZ), requestedCells);
                 if (removedFloorCells.isEmpty()) {
                     continue;
                 }
-                validateFloorDelete(layout, room, levelZ, removedFloorCells);
-                nextFloorCells.removeAll(removedFloorCells);
-            } else {
-                if (!nextFloorCells.addAll(requestedCells)) {
-                    continue;
-                }
+                validateFloorDelete(workingLayout, room, levelZ, removedFloorCells);
             }
-            Room updatedRoom = room.withStructure(features.world.dungeonmap.model.objects.StructureObject.fromDescriptor(
-                    room.structure().descriptor().withFloorCellsAtLevel(levelZ, nextFloorCells)));
-            updatedRooms.add(updatedRoom);
+            requestedByClusterId.computeIfAbsent(room.clusterId(), ignored -> new LinkedHashSet<>()).addAll(requestedCells);
         }
-        roomRepository.saveRooms(conn, mapId, updatedRooms);
+
+        for (Long clusterId : requestedByClusterId.keySet().stream().sorted().toList()) {
+            RoomCluster cluster = workingLayout.findCluster(clusterId);
+            if (cluster == null) {
+                continue;
+            }
+            Set<CellCoord> requestedCells = requestedByClusterId.getOrDefault(clusterId, Set.of());
+            Set<CellCoord> currentFloorCells = new LinkedHashSet<>(cluster.structure().floorCellCoordsAtLevel(levelZ));
+            Set<CellCoord> nextFloorCells = new LinkedHashSet<>(currentFloorCells);
+            boolean changed;
+            if (deleteFloor) {
+                changed = nextFloorCells.removeAll(requestedCells);
+            } else {
+                changed = nextFloorCells.addAll(requestedCells);
+            }
+            if (!changed) {
+                continue;
+            }
+            RoomCluster updatedCluster = new RoomCluster(
+                    cluster.clusterId(),
+                    cluster.mapId(),
+                    cluster.center(),
+                    features.world.dungeonmap.model.objects.StructureObject.fromDescriptor(
+                            cluster.structure().descriptor().withFloorCellsAtLevel(levelZ, nextFloorCells)),
+                    cluster.rooms());
+            persistClusterRewrite(conn, mapId, workingLayout, List.of(cluster), List.of(updatedCluster));
+            workingLayout = requireLayout(conn, mapId);
+        }
     }
 
     public void createDefaultRoom(Connection conn, long mapId) throws SQLException {
@@ -438,12 +465,14 @@ public final class DungeonRoomApplicationService {
         Set<Long> affectedRoomIds = affectedRoomIds(originalClusters);
         DungeonLayout rewrittenLayout = originalLayout.withReplacedClusters(originalClusters, finalClusters);
         validateRoomRewriteCorridors(originalLayout, rewrittenLayout, affectedRoomIds);
+        validateRoomRewriteTransitions(originalLayout, rewrittenLayout, affectedRoomIds);
         roomRepository.replaceClusters(conn, mapId, originalClusters, finalClusters);
         if (affectedRoomIds.isEmpty()) {
             return;
         }
         DungeonLayout persistedRoomLayout = loadRoomRewriteLayout(conn, originalLayout, mapId);
         persistReboundCorridors(conn, originalLayout, persistedRoomLayout, affectedRoomIds);
+        persistReboundTransitions(conn, originalLayout, persistedRoomLayout, affectedRoomIds);
     }
 
     private void persistUpdatedCorridors(Connection conn, DungeonLayout originalLayout, DungeonLayout movedLayout) throws SQLException {
@@ -496,6 +525,45 @@ public final class DungeonRoomApplicationService {
         }
     }
 
+    private void validateRoomRewriteTransitions(
+            DungeonLayout originalLayout,
+            DungeonLayout rewrittenLayout,
+            Set<Long> affectedRoomIds
+    ) {
+        if (originalLayout == null || rewrittenLayout == null || affectedRoomIds == null || affectedRoomIds.isEmpty()) {
+            return;
+        }
+        for (DungeonTransition transition : originalLayout.transitions()) {
+            if (touchesAffectedRooms(transition, affectedRoomIds)) {
+                reboundTransitionLocalConnection(rewrittenLayout, transition, affectedRoomIds, false);
+            }
+        }
+    }
+
+    private void persistReboundTransitions(
+            Connection conn,
+            DungeonLayout originalLayout,
+            DungeonLayout rewrittenRoomLayout,
+            Set<Long> affectedRoomIds
+    ) throws SQLException {
+        if (conn == null || originalLayout == null || rewrittenRoomLayout == null || affectedRoomIds == null || affectedRoomIds.isEmpty()) {
+            return;
+        }
+        for (DungeonTransition transition : originalLayout.transitions()) {
+            if (transition == null || transition.transitionId() == null || !touchesAffectedRooms(transition, affectedRoomIds)) {
+                continue;
+            }
+            DungeonConnection reboundConnection = reboundTransitionLocalConnection(
+                    rewrittenRoomLayout,
+                    transition,
+                    affectedRoomIds,
+                    true);
+            if (!Objects.equals(reboundConnection, transition.localConnection())) {
+                transitionRepository.updateLocalConnection(conn, transition.transitionId(), reboundConnection);
+            }
+        }
+    }
+
     private DungeonLayout loadRoomRewriteLayout(Connection conn, DungeonLayout originalLayout, long mapId) throws SQLException {
         List<Room> rooms = roomRepository.loadRooms(conn, mapId);
         List<RoomCluster> clusters = roomRepository.loadClusters(conn, mapId, rooms);
@@ -514,6 +582,126 @@ public final class DungeonRoomApplicationService {
             return false;
         }
         return corridor.connectedRoomIds().stream().anyMatch(affectedRoomIds::contains);
+    }
+
+    private static boolean touchesAffectedRooms(DungeonTransition transition, Set<Long> affectedRoomIds) {
+        if (transition == null
+                || transition.localConnection() == null
+                || affectedRoomIds == null
+                || affectedRoomIds.isEmpty()) {
+            return false;
+        }
+        return transition.localConnection().endpoints().stream()
+                .filter(Objects::nonNull)
+                .filter(endpoint -> endpoint.type() == features.world.dungeonmap.model.structures.connection.ConnectionEndpointType.ROOM)
+                .map(ConnectionEndpoint::id)
+                .filter(Objects::nonNull)
+                .anyMatch(affectedRoomIds::contains);
+    }
+
+    private static DungeonConnection reboundTransitionLocalConnection(
+            DungeonLayout layout,
+            DungeonTransition transition,
+            Set<Long> affectedRoomIds,
+            boolean requirePersistedRoomId
+    ) {
+        if (layout == null
+                || transition == null
+                || transition.localConnection() == null
+                || affectedRoomIds == null
+                || affectedRoomIds.isEmpty()) {
+            return transition == null ? null : transition.localConnection();
+        }
+        DungeonConnection localConnection = transition.localConnection();
+        if (localConnection.doorCarrier() != null) {
+            ConnectionEndpoint entryEndpoint = localConnection.entryEndpoint();
+            if (entryEndpoint == null
+                    || entryEndpoint.type() != features.world.dungeonmap.model.structures.connection.ConnectionEndpointType.ROOM
+                    || !affectedRoomIds.contains(entryEndpoint.id())) {
+                return localConnection;
+            }
+            Room reboundRoom = resolveTransitionDoorRoom(
+                    layout,
+                    localConnection.levelZ(),
+                    localConnection.anchorSegment2x(),
+                    requirePersistedRoomId);
+            return new DungeonConnection(
+                    localConnection.kind(),
+                    localConnection.ownerId(),
+                    localConnection.mapId(),
+                    localConnection.levelZ(),
+                    new DoorConnectionCarrier(localConnection.doorCarrier().door(), localConnection.anchorSegment2x()),
+                    List.of(ConnectionEndpoint.room(reboundRoom.roomId()), ConnectionEndpoint.transition(transition.transitionId())));
+        }
+        if (localConnection.stairCarrier() != null) {
+            ConnectionEndpoint entryEndpoint = localConnection.entryEndpoint();
+            if (entryEndpoint == null
+                    || entryEndpoint.type() != features.world.dungeonmap.model.structures.connection.ConnectionEndpointType.ROOM
+                    || !affectedRoomIds.contains(entryEndpoint.id())) {
+                return localConnection;
+            }
+            StairConnectionCarrier stairCarrier = localConnection.stairCarrier();
+            Room reboundRoom = layout.roomWithFloorAtCell(stairCarrier.anchorCell(), stairCarrier.anchorLevelZ());
+            if (reboundRoom == null) {
+                throw new IllegalArgumentException("Transition stair anchor no longer resolves to a room floor");
+            }
+            if (requirePersistedRoomId && reboundRoom.roomId() == null) {
+                throw new IllegalArgumentException("Transition stair rebound requires a persisted room id");
+            }
+            return new DungeonConnection(
+                    localConnection.kind(),
+                    localConnection.ownerId(),
+                    localConnection.mapId(),
+                    localConnection.levelZ(),
+                    new StairConnectionCarrier(
+                            stairCarrier.anchorCell(),
+                            stairCarrier.anchorLevelZ(),
+                            stairCarrier.shape(),
+                            stairCarrier.direction(),
+                            stairCarrier.minLevelZ(),
+                            stairCarrier.maxLevelZ(),
+                            stairCarrier.dimension1(),
+                            stairCarrier.dimension2(),
+                            stairCarrier.path(),
+                            stairCarrier.stopLevels()),
+                    List.of(ConnectionEndpoint.room(reboundRoom.roomId()), ConnectionEndpoint.transition(transition.transitionId())));
+        }
+        return localConnection;
+    }
+
+    private static Room resolveTransitionDoorRoom(
+            DungeonLayout layout,
+            int levelZ,
+            GridSegment2x boundarySegment2x,
+            boolean requirePersistedRoomId
+    ) {
+        if (layout == null || boundarySegment2x == null) {
+            throw new IllegalArgumentException("Transition door rebound requires a boundary segment");
+        }
+        Room reboundRoom = null;
+        for (CellCoord cell : boundarySegment2x.touchingCells().stream().sorted(CellCoord.ORDER).toList()) {
+            Room room = layout.roomAtCell(cell, levelZ);
+            if (room == null) {
+                continue;
+            }
+            var direction = boundarySegment2x.directionFrom(cell);
+            if (direction == null
+                    || !room.structure().boundaryEdgesAtLevel(levelZ).contains(boundarySegment2x)
+                    || layout.roomAtCell(cell.add(direction.delta()), levelZ) != null) {
+                continue;
+            }
+            if (reboundRoom != null && !Objects.equals(reboundRoom.roomId(), room.roomId())) {
+                throw new IllegalArgumentException("Transition door no longer resolves to exactly one exterior room boundary");
+            }
+            reboundRoom = room;
+        }
+        if (reboundRoom == null) {
+            throw new IllegalArgumentException("Transition door no longer resolves to an exterior room boundary");
+        }
+        if (requirePersistedRoomId && reboundRoom.roomId() == null) {
+            throw new IllegalArgumentException("Transition door rebound requires a persisted room id");
+        }
+        return reboundRoom;
     }
 
     private static Set<Long> affectedRoomIds(List<RoomCluster> clusters) {

@@ -19,7 +19,7 @@ Use it together with the parent `dungeonmap/AGENTS.md` and the repository root `
 - Do not add offset codecs, parity bridge types, or secondary tile-area wrappers at model or persistence seams.
 - `Wall` and `Door` are segment-based boundary objects keyed by normalized `GridSegment2x` collections.
 - Cell-owned surfaces stay as explicit `CellCoord` sets on `Floor` and related seams.
-- `StructureDescriptor.LevelDescriptor` authors room/corridor floor truth as `anchorCell`, `fillSeeds`, `boundaryEdges`, and `openingEdges`.
+- `StructureDescriptor.LevelDescriptor` authors cluster/corridor floor truth as `anchorCell`, `fillSeeds`, `boundaryEdges`, and `openingEdges`.
 - `StructureObject` hydrates floors, walls, and doors from that cell/edge truth without rebuilding alternate wrapper geometry.
 - Room and cluster persistence keep the existing `anchor_x2` and `seed_x2` column names, but their values are canonical raw 2x coordinates.
 
@@ -31,13 +31,13 @@ Use it together with the parent `dungeonmap/AGENTS.md` and the repository root `
 
 ## Structure Ownership
 
-- `Room` owns room-local truth and narration.
-- `RoomCluster` owns multi-room topology, adjacency, paint/delete/boundary mutation semantics, cluster moves, and derived local connections.
-- Room paint/delete/boundary edits mutate room-owned `StructureDescriptor` truth plus derived cluster metadata. They do not reroute or regenerate corridors or stairs.
+- `Room` owns room identity, narration, per-level anchors, and derived room topology only.
+- `RoomCluster` owns canonical cluster structure, multi-room topology, adjacency, paint/delete/boundary mutation semantics, cluster moves, and derived local connections.
+- Room paint/delete/boundary/floor edits mutate cluster-owned `StructureDescriptor` truth plus room metadata. They do not reroute or regenerate corridors or stairs.
 - `Connection` owns connectivity, entry resolution, occupied-position projection, and passive physical carrier data. `Door` is the boundary object exposed through door-shaped connections.
 - Level-aware exit descriptors and door catalogs stay with room/connection truth. Public exit-description queries live on `DungeonLayout`.
 - `Corridor` is a first-class structure with stable identity, nodes, segments, room bindings, derived geometry, and direct graph transforms.
-- Corridor room-bound endpoints keep absolute `CellCoord` room cells in memory. The graph compiles into the same `StructureDescriptor` and `StructureObject` surface model used by rooms, including opening segments for room-bound endpoints.
+- Corridor room-bound endpoints keep absolute `CellCoord` room cells in memory. The graph compiles into the same `StructureDescriptor` and `StructureObject` surface model used by cluster-derived rooms, including opening segments for room-bound endpoints and persisted free boundary doors.
 - Junction nodes are explicit authored state. Routing must not invent extra nodes.
 - `DungeonStair` is a first-class structure with stable identity, explicit 3D path geometry, and authored stop levels. Exits are derived views from that path.
 - `DungeonTransition` owns transition identity, destination, optional bidirectional link, and an optional placed `DungeonConnection`. Unplaced transitions are valid and spatial queries must handle absent local connections.

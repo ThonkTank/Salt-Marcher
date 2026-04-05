@@ -44,6 +44,7 @@ public final class Corridor {
     private final int levelZ;
     private final List<CorridorNode> nodes;
     private final List<CorridorSegment> segments;
+    private final Set<GridSegment2x> boundaryDoorSegments;
     private final StructureObject structure;
     private final List<CorridorRoute> routes;
     private final List<DungeonConnection> connections;
@@ -56,7 +57,19 @@ public final class Corridor {
             List<CorridorSegment> segments,
             Map<Long, Room> roomsById
     ) {
-        return new Corridor(corridorId, mapId, levelZ, nodes, segments, roomsById);
+        return new Corridor(corridorId, mapId, levelZ, nodes, segments, Set.of(), roomsById);
+    }
+
+    public static Corridor resolved(
+            Long corridorId,
+            long mapId,
+            int levelZ,
+            List<CorridorNode> nodes,
+            List<CorridorSegment> segments,
+            Set<GridSegment2x> boundaryDoorSegments,
+            Map<Long, Room> roomsById
+    ) {
+        return new Corridor(corridorId, mapId, levelZ, nodes, segments, boundaryDoorSegments, roomsById);
     }
 
     public static Corridor resolved(
@@ -67,7 +80,19 @@ public final class Corridor {
             List<CorridorSegment> segments,
             Collection<Room> rooms
     ) {
-        return new Corridor(corridorId, mapId, levelZ, nodes, segments, indexRoomsById(rooms));
+        return new Corridor(corridorId, mapId, levelZ, nodes, segments, Set.of(), indexRoomsById(rooms));
+    }
+
+    public static Corridor resolved(
+            Long corridorId,
+            long mapId,
+            int levelZ,
+            List<CorridorNode> nodes,
+            List<CorridorSegment> segments,
+            Set<GridSegment2x> boundaryDoorSegments,
+            Collection<Room> rooms
+    ) {
+        return new Corridor(corridorId, mapId, levelZ, nodes, segments, boundaryDoorSegments, indexRoomsById(rooms));
     }
 
     public static Corridor planned(
@@ -77,7 +102,18 @@ public final class Corridor {
             List<CorridorSegment> segments,
             Map<Long, Room> roomsById
     ) {
-        return new Corridor(null, mapId, levelZ, nodes, segments, roomsById);
+        return new Corridor(null, mapId, levelZ, nodes, segments, Set.of(), roomsById);
+    }
+
+    public static Corridor planned(
+            long mapId,
+            int levelZ,
+            List<CorridorNode> nodes,
+            List<CorridorSegment> segments,
+            Set<GridSegment2x> boundaryDoorSegments,
+            Map<Long, Room> roomsById
+    ) {
+        return new Corridor(null, mapId, levelZ, nodes, segments, boundaryDoorSegments, roomsById);
     }
 
     public static Corridor planned(
@@ -87,7 +123,18 @@ public final class Corridor {
             List<CorridorSegment> segments,
             Collection<Room> rooms
     ) {
-        return new Corridor(null, mapId, levelZ, nodes, segments, indexRoomsById(rooms));
+        return new Corridor(null, mapId, levelZ, nodes, segments, Set.of(), indexRoomsById(rooms));
+    }
+
+    public static Corridor planned(
+            long mapId,
+            int levelZ,
+            List<CorridorNode> nodes,
+            List<CorridorSegment> segments,
+            Set<GridSegment2x> boundaryDoorSegments,
+            Collection<Room> rooms
+    ) {
+        return new Corridor(null, mapId, levelZ, nodes, segments, boundaryDoorSegments, indexRoomsById(rooms));
     }
 
     private Corridor(
@@ -96,6 +143,7 @@ public final class Corridor {
             int levelZ,
             List<CorridorNode> nodes,
             List<CorridorSegment> segments,
+            Set<GridSegment2x> boundaryDoorSegments,
             Map<Long, Room> roomsById
     ) {
         Map<Long, Room> resolvedRooms = roomsById == null ? Map.of() : Map.copyOf(roomsById);
@@ -105,18 +153,26 @@ public final class Corridor {
         this.nodes = normalizeNodes(levelZ, nodes, resolvedRooms);
         this.segments = normalizeSegments(segments);
         validateTopology(this.nodes, this.segments);
-        DerivedProjection projection = deriveProjection(corridorId, mapId, levelZ, this.nodes, this.segments, resolvedRooms);
+        DerivedProjection projection = deriveProjection(
+                corridorId,
+                mapId,
+                levelZ,
+                this.nodes,
+                this.segments,
+                boundaryDoorSegments,
+                resolvedRooms);
+        this.boundaryDoorSegments = projection.boundaryDoorSegments();
         this.structure = projection.structure();
         this.routes = projection.routes();
         this.connections = projection.connections();
     }
 
     public Corridor withIdentity(Long corridorId, long mapId, Map<Long, Room> roomsById) {
-        return new Corridor(corridorId, mapId, levelZ, nodes, segments, roomsById);
+        return new Corridor(corridorId, mapId, levelZ, nodes, segments, boundaryDoorSegments, roomsById);
     }
 
     public Corridor withIdentity(Long corridorId, long mapId, Collection<Room> rooms) {
-        return new Corridor(corridorId, mapId, levelZ, nodes, segments, indexRoomsById(rooms));
+        return new Corridor(corridorId, mapId, levelZ, nodes, segments, boundaryDoorSegments, indexRoomsById(rooms));
     }
 
     public Long corridorId() {
@@ -139,6 +195,10 @@ public final class Corridor {
         return segments;
     }
 
+    public Set<GridSegment2x> boundaryDoorSegments() {
+        return boundaryDoorSegments;
+    }
+
     public List<Long> connectedRoomIds() {
         return nodes.stream()
                 .filter(CorridorNode::isRoomBound)
@@ -159,6 +219,34 @@ public final class Corridor {
 
     public List<DungeonConnection> connections() {
         return connections;
+    }
+
+    public Corridor withBoundaryDoor(DungeonLayout layout, GridSegment2x boundarySegment2x) {
+        return withBoundaryDoors(layout, boundarySegment2x == null ? List.of() : List.of(boundarySegment2x), false);
+    }
+
+    public Corridor withoutBoundaryDoor(DungeonLayout layout, GridSegment2x boundarySegment2x) {
+        return withBoundaryDoors(layout, boundarySegment2x == null ? List.of() : List.of(boundarySegment2x), true);
+    }
+
+    public Corridor withBoundaryDoors(DungeonLayout layout, Collection<GridSegment2x> segments2x, boolean deleteDoor) {
+        if (layout == null || segments2x == null || segments2x.isEmpty()) {
+            return this;
+        }
+        LinkedHashSet<GridSegment2x> nextBoundaryDoorSegments = new LinkedHashSet<>(boundaryDoorSegments);
+        boolean changed = false;
+        for (GridSegment2x segment2x : segments2x) {
+            if (segment2x == null) {
+                continue;
+            }
+            changed |= deleteDoor
+                    ? nextBoundaryDoorSegments.remove(segment2x)
+                    : nextBoundaryDoorSegments.add(segment2x);
+        }
+        if (!changed) {
+            return this;
+        }
+        return resolvedAgainst(layout, nodes, segments, nextBoundaryDoorSegments);
     }
 
     public Corridor movedNode(DungeonLayout layout, Long nodeId, GridPoint2x point2x) {
@@ -489,10 +577,19 @@ public final class Corridor {
     }
 
     private Corridor resolvedAgainst(DungeonLayout layout, List<CorridorNode> updatedNodes, List<CorridorSegment> updatedSegments) {
+        return resolvedAgainst(layout, updatedNodes, updatedSegments, boundaryDoorSegments);
+    }
+
+    private Corridor resolvedAgainst(
+            DungeonLayout layout,
+            List<CorridorNode> updatedNodes,
+            List<CorridorSegment> updatedSegments,
+            Set<GridSegment2x> updatedBoundaryDoorSegments
+    ) {
         if (layout == null) {
             return this;
         }
-        return layout.resolveCorridor(corridorId, levelZ, updatedNodes, updatedSegments);
+        return layout.resolveCorridor(corridorId, levelZ, updatedNodes, updatedSegments, updatedBoundaryDoorSegments);
     }
 
     private static CorridorRoute routeForSegment(Corridor corridor, Long segmentId) {
@@ -588,10 +685,42 @@ public final class Corridor {
                 }
             }
             if (!componentSegments.isEmpty()) {
-                result.add(new CorridorComponent(componentNodes, componentSegments));
+                result.add(new CorridorComponent(
+                        componentNodes,
+                        componentSegments,
+                        componentBoundaryDoorSegments(componentSegments)));
             }
         }
         return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
+    private Set<GridSegment2x> componentBoundaryDoorSegments(List<CorridorSegment> componentSegments) {
+        if (componentSegments == null || componentSegments.isEmpty() || boundaryDoorSegments.isEmpty()) {
+            return Set.of();
+        }
+        Set<Long> componentSegmentIds = componentSegments.stream()
+                .map(CorridorSegment::segmentId)
+                .filter(Objects::nonNull)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        Set<CellCoord> componentCells = occupiedCells(routes.stream()
+                .filter(route -> route != null && componentSegmentIds.contains(route.segmentId()))
+                .toList());
+        if (componentCells.isEmpty()) {
+            return Set.of();
+        }
+        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
+        for (GridSegment2x segment2x : boundaryDoorSegments) {
+            if (segment2x == null) {
+                continue;
+            }
+            long touching = segment2x.touchingCells().stream()
+                    .filter(componentCells::contains)
+                    .count();
+            if (touching == 1L) {
+                result.add(segment2x);
+            }
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
     private static void validateTopology(List<CorridorNode> nodes, List<CorridorSegment> segments) {
@@ -744,6 +873,7 @@ public final class Corridor {
             int levelZ,
             List<CorridorNode> nodes,
             List<CorridorSegment> segments,
+            Set<GridSegment2x> boundaryDoorSegments,
             Map<Long, Room> roomsById
     ) {
         // Keep routing/projection semantics centralized in the canonical corridor owner.
@@ -759,11 +889,42 @@ public final class Corridor {
             RoutePlan routePlan = findRoute(levelZ, start, end, resolvedRooms);
             routes.add(new CorridorRoute(segment.segmentId(), segment.startNodeId(), segment.endNodeId(), routePlan.path2x()));
         }
-        Set<GridSegment2x> openingSegments2x = corridorOpeningSegments(levelZ, nodes, resolvedRooms);
+        Set<GridSegment2x> explicitBoundaryDoorSegments = validatedBoundaryDoorSegments(levelZ, routes, boundaryDoorSegments);
+        LinkedHashSet<GridSegment2x> openingSegments2x = new LinkedHashSet<>(corridorOpeningSegments(levelZ, nodes, resolvedRooms));
+        openingSegments2x.addAll(explicitBoundaryDoorSegments);
         return new DerivedProjection(
                 compileStructure(levelZ, routes, openingSegments2x),
                 routes.isEmpty() ? List.of() : List.copyOf(routes),
-                materializeConnections(corridorId, mapId, levelZ, nodes, resolvedRooms));
+                materializeConnections(corridorId, mapId, levelZ, nodes, resolvedRooms),
+                explicitBoundaryDoorSegments);
+    }
+
+    private static Set<GridSegment2x> validatedBoundaryDoorSegments(
+            int levelZ,
+            Collection<CorridorRoute> routes,
+            Set<GridSegment2x> boundaryDoorSegments
+    ) {
+        if (boundaryDoorSegments == null || boundaryDoorSegments.isEmpty()) {
+            return Set.of();
+        }
+        Set<CellCoord> occupiedCells = occupiedCells(routes);
+        if (occupiedCells.isEmpty()) {
+            throw new IllegalArgumentException("Corridor boundary door requires occupied corridor cells");
+        }
+        StructureDescriptor.LevelDescriptor baseLevel = StructureDescriptor.fromCellCoordsByLevel(Map.of(levelZ, occupiedCells)).level(levelZ);
+        if (baseLevel == null) {
+            throw new IllegalArgumentException("Corridor boundary door requires a valid corridor level");
+        }
+        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
+        for (GridSegment2x segment2x : GridSegment2x.boundarySteps(boundaryDoorSegments).stream()
+                .sorted(GridSegment2x.ORDER)
+                .toList()) {
+            if (!baseLevel.boundaryEdges().contains(segment2x)) {
+                throw new IllegalArgumentException("Corridor boundary door must stay on an exterior corridor boundary");
+            }
+            result.add(segment2x);
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
     private static StructureObject compileStructure(
@@ -1223,7 +1384,8 @@ public final class Corridor {
     private record DerivedProjection(
             StructureObject structure,
             List<CorridorRoute> routes,
-            List<DungeonConnection> connections
+            List<DungeonConnection> connections,
+            Set<GridSegment2x> boundaryDoorSegments
     ) {
     }
 
@@ -1237,10 +1399,15 @@ public final class Corridor {
         }
     }
 
-    public record CorridorComponent(List<CorridorNode> nodes, List<CorridorSegment> segments) {
+    public record CorridorComponent(
+            List<CorridorNode> nodes,
+            List<CorridorSegment> segments,
+            Set<GridSegment2x> boundaryDoorSegments
+    ) {
         public CorridorComponent {
             nodes = nodes == null ? List.of() : List.copyOf(nodes);
             segments = segments == null ? List.of() : List.copyOf(segments);
+            boundaryDoorSegments = boundaryDoorSegments == null ? Set.of() : Set.copyOf(boundaryDoorSegments);
         }
     }
 

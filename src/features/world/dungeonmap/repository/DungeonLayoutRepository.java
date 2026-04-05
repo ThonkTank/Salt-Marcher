@@ -44,9 +44,12 @@ public final class DungeonLayoutRepository {
     }
 
     private DungeonLayout loadLayout(Connection conn, long mapId, String mapName) throws SQLException {
-        List<Room> rooms = roomRepository.loadRooms(conn, mapId);
-        List<RoomCluster> clusters = roomRepository.loadClusters(conn, mapId, rooms);
+        List<Room> roomMetadata = roomRepository.loadRooms(conn, mapId);
+        List<RoomCluster> clusters = roomRepository.loadClusters(conn, mapId, roomMetadata);
         Map<Long, Integer> clusterLevels = roomRepository.loadClusterLevels(conn, mapId);
+        List<Room> rooms = clusters.stream()
+                .flatMap(cluster -> cluster.rooms().stream())
+                .toList();
         List<Corridor> corridors = corridorRepository.loadByMap(conn, mapId, rooms);
         return new DungeonLayout(
                 mapId,
