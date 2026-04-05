@@ -1,6 +1,5 @@
 package features.world.dungeonmap.application.runtime;
 
-import features.world.dungeonmap.application.runtime.description.DungeonRuntimeDescription;
 import features.world.dungeonmap.application.runtime.description.DungeonRuntimeExit;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
@@ -20,10 +19,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Runtime actions are assembled from the shared parsed location.
+ * Runtime actions are assembled from the shared parsed location plus resolved exit data.
  *
- * <p>Door actions derive from the resolved runtime description exits. Stair and transition actions derive from the
- * same parsed location instead of forcing the description branch to carry executable workflow state.
+ * <p>Door actions derive from the resolved runtime exits. Stair and transition actions derive from the same parsed
+ * location instead of forcing the description branch to carry executable workflow state or description copy.
  */
 public final class DungeonRuntimeActionResolver {
 
@@ -33,20 +32,21 @@ public final class DungeonRuntimeActionResolver {
 
     public static List<DungeonRuntimeAction> resolve(
             DungeonRuntimeLocation location,
-            DungeonRuntimeDescription description
+            List<DungeonRuntimeExit> exits
     ) {
-        if (location == null || description == null) {
+        if (location == null) {
             return List.of();
         }
-        ArrayList<DungeonRuntimeAction> actions = new ArrayList<>(description.exits().size() + 4);
-        description.exits().stream()
+        List<DungeonRuntimeExit> resolvedExits = exits == null ? List.of() : exits;
+        ArrayList<DungeonRuntimeAction> actions = new ArrayList<>(resolvedExits.size() + 4);
+        resolvedExits.stream()
                 .map(DungeonRuntimeActionResolver::doorAction)
                 .forEach(actions::add);
         switch (location.structure()) {
             case DungeonLayout.CellStructure.RoomStructure ignored -> appendRoomActions(location, actions);
             case DungeonLayout.CellStructure.CorridorStructure ignored -> appendCorridorActions(location, actions);
             case DungeonLayout.CellStructure.StairStructure ignored -> appendStairActions(location, actions);
-            case DungeonLayout.CellStructure.TransitionStructure ignored -> appendTransitionAction(location, description, actions);
+            case DungeonLayout.CellStructure.TransitionStructure ignored -> appendActiveTransitionAction(location, actions);
         }
         return List.copyOf(actions);
     }
@@ -127,20 +127,15 @@ public final class DungeonRuntimeActionResolver {
         appendTransitionActionsAtCell(location.layout(), location.activeCell(), location.activeLevelZ(), actions);
     }
 
-    private static void appendTransitionAction(
+    private static void appendActiveTransitionAction(
             DungeonRuntimeLocation location,
-            DungeonRuntimeDescription description,
             List<DungeonRuntimeAction> actions
     ) {
         DungeonTransition transition = location.transition();
         if (transition == null || transition.transitionId() == null) {
             return;
         }
-        actions.add(new DungeonRuntimeAction(
-                transitionActionLabel(transition),
-                description.description(),
-                "Übergang konnte nicht benutzt werden",
-                new DungeonRuntimeAction.TransitionTarget(transition.transitionId())));
+        actions.add(transitionAction(transition));
     }
 
     private static void appendStructureStairs(

@@ -3,6 +3,7 @@ package features.world.dungeonmap.shell.editor.interaction;
 import features.world.dungeonmap.application.corridor.DungeonCorridorApplicationService;
 import features.world.dungeonmap.application.room.DungeonRoomApplicationService;
 import features.world.dungeonmap.application.stair.DungeonStairApplicationService;
+import features.world.dungeonmap.application.stair.StairNameGenerator;
 import features.world.dungeonmap.application.stair.StairDraftResolver;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
@@ -630,7 +631,7 @@ public final class ConnectionsTool implements EditorTool {
         stairStopLevels.add(levelZ);
         clearStairStatusOverride();
         setStairFields(
-                null,
+                suggestedStairName(),
                 StairShape.LADDER,
                 CardinalDirection.defaultDirection(),
                 2,
@@ -1508,6 +1509,11 @@ public final class ConnectionsTool implements EditorTool {
 
     private static String normalizedName(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private String suggestedStairName() {
+        DungeonLayout layout = mapState.activeMap();
+        return layout == null ? null : StairNameGenerator.nextName(layout);
     }
 
     private static DungeonSelectionRef corridorOwnerRef(Long corridorId) {

@@ -146,7 +146,9 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
     private void refreshRuntimeUi() {
         DungeonRuntimeLocation location = resolveRuntimeLocation();
         DungeonRuntimeDescription description = DungeonRuntimeDescriptionResolver.resolve(location);
-        List<DungeonRuntimeAction> actions = DungeonRuntimeActionResolver.resolve(location, description);
+        List<DungeonRuntimeAction> actions = DungeonRuntimeActionResolver.resolve(
+                location,
+                description == null ? List.of() : description.exits());
         workspace().showRuntimeRenderOverlay(DungeonRuntimeRenderOverlay.from(runtimeState.activeNavigation(), description));
         refreshTravelPane(description, actions);
         publishRuntimeDetails(description, actions);

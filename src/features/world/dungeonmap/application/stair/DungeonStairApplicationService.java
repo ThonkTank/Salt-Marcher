@@ -42,12 +42,13 @@ public final class DungeonStairApplicationService {
         try (Connection conn = DatabaseManager.getConnection()) {
             return DungeonTransactionRunner.inTransaction(conn, () -> {
                 DungeonLayout layout = requireLayout(conn, resolvedRequest.mapId());
+                StairDraft namedDraft = draftWithGeneratedCreateName(layout, draft);
                 DungeonStair stair = StairDraftResolver.resolveCommitted(
                         layout,
                         null,
                         resolvedRequest.mapId(),
-                        draft);
-                DungeonStairRepository.StairEditorData editorData = toEditorData(draft);
+                        namedDraft);
+                DungeonStairRepository.StairEditorData editorData = toEditorData(namedDraft);
                 long stairId = stairRepository.insertStair(conn, resolvedRequest.mapId(), stair, editorData);
                 stairRepository.replacePathNodes(conn, stairId, stair.path());
                 stairRepository.replaceStopLevels(conn, stairId, stair.stopLevels());
@@ -140,6 +141,24 @@ public final class DungeonStairApplicationService {
         if (mapId <= 0) {
             throw new IllegalArgumentException("Kein aktiver Dungeon geladen");
         }
+    }
+
+    private static StairDraft draftWithGeneratedCreateName(DungeonLayout layout, StairDraft draft) {
+        if (draft == null || draft.name() != null) {
+            return draft;
+        }
+        // Create flows assign the standard stair name once; update flows must not backfill legacy unnamed stairs.
+        return new StairDraft(
+                StairNameGenerator.nextName(layout),
+                draft.anchorCell(),
+                draft.anchorLevelZ(),
+                draft.shape(),
+                draft.direction(),
+                draft.minLevelZ(),
+                draft.maxLevelZ(),
+                draft.dimension1(),
+                draft.dimension2(),
+                draft.stopLevels());
     }
 
     private static DungeonStairRepository.StairEditorData toEditorData(StairDraft draft) {
