@@ -38,8 +38,8 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
   - `structures/` owns first-class structures and the structure-specific subpackages `cluster`, `connection`, `corridor`, `room`, `stair`, and `transition`.
   - `DungeonLayout` stays the feature-wide lookup surface, not a second mutation owner.
 - `application/`
-  - `room/` owns room topology, boundary edits, cluster moves, and room narration through the central `DungeonRoomApplicationService` workflow seam.
-  - `corridor/` owns corridor graph workflow orchestration for door-to-door create, door-to-tile attach, tile-node promotion, node move, and local delete/split, while canonical graph transforms stay on `Corridor` and persistence-specific id assignment stays on `DungeonCorridorRepository`.
+  - `room/` owns room topology, boundary edits, local door moves, cluster moves, and room narration through the central `DungeonRoomApplicationService` workflow seam.
+  - `corridor/` owns corridor graph workflow orchestration for door-to-door create, door-to-tile attach, corridor-door moves, tile-node promotion, node move, and local delete/split, while canonical graph transforms stay on `Corridor` and persistence-specific id assignment stays on `DungeonCorridorRepository`.
   - `runtime/` owns cell-only navigation, TILE persistence, runtime surface resolution, surface refs/exits, flat runtime actions, and runtime state repair.
   - `transition/` owns transition create/place/delete flows plus transition target lookup through one `DungeonTransitionApplicationService`. Do not split read options into a second application owner.
   - `support/` owns transaction helpers.
@@ -99,7 +99,7 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
   4. dispatch `pressed`, `dragged`, or `released` with an `EditorToolContext` that carries the resolved hit ref and selection ref
 - `EditorTool` implementations own gesture meaning. Shared state is justified only when multiple collaborators need it.
 - Tool responsibilities:
-- `SelectionTool` owns semantic selection plus cluster-drag and corridor-node drag gestures. Dragging a plain corridor tile first promotes that tile to an explicit node and then hands the drag to that new node; a simple click on a corridor tile must not create state.
+- `SelectionTool` owns semantic selection plus cluster-drag, door-drag, and corridor-node drag gestures. Dragging a plain corridor tile first promotes that tile to an explicit node and then hands the drag to that new node; dragging a connection door reuses `ConnectionRef` as the source and `RoomBoundaryRef` as the drop target, and a simple click on a corridor tile must not create state.
 - `RoomNarrationPane` owns the room narration editor UI for the current selection; `SelectionTool` no longer embeds that form logic.
 - `PaintTool` owns room paint/delete sessions from resolved `FloorCellRef` hits and publishes paint previews as `CellCoord` sets, not hydrierten room structures.
 - `BoundaryTool` owns wall-path drafting. Draft state stays local to the tool; shared state exposes only boundary preview geometry.
@@ -153,10 +153,10 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `RoomCluster` owns multi-room topology, grouping, adjacency, paint/delete/boundary mutation semantics, and cluster moves. Its aggregate cells stay on `CellCoord`, and its internal boundary edits/metadata use final `GridSegment2x`, both derived from room-owned `StructureObject`s.
 - `RoomCluster` owns its mutation and boundary-path semantics directly. Do not reintroduce a second public planner/helper type or diff payload that mirrors cluster topology decisions from the outside.
 - `RoomCluster` derives `LocalConnection`s from its rooms; final cluster owners must not carry a second local-connection truth in parallel.
-- `RoomCluster` owns door editability on internal boundaries. Do not leave door-create/delete validation only in editor tools.
+- `RoomCluster` owns door editability and local door moves on internal boundaries. Do not leave local door create/delete/move validation only in editor tools.
 - `Connection` owns connectivity; `Door` is the boundary object exposed through that connection.
 - Model-side exit descriptors and low-level door exit catalogs belong with room/connection truth, not under runtime or room application workflows. Public room/corridor exit-description queries live on `DungeonLayout`, the shared owner of structure lookup plus connection context; do not route runtime/editor callers through a second public room-exit helper owner.
-- `Corridor` is a first-class structure with stable identity, nodes, segments, room bindings, and derived geometry. In memory and at persistence seams it owns canonical `GridPoint2x`/`GridSegment2x` path truth plus `CellCoord` room bindings, and it owns its direct graph transforms (`attach`, `promote tile`, `move`, `delete segment`, `delete node`) instead of delegating them to a second public graph-editor helper.
+- `Corridor` is a first-class structure with stable identity, nodes, segments, room bindings, and derived geometry. In memory and at persistence seams it owns canonical `GridPoint2x`/`GridSegment2x` path truth plus `CellCoord` room bindings, and it owns its direct graph transforms (`attach`, `move door`, `promote tile`, `move node`, `delete segment`, `delete node`) instead of delegating them to a second public graph-editor helper.
 - `DungeonStair` is a first-class structure with stable identity and explicit 3D path geometry. Exits are derived views, not persisted second truths.
 - `DungeonTransition` owns transition identity, placement anchor, destination, and optional bidirectional link. Unplaced transitions are valid; spatial queries must guard for null anchor or placement state.
 - Transition workflows should call `DungeonTransitionApplicationService` directly with either a direct `DungeonTransitionDestination` or a prepared transition id. Do not reintroduce request DTOs or catalog option types that decompose the destination back into enum-and-id fields before writing.

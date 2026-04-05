@@ -124,6 +124,11 @@ public final class RoomCluster {
         return Topology.editBoundary(this, segments2x, type, deleteBoundary);
     }
 
+    public RoomCluster moveDoor(GridSegment2x sourceBoundarySegment2x, GridSegment2x targetBoundarySegment2x) {
+        // Door movement stays cluster-owned so SELECT drag and write workflows reuse the same local boundary rules.
+        return Topology.moveDoor(this, sourceBoundarySegment2x, targetBoundarySegment2x);
+    }
+
     public boolean canCreateDoor(GridSegment2x boundarySegment2x) {
         // Door eligibility belongs to the cluster owner so editor tools do not become the only source of boundary
         // semantics for local room-to-room connections.
@@ -861,6 +866,34 @@ public final class RoomCluster {
                     cluster.mapId(),
                     cluster.center(),
                     rewrittenRooms);
+        }
+
+        static RoomCluster moveDoor(
+                RoomCluster cluster,
+                GridSegment2x sourceBoundarySegment2x,
+                GridSegment2x targetBoundarySegment2x
+        ) {
+            if (cluster == null
+                    || sourceBoundarySegment2x == null
+                    || targetBoundarySegment2x == null
+                    || Objects.equals(sourceBoundarySegment2x, targetBoundarySegment2x)
+                    || !cluster.canDeleteDoor(sourceBoundarySegment2x)
+                    || !cluster.canCreateDoor(targetBoundarySegment2x)) {
+                return null;
+            }
+            RoomCluster withoutSourceDoor = editBoundary(
+                    cluster,
+                    List.of(sourceBoundarySegment2x),
+                    InternalBoundaryType.DOOR,
+                    true);
+            if (withoutSourceDoor == null || !withoutSourceDoor.canCreateDoor(targetBoundarySegment2x)) {
+                return null;
+            }
+            return editBoundary(
+                    withoutSourceDoor,
+                    List.of(targetBoundarySegment2x),
+                    InternalBoundaryType.DOOR,
+                    false);
         }
 
         static Map<GridSegment2x, InternalBoundaryType> internalBoundaryKinds(

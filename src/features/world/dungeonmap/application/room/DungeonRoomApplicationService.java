@@ -97,6 +97,33 @@ public final class DungeonRoomApplicationService {
         editDoor(mapId, clusterId, levelZ, segments2x, true);
     }
 
+    public void moveDoor(MoveDoorRequest request) throws SQLException {
+        MoveDoorRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        if (resolvedRequest.mapId() <= 0
+                || resolvedRequest.clusterId() <= 0
+                || resolvedRequest.sourceBoundarySegment2x() == null
+                || resolvedRequest.targetBoundarySegment2x() == null) {
+            throw new IllegalArgumentException("Local door move requires mapId, clusterId, source boundary, and target boundary");
+        }
+        try (Connection conn = DatabaseManager.getConnection()) {
+            DungeonTransactionRunner.inTransaction(conn, () -> {
+                DungeonLayout layout = requireLayout(conn, resolvedRequest.mapId());
+                RoomCluster cluster = layout.findCluster(resolvedRequest.clusterId());
+                RoomCluster projectedCluster = cluster == null ? null : cluster.projectedToLevel(resolvedRequest.levelZ());
+                if (cluster == null || projectedCluster == null) {
+                    return null;
+                }
+                RoomCluster updatedCluster = projectedCluster.moveDoor(
+                        resolvedRequest.sourceBoundarySegment2x(),
+                        resolvedRequest.targetBoundarySegment2x());
+                if (updatedCluster != null) {
+                    roomRepository.replaceClusters(conn, resolvedRequest.mapId(), List.of(cluster), List.of(updatedCluster));
+                }
+                return null;
+            });
+        }
+    }
+
     public void paintCells(Connection conn, long mapId, int levelZ, Set<CellCoord> cells) throws SQLException {
         DungeonLayout layout = requireLayout(conn, mapId);
         List<RoomCluster> overlappingClusters = overlappingClustersAtLevel(layout, cells, levelZ).stream()
@@ -454,5 +481,14 @@ public final class DungeonRoomApplicationService {
             changed = true;
         }
         return changed ? List.copyOf(renamedRooms) : rooms;
+    }
+
+    public record MoveDoorRequest(
+            long mapId,
+            long clusterId,
+            int levelZ,
+            GridSegment2x sourceBoundarySegment2x,
+            GridSegment2x targetBoundarySegment2x
+    ) {
     }
 }

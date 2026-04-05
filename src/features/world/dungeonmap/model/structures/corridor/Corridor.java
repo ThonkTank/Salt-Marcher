@@ -178,6 +178,44 @@ public final class Corridor {
         return changed ? resolvedAgainst(layout, updatedNodes, segments) : this;
     }
 
+    public Corridor movedDoor(DungeonLayout layout, GridSegment2x sourceBoundarySegment2x, CorridorNode targetRoomNode) {
+        if (layout == null || sourceBoundarySegment2x == null || targetRoomNode == null || !targetRoomNode.isRoomBound()) {
+            return this;
+        }
+        CorridorNode sourceNode = findRoomBoundNodeAtBoundary(sourceBoundarySegment2x);
+        if (sourceNode == null || sourceNode.nodeId() == null) {
+            return this;
+        }
+        RoomRewriteBinding targetBinding = resolveRoomRewriteBinding(layout, levelZ, targetRoomNode, true);
+        if (!Objects.equals(sourceNode.roomId(), targetBinding.roomId())) {
+            throw new IllegalArgumentException("Corridor door move must stay on the same room");
+        }
+        GridSegment2x targetBoundarySegment2x = GridSegment2x.boundaryEdge(targetBinding.roomCell(), targetBinding.direction());
+        if (Objects.equals(sourceBoundarySegment2x, targetBoundarySegment2x)) {
+            return this;
+        }
+        if (layout.connectionAt(levelZ, targetBoundarySegment2x) != null) {
+            throw new IllegalArgumentException("Corridor door move target is already occupied");
+        }
+
+        ArrayList<CorridorNode> updatedNodes = new ArrayList<>(nodes.size());
+        boolean changed = false;
+        for (CorridorNode node : nodes) {
+            CorridorNode updatedNode = node;
+            if (Objects.equals(node.nodeId(), sourceNode.nodeId())) {
+                updatedNode = new CorridorNode(
+                        node.nodeId(),
+                        targetBinding.anchorPoint(),
+                        sourceNode.roomId(),
+                        targetBinding.roomCell(),
+                        targetBinding.direction());
+            }
+            updatedNodes.add(updatedNode);
+            changed |= !Objects.equals(updatedNode, node);
+        }
+        return changed ? resolvedAgainst(layout, updatedNodes, segments) : this;
+    }
+
     public Corridor promotedTileNode(DungeonLayout layout, CellCoord tileCell) {
         if (layout == null || tileCell == null) {
             return this;

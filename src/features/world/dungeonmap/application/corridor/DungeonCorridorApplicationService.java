@@ -116,6 +116,29 @@ public final class DungeonCorridorApplicationService {
         }
     }
 
+    public void moveDoor(MoveCorridorDoorRequest request) throws SQLException {
+        MoveCorridorDoorRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        if (resolvedRequest.mapId() <= 0
+                || resolvedRequest.corridorId() <= 0
+                || resolvedRequest.sourceBoundarySegment2x() == null
+                || resolvedRequest.target() == null) {
+            throw new IllegalArgumentException("Corridor door move requires mapId, corridorId, source boundary, and target endpoint");
+        }
+        try (Connection conn = DatabaseManager.getConnection()) {
+            DungeonTransactionRunner.inTransaction(conn, () -> {
+                DungeonLayout layout = requireLayout(conn, resolvedRequest.mapId());
+                Corridor corridor = requireCorridor(layout, resolvedRequest.corridorId());
+                Corridor updated = corridor.movedDoor(
+                        layout,
+                        resolvedRequest.sourceBoundarySegment2x(),
+                        roomBoundaryNode(-1L, resolvedRequest.target()));
+                if (updated != corridor) {
+                    corridorRepository.save(conn, updated, layout);
+                }
+            });
+        }
+    }
+
     public void deleteSegment(DeleteCorridorSegmentRequest request) throws SQLException {
         DeleteCorridorSegmentRequest resolvedRequest = Objects.requireNonNull(request, "request");
         if (resolvedRequest.mapId() <= 0 || resolvedRequest.corridorId() <= 0 || resolvedRequest.segmentId() <= 0) {
@@ -253,6 +276,14 @@ public final class DungeonCorridorApplicationService {
     }
 
     public record MoveCorridorNodeRequest(long mapId, long corridorId, long nodeId, GridPoint2x point2x) {
+    }
+
+    public record MoveCorridorDoorRequest(
+            long mapId,
+            long corridorId,
+            GridSegment2x sourceBoundarySegment2x,
+            CorridorDoorEndpoint target
+    ) {
     }
 
     public record DeleteCorridorSegmentRequest(long mapId, long corridorId, long segmentId) {
