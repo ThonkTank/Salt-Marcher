@@ -3,9 +3,11 @@ package features.world.dungeonmap.shell.editor.interaction;
 import features.world.dungeonmap.application.room.DungeonRoomApplicationService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
+import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
+import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.state.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonMapState;
@@ -14,11 +16,12 @@ import features.world.dungeonmap.state.EditorPreview;
 import javafx.scene.Node;
 import ui.async.UiErrorReporter;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-public final class PaintTool implements EditorTool {
+public final class FloorTool implements EditorTool {
 
     private final DungeonMapState mapState;
     private final DungeonMapLoadingService loadingService;
@@ -26,9 +29,9 @@ public final class PaintTool implements EditorTool {
     private final DungeonRoomApplicationService roomApplicationService;
     private final EditorInteractionState state;
 
-    private CellWindowDragSession paintSession;
+    private CellWindowDragSession dragSession;
 
-    public PaintTool(
+    public FloorTool(
             DungeonMapState mapState,
             DungeonMapLoadingService loadingService,
             DungeonEditorSessionState sessionState,
@@ -44,7 +47,7 @@ public final class PaintTool implements EditorTool {
 
     @Override
     public Set<DungeonEditorTool> supportedTools() {
-        return Set.of(DungeonEditorTool.ROOM_PAINT, DungeonEditorTool.ROOM_DELETE);
+        return Set.of(DungeonEditorTool.FLOOR_PAINT, DungeonEditorTool.FLOOR_DELETE);
     }
 
     @Override
@@ -64,16 +67,13 @@ public final class PaintTool implements EditorTool {
             return false;
         }
         CellCoord cell = resolvedCell(ctx);
-        if (cell == null || !sessionState.selectedTool().isRoomTool()) {
+        if (cell == null || !sessionState.selectedTool().isFloorTool()) {
             clear();
             return false;
         }
         state.clearSelection();
-        paintSession = new CellWindowDragSession(cell, cell, sessionState.selectedTool() == DungeonEditorTool.ROOM_DELETE);
-        state.showPreview(new EditorPreview.PaintPreview(
-                paintSession.previewCells(),
-                mapState.activeProjectionLevel(),
-                paintSession.deleteMode()));
+        dragSession = new CellWindowDragSession(cell, cell, sessionState.selectedTool() == DungeonEditorTool.FLOOR_DELETE);
+        showPreview(ctx == null ? null : ctx.activeMap());
         return true;
     }
 
@@ -84,30 +84,27 @@ public final class PaintTool implements EditorTool {
             return false;
         }
         CellCoord cell = resolvedCell(ctx);
-        if (paintSession == null || cell == null || !sessionState.selectedTool().isRoomTool()) {
+        if (dragSession == null || cell == null || !sessionState.selectedTool().isFloorTool()) {
             return false;
         }
-        if (Objects.equals(paintSession.endCell(), cell)) {
+        if (Objects.equals(dragSession.endCell(), cell)) {
             return true;
         }
-        paintSession = paintSession.withEndCell(cell);
-        state.showPreview(new EditorPreview.PaintPreview(
-                paintSession.previewCells(),
-                mapState.activeProjectionLevel(),
-                paintSession.deleteMode()));
+        dragSession = dragSession.withEndCell(cell);
+        showPreview(ctx == null ? null : ctx.activeMap());
         return true;
     }
 
     @Override
     public boolean released(EditorToolContext ctx) {
         DungeonCanvasPointerEvent event = ctx == null ? null : ctx.event();
-        if (event == null || paintSession == null) {
+        CellCoord cell = resolvedCell(ctx);
+        if (event == null || dragSession == null) {
             return false;
         }
-        CellCoord cell = resolvedCell(ctx);
-        CellWindowDragSession finishedSession = cell == null ? paintSession : paintSession.withEndCell(cell);
+        CellWindowDragSession finishedSession = cell == null ? dragSession : dragSession.withEndCell(cell);
         int activeLevel = mapState.activeProjectionLevel();
-        Set<CellCoord> cells = finishedSession.previewCells();
+        Set<CellCoord> cells = validRoomCells(ctx == null ? null : ctx.activeMap(), activeLevel, finishedSession.previewCells());
         clear();
         Long mapId = mapState.activeMapId();
         if (mapId == null || cells.isEmpty()) {
@@ -116,16 +113,16 @@ public final class PaintTool implements EditorTool {
         loadingService.submitMutation(
                 () -> {
                     if (finishedSession.deleteMode()) {
-                        roomApplicationService.deleteCells(mapId, activeLevel, cells);
+                        roomApplicationService.deleteFloorCells(mapId, activeLevel, cells);
                     } else {
-                        roomApplicationService.paintCells(mapId, activeLevel, cells);
+                        roomApplicationService.addFloorCells(mapId, activeLevel, cells);
                     }
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,
                 ignored -> {
                 },
-                throwable -> UiErrorReporter.reportBackgroundFailure("PaintTool.released()", throwable));
+                throwable -> UiErrorReporter.reportBackgroundFailure("FloorTool.released()", throwable));
         return true;
     }
 
@@ -136,10 +133,10 @@ public final class PaintTool implements EditorTool {
 
     @Override
     public List<EditorInteractionCapability> interactionCapabilities(EditorToolContext ctx, EditorToolPhase phase) {
-        if (ctx == null || !sessionState.selectedTool().isRoomTool() || ctx.probe() == null) {
+        if (ctx == null || !sessionState.selectedTool().isFloorTool() || ctx.probe() == null) {
             return List.of();
         }
-        return List.of(EditorCapabilities.partFallback(this::gridCellRef));
+        return List.of(EditorCapabilities.partFallback(this::roomCellRef));
     }
 
     @Override
@@ -147,8 +144,20 @@ public final class PaintTool implements EditorTool {
     }
 
     private void clear() {
-        paintSession = null;
+        dragSession = null;
         state.clearPreview();
+    }
+
+    private void showPreview(DungeonLayout layout) {
+        if (dragSession == null) {
+            state.clearPreview();
+            return;
+        }
+        int activeLevel = mapState.activeProjectionLevel();
+        state.showPreview(new EditorPreview.PaintPreview(
+                validRoomCells(layout, activeLevel, dragSession.previewCells()),
+                activeLevel,
+                dragSession.deleteMode()));
     }
 
     private static CellCoord resolvedCell(EditorToolContext ctx) {
@@ -156,15 +165,35 @@ public final class PaintTool implements EditorTool {
             return null;
         }
         return switch (ctx.hitRef()) {
-            case DungeonSelectionRef.GridCellRef gridCellRef -> gridCellRef.cell().projectedCell();
+            case DungeonSelectionRef.RoomCellRef roomCellRef -> roomCellRef.cell().projectedCell();
             default -> null;
         };
     }
 
-    private DungeonSelectionRef gridCellRef(EditorToolContext ctx) {
+    private DungeonSelectionRef roomCellRef(EditorToolContext ctx) {
         if (ctx == null || ctx.probe() == null) {
             return null;
         }
-        return new DungeonSelectionRef.GridCellRef(CubePoint.at(ctx.probe().gridCell(), ctx.probe().levelZ()));
+        DungeonLayout layout = ctx.activeMap();
+        int levelZ = ctx.probe().levelZ();
+        CellCoord gridCell = ctx.probe().gridCell();
+        Room room = layout == null ? null : layout.roomAtCell(gridCell, levelZ);
+        if (room == null || room.roomId() == null) {
+            return null;
+        }
+        return new DungeonSelectionRef.RoomCellRef(room.roomId(), CubePoint.at(gridCell, levelZ));
+    }
+
+    private static Set<CellCoord> validRoomCells(DungeonLayout layout, int levelZ, Set<CellCoord> cells) {
+        if (layout == null || cells == null || cells.isEmpty()) {
+            return Set.of();
+        }
+        LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
+        for (CellCoord cell : cells) {
+            if (layout.roomAtCell(cell, levelZ) != null) {
+                result.add(cell);
+            }
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 }

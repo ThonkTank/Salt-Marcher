@@ -5,8 +5,11 @@ import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.stair.StairPathGenerator;
+import features.world.dungeonmap.model.geometry.CubePoint;
 
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Shared stair-draft semantics for both editor preview and persisted workflows.
@@ -26,7 +29,7 @@ public final class StairDraftResolver {
             long mapId,
             DungeonStairApplicationService.StairDraft draft
     ) {
-        return resolve(layout, stairId, mapId, draft, true);
+        return toDungeonStair(resolveDraft(layout, mapId, draft, true), stairId, mapId);
     }
 
     public static DungeonStair resolveCommitted(
@@ -35,35 +38,11 @@ public final class StairDraftResolver {
             long mapId,
             DungeonStairApplicationService.StairDraft draft
     ) {
-        return resolve(layout, stairId, mapId, draft, false);
+        return toDungeonStair(resolveDraft(layout, mapId, draft, false), stairId, mapId);
     }
 
-    public static DungeonStairApplicationService.StairDraft shiftedDraft(
-            DungeonStairApplicationService.StairDraft draft,
-            CellCoord delta,
-            int levelDelta
-    ) {
-        DungeonStairApplicationService.StairDraft resolvedDraft = Objects.requireNonNull(draft, "draft");
-        CellCoord resolvedDelta = delta == null ? new CellCoord(0, 0) : delta;
-        return new DungeonStairApplicationService.StairDraft(
-                resolvedDraft.name(),
-                resolvedDraft.anchorCell().add(resolvedDelta),
-                resolvedDraft.anchorLevelZ() + levelDelta,
-                resolvedDraft.shape(),
-                resolvedDraft.direction(),
-                resolvedDraft.minLevelZ() + levelDelta,
-                resolvedDraft.maxLevelZ() + levelDelta,
-                resolvedDraft.dimension1(),
-                resolvedDraft.dimension2(),
-                resolvedDraft.stopLevels().stream()
-                        .map(level -> level == null ? null : level + levelDelta)
-                        .filter(Objects::nonNull)
-                        .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new)));
-    }
-
-    private static DungeonStair resolve(
+    public static ResolvedStairDraft resolveDraft(
             DungeonLayout layout,
-            Long stairId,
             long mapId,
             DungeonStairApplicationService.StairDraft draft,
             boolean allowSingleStop
@@ -106,10 +85,8 @@ public final class StairDraftResolver {
             throw new IllegalArgumentException(validationMessage);
         }
         validateAnchor(resolvedLayout, resolvedDraft.anchorCell(), resolvedDraft.anchorLevelZ());
-        return DungeonStair.resolved(
-                stairId,
-                mapId,
-                resolvedDraft.name(),
+        return new ResolvedStairDraft(
+                resolvedDraft,
                 StairPathGenerator.generateAnchoredPath(
                         resolvedDraft.shape(),
                         resolvedDraft.anchorCell(),
@@ -122,10 +99,59 @@ public final class StairDraftResolver {
                 resolvedDraft.stopLevels());
     }
 
+    public static DungeonStairApplicationService.StairDraft shiftedDraft(
+            DungeonStairApplicationService.StairDraft draft,
+            CellCoord delta,
+            int levelDelta
+    ) {
+        DungeonStairApplicationService.StairDraft resolvedDraft = Objects.requireNonNull(draft, "draft");
+        CellCoord resolvedDelta = delta == null ? new CellCoord(0, 0) : delta;
+        return new DungeonStairApplicationService.StairDraft(
+                resolvedDraft.name(),
+                resolvedDraft.anchorCell().add(resolvedDelta),
+                resolvedDraft.anchorLevelZ() + levelDelta,
+                resolvedDraft.shape(),
+                resolvedDraft.direction(),
+                resolvedDraft.minLevelZ() + levelDelta,
+                resolvedDraft.maxLevelZ() + levelDelta,
+                resolvedDraft.dimension1(),
+                resolvedDraft.dimension2(),
+                resolvedDraft.stopLevels().stream()
+                        .map(level -> level == null ? null : level + levelDelta)
+                        .filter(Objects::nonNull)
+                        .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new)));
+    }
+
+    private static DungeonStair toDungeonStair(
+            ResolvedStairDraft resolvedDraft,
+            Long stairId,
+            long mapId
+    ) {
+        ResolvedStairDraft resolution = Objects.requireNonNull(resolvedDraft, "resolvedDraft");
+        return DungeonStair.resolved(
+                stairId,
+                mapId,
+                resolution.draft().name(),
+                resolution.path(),
+                resolution.stopLevels());
+    }
+
     private static void validateAnchor(DungeonLayout layout, CellCoord anchorCell, int anchorLevelZ) {
-        Room room = layout.roomAtCell(anchorCell, anchorLevelZ);
+        Room room = layout.roomWithFloorAtCell(anchorCell, anchorLevelZ);
         if (room == null) {
             throw new IllegalArgumentException("Treppenstart muss auf einem Raum-Floor liegen");
+        }
+    }
+
+    public record ResolvedStairDraft(
+            DungeonStairApplicationService.StairDraft draft,
+            List<CubePoint> path,
+            Set<Integer> stopLevels
+    ) {
+        public ResolvedStairDraft {
+            draft = Objects.requireNonNull(draft, "draft");
+            path = List.copyOf(path == null ? List.<CubePoint>of() : path);
+            stopLevels = Set.copyOf(stopLevels == null ? Set.<Integer>of() : stopLevels);
         }
     }
 }

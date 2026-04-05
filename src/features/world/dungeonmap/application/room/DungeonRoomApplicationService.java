@@ -8,8 +8,12 @@ import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
+import features.world.dungeonmap.model.structures.corridor.CorridorNode;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
+import features.world.dungeonmap.model.structures.stair.DungeonStair;
+import features.world.dungeonmap.model.structures.stair.DungeonStairExit;
+import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.repository.DungeonCorridorRepository;
 import features.world.dungeonmap.repository.DungeonLayoutRepository;
 import features.world.dungeonmap.repository.DungeonRoomRepository;
@@ -65,6 +69,30 @@ public final class DungeonRoomApplicationService {
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
                 deleteCells(conn, mapId, levelZ, cells);
+                return null;
+            });
+        }
+    }
+
+    public void addFloorCells(long mapId, int levelZ, Set<CellCoord> cells) throws SQLException {
+        if (cells == null || cells.isEmpty()) {
+            return;
+        }
+        try (Connection conn = DatabaseManager.getConnection()) {
+            DungeonTransactionRunner.inTransaction(conn, () -> {
+                editFloorCells(conn, mapId, levelZ, cells, false);
+                return null;
+            });
+        }
+    }
+
+    public void deleteFloorCells(long mapId, int levelZ, Set<CellCoord> cells) throws SQLException {
+        if (cells == null || cells.isEmpty()) {
+            return;
+        }
+        try (Connection conn = DatabaseManager.getConnection()) {
+            DungeonTransactionRunner.inTransaction(conn, () -> {
+                editFloorCells(conn, mapId, levelZ, cells, true);
                 return null;
             });
         }
@@ -173,6 +201,51 @@ public final class DungeonRoomApplicationService {
         }
     }
 
+    public void editFloorCells(
+            Connection conn,
+            long mapId,
+            int levelZ,
+            Set<CellCoord> cells,
+            boolean deleteFloor
+    ) throws SQLException {
+        if (cells == null || cells.isEmpty()) {
+            return;
+        }
+        DungeonLayout layout = requireLayout(conn, mapId);
+        List<Room> affectedRooms = overlappingRoomsAtLevel(layout, cells, levelZ);
+        if (affectedRooms.isEmpty()) {
+            return;
+        }
+        List<Room> updatedRooms = new java.util.ArrayList<>();
+        for (Room room : affectedRooms) {
+            if (room == null || room.roomId() == null) {
+                continue;
+            }
+            Set<CellCoord> requestedCells = intersect(room.structure().cellCoordsAtLevel(levelZ), cells);
+            if (requestedCells.isEmpty()) {
+                continue;
+            }
+            Set<CellCoord> currentFloorCells = new LinkedHashSet<>(room.structure().floorCellCoordsAtLevel(levelZ));
+            Set<CellCoord> nextFloorCells = new LinkedHashSet<>(currentFloorCells);
+            if (deleteFloor) {
+                Set<CellCoord> removedFloorCells = intersect(currentFloorCells, requestedCells);
+                if (removedFloorCells.isEmpty()) {
+                    continue;
+                }
+                validateFloorDelete(layout, room, levelZ, removedFloorCells);
+                nextFloorCells.removeAll(removedFloorCells);
+            } else {
+                if (!nextFloorCells.addAll(requestedCells)) {
+                    continue;
+                }
+            }
+            Room updatedRoom = room.withStructure(features.world.dungeonmap.model.objects.StructureObject.fromDescriptor(
+                    room.structure().descriptor().withFloorCellsAtLevel(levelZ, nextFloorCells)));
+            updatedRooms.add(updatedRoom);
+        }
+        roomRepository.saveRooms(conn, mapId, updatedRooms);
+    }
+
     public void createDefaultRoom(Connection conn, long mapId) throws SQLException {
         // Brand-new dungeons must bootstrap their first room without rehydrating an empty layout first.
         roomRepository.createClusterWithRoom(
@@ -216,6 +289,11 @@ public final class DungeonRoomApplicationService {
         }
         DungeonLayout layout = requireLayout(conn, mapId);
         if (layout.isTraversableCell(cell, levelZ)) {
+            return;
+        }
+        Room room = layout.roomAtCell(cell, levelZ);
+        if (room != null) {
+            editFloorCells(conn, mapId, levelZ, Set.of(cell), false);
             return;
         }
         paintCells(conn, mapId, levelZ, Set.of(cell));
@@ -299,6 +377,18 @@ public final class DungeonRoomApplicationService {
                 .filter(cluster -> cluster != null && cluster.rooms().stream()
                         .anyMatch(room -> room != null
                                 && room.structure().levels().contains(levelZ)))
+                .toList();
+    }
+
+    private static List<Room> overlappingRoomsAtLevel(DungeonLayout layout, Set<CellCoord> cells, int levelZ) {
+        if (layout == null || cells == null || cells.isEmpty()) {
+            return List.of();
+        }
+        return layout.rooms().stream()
+                .filter(room -> room != null
+                        && room.roomId() != null
+                        && !intersect(room.structure().cellCoordsAtLevel(levelZ), cells).isEmpty())
+                .sorted(Comparator.comparing(Room::roomId))
                 .toList();
     }
 
@@ -439,6 +529,66 @@ public final class DungeonRoomApplicationService {
             }
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
+    private static Set<CellCoord> intersect(Set<CellCoord> left, Set<CellCoord> right) {
+        if (left == null || left.isEmpty() || right == null || right.isEmpty()) {
+            return Set.of();
+        }
+        LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
+        for (CellCoord cell : left) {
+            if (right.contains(cell)) {
+                result.add(cell);
+            }
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
+    private static void validateFloorDelete(
+            DungeonLayout layout,
+            Room room,
+            int levelZ,
+            Set<CellCoord> removedFloorCells
+    ) throws SQLException {
+        if (layout == null || room == null || room.roomId() == null || removedFloorCells == null || removedFloorCells.isEmpty()) {
+            return;
+        }
+        for (Corridor corridor : layout.corridors()) {
+            if (corridor == null || corridor.levelZ() != levelZ) {
+                continue;
+            }
+            for (CorridorNode node : corridor.nodes()) {
+                if (node != null
+                        && node.isRoomBound()
+                        && Objects.equals(node.roomId(), room.roomId())
+                        && removedFloorCells.contains(node.roomCell())) {
+                    throw new SQLException("Boden unter einem Corridor-Anker kann nicht entfernt werden.");
+                }
+            }
+        }
+        for (DungeonTransition transition : layout.transitionsAtLevel(levelZ)) {
+            if (transition != null
+                    && transition.transitionId() != null
+                    && transition.occupiedPositions(layout).stream()
+                    .filter(point -> point != null && point.z() == levelZ)
+                    .map(point -> point.projectedCell())
+                    .anyMatch(removedFloorCells::contains)) {
+                throw new SQLException("Boden unter einem platzierten Übergang kann nicht entfernt werden.");
+            }
+        }
+        for (DungeonStair stair : layout.stairsAtLevel(levelZ)) {
+            if (stair == null || stair.stairId() == null) {
+                continue;
+            }
+            boolean usesRemovedExit = stair.exitsAtLevel(levelZ).stream()
+                    .map(DungeonStairExit::position)
+                    .filter(Objects::nonNull)
+                    .map(position -> position.projectedCell())
+                    .anyMatch(removedFloorCells::contains);
+            if (usesRemovedExit) {
+                throw new SQLException("Boden unter einem Treppenanschluss kann nicht entfernt werden.");
+            }
+        }
     }
 
     private static List<RoomCluster> assignGeneratedClusterRoomNames(List<RoomCluster> clusters, Supplier<String> roomNameSupplier) {

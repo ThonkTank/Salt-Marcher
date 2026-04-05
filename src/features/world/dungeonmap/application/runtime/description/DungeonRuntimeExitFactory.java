@@ -12,6 +12,8 @@ import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 
+import java.util.Objects;
+
 final class DungeonRuntimeExitFactory {
 
     private DungeonRuntimeExitFactory() {
@@ -55,10 +57,9 @@ final class DungeonRuntimeExitFactory {
             return null;
         }
         DungeonLayout layout = location == null ? null : location.layout();
-        String destinationLabel = doorDestinationLabel(
-                layout,
-                layout == null ? null : layout.connectionAt(exit.levelZ(), exit.anchorSegment2x()),
-                activeEndpoint);
+        Connection connection = layout == null ? null : layout.connectionAt(exit.levelZ(), exit.anchorSegment2x());
+        ConnectionEndpoint destinationEndpoint = oppositeEndpoint(connection, activeEndpoint);
+        String destinationLabel = doorDestinationLabel(layout, destinationEndpoint, activeEndpoint);
         return new DungeonRuntimeExit(
                 exit.label(),
                 exit.number(),
@@ -67,7 +68,10 @@ final class DungeonRuntimeExitFactory {
                 doorDescription(location == null ? null : location.heading(), exit.direction(), narration),
                 exit.outsideCell(),
                 exit.levelZ(),
-                exit.direction());
+                exit.direction(),
+                destinationEndpoint != null && destinationEndpoint.type() == ConnectionEndpointType.TRANSITION
+                        ? destinationEndpoint.id()
+                        : null);
     }
 
     private static String doorDescription(
@@ -83,14 +87,10 @@ final class DungeonRuntimeExitFactory {
 
     private static String doorDestinationLabel(
             DungeonLayout layout,
-            Connection connection,
+            ConnectionEndpoint destination,
             ConnectionEndpoint activeEndpoint
     ) {
-        if (layout == null || connection == null) {
-            return "";
-        }
-        ConnectionEndpoint destination = connection.oppositeOf(activeEndpoint);
-        if (destination == null) {
+        if (layout == null || destination == null) {
             return "";
         }
         if (destination.type() == ConnectionEndpointType.ROOM && destination.id() != null) {
@@ -121,6 +121,25 @@ final class DungeonRuntimeExitFactory {
             return transition == null ? "Übergang" : transition.label();
         }
         return "";
+    }
+
+    private static ConnectionEndpoint oppositeEndpoint(Connection connection, ConnectionEndpoint activeEndpoint) {
+        if (connection == null) {
+            return null;
+        }
+        if (activeEndpoint != null) {
+            ConnectionEndpoint opposite = connection.oppositeOf(activeEndpoint);
+            if (opposite != null) {
+                return opposite;
+            }
+        }
+        return connection.endpoints().stream()
+                .filter(endpoint -> endpoint != null && endpoint.type() == ConnectionEndpointType.TRANSITION)
+                .findFirst()
+                .orElseGet(() -> connection.endpoints().stream()
+                        .filter(Objects::nonNull)
+                        .findFirst()
+                        .orElse(null));
     }
 
     private static String roomLabel(DungeonLayout layout, Long roomId) {

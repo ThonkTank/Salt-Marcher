@@ -52,6 +52,13 @@ public final class DungeonRuntimeActionResolver {
     }
 
     private static DungeonRuntimeAction doorAction(DungeonRuntimeExit exit) {
+        if (exit.transitionId() != null && exit.transitionId() > 0) {
+            return new DungeonRuntimeAction(
+                    doorActionLabel(exit.label(), exit.destinationLabel()),
+                    "",
+                    "Übergang konnte nicht benutzt werden",
+                    new DungeonRuntimeAction.TransitionTarget(exit.transitionId()));
+        }
         return new DungeonRuntimeAction(
                 doorActionLabel(exit.label(), exit.destinationLabel()),
                 "",
@@ -75,14 +82,14 @@ public final class DungeonRuntimeActionResolver {
         for (int levelZ : room.structure().relevantLevels(location.activeCell(), location.activeLevelZ())) {
             appendStructureStairs(
                     location.layout(),
-                    room.structure().cellCoordsAtLevel(levelZ),
+                    room.structure().floorCellCoordsAtLevel(levelZ),
                     levelZ,
                     location.activeCell(),
                     location.activeLevelZ(),
                     actions);
             appendStructureTransitions(
                     location.layout(),
-                    room.structure().cellCoordsAtLevel(levelZ),
+                    room.structure().floorCellCoordsAtLevel(levelZ),
                     levelZ,
                     actions);
         }
@@ -250,7 +257,11 @@ public final class DungeonRuntimeActionResolver {
             return;
         }
         layout.transitionsAtLevel(levelZ).stream()
-                .filter(transition -> transition.anchor() != null && cells.contains(transition.anchor().projectedCell()))
+                .filter(transition -> transition != null)
+                .filter(transition -> transition.occupiedPositions(layout).stream()
+                        .filter(point -> point != null && point.z() == levelZ)
+                        .map(CubePoint::projectedCell)
+                        .anyMatch(cells::contains))
                 .sorted(Comparator.comparing(DungeonTransition::transitionId))
                 .map(DungeonRuntimeActionResolver::transitionAction)
                 .forEach(actions::add);

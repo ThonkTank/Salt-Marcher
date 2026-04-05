@@ -40,4 +40,4 @@ Use it together with the parent `dungeonmap/AGENTS.md` and the repository root `
 - Corridor room-bound endpoints keep absolute `CellCoord` room cells in memory. The graph compiles into the same `StructureDescriptor` and `StructureObject` surface model used by rooms, including opening segments for room-bound endpoints.
 - Junction nodes are explicit authored state. Routing must not invent extra nodes.
 - `DungeonStair` is a first-class structure with stable identity, explicit 3D path geometry, and authored stop levels. Exits are derived views from that path.
-- `DungeonTransition` owns transition identity, optional placement anchor, destination, and optional bidirectional link. Unplaced transitions are valid and spatial queries must handle them.
+- `DungeonTransition` owns transition identity, typed placement (`DoorPlacement` or `StairPlacement`), destination, and optional bidirectional link. Unplaced transitions are valid and spatial queries must handle absent placement.

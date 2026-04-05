@@ -14,7 +14,6 @@ import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
-import features.world.dungeonmap.model.objects.Floor;
 import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
@@ -22,6 +21,7 @@ import features.world.dungeonmap.model.structures.corridor.CorridorNode;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
+import features.world.dungeonmap.model.structures.transition.DungeonTransitionPlacement;
 import features.world.dungeonmap.shell.interaction.DungeonHitSurface;
 import features.world.dungeonmap.shell.interaction.DungeonSelectionHighlightResolver;
 import features.world.dungeonmap.state.EditorHover;
@@ -117,12 +117,14 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             boolean selectedCluster = selectedCluster(pass.selectedRef(), cluster.clusterId());
             for (Room room : cluster.rooms()) {
                 WalkableSurface surface = walkableSurface(room.structure(), pass.projectionLevel());
-                if (surface.tiles().isEmpty()) {
+                boolean selectedRoom = selectedRoom(pass.selectedRef(), room.roomId());
+                if (!surface.tiles().isEmpty()) {
+                    fillRoomTiles(gc, pass.camera(), pass.gridSize(), surface.tiles());
+                    strokeRoomTiles(gc, pass.camera(), pass.gridSize(), surface.tiles(), pass.palette().roomStroke(), 1.0);
+                }
+                if (surface.tiles().isEmpty() && surface.wallSegments().isEmpty() && surface.doorSegments().isEmpty()) {
                     continue;
                 }
-                boolean selectedRoom = selectedRoom(pass.selectedRef(), room.roomId());
-                fillRoomTiles(gc, pass.camera(), pass.gridSize(), surface.tiles());
-                strokeRoomTiles(gc, pass.camera(), pass.gridSize(), surface.tiles(), pass.palette().roomStroke(), 1.0);
                 if (selectedCluster || selectedRoom) {
                     selectedRoomBoundarySegments.addAll(surface.wallSegments());
                 } else {
@@ -131,7 +133,12 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 if (pass.showRuntimeLabels()) {
                     gc.setFill(pass.palette().roomText());
                     gc.setFont(DungeonCanvasTheme.ROOM_LABEL_FONT);
-                    drawRoomLabel(gc, room.name(), pass.camera(), pass.gridSize(), room.structure().floorAtLevel(pass.projectionLevel()));
+                    drawRoomLabel(
+                            gc,
+                            room.name(),
+                            pass.camera(),
+                            pass.gridSize(),
+                            room.structure().anchorCellCoordAtLevel(pass.projectionLevel()));
                     gc.setFill(pass.palette().roomFill());
                 }
                 if (selectedCluster || selectedRoom) {
@@ -300,12 +307,11 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             String roomName,
             DungeonCanvasCamera camera,
             double gridSize,
-            Floor floor
+            CellCoord labelAnchor
     ) {
-        if (roomName == null || roomName.isBlank() || floor == null || floor.cellCoords().isEmpty()) {
+        if (roomName == null || roomName.isBlank() || labelAnchor == null) {
             return;
         }
-        CellCoord labelAnchor = floor.anchorCellCoord();
         double centerX = camera.panX() + (labelAnchor.x() + 0.15) * gridSize;
         double centerY = camera.panY() + (labelAnchor.y() + 0.55) * gridSize;
         gc.fillText(roomName, centerX, centerY);
@@ -783,19 +789,70 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             if (transition == null || !transition.isPlaced()) {
                 continue;
             }
-            double centerX = pass.camera().panX() + (transition.anchor().x() + 0.5) * pass.gridSize();
-            double centerY = pass.camera().panY() + (transition.anchor().y() + 0.5) * pass.gridSize();
-            double radius = Math.max(8.0, pass.gridSize() * 0.24);
             boolean selected = selectedTransition(pass.selectedRef(), transition.transitionId());
-            gc.setFill(selected ? pass.palette().highlightAccent() : pass.palette().transitionFill());
-            gc.fillRoundRect(centerX - radius, centerY - radius, radius * 2, radius * 2, 8, 8);
-            gc.setStroke(selected ? pass.palette().highlightStroke() : pass.palette().transitionStroke());
-            gc.setLineWidth(selected ? 2.2 : 1.5);
-            gc.strokeRoundRect(centerX - radius, centerY - radius, radius * 2, radius * 2, 8, 8);
-            gc.setFill(DungeonCanvasTheme.LABEL_TEXT);
-            gc.fillText("→", centerX, centerY + 4.0);
+            if (transition.doorPlacement() != null) {
+                drawDoorTransition(pass, transition, selected);
+                continue;
+            }
+            drawStairTransition(pass, transition, selected);
         }
         gc.setTextAlign(TextAlignment.LEFT);
+    }
+
+    private static void drawDoorTransition(StructureRenderPass pass, DungeonTransition transition, boolean selected) {
+        if (transition.doorPlacement() == null || transition.doorPlacement().levelZ() != pass.projectionLevel()) {
+            return;
+        }
+        GraphicsContext gc = pass.gc();
+        GridSegment2x segment2x = transition.doorPlacement().boundarySegment2x();
+        double centerX = pass.camera().panX() + (segment2x.midpoint().x2() + 1) * pass.gridSize() / 2.0;
+        double centerY = pass.camera().panY() + (segment2x.midpoint().y2() + 1) * pass.gridSize() / 2.0;
+        double radius = Math.max(7.0, pass.gridSize() * 0.18);
+        gc.setFill(selected ? pass.palette().highlightAccent() : pass.palette().transitionFill());
+        gc.fillRoundRect(centerX - radius, centerY - radius, radius * 2, radius * 2, 8, 8);
+        gc.setStroke(selected ? pass.palette().highlightStroke() : pass.palette().transitionStroke());
+        gc.setLineWidth(selected ? 2.2 : 1.6);
+        gc.strokeRoundRect(centerX - radius, centerY - radius, radius * 2, radius * 2, 8, 8);
+        gc.setFill(DungeonCanvasTheme.LABEL_TEXT);
+        gc.fillText("→", centerX, centerY + 4.0);
+    }
+
+    private static void drawStairTransition(StructureRenderPass pass, DungeonTransition transition, boolean selected) {
+        DungeonTransitionPlacement.StairPlacement stairPlacement = transition.stairPlacement();
+        if (stairPlacement == null) {
+            return;
+        }
+        GraphicsContext gc = pass.gc();
+        gc.setFill(selected ? pass.palette().highlightFill() : pass.palette().transitionFill());
+        gc.setStroke(selected ? pass.palette().highlightStroke() : pass.palette().transitionStroke());
+        gc.setLineWidth(selected ? 2.5 : 1.8);
+        for (CubePoint node : stairPlacement.path()) {
+            if (node == null || node.z() != pass.projectionLevel()) {
+                continue;
+            }
+            double x = pass.camera().panX() + node.x() * pass.gridSize();
+            double y = pass.camera().panY() + node.y() * pass.gridSize();
+            gc.fillRoundRect(x + pass.gridSize() * 0.18, y + pass.gridSize() * 0.18, pass.gridSize() * 0.64, pass.gridSize() * 0.64, 10, 10);
+            gc.strokeRoundRect(x + pass.gridSize() * 0.18, y + pass.gridSize() * 0.18, pass.gridSize() * 0.64, pass.gridSize() * 0.64, 10, 10);
+        }
+        for (Integer stopLevel : stairPlacement.stopLevels().stream().sorted().toList()) {
+            CubePoint exitPoint = stairPlacement.path().stream()
+                    .filter(point -> point != null && point.z() == stopLevel)
+                    .findFirst()
+                    .orElse(null);
+            if (exitPoint == null || exitPoint.z() != pass.projectionLevel()) {
+                continue;
+            }
+            double centerX = pass.camera().panX() + (exitPoint.x() + 0.5) * pass.gridSize();
+            double centerY = pass.camera().panY() + (exitPoint.y() + 0.5) * pass.gridSize();
+            double radius = Math.max(6.0, pass.gridSize() * 0.18);
+            gc.setFill(selected ? pass.palette().highlightAccent() : pass.palette().transitionStroke());
+            gc.fillOval(centerX - radius, centerY - radius, radius * 2, radius * 2);
+            if (pass.editorMode() && !pass.overlayPass()) {
+                gc.setFill(pass.palette().roomText());
+                gc.fillText(Integer.toString(stopLevel), centerX, centerY - pass.gridSize() * 0.38);
+            }
+        }
     }
 
     private static void drawDoorNumbers(
@@ -895,11 +952,10 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         if (structure == null) {
             return WalkableSurface.empty();
         }
-        Floor levelFloor = structure.floorAtLevel(levelZ);
-        if (levelFloor == null || levelFloor.cellCoords().isEmpty()) {
+        if (structure.boundaryEdgesAtLevel(levelZ).isEmpty() && structure.floorCellCoordsAtLevel(levelZ).isEmpty()) {
             return WalkableSurface.empty();
         }
-        Set<CellCoord> tiles = structure.cellCoordsAtLevel(levelZ);
+        Set<CellCoord> tiles = structure.floorCellCoordsAtLevel(levelZ);
         Set<GridSegment2x> doorSegments = structure.openingEdgesAtLevel(levelZ);
         Set<GridSegment2x> wallSegments = new LinkedHashSet<>(structure.boundaryEdgesAtLevel(levelZ));
         wallSegments.removeAll(doorSegments);

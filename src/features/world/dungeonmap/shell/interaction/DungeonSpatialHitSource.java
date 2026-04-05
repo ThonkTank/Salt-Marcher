@@ -76,15 +76,32 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
 
     private static List<DungeonHitDescriptor> transitionDescriptors(DungeonLayout layout, DungeonHitProbe probe) {
         ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
-        for (DungeonTransition transition : layout.transitionsAtCell(probe.gridCell(), probe.levelZ())) {
-            if (transition == null || transition.transitionId() == null || transition.anchor() == null) {
+        for (DungeonTransition transition : layout.transitionsAtLevel(probe.levelZ())) {
+            if (transition == null || transition.transitionId() == null || transition.placement() == null) {
+                continue;
+            }
+            if (transition.doorPlacement() != null) {
+                if (!transition.doorPlacement().boundarySegment2x().touchingCells().contains(probe.gridCell())) {
+                    continue;
+                }
+                descriptors.add(new DungeonHitDescriptor(
+                        new DungeonSelectionRef.TransitionRef(transition.transitionId()),
+                        List.of(new DungeonHitSurface.SegmentSurface(
+                                Set.of(transition.doorPlacement().boundarySegment2x()),
+                                transition.doorPlacement().levelZ()))));
+                continue;
+            }
+            Set<CellCoord> occupiedCells = transition.placement().occupiedPositions().stream()
+                    .filter(point -> point != null && point.z() == probe.levelZ())
+                    .map(point -> point.projectedCell())
+                    .filter(cell -> cell.equals(probe.gridCell()))
+                    .collect(java.util.stream.Collectors.toSet());
+            if (occupiedCells.isEmpty()) {
                 continue;
             }
             descriptors.add(new DungeonHitDescriptor(
                     new DungeonSelectionRef.TransitionRef(transition.transitionId()),
-                    List.of(new DungeonHitSurface.CellSurface(
-                            Set.of(transition.anchor().projectedCell()),
-                            transition.anchor().z()))));
+                    List.of(new DungeonHitSurface.CellSurface(occupiedCells, probe.levelZ()))));
         }
         return List.copyOf(descriptors);
     }

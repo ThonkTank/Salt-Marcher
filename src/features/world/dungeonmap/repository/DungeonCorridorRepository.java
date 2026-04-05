@@ -314,12 +314,14 @@ public final class DungeonCorridorRepository {
         if (room == null) {
             throw new SQLException("Corridor node references missing room " + node.roomId());
         }
-        var floor = room.structure().floorAtLevel(levelZ);
-        if (floor == null) {
+        if (room.structure().floorAtLevel(levelZ) == null) {
             throw new SQLException("Corridor node references room without floor at level " + levelZ);
         }
         if (!room.structure().cellCoordsAtLevel(levelZ).contains(node.roomCell())) {
             throw new SQLException("Corridor node references cell outside room at level " + levelZ);
+        }
+        if (!room.structure().hasFloorCell(node.roomCell(), levelZ)) {
+            throw new SQLException("Corridor node references room cell without floor at level " + levelZ);
         }
         return node.roomCell();
     }

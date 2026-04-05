@@ -14,7 +14,8 @@ public record DungeonRuntimeExit(
         String description,
         CellCoord destinationCell,
         int destinationLevelZ,
-        CardinalDirection destinationHeading
+        CardinalDirection destinationHeading,
+        Long transitionId
 ) {
     public DungeonRuntimeExit {
         label = label == null ? "" : label.trim();

@@ -223,17 +223,19 @@ public final class DungeonRuntimeApplicationService {
             throw new SQLException("Ziel-Übergang konnte nicht aufgelöst werden");
         }
         DungeonTransition targetTransition = layout.findTransition(transitionId);
-        if (targetTransition == null || targetTransition.anchor() == null) {
+        CubePoint entryPoint = targetTransition == null ? null : targetTransition.entryPoint(layout);
+        if (targetTransition == null || entryPoint == null) {
             throw new SQLException("Ziel-Übergang ist nicht platziert");
         }
         CellCoord resolvedCell = nearestTraversableCell(
                 layout,
-                targetTransition.anchor().projectedCell(),
-                targetTransition.anchor().z());
+                entryPoint.projectedCell(),
+                entryPoint.z());
         if (resolvedCell == null) {
             throw new SQLException("Ziel-Übergang ist nicht begehbar");
         }
-        return navigationSnapshot(layout.mapId(), resolvedCell, targetTransition.anchor().z(), heading);
+        CardinalDirection resolvedHeading = targetTransition.entryHeading(layout);
+        return navigationSnapshot(layout.mapId(), resolvedCell, entryPoint.z(), resolvedHeading == null ? heading : resolvedHeading);
     }
 
     private DungeonRuntimeNavigationSnapshot resolveNavigation(

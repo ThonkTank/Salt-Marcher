@@ -1,8 +1,16 @@
 package features.world.dungeonmap.repository;
 
+import features.world.dungeonmap.model.geometry.CardinalDirection;
+import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
+import features.world.dungeonmap.model.structures.connection.ConnectionEndpointType;
+import features.world.dungeonmap.model.structures.stair.StairShape;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
+import features.world.dungeonmap.model.structures.transition.DungeonTransitionPlacement;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -10,23 +18,44 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public final class DungeonTransitionRepository {
 
     private static final String SELECT_COLUMNS =
-            "SELECT transition_id, dungeon_map_id, description, cell_x, cell_y, level_z, destination_type,"
-                    + " target_overworld_map_id, target_overworld_tile_id, target_dungeon_map_id,"
+            "SELECT transition_id, dungeon_map_id, description, placement_type,"
+                    + " door_level_z, door_start_x2, door_start_y2, door_end_x2, door_end_y2, door_endpoint_type, door_endpoint_id,"
+                    + " stair_anchor_cell_x, stair_anchor_cell_y, stair_anchor_level_z, stair_shape, stair_direction_code,"
+                    + " stair_dimension1, stair_dimension2, stair_min_level_z, stair_max_level_z,"
+                    + " destination_type, target_overworld_map_id, target_overworld_tile_id, target_dungeon_map_id,"
                     + " target_transition_id, linked_transition_id";
 
     public List<DungeonTransition> loadByMap(Connection conn, long mapId) throws SQLException {
+        Map<Long, List<CubePoint>> pathByTransitionId = loadGrouped(
+                conn,
+                "SELECT transition_id, cell_x, cell_y, cell_z"
+                        + " FROM dungeon_transition_stair_path_nodes"
+                        + " WHERE transition_id IN (SELECT transition_id FROM dungeon_transitions WHERE dungeon_map_id=?)"
+                        + " ORDER BY transition_id, sort_order",
+                mapId,
+                rs -> rs.getLong("transition_id"),
+                rs -> new CubePoint(rs.getInt("cell_x"), rs.getInt("cell_y"), rs.getInt("cell_z")));
+        Map<Long, Set<Integer>> stopLevelsByTransitionId = loadStopLevelsByTransitionId(conn, mapId);
         try (PreparedStatement ps = conn.prepareStatement(
                 SELECT_COLUMNS + " FROM dungeon_transitions WHERE dungeon_map_id=? ORDER BY transition_id")) {
             ps.setLong(1, mapId);
             try (ResultSet rs = ps.executeQuery()) {
                 List<DungeonTransition> result = new ArrayList<>();
                 while (rs.next()) {
-                    result.add(mapTransition(rs));
+                    long transitionId = rs.getLong("transition_id");
+                    result.add(mapTransition(
+                            rs,
+                            pathByTransitionId.getOrDefault(transitionId, List.of()),
+                            stopLevelsByTransitionId.getOrDefault(transitionId, Set.of())));
                 }
                 return result.isEmpty() ? List.of() : List.copyOf(result);
             }
@@ -34,20 +63,9 @@ public final class DungeonTransitionRepository {
     }
 
     public List<DungeonTransition> loadPlacedByMap(Connection conn, long mapId) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement(
-                SELECT_COLUMNS
-                        + " FROM dungeon_transitions"
-                        + " WHERE dungeon_map_id=? AND cell_x IS NOT NULL AND cell_y IS NOT NULL AND level_z IS NOT NULL"
-                        + " ORDER BY transition_id")) {
-            ps.setLong(1, mapId);
-            try (ResultSet rs = ps.executeQuery()) {
-                List<DungeonTransition> result = new ArrayList<>();
-                while (rs.next()) {
-                    result.add(mapTransition(rs));
-                }
-                return result.isEmpty() ? List.of() : List.copyOf(result);
-            }
-        }
+        return loadByMap(conn, mapId).stream()
+                .filter(DungeonTransition::isPlaced)
+                .toList();
     }
 
     public DungeonTransition find(Connection conn, long transitionId) throws SQLException {
@@ -55,7 +73,10 @@ public final class DungeonTransitionRepository {
                 SELECT_COLUMNS + " FROM dungeon_transitions WHERE transition_id=?")) {
             ps.setLong(1, transitionId);
             try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() ? mapTransition(rs) : null;
+                if (!rs.next()) {
+                    return null;
+                }
+                return mapTransition(rs, loadPathNodes(conn, transitionId), loadStopLevels(conn, transitionId));
             }
         }
     }
@@ -63,10 +84,13 @@ public final class DungeonTransitionRepository {
     public long insert(Connection conn, DungeonTransition transition) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "INSERT INTO dungeon_transitions("
-                        + "dungeon_map_id, description, cell_x, cell_y, level_z, destination_type,"
-                        + "target_overworld_map_id, target_overworld_tile_id, target_dungeon_map_id,"
+                        + "dungeon_map_id, description, placement_type,"
+                        + "door_level_z, door_start_x2, door_start_y2, door_end_x2, door_end_y2, door_endpoint_type, door_endpoint_id,"
+                        + "stair_anchor_cell_x, stair_anchor_cell_y, stair_anchor_level_z, stair_shape, stair_direction_code,"
+                        + "stair_dimension1, stair_dimension2, stair_min_level_z, stair_max_level_z,"
+                        + "destination_type, target_overworld_map_id, target_overworld_tile_id, target_dungeon_map_id,"
                         + "target_transition_id, linked_transition_id"
-                        + ") VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                        + ") VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 Statement.RETURN_GENERATED_KEYS)) {
             bindTransition(ps, transition);
             ps.executeUpdate();
@@ -74,26 +98,26 @@ public final class DungeonTransitionRepository {
                 if (!keys.next()) {
                     throw new SQLException("No key returned for dungeon_transitions insert");
                 }
-                return keys.getLong(1);
+                long transitionId = keys.getLong(1);
+                replacePlacementDetails(conn, transitionId, transition == null ? null : transition.placement());
+                return transitionId;
             }
         }
     }
 
-    public void updatePlacement(Connection conn, long transitionId, CubePoint anchor) throws SQLException {
+    public void updatePlacement(Connection conn, long transitionId, DungeonTransitionPlacement placement) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE dungeon_transitions SET cell_x=?, cell_y=?, level_z=? WHERE transition_id=?")) {
-            if (anchor == null) {
-                ps.setNull(1, java.sql.Types.INTEGER);
-                ps.setNull(2, java.sql.Types.INTEGER);
-                ps.setNull(3, java.sql.Types.INTEGER);
-            } else {
-                ps.setInt(1, anchor.x());
-                ps.setInt(2, anchor.y());
-                ps.setInt(3, anchor.z());
-            }
-            ps.setLong(4, transitionId);
+                "UPDATE dungeon_transitions SET "
+                        + "placement_type=?,"
+                        + "door_level_z=?, door_start_x2=?, door_start_y2=?, door_end_x2=?, door_end_y2=?, door_endpoint_type=?, door_endpoint_id=?,"
+                        + "stair_anchor_cell_x=?, stair_anchor_cell_y=?, stair_anchor_level_z=?, stair_shape=?, stair_direction_code=?,"
+                        + "stair_dimension1=?, stair_dimension2=?, stair_min_level_z=?, stair_max_level_z=? "
+                        + "WHERE transition_id=?")) {
+            bindPlacement(ps, placement);
+            ps.setLong(18, transitionId);
             ps.executeUpdate();
         }
+        replacePlacementDetails(conn, transitionId, placement);
     }
 
     public void linkPair(Connection conn, long transitionId, long counterpartId) throws SQLException {
@@ -159,17 +183,104 @@ public final class DungeonTransitionRepository {
         }
     }
 
-    private static DungeonTransition mapTransition(ResultSet rs) throws SQLException {
-        CubePoint anchor = rs.getObject("cell_x") == null
-                ? null
-                : new CubePoint(rs.getInt("cell_x"), rs.getInt("cell_y"), rs.getInt("level_z"));
+    private void replacePlacementDetails(Connection conn, long transitionId, DungeonTransitionPlacement placement) throws SQLException {
+        replacePathNodes(conn, transitionId, placement instanceof DungeonTransitionPlacement.StairPlacement stair ? stair.path() : List.of());
+        replaceStopLevels(conn, transitionId, placement instanceof DungeonTransitionPlacement.StairPlacement stair ? stair.stopLevels() : Set.of());
+    }
+
+    private void replacePathNodes(Connection conn, long transitionId, List<CubePoint> pathNodes) throws SQLException {
+        try (PreparedStatement delete = conn.prepareStatement(
+                "DELETE FROM dungeon_transition_stair_path_nodes WHERE transition_id=?")) {
+            delete.setLong(1, transitionId);
+            delete.executeUpdate();
+        }
+        if (pathNodes == null || pathNodes.isEmpty()) {
+            return;
+        }
+        try (PreparedStatement insert = conn.prepareStatement(
+                "INSERT INTO dungeon_transition_stair_path_nodes(transition_id, sort_order, cell_x, cell_y, cell_z)"
+                        + " VALUES(?,?,?,?,?)")) {
+            for (int index = 0; index < pathNodes.size(); index++) {
+                CubePoint node = pathNodes.get(index);
+                insert.setLong(1, transitionId);
+                insert.setInt(2, index);
+                insert.setInt(3, node.x());
+                insert.setInt(4, node.y());
+                insert.setInt(5, node.z());
+                insert.addBatch();
+            }
+            insert.executeBatch();
+        }
+    }
+
+    private void replaceStopLevels(Connection conn, long transitionId, Set<Integer> stopLevels) throws SQLException {
+        try (PreparedStatement delete = conn.prepareStatement(
+                "DELETE FROM dungeon_transition_stair_stop_levels WHERE transition_id=?")) {
+            delete.setLong(1, transitionId);
+            delete.executeUpdate();
+        }
+        if (stopLevels == null || stopLevels.isEmpty()) {
+            return;
+        }
+        try (PreparedStatement insert = conn.prepareStatement(
+                "INSERT INTO dungeon_transition_stair_stop_levels(transition_id, level_z) VALUES(?,?)")) {
+            for (Integer stopLevel : stopLevels) {
+                if (stopLevel == null) {
+                    continue;
+                }
+                insert.setLong(1, transitionId);
+                insert.setInt(2, stopLevel);
+                insert.addBatch();
+            }
+            insert.executeBatch();
+        }
+    }
+
+    private static DungeonTransition mapTransition(
+            ResultSet rs,
+            List<CubePoint> pathNodes,
+            Set<Integer> stopLevels
+    ) throws SQLException {
         return new DungeonTransition(
                 rs.getLong("transition_id"),
                 rs.getLong("dungeon_map_id"),
                 rs.getString("description"),
-                anchor,
+                mapPlacement(rs, pathNodes, stopLevels),
                 mapDestination(rs),
                 nullableLong(rs, "linked_transition_id"));
+    }
+
+    private static DungeonTransitionPlacement mapPlacement(
+            ResultSet rs,
+            List<CubePoint> pathNodes,
+            Set<Integer> stopLevels
+    ) throws SQLException {
+        String placementType = rs.getString("placement_type");
+        if (placementType == null || placementType.isBlank()) {
+            return null;
+        }
+        return switch (placementType) {
+            case "DOOR" -> new DungeonTransitionPlacement.DoorPlacement(
+                    new ConnectionEndpoint(
+                            ConnectionEndpointType.valueOf(rs.getString("door_endpoint_type")),
+                            nullableLong(rs, "door_endpoint_id")),
+                    new GridSegment2x(
+                            new GridPoint2x(rs.getInt("door_start_x2"), rs.getInt("door_start_y2")),
+                            new GridPoint2x(rs.getInt("door_end_x2"), rs.getInt("door_end_y2"))),
+                    rs.getInt("door_level_z"));
+            case "STAIR" -> new DungeonTransitionPlacement.StairPlacement(
+                    new CellCoord(rs.getInt("stair_anchor_cell_x"), rs.getInt("stair_anchor_cell_y")),
+                    rs.getInt("stair_anchor_level_z"),
+                    StairShape.parse(rs.getString("stair_shape")),
+                    CardinalDirection.fromCode(rs.getInt("stair_direction_code")),
+                    rs.getInt("stair_min_level_z"),
+                    rs.getInt("stair_max_level_z"),
+                    rs.getInt("stair_dimension1"),
+                    rs.getInt("stair_dimension2"),
+                    pathNodes,
+                    stopLevels);
+            default -> throw new SQLException("Unbekannter dungeon transition placement_type: " + placementType);
+        };
     }
 
     private static DungeonTransitionDestination mapDestination(ResultSet rs) throws SQLException {
@@ -189,49 +300,175 @@ public final class DungeonTransitionRepository {
         if (transition == null) {
             throw new IllegalArgumentException("transition darf nicht null sein");
         }
-        CubePoint anchor = transition.anchor();
-        DungeonTransitionDestination destination = transition.destination();
         ps.setLong(1, transition.mapId());
         ps.setString(2, transition.description());
-        if (anchor == null) {
-            ps.setNull(3, java.sql.Types.INTEGER);
-            ps.setNull(4, java.sql.Types.INTEGER);
-            ps.setNull(5, java.sql.Types.INTEGER);
-        } else {
-            ps.setInt(3, anchor.x());
-            ps.setInt(4, anchor.y());
-            ps.setInt(5, anchor.z());
-        }
-        ps.setString(6, destination == null ? "OVERWORLD_TILE" : destination.typeKey());
+        bindPlacement(ps, transition.placement());
+        DungeonTransitionDestination destination = transition.destination();
+        ps.setString(20, destination == null ? "OVERWORLD_TILE" : destination.typeKey());
         if (destination instanceof DungeonTransitionDestination.OverworldTileDestination overworld) {
-            ps.setLong(7, overworld.mapId());
-            ps.setLong(8, overworld.tileId());
-            ps.setNull(9, java.sql.Types.INTEGER);
-            ps.setNull(10, java.sql.Types.INTEGER);
+            ps.setLong(21, overworld.mapId());
+            ps.setLong(22, overworld.tileId());
+            ps.setNull(23, java.sql.Types.INTEGER);
+            ps.setNull(24, java.sql.Types.INTEGER);
         } else if (destination instanceof DungeonTransitionDestination.DungeonMapDestination dungeon) {
-            ps.setNull(7, java.sql.Types.INTEGER);
-            ps.setNull(8, java.sql.Types.INTEGER);
-            ps.setLong(9, dungeon.mapId());
+            ps.setNull(21, java.sql.Types.INTEGER);
+            ps.setNull(22, java.sql.Types.INTEGER);
+            ps.setLong(23, dungeon.mapId());
             if (dungeon.transitionId() == null) {
-                ps.setNull(10, java.sql.Types.INTEGER);
+                ps.setNull(24, java.sql.Types.INTEGER);
             } else {
-                ps.setLong(10, dungeon.transitionId());
+                ps.setLong(24, dungeon.transitionId());
             }
         } else {
-            ps.setNull(7, java.sql.Types.INTEGER);
-            ps.setNull(8, java.sql.Types.INTEGER);
-            ps.setNull(9, java.sql.Types.INTEGER);
-            ps.setNull(10, java.sql.Types.INTEGER);
+            ps.setNull(21, java.sql.Types.INTEGER);
+            ps.setNull(22, java.sql.Types.INTEGER);
+            ps.setNull(23, java.sql.Types.INTEGER);
+            ps.setNull(24, java.sql.Types.INTEGER);
         }
         if (transition.linkedTransitionId() == null) {
-            ps.setNull(11, java.sql.Types.INTEGER);
+            ps.setNull(25, java.sql.Types.INTEGER);
         } else {
-            ps.setLong(11, transition.linkedTransitionId());
+            ps.setLong(25, transition.linkedTransitionId());
         }
+    }
+
+    private static void bindPlacement(PreparedStatement ps, DungeonTransitionPlacement placement) throws SQLException {
+        if (placement instanceof DungeonTransitionPlacement.DoorPlacement doorPlacement) {
+            ps.setString(3, "DOOR");
+            ps.setInt(4, doorPlacement.levelZ());
+            ps.setInt(5, doorPlacement.boundarySegment2x().start().x2());
+            ps.setInt(6, doorPlacement.boundarySegment2x().start().y2());
+            ps.setInt(7, doorPlacement.boundarySegment2x().end().x2());
+            ps.setInt(8, doorPlacement.boundarySegment2x().end().y2());
+            ps.setString(9, doorPlacement.sourceEndpoint().type().name());
+            ps.setLong(10, doorPlacement.sourceEndpoint().id());
+            clearStairPlacement(ps, 11);
+            return;
+        }
+        if (placement instanceof DungeonTransitionPlacement.StairPlacement stairPlacement) {
+            ps.setString(3, "STAIR");
+            clearDoorPlacement(ps, 4);
+            ps.setInt(11, stairPlacement.anchorCell().x());
+            ps.setInt(12, stairPlacement.anchorCell().y());
+            ps.setInt(13, stairPlacement.anchorLevelZ());
+            ps.setString(14, stairPlacement.shape().name());
+            ps.setInt(15, stairPlacement.direction().code());
+            ps.setInt(16, stairPlacement.dimension1());
+            ps.setInt(17, stairPlacement.dimension2());
+            ps.setInt(18, stairPlacement.minLevelZ());
+            ps.setInt(19, stairPlacement.maxLevelZ());
+            return;
+        }
+        ps.setNull(3, java.sql.Types.VARCHAR);
+        clearDoorPlacement(ps, 4);
+        clearStairPlacement(ps, 11);
+    }
+
+    private static void clearDoorPlacement(PreparedStatement ps, int startIndex) throws SQLException {
+        ps.setNull(startIndex, java.sql.Types.INTEGER);
+        ps.setNull(startIndex + 1, java.sql.Types.INTEGER);
+        ps.setNull(startIndex + 2, java.sql.Types.INTEGER);
+        ps.setNull(startIndex + 3, java.sql.Types.INTEGER);
+        ps.setNull(startIndex + 4, java.sql.Types.INTEGER);
+        ps.setNull(startIndex + 5, java.sql.Types.VARCHAR);
+        ps.setNull(startIndex + 6, java.sql.Types.BIGINT);
+    }
+
+    private static void clearStairPlacement(PreparedStatement ps, int startIndex) throws SQLException {
+        ps.setNull(startIndex, java.sql.Types.INTEGER);
+        ps.setNull(startIndex + 1, java.sql.Types.INTEGER);
+        ps.setNull(startIndex + 2, java.sql.Types.INTEGER);
+        ps.setNull(startIndex + 3, java.sql.Types.VARCHAR);
+        ps.setNull(startIndex + 4, java.sql.Types.INTEGER);
+        ps.setNull(startIndex + 5, java.sql.Types.INTEGER);
+        ps.setNull(startIndex + 6, java.sql.Types.INTEGER);
+        ps.setNull(startIndex + 7, java.sql.Types.INTEGER);
+        ps.setNull(startIndex + 8, java.sql.Types.INTEGER);
+    }
+
+    private static Map<Long, Set<Integer>> loadStopLevelsByTransitionId(Connection conn, long mapId) throws SQLException {
+        Map<Long, Set<Integer>> mutable = new LinkedHashMap<>();
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT transition_id, level_z"
+                        + " FROM dungeon_transition_stair_stop_levels"
+                        + " WHERE transition_id IN (SELECT transition_id FROM dungeon_transitions WHERE dungeon_map_id=?)"
+                        + " ORDER BY transition_id, level_z")) {
+            ps.setLong(1, mapId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    mutable.computeIfAbsent(rs.getLong("transition_id"), ignored -> new LinkedHashSet<>())
+                            .add(rs.getInt("level_z"));
+                }
+            }
+        }
+        Map<Long, Set<Integer>> result = new LinkedHashMap<>();
+        for (Map.Entry<Long, Set<Integer>> entry : mutable.entrySet()) {
+            result.put(entry.getKey(), Set.copyOf(entry.getValue()));
+        }
+        return Map.copyOf(result);
+    }
+
+    private static Set<Integer> loadStopLevels(Connection conn, long transitionId) throws SQLException {
+        LinkedHashSet<Integer> result = new LinkedHashSet<>();
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT level_z FROM dungeon_transition_stair_stop_levels WHERE transition_id=? ORDER BY level_z")) {
+            ps.setLong(1, transitionId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    result.add(rs.getInt("level_z"));
+                }
+            }
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
+    private static List<CubePoint> loadPathNodes(Connection conn, long transitionId) throws SQLException {
+        List<CubePoint> result = new ArrayList<>();
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT cell_x, cell_y, cell_z FROM dungeon_transition_stair_path_nodes"
+                        + " WHERE transition_id=? ORDER BY sort_order")) {
+            ps.setLong(1, transitionId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    result.add(new CubePoint(rs.getInt("cell_x"), rs.getInt("cell_y"), rs.getInt("cell_z")));
+                }
+            }
+        }
+        return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
+    private static <K, V> Map<K, List<V>> loadGrouped(
+            Connection conn,
+            String sql,
+            long mapId,
+            ResultSetMapper<K> keyExtractor,
+            ResultSetMapper<V> valueExtractor
+    ) throws SQLException {
+        Map<K, List<V>> result = new LinkedHashMap<>();
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, mapId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    K key = keyExtractor.map(rs);
+                    V value = valueExtractor.map(rs);
+                    if (value != null) {
+                        result.computeIfAbsent(key, ignored -> new ArrayList<>()).add(value);
+                    } else {
+                        result.computeIfAbsent(key, ignored -> new ArrayList<>());
+                    }
+                }
+            }
+        }
+        return result;
     }
 
     private static Long nullableLong(ResultSet rs, String column) throws SQLException {
         long value = rs.getLong(column);
         return rs.wasNull() ? null : value;
+    }
+
+    @FunctionalInterface
+    private interface ResultSetMapper<T> {
+        T map(ResultSet rs) throws SQLException;
     }
 }

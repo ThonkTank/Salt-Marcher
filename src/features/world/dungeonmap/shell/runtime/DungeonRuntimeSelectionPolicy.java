@@ -86,7 +86,7 @@ public final class DungeonRuntimeSelectionPolicy {
             int activeLevelZ,
             DungeonSelectionRef.RoomRef roomRef
     ) {
-        Room room = activeMap.roomAtCell(activeCell, activeLevelZ);
+        Room room = activeMap.roomWithFloorAtCell(activeCell, activeLevelZ);
         return room != null && Objects.equals(room.roomId(), roomRef.roomId());
     }
 }

@@ -44,7 +44,7 @@ public final class DungeonPlacementValidator {
         if (layout == null || cell == null) {
             return null;
         }
-        if (!layout.isTraversableCell(cell)) {
+        if (!layout.isTraversableCell(cell, level)) {
             return new PlacementResult.Invalid(cell, level, "Zelle ist nicht begehbar.");
         }
         return new PlacementResult.Valid(cell, level);

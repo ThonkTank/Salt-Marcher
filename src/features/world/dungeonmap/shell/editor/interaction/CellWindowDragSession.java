@@ -5,7 +5,10 @@ import features.world.dungeonmap.model.geometry.CellCoord;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-public record RoomPaintSession(
+/**
+ * Shared rectangular cell-window draft for paint-style editor tools.
+ */
+public record CellWindowDragSession(
         CellCoord startCell,
         CellCoord endCell,
         boolean deleteMode
@@ -27,7 +30,7 @@ public record RoomPaintSession(
         return cells.isEmpty() ? Set.of() : Set.copyOf(cells);
     }
 
-    public RoomPaintSession withEndCell(CellCoord endCell) {
-        return new RoomPaintSession(startCell, endCell, deleteMode);
+    public CellWindowDragSession withEndCell(CellCoord endCell) {
+        return new CellWindowDragSession(startCell, endCell, deleteMode);
     }
 }

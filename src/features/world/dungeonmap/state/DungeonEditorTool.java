@@ -4,6 +4,8 @@ public enum DungeonEditorTool {
     SELECT("Auswahl"),
     ROOM_PAINT("Raum malen"),
     ROOM_DELETE("Raum löschen"),
+    FLOOR_PAINT("Boden malen"),
+    FLOOR_DELETE("Boden löschen"),
     CLUSTER_WALL("Wand setzen"),
     CLUSTER_WALL_DELETE("Wand löschen"),
     CONNECTIONS("Connections"),
@@ -25,6 +27,10 @@ public enum DungeonEditorTool {
         return this == ROOM_PAINT || this == ROOM_DELETE;
     }
 
+    public boolean isFloorTool() {
+        return this == FLOOR_PAINT || this == FLOOR_DELETE;
+    }
+
     public boolean isTransitionTool() {
         return this == TRANSITION_CREATE || this == TRANSITION_DELETE;
     }
@@ -44,6 +50,7 @@ public enum DungeonEditorTool {
     public DungeonEditorTool editVariant() {
         return switch (this) {
             case ROOM_PAINT, ROOM_DELETE -> ROOM_PAINT;
+            case FLOOR_PAINT, FLOOR_DELETE -> FLOOR_PAINT;
             case CLUSTER_WALL, CLUSTER_WALL_DELETE -> CLUSTER_WALL;
             case CONNECTIONS, CONNECTIONS_DELETE -> CONNECTIONS;
             case TRANSITION_CREATE, TRANSITION_DELETE -> TRANSITION_CREATE;
@@ -54,6 +61,7 @@ public enum DungeonEditorTool {
     public DungeonEditorTool deleteVariant() {
         return switch (this) {
             case ROOM_PAINT, ROOM_DELETE -> ROOM_DELETE;
+            case FLOOR_PAINT, FLOOR_DELETE -> FLOOR_DELETE;
             case CLUSTER_WALL, CLUSTER_WALL_DELETE -> CLUSTER_WALL_DELETE;
             case CONNECTIONS, CONNECTIONS_DELETE -> CONNECTIONS_DELETE;
             case TRANSITION_CREATE, TRANSITION_DELETE -> TRANSITION_DELETE;

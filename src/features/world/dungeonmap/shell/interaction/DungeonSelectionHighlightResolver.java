@@ -129,10 +129,19 @@ public final class DungeonSelectionHighlightResolver {
     }
 
     private static List<DungeonHitSurface> transitionOwnerSurfaces(DungeonTransition transition, int levelZ) {
-        if (transition == null || transition.anchor() == null || transition.anchor().z() != levelZ) {
+        if (transition == null || transition.placement() == null) {
             return List.of();
         }
-        return List.of(new DungeonHitSurface.CellSurface(Set.of(transition.anchor().projectedCell()), levelZ));
+        if (transition.doorPlacement() != null) {
+            return transition.doorPlacement().levelZ() == levelZ
+                    ? List.of(new DungeonHitSurface.SegmentSurface(Set.of(transition.doorPlacement().boundarySegment2x()), levelZ))
+                    : List.of();
+        }
+        Set<CellCoord> cells = transition.placement().occupiedPositions().stream()
+                .filter(point -> point != null && point.z() == levelZ)
+                .map(point -> point.projectedCell())
+                .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
+        return cells.isEmpty() ? List.of() : List.of(new DungeonHitSurface.CellSurface(cells, levelZ));
     }
 
     private static List<DungeonHitSurface> corridorSegmentSurfaces(

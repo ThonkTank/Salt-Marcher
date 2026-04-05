@@ -1230,10 +1230,10 @@ public final class ConnectionsTool implements EditorTool {
                                     levelZ)),
                     EditorCapabilities.part(ref ->
                             ref instanceof DungeonSelectionRef.CorridorBoundaryRef corridorBoundaryRef
-                                    && isAvailableCorridorBoundary(layout, corridorBoundaryRef, levelZ)),
+                                    && ConnectionSurfaceSupport.isAvailableCorridorBoundary(layout, corridorBoundaryRef, levelZ)),
                     EditorCapabilities.part(ref ->
                             ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundary
-                                    && isExteriorBoundary(layout, roomBoundary, levelZ)),
+                                    && ConnectionSurfaceSupport.isExteriorRoomBoundary(layout, roomBoundary, levelZ)),
                     EditorCapabilities.owner(ref -> ref instanceof DungeonSelectionRef.StairRef),
                     EditorCapabilities.part(ref -> ref instanceof DungeonSelectionRef.ConnectionRef),
                     EditorCapabilities.owner(ref -> ref instanceof DungeonSelectionRef.CorridorRef),
@@ -1243,14 +1243,14 @@ public final class ConnectionsTool implements EditorTool {
             return List.of(
                     EditorCapabilities.part(ref ->
                             ref instanceof DungeonSelectionRef.CorridorBoundaryRef corridorBoundaryRef
-                                    && isAvailableCorridorBoundary(layout, corridorBoundaryRef, levelZ)),
+                                    && ConnectionSurfaceSupport.isAvailableCorridorBoundary(layout, corridorBoundaryRef, levelZ)),
                     EditorCapabilities.part(ref ->
                             ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundary
-                                    && isExteriorBoundary(layout, roomBoundary, levelZ)));
+                                    && ConnectionSurfaceSupport.isExteriorRoomBoundary(layout, roomBoundary, levelZ)));
         }
         return List.of(EditorCapabilities.part(ref ->
                 ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundary
-                        && isExteriorBoundary(layout, roomBoundary, levelZ)));
+                        && ConnectionSurfaceSupport.isExteriorRoomBoundary(layout, roomBoundary, levelZ)));
     }
 
     private List<EditorInteractionCapability> deleteCapabilities() {
@@ -1266,19 +1266,6 @@ public final class ConnectionsTool implements EditorTool {
                 EditorCapabilities.part(ref -> ref instanceof DungeonSelectionRef.CorridorSegmentRef));
     }
 
-    private static boolean isExteriorBoundary(DungeonLayout layout, DungeonSelectionRef.RoomBoundaryRef ref, int levelZ) {
-        DungeonLayout.RoomBoundaryDescription boundary = layout == null ? null : layout.describeRoomBoundary(ref, levelZ);
-        return boundary != null && boundary.exterior();
-    }
-
-    private static boolean isAvailableCorridorBoundary(
-            DungeonLayout layout,
-            DungeonSelectionRef.CorridorBoundaryRef ref,
-            int levelZ
-    ) {
-        return layout != null && ref != null && layout.describeCorridorBoundary(ref, levelZ) != null;
-    }
-
     private void applySelection(DungeonSelectionRef resolvedRef) {
         if (resolvedRef != null) {
             state.selectRef(resolvedRef);
@@ -1292,7 +1279,7 @@ public final class ConnectionsTool implements EditorTool {
         DungeonLayout layout = ctx.activeMap();
         int levelZ = ctx.probe().levelZ();
         CellCoord gridCell = ctx.probe().gridCell();
-        if (layout == null || layout.roomAtCell(gridCell, levelZ) == null) {
+        if (layout == null || layout.roomWithFloorAtCell(gridCell, levelZ) == null) {
             return null;
         }
         return new DungeonSelectionRef.FloorCellRef(CubePoint.at(gridCell, levelZ));
@@ -1480,6 +1467,28 @@ public final class ConnectionsTool implements EditorTool {
             return null;
         }
         return new StairDragSource(stairDraftId, resolution.draft());
+    }
+
+    void adoptMovedStairDraft(long stairId, DungeonStairApplicationService.StairDraft draft) {
+        if (stairId <= 0 || draft == null) {
+            return;
+        }
+        stairDraftLoading = false;
+        stairDraftDirty = false;
+        stairDraftId = stairId;
+        stairAnchorCell = draft.anchorCell();
+        stairAnchorLevelZ = draft.anchorLevelZ();
+        clearStairStatusOverride();
+        setStairFields(
+                draft.name(),
+                draft.shape(),
+                draft.direction(),
+                draft.dimension1(),
+                draft.dimension2(),
+                draft.stopLevels());
+        lastResolvedStair = null;
+        state.clearPreview();
+        refreshStatePane();
     }
 
     private boolean sharedStairPaneVisible() {
