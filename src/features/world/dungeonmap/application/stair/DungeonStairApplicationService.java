@@ -5,9 +5,7 @@ import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
-import features.world.dungeonmap.model.structures.stair.StairPathGenerator;
 import features.world.dungeonmap.model.structures.stair.StairShape;
 import features.world.dungeonmap.repository.DungeonLayoutRepository;
 import features.world.dungeonmap.repository.DungeonStairRepository;
@@ -40,12 +38,15 @@ public final class DungeonStairApplicationService {
     public long createStair(CreateStairRequest request) throws SQLException {
         CreateStairRequest resolvedRequest = Objects.requireNonNull(request, "request");
         requireMapId(resolvedRequest.mapId());
-        StairDraft draft = requireDraft(resolvedRequest.draft());
+        StairDraft draft = Objects.requireNonNull(resolvedRequest.draft(), "draft");
         try (Connection conn = DatabaseManager.getConnection()) {
             return DungeonTransactionRunner.inTransaction(conn, () -> {
                 DungeonLayout layout = requireLayout(conn, resolvedRequest.mapId());
-                validateAnchor(layout, draft.anchorCell(), draft.anchorLevelZ());
-                DungeonStair stair = buildStair(null, resolvedRequest.mapId(), draft);
+                DungeonStair stair = StairDraftResolver.resolveCommitted(
+                        layout,
+                        null,
+                        resolvedRequest.mapId(),
+                        draft);
                 DungeonStairRepository.StairEditorData editorData = toEditorData(draft);
                 long stairId = stairRepository.insertStair(conn, resolvedRequest.mapId(), stair, editorData);
                 stairRepository.replacePathNodes(conn, stairId, stair.path());
@@ -61,15 +62,18 @@ public final class DungeonStairApplicationService {
         if (resolvedRequest.stairId() <= 0) {
             throw new IllegalArgumentException("Treppe fehlt");
         }
-        StairDraft draft = requireDraft(resolvedRequest.draft());
+        StairDraft draft = Objects.requireNonNull(resolvedRequest.draft(), "draft");
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
                 DungeonLayout layout = requireLayout(conn, resolvedRequest.mapId());
                 if (layout.findStair(resolvedRequest.stairId()) == null) {
                     throw new SQLException("Treppe " + resolvedRequest.stairId() + " existiert nicht");
                 }
-                validateAnchor(layout, draft.anchorCell(), draft.anchorLevelZ());
-                DungeonStair stair = buildStair(resolvedRequest.stairId(), resolvedRequest.mapId(), draft);
+                DungeonStair stair = StairDraftResolver.resolveCommitted(
+                        layout,
+                        resolvedRequest.stairId(),
+                        resolvedRequest.mapId(),
+                        draft);
                 stairRepository.updateStair(conn, resolvedRequest.stairId(), stair, toEditorData(draft));
                 stairRepository.replacePathNodes(conn, resolvedRequest.stairId(), stair.path());
                 stairRepository.replaceStopLevels(conn, resolvedRequest.stairId(), stair.stopLevels());
@@ -136,67 +140,6 @@ public final class DungeonStairApplicationService {
         if (mapId <= 0) {
             throw new IllegalArgumentException("Kein aktiver Dungeon geladen");
         }
-    }
-
-    private static StairDraft requireDraft(StairDraft draft) {
-        StairDraft resolvedDraft = Objects.requireNonNull(draft, "draft");
-        if (resolvedDraft.anchorCell() == null) {
-            throw new IllegalArgumentException("Treppenanker fehlt");
-        }
-        if (resolvedDraft.minLevelZ() > resolvedDraft.maxLevelZ()) {
-            throw new IllegalArgumentException("Treppenspanne ist ungültig");
-        }
-        if (resolvedDraft.anchorLevelZ() < resolvedDraft.minLevelZ()
-                || resolvedDraft.anchorLevelZ() > resolvedDraft.maxLevelZ()) {
-            throw new IllegalArgumentException("Start-Ebene liegt außerhalb der Treppenspanne");
-        }
-        if (resolvedDraft.stopLevels().isEmpty()) {
-            throw new IllegalArgumentException("Mindestens eine Ziel-Ebene wählen");
-        }
-        if (!resolvedDraft.stopLevels().contains(resolvedDraft.anchorLevelZ())) {
-            throw new IllegalArgumentException("Start-Ebene muss Teil der Treppenstopps bleiben");
-        }
-        if (resolvedDraft.stopLevels().size() < 2) {
-            throw new IllegalArgumentException("Mindestens eine weitere Ebene wählen");
-        }
-        for (Integer stopLevel : resolvedDraft.stopLevels()) {
-            if (stopLevel == null
-                    || stopLevel < resolvedDraft.minLevelZ()
-                    || stopLevel > resolvedDraft.maxLevelZ()) {
-                throw new IllegalArgumentException("Treppenstopps liegen außerhalb der Treppenspanne");
-            }
-        }
-        String validationMessage = resolvedDraft.shape()
-                .validateDimensions(resolvedDraft.dimension1(), resolvedDraft.dimension2())
-                .orElse(null);
-        if (validationMessage != null) {
-            throw new IllegalArgumentException(validationMessage);
-        }
-        return resolvedDraft;
-    }
-
-    private static void validateAnchor(DungeonLayout layout, CellCoord anchorCell, int anchorLevelZ) throws SQLException {
-        Room room = layout == null ? null : layout.roomAtCell(anchorCell, anchorLevelZ);
-        if (room == null) {
-            throw new SQLException("Treppenstart muss auf einem Raum-Floor liegen");
-        }
-    }
-
-    private static DungeonStair buildStair(Long stairId, long mapId, StairDraft draft) {
-        return DungeonStair.resolved(
-                stairId,
-                mapId,
-                draft.name(),
-                StairPathGenerator.generateAnchoredPath(
-                        draft.shape(),
-                        draft.anchorCell(),
-                        draft.anchorLevelZ(),
-                        draft.direction(),
-                        draft.minLevelZ(),
-                        draft.maxLevelZ(),
-                        draft.dimension1(),
-                        draft.dimension2()),
-                draft.stopLevels());
     }
 
     private static DungeonStairRepository.StairEditorData toEditorData(StairDraft draft) {

@@ -3,6 +3,7 @@ package features.world.dungeonmap.shell.editor.interaction;
 import features.world.dungeonmap.application.corridor.DungeonCorridorApplicationService;
 import features.world.dungeonmap.application.room.DungeonRoomApplicationService;
 import features.world.dungeonmap.application.stair.DungeonStairApplicationService;
+import features.world.dungeonmap.application.stair.StairDraftResolver;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
@@ -16,7 +17,6 @@ import features.world.dungeonmap.model.structures.connection.ConnectionKind;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
-import features.world.dungeonmap.model.structures.stair.StairPathGenerator;
 import features.world.dungeonmap.model.structures.stair.StairShape;
 import features.world.dungeonmap.shell.editor.EditorCards;
 import features.world.dungeonmap.state.DungeonEditorTool;
@@ -759,22 +759,9 @@ public final class ConnectionsTool implements EditorTool {
         CardinalDirection direction = currentDirection();
         int dimension1 = resolvedDimension(stairDimension1Field.getText(), shape.needsSideLength() || shape.needsDimensions() || shape.needsRadius());
         int dimension2 = resolvedDimension(stairDimension2Field.getText(), shape.needsDimensions());
-        String dimensionError = shape.validateDimensions(dimension1, dimension2).orElse(null);
-        if (dimensionError != null) {
-            return new StairDraftResolution(null, null, dimensionError);
-        }
-        if (stairAnchorLevelZ < minLevel || stairAnchorLevelZ > maxLevel) {
-            return new StairDraftResolution(null, null, "Start-Ebene liegt außerhalb der Treppenspanne");
-        }
         LinkedHashSet<Integer> stopLevels = stairStopLevels.stream()
                 .filter(level -> level != null && level >= minLevel && level <= maxLevel)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
-        if (!stopLevels.contains(stairAnchorLevelZ)) {
-            return new StairDraftResolution(null, null, "Start-Ebene muss Teil der Verbindungen bleiben");
-        }
-        if (!allowSingleStop && stopLevels.size() < 2) {
-            return new StairDraftResolution(null, null, "Mindestens eine weitere Ebene wählen");
-        }
         DungeonStairApplicationService.StairDraft draft = new DungeonStairApplicationService.StairDraft(
                 normalizedName(stairNameField.getText()),
                 stairAnchorCell,
@@ -786,21 +773,15 @@ public final class ConnectionsTool implements EditorTool {
                 dimension1,
                 dimension2,
                 stopLevels);
+        Long mapId = mapState.activeMapId();
+        DungeonLayout layout = mapState.activeMap();
+        if (mapId == null || layout == null) {
+            return new StairDraftResolution(null, null, "Kein aktiver Dungeon geladen");
+        }
         try {
-            DungeonStair previewStair = DungeonStair.resolved(
-                    stairDraftId,
-                    mapState.activeMapId() == null ? 0L : mapState.activeMapId(),
-                    draft.name(),
-                    StairPathGenerator.generateAnchoredPath(
-                            draft.shape(),
-                            draft.anchorCell(),
-                            draft.anchorLevelZ(),
-                            draft.direction(),
-                            draft.minLevelZ(),
-                            draft.maxLevelZ(),
-                            draft.dimension1(),
-                            draft.dimension2()),
-                    draft.stopLevels());
+            DungeonStair previewStair = allowSingleStop
+                    ? StairDraftResolver.resolvePreview(layout, stairDraftId, mapId, draft)
+                    : StairDraftResolver.resolveCommitted(layout, stairDraftId, mapId, draft);
             String status = stopLevels.size() < 2
                     ? "Mindestens eine weitere Ebene wählen"
                     : stairDraftDirty
