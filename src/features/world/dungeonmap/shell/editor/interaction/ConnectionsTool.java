@@ -167,7 +167,9 @@ public final class ConnectionsTool implements EditorTool {
     public void deactivate() {
         activeTool = null;
         pendingEndpoint = null;
-        clearStairDraftState(false);
+        if (!(state.selectedRef() instanceof DungeonSelectionRef.StairRef)) {
+            clearStairDraftState(false);
+        }
         refreshStatePane();
     }
 
@@ -216,10 +218,11 @@ public final class ConnectionsTool implements EditorTool {
         if (activeTool == null) {
             return null;
         }
-        ensureSelectedStairLoaded();
-        if (activeTool == DungeonEditorTool.CONNECTIONS && stairPaneVisible()) {
-            renderStairPane();
-            return stairCard;
+        if (activeTool == DungeonEditorTool.CONNECTIONS) {
+            Node stairPane = sharedStairPaneContent();
+            if (stairPane != null) {
+                return stairPane;
+            }
         }
         if (pendingEndpoint != null) {
             return null;
@@ -566,25 +569,18 @@ public final class ConnectionsTool implements EditorTool {
         } else if (!stairDraftDirty) {
             lastResolvedStair = persistedStair;
         }
-        if (activeTool == DungeonEditorTool.CONNECTIONS && stairFlowActive()) {
+        if ((activeTool == DungeonEditorTool.CONNECTIONS || state.selectedRef() instanceof DungeonSelectionRef.StairRef)
+                && stairFlowActive()) {
             refreshStairPreview();
         }
         refreshStatePane();
     }
 
     private boolean handleStairCreatePressed(EditorToolContext ctx) {
-        DungeonSelectionRef hit = ctx == null ? null : ctx.hitRef();
-        if (hit instanceof DungeonSelectionRef.StairRef stairRef && stairRef.stairId() != null) {
-            clearPendingEndpoint();
-            state.selectRef(stairOwnerRef(stairRef.stairId()));
-            Integer preferredAnchorLevel = preferredAnchorLevel(stairRef.stairId(), ctx);
-            if (stairFlowActive() && Objects.equals(stairDraftId, stairRef.stairId())) {
-                selectStairAnchorLevel(preferredAnchorLevel);
-            } else {
-                loadStairEditor(stairRef.stairId(), preferredAnchorLevel);
-            }
+        if (focusSelectedStair(ctx)) {
             return true;
         }
+        DungeonSelectionRef hit = ctx == null ? null : ctx.hitRef();
         if (!(hit instanceof DungeonSelectionRef.FloorCellRef floorCellRef)) {
             return false;
         }
@@ -659,8 +655,8 @@ public final class ConnectionsTool implements EditorTool {
                         new DungeonStairApplicationService.LoadStairEditorSpecRequest(mapId, stairId)),
                 spec -> {
                     if (requestId != stairLoadRequestSequence
-                            || activeTool != DungeonEditorTool.CONNECTIONS
-                            || !Objects.equals(mapState.activeMapId(), mapId)) {
+                            || !Objects.equals(mapState.activeMapId(), mapId)
+                            || !wantsStairEditor(stairId)) {
                         return;
                     }
                     if (spec == null) {
@@ -1353,7 +1349,7 @@ public final class ConnectionsTool implements EditorTool {
     }
 
     private void ensureSelectedStairLoaded() {
-        if (activeTool != DungeonEditorTool.CONNECTIONS || pendingEndpoint != null || stairFlowActive()) {
+        if (pendingEndpoint != null || stairFlowActive()) {
             return;
         }
         if (state.selectedRef() instanceof DungeonSelectionRef.StairRef stairRef && stairRef.stairId() != null) {
@@ -1440,10 +1436,61 @@ public final class ConnectionsTool implements EditorTool {
     }
 
     private void refreshStatePane() {
-        if (activeTool != null) {
+        if (activeTool != null || state.selectedRef() instanceof DungeonSelectionRef.StairRef) {
             ensureSelectedStairLoaded();
             refreshCallback.run();
         }
+    }
+
+    Node sharedStairPaneContent() {
+        if (!sharedStairPaneVisible()) {
+            return null;
+        }
+        ensureSelectedStairLoaded();
+        renderStairPane();
+        return stairCard;
+    }
+
+    boolean focusSelectedStair(EditorToolContext ctx) {
+        DungeonSelectionRef hit = ctx == null ? null : ctx.hitRef();
+        if (!(hit instanceof DungeonSelectionRef.StairRef stairRef) || stairRef.stairId() == null) {
+            return false;
+        }
+        clearPendingEndpoint();
+        state.selectRef(stairOwnerRef(stairRef.stairId()));
+        Integer preferredAnchorLevel = preferredAnchorLevel(stairRef.stairId(), ctx);
+        if (stairFlowActive() && Objects.equals(stairDraftId, stairRef.stairId())) {
+            selectStairAnchorLevel(preferredAnchorLevel);
+        } else {
+            loadStairEditor(stairRef.stairId(), preferredAnchorLevel);
+        }
+        return true;
+    }
+
+    StairDragSource stairDragSource() {
+        if (!(state.selectedRef() instanceof DungeonSelectionRef.StairRef stairRef) || stairRef.stairId() == null) {
+            return null;
+        }
+        ensureSelectedStairLoaded();
+        if (!Objects.equals(stairDraftId, stairRef.stairId()) || stairDraftLoading) {
+            return null;
+        }
+        StairDraftResolution resolution = resolveCurrentStairDraft(false);
+        if (resolution.draft() == null || stairDraftId == null) {
+            return null;
+        }
+        return new StairDragSource(stairDraftId, resolution.draft());
+    }
+
+    private boolean sharedStairPaneVisible() {
+        return state.selectedRef() instanceof DungeonSelectionRef.StairRef
+                || activeTool == DungeonEditorTool.CONNECTIONS && stairFlowActive();
+    }
+
+    private boolean wantsStairEditor(long stairId) {
+        return activeTool == DungeonEditorTool.CONNECTIONS
+                || state.selectedRef() instanceof DungeonSelectionRef.StairRef stairRef
+                && Objects.equals(stairRef.stairId(), stairId);
     }
 
     private static CorridorEndpoint corridorEndpoint(
@@ -1480,6 +1527,9 @@ public final class ConnectionsTool implements EditorTool {
             row.getChildren().add(block);
         }
         return row;
+    }
+
+    record StairDragSource(long stairId, DungeonStairApplicationService.StairDraft draft) {
     }
 
     private static void setNodeVisibility(Node node, boolean visible) {
