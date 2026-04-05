@@ -809,10 +809,9 @@ public final class RoomCluster {
                     openings.add(opening);
                 }
             }
-            levels.put(levelZ, new StructureDescriptor.LevelDescriptor(
+            levels.put(levelZ, StructureDescriptor.LevelDescriptor.fromSurfaceCells(
                     anchorCell(roomCells, preferredAnchor),
-                    baseLevel.fillSeeds(),
-                    baseLevel.boundaryEdges(),
+                    roomCells,
                     openings,
                     floorCells));
         }
@@ -1525,9 +1524,8 @@ public final class RoomCluster {
                         openingEdges.add(opening);
                     }
                 }
-                levels.put(levelZ, new StructureDescriptor.LevelDescriptor(
+                levels.put(levelZ, StructureDescriptor.LevelDescriptor.fromBoundaryEdges(
                         baseLevel.anchorCell(),
-                        baseLevel.fillSeeds(),
                         boundaryEdges,
                         openingEdges,
                         baseLevel.floorCells()));

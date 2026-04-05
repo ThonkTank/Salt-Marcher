@@ -3,11 +3,10 @@ package features.world.dungeonmap.model.structures.stair;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
-import features.world.dungeonmap.model.geometry.TileShape;
+import features.world.dungeonmap.model.geometry.TilePath;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
@@ -20,16 +19,14 @@ import java.util.Set;
  *
  * <p>A stair is exactly one continuous ordered 3D line with a fixed 1:1 climb between successive levels.
  * It is not a graph and it does not branch. Exits are disposable read projections derived from the explicit
- * path plus the authored stop levels that the editor exposes as usable stair connections.
- *
- * <p>If later editing wants templates, radius, direction, or other generation inputs, those belong in
- * editor/application code. The persisted structure truth must stay this explicit path plus its authored stop levels.
+ * path plus the authored stop levels that the editor exposes as usable stair connections.</p>
  */
-public final class Stair extends TileShape {
+public final class Stair {
 
     private final Long stairId;
     private final long mapId;
     private final String name;
+    private final TilePath path;
     private final Set<Integer> stopLevels;
     private final List<DungeonStairExit> exits;
 
@@ -40,22 +37,22 @@ public final class Stair extends TileShape {
             List<CubePoint> path,
             Set<Integer> stopLevels
     ) {
-        this(stairId, mapId, name, TileShape.fromPath(normalizePath(path)), stopLevels);
+        this(stairId, mapId, name, TilePath.of(normalizePath(path)), stopLevels);
     }
 
     private Stair(
             Long stairId,
             long mapId,
             String name,
-            TileShape pathShape,
+            TilePath path,
             Set<Integer> stopLevels
     ) {
-        super(pathShape);
         this.stairId = stairId;
         this.mapId = mapId;
         this.name = normalizeName(name);
-        this.stopLevels = normalizeStopLevels(path(), stopLevels);
-        this.exits = deriveExits(path(), this.stopLevels);
+        this.path = path == null ? TilePath.empty() : path;
+        this.stopLevels = normalizeStopLevels(this.path.points(), stopLevels);
+        this.exits = deriveExits(this.path.points(), this.stopLevels);
     }
 
     public static Stair resolved(
@@ -72,10 +69,10 @@ public final class Stair extends TileShape {
             Long stairId,
             long mapId,
             String name,
-            TileShape pathShape,
+            TilePath path,
             Set<Integer> stopLevels
     ) {
-        return new Stair(stairId, mapId, name, pathShape, stopLevels);
+        return new Stair(stairId, mapId, name, path, stopLevels);
     }
 
     public Long stairId() {
@@ -90,8 +87,12 @@ public final class Stair extends TileShape {
         return name;
     }
 
+    public TilePath tilePath() {
+        return path;
+    }
+
     public List<CubePoint> path() {
-        return pathPoints();
+        return path.points();
     }
 
     public Set<Integer> stopLevels() {
@@ -110,11 +111,11 @@ public final class Stair extends TileShape {
     }
 
     public Set<Integer> reachableLevels() {
-        return levels();
+        return path.levels();
     }
 
     public Set<CubePoint> occupiedPositions() {
-        return pathPointSet();
+        return path.pointSet();
     }
 
     public List<DungeonStairExit> exitsAtLevel(int levelZ) {
@@ -172,7 +173,7 @@ public final class Stair extends TileShape {
     }
 
     private static List<CubePoint> normalizePath(List<CubePoint> path) {
-        ArrayList<CubePoint> result = new ArrayList<>();
+        java.util.ArrayList<CubePoint> result = new java.util.ArrayList<>();
         for (CubePoint node : path == null ? List.<CubePoint>of() : path) {
             if (node != null) {
                 result.add(node);
@@ -184,7 +185,6 @@ public final class Stair extends TileShape {
         LinkedHashSet<Integer> seenLevels = new LinkedHashSet<>();
         CubePoint previous = null;
         for (CubePoint current : result) {
-            // The intended model is one stair node per reached z-level.
             if (!seenLevels.add(current.z())) {
                 throw new IllegalArgumentException("Treppenpfad darf jede Ebene nur einmal belegen");
             }
@@ -192,7 +192,6 @@ public final class Stair extends TileShape {
                 if (current.z() != previous.z() + 1) {
                     throw new IllegalArgumentException("Treppenpfad muss Ebenen in 1er-Schritten verbinden");
                 }
-                // Horizontal movement may be 0 or 1 cells per climbed level, never more.
                 int planarDistance = Math.abs(current.x() - previous.x()) + Math.abs(current.y() - previous.y());
                 if (planarDistance > 1) {
                     throw new IllegalArgumentException("Treppenpfad verletzt die 1:1-Steigung");
@@ -245,13 +244,10 @@ public final class Stair extends TileShape {
         if ((resolvedDelta.x() == 0 && resolvedDelta.y() == 0) && levelDelta == 0) {
             return this;
         }
-        List<CubePoint> translatedPath = path().stream()
-                .map(point -> CubePoint.at(point.projectedCell().add(resolvedDelta), point.z() + levelDelta))
-                .toList();
         Set<Integer> translatedStops = stopLevels.stream()
                 .map(stopLevel -> stopLevel + levelDelta)
                 .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
-        return resolved(stairId, mapId, name, translatedPath, translatedStops);
+        return resolved(stairId, mapId, name, path.translatedBy(resolvedDelta, levelDelta), translatedStops);
     }
 
     private static String normalizeName(String name) {

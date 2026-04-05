@@ -2,7 +2,7 @@ package features.world.dungeonmap.application.stair;
 
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.TileShape;
+import features.world.dungeonmap.model.geometry.TilePath;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.Stair;
 
@@ -83,7 +83,7 @@ public final class StairDraftResolver {
         validateAnchor(resolvedLayout, resolvedDraft.anchorCell(), resolvedDraft.anchorLevelZ());
         return new ResolvedStairDraft(
                 resolvedDraft,
-                TileShape.generate(
+                TilePath.generate(
                         resolvedDraft.shapeSpec(),
                         resolvedDraft.anchorCell(),
                         resolvedDraft.anchorLevelZ(),
@@ -122,7 +122,7 @@ public final class StairDraftResolver {
                 stairId,
                 mapId,
                 resolution.draft().name(),
-                resolution.shape(),
+                resolution.path(),
                 resolution.stopLevels());
     }
 
@@ -135,12 +135,12 @@ public final class StairDraftResolver {
 
     public record ResolvedStairDraft(
             DungeonStairApplicationService.StairDraft draft,
-            TileShape shape,
+            TilePath path,
             Set<Integer> stopLevels
     ) {
         public ResolvedStairDraft {
             draft = Objects.requireNonNull(draft, "draft");
-            shape = shape == null ? TileShape.empty() : shape;
+            path = path == null ? TilePath.empty() : path;
             stopLevels = Set.copyOf(stopLevels == null ? Set.<Integer>of() : stopLevels);
         }
     }

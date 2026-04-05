@@ -3,6 +3,7 @@ package features.world.dungeonmap.model.structures.connection;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.TilePath;
 import features.world.dungeonmap.model.geometry.TileShapeSpec;
 import features.world.dungeonmap.model.structures.stair.Stair;
 
@@ -41,6 +42,10 @@ public record StairConnectionCarrier(
 
     public List<CubePoint> path() {
         return stair.path();
+    }
+
+    public TilePath tilePath() {
+        return stair.tilePath();
     }
 
     public Set<Integer> stopLevels() {

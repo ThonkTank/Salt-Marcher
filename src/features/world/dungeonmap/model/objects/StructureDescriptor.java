@@ -3,10 +3,10 @@ package features.world.dungeonmap.model.objects;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.EdgeShape;
+import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.TileShape;
 
-import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -15,10 +15,10 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Canonical per-level structure input reduced to authored seeds plus shape-based tile and edge surfaces.
+ * Canonical per-level structure input reduced to shape-based tile and edge surfaces.
  *
- * <p>Surface ownership is exposed through {@link TileShape} and {@link EdgeShape}. The seed set remains authored
- * metadata for persistence and flood-fill reconstruction, not a second public geometry contract.</p>
+ * <p>Surface ownership is exposed through {@link TileShape} and {@link EdgeShape}. Boundary cells may be reconstructed
+ * from boundary edges, but there is no second seed-driven geometry truth.</p>
  */
 public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescriptor> levels) {
 
@@ -61,8 +61,14 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
                 .filter(entry -> entry != null && entry.getKey() != null)
                 .sorted(Map.Entry.comparingByKey())
                 .forEach(entry -> {
-                    LevelDescriptor level = descriptorForCells(
-                            entry.getValue(),
+                    Set<CellCoord> normalizedCells = CellCoord.normalize(entry.getValue());
+                    if (normalizedCells.isEmpty()) {
+                        return;
+                    }
+                    LevelDescriptor level = LevelDescriptor.fromSurfaceCells(
+                            CellCoord.bestCenter(normalizedCells),
+                            normalizedCells,
+                            Set.of(),
                             floorCellsByLevel == null ? null : floorCellsByLevel.get(entry.getKey()));
                     if (!level.isEmpty()) {
                         levels.put(entry.getKey(), level);
@@ -123,82 +129,74 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
         return result.isEmpty() ? Map.of() : Map.copyOf(result);
     }
 
-    private static LevelDescriptor descriptorForCells(
-            Collection<CellCoord> cells,
-            Collection<CellCoord> floorCells
-    ) {
-        Set<CellCoord> normalizedCells = CellCoord.normalize(cells);
-        if (normalizedCells.isEmpty()) {
-            return new LevelDescriptor(new CellCoord(0, 0), Set.of(), Set.of(), Set.of(), Set.of());
-        }
-        CellCoord anchorCell = CellCoord.bestCenter(normalizedCells);
-        return new LevelDescriptor(
-                anchorCell,
-                CellCoord.componentCenters(normalizedCells),
-                boundaryEdges(normalizedCells),
-                Set.of(),
-                normalizeFloorCells(normalizedCells, floorCells));
-    }
-
-    private static Set<GridSegment2x> boundaryEdges(Set<CellCoord> cells) {
-        if (cells == null || cells.isEmpty()) {
-            return Set.of();
-        }
-        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
-        for (CellCoord cell : cells) {
-            for (CellCoord step : CellCoord.CARDINAL_STEPS) {
-                if (!cells.contains(cell.add(step))) {
-                    result.add(GridSegment2x.boundaryEdge(cell, cell.directionTo4(cell.add(step))));
-                }
-            }
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
     public static final class LevelDescriptor {
 
         private final CellCoord anchorCell;
-        private final Set<CellCoord> fillSeeds;
         private final TileShape surfaceShape;
         private final TileShape floorShape;
         private final EdgeShape boundaryShape;
         private final EdgeShape openingShape;
 
-        public LevelDescriptor(
+        private LevelDescriptor(
                 CellCoord anchorCell,
-                Set<CellCoord> fillSeeds,
-                Set<GridSegment2x> boundaryEdges,
-                Set<GridSegment2x> openingEdges,
-                Set<CellCoord> floorCells
+                TileShape surfaceShape,
+                EdgeShape boundaryShape,
+                EdgeShape openingShape,
+                TileShape floorShape
         ) {
-            Set<CellCoord> requestedFloorCells = floorCells == null ? null : normalizeCellSet(floorCells);
-            this.anchorCell = normalizeAnchor(anchorCell);
-            Set<GridSegment2x> normalizedBoundaryEdges = normalizeBoundaryEdges(boundaryEdges);
-            this.boundaryShape = normalizedBoundaryEdges.isEmpty() ? EdgeShape.empty() : new EdgeShape(normalizedBoundaryEdges);
-            this.fillSeeds = normalizeSeeds(fillSeeds, this.anchorCell, !normalizedBoundaryEdges.isEmpty());
-            Set<GridSegment2x> normalizedOpenings = normalizeOpenings(openingEdges, this.boundaryShape.segmentSet2x());
-            this.openingShape = normalizedOpenings.isEmpty() ? EdgeShape.empty() : new EdgeShape(normalizedOpenings);
-            TileShape resolvedSurfaceShape = new TileShape(hydrateSurfaceCells(this.fillSeeds, normalizedBoundaryEdges));
-            this.surfaceShape = resolvedSurfaceShape.isEmpty() ? TileShape.empty() : resolvedSurfaceShape;
-            Set<CellCoord> normalizedFloorCells = normalizeFloorCells(this.surfaceShape.cellCoords(), requestedFloorCells);
-            this.floorShape = normalizedFloorCells.isEmpty() ? TileShape.empty() : new TileShape(normalizedFloorCells);
+            this.surfaceShape = surfaceShape == null ? TileShape.empty() : surfaceShape;
+            this.boundaryShape = boundaryShape == null ? EdgeShape.empty() : boundaryShape;
+            this.openingShape = openingShape == null ? EdgeShape.empty() : openingShape;
+            this.floorShape = floorShape == null ? TileShape.empty() : floorShape;
+            this.anchorCell = normalizeAnchor(anchorCell, this.surfaceShape);
         }
 
-        public LevelDescriptor(
+        public static LevelDescriptor fromSurfaceCells(
                 CellCoord anchorCell,
-                Set<CellCoord> fillSeeds,
-                Set<GridSegment2x> boundaryEdges,
-                Set<GridSegment2x> openingEdges
+                Collection<CellCoord> surfaceCells,
+                Collection<GridSegment2x> openingEdges,
+                Collection<CellCoord> floorCells
         ) {
-            this(anchorCell, fillSeeds, boundaryEdges, openingEdges, null);
+            TileShape surfaceShape = new TileShape(surfaceCells);
+            EdgeShape boundaryShape = surfaceShape.boundaryShape();
+            EdgeShape openingShape = normalizedOpeningShape(openingEdges, boundaryShape.segmentSet2x());
+            TileShape floorShape = new TileShape(normalizeFloorCells(surfaceShape.cellCoords(), floorCells));
+            return new LevelDescriptor(anchorCell, surfaceShape, boundaryShape, openingShape, floorShape);
+        }
+
+        public static LevelDescriptor fromSurfaceCells(
+                CellCoord anchorCell,
+                Collection<CellCoord> surfaceCells,
+                Collection<GridSegment2x> openingEdges
+        ) {
+            return fromSurfaceCells(anchorCell, surfaceCells, openingEdges, null);
+        }
+
+        public static LevelDescriptor fromBoundaryEdges(
+                CellCoord anchorCell,
+                Collection<GridSegment2x> boundaryEdges,
+                Collection<GridSegment2x> openingEdges,
+                Collection<CellCoord> floorCells
+        ) {
+            EdgeShape boundaryShape = boundaryEdges == null
+                    ? EdgeShape.empty()
+                    : EdgeShape.fromBoundarySegments(boundaryEdges);
+            TileShape surfaceShape = new TileShape(hydrateSurfaceCells(boundaryShape.segmentSet2x()));
+            EdgeShape openingShape = normalizedOpeningShape(openingEdges, boundaryShape.segmentSet2x());
+            TileShape floorShape = new TileShape(normalizeFloorCells(surfaceShape.cellCoords(), floorCells));
+            return new LevelDescriptor(anchorCell, surfaceShape, boundaryShape, openingShape, floorShape);
+        }
+
+        public static LevelDescriptor fromBoundaryEdges(
+                CellCoord anchorCell,
+                Collection<GridSegment2x> boundaryEdges,
+                Collection<GridSegment2x> openingEdges
+        ) {
+            return fromBoundaryEdges(anchorCell, boundaryEdges, openingEdges, null);
         }
 
         public CellCoord anchorCell() {
             return anchorCell;
-        }
-
-        public Set<CellCoord> fillSeeds() {
-            return fillSeeds;
         }
 
         public TileShape surfaceShape() {
@@ -234,33 +232,24 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
             if (resolvedDelta.x() == 0 && resolvedDelta.y() == 0) {
                 return this;
             }
-            Set<CellCoord> translatedSeeds = new LinkedHashSet<>();
-            for (CellCoord seed : fillSeeds) {
-                translatedSeeds.add(seed.add(resolvedDelta));
-            }
-            Set<CellCoord> translatedFloorCells = new LinkedHashSet<>();
-            for (CellCoord cell : floorCells()) {
-                translatedFloorCells.add(cell.add(resolvedDelta));
-            }
             return new LevelDescriptor(
                     anchorCell.add(resolvedDelta),
-                    translatedSeeds,
-                    boundaryShape.translatedByCells(resolvedDelta, 0).segmentSet2x(),
-                    openingShape.translatedByCells(resolvedDelta, 0).segmentSet2x(),
-                    translatedFloorCells);
+                    surfaceShape.translatedByCells(resolvedDelta),
+                    boundaryShape.translatedByCells(resolvedDelta),
+                    openingShape.translatedByCells(resolvedDelta),
+                    floorShape.translatedByCells(resolvedDelta));
         }
 
         public LevelDescriptor withFloorCells(Collection<CellCoord> floorCells) {
-            return new LevelDescriptor(anchorCell, fillSeeds, boundaryEdges(), openingEdges(), normalizeCellSet(floorCells));
+            return fromSurfaceCells(anchorCell, surfaceShape.cellCoords(), openingEdges(), normalizeFloorCells(surfaceShape.cellCoords(), floorCells));
         }
 
         public LevelDescriptor withOpeningEdges(Collection<GridSegment2x> openingEdges) {
-            return new LevelDescriptor(anchorCell, fillSeeds, boundaryEdges(), normalizeOpenings(openingEdges, boundaryEdges()), floorCells());
+            return fromSurfaceCells(anchorCell, surfaceShape.cellCoords(), openingEdges, floorCells());
         }
 
         public boolean isEmpty() {
-            return fillSeeds.isEmpty()
-                    && boundaryShape.isEmpty()
+            return surfaceShape.isEmpty()
                     && openingShape.isEmpty()
                     && floorShape.isEmpty();
         }
@@ -274,82 +263,47 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
                 return false;
             }
             return Objects.equals(anchorCell, that.anchorCell)
-                    && Objects.equals(fillSeeds, that.fillSeeds)
-                    && Objects.equals(boundaryEdges(), that.boundaryEdges())
+                    && Objects.equals(surfaceShape.cellCoords(), that.surfaceShape.cellCoords())
                     && Objects.equals(openingEdges(), that.openingEdges())
                     && Objects.equals(floorCells(), that.floorCells());
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(anchorCell, fillSeeds, boundaryEdges(), openingEdges(), floorCells());
+            return Objects.hash(anchorCell, surfaceShape.cellCoords(), openingEdges(), floorCells());
         }
 
         @Override
         public String toString() {
             return "LevelDescriptor[anchorCell=" + anchorCell
-                    + ", fillSeeds=" + fillSeeds
+                    + ", surfaceCells=" + surfaceShape.cellCoords()
                     + ", boundaryEdges=" + boundaryEdges()
                     + ", openingEdges=" + openingEdges()
                     + ", floorCells=" + floorCells()
                     + "]";
         }
 
-        private static CellCoord normalizeAnchor(CellCoord anchorCell) {
-            return anchorCell == null ? new CellCoord(0, 0) : anchorCell;
-        }
-
-        private static Set<CellCoord> normalizeSeeds(
-                Collection<CellCoord> seeds,
-                CellCoord anchorCell,
-                boolean defaultToAnchor
-        ) {
-            LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
-            if (seeds != null) {
-                seeds.stream()
-                        .filter(seed -> seed != null)
-                        .sorted(CellCoord.ORDER)
-                        .forEach(result::add);
-            }
-            if (result.isEmpty() && defaultToAnchor) {
-                result.add(anchorCell);
-            }
-            return result.isEmpty() ? Set.of() : Set.copyOf(result);
-        }
-
-        private static Set<CellCoord> normalizeCellSet(Collection<CellCoord> cells) {
-            return cells == null ? Set.of() : CellCoord.normalize(cells);
-        }
-
-        private static Set<GridSegment2x> normalizeBoundaryEdges(Collection<GridSegment2x> segments) {
-            LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
-            if (segments != null) {
-                segments.stream()
-                        .filter(segment -> segment != null)
-                        .sorted(GridSegment2x.ORDER)
-                        .forEach(segment -> {
-                            if (!segment.start().isVertex() || !segment.end().isVertex() || (segment.length2() & 1) != 0) {
-                                throw new IllegalArgumentException("StructureDescriptor boundaries must be vertex-to-vertex segments");
-                            }
-                            result.add(segment);
-                        });
-            }
-            return result.isEmpty() ? Set.of() : Set.copyOf(result);
-        }
-
-        private static Set<GridSegment2x> normalizeOpenings(
+        private static EdgeShape normalizedOpeningShape(
                 Collection<GridSegment2x> openings,
                 Set<GridSegment2x> boundaryEdges
         ) {
             if (openings == null || openings.isEmpty() || boundaryEdges == null || boundaryEdges.isEmpty()) {
-                return Set.of();
+                return EdgeShape.empty();
             }
             LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
             openings.stream()
                     .filter(segment -> segment != null && boundaryEdges.contains(segment))
                     .sorted(GridSegment2x.ORDER)
                     .forEach(result::add);
-            return result.isEmpty() ? Set.of() : Set.copyOf(result);
+            return result.isEmpty() ? EdgeShape.empty() : new EdgeShape(result);
+        }
+
+        private static CellCoord normalizeAnchor(CellCoord anchorCell, TileShape surfaceShape) {
+            if (anchorCell != null) {
+                return anchorCell;
+            }
+            CellCoord centerCell = surfaceShape == null ? null : surfaceShape.centerCellCoord();
+            return centerCell == null ? new CellCoord(0, 0) : centerCell;
         }
     }
 
@@ -376,46 +330,41 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
-    private static Set<CellCoord> hydrateSurfaceCells(
-            Set<CellCoord> fillSeeds,
-            Set<GridSegment2x> boundaryEdges
-    ) {
-        if (fillSeeds == null || fillSeeds.isEmpty()) {
+    private static Set<CellCoord> hydrateSurfaceCells(Set<GridSegment2x> boundaryEdges) {
+        Set<GridSegment2x> normalizedBoundaryEdges = GridSegment2x.boundarySteps(boundaryEdges);
+        if (normalizedBoundaryEdges.isEmpty()) {
             return Set.of();
         }
-        if (boundaryEdges == null || boundaryEdges.isEmpty()) {
-            return Set.copyOf(fillSeeds);
-        }
-        Set<GridSegment2x> blockedSegments = GridSegment2x.boundarySteps(boundaryEdges);
-        if (blockedSegments.isEmpty()) {
-            return Set.copyOf(fillSeeds);
-        }
-        CellBounds bounds = cellBounds(boundaryEdges, fillSeeds);
-        ArrayDeque<CellCoord> queue = new ArrayDeque<>(fillSeeds);
-        LinkedHashSet<CellCoord> visited = new LinkedHashSet<>();
-        while (!queue.isEmpty()) {
-            CellCoord current = queue.removeFirst();
-            if (!bounds.contains(current) || !visited.add(current)) {
-                continue;
-            }
-            for (CellCoord step : CellCoord.CARDINAL_STEPS) {
-                CellCoord neighbor = current.add(step);
-                if (!bounds.contains(neighbor)
-                        || blockedSegments.contains(GridSegment2x.boundaryEdge(current, current.directionTo4(neighbor)))) {
-                    continue;
+        CellBounds bounds = cellBounds(normalizedBoundaryEdges);
+        LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
+        for (int y = bounds.minY(); y <= bounds.maxY(); y++) {
+            for (int x = bounds.minX(); x <= bounds.maxX(); x++) {
+                CellCoord candidate = new CellCoord(x, y);
+                if (isInsideEvenOdd(candidate, normalizedBoundaryEdges)) {
+                    result.add(candidate);
                 }
-                queue.addLast(neighbor);
             }
         }
-        return visited.isEmpty() ? Set.of() : Set.copyOf(visited);
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
-    private static CellBounds cellBounds(Set<GridSegment2x> boundaryEdges, Set<CellCoord> seeds) {
-        int minX = seeds.stream().mapToInt(CellCoord::x).min().orElse(0);
-        int maxX = seeds.stream().mapToInt(CellCoord::x).max().orElse(0);
-        int minY = seeds.stream().mapToInt(CellCoord::y).min().orElse(0);
-        int maxY = seeds.stream().mapToInt(CellCoord::y).max().orElse(0);
-        for (GridSegment2x segment : boundaryEdges == null ? Set.<GridSegment2x>of() : boundaryEdges) {
+    private static boolean isInsideEvenOdd(CellCoord cell, Set<GridSegment2x> boundaryEdges) {
+        int centerX2 = cell.x() * 2;
+        int centerY2 = cell.y() * 2;
+        long crossings = boundaryEdges.stream()
+                .filter(GridSegment2x::isVertical)
+                .filter(segment -> segment.start().y2() < centerY2 && segment.end().y2() > centerY2)
+                .filter(segment -> segment.start().x2() > centerX2)
+                .count();
+        return (crossings & 1L) == 1L;
+    }
+
+    private static CellBounds cellBounds(Set<GridSegment2x> boundaryEdges) {
+        int minX = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE;
+        int minY = Integer.MAX_VALUE;
+        int maxY = Integer.MIN_VALUE;
+        for (GridSegment2x segment : boundaryEdges) {
             for (CellCoord cell : segment.touchingCells()) {
                 minX = Math.min(minX, cell.x());
                 maxX = Math.max(maxX, cell.x());
@@ -423,16 +372,12 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
                 maxY = Math.max(maxY, cell.y());
             }
         }
+        if (minX == Integer.MAX_VALUE) {
+            return new CellBounds(0, 0, -1, -1);
+        }
         return new CellBounds(minX, minY, maxX, maxY);
     }
 
     private record CellBounds(int minX, int minY, int maxX, int maxY) {
-        private boolean contains(CellCoord cell) {
-            return cell != null
-                    && cell.x() >= minX
-                    && cell.x() <= maxX
-                    && cell.y() >= minY
-                    && cell.y() <= maxY;
-        }
     }
 }

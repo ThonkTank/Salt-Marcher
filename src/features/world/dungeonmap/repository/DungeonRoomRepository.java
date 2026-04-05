@@ -377,8 +377,6 @@ public final class DungeonRoomRepository {
                 "INSERT INTO dungeon_room_cluster_levels(cluster_id, level_z, anchor_x2, anchor_y2) VALUES(?,?,?,?)");
              PreparedStatement insertFloorCell = conn.prepareStatement(
                      "INSERT INTO dungeon_room_cluster_level_floor_cells(cluster_id, level_z, cell_x2, cell_y2) VALUES(?,?,?,?)");
-             PreparedStatement insertSeed = conn.prepareStatement(
-                     "INSERT INTO dungeon_room_cluster_level_seeds(cluster_id, level_z, seed_x2, seed_y2) VALUES(?,?,?,?)");
              PreparedStatement insertSegment = conn.prepareStatement(
                      "INSERT INTO dungeon_room_cluster_level_segments("
                              + "cluster_id, level_z, segment_kind, start_x2, start_y2, end_x2, end_y2"
@@ -400,21 +398,11 @@ public final class DungeonRoomRepository {
                     insertFloorCell.setInt(4, persistedCellY2(floorCell));
                     insertFloorCell.addBatch();
                 }
-                for (CellCoord seed : level.fillSeeds().stream()
-                        .sorted(CellCoord.ORDER)
-                        .toList()) {
-                    insertSeed.setLong(1, clusterId);
-                    insertSeed.setInt(2, levelZ);
-                    insertSeed.setInt(3, persistedCellX2(seed));
-                    insertSeed.setInt(4, persistedCellY2(seed));
-                    insertSeed.addBatch();
-                }
                 addSegments(insertSegment, clusterId, levelZ, "BOUNDARY", level.boundaryEdges());
                 addSegments(insertSegment, clusterId, levelZ, "OPENING", level.openingEdges());
             }
             insertLevel.executeBatch();
             insertFloorCell.executeBatch();
-            insertSeed.executeBatch();
             insertSegment.executeBatch();
         }
     }
@@ -548,7 +536,6 @@ public final class DungeonRoomRepository {
     private static Map<Long, StructureDescriptor> loadClusterDescriptors(Connection conn, long mapId) throws SQLException {
         Map<Long, Map<Integer, CellCoord>> anchorsByClusterId = new LinkedHashMap<>();
         Map<Long, Map<Integer, Set<CellCoord>>> floorCellsByClusterId = new LinkedHashMap<>();
-        Map<Long, Map<Integer, Set<CellCoord>>> seedsByClusterId = new LinkedHashMap<>();
         Map<Long, Map<Integer, Set<GridSegment2x>>> boundarySegmentsByClusterId = new LinkedHashMap<>();
         Map<Long, Map<Integer, Set<GridSegment2x>>> openingSegmentsByClusterId = new LinkedHashMap<>();
         try (PreparedStatement ps = conn.prepareStatement(
@@ -589,25 +576,6 @@ public final class DungeonRoomRepository {
             }
         }
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT cluster_id, level_z, seed_x2, seed_y2"
-                        + " FROM dungeon_room_cluster_level_seeds"
-                        + " WHERE cluster_id IN (SELECT cluster_id FROM dungeon_room_clusters WHERE dungeon_map_id=?)"
-                        + " ORDER BY cluster_id, level_z, seed_y2, seed_x2")) {
-            ps.setLong(1, mapId);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    seedsByClusterId.computeIfAbsent(rs.getLong("cluster_id"), ignored -> new LinkedHashMap<>())
-                            .computeIfAbsent(rs.getInt("level_z"), ignored -> new LinkedHashSet<>())
-                            .add(requireStoredCellCenter(
-                                    rs.getInt("seed_x2"),
-                                    rs.getInt("seed_y2"),
-                                    "cluster fill seed",
-                                    rs.getLong("cluster_id"),
-                                    rs.getInt("level_z")));
-                }
-            }
-        }
-        try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT cluster_id, level_z, segment_kind, start_x2, start_y2, end_x2, end_y2"
                         + " FROM dungeon_room_cluster_level_segments"
                         + " WHERE cluster_id IN (SELECT cluster_id FROM dungeon_room_clusters WHERE dungeon_map_id=?)"
@@ -634,9 +602,8 @@ public final class DungeonRoomRepository {
             Map<Integer, StructureDescriptor.LevelDescriptor> levels = new LinkedHashMap<>();
             for (Map.Entry<Integer, CellCoord> levelEntry : clusterEntry.getValue().entrySet()) {
                 int levelZ = levelEntry.getKey();
-                levels.put(levelZ, new StructureDescriptor.LevelDescriptor(
+                levels.put(levelZ, StructureDescriptor.LevelDescriptor.fromBoundaryEdges(
                         levelEntry.getValue(),
-                        seedsByClusterId.getOrDefault(clusterId, Map.of()).getOrDefault(levelZ, Set.of()),
                         boundarySegmentsByClusterId.getOrDefault(clusterId, Map.of()).getOrDefault(levelZ, Set.of()),
                         openingSegmentsByClusterId.getOrDefault(clusterId, Map.of()).getOrDefault(levelZ, Set.of()),
                         floorCellsByClusterId.getOrDefault(clusterId, Map.of()).get(levelZ)));

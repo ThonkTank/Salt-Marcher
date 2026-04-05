@@ -98,7 +98,7 @@ public final class TransitionConnectionBuilder {
                 null,
                 mapId,
                 null,
-                resolvedDraft.shape(),
+                resolvedDraft.path(),
                 resolvedDraft.stopLevels());
         StairConnectionCarrier carrier = new StairConnectionCarrier(
                 resolvedDraft.draft().anchorCell(),

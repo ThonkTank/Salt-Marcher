@@ -875,10 +875,9 @@ public final class Corridor {
         }
         // Corridor structure compilation must share the same canonical cell-set descriptor path as rooms so routed
         // cells and hydrated floor geometry cannot silently drift apart.
-        StructureDescriptor descriptor = new StructureDescriptor(Map.of(levelZ, new StructureDescriptor.LevelDescriptor(
+        StructureDescriptor descriptor = new StructureDescriptor(Map.of(levelZ, StructureDescriptor.LevelDescriptor.fromSurfaceCells(
                 baseLevel.anchorCell(),
-                baseLevel.fillSeeds(),
-                baseLevel.boundaryEdges(),
+                occupiedCells,
                 openingEdges(baseLevel.boundaryEdges(), openingSegments2x))));
         return validatedStructureForCells(levelZ, occupiedCells, descriptor);
     }
