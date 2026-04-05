@@ -7,23 +7,16 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * A floor owns its walkable cells directly.
+ * A floor is the walkable cell subset of a structure surface.
  */
 public final class Floor extends TileShape {
 
-    private final CellCoord anchorCell;
-
     public static Floor empty() {
-        return new Floor(Set.of(), null);
+        return new Floor(Set.of());
     }
 
-    public Floor(Collection<CellCoord> cellCoords, CellCoord anchorCell) {
+    public Floor(Collection<CellCoord> cellCoords) {
         super(cellCoords);
-        this.anchorCell = normalizeAnchor(anchorCell, cellCoords());
-    }
-
-    public CellCoord anchorCellCoord() {
-        return anchorCell;
     }
 
     public Floor movedBy(CellCoord delta) {
@@ -34,17 +27,6 @@ public final class Floor extends TileShape {
         return new Floor(
                 cellCoords().stream()
                         .map(cell -> cell.add(resolvedDelta))
-                        .toList(),
-                anchorCell == null ? null : anchorCell.add(resolvedDelta));
-    }
-
-    private static CellCoord normalizeAnchor(CellCoord anchorCell, Set<CellCoord> cellCoords) {
-        if (anchorCell != null) {
-            return anchorCell;
-        }
-        if (cellCoords == null || cellCoords.isEmpty()) {
-            return new CellCoord(0, 0);
-        }
-        return CellCoord.bestCenter(cellCoords);
+                        .toList());
     }
 }

@@ -6,7 +6,7 @@ import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.model.structures.stair.DungeonStair;
+import features.world.dungeonmap.model.structures.stair.Stair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 
 import java.util.LinkedHashSet;
@@ -116,7 +116,7 @@ public final class DungeonSelectionHighlightResolver {
         return cells.isEmpty() ? List.of() : List.of(new DungeonHitSurface.CellSurface(cells, levelZ));
     }
 
-    private static List<DungeonHitSurface> stairOwnerSurfaces(DungeonStair stair, int levelZ) {
+    private static List<DungeonHitSurface> stairOwnerSurfaces(Stair stair, int levelZ) {
         if (stair == null) {
             return List.of();
         }

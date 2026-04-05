@@ -15,7 +15,7 @@ import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNode;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
-import features.world.dungeonmap.model.structures.stair.DungeonStair;
+import features.world.dungeonmap.model.structures.stair.Stair;
 import features.world.dungeonmap.model.structures.stair.DungeonStairExit;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.repository.DungeonCorridorRepository;
@@ -659,7 +659,7 @@ public final class DungeonRoomApplicationService {
                             stairCarrier.shapeSpec(),
                             stairCarrier.minLevelZ(),
                             stairCarrier.maxLevelZ(),
-                            DungeonStair.resolved(
+                            Stair.resolved(
                                     null,
                                     localConnection.mapId(),
                                     null,
@@ -766,7 +766,7 @@ public final class DungeonRoomApplicationService {
                 throw new SQLException("Boden unter einem platzierten Übergang kann nicht entfernt werden.");
             }
         }
-        for (DungeonStair stair : layout.stairsAtLevel(levelZ)) {
+        for (Stair stair : layout.stairsAtLevel(levelZ)) {
             if (stair == null || stair.stairId() == null) {
                 continue;
             }

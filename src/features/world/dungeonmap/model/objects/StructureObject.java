@@ -186,7 +186,7 @@ public final class StructureObject {
     }
 
     private static Floor hydrateFloor(StructureDescriptor.LevelDescriptor level) {
-        return new Floor(level.floorShape().cellCoords(), level.anchorCell());
+        return new Floor(level.floorShape().cellCoords());
     }
 
     private static List<Wall> hydrateWalls(StructureDescriptor.LevelDescriptor level) {

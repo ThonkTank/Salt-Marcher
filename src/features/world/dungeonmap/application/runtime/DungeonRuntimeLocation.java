@@ -6,7 +6,7 @@ import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.model.structures.stair.DungeonStair;
+import features.world.dungeonmap.model.structures.stair.Stair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 
 import java.util.Objects;
@@ -69,7 +69,7 @@ public record DungeonRuntimeLocation(
                 : null;
     }
 
-    public DungeonStair stair() {
+    public Stair stair() {
         return structure instanceof DungeonLayout.CellStructure.StairStructure stairStructure
                 ? stairStructure.stair()
                 : null;

@@ -4,7 +4,7 @@ import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.TileShapeSpec;
-import features.world.dungeonmap.model.structures.stair.DungeonStair;
+import features.world.dungeonmap.model.structures.stair.Stair;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -17,7 +17,7 @@ public record StairConnectionCarrier(
         TileShapeSpec shapeSpec,
         int minLevelZ,
         int maxLevelZ,
-        DungeonStair stair
+        Stair stair
 ) implements ConnectionCarrier {
 
     public StairConnectionCarrier {

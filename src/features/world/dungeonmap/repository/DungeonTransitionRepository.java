@@ -13,7 +13,7 @@ import features.world.dungeonmap.model.structures.connection.ConnectionKind;
 import features.world.dungeonmap.model.structures.connection.DoorConnectionCarrier;
 import features.world.dungeonmap.model.structures.connection.DungeonConnection;
 import features.world.dungeonmap.model.structures.connection.StairConnectionCarrier;
-import features.world.dungeonmap.model.structures.stair.DungeonStair;
+import features.world.dungeonmap.model.structures.stair.Stair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
 import features.world.dungeonmap.model.objects.Door;
@@ -332,7 +332,7 @@ public final class DungeonTransitionRepository {
                                     rs.getInt("stair_shape_param2")),
                             rs.getInt("stair_min_level_z"),
                             rs.getInt("stair_max_level_z"),
-                            DungeonStair.resolved(null, mapId, null, pathNodes, stopLevels)),
+                            Stair.resolved(null, mapId, null, pathNodes, stopLevels)),
                     List.of(ConnectionEndpoint.transition(transitionId)));
             default -> throw new SQLException("Unbekannter dungeon transition placement_type: " + placementType);
         };

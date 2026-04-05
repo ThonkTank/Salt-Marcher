@@ -5,7 +5,7 @@ import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.TileShapeSpec;
-import features.world.dungeonmap.model.structures.stair.DungeonStair;
+import features.world.dungeonmap.model.structures.stair.Stair;
 import features.world.dungeonmap.repository.DungeonLayoutRepository;
 import features.world.dungeonmap.repository.DungeonStairRepository;
 
@@ -42,7 +42,7 @@ public final class DungeonStairApplicationService {
             return DungeonTransactionRunner.inTransaction(conn, () -> {
                 DungeonLayout layout = requireLayout(conn, resolvedRequest.mapId());
                 StairDraft namedDraft = draftWithGeneratedCreateName(layout, draft);
-                DungeonStair stair = StairDraftResolver.resolveCommitted(
+                Stair stair = StairDraftResolver.resolveCommitted(
                         layout,
                         null,
                         resolvedRequest.mapId(),
@@ -69,7 +69,7 @@ public final class DungeonStairApplicationService {
                 if (layout.findStair(resolvedRequest.stairId()) == null) {
                     throw new SQLException("Treppe " + resolvedRequest.stairId() + " existiert nicht");
                 }
-                DungeonStair stair = StairDraftResolver.resolveCommitted(
+                Stair stair = StairDraftResolver.resolveCommitted(
                         layout,
                         resolvedRequest.stairId(),
                         resolvedRequest.mapId(),
@@ -103,7 +103,7 @@ public final class DungeonStairApplicationService {
                         resolvedDraft,
                         resolvedRequest.delta(),
                         resolvedRequest.levelDelta());
-                DungeonStair stair = StairDraftResolver.resolveCommitted(
+                Stair stair = StairDraftResolver.resolveCommitted(
                         layout,
                         resolvedRequest.stairId(),
                         resolvedRequest.mapId(),

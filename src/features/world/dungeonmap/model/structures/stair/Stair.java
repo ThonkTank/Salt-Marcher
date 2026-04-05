@@ -25,7 +25,7 @@ import java.util.Set;
  * <p>If later editing wants templates, radius, direction, or other generation inputs, those belong in
  * editor/application code. The persisted structure truth must stay this explicit path plus its authored stop levels.
  */
-public final class DungeonStair extends TileShape {
+public final class Stair extends TileShape {
 
     private final Long stairId;
     private final long mapId;
@@ -33,7 +33,7 @@ public final class DungeonStair extends TileShape {
     private final Set<Integer> stopLevels;
     private final List<DungeonStairExit> exits;
 
-    private DungeonStair(
+    private Stair(
             Long stairId,
             long mapId,
             String name,
@@ -43,7 +43,7 @@ public final class DungeonStair extends TileShape {
         this(stairId, mapId, name, TileShape.fromPath(normalizePath(path)), stopLevels);
     }
 
-    private DungeonStair(
+    private Stair(
             Long stairId,
             long mapId,
             String name,
@@ -58,24 +58,24 @@ public final class DungeonStair extends TileShape {
         this.exits = deriveExits(path(), this.stopLevels);
     }
 
-    public static DungeonStair resolved(
+    public static Stair resolved(
             Long stairId,
             long mapId,
             String name,
             List<CubePoint> path,
             Set<Integer> stopLevels
     ) {
-        return new DungeonStair(stairId, mapId, name, path, stopLevels);
+        return new Stair(stairId, mapId, name, path, stopLevels);
     }
 
-    public static DungeonStair resolved(
+    public static Stair resolved(
             Long stairId,
             long mapId,
             String name,
             TileShape pathShape,
             Set<Integer> stopLevels
     ) {
-        return new DungeonStair(stairId, mapId, name, pathShape, stopLevels);
+        return new Stair(stairId, mapId, name, pathShape, stopLevels);
     }
 
     public Long stairId() {
@@ -146,7 +146,7 @@ public final class DungeonStair extends TileShape {
         if (this == other) {
             return true;
         }
-        if (!(other instanceof DungeonStair stair)) {
+        if (!(other instanceof Stair stair)) {
             return false;
         }
         return mapId == stair.mapId
@@ -163,7 +163,7 @@ public final class DungeonStair extends TileShape {
 
     @Override
     public String toString() {
-        return "DungeonStair[stairId=" + stairId
+        return "Stair[stairId=" + stairId
                 + ", mapId=" + mapId
                 + ", name=" + name
                 + ", path=" + path()
@@ -240,7 +240,7 @@ public final class DungeonStair extends TileShape {
                 .toList();
     }
 
-    public DungeonStair movedBy(CellCoord delta, int levelDelta) {
+    public Stair movedBy(CellCoord delta, int levelDelta) {
         CellCoord resolvedDelta = delta == null ? new CellCoord(0, 0) : delta;
         if ((resolvedDelta.x() == 0 && resolvedDelta.y() == 0) && levelDelta == 0) {
             return this;

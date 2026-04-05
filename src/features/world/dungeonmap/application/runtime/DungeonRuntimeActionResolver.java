@@ -5,8 +5,8 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.stair.DungeonStairExit;
+import features.world.dungeonmap.model.structures.stair.Stair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
 
@@ -121,7 +121,7 @@ public final class DungeonRuntimeActionResolver {
             DungeonRuntimeLocation location,
             List<DungeonRuntimeAction> actions
     ) {
-        DungeonStair stair = location.stair();
+        Stair stair = location.stair();
         if (stair == null) {
             return;
         }
@@ -163,8 +163,8 @@ public final class DungeonRuntimeActionResolver {
                         .map(DungeonStairExit::position)
                         .map(CubePoint::projectedCell)
                         .anyMatch(surfaceCells::contains))
-                .sorted(Comparator.comparing(DungeonStair::label, String.CASE_INSENSITIVE_ORDER)
-                        .thenComparing(DungeonStair::stairId))
+                .sorted(Comparator.comparing(Stair::label, String.CASE_INSENSITIVE_ORDER)
+                        .thenComparing(Stair::stairId))
                 .forEach(stair -> appendStairActions(
                         stair,
                         stairOriginPositions(stair, surfaceCells, levelZ),
@@ -174,7 +174,7 @@ public final class DungeonRuntimeActionResolver {
     }
 
     private static void appendStairActions(
-            DungeonStair stair,
+            Stair stair,
             Set<CubePoint> originPositions,
             CellCoord activeCell,
             int activeLevelZ,
@@ -202,7 +202,7 @@ public final class DungeonRuntimeActionResolver {
     }
 
     private static Set<CubePoint> stairOriginPositions(
-            DungeonStair stair,
+            Stair stair,
             CellCoord activeCell,
             int activeLevelZ
     ) {
@@ -234,7 +234,7 @@ public final class DungeonRuntimeActionResolver {
     }
 
     private static Set<CubePoint> stairOriginPositions(
-            DungeonStair stair,
+            Stair stair,
             Set<CellCoord> surfaceCells,
             int levelZ
     ) {
@@ -300,7 +300,7 @@ public final class DungeonRuntimeActionResolver {
                 : resolvedLabel + ": " + destinationLabel;
     }
 
-    private static String stairActionLabel(DungeonStair stair, DungeonStairExit exit) {
+    private static String stairActionLabel(Stair stair, DungeonStairExit exit) {
         String stairLabel = stair == null ? "Treppe" : stair.label();
         String destinationLabel = stairDestinationLabel(exit);
         return destinationLabel.isBlank() ? stairLabel : stairLabel + ": " + destinationLabel;
@@ -314,7 +314,7 @@ public final class DungeonRuntimeActionResolver {
         return label == null || label.isBlank() ? "z=" + exit.position().z() : label;
     }
 
-    private static String stairDescription(DungeonStair stair, DungeonStairExit exit) {
+    private static String stairDescription(Stair stair, DungeonStairExit exit) {
         String stairName = stair == null ? "die Treppe" : stair.label();
         String target = stairDestinationLabel(exit);
         return "Über " + stairName + " gelangt ihr zu " + target + ".";

@@ -1,7 +1,7 @@
 package features.world.dungeonmap.application.runtime.description;
 
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
-import features.world.dungeonmap.model.structures.stair.DungeonStair;
+import features.world.dungeonmap.model.structures.stair.Stair;
 
 import java.util.List;
 
@@ -12,7 +12,7 @@ final class StairRuntimeDescriptionBuilder {
     }
 
     static DungeonRuntimeDescription build(DungeonRuntimeLocation location) {
-        DungeonStair stair = location == null ? null : location.stair();
+        Stair stair = location == null ? null : location.stair();
         if (location == null || stair == null || stair.stairId() == null) {
             return null;
         }

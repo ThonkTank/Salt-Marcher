@@ -15,7 +15,7 @@ import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNode;
 import features.world.dungeonmap.model.structures.corridor.CorridorSegment;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.model.structures.stair.DungeonStair;
+import features.world.dungeonmap.model.structures.stair.Stair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 
 import java.util.ArrayList;
@@ -47,7 +47,7 @@ public final class DungeonLayout {
         record CorridorStructure(Corridor corridor) implements CellStructure {
         }
 
-        record StairStructure(DungeonStair stair) implements CellStructure {
+        record StairStructure(Stair stair) implements CellStructure {
         }
 
         record TransitionStructure(DungeonTransition transition) implements CellStructure {
@@ -96,7 +96,7 @@ public final class DungeonLayout {
     private final String name;
     private final List<Corridor> corridors;
     private final List<RoomCluster> clusters;
-    private final List<DungeonStair> stairs;
+    private final List<Stair> stairs;
     private final List<DungeonTransition> transitions;
     private final List<Connection> connections;
     private final Map<GridSegment2x, Connection> connectionsBySegment2x;
@@ -106,7 +106,7 @@ public final class DungeonLayout {
     private final Map<Long, Room> roomsById;
     private final Map<Long, Corridor> corridorsById;
     private final Map<Long, RoomCluster> clustersById;
-    private final Map<Long, DungeonStair> stairsById;
+    private final Map<Long, Stair> stairsById;
     private final Map<Long, DungeonTransition> transitionsById;
     private final Map<Long, Integer> clusterLevelsById;
     private final Map<Long, Set<Integer>> roomLevelsByRoomId;
@@ -132,7 +132,7 @@ public final class DungeonLayout {
             String name,
             List<Corridor> corridors,
             List<RoomCluster> clusters,
-            List<DungeonStair> stairs,
+            List<Stair> stairs,
             List<DungeonTransition> transitions,
             Map<Long, Integer> clusterLevelsById
     ) {
@@ -185,7 +185,7 @@ public final class DungeonLayout {
         return corridors;
     }
 
-    public List<DungeonStair> stairs() {
+    public List<Stair> stairs() {
         return stairs;
     }
 
@@ -456,7 +456,7 @@ public final class DungeonLayout {
         return cluster != null && cluster.roomHasFloorCell(room, cell, levelZ);
     }
 
-    public DungeonStair findStair(Long stairId) {
+    public Stair findStair(Long stairId) {
         return stairId == null ? null : stairsById.get(stairId);
     }
 
@@ -505,7 +505,7 @@ public final class DungeonLayout {
         };
     }
 
-    public DungeonStair stair(DungeonSelectionRef ref) {
+    public Stair stair(DungeonSelectionRef ref) {
         return switch (ref == null ? null : ref.ownerRef()) {
             case DungeonSelectionRef.StairRef stairRef -> findStair(stairRef.stairId());
             case null, default -> null;
@@ -672,7 +672,7 @@ public final class DungeonLayout {
         return structuresAtCell(corridorIdsByLevelAndCell, cell, levelZ, this::findCorridor);
     }
 
-    public List<DungeonStair> stairsAtCell(CellCoord cell, int levelZ) {
+    public List<Stair> stairsAtCell(CellCoord cell, int levelZ) {
         return structuresAtCell(stairIdsByLevelAndCell, cell, levelZ, this::findStair);
     }
 
@@ -695,9 +695,9 @@ public final class DungeonLayout {
         if (corridor != null) {
             return new CellStructure.CorridorStructure(corridor);
         }
-        DungeonStair stair = stairsAtCell(cell, defaultLevel()).stream()
+        Stair stair = stairsAtCell(cell, defaultLevel()).stream()
                 .filter(candidate -> candidate != null && candidate.stairId() != null)
-                .min(Comparator.comparing(DungeonStair::stairId))
+                .min(Comparator.comparing(Stair::stairId))
                 .orElse(null);
         if (stair != null) {
             return new CellStructure.StairStructure(stair);
@@ -724,9 +724,9 @@ public final class DungeonLayout {
         if (corridor != null) {
             return new CellStructure.CorridorStructure(corridor);
         }
-        DungeonStair stair = stairsAtCell(cell, levelZ).stream()
+        Stair stair = stairsAtCell(cell, levelZ).stream()
                 .filter(candidate -> candidate != null && candidate.stairId() != null)
-                .min(Comparator.comparing(DungeonStair::stairId))
+                .min(Comparator.comparing(Stair::stairId))
                 .orElse(null);
         if (stair != null) {
             return new CellStructure.StairStructure(stair);
@@ -907,22 +907,22 @@ public final class DungeonLayout {
         return updatedCorridors.size() == corridors.size() ? this : withCorridors(updatedCorridors);
     }
 
-    public DungeonLayout withAddedStair(DungeonStair stair) {
+    public DungeonLayout withAddedStair(Stair stair) {
         if (stair == null) {
             return this;
         }
-        ArrayList<DungeonStair> updatedStairs = new ArrayList<>(stairs);
+        ArrayList<Stair> updatedStairs = new ArrayList<>(stairs);
         updatedStairs.add(stair);
         return withStairs(updatedStairs);
     }
 
-    public DungeonLayout withUpdatedStair(DungeonStair stair) {
+    public DungeonLayout withUpdatedStair(Stair stair) {
         if (stair == null || stair.stairId() == null) {
             return this;
         }
         boolean replaced = false;
-        ArrayList<DungeonStair> updatedStairs = new ArrayList<>(stairs.size());
-        for (DungeonStair existing : stairs) {
+        ArrayList<Stair> updatedStairs = new ArrayList<>(stairs.size());
+        for (Stair existing : stairs) {
             if (existing != null && Objects.equals(existing.stairId(), stair.stairId())) {
                 updatedStairs.add(stair);
                 replaced = true;
@@ -940,7 +940,7 @@ public final class DungeonLayout {
         if (stairId == null) {
             return this;
         }
-        List<DungeonStair> updatedStairs = stairs.stream()
+        List<Stair> updatedStairs = stairs.stream()
                 .filter(stair -> stair == null || !Objects.equals(stair.stairId(), stairId))
                 .toList();
         return updatedStairs.size() == stairs.size() ? this : withStairs(updatedStairs);
@@ -1030,7 +1030,7 @@ public final class DungeonLayout {
         return new DungeonLayout(mapId, name, updatedCorridors, clusters, stairs, transitions, clusterLevelsById);
     }
 
-    private DungeonLayout withStairs(List<DungeonStair> updatedStairs) {
+    private DungeonLayout withStairs(List<Stair> updatedStairs) {
         return new DungeonLayout(mapId, name, corridors, clusters, updatedStairs, transitions, clusterLevelsById);
     }
 
@@ -1046,7 +1046,7 @@ public final class DungeonLayout {
         List<Corridor> projectedCorridors = corridors.stream()
                 .filter(corridor -> corridor != null && corridorReachesLevel(corridor, levelZ))
                 .toList();
-        List<DungeonStair> projectedStairs = stairs.stream()
+        List<Stair> projectedStairs = stairs.stream()
                 .filter(stair -> stair != null && stair.reachableLevels().contains(levelZ))
                 .toList();
         List<DungeonTransition> projectedTransitions = transitions.stream()
@@ -1055,7 +1055,7 @@ public final class DungeonLayout {
         return new DungeonLayout(mapId, name, projectedCorridors, projectedClusters, projectedStairs, projectedTransitions, clusterLevelsById);
     }
 
-    public List<DungeonStair> stairsAtLevel(int levelZ) {
+    public List<Stair> stairsAtLevel(int levelZ) {
         return stairs.stream()
                 .filter(stair -> stair != null && stair.reachableLevels().contains(levelZ))
                 .toList();
@@ -1241,9 +1241,9 @@ public final class DungeonLayout {
         return Map.copyOf(result);
     }
 
-    private static Map<Long, DungeonStair> indexStairs(List<DungeonStair> stairs) {
-        Map<Long, DungeonStair> result = new LinkedHashMap<>();
-        for (DungeonStair stair : stairs) {
+    private static Map<Long, Stair> indexStairs(List<Stair> stairs) {
+        Map<Long, Stair> result = new LinkedHashMap<>();
+        for (Stair stair : stairs) {
             if (stair != null && stair.stairId() != null) {
                 result.put(stair.stairId(), stair);
             }
@@ -1290,7 +1290,7 @@ public final class DungeonLayout {
     private static Set<CellCoord> indexTraversableCells(
             List<RoomCluster> clusters,
             List<Corridor> corridors,
-            List<DungeonStair> stairs,
+            List<Stair> stairs,
             List<DungeonTransition> transitions
     ) {
         Set<CellCoord> result = new LinkedHashSet<>();
@@ -1311,7 +1311,7 @@ public final class DungeonLayout {
                 result.addAll(corridor.structure().cellCoords());
             }
         }
-        for (DungeonStair stair : stairs) {
+        for (Stair stair : stairs) {
             if (stair != null) {
                 stair.occupiedPositions().stream()
                         .map(CubePoint::projectedCell)
@@ -1332,7 +1332,7 @@ public final class DungeonLayout {
     private static Map<Integer, Set<CellCoord>> indexTraversableCellsByLevel(
             List<RoomCluster> clusters,
             List<Corridor> corridors,
-            List<DungeonStair> stairs,
+            List<Stair> stairs,
             List<DungeonTransition> transitions
     ) {
         Map<Integer, Set<CellCoord>> mutable = new LinkedHashMap<>();
@@ -1357,7 +1357,7 @@ public final class DungeonLayout {
             mutable.computeIfAbsent(corridor.levelZ(), ignored -> new LinkedHashSet<>())
                     .addAll(corridor.structure().cellCoordsAtLevel(corridor.levelZ()));
         }
-        for (DungeonStair stair : stairs) {
+        for (Stair stair : stairs) {
             if (stair != null) {
                 for (CubePoint point : stair.occupiedPositions()) {
                     if (point != null) {
@@ -1423,9 +1423,9 @@ public final class DungeonLayout {
         return immutableIdIndex(mutable);
     }
 
-    private static Map<Integer, Map<CellCoord, List<Long>>> indexStairIdsByLevelAndCell(List<DungeonStair> stairs) {
+    private static Map<Integer, Map<CellCoord, List<Long>>> indexStairIdsByLevelAndCell(List<Stair> stairs) {
         Map<Integer, Map<CellCoord, List<Long>>> mutable = new LinkedHashMap<>();
-        for (DungeonStair stair : stairs) {
+        for (Stair stair : stairs) {
             if (stair == null || stair.stairId() == null) {
                 continue;
             }

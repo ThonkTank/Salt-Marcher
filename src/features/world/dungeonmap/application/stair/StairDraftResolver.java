@@ -4,7 +4,7 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.model.structures.stair.DungeonStair;
+import features.world.dungeonmap.model.structures.stair.Stair;
 
 import java.util.Objects;
 import java.util.Set;
@@ -21,7 +21,7 @@ public final class StairDraftResolver {
         throw new AssertionError("No instances");
     }
 
-    public static DungeonStair resolvePreview(
+    public static Stair resolvePreview(
             DungeonLayout layout,
             Long stairId,
             long mapId,
@@ -30,7 +30,7 @@ public final class StairDraftResolver {
         return toDungeonStair(resolveDraft(layout, mapId, draft, true), stairId, mapId);
     }
 
-    public static DungeonStair resolveCommitted(
+    public static Stair resolveCommitted(
             DungeonLayout layout,
             Long stairId,
             long mapId,
@@ -112,13 +112,13 @@ public final class StairDraftResolver {
                         .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new)));
     }
 
-    private static DungeonStair toDungeonStair(
+    private static Stair toDungeonStair(
             ResolvedStairDraft resolvedDraft,
             Long stairId,
             long mapId
     ) {
         ResolvedStairDraft resolution = Objects.requireNonNull(resolvedDraft, "resolvedDraft");
-        return DungeonStair.resolved(
+        return Stair.resolved(
                 stairId,
                 mapId,
                 resolution.draft().name(),
