@@ -12,6 +12,8 @@ import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.shell.editor.EditorCards;
 import features.world.dungeonmap.state.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
+import features.world.dungeonmap.state.EditorHover;
+import features.world.dungeonmap.state.EditorHoverScope;
 import features.world.dungeonmap.state.DungeonMapState;
 import features.world.dungeonmap.state.EditorInteractionState;
 import features.world.dungeonmap.state.EditorPreview;
@@ -110,11 +112,7 @@ public final class BoundaryTool implements EditorTool {
             return List.of();
         }
         boolean deleteMode = tool == DungeonEditorTool.CLUSTER_WALL_DELETE;
-        return List.of(EditorCapabilities.capability(
-                null,
-                this::resolvedVertexRef,
-                (capabilityCtx, hitRef) -> resolvedClusterRef(capabilityCtx, deleteMode),
-                features.world.dungeonmap.state.EditorHoverScope.PART));
+        return List.of(EditorCapabilities.capability(capabilityCtx -> resolveWallCapability(capabilityCtx, deleteMode)));
     }
 
     @Override
@@ -329,18 +327,14 @@ public final class BoundaryTool implements EditorTool {
         return new DungeonSelectionRef.ClusterRef(clusterId);
     }
 
-    private DungeonSelectionRef resolvedVertexRef(EditorToolContext ctx) {
-        DungeonEditorTool tool = sessionState.selectedTool();
-        if (tool == null || !tool.isWallTool()) {
-            return null;
-        }
-        ResolvedBoundaryVertex resolved = resolveBoundaryVertex(ctx, tool == DungeonEditorTool.CLUSTER_WALL_DELETE);
-        return resolved == null ? null : new DungeonSelectionRef.VertexRef(resolved.vertex2x());
-    }
-
-    private DungeonSelectionRef resolvedClusterRef(EditorToolContext ctx, boolean deleteMode) {
+    private EditorHitResolution resolveWallCapability(EditorToolContext ctx, boolean deleteMode) {
         ResolvedBoundaryVertex resolved = resolveBoundaryVertex(ctx, deleteMode);
-        return resolved == null ? null : clusterOwnerRef(resolved.clusterId());
+        if (resolved == null) {
+            return EditorHitResolution.none();
+        }
+        DungeonSelectionRef hitRef = new DungeonSelectionRef.VertexRef(resolved.vertex2x());
+        DungeonSelectionRef resolvedRef = clusterOwnerRef(resolved.clusterId());
+        return new EditorHitResolution(hitRef, resolvedRef, new EditorHover(hitRef, EditorHoverScope.PART));
     }
 
     private void refreshStatePane() {
