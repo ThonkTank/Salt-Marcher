@@ -4,8 +4,9 @@ import features.world.dungeonmap.application.stair.DungeonStairApplicationServic
 import features.world.dungeonmap.application.stair.StairDraftResolver;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.EdgeShape;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
+import features.world.dungeonmap.model.objects.DoorOwnerType;
+import features.world.dungeonmap.model.objects.DoorRef;
 import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionKind;
@@ -55,7 +56,7 @@ public final class TransitionConnectionBuilder {
                     transitionId,
                     mapId,
                     levelZ,
-                    roomBoundary.boundarySegment2x(),
+                    new DoorRef(DoorOwnerType.ROOM, roomBoundary.roomId(), levelZ, roomBoundary.boundarySegment2x()),
                     ConnectionEndpoint.room(roomBoundary.roomId()));
         }
         if (sourceRef instanceof DungeonSelectionRef.CorridorBoundaryRef corridorBoundary) {
@@ -72,7 +73,7 @@ public final class TransitionConnectionBuilder {
                     transitionId,
                     mapId,
                     levelZ,
-                    corridorBoundary.boundarySegment2x(),
+                    new DoorRef(DoorOwnerType.CORRIDOR, corridorBoundary.corridorId(), levelZ, corridorBoundary.boundarySegment2x()),
                     ConnectionEndpoint.corridor(corridorBoundary.corridorId()));
         }
         throw new IllegalArgumentException("Tür-Übergänge unterstützen nur Raum- oder Corridor-Grenzen");
@@ -116,7 +117,7 @@ public final class TransitionConnectionBuilder {
             Long transitionId,
             long mapId,
             int levelZ,
-            features.world.dungeonmap.model.geometry.GridSegment2x boundarySegment2x,
+            DoorRef doorRef,
             ConnectionEndpoint sourceEndpoint
     ) {
         return new DungeonConnection(
@@ -124,10 +125,7 @@ public final class TransitionConnectionBuilder {
                 transitionId,
                 mapId,
                 levelZ,
-                new DoorConnectionCarrier(
-                        EdgeShape.fromBoundarySegments(List.of(boundarySegment2x)),
-                        boundarySegment2x,
-                        false),
+                new DoorConnectionCarrier(doorRef),
                 List.of(sourceEndpoint, ConnectionEndpoint.transition(transitionId)));
     }
 

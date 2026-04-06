@@ -6,6 +6,7 @@ public enum DungeonHitKind {
     ROOM,
     ROOM_BOUNDARY,
     CORRIDOR_BOUNDARY,
+    DOOR,
     CONNECTION,
     CORRIDOR,
     CORRIDOR_TILE,

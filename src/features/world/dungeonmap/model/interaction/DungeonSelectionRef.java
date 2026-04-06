@@ -3,6 +3,7 @@ package features.world.dungeonmap.model.interaction;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.objects.DoorOwnerType;
 import features.world.dungeonmap.model.structures.connection.ConnectionKind;
 
 import java.util.Objects;
@@ -16,6 +17,7 @@ public sealed interface DungeonSelectionRef permits
         DungeonSelectionRef.VertexRef,
         DungeonSelectionRef.RoomBoundaryRef,
         DungeonSelectionRef.CorridorBoundaryRef,
+        DungeonSelectionRef.DoorRef,
         DungeonSelectionRef.ConnectionRef,
         DungeonSelectionRef.CorridorTileRef,
         DungeonSelectionRef.CorridorNodeRef,
@@ -39,6 +41,7 @@ public sealed interface DungeonSelectionRef permits
             case VertexRef ignored -> DungeonHitKind.VERTEX;
             case RoomBoundaryRef ignored -> DungeonHitKind.ROOM_BOUNDARY;
             case CorridorBoundaryRef ignored -> DungeonHitKind.CORRIDOR_BOUNDARY;
+            case DoorRef ignored -> DungeonHitKind.DOOR;
             case ConnectionRef ignored -> DungeonHitKind.CONNECTION;
             case CorridorTileRef ignored -> DungeonHitKind.CORRIDOR_TILE;
             case CorridorNodeRef ignored -> DungeonHitKind.CORRIDOR_NODE;
@@ -127,6 +130,27 @@ public sealed interface DungeonSelectionRef permits
         @Override
         public DungeonSelectionRef ownerRef() {
             return corridorId == null ? null : new CorridorRef(corridorId);
+        }
+    }
+
+    record DoorRef(
+            DoorOwnerType ownerType,
+            Long ownerId,
+            int levelZ,
+            GridSegment2x anchorSegment2x
+    ) implements DungeonSelectionRef {
+        public DoorRef {
+            ownerType = Objects.requireNonNull(ownerType, "ownerType");
+            anchorSegment2x = Objects.requireNonNull(anchorSegment2x, "anchorSegment2x");
+        }
+
+        @Override
+        public DungeonSelectionRef ownerRef() {
+            return switch (ownerType) {
+                case CLUSTER -> ownerId == null ? null : new ClusterRef(ownerId);
+                case ROOM -> ownerId == null ? null : new RoomRef(ownerId);
+                case CORRIDOR -> ownerId == null ? null : new CorridorRef(ownerId);
+            };
         }
     }
 

@@ -3,11 +3,12 @@ package features.world.dungeonmap.repository;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.EdgeShape;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.TileShapeKind;
 import features.world.dungeonmap.model.geometry.TileShapeSpec;
+import features.world.dungeonmap.model.objects.DoorOwnerType;
+import features.world.dungeonmap.model.objects.DoorRef;
 import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpointType;
@@ -17,7 +18,6 @@ import features.world.dungeonmap.model.structures.connection.DungeonConnection;
 import features.world.dungeonmap.model.structures.connection.StairConnectionCarrier;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
-import features.world.dungeonmap.model.objects.Door;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -314,9 +314,7 @@ public final class DungeonTransitionRepository {
                         mapId,
                         rs.getInt("door_level_z"),
                         new DoorConnectionCarrier(
-                                EdgeShape.fromBoundarySegments(List.of(boundarySegment2x)),
-                                boundarySegment2x,
-                                false),
+                                transitionDoorRef(sourceEndpoint, rs.getInt("door_level_z"), boundarySegment2x)),
                         List.of(sourceEndpoint, ConnectionEndpoint.transition(transitionId)));
             }
             case "STAIR" -> new DungeonConnection(
@@ -399,14 +397,14 @@ public final class DungeonTransitionRepository {
             int startIndex
     ) throws SQLException {
         if (localConnection != null && localConnection.doorCarrier() != null) {
-            DoorConnectionCarrier doorCarrier = localConnection.doorCarrier();
             ConnectionEndpoint sourceEndpoint = localConnection.entryEndpoint();
+            GridSegment2x anchorSegment2x = localConnection.anchorSegment2x();
             ps.setString(startIndex, "DOOR");
             ps.setInt(startIndex + 1, localConnection.levelZ());
-            ps.setInt(startIndex + 2, doorCarrier.anchorSegment2x().start().x2());
-            ps.setInt(startIndex + 3, doorCarrier.anchorSegment2x().start().y2());
-            ps.setInt(startIndex + 4, doorCarrier.anchorSegment2x().end().x2());
-            ps.setInt(startIndex + 5, doorCarrier.anchorSegment2x().end().y2());
+            ps.setInt(startIndex + 2, anchorSegment2x.start().x2());
+            ps.setInt(startIndex + 3, anchorSegment2x.start().y2());
+            ps.setInt(startIndex + 4, anchorSegment2x.end().x2());
+            ps.setInt(startIndex + 5, anchorSegment2x.end().y2());
             ps.setString(startIndex + 6, sourceEndpoint == null ? null : sourceEndpoint.type().name());
             if (sourceEndpoint == null || sourceEndpoint.id() == null) {
                 ps.setNull(startIndex + 7, java.sql.Types.BIGINT);
@@ -456,6 +454,22 @@ public final class DungeonTransitionRepository {
         ps.setNull(startIndex + 6, java.sql.Types.INTEGER);
         ps.setNull(startIndex + 7, java.sql.Types.INTEGER);
         ps.setNull(startIndex + 8, java.sql.Types.INTEGER);
+    }
+
+    private static DoorRef transitionDoorRef(
+            ConnectionEndpoint sourceEndpoint,
+            int levelZ,
+            GridSegment2x boundarySegment2x
+    ) throws SQLException {
+        if (sourceEndpoint == null || boundarySegment2x == null) {
+            throw new SQLException("Transition door placement is missing its source endpoint or boundary");
+        }
+        DoorOwnerType ownerType = switch (sourceEndpoint.type()) {
+            case ROOM -> DoorOwnerType.ROOM;
+            case CORRIDOR -> DoorOwnerType.CORRIDOR;
+            default -> throw new SQLException("Transition door placement cannot resolve owner type " + sourceEndpoint.type());
+        };
+        return new DoorRef(ownerType, sourceEndpoint.id(), levelZ, boundarySegment2x);
     }
 
     private static Map<Long, Set<Integer>> loadStopLevelsByTransitionId(Connection conn, long mapId) throws SQLException {

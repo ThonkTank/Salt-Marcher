@@ -1,5 +1,6 @@
 package features.world.dungeonmap.model.structures.connection;
 
+import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
@@ -21,11 +22,16 @@ public final class DoorExitCatalog {
         throw new AssertionError("No instances");
     }
 
-    public static List<RoomExitDescriptor> describe(Set<CellCoord> cells, int levelZ, List<? extends Connection> connections) {
+    public static List<RoomExitDescriptor> describe(
+            DungeonLayout layout,
+            Set<CellCoord> cells,
+            int levelZ,
+            List<? extends Connection> connections
+    ) {
         if (cells == null || cells.isEmpty() || connections == null || connections.isEmpty()) {
             return List.of();
         }
-        List<ExitEdge> exitEdges = collectExitEdges(cells, levelZ, connections);
+        List<ExitEdge> exitEdges = collectExitEdges(layout, cells, levelZ, connections);
         if (exitEdges.isEmpty()) {
             return List.of();
         }
@@ -48,12 +54,17 @@ public final class DoorExitCatalog {
         return List.copyOf(result);
     }
 
-    private static List<ExitEdge> collectExitEdges(Set<CellCoord> cells, int levelZ, List<? extends Connection> connections) {
+    private static List<ExitEdge> collectExitEdges(
+            DungeonLayout layout,
+            Set<CellCoord> cells,
+            int levelZ,
+            List<? extends Connection> connections
+    ) {
         List<ExitEdge> result = new ArrayList<>();
         Set<GridSegment2x> boundarySegments = new LinkedHashSet<>();
         for (Connection connection : connections) {
             if (connection != null && connection.levelZ() == levelZ && connection.doorCarrier() != null) {
-                boundarySegments.addAll(connection.boundarySegments2x());
+                boundarySegments.addAll(connection.boundarySegments2x(layout));
             }
         }
         for (GridSegment2x segment2x : boundarySegments) {

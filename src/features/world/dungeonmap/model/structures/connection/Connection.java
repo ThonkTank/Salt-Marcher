@@ -3,8 +3,9 @@ package features.world.dungeonmap.model.structures.connection;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.EdgeShape;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.objects.Door;
+import features.world.dungeonmap.model.objects.DoorRef;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -31,9 +32,9 @@ public interface Connection {
 
     ConnectionKind kind();
 
-    default EdgeShape doorShape() {
+    default DoorRef doorRef() {
         DoorConnectionCarrier carrier = doorCarrier();
-        return carrier == null ? EdgeShape.empty() : carrier.shape();
+        return carrier == null ? null : carrier.doorRef();
     }
 
     default DoorConnectionCarrier doorCarrier() {
@@ -45,26 +46,36 @@ public interface Connection {
     }
 
     default GridSegment2x anchorSegment2x() {
-        DoorConnectionCarrier carrier = doorCarrier();
-        return carrier == null ? null : carrier.anchorSegment2x();
+        DoorRef doorRef = doorRef();
+        return doorRef == null ? null : doorRef.anchorSegment2x();
     }
 
-    default Set<GridSegment2x> boundarySegments2x() {
-        DoorConnectionCarrier carrier = doorCarrier();
-        if (carrier == null || carrier.shape().isEmpty()) {
+    default Door door(DungeonLayout layout) {
+        DoorRef doorRef = doorRef();
+        return layout == null || doorRef == null ? null : layout.resolveDoor(doorRef);
+    }
+
+    default Set<GridSegment2x> boundarySegments2x(DungeonLayout layout) {
+        Door door = door(layout);
+        if (door == null) {
+            GridSegment2x anchorSegment2x = anchorSegment2x();
+            return anchorSegment2x == null ? Set.of() : Set.of(anchorSegment2x);
+        }
+        if (door.isEmpty()) {
             return Set.of();
         }
-        return Set.copyOf(new LinkedHashSet<>(carrier.segments2x()));
+        return Set.copyOf(new LinkedHashSet<>(door.segments2x()));
     }
 
-    default boolean blocksPassage() {
-        DoorConnectionCarrier carrier = doorCarrier();
-        return carrier != null && carrier.blocksPassage();
+    default boolean blocksPassage(DungeonLayout layout) {
+        Door door = door(layout);
+        return door != null && door.blocksPassage();
     }
 
-    default boolean isTraversable() {
+    default boolean isTraversable(DungeonLayout layout) {
         if (doorCarrier() != null) {
-            return !blocksPassage();
+            Door door = door(layout);
+            return door != null && !door.blocksPassage();
         }
         return stairCarrier() != null;
     }

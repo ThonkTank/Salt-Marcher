@@ -3,6 +3,7 @@ package features.world.dungeonmap.shell.interaction;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
+import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
@@ -58,6 +59,8 @@ public final class DungeonSelectionHighlightResolver {
                     List.of(new DungeonHitSurface.SegmentSurface(Set.of(roomBoundaryRef.boundarySegment2x()), levelZ));
             case DungeonSelectionRef.CorridorBoundaryRef corridorBoundaryRef ->
                     List.of(new DungeonHitSurface.SegmentSurface(Set.of(corridorBoundaryRef.boundarySegment2x()), levelZ));
+            case DungeonSelectionRef.DoorRef doorRef ->
+                    doorPartSurfaces(layout, doorRef, levelZ);
             case DungeonSelectionRef.ConnectionRef connectionRef ->
                     List.of(new DungeonHitSurface.SegmentSurface(Set.of(connectionRef.boundarySegment2x()), levelZ));
             case DungeonSelectionRef.CorridorTileRef corridorTileRef ->
@@ -161,5 +164,24 @@ public final class DungeonSelectionHighlightResolver {
                 .map(trace -> List.<DungeonHitSurface>of(
                         new DungeonHitSurface.SegmentSurface(Set.copyOf(trace.segments2x()), levelZ)))
                 .orElse(List.of());
+    }
+
+    private static List<DungeonHitSurface> doorPartSurfaces(
+            DungeonLayout layout,
+            DungeonSelectionRef.DoorRef doorRef,
+            int levelZ
+    ) {
+        if (layout == null || doorRef == null || doorRef.levelZ() != levelZ) {
+            return List.of();
+        }
+        Door door = layout.resolveDoor(new features.world.dungeonmap.model.objects.DoorRef(
+                doorRef.ownerType(),
+                doorRef.ownerId(),
+                doorRef.levelZ(),
+                doorRef.anchorSegment2x()));
+        if (door == null || door.isEmpty()) {
+            return List.of(new DungeonHitSurface.SegmentSurface(Set.of(doorRef.anchorSegment2x()), levelZ));
+        }
+        return List.of(new DungeonHitSurface.SegmentSurface(Set.copyOf(door.segments2x()), levelZ));
     }
 }

@@ -66,6 +66,16 @@ public final class StructureObject {
             Map<Integer, ? extends Collection<CellCoord>> floorCellsByLevel,
             Map<Integer, CellCoord> anchorsByLevel
     ) {
+        return fromSurfaceCellsByLevel(cellsByLevel, Map.of(), openingEdgesByLevel, floorCellsByLevel, anchorsByLevel);
+    }
+
+    public static StructureObject fromSurfaceCellsByLevel(
+            Map<Integer, ? extends Collection<CellCoord>> cellsByLevel,
+            Map<Integer, ? extends Collection<GridSegment2x>> portalEdgesByLevel,
+            Map<Integer, ? extends Collection<GridSegment2x>> doorEdgesByLevel,
+            Map<Integer, ? extends Collection<CellCoord>> floorCellsByLevel,
+            Map<Integer, CellCoord> anchorsByLevel
+    ) {
         if (cellsByLevel == null || cellsByLevel.isEmpty()) {
             return empty();
         }
@@ -78,7 +88,8 @@ public final class StructureObject {
                     LevelStructure level = LevelStructure.fromSurfaceCells(
                             anchorsByLevel == null ? null : anchorsByLevel.get(levelZ),
                             entry.getValue(),
-                            openingEdgesByLevel == null ? null : openingEdgesByLevel.get(levelZ),
+                            portalEdgesByLevel == null ? null : portalEdgesByLevel.get(levelZ),
+                            doorEdgesByLevel == null ? null : doorEdgesByLevel.get(levelZ),
                             floorCellsByLevel == null ? null : floorCellsByLevel.get(levelZ));
                     if (!level.isEmpty()) {
                         levels.put(levelZ, level);
@@ -91,6 +102,23 @@ public final class StructureObject {
             Map<Integer, ? extends Collection<CellCoord>> surfaceCellsByLevel,
             Map<Integer, ? extends Collection<GridSegment2x>> boundaryEdgesByLevel,
             Map<Integer, ? extends Collection<GridSegment2x>> openingEdgesByLevel,
+            Map<Integer, ? extends Collection<CellCoord>> floorCellsByLevel,
+            Map<Integer, CellCoord> anchorsByLevel
+    ) {
+        return fromTopologyByLevel(
+                surfaceCellsByLevel,
+                boundaryEdgesByLevel,
+                Map.of(),
+                openingEdgesByLevel,
+                floorCellsByLevel,
+                anchorsByLevel);
+    }
+
+    public static StructureObject fromTopologyByLevel(
+            Map<Integer, ? extends Collection<CellCoord>> surfaceCellsByLevel,
+            Map<Integer, ? extends Collection<GridSegment2x>> boundaryEdgesByLevel,
+            Map<Integer, ? extends Collection<GridSegment2x>> portalEdgesByLevel,
+            Map<Integer, ? extends Collection<GridSegment2x>> doorEdgesByLevel,
             Map<Integer, ? extends Collection<CellCoord>> floorCellsByLevel,
             Map<Integer, CellCoord> anchorsByLevel
     ) {
@@ -107,7 +135,8 @@ public final class StructureObject {
                             anchorsByLevel == null ? null : anchorsByLevel.get(levelZ),
                             entry.getValue(),
                             boundaryEdgesByLevel == null ? null : boundaryEdgesByLevel.get(levelZ),
-                            openingEdgesByLevel == null ? null : openingEdgesByLevel.get(levelZ),
+                            portalEdgesByLevel == null ? null : portalEdgesByLevel.get(levelZ),
+                            doorEdgesByLevel == null ? null : doorEdgesByLevel.get(levelZ),
                             floorCellsByLevel == null ? null : floorCellsByLevel.get(levelZ));
                     if (!level.isEmpty()) {
                         levels.put(levelZ, level);
@@ -172,6 +201,20 @@ public final class StructureObject {
             }
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
+    public static List<Door> doorsForBoundary(
+            Collection<GridSegment2x> boundaryEdges,
+            Collection<GridSegment2x> candidateDoorEdges,
+            Door.DoorState doorState
+    ) {
+        EdgeShape doorShape = EdgeShape.fromBoundarySegments(openingEdgesForBoundary(boundaryEdges, candidateDoorEdges));
+        if (doorShape.isEmpty()) {
+            return List.of();
+        }
+        return doorShape.connectedComponents().stream()
+                .map(component -> Door.fromShape(component, doorState))
+                .toList();
     }
 
     public static Set<CellCoord> surfaceCellsForTraces(Collection<PathTrace> traces) {
@@ -267,8 +310,8 @@ public final class StructureObject {
             Collection<RoutedNode> nodes,
             Collection<RoutedLink> links,
             Collection<CellCoord> blockedCells,
-            Collection<GridSegment2x> fixedOpeningEdges,
-            Collection<GridSegment2x> boundaryOpeningEdges
+            Collection<GridSegment2x> portalEdges,
+            Collection<GridSegment2x> boundaryDoorEdges
     ) {
         Map<Long, RoutedNode> nodesById = indexRoutedNodes(nodes);
         ArrayList<PathTrace> traces = new ArrayList<>();
@@ -292,15 +335,15 @@ public final class StructureObject {
         if (boundaryEdges.isEmpty()) {
             return new RoutedProjection(empty(), List.copyOf(traces), Set.of());
         }
-        Set<GridSegment2x> normalizedBoundaryOpenings = validatedExteriorOpenings(boundaryEdges, boundaryOpeningEdges);
-        LinkedHashSet<GridSegment2x> openingEdges = new LinkedHashSet<>(openingEdgesForBoundary(boundaryEdges, fixedOpeningEdges));
-        openingEdges.addAll(normalizedBoundaryOpenings);
+        Set<GridSegment2x> normalizedPortalEdges = openingEdgesForBoundary(boundaryEdges, portalEdges);
+        Set<GridSegment2x> normalizedBoundaryDoorEdges = validatedExteriorOpenings(boundaryEdges, boundaryDoorEdges);
         StructureObject structure = new StructureObject(
                 Map.of(levelZ, LevelStructure.fromTopology(
                         CellCoord.bestCenter(occupiedCells),
                         occupiedCells,
                         boundaryEdges,
-                        openingEdges,
+                        normalizedPortalEdges,
+                        normalizedBoundaryDoorEdges,
                         occupiedCells)),
                 null,
                 Map.of(levelZ, traces));
@@ -308,7 +351,7 @@ public final class StructureObject {
         if (!hydratedCells.equals(CellCoord.normalize(occupiedCells))) {
             throw new IllegalStateException("StructureObject route projection changed the routed occupied cells");
         }
-        return new RoutedProjection(structure, traces, normalizedBoundaryOpenings);
+        return new RoutedProjection(structure, traces, normalizedBoundaryDoorEdges);
     }
 
     private StructureObject(
@@ -356,12 +399,26 @@ public final class StructureObject {
     }
 
     public StructureObject withOpeningEdgesAtLevel(int levelZ, Collection<GridSegment2x> openingEdges) {
+        return withDoorsAtLevel(levelZ, doorsForBoundary(boundaryEdgesAtLevel(levelZ), openingEdges, Door.DoorState.OPEN));
+    }
+
+    public StructureObject withPortalEdgesAtLevel(int levelZ, Collection<GridSegment2x> portalEdges) {
         LevelStructure level = levelStructure(levelZ);
         if (level == null) {
             return this;
         }
         Map<Integer, LevelStructure> updated = new LinkedHashMap<>(levelsByZ);
-        updated.put(levelZ, level.withOpeningEdges(openingEdges));
+        updated.put(levelZ, level.withPortalEdges(portalEdges));
+        return new StructureObject(updated, stair, pathTracesByLevel);
+    }
+
+    public StructureObject withDoorsAtLevel(int levelZ, Collection<Door> doors) {
+        LevelStructure level = levelStructure(levelZ);
+        if (level == null) {
+            return this;
+        }
+        Map<Integer, LevelStructure> updated = new LinkedHashMap<>(levelsByZ);
+        updated.put(levelZ, level.withDoors(doors));
         return new StructureObject(updated, stair, pathTracesByLevel);
     }
 
@@ -401,13 +458,8 @@ public final class StructureObject {
     }
 
     public List<Door> doorsAtLevel(int levelZ) {
-        EdgeShape openingShape = openingShapeAtLevel(levelZ);
-        if (openingShape.isEmpty()) {
-            return List.of();
-        }
-        return openingShape.connectedComponents().stream()
-                .map(component -> Door.fromShape(component, Door.DoorState.OPEN))
-                .toList();
+        LevelStructure level = levelStructure(levelZ);
+        return level == null ? List.of() : level.doors();
     }
 
     public List<EdgeShape> wallComponentShapesAtLevel(int levelZ) {
@@ -415,7 +467,10 @@ public final class StructureObject {
     }
 
     public List<EdgeShape> doorComponentShapesAtLevel(int levelZ) {
-        return openingShapeAtLevel(levelZ).connectedComponents();
+        return doorsAtLevel(levelZ).stream()
+                .map(door -> EdgeShape.fromBoundarySegments(door.segments2x()))
+                .sorted(Comparator.comparing(EdgeShape::firstSegment2x, GridSegment2x.ORDER))
+                .toList();
     }
 
     public Set<GridSegment2x> wallSegmentsAtLevel(int levelZ) {
@@ -423,7 +478,8 @@ public final class StructureObject {
     }
 
     public Set<GridSegment2x> doorSegmentsAtLevel(int levelZ) {
-        return openingShapeAtLevel(levelZ).segmentSet2x();
+        LevelStructure level = levelStructure(levelZ);
+        return level == null ? Set.of() : level.doorEdges();
     }
 
     public Floor floorAtLevel(int levelZ) {
@@ -512,6 +568,11 @@ public final class StructureObject {
         return level == null ? EdgeShape.empty() : level.openingShape();
     }
 
+    public EdgeShape portalShapeAtLevel(int levelZ) {
+        LevelStructure level = levelStructure(levelZ);
+        return level == null ? EdgeShape.empty() : level.portalShape();
+    }
+
     public Set<GridSegment2x> boundaryEdgesAtLevel(int levelZ) {
         LevelStructure level = levelStructure(levelZ);
         return level == null ? Set.of() : level.boundaryEdges();
@@ -520,6 +581,11 @@ public final class StructureObject {
     public Set<GridSegment2x> openingEdgesAtLevel(int levelZ) {
         LevelStructure level = levelStructure(levelZ);
         return level == null ? Set.of() : level.openingEdges();
+    }
+
+    public Set<GridSegment2x> portalEdgesAtLevel(int levelZ) {
+        LevelStructure level = levelStructure(levelZ);
+        return level == null ? Set.of() : level.portalEdges();
     }
 
     public Set<GridSegment2x> interiorBoundaryEdgesAtLevel(int levelZ) {
@@ -709,13 +775,15 @@ public final class StructureObject {
                     Set<GridSegment2x> boundaryEdges = boundaryEdgesForSurface(
                             clippedSurfaceCells,
                             interiorBoundaryEdgesAtLevel(levelZ));
-                    Set<GridSegment2x> openingEdges = openingEdgesForBoundary(boundaryEdges, openingEdgesAtLevel(levelZ));
+                    Set<GridSegment2x> portalEdges = openingEdgesForBoundary(boundaryEdges, portalEdgesAtLevel(levelZ));
+                    List<Door> clippedDoors = clippedDoorsForBoundary(doorsAtLevel(levelZ), boundaryEdges);
                     Set<CellCoord> floorCells = intersectCells(floorCellCoordsAtLevel(levelZ), clippedSurfaceCells);
-                    levels.put(levelZ, LevelStructure.fromTopology(
+                    levels.put(levelZ, LevelStructure.fromTopologyWithDoors(
                             preferredAnchorsByLevel == null ? null : preferredAnchorsByLevel.get(levelZ),
                             clippedSurfaceCells,
                             boundaryEdges,
-                            openingEdges,
+                            portalEdges,
+                            clippedDoors,
                             floorCells));
                 });
         return levels.isEmpty() ? empty() : new StructureObject(levels, null, Map.of());
@@ -776,6 +844,27 @@ public final class StructureObject {
         return boundaryShapeAtLevel(levelZ)
                 .without(openingEdgesAtLevel(levelZ))
                 .boundaryStepSet2x();
+    }
+
+    private static List<Door> clippedDoorsForBoundary(Collection<Door> doors, Collection<GridSegment2x> boundaryEdges) {
+        if (doors == null || doors.isEmpty() || boundaryEdges == null || boundaryEdges.isEmpty()) {
+            return List.of();
+        }
+        ArrayList<Door> result = new ArrayList<>();
+        for (Door door : doors) {
+            if (door == null || door.isEmpty()) {
+                continue;
+            }
+            EdgeShape clippedShape = EdgeShape.fromBoundarySegments(boundaryEdges).intersection(door.segments2x());
+            if (clippedShape.isEmpty()) {
+                continue;
+            }
+            GridSegment2x clippedAnchor = clippedShape.contains(door.anchorSegment2x())
+                    ? door.anchorSegment2x()
+                    : clippedShape.firstSegment2x();
+            result.add(Door.fromShape(clippedShape, clippedAnchor, door.doorState()));
+        }
+        return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
     private static Map<Integer, LevelStructure> normalizeLevels(Map<Integer, LevelStructure> levelsByZ) {
@@ -1276,18 +1365,25 @@ public final class StructureObject {
         private final TileShape surfaceShape;
         private final TileShape floorShape;
         private final EdgeShape boundaryShape;
+        private final EdgeShape portalShape;
+        private final List<Door> doors;
         private final EdgeShape openingShape;
 
         private LevelStructure(
                 CellCoord anchorCell,
                 TileShape surfaceShape,
                 EdgeShape boundaryShape,
-                EdgeShape openingShape,
+                EdgeShape portalShape,
+                Collection<Door> doors,
                 TileShape floorShape
         ) {
             this.surfaceShape = surfaceShape == null ? TileShape.empty() : surfaceShape;
             this.boundaryShape = boundaryShape == null ? EdgeShape.empty() : boundaryShape;
-            this.openingShape = openingShape == null ? EdgeShape.empty() : openingShape;
+            this.portalShape = boundaryShape == null
+                    ? EdgeShape.empty()
+                    : this.boundaryShape.intersection(portalShape == null ? List.of() : portalShape.segments2x());
+            this.doors = normalizeDoors(this.boundaryShape, doors);
+            this.openingShape = openingShape(this.portalShape, this.doors);
             this.floorShape = floorShape == null ? TileShape.empty() : floorShape;
             this.anchorCell = normalizeAnchor(anchorCell, this.surfaceShape);
         }
@@ -1295,7 +1391,8 @@ public final class StructureObject {
         public static LevelStructure fromSurfaceCells(
                 CellCoord anchorCell,
                 Collection<CellCoord> surfaceCells,
-                Collection<GridSegment2x> openingEdges,
+                Collection<GridSegment2x> portalEdges,
+                Collection<GridSegment2x> doorEdges,
                 Collection<CellCoord> floorCells
         ) {
             TileShape surfaceShape = TileShape.of(surfaceCells);
@@ -1303,7 +1400,8 @@ public final class StructureObject {
                     anchorCell,
                     surfaceShape.cellCoords(),
                     surfaceShape.boundaryShape().segmentSet2x(),
-                    openingEdges,
+                    portalEdges,
+                    doorEdges,
                     floorCells);
         }
 
@@ -1314,17 +1412,51 @@ public final class StructureObject {
                 Collection<GridSegment2x> openingEdges,
                 Collection<CellCoord> floorCells
         ) {
+            return fromTopology(
+                    anchorCell,
+                    surfaceCells,
+                    boundaryEdges,
+                    Set.of(),
+                    openingEdges,
+                    floorCells);
+        }
+
+        public static LevelStructure fromTopology(
+                CellCoord anchorCell,
+                Collection<CellCoord> surfaceCells,
+                Collection<GridSegment2x> boundaryEdges,
+                Collection<GridSegment2x> portalEdges,
+                Collection<GridSegment2x> doorEdges,
+                Collection<CellCoord> floorCells
+        ) {
+            return fromTopologyWithDoors(
+                    anchorCell,
+                    surfaceCells,
+                    boundaryEdges,
+                    portalEdges,
+                    doorsForBoundary(boundaryEdges, doorEdges, Door.DoorState.OPEN),
+                    floorCells);
+        }
+
+        private static LevelStructure fromTopologyWithDoors(
+                CellCoord anchorCell,
+                Collection<CellCoord> surfaceCells,
+                Collection<GridSegment2x> boundaryEdges,
+                Collection<GridSegment2x> portalEdges,
+                Collection<Door> doors,
+                Collection<CellCoord> floorCells
+        ) {
             TileShape surfaceShape = TileShape.of(surfaceCells);
             if (surfaceShape.isEmpty()) {
-                return new LevelStructure(anchorCell, surfaceShape, EdgeShape.empty(), EdgeShape.empty(), TileShape.empty());
+                return new LevelStructure(anchorCell, surfaceShape, EdgeShape.empty(), EdgeShape.empty(), List.of(), TileShape.empty());
             }
             Set<GridSegment2x> normalizedBoundaryEdges = StructureObject.normalizedBoundaryEdges(surfaceShape.cellCoords(), boundaryEdges);
             EdgeShape boundaryShape = normalizedBoundaryEdges.isEmpty()
                     ? surfaceShape.boundaryShape()
                     : EdgeShape.fromBoundarySegments(normalizedBoundaryEdges);
-            EdgeShape openingShape = boundaryShape.intersection(openingEdges);
+            EdgeShape portalShape = boundaryShape.intersection(portalEdges);
             TileShape floorShape = surfaceShape.intersection(floorCells);
-            return new LevelStructure(anchorCell, surfaceShape, boundaryShape, openingShape, floorShape);
+            return new LevelStructure(anchorCell, surfaceShape, boundaryShape, portalShape, doors, floorShape);
         }
 
         public CellCoord anchorCell() {
@@ -1343,6 +1475,14 @@ public final class StructureObject {
             return boundaryShape;
         }
 
+        public EdgeShape portalShape() {
+            return portalShape;
+        }
+
+        public List<Door> doors() {
+            return doors;
+        }
+
         public EdgeShape openingShape() {
             return openingShape;
         }
@@ -1353,6 +1493,20 @@ public final class StructureObject {
 
         public Set<GridSegment2x> boundaryEdges() {
             return boundaryShape.segmentSet2x();
+        }
+
+        public Set<GridSegment2x> portalEdges() {
+            return portalShape.segmentSet2x();
+        }
+
+        public Set<GridSegment2x> doorEdges() {
+            LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
+            for (Door door : doors) {
+                if (door != null) {
+                    result.addAll(door.segments2x());
+                }
+            }
+            return result.isEmpty() ? Set.of() : Set.copyOf(result);
         }
 
         public Set<GridSegment2x> openingEdges() {
@@ -1372,21 +1526,35 @@ public final class StructureObject {
                     anchorCell.add(resolvedDelta),
                     surfaceShape.translatedByCells(resolvedDelta),
                     boundaryShape.translatedByCells(resolvedDelta),
-                    openingShape.translatedByCells(resolvedDelta),
+                    portalShape.translatedByCells(resolvedDelta),
+                    doors.stream()
+                            .map(door -> door == null ? null : door.movedBy(resolvedDelta))
+                            .filter(Objects::nonNull)
+                            .toList(),
                     floorShape.translatedByCells(resolvedDelta));
         }
 
         public LevelStructure withFloorCells(Collection<CellCoord> floorCells) {
-            return fromTopology(anchorCell, surfaceShape.cellCoords(), boundaryEdges(), openingEdges(), floorCells);
+            return fromTopologyWithDoors(anchorCell, surfaceShape.cellCoords(), boundaryEdges(), portalEdges(), doors, floorCells);
         }
 
         public LevelStructure withOpeningEdges(Collection<GridSegment2x> openingEdges) {
-            return fromTopology(anchorCell, surfaceShape.cellCoords(), boundaryEdges(), openingEdges, floorCells());
+            return withDoors(doorsForBoundary(boundaryEdges(), openingEdges, Door.DoorState.OPEN));
+        }
+
+        public LevelStructure withPortalEdges(Collection<GridSegment2x> portalEdges) {
+            return fromTopologyWithDoors(anchorCell, surfaceShape.cellCoords(), boundaryEdges(), portalEdges, doors, floorCells());
+        }
+
+        public LevelStructure withDoors(Collection<Door> doors) {
+            return fromTopologyWithDoors(anchorCell, surfaceShape.cellCoords(), boundaryEdges(), portalEdges(), doors, floorCells());
         }
 
         public boolean isEmpty() {
             return surfaceShape.isEmpty()
                     && boundaryShape.isEmpty()
+                    && portalShape.isEmpty()
+                    && doors.isEmpty()
                     && openingShape.isEmpty()
                     && floorShape.isEmpty();
         }
@@ -1402,13 +1570,15 @@ public final class StructureObject {
             return Objects.equals(anchorCell, that.anchorCell)
                     && Objects.equals(surfaceShape.cellCoords(), that.surfaceShape.cellCoords())
                     && Objects.equals(boundaryEdges(), that.boundaryEdges())
+                    && Objects.equals(portalEdges(), that.portalEdges())
+                    && Objects.equals(doors, that.doors)
                     && Objects.equals(openingEdges(), that.openingEdges())
                     && Objects.equals(floorCells(), that.floorCells());
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(anchorCell, surfaceShape.cellCoords(), boundaryEdges(), openingEdges(), floorCells());
+            return Objects.hash(anchorCell, surfaceShape.cellCoords(), boundaryEdges(), portalEdges(), doors, openingEdges(), floorCells());
         }
 
         @Override
@@ -1416,6 +1586,8 @@ public final class StructureObject {
             return "LevelStructure[anchorCell=" + anchorCell
                     + ", surfaceCells=" + surfaceShape.cellCoords()
                     + ", boundaryEdges=" + boundaryEdges()
+                    + ", portalEdges=" + portalEdges()
+                    + ", doors=" + doors
                     + ", openingEdges=" + openingEdges()
                     + ", floorCells=" + floorCells()
                     + "]";
@@ -1427,6 +1599,39 @@ public final class StructureObject {
             }
             CellCoord centerCell = surfaceShape == null ? null : surfaceShape.centerCellCoord();
             return centerCell == null ? new CellCoord(0, 0) : centerCell;
+        }
+
+        private static List<Door> normalizeDoors(EdgeShape boundaryShape, Collection<Door> doors) {
+            if (doors == null || doors.isEmpty() || boundaryShape == null || boundaryShape.isEmpty()) {
+                return List.of();
+            }
+            ArrayList<Door> result = new ArrayList<>();
+            EdgeShape resolvedBoundaryShape = EdgeShape.fromBoundarySegments(boundaryShape.segments2x());
+            for (Door door : doors) {
+                if (door == null || door.isEmpty()) {
+                    continue;
+                }
+                EdgeShape clippedShape = resolvedBoundaryShape.intersection(door.segments2x());
+                if (clippedShape.isEmpty()) {
+                    continue;
+                }
+                GridSegment2x anchorSegment2x = clippedShape.contains(door.anchorSegment2x())
+                        ? door.anchorSegment2x()
+                        : clippedShape.firstSegment2x();
+                result.add(Door.fromShape(clippedShape, anchorSegment2x, door.doorState()));
+            }
+            result.sort(Comparator.comparing(Door::anchorSegment2x, GridSegment2x.ORDER));
+            return result.isEmpty() ? List.of() : List.copyOf(result);
+        }
+
+        private static EdgeShape openingShape(EdgeShape portalShape, Collection<Door> doors) {
+            LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>(portalShape == null ? List.of() : portalShape.segments2x());
+            for (Door door : doors == null ? List.<Door>of() : doors) {
+                if (door != null) {
+                    result.addAll(door.segments2x());
+                }
+            }
+            return result.isEmpty() ? EdgeShape.empty() : EdgeShape.fromBoundarySegments(result);
         }
     }
 }

@@ -11,7 +11,7 @@ Use it together with `shell/AGENTS.md`, the parent `dungeonmap/AGENTS.md`, and t
 
 ## Tool Ownership
 
-- `SelectionTool` owns semantic selection, cluster drag, whole-stair drag, door drag, and corridor-node drag.
+- `SelectionTool` owns semantic selection, cluster drag, whole-stair drag, door drag, and corridor-node drag. Physical door hits now resolve through `DungeonSelectionRef.DoorRef`; door drag starts from that ref and still drops onto `RoomBoundaryRef`.
 - Selecting a stair in `SelectionTool` must open the same stair editor state used by `StairTool`; do not fork a second stair form or second stair draft owner.
 - Dragging a plain corridor tile first promotes that tile to an explicit node. Clicking a corridor tile without drag must not create state.
 - `PaintTool` owns room paint/delete sessions from resolved `GridCellRef` hits and publishes previews as `CellCoord` sets, not temporary structures.

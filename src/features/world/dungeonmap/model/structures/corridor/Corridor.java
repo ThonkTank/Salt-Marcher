@@ -7,11 +7,14 @@ import features.world.dungeonmap.model.geometry.EdgeShape;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
+import features.world.dungeonmap.model.objects.DoorOwnerType;
+import features.world.dungeonmap.model.objects.DoorRef;
 import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionKind;
 import features.world.dungeonmap.model.structures.connection.DoorConnectionCarrier;
 import features.world.dungeonmap.model.structures.connection.DungeonConnection;
+import features.world.dungeonmap.model.structures.room.Room;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -928,12 +931,23 @@ public final class Corridor {
                     mapId,
                     levelZ,
                     new DoorConnectionCarrier(
-                            EdgeShape.fromBoundarySegments(List.of(boundaryEdge)),
-                            boundaryEdge,
-                            true),
+                            roomDoorRef(layout, levelZ, node.roomId(), boundaryEdge)),
                     List.of(ConnectionEndpoint.room(node.roomId()), ConnectionEndpoint.corridor(corridorId))));
         }
         return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
+    private static DoorRef roomDoorRef(
+            DungeonLayout layout,
+            int levelZ,
+            Long roomId,
+            GridSegment2x boundaryEdge
+    ) {
+        Room room = layout == null || roomId == null ? null : layout.findRoom(roomId);
+        if (room == null || boundaryEdge == null) {
+            throw new IllegalArgumentException("Corridor room-bound node could not resolve its owning door");
+        }
+        return new DoorRef(DoorOwnerType.ROOM, room.roomId(), levelZ, boundaryEdge);
     }
 
     private static GridPoint2x roomAnchorPoint(CorridorNode node, int levelZ, DungeonLayout layout) {

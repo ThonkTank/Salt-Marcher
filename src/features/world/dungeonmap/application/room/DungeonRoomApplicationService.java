@@ -5,6 +5,8 @@ import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.objects.DoorOwnerType;
+import features.world.dungeonmap.model.objects.DoorRef;
 import features.world.dungeonmap.model.objects.StairExit;
 import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
@@ -685,7 +687,11 @@ public final class DungeonRoomApplicationService {
                     localConnection.ownerId(),
                     localConnection.mapId(),
                     localConnection.levelZ(),
-                    new DoorConnectionCarrier(localConnection.doorShape(), localConnection.anchorSegment2x(), localConnection.blocksPassage()),
+                    new DoorConnectionCarrier(new DoorRef(
+                            DoorOwnerType.ROOM,
+                            reboundRoom.roomId(),
+                            localConnection.levelZ(),
+                            localConnection.anchorSegment2x())),
                     List.of(ConnectionEndpoint.room(reboundRoom.roomId()), ConnectionEndpoint.transition(transition.transitionId())));
         }
         if (localConnection.stairCarrier() != null) {

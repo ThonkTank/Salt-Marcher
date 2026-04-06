@@ -158,7 +158,7 @@ public final class DungeonRuntimeApplicationService {
         if (connection == null) {
             throw new SQLException("Verbindung konnte nicht aufgelöst werden");
         }
-        if (!connection.isTraversable()) {
+        if (!connection.isTraversable(layout)) {
             throw new SQLException("Verbindung ist blockiert");
         }
         CellCoord resolvedCell = nearestTraversableCell(layout, destination.cell(), destination.levelZ());

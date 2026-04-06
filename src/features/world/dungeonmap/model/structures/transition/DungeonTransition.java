@@ -3,6 +3,7 @@ package features.world.dungeonmap.model.structures.transition;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 import features.world.dungeonmap.model.structures.connection.DoorConnectionCarrier;
@@ -43,10 +44,14 @@ public record DungeonTransition(
         }
         DoorConnectionCarrier doorCarrier = localConnection.doorCarrier();
         if (doorCarrier != null) {
+            GridSegment2x anchorSegment2x = localConnection.anchorSegment2x();
+            if (anchorSegment2x == null) {
+                return null;
+            }
             return new InteractiveLabelHandle(
                     new DungeonSelectionRef.TransitionRef(transitionId),
                     label(),
-                    doorCarrier.anchorSegment2x().midpoint());
+                    anchorSegment2x.midpoint());
         }
         StairConnectionCarrier stairCarrier = localConnection.stairCarrier();
         if (stairCarrier == null) {
