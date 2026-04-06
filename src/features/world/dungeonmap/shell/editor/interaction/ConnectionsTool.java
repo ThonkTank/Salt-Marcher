@@ -1191,8 +1191,7 @@ public final class ConnectionsTool implements EditorTool {
             return false;
         }
         RoomCluster cluster = layout.findCluster(boundary.clusterId());
-        RoomCluster projectedCluster = cluster == null ? null : cluster.projectedToLevel(levelZ);
-        return projectedCluster != null && projectedCluster.canCreateDoor(hit.boundarySegment2x());
+        return cluster != null && cluster.canCreateDoor(levelZ, hit.boundarySegment2x());
     }
 
     private List<EditorInteractionCapability> createCapabilities(EditorToolContext ctx) {

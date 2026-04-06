@@ -146,11 +146,11 @@ public final class DungeonRoomApplicationService {
             DungeonTransactionRunner.inTransaction(conn, () -> {
                 DungeonLayout layout = requireLayout(conn, resolvedRequest.mapId());
                 RoomCluster cluster = layout.findCluster(resolvedRequest.clusterId());
-                RoomCluster projectedCluster = cluster == null ? null : cluster.projectedToLevel(resolvedRequest.levelZ());
-                if (cluster == null || projectedCluster == null) {
+                if (cluster == null) {
                     return null;
                 }
-                RoomCluster updatedCluster = projectedCluster.moveDoor(
+                RoomCluster updatedCluster = cluster.moveDoor(
+                        resolvedRequest.levelZ(),
                         resolvedRequest.sourceBoundarySegment2x(),
                         resolvedRequest.targetBoundarySegment2x());
                 if (updatedCluster != null) {
@@ -343,7 +343,7 @@ public final class DungeonRoomApplicationService {
         if (cluster == null) {
             return;
         }
-        RoomCluster updatedCluster = cluster.editBoundary(segments2x, type, deleteBoundary);
+        RoomCluster updatedCluster = cluster.editBoundary(levelZ, segments2x, type, deleteBoundary);
         if (updatedCluster == null) {
             return;
         }
@@ -379,20 +379,19 @@ public final class DungeonRoomApplicationService {
     ) throws SQLException {
         DungeonLayout layout = requireLayout(conn, mapId);
         RoomCluster cluster = layout.findCluster(clusterId);
-        RoomCluster projectedCluster = cluster == null ? null : cluster.projectedToLevel(levelZ);
-        if (projectedCluster == null) {
+        if (cluster == null) {
             return;
         }
         List<GridSegment2x> editableSegments = segments2x.stream()
                 .filter(Objects::nonNull)
                 .filter(segment2x -> deleteDoor
-                        ? projectedCluster.canDeleteDoor(segment2x)
-                        : projectedCluster.canCreateDoor(segment2x))
+                        ? cluster.canDeleteDoor(levelZ, segment2x)
+                        : cluster.canCreateDoor(levelZ, segment2x))
                 .toList();
         if (editableSegments.isEmpty()) {
             return;
         }
-        RoomCluster updatedCluster = cluster.editBoundary(editableSegments, InternalBoundaryType.DOOR, deleteDoor);
+        RoomCluster updatedCluster = cluster.editBoundary(levelZ, editableSegments, InternalBoundaryType.DOOR, deleteDoor);
         if (updatedCluster == null) {
             return;
         }
