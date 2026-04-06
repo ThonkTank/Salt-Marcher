@@ -877,7 +877,7 @@ public final class Corridor {
         StructureObject structure = StructureObject.fromSurfaceCellsByLevel(
                 Map.of(levelZ, occupiedCells),
                 Map.of(levelZ, openingEdges(boundaryEdges, openingSegments2x)),
-                Map.of(),
+                Map.of(levelZ, occupiedCells),
                 Map.of(levelZ, CellCoord.bestCenter(occupiedCells)));
         return validatedStructureForCells(levelZ, occupiedCells, structure);
     }

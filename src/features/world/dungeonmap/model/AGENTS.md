@@ -19,9 +19,9 @@ Use it together with the parent `dungeonmap/AGENTS.md` and the repository root `
 - `TileShape` owns unordered occupied cells on exactly one level. `EdgeShape` owns doubled-grid edge geometry on exactly one level. Ordered multi-level stair geometry lives on `TilePath`. Reusable generated forms are authored through `TileShapeSpec` and `TileShapeKind`, not through stair-local enums or generators.
 - Do not add offset codecs, parity bridge types, or secondary tile-area wrappers at model or persistence seams.
 - `Floor` extends `TileShape`; `Wall` and `Door` extend `EdgeShape`; passive object-side `Stair` extends `TilePath`. Those typed objects add semantics, while topology math lives on the shared shape bases.
-- `StructureObject.LevelStructure` authors cluster/corridor truth through `surfaceShape`, `boundaryShape`, `openingShape`, and an optional floor `TileShape`. Boundary-only loads may reconstruct surface cells, but `fillSeeds` are no longer part of authored geometry truth.
+- `StructureObject.LevelStructure` authors cluster/corridor truth through `surfaceShape`, `boundaryShape`, `openingShape`, and an optional floor `TileShape`. Surface cells are explicit authored topology; boundary rows do not rehydrate the surface.
 - `StructureObject` is the topology orchestrator over shape-backed `Floor`, `Wall`, `Door`, and optional passive `Stair` projections. It may expose raw cell/edge projections only as compatibility views, and it is the only allowed bridge from `objects/` into `structures/`.
-- Room and cluster persistence keep canonical raw 2x coordinates for anchors and boundary/opening rows. Legacy seed rows are transitional storage only and not geometry truth.
+- Room and cluster persistence keep canonical raw 2x coordinates for anchors, explicit cluster surface cells, floor cells, and boundary/opening rows.
 
 ## Interaction Seams
 

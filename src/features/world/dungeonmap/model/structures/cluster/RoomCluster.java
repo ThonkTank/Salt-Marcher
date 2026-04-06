@@ -1516,7 +1516,8 @@ public final class RoomCluster {
                 boundaryEdgesByLevel.put(levelZ, boundaryEdges);
                 openingEdgesByLevel.put(levelZ, openingEdges);
             }
-            return StructureObject.fromBoundaryEdgesByLevel(
+            return StructureObject.fromTopologyByLevel(
+                    normalizedCellsByLevel,
                     boundaryEdgesByLevel,
                     openingEdgesByLevel,
                     normalizedFloorCellsByLevel,

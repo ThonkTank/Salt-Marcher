@@ -90,12 +90,12 @@ public final class DungeonStorageSupport {
                 + "anchor_y2        INTEGER NOT NULL,"
                 + "PRIMARY KEY (cluster_id, level_z)"
                 + ")");
-        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_room_cluster_level_seeds ("
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_room_cluster_level_surface_cells ("
                 + "cluster_id       INTEGER NOT NULL,"
                 + "level_z          INTEGER NOT NULL,"
-                + "seed_x2          INTEGER NOT NULL,"
-                + "seed_y2          INTEGER NOT NULL,"
-                + "PRIMARY KEY (cluster_id, level_z, seed_x2, seed_y2),"
+                + "cell_x2          INTEGER NOT NULL,"
+                + "cell_y2          INTEGER NOT NULL,"
+                + "PRIMARY KEY (cluster_id, level_z, cell_x2, cell_y2),"
                 + "FOREIGN KEY(cluster_id, level_z) REFERENCES dungeon_room_cluster_levels(cluster_id, level_z) ON DELETE CASCADE"
                 + ")");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_room_cluster_level_segments ("
