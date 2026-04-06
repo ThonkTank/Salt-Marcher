@@ -134,6 +134,14 @@ public final class DungeonRoomApplicationService {
         editDoor(mapId, clusterId, levelZ, segments2x, true);
     }
 
+    public void createExteriorDoor(long mapId, long clusterId, int levelZ, Collection<GridSegment2x> segments2x) throws SQLException {
+        editExteriorDoor(mapId, clusterId, levelZ, segments2x, false);
+    }
+
+    public void deleteExteriorDoor(long mapId, long clusterId, int levelZ, Collection<GridSegment2x> segments2x) throws SQLException {
+        editExteriorDoor(mapId, clusterId, levelZ, segments2x, true);
+    }
+
     public void moveDoor(MoveDoorRequest request) throws SQLException {
         MoveDoorRequest resolvedRequest = Objects.requireNonNull(request, "request");
         if (resolvedRequest.mapId() <= 0
@@ -393,6 +401,54 @@ public final class DungeonRoomApplicationService {
         }
         RoomCluster updatedCluster = cluster.editBoundary(levelZ, editableSegments, InternalBoundaryType.DOOR, deleteDoor);
         if (updatedCluster == null) {
+            return;
+        }
+        roomRepository.replaceClusters(conn, mapId, List.of(cluster), List.of(updatedCluster));
+    }
+
+    private void editExteriorDoor(
+            long mapId,
+            long clusterId,
+            int levelZ,
+            Collection<GridSegment2x> segments2x,
+            boolean deleteDoor
+    ) throws SQLException {
+        if (segments2x == null || segments2x.isEmpty()) {
+            return;
+        }
+        try (Connection conn = DatabaseManager.getConnection()) {
+            DungeonTransactionRunner.inTransaction(conn, () -> {
+                editExteriorDoor(conn, mapId, clusterId, levelZ, segments2x, deleteDoor);
+                return null;
+            });
+        }
+    }
+
+    private void editExteriorDoor(
+            Connection conn,
+            long mapId,
+            long clusterId,
+            int levelZ,
+            Collection<GridSegment2x> segments2x,
+            boolean deleteDoor
+    ) throws SQLException {
+        DungeonLayout layout = requireLayout(conn, mapId);
+        RoomCluster cluster = layout.findCluster(clusterId);
+        RoomCluster projectedCluster = cluster == null ? null : cluster.projectedToLevel(levelZ);
+        if (projectedCluster == null) {
+            return;
+        }
+        List<GridSegment2x> editableSegments = segments2x.stream()
+                .filter(Objects::nonNull)
+                .filter(segment2x -> deleteDoor
+                        ? projectedCluster.canDeleteExteriorOpening(levelZ, segment2x)
+                        : projectedCluster.canCreateExteriorOpening(levelZ, segment2x))
+                .toList();
+        if (editableSegments.isEmpty()) {
+            return;
+        }
+        RoomCluster updatedCluster = cluster.withExteriorOpenings(levelZ, editableSegments, deleteDoor);
+        if (updatedCluster == null || updatedCluster == cluster) {
             return;
         }
         roomRepository.replaceClusters(conn, mapId, List.of(cluster), List.of(updatedCluster));

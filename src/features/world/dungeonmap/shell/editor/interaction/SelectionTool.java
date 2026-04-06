@@ -36,7 +36,7 @@ public final class SelectionTool implements EditorTool {
     private final DungeonStairApplicationService stairApplicationService;
     private final EditorInteractionState state;
     private final RoomNarrationPane roomNarrationPane;
-    private final ConnectionsTool connectionsTool;
+    private final StairTool stairTool;
 
     private ClusterDragSession dragSession;
     private StairDragSession stairDragSession;
@@ -56,7 +56,7 @@ public final class SelectionTool implements EditorTool {
             DungeonCorridorApplicationService corridorApplicationService,
             DungeonStairApplicationService stairApplicationService,
             RoomNarrationPane roomNarrationPane,
-            ConnectionsTool connectionsTool,
+            StairTool stairTool,
             EditorInteractionState state
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
@@ -65,7 +65,7 @@ public final class SelectionTool implements EditorTool {
         this.corridorApplicationService = Objects.requireNonNull(corridorApplicationService, "corridorApplicationService");
         this.stairApplicationService = Objects.requireNonNull(stairApplicationService, "stairApplicationService");
         this.roomNarrationPane = Objects.requireNonNull(roomNarrationPane, "roomNarrationPane");
-        this.connectionsTool = Objects.requireNonNull(connectionsTool, "connectionsTool");
+        this.stairTool = Objects.requireNonNull(stairTool, "stairTool");
         this.state = Objects.requireNonNull(state, "state");
         this.state.addListener(this::refreshNarrationContext);
         this.mapState.addListener(this::refreshNarrationContext);
@@ -104,8 +104,8 @@ public final class SelectionTool implements EditorTool {
         clear();
         if (hit instanceof DungeonSelectionRef.StairRef stairRef) {
             state.selectRef(resolvedSelectionRef);
-            connectionsTool.focusSelectedStair(ctx);
-            ConnectionsTool.StairDragSource stairDragSource = connectionsTool.stairDragSource();
+            stairTool.focusSelectedStair(ctx);
+            StairTool.StairDragSource stairDragSource = stairTool.stairDragSource();
             if (stairDragSource != null && Objects.equals(stairDragSource.stairId(), stairRef.stairId())) {
                 stairDragSession = StairDragSession.start(
                         stairDragSource.stairId(),
@@ -374,7 +374,7 @@ public final class SelectionTool implements EditorTool {
             return null;
         }
         if (state.selectedRef() instanceof DungeonSelectionRef.StairRef) {
-            return connectionsTool.sharedStairPaneContent();
+            return stairTool.sharedStairPaneContent();
         }
         return roomNarrationPane.content();
     }
@@ -545,7 +545,12 @@ public final class SelectionTool implements EditorTool {
         }
         Corridor corridor = session.baseMap().findCorridor(session.corridorId());
         DungeonLayout.RoomBoundaryDescription boundary = session.baseMap().describeRoomBoundary(session.targetBoundaryRef(), session.levelZ());
-        if (corridor == null || boundary == null) {
+        if (corridor == null
+                || boundary == null
+                || !ConnectionSurfaceSupport.isExistingExteriorRoomDoor(
+                session.baseMap(),
+                session.targetBoundaryRef(),
+                session.levelZ())) {
             return null;
         }
         try {
@@ -589,7 +594,12 @@ public final class SelectionTool implements EditorTool {
         }
         DungeonLayout.RoomBoundaryDescription boundary = session.baseMap().describeRoomBoundary(session.targetBoundaryRef(), session.levelZ());
         Long roomId = boundary == null || boundary.room() == null ? null : boundary.room().roomId();
-        if (boundary == null || roomId == null) {
+        if (boundary == null
+                || roomId == null
+                || !ConnectionSurfaceSupport.isExistingExteriorRoomDoor(
+                session.baseMap(),
+                session.targetBoundaryRef(),
+                session.levelZ())) {
             return;
         }
         loadingService.submitMutation(
@@ -638,7 +648,7 @@ public final class SelectionTool implements EditorTool {
                 },
                 updatedMapId -> updatedMapId,
                 ignored -> {
-                    connectionsTool.adoptMovedStairDraft(session.stairId(), movedDraft);
+                    stairTool.adoptMovedStairDraft(session.stairId(), movedDraft);
                     state.selectRef(new DungeonSelectionRef.StairRef(session.stairId()));
                 },
                 throwable -> UiErrorReporter.reportBackgroundFailure("SelectionTool.commitStairMove()", throwable));

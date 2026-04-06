@@ -93,11 +93,13 @@ public final class ToolControls {
 
     private void activateFamily(ToolFamily family) {
         Button anchor = familyButtons.get(family);
-        DungeonEditorTool primaryTool = family.primaryTool();
-        if (displayedTool != primaryTool) {
-            selectToolFromUser(primaryTool);
+        DungeonEditorTool preferredTool = family.contains(displayedTool)
+                ? displayedTool
+                : family.defaultTool();
+        if (displayedTool != preferredTool) {
+            selectToolFromUser(preferredTool);
         }
-        dropdownController.showFamilyOptions(anchor, family, primaryTool, this::selectToolFromUser);
+        dropdownController.showFamilyOptions(anchor, family, preferredTool, this::selectToolFromUser);
     }
 
     private void selectToolFromUser(DungeonEditorTool tool) {

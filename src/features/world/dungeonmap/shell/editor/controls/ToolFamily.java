@@ -2,19 +2,22 @@ package features.world.dungeonmap.shell.editor.controls;
 
 import features.world.dungeonmap.state.DungeonEditorTool;
 
+import java.util.List;
+
 enum ToolFamily {
-    ROOM(DungeonEditorTool.ROOM_PAINT, DungeonEditorTool.ROOM_DELETE),
-    FLOOR(DungeonEditorTool.FLOOR_PAINT, DungeonEditorTool.FLOOR_DELETE),
-    WALL(DungeonEditorTool.CLUSTER_WALL, DungeonEditorTool.CLUSTER_WALL_DELETE),
-    CONNECTIONS(DungeonEditorTool.CONNECTIONS, DungeonEditorTool.CONNECTIONS_DELETE),
-    TRANSITION(DungeonEditorTool.TRANSITION_CREATE, DungeonEditorTool.TRANSITION_DELETE);
+    ROOM(List.of(DungeonEditorTool.ROOM_PAINT, DungeonEditorTool.ROOM_DELETE)),
+    FLOOR(List.of(DungeonEditorTool.FLOOR_PAINT, DungeonEditorTool.FLOOR_DELETE)),
+    WALL(List.of(DungeonEditorTool.CLUSTER_WALL, DungeonEditorTool.CLUSTER_WALL_DELETE)),
+    CONNECTIONS(List.of(DungeonEditorTool.DOOR, DungeonEditorTool.CORRIDOR, DungeonEditorTool.STAIR)),
+    TRANSITION(List.of(DungeonEditorTool.TRANSITION_CREATE, DungeonEditorTool.TRANSITION_DELETE));
 
-    private final DungeonEditorTool primaryTool;
-    private final DungeonEditorTool secondaryTool;
+    private final List<DungeonEditorTool> tools;
 
-    ToolFamily(DungeonEditorTool primaryTool, DungeonEditorTool secondaryTool) {
-        this.primaryTool = primaryTool;
-        this.secondaryTool = secondaryTool;
+    ToolFamily(List<DungeonEditorTool> tools) {
+        this.tools = List.copyOf(tools);
+        if (this.tools.isEmpty()) {
+            throw new IllegalArgumentException("tool family requires at least one tool");
+        }
     }
 
     String label() {
@@ -27,12 +30,16 @@ enum ToolFamily {
         };
     }
 
-    DungeonEditorTool primaryTool() {
-        return primaryTool;
+    DungeonEditorTool defaultTool() {
+        return tools.getFirst();
     }
 
-    DungeonEditorTool secondaryTool() {
-        return secondaryTool;
+    List<DungeonEditorTool> tools() {
+        return tools;
+    }
+
+    boolean contains(DungeonEditorTool tool) {
+        return tool != null && tools.contains(tool);
     }
 
     static ToolFamily forTool(DungeonEditorTool tool) {
@@ -44,7 +51,7 @@ enum ToolFamily {
             case ROOM_PAINT, ROOM_DELETE -> ROOM;
             case FLOOR_PAINT, FLOOR_DELETE -> FLOOR;
             case CLUSTER_WALL, CLUSTER_WALL_DELETE -> WALL;
-            case CONNECTIONS, CONNECTIONS_DELETE -> CONNECTIONS;
+            case DOOR, CORRIDOR, STAIR -> CONNECTIONS;
             case TRANSITION_CREATE, TRANSITION_DELETE -> TRANSITION;
         };
     }

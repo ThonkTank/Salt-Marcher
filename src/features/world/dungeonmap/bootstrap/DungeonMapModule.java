@@ -17,12 +17,14 @@ import features.world.dungeonmap.repository.DungeonTransitionRepository;
 import features.world.dungeonmap.shell.editor.DungeonEditorView;
 import features.world.dungeonmap.shell.editor.RoomNarrationPane;
 import features.world.dungeonmap.shell.editor.interaction.BoundaryTool;
-import features.world.dungeonmap.shell.editor.interaction.ConnectionsTool;
+import features.world.dungeonmap.shell.editor.interaction.CorridorTool;
+import features.world.dungeonmap.shell.editor.interaction.DoorTool;
 import features.world.dungeonmap.shell.editor.interaction.EditorInteraction;
 import features.world.dungeonmap.shell.editor.interaction.EditorTool;
 import features.world.dungeonmap.shell.editor.interaction.FloorTool;
 import features.world.dungeonmap.shell.editor.interaction.PaintTool;
 import features.world.dungeonmap.shell.editor.interaction.SelectionTool;
+import features.world.dungeonmap.shell.editor.interaction.StairTool;
 import features.world.dungeonmap.shell.editor.interaction.TransitionTool;
 import features.world.dungeonmap.shell.interaction.DungeonHitCollector;
 import features.world.dungeonmap.shell.runtime.DungeonRuntimeView;
@@ -70,8 +72,7 @@ public final class DungeonMapModule {
                 runtimeApplicationService);
         DungeonCorridorApplicationService corridorApplicationService = new DungeonCorridorApplicationService(
                 layoutRepository,
-                corridorRepository,
-                roomRepository);
+                corridorRepository);
         DungeonMapState state = new DungeonMapState();
         DungeonMapLoadingService loadingService = new DungeonMapLoadingService(
                 loadResolver,
@@ -84,12 +85,9 @@ public final class DungeonMapModule {
                 roomApplicationService,
                 editorInteractionState);
         DungeonHitCollector hitCollector = new DungeonHitCollector();
-        ConnectionsTool connectionsTool = new ConnectionsTool(
+        StairTool stairTool = new StairTool(
                 state,
                 loadingService,
-                editorSessionState,
-                roomApplicationService,
-                corridorApplicationService,
                 stairApplicationService,
                 editorInteractionState);
         List<EditorTool> editorTools = List.of(
@@ -100,7 +98,7 @@ public final class DungeonMapModule {
                         corridorApplicationService,
                         stairApplicationService,
                         roomNarrationPane,
-                        connectionsTool,
+                        stairTool,
                         editorInteractionState),
                 new PaintTool(
                         state,
@@ -120,7 +118,17 @@ public final class DungeonMapModule {
                         editorSessionState,
                         roomApplicationService,
                         editorInteractionState),
-                connectionsTool,
+                new DoorTool(
+                        state,
+                        loadingService,
+                        roomApplicationService,
+                        editorInteractionState),
+                new CorridorTool(
+                        state,
+                        loadingService,
+                        corridorApplicationService,
+                        editorInteractionState),
+                stairTool,
                 new TransitionTool(
                         state,
                         loadingService,
