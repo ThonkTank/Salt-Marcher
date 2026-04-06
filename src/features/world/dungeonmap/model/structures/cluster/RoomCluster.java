@@ -240,19 +240,18 @@ public final class RoomCluster {
         if (boundarySegment2x == null || internalBoundaryKinds().get(boundarySegment2x) == InternalBoundaryType.DOOR) {
             return false;
         }
-        Set<CellCoord> clusterCells = cells();
-        Set<CellCoord> touchingCells = boundarySegment2x.touchingCells();
-        if (touchingCells.size() != 2 || !clusterCells.containsAll(touchingCells)) {
-            return false;
+        for (int levelZ : levelsTouchingInternalSegment(this, boundarySegment2x)) {
+            RoomPair roomPair = roomPairAtLevel(this, boundarySegment2x, levelZ);
+            if (roomPair != null
+                    && roomPair.left() != null
+                    && roomPair.right() != null
+                    && roomPair.left().roomId() != null
+                    && roomPair.right().roomId() != null
+                    && !roomPair.left().roomId().equals(roomPair.right().roomId())) {
+                return true;
+            }
         }
-        List<CellCoord> orderedCells = touchingCells.stream().sorted(CellCoord.ORDER).toList();
-        Room left = roomAt(orderedCells.getFirst());
-        Room right = roomAt(orderedCells.getLast());
-        return left != null
-                && right != null
-                && left.roomId() != null
-                && right.roomId() != null
-                && !left.roomId().equals(right.roomId());
+        return false;
     }
 
     public boolean canDeleteDoor(GridSegment2x boundarySegment2x) {
@@ -437,10 +436,17 @@ public final class RoomCluster {
         return roomId != null && roomPartition.roomsById().containsKey(roomId);
     }
 
+    /**
+     * Convenience shortcut for UI-only callers that do not have an explicit level context.
+     * This lookup only checks {@link #primaryLevel()} and must not be used for topology decisions.
+     */
     public Room roomAt(CellCoord cell) {
-        return cell == null ? null : roomPartition.roomsByCell().get(cell);
+        return cell == null ? null : roomAt(cell, primaryLevel());
     }
 
+    /**
+     * Canonical 3D room lookup used by topology-sensitive APIs.
+     */
     public Room roomAt(CellCoord cell, int levelZ) {
         return cell == null ? null : roomPartition.roomsByPoint().get(CubePoint.at(cell, levelZ));
     }
@@ -485,6 +491,14 @@ public final class RoomCluster {
 
     public Set<Long> componentContaining(CellCoord cell) {
         Room room = roomAt(cell);
+        return room == null ? Set.of() : componentContaining(room.roomId());
+    }
+
+    /**
+     * Canonical 3D component lookup. Prefer this overload for semantic decisions.
+     */
+    public Set<Long> componentContaining(CellCoord cell, int levelZ) {
+        Room room = roomAt(cell, levelZ);
         return room == null ? Set.of() : componentContaining(room.roomId());
     }
 
@@ -549,13 +563,6 @@ public final class RoomCluster {
         return Map.copyOf(result);
     }
 
-    private static Set<CellCoord> roomCells(
-            Room room,
-            Map<Room, Map<Integer, Set<CellCoord>>> roomCellsByRoom
-    ) {
-        return flattenCells(roomCellsByLevel(room, roomCellsByRoom));
-    }
-
     private static Map<Integer, Set<CellCoord>> roomCellsByLevel(
             Room room,
             Map<Room, Map<Integer, Set<CellCoord>>> roomCellsByRoom
@@ -587,49 +594,56 @@ public final class RoomCluster {
                 room.narration());
     }
 
-    private static OverlapIndex indexRoomsByCell(List<Room> rooms, Map<Room, Map<Integer, Set<CellCoord>>> roomCellsByRoom) {
-        Map<CellCoord, Room> result = new LinkedHashMap<>();
+    private static OverlapIndex indexRoomsByPoint(List<Room> rooms, Map<Room, Map<Integer, Set<CellCoord>>> roomCellsByRoom) {
+        Map<CubePoint, Room> result = new LinkedHashMap<>();
         boolean hasOverlaps = false;
         for (Room room : rooms) {
             if (room == null) {
                 continue;
             }
-            for (CellCoord cell : roomCells(room, roomCellsByRoom)) {
-                if (result.containsKey(cell)) {
-                    hasOverlaps = true;
+            for (Map.Entry<Integer, Set<CellCoord>> entry : roomCellsByLevel(room, roomCellsByRoom).entrySet()) {
+                Integer levelZ = entry.getKey();
+                if (levelZ == null) {
+                    continue;
                 }
-                result.put(cell, room);
+                for (CellCoord cell : entry.getValue()) {
+                    CubePoint point = CubePoint.at(cell, levelZ);
+                    if (result.containsKey(point) && result.get(point) != room) {
+                        hasOverlaps = true;
+                    }
+                    result.put(point, room);
+                }
             }
         }
         return new OverlapIndex(Map.copyOf(result), hasOverlaps);
     }
 
-    private static Map<CubePoint, Room> indexRoomsByPoint(List<Room> rooms, Map<Room, Map<Integer, Set<CellCoord>>> roomCellsByRoom) {
-        Map<CubePoint, Room> result = new LinkedHashMap<>();
-        for (Room room : rooms) {
-            if (room == null) {
-                continue;
-            }
-            for (Map.Entry<Integer, Set<CellCoord>> entry : roomCellsByLevel(room, roomCellsByRoom).entrySet()) {
-                for (CellCoord cell : entry.getValue()) {
-                    result.putIfAbsent(CubePoint.at(cell, entry.getKey()), room);
-                }
-            }
+    private static List<Integer> levelsTouchingInternalSegment(RoomCluster cluster, GridSegment2x segment2x) {
+        if (cluster == null || segment2x == null) {
+            return List.of();
         }
-        return Map.copyOf(result);
+        return cluster.structure().levels().stream()
+                .sorted()
+                .filter(levelZ -> cluster.structure().interiorAdjacencyEdgesAtLevel(levelZ).contains(segment2x))
+                .toList();
     }
 
-    private static Set<CellCoord> flattenCells(Map<Integer, Set<CellCoord>> cellsByLevel) {
-        if (cellsByLevel == null || cellsByLevel.isEmpty()) {
-            return Set.of();
+    private static RoomPair roomPairAtLevel(RoomCluster cluster, GridSegment2x segment2x, int levelZ) {
+        if (cluster == null || segment2x == null) {
+            return null;
         }
-        LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
-        for (Set<CellCoord> cells : cellsByLevel.values()) {
-            if (cells != null) {
-                result.addAll(cells);
-            }
+        List<CellCoord> touchingCells = segment2x.touchingCells().stream()
+                .sorted(CellCoord.ORDER)
+                .toList();
+        if (touchingCells.size() != 2) {
+            return null;
         }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+        Room left = cluster.roomAt(touchingCells.getFirst(), levelZ);
+        Room right = cluster.roomAt(touchingCells.getLast(), levelZ);
+        return left == null || right == null ? null : new RoomPair(left, right);
+    }
+
+    private record RoomPair(Room left, Room right) {
     }
 
     private static Map<Room, Map<Integer, Set<CellCoord>>> immutableRoomCellsByRoom(
@@ -775,15 +789,13 @@ public final class RoomCluster {
         List<Room> partitionedRooms = List.copyOf(result);
         Map<Room, Map<Integer, Set<CellCoord>>> resolvedRoomCellsByRoom = immutableRoomCellsByRoom(roomCellsByRoom);
         Map<Long, Room> roomsById = indexRoomsById(partitionedRooms);
-        OverlapIndex overlapIndex = indexRoomsByCell(partitionedRooms, resolvedRoomCellsByRoom);
-        Map<CubePoint, Room> roomsByPoint = indexRoomsByPoint(partitionedRooms, resolvedRoomCellsByRoom);
+        OverlapIndex overlapIndex = indexRoomsByPoint(partitionedRooms, resolvedRoomCellsByRoom);
         return new RoomPartition(
                 clusterStructure,
                 partitionedRooms,
                 resolvedRoomCellsByRoom,
                 roomsById,
-                overlapIndex.roomsByCell(),
-                roomsByPoint,
+                overlapIndex.roomsByPoint(),
                 overlapIndex.hasOverlaps());
     }
 
@@ -849,16 +861,22 @@ public final class RoomCluster {
         for (Long roomId : roomPartition.roomsById().keySet()) {
             result.put(roomId, new LinkedHashSet<>());
         }
-        for (Room room : roomPartition.rooms()) {
-            StructureObject roomStructure = roomPartition.structureFor(room);
-            for (CellCoord cell : roomStructure.cellCoords()) {
-                for (CellCoord step : CellCoord.CARDINAL_STEPS) {
-                    Room neighbor = roomPartition.roomsByCell().get(cell.add(step));
-                    if (neighbor == null || neighbor.roomId() == null || neighbor.roomId().equals(room.roomId())) {
-                        continue;
+        for (Map.Entry<Room, Map<Integer, Set<CellCoord>>> roomEntry : roomPartition.roomCellsByRoom().entrySet()) {
+            Room room = roomEntry.getKey();
+            if (room == null || room.roomId() == null) {
+                continue;
+            }
+            for (Map.Entry<Integer, Set<CellCoord>> levelEntry : roomEntry.getValue().entrySet()) {
+                int levelZ = levelEntry.getKey();
+                for (CellCoord cell : levelEntry.getValue()) {
+                    for (CellCoord step : CellCoord.CARDINAL_STEPS) {
+                        Room neighbor = roomPartition.roomsByPoint().get(CubePoint.at(cell.add(step), levelZ));
+                        if (neighbor == null || neighbor.roomId() == null || neighbor.roomId().equals(room.roomId())) {
+                            continue;
+                        }
+                        result.get(room.roomId()).add(neighbor.roomId());
                     }
-                    result.get(room.roomId()).add(neighbor.roomId());
-                    }
+                }
             }
         }
         return result;
@@ -1091,23 +1109,23 @@ public final class RoomCluster {
             InternalBoundaryType resolvedType = type == null ? InternalBoundaryType.WALL : type;
             boolean changed = false;
             for (GridSegment2x segment2x : segments2x) {
-                if (segment2x == null || !isInternalSegment(cluster.cells(), segment2x)) {
+                if (segment2x == null || levelsTouchingInternalSegment(cluster, segment2x).isEmpty()) {
                     continue;
                 }
-                List<CellCoord> touchingCells = segment2x.touchingCells().stream()
-                        .sorted(CellCoord.ORDER)
-                        .toList();
-                if (touchingCells.size() != 2) {
-                    continue;
+                boolean spansDistinctRooms = false;
+                for (int levelZ : levelsTouchingInternalSegment(cluster, segment2x)) {
+                    RoomPair roomPair = roomPairAtLevel(cluster, segment2x, levelZ);
+                    if (roomPair != null && !sameRoomId(roomPair.left(), roomPair.right())) {
+                        spansDistinctRooms = true;
+                        break;
+                    }
                 }
-                Room leftRoom = cluster.roomAt(touchingCells.getFirst());
-                Room rightRoom = cluster.roomAt(touchingCells.getLast());
-                if (leftRoom == null || rightRoom == null) {
+                if (!spansDistinctRooms) {
                     continue;
                 }
                 InternalBoundaryType currentType = updatedBoundaryKinds.get(segment2x);
                 if (deleteBoundary) {
-                    if (currentType == null || sameRoomId(leftRoom, rightRoom)) {
+                    if (currentType == null) {
                         continue;
                     }
                     updatedBoundaryKinds.remove(segment2x);
@@ -1665,12 +1683,15 @@ public final class RoomCluster {
     private record PartitionedRoom(Room room, Map<Integer, Set<CellCoord>> roomCellsByLevel) {
     }
 
+    /**
+     * Derived room partition over one cluster structure.
+     * roomsByPoint is the only topology-binding ownership index; XY-only access is UI convenience.
+     */
     private record RoomPartition(
             StructureObject clusterStructure,
             List<Room> rooms,
             Map<Room, Map<Integer, Set<CellCoord>>> roomCellsByRoom,
             Map<Long, Room> roomsById,
-            Map<CellCoord, Room> roomsByCell,
             Map<CubePoint, Room> roomsByPoint,
             boolean hasOverlaps
     ) {
@@ -1679,7 +1700,6 @@ public final class RoomCluster {
             rooms = rooms == null ? List.of() : List.copyOf(rooms);
             roomCellsByRoom = roomCellsByRoom == null ? Map.of() : immutableRoomCellsByRoom(roomCellsByRoom);
             roomsById = roomsById == null ? Map.of() : Map.copyOf(roomsById);
-            roomsByCell = roomsByCell == null ? Map.of() : Map.copyOf(roomsByCell);
             roomsByPoint = roomsByPoint == null ? Map.of() : Map.copyOf(roomsByPoint);
         }
 
@@ -1712,11 +1732,11 @@ public final class RoomCluster {
         }
 
         private static RoomPartition empty() {
-            return new RoomPartition(StructureObject.empty(), List.of(), Map.of(), Map.of(), Map.of(), Map.of(), false);
+            return new RoomPartition(StructureObject.empty(), List.of(), Map.of(), Map.of(), Map.of(), false);
         }
     }
 
-    private record OverlapIndex(Map<CellCoord, Room> roomsByCell, boolean hasOverlaps) {
+    private record OverlapIndex(Map<CubePoint, Room> roomsByPoint, boolean hasOverlaps) {
     }
 
     public record BoundaryPath(
