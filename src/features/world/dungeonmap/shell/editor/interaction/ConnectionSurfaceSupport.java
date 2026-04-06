@@ -2,7 +2,8 @@ package features.world.dungeonmap.shell.editor.interaction;
 
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
-import features.world.dungeonmap.model.structures.cluster.RoomCluster;
+
+import java.util.Objects;
 
 public final class ConnectionSurfaceSupport {
 
@@ -28,11 +29,13 @@ public final class ConnectionSurfaceSupport {
             return false;
         }
         DungeonLayout.RoomBoundaryDescription boundary = layout.describeRoomBoundary(ref, levelZ);
-        if (boundary == null || !boundary.exterior() || boundary.clusterId() == null || boundary.room() == null) {
+        if (boundary == null || !boundary.exterior()) {
             return false;
         }
-        RoomCluster cluster = layout.findCluster(boundary.clusterId());
-        return cluster != null && cluster.roomOpeningEdgesAtLevel(boundary.room(), levelZ).contains(ref.boundarySegment2x());
+        DungeonLayout.DoorDescription description = layout.describeDoorAt(levelZ, ref.boundarySegment2x());
+        return description != null
+                && description.role() == DungeonLayout.DoorRole.ROOM_EXTERIOR
+                && Objects.equals(description.roomId(), ref.roomId());
     }
 
     public static boolean isAvailableCorridorBoundary(

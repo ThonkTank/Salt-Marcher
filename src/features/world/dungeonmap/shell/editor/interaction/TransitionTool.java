@@ -14,6 +14,7 @@ import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.TileShapeKind;
 import features.world.dungeonmap.model.geometry.TileShapeSpec;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
+import features.world.dungeonmap.model.objects.DoorRef;
 import features.world.dungeonmap.model.structures.connection.DungeonConnection;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
@@ -226,10 +227,8 @@ public final class TransitionTool implements EditorTool {
         int levelZ = ctx.probe().levelZ();
         if (placementMode == TransitionPlacementMode.DOOR) {
             return List.of(
-                    EditorCapabilities.part(ref -> ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundary
-                            && ConnectionSurfaceSupport.isExteriorRoomBoundary(ctx.activeMap(), roomBoundary, levelZ)),
-                    EditorCapabilities.part(ref -> ref instanceof DungeonSelectionRef.CorridorBoundaryRef corridorBoundary
-                            && ConnectionSurfaceSupport.isAvailableCorridorBoundary(ctx.activeMap(), corridorBoundary, levelZ)),
+                    EditorCapabilities.part(ref -> ref instanceof DungeonSelectionRef.DoorRef doorRef
+                            && doorPlacementSource(ctx.activeMap(), doorRef, levelZ)),
                     EditorCapabilities.owner(ref -> ref instanceof DungeonSelectionRef.TransitionRef));
         }
         return List.of(
@@ -625,10 +624,8 @@ public final class TransitionTool implements EditorTool {
         int levelZ = ctx == null || ctx.probe() == null ? mapState.activeProjectionLevel() : ctx.probe().levelZ();
         DungeonSelectionRef sourceRef = ctx == null ? null : ctx.hitRef();
         Long mapId = mapState.activeMapId();
-        boolean validSource = sourceRef instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundary
-                && ConnectionSurfaceSupport.isExteriorRoomBoundary(layout, roomBoundary, levelZ)
-                || sourceRef instanceof DungeonSelectionRef.CorridorBoundaryRef corridorBoundary
-                && ConnectionSurfaceSupport.isAvailableCorridorBoundary(layout, corridorBoundary, levelZ);
+        boolean validSource = sourceRef instanceof DungeonSelectionRef.DoorRef doorRef
+                && doorPlacementSource(layout, doorRef, levelZ);
         if (mapId == null || !validSource) {
             return false;
         }
@@ -1180,8 +1177,8 @@ public final class TransitionTool implements EditorTool {
         }
         if (placementMode == TransitionPlacementMode.DOOR) {
             return preparedTransitionId != null
-                    ? "Außenwand oder Corridor-Grenze anklicken"
-                    : "Außenwand oder Corridor-Grenze anklicken";
+                    ? "Tür anklicken"
+                    : "Tür anklicken";
         }
         return stairDraftActive()
                 ? stairStatusText(resolveCurrentStairDraft(true))
@@ -1246,6 +1243,20 @@ public final class TransitionTool implements EditorTool {
         }
         placementError = null;
         refreshStatePane();
+    }
+
+    private static boolean doorPlacementSource(
+            DungeonLayout layout,
+            DungeonSelectionRef.DoorRef doorRef,
+            int levelZ
+    ) {
+        DungeonLayout.DoorDescription description = layout == null || doorRef == null
+                ? null
+                : layout.describeDoor(new DoorRef(doorRef.doorId()));
+        return description != null
+                && description.levelZ() == levelZ
+                && (description.role() == DungeonLayout.DoorRole.ROOM_EXTERIOR
+                || description.role() == DungeonLayout.DoorRole.CORRIDOR_BOUNDARY);
     }
 
     private void refreshStatePane() {

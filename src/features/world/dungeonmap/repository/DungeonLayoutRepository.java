@@ -49,13 +49,21 @@ public final class DungeonLayoutRepository {
         Map<Long, Integer> clusterLevels = roomRepository.loadClusterLevels(conn, mapId);
         DungeonLayout roomLayout = new DungeonLayout(mapId, mapName, List.of(), clusters, List.of(), List.of(), clusterLevels);
         List<Corridor> corridors = corridorRepository.loadByMap(conn, roomLayout);
-        return new DungeonLayout(
+        DungeonLayout structureLayout = new DungeonLayout(
                 mapId,
                 mapName,
                 corridors,
                 clusters,
                 stairRepository.loadByMap(conn, mapId),
-                transitionRepository.loadByMap(conn, mapId),
+                List.of(),
+                clusterLevels);
+        return new DungeonLayout(
+                mapId,
+                mapName,
+                corridors,
+                clusters,
+                structureLayout.stairs(),
+                transitionRepository.loadByMap(conn, structureLayout),
                 clusterLevels);
     }
 

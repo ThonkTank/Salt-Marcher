@@ -3,8 +3,6 @@ package features.world.dungeonmap.model.interaction;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.objects.DoorOwnerType;
-import features.world.dungeonmap.model.structures.connection.ConnectionKind;
 
 import java.util.Objects;
 
@@ -18,7 +16,6 @@ public sealed interface DungeonSelectionRef permits
         DungeonSelectionRef.RoomBoundaryRef,
         DungeonSelectionRef.CorridorBoundaryRef,
         DungeonSelectionRef.DoorRef,
-        DungeonSelectionRef.ConnectionRef,
         DungeonSelectionRef.CorridorTileRef,
         DungeonSelectionRef.CorridorNodeRef,
         DungeonSelectionRef.CorridorCornerRef,
@@ -42,7 +39,6 @@ public sealed interface DungeonSelectionRef permits
             case RoomBoundaryRef ignored -> DungeonHitKind.ROOM_BOUNDARY;
             case CorridorBoundaryRef ignored -> DungeonHitKind.CORRIDOR_BOUNDARY;
             case DoorRef ignored -> DungeonHitKind.DOOR;
-            case ConnectionRef ignored -> DungeonHitKind.CONNECTION;
             case CorridorTileRef ignored -> DungeonHitKind.CORRIDOR_TILE;
             case CorridorNodeRef ignored -> DungeonHitKind.CORRIDOR_NODE;
             case CorridorCornerRef ignored -> DungeonHitKind.CORRIDOR_CORNER;
@@ -134,44 +130,32 @@ public sealed interface DungeonSelectionRef permits
     }
 
     record DoorRef(
-            DoorOwnerType ownerType,
-            Long ownerId,
-            int levelZ,
+            long doorId,
+            DungeonSelectionRef ownerRef,
             GridSegment2x anchorSegment2x
     ) implements DungeonSelectionRef {
         public DoorRef {
-            ownerType = Objects.requireNonNull(ownerType, "ownerType");
+            if (doorId <= 0) {
+                throw new IllegalArgumentException("Door refs require doorId");
+            }
             anchorSegment2x = Objects.requireNonNull(anchorSegment2x, "anchorSegment2x");
         }
 
         @Override
         public DungeonSelectionRef ownerRef() {
-            return switch (ownerType) {
-                case CLUSTER -> ownerId == null ? null : new ClusterRef(ownerId);
-                case ROOM -> ownerId == null ? null : new RoomRef(ownerId);
-                case CORRIDOR -> ownerId == null ? null : new CorridorRef(ownerId);
-            };
-        }
-    }
-
-    record ConnectionRef(
-            ConnectionKind connectionKind,
-            Long ownerId,
-            GridSegment2x boundarySegment2x
-    ) implements DungeonSelectionRef {
-        public ConnectionRef {
-            connectionKind = Objects.requireNonNull(connectionKind, "connectionKind");
-            boundarySegment2x = Objects.requireNonNull(boundarySegment2x, "boundarySegment2x");
+            return ownerRef;
         }
 
-        @Override
-        public DungeonSelectionRef ownerRef() {
-            return switch (connectionKind) {
-                case LOCAL -> ownerId == null ? null : new ClusterRef(ownerId);
-                case CORRIDOR -> ownerId == null ? null : new CorridorRef(ownerId);
-                case STAIR -> ownerId == null ? null : new StairRef(ownerId);
-                case TRANSITION -> ownerId == null ? null : new TransitionRef(ownerId);
-            };
+        public Long clusterId() {
+            return ownerRef instanceof ClusterRef clusterRef ? clusterRef.clusterId() : null;
+        }
+
+        public Long roomId() {
+            return ownerRef instanceof RoomRef roomRef ? roomRef.roomId() : null;
+        }
+
+        public Long corridorId() {
+            return ownerRef instanceof CorridorRef corridorRef ? corridorRef.corridorId() : null;
         }
     }
 

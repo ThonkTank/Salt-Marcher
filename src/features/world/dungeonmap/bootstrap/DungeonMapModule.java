@@ -60,10 +60,7 @@ public final class DungeonMapModule {
                 stairRepository);
         DungeonTransitionApplicationService transitionApplicationService = new DungeonTransitionApplicationService(
                 layoutRepository,
-                roomApplicationService,
-                transitionRepository,
-                roomRepository,
-                corridorRepository);
+                transitionRepository);
         DungeonRuntimeApplicationService runtimeApplicationService = new DungeonRuntimeApplicationService(
                 layoutRepository,
                 loadResolver);

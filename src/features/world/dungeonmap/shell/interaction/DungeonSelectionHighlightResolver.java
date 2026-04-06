@@ -61,8 +61,6 @@ public final class DungeonSelectionHighlightResolver {
                     List.of(new DungeonHitSurface.SegmentSurface(Set.of(corridorBoundaryRef.boundarySegment2x()), levelZ));
             case DungeonSelectionRef.DoorRef doorRef ->
                     doorPartSurfaces(layout, doorRef, levelZ);
-            case DungeonSelectionRef.ConnectionRef connectionRef ->
-                    List.of(new DungeonHitSurface.SegmentSurface(Set.of(connectionRef.boundarySegment2x()), levelZ));
             case DungeonSelectionRef.CorridorTileRef corridorTileRef ->
                     corridorTileRef.cell().z() == levelZ
                             ? List.of(new DungeonHitSurface.CellSurface(Set.of(corridorTileRef.cell().projectedCell()), levelZ))
@@ -171,14 +169,15 @@ public final class DungeonSelectionHighlightResolver {
             DungeonSelectionRef.DoorRef doorRef,
             int levelZ
     ) {
-        if (layout == null || doorRef == null || doorRef.levelZ() != levelZ) {
+        if (layout == null || doorRef == null) {
             return List.of();
         }
-        Door door = layout.resolveDoor(new features.world.dungeonmap.model.objects.DoorRef(
-                doorRef.ownerType(),
-                doorRef.ownerId(),
-                doorRef.levelZ(),
-                doorRef.anchorSegment2x()));
+        DungeonLayout.DoorDescription description = layout.describeDoor(
+                new features.world.dungeonmap.model.objects.DoorRef(doorRef.doorId()));
+        if (description == null || description.levelZ() != levelZ) {
+            return List.of();
+        }
+        Door door = description.door();
         if (door == null || door.isEmpty()) {
             return List.of(new DungeonHitSurface.SegmentSurface(Set.of(doorRef.anchorSegment2x()), levelZ));
         }

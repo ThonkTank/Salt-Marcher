@@ -3,15 +3,14 @@ package features.world.dungeonmap.application.corridor;
 import database.DatabaseManager;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.objects.DoorRef;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNode;
 import features.world.dungeonmap.model.structures.corridor.CorridorSegment;
-import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.repository.DungeonCorridorRepository;
 import features.world.dungeonmap.repository.DungeonLayoutRepository;
 
@@ -43,10 +42,8 @@ public final class DungeonCorridorApplicationService {
         try (Connection conn = DatabaseManager.getConnection()) {
             return DungeonTransactionRunner.inTransaction(conn, () -> {
                 DungeonLayout layout = requireLayout(conn, resolvedRequest.mapId());
-                requireExistingRoomBoundaryDoor(layout, resolvedRequest.levelZ(), resolvedRequest.start());
-                requireExistingRoomBoundaryDoor(layout, resolvedRequest.levelZ(), resolvedRequest.end());
-                CorridorNode startNode = roomBoundaryNode(-1L, resolvedRequest.start());
-                CorridorNode endNode = roomBoundaryNode(-2L, resolvedRequest.end());
+                CorridorNode startNode = roomBoundaryNode(layout, resolvedRequest.levelZ(), -1L, resolvedRequest.start());
+                CorridorNode endNode = roomBoundaryNode(layout, resolvedRequest.levelZ(), -2L, resolvedRequest.end());
                 Corridor corridor = layout.planCorridor(
                         resolvedRequest.levelZ(),
                         List.of(startNode, endNode),
@@ -64,7 +61,7 @@ public final class DungeonCorridorApplicationService {
         AttachDoorToCorridorBoundaryRequest resolvedRequest = Objects.requireNonNull(request, "request");
         if (resolvedRequest.mapId() <= 0
                 || resolvedRequest.corridorId() <= 0
-                || resolvedRequest.endpoint() == null
+                || resolvedRequest.doorRef() == null
                 || resolvedRequest.boundarySegment2x() == null) {
             throw new IllegalArgumentException(
                     "Door-to-boundary corridor attachment requires mapId, corridorId, door endpoint, and boundary");
@@ -73,10 +70,9 @@ public final class DungeonCorridorApplicationService {
             DungeonTransactionRunner.inTransaction(conn, () -> {
                 DungeonLayout layout = requireLayout(conn, resolvedRequest.mapId());
                 Corridor corridor = requireCorridor(layout, resolvedRequest.corridorId());
-                requireExistingRoomBoundaryDoor(layout, corridor.levelZ(), resolvedRequest.endpoint());
                 Corridor updated = corridor.attachedRoomNodeAtBoundary(
                         layout,
-                        roomBoundaryNode(corridor.nextSyntheticNodeId(), resolvedRequest.endpoint()),
+                        roomBoundaryNode(layout, corridor.levelZ(), corridor.nextSyntheticNodeId(), resolvedRequest.doorRef()),
                         resolvedRequest.boundarySegment2x());
                 if (updated != corridor) {
                     corridorRepository.save(conn, updated, layout);
@@ -130,24 +126,24 @@ public final class DungeonCorridorApplicationService {
         if (resolvedRequest.mapId() <= 0
                 || resolvedRequest.corridorId() <= 0
                 || resolvedRequest.sourceBoundarySegment2x() == null
-                || resolvedRequest.target() == null) {
+                || resolvedRequest.targetDoorRef() == null) {
             throw new IllegalArgumentException("Corridor door move requires mapId, corridorId, source boundary, and target endpoint");
-        }
-        GridSegment2x targetBoundarySegment2x = GridSegment2x.boundaryEdge(
-                resolvedRequest.target().roomCell(),
-                resolvedRequest.target().outwardDirection());
-        if (resolvedRequest.sourceBoundarySegment2x().equals(targetBoundarySegment2x)) {
-            return;
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
                 DungeonLayout layout = requireLayout(conn, resolvedRequest.mapId());
                 Corridor corridor = requireCorridor(layout, resolvedRequest.corridorId());
-                requireExistingRoomBoundaryDoor(layout, corridor.levelZ(), resolvedRequest.target());
+                GridSegment2x targetBoundarySegment2x = requiredExistingExteriorDoor(
+                        layout,
+                        corridor.levelZ(),
+                        resolvedRequest.targetDoorRef()).anchorSegment2x();
+                if (resolvedRequest.sourceBoundarySegment2x().equals(targetBoundarySegment2x)) {
+                    return;
+                }
                 Corridor updated = corridor.movedDoor(
                         layout,
                         resolvedRequest.sourceBoundarySegment2x(),
-                        roomBoundaryNode(-1L, resolvedRequest.target()));
+                        roomBoundaryNode(layout, corridor.levelZ(), -1L, resolvedRequest.targetDoorRef()));
                 if (updated != corridor) {
                     corridorRepository.save(conn, updated, layout);
                 }
@@ -228,7 +224,7 @@ public final class DungeonCorridorApplicationService {
                 originalCorridor.levelZ(),
                 primaryComponent.nodes(),
                 primaryComponent.segments(),
-                primaryComponent.boundaryDoorSegments());
+                primaryComponent.doors());
         Corridor persistedPrimary = corridorRepository.save(conn, primaryCorridor, workingLayout);
         workingLayout = workingLayout.withUpdatedCorridor(persistedPrimary);
         for (Corridor.CorridorComponent component : components) {
@@ -236,32 +232,29 @@ public final class DungeonCorridorApplicationService {
                     originalCorridor.levelZ(),
                     component.nodes(),
                     component.segments(),
-                    component.boundaryDoorSegments());
+                    component.doors());
             Corridor persistedSplit = corridorRepository.save(conn, splitCorridor, workingLayout);
             workingLayout = workingLayout.withAddedCorridor(persistedSplit);
         }
     }
 
-    private void requireExistingRoomBoundaryDoor(
+    private static DungeonLayout.DoorDescription requiredExistingExteriorDoor(
             DungeonLayout layout,
             int levelZ,
-            CorridorDoorEndpoint endpoint
+            DoorRef doorRef
     ) {
-        if (layout == null || endpoint == null) {
+        if (layout == null || doorRef == null) {
             throw new IllegalArgumentException("Corridor endpoint requires an existing exterior door");
         }
-        Room room = layout.findRoom(endpoint.roomId());
-        if (room == null) {
-            throw new IllegalArgumentException("Raum " + endpoint.roomId() + " existiert nicht");
-        }
-        RoomCluster cluster = layout.findCluster(room.clusterId());
-        if (cluster == null) {
-            throw new IllegalArgumentException("Cluster " + room.clusterId() + " existiert nicht");
-        }
-        GridSegment2x boundarySegment2x = GridSegment2x.boundaryEdge(endpoint.roomCell(), endpoint.outwardDirection());
-        if (!cluster.canDeleteExteriorOpening(levelZ, boundarySegment2x)) {
+        DungeonLayout.DoorDescription description = layout.describeDoor(doorRef);
+        if (description == null || description.levelZ() != levelZ || description.role() != DungeonLayout.DoorRole.ROOM_EXTERIOR) {
             throw new IllegalArgumentException("Korridore dürfen nur an vorhandene Außentüren andocken");
         }
+        RoomCluster cluster = layout.findCluster(description.clusterId());
+        if (cluster == null || !cluster.canDeleteExteriorDoor(levelZ, description.anchorSegment2x())) {
+            throw new IllegalArgumentException("Korridore dürfen nur an vorhandene Außentüren andocken");
+        }
+        return description;
     }
 
     private DungeonLayout requireLayout(Connection conn, long mapId) throws SQLException {
@@ -280,33 +273,26 @@ public final class DungeonCorridorApplicationService {
         return corridor;
     }
 
-    private static CorridorNode roomBoundaryNode(long nodeId, CorridorDoorEndpoint endpoint) {
-        if (endpoint == null || endpoint.roomCell() == null || endpoint.outwardDirection() == null) {
-            throw new IllegalArgumentException("Corridor door endpoints require roomCell and outwardDirection");
-        }
+    private static CorridorNode roomBoundaryNode(DungeonLayout layout, int levelZ, long nodeId, DoorRef doorRef) {
+        DungeonLayout.DoorDescription description = requiredExistingExteriorDoor(layout, levelZ, doorRef);
         return new CorridorNode(
                 nodeId,
-                GridPoint2x.edgeCenter(endpoint.roomCell(), endpoint.outwardDirection()),
-                endpoint.roomId(),
-                endpoint.roomCell(),
-                endpoint.outwardDirection());
-    }
-
-    public record CorridorDoorEndpoint(long roomId, CellCoord roomCell, CardinalDirection outwardDirection) {
+                description.anchorSegment2x().midpoint(),
+                description.ref());
     }
 
     public record CreateDoorToDoorRequest(
             long mapId,
             int levelZ,
-            CorridorDoorEndpoint start,
-            CorridorDoorEndpoint end
+            DoorRef start,
+            DoorRef end
     ) {
     }
 
     public record AttachDoorToCorridorBoundaryRequest(
             long mapId,
             long corridorId,
-            CorridorDoorEndpoint endpoint,
+            DoorRef doorRef,
             GridSegment2x boundarySegment2x
     ) {
     }
@@ -327,7 +313,7 @@ public final class DungeonCorridorApplicationService {
             long mapId,
             long corridorId,
             GridSegment2x sourceBoundarySegment2x,
-            CorridorDoorEndpoint target
+            DoorRef targetDoorRef
     ) {
     }
 

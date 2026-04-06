@@ -5,7 +5,6 @@ import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.objects.DoorOwnerType;
 import features.world.dungeonmap.model.objects.DoorRef;
 import features.world.dungeonmap.model.objects.StairExit;
 import features.world.dungeonmap.model.objects.StructureObject;
@@ -401,7 +400,7 @@ public final class DungeonRoomApplicationService {
         if (editableSegments.isEmpty()) {
             return;
         }
-        RoomCluster updatedCluster = cluster.editBoundary(levelZ, editableSegments, InternalBoundaryType.DOOR, deleteDoor);
+        RoomCluster updatedCluster = cluster.withDoorSegments(levelZ, editableSegments, deleteDoor);
         if (updatedCluster == null) {
             return;
         }
@@ -443,13 +442,13 @@ public final class DungeonRoomApplicationService {
         List<GridSegment2x> editableSegments = segments2x.stream()
                 .filter(Objects::nonNull)
                 .filter(segment2x -> deleteDoor
-                        ? projectedCluster.canDeleteExteriorOpening(levelZ, segment2x)
-                        : projectedCluster.canCreateExteriorOpening(levelZ, segment2x))
+                        ? projectedCluster.canDeleteExteriorDoor(levelZ, segment2x)
+                        : projectedCluster.canCreateExteriorDoor(levelZ, segment2x))
                 .toList();
         if (editableSegments.isEmpty()) {
             return;
         }
-        RoomCluster updatedCluster = cluster.withExteriorOpenings(levelZ, editableSegments, deleteDoor);
+        RoomCluster updatedCluster = cluster.withExteriorDoors(levelZ, editableSegments, deleteDoor);
         if (updatedCluster == null || updatedCluster == cluster) {
             return;
         }
@@ -557,7 +556,7 @@ public final class DungeonRoomApplicationService {
         }
         for (Corridor corridor : originalLayout.corridors()) {
             if (corridor != null && touchesAffectedRooms(corridor, affectedRoomIds)) {
-                corridor.validateRoomBindingsForRewrite(rewrittenLayout, affectedRoomIds);
+                corridor.validateRoomBindingsForRewrite(originalLayout, rewrittenLayout, affectedRoomIds);
             }
         }
     }
@@ -575,7 +574,7 @@ public final class DungeonRoomApplicationService {
             if (originalCorridor == null || originalCorridor.corridorId() == null || !touchesAffectedRooms(originalCorridor, affectedRoomIds)) {
                 continue;
             }
-            Corridor reboundCorridor = originalCorridor.reboundRoomBindings(rewrittenRoomLayout, affectedRoomIds);
+            Corridor reboundCorridor = originalCorridor.reboundRoomBindings(originalLayout, rewrittenRoomLayout, affectedRoomIds);
             if (reboundCorridor != originalCorridor) {
                 corridorRepository.save(conn, reboundCorridor, rewrittenRoomLayout);
             }
@@ -680,18 +679,18 @@ public final class DungeonRoomApplicationService {
             Room reboundRoom = resolveTransitionDoorRoom(
                     layout,
                     localConnection.levelZ(),
-                    localConnection.anchorSegment2x(),
+                    localConnection.doorRef(),
                     requirePersistedRoomId);
+            DungeonLayout.DoorDescription reboundDoor = layout.describeDoor(localConnection.doorRef());
+            if (reboundDoor == null) {
+                throw new IllegalArgumentException("Transition door no longer resolves to a canonical door");
+            }
             return new DungeonConnection(
                     localConnection.kind(),
                     localConnection.ownerId(),
                     localConnection.mapId(),
                     localConnection.levelZ(),
-                    new DoorConnectionCarrier(new DoorRef(
-                            DoorOwnerType.ROOM,
-                            reboundRoom.roomId(),
-                            localConnection.levelZ(),
-                            localConnection.anchorSegment2x())),
+                    new DoorConnectionCarrier(reboundDoor.ref(), reboundDoor.anchorSegment2x()),
                     List.of(ConnectionEndpoint.room(reboundRoom.roomId()), ConnectionEndpoint.transition(transition.transitionId())));
         }
         if (localConnection.stairCarrier() != null) {
@@ -729,29 +728,17 @@ public final class DungeonRoomApplicationService {
     private static Room resolveTransitionDoorRoom(
             DungeonLayout layout,
             int levelZ,
-            GridSegment2x boundarySegment2x,
+            DoorRef doorRef,
             boolean requirePersistedRoomId
     ) {
-        if (layout == null || boundarySegment2x == null) {
-            throw new IllegalArgumentException("Transition door rebound requires a boundary segment");
+        if (layout == null || doorRef == null) {
+            throw new IllegalArgumentException("Transition door rebound requires a canonical door");
         }
-        Room reboundRoom = null;
-        for (CellCoord cell : boundarySegment2x.touchingCells().stream().sorted(CellCoord.ORDER).toList()) {
-            Room room = layout.roomAtCell(cell, levelZ);
-            if (room == null) {
-                continue;
-            }
-            var direction = boundarySegment2x.directionFrom(cell);
-            if (direction == null
-                    || !layout.roomBoundaryEdgesAtLevel(room, levelZ).contains(boundarySegment2x)
-                    || layout.roomAtCell(cell.add(direction.delta()), levelZ) != null) {
-                continue;
-            }
-            if (reboundRoom != null && !Objects.equals(reboundRoom.roomId(), room.roomId())) {
-                throw new IllegalArgumentException("Transition door no longer resolves to exactly one exterior room boundary");
-            }
-            reboundRoom = room;
+        DungeonLayout.DoorDescription reboundDoor = layout.describeDoor(doorRef);
+        if (reboundDoor == null || reboundDoor.levelZ() != levelZ || reboundDoor.role() != DungeonLayout.DoorRole.ROOM_EXTERIOR) {
+            throw new IllegalArgumentException("Transition door no longer resolves to an exterior room boundary");
         }
+        Room reboundRoom = reboundDoor.touchingRooms().isEmpty() ? null : reboundDoor.touchingRooms().getFirst();
         if (reboundRoom == null) {
             throw new IllegalArgumentException("Transition door no longer resolves to an exterior room boundary");
         }
@@ -803,10 +790,14 @@ public final class DungeonRoomApplicationService {
                 continue;
             }
             for (CorridorNode node : corridor.nodes()) {
+                DungeonLayout.DoorDescription description = node == null || !node.isDoorBound()
+                        ? null
+                        : layout.describeDoor(node.doorRef());
                 if (node != null
-                        && node.isRoomBound()
-                        && Objects.equals(node.roomId(), room.roomId())
-                        && removedFloorCells.contains(node.roomCell())) {
+                        && description != null
+                        && description.role() == DungeonLayout.DoorRole.ROOM_EXTERIOR
+                        && Objects.equals(description.roomId(), room.roomId())
+                        && description.anchorSegment2x().touchingCells().stream().anyMatch(removedFloorCells::contains)) {
                     throw new SQLException("Boden unter einem Corridor-Anker kann nicht entfernt werden.");
                 }
             }

@@ -11,7 +11,7 @@ import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
-import features.world.dungeonmap.model.objects.DoorOwnerType;
+import features.world.dungeonmap.model.objects.DoorRef;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNode;
@@ -143,14 +143,6 @@ public final class SelectionTool implements EditorTool {
                     mapState.activeMap(),
                     mapState.activeProjectionLevel(),
                     doorHit);
-            return true;
-        }
-        if (hit instanceof DungeonSelectionRef.ConnectionRef connectionHit) {
-            state.selectRef(resolvedSelectionRef == null ? connectionHit : resolvedSelectionRef);
-            doorDragSession = DoorDragSession.startLegacy(
-                    mapState.activeMap(),
-                    mapState.activeProjectionLevel(),
-                    connectionHit);
             return true;
         }
         if (hit instanceof DungeonSelectionRef.ClusterRef clusterLabelHit) {
@@ -352,8 +344,7 @@ public final class SelectionTool implements EditorTool {
                 EditorCapabilities.part(candidate ->
                         candidate instanceof DungeonSelectionRef.CorridorNodeRef
                                 || candidate instanceof DungeonSelectionRef.CorridorTileRef
-                                || candidate instanceof DungeonSelectionRef.DoorRef
-                                || candidate instanceof DungeonSelectionRef.ConnectionRef),
+                                || candidate instanceof DungeonSelectionRef.DoorRef),
                 EditorCapabilities.owner(SelectionTool::isRelevantRef));
     }
 
@@ -428,7 +419,6 @@ public final class SelectionTool implements EditorTool {
                 || ref instanceof DungeonSelectionRef.RoomRef
                 || ref instanceof DungeonSelectionRef.RoomBoundaryRef
                 || ref instanceof DungeonSelectionRef.DoorRef
-                || ref instanceof DungeonSelectionRef.ConnectionRef
                 || ref instanceof DungeonSelectionRef.CorridorRef
                 || ref instanceof DungeonSelectionRef.StairRef
                 || ref instanceof DungeonSelectionRef.TransitionRef;
@@ -448,11 +438,10 @@ public final class SelectionTool implements EditorTool {
         if (mapId == null) {
             return;
         }
-        switch (session.ownerType()) {
-            case CLUSTER -> commitLocalDoorMove(mapId, session);
-            case CORRIDOR -> commitCorridorDoorMove(mapId, session);
-            case ROOM -> {
-            }
+        if (session.clusterId() != null) {
+            commitLocalDoorMove(mapId, session);
+        } else if (session.corridorId() != null) {
+            commitCorridorDoorMove(mapId, session);
         }
     }
 
@@ -505,11 +494,13 @@ public final class SelectionTool implements EditorTool {
         if (session == null || session.targetBoundaryRef() == null) {
             return null;
         }
-        return switch (session.ownerType()) {
-            case CLUSTER -> previewLocalDoorMap(session);
-            case CORRIDOR -> previewCorridorDoorMap(session);
-            case ROOM -> null;
-        };
+        if (session.clusterId() != null) {
+            return previewLocalDoorMap(session);
+        }
+        if (session.corridorId() != null) {
+            return previewCorridorDoorMap(session);
+        }
+        return null;
     }
 
     private DungeonLayout previewCorridorTileMap() {
@@ -554,20 +545,22 @@ public final class SelectionTool implements EditorTool {
             return null;
         }
         Corridor corridor = session.baseMap().findCorridor(session.corridorId());
-        DungeonLayout.RoomBoundaryDescription boundary = session.baseMap().describeRoomBoundary(session.targetBoundaryRef(), session.levelZ());
+        DungeonSelectionRef.DoorRef targetDoorRef = session.baseMap().doorSelectionRefAt(
+                session.levelZ(),
+                session.targetBoundaryRef().boundarySegment2x());
         if (corridor == null
-                || boundary == null
                 || !ConnectionSurfaceSupport.isExistingExteriorRoomDoor(
                 session.baseMap(),
                 session.targetBoundaryRef(),
-                session.levelZ())) {
+                session.levelZ())
+                || targetDoorRef == null) {
             return null;
         }
         try {
             Corridor updated = corridor.movedDoor(
                     session.baseMap(),
                     session.sourceBoundarySegment2x(),
-                    corridorDoorNode(boundary));
+                    corridorDoorNode(targetDoorRef));
             return session.baseMap()
                     .withUpdatedCorridor(updated)
                     .projectedToLevel(session.levelZ());
@@ -591,9 +584,7 @@ public final class SelectionTool implements EditorTool {
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,
-                ignored -> state.selectRef(new DungeonSelectionRef.DoorRef(
-                        DoorOwnerType.CLUSTER,
-                        session.clusterId(),
+                ignored -> state.selectRef(session.baseMap().doorSelectionRefAt(
                         session.levelZ(),
                         session.targetBoundaryRef().boundarySegment2x())),
                 throwable -> UiErrorReporter.reportBackgroundFailure("SelectionTool.commitLocalDoorMove()", throwable));
@@ -603,14 +594,14 @@ public final class SelectionTool implements EditorTool {
         if (session == null || session.corridorId() == null || previewCorridorDoorMap(session) == null) {
             return;
         }
-        DungeonLayout.RoomBoundaryDescription boundary = session.baseMap().describeRoomBoundary(session.targetBoundaryRef(), session.levelZ());
-        Long roomId = boundary == null || boundary.room() == null ? null : boundary.room().roomId();
-        if (boundary == null
-                || roomId == null
-                || !ConnectionSurfaceSupport.isExistingExteriorRoomDoor(
+        DungeonSelectionRef.DoorRef targetDoorRef = session.baseMap().doorSelectionRefAt(
+                session.levelZ(),
+                session.targetBoundaryRef().boundarySegment2x());
+        if (!ConnectionSurfaceSupport.isExistingExteriorRoomDoor(
                 session.baseMap(),
                 session.targetBoundaryRef(),
-                session.levelZ())) {
+                session.levelZ())
+                || targetDoorRef == null) {
             return;
         }
         loadingService.submitMutation(
@@ -619,16 +610,11 @@ public final class SelectionTool implements EditorTool {
                             mapId,
                             session.corridorId(),
                             session.sourceBoundarySegment2x(),
-                            new DungeonCorridorApplicationService.CorridorDoorEndpoint(
-                                    roomId,
-                                    boundary.roomCell(),
-                                    boundary.outwardDirection())));
+                            new DoorRef(targetDoorRef.doorId())));
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,
-                ignored -> state.selectRef(new DungeonSelectionRef.DoorRef(
-                        DoorOwnerType.CORRIDOR,
-                        session.corridorId(),
+                ignored -> state.selectRef(session.baseMap().doorSelectionRefAt(
                         session.levelZ(),
                         session.targetBoundaryRef().boundarySegment2x())),
                 throwable -> UiErrorReporter.reportBackgroundFailure("SelectionTool.commitCorridorDoorMove()", throwable));
@@ -696,16 +682,14 @@ public final class SelectionTool implements EditorTool {
         return previewDoorMap(session.withTargetBoundaryRef(roomBoundaryRef)) != null;
     }
 
-    private static CorridorNode corridorDoorNode(DungeonLayout.RoomBoundaryDescription boundary) {
-        if (boundary == null || boundary.room() == null || boundary.room().roomId() == null) {
+    private static CorridorNode corridorDoorNode(DungeonSelectionRef.DoorRef doorRef) {
+        if (doorRef == null) {
             return null;
         }
         return new CorridorNode(
                 -1L,
-                GridPoint2x.edgeCenter(boundary.roomCell(), boundary.outwardDirection()),
-                boundary.room().roomId(),
-                boundary.roomCell(),
-                boundary.outwardDirection());
+                doorRef.anchorSegment2x().midpoint(),
+                new DoorRef(doorRef.doorId()));
     }
 
     private record ClusterDragSession(
@@ -794,25 +778,17 @@ public final class SelectionTool implements EditorTool {
     private record DoorDragSession(
             DungeonLayout baseMap,
             int levelZ,
-            DoorOwnerType ownerType,
-            Long ownerId,
+            Long clusterId,
+            Long corridorId,
             GridSegment2x sourceBoundarySegment2x,
             DungeonSelectionRef.RoomBoundaryRef targetBoundaryRef
     ) {
-        private Long clusterId() {
-            return ownerType == DoorOwnerType.CLUSTER ? ownerId : null;
-        }
-
-        private Long corridorId() {
-            return ownerType == DoorOwnerType.CORRIDOR ? ownerId : null;
-        }
-
         private DoorDragSession withTargetBoundaryRef(DungeonSelectionRef.RoomBoundaryRef targetBoundaryRef) {
             return new DoorDragSession(
                     baseMap,
                     levelZ,
-                    ownerType,
-                    ownerId,
+                    clusterId,
+                    corridorId,
                     sourceBoundarySegment2x,
                     targetBoundaryRef);
         }
@@ -822,41 +798,17 @@ public final class SelectionTool implements EditorTool {
                 int levelZ,
                 DungeonSelectionRef.DoorRef sourceRef
         ) {
-            if (sourceRef == null || sourceRef.ownerType() == DoorOwnerType.ROOM) {
+            if (sourceRef == null || sourceRef.roomId() != null) {
                 return null;
             }
             return new DoorDragSession(
                     baseMap,
                     levelZ,
-                    sourceRef.ownerType(),
-                    sourceRef.ownerId(),
+                    sourceRef.clusterId(),
+                    sourceRef.corridorId(),
                     sourceRef.anchorSegment2x(),
                     null);
         }
 
-        private static DoorDragSession startLegacy(
-                DungeonLayout baseMap,
-                int levelZ,
-                DungeonSelectionRef.ConnectionRef sourceRef
-        ) {
-            if (sourceRef == null) {
-                return null;
-            }
-            DoorOwnerType ownerType = switch (sourceRef.connectionKind()) {
-                case LOCAL -> DoorOwnerType.CLUSTER;
-                case CORRIDOR -> DoorOwnerType.CORRIDOR;
-                case STAIR, TRANSITION -> null;
-            };
-            if (ownerType == null) {
-                return null;
-            }
-            return new DoorDragSession(
-                    baseMap,
-                    levelZ,
-                    ownerType,
-                    sourceRef.ownerId(),
-                    sourceRef.boundarySegment2x(),
-                    null);
-        }
     }
 }

@@ -23,6 +23,8 @@ import java.util.Set;
 
 public final class DungeonRoomRepository {
 
+    private final DungeonDoorRepository doorRepository = new DungeonDoorRepository();
+
     public List<Room> loadRooms(Connection conn, long mapId) throws SQLException {
         Map<Long, Map<Integer, CellCoord>> anchorsByRoomId = loadRoomAnchors(conn, mapId);
         Map<Long, List<RoomExitNarration>> exitNarrationsByRoomId = loadGrouped(
@@ -356,7 +358,7 @@ public final class DungeonRoomRepository {
     }
 
     private void replaceClusterStructure(Connection conn, long clusterId, StructureObject structure) throws SQLException {
-        StructureObject resolvedStructure = requiredStructure(structure);
+        StructureObject resolvedStructure = doorRepository.assignPersistentIds(conn, requiredStructure(structure));
         try (PreparedStatement deleteSurfaceCells = conn.prepareStatement(
                 "DELETE FROM dungeon_room_cluster_level_surface_cells WHERE cluster_id=?");
              PreparedStatement deleteSegments = conn.prepareStatement(
@@ -395,13 +397,14 @@ public final class DungeonRoomRepository {
                 addCells(insertSurfaceCell, clusterId, levelZ, level.surfaceShape().cellCoords());
                 addCells(insertFloorCell, clusterId, levelZ, level.floorCells());
                 addSegments(insertSegment, clusterId, levelZ, "BOUNDARY", level.boundaryEdges());
-                addSegments(insertSegment, clusterId, levelZ, "OPENING", level.openingEdges());
+                addSegments(insertSegment, clusterId, levelZ, "PORTAL", level.portalEdges());
             }
             insertLevel.executeBatch();
             insertSurfaceCell.executeBatch();
             insertFloorCell.executeBatch();
             insertSegment.executeBatch();
         }
+        doorRepository.replaceClusterDoors(conn, clusterId, resolvedStructure);
     }
 
     private static void addCells(
@@ -538,7 +541,9 @@ public final class DungeonRoomRepository {
         Map<Long, Map<Integer, Set<CellCoord>>> surfaceCellsByClusterId = new LinkedHashMap<>();
         Map<Long, Map<Integer, Set<CellCoord>>> floorCellsByClusterId = new LinkedHashMap<>();
         Map<Long, Map<Integer, Set<GridSegment2x>>> boundarySegmentsByClusterId = new LinkedHashMap<>();
-        Map<Long, Map<Integer, Set<GridSegment2x>>> openingSegmentsByClusterId = new LinkedHashMap<>();
+        Map<Long, Map<Integer, Set<GridSegment2x>>> portalSegmentsByClusterId = new LinkedHashMap<>();
+        Map<Long, Map<Integer, List<features.world.dungeonmap.model.objects.Door>>> doorsByClusterId =
+                new DungeonDoorRepository().loadClusterDoorsByClusterId(conn, mapId);
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT cluster_id, level_z, anchor_x2, anchor_y2"
                         + " FROM dungeon_room_cluster_levels"
@@ -605,8 +610,8 @@ public final class DungeonRoomRepository {
                 while (rs.next()) {
                     long clusterId = rs.getLong("cluster_id");
                     int levelZ = rs.getInt("level_z");
-                    Map<Long, Map<Integer, Set<GridSegment2x>>> target = "OPENING".equals(rs.getString("segment_kind"))
-                            ? openingSegmentsByClusterId
+                    Map<Long, Map<Integer, Set<GridSegment2x>>> target = "PORTAL".equals(rs.getString("segment_kind"))
+                            ? portalSegmentsByClusterId
                             : boundarySegmentsByClusterId;
                     target.computeIfAbsent(clusterId, ignored -> new LinkedHashMap<>())
                             .computeIfAbsent(levelZ, ignored -> new LinkedHashSet<>())
@@ -626,11 +631,12 @@ public final class DungeonRoomRepository {
                 if (surfaceCells.isEmpty()) {
                     throw new IllegalStateException("Cluster " + clusterId + " hat keine persistierten Surface-Zellen auf Ebene " + levelZ);
                 }
-                StructureObject.LevelStructure level = StructureObject.LevelStructure.fromTopology(
+                StructureObject.LevelStructure level = StructureObject.LevelStructure.fromTopologyWithDoors(
                         levelEntry.getValue(),
                         surfaceCells,
                         boundarySegmentsByClusterId.getOrDefault(clusterId, Map.of()).getOrDefault(levelZ, Set.of()),
-                        openingSegmentsByClusterId.getOrDefault(clusterId, Map.of()).getOrDefault(levelZ, Set.of()),
+                        portalSegmentsByClusterId.getOrDefault(clusterId, Map.of()).getOrDefault(levelZ, Set.of()),
+                        doorsByClusterId.getOrDefault(clusterId, Map.of()).getOrDefault(levelZ, List.of()),
                         floorCellsByClusterId.getOrDefault(clusterId, Map.of()).get(levelZ));
                 if (level.isEmpty()) {
                     throw new IllegalStateException("Cluster " + clusterId + " hat eine leere Topologie auf Ebene " + levelZ);

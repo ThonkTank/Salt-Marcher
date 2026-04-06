@@ -6,7 +6,6 @@ import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
-import features.world.dungeonmap.model.objects.DoorOwnerType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.Connection;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
@@ -111,13 +110,13 @@ public final class DoorTool implements EditorTool {
         return List.of(
                 EditorCapabilities.part(ref ->
                         ref instanceof DungeonSelectionRef.DoorRef doorRef
-                                && doorRef.ownerType() == DoorOwnerType.CLUSTER),
+                                && doorRef.clusterId() != null),
                 EditorCapabilities.part(ref ->
                         ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundary
                                 && ConnectionSurfaceSupport.isExistingExteriorRoomDoor(layout, roomBoundary, levelZ)),
                 EditorCapabilities.part(ref ->
                         ref instanceof DungeonSelectionRef.DoorRef doorRef
-                                && doorRef.ownerType() == DoorOwnerType.ROOM),
+                                && doorRef.roomId() != null),
                 EditorCapabilities.part(ref ->
                         ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundary
                                 && isEditableLocalDoorBoundary(
@@ -158,11 +157,11 @@ public final class DoorTool implements EditorTool {
             return false;
         }
         int levelZ = ctx == null || ctx.probe() == null ? mapState.activeProjectionLevel() : ctx.probe().levelZ();
-        if (hit instanceof DungeonSelectionRef.DoorRef doorHit && doorHit.ownerType() == DoorOwnerType.CLUSTER) {
+        if (hit instanceof DungeonSelectionRef.DoorRef doorHit && doorHit.clusterId() != null) {
             applySelection(ctx.resolvedRef());
             return true;
         }
-        if (hit instanceof DungeonSelectionRef.DoorRef doorHit && doorHit.ownerType() == DoorOwnerType.ROOM) {
+        if (hit instanceof DungeonSelectionRef.DoorRef doorHit && doorHit.roomId() != null) {
             state.selectRef(doorHit);
             return true;
         }
@@ -174,7 +173,7 @@ public final class DoorTool implements EditorTool {
             return false;
         }
         if (ConnectionSurfaceSupport.isExistingExteriorRoomDoor(layout, roomBoundaryHit, levelZ)) {
-            state.selectRef(exteriorDoorRef(roomBoundaryHit.roomId(), levelZ, roomBoundaryHit.boundarySegment2x()));
+            state.selectRef(layout.doorSelectionRefAt(levelZ, roomBoundaryHit.boundarySegment2x()));
             return true;
         }
         if (boundary.exterior()) {
@@ -182,14 +181,14 @@ public final class DoorTool implements EditorTool {
                     boundary.clusterId(),
                     levelZ,
                     roomBoundaryHit.boundarySegment2x(),
-                    exteriorDoorRef(roomBoundaryHit.roomId(), levelZ, roomBoundaryHit.boundarySegment2x()));
+                    roomBoundaryHit.boundarySegment2x());
             return true;
         }
         if (!isEditableLocalDoorBoundary(roomBoundaryHit, boundary, layout, levelZ)) {
             return false;
         }
         createLocalDoor(boundary.clusterId(), levelZ, roomBoundaryHit.boundarySegment2x(),
-                localDoorRef(boundary.clusterId(), levelZ, roomBoundaryHit.boundarySegment2x()));
+                roomBoundaryHit.boundarySegment2x());
         return true;
     }
 
@@ -199,15 +198,13 @@ public final class DoorTool implements EditorTool {
         }
         int levelZ = mapState.activeProjectionLevel();
         if (hit instanceof DungeonSelectionRef.DoorRef doorHit
-                && doorHit.ownerType() == DoorOwnerType.CLUSTER
-                && doorHit.ownerId() != null) {
-            deleteLocalDoor(doorHit.ownerId(), levelZ, doorHit.anchorSegment2x());
+                && doorHit.clusterId() != null) {
+            deleteLocalDoor(doorHit.clusterId(), levelZ, doorHit.anchorSegment2x());
             return true;
         }
         if (hit instanceof DungeonSelectionRef.DoorRef doorHit
-                && doorHit.ownerType() == DoorOwnerType.ROOM
-                && doorHit.ownerId() != null) {
-            Room room = layout.findRoom(doorHit.ownerId());
+                && doorHit.roomId() != null) {
+            Room room = layout.findRoom(doorHit.roomId());
             if (room == null) {
                 return false;
             }
@@ -226,7 +223,7 @@ public final class DoorTool implements EditorTool {
         return true;
     }
 
-    private void createLocalDoor(Long clusterId, int levelZ, GridSegment2x segment2x, DungeonSelectionRef followUpRef) {
+    private void createLocalDoor(Long clusterId, int levelZ, GridSegment2x segment2x, GridSegment2x followUpSegment2x) {
         Long mapId = mapState.activeMapId();
         if (mapId == null || clusterId == null || segment2x == null) {
             return;
@@ -238,6 +235,9 @@ public final class DoorTool implements EditorTool {
                 },
                 updatedMapId -> updatedMapId,
                 ignored -> {
+                    DungeonSelectionRef followUpRef = mapState.activeMap() == null
+                            ? null
+                            : mapState.activeMap().doorSelectionRefAt(levelZ, followUpSegment2x);
                     if (followUpRef != null) {
                         state.selectRef(followUpRef);
                     } else {
@@ -262,7 +262,7 @@ public final class DoorTool implements EditorTool {
                 throwable -> UiErrorReporter.reportBackgroundFailure("DoorTool.deleteLocalDoor()", throwable));
     }
 
-    private void createExteriorDoor(Long clusterId, int levelZ, GridSegment2x segment2x, DungeonSelectionRef followUpRef) {
+    private void createExteriorDoor(Long clusterId, int levelZ, GridSegment2x segment2x, GridSegment2x followUpSegment2x) {
         Long mapId = mapState.activeMapId();
         if (mapId == null || clusterId == null || segment2x == null) {
             return;
@@ -274,6 +274,9 @@ public final class DoorTool implements EditorTool {
                 },
                 updatedMapId -> updatedMapId,
                 ignored -> {
+                    DungeonSelectionRef followUpRef = mapState.activeMap() == null
+                            ? null
+                            : mapState.activeMap().doorSelectionRefAt(levelZ, followUpSegment2x);
                     if (followUpRef != null) {
                         state.selectRef(followUpRef);
                     } else {
@@ -308,7 +311,7 @@ public final class DoorTool implements EditorTool {
     }
 
     private void renderExteriorDoorPane(DungeonSelectionRef.DoorRef doorRef) {
-        Room room = doorRef == null ? null : mapState.activeMap().findRoom(doorRef.ownerId());
+        Room room = doorRef == null ? null : mapState.activeMap().findRoom(doorRef.roomId());
         summaryLabel.setText("Außentür");
         detailLabel.setText(room == null ? "Raum" : roomName(room.roomId()));
         metaLabel.setText(segmentText(doorRef == null ? null : doorRef.anchorSegment2x()));
@@ -316,7 +319,7 @@ public final class DoorTool implements EditorTool {
 
     private Connection selectedLocalDoor() {
         if (!(state.selectedRef() instanceof DungeonSelectionRef.DoorRef doorRef)
-                || doorRef.ownerType() != DoorOwnerType.CLUSTER) {
+                || doorRef.clusterId() == null) {
             return null;
         }
         return mapState.activeMap().connectionAt(mapState.activeProjectionLevel(), doorRef.anchorSegment2x());
@@ -324,7 +327,7 @@ public final class DoorTool implements EditorTool {
 
     private DungeonSelectionRef.DoorRef selectedExteriorDoorRef() {
         return state.selectedRef() instanceof DungeonSelectionRef.DoorRef doorRef
-                && doorRef.ownerType() == DoorOwnerType.ROOM
+                && doorRef.roomId() != null
                 ? doorRef
                 : null;
     }
@@ -383,15 +386,4 @@ public final class DoorTool implements EditorTool {
         }
     }
 
-    private static DungeonSelectionRef.DoorRef localDoorRef(Long clusterId, int levelZ, GridSegment2x boundarySegment2x) {
-        return clusterId == null || boundarySegment2x == null
-                ? null
-                : new DungeonSelectionRef.DoorRef(DoorOwnerType.CLUSTER, clusterId, levelZ, boundarySegment2x);
-    }
-
-    private static DungeonSelectionRef.DoorRef exteriorDoorRef(Long roomId, int levelZ, GridSegment2x boundarySegment2x) {
-        return roomId == null || boundarySegment2x == null
-                ? null
-                : new DungeonSelectionRef.DoorRef(DoorOwnerType.ROOM, roomId, levelZ, boundarySegment2x);
-    }
 }

@@ -5,7 +5,6 @@ import features.world.dungeonmap.application.stair.StairDraftResolver;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
-import features.world.dungeonmap.model.objects.DoorOwnerType;
 import features.world.dungeonmap.model.objects.DoorRef;
 import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
@@ -43,40 +42,28 @@ public final class TransitionConnectionBuilder {
         if (layout == null || mapId <= 0) {
             throw new IllegalArgumentException("Kein aktiver Dungeon geladen");
         }
-        if (sourceRef instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundary) {
-            DungeonLayout.RoomBoundaryDescription boundary = layout.describeRoomBoundary(roomBoundary, levelZ);
-            if (boundary == null || !boundary.exterior()) {
-                throw new IllegalArgumentException("Tür-Übergänge benötigen eine freie Raum-Außenwand");
+        if (sourceRef instanceof DungeonSelectionRef.DoorRef doorRef) {
+            DungeonLayout.DoorDescription description = layout.describeDoor(new DoorRef(doorRef.doorId()));
+            if (description == null || description.levelZ() != levelZ) {
+                throw new IllegalArgumentException("Tür-Übergänge benötigen eine vorhandene Tür");
             }
-            if (occupiedByOtherConnection(
-                    layout.connectionAt(levelZ, roomBoundary.boundarySegment2x()))) {
+            if (occupiedByOtherConnection(layout.connectionAt(levelZ, description.anchorSegment2x()))) {
                 throw new IllegalArgumentException("An dieser Grenze existiert bereits eine Verbindung");
             }
+            ConnectionEndpoint sourceEndpoint = switch (description.role()) {
+                case ROOM_EXTERIOR -> ConnectionEndpoint.room(description.roomId());
+                case CORRIDOR_BOUNDARY -> ConnectionEndpoint.corridor(description.corridorId());
+                case ROOM_LOCAL -> throw new IllegalArgumentException("Tür-Übergänge unterstützen keine lokalen Raumtüren");
+            };
             return transitionDoorConnection(
                     transitionId,
                     mapId,
                     levelZ,
-                    new DoorRef(DoorOwnerType.ROOM, roomBoundary.roomId(), levelZ, roomBoundary.boundarySegment2x()),
-                    ConnectionEndpoint.room(roomBoundary.roomId()));
+                    description.ref(),
+                    description.anchorSegment2x(),
+                    sourceEndpoint);
         }
-        if (sourceRef instanceof DungeonSelectionRef.CorridorBoundaryRef corridorBoundary) {
-            if (layout.connectionAt(levelZ, corridorBoundary.boundarySegment2x()) != null) {
-                throw new IllegalArgumentException("An dieser Grenze existiert bereits eine Verbindung");
-            }
-            if (layout.describeConnectionSurface(
-                    ConnectionEndpoint.corridor(corridorBoundary.corridorId()),
-                    corridorBoundary.boundarySegment2x(),
-                    levelZ) == null) {
-                throw new IllegalArgumentException("Tür-Übergänge benötigen eine freie Corridor-Grenze");
-            }
-            return transitionDoorConnection(
-                    transitionId,
-                    mapId,
-                    levelZ,
-                    new DoorRef(DoorOwnerType.CORRIDOR, corridorBoundary.corridorId(), levelZ, corridorBoundary.boundarySegment2x()),
-                    ConnectionEndpoint.corridor(corridorBoundary.corridorId()));
-        }
-        throw new IllegalArgumentException("Tür-Übergänge unterstützen nur Raum- oder Corridor-Grenzen");
+        throw new IllegalArgumentException("Tür-Übergänge unterstützen nur vorhandene Türen");
     }
 
     public static DungeonConnection buildStairConnection(
@@ -118,6 +105,7 @@ public final class TransitionConnectionBuilder {
             long mapId,
             int levelZ,
             DoorRef doorRef,
+            features.world.dungeonmap.model.geometry.GridSegment2x anchorSegment2x,
             ConnectionEndpoint sourceEndpoint
     ) {
         return new DungeonConnection(
@@ -125,7 +113,7 @@ public final class TransitionConnectionBuilder {
                 transitionId,
                 mapId,
                 levelZ,
-                new DoorConnectionCarrier(doorRef),
+                new DoorConnectionCarrier(doorRef, anchorSegment2x),
                 List.of(sourceEndpoint, ConnectionEndpoint.transition(transitionId)));
     }
 

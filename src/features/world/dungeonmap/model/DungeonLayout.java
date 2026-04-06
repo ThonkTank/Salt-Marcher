@@ -3,10 +3,10 @@ package features.world.dungeonmap.model;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.objects.Door;
-import features.world.dungeonmap.model.objects.DoorOwnerType;
 import features.world.dungeonmap.model.objects.DoorRef;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.Connection;
@@ -92,6 +92,43 @@ public final class DungeonLayout {
         }
     }
 
+    public enum DoorRole {
+        ROOM_LOCAL,
+        ROOM_EXTERIOR,
+        CORRIDOR_BOUNDARY
+    }
+
+    public record DoorDescription(
+            DoorRef ref,
+            Door door,
+            int levelZ,
+            DoorRole role,
+            DungeonSelectionRef ownerRef,
+            Long clusterId,
+            Long corridorId,
+            List<Room> touchingRooms
+    ) {
+        public DoorDescription {
+            ref = Objects.requireNonNull(ref, "ref");
+            door = Objects.requireNonNull(door, "door");
+            role = Objects.requireNonNull(role, "role");
+            ownerRef = Objects.requireNonNull(ownerRef, "ownerRef");
+            touchingRooms = touchingRooms == null ? List.of() : List.copyOf(touchingRooms);
+        }
+
+        public GridSegment2x anchorSegment2x() {
+            return door.anchorSegment2x();
+        }
+
+        public Long roomId() {
+            if (role != DoorRole.ROOM_EXTERIOR || touchingRooms.isEmpty()) {
+                return null;
+            }
+            Room room = touchingRooms.getFirst();
+            return room == null ? null : room.roomId();
+        }
+    }
+
     private static final DungeonLayout EMPTY = new DungeonLayout(0L, "Kein Dungeon", List.of(), List.of(), List.of(), List.of(), Map.of());
 
     private final long mapId;
@@ -101,7 +138,8 @@ public final class DungeonLayout {
     private final List<DungeonStair> stairs;
     private final List<DungeonTransition> transitions;
     private final List<DoorEntry> doorEntries;
-    private final Map<DoorRef, Door> doorsByRef;
+    private final Map<Long, Door> doorsById;
+    private final Map<Long, DoorDescription> doorDescriptionsById;
     private final Map<ConnectionSegmentKey, DoorEntry> doorEntriesBySegmentAndLevel2x;
     private final List<Connection> connections;
     private final Map<GridSegment2x, Connection> connectionsBySegment2x;
@@ -152,11 +190,12 @@ public final class DungeonLayout {
         this.stairsById = indexStairs(this.stairs);
         this.transitionsById = indexTransitions(this.transitions);
         this.doorEntries = indexDoorEntries(this.clusters, this.corridors);
-        this.doorsByRef = indexDoorsByRef(this.doorEntries);
+        this.doorsById = indexDoorsById(this.doorEntries);
+        this.doorDescriptionsById = indexDoorDescriptionsById(this.doorEntries);
         this.doorEntriesBySegmentAndLevel2x = indexDoorEntriesBySegmentAndLevel2x(this.doorEntries);
-        this.connections = indexConnections(this.clusters, this.corridors, this.transitions, this.doorsByRef);
-        this.connectionsBySegment2x = indexConnectionsBySegment2x(this.connections, this.doorsByRef);
-        this.connectionsBySegmentAndLevel2x = indexConnectionsBySegmentAndLevel2x(this.connections, this.doorsByRef);
+        this.connections = indexConnections(this.clusters, this.corridors, this.transitions, this.doorsById);
+        this.connectionsBySegment2x = indexConnectionsBySegment2x(this.connections, this.doorsById);
+        this.connectionsBySegmentAndLevel2x = indexConnectionsBySegmentAndLevel2x(this.connections, this.doorsById);
         this.connectionsByEndpoint = indexConnectionsByEndpoint(this.connections);
         this.clusterLevelsById = indexLevels(clusterLevelsById);
         this.roomLevelsByRoomId = indexRoomLevels(this.roomsById, this.clustersById);
@@ -317,12 +356,26 @@ public final class DungeonLayout {
     }
 
     public Door resolveDoor(DoorRef ref) {
-        return ref == null ? null : doorsByRef.get(ref);
+        return ref == null ? null : doorsById.get(ref.doorId());
+    }
+
+    public DoorDescription describeDoor(DoorRef ref) {
+        return ref == null ? null : doorDescriptionsById.get(ref.doorId());
     }
 
     public DungeonSelectionRef.DoorRef doorSelectionRefAt(int levelZ, GridSegment2x segment2x) {
+        DoorDescription description = describeDoorAt(levelZ, segment2x);
+        return description == null
+                ? null
+                : new DungeonSelectionRef.DoorRef(
+                        description.ref().doorId(),
+                        description.ownerRef(),
+                        description.anchorSegment2x());
+    }
+
+    public DoorDescription describeDoorAt(int levelZ, GridSegment2x segment2x) {
         DoorEntry entry = doorEntryAt(levelZ, segment2x);
-        return entry == null ? null : new DungeonSelectionRef.DoorRef(entry.ref().ownerType(), entry.ref().ownerId(), levelZ, entry.ref().anchorSegment2x());
+        return entry == null ? null : entry.description();
     }
 
     public Room findRoom(Long roomId) {
@@ -841,9 +894,9 @@ public final class DungeonLayout {
             int levelZ,
             List<CorridorNode> nodes,
             List<CorridorSegment> segments,
-            Set<GridSegment2x> boundaryDoorSegments
+            Collection<Door> doors
     ) {
-        return Corridor.planned(this, levelZ, nodes, segments, boundaryDoorSegments);
+        return Corridor.planned(this, levelZ, nodes, segments, doors);
     }
 
     public Corridor resolveCorridor(Long corridorId, int levelZ, List<CorridorNode> nodes, List<CorridorSegment> segments) {
@@ -855,9 +908,9 @@ public final class DungeonLayout {
             int levelZ,
             List<CorridorNode> nodes,
             List<CorridorSegment> segments,
-            Set<GridSegment2x> boundaryDoorSegments
+            Collection<Door> doors
     ) {
-        return Corridor.resolved(this, corridorId, levelZ, nodes, segments, boundaryDoorSegments);
+        return Corridor.resolved(this, corridorId, levelZ, nodes, segments, doors);
     }
 
     public DungeonLayout withAddedCorridor(Corridor corridor) {
@@ -1101,22 +1154,16 @@ public final class DungeonLayout {
     }
 
     private static List<DoorEntry> indexDoorEntries(List<RoomCluster> clusters, List<Corridor> corridors) {
-        Map<String, DoorEntry> result = new LinkedHashMap<>();
+        Map<Long, DoorEntry> result = new LinkedHashMap<>();
         for (RoomCluster cluster : clusters) {
             if (cluster == null) {
                 continue;
             }
-            for (Room room : cluster.rooms()) {
-                if (room == null) {
-                    continue;
-                }
-                for (Integer levelZ : cluster.roomLevels(room)) {
-                    for (Door door : cluster.roomDoorsAtLevel(room, levelZ)) {
-                        if (door == null || door.isEmpty()) {
-                            continue;
-                        }
-                        DoorRef ref = clusterDoorRef(cluster, levelZ, door);
-                        result.putIfAbsent(doorKey(levelZ, door), new DoorEntry(ref, door));
+            for (Integer levelZ : cluster.structure().levels()) {
+                for (Door door : cluster.structure().doorsAtLevel(levelZ)) {
+                    DoorEntry entry = clusterDoorEntry(cluster, levelZ, door);
+                    if (entry != null) {
+                        result.putIfAbsent(entry.ref().doorId(), entry);
                     }
                 }
             }
@@ -1126,22 +1173,30 @@ public final class DungeonLayout {
                 continue;
             }
             for (Door door : corridor.structure().doorsAtLevel(corridor.levelZ())) {
-                if (door == null || door.isEmpty()) {
-                    continue;
+                DoorEntry entry = corridorDoorEntry(corridor, door);
+                if (entry != null) {
+                    result.putIfAbsent(entry.ref().doorId(), entry);
                 }
-                result.putIfAbsent(
-                        doorKey(corridor.levelZ(), door),
-                        new DoorEntry(new DoorRef(DoorOwnerType.CORRIDOR, corridor.corridorId(), corridor.levelZ(), door.anchorSegment2x()), door));
             }
         }
         return result.isEmpty() ? List.of() : List.copyOf(result.values());
     }
 
-    private static Map<DoorRef, Door> indexDoorsByRef(List<DoorEntry> doorEntries) {
-        Map<DoorRef, Door> result = new LinkedHashMap<>();
+    private static Map<Long, Door> indexDoorsById(List<DoorEntry> doorEntries) {
+        Map<Long, Door> result = new LinkedHashMap<>();
         for (DoorEntry doorEntry : doorEntries) {
             if (doorEntry != null) {
-                result.put(doorEntry.ref(), doorEntry.door());
+                result.put(doorEntry.ref().doorId(), doorEntry.door());
+            }
+        }
+        return result.isEmpty() ? Map.of() : Map.copyOf(result);
+    }
+
+    private static Map<Long, DoorDescription> indexDoorDescriptionsById(List<DoorEntry> doorEntries) {
+        Map<Long, DoorDescription> result = new LinkedHashMap<>();
+        for (DoorEntry doorEntry : doorEntries) {
+            if (doorEntry != null) {
+                result.put(doorEntry.ref().doorId(), doorEntry.description());
             }
         }
         return result.isEmpty() ? Map.of() : Map.copyOf(result);
@@ -1154,7 +1209,7 @@ public final class DungeonLayout {
                 continue;
             }
             for (GridSegment2x segment2x : doorEntry.door().segments2x()) {
-                result.putIfAbsent(new ConnectionSegmentKey(doorEntry.ref().levelZ(), segment2x), doorEntry);
+                result.putIfAbsent(new ConnectionSegmentKey(doorEntry.description().levelZ(), segment2x), doorEntry);
             }
         }
         return result.isEmpty() ? Map.of() : Map.copyOf(result);
@@ -1164,7 +1219,7 @@ public final class DungeonLayout {
             List<RoomCluster> clusters,
             List<Corridor> corridors,
             List<DungeonTransition> transitions,
-            Map<DoorRef, Door> doorsByRef
+            Map<Long, Door> doorsById
     ) {
         List<Connection> result = new ArrayList<>();
         Set<ConnectionSegmentKey> explicitDoorSegments = new LinkedHashSet<>();
@@ -1177,14 +1232,14 @@ public final class DungeonLayout {
                     .map(Connection.class::cast)
                     .toList()) {
                 result.add(connection);
-                registerDoorSegments(explicitDoorSegments, connection, doorsByRef);
+                registerDoorSegments(explicitDoorSegments, connection, doorsById);
             }
         }
         for (DungeonTransition transition : transitions) {
             Connection connection = transition == null ? null : transition.localConnection();
             if (connection != null) {
                 result.add(connection);
-                registerDoorSegments(explicitDoorSegments, connection, doorsByRef);
+                registerDoorSegments(explicitDoorSegments, connection, doorsById);
             }
         }
         for (RoomCluster cluster : clusters) {
@@ -1195,7 +1250,7 @@ public final class DungeonLayout {
                     .filter(Objects::nonNull)
                     .map(Connection.class::cast)
                     .toList()) {
-                if (connectionUsesAnyDoorSegment(connection, explicitDoorSegments, doorsByRef)) {
+                if (connectionUsesAnyDoorSegment(connection, explicitDoorSegments, doorsById)) {
                     continue;
                 }
                 result.add(connection);
@@ -1207,12 +1262,12 @@ public final class DungeonLayout {
     private static boolean connectionUsesAnyDoorSegment(
             Connection connection,
             Set<ConnectionSegmentKey> occupiedSegments,
-            Map<DoorRef, Door> doorsByRef
+            Map<Long, Door> doorsById
     ) {
         if (connection == null || connection.doorCarrier() == null || occupiedSegments == null || occupiedSegments.isEmpty()) {
             return false;
         }
-        for (GridSegment2x segment2x : boundarySegments(connection, doorsByRef)) {
+        for (GridSegment2x segment2x : boundarySegments(connection, doorsById)) {
             if (occupiedSegments.contains(new ConnectionSegmentKey(connection.levelZ(), segment2x))) {
                 return true;
             }
@@ -1223,51 +1278,52 @@ public final class DungeonLayout {
     private static void registerDoorSegments(
             Set<ConnectionSegmentKey> occupiedSegments,
             Connection connection,
-            Map<DoorRef, Door> doorsByRef
+            Map<Long, Door> doorsById
     ) {
         if (occupiedSegments == null || connection == null || connection.doorCarrier() == null) {
             return;
         }
-        for (GridSegment2x segment2x : boundarySegments(connection, doorsByRef)) {
+        for (GridSegment2x segment2x : boundarySegments(connection, doorsById)) {
             occupiedSegments.add(new ConnectionSegmentKey(connection.levelZ(), segment2x));
         }
     }
 
     private static Map<GridSegment2x, Connection> indexConnectionsBySegment2x(
             List<Connection> connections,
-            Map<DoorRef, Door> doorsByRef
+            Map<Long, Door> doorsById
     ) {
         Map<GridSegment2x, Connection> result = new LinkedHashMap<>();
         for (Connection connection : connections) {
             if (connection == null || connection.doorCarrier() == null) {
                 continue;
             }
-            boundarySegments(connection, doorsByRef).forEach(segment2x -> result.putIfAbsent(segment2x, connection));
+            boundarySegments(connection, doorsById).forEach(segment2x -> result.putIfAbsent(segment2x, connection));
         }
         return Map.copyOf(result);
     }
 
     private static Map<ConnectionSegmentKey, Connection> indexConnectionsBySegmentAndLevel2x(
             List<Connection> connections,
-            Map<DoorRef, Door> doorsByRef
+            Map<Long, Door> doorsById
     ) {
         Map<ConnectionSegmentKey, Connection> result = new LinkedHashMap<>();
         for (Connection connection : connections) {
             if (connection == null || connection.doorCarrier() == null) {
                 continue;
             }
-            for (GridSegment2x segment2x : boundarySegments(connection, doorsByRef)) {
+            for (GridSegment2x segment2x : boundarySegments(connection, doorsById)) {
                 result.putIfAbsent(new ConnectionSegmentKey(connection.levelZ(), segment2x), connection);
             }
         }
         return Map.copyOf(result);
     }
 
-    private static Set<GridSegment2x> boundarySegments(Connection connection, Map<DoorRef, Door> doorsByRef) {
+    private static Set<GridSegment2x> boundarySegments(Connection connection, Map<Long, Door> doorsById) {
         if (connection == null || connection.doorCarrier() == null) {
             return Set.of();
         }
-        Door door = doorsByRef == null ? null : doorsByRef.get(connection.doorRef());
+        DoorRef ref = connection.doorRef();
+        Door door = ref == null || doorsById == null ? null : doorsById.get(ref.doorId());
         if (door == null || door.isEmpty()) {
             GridSegment2x anchorSegment2x = connection.anchorSegment2x();
             return anchorSegment2x == null ? Set.of() : Set.of(anchorSegment2x);
@@ -1275,13 +1331,49 @@ public final class DungeonLayout {
         return Set.copyOf(new LinkedHashSet<>(door.segments2x()));
     }
 
-    private static DoorRef clusterDoorRef(RoomCluster cluster, int levelZ, Door door) {
-        List<Room> touchingRooms = touchingRooms(cluster, levelZ, door);
-        if (touchingRooms.size() >= 2) {
-            return new DoorRef(DoorOwnerType.CLUSTER, cluster == null ? null : cluster.clusterId(), levelZ, door.anchorSegment2x());
+    private static DoorEntry clusterDoorEntry(RoomCluster cluster, int levelZ, Door door) {
+        if (cluster == null || door == null || door.isEmpty() || door.doorId() == null || door.doorId() == 0L) {
+            return null;
         }
-        Room room = touchingRooms.isEmpty() ? null : touchingRooms.getFirst();
-        return new DoorRef(DoorOwnerType.ROOM, room == null ? null : room.roomId(), levelZ, door.anchorSegment2x());
+        List<Room> touchingRooms = touchingRooms(cluster, levelZ, door);
+        DoorRole role = touchingRooms.size() >= 2 ? DoorRole.ROOM_LOCAL : DoorRole.ROOM_EXTERIOR;
+        DungeonSelectionRef ownerRef = role == DoorRole.ROOM_LOCAL
+                ? new DungeonSelectionRef.ClusterRef(cluster.clusterId())
+                : touchingRooms.isEmpty()
+                ? new DungeonSelectionRef.ClusterRef(cluster.clusterId())
+                : new DungeonSelectionRef.RoomRef(touchingRooms.getFirst().roomId());
+        DoorRef ref = new DoorRef(door.doorId());
+        return new DoorEntry(
+                ref,
+                door,
+                new DoorDescription(
+                        ref,
+                        door,
+                        levelZ,
+                        role,
+                        ownerRef,
+                        cluster.clusterId(),
+                        null,
+                        touchingRooms));
+    }
+
+    private static DoorEntry corridorDoorEntry(Corridor corridor, Door door) {
+        if (corridor == null || door == null || door.isEmpty() || door.doorId() == null || door.doorId() == 0L) {
+            return null;
+        }
+        DoorRef ref = new DoorRef(door.doorId());
+        return new DoorEntry(
+                ref,
+                door,
+                new DoorDescription(
+                        ref,
+                        door,
+                        corridor.levelZ(),
+                        DoorRole.CORRIDOR_BOUNDARY,
+                        new DungeonSelectionRef.CorridorRef(corridor.corridorId()),
+                        null,
+                        corridor.corridorId(),
+                        List.of()));
     }
 
     private static List<Room> touchingRooms(RoomCluster cluster, int levelZ, Door door) {
@@ -1298,20 +1390,6 @@ public final class DungeonLayout {
             }
         }
         return rooms.isEmpty() ? List.of() : List.copyOf(rooms);
-    }
-
-    private static String doorKey(int levelZ, Door door) {
-        StringBuilder builder = new StringBuilder();
-        builder.append(levelZ).append(':');
-        for (GridSegment2x segment2x : (door == null ? List.<GridSegment2x>of() : door.segments2x()).stream()
-                .sorted(GridSegment2x.ORDER)
-                .toList()) {
-            builder.append(segment2x.start().x2()).append(',').append(segment2x.start().y2())
-                    .append('>')
-                    .append(segment2x.end().x2()).append(',').append(segment2x.end().y2())
-                    .append(';');
-        }
-        return builder.toString();
     }
 
     private static Map<ConnectionEndpoint, List<Connection>> indexConnectionsByEndpoint(List<Connection> connections) {
@@ -1599,6 +1677,6 @@ public final class DungeonLayout {
     private record ConnectionSegmentKey(int levelZ, GridSegment2x segment2x) {
     }
 
-    private record DoorEntry(DoorRef ref, Door door) {
+    private record DoorEntry(DoorRef ref, Door door, DoorDescription description) {
     }
 }

@@ -46,8 +46,8 @@ public interface Connection {
     }
 
     default GridSegment2x anchorSegment2x() {
-        DoorRef doorRef = doorRef();
-        return doorRef == null ? null : doorRef.anchorSegment2x();
+        DoorConnectionCarrier carrier = doorCarrier();
+        return carrier == null ? null : carrier.anchorSegment2x();
     }
 
     default Door door(DungeonLayout layout) {
