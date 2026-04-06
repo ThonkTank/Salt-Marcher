@@ -334,7 +334,7 @@ public final class DungeonTransitionRepository {
                                     rs.getInt("stair_shape_param2")),
                             rs.getInt("stair_min_level_z"),
                             rs.getInt("stair_max_level_z"),
-                            StructureObject.fromStair(features.world.dungeonmap.model.objects.Stair.of(pathNodes, stopLevels))),
+                            StructureObject.fromPathPoints(pathNodes, stopLevels)),
                     List.of(ConnectionEndpoint.transition(transitionId)));
             default -> throw new SQLException("Unbekannter dungeon transition placement_type: " + placementType);
         };

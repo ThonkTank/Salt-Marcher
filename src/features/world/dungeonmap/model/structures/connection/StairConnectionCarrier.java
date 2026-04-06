@@ -32,7 +32,7 @@ public record StairConnectionCarrier(
                         shapeSpec.parameter2());
         structure = structure == null ? StructureObject.empty() : structure;
         var stair = structure.stair();
-        if (stair.path().isEmpty()) {
+        if (stair == null || stair.path().isEmpty()) {
             throw new IllegalArgumentException("Transition stair path fehlt");
         }
     }

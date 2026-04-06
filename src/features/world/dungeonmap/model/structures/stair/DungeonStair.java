@@ -44,7 +44,7 @@ public final class DungeonStair {
                 stairId,
                 mapId,
                 name,
-                StructureObject.fromStair(features.world.dungeonmap.model.objects.Stair.of(path, stopLevels)));
+                StructureObject.fromPathPoints(path, stopLevels));
     }
 
     public static DungeonStair resolved(

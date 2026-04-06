@@ -4,13 +4,16 @@ import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.EdgeShape;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.geometry.TilePath;
 import features.world.dungeonmap.model.geometry.TileShape;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -21,57 +24,51 @@ public final class StructureObject {
     public record StairStop(CubePoint position, String label) {
     }
 
-    private final StructureDescriptor descriptor;
-    private final Map<Integer, TileShape> surfaceShapesByLevel;
-    private final Map<Integer, Floor> floorsByLevel;
-    private final Map<Integer, List<Wall>> wallsByLevel;
-    private final Map<Integer, List<Door>> doorsByLevel;
-    private final List<Stair> stairs;
+    private final Map<Integer, LevelStructure> levelsByZ;
+    private final Stair stair;
 
     public static StructureObject empty() {
-        return new StructureObject(StructureDescriptor.empty(), Map.of(), Map.of(), Map.of(), Map.of(), List.of());
+        return new StructureObject(Map.of(), null);
     }
 
-    public static StructureObject fromDescriptor(StructureDescriptor descriptor) {
-        StructureDescriptor resolvedDescriptor = descriptor == null ? StructureDescriptor.empty() : descriptor;
-        if (resolvedDescriptor.levels().isEmpty()) {
+    public static StructureObject fromLevels(Map<Integer, LevelStructure> levelsByZ) {
+        if (levelsByZ == null || levelsByZ.isEmpty()) {
             return empty();
         }
-        Map<Integer, TileShape> surfaceShapes = new LinkedHashMap<>();
-        Map<Integer, Floor> floors = new LinkedHashMap<>();
-        Map<Integer, List<Wall>> walls = new LinkedHashMap<>();
-        Map<Integer, List<Door>> doors = new LinkedHashMap<>();
-        for (Map.Entry<Integer, StructureDescriptor.LevelDescriptor> entry : resolvedDescriptor.levels().entrySet()) {
-            int levelZ = entry.getKey();
-            StructureDescriptor.LevelDescriptor level = entry.getValue();
-            surfaceShapes.put(levelZ, level.surfaceShape());
-            floors.put(levelZ, new Floor(level.floorShape()));
-            walls.put(levelZ, hydrateWalls(level.boundaryShape(), level.openingShape()));
-            doors.put(levelZ, hydrateDoors(level.openingShape()));
-        }
-        return new StructureObject(resolvedDescriptor, surfaceShapes, floors, walls, doors, List.of());
+        return new StructureObject(levelsByZ, null);
     }
 
-    public static StructureObject fromCubePoints(java.util.Collection<CubePoint> cubePoints) {
-        return fromDescriptor(StructureDescriptor.fromCubePoints(cubePoints));
+    public static StructureObject fromCubePoints(Collection<CubePoint> cubePoints) {
+        if (cubePoints == null || cubePoints.isEmpty()) {
+            return empty();
+        }
+        Map<Integer, Set<CellCoord>> cellsByLevel = new LinkedHashMap<>();
+        for (CubePoint cubePoint : cubePoints) {
+            if (cubePoint == null) {
+                continue;
+            }
+            cellsByLevel.computeIfAbsent(cubePoint.z(), ignored -> new LinkedHashSet<>())
+                    .add(cubePoint.projectedCell());
+        }
+        return fromSurfaceCellsByLevel(cellsByLevel, Map.of(), Map.of(), Map.of());
     }
 
     public static StructureObject fromSurfaceCellsByLevel(
-            Map<Integer, ? extends java.util.Collection<CellCoord>> cellsByLevel,
-            Map<Integer, ? extends java.util.Collection<GridSegment2x>> openingEdgesByLevel,
-            Map<Integer, ? extends java.util.Collection<CellCoord>> floorCellsByLevel,
+            Map<Integer, ? extends Collection<CellCoord>> cellsByLevel,
+            Map<Integer, ? extends Collection<GridSegment2x>> openingEdgesByLevel,
+            Map<Integer, ? extends Collection<CellCoord>> floorCellsByLevel,
             Map<Integer, CellCoord> anchorsByLevel
     ) {
         if (cellsByLevel == null || cellsByLevel.isEmpty()) {
             return empty();
         }
-        Map<Integer, StructureDescriptor.LevelDescriptor> levels = new LinkedHashMap<>();
+        Map<Integer, LevelStructure> levels = new LinkedHashMap<>();
         cellsByLevel.entrySet().stream()
                 .filter(entry -> entry != null && entry.getKey() != null)
                 .sorted(Map.Entry.comparingByKey())
                 .forEach(entry -> {
                     int levelZ = entry.getKey();
-                    StructureDescriptor.LevelDescriptor level = StructureDescriptor.LevelDescriptor.fromSurfaceCells(
+                    LevelStructure level = LevelStructure.fromSurfaceCells(
                             anchorsByLevel == null ? null : anchorsByLevel.get(levelZ),
                             entry.getValue(),
                             openingEdgesByLevel == null ? null : openingEdgesByLevel.get(levelZ),
@@ -80,25 +77,25 @@ public final class StructureObject {
                         levels.put(levelZ, level);
                     }
                 });
-        return levels.isEmpty() ? empty() : fromDescriptor(new StructureDescriptor(levels));
+        return levels.isEmpty() ? empty() : fromLevels(levels);
     }
 
     public static StructureObject fromBoundaryEdgesByLevel(
-            Map<Integer, ? extends java.util.Collection<GridSegment2x>> boundaryEdgesByLevel,
-            Map<Integer, ? extends java.util.Collection<GridSegment2x>> openingEdgesByLevel,
-            Map<Integer, ? extends java.util.Collection<CellCoord>> floorCellsByLevel,
+            Map<Integer, ? extends Collection<GridSegment2x>> boundaryEdgesByLevel,
+            Map<Integer, ? extends Collection<GridSegment2x>> openingEdgesByLevel,
+            Map<Integer, ? extends Collection<CellCoord>> floorCellsByLevel,
             Map<Integer, CellCoord> anchorsByLevel
     ) {
         if (boundaryEdgesByLevel == null || boundaryEdgesByLevel.isEmpty()) {
             return empty();
         }
-        Map<Integer, StructureDescriptor.LevelDescriptor> levels = new LinkedHashMap<>();
+        Map<Integer, LevelStructure> levels = new LinkedHashMap<>();
         boundaryEdgesByLevel.entrySet().stream()
                 .filter(entry -> entry != null && entry.getKey() != null)
                 .sorted(Map.Entry.comparingByKey())
                 .forEach(entry -> {
                     int levelZ = entry.getKey();
-                    StructureDescriptor.LevelDescriptor level = StructureDescriptor.LevelDescriptor.fromBoundaryEdges(
+                    LevelStructure level = LevelStructure.fromBoundaryEdges(
                             anchorsByLevel == null ? null : anchorsByLevel.get(levelZ),
                             entry.getValue(),
                             openingEdgesByLevel == null ? null : openingEdgesByLevel.get(levelZ),
@@ -107,64 +104,84 @@ public final class StructureObject {
                         levels.put(levelZ, level);
                     }
                 });
-        return levels.isEmpty() ? empty() : fromDescriptor(new StructureDescriptor(levels));
+        return levels.isEmpty() ? empty() : fromLevels(levels);
+    }
+
+    public static StructureObject fromTilePath(TilePath path, Set<Integer> stopLevels) {
+        if (path == null || path.isEmpty()) {
+            return empty();
+        }
+        return fromStair(Stair.of(path, stopLevels));
+    }
+
+    public static StructureObject fromPathPoints(Collection<CubePoint> pathPoints, Set<Integer> stopLevels) {
+        if (pathPoints == null || pathPoints.isEmpty()) {
+            return empty();
+        }
+        return fromTilePath(TilePath.of(pathPoints), stopLevels);
     }
 
     public static StructureObject fromStair(Stair stair) {
         if (stair == null) {
             return empty();
         }
-        return new StructureObject(StructureDescriptor.empty(), Map.of(), Map.of(), Map.of(), Map.of(), List.of(stair));
+        return new StructureObject(Map.of(), stair);
     }
 
     private StructureObject(
-            StructureDescriptor descriptor,
-            Map<Integer, TileShape> surfaceShapesByLevel,
-            Map<Integer, Floor> floorsByLevel,
-            Map<Integer, List<Wall>> wallsByLevel,
-            Map<Integer, List<Door>> doorsByLevel,
-            List<Stair> stairs
+            Map<Integer, LevelStructure> levelsByZ,
+            Stair stair
     ) {
-        this.descriptor = descriptor == null ? StructureDescriptor.empty() : descriptor;
-        this.surfaceShapesByLevel = normalizedSurfaceShapes(surfaceShapesByLevel);
-        this.floorsByLevel = normalizedFloors(floorsByLevel);
-        this.wallsByLevel = normalizedObjectsByLevel(wallsByLevel);
-        this.doorsByLevel = normalizedObjectsByLevel(doorsByLevel);
-        this.stairs = normalizedStairs(stairs);
+        this.levelsByZ = normalizeLevels(levelsByZ);
+        this.stair = stair;
     }
 
-    public StructureDescriptor descriptor() {
-        return descriptor;
+    public Map<Integer, LevelStructure> levelStructures() {
+        return levelsByZ;
+    }
+
+    public LevelStructure levelStructure(int levelZ) {
+        return levelsByZ.get(levelZ);
     }
 
     public StructureObject projectedToLevel(int levelZ) {
-        StructureDescriptor.LevelDescriptor descriptorLevel = descriptor.level(levelZ);
-        List<Stair> projectedStairs = stairs.stream()
-                .filter(stair -> stair != null && stair.levels().contains(levelZ))
-                .map(stair -> Stair.of(
+        LevelStructure level = levelStructure(levelZ);
+        Stair projectedStair = stair == null || !stair.levels().contains(levelZ)
+                ? null
+                : Stair.of(
                         stair.path().stream()
                                 .filter(point -> point != null && point.z() == levelZ)
                                 .toList(),
-                        Set.of(levelZ)))
-                .toList();
-        if (descriptorLevel == null && projectedStairs.isEmpty()) {
+                        Set.of(levelZ));
+        if (level == null && projectedStair == null) {
             return empty();
         }
-        return new StructureObject(
-                descriptorLevel == null ? StructureDescriptor.empty() : new StructureDescriptor(Map.of(levelZ, descriptorLevel)),
-                descriptorLevel == null ? Map.of() : Map.of(levelZ, descriptorLevel.surfaceShape()),
-                descriptorLevel == null ? Map.of() : Map.of(levelZ, new Floor(descriptorLevel.floorShape())),
-                descriptorLevel == null ? Map.of() : Map.of(levelZ, hydrateWalls(descriptorLevel.boundaryShape(), descriptorLevel.openingShape())),
-                descriptorLevel == null ? Map.of() : Map.of(levelZ, hydrateDoors(descriptorLevel.openingShape())),
-                projectedStairs);
+        return new StructureObject(level == null ? Map.of() : Map.of(levelZ, level), projectedStair);
     }
 
-    public StructureObject withOpeningEdgesAtLevel(int levelZ, java.util.Collection<GridSegment2x> openingEdges) {
-        return fromDescriptor(descriptor.withOpeningEdgesAtLevel(levelZ, openingEdges));
+    public StructureObject withOpeningEdgesAtLevel(int levelZ, Collection<GridSegment2x> openingEdges) {
+        LevelStructure level = levelStructure(levelZ);
+        if (level == null) {
+            return this;
+        }
+        Map<Integer, LevelStructure> updated = new LinkedHashMap<>(levelsByZ);
+        updated.put(levelZ, level.withOpeningEdges(openingEdges));
+        return new StructureObject(updated, stair);
+    }
+
+    public StructureObject withFloorCellsAtLevel(int levelZ, Collection<CellCoord> floorCells) {
+        LevelStructure level = levelStructure(levelZ);
+        if (level == null) {
+            return this;
+        }
+        Map<Integer, LevelStructure> updated = new LinkedHashMap<>(levelsByZ);
+        updated.put(levelZ, level.withFloorCells(floorCells));
+        return new StructureObject(updated, stair);
     }
 
     public TileShape surfaceShapeAtLevel(int levelZ) {
-        TileShape descriptorShape = surfaceShapesByLevel.getOrDefault(levelZ, TileShape.empty());
+        LevelStructure level = levelStructure(levelZ);
+        TileShape descriptorShape = level == null ? TileShape.empty() : level.surfaceShape();
         TileShape stairShape = stairShapeAtLevel(levelZ);
         if (descriptorShape.isEmpty()) {
             return stairShape;
@@ -178,53 +195,52 @@ public final class StructureObject {
     }
 
     public List<Wall> wallsAtLevel(int levelZ) {
-        return wallsByLevel.getOrDefault(levelZ, List.of());
+        EdgeShape wallShape = wallShapeAtLevel(levelZ);
+        if (wallShape.isEmpty()) {
+            return List.of();
+        }
+        return wallShape.connectedComponents().stream()
+                .map(Wall::fromShape)
+                .toList();
     }
 
     public List<Door> doorsAtLevel(int levelZ) {
-        return doorsByLevel.getOrDefault(levelZ, List.of());
+        EdgeShape openingShape = openingShapeAtLevel(levelZ);
+        if (openingShape.isEmpty()) {
+            return List.of();
+        }
+        return openingShape.connectedComponents().stream()
+                .map(component -> Door.fromShape(component, Door.DoorState.OPEN))
+                .toList();
     }
 
     public List<EdgeShape> wallComponentShapesAtLevel(int levelZ) {
-        return wallsAtLevel(levelZ).stream()
-                .filter(wall -> wall != null)
-                .map(wall -> EdgeShape.fromBoundarySegments(wall.segments2x()))
-                .toList();
+        return wallShapeAtLevel(levelZ).connectedComponents();
     }
 
     public List<EdgeShape> doorComponentShapesAtLevel(int levelZ) {
-        return doorsAtLevel(levelZ).stream()
-                .filter(door -> door != null)
-                .map(door -> EdgeShape.fromBoundarySegments(door.segments2x()))
-                .toList();
+        return openingShapeAtLevel(levelZ).connectedComponents();
     }
 
     public Set<GridSegment2x> wallSegmentsAtLevel(int levelZ) {
-        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
-        for (EdgeShape shape : wallComponentShapesAtLevel(levelZ)) {
-            result.addAll(shape.segments2x());
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+        return wallShapeAtLevel(levelZ).segmentSet2x();
     }
 
     public Set<GridSegment2x> doorSegmentsAtLevel(int levelZ) {
-        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
-        for (EdgeShape shape : doorComponentShapesAtLevel(levelZ)) {
-            result.addAll(shape.segments2x());
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+        return openingShapeAtLevel(levelZ).segmentSet2x();
     }
 
     public Floor floorAtLevel(int levelZ) {
-        return floorsByLevel.get(levelZ);
+        LevelStructure level = levelStructure(levelZ);
+        return level == null ? null : new Floor(level.floorShape());
     }
 
     public List<Stair> stairs() {
-        return stairs;
+        return stair == null ? List.of() : List.of(stair);
     }
 
     public Stair stair() {
-        return stairs.isEmpty() ? null : stairs.getFirst();
+        return stair;
     }
 
     public List<CubePoint> stairPath() {
@@ -254,8 +270,8 @@ public final class StructureObject {
     }
 
     public Set<Integer> levels() {
-        LinkedHashSet<Integer> result = new LinkedHashSet<>(descriptor.levelZs());
-        for (Stair stair : stairs) {
+        LinkedHashSet<Integer> result = new LinkedHashSet<>(levelsByZ.keySet());
+        if (stair != null) {
             result.addAll(stair.levels());
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
@@ -291,22 +307,22 @@ public final class StructureObject {
     }
 
     public EdgeShape boundaryShapeAtLevel(int levelZ) {
-        StructureDescriptor.LevelDescriptor level = descriptor.level(levelZ);
+        LevelStructure level = levelStructure(levelZ);
         return level == null ? EdgeShape.empty() : level.boundaryShape();
     }
 
     public EdgeShape openingShapeAtLevel(int levelZ) {
-        StructureDescriptor.LevelDescriptor level = descriptor.level(levelZ);
+        LevelStructure level = levelStructure(levelZ);
         return level == null ? EdgeShape.empty() : level.openingShape();
     }
 
     public Set<GridSegment2x> boundaryEdgesAtLevel(int levelZ) {
-        StructureDescriptor.LevelDescriptor level = descriptor.level(levelZ);
+        LevelStructure level = levelStructure(levelZ);
         return level == null ? Set.of() : level.boundaryEdges();
     }
 
     public Set<GridSegment2x> openingEdgesAtLevel(int levelZ) {
-        StructureDescriptor.LevelDescriptor level = descriptor.level(levelZ);
+        LevelStructure level = levelStructure(levelZ);
         return level == null ? Set.of() : level.openingEdges();
     }
 
@@ -329,10 +345,10 @@ public final class StructureObject {
 
     public Set<CubePoint> cubePoints() {
         LinkedHashSet<CubePoint> result = new LinkedHashSet<>();
-        for (Map.Entry<Integer, TileShape> entry : surfaceShapesByLevel.entrySet()) {
-            result.addAll(entry.getValue().cubePoints(entry.getKey()));
+        for (Map.Entry<Integer, LevelStructure> entry : levelsByZ.entrySet()) {
+            result.addAll(entry.getValue().surfaceShape().cubePoints(entry.getKey()));
         }
-        for (Stair stair : stairs) {
+        if (stair != null) {
             result.addAll(stair.pointSet());
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
@@ -355,7 +371,7 @@ public final class StructureObject {
     }
 
     public CellCoord anchorCellCoordAtLevel(int levelZ) {
-        StructureDescriptor.LevelDescriptor level = descriptor.level(levelZ);
+        LevelStructure level = levelStructure(levelZ);
         if (level != null) {
             return level.anchorCell();
         }
@@ -369,134 +385,209 @@ public final class StructureObject {
     }
 
     public StructureObject movedBy(CellCoord delta, int levelDelta) {
-        List<Stair> translatedStairs = stairs.stream()
-                .map(stair -> stair.movedBy(delta, levelDelta))
-                .toList();
-        return new StructureObject(
-                descriptor.translatedByCells(delta, levelDelta),
-                translatedSurfaceShapes(delta, levelDelta),
-                translatedFloors(delta, levelDelta),
-                translatedWalls(delta, levelDelta),
-                translatedDoors(delta, levelDelta),
-                translatedStairs);
+        CellCoord resolvedDelta = delta == null ? new CellCoord(0, 0) : delta;
+        if (resolvedDelta.x() == 0 && resolvedDelta.y() == 0 && levelDelta == 0) {
+            return this;
+        }
+        Map<Integer, LevelStructure> translatedLevels = new LinkedHashMap<>();
+        for (Map.Entry<Integer, LevelStructure> entry : levelsByZ.entrySet()) {
+            translatedLevels.put(entry.getKey() + levelDelta, entry.getValue().translatedByCells(resolvedDelta));
+        }
+        Stair translatedStair = stair == null ? null : stair.movedBy(resolvedDelta, levelDelta);
+        return new StructureObject(translatedLevels, translatedStair);
     }
 
     private TileShape stairShapeAtLevel(int levelZ) {
-        LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
-        for (Stair stair : stairs) {
-            result.addAll(stair.cellCoordsAtLevel(levelZ));
-        }
-        return result.isEmpty() ? TileShape.empty() : new TileShape(result);
+        return stair == null ? TileShape.empty() : stair.shapeAtLevel(levelZ);
     }
 
-    private Map<Integer, TileShape> translatedSurfaceShapes(CellCoord delta, int levelDelta) {
-        Map<Integer, TileShape> result = new LinkedHashMap<>();
-        for (Map.Entry<Integer, TileShape> entry : surfaceShapesByLevel.entrySet()) {
-            result.put(entry.getKey() + levelDelta, entry.getValue().translatedByCells(delta));
-        }
-        return result;
+    private EdgeShape wallShapeAtLevel(int levelZ) {
+        LevelStructure level = levelStructure(levelZ);
+        return level == null ? EdgeShape.empty() : level.wallShape();
     }
 
-    private Map<Integer, Floor> translatedFloors(CellCoord delta, int levelDelta) {
-        Map<Integer, Floor> result = new LinkedHashMap<>();
-        for (Map.Entry<Integer, Floor> entry : floorsByLevel.entrySet()) {
-            result.put(entry.getKey() + levelDelta, entry.getValue().movedBy(delta));
-        }
-        return result;
-    }
-
-    private Map<Integer, List<Wall>> translatedWalls(CellCoord delta, int levelDelta) {
-        Map<Integer, List<Wall>> result = new LinkedHashMap<>();
-        for (Map.Entry<Integer, List<Wall>> entry : wallsByLevel.entrySet()) {
-            result.put(entry.getKey() + levelDelta, entry.getValue().stream()
-                    .map(wall -> wall == null ? null : wall.movedBy(delta))
-                    .filter(wall -> wall != null)
-                    .toList());
-        }
-        return result;
-    }
-
-    private Map<Integer, List<Door>> translatedDoors(CellCoord delta, int levelDelta) {
-        Map<Integer, List<Door>> result = new LinkedHashMap<>();
-        for (Map.Entry<Integer, List<Door>> entry : doorsByLevel.entrySet()) {
-            result.put(entry.getKey() + levelDelta, entry.getValue().stream()
-                    .map(door -> door == null ? null : door.movedBy(delta))
-                    .filter(door -> door != null)
-                    .toList());
-        }
-        return result;
-    }
-
-    private static List<Wall> hydrateWalls(EdgeShape boundaryShape, EdgeShape openingShape) {
-        EdgeShape wallShape = boundaryShape == null ? EdgeShape.empty() : boundaryShape.without(openingShape == null ? List.of() : openingShape.segments2x());
-        return wallShape.isEmpty() ? List.of() : List.of(Wall.fromShape(wallShape));
-    }
-
-    private static List<Door> hydrateDoors(EdgeShape openingShape) {
-        if (openingShape == null || openingShape.isEmpty()) {
-            return List.of();
-        }
-        return openingShape.connectedComponents().stream()
-                .map(component -> Door.fromShape(component, Door.DoorState.OPEN))
-                .toList();
-    }
-
-    private static List<Stair> normalizedStairs(List<Stair> stairs) {
-        if (stairs == null || stairs.isEmpty()) {
-            return List.of();
-        }
-        ArrayList<Stair> result = new ArrayList<>();
-        for (Stair stair : stairs) {
-            if (stair != null) {
-                result.add(stair);
-            }
-        }
-        return result.isEmpty() ? List.of() : List.copyOf(result);
-    }
-
-    private static Map<Integer, Floor> normalizedFloors(Map<Integer, Floor> floors) {
-        if (floors == null || floors.isEmpty()) {
+    private static Map<Integer, LevelStructure> normalizeLevels(Map<Integer, LevelStructure> levelsByZ) {
+        if (levelsByZ == null || levelsByZ.isEmpty()) {
             return Map.of();
         }
-        Map<Integer, Floor> result = new LinkedHashMap<>();
-        floors.entrySet().stream()
+        Map<Integer, LevelStructure> result = new LinkedHashMap<>();
+        levelsByZ.entrySet().stream()
                 .filter(entry -> entry != null && entry.getKey() != null && entry.getValue() != null)
                 .sorted(Map.Entry.comparingByKey())
                 .forEach(entry -> result.put(entry.getKey(), entry.getValue()));
         return result.isEmpty() ? Map.of() : Map.copyOf(result);
     }
 
-    private static Map<Integer, TileShape> normalizedSurfaceShapes(Map<Integer, TileShape> surfaceShapesByLevel) {
-        if (surfaceShapesByLevel == null || surfaceShapesByLevel.isEmpty()) {
-            return Map.of();
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
         }
-        Map<Integer, TileShape> result = new LinkedHashMap<>();
-        surfaceShapesByLevel.entrySet().stream()
-                .filter(entry -> entry != null && entry.getKey() != null && entry.getValue() != null && !entry.getValue().isEmpty())
-                .sorted(Map.Entry.comparingByKey())
-                .forEach(entry -> result.put(entry.getKey(), entry.getValue()));
-        return result.isEmpty() ? Map.of() : Map.copyOf(result);
+        if (!(other instanceof StructureObject that)) {
+            return false;
+        }
+        return Objects.equals(levelsByZ, that.levelsByZ)
+                && Objects.equals(stair, that.stair);
     }
 
-    private static <T> Map<Integer, List<T>> normalizedObjectsByLevel(Map<Integer, List<T>> source) {
-        if (source == null || source.isEmpty()) {
-            return Map.of();
+    @Override
+    public int hashCode() {
+        return Objects.hash(levelsByZ, stair);
+    }
+
+    @Override
+    public String toString() {
+        return "StructureObject[levelsByZ=" + levelsByZ + ", stair=" + stair + "]";
+    }
+
+    public static final class LevelStructure {
+
+        private final CellCoord anchorCell;
+        private final TileShape surfaceShape;
+        private final TileShape floorShape;
+        private final EdgeShape boundaryShape;
+        private final EdgeShape openingShape;
+
+        private LevelStructure(
+                CellCoord anchorCell,
+                TileShape surfaceShape,
+                EdgeShape boundaryShape,
+                EdgeShape openingShape,
+                TileShape floorShape
+        ) {
+            this.surfaceShape = surfaceShape == null ? TileShape.empty() : surfaceShape;
+            this.boundaryShape = boundaryShape == null ? EdgeShape.empty() : boundaryShape;
+            this.openingShape = openingShape == null ? EdgeShape.empty() : openingShape;
+            this.floorShape = floorShape == null ? TileShape.empty() : floorShape;
+            this.anchorCell = normalizeAnchor(anchorCell, this.surfaceShape);
         }
-        Map<Integer, List<T>> result = new LinkedHashMap<>();
-        source.entrySet().stream()
-                .filter(entry -> entry != null && entry.getKey() != null)
-                .sorted(Map.Entry.comparingByKey())
-                .forEach(entry -> {
-                    ArrayList<T> objects = new ArrayList<>();
-                    if (entry.getValue() != null) {
-                        for (T object : entry.getValue()) {
-                            if (object != null) {
-                                objects.add(object);
-                            }
-                        }
-                    }
-                    result.put(entry.getKey(), objects.isEmpty() ? List.of() : List.copyOf(objects));
-                });
-        return result.isEmpty() ? Map.of() : Map.copyOf(result);
+
+        public static LevelStructure fromSurfaceCells(
+                CellCoord anchorCell,
+                Collection<CellCoord> surfaceCells,
+                Collection<GridSegment2x> openingEdges,
+                Collection<CellCoord> floorCells
+        ) {
+            TileShape surfaceShape = TileShape.of(surfaceCells);
+            EdgeShape boundaryShape = surfaceShape.boundaryShape();
+            EdgeShape openingShape = boundaryShape.intersection(openingEdges);
+            TileShape floorShape = surfaceShape.intersection(floorCells);
+            return new LevelStructure(anchorCell, surfaceShape, boundaryShape, openingShape, floorShape);
+        }
+
+        public static LevelStructure fromBoundaryEdges(
+                CellCoord anchorCell,
+                Collection<GridSegment2x> boundaryEdges,
+                Collection<GridSegment2x> openingEdges,
+                Collection<CellCoord> floorCells
+        ) {
+            EdgeShape boundaryShape = boundaryEdges == null
+                    ? EdgeShape.empty()
+                    : EdgeShape.fromBoundarySegments(boundaryEdges);
+            TileShape surfaceShape = boundaryShape.surfaceShape();
+            EdgeShape openingShape = boundaryShape.intersection(openingEdges);
+            TileShape floorShape = surfaceShape.intersection(floorCells);
+            return new LevelStructure(anchorCell, surfaceShape, boundaryShape, openingShape, floorShape);
+        }
+
+        public CellCoord anchorCell() {
+            return anchorCell;
+        }
+
+        public TileShape surfaceShape() {
+            return surfaceShape;
+        }
+
+        public TileShape floorShape() {
+            return floorShape;
+        }
+
+        public EdgeShape boundaryShape() {
+            return boundaryShape;
+        }
+
+        public EdgeShape openingShape() {
+            return openingShape;
+        }
+
+        public EdgeShape wallShape() {
+            return boundaryShape.without(openingShape.segments2x());
+        }
+
+        public Set<GridSegment2x> boundaryEdges() {
+            return boundaryShape.segmentSet2x();
+        }
+
+        public Set<GridSegment2x> openingEdges() {
+            return openingShape.segmentSet2x();
+        }
+
+        public Set<CellCoord> floorCells() {
+            return floorShape.cellCoords();
+        }
+
+        public LevelStructure translatedByCells(CellCoord delta) {
+            CellCoord resolvedDelta = delta == null ? new CellCoord(0, 0) : delta;
+            if (resolvedDelta.x() == 0 && resolvedDelta.y() == 0) {
+                return this;
+            }
+            return new LevelStructure(
+                    anchorCell.add(resolvedDelta),
+                    surfaceShape.translatedByCells(resolvedDelta),
+                    boundaryShape.translatedByCells(resolvedDelta),
+                    openingShape.translatedByCells(resolvedDelta),
+                    floorShape.translatedByCells(resolvedDelta));
+        }
+
+        public LevelStructure withFloorCells(Collection<CellCoord> floorCells) {
+            return fromSurfaceCells(anchorCell, surfaceShape.cellCoords(), openingEdges(), floorCells);
+        }
+
+        public LevelStructure withOpeningEdges(Collection<GridSegment2x> openingEdges) {
+            return fromSurfaceCells(anchorCell, surfaceShape.cellCoords(), openingEdges, floorCells());
+        }
+
+        public boolean isEmpty() {
+            return surfaceShape.isEmpty()
+                    && openingShape.isEmpty()
+                    && floorShape.isEmpty();
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (!(other instanceof LevelStructure that)) {
+                return false;
+            }
+            return Objects.equals(anchorCell, that.anchorCell)
+                    && Objects.equals(surfaceShape.cellCoords(), that.surfaceShape.cellCoords())
+                    && Objects.equals(openingEdges(), that.openingEdges())
+                    && Objects.equals(floorCells(), that.floorCells());
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(anchorCell, surfaceShape.cellCoords(), openingEdges(), floorCells());
+        }
+
+        @Override
+        public String toString() {
+            return "LevelStructure[anchorCell=" + anchorCell
+                    + ", surfaceCells=" + surfaceShape.cellCoords()
+                    + ", boundaryEdges=" + boundaryEdges()
+                    + ", openingEdges=" + openingEdges()
+                    + ", floorCells=" + floorCells()
+                    + "]";
+        }
+
+        private static CellCoord normalizeAnchor(CellCoord anchorCell, TileShape surfaceShape) {
+            if (anchorCell != null) {
+                return anchorCell;
+            }
+            CellCoord centerCell = surfaceShape == null ? null : surfaceShape.centerCellCoord();
+            return centerCell == null ? new CellCoord(0, 0) : centerCell;
+        }
     }
 }

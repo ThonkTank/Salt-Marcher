@@ -6,7 +6,6 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.EdgeShape;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
-import features.world.dungeonmap.model.objects.Stair;
 import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionKind;
@@ -95,14 +94,13 @@ public final class TransitionConnectionBuilder {
         }
         StairDraftResolver.ResolvedStairDraft resolvedDraft =
                 StairDraftResolver.resolveDraft(layout, mapId, stairDraft, allowSingleStop);
-        Stair stair = Stair.of(resolvedDraft.path(), resolvedDraft.stopLevels());
         StairConnectionCarrier carrier = new StairConnectionCarrier(
                 resolvedDraft.draft().anchorCell(),
                 resolvedDraft.draft().anchorLevelZ(),
                 resolvedDraft.draft().shapeSpec(),
                 resolvedDraft.draft().minLevelZ(),
                 resolvedDraft.draft().maxLevelZ(),
-                StructureObject.fromStair(stair));
+                StructureObject.fromTilePath(resolvedDraft.path(), resolvedDraft.stopLevels()));
         DungeonConnection candidate = new DungeonConnection(
                 ConnectionKind.TRANSITION,
                 transitionId,

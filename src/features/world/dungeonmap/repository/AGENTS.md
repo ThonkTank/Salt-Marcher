@@ -19,7 +19,7 @@ Use it together with the parent `dungeonmap/AGENTS.md` and the repository root `
 
 ## Storage Model
 
-- Clusters persist membership ownership plus derived center/level metadata and canonical per-level cluster descriptor rows for anchors, boundary/opening edges, and optional floor cells. Legacy seed rows are cleared on write and ignored on load.
+- Clusters persist membership ownership plus derived center/level metadata and canonical per-level `StructureObject.LevelStructure` rows for anchors, boundary/opening edges, and optional floor cells. Legacy seed rows are cleared on write and ignored on load.
 - Rooms persist the room row plus per-level anchor rows only.
 - Corridors persist stable identity plus node/segment tables and free boundary-door rows.
 - Stairs persist stable identity plus ordered path nodes, authored stop levels, and reopen metadata.

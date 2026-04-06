@@ -3,7 +3,6 @@ package features.world.dungeonmap.repository;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
@@ -69,7 +68,7 @@ public final class DungeonRoomRepository {
     public List<RoomCluster> loadClusters(Connection conn, long mapId, List<Room> rooms) throws SQLException {
         List<RoomCluster> clusters = new ArrayList<>();
         Map<Long, List<Room>> roomsByClusterId = roomsByClusterId(rooms);
-        Map<Long, StructureDescriptor> descriptorsByClusterId = loadClusterDescriptors(conn, mapId);
+        Map<Long, StructureObject> structuresByClusterId = loadClusterStructures(conn, mapId);
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT cluster_id, dungeon_map_id, center_x, center_y FROM dungeon_room_clusters"
                         + " WHERE dungeon_map_id=? ORDER BY cluster_id")) {
@@ -77,15 +76,15 @@ public final class DungeonRoomRepository {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     long clusterId = rs.getLong("cluster_id");
-                    StructureDescriptor descriptor = descriptorsByClusterId.get(clusterId);
-                    if (descriptor == null || descriptor.levels().isEmpty()) {
+                    StructureObject structure = structuresByClusterId.get(clusterId);
+                    if (structure == null || structure.levelStructures().isEmpty()) {
                         throw new IllegalStateException("Cluster " + clusterId + " hat keine persistierte Strukturbeschreibung");
                     }
                     clusters.add(new RoomCluster(
                             clusterId,
                             rs.getLong("dungeon_map_id"),
                             new CellCoord(rs.getInt("center_x"), rs.getInt("center_y")),
-                            StructureObject.fromDescriptor(descriptor),
+                            structure,
                             roomsByClusterId.getOrDefault(clusterId, List.of())));
                 }
             }
@@ -111,10 +110,12 @@ public final class DungeonRoomRepository {
             return;
         }
         long clusterId = insertCluster(conn, mapId, CellCoord.bestCenter(resolvedCells), levelZ);
-        StructureDescriptor descriptor = StructureDescriptor.fromCellCoordsByLevel(
+        StructureObject structure = StructureObject.fromSurfaceCellsByLevel(
                 Map.of(levelZ, resolvedCells),
-                Map.of(levelZ, resolvedCells));
-        replaceClusterDescriptor(conn, clusterId, descriptor);
+                Map.of(),
+                Map.of(levelZ, resolvedCells),
+                Map.of(levelZ, CellCoord.bestCenter(resolvedCells)));
+        replaceClusterStructure(conn, clusterId, structure);
         insertRoom(
                 conn,
                 mapId,
@@ -152,7 +153,7 @@ public final class DungeonRoomRepository {
             }
             retainedClusterIds.add(cluster.clusterId());
             updateClusterMetadata(conn, cluster.clusterId(), cluster.center(), cluster.primaryLevel());
-            replaceClusterDescriptor(conn, cluster.clusterId(), cluster.structure().descriptor());
+            replaceClusterStructure(conn, cluster.clusterId(), cluster.structure());
             persistRooms(conn, mapId, cluster.clusterId(), cluster.rooms());
         }
 
@@ -161,7 +162,7 @@ public final class DungeonRoomRepository {
                 continue;
             }
             long clusterId = insertCluster(conn, mapId, cluster.center(), cluster.primaryLevel());
-            replaceClusterDescriptor(conn, clusterId, cluster.structure().descriptor());
+            replaceClusterStructure(conn, clusterId, cluster.structure());
             persistRooms(conn, mapId, clusterId, cluster.rooms());
         }
 
@@ -178,7 +179,7 @@ public final class DungeonRoomRepository {
             return;
         }
         updateClusterMetadata(conn, cluster.clusterId(), cluster.center(), cluster.primaryLevel());
-        replaceClusterDescriptor(conn, cluster.clusterId(), cluster.structure().descriptor());
+        replaceClusterStructure(conn, cluster.clusterId(), cluster.structure());
         persistRooms(conn, cluster.mapId(), cluster.clusterId(), cluster.rooms());
     }
 
@@ -354,8 +355,8 @@ public final class DungeonRoomRepository {
         }
     }
 
-    private void replaceClusterDescriptor(Connection conn, long clusterId, StructureDescriptor descriptor) throws SQLException {
-        StructureDescriptor resolvedDescriptor = requiredDescriptor(descriptor);
+    private void replaceClusterStructure(Connection conn, long clusterId, StructureObject structure) throws SQLException {
+        StructureObject resolvedStructure = requiredStructure(structure);
         try (PreparedStatement deleteSegments = conn.prepareStatement(
                 "DELETE FROM dungeon_room_cluster_level_segments WHERE cluster_id=?");
              PreparedStatement deleteFloorCells = conn.prepareStatement(
@@ -381,9 +382,9 @@ public final class DungeonRoomRepository {
                      "INSERT INTO dungeon_room_cluster_level_segments("
                              + "cluster_id, level_z, segment_kind, start_x2, start_y2, end_x2, end_y2"
                              + ") VALUES(?,?,?,?,?,?,?)")) {
-            for (var entry : resolvedDescriptor.levels().entrySet()) {
+            for (var entry : resolvedStructure.levelStructures().entrySet()) {
                 int levelZ = entry.getKey();
-                StructureDescriptor.LevelDescriptor level = entry.getValue();
+                StructureObject.LevelStructure level = entry.getValue();
                 insertLevel.setLong(1, clusterId);
                 insertLevel.setInt(2, levelZ);
                 insertLevel.setInt(3, persistedCellX2(level.anchorCell()));
@@ -447,27 +448,12 @@ public final class DungeonRoomRepository {
         }
     }
 
-    private static StructureDescriptor requiredDescriptor(StructureDescriptor descriptor) {
-        StructureDescriptor resolvedDescriptor = descriptor == null ? StructureDescriptor.empty() : descriptor;
-        if (resolvedDescriptor.levels().isEmpty()) {
-            throw new IllegalArgumentException("Room descriptor must not be empty");
+    private static StructureObject requiredStructure(StructureObject structure) {
+        StructureObject resolvedStructure = structure == null ? StructureObject.empty() : structure;
+        if (resolvedStructure.levelStructures().isEmpty()) {
+            throw new IllegalArgumentException("Room structure must not be empty");
         }
-        return resolvedDescriptor;
-    }
-
-    private static int primaryLevel(StructureDescriptor descriptor) {
-        return descriptor.levels().keySet().stream()
-                .mapToInt(Integer::intValue)
-                .min()
-                .orElse(0);
-    }
-
-    private static CellCoord primaryAnchorCell(StructureDescriptor descriptor) {
-        StructureDescriptor.LevelDescriptor level = descriptor.level(primaryLevel(descriptor));
-        if (level == null) {
-            return new CellCoord(0, 0);
-        }
-        return level.anchorCell();
+        return resolvedStructure;
     }
 
     private static Map<Integer, CellCoord> requiredAnchors(Map<Integer, CellCoord> anchorsByLevel) {
@@ -533,7 +519,7 @@ public final class DungeonRoomRepository {
         return result.isEmpty() ? Map.of() : Map.copyOf(result);
     }
 
-    private static Map<Long, StructureDescriptor> loadClusterDescriptors(Connection conn, long mapId) throws SQLException {
+    private static Map<Long, StructureObject> loadClusterStructures(Connection conn, long mapId) throws SQLException {
         Map<Long, Map<Integer, CellCoord>> anchorsByClusterId = new LinkedHashMap<>();
         Map<Long, Map<Integer, Set<CellCoord>>> floorCellsByClusterId = new LinkedHashMap<>();
         Map<Long, Map<Integer, Set<GridSegment2x>>> boundarySegmentsByClusterId = new LinkedHashMap<>();
@@ -596,19 +582,19 @@ public final class DungeonRoomRepository {
                 }
             }
         }
-        Map<Long, StructureDescriptor> result = new LinkedHashMap<>();
+        Map<Long, StructureObject> result = new LinkedHashMap<>();
         for (Map.Entry<Long, Map<Integer, CellCoord>> clusterEntry : anchorsByClusterId.entrySet()) {
             Long clusterId = clusterEntry.getKey();
-            Map<Integer, StructureDescriptor.LevelDescriptor> levels = new LinkedHashMap<>();
+            Map<Integer, StructureObject.LevelStructure> levels = new LinkedHashMap<>();
             for (Map.Entry<Integer, CellCoord> levelEntry : clusterEntry.getValue().entrySet()) {
                 int levelZ = levelEntry.getKey();
-                levels.put(levelZ, StructureDescriptor.LevelDescriptor.fromBoundaryEdges(
+                levels.put(levelZ, StructureObject.LevelStructure.fromBoundaryEdges(
                         levelEntry.getValue(),
                         boundarySegmentsByClusterId.getOrDefault(clusterId, Map.of()).getOrDefault(levelZ, Set.of()),
                         openingSegmentsByClusterId.getOrDefault(clusterId, Map.of()).getOrDefault(levelZ, Set.of()),
                         floorCellsByClusterId.getOrDefault(clusterId, Map.of()).get(levelZ)));
             }
-            result.put(clusterId, new StructureDescriptor(levels));
+            result.put(clusterId, StructureObject.fromLevels(levels));
         }
         return result.isEmpty() ? Map.of() : Map.copyOf(result);
     }

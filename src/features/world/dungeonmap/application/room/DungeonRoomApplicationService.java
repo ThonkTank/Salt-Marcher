@@ -5,7 +5,6 @@ import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.objects.Stair;
 import features.world.dungeonmap.model.objects.StairExit;
 import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
@@ -267,8 +266,7 @@ public final class DungeonRoomApplicationService {
                     cluster.clusterId(),
                     cluster.mapId(),
                     cluster.center(),
-                    features.world.dungeonmap.model.objects.StructureObject.fromDescriptor(
-                            cluster.structure().descriptor().withFloorCellsAtLevel(levelZ, nextFloorCells)),
+                    cluster.structure().withFloorCellsAtLevel(levelZ, nextFloorCells),
                     cluster.rooms());
             persistClusterRewrite(conn, mapId, workingLayout, List.of(cluster), List.of(updatedCluster));
             workingLayout = requireLayout(conn, mapId);
@@ -661,7 +659,7 @@ public final class DungeonRoomApplicationService {
                             stairCarrier.shapeSpec(),
                             stairCarrier.minLevelZ(),
                             stairCarrier.maxLevelZ(),
-                            StructureObject.fromStair(Stair.of(stairCarrier.path(), stairCarrier.stopLevels()))),
+                            StructureObject.fromTilePath(stairCarrier.tilePath(), stairCarrier.stopLevels())),
                     List.of(ConnectionEndpoint.room(reboundRoom.roomId()), ConnectionEndpoint.transition(transition.transitionId())));
         }
         return localConnection;
