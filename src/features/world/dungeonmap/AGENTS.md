@@ -156,6 +156,23 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `structures/` own dungeon semantics and structure-local behavior.
 - `DungeonLayout` indexes and exposes structure relationships, traversable cells, level projections, connections, stairs, transitions, and lookups. It must not become a second home for structure-specific edit semantics.
 
+### Target model architecture contract
+
+- `model/geometry` is the only place where geometry algebra is defined. Other directories may consume shapes and coordinates but must not mirror geometry math.
+- `model/geometry/grid` owns the coordinate system primitives (`CellCoord`, `GridPoint2x`, `GridSegment2x`) and their pure coordinate helpers.
+- `model/geometry/Shape` is the base geometry contract for reusable dungeon shapes.
+- `TileShape`, `EdgeShape`, and `TilePath` are the canonical shape families:
+  - `TileShape` = arbitrary polygonal tile surface on the grid.
+  - `EdgeShape` = connected edge topology that is not required to be loop-closed edge-by-edge.
+  - `TilePath` = ordered tile-following path used to plan stairs and corridors.
+- `model/objects` owns gameplay semantics only (`Floor`, `Wall`, `Door`, passive object-side `Stair` plus `StructureObject`).
+  - `Floor` extends `TileShape`.
+  - `Wall` and `Door` extend `EdgeShape`.
+  - passive `Stair` extends `TilePath`.
+- `StructureObject` is the only object aggregate owner and the only bridge from object shapes into structure topology.
+- `model/structures` owns high-level topology owners only. `RoomCluster` and `Corridor` compose one canonical `StructureObject` and add only cluster/corridor topology behavior; they must not reimplement geometry algebra or become parallel object aggregates.
+- `application/`, `repository/`, `canvas/`, and `shell/` must query model owners for semantics (or call model factory/mutation seams) instead of re-deriving room/corridor/stair/object rules locally.
+
 ### Key structure rules
 
 - `Room` owns room identity, narration, and per-level anchors only. It does not cache or expose topology.
