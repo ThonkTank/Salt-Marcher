@@ -221,41 +221,41 @@ public final class RoomCluster {
                 projectedRooms);
     }
 
-    public RoomCluster editBoundary(GridSegment2x segment2x, InternalBoundaryType type, boolean deleteBoundary) {
-        return editBoundary(segment2x == null ? List.<GridSegment2x>of() : List.of(segment2x), type, deleteBoundary);
+    public RoomCluster editBoundary(int levelZ, GridSegment2x segment2x, InternalBoundaryType type, boolean deleteBoundary) {
+        return editBoundary(levelZ, segment2x == null ? List.<GridSegment2x>of() : List.of(segment2x), type, deleteBoundary);
     }
 
-    public RoomCluster editBoundary(Collection<GridSegment2x> segments2x, InternalBoundaryType type, boolean deleteBoundary) {
-        return Topology.editBoundary(this, segments2x, type, deleteBoundary);
+    public RoomCluster editBoundary(int levelZ, Collection<GridSegment2x> segments2x, InternalBoundaryType type, boolean deleteBoundary) {
+        return Topology.editBoundary(this, levelZ, segments2x, type, deleteBoundary);
     }
 
-    public RoomCluster moveDoor(GridSegment2x sourceBoundarySegment2x, GridSegment2x targetBoundarySegment2x) {
+    public RoomCluster moveDoor(int levelZ, GridSegment2x sourceBoundarySegment2x, GridSegment2x targetBoundarySegment2x) {
         // Door movement stays cluster-owned so SELECT drag and write workflows reuse the same local boundary rules.
-        return Topology.moveDoor(this, sourceBoundarySegment2x, targetBoundarySegment2x);
+        return Topology.moveDoor(this, levelZ, sourceBoundarySegment2x, targetBoundarySegment2x);
     }
 
-    public boolean canCreateDoor(GridSegment2x boundarySegment2x) {
+    public boolean canCreateDoor(int levelZ, GridSegment2x boundarySegment2x) {
         // Door eligibility belongs to the cluster owner so editor tools do not become the only source of boundary
         // semantics for local room-to-room connections.
-        if (boundarySegment2x == null || internalBoundaryKinds().get(boundarySegment2x) == InternalBoundaryType.DOOR) {
+        if (boundarySegment2x == null
+                || internalBoundaryKinds().get(new BoundaryLevelKey(levelZ, boundarySegment2x)) == InternalBoundaryType.DOOR) {
             return false;
         }
-        for (int levelZ : levelsTouchingInternalSegment(this, boundarySegment2x)) {
-            RoomPair roomPair = roomPairAtLevel(this, boundarySegment2x, levelZ);
-            if (roomPair != null
-                    && roomPair.left() != null
-                    && roomPair.right() != null
-                    && roomPair.left().roomId() != null
-                    && roomPair.right().roomId() != null
-                    && !roomPair.left().roomId().equals(roomPair.right().roomId())) {
-                return true;
-            }
+        if (!structure.interiorAdjacencyEdgesAtLevel(levelZ).contains(boundarySegment2x)) {
+            return false;
         }
-        return false;
+        RoomPair roomPair = roomPairAtLevel(this, boundarySegment2x, levelZ);
+        return roomPair != null
+                && roomPair.left() != null
+                && roomPair.right() != null
+                && roomPair.left().roomId() != null
+                && roomPair.right().roomId() != null
+                && !roomPair.left().roomId().equals(roomPair.right().roomId());
     }
 
-    public boolean canDeleteDoor(GridSegment2x boundarySegment2x) {
-        return boundarySegment2x != null && internalBoundaryKinds().get(boundarySegment2x) == InternalBoundaryType.DOOR;
+    public boolean canDeleteDoor(int levelZ, GridSegment2x boundarySegment2x) {
+        return boundarySegment2x != null
+                && internalBoundaryKinds().get(new BoundaryLevelKey(levelZ, boundarySegment2x)) == InternalBoundaryType.DOOR;
     }
 
     public boolean canCreateExteriorOpening(int levelZ, GridSegment2x boundarySegment2x) {
@@ -533,7 +533,7 @@ public final class RoomCluster {
         return visited.equals(selected);
     }
 
-    public Map<GridSegment2x, InternalBoundaryType> internalBoundaryKinds() {
+    public Map<BoundaryLevelKey, InternalBoundaryType> internalBoundaryKinds() {
         return Topology.internalBoundaryKinds(this);
     }
 
@@ -618,16 +618,6 @@ public final class RoomCluster {
         return new OverlapIndex(Map.copyOf(result), hasOverlaps);
     }
 
-    private static List<Integer> levelsTouchingInternalSegment(RoomCluster cluster, GridSegment2x segment2x) {
-        if (cluster == null || segment2x == null) {
-            return List.of();
-        }
-        return cluster.structure().levels().stream()
-                .sorted()
-                .filter(levelZ -> cluster.structure().interiorAdjacencyEdgesAtLevel(levelZ).contains(segment2x))
-                .toList();
-    }
-
     private static RoomPair roomPairAtLevel(RoomCluster cluster, GridSegment2x segment2x, int levelZ) {
         if (cluster == null || segment2x == null) {
             return null;
@@ -644,6 +634,9 @@ public final class RoomCluster {
     }
 
     private record RoomPair(Room left, Room right) {
+    }
+
+    public record BoundaryLevelKey(int levelZ, GridSegment2x segment2x) {
     }
 
     private static Map<Room, Map<Integer, Set<CellCoord>>> immutableRoomCellsByRoom(
@@ -972,7 +965,7 @@ public final class RoomCluster {
     private Set<GridSegment2x> internalWallEdges() {
         return internalBoundaryKinds().entrySet().stream()
                 .filter(entry -> entry.getValue() == InternalBoundaryType.WALL)
-                .map(Map.Entry::getKey)
+                .map(entry -> entry.getKey() == null ? null : entry.getKey().segment2x())
                 .filter(Objects::nonNull)
                 .sorted(GridSegment2x.ORDER)
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
@@ -983,7 +976,7 @@ public final class RoomCluster {
         // make the path look inert to the editor user.
         return internalBoundaryKinds().entrySet().stream()
                 .filter(entry -> entry.getValue() == InternalBoundaryType.WALL || entry.getValue() == InternalBoundaryType.DOOR)
-                .map(Map.Entry::getKey)
+                .map(entry -> entry.getKey() == null ? null : entry.getKey().segment2x())
                 .filter(Objects::nonNull)
                 .sorted(GridSegment2x.ORDER)
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
@@ -1033,7 +1026,7 @@ public final class RoomCluster {
 
             Map<Integer, Set<CellCoord>> mergedClusterCellsByLevel = new LinkedHashMap<>();
             Map<Integer, Set<CellCoord>> mergedClusterFloorCellsByLevel = new LinkedHashMap<>();
-            Map<GridSegment2x, InternalBoundaryType> mergedBoundaryKinds = new LinkedHashMap<>();
+            Map<BoundaryLevelKey, InternalBoundaryType> mergedBoundaryKinds = new LinkedHashMap<>();
             Map<Integer, Set<GridSegment2x>> mergedExteriorOpeningsByLevel = new LinkedHashMap<>();
             List<Room> mergedMetadataRooms = new ArrayList<>();
             for (RoomCluster overlappingCluster : resolvedClusters) {
@@ -1101,34 +1094,35 @@ public final class RoomCluster {
             return List.copyOf(finalClusters);
         }
 
-        static RoomCluster editBoundary(RoomCluster cluster, Collection<GridSegment2x> segments2x, InternalBoundaryType type, boolean deleteBoundary) {
+        static RoomCluster editBoundary(
+                RoomCluster cluster,
+                int levelZ,
+                Collection<GridSegment2x> segments2x,
+                InternalBoundaryType type,
+                boolean deleteBoundary
+        ) {
             if (cluster == null || segments2x == null || segments2x.isEmpty()) {
                 return null;
             }
-            Map<GridSegment2x, InternalBoundaryType> updatedBoundaryKinds = new LinkedHashMap<>(cluster.internalBoundaryKinds());
+            Map<BoundaryLevelKey, InternalBoundaryType> updatedBoundaryKinds = new LinkedHashMap<>(cluster.internalBoundaryKinds());
             InternalBoundaryType resolvedType = type == null ? InternalBoundaryType.WALL : type;
             boolean changed = false;
             for (GridSegment2x segment2x : segments2x) {
-                if (segment2x == null || levelsTouchingInternalSegment(cluster, segment2x).isEmpty()) {
+                if (segment2x == null || !cluster.structure().interiorAdjacencyEdgesAtLevel(levelZ).contains(segment2x)) {
                     continue;
                 }
-                boolean spansDistinctRooms = false;
-                for (int levelZ : levelsTouchingInternalSegment(cluster, segment2x)) {
-                    RoomPair roomPair = roomPairAtLevel(cluster, segment2x, levelZ);
-                    if (roomPair != null && !sameRoomId(roomPair.left(), roomPair.right())) {
-                        spansDistinctRooms = true;
-                        break;
-                    }
-                }
+                RoomPair roomPair = roomPairAtLevel(cluster, segment2x, levelZ);
+                boolean spansDistinctRooms = roomPair != null && !sameRoomId(roomPair.left(), roomPair.right());
                 if (!spansDistinctRooms) {
                     continue;
                 }
-                InternalBoundaryType currentType = updatedBoundaryKinds.get(segment2x);
+                BoundaryLevelKey boundaryKey = new BoundaryLevelKey(levelZ, segment2x);
+                InternalBoundaryType currentType = updatedBoundaryKinds.get(boundaryKey);
                 if (deleteBoundary) {
                     if (currentType == null) {
                         continue;
                     }
-                    updatedBoundaryKinds.remove(segment2x);
+                    updatedBoundaryKinds.remove(boundaryKey);
                     changed = true;
                     continue;
                 }
@@ -1138,7 +1132,7 @@ public final class RoomCluster {
                 if (resolvedType == currentType) {
                     continue;
                 }
-                updatedBoundaryKinds.put(segment2x, resolvedType);
+                updatedBoundaryKinds.put(boundaryKey, resolvedType);
                 changed = true;
             }
 
@@ -1161,6 +1155,7 @@ public final class RoomCluster {
 
         static RoomCluster moveDoor(
                 RoomCluster cluster,
+                int levelZ,
                 GridSegment2x sourceBoundarySegment2x,
                 GridSegment2x targetBoundarySegment2x
         ) {
@@ -1168,30 +1163,32 @@ public final class RoomCluster {
                     || sourceBoundarySegment2x == null
                     || targetBoundarySegment2x == null
                     || Objects.equals(sourceBoundarySegment2x, targetBoundarySegment2x)
-                    || !cluster.canDeleteDoor(sourceBoundarySegment2x)
-                    || !cluster.canCreateDoor(targetBoundarySegment2x)) {
+                    || !cluster.canDeleteDoor(levelZ, sourceBoundarySegment2x)
+                    || !cluster.canCreateDoor(levelZ, targetBoundarySegment2x)) {
                 return null;
             }
             RoomCluster withoutSourceDoor = editBoundary(
                     cluster,
+                    levelZ,
                     List.of(sourceBoundarySegment2x),
                     InternalBoundaryType.DOOR,
                     true);
-            if (withoutSourceDoor == null || !withoutSourceDoor.canCreateDoor(targetBoundarySegment2x)) {
+            if (withoutSourceDoor == null || !withoutSourceDoor.canCreateDoor(levelZ, targetBoundarySegment2x)) {
                 return null;
             }
             return editBoundary(
                     withoutSourceDoor,
+                    levelZ,
                     List.of(targetBoundarySegment2x),
                     InternalBoundaryType.DOOR,
                     false);
         }
 
-        static Map<GridSegment2x, InternalBoundaryType> internalBoundaryKinds(RoomCluster cluster) {
+        static Map<BoundaryLevelKey, InternalBoundaryType> internalBoundaryKinds(RoomCluster cluster) {
             if (cluster == null) {
                 return Map.of();
             }
-            return computeInternalBoundaries(cluster, cluster.cells(), cluster.rooms(), boundaryKinds(cluster.localConnections()));
+            return computeInternalBoundaries(cluster, cluster.cellsByLevel(), cluster.rooms(), boundaryKinds(cluster.localConnections()));
         }
 
         private static List<RoomCluster> normalizedClusters(List<RoomCluster> clusters) {
@@ -1212,28 +1209,41 @@ public final class RoomCluster {
             return touchingCells.size() == 2 && clusterCells.containsAll(touchingCells);
         }
 
-        private static Map<GridSegment2x, InternalBoundaryType> computeInternalBoundaries(
+        private static Map<BoundaryLevelKey, InternalBoundaryType> computeInternalBoundaries(
                 RoomCluster cluster,
-                Set<CellCoord> clusterCells,
+                Map<Integer, Set<CellCoord>> clusterCellsByLevel,
                 List<Room> rooms,
-                Map<GridSegment2x, InternalBoundaryType> boundaryKinds
+                Map<BoundaryLevelKey, InternalBoundaryType> boundaryKinds
         ) {
-            if (clusterCells == null || clusterCells.isEmpty()) {
+            if (clusterCellsByLevel == null || clusterCellsByLevel.isEmpty()) {
                 return Map.of();
             }
-            Map<GridSegment2x, InternalBoundaryType> result = new LinkedHashMap<>();
+            Map<BoundaryLevelKey, InternalBoundaryType> result = new LinkedHashMap<>();
             for (Room room : rooms == null ? List.<Room>of() : rooms) {
                 if (room == null) {
                     continue;
                 }
-                for (GridSegment2x segment2x : roomWallSegments(cluster, room)) {
-                    if (isInternalSegment(clusterCells, segment2x)) {
-                        result.putIfAbsent(segment2x, InternalBoundaryType.WALL);
+                for (Integer levelZ : cluster.roomLevels(room)) {
+                    Set<CellCoord> levelCells = clusterCellsByLevel.getOrDefault(levelZ, Set.of());
+                    if (levelCells.isEmpty()) {
+                        continue;
+                    }
+                    for (GridSegment2x segment2x : roomWallSegmentsAtLevel(cluster, room, levelZ)) {
+                        if (isInternalSegment(levelCells, segment2x)) {
+                            result.putIfAbsent(new BoundaryLevelKey(levelZ, segment2x), InternalBoundaryType.WALL);
+                        }
                     }
                 }
             }
-            for (Map.Entry<GridSegment2x, InternalBoundaryType> entry : (boundaryKinds == null ? Map.<GridSegment2x, InternalBoundaryType>of() : boundaryKinds).entrySet()) {
-                if (isInternalSegment(clusterCells, entry.getKey()) && entry.getValue() == InternalBoundaryType.DOOR) {
+            for (Map.Entry<BoundaryLevelKey, InternalBoundaryType> entry : (boundaryKinds == null
+                    ? Map.<BoundaryLevelKey, InternalBoundaryType>of()
+                    : boundaryKinds).entrySet()) {
+                BoundaryLevelKey key = entry.getKey();
+                if (key == null) {
+                    continue;
+                }
+                Set<CellCoord> levelCells = clusterCellsByLevel.getOrDefault(key.levelZ(), Set.of());
+                if (isInternalSegment(levelCells, key.segment2x()) && entry.getValue() == InternalBoundaryType.DOOR) {
                     result.put(entry.getKey(), InternalBoundaryType.DOOR);
                 }
             }
@@ -1262,14 +1272,14 @@ public final class RoomCluster {
                     : name.trim();
         }
 
-        private static Map<GridSegment2x, InternalBoundaryType> boundaryKinds(List<DungeonConnection> localConnections) {
-            Map<GridSegment2x, InternalBoundaryType> result = new LinkedHashMap<>();
+        private static Map<BoundaryLevelKey, InternalBoundaryType> boundaryKinds(List<DungeonConnection> localConnections) {
+            Map<BoundaryLevelKey, InternalBoundaryType> result = new LinkedHashMap<>();
             for (DungeonConnection connection : localConnections == null ? List.<DungeonConnection>of() : localConnections) {
                 if (connection == null || connection.doorCarrier() == null) {
                     continue;
                 }
                 for (GridSegment2x segment2x : connection.boundarySegments2x()) {
-                    result.put(segment2x, InternalBoundaryType.DOOR);
+                    result.put(new BoundaryLevelKey(connection.levelZ(), segment2x), InternalBoundaryType.DOOR);
                 }
             }
             return Map.copyOf(result);
@@ -1354,7 +1364,7 @@ public final class RoomCluster {
         private static StructureObject buildClusterStructure(
                 Map<Integer, Set<CellCoord>> cellsByLevel,
                 Map<Integer, Set<CellCoord>> floorCellsByLevel,
-                Map<GridSegment2x, InternalBoundaryType> boundaryKinds,
+                Map<BoundaryLevelKey, InternalBoundaryType> boundaryKinds,
                 Map<Integer, Set<GridSegment2x>> exteriorOpeningsByLevel
         ) {
             Map<Integer, Set<CellCoord>> normalizedCellsByLevel = immutableCellsByLevel(cellsByLevel);
@@ -1373,11 +1383,12 @@ public final class RoomCluster {
                 }
                 LinkedHashSet<GridSegment2x> interiorBoundaryEdges = new LinkedHashSet<>();
                 LinkedHashSet<GridSegment2x> openingCandidates = new LinkedHashSet<>();
-                for (Map.Entry<GridSegment2x, InternalBoundaryType> boundaryEntry : (boundaryKinds == null
-                        ? Map.<GridSegment2x, InternalBoundaryType>of()
+                for (Map.Entry<BoundaryLevelKey, InternalBoundaryType> boundaryEntry : (boundaryKinds == null
+                        ? Map.<BoundaryLevelKey, InternalBoundaryType>of()
                         : boundaryKinds).entrySet()) {
-                    GridSegment2x segment2x = boundaryEntry.getKey();
-                    if (segment2x == null || !isInternalSegment(levelCells, segment2x)) {
+                    BoundaryLevelKey key = boundaryEntry.getKey();
+                    GridSegment2x segment2x = key == null ? null : key.segment2x();
+                    if (segment2x == null || key.levelZ() != levelZ || !isInternalSegment(levelCells, segment2x)) {
                         continue;
                     }
                     interiorBoundaryEdges.add(segment2x);
@@ -1403,7 +1414,7 @@ public final class RoomCluster {
             if (originalCluster == null || rewrittenStructure == null || rewrittenStructure.levels().isEmpty()) {
                 return List.of();
             }
-            Map<GridSegment2x, InternalBoundaryType> boundaryKinds = originalCluster.internalBoundaryKinds();
+            Map<BoundaryLevelKey, InternalBoundaryType> boundaryKinds = originalCluster.internalBoundaryKinds();
             Map<Integer, Set<GridSegment2x>> exteriorOpeningsByLevel = exteriorOpeningsByLevel(rewrittenStructure);
             List<Map<Integer, Set<CellCoord>>> projectedComponents = rewrittenStructure.projectedSurfaceComponents();
             if (projectedComponents.isEmpty()) {
@@ -1428,7 +1439,7 @@ public final class RoomCluster {
                 RoomCluster originalCluster,
                 Map<Integer, Set<CellCoord>> componentCellsByLevel,
                 Map<Integer, Set<CellCoord>> clusterFloorCellsByLevel,
-                Map<GridSegment2x, InternalBoundaryType> boundaryKinds,
+                Map<BoundaryLevelKey, InternalBoundaryType> boundaryKinds,
                 Map<Integer, Set<GridSegment2x>> clusterExteriorOpeningsByLevel
         ) {
             Map<Integer, Set<CellCoord>> componentFloorCellsByLevel = new LinkedHashMap<>();
@@ -1492,15 +1503,12 @@ public final class RoomCluster {
             return room == null ? Map.of() : room.anchorsByLevel();
         }
 
-        private static Set<GridSegment2x> roomWallSegments(RoomCluster cluster, Room room) {
-            if (room == null) {
+        private static Set<GridSegment2x> roomWallSegmentsAtLevel(RoomCluster cluster, Room room, int levelZ) {
+            if (room == null || cluster == null) {
                 return Set.of();
             }
-            Set<GridSegment2x> result = new LinkedHashSet<>();
-            for (Integer levelZ : cluster.roomLevels(room)) {
-                StructureObject roomStructure = cluster.structureFor(room);
-                result.addAll(roomStructure.wallSegmentsAtLevel(levelZ));
-            }
+            StructureObject roomStructure = cluster.structureFor(room);
+            Set<GridSegment2x> result = new LinkedHashSet<>(roomStructure.wallSegmentsAtLevel(levelZ));
             return result.isEmpty() ? Set.of() : Set.copyOf(result);
         }
 

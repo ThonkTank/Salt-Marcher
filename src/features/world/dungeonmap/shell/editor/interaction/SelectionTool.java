@@ -524,11 +524,11 @@ public final class SelectionTool implements EditorTool {
             return null;
         }
         RoomCluster cluster = session.baseMap().findCluster(session.clusterId());
-        RoomCluster projectedCluster = cluster == null ? null : cluster.projectedToLevel(session.levelZ());
-        if (projectedCluster == null) {
+        if (cluster == null) {
             return null;
         }
-        RoomCluster updatedCluster = projectedCluster.moveDoor(
+        RoomCluster updatedCluster = cluster.moveDoor(
+                session.levelZ(),
                 session.sourceBoundarySegment2x(),
                 session.targetBoundaryRef().boundarySegment2x());
         if (updatedCluster == null) {
