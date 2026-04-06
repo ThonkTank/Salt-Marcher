@@ -4,15 +4,16 @@ import features.world.dungeonmap.application.stair.DungeonStairApplicationServic
 import features.world.dungeonmap.application.stair.StairDraftResolver;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.EdgeShape;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
-import features.world.dungeonmap.model.objects.Door;
+import features.world.dungeonmap.model.objects.Stair;
+import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionKind;
 import features.world.dungeonmap.model.structures.connection.DoorConnectionCarrier;
 import features.world.dungeonmap.model.structures.connection.DungeonConnection;
 import features.world.dungeonmap.model.structures.connection.StairConnectionCarrier;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.model.structures.stair.Stair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 
 import java.util.LinkedHashSet;
@@ -94,19 +95,14 @@ public final class TransitionConnectionBuilder {
         }
         StairDraftResolver.ResolvedStairDraft resolvedDraft =
                 StairDraftResolver.resolveDraft(layout, mapId, stairDraft, allowSingleStop);
-        Stair stair = Stair.resolved(
-                null,
-                mapId,
-                null,
-                resolvedDraft.path(),
-                resolvedDraft.stopLevels());
+        Stair stair = Stair.of(resolvedDraft.path(), resolvedDraft.stopLevels());
         StairConnectionCarrier carrier = new StairConnectionCarrier(
                 resolvedDraft.draft().anchorCell(),
                 resolvedDraft.draft().anchorLevelZ(),
                 resolvedDraft.draft().shapeSpec(),
                 resolvedDraft.draft().minLevelZ(),
                 resolvedDraft.draft().maxLevelZ(),
-                stair);
+                StructureObject.fromStair(stair));
         DungeonConnection candidate = new DungeonConnection(
                 ConnectionKind.TRANSITION,
                 transitionId,
@@ -131,8 +127,9 @@ public final class TransitionConnectionBuilder {
                 mapId,
                 levelZ,
                 new DoorConnectionCarrier(
-                        Door.fromSegments(List.of(boundarySegment2x), Door.DoorState.OPEN),
-                        boundarySegment2x),
+                        EdgeShape.fromBoundarySegments(List.of(boundarySegment2x)),
+                        boundarySegment2x,
+                        false),
                 List.of(sourceEndpoint, ConnectionEndpoint.transition(transitionId)));
     }
 

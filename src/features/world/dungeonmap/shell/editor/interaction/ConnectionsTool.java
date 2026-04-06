@@ -21,7 +21,7 @@ import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionKind;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.model.structures.stair.Stair;
+import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.shell.editor.EditorCards;
 import features.world.dungeonmap.state.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
@@ -122,7 +122,7 @@ public final class ConnectionsTool implements EditorTool {
     private boolean stairDraftLoading;
     private long stairLoadRequestSequence;
     private String stairStatusOverride;
-    private Stair lastResolvedStair;
+    private DungeonStair lastResolvedStair;
 
     public ConnectionsTool(
             DungeonMapState mapState,
@@ -454,7 +454,7 @@ public final class ConnectionsTool implements EditorTool {
         if (level == null || stairDraftLoading || stairAnchorCell == null || stairAnchorLevelZ == null) {
             return false;
         }
-        Stair stair = resolvedStairForAnchorSelection();
+        DungeonStair stair = resolvedStairForAnchorSelection();
         CubePoint anchorPoint = exitPointAtLevel(stair, level);
         if (anchorPoint == null) {
             return false;
@@ -472,7 +472,7 @@ public final class ConnectionsTool implements EditorTool {
         return true;
     }
 
-    private Stair resolvedStairForAnchorSelection() {
+    private DungeonStair resolvedStairForAnchorSelection() {
         StairDraftResolution resolution = resolveCurrentStairDraft(true);
         if (resolution.previewStair() != null) {
             return resolution.previewStair();
@@ -481,7 +481,7 @@ public final class ConnectionsTool implements EditorTool {
     }
 
     private Integer preferredAnchorLevel(Long stairId, EditorToolContext ctx) {
-        Stair stair = displayedStair(stairId);
+        DungeonStair stair = displayedStair(stairId);
         CubePoint clickedPoint = clickedPoint(ctx);
         if (stair == null || clickedPoint == null) {
             return null;
@@ -493,7 +493,7 @@ public final class ConnectionsTool implements EditorTool {
         }
         return stair.exits().stream()
                 .min(Comparator
-                        .comparingInt((features.world.dungeonmap.model.structures.stair.DungeonStairExit exit) ->
+                        .comparingInt((features.world.dungeonmap.model.objects.StructureObject.StairStop exit) ->
                                 stairExitDistance(clickedPoint, exit.position()))
                         .thenComparingInt(exit -> stairExitTieRank(stairId, exit.position().z()))
                         .thenComparingInt(exit -> exit.position().z()))
@@ -501,12 +501,12 @@ public final class ConnectionsTool implements EditorTool {
                 .orElse(null);
     }
 
-    private Stair displayedStair(Long stairId) {
+    private DungeonStair displayedStair(Long stairId) {
         if (stairId == null) {
             return null;
         }
         if (Objects.equals(stairDraftId, stairId) && stairFlowActive()) {
-            Stair preview = resolvedStairForAnchorSelection();
+            DungeonStair preview = resolvedStairForAnchorSelection();
             if (preview != null) {
                 return preview;
             }
@@ -521,7 +521,7 @@ public final class ConnectionsTool implements EditorTool {
         return CubePoint.at(ctx.probe().gridCell(), ctx.probe().levelZ());
     }
 
-    private static CubePoint exitPointAtLevel(Stair stair, int level) {
+    private static CubePoint exitPointAtLevel(DungeonStair stair, int level) {
         if (stair == null) {
             return null;
         }
@@ -559,7 +559,7 @@ public final class ConnectionsTool implements EditorTool {
             pendingEndpoint = null;
             clearStairDraftState(false);
         }
-        Stair persistedStair = stairDraftId == null ? null : mapState.activeMap().findStair(stairDraftId);
+        DungeonStair persistedStair = stairDraftId == null ? null : mapState.activeMap().findStair(stairDraftId);
         if (stairDraftId != null && persistedStair == null) {
             clearStairDraftState(false);
         } else if (!stairDraftDirty) {
@@ -811,7 +811,7 @@ public final class ConnectionsTool implements EditorTool {
             return;
         }
         StairDraftResolution resolution = resolveCurrentStairDraft(true);
-        Stair previewStair = resolution.previewStair();
+        DungeonStair previewStair = resolution.previewStair();
         Long mapId = mapState.activeMapId();
         if (previewStair == null || mapId == null) {
             state.clearPreview();
@@ -856,7 +856,7 @@ public final class ConnectionsTool implements EditorTool {
             return new StairDraftResolution(null, null, "Kein aktiver Dungeon geladen");
         }
         try {
-            Stair previewStair = allowSingleStop
+            DungeonStair previewStair = allowSingleStop
                     ? StairDraftResolver.resolvePreview(layout, stairDraftId, mapId, draft)
                     : StairDraftResolver.resolveCommitted(layout, stairDraftId, mapId, draft);
             lastResolvedStair = previewStair;
@@ -1393,7 +1393,7 @@ public final class ConnectionsTool implements EditorTool {
     }
 
     private String stairLabel(Long stairId) {
-        Stair stair = stairId == null ? null : mapState.activeMap().findStair(stairId);
+        DungeonStair stair = stairId == null ? null : mapState.activeMap().findStair(stairId);
         return stair == null ? "Treppe " + stairId : stair.label();
     }
 
@@ -1589,7 +1589,7 @@ public final class ConnectionsTool implements EditorTool {
 
     private record StairDraftResolution(
             DungeonStairApplicationService.StairDraft draft,
-            Stair previewStair,
+            DungeonStair previewStair,
             String validationMessage
     ) {
     }

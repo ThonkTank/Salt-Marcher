@@ -5,7 +5,7 @@ import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.TilePath;
 import features.world.dungeonmap.model.geometry.TileShapeSpec;
-import features.world.dungeonmap.model.structures.stair.Stair;
+import features.world.dungeonmap.model.objects.StructureObject;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -18,7 +18,7 @@ public record StairConnectionCarrier(
         TileShapeSpec shapeSpec,
         int minLevelZ,
         int maxLevelZ,
-        Stair stair
+        StructureObject structure
 ) implements ConnectionCarrier {
 
     public StairConnectionCarrier {
@@ -30,7 +30,8 @@ public record StairConnectionCarrier(
                         shapeSpec.direction() == null ? CardinalDirection.defaultDirection() : shapeSpec.direction(),
                         shapeSpec.parameter1(),
                         shapeSpec.parameter2());
-        stair = Objects.requireNonNull(stair, "stair");
+        structure = structure == null ? StructureObject.empty() : structure;
+        var stair = structure.stair();
         if (stair.path().isEmpty()) {
             throw new IllegalArgumentException("Transition stair path fehlt");
         }
@@ -41,18 +42,22 @@ public record StairConnectionCarrier(
     }
 
     public List<CubePoint> path() {
+        var stair = structure.stair();
         return stair.path();
     }
 
     public TilePath tilePath() {
+        var stair = structure.stair();
         return stair.tilePath();
     }
 
     public Set<Integer> stopLevels() {
+        var stair = structure.stair();
         return stair.stopLevels();
     }
 
     public Set<CubePoint> pathPositions() {
+        var stair = structure.stair();
         return Set.copyOf(new LinkedHashSet<>(stair.occupiedPositions()));
     }
 }

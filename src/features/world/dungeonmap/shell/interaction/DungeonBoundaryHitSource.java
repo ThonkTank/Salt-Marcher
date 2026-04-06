@@ -35,10 +35,10 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
     private static Set<GridSegment2x> connectionSegments(List<Connection> connections) {
         LinkedHashSet<GridSegment2x> segments = new LinkedHashSet<>();
         for (Connection connection : connections) {
-            if (connection == null || connection.door() == null) {
+            if (connection == null || connection.doorCarrier() == null) {
                 continue;
             }
-            segments.addAll(connection.door().segments2x());
+            segments.addAll(connection.boundarySegments2x());
         }
         return Set.copyOf(segments);
     }
@@ -84,11 +84,11 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
     }
 
     private static List<DungeonHitDescriptor> connectionDescriptors(Connection connection, int levelZ) {
-        if (connection == null || connection.door() == null) {
+        if (connection == null || connection.doorCarrier() == null) {
             return List.of();
         }
         ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
-        for (GridSegment2x segment2x : connection.door().segments2x()) {
+        for (GridSegment2x segment2x : connection.boundarySegments2x()) {
             if (segment2x == null) {
                 continue;
             }

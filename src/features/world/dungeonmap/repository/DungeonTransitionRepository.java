@@ -3,17 +3,18 @@ package features.world.dungeonmap.repository;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.EdgeShape;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.TileShapeKind;
 import features.world.dungeonmap.model.geometry.TileShapeSpec;
+import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpointType;
 import features.world.dungeonmap.model.structures.connection.ConnectionKind;
 import features.world.dungeonmap.model.structures.connection.DoorConnectionCarrier;
 import features.world.dungeonmap.model.structures.connection.DungeonConnection;
 import features.world.dungeonmap.model.structures.connection.StairConnectionCarrier;
-import features.world.dungeonmap.model.structures.stair.Stair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
 import features.world.dungeonmap.model.objects.Door;
@@ -313,8 +314,9 @@ public final class DungeonTransitionRepository {
                         mapId,
                         rs.getInt("door_level_z"),
                         new DoorConnectionCarrier(
-                                Door.fromSegments(List.of(boundarySegment2x), Door.DoorState.OPEN),
-                                boundarySegment2x),
+                                EdgeShape.fromBoundarySegments(List.of(boundarySegment2x)),
+                                boundarySegment2x,
+                                false),
                         List.of(sourceEndpoint, ConnectionEndpoint.transition(transitionId)));
             }
             case "STAIR" -> new DungeonConnection(
@@ -332,7 +334,7 @@ public final class DungeonTransitionRepository {
                                     rs.getInt("stair_shape_param2")),
                             rs.getInt("stair_min_level_z"),
                             rs.getInt("stair_max_level_z"),
-                            Stair.resolved(null, mapId, null, pathNodes, stopLevels)),
+                            StructureObject.fromStair(features.world.dungeonmap.model.objects.Stair.of(pathNodes, stopLevels))),
                     List.of(ConnectionEndpoint.transition(transitionId)));
             default -> throw new SQLException("Unbekannter dungeon transition placement_type: " + placementType);
         };

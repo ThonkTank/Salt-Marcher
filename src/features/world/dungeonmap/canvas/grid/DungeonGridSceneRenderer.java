@@ -20,7 +20,7 @@ import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNode;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.model.structures.stair.Stair;
+import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.shell.interaction.DungeonHitSurface;
 import features.world.dungeonmap.shell.interaction.DungeonSelectionHighlightResolver;
@@ -600,7 +600,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         DungeonLayout mapModel = pass.projected();
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setFont(DungeonCanvasTheme.ROOM_LABEL_FONT);
-        for (Stair stair : mapModel.stairs()) {
+        for (DungeonStair stair : mapModel.stairs()) {
             if (stair == null) {
                 continue;
             }

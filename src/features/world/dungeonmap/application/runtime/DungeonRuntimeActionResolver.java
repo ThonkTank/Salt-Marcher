@@ -4,9 +4,9 @@ import features.world.dungeonmap.application.runtime.description.DungeonRuntimeE
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.model.structures.stair.DungeonStairExit;
-import features.world.dungeonmap.model.structures.stair.Stair;
+import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
 
@@ -121,7 +121,7 @@ public final class DungeonRuntimeActionResolver {
             DungeonRuntimeLocation location,
             List<DungeonRuntimeAction> actions
     ) {
-        Stair stair = location.stair();
+        DungeonStair stair = location.stair();
         if (stair == null) {
             return;
         }
@@ -160,11 +160,11 @@ public final class DungeonRuntimeActionResolver {
         layout.stairsAtLevel(levelZ).stream()
                 .filter(stair -> stair != null && stair.stairId() != null)
                 .filter(stair -> stair.exitsAtLevel(levelZ).stream()
-                        .map(DungeonStairExit::position)
+                        .map(StructureObject.StairStop::position)
                         .map(CubePoint::projectedCell)
                         .anyMatch(surfaceCells::contains))
-                .sorted(Comparator.comparing(Stair::label, String.CASE_INSENSITIVE_ORDER)
-                        .thenComparing(Stair::stairId))
+                .sorted(Comparator.comparing(DungeonStair::label, String.CASE_INSENSITIVE_ORDER)
+                        .thenComparing(DungeonStair::stairId))
                 .forEach(stair -> appendStairActions(
                         stair,
                         stairOriginPositions(stair, surfaceCells, levelZ),
@@ -174,7 +174,7 @@ public final class DungeonRuntimeActionResolver {
     }
 
     private static void appendStairActions(
-            Stair stair,
+            DungeonStair stair,
             Set<CubePoint> originPositions,
             CellCoord activeCell,
             int activeLevelZ,
@@ -189,7 +189,7 @@ public final class DungeonRuntimeActionResolver {
                 .filter(exit -> activeCell == null
                         || exit.position().z() != activeLevelZ
                         || !activeCell.equals(exit.position().projectedCell()))
-                .sorted(Comparator.comparingInt((DungeonStairExit exit) -> exit.position().z())
+                .sorted(Comparator.comparingInt((StructureObject.StairStop exit) -> exit.position().z())
                         .thenComparing(exit -> exit.position(), CubePoint.POINT_ORDER))
                 .forEach(exit -> actions.add(new DungeonRuntimeAction(
                         stairActionLabel(stair, exit),
@@ -202,7 +202,7 @@ public final class DungeonRuntimeActionResolver {
     }
 
     private static Set<CubePoint> stairOriginPositions(
-            Stair stair,
+            DungeonStair stair,
             CellCoord activeCell,
             int activeLevelZ
     ) {
@@ -210,7 +210,7 @@ public final class DungeonRuntimeActionResolver {
             return Set.of();
         }
         Set<CubePoint> activeOrigins = stair.exits().stream()
-                .map(DungeonStairExit::position)
+                .map(StructureObject.StairStop::position)
                 .filter(Objects::nonNull)
                 .filter(position -> position.z() == activeLevelZ)
                 .filter(position -> activeCell == null || activeCell.equals(position.projectedCell()))
@@ -219,7 +219,7 @@ public final class DungeonRuntimeActionResolver {
             return activeOrigins;
         }
         Set<CubePoint> sameLevelOrigins = stair.exits().stream()
-                .map(DungeonStairExit::position)
+                .map(StructureObject.StairStop::position)
                 .filter(Objects::nonNull)
                 .filter(position -> position.z() == activeLevelZ)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
@@ -227,14 +227,14 @@ public final class DungeonRuntimeActionResolver {
             return sameLevelOrigins;
         }
         return stair.exits().stream()
-                .map(DungeonStairExit::position)
+                .map(StructureObject.StairStop::position)
                 .filter(Objects::nonNull)
                 .limit(1)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     private static Set<CubePoint> stairOriginPositions(
-            Stair stair,
+            DungeonStair stair,
             Set<CellCoord> surfaceCells,
             int levelZ
     ) {
@@ -242,7 +242,7 @@ public final class DungeonRuntimeActionResolver {
             return Set.of();
         }
         return stair.exitsAtLevel(levelZ).stream()
-                .map(DungeonStairExit::position)
+                .map(StructureObject.StairStop::position)
                 .filter(position -> position != null && surfaceCells.contains(position.projectedCell()))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
@@ -300,13 +300,13 @@ public final class DungeonRuntimeActionResolver {
                 : resolvedLabel + ": " + destinationLabel;
     }
 
-    private static String stairActionLabel(Stair stair, DungeonStairExit exit) {
+    private static String stairActionLabel(DungeonStair stair, StructureObject.StairStop exit) {
         String stairLabel = stair == null ? "Treppe" : stair.label();
         String destinationLabel = stairDestinationLabel(exit);
         return destinationLabel.isBlank() ? stairLabel : stairLabel + ": " + destinationLabel;
     }
 
-    private static String stairDestinationLabel(DungeonStairExit exit) {
+    private static String stairDestinationLabel(StructureObject.StairStop exit) {
         if (exit == null || exit.position() == null) {
             return "";
         }
@@ -314,7 +314,7 @@ public final class DungeonRuntimeActionResolver {
         return label == null || label.isBlank() ? "z=" + exit.position().z() : label;
     }
 
-    private static String stairDescription(Stair stair, DungeonStairExit exit) {
+    private static String stairDescription(DungeonStair stair, StructureObject.StairStop exit) {
         String stairName = stair == null ? "die Treppe" : stair.label();
         String target = stairDestinationLabel(exit);
         return "Über " + stairName + " gelangt ihr zu " + target + ".";

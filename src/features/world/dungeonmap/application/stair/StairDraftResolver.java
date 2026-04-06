@@ -3,8 +3,10 @@ package features.world.dungeonmap.application.stair;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.TilePath;
+import features.world.dungeonmap.model.objects.Stair;
+import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.model.structures.stair.Stair;
+import features.world.dungeonmap.model.structures.stair.DungeonStair;
 
 import java.util.Objects;
 import java.util.Set;
@@ -21,7 +23,7 @@ public final class StairDraftResolver {
         throw new AssertionError("No instances");
     }
 
-    public static Stair resolvePreview(
+    public static DungeonStair resolvePreview(
             DungeonLayout layout,
             Long stairId,
             long mapId,
@@ -30,7 +32,7 @@ public final class StairDraftResolver {
         return toDungeonStair(resolveDraft(layout, mapId, draft, true), stairId, mapId);
     }
 
-    public static Stair resolveCommitted(
+    public static DungeonStair resolveCommitted(
             DungeonLayout layout,
             Long stairId,
             long mapId,
@@ -112,18 +114,17 @@ public final class StairDraftResolver {
                         .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new)));
     }
 
-    private static Stair toDungeonStair(
+    private static DungeonStair toDungeonStair(
             ResolvedStairDraft resolvedDraft,
             Long stairId,
             long mapId
     ) {
         ResolvedStairDraft resolution = Objects.requireNonNull(resolvedDraft, "resolvedDraft");
-        return Stair.resolved(
+        return DungeonStair.resolved(
                 stairId,
                 mapId,
                 resolution.draft().name(),
-                resolution.path(),
-                resolution.stopLevels());
+                StructureObject.fromStair(Stair.of(resolution.path(), resolution.stopLevels())));
     }
 
     private static void validateAnchor(DungeonLayout layout, CellCoord anchorCell, int anchorLevelZ) {

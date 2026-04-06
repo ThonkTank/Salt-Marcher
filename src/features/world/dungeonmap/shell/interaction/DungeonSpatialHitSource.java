@@ -5,7 +5,7 @@ import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.model.structures.stair.Stair;
+import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 
 import java.util.ArrayList;
@@ -64,7 +64,7 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
 
     private static List<DungeonHitDescriptor> stairDescriptors(DungeonLayout layout, DungeonHitProbe probe) {
         ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
-        for (Stair stair : layout.stairsAtCell(probe.gridCell(), probe.levelZ())) {
+        for (DungeonStair stair : layout.stairsAtCell(probe.gridCell(), probe.levelZ())) {
             if (stair == null || stair.stairId() == null) {
                 continue;
             }

@@ -5,6 +5,9 @@ import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.objects.Stair;
+import features.world.dungeonmap.model.objects.StairExit;
+import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
@@ -15,8 +18,7 @@ import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNode;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
-import features.world.dungeonmap.model.structures.stair.Stair;
-import features.world.dungeonmap.model.structures.stair.DungeonStairExit;
+import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.repository.DungeonCorridorRepository;
 import features.world.dungeonmap.repository.DungeonLayoutRepository;
@@ -630,7 +632,7 @@ public final class DungeonRoomApplicationService {
                     localConnection.ownerId(),
                     localConnection.mapId(),
                     localConnection.levelZ(),
-                    new DoorConnectionCarrier(localConnection.doorCarrier().door(), localConnection.anchorSegment2x()),
+                    new DoorConnectionCarrier(localConnection.doorShape(), localConnection.anchorSegment2x(), localConnection.blocksPassage()),
                     List.of(ConnectionEndpoint.room(reboundRoom.roomId()), ConnectionEndpoint.transition(transition.transitionId())));
         }
         if (localConnection.stairCarrier() != null) {
@@ -659,12 +661,7 @@ public final class DungeonRoomApplicationService {
                             stairCarrier.shapeSpec(),
                             stairCarrier.minLevelZ(),
                             stairCarrier.maxLevelZ(),
-                            Stair.resolved(
-                                    null,
-                                    localConnection.mapId(),
-                                    null,
-                                    stairCarrier.path(),
-                                    stairCarrier.stopLevels())),
+                            StructureObject.fromStair(Stair.of(stairCarrier.path(), stairCarrier.stopLevels()))),
                     List.of(ConnectionEndpoint.room(reboundRoom.roomId()), ConnectionEndpoint.transition(transition.transitionId())));
         }
         return localConnection;
@@ -766,12 +763,12 @@ public final class DungeonRoomApplicationService {
                 throw new SQLException("Boden unter einem platzierten Übergang kann nicht entfernt werden.");
             }
         }
-        for (Stair stair : layout.stairsAtLevel(levelZ)) {
+        for (DungeonStair stair : layout.stairsAtLevel(levelZ)) {
             if (stair == null || stair.stairId() == null) {
                 continue;
             }
             boolean usesRemovedExit = stair.exitsAtLevel(levelZ).stream()
-                    .map(DungeonStairExit::position)
+                    .map(StructureObject.StairStop::position)
                     .filter(Objects::nonNull)
                     .map(position -> position.projectedCell())
                     .anyMatch(removedFloorCells::contains);

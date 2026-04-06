@@ -52,8 +52,8 @@ public final class DoorExitCatalog {
         List<ExitEdge> result = new ArrayList<>();
         Set<GridSegment2x> boundarySegments = new LinkedHashSet<>();
         for (Connection connection : connections) {
-            if (connection != null && connection.levelZ() == levelZ && connection.door() != null) {
-                boundarySegments.addAll(connection.door().segments2x());
+            if (connection != null && connection.levelZ() == levelZ && connection.doorCarrier() != null) {
+                boundarySegments.addAll(connection.boundarySegments2x());
             }
         }
         for (GridSegment2x segment2x : boundarySegments) {

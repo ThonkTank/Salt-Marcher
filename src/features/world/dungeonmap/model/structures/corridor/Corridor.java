@@ -3,11 +3,11 @@ package features.world.dungeonmap.model.structures.corridor;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.model.geometry.EdgeShape;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
-import features.world.dungeonmap.model.objects.Door;
-import features.world.dungeonmap.model.objects.StructureDescriptor;
 import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionKind;
@@ -843,15 +843,15 @@ public final class Corridor {
         if (occupiedCells.isEmpty()) {
             throw new IllegalArgumentException("Corridor boundary door requires occupied corridor cells");
         }
-        StructureDescriptor.LevelDescriptor baseLevel = StructureDescriptor.fromCellCoordsByLevel(Map.of(levelZ, occupiedCells)).level(levelZ);
-        if (baseLevel == null) {
+        Set<GridSegment2x> boundaryEdges = TileShape.of(occupiedCells).boundaryShape().segmentSet2x();
+        if (boundaryEdges.isEmpty()) {
             throw new IllegalArgumentException("Corridor boundary door requires a valid corridor level");
         }
         LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
         for (GridSegment2x segment2x : GridSegment2x.boundarySteps(boundaryDoorSegments).stream()
                 .sorted(GridSegment2x.ORDER)
                 .toList()) {
-            if (!baseLevel.boundaryEdges().contains(segment2x)) {
+            if (!boundaryEdges.contains(segment2x)) {
                 throw new IllegalArgumentException("Corridor boundary door must stay on an exterior corridor boundary");
             }
             result.add(segment2x);
@@ -868,18 +868,18 @@ public final class Corridor {
         if (occupiedCells.isEmpty()) {
             return StructureObject.empty();
         }
-        StructureDescriptor baseDescriptor = StructureDescriptor.fromCellCoordsByLevel(Map.of(levelZ, occupiedCells));
-        StructureDescriptor.LevelDescriptor baseLevel = baseDescriptor.level(levelZ);
-        if (baseLevel == null || baseLevel.boundaryEdges().isEmpty()) {
+        Set<GridSegment2x> boundaryEdges = TileShape.of(occupiedCells).boundaryShape().segmentSet2x();
+        if (boundaryEdges.isEmpty()) {
             return StructureObject.empty();
         }
         // Corridor structure compilation must share the same canonical cell-set descriptor path as rooms so routed
         // cells and hydrated floor geometry cannot silently drift apart.
-        StructureDescriptor descriptor = new StructureDescriptor(Map.of(levelZ, StructureDescriptor.LevelDescriptor.fromSurfaceCells(
-                baseLevel.anchorCell(),
-                occupiedCells,
-                openingEdges(baseLevel.boundaryEdges(), openingSegments2x))));
-        return validatedStructureForCells(levelZ, occupiedCells, descriptor);
+        StructureObject structure = StructureObject.fromSurfaceCellsByLevel(
+                Map.of(levelZ, occupiedCells),
+                Map.of(levelZ, openingEdges(boundaryEdges, openingSegments2x)),
+                Map.of(),
+                Map.of(levelZ, CellCoord.bestCenter(occupiedCells)));
+        return validatedStructureForCells(levelZ, occupiedCells, structure);
     }
 
     private static CorridorNode canonicalizeRoomBoundNode(CorridorNode node, int levelZ, DungeonLayout layout) {
@@ -1180,8 +1180,9 @@ public final class Corridor {
                     mapId,
                     levelZ,
                     new DoorConnectionCarrier(
-                            Door.fromSegments(List.of(boundaryEdge), Door.DoorState.CLOSED),
-                            boundaryEdge),
+                            EdgeShape.fromBoundarySegments(List.of(boundaryEdge)),
+                            boundaryEdge,
+                            true),
                     List.of(ConnectionEndpoint.room(node.roomId()), ConnectionEndpoint.corridor(corridorId))));
         }
         return result.isEmpty() ? List.of() : List.copyOf(result);
@@ -1288,9 +1289,8 @@ public final class Corridor {
     private static StructureObject validatedStructureForCells(
             int levelZ,
             Set<CellCoord> occupiedCells,
-            StructureDescriptor descriptor
+            StructureObject structure
     ) {
-        StructureObject structure = StructureObject.fromDescriptor(descriptor);
         Set<CellCoord> expected = CellCoord.normalize(occupiedCells);
         Set<CellCoord> hydrated = CellCoord.normalize(structure.cellCoordsAtLevel(levelZ));
         if (!hydrated.equals(expected)) {

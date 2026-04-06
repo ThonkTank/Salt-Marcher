@@ -3,8 +3,8 @@ package features.world.dungeonmap.model.structures.connection;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.EdgeShape;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.objects.Door;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -31,9 +31,9 @@ public interface Connection {
 
     ConnectionKind kind();
 
-    default Door door() {
+    default EdgeShape doorShape() {
         DoorConnectionCarrier carrier = doorCarrier();
-        return carrier == null ? null : carrier.door();
+        return carrier == null ? EdgeShape.empty() : carrier.shape();
     }
 
     default DoorConnectionCarrier doorCarrier() {
@@ -49,10 +49,22 @@ public interface Connection {
         return carrier == null ? null : carrier.anchorSegment2x();
     }
 
+    default Set<GridSegment2x> boundarySegments2x() {
+        DoorConnectionCarrier carrier = doorCarrier();
+        if (carrier == null || carrier.shape().isEmpty()) {
+            return Set.of();
+        }
+        return Set.copyOf(new LinkedHashSet<>(carrier.segments2x()));
+    }
+
+    default boolean blocksPassage() {
+        DoorConnectionCarrier carrier = doorCarrier();
+        return carrier != null && carrier.blocksPassage();
+    }
+
     default boolean isTraversable() {
-        Door door = door();
-        if (door != null) {
-            return !door.blocksPassage();
+        if (doorCarrier() != null) {
+            return !blocksPassage();
         }
         return stairCarrier() != null;
     }

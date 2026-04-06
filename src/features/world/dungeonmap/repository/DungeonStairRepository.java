@@ -5,7 +5,7 @@ import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.TileShapeKind;
 import features.world.dungeonmap.model.geometry.TileShapeSpec;
-import features.world.dungeonmap.model.structures.stair.Stair;
+import features.world.dungeonmap.model.structures.stair.DungeonStair;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -45,7 +45,7 @@ public final class DungeonStairRepository {
         }
     }
 
-    public List<Stair> loadByMap(Connection conn, long mapId) throws SQLException {
+    public List<DungeonStair> loadByMap(Connection conn, long mapId) throws SQLException {
         Map<Long, List<CubePoint>> pathByStairId = loadGrouped(
                 conn,
                 "SELECT stair_id, cell_x, cell_y, cell_z"
@@ -61,10 +61,10 @@ public final class DungeonStairRepository {
                         + " FROM dungeon_stairs WHERE dungeon_map_id=? ORDER BY stair_id")) {
             ps.setLong(1, mapId);
             try (ResultSet rs = ps.executeQuery()) {
-                List<Stair> result = new ArrayList<>();
+                List<DungeonStair> result = new ArrayList<>();
                 while (rs.next()) {
                     long stairId = rs.getLong("stair_id");
-                    result.add(Stair.resolved(
+                    result.add(DungeonStair.resolved(
                             stairId,
                             rs.getLong("dungeon_map_id"),
                             rs.getString("name"),
@@ -110,10 +110,10 @@ public final class DungeonStairRepository {
     public long insertStair(
             Connection conn,
             long mapId,
-            Stair stair,
+            DungeonStair stair,
             StairEditorData editorData
     ) throws SQLException {
-        Stair resolvedStair = Objects.requireNonNull(stair, "stair");
+        DungeonStair resolvedStair = Objects.requireNonNull(stair, "stair");
         StairEditorData resolvedEditorData = Objects.requireNonNull(editorData, "editorData");
         try (PreparedStatement ps = conn.prepareStatement(
                 "INSERT INTO dungeon_stairs("
@@ -135,10 +135,10 @@ public final class DungeonStairRepository {
     public void updateStair(
             Connection conn,
             long stairId,
-            Stair stair,
+            DungeonStair stair,
             StairEditorData editorData
     ) throws SQLException {
-        Stair resolvedStair = Objects.requireNonNull(stair, "stair");
+        DungeonStair resolvedStair = Objects.requireNonNull(stair, "stair");
         StairEditorData resolvedEditorData = Objects.requireNonNull(editorData, "editorData");
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE dungeon_stairs SET "
@@ -213,7 +213,7 @@ public final class DungeonStairRepository {
     private static void bindEditorColumns(
             PreparedStatement ps,
             long mapId,
-            Stair stair,
+            DungeonStair stair,
             StairEditorData editorData
     ) throws SQLException {
         ps.setLong(1, mapId);
