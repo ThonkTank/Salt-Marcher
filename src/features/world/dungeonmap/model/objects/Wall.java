@@ -5,6 +5,7 @@ import features.world.dungeonmap.model.geometry.EdgeShape;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 
 import java.util.Collection;
+import java.util.List;
 
 public final class Wall extends EdgeShape {
 
@@ -13,8 +14,16 @@ public final class Wall extends EdgeShape {
         super(EdgeShape.normalizeBoundarySegments(segments));
     }
 
+    public Wall(EdgeShape shape) {
+        super(shape == null ? List.of() : EdgeShape.normalizeBoundarySegments(shape.segments2x()));
+    }
+
     public static Wall fromSegments(Collection<GridSegment2x> segments) {
         return new Wall(segments);
+    }
+
+    public static Wall fromShape(EdgeShape shape) {
+        return new Wall(shape);
     }
 
     public Wall movedBy(CellCoord delta) {

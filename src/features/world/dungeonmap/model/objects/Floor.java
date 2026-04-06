@@ -19,6 +19,10 @@ public final class Floor extends TileShape {
         super(cellCoords);
     }
 
+    public Floor(TileShape shape) {
+        super(shape);
+    }
+
     public Floor movedBy(CellCoord delta) {
         CellCoord resolvedDelta = delta == null ? new CellCoord(0, 0) : delta;
         if (resolvedDelta.x() == 0 && resolvedDelta.y() == 0) {

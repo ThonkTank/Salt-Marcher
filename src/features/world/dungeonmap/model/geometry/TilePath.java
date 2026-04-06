@@ -14,7 +14,7 @@ import java.util.Set;
  *
  * <p>This type owns ordered path semantics. Unordered occupied surfaces remain on {@link TileShape}.</p>
  */
-public final class TilePath {
+public class TilePath {
 
     private final List<CubePoint> points;
     private final Map<Integer, TileShape> shapesByLevel;
@@ -24,7 +24,7 @@ public final class TilePath {
     }
 
     public static TilePath of(Collection<CubePoint> cubePoints) {
-        return new TilePath(normalizePoints(cubePoints));
+        return new TilePath(cubePoints);
     }
 
     public static TilePath generate(
@@ -67,8 +67,8 @@ public final class TilePath {
         return of(result);
     }
 
-    private TilePath(List<CubePoint> points) {
-        this.points = points == null ? List.of() : List.copyOf(points);
+    protected TilePath(Collection<CubePoint> points) {
+        this.points = normalizePoints(points);
         this.shapesByLevel = indexShapesByLevel(this.points);
     }
 

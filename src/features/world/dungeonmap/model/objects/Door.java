@@ -5,6 +5,7 @@ import features.world.dungeonmap.model.geometry.EdgeShape;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 
 import java.util.Collection;
+import java.util.List;
 
 public final class Door extends EdgeShape {
 
@@ -19,8 +20,16 @@ public final class Door extends EdgeShape {
         this.doorState = doorState == null ? DoorState.CLOSED : doorState;
     }
 
+    public Door(EdgeShape shape, DoorState doorState) {
+        this(shape == null ? List.of() : shape.segments2x(), doorState);
+    }
+
     public static Door fromSegments(Collection<GridSegment2x> segments, DoorState doorState) {
         return new Door(segments, doorState);
+    }
+
+    public static Door fromShape(EdgeShape shape, DoorState doorState) {
+        return new Door(shape, doorState);
     }
 
     public Door movedBy(CellCoord delta) {

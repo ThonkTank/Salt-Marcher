@@ -3,7 +3,6 @@ package features.world.dungeonmap.model.objects;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.EdgeShape;
-import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.TileShape;
 
@@ -159,8 +158,8 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
         ) {
             TileShape surfaceShape = new TileShape(surfaceCells);
             EdgeShape boundaryShape = surfaceShape.boundaryShape();
-            EdgeShape openingShape = normalizedOpeningShape(openingEdges, boundaryShape.segmentSet2x());
-            TileShape floorShape = new TileShape(normalizeFloorCells(surfaceShape.cellCoords(), floorCells));
+            EdgeShape openingShape = boundaryShape.intersection(openingEdges);
+            TileShape floorShape = surfaceShape.intersection(floorCells);
             return new LevelDescriptor(anchorCell, surfaceShape, boundaryShape, openingShape, floorShape);
         }
 
@@ -181,9 +180,9 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
             EdgeShape boundaryShape = boundaryEdges == null
                     ? EdgeShape.empty()
                     : EdgeShape.fromBoundarySegments(boundaryEdges);
-            TileShape surfaceShape = new TileShape(hydrateSurfaceCells(boundaryShape.segmentSet2x()));
-            EdgeShape openingShape = normalizedOpeningShape(openingEdges, boundaryShape.segmentSet2x());
-            TileShape floorShape = new TileShape(normalizeFloorCells(surfaceShape.cellCoords(), floorCells));
+            TileShape surfaceShape = boundaryShape.surfaceShape();
+            EdgeShape openingShape = boundaryShape.intersection(openingEdges);
+            TileShape floorShape = surfaceShape.intersection(floorCells);
             return new LevelDescriptor(anchorCell, surfaceShape, boundaryShape, openingShape, floorShape);
         }
 
@@ -241,7 +240,7 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
         }
 
         public LevelDescriptor withFloorCells(Collection<CellCoord> floorCells) {
-            return fromSurfaceCells(anchorCell, surfaceShape.cellCoords(), openingEdges(), normalizeFloorCells(surfaceShape.cellCoords(), floorCells));
+            return fromSurfaceCells(anchorCell, surfaceShape.cellCoords(), openingEdges(), floorCells);
         }
 
         public LevelDescriptor withOpeningEdges(Collection<GridSegment2x> openingEdges) {
@@ -283,21 +282,6 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
                     + "]";
         }
 
-        private static EdgeShape normalizedOpeningShape(
-                Collection<GridSegment2x> openings,
-                Set<GridSegment2x> boundaryEdges
-        ) {
-            if (openings == null || openings.isEmpty() || boundaryEdges == null || boundaryEdges.isEmpty()) {
-                return EdgeShape.empty();
-            }
-            LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
-            openings.stream()
-                    .filter(segment -> segment != null && boundaryEdges.contains(segment))
-                    .sorted(GridSegment2x.ORDER)
-                    .forEach(result::add);
-            return result.isEmpty() ? EdgeShape.empty() : new EdgeShape(result);
-        }
-
         private static CellCoord normalizeAnchor(CellCoord anchorCell, TileShape surfaceShape) {
             if (anchorCell != null) {
                 return anchorCell;
@@ -305,79 +289,5 @@ public record StructureDescriptor(Map<Integer, StructureDescriptor.LevelDescript
             CellCoord centerCell = surfaceShape == null ? null : surfaceShape.centerCellCoord();
             return centerCell == null ? new CellCoord(0, 0) : centerCell;
         }
-    }
-
-    private static Set<CellCoord> normalizeFloorCells(
-            Set<CellCoord> surfaceCells,
-            Collection<CellCoord> floorCells
-    ) {
-        if (surfaceCells == null || surfaceCells.isEmpty()) {
-            return Set.of();
-        }
-        if (floorCells == null) {
-            return surfaceCells;
-        }
-        Set<CellCoord> normalizedFloorCells = CellCoord.normalize(floorCells);
-        if (normalizedFloorCells.isEmpty()) {
-            return Set.of();
-        }
-        LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
-        for (CellCoord cell : normalizedFloorCells) {
-            if (surfaceCells.contains(cell)) {
-                result.add(cell);
-            }
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
-    private static Set<CellCoord> hydrateSurfaceCells(Set<GridSegment2x> boundaryEdges) {
-        Set<GridSegment2x> normalizedBoundaryEdges = GridSegment2x.boundarySteps(boundaryEdges);
-        if (normalizedBoundaryEdges.isEmpty()) {
-            return Set.of();
-        }
-        CellBounds bounds = cellBounds(normalizedBoundaryEdges);
-        LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
-        for (int y = bounds.minY(); y <= bounds.maxY(); y++) {
-            for (int x = bounds.minX(); x <= bounds.maxX(); x++) {
-                CellCoord candidate = new CellCoord(x, y);
-                if (isInsideEvenOdd(candidate, normalizedBoundaryEdges)) {
-                    result.add(candidate);
-                }
-            }
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
-    private static boolean isInsideEvenOdd(CellCoord cell, Set<GridSegment2x> boundaryEdges) {
-        int centerX2 = cell.x() * 2;
-        int centerY2 = cell.y() * 2;
-        long crossings = boundaryEdges.stream()
-                .filter(GridSegment2x::isVertical)
-                .filter(segment -> segment.start().y2() < centerY2 && segment.end().y2() > centerY2)
-                .filter(segment -> segment.start().x2() > centerX2)
-                .count();
-        return (crossings & 1L) == 1L;
-    }
-
-    private static CellBounds cellBounds(Set<GridSegment2x> boundaryEdges) {
-        int minX = Integer.MAX_VALUE;
-        int maxX = Integer.MIN_VALUE;
-        int minY = Integer.MAX_VALUE;
-        int maxY = Integer.MIN_VALUE;
-        for (GridSegment2x segment : boundaryEdges) {
-            for (CellCoord cell : segment.touchingCells()) {
-                minX = Math.min(minX, cell.x());
-                maxX = Math.max(maxX, cell.x());
-                minY = Math.min(minY, cell.y());
-                maxY = Math.max(maxY, cell.y());
-            }
-        }
-        if (minX == Integer.MAX_VALUE) {
-            return new CellBounds(0, 0, -1, -1);
-        }
-        return new CellBounds(minX, minY, maxX, maxY);
-    }
-
-    private record CellBounds(int minX, int minY, int maxX, int maxY) {
     }
 }

@@ -21,12 +21,11 @@ import java.util.Set;
  * It is not a graph and it does not branch. Exits are disposable read projections derived from the explicit
  * path plus the authored stop levels that the editor exposes as usable stair connections.</p>
  */
-public final class Stair {
+public final class Stair extends TilePath {
 
     private final Long stairId;
     private final long mapId;
     private final String name;
-    private final TilePath path;
     private final Set<Integer> stopLevels;
     private final List<DungeonStairExit> exits;
 
@@ -37,7 +36,12 @@ public final class Stair {
             List<CubePoint> path,
             Set<Integer> stopLevels
     ) {
-        this(stairId, mapId, name, TilePath.of(normalizePath(path)), stopLevels);
+        super(normalizePath(path));
+        this.stairId = stairId;
+        this.mapId = mapId;
+        this.name = normalizeName(name);
+        this.stopLevels = normalizeStopLevels(points(), stopLevels);
+        this.exits = deriveExits(points(), this.stopLevels);
     }
 
     private Stair(
@@ -47,12 +51,7 @@ public final class Stair {
             TilePath path,
             Set<Integer> stopLevels
     ) {
-        this.stairId = stairId;
-        this.mapId = mapId;
-        this.name = normalizeName(name);
-        this.path = path == null ? TilePath.empty() : path;
-        this.stopLevels = normalizeStopLevels(this.path.points(), stopLevels);
-        this.exits = deriveExits(this.path.points(), this.stopLevels);
+        this(stairId, mapId, name, path == null ? List.of() : path.points(), stopLevels);
     }
 
     public static Stair resolved(
@@ -88,11 +87,11 @@ public final class Stair {
     }
 
     public TilePath tilePath() {
-        return path;
+        return this;
     }
 
     public List<CubePoint> path() {
-        return path.points();
+        return points();
     }
 
     public Set<Integer> stopLevels() {
@@ -111,11 +110,11 @@ public final class Stair {
     }
 
     public Set<Integer> reachableLevels() {
-        return path.levels();
+        return levels();
     }
 
     public Set<CubePoint> occupiedPositions() {
-        return path.pointSet();
+        return pointSet();
     }
 
     public List<DungeonStairExit> exitsAtLevel(int levelZ) {
@@ -153,13 +152,13 @@ public final class Stair {
         return mapId == stair.mapId
                 && Objects.equals(stairId, stair.stairId)
                 && Objects.equals(name, stair.name)
-                && Objects.equals(path(), stair.path())
+                && Objects.equals(points(), stair.points())
                 && Objects.equals(stopLevels, stair.stopLevels);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(stairId, mapId, name, path(), stopLevels);
+        return Objects.hash(stairId, mapId, name, points(), stopLevels);
     }
 
     @Override
@@ -167,7 +166,7 @@ public final class Stair {
         return "Stair[stairId=" + stairId
                 + ", mapId=" + mapId
                 + ", name=" + name
-                + ", path=" + path()
+                + ", path=" + points()
                 + ", stopLevels=" + stopLevels
                 + "]";
     }
@@ -247,7 +246,7 @@ public final class Stair {
         Set<Integer> translatedStops = stopLevels.stream()
                 .map(stopLevel -> stopLevel + levelDelta)
                 .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
-        return resolved(stairId, mapId, name, path.translatedBy(resolvedDelta, levelDelta), translatedStops);
+        return resolved(stairId, mapId, name, translatedBy(resolvedDelta, levelDelta), translatedStops);
     }
 
     private static String normalizeName(String name) {
