@@ -17,7 +17,7 @@ Use it together with the parent `dungeonmap/AGENTS.md` and the repository root `
 - `DungeonGridSceneRenderer` renders room and corridor floors from `CellCoord` surfaces and boundaries/overlays from final `GridPoint2x` and `GridSegment2x`. Corridor surfaces come from `StructureObject`; room surfaces come from cluster/layout room-surface queries instead of `Room`-owned topology.
 - Editor hover rendering resolves generic `DungeonHitSurface` overlays through `DungeonSelectionHighlightResolver`; do not rebuild hover geometry from ref variants directly in the renderer.
 - Paint previews are direct `CellCoord` overlays. Do not build temporary `StructureObject`s just to render them.
-- Corridor graph handles are an editor-only overlay on top of shared structure geometry.
+- Corridor graph handles are an editor-only overlay on top of shared structure geometry and must read corner/segment traces from `StructureObject.PathTrace`, not a corridor-owned route list.
 - `DungeonEditorRenderState` is display-only and carries selection, hover, and preview geometry only.
 - `DungeonRuntimeRenderOverlay` carries the active navigation snapshot plus runtime exit markers derived from the resolved runtime description. Canvas does not interpret runtime actions or reparse runtime ownership.
 

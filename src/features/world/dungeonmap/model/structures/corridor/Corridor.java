@@ -6,7 +6,6 @@ import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.EdgeShape;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
@@ -17,15 +16,12 @@ import features.world.dungeonmap.model.structures.connection.DungeonConnection;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.PriorityQueue;
 import java.util.Set;
 
 /**
@@ -36,8 +32,6 @@ import java.util.Set;
  */
 public final class Corridor {
 
-    private static final int ROUTE_MARGIN = 4;
-
     private final Long corridorId;
     private final long mapId;
     private final int levelZ;
@@ -45,7 +39,6 @@ public final class Corridor {
     private final List<CorridorSegment> segments;
     private final Set<GridSegment2x> boundaryDoorSegments;
     private final StructureObject structure;
-    private final List<CorridorRoute> routes;
     private final List<DungeonConnection> connections;
 
     public static Corridor resolved(
@@ -113,7 +106,6 @@ public final class Corridor {
                 boundaryDoorSegments);
         this.boundaryDoorSegments = projection.boundaryDoorSegments();
         this.structure = projection.structure();
-        this.routes = projection.routes();
         this.connections = projection.connections();
     }
 
@@ -157,10 +149,6 @@ public final class Corridor {
 
     public StructureObject structure() {
         return structure;
-    }
-
-    public List<CorridorRoute> routes() {
-        return routes;
     }
 
     public List<DungeonConnection> connections() {
@@ -270,8 +258,8 @@ public final class Corridor {
         LinkedHashSet<String> seenEdges = new LinkedHashSet<>();
         boolean changed = false;
         for (CorridorSegment segment : segments) {
-            CorridorRoute route = routeForSegment(this, segment == null ? null : segment.segmentId());
-            if (segment == null || route == null || !route.path2x().contains(tilePoint)) {
+            StructureObject.PathTrace trace = traceForSegment(this, segment == null ? null : segment.segmentId());
+            if (segment == null || trace == null || !trace.path2x().contains(tilePoint)) {
                 addUniqueSegment(updatedSegments, seenEdges, segment);
                 continue;
             }
@@ -436,7 +424,7 @@ public final class Corridor {
             return this;
         }
         Corridor reboundCorridor = resolvedAgainst(layout, updatedNodes, segments);
-        if (!reboundCorridor.routes().equals(routes)) {
+        if (!reboundCorridor.structure().pathTracesAtLevel(levelZ).equals(structure.pathTracesAtLevel(levelZ))) {
             throw new IllegalArgumentException("Corridor room rewrite may not reroute corridor");
         }
         return reboundCorridor;
@@ -538,14 +526,11 @@ public final class Corridor {
         return layout.resolveCorridor(corridorId, levelZ, updatedNodes, updatedSegments, updatedBoundaryDoorSegments);
     }
 
-    private static CorridorRoute routeForSegment(Corridor corridor, Long segmentId) {
+    private static StructureObject.PathTrace traceForSegment(Corridor corridor, Long segmentId) {
         if (corridor == null || segmentId == null) {
             return null;
         }
-        return corridor.routes().stream()
-                .filter(route -> Objects.equals(route.segmentId(), segmentId))
-                .findFirst()
-                .orElse(null);
+        return corridor.structure().pathTraceAtLevel(corridor.levelZ(), segmentId);
     }
 
     private static Long otherNodeId(CorridorSegment segment, Long nodeId) {
@@ -648,8 +633,8 @@ public final class Corridor {
                 .map(CorridorSegment::segmentId)
                 .filter(Objects::nonNull)
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
-        Set<CellCoord> componentCells = occupiedCells(routes.stream()
-                .filter(route -> route != null && componentSegmentIds.contains(route.segmentId()))
+        Set<CellCoord> componentCells = StructureObject.surfaceCellsForTraces(structure.pathTracesAtLevel(levelZ).stream()
+                .filter(trace -> trace != null && componentSegmentIds.contains(trace.traceId()))
                 .toList());
         if (componentCells.isEmpty()) {
             return Set.of();
@@ -809,77 +794,25 @@ public final class Corridor {
             List<CorridorSegment> segments,
             Set<GridSegment2x> boundaryDoorSegments
     ) {
-        // Keep routing/projection semantics centralized in the canonical corridor owner.
-        Map<Long, CorridorNode> nodesById = indexNodes(nodes);
-        ArrayList<CorridorRoute> routes = new ArrayList<>();
-        for (CorridorSegment segment : segments) {
-            CorridorNode start = nodesById.get(segment.startNodeId());
-            CorridorNode end = nodesById.get(segment.endNodeId());
-            if (start == null || end == null) {
-                throw new IllegalArgumentException("Corridor segment references missing node");
-            }
-            RoutePlan routePlan = findRoute(layout, levelZ, start, end);
-            routes.add(new CorridorRoute(segment.segmentId(), segment.startNodeId(), segment.endNodeId(), routePlan.path2x()));
-        }
-        Set<GridSegment2x> explicitBoundaryDoorSegments = validatedBoundaryDoorSegments(levelZ, routes, boundaryDoorSegments);
-        LinkedHashSet<GridSegment2x> openingSegments2x = new LinkedHashSet<>(corridorOpeningSegments(layout, levelZ, nodes));
-        openingSegments2x.addAll(explicitBoundaryDoorSegments);
+        Set<CellCoord> blockedCells = blockedRoomCells(layout, levelZ);
+        List<StructureObject.RoutedNode> routedNodes = nodes.stream()
+                .map(node -> routedNode(layout, node, levelZ, blockedCells))
+                .toList();
+        List<StructureObject.RoutedLink> routedLinks = segments.stream()
+                .filter(Objects::nonNull)
+                .map(segment -> new StructureObject.RoutedLink(segment.segmentId(), segment.startNodeId(), segment.endNodeId()))
+                .toList();
+        StructureObject.RoutedProjection routedProjection = StructureObject.routeSurfaceProjection(
+                levelZ,
+                routedNodes,
+                routedLinks,
+                blockedCells,
+                corridorOpeningSegments(layout, levelZ, nodes),
+                boundaryDoorSegments);
         return new DerivedProjection(
-                compileStructure(levelZ, routes, openingSegments2x),
-                routes.isEmpty() ? List.of() : List.copyOf(routes),
+                routedProjection.structure(),
                 materializeConnections(layout, corridorId, mapId, levelZ, nodes),
-                explicitBoundaryDoorSegments);
-    }
-
-    private static Set<GridSegment2x> validatedBoundaryDoorSegments(
-            int levelZ,
-            Collection<CorridorRoute> routes,
-            Set<GridSegment2x> boundaryDoorSegments
-    ) {
-        if (boundaryDoorSegments == null || boundaryDoorSegments.isEmpty()) {
-            return Set.of();
-        }
-        Set<CellCoord> occupiedCells = occupiedCells(routes);
-        if (occupiedCells.isEmpty()) {
-            throw new IllegalArgumentException("Corridor boundary door requires occupied corridor cells");
-        }
-        Set<GridSegment2x> boundaryEdges = TileShape.of(occupiedCells).boundaryShape().segmentSet2x();
-        if (boundaryEdges.isEmpty()) {
-            throw new IllegalArgumentException("Corridor boundary door requires a valid corridor level");
-        }
-        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
-        for (GridSegment2x segment2x : GridSegment2x.boundarySteps(boundaryDoorSegments).stream()
-                .sorted(GridSegment2x.ORDER)
-                .toList()) {
-            if (!boundaryEdges.contains(segment2x)) {
-                throw new IllegalArgumentException("Corridor boundary door must stay on an exterior corridor boundary");
-            }
-            result.add(segment2x);
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
-    private static StructureObject compileStructure(
-            int levelZ,
-            Collection<CorridorRoute> routes,
-            Set<GridSegment2x> openingSegments2x
-    ) {
-        Set<CellCoord> occupiedCells = occupiedCells(routes);
-        if (occupiedCells.isEmpty()) {
-            return StructureObject.empty();
-        }
-        Set<GridSegment2x> boundaryEdges = TileShape.of(occupiedCells).boundaryShape().segmentSet2x();
-        if (boundaryEdges.isEmpty()) {
-            return StructureObject.empty();
-        }
-        // Corridor structure compilation must share the same canonical cell-set descriptor path as rooms so routed
-        // cells and hydrated floor geometry cannot silently drift apart.
-        StructureObject structure = StructureObject.fromSurfaceCellsByLevel(
-                Map.of(levelZ, occupiedCells),
-                Map.of(levelZ, openingEdges(boundaryEdges, openingSegments2x)),
-                Map.of(levelZ, occupiedCells),
-                Map.of(levelZ, CellCoord.bestCenter(occupiedCells)));
-        return validatedStructureForCells(levelZ, occupiedCells, structure);
+                routedProjection.boundaryOpeningEdges());
     }
 
     private static CorridorNode canonicalizeRoomBoundNode(CorridorNode node, int levelZ, DungeonLayout layout) {
@@ -921,16 +854,6 @@ public final class Corridor {
         return Map.copyOf(result);
     }
 
-    private static RoutePlan findRoute(
-            DungeonLayout layout,
-            int levelZ,
-            CorridorNode start,
-            CorridorNode end
-    ) {
-        Set<CellCoord> blockedCells = blockedRoomCells(layout, levelZ);
-        return findAnchoredRoute(layout, levelZ, start, end, blockedCells);
-    }
-
     private static Set<CellCoord> blockedRoomCells(DungeonLayout layout, int levelZ) {
         Set<CellCoord> blocked = new LinkedHashSet<>();
         if (layout == null) {
@@ -945,41 +868,19 @@ public final class Corridor {
         return Set.copyOf(blocked);
     }
 
-    private static RoutePlan findAnchoredRoute(
+    private static StructureObject.RoutedNode routedNode(
             DungeonLayout layout,
+            CorridorNode node,
             int levelZ,
-            CorridorNode start,
-            CorridorNode end,
             Set<CellCoord> blockedCells
     ) {
-        List<AnchorAttachment> startAttachments = attachmentsForNode(layout, start, levelZ, blockedCells);
-        List<AnchorAttachment> endAttachments = attachmentsForNode(layout, end, levelZ, blockedCells);
-        RoutePlan bestPlan = null;
-        for (AnchorAttachment startAttachment : startAttachments) {
-            for (AnchorAttachment endAttachment : endAttachments) {
-                CellRoute cellRoute = findCellRoute(startAttachment.cell(), endAttachment.cell(), blockedCells);
-                if (cellRoute == null) {
-                    continue;
-                }
-                List<GridPoint2x> path2x = assemblePath2x(
-                        startAttachment.anchorPath(),
-                        cellRoute.cells(),
-                        endAttachment.anchorPath());
-                double totalCost = cellRoute.cost()
-                        + startAttachment.anchorPathCost()
-                        + endAttachment.anchorPathCost();
-                if (bestPlan == null || totalCost < bestPlan.cost()) {
-                    bestPlan = new RoutePlan(path2x, totalCost);
-                }
-            }
+        if (node == null || node.nodeId() == null) {
+            throw new IllegalArgumentException("Corridor routed node requires a stable id");
         }
-        if (bestPlan == null) {
-            throw new IllegalArgumentException("Corridor segment could not be routed");
-        }
-        return bestPlan;
+        return new StructureObject.RoutedNode(node.nodeId(), attachmentsForNode(layout, node, levelZ, blockedCells));
     }
 
-    private static List<AnchorAttachment> attachmentsForNode(
+    private static List<StructureObject.AnchorAttachment> attachmentsForNode(
             DungeonLayout layout,
             CorridorNode node,
             int levelZ,
@@ -995,164 +896,11 @@ public final class Corridor {
                 throw new IllegalArgumentException("Corridor room-bound node could not be resolved");
             }
             CellCoord exteriorCell = roomCell.add(node.roomBoundaryDirection().delta());
-            return List.of(new AnchorAttachment(
+            return List.of(new StructureObject.AnchorAttachment(
                     exteriorCell,
                     List.of(anchorPoint, GridPoint2x.cell(exteriorCell))));
         }
-        GridPoint2x anchorPoint = node.point2x();
-        if (anchorPoint.isCell()) {
-            return List.of(new AnchorAttachment(anchorPoint.asCell().orElseThrow(), List.of(anchorPoint)));
-        }
-        List<CellCoord> touchingCells = anchorPoint.touchingCells().stream()
-                .sorted(CellCoord.ORDER)
-                .toList();
-        List<CellCoord> preferredCells = touchingCells.stream()
-                .filter(cell -> !blockedCells.contains(cell))
-                .toList();
-        List<CellCoord> candidateCells = preferredCells.isEmpty() ? touchingCells : preferredCells;
-        ArrayList<AnchorAttachment> attachments = new ArrayList<>();
-        for (CellCoord cell : candidateCells) {
-            for (List<GridPoint2x> anchorPath : anchorPaths(anchorPoint, cell)) {
-                attachments.add(new AnchorAttachment(cell, anchorPath));
-            }
-        }
-        return attachments.isEmpty() ? List.of() : List.copyOf(attachments);
-    }
-
-    private static CellRoute findCellRoute(CellCoord start, CellCoord end, Set<CellCoord> blockedCells) {
-        if (start == null || end == null) {
-            return null;
-        }
-        if (start.equals(end)) {
-            return new CellRoute(List.of(start), 0.0d);
-        }
-        int minX = Math.min(start.x(), end.x());
-        int maxX = Math.max(start.x(), end.x());
-        int minY = Math.min(start.y(), end.y());
-        int maxY = Math.max(start.y(), end.y());
-        for (CellCoord blocked : blockedCells) {
-            minX = Math.min(minX, blocked.x());
-            maxX = Math.max(maxX, blocked.x());
-            minY = Math.min(minY, blocked.y());
-            maxY = Math.max(maxY, blocked.y());
-        }
-        minX -= ROUTE_MARGIN;
-        maxX += ROUTE_MARGIN;
-        minY -= ROUTE_MARGIN;
-        maxY += ROUTE_MARGIN;
-
-        double turnPenalty = turnPenalty(start, end);
-        Set<CellCoord> effectiveBlocked = new LinkedHashSet<>(blockedCells);
-        effectiveBlocked.remove(start);
-        effectiveBlocked.remove(end);
-
-        SearchState startState = new SearchState(start, null);
-        PriorityQueue<QueueEntry> frontier = new PriorityQueue<>(Comparator.comparingDouble(QueueEntry::estimatedTotalCost));
-        Map<SearchState, Double> bestCosts = new HashMap<>();
-        Map<SearchState, SearchState> cameFrom = new HashMap<>();
-        frontier.add(new QueueEntry(startState, heuristic(start, end)));
-        bestCosts.put(startState, 0.0d);
-
-        while (!frontier.isEmpty()) {
-            QueueEntry currentEntry = frontier.poll();
-            SearchState current = currentEntry.state();
-            double currentCost = bestCosts.getOrDefault(current, Double.POSITIVE_INFINITY);
-            if (currentEntry.estimatedTotalCost() - heuristic(current.cell(), end) > currentCost + 1e-9) {
-                continue;
-            }
-            if (current.cell().equals(end)) {
-                return new CellRoute(reconstructCellPath(cameFrom, current), currentCost);
-            }
-            for (CellCoord step : CellCoord.CARDINAL_STEPS) {
-                CellCoord neighbor = current.cell().add(step);
-                if (neighbor.x() < minX || neighbor.x() > maxX || neighbor.y() < minY || neighbor.y() > maxY) {
-                    continue;
-                }
-                if (effectiveBlocked.contains(neighbor)) {
-                    continue;
-                }
-                double nextCost = currentCost + 1.0d;
-                if (current.direction() != null && !current.direction().equals(step)) {
-                    nextCost += turnPenalty;
-                }
-                SearchState next = new SearchState(neighbor, step);
-                if (nextCost + 1e-9 >= bestCosts.getOrDefault(next, Double.POSITIVE_INFINITY)) {
-                    continue;
-                }
-                bestCosts.put(next, nextCost);
-                cameFrom.put(next, current);
-                frontier.add(new QueueEntry(next, nextCost + heuristic(neighbor, end)));
-            }
-        }
-        return null;
-    }
-
-    private static List<CellCoord> reconstructCellPath(Map<SearchState, SearchState> cameFrom, SearchState endState) {
-        ArrayList<CellCoord> path = new ArrayList<>();
-        SearchState current = endState;
-        path.add(current.cell());
-        while (cameFrom.containsKey(current)) {
-            current = cameFrom.get(current);
-            path.add(current.cell());
-        }
-        Collections.reverse(path);
-        return List.copyOf(path);
-    }
-
-    private static List<GridPoint2x> assemblePath2x(
-            List<GridPoint2x> startAnchorPath,
-            List<CellCoord> cellRoute,
-            List<GridPoint2x> endAnchorPath
-    ) {
-        ArrayList<GridPoint2x> result = new ArrayList<>();
-        appendUnique(result, startAnchorPath);
-        appendUnique(result, cellRoute == null ? List.of() : cellRoute.stream().map(GridPoint2x::cell).toList());
-        ArrayList<GridPoint2x> reversedEnd = new ArrayList<>(endAnchorPath == null ? List.of() : endAnchorPath);
-        Collections.reverse(reversedEnd);
-        appendUnique(result, reversedEnd);
-        return result.isEmpty() ? List.of() : List.copyOf(result);
-    }
-
-    private static void appendUnique(List<GridPoint2x> target, List<GridPoint2x> points) {
-        if (target == null || points == null) {
-            return;
-        }
-        for (GridPoint2x point : points) {
-            if (point == null) {
-                continue;
-            }
-            if (!target.isEmpty() && target.getLast().equals(point)) {
-                continue;
-            }
-            target.add(point);
-        }
-    }
-
-    private static List<List<GridPoint2x>> anchorPaths(GridPoint2x anchorPoint, CellCoord cell) {
-        if (anchorPoint == null || cell == null) {
-            return List.of();
-        }
-        GridPoint2x cellCenter = GridPoint2x.cell(cell);
-        if (anchorPoint.equals(cellCenter)) {
-            return List.of(List.of(anchorPoint));
-        }
-        if (anchorPoint.manhattanDistance2x(cellCenter) == 1) {
-            return List.of(List.of(anchorPoint, cellCenter));
-        }
-        GridPoint2x firstMidpoint = GridPoint2x.raw(anchorPoint.x2(), cellCenter.y2());
-        GridPoint2x secondMidpoint = GridPoint2x.raw(cellCenter.x2(), anchorPoint.y2());
-        return List.of(
-                List.of(anchorPoint, firstMidpoint, cellCenter),
-                List.of(anchorPoint, secondMidpoint, cellCenter));
-    }
-
-    private static double heuristic(CellCoord current, CellCoord end) {
-        return current == null || end == null ? 0.0d : current.manhattanDistance(end);
-    }
-
-    private static double turnPenalty(CellCoord start, CellCoord end) {
-        int cellDistance = Math.max(1, start.manhattanDistance(end));
-        return Math.max(0.15d, Math.min(0.75d, 0.75d / Math.sqrt(cellDistance)));
+        return StructureObject.attachmentsForPoint(node.point2x(), blockedCells);
     }
 
     private static List<DungeonConnection> materializeConnections(
@@ -1271,53 +1019,8 @@ public final class Corridor {
         return node.roomCell();
     }
 
-    private static Set<CellCoord> occupiedCells(Collection<CorridorRoute> routes) {
-        LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
-        for (CorridorRoute route : routes == null ? List.<CorridorRoute>of() : routes) {
-            if (route == null) {
-                continue;
-            }
-            for (GridPoint2x point2x : route.path2x()) {
-                if (point2x != null) {
-                    point2x.asCell().ifPresent(result::add);
-                }
-            }
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
-    private static StructureObject validatedStructureForCells(
-            int levelZ,
-            Set<CellCoord> occupiedCells,
-            StructureObject structure
-    ) {
-        Set<CellCoord> expected = CellCoord.normalize(occupiedCells);
-        Set<CellCoord> hydrated = CellCoord.normalize(structure.cellCoordsAtLevel(levelZ));
-        if (!hydrated.equals(expected)) {
-            throw new IllegalStateException("Corridor descriptor changed the routed occupied cells");
-        }
-        return structure;
-    }
-
-    private static Set<GridSegment2x> openingEdges(
-            Set<GridSegment2x> boundaryEdges,
-            Set<GridSegment2x> openingSegments2x
-    ) {
-        if (boundaryEdges == null || boundaryEdges.isEmpty() || openingSegments2x == null || openingSegments2x.isEmpty()) {
-            return Set.of();
-        }
-        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
-        for (GridSegment2x segment2x : openingSegments2x) {
-            if (segment2x != null && boundaryEdges.contains(segment2x)) {
-                result.add(segment2x);
-            }
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
     private record DerivedProjection(
             StructureObject structure,
-            List<CorridorRoute> routes,
             List<DungeonConnection> connections,
             Set<GridSegment2x> boundaryDoorSegments
     ) {
@@ -1351,82 +1054,5 @@ public final class Corridor {
             CardinalDirection direction,
             GridPoint2x anchorPoint
     ) {
-    }
-
-    private record AnchorAttachment(CellCoord cell, List<GridPoint2x> anchorPath) {
-        private AnchorAttachment {
-            cell = Objects.requireNonNull(cell, "cell");
-            anchorPath = anchorPath == null ? List.of() : List.copyOf(anchorPath);
-        }
-
-        private double anchorPathCost() {
-            return Math.max(0, anchorPath.size() - 1);
-        }
-    }
-
-    private record SearchState(CellCoord cell, CellCoord direction) {
-        private SearchState {
-            cell = Objects.requireNonNull(cell, "cell");
-        }
-    }
-
-    private record QueueEntry(SearchState state, double estimatedTotalCost) {
-        private QueueEntry {
-            state = Objects.requireNonNull(state, "state");
-        }
-    }
-
-    private record CellRoute(List<CellCoord> cells, double cost) {
-        private CellRoute {
-            cells = cells == null ? List.of() : List.copyOf(cells);
-        }
-    }
-
-    private record RoutePlan(List<GridPoint2x> path2x, double cost) {
-        private RoutePlan {
-            path2x = path2x == null ? List.of() : List.copyOf(path2x);
-        }
-    }
-
-    public record CorridorRoute(
-            Long segmentId,
-            Long startNodeId,
-            Long endNodeId,
-            List<GridPoint2x> path2x
-    ) {
-        public CorridorRoute {
-            path2x = path2x == null ? List.of() : List.copyOf(path2x);
-        }
-
-        public List<GridSegment2x> segments2x() {
-            if (path2x.size() < 2) {
-                return List.of();
-            }
-            ArrayList<GridSegment2x> result = new ArrayList<>();
-            for (int index = 1; index < path2x.size(); index++) {
-                result.add(new GridSegment2x(path2x.get(index - 1), path2x.get(index)));
-            }
-            return List.copyOf(result);
-        }
-
-        public List<GridPoint2x> cornerPoints2x() {
-            if (path2x.size() < 3) {
-                return List.of();
-            }
-            ArrayList<GridPoint2x> result = new ArrayList<>();
-            for (int index = 1; index < path2x.size() - 1; index++) {
-                GridPoint2x previous = path2x.get(index - 1);
-                GridPoint2x current = path2x.get(index);
-                GridPoint2x next = path2x.get(index + 1);
-                int incomingDx2 = current.x2() - previous.x2();
-                int incomingDy2 = current.y2() - previous.y2();
-                int outgoingDx2 = next.x2() - current.x2();
-                int outgoingDy2 = next.y2() - current.y2();
-                if (incomingDx2 != outgoingDx2 || incomingDy2 != outgoingDy2) {
-                    result.add(current);
-                }
-            }
-            return List.copyOf(result);
-        }
     }
 }

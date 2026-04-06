@@ -4,6 +4,7 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
+import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNode;
 
@@ -43,19 +44,19 @@ public final class DungeonCorridorGraphHitSource implements DungeonHitSource {
 
     private static List<DungeonHitDescriptor> segmentDescriptors(Corridor corridor, int levelZ) {
         ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
-        for (Corridor.CorridorRoute route : corridor.routes()) {
-            if (route.segmentId() == null || route.path2x().isEmpty()) {
+        for (StructureObject.PathTrace trace : corridor.structure().pathTracesAtLevel(levelZ)) {
+            if (trace.traceId() == null || trace.path2x().isEmpty()) {
                 continue;
             }
-            Set<GridSegment2x> segments2x = Set.copyOf(route.segments2x());
+            Set<GridSegment2x> segments2x = Set.copyOf(trace.segments2x());
             if (segments2x.isEmpty()) {
                 continue;
             }
             descriptors.add(new DungeonHitDescriptor(
                     new DungeonSelectionRef.CorridorSegmentRef(
                             corridor.corridorId(),
-                            route.segmentId(),
-                            canonicalSegmentPoint(route.path2x())),
+                            trace.traceId(),
+                            canonicalSegmentPoint(trace.path2x())),
                     List.of(new DungeonHitSurface.SegmentSurface(segments2x, levelZ))));
         }
         return List.copyOf(descriptors);

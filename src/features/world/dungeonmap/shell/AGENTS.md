@@ -17,6 +17,7 @@ For editor tool responsibilities, also read `shell/editor/interaction/AGENTS.md`
 - `DungeonHitKind` and `DungeonSelectionRef` come from `model/interaction/`. Shell code consumes them and must not redefine owner semantics.
 - Internal wall hits resolve through `RoomBoundaryRef`. Tools that need cluster context derive it from `DungeonLayout.describeRoomBoundary(...)`.
 - Free corridor wall hits resolve through `CorridorBoundaryRef`. Tools that need the touched corridor cell derive it from `DungeonLayout.describeCorridorBoundary(...)`.
+- Corridor segment highlights and graph hit surfaces read routed trace geometry from `Corridor.structure()` / `StructureObject.PathTrace`. Shell code must not keep a second corridor-route mirror.
 - `DungeonSelectionHighlightResolver` is the shared shell seam that turns `DungeonSelectionRef` into generic `DungeonHitSurface` overlays for editor hover rendering.
 
 ## Shared State Boundaries

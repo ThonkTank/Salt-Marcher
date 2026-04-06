@@ -155,11 +155,11 @@ public final class DungeonSelectionHighlightResolver {
         if (corridor == null || corridorSegmentRef.segmentId() == null) {
             return List.of();
         }
-        return corridor.routes().stream()
-                .filter(route -> Objects.equals(route.segmentId(), corridorSegmentRef.segmentId()))
+        return corridor.structure().pathTracesAtLevel(levelZ).stream()
+                .filter(trace -> Objects.equals(trace.traceId(), corridorSegmentRef.segmentId()))
                 .findFirst()
-                .map(route -> List.<DungeonHitSurface>of(
-                        new DungeonHitSurface.SegmentSurface(Set.copyOf(route.segments2x()), levelZ)))
+                .map(trace -> List.<DungeonHitSurface>of(
+                        new DungeonHitSurface.SegmentSurface(Set.copyOf(trace.segments2x()), levelZ)))
                 .orElse(List.of());
     }
 }

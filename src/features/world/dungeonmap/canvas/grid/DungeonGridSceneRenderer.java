@@ -387,8 +387,8 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                     pass.palette().highlightStroke(),
                     Math.max(5.0, pass.gridSize() * 0.16));
         }
-        for (Corridor.CorridorRoute route : corridor.routes()) {
-            for (GridPoint2x corner : route.cornerPoints2x()) {
+        for (StructureObject.PathTrace trace : corridor.structure().pathTracesAtLevel(corridor.levelZ())) {
+            for (GridPoint2x corner : trace.cornerPoints2x()) {
                 drawCorridorHandle(
                         pass.gc(),
                         pass.camera(),
