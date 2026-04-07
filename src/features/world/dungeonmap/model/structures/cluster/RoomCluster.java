@@ -421,26 +421,6 @@ public final class RoomCluster {
         return structure.roomTopology();
     }
 
-    private static Map<Long, Room> indexRoomsById(List<Room> rooms) {
-        Map<Long, Room> result = new LinkedHashMap<>();
-        for (Room room : rooms) {
-            if (room != null && room.roomId() != null) {
-                result.put(room.roomId(), room);
-            }
-        }
-        return Map.copyOf(result);
-    }
-
-    private static Map<Integer, Set<CellCoord>> roomCellsByLevel(
-            Room room,
-            Map<Room, Map<Integer, Set<CellCoord>>> roomCellsByRoom
-    ) {
-        if (room == null || roomCellsByRoom == null || roomCellsByRoom.isEmpty()) {
-            return Map.of();
-        }
-        return roomCellsByRoom.getOrDefault(room, Map.of());
-    }
-
     private static List<Room> requireExplicitStructure(List<Room> rooms) {
         List<Room> resolvedRooms = rooms == null ? List.of() : List.copyOf(rooms);
         if (!resolvedRooms.isEmpty()) {
@@ -467,18 +447,6 @@ public final class RoomCluster {
     private record RoomPair(Room left, Room right) {
     }
 
-    private static Map<Integer, Set<CellCoord>> immutableCellsByLevel(Map<Integer, Set<CellCoord>> source) {
-        if (source == null || source.isEmpty()) {
-            return Map.of();
-        }
-        Map<Integer, Set<CellCoord>> result = new LinkedHashMap<>();
-        source.entrySet().stream()
-                .filter(entry -> entry != null && entry.getKey() != null)
-                .sorted(Map.Entry.comparingByKey())
-                .forEach(entry -> result.put(entry.getKey(), CellCoord.normalize(entry.getValue())));
-        return result.isEmpty() ? Map.of() : Map.copyOf(result);
-    }
-
     private static Structure normalizeClusterStructure(Structure structure, List<Room> rooms) {
         if (structure != null && !structure.levels().isEmpty()) {
             return structure;
@@ -487,32 +455,6 @@ public final class RoomCluster {
             return Structure.empty();
         }
         throw new IllegalArgumentException("RoomCluster requires explicit structure when rooms are present");
-    }
-
-
-    private Map<Long, Set<Long>> adjacency() {
-        return roomTopology().adjacencyIndex();
-    }
-
-    private List<Set<Long>> componentsLazy() {
-        return roomTopology().components();
-    }
-
-    private Map<Long, Set<Long>> componentByRoomId() {
-        return roomTopology().componentByRoomIdIndex();
-    }
-
-    private static Set<Long> normalizedRoomIds(Set<Long> roomIds) {
-        Set<Long> result = new LinkedHashSet<>();
-        if (roomIds == null) {
-            return result;
-        }
-        for (Long roomId : roomIds) {
-            if (roomId != null) {
-                result.add(roomId);
-            }
-        }
-        return Set.copyOf(result);
     }
 
     private static final class Topology {

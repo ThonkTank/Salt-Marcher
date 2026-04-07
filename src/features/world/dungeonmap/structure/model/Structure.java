@@ -30,6 +30,7 @@ public final class Structure {
     }
 
     private final Map<Integer, LevelStructure> levelsByZ;
+    // Derived companion over physical structure + room metadata. This is intentionally not part of persisted identity.
     private final StructureRoomTopology roomTopology;
 
     public static Structure empty() {
@@ -235,19 +236,17 @@ public final class Structure {
         if (!(other instanceof Structure that)) {
             return false;
         }
-        return Objects.equals(levelsByZ, that.levelsByZ)
-                && Objects.equals(roomTopology, that.roomTopology);
+        return Objects.equals(levelsByZ, that.levelsByZ);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(levelsByZ, roomTopology);
+        return Objects.hash(levelsByZ);
     }
 
     @Override
     public String toString() {
-        return "Structure[levelsByZ=" + levelsByZ
-                + ", roomTopology=" + roomTopology + "]";
+        return "Structure[levelsByZ=" + levelsByZ + "]";
     }
 
     public static final class LevelStructure {

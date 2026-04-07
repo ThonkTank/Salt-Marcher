@@ -48,7 +48,7 @@ public final class StructureRoomTopology {
                 clusterId,
                 clusterStructure,
                 projectionIndex,
-                StructureRoomGraph.derive(mapId, clusterId, projectionIndex));
+                StructureRoomGraph.derive(mapId, clusterId, clusterStructure, projectionIndex));
     }
 
     private StructureRoomTopology(
@@ -212,14 +212,6 @@ public final class StructureRoomTopology {
 
     public boolean canMergeRooms(Set<Long> roomIds) {
         return graph.canMergeRooms(roomIds);
-    }
-
-    public Map<Long, Set<Long>> adjacencyIndex() {
-        return graph.adjacencyIndex();
-    }
-
-    public Map<Long, Set<Long>> componentByRoomIdIndex() {
-        return graph.componentByRoomIdIndex();
     }
 
     public Structure structureFor(Room room) {

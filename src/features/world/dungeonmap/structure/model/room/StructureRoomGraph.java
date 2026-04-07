@@ -36,6 +36,7 @@ final class StructureRoomGraph {
     static StructureRoomGraph derive(
             long mapId,
             Long clusterId,
+            Structure clusterStructure,
             StructureRoomProjectionIndex projectionIndex
     ) {
         if (projectionIndex == null || projectionIndex.isEmpty()) {
@@ -50,7 +51,7 @@ final class StructureRoomGraph {
                 adjacency,
                 components,
                 indexComponentByRoomId(components),
-                deriveLocalConnections(mapId, clusterId, projectionIndex.derivedStructuresByRoom(), projectionIndex.roomsByPoint()));
+                deriveLocalConnections(mapId, clusterId, clusterStructure, projectionIndex.roomsByPoint()));
     }
 
     private StructureRoomGraph(
@@ -108,42 +109,30 @@ final class StructureRoomGraph {
         return visited.equals(selected);
     }
 
-    Map<Long, Set<Long>> adjacencyIndex() {
-        return adjacencyByRoomId;
-    }
-
-    Map<Long, Set<Long>> componentByRoomIdIndex() {
-        return componentByRoomId;
-    }
-
     private static List<DungeonConnection> deriveLocalConnections(
             long mapId,
             Long clusterId,
-            Map<Room, Structure> derivedStructuresByRoom,
+            Structure clusterStructure,
             Map<CubePoint, Room> roomsByPoint
     ) {
-        if (derivedStructuresByRoom == null || derivedStructuresByRoom.isEmpty()) {
+        if (clusterStructure == null || clusterStructure.levels().isEmpty()) {
             return List.of();
         }
         long resolvedClusterId = clusterId == null ? 0L : clusterId;
         List<DungeonConnection> result = new ArrayList<>();
         Set<DoorIdentity> seenDoors = new LinkedHashSet<>();
-        for (Map.Entry<Room, Structure> entry : derivedStructuresByRoom.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey(Comparator.comparing(Room::roomId, Comparator.nullsLast(Long::compareTo))))
-                .toList()) {
-            Structure roomStructure = entry.getValue();
-            for (Integer levelZ : roomStructure.levels()) {
-                for (Door door : roomStructure.boundaryAtLevel(levelZ).doors()) {
-                    if (door != null && door.hasBoundarySegments()) {
-                        DoorIdentity doorIdentity = doorIdentity(levelZ, door);
-                        if (doorIdentity == null || !seenDoors.add(doorIdentity)) {
-                            continue;
-                        }
-                        DungeonConnection connection = localConnectionForDoor(levelZ, door, mapId, resolvedClusterId, roomsByPoint);
-                        if (connection != null) {
-                            result.add(connection);
-                        }
-                    }
+        for (Integer levelZ : clusterStructure.levels().stream().sorted().toList()) {
+            for (Door door : clusterStructure.boundaryAtLevel(levelZ).doors()) {
+                if (door == null || !door.hasBoundarySegments()) {
+                    continue;
+                }
+                DoorIdentity doorIdentity = doorIdentity(levelZ, door);
+                if (doorIdentity == null || !seenDoors.add(doorIdentity)) {
+                    continue;
+                }
+                DungeonConnection connection = localConnectionForDoor(levelZ, door, mapId, resolvedClusterId, roomsByPoint);
+                if (connection != null) {
+                    result.add(connection);
                 }
             }
         }

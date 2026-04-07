@@ -7,7 +7,7 @@
 ## Owner Atlas
 
 - `layout` — `DungeonLayout`, `DungeonMapLoadingService`, `DungeonLayoutRepository`, `DungeonMapState`
-- `structure` — `Structure`, `Structure.roomTopology()`, the local `surface`, `boundary`, and `room` sub-owners plus boundary-local `door` and `wall` object sub-owners, `DungeonStructureRepository`, `DungeonWallKindRepository`
+- `structure` — `Structure`, derived `Structure.roomTopology()`, the local `surface`, `boundary`, and `room` sub-owners plus boundary-local `door` and `wall` object sub-owners, `DungeonStructureRepository`, `DungeonWallKindRepository`
 - `room` — `Room`, `RoomCluster`, `DungeonRoomApplicationService`, `DungeonRoomRepository`
 - `corridor` — `Corridor`, `CorridorRouting`, `CorridorPathTrace`, `DungeonCorridorApplicationService`, `DungeonCorridorRepository`
 - `stair` — `DungeonStair`, `Stair`, `StairExit`, `DungeonStairApplicationService`, `DungeonStairRepository`
