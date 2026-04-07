@@ -2,10 +2,10 @@ package features.world.dungeonmap.structure.model.boundary;
 
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridBoundary;
-import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridSegment;
 import features.world.dungeonmap.geometry.GridArea;
 import features.world.dungeonmap.structure.model.boundary.door.Door;
+import features.world.dungeonmap.structure.model.boundary.door.Door.DoorState;
 import features.world.dungeonmap.structure.model.boundary.wall.Wall;
 import features.world.dungeonmap.structure.model.boundary.wall.WallKind;
 
@@ -150,20 +150,6 @@ public final class StructureBoundary {
         return null;
     }
 
-    public Set<GridSegment> movementBlockingBoundaryEdges() {
-        LinkedHashSet<GridSegment> result = new LinkedHashSet<>();
-        for (GridSegment segment2x : boundaryEdges().stream().sorted(GridSegment.ORDER).toList()) {
-            if (doorAtBoundarySegment(segment2x) != null) {
-                continue;
-            }
-            Wall wall = wallAtBoundarySegment(segment2x);
-            if (wall != null && wall.blocksPassage()) {
-                result.add(segment2x);
-            }
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
     public Set<GridSegment> interiorAdjacencyEdges() {
         return interiorAdjacencyEdgesForSurface(surfaceCells);
     }
@@ -249,6 +235,45 @@ public final class StructureBoundary {
                 surfaceCells,
                 doors,
                 deletedWalls(walls, normalizedBoundaryEdges(deletableWallEdges(), segments2x)));
+    }
+
+    public StructureBoundary withCreatedDoorSegments(Collection<GridSegment> segments2x) {
+        List<Door> nextDoors = createdDoors(segments2x);
+        return Objects.equals(nextDoors, doors) ? this : withDoors(nextDoors);
+    }
+
+    public StructureBoundary withDeletedDoorSegments(Collection<GridSegment> segments2x) {
+        List<Door> nextDoors = deletedDoors(segments2x);
+        return Objects.equals(nextDoors, doors) ? this : withDoors(nextDoors);
+    }
+
+    /**
+     * Preserve the current move behavior as delete-source then create-target so every caller gets the same door split
+     * and replacement semantics without rebuilding them in higher-level workflows.
+     */
+    public StructureBoundary withMovedDoor(
+            GridSegment sourceBoundarySegment2x,
+            GridSegment targetBoundarySegment2x
+    ) {
+        if (Objects.equals(sourceBoundarySegment2x, targetBoundarySegment2x)) {
+            return this;
+        }
+        if (doorAtBoundarySegment(sourceBoundarySegment2x) == null) {
+            throw new IllegalArgumentException("Door move source must already contain a door");
+        }
+        if (doorAtBoundarySegment(targetBoundarySegment2x) != null) {
+            throw new IllegalArgumentException("Door move target is already occupied");
+        }
+        Wall targetWall = wallAtBoundarySegment(targetBoundarySegment2x);
+        if (!boundaryEdges().contains(targetBoundarySegment2x)
+                || targetWall == null
+                || !targetWall.supportsDoorAttachments()) {
+            throw new IllegalArgumentException("Door move target must be a valid boundary wall");
+        }
+        StructureBoundary withoutSource = withDeletedDoorSegments(List.of(sourceBoundarySegment2x));
+        return withoutSource == this
+                ? this
+                : withoutSource.withCreatedDoorSegments(List.of(targetBoundarySegment2x));
     }
 
     public StructureBoundary translatedByCells(GridPoint delta) {
@@ -440,6 +465,51 @@ public final class StructureBoundary {
         }
         result.sort(Comparator.comparing(Door::anchorSegment2x, GridSegment.ORDER));
         return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
+    private List<Door> createdDoors(Collection<GridSegment> requestedSegments) {
+        if (requestedSegments == null || requestedSegments.isEmpty()) {
+            return doors;
+        }
+        List<GridSegment> editableSegments = requestedSegments.stream()
+                .filter(Objects::nonNull)
+                .filter(boundaryEdges()::contains)
+                .filter(segment2x -> doorAtBoundarySegment(segment2x) == null)
+                .filter(segment2x -> {
+                    Wall wall = wallAtBoundarySegment(segment2x);
+                    return wall != null && wall.supportsDoorAttachments();
+                })
+                .sorted(GridSegment.ORDER)
+                .toList();
+        if (editableSegments.isEmpty()) {
+            return doors;
+        }
+        LinkedHashSet<Door> nextDoors = new LinkedHashSet<>(doors);
+        nextDoors.addAll(Door.fromBoundaryComponents(editableSegments, DoorState.OPEN));
+        return nextDoors.stream()
+                .filter(Objects::nonNull)
+                .sorted(Comparator.comparing(Door::anchorSegment2x, GridSegment.ORDER))
+                .toList();
+    }
+
+    private List<Door> deletedDoors(Collection<GridSegment> requestedSegments) {
+        if (requestedSegments == null || requestedSegments.isEmpty()) {
+            return doors;
+        }
+        Set<GridSegment> removableSegments = requestedSegments.stream()
+                .filter(Objects::nonNull)
+                .filter(segment2x -> doorAtBoundarySegment(segment2x) != null)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        if (removableSegments.isEmpty()) {
+            return doors;
+        }
+        List<Door> nextDoors = doors.stream()
+                .filter(Objects::nonNull)
+                .map(door -> door.withoutBoundarySegments(removableSegments))
+                .filter(Objects::nonNull)
+                .sorted(Comparator.comparing(Door::anchorSegment2x, GridSegment.ORDER))
+                .toList();
+        return Objects.equals(nextDoors, doors) ? doors : nextDoors;
     }
 
     private static List<Wall> createdWalls(Collection<Wall> existingWalls, Collection<GridSegment> segments2x) {

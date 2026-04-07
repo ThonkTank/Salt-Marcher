@@ -1,7 +1,6 @@
 package features.world.dungeonmap.structure.model.surface;
 
 import features.world.dungeonmap.geometry.GridPoint;
-import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridSegment;
 import features.world.dungeonmap.geometry.GridArea;
 
@@ -43,11 +42,6 @@ public final class StructureSurfaceArea extends StructureSurfaceObject {
             return empty();
         }
         return new StructureSurfaceArea(anchorCell, tileShape);
-    }
-
-    static StructureSurfaceArea fromPersistenceSnapshot(PersistenceSnapshot snapshot) {
-        PersistenceSnapshot resolvedSnapshot = snapshot == null ? emptySnapshot() : snapshot;
-        return fromCells(resolvedSnapshot.anchorCell(), resolvedSnapshot.cells());
     }
 
     private StructureSurfaceArea(

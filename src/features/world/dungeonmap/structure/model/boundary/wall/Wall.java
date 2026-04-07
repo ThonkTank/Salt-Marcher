@@ -22,20 +22,20 @@ public final class Wall extends BoundaryObject {
 
     private final WallKind wallKind;
 
-    public Wall(Collection<GridSegment> segments) {
+    private Wall(Collection<GridSegment> segments) {
         this(null, segments, null, WallKind.solid());
     }
 
-    public Wall(GridBoundary shape) {
+    private Wall(GridBoundary shape) {
         this(null, shape, null, WallKind.solid());
     }
 
-    public Wall(Long wallId, Collection<GridSegment> segments, GridSegment anchorSegment2x, WallKind wallKind) {
+    private Wall(Long wallId, Collection<GridSegment> segments, GridSegment anchorSegment2x, WallKind wallKind) {
         super(wallId, segments, anchorSegment2x);
         this.wallKind = wallKind == null ? WallKind.solid() : wallKind;
     }
 
-    public Wall(Long wallId, GridBoundary shape, GridSegment anchorSegment2x, WallKind wallKind) {
+    private Wall(Long wallId, GridBoundary shape, GridSegment anchorSegment2x, WallKind wallKind) {
         super(wallId, shape, anchorSegment2x);
         this.wallKind = wallKind == null ? WallKind.solid() : wallKind;
     }

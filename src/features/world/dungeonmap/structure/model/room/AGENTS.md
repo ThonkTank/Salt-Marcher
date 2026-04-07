@@ -26,4 +26,5 @@ This file covers `src/features/world/dungeonmap/structure/model/room/`.
 
 - Do not mirror room projection or room graph truth back onto `Structure`, `RoomCluster`, `DungeonLayout`, renderers, or repositories.
 - Do not add second convenience mirrors like `Structure.rooms()` or `Structure.localRoomConnections()` once `Structure.roomTopology()` exists.
+- Do not mirror room lookup, room containment, or derived room-structure reads back onto `RoomCluster` or `DungeonLayout`; callers must resolve the owning structure and continue on `roomTopology()`.
 - Do not re-home public room workflows from the room owner into this subtree; this package may host reusable structure-backed rewrite helpers, but application entrypoints still belong to the room owner.

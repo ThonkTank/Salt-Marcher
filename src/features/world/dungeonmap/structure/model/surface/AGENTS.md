@@ -10,6 +10,7 @@ This file covers `src/features/world/dungeonmap/structure/model/surface/`.
 ## Canonical Types and APIs
 
 - `StructureSurface` — level-local surface aggregate — owns the composed surface and floor state for one level and the surface-local persistence snapshot.
+- `StructureSurface.editedSurfaceCells(...)` / `StructureSurface.editedFloorCells(...)` — aggregate-owned edit seams — own cell-set mutation, floor clipping, and anchor retention so `Structure` only orchestrates level lifecycle.
 - `StructureSurfaceObject` — internal shared base — owns tile-shape-backed behavior common to `StructureSurfaceArea` and `StructureFloor`; this is not a public consumer seam.
 - `StructureSurfaceArea` — surface-area owner — owns anchors, surface cells, clipping, reachability, and surface translation.
 - `StructureFloor` — floor owner — owns floor-cell truth constrained to one `StructureSurfaceArea`.
@@ -19,6 +20,7 @@ This file covers `src/features/world/dungeonmap/structure/model/surface/`.
 
 - Put surface-local state, mutation, and persistence shape here.
 - Keep callers on `Structure.surfaceAtLevel(levelZ)` and then continue on `.surface()` or `.floor()`.
+- Keep surface/floor cell edit orchestration on `StructureSurface` instead of rebuilding raw set mutation in `Structure`.
 - Put anchor and surface-cell behavior on `StructureSurfaceArea`.
 - Put floor-cell behavior on `StructureFloor`.
 - Keep shared tile-shape-backed behavior on the internal `StructureSurfaceObject` instead of duplicating it across both child owners.

@@ -38,23 +38,8 @@ public final class StructureFloor extends StructureSurfaceObject {
         return new StructureFloor(resolvedSurfaceArea.tileShape().intersection(cells));
     }
 
-    static StructureFloor fromPersistenceSnapshot(
-            PersistenceSnapshot snapshot,
-            StructureSurfaceArea surfaceArea
-    ) {
-        PersistenceSnapshot resolvedSnapshot = snapshot == null ? emptySnapshot() : snapshot;
-        return fromCells(resolvedSnapshot.cells(), surfaceArea);
-    }
-
     private StructureFloor(GridArea tileShape) {
         super(tileShape);
-    }
-
-    StructureFloor withCells(
-            Collection<GridPoint> cells,
-            StructureSurfaceArea surfaceArea
-    ) {
-        return fromCells(cells, surfaceArea);
     }
 
     StructureFloor translatedByCells(GridPoint delta) {

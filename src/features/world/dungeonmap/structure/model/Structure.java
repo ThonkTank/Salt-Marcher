@@ -1,13 +1,9 @@
 package features.world.dungeonmap.structure.model;
 
 import features.world.dungeonmap.geometry.GridPoint;
-import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridSegment;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.structure.model.boundary.StructureBoundary;
-import features.world.dungeonmap.structure.model.boundary.door.Door;
-import features.world.dungeonmap.structure.model.boundary.door.Door.DoorState;
-import features.world.dungeonmap.structure.model.boundary.wall.Wall;
 import features.world.dungeonmap.structure.model.room.StructureRoomTopology;
 import features.world.dungeonmap.structure.model.surface.StructureSurface;
 
@@ -189,32 +185,20 @@ public final class Structure {
             return this;
         }
         LevelStructure currentLevel = levelsByZ.get(edit.levelZ());
-        LinkedHashSet<GridPoint> nextSurfaceCells = new LinkedHashSet<>(currentLevel == null
-                ? Set.<GridPoint>of()
-                : currentLevel.surface().surface().cellCoords());
-        boolean changed = applyCellEdit(nextSurfaceCells, edit.cells(), edit.mode());
-        if (!changed) {
+        StructureSurface currentSurface = currentLevel == null ? StructureSurface.empty() : currentLevel.surface();
+        StructureSurface nextSurface = currentSurface.editedSurfaceCells(
+                edit.cells(),
+                edit.mode(),
+                edit.floorSyncPolicy(),
+                edit.preferredAnchorCell());
+        if (Objects.equals(nextSurface, currentSurface)) {
             return this;
         }
-        if (nextSurfaceCells.isEmpty()) {
+        if (nextSurface.isEmpty()) {
             return withUpdatedLevel(edit.levelZ(), null);
         }
-        LinkedHashSet<GridPoint> nextFloorCells = new LinkedHashSet<>(currentLevel == null
-                ? Set.<GridPoint>of()
-                : currentLevel.surface().floor().cellCoords());
-        if (edit.floorSyncPolicy() == StructureMutation.FloorSyncPolicy.MATCH_SURFACE_EDIT) {
-            applyCellEdit(nextFloorCells, edit.cells(), edit.mode());
-        }
-        nextFloorCells.retainAll(nextSurfaceCells);
-        GridPoint anchorCell = preferredAnchor(currentLevel, edit.preferredAnchorCell(), nextSurfaceCells);
-        StructureSurface nextSurface = StructureSurface.fromCells(anchorCell, nextSurfaceCells, nextFloorCells);
         LevelStructure nextLevel = currentLevel == null
-                ? LevelStructure.fromSpecification(StructureSpecification.LevelSpecification.of(
-                anchorCell,
-                nextSurfaceCells,
-                nextFloorCells,
-                List.of(),
-                List.of()))
+                ? LevelStructure.fromSurface(nextSurface)
                 : currentLevel.withSurface(nextSurface);
         return withUpdatedLevel(edit.levelZ(), nextLevel);
     }
@@ -227,16 +211,10 @@ public final class Structure {
         if (currentLevel == null || currentLevel.surface().isEmpty()) {
             return this;
         }
-        LinkedHashSet<GridPoint> nextFloorCells = new LinkedHashSet<>(currentLevel.surface().floor().cellCoords());
-        boolean changed = applyCellEdit(nextFloorCells, edit.cells(), edit.mode());
-        if (!changed) {
+        StructureSurface nextSurface = currentLevel.surface().editedFloorCells(edit.cells(), edit.mode());
+        if (Objects.equals(nextSurface, currentLevel.surface())) {
             return this;
         }
-        nextFloorCells.retainAll(currentLevel.surface().surface().cellCoords());
-        StructureSurface nextSurface = StructureSurface.fromCells(
-                currentLevel.surface().surface().anchorCell(),
-                currentLevel.surface().surface().cellCoords(),
-                nextFloorCells);
         return withUpdatedLevel(edit.levelZ(), currentLevel.withSurface(nextSurface));
     }
 
@@ -267,13 +245,13 @@ public final class Structure {
             return this;
         }
         StructureBoundary currentBoundary = currentLevel.boundary();
-        List<Door> nextDoors = edit.mode() == StructureMutation.BoundaryEditMode.CREATE
-                ? createdDoors(currentBoundary, edit.segments2x())
-                : deletedDoors(currentBoundary, edit.segments2x());
-        if (Objects.equals(nextDoors, currentBoundary.doors())) {
+        StructureBoundary nextBoundary = edit.mode() == StructureMutation.BoundaryEditMode.CREATE
+                ? currentBoundary.withCreatedDoorSegments(edit.segments2x())
+                : currentBoundary.withDeletedDoorSegments(edit.segments2x());
+        if (Objects.equals(nextBoundary, currentBoundary)) {
             return this;
         }
-        return withUpdatedLevel(edit.levelZ(), currentLevel.withBoundary(currentBoundary.withDoors(nextDoors)));
+        return withUpdatedLevel(edit.levelZ(), currentLevel.withBoundary(nextBoundary));
     }
 
     private Structure mutateDoorMove(StructureMutation.DoorMove edit) {
@@ -284,97 +262,14 @@ public final class Structure {
         if (currentLevel == null) {
             return this;
         }
-        StructureBoundary boundary = currentLevel.boundary();
-        if (boundary.doorAtBoundarySegment(edit.sourceBoundarySegment2x()) == null) {
-            throw new IllegalArgumentException("Door move source must already contain a door");
-        }
-        if (boundary.doorAtBoundarySegment(edit.targetBoundarySegment2x()) != null) {
-            throw new IllegalArgumentException("Door move target is already occupied");
-        }
-        Wall targetWall = boundary.wallAtBoundarySegment(edit.targetBoundarySegment2x());
-        if (!boundary.boundaryEdges().contains(edit.targetBoundarySegment2x())
-                || targetWall == null
-                || !targetWall.supportsDoorAttachments()) {
-            throw new IllegalArgumentException("Door move target must be a valid boundary wall");
-        }
-        Structure withoutSource = mutateDoorSegments(new StructureMutation.DoorSegmentsEdit(
-                edit.levelZ(),
-                List.of(edit.sourceBoundarySegment2x()),
-                StructureMutation.BoundaryEditMode.DELETE));
-        if (withoutSource == this) {
+        StructureBoundary currentBoundary = currentLevel.boundary();
+        StructureBoundary nextBoundary = currentBoundary.withMovedDoor(
+                edit.sourceBoundarySegment2x(),
+                edit.targetBoundarySegment2x());
+        if (Objects.equals(nextBoundary, currentBoundary)) {
             return this;
         }
-        return withoutSource.mutated(new StructureMutation.DoorSegmentsEdit(
-                edit.levelZ(),
-                List.of(edit.targetBoundarySegment2x()),
-                StructureMutation.BoundaryEditMode.CREATE));
-    }
-
-    private static List<Door> createdDoors(StructureBoundary boundary, Collection<GridSegment> requestedSegments) {
-        if (boundary == null || requestedSegments == null || requestedSegments.isEmpty()) {
-            return boundary == null ? List.of() : boundary.doors();
-        }
-        List<GridSegment> editableSegments = requestedSegments.stream()
-                .filter(Objects::nonNull)
-                .filter(boundary.boundaryEdges()::contains)
-                .filter(segment2x -> boundary.doorAtBoundarySegment(segment2x) == null)
-                .filter(segment2x -> {
-                    Wall wall = boundary.wallAtBoundarySegment(segment2x);
-                    return wall != null && wall.supportsDoorAttachments();
-                })
-                .sorted(GridSegment.ORDER)
-                .toList();
-        if (editableSegments.isEmpty()) {
-            return boundary.doors();
-        }
-        LinkedHashSet<Door> nextDoors = new LinkedHashSet<>(boundary.doors());
-        nextDoors.addAll(Door.fromBoundaryComponents(editableSegments, DoorState.OPEN));
-        return nextDoors.stream()
-                .filter(Objects::nonNull)
-                .sorted(java.util.Comparator.comparing(Door::anchorSegment2x, GridSegment.ORDER))
-                .toList();
-    }
-
-    private static List<Door> deletedDoors(StructureBoundary boundary, Collection<GridSegment> requestedSegments) {
-        if (boundary == null || requestedSegments == null || requestedSegments.isEmpty()) {
-            return boundary == null ? List.of() : boundary.doors();
-        }
-        Set<GridSegment> removableSegments = requestedSegments.stream()
-                .filter(Objects::nonNull)
-                .filter(segment2x -> boundary.doorAtBoundarySegment(segment2x) != null)
-                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
-        if (removableSegments.isEmpty()) {
-            return boundary.doors();
-        }
-        List<Door> nextDoors = boundary.doors().stream()
-                .filter(Objects::nonNull)
-                .map(door -> door.withoutBoundarySegments(removableSegments))
-                .filter(Objects::nonNull)
-                .sorted(java.util.Comparator.comparing(Door::anchorSegment2x, GridSegment.ORDER))
-                .toList();
-        return Objects.equals(nextDoors, boundary.doors()) ? boundary.doors() : nextDoors;
-    }
-
-    private static boolean applyCellEdit(Set<GridPoint> target, Collection<GridPoint> cells, StructureMutation.CellEditMode mode) {
-        if (target == null || cells == null || cells.isEmpty()) {
-            return false;
-        }
-        return mode == StructureMutation.CellEditMode.ADD
-                ? target.addAll(cells)
-                : target.removeAll(cells);
-    }
-
-    private GridPoint preferredAnchor(LevelStructure currentLevel, GridPoint preferredAnchorCell, Set<GridPoint> nextSurfaceCells) {
-        if (preferredAnchorCell != null && nextSurfaceCells.contains(preferredAnchorCell)) {
-            return preferredAnchorCell;
-        }
-        if (currentLevel != null) {
-            GridPoint currentAnchor = currentLevel.surface().surface().anchorCell();
-            if (currentAnchor != null && nextSurfaceCells.contains(currentAnchor)) {
-                return currentAnchor;
-            }
-        }
-        return GridPoint.bestCenter(nextSurfaceCells);
+        return withUpdatedLevel(edit.levelZ(), currentLevel.withBoundary(nextBoundary));
     }
 
     private Structure withUpdatedLevel(int levelZ, LevelStructure nextLevel) {
@@ -467,6 +362,16 @@ public final class Structure {
             return new LevelStructure(
                     surface,
                     StructureBoundary.fromSurfaceAndFeatures(surface.surface().cellCoords(), specification.doors(), specification.walls()));
+        }
+
+        private static LevelStructure fromSurface(StructureSurface surface) {
+            StructureSurface resolvedSurface = surface == null ? StructureSurface.empty() : surface;
+            if (resolvedSurface.isEmpty()) {
+                return new LevelStructure(StructureSurface.empty(), StructureBoundary.empty());
+            }
+            return new LevelStructure(
+                    resolvedSurface,
+                    StructureBoundary.fromSurfaceAndFeatures(resolvedSurface.surface().cellCoords(), List.of(), List.of()));
         }
 
         private LevelStructure translatedByCells(GridPoint delta) {

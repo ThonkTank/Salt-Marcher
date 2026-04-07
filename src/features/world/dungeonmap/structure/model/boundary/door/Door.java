@@ -22,32 +22,32 @@ public final class Door extends BoundaryObject {
 
     private final DoorState doorState;
 
-    public Door(Collection<GridSegment> segments) {
+    private Door(Collection<GridSegment> segments) {
         this(null, segments, null, DoorState.CLOSED);
     }
 
-    public Door(Collection<GridSegment> segments, DoorState doorState) {
+    private Door(Collection<GridSegment> segments, DoorState doorState) {
         this(null, segments, null, doorState);
     }
 
-    public Door(Collection<GridSegment> segments, GridSegment anchorSegment2x, DoorState doorState) {
+    private Door(Collection<GridSegment> segments, GridSegment anchorSegment2x, DoorState doorState) {
         this(null, segments, anchorSegment2x, doorState);
     }
 
-    public Door(Long doorId, Collection<GridSegment> segments, GridSegment anchorSegment2x, DoorState doorState) {
+    private Door(Long doorId, Collection<GridSegment> segments, GridSegment anchorSegment2x, DoorState doorState) {
         super(doorId, segments, anchorSegment2x);
         this.doorState = doorState == null ? DoorState.CLOSED : doorState;
     }
 
-    public Door(GridBoundary shape, DoorState doorState) {
+    private Door(GridBoundary shape, DoorState doorState) {
         this(null, shape, null, doorState);
     }
 
-    public Door(GridBoundary shape, GridSegment anchorSegment2x, DoorState doorState) {
+    private Door(GridBoundary shape, GridSegment anchorSegment2x, DoorState doorState) {
         this(null, shape, anchorSegment2x, doorState);
     }
 
-    public Door(Long doorId, GridBoundary shape, GridSegment anchorSegment2x, DoorState doorState) {
+    private Door(Long doorId, GridBoundary shape, GridSegment anchorSegment2x, DoorState doorState) {
         super(doorId, shape, anchorSegment2x);
         this.doorState = doorState == null ? DoorState.CLOSED : doorState;
     }
