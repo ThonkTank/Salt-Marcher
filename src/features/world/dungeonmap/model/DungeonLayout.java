@@ -512,7 +512,7 @@ public final class DungeonLayout {
         }
         return DoorExitCatalog.describe(
                 this,
-                corridor.structure().cellCoordsAtLevel(corridor.levelZ()),
+                corridor.structure().surfaceAtLevel(corridor.levelZ()).cellCoords(),
                 corridor.levelZ(),
                 connectionsForCorridor(corridor.corridorId()));
     }
@@ -770,7 +770,7 @@ public final class DungeonLayout {
             return null;
         }
         List<CellCoord> corridorCells = ref.boundarySegment2x().touchingCells().stream()
-                .filter(cell -> corridor.structure().cellCoordsAtLevel(levelZ).contains(cell))
+                .filter(cell -> corridor.structure().surfaceAtLevel(levelZ).contains(cell))
                 .sorted(CellCoord.ORDER)
                 .toList();
         if (corridorCells.size() != 1) {
@@ -1238,7 +1238,7 @@ public final class DungeonLayout {
 
     private static boolean corridorReachesLevel(Corridor corridor, int levelZ) {
         return corridor != null
-                && !corridor.structure().cellCoordsAtLevel(levelZ).isEmpty();
+                && !corridor.structure().surfaceAtLevel(levelZ).cellCoords().isEmpty();
     }
 
     private static List<RoomCluster> normalizedClusters(List<RoomCluster> clusters) {
@@ -1682,7 +1682,7 @@ public final class DungeonLayout {
                 continue;
             }
             mutable.computeIfAbsent(corridor.levelZ(), ignored -> new LinkedHashSet<>())
-                    .addAll(corridor.structure().cellCoordsAtLevel(corridor.levelZ()));
+                    .addAll(corridor.structure().surfaceAtLevel(corridor.levelZ()).cellCoords());
         }
         for (DungeonStair stair : stairs) {
             if (stair != null) {
@@ -1741,7 +1741,7 @@ public final class DungeonLayout {
             if (corridor == null || corridor.corridorId() == null) {
                 continue;
             }
-            for (CellCoord cell : corridor.structure().cellCoordsAtLevel(corridor.levelZ())) {
+            for (CellCoord cell : corridor.structure().surfaceAtLevel(corridor.levelZ()).cellCoords()) {
                 mutable.computeIfAbsent(corridor.levelZ(), ignored -> new LinkedHashMap<>())
                         .computeIfAbsent(cell, ignored -> new ArrayList<>())
                         .add(corridor.corridorId());

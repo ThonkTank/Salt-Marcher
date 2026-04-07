@@ -4,7 +4,7 @@ This file covers `src/features/world/dungeonmap/model/`. Use it together with th
 
 ## Purpose
 
-This package is the current home of layout, geometry, interaction refs, and aggregate-specific dungeon semantics. Shared physical structure truth now lives in the sibling `structure/` slice; this file only documents model-local additions.
+This file only documents model-local additions beneath `dungeonmap/`. Shared dungeonmap ownership already lives in the parent file.
 
 ## Canonical Types and APIs
 
@@ -18,6 +18,8 @@ This package is the current home of layout, geometry, interaction refs, and aggr
 - Put new dungeon semantics on the lowest stable model owner that actually enforces the invariant.
 - Put new shared geometry behavior in `geometry/` only when it is owner-neutral and genuinely canonical.
 - Put room-projection and shared physical topology logic on the sibling `structure` slice, not on repositories, views, or workflow helpers.
+- Let `RoomCluster` and `Corridor` consume `StructureSurface` or `StructureBoundary` through `Structure`; do not recreate level-local surface or boundary helper owners inside `model/structures`.
+- Keep immutable geometry and similar value types transparent; put invariant-protecting mutation on the actual owner type.
 
 ## Forbidden Drift
 

@@ -114,7 +114,7 @@ public final class DungeonSelectionHighlightResolver {
         if (corridor == null) {
             return List.of();
         }
-        Set<CellCoord> cells = corridor.structure().cellCoordsAtLevel(levelZ);
+        Set<CellCoord> cells = corridor.structure().surfaceAtLevel(levelZ).cellCoords();
         return cells.isEmpty() ? List.of() : List.of(new DungeonHitSurface.CellSurface(cells, levelZ));
     }
 

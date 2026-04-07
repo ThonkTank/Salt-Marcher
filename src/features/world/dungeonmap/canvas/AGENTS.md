@@ -4,7 +4,7 @@ This file covers `src/features/world/dungeonmap/canvas/`. Use it together with t
 
 ## Purpose
 
-This package is the current home of the `render/input` owner slice. Shared owner placement already lives in the parent file; this file only records render-local seams.
+This file only records render-local seams beneath `dungeonmap/`. Shared owner placement already lives in the parent file.
 
 ## Canonical Types and APIs
 

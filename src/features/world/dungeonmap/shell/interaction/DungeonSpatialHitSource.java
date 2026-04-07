@@ -57,7 +57,7 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
             descriptors.add(new DungeonHitDescriptor(
                     new DungeonSelectionRef.CorridorRef(corridor.corridorId()),
                     List.of(new DungeonHitSurface.CellSurface(
-                            corridor.structure().cellCoordsAtLevel(probe.levelZ()),
+                            corridor.structure().surfaceAtLevel(probe.levelZ()).cellCoords(),
                             probe.levelZ()))));
         }
         return List.copyOf(descriptors);

@@ -4,7 +4,7 @@ This file covers `src/features/world/dungeonmap/shell/`. Use it together with th
 
 ## Purpose
 
-This package is the current UI home for dungeon-facing surfaces. Shared owner placement already lives in the parent file; this file only records shell-local seams.
+This file only records shell-local seams beneath `dungeonmap/`. Shared owner placement already lives in the parent file.
 
 ## Canonical Types and APIs
 

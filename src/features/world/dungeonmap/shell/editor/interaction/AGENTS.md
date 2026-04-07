@@ -4,7 +4,7 @@ This file covers `src/features/world/dungeonmap/shell/editor/interaction/`. Use 
 
 ## Purpose
 
-This package is the current home of the `editor interaction` owner slice. Shared owner placement already lives in the parent files; this file only records interaction-local seams.
+This file only records editor-interaction-local seams beneath `dungeonmap/`. Shared owner placement already lives in the parent files.
 
 ## Canonical Types and APIs
 

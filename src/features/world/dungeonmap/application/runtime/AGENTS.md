@@ -4,7 +4,7 @@ This file covers `src/features/world/dungeonmap/application/runtime/`. Use it to
 
 ## Purpose
 
-This package is the current home of the `runtime` owner slice. Shared owner placement already lives in the parent file; this file only records runtime-local seams.
+This file only records runtime-local seams beneath `dungeonmap/`. Shared owner placement already lives in the parent file.
 
 ## Canonical Types and APIs
 

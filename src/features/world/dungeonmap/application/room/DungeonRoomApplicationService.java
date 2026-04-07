@@ -275,7 +275,7 @@ public final class DungeonRoomApplicationService {
                 continue;
             }
             Set<CellCoord> requestedCells = requestedByClusterId.getOrDefault(clusterId, Set.of());
-            Set<CellCoord> currentFloorCells = new LinkedHashSet<>(cluster.structure().floorCellCoordsAtLevel(levelZ));
+            Set<CellCoord> currentFloorCells = new LinkedHashSet<>(cluster.structure().surfaceAtLevel(levelZ).floorCells());
             Set<CellCoord> nextFloorCells = new LinkedHashSet<>(currentFloorCells);
             boolean changed;
             if (deleteFloor) {
@@ -291,7 +291,7 @@ public final class DungeonRoomApplicationService {
                     cluster.structureObjectId(),
                     cluster.mapId(),
                     cluster.center(),
-                    cluster.structure().withFloorCellsAtLevel(levelZ, nextFloorCells),
+                    cluster.structure().withSurfaceAtLevel(levelZ, cluster.structure().surfaceAtLevel(levelZ).withFloorCells(nextFloorCells)),
                     cluster.rooms());
             persistClusterRewrite(conn, mapId, workingLayout, List.of(cluster), List.of(updatedCluster));
             workingLayout = requireLayout(conn, mapId);

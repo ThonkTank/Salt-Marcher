@@ -1,20 +1,17 @@
 # AGENTS.md
 
-This file defines hex map and overworld-specific operating constraints for agents working under `src/features/world/hexmap/`. Apply the root `AGENTS.md` first, then this file for feature-local architecture and behavior.
+This file covers `src/features/world/hexmap/`. Apply the root `AGENTS.md` and `src/features/world/AGENTS.md` first. This file documents only hexmap-local rules.
 
-## Scope
+## Purpose
 
-This file covers the overworld hex map, map editor, shared hex rendering, and the calendar behavior that is specific to this feature area. Do not promote these details into the root `AGENTS.md`; they are local feature rules.
+`hexmap` owns the overworld map, the overworld editor, the shared hex renderer used by both, and the calendar behavior tied to this feature area.
 
-## Public Boundary
+## Canonical Types and APIs
 
-| Public API | Internal | Allowed consumers |
-| --- | --- | --- |
-| `features.world.hexmap.api` | `model`, `repository`, `service`, `ui` | `features.world.api` |
-
-## Feature Architecture
-
-The feature shares one hex renderer across read-only runtime and editing workflows. Preserve that shared rendering model instead of forking parallel canvases for small behavior differences.
+- `features.world.hexmap.api` — public world-owned boundary for hexmap reads, mutations, and shell wiring.
+- `HexGridPane` — shared renderer for read-only and editing workflows.
+- `HexMapService` — async map loading and overworld persistence workflow seam.
+- `CalendarService` — Forgotten Realms calendar parsing and day conversion seam.
 
 ### Shared Renderer
 
@@ -28,7 +25,7 @@ The feature shares one hex renderer across read-only runtime and editing workflo
 
 Do not duplicate these behaviors into separate renderer implementations unless the user explicitly asks for an architectural split.
 
-### Service Rules
+### Persistence and Workflow Rules
 
 - `HexMapService` owns async map loading
 - `updatePartyTileAsync` persists party tile movement with a 300ms debounce
@@ -56,3 +53,9 @@ Do not degrade this into per-tile writes during drag unless the user explicitly 
 - `CalendarService.ParsedCalendar.from(config)` is parsed once and then reused for repeated `fromEpochDay()` calls
 
 Preserve the cached parsed-calendar flow; repeated reparsing in hot paths is a regression, not a harmless refactor.
+
+## Forbidden Drift
+
+- Do not fork separate runtime and editor renderers for the same hex surface behavior.
+- Do not move debounced party-position persistence or transactional map resizing out of `HexMapService`.
+- Do not turn shared renderer or calendar rules into generic root architecture rules; they stay hexmap-local.

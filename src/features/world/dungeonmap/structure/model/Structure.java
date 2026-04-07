@@ -2,7 +2,6 @@ package features.world.dungeonmap.structure.model;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.structures.connection.DungeonConnection;
@@ -11,7 +10,6 @@ import features.world.dungeonmap.model.structures.room.Room;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -237,6 +235,11 @@ public final class Structure {
         return level == null ? StructureBoundary.empty() : level.boundary();
     }
 
+    public StructureSurface surfaceAtLevel(int levelZ) {
+        LevelStructure level = levelStructure(levelZ);
+        return level == null ? StructureSurface.empty() : level.surface();
+    }
+
     public Structure withBoundaryAtLevel(int levelZ, StructureBoundary boundary) {
         LevelStructure level = levelStructure(levelZ);
         if (level == null) {
@@ -247,24 +250,14 @@ public final class Structure {
         return reattachedWithSameRooms(new Structure(updated, null));
     }
 
-    public Structure withFloorCellsAtLevel(int levelZ, Collection<CellCoord> floorCells) {
+    public Structure withSurfaceAtLevel(int levelZ, StructureSurface surface) {
         LevelStructure level = levelStructure(levelZ);
         if (level == null) {
             return this;
         }
         Map<Integer, LevelStructure> updated = new LinkedHashMap<>(levelsByZ);
-        updated.put(levelZ, level.withFloorCells(floorCells));
+        updated.put(levelZ, level.withSurface(surface));
         return reattachedWithSameRooms(new Structure(updated, null));
-    }
-
-    public TileShape surfaceShapeAtLevel(int levelZ) {
-        LevelStructure level = levelStructure(levelZ);
-        return level == null ? TileShape.empty() : level.surfaceShape();
-    }
-
-    public Floor floorAtLevel(int levelZ) {
-        LevelStructure level = levelStructure(levelZ);
-        return level == null ? null : new Floor(level.floorShape());
     }
 
     public Set<Integer> levels() {
@@ -272,7 +265,7 @@ public final class Structure {
     }
 
     public List<Integer> relevantLevels(CellCoord focusCell, int focusLevelZ) {
-        if (focusCell != null && contains(focusCell, focusLevelZ)) {
+        if (focusCell != null && surfaceAtLevel(focusLevelZ).contains(focusCell)) {
             return List.of(focusLevelZ);
         }
         return levels().stream()
@@ -287,96 +280,33 @@ public final class Structure {
                 .orElse(0);
     }
 
-    public CellCoord centerCellCoordAtLevel(int levelZ) {
-        Floor floor = floorAtLevel(levelZ);
-        if (floor != null && !floor.cellCoords().isEmpty()) {
-            return floor.centerCellCoord();
-        }
-        return surfaceCenterCellCoordAtLevel(levelZ);
-    }
-
     public CubePoint centerPointAtLevel(int levelZ) {
-        CellCoord centerCell = centerCellCoordAtLevel(levelZ);
+        CellCoord centerCell = surfaceAtLevel(levelZ).centerCellCoord();
         return centerCell == null ? null : CubePoint.at(centerCell, levelZ);
     }
 
     public Set<CellCoord> cellCoords() {
         LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
         for (Integer levelZ : levels()) {
-            result.addAll(cellCoordsAtLevel(levelZ));
+            result.addAll(surfaceAtLevel(levelZ).cellCoords());
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
-    public Set<CellCoord> cellCoordsAtLevel(int levelZ) {
-        return surfaceShapeAtLevel(levelZ).cellCoords();
-    }
-
-    public Set<CellCoord> floorCellCoordsAtLevel(int levelZ) {
-        Floor floor = floorAtLevel(levelZ);
-        return floor == null ? Set.of() : floor.cellCoords();
-    }
-
-    public Map<Integer, Set<CellCoord>> surfaceCellsByLevel() {
-        Map<Integer, Set<CellCoord>> result = new LinkedHashMap<>();
-        for (Integer levelZ : levels().stream().sorted().toList()) {
-            Set<CellCoord> surfaceCells = cellCoordsAtLevel(levelZ);
-            if (!surfaceCells.isEmpty()) {
-                result.put(levelZ, surfaceCells);
-            }
-        }
-        return result.isEmpty() ? Map.of() : Map.copyOf(result);
-    }
-
-    public Map<Integer, Set<CellCoord>> floorCellsByLevel() {
-        Map<Integer, Set<CellCoord>> result = new LinkedHashMap<>();
-        for (Integer levelZ : levels().stream().sorted().toList()) {
-            result.put(levelZ, floorCellCoordsAtLevel(levelZ));
-        }
-        return result.isEmpty() ? Map.of() : Map.copyOf(result);
     }
 
     public Set<CubePoint> cubePoints() {
         LinkedHashSet<CubePoint> result = new LinkedHashSet<>();
         for (Map.Entry<Integer, LevelStructure> entry : levelsByZ.entrySet()) {
-            result.addAll(entry.getValue().surfaceShape().cubePoints(entry.getKey()));
+            result.addAll(entry.getValue().surface().cubePoints(entry.getKey()));
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
     public boolean contains(CellCoord cell) {
-        return cell != null && levels().stream().anyMatch(levelZ -> contains(cell, levelZ));
-    }
-
-    public boolean contains(CellCoord cell, int levelZ) {
-        return cell != null && surfaceShapeAtLevel(levelZ).contains(cell);
+        return cell != null && levels().stream().anyMatch(levelZ -> surfaceAtLevel(levelZ).contains(cell));
     }
 
     public boolean contains(CubePoint point) {
-        return point != null && contains(point.projectedCell(), point.z());
-    }
-
-    public boolean hasFloorCell(CellCoord cell, int levelZ) {
-        return cell != null && floorCellCoordsAtLevel(levelZ).contains(cell);
-    }
-
-    public Set<CellCoord> reachableSurfaceFrom(CellCoord anchorCell, int levelZ) {
-        if (anchorCell == null || !contains(anchorCell, levelZ)) {
-            return Set.of();
-        }
-        return surfaceShapeAtLevel(levelZ)
-                .reachableFrom(anchorCell, boundaryAtLevel(levelZ).boundaryEdges())
-                .cellCoords();
-    }
-
-    public CellCoord anchorCellCoordAtLevel(int levelZ) {
-        LevelStructure level = levelStructure(levelZ);
-        return level == null ? null : level.anchorCell();
-    }
-
-    public CellCoord surfaceCenterCellCoordAtLevel(int levelZ) {
-        Set<CellCoord> surfaceCells = cellCoordsAtLevel(levelZ);
-        return surfaceCells.isEmpty() ? null : CellCoord.bestCenter(surfaceCells);
+        return point != null && surfaceAtLevel(point.z()).contains(point.projectedCell());
     }
 
     public Structure clippedToSurface(
@@ -392,18 +322,14 @@ public final class Structure {
                 .sorted(Map.Entry.comparingByKey())
                 .forEach(entry -> {
                     int levelZ = entry.getKey();
-                    Set<CellCoord> clippedSurfaceCells = intersectCells(cellCoordsAtLevel(levelZ), entry.getValue());
-                    if (clippedSurfaceCells.isEmpty()) {
+                    StructureSurface clippedSurface = surfaceAtLevel(levelZ).clippedTo(
+                            entry.getValue(),
+                            preferredAnchorsByLevel == null ? null : preferredAnchorsByLevel.get(levelZ));
+                    if (clippedSurface.isEmpty()) {
                         return;
                     }
-                    Set<CellCoord> floorCells = intersectCells(floorCellCoordsAtLevel(levelZ), clippedSurfaceCells);
-                    StructureBoundary clippedBoundary = boundaryAtLevel(levelZ).clippedToSurface(clippedSurfaceCells);
-                    levels.put(levelZ, LevelStructure.fromSurfaceAndFeatures(
-                            preferredAnchorsByLevel == null ? null : preferredAnchorsByLevel.get(levelZ),
-                            clippedSurfaceCells,
-                            clippedBoundary.doors(),
-                            clippedBoundary.authoredWalls(),
-                            floorCells));
+                    StructureBoundary clippedBoundary = boundaryAtLevel(levelZ).clippedToSurface(clippedSurface.cellCoords());
+                    levels.put(levelZ, LevelStructure.fromSurfaceAndBoundary(clippedSurface, clippedBoundary));
                 });
         Structure clipped = levels.isEmpty() ? empty() : new Structure(levels, null);
         return reattachedWithSameRooms(clipped);
@@ -419,7 +345,7 @@ public final class Structure {
         for (Set<CellCoord> component : components) {
             Map<Integer, Set<CellCoord>> componentByLevel = new LinkedHashMap<>();
             for (Integer levelZ : levels().stream().sorted().toList()) {
-                Set<CellCoord> levelCells = intersectCells(cellCoordsAtLevel(levelZ), component);
+                Set<CellCoord> levelCells = intersectCells(surfaceAtLevel(levelZ).cellCoords(), component);
                 if (!levelCells.isEmpty()) {
                     componentByLevel.put(levelZ, levelCells);
                 }
@@ -458,39 +384,6 @@ public final class Structure {
         return result.isEmpty() ? Map.of() : Map.copyOf(result);
     }
 
-
-    private static List<GridPoint2x> assemblePath2x(
-            List<GridPoint2x> startAnchorPath,
-            List<CellCoord> cellRoute,
-            List<GridPoint2x> endAnchorPath
-    ) {
-        ArrayList<GridPoint2x> result = new ArrayList<>();
-        appendUnique(result, startAnchorPath);
-        appendUnique(result, cellRoute == null ? List.of() : cellRoute.stream().map(GridPoint2x::cell).toList());
-        ArrayList<GridPoint2x> reversedEnd = new ArrayList<>(endAnchorPath == null ? List.of() : endAnchorPath);
-        Collections.reverse(reversedEnd);
-        appendUnique(result, reversedEnd);
-        return result.isEmpty() ? List.of() : List.copyOf(result);
-    }
-
-    private static void appendUnique(List<GridPoint2x> target, List<GridPoint2x> points) {
-        if (target == null || points == null) {
-            return;
-        }
-        for (GridPoint2x point : points) {
-            if (point == null) {
-                continue;
-            }
-            if (!target.isEmpty() && target.getLast().equals(point)) {
-                continue;
-            }
-            target.add(point);
-        }
-    }
-
-    private static List<Map<Integer, Set<CellCoord>>> emptyComponentList() {
-        return List.of();
-    }
 
     private static List<Set<CellCoord>> connectedProjectedComponents(Collection<CellCoord> cells) {
         Set<CellCoord> remaining = CellCoord.normalize(cells);
@@ -564,21 +457,15 @@ public final class Structure {
 
     public static final class LevelStructure {
 
-        private final CellCoord anchorCell;
-        private final TileShape surfaceShape;
-        private final TileShape floorShape;
+        private final StructureSurface surface;
         private final StructureBoundary boundary;
 
         private LevelStructure(
-                CellCoord anchorCell,
-                TileShape surfaceShape,
-                StructureBoundary boundary,
-                TileShape floorShape
+                StructureSurface surface,
+                StructureBoundary boundary
         ) {
-            this.surfaceShape = surfaceShape == null ? TileShape.empty() : surfaceShape;
-            this.floorShape = floorShape == null ? TileShape.empty() : floorShape;
+            this.surface = surface == null ? StructureSurface.empty() : surface;
             this.boundary = boundary == null ? StructureBoundary.empty() : boundary;
-            this.anchorCell = normalizeAnchor(anchorCell, this.surfaceShape);
         }
 
         public static LevelStructure fromSurfaceCells(
@@ -601,16 +488,13 @@ public final class Structure {
                 Collection<Wall> walls,
                 Collection<CellCoord> floorCells
         ) {
-            TileShape surfaceShape = TileShape.of(surfaceCells);
-            if (surfaceShape.isEmpty()) {
-                return new LevelStructure(anchorCell, surfaceShape, StructureBoundary.empty(), TileShape.empty());
+            StructureSurface surface = StructureSurface.fromCells(anchorCell, surfaceCells, floorCells);
+            if (surface.isEmpty()) {
+                return new LevelStructure(StructureSurface.empty(), StructureBoundary.empty());
             }
-            TileShape floorShape = surfaceShape.intersection(floorCells);
             return new LevelStructure(
-                    anchorCell,
-                    surfaceShape,
-                    StructureBoundary.fromSurfaceAndFeatures(surfaceShape.cellCoords(), doors, walls),
-                    floorShape);
+                    surface,
+                    StructureBoundary.fromSurfaceAndFeatures(surface.cellCoords(), doors, walls));
         }
 
         public static LevelStructure fromTopology(
@@ -646,28 +530,29 @@ public final class Structure {
                 Collection<Wall> walls,
                 Collection<CellCoord> floorCells
         ) {
-            TileShape surfaceShape = TileShape.of(surfaceCells);
-            if (surfaceShape.isEmpty()) {
-                return new LevelStructure(anchorCell, surfaceShape, StructureBoundary.empty(), TileShape.empty());
+            StructureSurface surface = StructureSurface.fromCells(anchorCell, surfaceCells, floorCells);
+            if (surface.isEmpty()) {
+                return new LevelStructure(StructureSurface.empty(), StructureBoundary.empty());
             }
-            TileShape floorShape = surfaceShape.intersection(floorCells);
             return new LevelStructure(
-                    anchorCell,
-                    surfaceShape,
-                    StructureBoundary.fromBoundaryEdges(surfaceShape.cellCoords(), boundaryEdges, doors, walls),
-                    floorShape);
+                    surface,
+                    StructureBoundary.fromBoundaryEdges(surface.cellCoords(), boundaryEdges, doors, walls));
         }
 
         public CellCoord anchorCell() {
-            return anchorCell;
+            return surface.anchorCell();
         }
 
         public TileShape surfaceShape() {
-            return surfaceShape;
+            return surface.surfaceShape();
         }
 
         public TileShape floorShape() {
-            return floorShape;
+            return surface.floorShape();
+        }
+
+        public StructureSurface surface() {
+            return surface;
         }
 
         public StructureBoundary boundary() {
@@ -675,40 +560,53 @@ public final class Structure {
         }
 
         public Set<CellCoord> floorCells() {
-            return floorShape.cellCoords();
+            return surface.floorCells();
         }
 
         public LevelStructure translatedByCells(CellCoord delta) {
-            CellCoord resolvedDelta = delta == null ? new CellCoord(0, 0) : delta;
-            if (resolvedDelta.x() == 0 && resolvedDelta.y() == 0) {
-                return this;
-            }
             return new LevelStructure(
-                    anchorCell.add(resolvedDelta),
-                    surfaceShape.translatedByCells(resolvedDelta),
-                    boundary.translatedByCells(resolvedDelta),
-                    floorShape.translatedByCells(resolvedDelta));
+                    surface.translatedByCells(delta),
+                    boundary.translatedByCells(delta));
         }
 
         public LevelStructure withFloorCells(Collection<CellCoord> floorCells) {
-            return fromSurfaceAndFeatures(anchorCell, surfaceShape.cellCoords(), boundary.doors(), boundary.authoredWalls(), floorCells);
+            return new LevelStructure(surface.withFloorCells(floorCells), boundary);
         }
 
         public LevelStructure withBoundary(StructureBoundary boundary) {
             StructureBoundary resolvedBoundary = boundary == null
                     ? StructureBoundary.empty()
                     : StructureBoundary.fromBoundaryEdges(
-                    surfaceShape.cellCoords(),
+                    surface.cellCoords(),
                     boundary.boundaryEdges(),
                     boundary.doors(),
                     boundary.authoredWalls());
-            return new LevelStructure(anchorCell, surfaceShape, resolvedBoundary, floorShape);
+            return new LevelStructure(surface, resolvedBoundary);
+        }
+
+        public LevelStructure withSurface(StructureSurface surface) {
+            StructureSurface resolvedSurface = surface == null ? StructureSurface.empty() : surface;
+            StructureBoundary resolvedBoundary = resolvedSurface.isEmpty()
+                    ? StructureBoundary.empty()
+                    : StructureBoundary.fromBoundaryEdges(
+                    resolvedSurface.cellCoords(),
+                    boundary.boundaryEdges(),
+                    boundary.doors(),
+                    boundary.authoredWalls());
+            return new LevelStructure(resolvedSurface, resolvedBoundary);
+        }
+
+        public static LevelStructure fromSurfaceAndBoundary(
+                StructureSurface surface,
+                StructureBoundary boundary
+        ) {
+            return new LevelStructure(surface, boundary);
         }
 
         public boolean isEmpty() {
-            return surfaceShape.isEmpty()
+            return surface.isEmpty()
                     && boundary.isEmpty()
-                    && floorShape.isEmpty();
+                    && surface.floorShape().isEmpty();
         }
 
         @Override
@@ -719,32 +617,22 @@ public final class Structure {
             if (!(other instanceof LevelStructure that)) {
                 return false;
             }
-            return Objects.equals(anchorCell, that.anchorCell)
-                    && Objects.equals(surfaceShape.cellCoords(), that.surfaceShape.cellCoords())
+            return Objects.equals(surface, that.surface)
                     && Objects.equals(boundary, that.boundary)
                     && Objects.equals(floorCells(), that.floorCells());
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(anchorCell, surfaceShape.cellCoords(), boundary, floorCells());
+            return Objects.hash(surface, boundary, floorCells());
         }
 
         @Override
         public String toString() {
-            return "LevelStructure[anchorCell=" + anchorCell
-                    + ", surfaceCells=" + surfaceShape.cellCoords()
+            return "LevelStructure[surface=" + surface
                     + ", boundary=" + boundary
                     + ", floorCells=" + floorCells()
                     + "]";
-        }
-
-        private static CellCoord normalizeAnchor(CellCoord anchorCell, TileShape surfaceShape) {
-            if (anchorCell != null) {
-                return anchorCell;
-            }
-            CellCoord centerCell = surfaceShape == null ? null : surfaceShape.centerCellCoord();
-            return centerCell == null ? new CellCoord(0, 0) : centerCell;
         }
     }
 }

@@ -240,7 +240,7 @@ public final class Corridor {
         }
         ArrayList<Door> nextDoors = new ArrayList<>();
         boolean changed = false;
-        for (Door door : structure.doorsAtLevel(levelZ)) {
+        for (Door door : structure.boundaryAtLevel(levelZ).doors()) {
             if (door == null || door.isEmpty()) {
                 continue;
             }
@@ -585,7 +585,7 @@ public final class Corridor {
     }
 
     private Corridor resolvedAgainst(DungeonLayout layout, List<CorridorNode> updatedNodes, List<CorridorSegment> updatedSegments) {
-        return resolvedAgainst(layout, updatedNodes, updatedSegments, structure.doorsAtLevel(levelZ));
+        return resolvedAgainst(layout, updatedNodes, updatedSegments, structure.boundaryAtLevel(levelZ).doors());
     }
 
     private Corridor resolvedAgainst(
@@ -703,7 +703,7 @@ public final class Corridor {
     }
 
     private List<Door> componentDoors(List<CorridorSegment> componentSegments) {
-        List<Door> doors = structure.doorsAtLevel(levelZ);
+        List<Door> doors = structure.boundaryAtLevel(levelZ).doors();
         if (componentSegments == null || componentSegments.isEmpty() || doors.isEmpty()) {
             return List.of();
         }

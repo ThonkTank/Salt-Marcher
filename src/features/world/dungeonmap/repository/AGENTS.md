@@ -4,7 +4,7 @@ This file covers `src/features/world/dungeonmap/repository/`. Use it together wi
 
 ## Purpose
 
-This package is the current storage home for dungeonmap persistence seams. Shared owner placement already lives in the parent file; this file only records repository-local rules.
+This file only records repository-local rules beneath `dungeonmap/`. Shared owner placement already lives in the parent file.
 
 ## Canonical Types and APIs
 
