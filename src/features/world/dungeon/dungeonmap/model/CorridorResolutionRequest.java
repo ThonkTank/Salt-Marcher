@@ -1,20 +1,16 @@
 package features.world.dungeon.dungeonmap.model;
 
-import features.world.dungeon.dungeonmap.corridor.model.CorridorDraft;
-import features.world.dungeon.dungeonmap.structure.model.boundary.door.Door;
+import features.world.dungeon.dungeonmap.corridor.model.CorridorInput;
 
-import java.util.List;
 import java.util.Objects;
 
 /**
- * Map-owned request for resolving a corridor from authored corridor state plus current corridor doors.
+ * Map-owned request for resolving a corridor from authored input.
  */
 public record CorridorResolutionRequest(
-        CorridorDraft draft,
-        List<Door> corridorDoors
+        CorridorInput input
 ) {
     public CorridorResolutionRequest {
-        draft = Objects.requireNonNull(draft, "draft");
-        corridorDoors = corridorDoors == null ? List.of() : List.copyOf(corridorDoors);
+        input = Objects.requireNonNull(input, "input");
     }
 }

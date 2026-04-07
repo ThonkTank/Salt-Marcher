@@ -1,6 +1,7 @@
 package features.world.dungeon.shell.editor.interaction;
 
 import features.world.dungeon.dungeonmap.corridor.application.DungeonCorridorApplicationService;
+import features.world.dungeon.dungeonmap.corridor.application.CorridorInputEditor;
 import features.world.dungeon.dungeonmap.cluster.application.DungeonClusterApplicationService;
 import features.world.dungeon.dungeonmap.cluster.model.ClusterMutation;
 import features.world.dungeon.dungeonmap.cluster.model.ClusterRewritePlan;
@@ -8,7 +9,6 @@ import features.world.dungeon.application.stair.DungeonStairApplicationService;
 import features.world.dungeon.application.stair.StairDraftResolver;
 import features.world.dungeon.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
-import features.world.dungeon.dungeonmap.model.CorridorResolutionContextRequest;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
@@ -17,8 +17,6 @@ import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeon.dungeonmap.cluster.model.Cluster;
 import features.world.dungeon.dungeonmap.corridor.model.Corridor;
-import features.world.dungeon.dungeonmap.corridor.model.CorridorMutation;
-import features.world.dungeon.dungeonmap.corridor.model.CorridorNode;
 import features.world.dungeon.shell.editor.RoomNarrationPane;
 import features.world.dungeon.state.DungeonEditorTool;
 import features.world.dungeon.dungeonmap.state.DungeonMapState;
@@ -128,11 +126,11 @@ public final class SelectionTool implements EditorTool {
         }
         if (hit instanceof DungeonSelectionRef.CorridorNodeRef corridorNodeHit
                 && corridorNodeHit.corridorId() != null
-                && corridorNodeHit.waypointId() != null) {
+                && corridorNodeHit.nodeId() != null) {
             state.selectRef(resolvedSelectionRef);
             corridorNodeDragSession = new CorridorNodeDragSession(
                     corridorNodeHit.corridorId(),
-                    corridorNodeHit.waypointId(),
+                    corridorNodeHit.nodeId(),
                     corridorNodeHit.point(),
                     corridorNodeHit.point());
             return true;
@@ -281,14 +279,14 @@ public final class SelectionTool implements EditorTool {
                             corridorApplicationService.moveNode(new DungeonCorridorApplicationService.MoveCorridorNodeRequest(
                                     mapId,
                                     current.corridorId(),
-                                    current.waypointId(),
+                                    current.nodeId(),
                                     current.currentPoint()));
                             return mapId;
                         },
                         updatedMapId -> updatedMapId,
                         ignored -> state.selectRef(corridorNodeRef(
                                 current.corridorId(),
-                                current.waypointId(),
+                                current.nodeId(),
                                 current.currentPoint())),
                         throwable -> UiErrorReporter.reportBackgroundFailure("SelectionTool.released()", throwable));
             }
@@ -437,8 +435,8 @@ public final class SelectionTool implements EditorTool {
                 || ref instanceof DungeonSelectionRef.TransitionRef;
     }
 
-    private static DungeonSelectionRef corridorNodeRef(long corridorId, Long waypointId, GridPoint point2x) {
-        return new DungeonSelectionRef.CorridorNodeRef(corridorId, waypointId, point2x);
+    private static DungeonSelectionRef corridorNodeRef(long corridorId, Long nodeId, GridPoint point2x) {
+        return new DungeonSelectionRef.CorridorNodeRef(corridorId, nodeId, point2x);
     }
 
     private void commitDoorMove(DoorDragSession session) {
@@ -497,11 +495,12 @@ public final class SelectionTool implements EditorTool {
         if (corridor == null) {
             return null;
         }
-        Corridor updated = corridor.mutated(
-                new CorridorMutation.NodeMove(
-                        corridorNodeDragSession.waypointId(),
+        Corridor updated = corridor.withInput(
+                CorridorInputEditor.moveNode(
+                        corridor.input(),
+                        corridorNodeDragSession.nodeId(),
                         corridorNodeDragSession.currentPoint()),
-                mapState.activeMap().corridorResolutionInput(CorridorResolutionContextRequest.forCorridor(corridor)));
+                mapState.activeMap().corridorResolutionInput(new features.world.dungeon.dungeonmap.model.CorridorResolutionContextRequest(corridor.levelZ())));
         return mapState.activeMap()
                 .withUpdatedCorridor(updated)
                 .projectedToLevel(mapState.activeProjectionLevel());
@@ -528,11 +527,19 @@ public final class SelectionTool implements EditorTool {
         if (corridor == null) {
             return null;
         }
-        Corridor updated = corridor.mutated(
-                new CorridorMutation.TileNodePromotionAndMove(
-                        corridorTileDragSession.tileCell(),
+        Long segmentId = corridor.segmentIdAtCell(corridorTileDragSession.tileCell());
+        var insertedInput = CorridorInputEditor.insertNodeOnSegment(corridor.input(), segmentId, corridorTileDragSession.tileCell());
+        Long nodeId = insertedInput.nodes().stream()
+                .filter(node -> node != null && !node.isDoorBound() && Objects.equals(node.fixedPoint(), corridorTileDragSession.tileCell()))
+                .map(features.world.dungeon.dungeonmap.corridor.model.CorridorInputNode::nodeId)
+                .findFirst()
+                .orElse(null);
+        Corridor updated = corridor.withInput(
+                CorridorInputEditor.moveNode(
+                        insertedInput,
+                        nodeId,
                         corridorTileDragSession.currentPoint()),
-                mapState.activeMap().corridorResolutionInput(CorridorResolutionContextRequest.forCorridor(corridor)));
+                mapState.activeMap().corridorResolutionInput(new features.world.dungeon.dungeonmap.model.CorridorResolutionContextRequest(corridor.levelZ())));
         return mapState.activeMap()
                 .withUpdatedCorridor(updated)
                 .projectedToLevel(mapState.activeProjectionLevel());
@@ -574,11 +581,12 @@ public final class SelectionTool implements EditorTool {
             return null;
         }
         try {
-            Corridor updated = corridor.mutated(
-                    new CorridorMutation.DoorMove(
-                            session.sourceBoundarySegment2x(),
-                            new DoorRef(targetDoorRef.doorId())),
-                    session.baseMap().corridorResolutionInput(CorridorResolutionContextRequest.forCorridor(corridor)));
+            Long nodeId = corridor.doorNodeIdAtBoundary(
+                    session.sourceBoundarySegment2x(),
+                    session.baseMap().corridorResolutionInput(new features.world.dungeon.dungeonmap.model.CorridorResolutionContextRequest(corridor.levelZ())));
+            Corridor updated = corridor.withInput(
+                    CorridorInputEditor.moveDoor(corridor.input(), nodeId, new DoorRef(targetDoorRef.doorId())),
+                    session.baseMap().corridorResolutionInput(new features.world.dungeon.dungeonmap.model.CorridorResolutionContextRequest(corridor.levelZ())));
             return session.baseMap()
                     .withUpdatedCorridor(updated)
                     .projectedToLevel(session.levelZ());
@@ -698,20 +706,6 @@ public final class SelectionTool implements EditorTool {
         return previewDoorMap(session.withTargetBoundaryRef(roomBoundaryRef)) != null;
     }
 
-    private static CorridorNode corridorDoorNode(DungeonMap layout, DungeonSelectionRef.DoorRef doorRef) {
-        if (doorRef == null) {
-            return null;
-        }
-        GridSegment anchorSegment2x = doorAnchorSegment(layout, doorRef);
-        if (anchorSegment2x == null) {
-            return null;
-        }
-        return new CorridorNode(
-                -1L,
-                anchorSegment2x.midpoint(),
-                new DoorRef(doorRef.doorId()));
-    }
-
     private static GridTranslation dragTranslation(GridPoint currentCell, GridPoint startCell) {
         return GridTranslation.betweenCells(startCell, currentCell);
     }
@@ -779,12 +773,12 @@ public final class SelectionTool implements EditorTool {
 
     private record CorridorNodeDragSession(
             long corridorId,
-            Long waypointId,
+            Long nodeId,
             GridPoint startPoint,
             GridPoint currentPoint
     ) {
         private CorridorNodeDragSession withCurrentPoint(GridPoint currentPoint) {
-            return new CorridorNodeDragSession(corridorId, waypointId, startPoint, currentPoint);
+            return new CorridorNodeDragSession(corridorId, nodeId, startPoint, currentPoint);
         }
     }
 

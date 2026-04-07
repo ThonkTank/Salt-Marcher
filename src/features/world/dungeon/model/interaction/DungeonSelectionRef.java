@@ -138,7 +138,7 @@ public sealed interface DungeonSelectionRef permits
         }
     }
 
-    record CorridorNodeRef(Long corridorId, Long waypointId, GridPoint point) implements DungeonSelectionRef {
+    record CorridorNodeRef(Long corridorId, Long nodeId, GridPoint point) implements DungeonSelectionRef {
         public CorridorNodeRef {
             point = Objects.requireNonNull(point, "point");
         }
@@ -149,10 +149,10 @@ public sealed interface DungeonSelectionRef permits
         }
     }
 
-    record CorridorCornerRef(Long corridorId, Long memberId, int segmentOrdinal, GridPoint point) implements DungeonSelectionRef {
+    record CorridorCornerRef(Long corridorId, Long segmentId, GridPoint point) implements DungeonSelectionRef {
         public CorridorCornerRef {
-            if (memberId == null || segmentOrdinal < 0) {
-                throw new IllegalArgumentException("Corridor corner refs require memberId and segmentOrdinal");
+            if (segmentId == null) {
+                throw new IllegalArgumentException("Corridor corner refs require segmentId");
             }
             point = Objects.requireNonNull(point, "point");
         }
@@ -163,10 +163,10 @@ public sealed interface DungeonSelectionRef permits
         }
     }
 
-    record CorridorSegmentRef(Long corridorId, Long memberId, int segmentOrdinal, GridPoint point) implements DungeonSelectionRef {
+    record CorridorSegmentRef(Long corridorId, Long segmentId, GridPoint point) implements DungeonSelectionRef {
         public CorridorSegmentRef {
-            if (memberId == null || segmentOrdinal < 0) {
-                throw new IllegalArgumentException("Corridor segment refs require memberId and segmentOrdinal");
+            if (segmentId == null) {
+                throw new IllegalArgumentException("Corridor segment refs require segmentId");
             }
             point = Objects.requireNonNull(point, "point");
         }

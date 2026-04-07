@@ -373,12 +373,12 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
     }
 
     private static void drawCorridorHandles(StructureRenderPass pass, Corridor corridor) {
-        for (CorridorNode node : corridor.persistedManualNodes()) {
+        for (var node : corridor.fixedNodes()) {
             drawCorridorHandle(
                     pass.gc(),
                     pass.camera(),
                     pass.gridSize(),
-                    node.point(),
+                    node.fixedPoint(),
                     pass.palette().highlightAccent(),
                     pass.palette().highlightStroke(),
                     Math.max(5.0, pass.gridSize() * 0.16));

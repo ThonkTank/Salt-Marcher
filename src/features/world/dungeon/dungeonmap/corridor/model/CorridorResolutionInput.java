@@ -6,10 +6,8 @@ import features.world.dungeon.geometry.GridSegment;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.Door;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
 
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -21,41 +19,18 @@ public record CorridorResolutionInput(
         int levelZ,
         Set<GridPoint> blockedCells,
         Map<DoorRef, ExteriorDoorInput> exteriorDoorsByRef,
-        Map<GridSegment, BoundaryAttachmentInput> attachableBoundariesBySegment,
-        Set<GridSegment> occupiedConnectionSegments,
-        List<Door> corridorDoors
+        Set<GridSegment> occupiedConnectionSegments
 ) {
     public CorridorResolutionInput {
         blockedCells = blockedCells == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(blockedCells));
         exteriorDoorsByRef = exteriorDoorsByRef == null ? Map.of() : Map.copyOf(new LinkedHashMap<>(exteriorDoorsByRef));
-        attachableBoundariesBySegment = attachableBoundariesBySegment == null
-                ? Map.of()
-                : Map.copyOf(new LinkedHashMap<>(attachableBoundariesBySegment));
         occupiedConnectionSegments = occupiedConnectionSegments == null
                 ? Set.of()
                 : Set.copyOf(new LinkedHashSet<>(occupiedConnectionSegments));
-        corridorDoors = corridorDoors == null ? List.of() : List.copyOf(corridorDoors);
         if (exteriorDoorsByRef.keySet().stream().anyMatch(Objects::isNull)
                 || exteriorDoorsByRef.values().stream().anyMatch(Objects::isNull)) {
             throw new IllegalArgumentException("Corridor exterior door inputs must stay complete");
         }
-        if (attachableBoundariesBySegment.keySet().stream().anyMatch(Objects::isNull)
-                || attachableBoundariesBySegment.values().stream().anyMatch(Objects::isNull)) {
-            throw new IllegalArgumentException("Corridor boundary attachment inputs must stay complete");
-        }
-        if (corridorDoors.stream().anyMatch(Objects::isNull)) {
-            throw new IllegalArgumentException("Corridor door collection may not contain null entries");
-        }
-    }
-
-    CorridorResolutionInput withDoors(Collection<Door> doors) {
-        return new CorridorResolutionInput(
-                levelZ,
-                blockedCells,
-                exteriorDoorsByRef,
-                attachableBoundariesBySegment,
-                occupiedConnectionSegments,
-                doors == null ? List.of() : List.copyOf(doors));
     }
 
     ExteriorDoorInput requiredExteriorDoor(DoorRef doorRef) {
@@ -64,14 +39,6 @@ public record CorridorResolutionInput(
             throw new IllegalArgumentException("Corridor door node must reference an existing exterior room door");
         }
         return description;
-    }
-
-    BoundaryAttachmentInput requiredBoundaryAttachment(GridSegment boundarySegment) {
-        BoundaryAttachmentInput attachment = boundarySegment == null ? null : attachableBoundariesBySegment.get(boundarySegment);
-        if (attachment == null) {
-            throw new IllegalArgumentException("Corridor attachment target must be a free corridor wall");
-        }
-        return attachment;
     }
 
     boolean hasOccupiedConnection(GridSegment boundarySegment) {
@@ -100,17 +67,6 @@ public record CorridorResolutionInput(
 
         public GridPoint exteriorCell() {
             return roomCell.step(outwardDirection);
-        }
-    }
-
-    public record BoundaryAttachmentInput(
-            Long corridorId,
-            GridSegment boundarySegment,
-            GridPoint corridorCell
-    ) {
-        public BoundaryAttachmentInput {
-            boundarySegment = Objects.requireNonNull(boundarySegment, "boundarySegment");
-            corridorCell = Objects.requireNonNull(corridorCell, "corridorCell");
         }
     }
 }
