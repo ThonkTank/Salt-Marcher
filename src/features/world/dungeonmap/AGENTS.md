@@ -43,6 +43,7 @@ These owner slices are the target architecture. The package names above are curr
 - Put shared physical topology and boundary semantics on the `structure` owner instead of mirroring them into room, corridor, runtime, or renderer code.
 - When a caller needs anchor, surface-cell, floor-cell, or level-local reachability behavior for one level, route that through `StructureSurface` rather than rebuilding that logic on `Structure`, `RoomCluster`, or renderer helpers.
 - When a caller needs door, wall, or boundary-edge behavior for one level, route that through `StructureBoundary` rather than re-expanding `Structure` into a second boundary API bucket.
+- Boundary reads or writes must terminate on `Structure.boundaryAtLevel(levelZ).something()`. `DungeonLayout`, `RoomCluster`, and `StructureRoomTopology` may hand callers the relevant `Structure`, but they must not re-export boundary collections, lookups, or mutations as convenience mirrors.
 - Extend `DungeonMapLoadingService` for authoritative reload behavior instead of teaching tools, views, or repositories to repair state locally.
 - Put runtime-only semantics under the runtime owner, not on editor tools or render payloads.
 - Put editor gesture meaning under editor interaction owners, not in renderers, repositories, or ad-hoc controllers.
@@ -54,6 +55,7 @@ These owner slices are the target architecture. The package names above are curr
 - Do not treat `application/`, `repository/`, `shell/`, `canvas/`, or `catalog/` as the primary architecture story. They are current homes inside the owner atlas above.
 - Do not add a second shared physical topology owner beside `Structure`, `StructureSurface`, `StructureBoundary`, and `StructureRoomTopology`.
 - Do not duplicate room, corridor, stair, transition, or runtime semantics in tool-local state, render models, or storage helper types.
+- Do not add convenience wrapper APIs that mirror `StructureBoundary` state or mutations on `DungeonLayout`, `RoomCluster`, `StructureRoomTopology`, or renderer helpers.
 - Do not create a new service, helper, support, or wrapper class before checking whether one of the documented owners already exposes the needed seam.
 - Do not document a future owner or workflow seam as canonical before it exists in code.
 - Do not create alternate load, repair, or compatibility paths outside `DungeonMapLoadingService` and the canonical owner workflows.

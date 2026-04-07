@@ -19,6 +19,7 @@ This file only documents model-local additions beneath `dungeonmap/`. Shared dun
 - Put new shared geometry behavior in `geometry/` only when it is owner-neutral and genuinely canonical.
 - Put room-projection and shared physical topology logic on the sibling `structure` slice, not on repositories, views, or workflow helpers.
 - Let `RoomCluster` and `Corridor` consume `StructureSurface` or `StructureBoundary` through `Structure`; do not recreate level-local surface or boundary helper owners inside `model/structures`.
+- `RoomCluster` may expose the derived room `Structure` when callers need canonical structure truth, but it must not mirror `StructureBoundary` collections or mutations as parallel public APIs.
 - Keep immutable geometry and similar value types transparent; put invariant-protecting mutation on the actual owner type.
 
 ## Forbidden Drift

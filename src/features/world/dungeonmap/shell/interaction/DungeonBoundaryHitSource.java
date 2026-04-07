@@ -3,10 +3,11 @@ package features.world.dungeonmap.shell.interaction;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
-import features.world.dungeonmap.structure.model.Door;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.structure.model.Door;
+import features.world.dungeonmap.structure.model.Structure;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -57,7 +58,9 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
                 if (room == null || room.roomId() == null) {
                     continue;
                 }
-                for (GridSegment2x segment2x : projectedLayout.roomBoundaryEdgesAtLevel(room, levelZ)) {
+                Structure roomStructure = cluster.roomStructure(room);
+                var boundary = roomStructure.boundaryAtLevel(levelZ);
+                for (GridSegment2x segment2x : boundary.boundaryEdges()) {
                     if (segment2x == null || connectionSegments.contains(segment2x)) {
                         continue;
                     }

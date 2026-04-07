@@ -150,28 +150,12 @@ public final class RoomCluster {
         return roomTopology().roomFloorCellsAtLevel(roomId, levelZ);
     }
 
-    public Set<GridSegment2x> roomBoundaryEdgesAtLevel(Room room, int levelZ) {
-        return roomTopology().roomBoundaryEdgesAtLevel(room, levelZ);
+    public Structure roomStructure(Room room) {
+        return roomTopology().structureFor(room);
     }
 
-    public Set<GridSegment2x> roomBoundaryEdgesAtLevel(Long roomId, int levelZ) {
-        return roomTopology().roomBoundaryEdgesAtLevel(roomId, levelZ);
-    }
-
-    public Set<GridSegment2x> roomDoorSegmentsAtLevel(Room room, int levelZ) {
-        return roomTopology().roomDoorSegmentsAtLevel(room, levelZ);
-    }
-
-    public Set<GridSegment2x> roomDoorSegmentsAtLevel(Long roomId, int levelZ) {
-        return roomTopology().roomDoorSegmentsAtLevel(roomId, levelZ);
-    }
-
-    public List<Door> roomDoorsAtLevel(Room room, int levelZ) {
-        return roomTopology().roomDoorsAtLevel(room, levelZ);
-    }
-
-    public List<Door> roomDoorsAtLevel(Long roomId, int levelZ) {
-        return roomTopology().roomDoorsAtLevel(roomId, levelZ);
+    public Structure roomStructure(Long roomId) {
+        return roomTopology().structureFor(roomId);
     }
 
     public boolean roomContainsCell(Room room, CellCoord cell, int levelZ) {
@@ -488,14 +472,6 @@ public final class RoomCluster {
 
     public List<RoomCluster> applyDelete(Set<CellCoord> deletedCells, int deleteLevel) {
         return Topology.applyDelete(this, deletedCells, deleteLevel);
-    }
-
-    private Structure structureFor(Room room) {
-        return roomTopology().structureFor(room);
-    }
-
-    private Structure structureFor(Long roomId) {
-        return roomTopology().structureFor(roomId);
     }
 
     private StructureRoomTopology roomTopology() {

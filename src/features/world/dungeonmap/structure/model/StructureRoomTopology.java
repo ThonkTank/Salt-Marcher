@@ -284,30 +284,6 @@ public final class StructureRoomTopology {
         return structureFor(roomId).surfaceAtLevel(levelZ).floorCells();
     }
 
-    public Set<GridSegment2x> roomBoundaryEdgesAtLevel(Room room, int levelZ) {
-        return structureFor(room).boundaryAtLevel(levelZ).boundaryEdges();
-    }
-
-    public Set<GridSegment2x> roomBoundaryEdgesAtLevel(Long roomId, int levelZ) {
-        return structureFor(roomId).boundaryAtLevel(levelZ).boundaryEdges();
-    }
-
-    public Set<GridSegment2x> roomDoorSegmentsAtLevel(Room room, int levelZ) {
-        return structureFor(room).boundaryAtLevel(levelZ).doorEdges();
-    }
-
-    public Set<GridSegment2x> roomDoorSegmentsAtLevel(Long roomId, int levelZ) {
-        return structureFor(roomId).boundaryAtLevel(levelZ).doorEdges();
-    }
-
-    public List<Door> roomDoorsAtLevel(Room room, int levelZ) {
-        return structureFor(room).boundaryAtLevel(levelZ).doors();
-    }
-
-    public List<Door> roomDoorsAtLevel(Long roomId, int levelZ) {
-        return structureFor(roomId).boundaryAtLevel(levelZ).doors();
-    }
-
     public boolean roomContainsCell(Room room, CellCoord cell, int levelZ) {
         return structureFor(room).surfaceAtLevel(levelZ).contains(cell);
     }

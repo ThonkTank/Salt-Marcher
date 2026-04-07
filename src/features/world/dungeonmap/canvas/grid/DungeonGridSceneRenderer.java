@@ -117,10 +117,12 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             InteractiveLabelHandle handle = cluster.labelHandle();
             boolean selectedCluster = selectedCluster(pass.projected(), pass.selectedRef(), cluster.clusterId());
             for (Room room : cluster.rooms()) {
+                Structure roomStructure = cluster.roomStructure(room);
+                var boundary = roomStructure.boundaryAtLevel(pass.projectionLevel());
                 WalkableSurface surface = walkableSurface(
                         cluster.roomFloorCellsAtLevel(room, pass.projectionLevel()),
-                        cluster.roomBoundaryEdgesAtLevel(room, pass.projectionLevel()),
-                        cluster.roomDoorSegmentsAtLevel(room, pass.projectionLevel()));
+                        boundary.boundaryEdges(),
+                        boundary.doorEdges());
                 boolean selectedRoom = selectedRoom(pass.projected(), pass.selectedRef(), room.roomId());
                 if (!surface.tiles().isEmpty()) {
                     fillRoomTiles(gc, pass.camera(), pass.gridSize(), surface.tiles());

@@ -563,11 +563,6 @@ public final class DungeonLayout {
         return cluster == null ? Set.of() : cluster.roomFloorCellsAtLevel(room, levelZ);
     }
 
-    public Set<GridSegment2x> roomBoundaryEdgesAtLevel(Room room, int levelZ) {
-        RoomCluster cluster = clusterForRoom(room);
-        return cluster == null ? Set.of() : cluster.roomBoundaryEdgesAtLevel(room, levelZ);
-    }
-
     public boolean roomHasFloorCell(Room room, CellCoord cell, int levelZ) {
         RoomCluster cluster = clusterForRoom(room);
         return cluster != null && cluster.roomHasFloorCell(room, cell, levelZ);
