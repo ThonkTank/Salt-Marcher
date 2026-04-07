@@ -225,7 +225,7 @@ public final class DungeonCorridorRepository {
                 if (trace == null) {
                     continue;
                 }
-                List<GridPoint> pathPoints = trace.points();
+                List<GridPoint> pathPoints = trace.path().points();
                 for (int index = 0; index < pathPoints.size(); index++) {
                     GridPoint point2x = pathPoints.get(index);
                     insert.setLong(1, segment.segmentId());
@@ -306,7 +306,7 @@ public final class DungeonCorridorRepository {
                         remappedSegmentIds.getOrDefault(trace.traceId(), trace.traceId()),
                         remappedNodeIds.getOrDefault(trace.startNodeId(), trace.startNodeId()),
                         remappedNodeIds.getOrDefault(trace.endNodeId(), trace.endNodeId()),
-                        GridPath.of(trace.points())))
+                        trace.path()))
                 .toList();
     }
 

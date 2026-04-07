@@ -120,9 +120,15 @@ public final class FloorTool implements EditorTool {
         loadingService.submitMutation(
                 () -> {
                     if (finishedSession.deleteMode()) {
-                        roomApplicationService.deleteFloorCells(mapId, activeLevel, features.world.dungeon.geometry.GridArea.of(cells));
+                        roomApplicationService.deleteFloorCells(new DungeonClusterApplicationService.DeleteFloorCellsRequest(
+                                mapId,
+                                activeLevel,
+                                features.world.dungeon.geometry.GridArea.of(cells)));
                     } else {
-                        roomApplicationService.addFloorCells(mapId, activeLevel, features.world.dungeon.geometry.GridArea.of(cells));
+                        roomApplicationService.addFloorCells(new DungeonClusterApplicationService.AddFloorCellsRequest(
+                                mapId,
+                                activeLevel,
+                                features.world.dungeon.geometry.GridArea.of(cells)));
                     }
                     return mapId;
                 },

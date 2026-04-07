@@ -2,6 +2,8 @@ package features.world.dungeon.dungeonmap.cluster.application;
 
 import database.DatabaseManager;
 import features.world.dungeon.application.support.DungeonTransactionRunner;
+import features.world.dungeon.dungeonmap.cluster.model.ClusterMutation;
+import features.world.dungeon.dungeonmap.cluster.model.ClusterRewritePlan;
 import features.world.dungeon.dungeonmap.cluster.model.ClusterStructureEditor;
 import features.world.dungeon.dungeonmap.cluster.model.Cluster;
 import features.world.dungeon.dungeonmap.cluster.repository.DungeonClusterRepository;
@@ -12,20 +14,10 @@ import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridBoundary;
 import features.world.dungeon.geometry.GridTranslation;
 import features.world.dungeon.dungeonmap.structure.model.Structure;
-import features.world.dungeon.dungeonmap.structure.model.StructureMutation;
 import features.world.dungeon.dungeonmap.structure.model.StructureSpecification;
-import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeon.dungeonmap.structure.model.surface.StructureSurface;
-import features.world.dungeon.model.structures.connection.ConnectionEndpoint;
-import features.world.dungeon.model.structures.connection.DoorConnectionCarrier;
-import features.world.dungeon.model.structures.connection.DungeonConnection;
-import features.world.dungeon.model.structures.connection.StairConnectionCarrier;
 import features.world.dungeon.dungeonmap.corridor.model.Corridor;
-import features.world.dungeon.dungeonmap.corridor.model.CorridorNode;
 import features.world.dungeon.model.structures.room.Room;
-import features.world.dungeon.model.structures.stair.Stair;
-import features.world.dungeon.model.structures.stair.StairExit;
-import features.world.dungeon.model.structures.stair.DungeonStair;
 import features.world.dungeon.model.structures.transition.DungeonTransition;
 import features.world.dungeon.dungeonmap.corridor.repository.DungeonCorridorRepository;
 import features.world.dungeon.dungeonmap.repository.DungeonMapRepository;
@@ -43,7 +35,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * Central cluster workflow owner for editor-visible cluster mutations.
@@ -73,108 +64,150 @@ public final class DungeonClusterApplicationService {
         this.transitionRepository = Objects.requireNonNull(transitionRepository, "transitionRepository");
     }
 
-    public void paintCells(long mapId, int levelZ, GridArea cells) throws SQLException {
-        GridArea resolvedCells = cells == null ? GridArea.empty() : cells.onLevel(levelZ);
+    public void paintCells(PaintCellsRequest request) throws SQLException {
+        PaintCellsRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        if (resolvedRequest.mapId() <= 0) {
+            throw new IllegalArgumentException("Cluster paint requires mapId");
+        }
+        GridArea resolvedCells = resolvedRequest.cells() == null ? GridArea.empty() : resolvedRequest.cells().onLevel(resolvedRequest.levelZ());
         if (resolvedCells.isEmpty()) {
             return;
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                paintCells(conn, mapId, levelZ, resolvedCells);
+                paintCells(conn, resolvedRequest.mapId(), resolvedRequest.levelZ(), resolvedCells);
                 return null;
             });
         }
     }
 
-    public void deleteCells(long mapId, int levelZ, GridArea cells) throws SQLException {
-        GridArea resolvedCells = cells == null ? GridArea.empty() : cells.onLevel(levelZ);
+    public void deleteCells(DeleteCellsRequest request) throws SQLException {
+        DeleteCellsRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        if (resolvedRequest.mapId() <= 0) {
+            throw new IllegalArgumentException("Cluster delete requires mapId");
+        }
+        GridArea resolvedCells = resolvedRequest.cells() == null ? GridArea.empty() : resolvedRequest.cells().onLevel(resolvedRequest.levelZ());
         if (resolvedCells.isEmpty()) {
             return;
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                deleteCells(conn, mapId, levelZ, resolvedCells);
+                deleteCells(conn, resolvedRequest.mapId(), resolvedRequest.levelZ(), resolvedCells);
                 return null;
             });
         }
     }
 
-    public void addFloorCells(long mapId, int levelZ, GridArea cells) throws SQLException {
-        GridArea resolvedCells = cells == null ? GridArea.empty() : cells.onLevel(levelZ);
+    public void addFloorCells(AddFloorCellsRequest request) throws SQLException {
+        AddFloorCellsRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        if (resolvedRequest.mapId() <= 0) {
+            throw new IllegalArgumentException("Cluster floor add requires mapId");
+        }
+        GridArea resolvedCells = resolvedRequest.cells() == null ? GridArea.empty() : resolvedRequest.cells().onLevel(resolvedRequest.levelZ());
         if (resolvedCells.isEmpty()) {
             return;
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                editFloorCells(conn, mapId, levelZ, resolvedCells, false);
+                editFloorCells(conn, resolvedRequest.mapId(), resolvedRequest.levelZ(), resolvedCells, false);
                 return null;
             });
         }
     }
 
-    public void deleteFloorCells(long mapId, int levelZ, GridArea cells) throws SQLException {
-        GridArea resolvedCells = cells == null ? GridArea.empty() : cells.onLevel(levelZ);
+    public void deleteFloorCells(DeleteFloorCellsRequest request) throws SQLException {
+        DeleteFloorCellsRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        if (resolvedRequest.mapId() <= 0) {
+            throw new IllegalArgumentException("Cluster floor delete requires mapId");
+        }
+        GridArea resolvedCells = resolvedRequest.cells() == null ? GridArea.empty() : resolvedRequest.cells().onLevel(resolvedRequest.levelZ());
         if (resolvedCells.isEmpty()) {
             return;
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                editFloorCells(conn, mapId, levelZ, resolvedCells, true);
+                editFloorCells(conn, resolvedRequest.mapId(), resolvedRequest.levelZ(), resolvedCells, true);
                 return null;
             });
         }
     }
 
-    public void createWallPath(
-            long mapId,
-            long clusterId,
-            int levelZ,
-            GridBoundary segments
-    ) throws SQLException {
-        GridBoundary resolvedSegments = segments == null ? GridBoundary.empty() : segments;
+    public void createWallPath(CreateWallPathRequest request) throws SQLException {
+        CreateWallPathRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        if (resolvedRequest.mapId() <= 0 || resolvedRequest.clusterId() <= 0) {
+            throw new IllegalArgumentException("Wall creation requires mapId and clusterId");
+        }
+        GridBoundary resolvedSegments = resolvedRequest.segments() == null ? GridBoundary.empty() : resolvedRequest.segments();
         if (resolvedSegments.isEmpty()) {
             return;
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                createWallPath(conn, mapId, clusterId, levelZ, resolvedSegments);
+                createWallPath(conn, resolvedRequest.mapId(), resolvedRequest.clusterId(), resolvedRequest.levelZ(), resolvedSegments);
                 return null;
             });
         }
     }
 
-    public void deleteWallPath(
-            long mapId,
-            long clusterId,
-            int levelZ,
-            GridBoundary segments
-    ) throws SQLException {
-        GridBoundary resolvedSegments = segments == null ? GridBoundary.empty() : segments;
+    public void deleteWallPath(DeleteWallPathRequest request) throws SQLException {
+        DeleteWallPathRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        if (resolvedRequest.mapId() <= 0 || resolvedRequest.clusterId() <= 0) {
+            throw new IllegalArgumentException("Wall deletion requires mapId and clusterId");
+        }
+        GridBoundary resolvedSegments = resolvedRequest.segments() == null ? GridBoundary.empty() : resolvedRequest.segments();
         if (resolvedSegments.isEmpty()) {
             return;
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                deleteWallPath(conn, mapId, clusterId, levelZ, resolvedSegments);
+                deleteWallPath(conn, resolvedRequest.mapId(), resolvedRequest.clusterId(), resolvedRequest.levelZ(), resolvedSegments);
                 return null;
             });
         }
     }
 
-    public void createDoor(long mapId, long clusterId, int levelZ, GridBoundary segments) throws SQLException {
-        editDoor(mapId, clusterId, levelZ, segments, false);
+    public void createDoor(CreateDoorRequest request) throws SQLException {
+        CreateDoorRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        editDoor(
+                resolvedRequest.mapId(),
+                resolvedRequest.clusterId(),
+                resolvedRequest.levelZ(),
+                resolvedRequest.segments(),
+                false,
+                ClusterMutation.DoorScope.INTERIOR);
     }
 
-    public void deleteDoor(long mapId, long clusterId, int levelZ, GridBoundary segments) throws SQLException {
-        editDoor(mapId, clusterId, levelZ, segments, true);
+    public void deleteDoor(DeleteDoorRequest request) throws SQLException {
+        DeleteDoorRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        editDoor(
+                resolvedRequest.mapId(),
+                resolvedRequest.clusterId(),
+                resolvedRequest.levelZ(),
+                resolvedRequest.segments(),
+                true,
+                ClusterMutation.DoorScope.INTERIOR);
     }
 
-    public void createExteriorDoor(long mapId, long clusterId, int levelZ, GridBoundary segments) throws SQLException {
-        editExteriorDoor(mapId, clusterId, levelZ, segments, false);
+    public void createExteriorDoor(CreateExteriorDoorRequest request) throws SQLException {
+        CreateExteriorDoorRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        editDoor(
+                resolvedRequest.mapId(),
+                resolvedRequest.clusterId(),
+                resolvedRequest.levelZ(),
+                resolvedRequest.segments(),
+                false,
+                ClusterMutation.DoorScope.EXTERIOR);
     }
 
-    public void deleteExteriorDoor(long mapId, long clusterId, int levelZ, GridBoundary segments) throws SQLException {
-        editExteriorDoor(mapId, clusterId, levelZ, segments, true);
+    public void deleteExteriorDoor(DeleteExteriorDoorRequest request) throws SQLException {
+        DeleteExteriorDoorRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        editDoor(
+                resolvedRequest.mapId(),
+                resolvedRequest.clusterId(),
+                resolvedRequest.levelZ(),
+                resolvedRequest.segments(),
+                true,
+                ClusterMutation.DoorScope.EXTERIOR);
     }
 
     public void moveDoor(MoveDoorRequest request) throws SQLException {
@@ -192,12 +225,16 @@ public final class DungeonClusterApplicationService {
                 if (cluster == null) {
                     return null;
                 }
-                Cluster updatedCluster = cluster.moveDoor(
+                Cluster updatedCluster = cluster.mutated(new ClusterMutation.DoorMove(
                         resolvedRequest.levelZ(),
                         resolvedRequest.sourceBoundarySegment(),
-                        resolvedRequest.targetBoundarySegment());
-                if (updatedCluster != null) {
-                    replaceClusters(conn, resolvedRequest.mapId(), List.of(cluster), List.of(updatedCluster));
+                        resolvedRequest.targetBoundarySegment()));
+                if (updatedCluster != cluster) {
+                    persistClusterRewrite(
+                            conn,
+                            resolvedRequest.mapId(),
+                            layout,
+                            ClusterRewritePlan.of(List.of(cluster), List.of(updatedCluster)));
                 }
                 return null;
             });
@@ -215,16 +252,16 @@ public final class DungeonClusterApplicationService {
             return;
         }
 
-        Cluster mergedCluster = ClusterStructureEditor.applyPaint(
+        ClusterRewritePlan rewritePlan = ClusterStructureEditor.applyPaint(
                 overlappingClusters.getFirst(),
                 requestedCells,
                 overlappingClusters,
                 levelZ);
-        if (mergedCluster == null) {
+        if (rewritePlan == null || !rewritePlan.hasChanges()) {
             return;
         }
 
-        persistClusterRewrite(conn, mapId, layout, overlappingClusters, List.of(mergedCluster));
+        persistClusterRewrite(conn, mapId, layout, rewritePlan);
     }
 
     public void deleteCells(Connection conn, long mapId, int levelZ, GridArea cells) throws SQLException {
@@ -247,13 +284,15 @@ public final class DungeonClusterApplicationService {
                 continue;
             }
             DungeonMap layoutSnapshot = workingLayout;
-            List<Cluster> finalClusters = ClusterStructureEditor.assignGeneratedClusterRoomNames(
-                    ClusterStructureEditor.applyDelete(cluster, cells.cells(), levelZ),
+            ClusterRewritePlan rewritePlan = ClusterStructureEditor.applyDelete(
+                    cluster,
+                    cells.cells(),
+                    levelZ,
                     () -> nextRoomName(layoutSnapshot, reservedNames));
-            if (finalClusters == null) {
+            if (rewritePlan == null || !rewritePlan.hasChanges()) {
                 continue;
             }
-            persistClusterRewrite(conn, mapId, workingLayout, List.of(cluster), finalClusters);
+            persistClusterRewrite(conn, mapId, workingLayout, rewritePlan);
             workingLayout = requireLayout(conn, mapId);
         }
     }
@@ -294,7 +333,11 @@ public final class DungeonClusterApplicationService {
                 if (removedFloorCells.isEmpty()) {
                     continue;
                 }
-                validateFloorDelete(workingLayout, room, levelZ, removedFloorCells);
+                try {
+                    workingLayout.assertClusterFloorDeletionAllowed(room, levelZ, removedFloorCells);
+                } catch (IllegalArgumentException exception) {
+                    throw new SQLException(exception.getMessage(), exception);
+                }
             }
             requestedByClusterId.computeIfAbsent(room.clusterId(), ignored -> new LinkedHashSet<>()).addAll(requestedRoomCells);
         }
@@ -317,17 +360,11 @@ public final class DungeonClusterApplicationService {
             if (!changed) {
                 continue;
             }
-            Cluster updatedCluster = new Cluster(
-                    cluster.clusterId(),
-                    cluster.structureObjectId(),
-                    cluster.mapId(),
-                    cluster.center(),
-                    cluster.mutated(new StructureMutation.FloorCellsEdit(
-                            levelZ,
-                            GridArea.of(requestedCells),
-                            deleteFloor ? StructureMutation.CellEditMode.REMOVE : StructureMutation.CellEditMode.ADD)),
-                    cluster.roomTopology().rooms());
-            persistClusterRewrite(conn, mapId, workingLayout, List.of(cluster), List.of(updatedCluster));
+            Cluster updatedCluster = cluster.mutated(new ClusterMutation.FloorCellsEdit(
+                    levelZ,
+                    GridArea.of(clusterRequestedCells),
+                    deleteFloor ? ClusterMutation.CellEditMode.REMOVE : ClusterMutation.CellEditMode.ADD));
+            persistClusterRewrite(conn, mapId, workingLayout, ClusterRewritePlan.of(List.of(cluster), List.of(updatedCluster)));
             workingLayout = requireLayout(conn, mapId);
         }
     }
@@ -363,18 +400,26 @@ public final class DungeonClusterApplicationService {
                 new Room(null, mapId, persistedCluster.clusterId(), roomName, java.util.Map.of(levelZ, center), null)));
     }
 
-    public void move(long mapId, long clusterId, GridTranslation translation) throws SQLException {
-        GridTranslation resolvedTranslation = translation == null ? GridTranslation.none() : translation;
+    public void move(MoveClusterRequest request) throws SQLException {
+        MoveClusterRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        if (resolvedRequest.mapId() <= 0 || resolvedRequest.clusterId() <= 0) {
+            throw new IllegalArgumentException("Cluster move requires mapId and clusterId");
+        }
+        GridTranslation resolvedTranslation = resolvedRequest.translation() == null
+                ? GridTranslation.none()
+                : resolvedRequest.translation();
         if (resolvedTranslation.isZero()) {
             return;
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                DungeonMap layout = requireLayout(conn, mapId);
-                DungeonMap movedLayout = layout.withMovedCluster(clusterId, resolvedTranslation);
-                Cluster cluster = requireCluster(movedLayout, clusterId);
-                saveMovedCluster(conn, cluster);
-                persistUpdatedCorridors(conn, layout, movedLayout);
+                DungeonMap layout = requireLayout(conn, resolvedRequest.mapId());
+                Cluster cluster = requireCluster(layout, resolvedRequest.clusterId());
+                ClusterRewritePlan rewritePlan = ClusterRewritePlan.of(
+                        List.of(cluster),
+                        List.of(cluster.translated(resolvedTranslation)),
+                        resolvedTranslation);
+                persistClusterRewrite(conn, resolvedRequest.mapId(), layout, rewritePlan);
                 return null;
             });
         }
@@ -411,12 +456,15 @@ public final class DungeonClusterApplicationService {
         if (cluster == null) {
             return;
         }
-        Cluster updatedCluster = cluster.createWallPath(levelZ, segments);
-        if (updatedCluster == null) {
+        Cluster updatedCluster = cluster.mutated(new ClusterMutation.WallPathEdit(
+                levelZ,
+                segments,
+                ClusterMutation.BoundaryEditMode.CREATE));
+        if (updatedCluster == cluster) {
             return;
         }
 
-        persistClusterRewrite(conn, mapId, layout, List.of(cluster), List.of(updatedCluster));
+        persistClusterRewrite(conn, mapId, layout, ClusterRewritePlan.of(List.of(cluster), List.of(updatedCluster)));
     }
 
     public void deleteWallPath(
@@ -434,12 +482,15 @@ public final class DungeonClusterApplicationService {
         if (cluster == null) {
             return;
         }
-        Cluster updatedCluster = cluster.deleteWallPath(levelZ, segments);
-        if (updatedCluster == null) {
+        Cluster updatedCluster = cluster.mutated(new ClusterMutation.WallPathEdit(
+                levelZ,
+                segments,
+                ClusterMutation.BoundaryEditMode.DELETE));
+        if (updatedCluster == cluster) {
             return;
         }
 
-        persistClusterRewrite(conn, mapId, layout, List.of(cluster), List.of(updatedCluster));
+        persistClusterRewrite(conn, mapId, layout, ClusterRewritePlan.of(List.of(cluster), List.of(updatedCluster)));
     }
 
     private void editDoor(
@@ -447,14 +498,18 @@ public final class DungeonClusterApplicationService {
             long clusterId,
             int levelZ,
             GridBoundary segments,
-            boolean deleteDoor
+            boolean deleteDoor,
+            ClusterMutation.DoorScope scope
     ) throws SQLException {
+        if (mapId <= 0 || clusterId <= 0) {
+            throw new IllegalArgumentException("Door edit requires mapId and clusterId");
+        }
         if (segments == null || segments.isEmpty()) {
             return;
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                editDoor(conn, mapId, clusterId, levelZ, segments, deleteDoor);
+                editDoor(conn, mapId, clusterId, levelZ, segments, deleteDoor, scope);
                 return null;
             });
         }
@@ -466,75 +521,23 @@ public final class DungeonClusterApplicationService {
             long clusterId,
             int levelZ,
             GridBoundary segments,
-            boolean deleteDoor
+            boolean deleteDoor,
+            ClusterMutation.DoorScope scope
     ) throws SQLException {
         DungeonMap layout = requireLayout(conn, mapId);
         Cluster cluster = layout.findCluster(clusterId);
         if (cluster == null) {
             return;
         }
-        GridBoundary editableSegments = GridBoundary.of(segments.segments().stream()
-                .filter(Objects::nonNull)
-                .filter(segment2x -> deleteDoor
-                        ? cluster.canDeleteDoor(levelZ, segment2x)
-                        : cluster.canCreateDoor(levelZ, segment2x))
-                .toList());
-        if (editableSegments.isEmpty()) {
+        Cluster updatedCluster = cluster.mutated(new ClusterMutation.DoorSegmentsEdit(
+                levelZ,
+                segments,
+                deleteDoor ? ClusterMutation.BoundaryEditMode.DELETE : ClusterMutation.BoundaryEditMode.CREATE,
+                scope));
+        if (updatedCluster == cluster) {
             return;
         }
-        Cluster updatedCluster = cluster.withDoorSegments(levelZ, editableSegments, deleteDoor);
-        if (updatedCluster == null) {
-            return;
-        }
-        replaceClusters(conn, mapId, List.of(cluster), List.of(updatedCluster));
-    }
-
-    private void editExteriorDoor(
-            long mapId,
-            long clusterId,
-            int levelZ,
-            GridBoundary segments,
-            boolean deleteDoor
-    ) throws SQLException {
-        if (segments == null || segments.isEmpty()) {
-            return;
-        }
-        try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonTransactionRunner.inTransaction(conn, () -> {
-                editExteriorDoor(conn, mapId, clusterId, levelZ, segments, deleteDoor);
-                return null;
-            });
-        }
-    }
-
-    private void editExteriorDoor(
-            Connection conn,
-            long mapId,
-            long clusterId,
-            int levelZ,
-            GridBoundary segments,
-            boolean deleteDoor
-    ) throws SQLException {
-        DungeonMap layout = requireLayout(conn, mapId);
-        Cluster cluster = layout.findCluster(clusterId);
-        Cluster projectedCluster = cluster == null ? null : cluster.projectedToLevel(levelZ);
-        if (projectedCluster == null) {
-            return;
-        }
-        GridBoundary editableSegments = GridBoundary.of(segments.segments().stream()
-                .filter(Objects::nonNull)
-                .filter(segment2x -> deleteDoor
-                        ? projectedCluster.canDeleteExteriorDoor(levelZ, segment2x)
-                        : projectedCluster.canCreateExteriorDoor(levelZ, segment2x))
-                .toList());
-        if (editableSegments.isEmpty()) {
-            return;
-        }
-        Cluster updatedCluster = cluster.withExteriorDoors(levelZ, editableSegments, deleteDoor);
-        if (updatedCluster == null || updatedCluster == cluster) {
-            return;
-        }
-        replaceClusters(conn, mapId, List.of(cluster), List.of(updatedCluster));
+        persistClusterRewrite(conn, mapId, layout, ClusterRewritePlan.of(List.of(cluster), List.of(updatedCluster)));
     }
 
     private static List<Cluster> overlappingClustersAtLevel(DungeonMap layout, Set<GridPoint> cells, int levelZ) {
@@ -594,179 +597,34 @@ public final class DungeonClusterApplicationService {
             Connection conn,
             long mapId,
             DungeonMap originalLayout,
-            List<Cluster> originalClusters,
-            List<Cluster> finalClusters
+            ClusterRewritePlan rewritePlan
     ) throws SQLException {
-        if (conn == null || originalLayout == null) {
+        if (conn == null || originalLayout == null || rewritePlan == null || !rewritePlan.hasChanges()) {
             return;
         }
-        Set<Long> affectedRoomIds = affectedRoomIds(originalClusters);
-        DungeonMap rewrittenLayout = originalLayout.withReplacedClusters(originalClusters, finalClusters);
-        validateRoomRewriteCorridors(originalLayout, rewrittenLayout, affectedRoomIds);
-        validateRoomRewriteTransitions(originalLayout, rewrittenLayout, affectedRoomIds);
-        replaceClusters(conn, mapId, originalClusters, finalClusters);
-        if (affectedRoomIds.isEmpty()) {
+        originalLayout.validateClusterRewrite(rewritePlan);
+        clusterRepository.replaceClusters(conn, mapId, rewritePlan.originalClusters(), rewritePlan.finalClusters());
+        if (!rewritePlan.hasAffectedRooms()) {
             return;
         }
         DungeonMap persistedRoomLayout = loadRoomRewriteLayout(conn, originalLayout, mapId);
-        persistReboundCorridors(conn, originalLayout, persistedRoomLayout, affectedRoomIds);
-        persistReboundTransitions(conn, originalLayout, persistedRoomLayout, affectedRoomIds);
-    }
-
-    private void saveMovedCluster(Connection conn, Cluster cluster) throws SQLException {
-        DungeonClusterRepository.PersistedCluster persistedCluster = clusterRepository.saveCluster(conn, cluster);
-        roomRepository.saveRooms(
-                conn,
-                cluster.mapId(),
-                persistedCluster.clusterId(),
-                persistedCluster.structure().roomTopology().rooms());
-    }
-
-    private void replaceClusters(
-            Connection conn,
-            long mapId,
-            List<Cluster> originalClusters,
-            List<Cluster> finalClusters
-    ) throws SQLException {
-        List<Cluster> resolvedOriginalClusters = normalizedClusters(originalClusters);
-        List<Cluster> resolvedFinalClusters = normalizedClusters(finalClusters);
-        if (resolvedOriginalClusters.isEmpty() && resolvedFinalClusters.isEmpty()) {
-            return;
-        }
-
-        Set<Long> finalRoomIds = roomIds(resolvedFinalClusters);
-        LinkedHashSet<Long> removedRoomIds = new LinkedHashSet<>();
-        for (Long roomId : roomIds(resolvedOriginalClusters)) {
-            if (roomId != null && !finalRoomIds.contains(roomId)) {
-                removedRoomIds.add(roomId);
+        var rewriteEffects = originalLayout.reconcileClusterRewrite(persistedRoomLayout, rewritePlan);
+        for (Corridor reboundCorridor : rewriteEffects.reboundCorridors()) {
+            if (reboundCorridor != null) {
+                corridorRepository.save(conn, reboundCorridor, persistedRoomLayout);
             }
         }
-        roomRepository.deleteRooms(conn, removedRoomIds);
-
-        LinkedHashSet<Long> retainedClusterIds = new LinkedHashSet<>();
-        for (Cluster cluster : resolvedFinalClusters) {
-            if (cluster == null || cluster.clusterId() == null) {
+        for (Map.Entry<Long, features.world.dungeon.model.structures.connection.DungeonConnection> entry
+                : rewriteEffects.reboundTransitionConnectionsById().entrySet()) {
+            if (entry.getKey() == null) {
                 continue;
             }
-            DungeonClusterRepository.PersistedCluster persistedCluster = clusterRepository.saveCluster(conn, cluster);
-            retainedClusterIds.add(persistedCluster.clusterId());
-            roomRepository.saveRooms(
+            DungeonTransition transition = originalLayout.findTransition(entry.getKey());
+            transitionRepository.updateLocalConnection(
                     conn,
-                    mapId,
-                    persistedCluster.clusterId(),
-                    persistedCluster.structure().roomTopology().rooms());
-        }
-
-        for (Cluster cluster : resolvedFinalClusters) {
-            if (cluster == null || cluster.clusterId() != null) {
-                continue;
-            }
-            DungeonClusterRepository.PersistedCluster persistedCluster =
-                    clusterRepository.createCluster(conn, mapId, cluster.center(), cluster);
-            roomRepository.saveRooms(
-                    conn,
-                    mapId,
-                    persistedCluster.clusterId(),
-                    persistedCluster.structure().roomTopology().rooms());
-        }
-
-        for (Cluster cluster : resolvedOriginalClusters) {
-            if (cluster == null || cluster.clusterId() == null || retainedClusterIds.contains(cluster.clusterId())) {
-                continue;
-            }
-            clusterRepository.deleteCluster(conn, cluster);
-        }
-    }
-
-    private void persistUpdatedCorridors(Connection conn, DungeonMap originalLayout, DungeonMap movedLayout) throws SQLException {
-        if (conn == null || originalLayout == null || movedLayout == null) {
-            return;
-        }
-        for (var originalCorridor : originalLayout.corridors()) {
-            if (originalCorridor == null || originalCorridor.corridorId() == null) {
-                continue;
-            }
-            var movedCorridor = movedLayout.findCorridor(originalCorridor.corridorId());
-            if (movedCorridor != null && movedCorridor != originalCorridor) {
-                corridorRepository.save(conn, movedCorridor, movedLayout);
-            }
-        }
-    }
-
-    private void validateRoomRewriteCorridors(
-            DungeonMap originalLayout,
-            DungeonMap rewrittenLayout,
-            Set<Long> affectedRoomIds
-    ) {
-        if (originalLayout != null) {
-            originalLayout.validateCorridorRoomRewrite(rewrittenLayout, affectedRoomIds);
-        }
-    }
-
-    private void persistReboundCorridors(
-            Connection conn,
-            DungeonMap originalLayout,
-            DungeonMap rewrittenRoomLayout,
-            Set<Long> affectedRoomIds
-    ) throws SQLException {
-        if (conn == null || originalLayout == null || rewrittenRoomLayout == null || affectedRoomIds == null || affectedRoomIds.isEmpty()) {
-            return;
-        }
-        Map<Long, Corridor> originalCorridorsById = originalLayout.corridors().stream()
-                .filter(Objects::nonNull)
-                .filter(corridor -> corridor.corridorId() != null)
-                .collect(Collectors.toMap(Corridor::corridorId, corridor -> corridor, (left, right) -> left, LinkedHashMap::new));
-        for (Corridor reboundCorridor : originalLayout.reboundCorridors(rewrittenRoomLayout, affectedRoomIds)) {
-            Corridor originalCorridor = reboundCorridor == null ? null : originalCorridorsById.get(reboundCorridor.corridorId());
-            if (reboundCorridor == null || originalCorridor == null) {
-                continue;
-            }
-            if (reboundCorridor != originalCorridor) {
-                corridorRepository.save(conn, reboundCorridor, rewrittenRoomLayout);
-            }
-        }
-    }
-
-    private void validateRoomRewriteTransitions(
-            DungeonMap originalLayout,
-            DungeonMap rewrittenLayout,
-            Set<Long> affectedRoomIds
-    ) {
-        if (originalLayout == null || rewrittenLayout == null || affectedRoomIds == null || affectedRoomIds.isEmpty()) {
-            return;
-        }
-        for (DungeonTransition transition : originalLayout.transitions()) {
-            if (touchesAffectedRooms(transition, affectedRoomIds)) {
-                reboundTransitionLocalConnection(rewrittenLayout, transition, affectedRoomIds, false);
-            }
-        }
-    }
-
-    private void persistReboundTransitions(
-            Connection conn,
-            DungeonMap originalLayout,
-            DungeonMap rewrittenRoomLayout,
-            Set<Long> affectedRoomIds
-    ) throws SQLException {
-        if (conn == null || originalLayout == null || rewrittenRoomLayout == null || affectedRoomIds == null || affectedRoomIds.isEmpty()) {
-            return;
-        }
-        for (DungeonTransition transition : originalLayout.transitions()) {
-            if (transition == null || transition.transitionId() == null || !touchesAffectedRooms(transition, affectedRoomIds)) {
-                continue;
-            }
-            DungeonConnection reboundConnection = reboundTransitionLocalConnection(
-                    rewrittenRoomLayout,
-                    transition,
-                    affectedRoomIds,
-                    true);
-            if (!Objects.equals(reboundConnection, transition.localConnection())) {
-                transitionRepository.updateLocalConnection(
-                        conn,
-                        transition.transitionId(),
-                        reboundConnection,
-                        transition.stairPlacementSpec());
-            }
+                    entry.getKey(),
+                    entry.getValue(),
+                    transition == null ? null : transition.stairPlacementSpec());
         }
     }
 
@@ -783,169 +641,6 @@ public final class DungeonClusterApplicationService {
                 clusterRepository.loadClusterLevels(conn, mapId));
     }
 
-    private static boolean touchesAffectedRooms(Corridor corridor, Set<Long> affectedRoomIds) {
-        if (corridor == null || affectedRoomIds == null || affectedRoomIds.isEmpty()) {
-            return false;
-        }
-        return corridor.connectedRoomIds().stream().anyMatch(affectedRoomIds::contains);
-    }
-
-    private static boolean touchesAffectedRooms(DungeonTransition transition, Set<Long> affectedRoomIds) {
-        if (transition == null
-                || transition.localConnection() == null
-                || affectedRoomIds == null
-                || affectedRoomIds.isEmpty()) {
-            return false;
-        }
-        return transition.localConnection().endpoints().stream()
-                .filter(Objects::nonNull)
-                .filter(endpoint -> endpoint.type() == features.world.dungeon.model.structures.connection.ConnectionEndpointType.ROOM)
-                .map(ConnectionEndpoint::id)
-                .filter(Objects::nonNull)
-                .anyMatch(affectedRoomIds::contains);
-    }
-
-    private static DungeonConnection reboundTransitionLocalConnection(
-            DungeonMap layout,
-            DungeonTransition transition,
-            Set<Long> affectedRoomIds,
-            boolean requirePersistedRoomId
-    ) {
-        if (layout == null
-                || transition == null
-                || transition.localConnection() == null
-                || affectedRoomIds == null
-                || affectedRoomIds.isEmpty()) {
-            return transition == null ? null : transition.localConnection();
-        }
-        DungeonConnection localConnection = transition.localConnection();
-        if (localConnection.doorCarrier() != null) {
-            ConnectionEndpoint entryEndpoint = localConnection.entryEndpoint();
-            if (entryEndpoint == null
-                    || entryEndpoint.type() != features.world.dungeon.model.structures.connection.ConnectionEndpointType.ROOM
-                    || !affectedRoomIds.contains(entryEndpoint.id())) {
-                return localConnection;
-            }
-            Room reboundRoom = resolveTransitionDoorRoom(
-                    layout,
-                    localConnection.levelZ(),
-                    localConnection.doorRef(),
-                    requirePersistedRoomId);
-            DungeonMap.DoorDescription reboundDoor = layout.describeDoor(localConnection.doorRef());
-            if (reboundDoor == null) {
-                throw new IllegalArgumentException("Transition door no longer resolves to a canonical door");
-            }
-            return new DungeonConnection(
-                    localConnection.kind(),
-                    localConnection.ownerId(),
-                    localConnection.mapId(),
-                    localConnection.levelZ(),
-                    new DoorConnectionCarrier(reboundDoor.ref()),
-                    List.of(ConnectionEndpoint.room(reboundRoom.roomId()), ConnectionEndpoint.transition(transition.transitionId())));
-        }
-        if (localConnection.stairCarrier() != null) {
-            ConnectionEndpoint entryEndpoint = localConnection.entryEndpoint();
-            if (entryEndpoint == null
-                    || entryEndpoint.type() != features.world.dungeon.model.structures.connection.ConnectionEndpointType.ROOM
-                    || !affectedRoomIds.contains(entryEndpoint.id())) {
-                return localConnection;
-            }
-            StairConnectionCarrier stairCarrier = localConnection.stairCarrier();
-            Room reboundRoom = roomWithFloorAtCell(layout, stairCarrier.anchorCell(), stairCarrier.anchorLevelZ());
-            if (reboundRoom == null) {
-                throw new IllegalArgumentException("Transition stair anchor no longer resolves to a room floor");
-            }
-            if (requirePersistedRoomId && reboundRoom.roomId() == null) {
-                throw new IllegalArgumentException("Transition stair rebound requires a persisted room id");
-            }
-            return new DungeonConnection(
-                    localConnection.kind(),
-                    localConnection.ownerId(),
-                    localConnection.mapId(),
-                    localConnection.levelZ(),
-                    new StairConnectionCarrier(
-                            stairCarrier.anchorCell(),
-                            stairCarrier.anchorLevelZ(),
-                            stairCarrier.stair()),
-                    List.of(ConnectionEndpoint.room(reboundRoom.roomId()), ConnectionEndpoint.transition(transition.transitionId())));
-        }
-        return localConnection;
-    }
-
-    private static Room resolveTransitionDoorRoom(
-            DungeonMap layout,
-            int levelZ,
-            DoorRef doorRef,
-            boolean requirePersistedRoomId
-    ) {
-        if (layout == null || doorRef == null) {
-            throw new IllegalArgumentException("Transition door rebound requires a canonical door");
-        }
-        DungeonMap.DoorDescription reboundDoor = layout.describeDoor(doorRef);
-        if (reboundDoor == null || reboundDoor.levelZ() != levelZ || reboundDoor.role() != DungeonMap.DoorRole.ROOM_EXTERIOR) {
-            throw new IllegalArgumentException("Transition door no longer resolves to an exterior room boundary");
-        }
-        Room reboundRoom = reboundDoor.touchingRooms().isEmpty() ? null : reboundDoor.touchingRooms().getFirst();
-        if (reboundRoom == null) {
-            throw new IllegalArgumentException("Transition door no longer resolves to an exterior room boundary");
-        }
-        if (requirePersistedRoomId && reboundRoom.roomId() == null) {
-            throw new IllegalArgumentException("Transition door rebound requires a persisted room id");
-        }
-        return reboundRoom;
-    }
-
-    private static Set<Long> affectedRoomIds(List<Cluster> clusters) {
-        LinkedHashSet<Long> result = new LinkedHashSet<>();
-        for (Cluster cluster : clusters == null ? List.<Cluster>of() : clusters) {
-            if (cluster == null) {
-                continue;
-            }
-            for (Room room : cluster.roomTopology().rooms()) {
-                if (room != null && room.roomId() != null) {
-                    result.add(room.roomId());
-                }
-            }
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
-    private static List<Cluster> normalizedClusters(List<Cluster> clusters) {
-        if (clusters == null || clusters.isEmpty()) {
-            return List.of();
-        }
-        List<Cluster> result = new java.util.ArrayList<>();
-        LinkedHashSet<Long> seenClusterIds = new LinkedHashSet<>();
-        for (Cluster cluster : clusters) {
-            if (cluster == null) {
-                continue;
-            }
-            if (cluster.clusterId() == null) {
-                result.add(cluster);
-                continue;
-            }
-            if (seenClusterIds.add(cluster.clusterId())) {
-                result.add(cluster);
-            }
-        }
-        return result.isEmpty() ? List.of() : List.copyOf(result);
-    }
-
-    private static Set<Long> roomIds(List<Cluster> clusters) {
-        LinkedHashSet<Long> result = new LinkedHashSet<>();
-        for (Cluster cluster : clusters == null ? List.<Cluster>of() : clusters) {
-            if (cluster == null) {
-                continue;
-            }
-            for (Room room : cluster.roomTopology().rooms()) {
-                if (room != null && room.roomId() != null) {
-                    result.add(room.roomId());
-                }
-            }
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
     private static Set<GridPoint> intersect(Set<GridPoint> left, Set<GridPoint> right) {
         if (left == null || left.isEmpty() || right == null || right.isEmpty()) {
             return Set.of();
@@ -957,56 +652,6 @@ public final class DungeonClusterApplicationService {
             }
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
-    private static void validateFloorDelete(
-            DungeonMap layout,
-            Room room,
-            int levelZ,
-            Set<GridPoint> removedFloorCells
-    ) throws SQLException {
-        if (layout == null || room == null || room.roomId() == null || removedFloorCells == null || removedFloorCells.isEmpty()) {
-            return;
-        }
-        for (Corridor corridor : layout.corridors()) {
-            if (corridor == null || corridor.levelZ() != levelZ) {
-                continue;
-            }
-            for (CorridorNode node : corridor.nodes()) {
-                DungeonMap.DoorDescription description = node == null || !node.isDoorBound()
-                        ? null
-                        : layout.describeDoor(node.doorRef());
-                if (node != null
-                        && description != null
-                        && description.isRoomExterior()
-                        && Objects.equals(description.roomId(), room.roomId())
-                        && description.anchorSegment().cellFootprint().cells().stream().anyMatch(removedFloorCells::contains)) {
-                    throw new SQLException("Boden unter einem Corridor-Anker kann nicht entfernt werden.");
-                }
-            }
-        }
-        for (DungeonTransition transition : layout.transitionsAtLevel(levelZ)) {
-            if (transition != null
-                    && transition.transitionId() != null
-                    && transition.localConnection() != null
-                    && transition.localConnection().cellFootprint(layout).cells().stream()
-                    .filter(point -> point != null && point.z() == levelZ)
-                    .anyMatch(removedFloorCells::contains)) {
-                throw new SQLException("Boden unter einem platzierten Übergang kann nicht entfernt werden.");
-            }
-        }
-        for (DungeonStair stair : layout.stairsAtLevel(levelZ)) {
-            if (stair == null || stair.stairId() == null) {
-                continue;
-            }
-            boolean usesRemovedExit = stair.exitsAtLevel(levelZ).stream()
-                    .map(StairExit::cell)
-                    .filter(Objects::nonNull)
-                    .anyMatch(removedFloorCells::contains);
-            if (usesRemovedExit) {
-                throw new SQLException("Boden unter einem Treppenanschluss kann nicht entfernt werden.");
-            }
-        }
     }
 
     private static List<Room> rooms(DungeonMap layout) {
@@ -1031,9 +676,120 @@ public final class DungeonClusterApplicationService {
         return cluster == null ? null : cluster.roomTopology().roomAt(cell, levelZ);
     }
 
-    private static Room roomWithFloorAtCell(DungeonMap layout, GridPoint cell, int levelZ) {
-        Room room = roomAtCell(layout, cell, levelZ);
-        return room != null && roomStructure(layout, room).surfaceAtLevel(levelZ).floor().contains(cell) ? room : null;
+    public record PaintCellsRequest(
+            long mapId,
+            int levelZ,
+            GridArea cells
+    ) {
+        public PaintCellsRequest {
+            cells = cells == null ? GridArea.empty() : cells.onLevel(levelZ);
+        }
+    }
+
+    public record DeleteCellsRequest(
+            long mapId,
+            int levelZ,
+            GridArea cells
+    ) {
+        public DeleteCellsRequest {
+            cells = cells == null ? GridArea.empty() : cells.onLevel(levelZ);
+        }
+    }
+
+    public record AddFloorCellsRequest(
+            long mapId,
+            int levelZ,
+            GridArea cells
+    ) {
+        public AddFloorCellsRequest {
+            cells = cells == null ? GridArea.empty() : cells.onLevel(levelZ);
+        }
+    }
+
+    public record DeleteFloorCellsRequest(
+            long mapId,
+            int levelZ,
+            GridArea cells
+    ) {
+        public DeleteFloorCellsRequest {
+            cells = cells == null ? GridArea.empty() : cells.onLevel(levelZ);
+        }
+    }
+
+    public record CreateWallPathRequest(
+            long mapId,
+            long clusterId,
+            int levelZ,
+            GridBoundary segments
+    ) {
+        public CreateWallPathRequest {
+            segments = segments == null ? GridBoundary.empty() : segments;
+        }
+    }
+
+    public record DeleteWallPathRequest(
+            long mapId,
+            long clusterId,
+            int levelZ,
+            GridBoundary segments
+    ) {
+        public DeleteWallPathRequest {
+            segments = segments == null ? GridBoundary.empty() : segments;
+        }
+    }
+
+    public record CreateDoorRequest(
+            long mapId,
+            long clusterId,
+            int levelZ,
+            GridBoundary segments
+    ) {
+        public CreateDoorRequest {
+            segments = segments == null ? GridBoundary.empty() : segments;
+        }
+    }
+
+    public record DeleteDoorRequest(
+            long mapId,
+            long clusterId,
+            int levelZ,
+            GridBoundary segments
+    ) {
+        public DeleteDoorRequest {
+            segments = segments == null ? GridBoundary.empty() : segments;
+        }
+    }
+
+    public record CreateExteriorDoorRequest(
+            long mapId,
+            long clusterId,
+            int levelZ,
+            GridBoundary segments
+    ) {
+        public CreateExteriorDoorRequest {
+            segments = segments == null ? GridBoundary.empty() : segments;
+        }
+    }
+
+    public record DeleteExteriorDoorRequest(
+            long mapId,
+            long clusterId,
+            int levelZ,
+            GridBoundary segments
+    ) {
+        public DeleteExteriorDoorRequest {
+            segments = segments == null ? GridBoundary.empty() : segments;
+        }
+    }
+
+    public record MoveClusterRequest(
+            long mapId,
+            long clusterId,
+            GridTranslation translation
+    ) {
+        public MoveClusterRequest {
+            translation = translation == null ? GridTranslation.none() : translation;
+        }
     }
 
     public record MoveDoorRequest(

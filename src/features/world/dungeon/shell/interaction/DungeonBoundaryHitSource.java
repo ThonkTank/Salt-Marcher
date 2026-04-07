@@ -60,7 +60,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
                 }
                 Structure roomStructure = cluster.roomTopology().structureFor(room);
                 var boundary = roomStructure.boundaryAtLevel(levelZ);
-                for (GridSegment segment2x : boundary.boundaryEdges()) {
+                for (GridSegment segment2x : boundary.boundary().segments()) {
                     if (segment2x == null || connectionSegments.contains(segment2x)) {
                         continue;
                     }
@@ -114,8 +114,8 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
             if (corridor == null || corridor.corridorId() == null) {
                 continue;
             }
-            Set<GridSegment> openingEdges = corridor.boundaryDoorSegments();
-            for (GridSegment segment2x : corridor.boundaryAtLevel(levelZ).boundaryEdges()) {
+            Set<GridSegment> openingEdges = corridor.boundaryDoorBoundary().segments();
+            for (GridSegment segment2x : corridor.boundaryAtLevel(levelZ).boundary().segments()) {
                 if (segment2x == null || openingEdges.contains(segment2x) || connectionSegments.contains(segment2x)) {
                     continue;
                 }

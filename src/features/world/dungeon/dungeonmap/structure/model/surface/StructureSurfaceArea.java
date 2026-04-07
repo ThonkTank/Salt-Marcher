@@ -58,12 +58,12 @@ public final class StructureSurfaceArea extends StructureSurfaceObject {
         return anchorCell;
     }
 
-    public Set<GridPoint> reachableFrom(GridPoint startCell, GridBoundary boundaryEdges) {
+    public GridArea reachableFrom(GridPoint startCell, GridBoundary boundaryEdges) {
         if (startCell == null || !contains(startCell)) {
-            return Set.of();
+            return GridArea.empty();
         }
         GridBoundary barriers = boundaryEdges == null ? GridBoundary.empty() : boundaryEdges;
-        return area().reachableFrom(startCell, barriers).cells();
+        return area().reachableFrom(startCell, barriers);
     }
 
     StructureSurfaceArea translated(GridTranslation translation) {

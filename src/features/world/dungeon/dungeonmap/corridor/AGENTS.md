@@ -13,7 +13,7 @@
 - `model/CorridorReconcileInput` — fixed room-rewrite contract — supplies affected room ids, before-or-after door facts, translations, level shifts, and updated resolution input for rebound workflows.
 - `model/CorridorRouting` — canonical corridor routing helper — projects corridor graph links into routed structure and trace output without re-homing physical topology out of `structure`.
 - `model/CorridorPathTrace`, `model/CorridorNode`, `model/CorridorSegment` — corridor-local authored topology values.
-- `model/Corridor.boundaryDoorSegments()` — corridor-owned read projection — reports corridor boundary openings without requiring live external map context.
+- `model/Corridor.boundaryDoorBoundary()` — corridor-owned read projection — reports corridor boundary openings through the canonical `GridBoundary` carrier without requiring live external map context.
 - `application/DungeonCorridorApplicationService` — public corridor workflow seam for corridor creation, room-door attachment, node or door movement, and topology deletion.
 - `repository/DungeonCorridorRepository` — corridor row, node, segment, and routed path persistence seam.
 

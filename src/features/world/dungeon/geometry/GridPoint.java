@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-public final class GridPoint extends GridObject {
+public final class GridPoint extends GridObject<GridPoint> {
 
     public enum Kind {
         CELL,

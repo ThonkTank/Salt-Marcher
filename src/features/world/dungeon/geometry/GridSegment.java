@@ -9,7 +9,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-public final class GridSegment extends GridObject {
+public final class GridSegment extends GridObject<GridSegment> implements GridBounded {
 
     public enum Orientation {
         HORIZONTAL,
@@ -106,6 +106,11 @@ public final class GridSegment extends GridObject {
 
     public GridBoundary boundarySteps() {
         return GridBoundary.of(stepSegments());
+    }
+
+    @Override
+    public GridBoundary boundary() {
+        return boundarySteps();
     }
 
     public CardinalDirection directionFrom(GridPoint cell) {

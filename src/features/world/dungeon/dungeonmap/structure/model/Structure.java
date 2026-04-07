@@ -189,9 +189,13 @@ public abstract class Structure {
             translatedLevels.put(entry.getKey() + resolvedTranslation.dzLevels(), entry.getValue().translated(resolvedTranslation));
         }
         Structure moved = recreate(translatedLevels, StructureRoomTopology.empty());
-        return roomTopology.isEmpty()
-                ? moved
-                : reattachTopology(moved, roomTopology.translatedBy(resolvedTranslation, moved));
+        if (roomTopology.isEmpty()) {
+            return moved;
+        }
+        List<Room> movedRooms = roomTopology.rooms().stream()
+                .map(room -> room == null ? null : room.translated(resolvedTranslation))
+                .toList();
+        return reattachTopology(moved, roomTopology.withRooms(movedRooms).rebasedTo(moved));
     }
 
     private Structure mutateSurfaceCells(StructureMutation.SurfaceCellsEdit edit) {

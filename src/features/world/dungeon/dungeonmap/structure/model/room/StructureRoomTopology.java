@@ -104,17 +104,6 @@ public final class StructureRoomTopology {
         return derive(mapId, clusterId, structure, rooms());
     }
 
-    public StructureRoomTopology translatedBy(GridTranslation translation, Structure movedStructure) {
-        GridTranslation resolvedTranslation = translation == null ? GridTranslation.none() : translation;
-        return derive(
-                mapId,
-                clusterId,
-                movedStructure,
-                rooms().stream()
-                        .map(room -> room == null ? null : room.translated(resolvedTranslation))
-                        .toList());
-    }
-
     public StructureRoomTopology projectedToLevel(int levelZ, Structure projectedStructure) {
         if (projectedStructure == null || projectedStructure.levels().isEmpty()) {
             return empty();

@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-public final class GridPath extends GridObject {
+public final class GridPath extends GridObject<GridPath> {
 
     private final List<GridPoint> points;
 

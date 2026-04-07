@@ -45,12 +45,12 @@ public final class StructureSurface {
             return surface.anchorCell();
         }
 
-        public Set<GridPoint> surfaceCells() {
-            return surface.cells();
+        public GridArea surfaceArea() {
+            return GridArea.of(surface.cells());
         }
 
-        public Set<GridPoint> floorCells() {
-            return floor.cells();
+        public GridArea floorArea() {
+            return GridArea.of(floor.cells());
         }
 
         @Override
@@ -99,8 +99,8 @@ public final class StructureSurface {
         PersistenceSnapshot resolvedSnapshot = snapshot == null ? emptySnapshot() : snapshot;
         StructureSurfaceArea surface = StructureSurfaceArea.fromCells(
                 resolvedSnapshot.anchorCell(),
-                GridArea.of(resolvedSnapshot.surfaceCells()));
-        return fromSurfaceAndFloor(surface, StructureFloor.fromCells(GridArea.of(resolvedSnapshot.floorCells()), surface));
+                resolvedSnapshot.surfaceArea());
+        return fromSurfaceAndFloor(surface, StructureFloor.fromCells(resolvedSnapshot.floorArea(), surface));
     }
 
     public static StructureSurface fromSurfaceAndFloor(StructureSurfaceArea surface, StructureFloor floor) {

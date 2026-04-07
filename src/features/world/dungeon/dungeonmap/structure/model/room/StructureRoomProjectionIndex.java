@@ -80,8 +80,8 @@ final class StructureRoomProjectionIndex {
                         resolvedStructure.surfaceAtLevel(levelZ).surface()
                                 .reachableFrom(
                                         anchor,
-                                        features.world.dungeon.geometry.GridBoundary.of(
-                                                resolvedStructure.boundaryAtLevel(levelZ).boundaryEdges())),
+                                        resolvedStructure.boundaryAtLevel(levelZ).boundary())
+                                .cells(),
                         remainingLevelCells);
                 if (roomCells.isEmpty()) {
                     continue;
@@ -112,8 +112,8 @@ final class StructureRoomProjectionIndex {
                         resolvedStructure.surfaceAtLevel(levelZ).surface()
                                 .reachableFrom(
                                         seed,
-                                        features.world.dungeon.geometry.GridBoundary.of(
-                                                resolvedStructure.boundaryAtLevel(levelZ).boundaryEdges())),
+                                        resolvedStructure.boundaryAtLevel(levelZ).boundary())
+                                .cells(),
                         unassigned);
                 if (roomCells.isEmpty()) {
                     unassigned.remove(seed);

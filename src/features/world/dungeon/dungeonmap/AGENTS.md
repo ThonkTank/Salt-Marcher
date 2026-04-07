@@ -24,7 +24,9 @@
 - `state/DungeonLevelOverlayMode`, `state/DungeonLevelOverlaySettings` — map-owned overlay policy state consumed by shell and canvas surfaces.
 - `model/DungeonMap.corridorResolutionInput(...)` — corridor-external fact builder — materializes the fixed corridor input contract from current map state.
 - `model/DungeonMap.resolveCorridor(...)`, `model/DungeonMap.rehydrateCorridor(...)` — typed corridor build and reload seam — constructs `Corridor` only from fixed corridor requests plus map-owned external input facts.
-- `model/DungeonMap.validateCorridorRoomRewrite(...)`, `model/DungeonMap.reboundCorridors(...)` — cross-owner corridor reconcile seam — validates and reapplies corridor bindings after room or cluster rewrites.
+- `model/DungeonMap.validateClusterRewrite(...)` — cross-owner pre-persist rewrite validation seam — checks corridor and transition consistency against the post-rewrite cluster snapshot.
+- `model/DungeonMap.reconcileClusterRewrite(...)` — cross-owner post-persist reconcile seam — returns rebound corridors and transition local connections after persisted cluster rewrites.
+- `model/DungeonMap.assertClusterFloorDeletionAllowed(...)` — cluster-external occupancy guard — rejects floor deletions that would orphan corridor, transition, or stair anchors.
 
 ## Where New Code Goes
 
@@ -34,6 +36,7 @@
 - Put map rehydration and staged owner loading in `repository/`.
 - Put active-map and overlay session state in `state/`.
 - Put structure-backed map objects under `structure/`, `cluster/`, or `corridor/` inside this owner instead of restoring parallel top-level package trees.
+- Put cluster rewrite validation and cross-owner rebound logic on `DungeonMap`, not in cluster or transition services.
 - Keep map workflows authoritative: successful writes must still end on `DungeonMapLoadingService` reloads instead of mutating shell-local mirrors.
 
 ## Forbidden Drift
@@ -43,3 +46,4 @@
 - Do not reintroduce top-level `structure`, `cluster`, or `corridor` owners beside `dungeonmap`.
 - Do not turn `DungeonMap` into a second physical topology owner when `structure`, `cluster`, `corridor`, `stair`, and `transition` already own their underlying truth.
 - Do not let corridor callers bypass the fixed corridor input contract by passing raw map state, room lookups, primitive corridor bundles, or ad-hoc door resolution directly into `Corridor`.
+- Do not let cluster rewrite workflows keep separate corridor-only and transition-only validation paths outside `DungeonMap`.

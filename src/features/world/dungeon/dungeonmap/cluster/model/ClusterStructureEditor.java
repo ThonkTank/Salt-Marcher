@@ -5,7 +5,6 @@ import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
 import features.world.dungeon.model.structures.room.Room;
 import features.world.dungeon.dungeonmap.structure.model.Structure;
-import features.world.dungeon.dungeonmap.structure.model.StructureMutation;
 import features.world.dungeon.dungeonmap.structure.model.StructureSpecification;
 import features.world.dungeon.dungeonmap.structure.model.boundary.StructureBoundary;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.Door;
@@ -26,7 +25,7 @@ import java.util.function.Supplier;
 /**
  * Cluster rewrite owner for structure-backed cluster edits.
  *
- * <p>These workflows still return cluster carriers for persistence, but the room semantics themselves live under the
+ * <p>These workflows produce explicit cluster rewrite plans, while the room semantics themselves live under the
  * structure-owned room subtree instead of on {@link Cluster}.</p>
  */
 public final class ClusterStructureEditor {
@@ -34,7 +33,7 @@ public final class ClusterStructureEditor {
     private ClusterStructureEditor() {
     }
 
-    public static Cluster applyPaint(
+    public static ClusterRewritePlan applyPaint(
             Cluster cluster,
             Set<GridPoint> paintCells,
             List<Cluster> overlappingClusters,
@@ -77,16 +76,22 @@ public final class ClusterStructureEditor {
                 mergedDoorsByLevel,
                 mergedWallsByLevel,
                 previousClusterCellsByLevel);
-        return new Cluster(
+        Cluster mergedCluster = Cluster.fromSpecification(new ClusterSpecification(
                 cluster.clusterId(),
                 cluster.structureObjectId(),
                 cluster.mapId(),
                 centerCell(flattenCells(mergedClusterCellsByLevel)),
                 mergedStructure,
-                normalizedMetadataRooms(mergedMetadataRooms));
+                normalizedMetadataRooms(mergedMetadataRooms)));
+        return ClusterRewritePlan.of(resolvedClusters, List.of(mergedCluster));
     }
 
-    public static List<Cluster> applyDelete(Cluster cluster, Set<GridPoint> deletedCells, int deleteLevel) {
+    public static ClusterRewritePlan applyDelete(
+            Cluster cluster,
+            Set<GridPoint> deletedCells,
+            int deleteLevel,
+            Supplier<String> roomNameSupplier
+    ) {
         if (cluster == null || deletedCells == null || deletedCells.isEmpty()) {
             return null;
         }
@@ -101,7 +106,7 @@ public final class ClusterStructureEditor {
             remainingCellsByLevel.put(deleteLevel, Set.copyOf(remainingDeleteLevelCells));
         }
         if (remainingCellsByLevel.isEmpty()) {
-            return List.of();
+            return ClusterRewritePlan.of(List.of(cluster), List.of());
         }
 
         Map<Integer, Set<GridPoint>> remainingFloorCellsByLevel = mutableCellsByLevel(copyStructureFloorCellsByLevel(cluster));
@@ -121,40 +126,14 @@ public final class ClusterStructureEditor {
                 copyStructureSurfaceCellsByLevel(cluster));
         List<Cluster> componentClusters = splitDeletedCluster(cluster, rewrittenStructure);
         if (componentClusters.isEmpty()) {
-            return List.of();
+            return ClusterRewritePlan.of(List.of(cluster), List.of());
         }
         ArrayList<Cluster> finalClusters = new ArrayList<>(componentClusters.size());
         finalClusters.add(withClusterId(componentClusters.getFirst(), cluster.clusterId()));
         finalClusters.addAll(componentClusters.stream().skip(1).toList());
-        return List.copyOf(finalClusters);
-    }
-
-    public static List<Cluster> assignGeneratedClusterRoomNames(List<Cluster> clusters, Supplier<String> roomNameSupplier) {
-        if (clusters == null || roomNameSupplier == null) {
-            return clusters;
-        }
-        boolean changed = false;
-        List<Cluster> renamedClusters = new ArrayList<>(clusters.size());
-        for (Cluster cluster : clusters) {
-            if (cluster == null) {
-                renamedClusters.add(null);
-                continue;
-            }
-            List<Room> renamedRooms = assignGeneratedNamesToRooms(rooms(cluster), roomNameSupplier);
-            if (renamedRooms.equals(rooms(cluster))) {
-                renamedClusters.add(cluster);
-                continue;
-            }
-            renamedClusters.add(new Cluster(
-                    cluster.clusterId(),
-                    cluster.structureObjectId(),
-                    cluster.mapId(),
-                    cluster.center(),
-                    cluster,
-                    renamedRooms));
-            changed = true;
-        }
-        return changed ? List.copyOf(renamedClusters) : clusters;
+        return ClusterRewritePlan.of(
+                List.of(cluster),
+                assignGeneratedClusterRoomNames(finalClusters, roomNameSupplier));
     }
 
     private static List<Room> assignGeneratedNamesToRooms(List<Room> rooms, Supplier<String> roomNameSupplier) {
@@ -182,13 +161,13 @@ public final class ClusterStructureEditor {
         List<Room> reassignedRooms = rooms(cluster).stream()
                 .map(room -> room == null ? null : room.withClusterId(resolvedClusterId))
                 .toList();
-        return new Cluster(
+        return Cluster.fromSpecification(new ClusterSpecification(
                 clusterId,
                 cluster.structureObjectId(),
                 cluster.mapId(),
                 cluster.center(),
                 cluster,
-                reassignedRooms);
+                reassignedRooms));
     }
 
     private static List<Room> rooms(Cluster cluster) {
@@ -522,13 +501,13 @@ public final class ClusterStructureEditor {
                 componentDoorsByLevel,
                 componentWallsByLevel,
                 null);
-        return new Cluster(
+        return Cluster.fromSpecification(new ClusterSpecification(
                 null,
                 null,
                 originalCluster.mapId(),
                 centerCell(flattenCells(componentCellsByLevel)),
                 componentStructure,
-                metadataRoomsForComponent(rooms(originalCluster), componentStructure));
+                metadataRoomsForComponent(rooms(originalCluster), componentStructure)));
     }
 
     private static List<Room> metadataRoomsForComponent(List<Room> rooms, Structure componentStructure) {
@@ -617,5 +596,33 @@ public final class ClusterStructureEditor {
 
     private static GridPoint centerCell(Collection<GridPoint> cells) {
         return features.world.dungeon.geometry.GridArea.of(cells).center();
+    }
+
+    private static List<Cluster> assignGeneratedClusterRoomNames(List<Cluster> clusters, Supplier<String> roomNameSupplier) {
+        if (clusters == null || roomNameSupplier == null) {
+            return clusters == null ? List.of() : List.copyOf(clusters);
+        }
+        boolean changed = false;
+        List<Cluster> renamedClusters = new ArrayList<>(clusters.size());
+        for (Cluster cluster : clusters) {
+            if (cluster == null) {
+                renamedClusters.add(null);
+                continue;
+            }
+            List<Room> renamedRooms = assignGeneratedNamesToRooms(rooms(cluster), roomNameSupplier);
+            if (renamedRooms.equals(rooms(cluster))) {
+                renamedClusters.add(cluster);
+                continue;
+            }
+            renamedClusters.add(Cluster.fromSpecification(new ClusterSpecification(
+                    cluster.clusterId(),
+                    cluster.structureObjectId(),
+                    cluster.mapId(),
+                    cluster.center(),
+                    cluster,
+                    renamedRooms)));
+            changed = true;
+        }
+        return changed ? List.copyOf(renamedClusters) : List.copyOf(clusters);
     }
 }

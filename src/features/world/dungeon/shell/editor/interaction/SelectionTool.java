@@ -2,6 +2,8 @@ package features.world.dungeon.shell.editor.interaction;
 
 import features.world.dungeon.dungeonmap.corridor.application.DungeonCorridorApplicationService;
 import features.world.dungeon.dungeonmap.cluster.application.DungeonClusterApplicationService;
+import features.world.dungeon.dungeonmap.cluster.model.ClusterMutation;
+import features.world.dungeon.dungeonmap.cluster.model.ClusterRewritePlan;
 import features.world.dungeon.application.stair.DungeonStairApplicationService;
 import features.world.dungeon.application.stair.StairDraftResolver;
 import features.world.dungeon.canvas.base.DungeonCanvasPointerEvent;
@@ -326,7 +328,10 @@ public final class SelectionTool implements EditorTool {
         if (mapId != null && clusterId != null && !translation.isZero()) {
             loadingService.submitMutation(
                     () -> {
-                        roomApplicationService.move(mapId, clusterId, translation);
+                        roomApplicationService.move(new DungeonClusterApplicationService.MoveClusterRequest(
+                                mapId,
+                                clusterId,
+                                translation));
                         return mapId;
                     },
                     updatedMapId -> updatedMapId,
@@ -540,15 +545,15 @@ public final class SelectionTool implements EditorTool {
         if (cluster == null) {
             return null;
         }
-        Cluster updatedCluster = cluster.moveDoor(
+        Cluster updatedCluster = cluster.mutated(new ClusterMutation.DoorMove(
                 session.levelZ(),
                 session.sourceBoundarySegment2x(),
-                session.targetBoundaryRef().boundarySegment());
-        if (updatedCluster == null) {
+                session.targetBoundaryRef().boundarySegment()));
+        if (updatedCluster == cluster) {
             return null;
         }
         return session.baseMap()
-                .withReplacedClusters(List.of(cluster), List.of(updatedCluster))
+                .withAppliedClusterRewrite(ClusterRewritePlan.of(List.of(cluster), List.of(updatedCluster)))
                 .projectedToLevel(session.levelZ());
     }
 

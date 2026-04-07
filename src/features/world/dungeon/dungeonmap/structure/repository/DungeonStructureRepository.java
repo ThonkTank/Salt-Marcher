@@ -245,8 +245,8 @@ public final class DungeonStructureRepository {
                 insertLevel.setInt(3, persistedCellX2(surface.anchorCell()));
                 insertLevel.setInt(4, persistedCellY2(surface.anchorCell()));
                 insertLevel.addBatch();
-                addCells(insertSurfaceCell, structureObjectId, levelZ, surface.surfaceCells());
-                addCells(insertFloorCell, structureObjectId, levelZ, surface.floorCells());
+                addCells(insertSurfaceCell, structureObjectId, levelZ, surface.surfaceArea().cells());
+                addCells(insertFloorCell, structureObjectId, levelZ, surface.floorArea().cells());
                 addWalls(insertWall, insertWallSegment, structureObjectId, levelZ, boundary.walls());
                 addDoors(insertDoor, insertDoorSegment, structureObjectId, levelZ, boundary.doors());
             }

@@ -71,7 +71,7 @@ public final class CorridorRouting {
             if (trace == null) {
                 continue;
             }
-            for (GridPoint point2x : trace.points()) {
+            for (GridPoint point2x : trace.path().points()) {
                 if (point2x != null && point2x.kind() == GridPoint.Kind.CELL) {
                     result.add(point2x);
                 }

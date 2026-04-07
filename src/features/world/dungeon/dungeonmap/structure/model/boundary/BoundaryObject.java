@@ -2,6 +2,7 @@ package features.world.dungeon.dungeonmap.structure.model.boundary;
 
 import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridBoundary;
+import features.world.dungeon.geometry.GridBounded;
 import features.world.dungeon.geometry.GridOccupant;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
@@ -15,7 +16,7 @@ import java.util.Set;
 /**
  * Shared internal base for boundary-local single-object owners.
  */
-public abstract class BoundaryObject implements GridOccupant {
+public abstract class BoundaryObject implements GridOccupant, GridBounded {
 
     private final Long objectId;
     private final GridBoundary boundary;
@@ -39,6 +40,11 @@ public abstract class BoundaryObject implements GridOccupant {
         return anchorSegment != null
                 ? anchorSegment
                 : boundary.segments().stream().sorted(GridSegment.ORDER).findFirst().orElse(null);
+    }
+
+    @Override
+    public final GridBoundary boundary() {
+        return boundary;
     }
 
     public final Set<GridSegment> boundarySegments() {

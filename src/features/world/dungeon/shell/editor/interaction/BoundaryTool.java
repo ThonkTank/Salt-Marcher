@@ -214,17 +214,17 @@ public final class BoundaryTool implements EditorTool {
         loadingService.submitMutation(
                 () -> {
                     if (currentDraft.deleteMode()) {
-                        roomApplicationService.deleteWallPath(
+                        roomApplicationService.deleteWallPath(new DungeonClusterApplicationService.DeleteWallPathRequest(
                                 mapId,
                                 currentDraft.clusterId(),
                                 mapState.activeProjectionLevel(),
-                                features.world.dungeon.geometry.GridBoundary.of(edges));
+                                features.world.dungeon.geometry.GridBoundary.of(edges)));
                     } else {
-                        roomApplicationService.createWallPath(
+                        roomApplicationService.createWallPath(new DungeonClusterApplicationService.CreateWallPathRequest(
                                 mapId,
                                 currentDraft.clusterId(),
                                 mapState.activeProjectionLevel(),
-                                features.world.dungeon.geometry.GridBoundary.of(edges));
+                                features.world.dungeon.geometry.GridBoundary.of(edges)));
                     }
                     return mapId;
                 },

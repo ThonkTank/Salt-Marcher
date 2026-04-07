@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-public final class GridBoundary extends GridObject {
+public final class GridBoundary extends GridObject<GridBoundary> implements GridBounded {
 
     private final Set<GridSegment> segments;
 
@@ -106,6 +106,11 @@ public final class GridBoundary extends GridObject {
             }
         }
         return cells.isEmpty() ? GridArea.empty() : GridArea.of(cells);
+    }
+
+    @Override
+    public GridBoundary boundary() {
+        return this;
     }
 
     @Override

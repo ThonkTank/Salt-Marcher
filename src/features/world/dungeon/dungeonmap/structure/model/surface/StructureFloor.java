@@ -44,11 +44,11 @@ public final class StructureFloor extends StructureSurfaceObject {
     }
 
     StructureFloor clippedTo(StructureSurfaceArea surfaceArea) {
-        return fromCells(GridArea.of(cells()), surfaceArea);
+        return fromCells(area(), surfaceArea);
     }
 
     PersistenceSnapshot persistenceSnapshot() {
-        return new PersistenceSnapshot(cells());
+        return new PersistenceSnapshot(area().cells());
     }
 
     @Override

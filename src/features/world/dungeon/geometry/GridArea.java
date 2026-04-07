@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-public final class GridArea extends GridObject {
+public final class GridArea extends GridObject<GridArea> {
 
     private final Set<GridPoint> cells;
 

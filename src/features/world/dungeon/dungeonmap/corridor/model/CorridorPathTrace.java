@@ -17,19 +17,6 @@ public record CorridorPathTrace(
         path = path == null ? GridPath.empty() : path;
     }
 
-    public static CorridorPathTrace of(
-            Long traceId,
-            Long startNodeId,
-            Long endNodeId,
-            List<GridPoint> points
-    ) {
-        return new CorridorPathTrace(traceId, startNodeId, endNodeId, GridPath.of(points));
-    }
-
-    public List<GridPoint> points() {
-        return path.points();
-    }
-
     public List<GridSegment> segments() {
         List<GridPoint> points = path.points();
         if (points.size() < 2) {
@@ -45,6 +32,11 @@ public record CorridorPathTrace(
             result.add(new GridSegment(start, end));
         }
         return List.copyOf(result);
+    }
+
+    public GridPoint canonicalPoint() {
+        List<GridPoint> points = path.points();
+        return points.isEmpty() ? null : points.get(points.size() / 2);
     }
 
     public List<GridPoint> turnPoints() {

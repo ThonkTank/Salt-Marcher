@@ -1,10 +1,10 @@
 package features.world.dungeon.dungeonmap.cluster.repository;
 
 import features.world.dungeon.geometry.GridPoint;
-import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.dungeonmap.structure.model.Structure;
 import features.world.dungeon.dungeonmap.structure.model.StructureSpecification;
 import features.world.dungeon.dungeonmap.cluster.model.Cluster;
+import features.world.dungeon.dungeonmap.cluster.model.ClusterSpecification;
 import features.world.dungeon.model.structures.room.RoomExitNarration;
 import features.world.dungeon.model.structures.room.RoomNarration;
 import features.world.dungeon.model.structures.room.Room;
@@ -133,13 +133,13 @@ public final class DungeonClusterRepository {
                     if (structure == null || structure.levels().isEmpty()) {
                         throw new IllegalStateException("Cluster " + clusterId + " hat keine persistierte Strukturbeschreibung");
                     }
-                    clusters.add(new Cluster(
+                    clusters.add(Cluster.fromSpecification(new ClusterSpecification(
                             clusterId,
                             structureObjectId,
                             rs.getLong("dungeon_map_id"),
                             GridPoint.cell(rs.getInt("center_x"), rs.getInt("center_y"), 0),
                             structure,
-                            roomsByClusterId.getOrDefault(clusterId, List.of())));
+                            roomsByClusterId.getOrDefault(clusterId, List.of()))));
                 }
             }
         }

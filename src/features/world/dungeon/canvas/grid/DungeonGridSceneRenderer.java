@@ -121,8 +121,8 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 var boundary = roomStructure.boundaryAtLevel(pass.projectionLevel());
                 WalkableSurface surface = walkableSurface(
                         roomStructure.surfaceAtLevel(pass.projectionLevel()).floor().cells(),
-                        boundary.boundaryEdges(),
-                        boundary.doorBoundaryEdges());
+                        boundary.boundary().segments(),
+                        boundary.doorBoundary().segments());
                 boolean selectedRoom = selectedRoom(pass.projected(), pass.selectedRef(), room.roomId());
                 if (!surface.tiles().isEmpty()) {
                     fillRoomTiles(gc, pass.camera(), pass.gridSize(), surface.tiles());
@@ -342,8 +342,8 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             boolean selected = selectedCorridor(pass.projected(), pass.selectedRef(), corridor.corridorId());
             WalkableSurface surface = walkableSurface(
                     corridor.surfaceAtLevel(pass.projectionLevel()).floor().cells(),
-                    corridor.boundaryAtLevel(pass.projectionLevel()).boundaryEdges(),
-                    corridor.boundaryDoorSegments());
+                    corridor.boundaryAtLevel(pass.projectionLevel()).boundary().segments(),
+                    corridor.boundaryDoorBoundary().segments());
             if (surface.tiles().isEmpty() && surface.doorSegments().isEmpty()) {
                 continue;
             }
@@ -972,8 +972,8 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         }
         return walkableSurface(
                 structure.surfaceAtLevel(levelZ).floor().cells(),
-                structure.boundaryAtLevel(levelZ).boundaryEdges(),
-                structure.boundaryAtLevel(levelZ).doorBoundaryEdges());
+                structure.boundaryAtLevel(levelZ).boundary().segments(),
+                structure.boundaryAtLevel(levelZ).doorBoundary().segments());
     }
 
     private static WalkableSurface walkableSurface(

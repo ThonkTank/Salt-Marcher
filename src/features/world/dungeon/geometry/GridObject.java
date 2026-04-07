@@ -2,9 +2,9 @@ package features.world.dungeon.geometry;
 
 import java.util.Set;
 
-public abstract class GridObject implements GridTranslatable<GridObject>, GridOccupant {
+public abstract class GridObject<T extends GridObject<T>> implements GridTranslatable<T>, GridOccupant {
 
-    public abstract GridObject translated(GridTranslation translation);
+    public abstract T translated(GridTranslation translation);
 
     public abstract Set<Integer> levels();
 

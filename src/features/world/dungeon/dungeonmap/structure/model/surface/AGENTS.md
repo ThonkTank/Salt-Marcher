@@ -14,7 +14,7 @@ This file covers `src/features/world/dungeon/dungeonmap/structure/model/surface/
 - `StructureSurfaceObject` — internal shared base — owns tile-shape-backed behavior common to `StructureSurfaceArea` and `StructureFloor`; this is not a public consumer seam.
 - `StructureSurfaceArea` — surface-area owner — owns anchors, surface cells, clipping, reachability, and surface translation.
 - `StructureFloor` — floor owner — owns floor-cell truth constrained to one `StructureSurfaceArea`.
-- `StructureSurface.PersistenceSnapshot` — surface-owned aggregate persistence shape — the only public surface persistence seam; repositories load and save anchor, surface, and floor rows through this aggregate snapshot instead of constructing child snapshots directly.
+- `StructureSurface.PersistenceSnapshot` — surface-owned aggregate persistence shape — the only public surface persistence seam; it carries `anchorCell()`, `surfaceArea()`, and `floorArea()` so repositories load and save the aggregate through canonical geometry carriers instead of raw cell sets.
 
 ## Where New Code Goes
 

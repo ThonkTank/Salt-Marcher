@@ -3,6 +3,7 @@ package features.world.dungeon.dungeonmap.structure.model.boundary;
 import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridBoundary;
+import features.world.dungeon.geometry.GridBounded;
 import features.world.dungeon.geometry.GridSegment;
 import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridTranslation;
@@ -29,7 +30,7 @@ import java.util.Set;
  * <p>The boundary aggregate now materializes the current surface perimeter as real walls so callers no longer need a
  * synthetic "effective wall" fallback for exterior edges.</p>
  */
-public final class StructureBoundary {
+public final class StructureBoundary implements GridBounded {
 
     public record PersistenceSnapshot(
             List<Door> doors,
@@ -111,13 +112,14 @@ public final class StructureBoundary {
         return new PersistenceSnapshot(doors, walls);
     }
 
-    public Set<GridSegment> boundaryEdges() {
-        return edgeShape.segments();
+    @Override
+    public GridBoundary boundary() {
+        return edgeShape;
     }
 
-    public Set<GridSegment> doorBoundaryEdges() {
+    public GridBoundary doorBoundary() {
         if (doors.isEmpty()) {
-            return Set.of();
+            return GridBoundary.empty();
         }
         LinkedHashSet<GridSegment> result = new LinkedHashSet<>();
         for (Door door : doors) {
@@ -125,11 +127,51 @@ public final class StructureBoundary {
                 result.addAll(door.boundarySegments());
             }
         }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+        return result.isEmpty() ? GridBoundary.empty() : GridBoundary.of(result);
+    }
+
+    public GridBoundary interiorAdjacencyBoundary() {
+        return GridBoundary.of(interiorAdjacencyEdgesForSurface(surfaceCells));
+    }
+
+    public GridBoundary creatableWallBoundary() {
+        LinkedHashSet<GridSegment> result = new LinkedHashSet<>(interiorAdjacencyBoundary().segments());
+        result.removeAll(wallEdges(walls));
+        return result.isEmpty() ? GridBoundary.empty() : GridBoundary.of(result);
+    }
+
+    public GridBoundary deletableWallBoundary() {
+        LinkedHashSet<GridSegment> result = new LinkedHashSet<>(wallEdges(walls));
+        result.retainAll(interiorAdjacencyBoundary().segments());
+        return result.isEmpty() ? GridBoundary.empty() : GridBoundary.of(result);
+    }
+
+    public GridBoundary interiorBoundary() {
+        if (surfaceCells.isEmpty()) {
+            return GridBoundary.empty();
+        }
+        return GridBoundary.of(boundary().segments().stream()
+                .filter(this::isInteriorBoundary)
+                .sorted(GridSegment.ORDER)
+                .toList());
+    }
+
+    public GridBoundary exteriorBoundary() {
+        if (surfaceCells.isEmpty()) {
+            return GridBoundary.empty();
+        }
+        return GridBoundary.of(boundary().segments().stream()
+                .filter(this::isExteriorBoundary)
+                .sorted(GridSegment.ORDER)
+                .toList());
+    }
+
+    private Set<GridSegment> boundaryEdges() {
+        return edgeShape.segments();
     }
 
     public Door doorAtBoundarySegment(GridSegment segment2x) {
-        if (segment2x == null || !boundaryEdges().contains(segment2x)) {
+        if (segment2x == null || !boundary().contains(segment2x)) {
             return null;
         }
         for (Door door : doors) {
@@ -141,7 +183,7 @@ public final class StructureBoundary {
     }
 
     public Wall wallAtBoundarySegment(GridSegment segment2x) {
-        if (segment2x == null || !boundaryEdges().contains(segment2x)) {
+        if (segment2x == null || !boundary().contains(segment2x)) {
             return null;
         }
         for (Wall wall : walls) {
@@ -152,22 +194,6 @@ public final class StructureBoundary {
         return null;
     }
 
-    public Set<GridSegment> interiorAdjacencyEdges() {
-        return interiorAdjacencyEdgesForSurface(surfaceCells);
-    }
-
-    public Set<GridSegment> creatableWallEdges() {
-        LinkedHashSet<GridSegment> result = new LinkedHashSet<>(interiorAdjacencyEdges());
-        result.removeAll(wallEdges(walls));
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
-    public Set<GridSegment> deletableWallEdges() {
-        LinkedHashSet<GridSegment> result = new LinkedHashSet<>(wallEdges(walls));
-        result.retainAll(interiorAdjacencyEdges());
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
     public boolean isInteriorBoundary(GridSegment segment2x) {
         return segment2x != null && touchingSurfaceCellCount(surfaceCells, segment2x) == 2L;
     }
@@ -176,31 +202,11 @@ public final class StructureBoundary {
         return segment2x != null && touchingSurfaceCellCount(surfaceCells, segment2x) == 1L;
     }
 
-    public Set<GridSegment> interiorBoundaryEdges() {
-        if (surfaceCells.isEmpty()) {
-            return Set.of();
-        }
-        return boundaryEdges().stream()
-                .filter(this::isInteriorBoundary)
-                .sorted(GridSegment.ORDER)
-                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
-    }
-
-    public Set<GridSegment> exteriorBoundaryEdges() {
-        if (surfaceCells.isEmpty()) {
-            return Set.of();
-        }
-        return boundaryEdges().stream()
-                .filter(this::isExteriorBoundary)
-                .sorted(GridSegment.ORDER)
-                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
-    }
-
     public boolean touchesBoundaryVertex(GridPoint vertex) {
         if (vertex == null) {
             return false;
         }
-        return boundaryEdges().stream()
+        return boundary().segments().stream()
                 .anyMatch(segment2x -> segment2x.start().equals(vertex) || segment2x.end().equals(vertex));
     }
 
@@ -208,17 +214,19 @@ public final class StructureBoundary {
         if (vertex == null) {
             return false;
         }
-        Set<GridSegment> candidateEdges = deleteMode ? deletableWallEdges() : creatableWallEdges();
+        Set<GridSegment> candidateEdges = deleteMode
+                ? deletableWallBoundary().segments()
+                : creatableWallBoundary().segments();
         return candidateEdges.stream()
                 .anyMatch(segment2x -> segment2x.start().equals(vertex) || segment2x.end().equals(vertex));
     }
 
     public List<GridSegment> findCreatableWallPath(GridPoint start, GridPoint goal) {
-        return shortestEdgePath(start, goal, creatableWallEdges());
+        return shortestEdgePath(start, goal, creatableWallBoundary().segments());
     }
 
     public List<GridSegment> findDeletableWallPath(GridPoint start, GridPoint goal) {
-        return shortestEdgePath(start, goal, deletableWallEdges());
+        return shortestEdgePath(start, goal, deletableWallBoundary().segments());
     }
 
     public StructureBoundary withDoors(Collection<Door> doors) {
@@ -229,14 +237,14 @@ public final class StructureBoundary {
         return fromSurfaceAndFeatures(
                 surfaceCells,
                 doors,
-                createdWalls(walls, normalizedBoundaryEdges(creatableWallEdges(), segments == null ? Set.of() : segments.segments())));
+                createdWalls(walls, normalizedBoundaryEdges(creatableWallBoundary().segments(), segments == null ? Set.of() : segments.segments())));
     }
 
     public StructureBoundary withDeletedWallPath(GridBoundary segments) {
         return fromSurfaceAndFeatures(
                 surfaceCells,
                 doors,
-                deletedWalls(walls, normalizedBoundaryEdges(deletableWallEdges(), segments == null ? Set.of() : segments.segments())));
+                deletedWalls(walls, normalizedBoundaryEdges(deletableWallBoundary().segments(), segments == null ? Set.of() : segments.segments())));
     }
 
     public StructureBoundary withCreatedDoorSegments(GridBoundary segments) {
@@ -267,7 +275,7 @@ public final class StructureBoundary {
             throw new IllegalArgumentException("Door move target is already occupied");
         }
         Wall targetWall = wallAtBoundarySegment(targetBoundarySegment2x);
-        if (!boundaryEdges().contains(targetBoundarySegment2x)
+        if (!boundary().contains(targetBoundarySegment2x)
                 || targetWall == null
                 || !targetWall.supportsDoorAttachments()) {
             throw new IllegalArgumentException("Door move target must be a valid boundary wall");
@@ -318,14 +326,14 @@ public final class StructureBoundary {
             return false;
         }
         return Objects.equals(surfaceCells, that.surfaceCells)
-                && Objects.equals(boundaryEdges(), that.boundaryEdges())
+                && Objects.equals(boundary(), that.boundary())
                 && Objects.equals(doors, that.doors)
                 && Objects.equals(walls, that.walls);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(surfaceCells, boundaryEdges(), doors, walls);
+        return Objects.hash(surfaceCells, boundary(), doors, walls);
     }
 
     @Override
@@ -474,7 +482,7 @@ public final class StructureBoundary {
         }
         List<GridSegment> editableSegments = requestedSegments.stream()
                 .filter(Objects::nonNull)
-                .filter(boundaryEdges()::contains)
+                .filter(boundary().segments()::contains)
                 .filter(segment2x -> doorAtBoundarySegment(segment2x) == null)
                 .filter(segment2x -> {
                     Wall wall = wallAtBoundarySegment(segment2x);

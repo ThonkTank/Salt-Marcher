@@ -10,12 +10,9 @@ import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.model.interaction.InteractiveLabelHandle;
 import features.world.dungeon.dungeonmap.structure.model.Structure;
 import features.world.dungeon.dungeonmap.structure.model.StructureMutation;
-import features.world.dungeon.dungeonmap.structure.model.StructureSpecification;
 import features.world.dungeon.dungeonmap.structure.model.boundary.StructureBoundary;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.Door;
-import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeon.dungeonmap.structure.model.boundary.wall.Wall;
-import features.world.dungeon.dungeonmap.structure.model.boundary.wall.WallKind;
 import features.world.dungeon.dungeonmap.structure.model.room.StructureRoomTopology;
 import features.world.dungeon.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeon.model.structures.connection.ConnectionKind;
@@ -48,6 +45,20 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
                 resolvedSpecification.mapId(),
                 resolvedSpecification.structure(),
                 resolvedSpecification.rooms()));
+    }
+
+    private Cluster(
+            ClusterSpecification specification,
+            Map<Integer, Structure.LevelStructure> levelsByZ,
+            StructureRoomTopology roomTopology
+    ) {
+        this(
+                specification == null ? null : specification.clusterId(),
+                specification == null ? null : specification.structureObjectId(),
+                specification == null ? 0L : specification.mapId(),
+                specification == null ? null : specification.center(),
+                levelsByZ,
+                roomTopology);
     }
 
     private Cluster(
@@ -146,7 +157,7 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
             return false;
         }
         Wall effectiveWall = boundary.wallAtBoundarySegment(boundarySegment2x);
-        if (!boundary.boundaryEdges().contains(boundarySegment2x)
+        if (!boundary.boundary().contains(boundarySegment2x)
                 || effectiveWall == null
                 || !effectiveWall.supportsDoorAttachments()
                 || !boundary.isInteriorBoundary(boundarySegment2x)) {
@@ -172,7 +183,7 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
         StructureBoundary boundary = boundaryAtLevel(levelZ);
         Wall effectiveWall = boundary.wallAtBoundarySegment(boundarySegment2x);
         return boundarySegment2x != null
-                && boundary.boundaryEdges().contains(boundarySegment2x)
+                && boundary.boundary().contains(boundarySegment2x)
                 && boundary.doorAtBoundarySegment(boundarySegment2x) == null
                 && effectiveWall != null
                 && effectiveWall.supportsDoorAttachments()
@@ -184,14 +195,6 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
         return boundarySegment2x != null
                 && boundary.doorAtBoundarySegment(boundarySegment2x) != null
                 && boundary.isExteriorBoundary(boundarySegment2x);
-    }
-
-    public Cluster withDoorSegments(int levelZ, GridBoundary segments, boolean deleteDoor) {
-        return Topology.editDoors(this, levelZ, segments == null ? Set.of() : segments.segments(), deleteDoor, false);
-    }
-
-    public Cluster withExteriorDoors(int levelZ, GridBoundary segments, boolean deleteDoor) {
-        return Topology.editDoors(this, levelZ, segments == null ? Set.of() : segments.segments(), deleteDoor, true);
     }
 
     public InteractiveLabelHandle labelHandle() {
@@ -262,20 +265,16 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
         return super.primaryLevel();
     }
 
-    public Set<GridSegment> outerBoundarySegments2x() {
+    public GridBoundary outerBoundary() {
         LinkedHashSet<GridSegment> result = new LinkedHashSet<>();
         for (Integer levelZ : levels().stream().sorted().toList()) {
-            result.addAll(boundaryAtLevel(levelZ).exteriorBoundaryEdges());
+            result.addAll(boundaryAtLevel(levelZ).exteriorBoundary().segments());
         }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+        return result.isEmpty() ? GridBoundary.empty() : GridBoundary.of(result);
     }
 
     public boolean contains(GridPoint cell, int levelZ) {
         return roomAt(cell, levelZ) != null;
-    }
-
-    private List<Room> rooms() {
-        return roomTopology().rooms();
     }
 
     private Structure roomStructure(Room room) {
@@ -292,14 +291,6 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
 
     private Room roomAt(GridPoint cell, int levelZ) {
         return cell == null ? null : roomTopology().roomAt(cell, levelZ);
-    }
-
-    private static List<Room> requireExplicitStructure(List<Room> rooms) {
-        List<Room> resolvedRooms = rooms == null ? List.of() : List.copyOf(rooms);
-        if (!resolvedRooms.isEmpty()) {
-            throw new IllegalArgumentException("Cluster requires explicit structure when rooms are present");
-        }
-        return resolvedRooms;
     }
 
     private static RoomPair roomPairAtLevel(Cluster cluster, GridSegment segment2x, int levelZ) {
@@ -433,7 +424,7 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
             }
             return segments2x.stream()
                     .filter(Objects::nonNull)
-                    .filter(segment2x -> cluster.boundaryAtLevel(levelZ).interiorAdjacencyEdges().contains(segment2x))
+                    .filter(segment2x -> cluster.boundaryAtLevel(levelZ).interiorAdjacencyBoundary().contains(segment2x))
                     .filter(segment2x -> {
                         RoomPair roomPair = roomPairAtLevel(cluster, segment2x, levelZ);
                         return roomPair != null && !sameRoomId(roomPair.left(), roomPair.right());

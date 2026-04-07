@@ -33,7 +33,7 @@ abstract sealed class StructureSurfaceObject permits StructureSurfaceArea, Struc
         return area.isEmpty();
     }
 
-    final GridArea area() {
+    public final GridArea area() {
         return area;
     }
 

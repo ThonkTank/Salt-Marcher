@@ -21,7 +21,7 @@
 
 ## Canonical Types and APIs
 
-- `GridObject` and the `geometry` slice — canonical dungeon grid algebra — every topology owner must express shared spatial truth through `GridPoint`, `GridSegment`, `GridArea`, `GridBoundary`, or `GridPath`, movement through `GridTranslation`, and occupancy through `cellFootprint(): GridArea`.
+- `GridObject` and the `geometry` slice — canonical dungeon grid algebra — every topology owner must express shared spatial truth through `GridPoint`, `GridSegment`, `GridArea`, `GridBoundary`, or `GridPath`, movement through `GridTranslation`, occupancy through `cellFootprint(): GridArea`, and aggregate boundary truth through `boundary(): GridBoundary`.
 - `dungeonmap` slice — authoritative loaded map snapshot plus load/reload and map-state seams — other owners rebuild through this slice after writes.
 - `DungeonClusterApplicationService` — cluster mutation seam — persists top-level cluster edits, cluster-backed room rewrites, and cluster bootstrap flows.
 - `DungeonRoomApplicationService` — room metadata seam — persists room-local narration and other room-owned metadata writes.
@@ -42,6 +42,7 @@
 - Route public structure-backed topology mutation through `structure.mutated(...)`.
 - Keep public movement on `translated(GridTranslation)` and keep drag/drop deltas, stair moves, and corridor reconciliation on `GridTranslation` instead of `GridPoint` stand-ins.
 - Keep public occupied-cell reads on `cellFootprint()`; if a caller truly needs raw cells, it should unwrap `.cells()` at the leaf instead of adding a second owner-level occupancy API.
+- Keep public aggregate boundary reads on `boundary()`; if a caller truly needs raw boundary segments, it should unwrap `.segments()` at the leaf instead of adding a second owner-level boundary API.
 - Treat `floor` as the only traversable/runtime/exit truth. `surface` remains explicit owned geometry for projection, editing, and hit/selection areas; it must not be used as a fallback for "walkable anyway".
 - Let door- and wall-specific reads and edits terminate on the explicit `BoundaryObject`, `Door`, and `Wall` APIs returned from that boundary owner instead of rebuilding raw `GridBoundary` surgery or derived mirrors in callers.
 - Keep shared structure persistence shaped like the runtime `Structure -> level -> surface(surface area + floor) + boundary` composition so save and reload do not rebuild a second flattened structure model.

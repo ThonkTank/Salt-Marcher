@@ -122,9 +122,15 @@ public final class PaintTool implements EditorTool {
         loadingService.submitMutation(
                 () -> {
                     if (finishedSession.deleteMode()) {
-                        roomApplicationService.deleteCells(mapId, activeLevel, features.world.dungeon.geometry.GridArea.of(cells));
+                        roomApplicationService.deleteCells(new DungeonClusterApplicationService.DeleteCellsRequest(
+                                mapId,
+                                activeLevel,
+                                features.world.dungeon.geometry.GridArea.of(cells)));
                     } else {
-                        roomApplicationService.paintCells(mapId, activeLevel, features.world.dungeon.geometry.GridArea.of(cells));
+                        roomApplicationService.paintCells(new DungeonClusterApplicationService.PaintCellsRequest(
+                                mapId,
+                                activeLevel,
+                                features.world.dungeon.geometry.GridArea.of(cells)));
                     }
                     return mapId;
                 },
