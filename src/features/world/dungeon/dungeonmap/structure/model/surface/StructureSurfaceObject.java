@@ -1,6 +1,7 @@
 package features.world.dungeon.dungeonmap.structure.model.surface;
 
 import features.world.dungeon.geometry.GridArea;
+import features.world.dungeon.geometry.GridOccupant;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridTranslation;
 
@@ -9,7 +10,7 @@ import java.util.Set;
 /**
  * Internal shared area-backed base for surface child owners.
  */
-abstract sealed class StructureSurfaceObject permits StructureSurfaceArea, StructureFloor {
+abstract sealed class StructureSurfaceObject implements GridOccupant permits StructureSurfaceArea, StructureFloor {
 
     private final GridArea area;
 
@@ -17,7 +18,7 @@ abstract sealed class StructureSurfaceObject permits StructureSurfaceArea, Struc
         this.area = area == null ? GridArea.empty() : area;
     }
 
-    public final Set<GridPoint> cells() {
+    final Set<GridPoint> cells() {
         return area.cells();
     }
 
@@ -33,7 +34,12 @@ abstract sealed class StructureSurfaceObject permits StructureSurfaceArea, Struc
         return area.isEmpty();
     }
 
-    public final GridArea area() {
+    final GridArea area() {
+        return area;
+    }
+
+    @Override
+    public final GridArea cellFootprint() {
         return area;
     }
 

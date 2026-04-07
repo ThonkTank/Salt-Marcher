@@ -148,7 +148,7 @@ public final class RoomNarrationPane {
                 .sorted()
                 .flatMap(levelZ -> DoorExitCatalog.describe(
                         layout,
-                        cluster.roomTopology().structureFor(room).surfaceAtLevel(levelZ).floor().cells(),
+                        cluster.roomTopology().structureFor(room).surfaceAtLevel(levelZ).floor().cellFootprint().cells(),
                         levelZ,
                         layout.connectionsForEndpoint(ConnectionEndpoint.room(room.roomId()))).stream())
                 .toList();

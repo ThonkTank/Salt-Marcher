@@ -92,7 +92,7 @@ public final class DungeonRuntimeActionResolver {
             return;
         }
         for (int levelZ : cluster.roomTopology().roomRelevantLevels(room, location.activeCell(), location.activeLevelZ())) {
-            Set<GridPoint> roomFloorCells = cluster.roomTopology().structureFor(room).surfaceAtLevel(levelZ).floor().cells();
+            Set<GridPoint> roomFloorCells = cluster.roomTopology().structureFor(room).surfaceAtLevel(levelZ).floor().cellFootprint().cells();
             appendStructureStairs(
                     location.layout(),
                     roomFloorCells,
@@ -117,7 +117,7 @@ public final class DungeonRuntimeActionResolver {
             return;
         }
         // Runtime exits must terminate on explicit floor truth instead of assuming corridor surface implies walkable area.
-        Set<GridPoint> corridorFloorCells = corridor.surfaceAtLevel(corridor.levelZ()).floor().cells();
+        Set<GridPoint> corridorFloorCells = corridor.surfaceAtLevel(corridor.levelZ()).floor().cellFootprint().cells();
         appendStructureStairs(
                 location.layout(),
                 corridorFloorCells,

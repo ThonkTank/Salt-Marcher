@@ -491,7 +491,7 @@ public final class DungeonMap {
         }
         return DoorExitCatalog.describe(
                 this,
-                corridor.surfaceAtLevel(corridor.levelZ()).floor().cells(),
+                corridor.surfaceAtLevel(corridor.levelZ()).floor().cellFootprint().cells(),
                 corridor.levelZ(),
                 connectionsForCorridor(corridor.corridorId()));
     }
@@ -996,7 +996,7 @@ public final class DungeonMap {
                 : new ClusterRewriteEffects(reboundCorridors, reboundTransitionConnections);
     }
 
-    public void assertClusterFloorDeletionAllowed(Room room, int levelZ, Set<GridPoint> removedFloorCells) {
+    public void assertClusterFloorDeletionAllowed(Room room, int levelZ, GridArea removedFloorCells) {
         if (room == null || room.roomId() == null || removedFloorCells == null || removedFloorCells.isEmpty()) {
             return;
         }
@@ -1014,7 +1014,7 @@ public final class DungeonMap {
                     && transition.localConnection() != null
                     && transition.localConnection().cellFootprint(this).cells().stream()
                     .filter(point -> point != null && point.z() == levelZ)
-                    .anyMatch(removedFloorCells::contains)) {
+                    .anyMatch(removedFloorCells.cells()::contains)) {
                 throw new IllegalArgumentException("Boden unter einem platzierten Übergang kann nicht entfernt werden.");
             }
         }
@@ -1025,7 +1025,7 @@ public final class DungeonMap {
             boolean usesRemovedExit = stair.exitsAtLevel(levelZ).stream()
                     .map(features.world.dungeon.model.structures.stair.StairExit::cell)
                     .filter(Objects::nonNull)
-                    .anyMatch(removedFloorCells::contains);
+                    .anyMatch(removedFloorCells.cells()::contains);
             if (usesRemovedExit) {
                 throw new IllegalArgumentException("Boden unter einem Treppenanschluss kann nicht entfernt werden.");
             }
@@ -1147,7 +1147,7 @@ public final class DungeonMap {
             }
             for (Room room : cluster.roomTopology().rooms()) {
                 if (room != null) {
-                    blocked.addAll(cluster.roomTopology().structureFor(room).surfaceAtLevel(levelZ).surface().cells());
+                    blocked.addAll(cluster.roomTopology().structureFor(room).surfaceAtLevel(levelZ).surface().cellFootprint().cells());
                 }
             }
         }
@@ -1333,7 +1333,6 @@ public final class DungeonMap {
         return Corridor.rehydrated(
                 specification,
                 structure,
-                resolvedRequest.pathTraces(),
                 corridorResolutionInput(new CorridorResolutionContextRequest(
                         specification.levelZ(),
                         structure.boundaryAtLevel(specification.levelZ()).doors())));
@@ -1550,7 +1549,7 @@ public final class DungeonMap {
 
     private static boolean corridorReachesLevel(Corridor corridor, int levelZ) {
         return corridor != null
-                && !corridor.surfaceAtLevel(levelZ).floor().cells().isEmpty();
+                && !corridor.surfaceAtLevel(levelZ).floor().cellFootprint().cells().isEmpty();
     }
 
     private static List<Cluster> normalizedClusters(List<Cluster> clusters) {
@@ -1629,7 +1628,7 @@ public final class DungeonMap {
             if (doorEntry == null || doorEntry.door() == null) {
                 continue;
             }
-            for (GridSegment segment2x : doorEntry.door().boundarySegments()) {
+            for (GridSegment segment2x : doorEntry.door().boundary().segments()) {
                 result.putIfAbsent(new ConnectionSegmentKey(doorEntry.description().levelZ(), segment2x), doorEntry);
             }
         }
@@ -1774,7 +1773,7 @@ public final class DungeonMap {
         if (door == null || !door.hasBoundarySegments()) {
             return Set.of();
         }
-        return door.boundarySegments();
+        return door.boundary().segments();
     }
 
     private static DoorEntry clusterDoorEntry(Cluster cluster, int levelZ, Door door) {
@@ -1918,7 +1917,7 @@ public final class DungeonMap {
             for (Room room : cluster.roomTopology().rooms()) {
                 if (room != null) {
                     for (Integer levelZ : cluster.roomTopology().roomLevels(room)) {
-                        result.addAll(cluster.roomTopology().structureFor(room).surfaceAtLevel(levelZ).floor().cells());
+                        result.addAll(cluster.roomTopology().structureFor(room).surfaceAtLevel(levelZ).floor().cellFootprint().cells());
                     }
                 }
             }
@@ -1927,7 +1926,7 @@ public final class DungeonMap {
             if (corridor != null) {
                 // Traversable layout indexes must follow the explicit floor set even when a structure also owns
                 // non-walkable surface cells.
-                result.addAll(corridor.surfaceAtLevel(corridor.levelZ()).floor().cells());
+                result.addAll(corridor.surfaceAtLevel(corridor.levelZ()).floor().cellFootprint().cells());
             }
         }
         for (DungeonStair stair : stairs) {
@@ -1961,7 +1960,7 @@ public final class DungeonMap {
                 }
                 for (Integer levelZ : cluster.roomTopology().roomLevels(room)) {
                     mutable.computeIfAbsent(levelZ, ignored -> new LinkedHashSet<>())
-                            .addAll(cluster.roomTopology().structureFor(room).surfaceAtLevel(levelZ).floor().cells());
+                            .addAll(cluster.roomTopology().structureFor(room).surfaceAtLevel(levelZ).floor().cellFootprint().cells());
                 }
             }
         }
@@ -1970,7 +1969,7 @@ public final class DungeonMap {
                 continue;
             }
             mutable.computeIfAbsent(corridor.levelZ(), ignored -> new LinkedHashSet<>())
-                    .addAll(corridor.surfaceAtLevel(corridor.levelZ()).floor().cells());
+                    .addAll(corridor.surfaceAtLevel(corridor.levelZ()).floor().cellFootprint().cells());
         }
         for (DungeonStair stair : stairs) {
             if (stair != null) {
@@ -2012,7 +2011,7 @@ public final class DungeonMap {
             if (corridor == null || corridor.corridorId() == null) {
                 continue;
             }
-            for (GridPoint cell : corridor.surfaceAtLevel(corridor.levelZ()).surface().cells()) {
+            for (GridPoint cell : corridor.surfaceAtLevel(corridor.levelZ()).surface().cellFootprint().cells()) {
                 mutable.computeIfAbsent(cell, ignored -> new ArrayList<>()).add(corridor.corridorId());
             }
         }
@@ -2029,7 +2028,7 @@ public final class DungeonMap {
             if (corridor == null || corridor.corridorId() == null) {
                 continue;
             }
-            for (GridPoint cell : corridor.surfaceAtLevel(corridor.levelZ()).surface().cells()) {
+            for (GridPoint cell : corridor.surfaceAtLevel(corridor.levelZ()).surface().cellFootprint().cells()) {
                 mutable.computeIfAbsent(corridor.levelZ(), ignored -> new LinkedHashMap<>())
                         .computeIfAbsent(cell, ignored -> new ArrayList<>())
                         .add(corridor.corridorId());

@@ -70,7 +70,9 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
         this.clusterId = resolvedSpecification.clusterId();
         this.structureObjectId = resolvedSpecification.structureObjectId();
         this.mapId = resolvedSpecification.mapId();
-        this.center = resolvedSpecification.center() == null ? GridPoint.cell(0, 0, 0) : resolvedSpecification.center();
+        this.center = resolvedSpecification.center() == null
+                ? Topology.derivedCenter(base.structure())
+                : resolvedSpecification.center();
     }
 
     private Cluster(
@@ -85,7 +87,7 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
         this.clusterId = clusterId;
         this.structureObjectId = structureObjectId;
         this.mapId = mapId;
-        this.center = center == null ? GridPoint.cell(0, 0, 0) : center;
+        this.center = center == null ? Topology.derivedCenter(levelsByZ) : center;
     }
 
     @Override
@@ -224,9 +226,13 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
             return this;
         }
         Structure movedStructure = super.mutated(new StructureMutation.Translation(resolvedTranslation));
-        return withStructure(
+        return fromSpecification(new ClusterSpecification(
+                clusterId,
+                structureObjectId,
+                mapId,
+                center.translated(GridTranslation.planar(resolvedTranslation.dxCells(), resolvedTranslation.dyCells())),
                 movedStructure,
-                center.translated(GridTranslation.planar(resolvedTranslation.dxCells(), resolvedTranslation.dyCells())));
+                movedStructure.roomTopology().rooms()));
     }
 
     public BoundaryPath findCreateWallPath(GridPoint start, GridPoint goal) {
@@ -390,18 +396,14 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
     }
 
     private Cluster withStructure(Structure updatedStructure) {
-        return withStructure(updatedStructure, center);
-    }
-
-    private Cluster withStructure(Structure updatedStructure, GridPoint updatedCenter) {
-        if (Objects.equals(updatedStructure, this) && Objects.equals(updatedCenter, center)) {
+        if (Objects.equals(updatedStructure, this)) {
             return this;
         }
         return fromSpecification(new ClusterSpecification(
                 clusterId,
                 structureObjectId,
                 mapId,
-                updatedCenter,
+                null,
                 updatedStructure,
                 updatedStructure == null ? roomTopology().rooms() : updatedStructure.roomTopology().rooms()));
     }
@@ -461,9 +463,29 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
             }
             LinkedHashSet<GridPoint> result = new LinkedHashSet<>();
             for (Integer levelZ : structure.levels().stream().sorted().toList()) {
-                result.addAll(structure.surfaceAtLevel(levelZ).surface().cells());
+                result.addAll(structure.surfaceAtLevel(levelZ).surface().cellFootprint().cells());
             }
             return result.isEmpty() ? Set.of() : Set.copyOf(result);
+        }
+
+        private static GridPoint derivedCenter(Structure structure) {
+            return derivedCenter(projectedSurfaceCells(structure));
+        }
+
+        private static GridPoint derivedCenter(Map<Integer, Structure.LevelStructure> levelsByZ) {
+            if (levelsByZ == null || levelsByZ.isEmpty()) {
+                return GridPoint.cell(0, 0, 0);
+            }
+            LinkedHashSet<GridPoint> result = new LinkedHashSet<>();
+            levelsByZ.entrySet().stream()
+                    .filter(entry -> entry != null && entry.getKey() != null && entry.getValue() != null)
+                    .sorted(Map.Entry.comparingByKey())
+                    .forEach(entry -> result.addAll(entry.getValue().surface().surface().cellFootprint().cells()));
+            return derivedCenter(result);
+        }
+
+        private static GridPoint derivedCenter(Collection<GridPoint> cells) {
+            return cells == null || cells.isEmpty() ? GridPoint.cell(0, 0, 0) : GridArea.of(cells).center();
         }
 
         private static List<GridSegment> createdEditableSegments(

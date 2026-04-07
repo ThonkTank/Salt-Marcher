@@ -299,7 +299,7 @@ public final class DungeonStructureRepository {
             insertWall.setInt(7, anchorSegment2x.end().x2());
             insertWall.setInt(8, anchorSegment2x.end().y2());
             insertWall.addBatch();
-            for (GridSegment segment2x : wall.orderedBoundarySegments()) {
+            for (GridSegment segment2x : wall.boundary().segments().stream().sorted(GridSegment.ORDER).toList()) {
                 insertWallSegment.setLong(1, wall.wallId());
                 insertWallSegment.setInt(2, segment2x.start().x2());
                 insertWallSegment.setInt(3, segment2x.start().y2());
@@ -331,7 +331,7 @@ public final class DungeonStructureRepository {
             insertDoor.setInt(7, anchorSegment2x.end().y2());
             insertDoor.setString(8, door.doorState().name());
             insertDoor.addBatch();
-            for (GridSegment segment2x : door.orderedBoundarySegments()) {
+            for (GridSegment segment2x : door.boundary().segments().stream().sorted(GridSegment.ORDER).toList()) {
                 insertDoorSegment.setLong(1, door.doorId());
                 insertDoorSegment.setInt(2, segment2x.start().x2());
                 insertDoorSegment.setInt(3, segment2x.start().y2());

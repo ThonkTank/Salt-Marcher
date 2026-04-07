@@ -18,7 +18,7 @@
 - `model/DungeonMap` — loaded map snapshot — resolves canonical room, corridor, stair, transition, door, connection, and traversability lookups.
 - `model/CorridorResolutionContextRequest` — typed map-owned corridor-context request — the only public input for `DungeonMap.corridorResolutionInput(...)`.
 - `model/CorridorResolutionRequest`, `model/CorridorRehydrationRequest` — typed map-owned corridor materialization requests — carry authored corridor state into `DungeonMap.resolveCorridor(...)` and `DungeonMap.rehydrateCorridor(...)`.
-- `repository/DungeonMapRepository` — map id plus connection — rehydrates one authoritative `DungeonMap` from persisted owner slices.
+- `repository/DungeonMapRepository` — map id plus connection — rehydrates one authoritative `DungeonMap` from persisted owner slices; clusters load from structure plus room metadata, corridors load from structure plus graph metadata.
 - `application/DungeonMapLoadResolver` — synchronous selection and repair policy — resolves which map should load or reload next.
 - `application/DungeonMapLoadingService` — async load and post-write reload seam — updates `DungeonMapState` from authoritative reloads.
 - `state/DungeonMapState` — shared map session state for active map, projection level, overlay settings, and loading flags.
@@ -49,3 +49,4 @@
 - Do not let corridor callers bypass the fixed corridor input contract by passing raw map state, room lookups, primitive corridor bundles, or ad-hoc door resolution directly into `Corridor`.
 - Do not add a second public `corridorResolutionInput(...)` entry shape beside `CorridorResolutionContextRequest`.
 - Do not let cluster rewrite workflows keep separate corridor-only and transition-only validation paths outside `DungeonMap`.
+- Do not reintroduce persisted cluster centers, corridor level mirrors, or corridor path-point tables when `Structure` already persists the final topology.

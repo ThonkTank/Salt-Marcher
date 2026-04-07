@@ -3,6 +3,7 @@ package features.world.dungeon.dungeonmap.corridor.model;
 import features.world.dungeon.geometry.GridPath;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
+import features.world.dungeon.geometry.GridTranslatable;
 import features.world.dungeon.geometry.GridTranslation;
 
 import java.util.List;
@@ -12,7 +13,7 @@ public record CorridorPathTrace(
         Long startNodeId,
         Long endNodeId,
         GridPath path
-) {
+) implements GridTranslatable<CorridorPathTrace> {
     public CorridorPathTrace {
         path = path == null ? GridPath.empty() : path;
     }
@@ -55,6 +56,7 @@ public record CorridorPathTrace(
         return List.copyOf(result);
     }
 
+    @Override
     public CorridorPathTrace translated(GridTranslation translation) {
         GridTranslation resolvedTranslation = translation == null ? GridTranslation.none() : translation;
         return resolvedTranslation.isZero()

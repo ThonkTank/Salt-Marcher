@@ -379,7 +379,7 @@ public abstract class Structure {
             }
             return new LevelStructure(
                     surface,
-                    StructureBoundary.fromSurfaceAndFeatures(surface.surface().cells(), specification.doors(), specification.walls()));
+                    StructureBoundary.fromSurfaceAndFeatures(surface.surface().cellFootprint().cells(), specification.doors(), specification.walls()));
         }
 
         private static LevelStructure fromSurface(StructureSurface surface) {
@@ -389,7 +389,7 @@ public abstract class Structure {
             }
             return new LevelStructure(
                     resolvedSurface,
-                    StructureBoundary.fromSurfaceAndFeatures(resolvedSurface.surface().cells(), List.of(), List.of()));
+                    StructureBoundary.fromSurfaceAndFeatures(resolvedSurface.surface().cellFootprint().cells(), List.of(), List.of()));
         }
 
         private LevelStructure translated(GridTranslation translation) {
@@ -402,7 +402,7 @@ public abstract class Structure {
             StructureBoundary resolvedBoundary = boundary == null
                     ? StructureBoundary.empty()
                     : StructureBoundary.fromSurfaceAndFeatures(
-                    surface.surface().cells(),
+                    surface.surface().cellFootprint().cells(),
                     boundary.doors(),
                     boundary.walls());
             return new LevelStructure(surface, resolvedBoundary);
@@ -412,7 +412,7 @@ public abstract class Structure {
             StructureSurface resolvedSurface = surface == null ? StructureSurface.empty() : surface;
             StructureBoundary resolvedBoundary = resolvedSurface.isEmpty()
                     ? StructureBoundary.empty()
-                    : boundary.rewrittenToSurface(features.world.dungeon.geometry.GridArea.of(resolvedSurface.surface().cells()));
+                    : boundary.rewrittenToSurface(resolvedSurface.surface().cellFootprint());
             return new LevelStructure(resolvedSurface, resolvedBoundary);
         }
 
@@ -426,7 +426,7 @@ public abstract class Structure {
             }
             return new LevelStructure(
                     surface,
-                    StructureBoundary.fromPersistenceSnapshot(surface.surface().cells(), resolvedSnapshot.boundary()));
+                    StructureBoundary.fromPersistenceSnapshot(surface.surface().cellFootprint().cells(), resolvedSnapshot.boundary()));
         }
 
         public boolean isEmpty() {

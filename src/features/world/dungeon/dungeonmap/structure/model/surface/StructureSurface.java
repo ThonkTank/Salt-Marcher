@@ -2,6 +2,7 @@ package features.world.dungeon.dungeonmap.structure.model.surface;
 
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridArea;
+import features.world.dungeon.geometry.GridTranslatable;
 import features.world.dungeon.geometry.GridTranslation;
 import features.world.dungeon.dungeonmap.structure.model.StructureMutation;
 
@@ -12,7 +13,7 @@ import java.util.Set;
 /**
  * Canonical level-local aggregate over the surface and floor objects attached to one structure level.
  */
-public final class StructureSurface {
+public final class StructureSurface implements GridTranslatable<StructureSurface> {
 
     public static final class PersistenceSnapshot {
 
@@ -132,6 +133,7 @@ public final class StructureSurface {
         return floorCenter != null ? floorCenter : surface.center();
     }
 
+    @Override
     public StructureSurface translated(GridTranslation translation) {
         return fromSurfaceAndFloor(surface.translated(translation), floor.translated(translation));
     }

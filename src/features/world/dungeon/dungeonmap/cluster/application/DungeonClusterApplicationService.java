@@ -321,20 +321,20 @@ public final class DungeonClusterApplicationService {
             }
             Structure roomStructure = roomStructure(workingLayout, room);
             Set<GridPoint> requestedRoomCells = intersect(
-                    roomStructure.surfaceAtLevel(levelZ).surface().cells(),
+                    roomStructure.surfaceAtLevel(levelZ).surface().cellFootprint().cells(),
                     requestedCells);
             if (requestedRoomCells.isEmpty()) {
                 continue;
             }
             if (deleteFloor) {
                 Set<GridPoint> removedFloorCells = intersect(
-                        roomStructure.surfaceAtLevel(levelZ).floor().cells(),
+                        roomStructure.surfaceAtLevel(levelZ).floor().cellFootprint().cells(),
                         requestedRoomCells);
                 if (removedFloorCells.isEmpty()) {
                     continue;
                 }
                 try {
-                    workingLayout.assertClusterFloorDeletionAllowed(room, levelZ, removedFloorCells);
+                    workingLayout.assertClusterFloorDeletionAllowed(room, levelZ, GridArea.of(removedFloorCells));
                 } catch (IllegalArgumentException exception) {
                     throw new SQLException(exception.getMessage(), exception);
                 }
@@ -349,7 +349,7 @@ public final class DungeonClusterApplicationService {
             }
             Set<GridPoint> clusterRequestedCells = requestedByClusterId.getOrDefault(clusterId, Set.of());
             StructureSurface structureSurface = cluster.surfaceAtLevel(levelZ);
-            Set<GridPoint> currentFloorCells = new LinkedHashSet<>(structureSurface.floor().cells());
+            Set<GridPoint> currentFloorCells = new LinkedHashSet<>(structureSurface.floor().cellFootprint().cells());
             Set<GridPoint> nextFloorCells = new LinkedHashSet<>(currentFloorCells);
             boolean changed;
             if (deleteFloor) {
@@ -395,7 +395,7 @@ public final class DungeonClusterApplicationService {
                         List.of(),
                         List.of())));
         DungeonClusterRepository.PersistedCluster persistedCluster =
-                clusterRepository.createCluster(conn, mapId, center, structure);
+                clusterRepository.createCluster(conn, mapId, structure);
         roomRepository.saveRooms(conn, mapId, persistedCluster.clusterId(), List.of(
                 new Room(null, mapId, persistedCluster.clusterId(), roomName, java.util.Map.of(levelZ, center), null)));
     }
@@ -555,7 +555,7 @@ public final class DungeonClusterApplicationService {
         return rooms(layout).stream()
                 .filter(room -> room != null
                         && room.roomId() != null
-                        && !intersect(roomStructure(layout, room).surfaceAtLevel(levelZ).surface().cells(), cells).isEmpty())
+                        && !intersect(roomStructure(layout, room).surfaceAtLevel(levelZ).surface().cellFootprint().cells(), cells).isEmpty())
                 .sorted(Comparator.comparing(Room::roomId))
                 .toList();
     }

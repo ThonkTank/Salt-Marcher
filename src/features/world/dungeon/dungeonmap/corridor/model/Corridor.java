@@ -61,14 +61,13 @@ public final class Corridor extends Structure {
     public static Corridor rehydrated(
             CorridorSpecification specification,
             Structure structure,
-            List<CorridorPathTrace> pathTraces,
             CorridorResolutionInput input
     ) {
         CorridorSpecification resolvedSpecification = Objects.requireNonNull(specification, "specification");
         CorridorResolutionInput resolvedInput = requireInput(resolvedSpecification.levelZ(), input);
         return new Corridor(
                 resolvedSpecification,
-                rehydratedState(resolvedSpecification, structure, pathTraces, resolvedInput),
+                rehydratedState(resolvedSpecification, structure, resolvedInput),
                 resolvedInput);
     }
 
@@ -169,7 +168,6 @@ public final class Corridor extends Structure {
     private static CorridorState rehydratedState(
             CorridorSpecification specification,
             Structure structure,
-            List<CorridorPathTrace> pathTraces,
             CorridorResolutionInput input
     ) {
         CorridorSpecification resolvedSpecification = Objects.requireNonNull(specification, "specification");
@@ -183,7 +181,11 @@ public final class Corridor extends Structure {
         }
         return new CorridorState(
                 hydratedStructure,
-                pathTraces == null ? List.of() : List.copyOf(pathTraces),
+                CorridorRouting.recoverPathTraces(
+                        hydratedStructure,
+                        resolvedSpecification.levelZ(),
+                        resolvedNodes,
+                        resolvedSegments),
                 materializeConnections(
                         resolvedInput,
                         resolvedSpecification.corridorId(),
@@ -276,7 +278,7 @@ public final class Corridor extends Structure {
         return boundaryDoorBoundary;
     }
 
-    public boolean touchesRoomAnchorCells(Long roomId, Set<GridPoint> cells) {
+    public boolean touchesRoomAnchorCells(Long roomId, GridArea cells) {
         if (roomId == null || cells == null || cells.isEmpty()) {
             return false;
         }
@@ -286,7 +288,7 @@ public final class Corridor extends Structure {
         }
         return roomAnchorBoundary.segments().stream()
                 .flatMap(segment -> segment.cellFootprint().cells().stream())
-                .anyMatch(cells::contains);
+                .anyMatch(cells.cells()::contains);
     }
 
     public Corridor mutated(CorridorMutation mutation, CorridorResolutionInput input) {
@@ -909,8 +911,8 @@ public final class Corridor extends Structure {
                 levelZ,
                 new StructureSpecification.LevelSpecification(
                         routedStructure.surfaceAtLevel(levelZ).surface().anchorCell(),
-                        features.world.dungeon.geometry.GridArea.of(routedStructure.surfaceAtLevel(levelZ).surface().cells()),
-                        features.world.dungeon.geometry.GridArea.of(routedStructure.surfaceAtLevel(levelZ).floor().cells()),
+                        routedStructure.surfaceAtLevel(levelZ).surface().cellFootprint(),
+                        routedStructure.surfaceAtLevel(levelZ).floor().cellFootprint(),
                         doors == null ? List.of() : List.copyOf(doors),
                         boundary.walls())));
     }
@@ -1005,7 +1007,7 @@ public final class Corridor extends Structure {
                 continue;
             }
             CorridorResolutionInput.ExteriorDoorInput description = requiredExteriorDoor(input, node.doorRef());
-            result.addAll(description.door().boundarySegments().stream()
+            result.addAll(description.door().boundary().segments().stream()
                     .filter(boundary.boundary().segments()::contains)
                     .toList());
         }

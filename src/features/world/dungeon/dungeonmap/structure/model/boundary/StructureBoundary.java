@@ -6,6 +6,7 @@ import features.world.dungeon.geometry.GridBoundary;
 import features.world.dungeon.geometry.GridBounded;
 import features.world.dungeon.geometry.GridSegment;
 import features.world.dungeon.geometry.GridArea;
+import features.world.dungeon.geometry.GridTranslatable;
 import features.world.dungeon.geometry.GridTranslation;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.Door;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.Door.DoorState;
@@ -30,7 +31,7 @@ import java.util.Set;
  * <p>The boundary aggregate now materializes the current surface perimeter as real walls so callers no longer need a
  * synthetic "effective wall" fallback for exterior edges.</p>
  */
-public final class StructureBoundary implements GridBounded {
+public final class StructureBoundary implements GridBounded, GridTranslatable<StructureBoundary> {
 
     public record PersistenceSnapshot(
             List<Door> doors,
@@ -124,7 +125,7 @@ public final class StructureBoundary implements GridBounded {
         LinkedHashSet<GridSegment> result = new LinkedHashSet<>();
         for (Door door : doors) {
             if (door != null) {
-                result.addAll(door.boundarySegments());
+                result.addAll(door.boundary().segments());
             }
         }
         return result.isEmpty() ? GridBoundary.empty() : GridBoundary.of(result);
@@ -286,6 +287,7 @@ public final class StructureBoundary implements GridBounded {
                 : withoutSource.withCreatedDoorSegments(GridBoundary.of(List.of(targetBoundarySegment2x)));
     }
 
+    @Override
     public StructureBoundary translated(GridTranslation translation) {
         GridTranslation resolvedTranslation = translation == null ? GridTranslation.none() : translation;
         if (resolvedTranslation.isZero()) {

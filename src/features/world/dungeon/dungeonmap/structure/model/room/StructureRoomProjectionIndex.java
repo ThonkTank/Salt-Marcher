@@ -57,7 +57,7 @@ final class StructureRoomProjectionIndex {
                 .toList();
         Map<Integer, Set<GridPoint>> remainingCellsByLevel = new LinkedHashMap<>();
         for (Integer levelZ : resolvedStructure.levels().stream().sorted().toList()) {
-            remainingCellsByLevel.put(levelZ, new LinkedHashSet<>(resolvedStructure.surfaceAtLevel(levelZ).surface().cells()));
+            remainingCellsByLevel.put(levelZ, new LinkedHashSet<>(resolvedStructure.surfaceAtLevel(levelZ).surface().cellFootprint().cells()));
         }
 
         List<Room> result = new java.util.ArrayList<>();
@@ -401,11 +401,11 @@ final class StructureRoomProjectionIndex {
                 continue;
             }
             StructureBoundary clippedBoundary = clusterStructure.boundaryAtLevel(levelZ)
-                    .clippedToSurface(features.world.dungeon.geometry.GridArea.of(clippedSurface.surface().cells()));
+                    .clippedToSurface(clippedSurface.surface().cellFootprint());
             levelsByZ.put(levelZ, new StructureSpecification.LevelSpecification(
                     clippedSurface.surface().anchorCell(),
-                    features.world.dungeon.geometry.GridArea.of(clippedSurface.surface().cells()),
-                    features.world.dungeon.geometry.GridArea.of(clippedSurface.floor().cells()),
+                    clippedSurface.surface().cellFootprint(),
+                    clippedSurface.floor().cellFootprint(),
                     clippedBoundary.doors(),
                     clippedBoundary.walls()));
         }

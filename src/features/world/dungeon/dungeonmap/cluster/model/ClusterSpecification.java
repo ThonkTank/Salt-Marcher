@@ -18,7 +18,6 @@ public record ClusterSpecification(
         List<Room> rooms
 ) {
     public ClusterSpecification {
-        center = center == null ? GridPoint.cell(0, 0, 0) : center;
         structure = structure == null ? Structure.empty() : structure;
         rooms = rooms == null ? List.of() : List.copyOf(rooms);
     }

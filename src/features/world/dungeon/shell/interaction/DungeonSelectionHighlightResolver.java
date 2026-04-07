@@ -98,7 +98,7 @@ public final class DungeonSelectionHighlightResolver {
         LinkedHashSet<GridPoint> cells = new LinkedHashSet<>();
         for (Room room : cluster.roomTopology().rooms()) {
             if (room != null) {
-                cells.addAll(roomStructure(layout, room).surfaceAtLevel(levelZ).surface().cells());
+                cells.addAll(roomStructure(layout, room).surfaceAtLevel(levelZ).surface().cellFootprint().cells());
             }
         }
         return cells.isEmpty() ? List.of() : List.of(new DungeonHitSurface.CellSurface(cells, levelZ));
@@ -108,7 +108,7 @@ public final class DungeonSelectionHighlightResolver {
         if (room == null) {
             return List.of();
         }
-        Set<GridPoint> cells = roomStructure(layout, room).surfaceAtLevel(levelZ).surface().cells();
+        Set<GridPoint> cells = roomStructure(layout, room).surfaceAtLevel(levelZ).surface().cellFootprint().cells();
         return cells.isEmpty() ? List.of() : List.of(new DungeonHitSurface.CellSurface(cells, levelZ));
     }
 
@@ -137,7 +137,7 @@ public final class DungeonSelectionHighlightResolver {
         if (corridor == null) {
             return List.of();
         }
-        Set<GridPoint> cells = corridor.surfaceAtLevel(levelZ).surface().cells();
+        Set<GridPoint> cells = corridor.surfaceAtLevel(levelZ).surface().cellFootprint().cells();
         return cells.isEmpty() ? List.of() : List.of(new DungeonHitSurface.CellSurface(cells, levelZ));
     }
 
@@ -204,6 +204,6 @@ public final class DungeonSelectionHighlightResolver {
         Door door = description.door();
         return door == null || !door.hasBoundarySegments()
                 ? List.of()
-                : List.of(new DungeonHitSurface.SegmentSurface(door.boundarySegments(), levelZ));
+                : List.of(new DungeonHitSurface.SegmentSurface(door.boundary().segments(), levelZ));
     }
 }

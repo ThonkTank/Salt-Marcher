@@ -80,6 +80,90 @@ public final class CorridorRouting {
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
+    /**
+     * Rebuilds transient corridor trace state from the persisted final structure plus node and segment metadata.
+     *
+     * <p>The persisted structure is the only topology truth. This recovery step only partitions that final surface
+     * back onto the authored corridor graph so runtime-only workflows can keep using corridor-owned trace state.
+     */
+    public static List<CorridorPathTrace> recoverPathTraces(
+            Structure structure,
+            int levelZ,
+            Collection<CorridorNode> nodes,
+            Collection<CorridorSegment> segments
+    ) {
+        Structure resolvedStructure = structure == null ? Structure.empty() : structure;
+        List<CorridorNode> resolvedNodes = sanitizeNodes(nodes);
+        List<CorridorSegment> resolvedSegments = sanitizeSegments(segments);
+        if (resolvedSegments.isEmpty()) {
+            return List.of();
+        }
+        Set<GridPoint> surfaceCells = resolvedStructure.surfaceAtLevel(levelZ).surface().cellFootprint().cells();
+        if (surfaceCells.isEmpty()) {
+            throw new IllegalArgumentException("Persisted corridor structure must contain corridor surface cells");
+        }
+
+        Map<Long, CorridorNode> nodesById = new LinkedHashMap<>();
+        LinkedHashSet<GridPoint> fixedNodeCells = new LinkedHashSet<>();
+        for (CorridorNode node : resolvedNodes) {
+            if (node == null || node.nodeId() == null) {
+                continue;
+            }
+            nodesById.put(node.nodeId(), node);
+            if (!node.isDoorBound() && node.point().kind() == GridPoint.Kind.CELL) {
+                fixedNodeCells.add(node.point());
+            }
+        }
+
+        LinkedHashSet<GridPoint> consumedNonNodeCells = new LinkedHashSet<>();
+        LinkedHashSet<GridPoint> coveredSurfaceCells = new LinkedHashSet<>();
+        ArrayList<CorridorPathTrace> result = new ArrayList<>();
+        for (CorridorSegment segment : resolvedSegments) {
+            CorridorNode startNode = nodesById.get(segment.startNodeId());
+            CorridorNode endNode = nodesById.get(segment.endNodeId());
+            if (startNode == null || endNode == null) {
+                throw new IllegalArgumentException("Persisted corridor segment references missing node");
+            }
+            List<AnchorAttachment> startAttachments = recoverAttachments(startNode.point(), surfaceCells);
+            List<AnchorAttachment> endAttachments = recoverAttachments(endNode.point(), surfaceCells);
+            if (startAttachments.isEmpty() || endAttachments.isEmpty()) {
+                throw new IllegalArgumentException("Persisted corridor node no longer touches corridor surface");
+            }
+
+            LinkedHashSet<GridPoint> blockedCells = new LinkedHashSet<>(consumedNonNodeCells);
+            blockedCells.addAll(fixedNodeCells);
+            blockedCells.removeAll(startNode.point().cellFootprint().cells());
+            blockedCells.removeAll(endNode.point().cellFootprint().cells());
+
+            RoutePlan recoveredRoute = findBestTraceWithinSurface(
+                    startAttachments,
+                    endAttachments,
+                    surfaceCells,
+                    blockedCells);
+            CorridorPathTrace trace = new CorridorPathTrace(
+                    segment.segmentId(),
+                    segment.startNodeId(),
+                    segment.endNodeId(),
+                    GridPath.of(recoveredRoute.path2x()));
+            result.add(trace);
+
+            Set<GridPoint> traceCells = trace.path().cellFootprint().cells();
+            coveredSurfaceCells.addAll(traceCells);
+            for (GridPoint cell : traceCells) {
+                if (!startNode.point().cellFootprint().cells().contains(cell)
+                        && !endNode.point().cellFootprint().cells().contains(cell)
+                        && !fixedNodeCells.contains(cell)) {
+                    consumedNonNodeCells.add(cell);
+                }
+            }
+        }
+
+        if (!coveredSurfaceCells.equals(surfaceCells)) {
+            throw new IllegalArgumentException("Persisted corridor surface cannot be reconstructed from corridor metadata");
+        }
+        return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
     public static List<AnchorAttachment> attachmentsForPoint(GridPoint anchorPoint, GridArea blockedCells) {
         if (anchorPoint == null) {
             return List.of();
@@ -99,6 +183,18 @@ public final class CorridorRouting {
             }
         }
         return attachments.isEmpty() ? List.of() : List.copyOf(attachments);
+    }
+
+    private static List<AnchorAttachment> recoverAttachments(GridPoint anchorPoint, Set<GridPoint> surfaceCells) {
+        if (anchorPoint == null || surfaceCells == null || surfaceCells.isEmpty()) {
+            return List.of();
+        }
+        return attachmentsForPoint(anchorPoint, GridArea.empty()).stream()
+                .filter(attachment -> attachment != null && surfaceCells.contains(attachment.cell()))
+                .sorted(Comparator
+                        .comparing(AnchorAttachment::cell, GridPoint.ORDER)
+                        .thenComparingInt(attachment -> attachment.anchorPath().size()))
+                .toList();
     }
 
     public static RoutedProjection routeSurfaceProjection(
@@ -138,7 +234,7 @@ public final class CorridorRouting {
                         List.of(),
                         List.of())));
         Set<GridPoint> hydratedCells = features.world.dungeon.geometry.GridArea.of(
-                structure.surfaceAtLevel(levelZ).surface().cells()).cells();
+                structure.surfaceAtLevel(levelZ).surface().cellFootprint().cells()).cells();
         if (!hydratedCells.equals(features.world.dungeon.geometry.GridArea.of(occupiedCells).cells())) {
             throw new IllegalStateException("Corridor route projection changed the routed occupied cells");
         }
@@ -211,6 +307,47 @@ public final class CorridorRouting {
         return bestPlan;
     }
 
+    private static RoutePlan findBestTraceWithinSurface(
+            Collection<AnchorAttachment> startAttachments,
+            Collection<AnchorAttachment> endAttachments,
+            Set<GridPoint> surfaceCells,
+            Set<GridPoint> blockedCells
+    ) {
+        RoutePlan bestPlan = null;
+        for (AnchorAttachment startAttachment : startAttachments == null ? List.<AnchorAttachment>of() : startAttachments) {
+            if (startAttachment == null) {
+                continue;
+            }
+            for (AnchorAttachment endAttachment : endAttachments == null ? List.<AnchorAttachment>of() : endAttachments) {
+                if (endAttachment == null) {
+                    continue;
+                }
+                CellRoute cellRoute = findCellRouteWithinSurface(
+                        startAttachment.cell(),
+                        endAttachment.cell(),
+                        surfaceCells,
+                        blockedCells);
+                if (cellRoute == null) {
+                    continue;
+                }
+                List<GridPoint> path2x = assemblePath2x(
+                        startAttachment.anchorPath(),
+                        cellRoute.cells(),
+                        endAttachment.anchorPath());
+                double totalCost = cellRoute.cost()
+                        + startAttachment.anchorPathCost()
+                        + endAttachment.anchorPathCost();
+                if (bestPlan == null || totalCost < bestPlan.cost()) {
+                    bestPlan = new RoutePlan(path2x, totalCost);
+                }
+            }
+        }
+        if (bestPlan == null) {
+            throw new IllegalArgumentException("Persisted corridor route trace could not be reconstructed");
+        }
+        return bestPlan;
+    }
+
     private static CellRoute findCellRoute(GridPoint start, GridPoint end, Set<GridPoint> blockedCells) {
         if (start == null || end == null) {
             return null;
@@ -277,6 +414,89 @@ public final class CorridorRouting {
             }
         }
         return null;
+    }
+
+    private static CellRoute findCellRouteWithinSurface(
+            GridPoint start,
+            GridPoint end,
+            Set<GridPoint> surfaceCells,
+            Set<GridPoint> blockedCells
+    ) {
+        if (start == null || end == null || surfaceCells == null || surfaceCells.isEmpty()) {
+            return null;
+        }
+        if (!surfaceCells.contains(start) || !surfaceCells.contains(end)) {
+            return null;
+        }
+        if (start.equals(end)) {
+            return new CellRoute(List.of(start), 0.0d);
+        }
+        double turnPenalty = turnPenalty(start, end);
+        Set<GridPoint> effectiveBlocked = new LinkedHashSet<>(blockedCells == null ? Set.<GridPoint>of() : blockedCells);
+        effectiveBlocked.remove(start);
+        effectiveBlocked.remove(end);
+
+        SearchState startState = new SearchState(start, null);
+        PriorityQueue<QueueEntry> frontier = new PriorityQueue<>(Comparator.comparingDouble(QueueEntry::estimatedTotalCost));
+        Map<SearchState, Double> bestCosts = new HashMap<>();
+        Map<SearchState, SearchState> cameFrom = new HashMap<>();
+        frontier.add(new QueueEntry(startState, heuristic(start, end)));
+        bestCosts.put(startState, 0.0d);
+
+        while (!frontier.isEmpty()) {
+            QueueEntry currentEntry = frontier.poll();
+            SearchState current = currentEntry.state();
+            double currentCost = bestCosts.getOrDefault(current, Double.POSITIVE_INFINITY);
+            if (currentEntry.estimatedTotalCost() - heuristic(current.cell(), end) > currentCost + 1e-9) {
+                continue;
+            }
+            if (current.cell().equals(end)) {
+                return new CellRoute(reconstructCellPath(cameFrom, current), currentCost);
+            }
+            for (CardinalDirection step : CardinalDirection.values()) {
+                GridPoint neighbor = current.cell().step(step);
+                if (!surfaceCells.contains(neighbor) || effectiveBlocked.contains(neighbor)) {
+                    continue;
+                }
+                double nextCost = currentCost + 1.0d;
+                if (current.direction() != null && !current.direction().equals(step)) {
+                    nextCost += turnPenalty;
+                }
+                SearchState next = new SearchState(neighbor, step);
+                if (nextCost + 1e-9 >= bestCosts.getOrDefault(next, Double.POSITIVE_INFINITY)) {
+                    continue;
+                }
+                bestCosts.put(next, nextCost);
+                cameFrom.put(next, current);
+                frontier.add(new QueueEntry(next, nextCost + heuristic(neighbor, end)));
+            }
+        }
+        return null;
+    }
+
+    private static List<CorridorNode> sanitizeNodes(Collection<CorridorNode> nodes) {
+        if (nodes == null || nodes.isEmpty()) {
+            return List.of();
+        }
+        return nodes.stream()
+                .filter(Objects::nonNull)
+                .sorted(Comparator
+                        .comparing((CorridorNode node) -> node.nodeId() == null ? Long.MAX_VALUE : node.nodeId())
+                        .thenComparing(CorridorNode::point, GridPoint.ORDER))
+                .toList();
+    }
+
+    private static List<CorridorSegment> sanitizeSegments(Collection<CorridorSegment> segments) {
+        if (segments == null || segments.isEmpty()) {
+            return List.of();
+        }
+        return segments.stream()
+                .filter(Objects::nonNull)
+                .sorted(Comparator
+                        .comparing((CorridorSegment segment) -> segment.segmentId() == null ? Long.MAX_VALUE : segment.segmentId())
+                        .thenComparing(CorridorSegment::startNodeId)
+                        .thenComparing(CorridorSegment::endNodeId))
+                .toList();
     }
 
     private static List<GridPoint> reconstructCellPath(Map<SearchState, SearchState> cameFrom, SearchState endState) {

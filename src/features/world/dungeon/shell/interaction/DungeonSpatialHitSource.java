@@ -37,7 +37,7 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
         Room room = roomAtCell(layout, probe.gridCell(), probe.levelZ());
         Set<GridPoint> roomCells = room == null
                 ? Set.of()
-                : roomStructure(layout, room).surfaceAtLevel(probe.levelZ()).surface().cells();
+                : roomStructure(layout, room).surfaceAtLevel(probe.levelZ()).surface().cellFootprint().cells();
         if (room == null || room.roomId() == null || roomCells.isEmpty()) {
             return List.of();
         }
@@ -64,7 +64,7 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
             descriptors.add(new DungeonHitDescriptor(
                     new DungeonSelectionRef.CorridorRef(corridor.corridorId()),
                     List.of(new DungeonHitSurface.CellSurface(
-                            corridor.surfaceAtLevel(probe.levelZ()).surface().cells(),
+                            corridor.surfaceAtLevel(probe.levelZ()).surface().cellFootprint().cells(),
                             probe.levelZ()))));
         }
         return List.copyOf(descriptors);

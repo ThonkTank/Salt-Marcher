@@ -212,7 +212,7 @@ public final class ClusterStructureEditor {
         if (room == null || paintCells == null || paintCells.isEmpty()) {
             return false;
         }
-        return !disjoint(roomStructure(cluster, room).surfaceAtLevel(levelZ).surface().cells(), paintCells);
+        return !disjoint(roomStructure(cluster, room).surfaceAtLevel(levelZ).surface().cellFootprint().cells(), paintCells);
     }
 
     private static List<Room> normalizedMetadataRooms(List<Room> rooms) {
@@ -246,7 +246,7 @@ public final class ClusterStructureEditor {
         }
         Map<Integer, Set<GridPoint>> result = new LinkedHashMap<>();
         for (Integer levelZ : structure.levels().stream().sorted().toList()) {
-            Set<GridPoint> levelCells = structure.surfaceAtLevel(levelZ).surface().cells();
+            Set<GridPoint> levelCells = structure.surfaceAtLevel(levelZ).surface().cellFootprint().cells();
             if (!levelCells.isEmpty()) {
                 result.put(levelZ, levelCells);
             }
@@ -260,7 +260,7 @@ public final class ClusterStructureEditor {
         }
         Map<Integer, Set<GridPoint>> result = new LinkedHashMap<>();
         for (Integer levelZ : structure.levels().stream().sorted().toList()) {
-            Set<GridPoint> floorCells = structure.surfaceAtLevel(levelZ).floor().cells();
+            Set<GridPoint> floorCells = structure.surfaceAtLevel(levelZ).floor().cellFootprint().cells();
             if (!floorCells.isEmpty()) {
                 result.put(levelZ, floorCells);
             }
@@ -281,7 +281,7 @@ public final class ClusterStructureEditor {
         for (Set<GridPoint> component : components) {
             Map<Integer, Set<GridPoint>> componentByLevel = new LinkedHashMap<>();
             for (Integer levelZ : structure.levels().stream().sorted().toList()) {
-                Set<GridPoint> levelCells = intersectCells(structure.surfaceAtLevel(levelZ).surface().cells(), component);
+                Set<GridPoint> levelCells = intersectCells(structure.surfaceAtLevel(levelZ).surface().cellFootprint().cells(), component);
                 if (!levelCells.isEmpty()) {
                     componentByLevel.put(levelZ, levelCells);
                 }
@@ -299,7 +299,7 @@ public final class ClusterStructureEditor {
         }
         LinkedHashSet<GridPoint> result = new LinkedHashSet<>();
         for (Integer levelZ : structure.levels().stream().sorted().toList()) {
-            result.addAll(structure.surfaceAtLevel(levelZ).surface().cells());
+            result.addAll(structure.surfaceAtLevel(levelZ).surface().cellFootprint().cells());
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }

@@ -34,12 +34,12 @@ public final class DungeonClusterRepository {
 
     private final DungeonStructureRepository structureRepository = new DungeonStructureRepository();
 
-    public PersistedCluster createCluster(Connection conn, long mapId, GridPoint center, Structure structure) throws SQLException {
+    public PersistedCluster createCluster(Connection conn, long mapId, Structure structure) throws SQLException {
         if (conn == null || structure == null) {
             throw new IllegalArgumentException("conn und structure dürfen nicht null sein");
         }
         DungeonStructureRepository.PersistedStructure persistedStructure = structureRepository.save(conn, null, structure);
-        long clusterId = insertCluster(conn, mapId, center, persistedStructure.structureObjectId());
+        long clusterId = insertCluster(conn, mapId, persistedStructure.structureObjectId());
         return new PersistedCluster(clusterId, persistedStructure.structureObjectId(), persistedStructure.structure());
     }
 
@@ -50,7 +50,6 @@ public final class DungeonClusterRepository {
         if (cluster.structureObjectId() == null || cluster.structureObjectId() <= 0L) {
             throw new IllegalArgumentException("Persisted cluster requires a structure object id");
         }
-        updateClusterMetadata(conn, cluster.clusterId(), cluster.center());
         DungeonStructureRepository.PersistedStructure persistedStructure =
                 structureRepository.save(conn, cluster.structureObjectId(), cluster);
         return new PersistedCluster(cluster.clusterId(), persistedStructure.structureObjectId(), persistedStructure.structure());
@@ -122,7 +121,7 @@ public final class DungeonClusterRepository {
         }
         Map<Long, Structure> structuresById = structureRepository.loadByIds(conn, structureIdsByClusterId.values());
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT cluster_id, dungeon_map_id, structure_object_id, center_x, center_y FROM dungeon_room_clusters"
+                "SELECT cluster_id, dungeon_map_id, structure_object_id FROM dungeon_room_clusters"
                         + " WHERE dungeon_map_id=? ORDER BY cluster_id")) {
             ps.setLong(1, mapId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -137,7 +136,7 @@ public final class DungeonClusterRepository {
                             clusterId,
                             structureObjectId,
                             rs.getLong("dungeon_map_id"),
-                            GridPoint.cell(rs.getInt("center_x"), rs.getInt("center_y"), 0),
+                            null,
                             structure,
                             roomsByClusterId.getOrDefault(clusterId, List.of()))));
                 }
@@ -178,7 +177,7 @@ public final class DungeonClusterRepository {
                         List.of(),
                         List.of())));
         DungeonStructureRepository.PersistedStructure persistedStructure = structureRepository.save(conn, null, structure);
-        long clusterId = insertCluster(conn, mapId, center, persistedStructure.structureObjectId());
+        long clusterId = insertCluster(conn, mapId, persistedStructure.structureObjectId());
         insertRoom(
                 conn,
                 mapId,
@@ -215,7 +214,6 @@ public final class DungeonClusterRepository {
                 continue;
             }
             retainedClusterIds.add(cluster.clusterId());
-            updateClusterMetadata(conn, cluster.clusterId(), cluster.center());
             if (cluster.structureObjectId() == null || cluster.structureObjectId() <= 0L) {
                 throw new IllegalArgumentException("Persisted cluster requires a structure object id");
             }
@@ -229,7 +227,7 @@ public final class DungeonClusterRepository {
             }
             DungeonStructureRepository.PersistedStructure persistedStructure =
                     structureRepository.save(conn, null, cluster);
-            long clusterId = insertCluster(conn, mapId, cluster.center(), persistedStructure.structureObjectId());
+            long clusterId = insertCluster(conn, mapId, persistedStructure.structureObjectId());
             persistRooms(conn, mapId, clusterId, cluster.roomTopology().rooms());
         }
 
@@ -246,7 +244,6 @@ public final class DungeonClusterRepository {
         if (cluster == null || cluster.clusterId() == null) {
             return;
         }
-        updateClusterMetadata(conn, cluster.clusterId(), cluster.center());
         if (cluster.structureObjectId() == null || cluster.structureObjectId() <= 0L) {
             throw new IllegalArgumentException("Persisted cluster requires a structure object id");
         }
@@ -267,15 +264,12 @@ public final class DungeonClusterRepository {
         }
     }
 
-    private long insertCluster(Connection conn, long mapId, GridPoint center, long structureObjectId) throws SQLException {
-        GridPoint resolvedCenter = center == null ? GridPoint.cell(0, 0, 0) : center;
+    private long insertCluster(Connection conn, long mapId, long structureObjectId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "INSERT INTO dungeon_room_clusters(dungeon_map_id, structure_object_id, center_x, center_y) VALUES(?,?,?,?)",
+                "INSERT INTO dungeon_room_clusters(dungeon_map_id, structure_object_id) VALUES(?,?)",
                 Statement.RETURN_GENERATED_KEYS)) {
             ps.setLong(1, mapId);
             ps.setLong(2, structureObjectId);
-            ps.setInt(3, resolvedCenter.cellX());
-            ps.setInt(4, resolvedCenter.cellY());
             ps.executeUpdate();
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (!rs.next()) {
@@ -283,17 +277,6 @@ public final class DungeonClusterRepository {
                 }
                 return rs.getLong(1);
             }
-        }
-    }
-
-    private void updateClusterMetadata(Connection conn, long clusterId, GridPoint center) throws SQLException {
-        GridPoint resolvedCenter = center == null ? GridPoint.cell(0, 0, 0) : center;
-        try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE dungeon_room_clusters SET center_x=?, center_y=? WHERE cluster_id=?")) {
-            ps.setInt(1, resolvedCenter.cellX());
-            ps.setInt(2, resolvedCenter.cellY());
-            ps.setLong(3, clusterId);
-            ps.executeUpdate();
         }
     }
 

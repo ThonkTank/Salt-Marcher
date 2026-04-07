@@ -120,7 +120,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 Structure roomStructure = cluster.roomTopology().structureFor(room);
                 var boundary = roomStructure.boundaryAtLevel(pass.projectionLevel());
                 WalkableSurface surface = walkableSurface(
-                        roomStructure.surfaceAtLevel(pass.projectionLevel()).floor().cells(),
+                        roomStructure.surfaceAtLevel(pass.projectionLevel()).floor().cellFootprint().cells(),
                         boundary.boundary().segments(),
                         boundary.doorBoundary().segments());
                 boolean selectedRoom = selectedRoom(pass.projected(), pass.selectedRef(), room.roomId());
@@ -341,7 +341,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             }
             boolean selected = selectedCorridor(pass.projected(), pass.selectedRef(), corridor.corridorId());
             WalkableSurface surface = walkableSurface(
-                    corridor.surfaceAtLevel(pass.projectionLevel()).floor().cells(),
+                    corridor.surfaceAtLevel(pass.projectionLevel()).floor().cellFootprint().cells(),
                     corridor.boundaryAtLevel(pass.projectionLevel()).boundary().segments(),
                     corridor.boundaryDoorBoundary().segments());
             if (surface.tiles().isEmpty() && surface.doorSegments().isEmpty()) {
@@ -971,7 +971,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             return WalkableSurface.empty();
         }
         return walkableSurface(
-                structure.surfaceAtLevel(levelZ).floor().cells(),
+                structure.surfaceAtLevel(levelZ).floor().cellFootprint().cells(),
                 structure.boundaryAtLevel(levelZ).boundary().segments(),
                 structure.boundaryAtLevel(levelZ).doorBoundary().segments());
     }

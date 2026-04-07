@@ -41,7 +41,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
             if (door == null) {
                 continue;
             }
-            segments.addAll(door.boundarySegments());
+            segments.addAll(door.boundary().segments());
         }
         return Set.copyOf(segments);
     }
@@ -86,7 +86,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
             if (door == null) {
                 continue;
             }
-            for (GridSegment segment2x : door.boundarySegments()) {
+            for (GridSegment segment2x : door.boundary().segments()) {
                 DungeonSelectionRef.DoorRef ref = layout.doorSelectionRefAt(levelZ, segment2x);
                 if (ref == null) {
                     continue;

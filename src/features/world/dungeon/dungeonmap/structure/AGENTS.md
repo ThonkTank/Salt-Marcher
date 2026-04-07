@@ -34,6 +34,7 @@ This file covers `src/features/world/dungeon/dungeonmap/structure/`.
 - Derive local room connections directly from the canonical structure boundary plus room projection; do not route graph derivation through per-room structure caches.
 - If callers need one boundary object at one segment, resolve it through `StructureBoundary` object lookups and continue on that `Door` or `Wall`; do not add second boolean or projected-edge mirrors for door or wall truth.
 - Put level-local boundary persistence data on `StructureBoundary.PersistenceSnapshot`, let `StructureSurface.PersistenceSnapshot` compose the `StructureSurfaceArea` and `StructureFloor` snapshots, and let `Structure.LevelStructure.PersistenceSnapshot` compose those owner snapshots.
+- Keep persisted dungeon topology normalized on `Structure`; cluster centers, corridor levels, routed corridor path points, and similar derivable mirrors must stay out of storage.
 - If room-facing code needs one derived room's surface or floor truth, expose the derived `Structure` and continue on `surfaceAtLevel(levelZ).surface()` or `.floor()` instead of adding room-level mirrors back onto `StructureRoomTopology`.
 - Keep room- or corridor-specific workflow logic in their owners; only reused physical structure truth belongs here.
 - Keep internal mutation and invariant protection on `Structure`, `StructureSurface`, `StructureSurfaceArea`, `StructureFloor`, and `StructureBoundary`.
@@ -53,3 +54,4 @@ This file covers `src/features/world/dungeon/dungeonmap/structure/`.
 - Do not pull corridor routing traces or stair geometry back into `Structure`.
 - Do not create a second persistence path for shared structure truth outside this slice.
 - Do not treat `roomTopology()` as part of `Structure` persistence or physical equality.
+- Do not let cluster or corridor persistence duplicate any topology that can be reconstructed from final structure plus their own metadata.

@@ -47,11 +47,11 @@ public abstract class BoundaryObject implements GridOccupant, GridBounded {
         return boundary;
     }
 
-    public final Set<GridSegment> boundarySegments() {
+    protected final Set<GridSegment> boundarySegments() {
         return boundary.segments();
     }
 
-    public final List<GridSegment> orderedBoundarySegments() {
+    protected final List<GridSegment> orderedBoundarySegments() {
         return boundary.segments().stream().sorted(GridSegment.ORDER).toList();
     }
 

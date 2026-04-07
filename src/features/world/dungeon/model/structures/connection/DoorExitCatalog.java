@@ -69,7 +69,7 @@ public final class DoorExitCatalog {
             if (doorRef == null) {
                 continue;
             }
-            Set<GridSegment> boundarySegments = new LinkedHashSet<>(connection.boundarySegments(layout));
+            Set<GridSegment> boundarySegments = new LinkedHashSet<>(connection.boundary(layout).segments());
             for (GridSegment segment2x : boundarySegments) {
                 if (segment2x == null) {
                     continue;
