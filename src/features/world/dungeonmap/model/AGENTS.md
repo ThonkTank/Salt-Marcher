@@ -18,6 +18,7 @@ This file covers `src/features/world/dungeonmap/model/`. Use it together with th
 
 - Geometry algebra belongs only in `geometry/`.
 - Gameplay semantics belong on object or structure owners, not in repositories, renderers, or tools.
+- `StructureObject` owns the canonical serializable structure form for clustered room topology; repositories map rows to and from that snapshot instead of inventing a second boundary model.
 - `Wall` is an authored boundary-path object with stable identity and a resolved `WallKind`; uncovered boundary segments fall back to the built-in solid wall kind.
 - `Door` remains a separate boundary-attached object. Doors occupy compatible wall segments; they do not replace wall ownership or create a second topology aggregate.
 - `Room` owns identity, narration, and anchors only. Room surfaces and boundaries resolve through `RoomCluster` or `DungeonLayout`.

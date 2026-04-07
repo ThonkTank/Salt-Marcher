@@ -230,7 +230,6 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             DungeonCanvasCamera camera,
             double gridSize,
             Set<GridSegment2x> previewEdges,
-            Set<GridSegment2x> skippedEdges,
             GridPoint2x startVertex2x,
             GridPoint2x currentVertex2x,
             boolean deleteMode
@@ -241,15 +240,6 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             for (GridSegment2x segment2x : previewEdges) {
                 strokeSegment2x(gc, camera, gridSize, segment2x);
             }
-        }
-        if (skippedEdges != null && !skippedEdges.isEmpty()) {
-            gc.setStroke(DungeonCanvasTheme.BOUNDARY_SKIPPED_PREVIEW_STROKE);
-            gc.setLineWidth(2.2);
-            gc.setLineDashes(8.0, 5.0);
-            for (GridSegment2x segment2x : skippedEdges) {
-                strokeSegment2x(gc, camera, gridSize, segment2x);
-            }
-            gc.setLineDashes();
         }
         if (startVertex2x != null) {
             drawBoundaryVertexMarker(
@@ -979,7 +969,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         }
         return walkableSurface(
                 structure.floorCellCoordsAtLevel(levelZ),
-                structure.wallSegmentsAtLevel(levelZ),
+                structure.boundaryEdgesAtLevel(levelZ),
                 structure.doorSegmentsAtLevel(levelZ));
     }
 
@@ -993,9 +983,8 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         }
         Set<CellCoord> resolvedTiles = tiles == null ? Set.of() : Set.copyOf(tiles);
         Set<GridSegment2x> resolvedDoors = doorSegments == null ? Set.of() : Set.copyOf(doorSegments);
-        Set<GridSegment2x> wallSegments = new LinkedHashSet<>(boundarySegments == null ? Set.<GridSegment2x>of() : boundarySegments);
-        wallSegments.removeAll(resolvedDoors);
-        return new WalkableSurface(resolvedTiles, Set.copyOf(wallSegments), resolvedDoors);
+        Set<GridSegment2x> resolvedBoundaries = boundarySegments == null ? Set.of() : Set.copyOf(boundarySegments);
+        return new WalkableSurface(resolvedTiles, resolvedBoundaries, resolvedDoors);
     }
 
     private static void drawPaintPreview(
@@ -1235,7 +1224,6 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                         frame.camera(),
                         DungeonCanvasTheme.BASE_GRID * frame.camera().zoom(),
                         boundaryPreview.edges(),
-                        boundaryPreview.skippedConnectionEdges(),
                         boundaryPreview.startVertex2x(),
                         boundaryPreview.currentVertex2x(),
                         boundaryPreview.deleteMode());

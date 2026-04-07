@@ -158,7 +158,6 @@ public final class BoundaryTool implements EditorTool {
                     vertex,
                     vertex,
                     Set.of(),
-                    Set.of(),
                     deleteMode
                             ? "Start auf Innenwand oder Tür gewählt, nächsten Eckpunkt anklicken"
                             : "Start-Eckpunkt gewählt, nächsten Eckpunkt anklicken"));
@@ -170,8 +169,8 @@ public final class BoundaryTool implements EditorTool {
         }
 
         RoomCluster.BoundaryPath result = deleteMode
-                ? cluster.findDeleteBoundaryPath(draft.currentVertex(), vertex)
-                : cluster.findCreateBoundaryPath(draft.currentVertex(), vertex);
+                ? cluster.findDeleteWallPath(draft.currentVertex(), vertex)
+                : cluster.findCreateWallPath(draft.currentVertex(), vertex);
         if (!result.hasRoute()) {
             showDraft(new Draft(
                     draft.clusterId(),
@@ -179,7 +178,6 @@ public final class BoundaryTool implements EditorTool {
                     draft.startVertex(),
                     draft.currentVertex(),
                     draft.previewEdges(),
-                    draft.skippedConnectionEdges(),
                     deleteMode
                             ? "Pfad kann nur entlang bestehender Innenwände oder Türen verlaufen"
                             : "Zwischen diesen Eckpunkten gibt es keinen gültigen Pfad"));
@@ -188,16 +186,13 @@ public final class BoundaryTool implements EditorTool {
 
         Set<GridSegment2x> nextPreview = new LinkedHashSet<>(draft.previewEdges());
         nextPreview.addAll(result.committedEdges());
-        Set<GridSegment2x> nextSkipped = new LinkedHashSet<>(draft.skippedConnectionEdges());
-        nextSkipped.addAll(result.skippedConnectionEdges());
         showDraft(new Draft(
                 draft.clusterId(),
                 draft.deleteMode(),
                 draft.startVertex(),
                 vertex,
                 nextPreview,
-                nextSkipped,
-                statusMessage(deleteMode, nextPreview, nextSkipped)));
+                statusMessage(deleteMode, nextPreview)));
 
         if (!deleteMode && cluster.touchesExistingWall(vertex)) {
             return finishDraft();
@@ -218,12 +213,19 @@ public final class BoundaryTool implements EditorTool {
         }
         loadingService.submitMutation(
                 () -> {
-                    roomApplicationService.editBoundary(
-                            mapId,
-                            currentDraft.clusterId(),
-                            mapState.activeProjectionLevel(),
-                            edges,
-                            currentDraft.deleteMode());
+                    if (currentDraft.deleteMode()) {
+                        roomApplicationService.deleteWallPath(
+                                mapId,
+                                currentDraft.clusterId(),
+                                mapState.activeProjectionLevel(),
+                                edges);
+                    } else {
+                        roomApplicationService.createWallPath(
+                                mapId,
+                                currentDraft.clusterId(),
+                                mapState.activeProjectionLevel(),
+                                edges);
+                    }
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,
@@ -260,7 +262,7 @@ public final class BoundaryTool implements EditorTool {
 
     private boolean isEditableCluster(Long clusterId, DungeonLayout layout, GridPoint2x vertex, boolean deleteMode) {
         RoomCluster cluster = clusterOnActiveLevel(clusterId, layout);
-        return cluster != null && cluster.isEditableBoundaryVertex(vertex, deleteMode);
+        return cluster != null && cluster.isEditableWallVertex(vertex, deleteMode);
     }
 
     private Long activeBoundaryDraftClusterId() {
@@ -311,7 +313,6 @@ public final class BoundaryTool implements EditorTool {
         draft = nextDraft;
         state.showPreview(new EditorPreview.BoundaryPreview(
                 nextDraft.previewEdges(),
-                nextDraft.skippedConnectionEdges(),
                 nextDraft.startVertex(),
                 nextDraft.currentVertex(),
                 nextDraft.deleteMode()));
@@ -365,16 +366,12 @@ public final class BoundaryTool implements EditorTool {
 
     private static String statusMessage(
             boolean deleteMode,
-            Set<GridSegment2x> previewEdges,
-            Set<GridSegment2x> skippedConnectionEdges
+            Set<GridSegment2x> previewEdges
     ) {
         if (deleteMode) {
             return previewEdges.isEmpty()
                     ? "Nur Außenwände getroffen, nichts zu löschen"
                     : "Innenwand-/Türpfad aktiv, Rechtsklick schließt ab";
-        }
-        if (!skippedConnectionEdges.isEmpty()) {
-            return "Pfad aktiv, Türen bleiben erhalten, Rechtsklick schließt ab";
         }
         if (!previewEdges.isEmpty()) {
             return "Wandpfad aktiv, Rechtsklick oder Klick auf bestehende Wand schließt ab";
@@ -388,12 +385,10 @@ public final class BoundaryTool implements EditorTool {
             GridPoint2x startVertex,
             GridPoint2x currentVertex,
             Set<GridSegment2x> previewEdges,
-            Set<GridSegment2x> skippedConnectionEdges,
             String statusMessage
     ) {
         private Draft {
             previewEdges = previewEdges == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(previewEdges));
-            skippedConnectionEdges = skippedConnectionEdges == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(skippedConnectionEdges));
             statusMessage = statusMessage == null ? "" : statusMessage;
         }
     }

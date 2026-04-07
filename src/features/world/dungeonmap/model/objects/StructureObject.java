@@ -30,6 +30,27 @@ public final class StructureObject {
     public record StairStop(CubePoint position, String label) {
     }
 
+    public record PersistenceSnapshot(Map<Integer, PersistenceLevel> levelsByZ) {
+        public PersistenceSnapshot {
+            levelsByZ = levelsByZ == null ? Map.of() : Map.copyOf(new LinkedHashMap<>(levelsByZ));
+        }
+    }
+
+    public record PersistenceLevel(
+            CellCoord anchorCell,
+            Set<CellCoord> surfaceCells,
+            Set<CellCoord> floorCells,
+            List<Wall> authoredWalls,
+            List<Door> doors
+    ) {
+        public PersistenceLevel {
+            surfaceCells = surfaceCells == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(surfaceCells));
+            floorCells = floorCells == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(floorCells));
+            authoredWalls = authoredWalls == null ? List.of() : List.copyOf(authoredWalls);
+            doors = doors == null ? List.of() : List.copyOf(doors);
+        }
+    }
+
     private final Map<Integer, LevelStructure> levelsByZ;
     private final Stair stair;
     private final Map<Integer, List<PathTrace>> pathTracesByLevel;
@@ -112,30 +133,25 @@ public final class StructureObject {
         return levels.isEmpty() ? empty() : fromLevels(levels);
     }
 
-    public static StructureObject fromTopologyWithDoorsAndWallsByLevel(
-            Map<Integer, ? extends Collection<CellCoord>> surfaceCellsByLevel,
-            Map<Integer, ? extends Collection<GridSegment2x>> boundaryEdgesByLevel,
-            Map<Integer, ? extends Collection<Door>> doorsByLevel,
-            Map<Integer, ? extends Collection<Wall>> wallsByLevel,
-            Map<Integer, ? extends Collection<CellCoord>> floorCellsByLevel,
-            Map<Integer, CellCoord> anchorsByLevel
-    ) {
-        if (surfaceCellsByLevel == null || surfaceCellsByLevel.isEmpty()) {
+    public static StructureObject fromPersistenceSnapshot(PersistenceSnapshot snapshot) {
+        if (snapshot == null || snapshot.levelsByZ().isEmpty()) {
             return empty();
         }
         Map<Integer, LevelStructure> levels = new LinkedHashMap<>();
-        surfaceCellsByLevel.entrySet().stream()
+        snapshot.levelsByZ().entrySet().stream()
                 .filter(entry -> entry != null && entry.getKey() != null)
                 .sorted(Map.Entry.comparingByKey())
                 .forEach(entry -> {
                     int levelZ = entry.getKey();
-                    LevelStructure level = LevelStructure.fromTopologyWithDoorsAndWalls(
-                            anchorsByLevel == null ? null : anchorsByLevel.get(levelZ),
-                            entry.getValue(),
-                            boundaryEdgesByLevel == null ? null : boundaryEdgesByLevel.get(levelZ),
-                            doorsByLevel == null ? null : doorsByLevel.get(levelZ),
-                            wallsByLevel == null ? null : wallsByLevel.get(levelZ),
-                            floorCellsByLevel == null ? null : floorCellsByLevel.get(levelZ));
+                    PersistenceLevel persistedLevel = entry.getValue();
+                    LevelStructure level = persistedLevel == null
+                            ? null
+                            : LevelStructure.fromSurfaceAndFeatures(
+                            persistedLevel.anchorCell(),
+                            persistedLevel.surfaceCells(),
+                            persistedLevel.doors(),
+                            persistedLevel.authoredWalls(),
+                            persistedLevel.floorCells());
                     if (!level.isEmpty()) {
                         levels.put(levelZ, level);
                     }
@@ -164,16 +180,16 @@ public final class StructureObject {
         return new StructureObject(Map.of(), stair, Map.of());
     }
 
-    public static Set<GridSegment2x> boundaryEdgesForSurface(
+    private static Set<GridSegment2x> derivedBoundaryEdgesForSurface(
             Collection<CellCoord> surfaceCells,
-            Collection<GridSegment2x> extraBoundaryEdges
+            Collection<GridSegment2x> authoredWallEdges
     ) {
         TileShape surfaceShape = TileShape.of(surfaceCells);
         if (surfaceShape.isEmpty()) {
             return Set.of();
         }
         LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>(surfaceShape.boundaryShape().segmentSet2x());
-        result.addAll(normalizedBoundaryEdges(surfaceShape.cellCoords(), extraBoundaryEdges));
+        result.addAll(normalizedBoundaryEdges(interiorAdjacencyEdgesForSurface(surfaceShape.cellCoords()), authoredWallEdges));
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
@@ -289,7 +305,7 @@ public final class StructureObject {
         if (occupiedCells.isEmpty()) {
             return new RoutedProjection(empty(), List.copyOf(traces), Set.of());
         }
-        Set<GridSegment2x> boundaryEdges = boundaryEdgesForSurface(occupiedCells, Set.of());
+        Set<GridSegment2x> boundaryEdges = derivedBoundaryEdgesForSurface(occupiedCells, Set.of());
         if (boundaryEdges.isEmpty()) {
             return new RoutedProjection(empty(), List.copyOf(traces), Set.of());
         }
@@ -329,6 +345,23 @@ public final class StructureObject {
         return levelsByZ;
     }
 
+    public PersistenceSnapshot persistenceSnapshot() {
+        Map<Integer, PersistenceLevel> snapshotLevels = new LinkedHashMap<>();
+        for (Map.Entry<Integer, LevelStructure> entry : levelsByZ.entrySet()) {
+            if (entry.getKey() == null || entry.getValue() == null || entry.getValue().isEmpty()) {
+                continue;
+            }
+            LevelStructure level = entry.getValue();
+            snapshotLevels.put(entry.getKey(), new PersistenceLevel(
+                    level.anchorCell(),
+                    level.surfaceShape().cellCoords(),
+                    level.floorCells(),
+                    level.walls(),
+                    level.doors()));
+        }
+        return new PersistenceSnapshot(snapshotLevels);
+    }
+
     public LevelStructure levelStructure(int levelZ) {
         return levelsByZ.get(levelZ);
     }
@@ -362,13 +395,23 @@ public final class StructureObject {
         return new StructureObject(updated, stair, pathTracesByLevel);
     }
 
-    public StructureObject withWallsAtLevel(int levelZ, Collection<Wall> walls) {
+    public StructureObject withCreatedWallPathAtLevel(int levelZ, Collection<GridSegment2x> segments2x) {
         LevelStructure level = levelStructure(levelZ);
         if (level == null) {
             return this;
         }
         Map<Integer, LevelStructure> updated = new LinkedHashMap<>(levelsByZ);
-        updated.put(levelZ, level.withWalls(walls));
+        updated.put(levelZ, level.withCreatedWallPath(segments2x));
+        return new StructureObject(updated, stair, pathTracesByLevel);
+    }
+
+    public StructureObject withDeletedWallPathAtLevel(int levelZ, Collection<GridSegment2x> segments2x) {
+        LevelStructure level = levelStructure(levelZ);
+        if (level == null) {
+            return this;
+        }
+        Map<Integer, LevelStructure> updated = new LinkedHashMap<>(levelsByZ);
+        updated.put(levelZ, level.withDeletedWallPath(segments2x));
         return new StructureObject(updated, stair, pathTracesByLevel);
     }
 
@@ -402,9 +445,14 @@ public final class StructureObject {
         return level == null ? List.of() : level.doors();
     }
 
-    public List<Wall> wallsAtLevelExplicit(int levelZ) {
+    public List<Wall> authoredWallsAtLevel(int levelZ) {
         LevelStructure level = levelStructure(levelZ);
         return level == null ? List.of() : level.walls();
+    }
+
+    public Set<GridSegment2x> authoredWallEdgesAtLevel(int levelZ) {
+        LevelStructure level = levelStructure(levelZ);
+        return level == null ? Set.of() : level.authoredWallEdges();
     }
 
     public List<EdgeShape> doorComponentShapesAtLevel(int levelZ) {
@@ -417,6 +465,16 @@ public final class StructureObject {
     public Set<GridSegment2x> doorSegmentsAtLevel(int levelZ) {
         LevelStructure level = levelStructure(levelZ);
         return level == null ? Set.of() : level.doorEdges();
+    }
+
+    public boolean hasDoorAtLevel(int levelZ, GridSegment2x segment2x) {
+        LevelStructure level = levelStructure(levelZ);
+        return level != null && level.hasDoorAt(segment2x);
+    }
+
+    public boolean supportsDoorAtLevel(int levelZ, GridSegment2x segment2x) {
+        LevelStructure level = levelStructure(levelZ);
+        return level != null && level.supportsDoorAt(segment2x);
     }
 
     public WallKind wallKindAtLevel(int levelZ, GridSegment2x segment2x) {
@@ -507,7 +565,44 @@ public final class StructureObject {
 
     public Set<GridSegment2x> boundaryEdgesAtLevel(int levelZ) {
         LevelStructure level = levelStructure(levelZ);
-        return level == null ? Set.of() : level.boundaryEdges();
+        return level == null ? Set.of() : level.derivedBoundaryEdges();
+    }
+
+    public boolean isInteriorBoundaryAtLevel(int levelZ, GridSegment2x segment2x) {
+        return segment2x != null && touchingSurfaceCellCount(cellCoordsAtLevel(levelZ), segment2x) == 2L;
+    }
+
+    public boolean isExteriorBoundaryAtLevel(int levelZ, GridSegment2x segment2x) {
+        return segment2x != null && touchingSurfaceCellCount(cellCoordsAtLevel(levelZ), segment2x) == 1L;
+    }
+
+    public boolean touchesBoundaryVertexAtLevel(int levelZ, GridPoint2x vertex) {
+        if (vertex == null) {
+            return false;
+        }
+        return boundaryEdgesAtLevel(levelZ).stream()
+                .anyMatch(segment2x -> segment2x.start().equals(vertex) || segment2x.end().equals(vertex));
+    }
+
+    public boolean isEditableWallVertexAtLevel(int levelZ, GridPoint2x vertex, boolean deleteMode) {
+        if (vertex == null) {
+            return false;
+        }
+        Set<GridSegment2x> candidateEdges = deleteMode
+                ? deletableWallEdgesAtLevel(levelZ)
+                : creatableWallEdgesAtLevel(levelZ);
+        return candidateEdges.stream()
+                .anyMatch(segment2x -> segment2x.start().equals(vertex) || segment2x.end().equals(vertex));
+    }
+
+    public Set<GridSegment2x> creatableWallEdgesAtLevel(int levelZ) {
+        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>(interiorAdjacencyEdgesAtLevel(levelZ));
+        result.removeAll(authoredWallEdgesAtLevel(levelZ));
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
+    public Set<GridSegment2x> deletableWallEdgesAtLevel(int levelZ) {
+        return authoredWallEdgesAtLevel(levelZ);
     }
 
     public Set<GridSegment2x> interiorBoundaryEdgesAtLevel(int levelZ) {
@@ -519,11 +614,6 @@ public final class StructureObject {
                 .filter(segment2x -> touchingSurfaceCellCount(levelCells, segment2x) == 2L)
                 .sorted(GridSegment2x.ORDER)
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
-    }
-
-    public Set<GridSegment2x> movementBlockingBoundaryEdgesAtLevel(int levelZ) {
-        LevelStructure level = levelStructure(levelZ);
-        return level == null ? Set.of() : level.movementBlockingBoundaryEdges();
     }
 
     public Set<GridSegment2x> exteriorBoundaryEdgesAtLevel(int levelZ) {
@@ -538,21 +628,7 @@ public final class StructureObject {
     }
 
     public Set<GridSegment2x> interiorAdjacencyEdgesAtLevel(int levelZ) {
-        Set<CellCoord> levelCells = cellCoordsAtLevel(levelZ);
-        if (levelCells.isEmpty()) {
-            return Set.of();
-        }
-        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
-        for (CellCoord cell : levelCells) {
-            for (CellCoord step : CellCoord.CARDINAL_STEPS) {
-                CellCoord neighbor = cell.add(step);
-                if (!levelCells.contains(neighbor) || CellCoord.ORDER.compare(cell, neighbor) >= 0) {
-                    continue;
-                }
-                result.add(GridSegment2x.boundaryEdge(cell, cell.directionTo4(neighbor)));
-            }
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+        return interiorAdjacencyEdgesForSurface(cellCoordsAtLevel(levelZ));
     }
 
     public Set<GridSegment2x> exteriorBoundaryEdges() {
@@ -653,7 +729,7 @@ public final class StructureObject {
             return Set.of();
         }
         return surfaceShapeAtLevel(levelZ)
-                .reachableFrom(anchorCell, barrierEdgesAtLevel(levelZ))
+                .reachableFrom(anchorCell, boundaryEdgesAtLevel(levelZ))
                 .cellCoords();
     }
 
@@ -688,16 +764,15 @@ public final class StructureObject {
                     if (clippedSurfaceCells.isEmpty()) {
                         return;
                     }
-                    Set<GridSegment2x> boundaryEdges = boundaryEdgesForSurface(
+                    Set<GridSegment2x> boundaryEdges = derivedBoundaryEdgesForSurface(
                             clippedSurfaceCells,
-                            interiorBoundaryEdgesAtLevel(levelZ));
+                            authoredWallEdgesAtLevel(levelZ));
                     List<Door> clippedDoors = clippedDoorsForBoundary(doorsAtLevel(levelZ), boundaryEdges);
-                    List<Wall> clippedWalls = clippedWallsForBoundary(wallsAtLevelExplicit(levelZ), boundaryEdges);
+                    List<Wall> clippedWalls = clippedWallsForBoundary(authoredWallsAtLevel(levelZ), boundaryEdges);
                     Set<CellCoord> floorCells = intersectCells(floorCellCoordsAtLevel(levelZ), clippedSurfaceCells);
-                    levels.put(levelZ, LevelStructure.fromTopologyWithDoorsAndWalls(
+                    levels.put(levelZ, LevelStructure.fromSurfaceAndFeatures(
                             preferredAnchorsByLevel == null ? null : preferredAnchorsByLevel.get(levelZ),
                             clippedSurfaceCells,
-                            boundaryEdges,
                             clippedDoors,
                             clippedWalls,
                             floorCells));
@@ -749,15 +824,6 @@ public final class StructureObject {
 
     private TileShape stairShapeAtLevel(int levelZ) {
         return stair == null ? TileShape.empty() : stair.shapeAtLevel(levelZ);
-    }
-
-    private EdgeShape wallShapeAtLevel(int levelZ) {
-        LevelStructure level = levelStructure(levelZ);
-        return level == null ? EdgeShape.empty() : level.wallShape();
-    }
-
-    private Set<GridSegment2x> barrierEdgesAtLevel(int levelZ) {
-        return movementBlockingBoundaryEdgesAtLevel(levelZ);
     }
 
     private static List<Door> clippedDoorsForBoundary(Collection<Door> doors, Collection<GridSegment2x> boundaryEdges) {
@@ -1110,17 +1176,34 @@ public final class StructureObject {
     }
 
     private static Set<GridSegment2x> normalizedBoundaryEdges(
-            Set<CellCoord> surfaceCells,
+            Set<GridSegment2x> allowedEdges,
             Collection<GridSegment2x> boundaryEdges
     ) {
-        if (surfaceCells == null || surfaceCells.isEmpty() || boundaryEdges == null || boundaryEdges.isEmpty()) {
+        if (allowedEdges == null || allowedEdges.isEmpty() || boundaryEdges == null || boundaryEdges.isEmpty()) {
             return Set.of();
         }
         LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
         GridSegment2x.boundarySteps(boundaryEdges).stream()
                 .sorted(GridSegment2x.ORDER)
-                .filter(segment -> touchesSurfaceCells(surfaceCells, segment))
+                .filter(allowedEdges::contains)
                 .forEach(result::add);
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
+    private static Set<GridSegment2x> interiorAdjacencyEdgesForSurface(Set<CellCoord> surfaceCells) {
+        if (surfaceCells == null || surfaceCells.isEmpty()) {
+            return Set.of();
+        }
+        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
+        for (CellCoord cell : surfaceCells) {
+            for (CellCoord step : CellCoord.CARDINAL_STEPS) {
+                CellCoord neighbor = cell.add(step);
+                if (!surfaceCells.contains(neighbor) || CellCoord.ORDER.compare(cell, neighbor) >= 0) {
+                    continue;
+                }
+                result.add(GridSegment2x.boundaryEdge(cell, cell.directionTo4(neighbor)));
+            }
+        }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
@@ -1303,14 +1386,32 @@ public final class StructureObject {
                 Collection<CellCoord> surfaceCells,
                 Collection<CellCoord> floorCells
         ) {
-            TileShape surfaceShape = TileShape.of(surfaceCells);
-            return fromTopologyWithDoorsAndWalls(
+            return fromSurfaceAndFeatures(
                     anchorCell,
-                    surfaceShape.cellCoords(),
-                    surfaceShape.boundaryShape().segmentSet2x(),
+                    surfaceCells,
                     List.of(),
                     List.of(),
                     floorCells);
+        }
+
+        public static LevelStructure fromSurfaceAndFeatures(
+                CellCoord anchorCell,
+                Collection<CellCoord> surfaceCells,
+                Collection<Door> doors,
+                Collection<Wall> walls,
+                Collection<CellCoord> floorCells
+        ) {
+            TileShape surfaceShape = TileShape.of(surfaceCells);
+            if (surfaceShape.isEmpty()) {
+                return new LevelStructure(anchorCell, surfaceShape, EdgeShape.empty(), List.of(), List.of(), TileShape.empty());
+            }
+            EdgeShape allowedWallShape = EdgeShape.fromBoundarySegments(interiorAdjacencyEdgesForSurface(surfaceShape.cellCoords()));
+            List<Wall> normalizedWalls = normalizeWalls(allowedWallShape, walls);
+            EdgeShape boundaryShape = EdgeShape.fromBoundarySegments(derivedBoundaryEdgesForSurface(
+                    surfaceShape.cellCoords(),
+                    authoredWallEdges(normalizedWalls)));
+            TileShape floorShape = surfaceShape.intersection(floorCells);
+            return new LevelStructure(anchorCell, surfaceShape, boundaryShape, doors, normalizedWalls, floorShape);
         }
 
         public static LevelStructure fromTopology(
@@ -1350,7 +1451,9 @@ public final class StructureObject {
             if (surfaceShape.isEmpty()) {
                 return new LevelStructure(anchorCell, surfaceShape, EdgeShape.empty(), List.of(), List.of(), TileShape.empty());
             }
-            Set<GridSegment2x> normalizedBoundaryEdges = StructureObject.normalizedBoundaryEdges(surfaceShape.cellCoords(), boundaryEdges);
+            Set<GridSegment2x> normalizedBoundaryEdges = StructureObject.normalizedBoundaryEdges(
+                    surfaceShape.boundaryShape().segmentSet2x(),
+                    boundaryEdges);
             EdgeShape boundaryShape = normalizedBoundaryEdges.isEmpty()
                     ? surfaceShape.boundaryShape()
                     : EdgeShape.fromBoundarySegments(normalizedBoundaryEdges);
@@ -1382,6 +1485,14 @@ public final class StructureObject {
             return walls;
         }
 
+        public Set<GridSegment2x> authoredWallEdges() {
+            return authoredWallEdges(walls);
+        }
+
+        public Set<GridSegment2x> derivedBoundaryEdges() {
+            return boundaryEdges();
+        }
+
         public EdgeShape wallShape() {
             return EdgeShape.fromBoundarySegments(movementBlockingBoundaryEdges());
         }
@@ -1398,6 +1509,15 @@ public final class StructureObject {
                 }
             }
             return result.isEmpty() ? Set.of() : Set.copyOf(result);
+        }
+
+        public boolean hasDoorAt(GridSegment2x segment2x) {
+            return segment2x != null && doorEdges().contains(segment2x);
+        }
+
+        public boolean supportsDoorAt(GridSegment2x segment2x) {
+            WallKind wallKind = wallKindAt(segment2x);
+            return wallKind != null && wallKind.supportsDoorAttachments();
         }
 
         public Set<GridSegment2x> movementBlockingBoundaryEdges() {
@@ -1452,15 +1572,25 @@ public final class StructureObject {
         }
 
         public LevelStructure withFloorCells(Collection<CellCoord> floorCells) {
-            return fromTopologyWithDoorsAndWalls(anchorCell, surfaceShape.cellCoords(), boundaryEdges(), doors, walls, floorCells);
+            return fromSurfaceAndFeatures(anchorCell, surfaceShape.cellCoords(), doors, walls, floorCells);
         }
 
         public LevelStructure withDoors(Collection<Door> doors) {
-            return fromTopologyWithDoorsAndWalls(anchorCell, surfaceShape.cellCoords(), boundaryEdges(), doors, walls, floorCells());
+            return fromSurfaceAndFeatures(anchorCell, surfaceShape.cellCoords(), doors, walls, floorCells());
         }
 
-        public LevelStructure withWalls(Collection<Wall> walls) {
-            return fromTopologyWithDoorsAndWalls(anchorCell, surfaceShape.cellCoords(), boundaryEdges(), doors, walls, floorCells());
+        public LevelStructure withCreatedWallPath(Collection<GridSegment2x> segments2x) {
+            return fromSurfaceAndFeatures(
+                    anchorCell,
+                    surfaceShape.cellCoords(),
+                    doors,
+                    createdWalls(walls, normalizedBoundaryEdges(creatableWallCandidates(), segments2x)),
+                    floorCells());
+        }
+
+        public LevelStructure withDeletedWallPath(Collection<GridSegment2x> segments2x) {
+            List<Wall> remainingWalls = deletedWalls(walls, normalizedBoundaryEdges(authoredWallEdges(), segments2x));
+            return fromSurfaceAndFeatures(anchorCell, surfaceShape.cellCoords(), doors, remainingWalls, floorCells());
         }
 
         public boolean isEmpty() {
@@ -1565,6 +1695,77 @@ public final class StructureObject {
             }
             result.sort(Comparator.comparing(Wall::anchorSegment2x, GridSegment2x.ORDER));
             return result.isEmpty() ? List.of() : List.copyOf(result);
+        }
+
+        private Set<GridSegment2x> creatableWallCandidates() {
+            LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>(interiorAdjacencyEdgesForSurface(surfaceShape.cellCoords()));
+            result.removeAll(authoredWallEdges());
+            return result.isEmpty() ? Set.of() : Set.copyOf(result);
+        }
+
+        private static Set<GridSegment2x> authoredWallEdges(Collection<Wall> walls) {
+            LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
+            for (Wall wall : walls == null ? List.<Wall>of() : walls) {
+                if (wall != null) {
+                    result.addAll(wall.segments2x());
+                }
+            }
+            return result.isEmpty() ? Set.of() : Set.copyOf(result);
+        }
+
+        private static List<Wall> createdWalls(Collection<Wall> existingWalls, Collection<GridSegment2x> segments2x) {
+            List<GridSegment2x> newSegments = (segments2x == null ? List.<GridSegment2x>of() : segments2x).stream()
+                    .filter(Objects::nonNull)
+                    .sorted(GridSegment2x.ORDER)
+                    .toList();
+            if (newSegments.isEmpty()) {
+                return existingWalls == null ? List.of() : List.copyOf(existingWalls);
+            }
+            ArrayList<Wall> result = new ArrayList<>(existingWalls == null ? List.<Wall>of() : existingWalls);
+            EdgeShape shape = EdgeShape.fromBoundarySegments(newSegments);
+            if (!shape.isEmpty()) {
+                result.add(Wall.fromShape(null, shape, shape.firstSegment2x(), WallKind.solid()));
+            }
+            return result.stream()
+                    .filter(Objects::nonNull)
+                    .sorted(Comparator.comparing(Wall::anchorSegment2x, GridSegment2x.ORDER))
+                    .toList();
+        }
+
+        private static List<Wall> deletedWalls(Collection<Wall> existingWalls, Collection<GridSegment2x> segments2x) {
+            if (existingWalls == null || existingWalls.isEmpty()) {
+                return List.of();
+            }
+            List<GridSegment2x> removedSegments = (segments2x == null ? List.<GridSegment2x>of() : segments2x).stream()
+                    .filter(Objects::nonNull)
+                    .sorted(GridSegment2x.ORDER)
+                    .toList();
+            if (removedSegments.isEmpty()) {
+                return existingWalls.stream()
+                        .filter(Objects::nonNull)
+                        .sorted(Comparator.comparing(Wall::anchorSegment2x, GridSegment2x.ORDER))
+                        .toList();
+            }
+            ArrayList<Wall> result = new ArrayList<>();
+            for (Wall wall : existingWalls) {
+                if (wall == null || wall.isEmpty()) {
+                    continue;
+                }
+                EdgeShape remainingShape = EdgeShape.fromBoundarySegments(wall.segments2x()).without(removedSegments);
+                List<EdgeShape> remainingComponents = remainingShape.connectedComponents();
+                for (int index = 0; index < remainingComponents.size(); index++) {
+                    EdgeShape component = remainingComponents.get(index);
+                    GridSegment2x anchorSegment2x = component.contains(wall.anchorSegment2x())
+                            ? wall.anchorSegment2x()
+                            : component.firstSegment2x();
+                    Long wallId = index == 0 ? wall.wallId() : null;
+                    result.add(Wall.fromShape(wallId, component, anchorSegment2x, wall.wallKind()));
+                }
+            }
+            return result.stream()
+                    .filter(Objects::nonNull)
+                    .sorted(Comparator.comparing(Wall::anchorSegment2x, GridSegment2x.ORDER))
+                    .toList();
         }
 
         private static long syntheticDoorId(EdgeShape shape, GridSegment2x anchorSegment2x, Door.DoorState doorState) {

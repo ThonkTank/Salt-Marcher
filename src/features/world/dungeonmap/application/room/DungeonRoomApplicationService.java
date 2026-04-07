@@ -107,19 +107,35 @@ public final class DungeonRoomApplicationService {
         }
     }
 
-    public void editBoundary(
+    public void createWallPath(
             long mapId,
             long clusterId,
             int levelZ,
-            Collection<GridSegment2x> segments2x,
-            boolean deleteBoundary
+            Collection<GridSegment2x> segments2x
     ) throws SQLException {
         if (segments2x == null || segments2x.isEmpty()) {
             return;
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                editBoundary(conn, mapId, clusterId, levelZ, segments2x, deleteBoundary);
+                createWallPath(conn, mapId, clusterId, levelZ, segments2x);
+                return null;
+            });
+        }
+    }
+
+    public void deleteWallPath(
+            long mapId,
+            long clusterId,
+            int levelZ,
+            Collection<GridSegment2x> segments2x
+    ) throws SQLException {
+        if (segments2x == null || segments2x.isEmpty()) {
+            return;
+        }
+        try (Connection conn = DatabaseManager.getConnection()) {
+            DungeonTransactionRunner.inTransaction(conn, () -> {
+                deleteWallPath(conn, mapId, clusterId, levelZ, segments2x);
                 return null;
             });
         }
@@ -333,13 +349,12 @@ public final class DungeonRoomApplicationService {
         paintCells(conn, mapId, levelZ, Set.of(cell));
     }
 
-    public void editBoundary(
+    public void createWallPath(
             Connection conn,
             long mapId,
             long clusterId,
             int levelZ,
-            Collection<GridSegment2x> segments2x,
-            boolean deleteBoundary
+            Collection<GridSegment2x> segments2x
     ) throws SQLException {
         if (segments2x == null || segments2x.isEmpty()) {
             return;
@@ -349,7 +364,30 @@ public final class DungeonRoomApplicationService {
         if (cluster == null) {
             return;
         }
-        RoomCluster updatedCluster = cluster.editBoundary(levelZ, segments2x, deleteBoundary);
+        RoomCluster updatedCluster = cluster.createWallPath(levelZ, segments2x);
+        if (updatedCluster == null) {
+            return;
+        }
+
+        persistClusterRewrite(conn, mapId, layout, List.of(cluster), List.of(updatedCluster));
+    }
+
+    public void deleteWallPath(
+            Connection conn,
+            long mapId,
+            long clusterId,
+            int levelZ,
+            Collection<GridSegment2x> segments2x
+    ) throws SQLException {
+        if (segments2x == null || segments2x.isEmpty()) {
+            return;
+        }
+        DungeonLayout layout = requireLayout(conn, mapId);
+        RoomCluster cluster = layout.findCluster(clusterId);
+        if (cluster == null) {
+            return;
+        }
+        RoomCluster updatedCluster = cluster.deleteWallPath(levelZ, segments2x);
         if (updatedCluster == null) {
             return;
         }

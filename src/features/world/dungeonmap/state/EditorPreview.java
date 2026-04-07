@@ -21,16 +21,12 @@ public sealed interface EditorPreview permits EditorPreview.LayoutPreview, Edito
 
     record BoundaryPreview(
             Set<GridSegment2x> edges,
-            Set<GridSegment2x> skippedConnectionEdges,
             GridPoint2x startVertex2x,
             GridPoint2x currentVertex2x,
             boolean deleteMode
     ) implements EditorPreview {
         public BoundaryPreview {
             edges = edges == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(edges));
-            skippedConnectionEdges = skippedConnectionEdges == null
-                    ? Set.of()
-                    : Set.copyOf(new LinkedHashSet<>(skippedConnectionEdges));
         }
     }
 }

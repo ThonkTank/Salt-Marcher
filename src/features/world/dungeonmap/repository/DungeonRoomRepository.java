@@ -17,6 +17,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -361,9 +362,10 @@ public final class DungeonRoomRepository {
     }
 
     private void replaceClusterStructure(Connection conn, long clusterId, StructureObject structure) throws SQLException {
-        StructureObject resolvedStructure = doorRepository.assignPersistentIds(
+        StructureObject resolvedStructure = assignPersistentWallIds(
                 conn,
-                requiredStructure(structure));
+                doorRepository.assignPersistentIds(conn, requiredStructure(structure)));
+        StructureObject.PersistenceSnapshot snapshot = resolvedStructure.persistenceSnapshot();
         try (PreparedStatement deleteSurfaceCells = conn.prepareStatement(
                 "DELETE FROM dungeon_room_cluster_level_surface_cells WHERE cluster_id=?");
              PreparedStatement deleteFloorCells = conn.prepareStatement(
@@ -383,15 +385,15 @@ public final class DungeonRoomRepository {
                      "INSERT INTO dungeon_room_cluster_level_surface_cells(cluster_id, level_z, cell_x2, cell_y2) VALUES(?,?,?,?)");
              PreparedStatement insertFloorCell = conn.prepareStatement(
                      "INSERT INTO dungeon_room_cluster_level_floor_cells(cluster_id, level_z, cell_x2, cell_y2) VALUES(?,?,?,?)")) {
-            for (var entry : resolvedStructure.levelStructures().entrySet()) {
+            for (var entry : snapshot.levelsByZ().entrySet()) {
                 int levelZ = entry.getKey();
-                StructureObject.LevelStructure level = entry.getValue();
+                StructureObject.PersistenceLevel level = entry.getValue();
                 insertLevel.setLong(1, clusterId);
                 insertLevel.setInt(2, levelZ);
                 insertLevel.setInt(3, persistedCellX2(level.anchorCell()));
                 insertLevel.setInt(4, persistedCellY2(level.anchorCell()));
                 insertLevel.addBatch();
-                addCells(insertSurfaceCell, clusterId, levelZ, level.surfaceShape().cellCoords());
+                addCells(insertSurfaceCell, clusterId, levelZ, level.surfaceCells());
                 addCells(insertFloorCell, clusterId, levelZ, level.floorCells());
             }
             insertLevel.executeBatch();
@@ -399,6 +401,7 @@ public final class DungeonRoomRepository {
             insertFloorCell.executeBatch();
         }
         doorRepository.replaceClusterDoors(conn, clusterId, resolvedStructure);
+        replaceClusterWalls(conn, clusterId, snapshot);
     }
 
     private static void addCells(
@@ -416,25 +419,6 @@ public final class DungeonRoomRepository {
             insertCell.setInt(3, persistedCellX2(cell));
             insertCell.setInt(4, persistedCellY2(cell));
             insertCell.addBatch();
-        }
-    }
-
-    private static void addSegments(
-            PreparedStatement insertSegment,
-            long roomId,
-            int levelZ,
-            java.util.Collection<GridSegment2x> segments
-    ) throws SQLException {
-        for (GridSegment2x persistedSegment : GridSegment2x.boundarySteps(segments).stream()
-                .sorted(GridSegment2x.ORDER)
-                .toList()) {
-            insertSegment.setLong(1, roomId);
-            insertSegment.setInt(2, levelZ);
-            insertSegment.setInt(3, persistedSegment.start().x2());
-            insertSegment.setInt(4, persistedSegment.start().y2());
-            insertSegment.setInt(5, persistedSegment.end().x2());
-            insertSegment.setInt(6, persistedSegment.end().y2());
-            insertSegment.addBatch();
         }
     }
 
@@ -463,6 +447,89 @@ public final class DungeonRoomRepository {
             throw new IllegalArgumentException("Room structure must not be empty");
         }
         return resolvedStructure;
+    }
+
+    private StructureObject assignPersistentWallIds(Connection conn, StructureObject structure) throws SQLException {
+        StructureObject.PersistenceSnapshot snapshot = structure.persistenceSnapshot();
+        if (snapshot.levelsByZ().isEmpty()) {
+            return structure;
+        }
+        long nextWallId = nextWallId(conn);
+        Map<Integer, StructureObject.PersistenceLevel> updatedLevels = new LinkedHashMap<>();
+        boolean changed = false;
+        for (Map.Entry<Integer, StructureObject.PersistenceLevel> entry : snapshot.levelsByZ().entrySet()) {
+            StructureObject.PersistenceLevel level = entry.getValue();
+            List<Wall> persistedWalls = new ArrayList<>();
+            for (Wall wall : level.authoredWalls()) {
+                if (wall == null || wall.isEmpty()) {
+                    continue;
+                }
+                Wall persistedWall = wall;
+                if (wall.wallId() == null || wall.wallId() <= 0L) {
+                    persistedWall = wall.withWallId(nextWallId++);
+                    changed = true;
+                }
+                persistedWalls.add(persistedWall);
+            }
+            updatedLevels.put(entry.getKey(), new StructureObject.PersistenceLevel(
+                    level.anchorCell(),
+                    level.surfaceCells(),
+                    level.floorCells(),
+                    persistedWalls,
+                    level.doors()));
+        }
+        return changed ? StructureObject.fromPersistenceSnapshot(new StructureObject.PersistenceSnapshot(updatedLevels)) : structure;
+    }
+
+    private void replaceClusterWalls(
+            Connection conn,
+            long clusterId,
+            StructureObject.PersistenceSnapshot snapshot
+    ) throws SQLException {
+        try (PreparedStatement delete = conn.prepareStatement(
+                "DELETE FROM dungeon_cluster_walls WHERE cluster_id=?")) {
+            delete.setLong(1, clusterId);
+            delete.executeUpdate();
+        }
+        if (snapshot == null || snapshot.levelsByZ().isEmpty()) {
+            return;
+        }
+        try (PreparedStatement insertWall = conn.prepareStatement(
+                "INSERT INTO dungeon_cluster_walls(wall_id, cluster_id, level_z, wall_kind_id,"
+                        + " anchor_start_x2, anchor_start_y2, anchor_end_x2, anchor_end_y2)"
+                        + " VALUES(?,?,?,?,?,?,?,?)");
+             PreparedStatement insertSegment = conn.prepareStatement(
+                     "INSERT INTO dungeon_cluster_wall_segments(wall_id, start_x2, start_y2, end_x2, end_y2)"
+                             + " VALUES(?,?,?,?,?)")) {
+            for (Map.Entry<Integer, StructureObject.PersistenceLevel> entry : snapshot.levelsByZ().entrySet()) {
+                int levelZ = entry.getKey();
+                for (Wall wall : entry.getValue().authoredWalls()) {
+                    if (wall == null || wall.isEmpty() || wall.wallId() == null || wall.wallId() <= 0L) {
+                        throw new IllegalArgumentException("Persisted walls require a stable positive wall id");
+                    }
+                    GridSegment2x anchorSegment2x = wall.anchorSegment2x() == null ? wall.firstSegment2x() : wall.anchorSegment2x();
+                    insertWall.setLong(1, wall.wallId());
+                    insertWall.setLong(2, clusterId);
+                    insertWall.setInt(3, levelZ);
+                    insertWall.setLong(4, wall.wallKind().wallKindId());
+                    insertWall.setInt(5, anchorSegment2x.start().x2());
+                    insertWall.setInt(6, anchorSegment2x.start().y2());
+                    insertWall.setInt(7, anchorSegment2x.end().x2());
+                    insertWall.setInt(8, anchorSegment2x.end().y2());
+                    insertWall.addBatch();
+                    for (GridSegment2x segment2x : wall.segments2x().stream().sorted(GridSegment2x.ORDER).toList()) {
+                        insertSegment.setLong(1, wall.wallId());
+                        insertSegment.setInt(2, segment2x.start().x2());
+                        insertSegment.setInt(3, segment2x.start().y2());
+                        insertSegment.setInt(4, segment2x.end().x2());
+                        insertSegment.setInt(5, segment2x.end().y2());
+                        insertSegment.addBatch();
+                    }
+                }
+            }
+            insertWall.executeBatch();
+            insertSegment.executeBatch();
+        }
     }
 
     private static Map<Integer, CellCoord> requiredAnchors(Map<Integer, CellCoord> anchorsByLevel) {
@@ -538,8 +605,7 @@ public final class DungeonRoomRepository {
         Map<Long, Map<Integer, Set<CellCoord>>> floorCellsByClusterId = new LinkedHashMap<>();
         Map<Long, Map<Integer, List<features.world.dungeonmap.model.objects.Door>>> doorsByClusterId =
                 new DungeonDoorRepository().loadClusterDoorsByClusterId(conn, mapId);
-        Map<Long, Map<Integer, List<Wall>>> wallsByClusterId =
-                new LinkedHashMap<>();
+        Map<Long, Map<Integer, List<Wall>>> wallsByClusterId = loadClusterWallsByClusterId(conn, mapId, wallKindsById);
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT cluster_id, level_z, anchor_x2, anchor_y2"
                         + " FROM dungeon_room_cluster_levels"
@@ -599,26 +665,75 @@ public final class DungeonRoomRepository {
         Map<Long, StructureObject> result = new LinkedHashMap<>();
         for (Map.Entry<Long, Map<Integer, CellCoord>> clusterEntry : anchorsByClusterId.entrySet()) {
             Long clusterId = clusterEntry.getKey();
-            Map<Integer, StructureObject.LevelStructure> levels = new LinkedHashMap<>();
+            Map<Integer, StructureObject.PersistenceLevel> snapshotLevels = new LinkedHashMap<>();
             for (Map.Entry<Integer, CellCoord> levelEntry : clusterEntry.getValue().entrySet()) {
                 int levelZ = levelEntry.getKey();
                 Set<CellCoord> surfaceCells = surfaceCellsByClusterId.getOrDefault(clusterId, Map.of()).getOrDefault(levelZ, Set.of());
                 if (surfaceCells.isEmpty()) {
                     throw new IllegalStateException("Cluster " + clusterId + " hat keine persistierten Surface-Zellen auf Ebene " + levelZ);
                 }
-                StructureObject.LevelStructure level = StructureObject.LevelStructure.fromTopologyWithDoorsAndWalls(
+                snapshotLevels.put(levelZ, new StructureObject.PersistenceLevel(
                         levelEntry.getValue(),
                         surfaceCells,
-                        Set.of(),
-                        doorsByClusterId.getOrDefault(clusterId, Map.of()).getOrDefault(levelZ, List.of()),
+                        floorCellsByClusterId.getOrDefault(clusterId, Map.of()).getOrDefault(levelZ, Set.of()),
                         wallsByClusterId.getOrDefault(clusterId, Map.of()).getOrDefault(levelZ, List.of()),
-                        floorCellsByClusterId.getOrDefault(clusterId, Map.of()).get(levelZ));
-                if (level.isEmpty()) {
-                    throw new IllegalStateException("Cluster " + clusterId + " hat eine leere Topologie auf Ebene " + levelZ);
-                }
-                levels.put(levelZ, level);
+                        doorsByClusterId.getOrDefault(clusterId, Map.of()).getOrDefault(levelZ, List.of())));
             }
-            result.put(clusterId, StructureObject.fromLevels(levels));
+            StructureObject structure = StructureObject.fromPersistenceSnapshot(new StructureObject.PersistenceSnapshot(snapshotLevels));
+            if (structure.levelStructures().isEmpty()) {
+                throw new IllegalStateException("Cluster " + clusterId + " hat keine persistierte Strukturbeschreibung");
+            }
+            result.put(clusterId, structure);
+        }
+        return result.isEmpty() ? Map.of() : Map.copyOf(result);
+    }
+
+    private Map<Long, Map<Integer, List<Wall>>> loadClusterWallsByClusterId(
+            Connection conn,
+            long mapId,
+            Map<Long, WallKind> wallKindsById
+    ) throws SQLException {
+        Map<Long, Map<Integer, LinkedHashMap<Long, MutableWall>>> mutable = new LinkedHashMap<>();
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT w.cluster_id, w.wall_id, w.level_z, w.wall_kind_id,"
+                        + " w.anchor_start_x2, w.anchor_start_y2, w.anchor_end_x2, w.anchor_end_y2,"
+                        + " s.start_x2, s.start_y2, s.end_x2, s.end_y2"
+                        + " FROM dungeon_cluster_walls w"
+                        + " JOIN dungeon_cluster_wall_segments s ON s.wall_id=w.wall_id"
+                        + " WHERE w.cluster_id IN (SELECT cluster_id FROM dungeon_room_clusters WHERE dungeon_map_id=?)"
+                        + " ORDER BY w.cluster_id, w.level_z, w.wall_id, s.start_y2, s.start_x2, s.end_y2, s.end_x2")) {
+            ps.setLong(1, mapId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    long clusterId = rs.getLong("cluster_id");
+                    int levelZ = rs.getInt("level_z");
+                    long wallId = rs.getLong("wall_id");
+                    WallKind wallKind = wallKindsById.getOrDefault(rs.getLong("wall_kind_id"), WallKind.solid());
+                    GridSegment2x anchorSegment2x = new GridSegment2x(
+                            GridPoint2x.raw(rs.getInt("anchor_start_x2"), rs.getInt("anchor_start_y2")),
+                            GridPoint2x.raw(rs.getInt("anchor_end_x2"), rs.getInt("anchor_end_y2")));
+                    LinkedHashMap<Long, MutableWall> wallsById = mutable
+                            .computeIfAbsent(clusterId, ignored -> new LinkedHashMap<>())
+                            .computeIfAbsent(levelZ, ignored -> new LinkedHashMap<>());
+                    MutableWall mutableWall = wallsById.computeIfAbsent(
+                            wallId,
+                            ignored -> new MutableWall(wallId, anchorSegment2x, wallKind));
+                    mutableWall.segments().add(new GridSegment2x(
+                            GridPoint2x.raw(rs.getInt("start_x2"), rs.getInt("start_y2")),
+                            GridPoint2x.raw(rs.getInt("end_x2"), rs.getInt("end_y2"))));
+                }
+            }
+        }
+        Map<Long, Map<Integer, List<Wall>>> result = new LinkedHashMap<>();
+        for (Map.Entry<Long, Map<Integer, LinkedHashMap<Long, MutableWall>>> ownerEntry : mutable.entrySet()) {
+            Map<Integer, List<Wall>> levels = new LinkedHashMap<>();
+            for (Map.Entry<Integer, LinkedHashMap<Long, MutableWall>> levelEntry : ownerEntry.getValue().entrySet()) {
+                levels.put(levelEntry.getKey(), levelEntry.getValue().values().stream()
+                        .map(MutableWall::toWall)
+                        .sorted(Comparator.comparing(Wall::anchorSegment2x, GridSegment2x.ORDER))
+                        .toList());
+            }
+            result.put(ownerEntry.getKey(), Map.copyOf(levels));
         }
         return result.isEmpty() ? Map.of() : Map.copyOf(result);
     }
@@ -714,6 +829,32 @@ public final class DungeonRoomRepository {
             }
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
+    private static long nextWallId(Connection conn) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT COALESCE(MAX(wall_id), 0) + 1 AS next_id FROM dungeon_cluster_walls");
+             ResultSet rs = ps.executeQuery()) {
+            if (!rs.next()) {
+                throw new SQLException("Nächste Wand-ID konnte nicht bestimmt werden");
+            }
+            return rs.getLong("next_id");
+        }
+    }
+
+    private record MutableWall(
+            long wallId,
+            GridSegment2x anchorSegment2x,
+            WallKind wallKind,
+            LinkedHashSet<GridSegment2x> segments
+    ) {
+        private MutableWall(long wallId, GridSegment2x anchorSegment2x, WallKind wallKind) {
+            this(wallId, anchorSegment2x, wallKind, new LinkedHashSet<>());
+        }
+
+        private Wall toWall() {
+            return Wall.fromSegments(wallId, segments, anchorSegment2x, wallKind);
+        }
     }
 
     @FunctionalInterface
