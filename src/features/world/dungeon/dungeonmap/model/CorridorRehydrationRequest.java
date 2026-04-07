@@ -1,6 +1,6 @@
 package features.world.dungeon.dungeonmap.model;
 
-import features.world.dungeon.dungeonmap.corridor.model.CorridorSpecification;
+import features.world.dungeon.dungeonmap.corridor.model.CorridorDraft;
 import features.world.dungeon.dungeonmap.structure.model.Structure;
 
 import java.util.Objects;
@@ -9,11 +9,11 @@ import java.util.Objects;
  * Map-owned request for rehydrating a corridor directly from persisted structure plus corridor metadata.
  */
 public record CorridorRehydrationRequest(
-        CorridorSpecification specification,
+        CorridorDraft draft,
         Structure structure
 ) {
     public CorridorRehydrationRequest {
-        specification = Objects.requireNonNull(specification, "specification");
+        draft = Objects.requireNonNull(draft, "draft");
         structure = Objects.requireNonNull(structure, "structure");
     }
 }

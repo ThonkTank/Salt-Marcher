@@ -10,11 +10,19 @@ import java.util.List;
 
 public record CorridorPathTrace(
         Long traceId,
+        Long memberId,
+        int segmentOrdinal,
         Long startNodeId,
         Long endNodeId,
         GridPath path
 ) implements GridTranslatable<CorridorPathTrace> {
     public CorridorPathTrace {
+        if (memberId == null) {
+            throw new IllegalArgumentException("Corridor trace member id is required");
+        }
+        if (segmentOrdinal < 0) {
+            throw new IllegalArgumentException("Corridor trace segment ordinal must be non-negative");
+        }
         path = path == null ? GridPath.empty() : path;
     }
 
@@ -61,6 +69,6 @@ public record CorridorPathTrace(
         GridTranslation resolvedTranslation = translation == null ? GridTranslation.none() : translation;
         return resolvedTranslation.isZero()
                 ? this
-                : new CorridorPathTrace(traceId, startNodeId, endNodeId, path.translated(resolvedTranslation));
+                : new CorridorPathTrace(traceId, memberId, segmentOrdinal, startNodeId, endNodeId, path.translated(resolvedTranslation));
     }
 }

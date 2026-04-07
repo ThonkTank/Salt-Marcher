@@ -21,7 +21,7 @@ import features.world.dungeon.model.structures.connection.StairConnectionCarrier
 import features.world.dungeon.dungeonmap.corridor.model.Corridor;
 import features.world.dungeon.dungeonmap.corridor.model.CorridorReconcileInput;
 import features.world.dungeon.dungeonmap.corridor.model.CorridorResolutionInput;
-import features.world.dungeon.dungeonmap.corridor.model.CorridorSpecification;
+import features.world.dungeon.dungeonmap.corridor.model.CorridorDraft;
 import features.world.dungeon.dungeonmap.corridor.model.CorridorNode;
 import features.world.dungeon.dungeonmap.corridor.model.CorridorMutation;
 import features.world.dungeon.dungeonmap.corridor.model.CorridorPathTrace;
@@ -1318,24 +1318,24 @@ public final class DungeonMap {
      */
     public Corridor resolveCorridor(CorridorResolutionRequest request) {
         CorridorResolutionRequest resolvedRequest = Objects.requireNonNull(request, "request");
-        CorridorSpecification specification = resolvedRequest.specification();
-        return Corridor.fromSpecification(
-                specification,
+        CorridorDraft draft = resolvedRequest.draft();
+        return Corridor.fromDraft(
+                draft,
                 corridorResolutionInput(new CorridorResolutionContextRequest(
-                        specification.levelZ(),
+                        draft.levelZ(),
                         resolvedRequest.corridorDoors())));
     }
 
     public Corridor rehydrateCorridor(CorridorRehydrationRequest request) {
         CorridorRehydrationRequest resolvedRequest = Objects.requireNonNull(request, "request");
-        CorridorSpecification specification = resolvedRequest.specification();
+        CorridorDraft draft = resolvedRequest.draft();
         Structure structure = resolvedRequest.structure();
         return Corridor.rehydrated(
-                specification,
+                draft,
                 structure,
                 corridorResolutionInput(new CorridorResolutionContextRequest(
-                        specification.levelZ(),
-                        structure.boundaryAtLevel(specification.levelZ()).doors())));
+                        draft.levelZ(),
+                        structure.boundaryAtLevel(draft.levelZ()).doors())));
     }
 
     public DungeonMap withAddedCorridor(Corridor corridor) {

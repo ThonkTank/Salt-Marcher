@@ -46,10 +46,14 @@ public final class CorridorRouting {
         }
     }
 
-    public record RoutedLink(Long traceId, Long startNodeId, Long endNodeId) {
+    public record RoutedLink(Long traceId, Long memberId, int segmentOrdinal, Long startNodeId, Long endNodeId) {
         public RoutedLink {
             startNodeId = Objects.requireNonNull(startNodeId, "startNodeId");
             endNodeId = Objects.requireNonNull(endNodeId, "endNodeId");
+            memberId = Objects.requireNonNull(memberId, "memberId");
+            if (segmentOrdinal < 0) {
+                throw new IllegalArgumentException("segmentOrdinal must be non-negative");
+            }
         }
     }
 
@@ -141,7 +145,9 @@ public final class CorridorRouting {
                     surfaceCells,
                     blockedCells);
             CorridorPathTrace trace = new CorridorPathTrace(
-                    segment.segmentId(),
+                    null,
+                    segment.memberId(),
+                    segment.segmentOrdinal(),
                     segment.startNodeId(),
                     segment.endNodeId(),
                     GridPath.of(recoveredRoute.path2x()));
@@ -214,6 +220,8 @@ public final class CorridorRouting {
             RoutePlan routePlan = findBestTrace(start.attachments(), end.attachments(), blockedCells);
             traces.add(new CorridorPathTrace(
                     link.traceId(),
+                    link.memberId(),
+                    link.segmentOrdinal(),
                     link.startNodeId(),
                     link.endNodeId(),
                     GridPath.of(routePlan.path2x())));
