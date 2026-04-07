@@ -41,48 +41,25 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
     private final long mapId;
     private final GridPoint center;
 
-    public Cluster(
-            Long clusterId,
-            long mapId,
-            GridPoint center,
-            List<Room> rooms
-    ) {
-        this(clusterId, null, mapId, center, Structure.empty(), requireExplicitStructure(rooms));
-    }
-
-    public Cluster(
-            Long clusterId,
-            long mapId,
-            GridPoint center,
-            Structure structure,
-            List<Room> rooms
-    ) {
-        this(clusterId, null, mapId, center, structure, rooms);
-    }
-
-    public Cluster(
-            Long clusterId,
-            Long structureObjectId,
-            long mapId,
-            GridPoint center,
-            Structure structure,
-            List<Room> rooms
-    ) {
-        this(clusterId, structureObjectId, mapId, center, resolveClusterBase(clusterId, mapId, structure, rooms));
+    public static Cluster fromSpecification(ClusterSpecification specification) {
+        ClusterSpecification resolvedSpecification = Objects.requireNonNull(specification, "specification");
+        return new Cluster(resolvedSpecification, resolveClusterBase(
+                resolvedSpecification.clusterId(),
+                resolvedSpecification.mapId(),
+                resolvedSpecification.structure(),
+                resolvedSpecification.rooms()));
     }
 
     private Cluster(
-            Long clusterId,
-            Long structureObjectId,
-            long mapId,
-            GridPoint center,
+            ClusterSpecification specification,
             ClusterBase base
     ) {
         super(base.structure(), base.roomTopology());
-        this.clusterId = clusterId;
-        this.structureObjectId = structureObjectId;
-        this.mapId = mapId;
-        this.center = center == null ? GridPoint.cell(0, 0, 0) : center;
+        ClusterSpecification resolvedSpecification = Objects.requireNonNull(specification, "specification");
+        this.clusterId = resolvedSpecification.clusterId();
+        this.structureObjectId = resolvedSpecification.structureObjectId();
+        this.mapId = resolvedSpecification.mapId();
+        this.center = resolvedSpecification.center() == null ? GridPoint.cell(0, 0, 0) : resolvedSpecification.center();
     }
 
     private Cluster(
@@ -105,7 +82,11 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
             Map<Integer, Structure.LevelStructure> levelsByZ,
             StructureRoomTopology roomTopology
     ) {
-        return new Cluster(clusterId, structureObjectId, mapId, center, levelsByZ, roomTopology);
+        return new Cluster(specification(), levelsByZ, roomTopology);
+    }
+
+    private ClusterSpecification specification() {
+        return new ClusterSpecification(clusterId, structureObjectId, mapId, center, this, roomTopology().rooms());
     }
 
     public Long clusterId() {
@@ -130,26 +111,30 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
         if (projectedStructure == null || projectedStructure.levels().isEmpty() || projectedTopology.rooms().isEmpty()) {
             return null;
         }
-        return new Cluster(
+        return fromSpecification(new ClusterSpecification(
                 clusterId,
                 structureObjectId,
                 mapId,
                 center,
                 projectedStructure,
-                projectedTopology.rooms());
+                projectedTopology.rooms()));
     }
 
-    public Cluster createWallPath(int levelZ, GridBoundary segments) {
-        return Topology.editWallPath(this, levelZ, segments == null ? Set.of() : segments.segments(), false);
-    }
-
-    public Cluster deleteWallPath(int levelZ, GridBoundary segments) {
-        return Topology.editWallPath(this, levelZ, segments == null ? Set.of() : segments.segments(), true);
-    }
-
-    public Cluster moveDoor(int levelZ, GridSegment sourceBoundarySegment2x, GridSegment targetBoundarySegment2x) {
-        // Door movement stays cluster-owned so SELECT drag and write workflows reuse the same local boundary rules.
-        return Topology.moveDoor(this, levelZ, sourceBoundarySegment2x, targetBoundarySegment2x);
+    /**
+     * Public cluster mutations converge here so the same room-cluster rewrite is applied consistently regardless of
+     * which editor workflow requested it.
+     */
+    public Cluster mutated(ClusterMutation mutation) {
+        if (mutation == null) {
+            return this;
+        }
+        return switch (mutation) {
+            case ClusterMutation.Translation edit -> translated(edit.translation());
+            case ClusterMutation.FloorCellsEdit edit -> mutatedFloorCells(edit);
+            case ClusterMutation.WallPathEdit edit -> mutatedWallPath(edit);
+            case ClusterMutation.DoorSegmentsEdit edit -> mutatedDoorSegments(edit);
+            case ClusterMutation.DoorMove edit -> movedDoor(edit);
+        };
     }
 
     public boolean canCreateDoor(int levelZ, GridSegment boundarySegment2x) {
@@ -235,15 +220,10 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
         if (resolvedTranslation.isZero()) {
             return this;
         }
-        Structure movedStructure = mutated(new StructureMutation.Translation(
-                resolvedTranslation));
-        return new Cluster(
-                clusterId,
-                structureObjectId,
-                mapId,
-                center.translated(GridTranslation.planar(resolvedTranslation.dxCells(), resolvedTranslation.dyCells())),
+        Structure movedStructure = super.mutated(new StructureMutation.Translation(resolvedTranslation));
+        return withStructure(
                 movedStructure,
-                movedStructure.roomTopology().rooms());
+                center.translated(GridTranslation.planar(resolvedTranslation.dxCells(), resolvedTranslation.dyCells())));
     }
 
     public BoundaryPath findCreateWallPath(GridPoint start, GridPoint goal) {
@@ -359,6 +339,82 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
         return new ClusterBase(normalizedStructure, roomTopology);
     }
 
+    private Cluster mutatedFloorCells(ClusterMutation.FloorCellsEdit edit) {
+        Structure updatedStructure = super.mutated(new StructureMutation.FloorCellsEdit(
+                edit.levelZ(),
+                edit.cells(),
+                switch (edit.mode()) {
+                    case ADD -> StructureMutation.CellEditMode.ADD;
+                    case REMOVE -> StructureMutation.CellEditMode.REMOVE;
+                }));
+        return withStructure(updatedStructure);
+    }
+
+    private Cluster mutatedWallPath(ClusterMutation.WallPathEdit edit) {
+        List<GridSegment> editableSegments = Topology.editableWallSegments(this, edit.levelZ(), edit.segments().segments());
+        if (editableSegments.isEmpty()) {
+            return this;
+        }
+        Structure updatedStructure = super.mutated(new StructureMutation.WallPathEdit(
+                edit.levelZ(),
+                GridBoundary.of(editableSegments),
+                switch (edit.mode()) {
+                    case CREATE -> StructureMutation.BoundaryEditMode.CREATE;
+                    case DELETE -> StructureMutation.BoundaryEditMode.DELETE;
+                }));
+        return withStructure(updatedStructure);
+    }
+
+    private Cluster mutatedDoorSegments(ClusterMutation.DoorSegmentsEdit edit) {
+        List<GridSegment> editableSegments = Topology.editableDoorSegments(
+                this,
+                edit.levelZ(),
+                edit.segments().segments(),
+                edit.mode(),
+                edit.scope());
+        if (editableSegments.isEmpty()) {
+            return this;
+        }
+        Structure updatedStructure = super.mutated(new StructureMutation.DoorSegmentsEdit(
+                edit.levelZ(),
+                GridBoundary.of(editableSegments),
+                switch (edit.mode()) {
+                    case CREATE -> StructureMutation.BoundaryEditMode.CREATE;
+                    case DELETE -> StructureMutation.BoundaryEditMode.DELETE;
+                }));
+        return withStructure(updatedStructure);
+    }
+
+    private Cluster movedDoor(ClusterMutation.DoorMove edit) {
+        if (Objects.equals(edit.sourceBoundarySegment(), edit.targetBoundarySegment())
+                || !canDeleteDoor(edit.levelZ(), edit.sourceBoundarySegment())
+                || !canCreateDoor(edit.levelZ(), edit.targetBoundarySegment())) {
+            return this;
+        }
+        Structure updatedStructure = super.mutated(new StructureMutation.DoorMove(
+                edit.levelZ(),
+                edit.sourceBoundarySegment(),
+                edit.targetBoundarySegment()));
+        return withStructure(updatedStructure);
+    }
+
+    private Cluster withStructure(Structure updatedStructure) {
+        return withStructure(updatedStructure, center);
+    }
+
+    private Cluster withStructure(Structure updatedStructure, GridPoint updatedCenter) {
+        if (Objects.equals(updatedStructure, this) && Objects.equals(updatedCenter, center)) {
+            return this;
+        }
+        return fromSpecification(new ClusterSpecification(
+                clusterId,
+                structureObjectId,
+                mapId,
+                updatedCenter,
+                updatedStructure,
+                updatedStructure == null ? roomTopology().rooms() : updatedStructure.roomTopology().rooms()));
+    }
+
     private record ClusterBase(Structure structure, StructureRoomTopology roomTopology) {
     }
 
@@ -367,16 +423,15 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
         private Topology() {
         }
 
-        static Cluster editWallPath(
+        static List<GridSegment> editableWallSegments(
                 Cluster cluster,
                 int levelZ,
-                Collection<GridSegment> segments2x,
-                boolean deleteWall
+                Collection<GridSegment> segments2x
         ) {
             if (cluster == null || segments2x == null || segments2x.isEmpty()) {
-                return null;
+                return List.of();
             }
-            List<GridSegment> editedSegments = segments2x.stream()
+            return segments2x.stream()
                     .filter(Objects::nonNull)
                     .filter(segment2x -> cluster.boundaryAtLevel(levelZ).interiorAdjacencyEdges().contains(segment2x))
                     .filter(segment2x -> {
@@ -385,85 +440,21 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
                     })
                     .sorted(GridSegment.ORDER)
                     .toList();
-            if (editedSegments.isEmpty()) {
-                return null;
-            }
-            Structure updatedStructure = cluster.mutated(new StructureMutation.WallPathEdit(
-                    levelZ,
-                    GridBoundary.of(editedSegments),
-                    deleteWall ? StructureMutation.BoundaryEditMode.DELETE : StructureMutation.BoundaryEditMode.CREATE));
-            if (Objects.equals(updatedStructure, cluster)) {
-                return null;
-            }
-            return new Cluster(
-                    cluster.clusterId(),
-                    cluster.structureObjectId(),
-                    cluster.mapId(),
-                    cluster.center(),
-                    updatedStructure,
-                    cluster.rooms());
         }
 
-        static Cluster editDoors(
+        static List<GridSegment> editableDoorSegments(
                 Cluster cluster,
                 int levelZ,
                 Collection<GridSegment> segments2x,
-                boolean deleteDoor,
-                boolean exteriorDoor
+                ClusterMutation.BoundaryEditMode mode,
+                ClusterMutation.DoorScope scope
         ) {
             if (cluster == null || segments2x == null || segments2x.isEmpty()) {
-                return null;
+                return List.of();
             }
-            List<GridSegment> editableSegments = deleteDoor
-                    ? deletedEditableSegments(cluster, levelZ, segments2x, exteriorDoor)
-                    : createdEditableSegments(cluster, levelZ, segments2x, exteriorDoor);
-            if (editableSegments.isEmpty()) {
-                return null;
-            }
-            Structure updatedStructure = cluster.mutated(new StructureMutation.DoorSegmentsEdit(
-                    levelZ,
-                    GridBoundary.of(editableSegments),
-                    deleteDoor ? StructureMutation.BoundaryEditMode.DELETE : StructureMutation.BoundaryEditMode.CREATE));
-            if (Objects.equals(updatedStructure, cluster)) {
-                return null;
-            }
-            return new Cluster(
-                    cluster.clusterId(),
-                    cluster.structureObjectId(),
-                    cluster.mapId(),
-                    cluster.center(),
-                    updatedStructure,
-                    cluster.rooms());
-        }
-
-        static Cluster moveDoor(
-                Cluster cluster,
-                int levelZ,
-                GridSegment sourceBoundarySegment2x,
-                GridSegment targetBoundarySegment2x
-        ) {
-            if (cluster == null
-                    || sourceBoundarySegment2x == null
-                    || targetBoundarySegment2x == null
-                    || Objects.equals(sourceBoundarySegment2x, targetBoundarySegment2x)
-                    || !cluster.canDeleteDoor(levelZ, sourceBoundarySegment2x)
-                    || !cluster.canCreateDoor(levelZ, targetBoundarySegment2x)) {
-                return null;
-            }
-            Structure updatedStructure = cluster.mutated(new StructureMutation.DoorMove(
-                    levelZ,
-                    sourceBoundarySegment2x,
-                    targetBoundarySegment2x));
-            if (Objects.equals(updatedStructure, cluster)) {
-                return null;
-            }
-            return new Cluster(
-                    cluster.clusterId(),
-                    cluster.structureObjectId(),
-                    cluster.mapId(),
-                    cluster.center(),
-                    updatedStructure,
-                    cluster.rooms());
+            return mode == ClusterMutation.BoundaryEditMode.DELETE
+                    ? deletedEditableSegments(cluster, levelZ, segments2x, scope)
+                    : createdEditableSegments(cluster, levelZ, segments2x, scope);
         }
 
         private static boolean sameRoomId(Room left, Room right) {
@@ -488,11 +479,11 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
                 Cluster cluster,
                 int levelZ,
                 Collection<GridSegment> segments2x,
-                boolean exteriorDoor
+                ClusterMutation.DoorScope scope
         ) {
             return (segments2x == null ? List.<GridSegment>of() : segments2x).stream()
                     .filter(Objects::nonNull)
-                    .filter(segment2x -> exteriorDoor
+                    .filter(segment2x -> scope == ClusterMutation.DoorScope.EXTERIOR
                             ? cluster.canCreateExteriorDoor(levelZ, segment2x)
                             : cluster.canCreateDoor(levelZ, segment2x))
                     .toList();
@@ -502,11 +493,11 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
                 Cluster cluster,
                 int levelZ,
                 Collection<GridSegment> segments2x,
-                boolean exteriorDoor
+                ClusterMutation.DoorScope scope
         ) {
             return (segments2x == null ? List.<GridSegment>of() : segments2x).stream()
                     .filter(Objects::nonNull)
-                    .filter(segment2x -> exteriorDoor
+                    .filter(segment2x -> scope == ClusterMutation.DoorScope.EXTERIOR
                             ? cluster.canDeleteExteriorDoor(levelZ, segment2x)
                             : cluster.canDeleteDoor(levelZ, segment2x))
                     .toList();
