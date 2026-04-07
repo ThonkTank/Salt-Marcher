@@ -2,8 +2,8 @@ package features.world.dungeonmap.shell.editor.interaction;
 
 import features.world.dungeonmap.corridor.application.DungeonCorridorApplicationService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
-import features.world.dungeonmap.loading.DungeonMapLoadingService;
-import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.map.application.DungeonMapLoadingService;
+import features.world.dungeonmap.map.model.DungeonLayout;
 import features.world.dungeonmap.geometry.CardinalDirection;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridSegment;
@@ -16,7 +16,7 @@ import features.world.dungeonmap.corridor.model.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.shell.editor.EditorCards;
 import features.world.dungeonmap.state.DungeonEditorTool;
-import features.world.dungeonmap.state.DungeonMapState;
+import features.world.dungeonmap.map.state.DungeonMapState;
 import features.world.dungeonmap.state.EditorInteractionState;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -344,7 +344,7 @@ public final class CorridorTool implements EditorTool {
                     .map(this::endpointLabel)
                     .filter(label -> label != null && !label.isBlank())
                     .collect(Collectors.joining(", ")));
-            metaLabel.setText(segmentText(connection.anchorSegment2x(mapState.activeMap())));
+            metaLabel.setText(segmentText(connection.anchorSegment(mapState.activeMap())));
             return;
         }
         if (corridor == null) {

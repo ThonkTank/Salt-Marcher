@@ -6,7 +6,7 @@ import features.world.dungeonmap.canvas.base.DungeonEditorRenderState;
 import features.world.dungeonmap.canvas.base.DungeonRuntimeRenderOverlay;
 import features.world.dungeonmap.canvas.base.DungeonSceneFrame;
 import features.world.dungeonmap.canvas.base.DungeonSceneRenderer;
-import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.map.model.DungeonLayout;
 import features.world.dungeonmap.geometry.CardinalDirection;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridPoint;
@@ -811,12 +811,12 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             return;
         }
         GraphicsContext gc = pass.gc();
-        GridSegment segment2x = transition.localConnection().anchorSegment2x(pass.projected());
-        if (segment2x == null) {
+        GridSegment segment = transition.localConnection().anchorSegment(pass.projected());
+        if (segment == null) {
             return;
         }
-        double centerX = pass.camera().panX() + (segment2x.midpoint().x2() + 1) * pass.gridSize() / 2.0;
-        double centerY = pass.camera().panY() + (segment2x.midpoint().y2() + 1) * pass.gridSize() / 2.0;
+        double centerX = pass.camera().panX() + (segment.midpoint().x2() + 1) * pass.gridSize() / 2.0;
+        double centerY = pass.camera().panY() + (segment.midpoint().y2() + 1) * pass.gridSize() / 2.0;
         double radius = Math.max(7.0, pass.gridSize() * 0.18);
         gc.setFill(selected ? pass.palette().highlightAccent() : pass.palette().transitionFill());
         gc.fillRoundRect(centerX - radius, centerY - radius, radius * 2, radius * 2, 8, 8);

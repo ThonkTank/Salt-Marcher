@@ -1,6 +1,6 @@
 package features.world.dungeonmap.shell.interaction;
 
-import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.map.model.DungeonLayout;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridSegment;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
@@ -87,14 +87,14 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
                 continue;
             }
             if (transition.localConnection().doorCarrier() != null) {
-                GridSegment anchorSegment2x = transition.localConnection().anchorSegment2x(layout);
-                if (anchorSegment2x == null || !anchorSegment2x.touchingCells().contains(probe.gridCell())) {
+                GridSegment anchorSegment = transition.localConnection().anchorSegment(layout);
+                if (anchorSegment == null || !anchorSegment.touchingCells().contains(probe.gridCell())) {
                     continue;
                 }
                 descriptors.add(new DungeonHitDescriptor(
                         new DungeonSelectionRef.TransitionRef(transition.transitionId()),
                         List.of(new DungeonHitSurface.SegmentSurface(
-                                Set.of(anchorSegment2x),
+                                Set.of(anchorSegment),
                                 transition.localConnection().levelZ()))));
                 continue;
             }

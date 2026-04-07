@@ -1,9 +1,12 @@
-package features.world.dungeonmap.repository;
+package features.world.dungeonmap.map.repository;
 
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogEntry;
 import features.world.dungeonmap.cluster.repository.DungeonClusterRepository;
 import features.world.dungeonmap.corridor.repository.DungeonCorridorRepository;
-import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.map.model.DungeonLayout;
+import features.world.dungeonmap.repository.DungeonRoomRepository;
+import features.world.dungeonmap.repository.DungeonStairRepository;
+import features.world.dungeonmap.repository.DungeonTransitionRepository;
 import features.world.dungeonmap.cluster.model.RoomCluster;
 import features.world.dungeonmap.corridor.model.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;

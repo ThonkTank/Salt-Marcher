@@ -2,7 +2,7 @@ package features.world.dungeonmap.shell.runtime;
 
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationSnapshot;
-import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.map.model.DungeonLayout;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.cluster.model.RoomCluster;

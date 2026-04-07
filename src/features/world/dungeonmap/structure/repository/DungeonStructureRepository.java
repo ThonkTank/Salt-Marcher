@@ -463,7 +463,7 @@ public final class DungeonStructureRepository {
             for (Map.Entry<Integer, LinkedHashMap<Long, MutableWall>> levelEntry : structureEntry.getValue().entrySet()) {
                 levels.put(levelEntry.getKey(), levelEntry.getValue().values().stream()
                         .map(MutableWall::toWall)
-                        .sorted(Comparator.comparing(Wall::anchorSegment2x, GridSegment.ORDER))
+                        .sorted(Comparator.comparing(Wall::anchorSegment, GridSegment.ORDER))
                         .toList());
             }
             result.put(structureEntry.getKey(), Map.copyOf(levels));
@@ -480,7 +480,7 @@ public final class DungeonStructureRepository {
             for (Map.Entry<Integer, LinkedHashMap<Long, MutableDoor>> levelEntry : ownerEntry.getValue().entrySet()) {
                 List<Door> doors = levelEntry.getValue().values().stream()
                         .map(MutableDoor::toDoor)
-                        .sorted(Comparator.comparing(Door::anchorSegment2x, GridSegment.ORDER))
+                        .sorted(Comparator.comparing(Door::anchorSegment, GridSegment.ORDER))
                         .toList();
                 levels.put(levelEntry.getKey(), doors);
             }

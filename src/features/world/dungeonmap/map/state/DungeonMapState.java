@@ -1,7 +1,7 @@
-package features.world.dungeonmap.state;
+package features.world.dungeonmap.map.state;
 
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogEntry;
-import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.map.model.DungeonLayout;
 
 import java.util.List;
 import java.util.Objects;

@@ -2,6 +2,7 @@ package features.world.dungeonmap.corridor.model;
 
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridSegment;
+import features.world.dungeonmap.geometry.GridPath;
 import features.world.dungeonmap.structure.model.Structure;
 import features.world.dungeonmap.structure.model.StructureSpecification;
 
@@ -68,7 +69,7 @@ public final class CorridorRouting {
             if (trace == null) {
                 continue;
             }
-            for (GridPoint point2x : trace.path2x()) {
+            for (GridPoint point2x : trace.points()) {
                 if (point2x != null) {
                     point2x.asCell().ifPresent(result::add);
                 }
@@ -85,7 +86,7 @@ public final class CorridorRouting {
             return List.of(new AnchorAttachment(anchorPoint.asCell().orElseThrow(), List.of(anchorPoint)));
         }
         LinkedHashSet<GridPoint> blocked = new LinkedHashSet<>(blockedCells == null ? Set.<GridPoint>of() : blockedCells);
-        Set<GridPoint> candidates = anchorPoint.touchingCells();
+        Set<GridPoint> candidates = anchorPoint.touchingCells().cells();
         ArrayList<AnchorAttachment> attachments = new ArrayList<>();
         for (GridPoint candidate : candidates.stream().sorted(GridPoint.ORDER).toList()) {
             if (blocked.contains(candidate)) {
@@ -113,7 +114,11 @@ public final class CorridorRouting {
                 throw new IllegalArgumentException("Trace link references missing node");
             }
             RoutePlan routePlan = findBestTrace(start.attachments(), end.attachments(), blockedCells);
-            traces.add(new CorridorPathTrace(link.traceId(), link.startNodeId(), link.endNodeId(), routePlan.path2x()));
+            traces.add(new CorridorPathTrace(
+                    link.traceId(),
+                    link.startNodeId(),
+                    link.endNodeId(),
+                    GridPath.of(routePlan.path2x())));
         }
         if (traces.isEmpty()) {
             return new RoutedProjection(Structure.empty(), List.of(), Set.of());

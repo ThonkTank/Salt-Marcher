@@ -2,8 +2,8 @@ package features.world.dungeonmap.shell.editor;
 
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogEntry;
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
-import features.world.dungeonmap.loading.DungeonMapLoadingService;
-import features.world.dungeonmap.state.DungeonMapState;
+import features.world.dungeonmap.map.application.DungeonMapLoadingService;
+import features.world.dungeonmap.map.state.DungeonMapState;
 import javafx.scene.Node;
 import ui.async.UiErrorReporter;
 

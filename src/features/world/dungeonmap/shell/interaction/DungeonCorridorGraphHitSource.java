@@ -1,6 +1,6 @@
 package features.world.dungeonmap.shell.interaction;
 
-import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.map.model.DungeonLayout;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridSegment;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
@@ -45,7 +45,7 @@ public final class DungeonCorridorGraphHitSource implements DungeonHitSource {
     private static List<DungeonHitDescriptor> segmentDescriptors(Corridor corridor, int levelZ) {
         ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
         for (CorridorPathTrace trace : corridor.pathTraces()) {
-            if (trace.traceId() == null || trace.path2x().isEmpty()) {
+            if (trace.traceId() == null || trace.points().isEmpty()) {
                 continue;
             }
             Set<GridSegment> segments2x = Set.copyOf(trace.segments());
@@ -56,7 +56,7 @@ public final class DungeonCorridorGraphHitSource implements DungeonHitSource {
                     new DungeonSelectionRef.CorridorSegmentRef(
                             corridor.corridorId(),
                             trace.traceId(),
-                            canonicalSegmentPoint(trace.path2x())),
+                            canonicalSegmentPoint(trace.points())),
                     List.of(new DungeonHitSurface.SegmentSurface(segments2x, levelZ))));
         }
         return List.copyOf(descriptors);

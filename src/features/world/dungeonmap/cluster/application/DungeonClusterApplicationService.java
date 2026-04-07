@@ -5,9 +5,10 @@ import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.cluster.model.ClusterStructureEditor;
 import features.world.dungeonmap.cluster.model.RoomCluster;
 import features.world.dungeonmap.cluster.repository.DungeonClusterRepository;
-import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.map.model.DungeonLayout;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridSegment;
+import features.world.dungeonmap.geometry.GridArea;
 import features.world.dungeonmap.structure.model.Structure;
 import features.world.dungeonmap.structure.model.StructureMutation;
 import features.world.dungeonmap.structure.model.StructureSpecification;
@@ -25,7 +26,7 @@ import features.world.dungeonmap.model.structures.stair.StairExit;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.corridor.repository.DungeonCorridorRepository;
-import features.world.dungeonmap.repository.DungeonLayoutRepository;
+import features.world.dungeonmap.map.repository.DungeonLayoutRepository;
 import features.world.dungeonmap.repository.DungeonRoomRepository;
 import features.world.dungeonmap.repository.DungeonTransitionRepository;
 
@@ -310,7 +311,7 @@ public final class DungeonClusterApplicationService {
                     cluster.center(),
                     cluster.structure().mutated(new StructureMutation.FloorCellsEdit(
                             levelZ,
-                            requestedCells,
+                            GridArea.of(requestedCells),
                             deleteFloor ? StructureMutation.CellEditMode.REMOVE : StructureMutation.CellEditMode.ADD)),
                     cluster.structure().roomTopology().rooms());
             persistClusterRewrite(conn, mapId, workingLayout, List.of(cluster), List.of(updatedCluster));
@@ -966,7 +967,7 @@ public final class DungeonClusterApplicationService {
                         && description != null
                         && description.isRoomExterior()
                         && Objects.equals(description.roomId(), room.roomId())
-                        && description.anchorSegment().touchingCells().cells().stream().anyMatch(removedFloorCells::contains)) {
+                        && description.anchorSegment().touchingCells().stream().anyMatch(removedFloorCells::contains)) {
                     throw new SQLException("Boden unter einem Corridor-Anker kann nicht entfernt werden.");
                 }
             }

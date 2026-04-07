@@ -2,12 +2,12 @@
 
 ## Purpose
 
-`dungeonmap` owns the dungeon editor and the matching runtime surface. Editor, runtime, loading, and persistence must all resolve the same dungeon topology.
+`dungeonmap` owns the dungeon editor and the matching runtime surface. Editor, runtime, map loading, and persistence must all resolve the same dungeon topology.
 
 ## Owner Atlas
 
 - `geometry` — `GridObject`, `GridPoint`, `GridSegment`, `GridArea`, `GridBoundary`, `GridPath`, `GridPathPatternSpec`, `CardinalDirection`
-- `layout` — `DungeonLayout`, `DungeonMapLoadingService`, `DungeonLayoutRepository`, `DungeonMapState`
+- `map` — `DungeonLayout`, `DungeonMapLoadResolver`, `DungeonMapLoadingService`, `DungeonLayoutRepository`, `DungeonMapState`
 - `cluster` — `RoomCluster`, `DungeonClusterApplicationService`, `DungeonClusterRepository`
 - `structure` — `Structure`, derived `Structure.roomTopology()`, the local `surface`, `boundary`, and `room` sub-owners plus boundary-local `door` and `wall` object sub-owners, `DungeonStructureRepository`, `DungeonWallKindRepository`
 - `room` — `Room`, `DungeonRoomApplicationService`, `DungeonRoomRepository`
@@ -22,8 +22,7 @@
 ## Canonical Types and APIs
 
 - `GridObject` and the `geometry` slice — canonical dungeon grid algebra — every topology owner must express shared spatial truth through `GridPoint`, `GridSegment`, `GridArea`, `GridBoundary`, or `GridPath`.
-- `DungeonLayout` — loaded map snapshot — resolves canonical room, corridor, stair, transition, door, and traversal lookups.
-- `DungeonMapLoadingService` — map selection plus authoritative load or reload — updates `DungeonMapState` and is the required post-write rebuild seam.
+- `map` slice — authoritative loaded map snapshot plus load/reload and map-state seams — other owners rebuild through this slice after writes.
 - `DungeonClusterApplicationService` — cluster mutation seam — persists top-level cluster edits, cluster-backed room rewrites, and cluster bootstrap flows.
 - `DungeonRoomApplicationService` — room metadata seam — persists room-local narration and other room-owned metadata writes.
 - `DungeonCorridorApplicationService` — corridor mutation seam — persists corridor creation, endpoint changes, node moves, and topology edits.
@@ -44,8 +43,9 @@
 - Treat `floor` as the only traversable/runtime/exit truth. `surface` remains explicit owned geometry for projection, editing, and hit/selection areas; it must not be used as a fallback for "walkable anyway".
 - Let door- and wall-specific reads and edits terminate on the explicit `BoundaryObject`, `Door`, and `Wall` APIs returned from that boundary owner instead of rebuilding raw `GridBoundary` surgery or derived mirrors in callers.
 - Keep shared structure persistence shaped like the runtime `Structure -> level -> surface(surface area + floor) + boundary` composition so save and reload do not rebuild a second flattened structure model.
-- Route authoritative reloads through `DungeonMapLoadingService`.
+- Route authoritative reloads through `map/application/DungeonMapLoadingService`.
 - Keep runtime-only semantics under `runtime` and gesture meaning under `editor interaction`.
+- Keep loaded-map ownership, selection policy, and map-scoped overlay state under `map`, not in generic top-level technical folders.
 
 ## Forbidden Drift
 
@@ -56,3 +56,4 @@
 - Do not add second public structure creation or mutation workflows beside `Structure.fromSpecification(...)` and `structure.mutated(...)`.
 - Do not call inherited generic `GridBoundary` methods on `Door` or `Wall` outside the boundary owner subtree; if a read is truly missing, add it to the explicit object API instead.
 - Do not create alternate load, repair, or compatibility paths outside `DungeonMapLoadingService` and the canonical owner workflows.
+- Do not move map snapshot, load/reload, or map session state ownership back into legacy `model/`, `loading/`, `state/`, or `repository/` roots.

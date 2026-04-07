@@ -1,6 +1,6 @@
 package features.world.dungeonmap.corridor.model;
 
-import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.map.model.DungeonLayout;
 import features.world.dungeonmap.geometry.CardinalDirection;
 import features.world.dungeonmap.geometry.GridBoundary;
 import features.world.dungeonmap.geometry.GridPoint;
@@ -330,7 +330,7 @@ public final class Corridor {
         boolean changed = false;
         for (CorridorSegment segment : segments) {
             CorridorPathTrace trace = traceForSegment(this, segment == null ? null : segment.segmentId());
-            if (segment == null || trace == null || !trace.path2x().contains(tilePoint)) {
+            if (segment == null || trace == null || !trace.points().contains(tilePoint)) {
                 addUniqueSegment(updatedSegments, seenEdges, segment);
                 continue;
             }

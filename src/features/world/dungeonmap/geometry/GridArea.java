@@ -6,6 +6,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
 
 public final class GridArea extends GridObject {
 
@@ -29,6 +30,10 @@ public final class GridArea extends GridObject {
 
     public Set<GridPoint> cells() {
         return cells;
+    }
+
+    public Stream<GridPoint> stream() {
+        return cells.stream();
     }
 
     public boolean contains(GridPoint cell) {

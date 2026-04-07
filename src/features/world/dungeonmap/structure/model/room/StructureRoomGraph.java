@@ -150,7 +150,7 @@ final class StructureRoomGraph {
             return null;
         }
         List<Room> touchingRooms = new ArrayList<>();
-        for (GridPoint cell : door.touchingCells().cells().stream().sorted(GridPoint.ORDER).toList()) {
+        for (GridPoint cell : door.touchingCells().stream().sorted(GridPoint.ORDER).toList()) {
             Room room = roomsByPoint.get(GridPoint.at(cell, levelZ));
             if (room != null && !touchingRooms.contains(room)) {
                 touchingRooms.add(room);

@@ -2,6 +2,7 @@ package features.world.dungeonmap.structure.model.boundary.wall;
 
 import features.world.dungeonmap.geometry.GridBoundary;
 import features.world.dungeonmap.geometry.GridSegment;
+import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridTranslation;
 import features.world.dungeonmap.structure.model.boundary.BoundaryObject;
 
@@ -59,6 +60,13 @@ public final class Wall extends BoundaryObject {
                 ? this
                 : new Wall(wallId(), GridBoundary.of(translatedBoundarySegments(resolvedTranslation)),
                 translatedAnchorSegment(resolvedTranslation), wallKind);
+    }
+
+    public Wall movedBy(GridPoint delta) {
+        if (delta == null) {
+            return this;
+        }
+        return movedBy(new GridTranslation(delta.x(), delta.y(), delta.z()));
     }
 
     public Wall withWallId(Long wallId) {

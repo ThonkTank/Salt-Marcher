@@ -4,11 +4,10 @@ This file covers `src/features/world/dungeonmap/repository/`.
 
 ## Purpose
 
-`repository` owns owner-local dungeon persistence seams beneath `dungeonmap/`.
+`repository` owns the remaining legacy owner-local dungeon persistence seams that still live directly beneath `dungeonmap/`. Map rehydration now lives in the sibling `map/repository` slice.
 
 ## Canonical Types and APIs
 
-- `DungeonLayoutRepository` — map id plus connection — rehydrates one authoritative `DungeonLayout`.
 - `DungeonRoomRepository` — persists room metadata and room-to-cluster membership.
 - `cluster/DungeonClusterRepository` — persists top-level cluster rows and cluster-owned structure references.
 - `DungeonStairRepository`, `DungeonTransitionRepository` — persist owner-local stair and transition metadata.
@@ -16,6 +15,7 @@ This file covers `src/features/world/dungeonmap/repository/`.
 ## Where New Code Goes
 
 - Put SQL, row mapping, and schema ordering here.
+- Put loaded-map rehydration in `map/repository/`, not back in this legacy root.
 - Route shared physical structure persistence through `structure/repository` and the canonical `Structure` snapshot.
 - Mirror the runtime structure shape as closely as practical when persisting shared structure truth: map level-local anchors, surface rows, and floor rows directly through `StructureSurface.PersistenceSnapshot`, map level-local boundary rows into `StructureBoundary.PersistenceSnapshot`, and compose them through `Structure.LevelStructure.PersistenceSnapshot` instead of rebuilding a second flattened structure DTO.
 - Keep owner-local metadata in the owner repository rather than inventing shared helper mirrors.
@@ -24,4 +24,5 @@ This file covers `src/features/world/dungeonmap/repository/`.
 
 - Do not add runtime compatibility normalization for stale rows.
 - Do not move selection, fallback, or reload policy into repositories.
+- Do not move `DungeonLayoutRepository` back into this legacy root.
 - Do not duplicate canonical room, door, stair, or transition semantics in storage helper types.

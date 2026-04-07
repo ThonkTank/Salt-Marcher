@@ -1,7 +1,7 @@
 package features.world.dungeonmap.structure.model.room;
 
 import features.world.dungeonmap.geometry.GridPoint;
-import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridTranslation;
 import features.world.dungeonmap.model.structures.connection.DungeonConnection;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.structure.model.Structure;
@@ -104,13 +104,15 @@ public final class StructureRoomTopology {
         return derive(mapId, clusterId, structure, rooms());
     }
 
-    public StructureRoomTopology translatedBy(GridPoint delta, int levelDelta, Structure movedStructure) {
+    public StructureRoomTopology translatedBy(GridTranslation translation, Structure movedStructure) {
+        GridTranslation resolvedTranslation = translation == null ? GridTranslation.none() : translation;
+        GridPoint planarDelta = new GridPoint(resolvedTranslation.dxCells(), resolvedTranslation.dyCells());
         return derive(
                 mapId,
                 clusterId,
                 movedStructure,
                 rooms().stream()
-                        .map(room -> room == null ? null : room.movedBy(delta, levelDelta))
+                        .map(room -> room == null ? null : room.movedBy(planarDelta, resolvedTranslation.dzLevels()))
                         .toList());
     }
 

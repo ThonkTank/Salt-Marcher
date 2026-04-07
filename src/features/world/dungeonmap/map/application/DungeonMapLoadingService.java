@@ -1,8 +1,8 @@
-package features.world.dungeonmap.loading;
+package features.world.dungeonmap.map.application;
 
 import database.DatabaseManager;
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogEntry;
-import features.world.dungeonmap.state.DungeonMapState;
+import features.world.dungeonmap.map.state.DungeonMapState;
 import ui.async.UiAsyncTasks;
 
 import java.sql.Connection;

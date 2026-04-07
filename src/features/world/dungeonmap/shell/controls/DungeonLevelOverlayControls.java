@@ -1,7 +1,7 @@
 package features.world.dungeonmap.shell.controls;
 
-import features.world.dungeonmap.state.DungeonLevelOverlayMode;
-import features.world.dungeonmap.state.DungeonLevelOverlaySettings;
+import features.world.dungeonmap.map.state.DungeonLevelOverlayMode;
+import features.world.dungeonmap.map.state.DungeonLevelOverlaySettings;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;

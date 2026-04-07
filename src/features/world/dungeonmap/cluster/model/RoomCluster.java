@@ -3,6 +3,7 @@ package features.world.dungeonmap.cluster.model;
 import features.world.dungeonmap.geometry.GridBoundary;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridSegment;
+import features.world.dungeonmap.geometry.GridTranslation;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 import features.world.dungeonmap.structure.model.Structure;
@@ -208,7 +209,8 @@ public final class RoomCluster {
             return this;
         }
         GridPoint resolvedDelta = delta == null ? new GridPoint(0, 0) : delta;
-        Structure movedStructure = structure.mutated(new StructureMutation.Translation(resolvedDelta, levelDelta));
+        Structure movedStructure = structure.mutated(new StructureMutation.Translation(
+                new GridTranslation(resolvedDelta.x(), resolvedDelta.y(), levelDelta)));
         return new RoomCluster(
                 clusterId,
                 structureObjectId,
@@ -305,7 +307,7 @@ public final class RoomCluster {
         if (cluster == null || segment2x == null) {
             return null;
         }
-        List<GridPoint> touchingCells = segment2x.touchingCells().cells().stream()
+        List<GridPoint> touchingCells = segment2x.touchingCells().stream()
                 .sorted(GridPoint.ORDER)
                 .toList();
         if (touchingCells.size() != 2) {
@@ -357,7 +359,7 @@ public final class RoomCluster {
             }
             Structure updatedStructure = cluster.structure().mutated(new StructureMutation.WallPathEdit(
                     levelZ,
-                    editedSegments,
+                    GridBoundary.of(editedSegments),
                     deleteWall ? StructureMutation.BoundaryEditMode.DELETE : StructureMutation.BoundaryEditMode.CREATE));
             if (Objects.equals(updatedStructure, cluster.structure())) {
                 return null;
@@ -389,7 +391,7 @@ public final class RoomCluster {
             }
             Structure updatedStructure = cluster.structure().mutated(new StructureMutation.DoorSegmentsEdit(
                     levelZ,
-                    editableSegments,
+                    GridBoundary.of(editableSegments),
                     deleteDoor ? StructureMutation.BoundaryEditMode.DELETE : StructureMutation.BoundaryEditMode.CREATE));
             if (Objects.equals(updatedStructure, cluster.structure())) {
                 return null;

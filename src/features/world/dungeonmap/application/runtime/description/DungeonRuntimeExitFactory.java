@@ -1,7 +1,7 @@
 package features.world.dungeonmap.application.runtime.description;
 
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
-import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.map.model.DungeonLayout;
 import features.world.dungeonmap.geometry.CardinalDirection;
 import features.world.dungeonmap.structure.model.Structure;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
@@ -72,7 +72,7 @@ final class DungeonRuntimeExitFactory {
             String narration
     ) {
         CardinalDirection resolvedHeading = heading == null ? CardinalDirection.defaultDirection() : heading;
-        String relativeLabel = resolvedHeading.relativeLabel(doorDirection.delta());
+        String relativeLabel = resolvedHeading.relativeLabel(doorDirection);
         String resolvedNarration = narration == null || narration.isBlank() ? "eine Tür" : narration.trim();
         return relativeLabel + " ist " + resolvedNarration;
     }

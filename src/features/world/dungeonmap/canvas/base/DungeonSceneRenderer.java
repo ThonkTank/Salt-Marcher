@@ -1,6 +1,6 @@
 package features.world.dungeonmap.canvas.base;
 
-import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.map.model.DungeonLayout;
 import javafx.scene.canvas.GraphicsContext;
 
 public interface DungeonSceneRenderer {

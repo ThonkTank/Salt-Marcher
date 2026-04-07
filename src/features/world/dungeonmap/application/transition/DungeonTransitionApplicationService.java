@@ -5,13 +5,13 @@ import features.world.api.OverworldTransitionTargetSummary;
 import features.world.api.WorldReadApi;
 import features.world.dungeonmap.application.stair.DungeonStairApplicationService;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
-import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.map.model.DungeonLayout;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.DungeonConnection;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
-import features.world.dungeonmap.repository.DungeonLayoutRepository;
+import features.world.dungeonmap.map.repository.DungeonLayoutRepository;
 import features.world.dungeonmap.repository.DungeonTransitionRepository;
 
 import java.sql.Connection;

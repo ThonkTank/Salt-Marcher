@@ -2,13 +2,13 @@ package features.world.dungeonmap.shell.editor.interaction;
 
 import features.world.dungeonmap.cluster.application.DungeonClusterApplicationService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
-import features.world.dungeonmap.loading.DungeonMapLoadingService;
+import features.world.dungeonmap.map.application.DungeonMapLoadingService;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.state.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
-import features.world.dungeonmap.state.DungeonMapState;
+import features.world.dungeonmap.map.state.DungeonMapState;
 import features.world.dungeonmap.state.EditorInteractionState;
 import features.world.dungeonmap.state.EditorPreview;
 import javafx.scene.Node;

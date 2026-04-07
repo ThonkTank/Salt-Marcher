@@ -4,15 +4,15 @@ import database.DatabaseManager;
 import features.campaignstate.api.CampaignStateApi;
 import features.campaignstate.api.CampaignStateReadApi;
 import features.campaignstate.api.DungeonTilePosition;
-import features.world.dungeonmap.loading.DungeonMapLoadResolver;
-import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.map.application.DungeonMapLoadResolver;
+import features.world.dungeonmap.map.model.DungeonLayout;
 import features.world.dungeonmap.geometry.CardinalDirection;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
-import features.world.dungeonmap.repository.DungeonLayoutRepository;
+import features.world.dungeonmap.map.repository.DungeonLayoutRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;

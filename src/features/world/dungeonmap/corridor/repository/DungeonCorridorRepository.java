@@ -1,6 +1,7 @@
 package features.world.dungeonmap.corridor.repository;
 
-import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.map.model.DungeonLayout;
+import features.world.dungeonmap.geometry.GridPath;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.structure.model.Structure;
 import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
@@ -217,8 +218,9 @@ public final class DungeonCorridorRepository {
                 if (trace == null) {
                     continue;
                 }
-                for (int index = 0; index < trace.path2x().size(); index++) {
-                    GridPoint point2x = trace.path2x().get(index);
+                List<GridPoint> pathPoints = trace.points();
+                for (int index = 0; index < pathPoints.size(); index++) {
+                    GridPoint point2x = pathPoints.get(index);
                     insert.setLong(1, segment.segmentId());
                     insert.setInt(2, index);
                     insert.setInt(3, point2x.x2());
@@ -295,7 +297,7 @@ public final class DungeonCorridorRepository {
                         remappedSegmentIds.getOrDefault(trace.traceId(), trace.traceId()),
                         remappedNodeIds.getOrDefault(trace.startNodeId(), trace.startNodeId()),
                         remappedNodeIds.getOrDefault(trace.endNodeId(), trace.endNodeId()),
-                        trace.path2x()))
+                        GridPath.of(trace.points())))
                 .toList();
     }
 
@@ -437,7 +439,7 @@ public final class DungeonCorridorRepository {
                         segment.segmentId(),
                         segment.startNodeId(),
                         segment.endNodeId(),
-                        segmentEntry.getValue()));
+                        GridPath.of(segmentEntry.getValue())));
             }
             result.put(corridorEntry.getKey(), List.copyOf(traces));
         }

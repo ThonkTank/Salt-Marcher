@@ -2,6 +2,7 @@ package features.world.dungeonmap.structure.model.boundary.door;
 
 import features.world.dungeonmap.geometry.GridBoundary;
 import features.world.dungeonmap.geometry.GridSegment;
+import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridTranslation;
 import features.world.dungeonmap.structure.model.boundary.BoundaryObject;
 
@@ -58,6 +59,13 @@ public final class Door extends BoundaryObject {
                 ? this
                 : new Door(doorId(), GridBoundary.of(translatedBoundarySegments(resolvedTranslation)),
                 translatedAnchorSegment(resolvedTranslation), doorState);
+    }
+
+    public Door movedBy(GridPoint delta) {
+        if (delta == null) {
+            return this;
+        }
+        return movedBy(new GridTranslation(delta.x(), delta.y(), delta.z()));
     }
 
     public Door withDoorId(Long doorId) {

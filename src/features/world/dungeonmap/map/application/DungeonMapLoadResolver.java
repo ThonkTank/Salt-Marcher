@@ -1,9 +1,9 @@
-package features.world.dungeonmap.loading;
+package features.world.dungeonmap.map.application;
 
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogEntry;
 import features.world.dungeonmap.catalog.persistence.DungeonMapCatalogRepository;
-import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.repository.DungeonLayoutRepository;
+import features.world.dungeonmap.map.model.DungeonLayout;
+import features.world.dungeonmap.map.repository.DungeonLayoutRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;

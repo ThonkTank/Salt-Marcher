@@ -95,6 +95,7 @@ Left column is a VBox (Controls takes natural height, Main fills rest — not re
 - `src/features/world/dungeonmap/AGENTS.md` — dungeonmap owner atlas and canonical dungeon seams
 - `src/features/world/dungeonmap/cluster/AGENTS.md` — cluster owner rules for top-level room-cluster aggregates, workflows, and persistence
 - `src/features/world/dungeonmap/corridor/AGENTS.md` — corridor owner rules for standalone corridor aggregates, workflows, and persistence
+- `src/features/world/dungeonmap/map/AGENTS.md` — map owner rules for loaded dungeon snapshots, load/reload workflows, and map session state
 - `src/features/world/dungeonmap/geometry/AGENTS.md` — canonical dungeon grid algebra and shared geometry rules
 - `src/features/world/dungeonmap/structure/AGENTS.md` — shared structure-topology owner rules and persistence seams
 

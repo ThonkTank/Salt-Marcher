@@ -1,4 +1,4 @@
-package features.world.dungeonmap.model;
+package features.world.dungeonmap.map.model;
 
 import features.world.dungeonmap.geometry.CardinalDirection;
 import features.world.dungeonmap.geometry.GridPoint;
@@ -116,7 +116,7 @@ public final class DungeonLayout {
             touchingRooms = touchingRooms == null ? List.of() : List.copyOf(touchingRooms);
         }
 
-        public GridSegment anchorSegment2x() {
+        public GridSegment anchorSegment() {
             return door.anchorSegment();
         }
 
@@ -624,7 +624,7 @@ public final class DungeonLayout {
         if (room == null || ref.boundarySegment2x() == null) {
             return null;
         }
-        for (GridPoint cell : ref.boundarySegment2x().touchingCells().cells().stream().sorted(GridPoint.ORDER).toList()) {
+        for (GridPoint cell : ref.boundarySegment2x().touchingCells().stream().sorted(GridPoint.ORDER).toList()) {
             if (!roomStructure(room).surfaceAtLevel(levelZ).surface().contains(cell)) {
                 continue;
             }
@@ -725,7 +725,7 @@ public final class DungeonLayout {
         if (corridor == null || !corridor.structure().boundaryAtLevel(levelZ).boundaryEdges().contains(ref.boundarySegment2x())) {
             return null;
         }
-        List<GridPoint> corridorCells = ref.boundarySegment2x().touchingCells().cells().stream()
+        List<GridPoint> corridorCells = ref.boundarySegment2x().touchingCells().stream()
                 .filter(cell -> corridor.structure().surfaceAtLevel(levelZ).surface().contains(cell))
                 .sorted(GridPoint.ORDER)
                 .toList();
@@ -1465,7 +1465,7 @@ public final class DungeonLayout {
             return List.of();
         }
         LinkedHashSet<Room> rooms = new LinkedHashSet<>();
-        for (GridPoint cell : door.touchingCells().cells().stream().sorted(GridPoint.ORDER).toList()) {
+        for (GridPoint cell : door.touchingCells().stream().sorted(GridPoint.ORDER).toList()) {
             Room room = cluster.structure().roomTopology().roomAt(cell, levelZ);
             if (room != null) {
                 rooms.add(room);

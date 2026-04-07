@@ -1,4 +1,4 @@
-package features.world.dungeonmap.state;
+package features.world.dungeonmap.map.state;
 
 import java.util.Comparator;
 import java.util.List;

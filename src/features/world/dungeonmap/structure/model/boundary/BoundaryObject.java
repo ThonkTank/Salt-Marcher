@@ -65,7 +65,7 @@ public abstract class BoundaryObject {
             return Set.of();
         }
         LinkedHashSet<GridPoint> result = new LinkedHashSet<>();
-        orderedBoundarySegments().forEach(segment -> segment.touchingCells().cells().stream()
+        orderedBoundarySegments().forEach(segment -> segment.touchingCells().stream()
                 .sorted(GridPoint.ORDER)
                 .forEach(result::add));
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
@@ -76,7 +76,7 @@ public abstract class BoundaryObject {
             return false;
         }
         Set<GridPoint> candidates = Set.copyOf(cells);
-        return touchingCells().cells().stream().anyMatch(candidates::contains);
+        return touchingCells().stream().anyMatch(candidates::contains);
     }
 
     protected final List<GridSegment> translatedBoundarySegments(GridTranslation translation) {

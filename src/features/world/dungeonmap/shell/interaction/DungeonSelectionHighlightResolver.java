@@ -1,6 +1,6 @@
 package features.world.dungeonmap.shell.interaction;
 
-import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.map.model.DungeonLayout;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridSegment;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
@@ -158,10 +158,10 @@ public final class DungeonSelectionHighlightResolver {
             return List.of();
         }
         if (transition.localConnection().doorCarrier() != null) {
-            GridSegment anchorSegment2x = transition.localConnection().anchorSegment2x(layout);
+            GridSegment anchorSegment = transition.localConnection().anchorSegment(layout);
             return transition.localConnection().levelZ() == levelZ
-                    && anchorSegment2x != null
-                    ? List.of(new DungeonHitSurface.SegmentSurface(Set.of(anchorSegment2x), levelZ))
+                    && anchorSegment != null
+                    ? List.of(new DungeonHitSurface.SegmentSurface(Set.of(anchorSegment), levelZ))
                     : List.of();
         }
         Set<GridPoint> cells = transition.localConnection().stairCarrier() == null

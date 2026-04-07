@@ -188,7 +188,7 @@ public final class Structure {
         LevelStructure currentLevel = levelsByZ.get(edit.levelZ());
         StructureSurface currentSurface = currentLevel == null ? StructureSurface.empty() : currentLevel.surface();
         StructureSurface nextSurface = currentSurface.editedSurfaceCells(
-                edit.cells(),
+                edit.cells().cells(),
                 edit.mode(),
                 edit.floorSyncPolicy(),
                 edit.preferredAnchorCell());
@@ -212,7 +212,7 @@ public final class Structure {
         if (currentLevel == null || currentLevel.surface().isEmpty()) {
             return this;
         }
-        StructureSurface nextSurface = currentLevel.surface().editedFloorCells(edit.cells(), edit.mode());
+        StructureSurface nextSurface = currentLevel.surface().editedFloorCells(edit.cells().cells(), edit.mode());
         if (Objects.equals(nextSurface, currentLevel.surface())) {
             return this;
         }

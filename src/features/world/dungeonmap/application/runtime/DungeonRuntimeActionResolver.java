@@ -1,7 +1,7 @@
 package features.world.dungeonmap.application.runtime;
 
 import features.world.dungeonmap.application.runtime.description.DungeonRuntimeExit;
-import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.map.model.DungeonLayout;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.cluster.model.RoomCluster;

@@ -2,7 +2,7 @@ package features.world.dungeonmap.corridor.application;
 
 import database.DatabaseManager;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
-import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.map.model.DungeonLayout;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridSegment;
 import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
@@ -11,7 +11,7 @@ import features.world.dungeonmap.corridor.model.Corridor;
 import features.world.dungeonmap.corridor.model.CorridorNode;
 import features.world.dungeonmap.corridor.model.CorridorSegment;
 import features.world.dungeonmap.corridor.repository.DungeonCorridorRepository;
-import features.world.dungeonmap.repository.DungeonLayoutRepository;
+import features.world.dungeonmap.map.repository.DungeonLayoutRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;

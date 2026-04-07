@@ -1,7 +1,6 @@
 package features.world.dungeonmap.shell.interaction;
 
 import features.world.dungeonmap.geometry.GridPoint;
-import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridSegment;
 import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
@@ -27,6 +26,10 @@ public sealed interface DungeonHitSurface permits DungeonHitSurface.CellSurface,
     record SegmentSurface(Set<GridSegment> segments2x, int levelZ) implements DungeonHitSurface {
         public SegmentSurface {
             segments2x = normalizedMembers(segments2x);
+        }
+
+        public Set<GridSegment> segments() {
+            return segments2x;
         }
     }
 

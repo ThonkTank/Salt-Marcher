@@ -1,6 +1,6 @@
 package features.world.dungeonmap.application.stair;
 
-import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.map.model.DungeonLayout;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 
 import java.util.LinkedHashSet;

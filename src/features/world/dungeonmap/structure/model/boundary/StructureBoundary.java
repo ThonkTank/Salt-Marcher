@@ -4,6 +4,7 @@ import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridBoundary;
 import features.world.dungeonmap.geometry.GridSegment;
 import features.world.dungeonmap.geometry.GridArea;
+import features.world.dungeonmap.geometry.GridTranslation;
 import features.world.dungeonmap.structure.model.boundary.door.Door;
 import features.world.dungeonmap.structure.model.boundary.door.Door.DoorState;
 import features.world.dungeonmap.structure.model.boundary.wall.Wall;
@@ -276,19 +277,19 @@ public final class StructureBoundary {
                 : withoutSource.withCreatedDoorSegments(List.of(targetBoundarySegment2x));
     }
 
-    public StructureBoundary translatedByCells(GridPoint delta) {
-        GridPoint resolvedDelta = delta == null ? new GridPoint(0, 0) : delta;
-        if (resolvedDelta.x() == 0 && resolvedDelta.y() == 0) {
+    public StructureBoundary translated(GridTranslation translation) {
+        GridTranslation resolvedTranslation = translation == null ? GridTranslation.none() : translation;
+        if (resolvedTranslation.isZero()) {
             return this;
         }
         return new StructureBoundary(
-                surfaceCells.stream().map(cell -> cell.add(resolvedDelta)).toList(),
+                GridArea.of(surfaceCells).translated(resolvedTranslation).cells(),
                 doors.stream()
-                        .map(door -> door == null ? null : door.movedBy(resolvedDelta))
+                        .map(door -> door == null ? null : door.movedBy(resolvedTranslation))
                         .filter(Objects::nonNull)
                         .toList(),
                 walls.stream()
-                        .map(wall -> wall == null ? null : wall.movedBy(resolvedDelta))
+                        .map(wall -> wall == null ? null : wall.movedBy(resolvedTranslation))
                         .filter(Objects::nonNull)
                         .toList());
     }
@@ -436,14 +437,14 @@ public final class StructureBoundary {
             return Set.of();
         }
         GridArea surfaceShape = GridArea.of(surfaceCells);
-        return surfaceShape.isEmpty() ? Set.of() : surfaceShape.boundaryShape().segments();
+        return surfaceShape.isEmpty() ? Set.of() : surfaceShape.boundary().segments();
     }
 
     private static long touchingSurfaceCellCount(Set<GridPoint> surfaceCells, GridSegment segment) {
         if (surfaceCells == null || surfaceCells.isEmpty() || segment == null) {
             return 0L;
         }
-        return segment.touchingCells().cells().stream().filter(surfaceCells::contains).count();
+        return segment.touchingCells().stream().filter(surfaceCells::contains).count();
     }
 
     private static List<Door> normalizeDoors(GridBoundary boundaryShape, Collection<Door> doors) {
@@ -451,7 +452,9 @@ public final class StructureBoundary {
             return List.of();
         }
         ArrayList<Door> result = new ArrayList<>();
-        List<GridSegment> resolvedBoundarySegments = boundaryShape.segments();
+        List<GridSegment> resolvedBoundarySegments = boundaryShape.segments().stream()
+                .sorted(GridSegment.ORDER)
+                .toList();
         for (Door door : doors) {
             Door normalizedDoor = door == null ? null : door.clippedToBoundary(resolvedBoundarySegments);
             if (normalizedDoor == null) {
@@ -463,7 +466,7 @@ public final class StructureBoundary {
             }
             result.add(normalizedDoor.withDoorId(doorId));
         }
-        result.sort(Comparator.comparing(Door::anchorSegment2x, GridSegment.ORDER));
+        result.sort(Comparator.comparing(Door::anchorSegment, GridSegment.ORDER));
         return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
@@ -488,7 +491,7 @@ public final class StructureBoundary {
         nextDoors.addAll(Door.fromBoundaryComponents(editableSegments, DoorState.OPEN));
         return nextDoors.stream()
                 .filter(Objects::nonNull)
-                .sorted(Comparator.comparing(Door::anchorSegment2x, GridSegment.ORDER))
+                .sorted(Comparator.comparing(Door::anchorSegment, GridSegment.ORDER))
                 .toList();
     }
 
@@ -507,7 +510,7 @@ public final class StructureBoundary {
                 .filter(Objects::nonNull)
                 .map(door -> door.withoutBoundarySegments(removableSegments))
                 .filter(Objects::nonNull)
-                .sorted(Comparator.comparing(Door::anchorSegment2x, GridSegment.ORDER))
+                .sorted(Comparator.comparing(Door::anchorSegment, GridSegment.ORDER))
                 .toList();
         return Objects.equals(nextDoors, doors) ? doors : nextDoors;
     }
@@ -607,7 +610,7 @@ public final class StructureBoundary {
     private static List<Wall> sortedWalls(Collection<Wall> walls) {
         return (walls == null ? List.<Wall>of() : walls).stream()
                 .filter(Objects::nonNull)
-                .sorted(Comparator.comparing(Wall::anchorSegment2x, GridSegment.ORDER))
+                .sorted(Comparator.comparing(Wall::anchorSegment, GridSegment.ORDER))
                 .toList();
     }
 

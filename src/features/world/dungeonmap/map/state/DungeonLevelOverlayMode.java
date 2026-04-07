@@ -1,4 +1,4 @@
-package features.world.dungeonmap.state;
+package features.world.dungeonmap.map.state;
 
 public enum DungeonLevelOverlayMode {
     OFF("Aus", false, false),

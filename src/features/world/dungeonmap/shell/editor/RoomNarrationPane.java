@@ -1,17 +1,17 @@
 package features.world.dungeonmap.shell.editor;
 
 import features.world.dungeonmap.application.room.DungeonRoomApplicationService;
-import features.world.dungeonmap.loading.DungeonMapLoadingService;
+import features.world.dungeonmap.map.application.DungeonMapLoadingService;
 import features.world.dungeonmap.geometry.CardinalDirection;
 import features.world.dungeonmap.geometry.GridPoint;
-import features.world.dungeonmap.model.DungeonLayout;
+import features.world.dungeonmap.map.model.DungeonLayout;
 import features.world.dungeonmap.cluster.model.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.DoorExitCatalog;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
-import features.world.dungeonmap.state.DungeonMapState;
+import features.world.dungeonmap.map.state.DungeonMapState;
 import features.world.dungeonmap.state.EditorInteractionState;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
