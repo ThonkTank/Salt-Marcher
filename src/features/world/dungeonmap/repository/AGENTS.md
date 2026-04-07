@@ -1,23 +1,23 @@
 # AGENTS.md
 
-This file covers `src/features/world/dungeonmap/repository/`. Use it together with the parent `dungeonmap/AGENTS.md` and the repository root `AGENTS.md`.
+This file covers `src/features/world/dungeonmap/repository/`.
 
 ## Purpose
 
-This file only records repository-local rules beneath `dungeonmap/`. Shared owner placement already lives in the parent file.
+`repository` owns owner-local dungeon persistence seams beneath `dungeonmap/`.
 
 ## Canonical Types and APIs
 
 - `DungeonLayoutRepository` — map id plus connection — rehydrates one authoritative `DungeonLayout`.
-- `DungeonRoomRepository` — room rows plus shared structure references — persists room metadata and cluster references while delegating concrete structure snapshots to the sibling structure repository.
-- `DungeonCorridorRepository` — corridor rows plus corridor path traces — persists corridor-local topology metadata and delegates realized physical structure snapshots to the sibling structure repository.
-- `DungeonStairRepository`, `DungeonTransitionRepository` — owner-local rows — persist stair and transition metadata for their respective slices.
+- `DungeonRoomRepository` — persists room metadata and cluster references.
+- `DungeonCorridorRepository` — persists corridor-local topology metadata and corridor path traces.
+- `DungeonStairRepository`, `DungeonTransitionRepository` — persist owner-local stair and transition metadata.
 
 ## Where New Code Goes
 
 - Put SQL, row mapping, and schema ordering here.
-- When persistence touches shared physical structure truth, route it through `structure/repository` and the canonical `Structure` snapshot instead of persisting duplicate structure rows here.
-- When persistence touches owner-local metadata, keep it in that owner repository rather than inventing shared helper mirrors.
+- Route shared physical structure persistence through `structure/repository` and the canonical `Structure` snapshot.
+- Keep owner-local metadata in the owner repository rather than inventing shared helper mirrors.
 
 ## Forbidden Drift
 

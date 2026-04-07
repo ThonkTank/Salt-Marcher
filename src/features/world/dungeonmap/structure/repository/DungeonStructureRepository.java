@@ -109,7 +109,7 @@ public final class DungeonStructureRepository {
             }
             Structure persistedStructure = Structure.fromPersistenceSnapshot(
                     new Structure.PersistenceSnapshot(snapshotLevels));
-            if (persistedStructure.levelStructures().isEmpty()) {
+            if (persistedStructure.levels().isEmpty()) {
                 throw new IllegalStateException("Structure " + structureId + " hat keine persistierte Struktur");
             }
             result.put(structureId, persistedStructure);
@@ -119,7 +119,7 @@ public final class DungeonStructureRepository {
 
     private static Structure requiredStructure(Structure structure) {
         Structure resolvedStructure = structure == null ? Structure.empty() : structure;
-        if (resolvedStructure.levelStructures().isEmpty()) {
+        if (resolvedStructure.levels().isEmpty()) {
             throw new IllegalArgumentException("Structure must not be empty");
         }
         return resolvedStructure;

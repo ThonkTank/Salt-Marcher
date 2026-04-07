@@ -245,7 +245,13 @@ public final class StructureRoomTopology {
     }
 
     public List<Integer> roomRelevantLevels(Room room, CellCoord focusCell, int focusLevelZ) {
-        return structureFor(room).relevantLevels(focusCell, focusLevelZ);
+        Structure roomStructure = structureFor(room);
+        if (focusCell != null && roomStructure.surfaceAtLevel(focusLevelZ).contains(focusCell)) {
+            return List.of(focusLevelZ);
+        }
+        return roomStructure.levels().stream()
+                .sorted()
+                .toList();
     }
 
     public CellCoord roomAnchorCellAtLevel(Room room, int levelZ) {
@@ -546,7 +552,7 @@ public final class StructureRoomTopology {
             Map<Integer, CellCoord> preferredAnchorsByLevel,
             Structure clusterStructure
     ) {
-        Map<Integer, CellCoord> anchorsByLevel = new LinkedHashMap<>();
+        Map<Integer, Structure.LevelStructure> levelsByZ = new LinkedHashMap<>();
         for (Map.Entry<Integer, Set<CellCoord>> entry : roomCellsByLevel.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
                 .toList()) {
@@ -556,9 +562,16 @@ public final class StructureRoomTopology {
                 continue;
             }
             CellCoord preferredAnchor = preferredAnchorsByLevel == null ? null : preferredAnchorsByLevel.get(levelZ);
-            anchorsByLevel.put(levelZ, anchorCell(roomCells, preferredAnchor));
+            StructureSurface clippedSurface = clusterStructure.surfaceAtLevel(levelZ).clippedTo(
+                    roomCells,
+                    anchorCell(roomCells, preferredAnchor));
+            if (clippedSurface.isEmpty()) {
+                continue;
+            }
+            StructureBoundary clippedBoundary = clusterStructure.boundaryAtLevel(levelZ).clippedToSurface(clippedSurface.cellCoords());
+            levelsByZ.put(levelZ, Structure.LevelStructure.fromSurfaceAndBoundary(clippedSurface, clippedBoundary));
         }
-        return clusterStructure.clippedToSurface(roomCellsByLevel, anchorsByLevel);
+        return levelsByZ.isEmpty() ? Structure.empty() : Structure.fromLevels(levelsByZ);
     }
 
     private static PartitionedRoom resolvedDerivedRoom(

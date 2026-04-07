@@ -17,7 +17,7 @@ This file defines the repository-specific operating constraints for Claude Code 
 - shared kernels such as `layout` or geometry only when they are the one canonical truth shared by several owners
 - workflow or surface owners such as `runtime`, `catalog`, `editor interaction`, or `render/input` only when the workflow or surface is itself the stable central owner
 
-**Legacy package names:** directories such as `service`, `builder`, `loading`, `shell`, `canvas`, `internal`, `maintenance`, or `support` may still exist as current homes. They do **not** define the target architecture by themselves. Treat them as current locations that future touched code should converge away from unless a nearer local `AGENTS.md` explicitly declares one of them as a stable owner slice.
+**Legacy package names:** directories such as `service`, `builder`, `loading`, `shell`, `canvas`, `internal`, `maintenance`, or `support` may still exist in the tree. They do **not** define architecture precedent by themselves. Treat them as exceptions that require an explicit local owner rule before using them as precedent.
 
 **Stable infrastructure homes:**
 - `src/database/DatabaseManager` — connection factory. `getConnection()` returns a fresh Connection with `PRAGMA foreign_keys=ON` and `journal_mode=WAL`; callers own it via try-with-resources. `setupDatabase()` uses idempotent `CREATE TABLE IF NOT EXISTS` + `INSERT OR IGNORE` seeding
@@ -157,6 +157,9 @@ Do not use AGENTS files to:
 - dump per-method control flow or table-by-table storage layout
 - preserve stale migration notes after the migration is over
 - present the current folder layout as the target architecture when the target has already changed
+- narrate a recent refactor just because it was recent
+- describe temporary ownership such as `still`, `for now`, `until X exists`, `future owner`, `new flow after refactor`, or `used to`
+- repeat parent-directory guidance in child files when the rule applies to siblings
 
 ### Agent Compliance Checklist
 
@@ -169,7 +172,7 @@ Before adding new code:
 When adding a genuinely new owner or public seam:
 1. Update the governing `AGENTS.md` files in the same change.
 2. Document the new owner, its purpose, and the small set of canonical entry points other agents should reuse.
-3. Explain current location versus target placement when the code still lives in a legacy package.
+3. Document only the durable truth needed to edit the code safely. If a legacy placement is a live hazard, name the hazard directly instead of narrating the migration.
 
 ## Key Conventions
 
@@ -186,6 +189,8 @@ The rules in this section are decision filters, not soft preferences. When multi
 - `AGENTS.md` files document concrete truths that exist now and durable editing rules. They are guidance, not changelogs
 - Remove or rewrite references to removed systems, rename history, and stale transition notes when they no longer affect current editing decisions
 - Keep transition notes only when they describe a live compatibility constraint or a current implementation hazard
+- If a rule applies to multiple sibling directories, document it once in the nearest shared parent instead of repeating it in each child file
+- Default local-file shape is `Purpose`, `Canonical Types and APIs`, `Where New Code Goes`, and `Forbidden Drift`. Add `Owner Atlas` only when the directory itself is the first real owner node for its subtree
 - During implementation, new or changed non-trivial code must document its intended behavior briefly at the owner seam that enforces it, so later contributors can understand the intent without reconstructing it from surrounding call sites
 - Prefer one concise intent comment on the stable owner over repeated narration on every branch or statement
 - Before handoff, inspect the root `AGENTS.md` and any nearer local `AGENTS.md` files governing the edited paths

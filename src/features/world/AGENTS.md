@@ -1,17 +1,22 @@
 # World Feature
 
-This file uses the root owner-slice architecture. `hexmap` and `dungeonmap` are the current world-owned subfeature homes and boundaries, not permission to add more world package families without first naming a stable owner.
+## Purpose
 
-| Public API | Internal | Allowed consumers |
-| --- | --- | --- |
-| `features.world.api` | `hexmap`, `dungeonmap` | `ui.bootstrap` |
+`features.world` owns world navigation surfaces and the world-owned boundary that composes `hexmap` and `dungeonmap`.
 
-`features.world` owns world navigation surfaces and consumes world-session state through
-`features.campaignstate.api`.
-`features.campaignstate` owns the `campaign_state` schema and persists both overworld position and tile-only
-dungeon runtime position.
+## Canonical Types and APIs
 
-Reusable world-feature UI building blocks shared by runtime and editor surfaces belong in the
-feature's `ui/shared` package rather than an editor-only package. Editor-facing application
-services should use typed request payloads, `loadMapList`/`loadMap`/`updateMap`-style method
-names, and validate nullable IDs at the service boundary before dispatching background tasks.
+- `features.world.api` — public world-owned boundary used by shell bootstrap.
+- `WorldModule` — world composition seam that exposes overworld and dungeon-facing surfaces.
+- `features.campaignstate.api` — campaign-state seam consumed for persisted world-session position.
+
+## Where New Code Goes
+
+- Put shared world navigation behavior here.
+- Keep reusable world-owned UI building blocks shared by runtime and editor surfaces under world-owned UI, not under one editor subtree.
+- Keep editor-facing application services on typed request payloads such as `loadMapList`, `loadMap`, and `updateMap`.
+
+## Forbidden Drift
+
+- Do not move `campaign_state` ownership into the world feature.
+- Do not add new world package families without naming a stable world-owned owner first.

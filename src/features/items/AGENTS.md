@@ -1,28 +1,23 @@
 # Items Feature
 
-This file uses the root owner-slice architecture. The package names mentioned below describe current homes and exported seams, not the default shape for new sibling package families.
+## Purpose
 
-`features.items` owns item data, item search/read use cases, and the reusable item-catalog UI building blocks that other features can compose.
+`features.items` owns item data, item search and detail reads, and reusable item-catalog UI building blocks.
 
-| Public API | Internal | Allowed consumers |
-| --- | --- | --- |
-| `features.items.api` | `model`, `repository`, `importer`, `service`, `ui` | `ui.bootstrap`, feature modules that need item data or reusable item widgets |
+## Canonical Types and APIs
 
-## Public surface
+- `ItemCatalogService` — supported read boundary for item search, filters, and details.
+- `ItemBrowserPane`, `ItemFilterPane`, `ItemViewerPane` — reusable item-owned UI building blocks.
+- `ItemBrowserPageLoader`, `ItemBrowserRowAction` — supported host extension points for paging and row actions.
 
-- `ItemCatalogService` is the supported read boundary for item search, filter options, and item details.
-- `ItemBrowserPane`, `ItemFilterPane`, and `ItemViewerPane` are reusable item-owned UI building blocks.
-- `ItemBrowserPageLoader` and `ItemBrowserRowAction` are the supported extension points when a host feature needs custom paging behavior or a feature-specific row action.
+## Where New Code Goes
 
-## Boundary notes
+- Change item search, filter, and detail behavior in `features.items`.
+- Change host-specific row actions, selection rules, and exclusions in the consuming feature.
+- Keep concrete JavaFX catalog implementation behind the item-owned API seam.
 
-- `features.items.api` is the only public cross-feature surface for item reads and reusable item widgets.
-- Concrete JavaFX implementations live under `features.items.ui.shared.catalog`; `features.items.api` exposes the supported entry points to those item-owned widgets.
-- The shared browser is intentionally item-catalog-neutral. Feature-specific actions such as "add to loot table" must be supplied by the host feature, not hard-coded inside `features.items`.
-- Other features must not import `features.items.model` or `features.items.ui.shared.*` directly.
+## Forbidden Drift
 
-## Where changes belong
-
-- Change item search/filter/detail behavior in `features.items`.
-- Change host-specific actions, selection rules, or exclusion policies in the consuming feature.
-- Keep shell/bootstrap wiring at the module boundary; avoid wiring item-widget internals directly from `ui.bootstrap`.
+- Do not import `features.items.model` or `features.items.ui.shared.*` directly from consuming features.
+- Do not hard-code feature-specific actions into the neutral shared item browser.
+- Do not wire item-widget internals directly from shell bootstrap.

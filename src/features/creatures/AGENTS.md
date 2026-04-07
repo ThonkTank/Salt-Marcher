@@ -1,33 +1,25 @@
 # Creatures Platform
 
-This file uses the root owner-slice architecture. The package names mentioned below describe current homes and exported seams, not the default shape for new package invention.
+## Purpose
 
-`features/creatures` is a core platform domain. It owns creature data, creature-facing application APIs, and the reusable public Creature UI consumed by encounter workflows and shell surfaces.
+`features.creatures` owns creature data, creature-facing application seams, and reusable creature UI consumed by other features and shell surfaces.
 
-## Ownership
+## Canonical Types and APIs
 
-| Surface | Purpose | Notes |
-| --- | --- | --- |
-| `features.creatures.api` | Public application/API boundary | The supported entry point for other features and shell wiring, including public Creature UI entry types |
-| `features.creatures.application` | Creature-owned workflows and use cases | Internal to the platform unless explicitly promoted to `api` |
-| `features.creatures.model` | Creature domain model | Canonical creature types live here |
-| `features.creatures.repository` | Creature persistence | Storage contract stays creature-owned |
-| `features.creatures.service` | Domain policy/helpers | Keep feature-owned logic here when it has a clear creature owner |
-| `features.creatures.ui.shared` | Reusable creature UI implementation | Internal implementation behind the public `features.creatures.api` entry surface |
+- `features.creatures.api` — public creature boundary for reads and reusable creature UI.
+- `CreatureBrowserPane`, `CreatureFilterPane` — reusable creature-owned browser surfaces.
+- `StatBlockLoader`, `StatBlockRequest` — public stat-block loading seam.
+- `features.creatures.ui.shared` — creature-owned reusable UI implementation behind the API surface.
+- `shared/creatures/parser/ActionToHitParser` — shared parser seam reused by importer parsing and creature UI rendering.
 
-## Boundaries
+## Where New Code Goes
 
-- `ui/components` is not the default home for Creature UI. Only move Creature components there when they are truly generic shared UI used by 2+ unrelated features and no longer creature-owned.
-- `CreatureBrowserPane`, `CreatureFilterPane`, `StatBlockLoader`, and `StatBlockRequest` are public Creature entry types exposed via `features.creatures.api`.
-- `features.creatures.ui.shared` contains the reusable feature-owned UI implementation behind that API surface, including `StatBlockPane` and `MobAttackCalculator`.
-- Importer-adjacent helpers stay inside the creature platform unless they are genuinely owner-neutral.
-- `shared/creatures/parser/ActionToHitParser` intentionally remains under `shared` because it is reused by both importer parsing and creature UI stat block rendering.
+- Put creature search, filtering, detail reads, and reusable creature widgets in `features.creatures`.
+- Keep importer-adjacent creature helpers creature-owned unless they are truly shared-owned.
+- Move UI to `ui/components` only when it is no longer creature-owned and is reused by unrelated features.
 
-## Allowed consumers
+## Forbidden Drift
 
-- `ui.bootstrap`
-- `ui.shell`
-- `features.encounter`
-- `features.encountertable`
-- `features.partyanalysis`
-- importer maintenance flows
+- Do not import `features.creatures.ui.shared.*` or other creature internals directly from consuming features.
+- Do not move creature-owned UI into generic shared UI by default.
+- Do not duplicate stat-block loading or attack-calculation seams outside the creature platform.

@@ -74,7 +74,7 @@ public final class DungeonCorridorRepository {
                     long structureObjectId = rs.getLong("structure_object_id");
                     int levelZ = rs.getInt("level_z");
                     Structure structure = structuresById.get(structureObjectId);
-                    if (structure == null || structure.levelStructure(levelZ) == null) {
+                    if (structure == null || structure.surfaceAtLevel(levelZ).isEmpty()) {
                         throw new IllegalStateException("Corridor " + corridorId + " hat kein persistiertes Structure");
                     }
                     result.add(resolvedLayout.rehydrateCorridor(

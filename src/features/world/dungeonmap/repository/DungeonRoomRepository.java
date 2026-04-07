@@ -91,7 +91,7 @@ public final class DungeonRoomRepository {
                     long clusterId = rs.getLong("cluster_id");
                     long structureObjectId = rs.getLong("structure_object_id");
                     Structure structure = structuresById.get(structureObjectId);
-                    if (structure == null || structure.levelStructures().isEmpty()) {
+                    if (structure == null || structure.levels().isEmpty()) {
                         throw new IllegalStateException("Cluster " + clusterId + " hat keine persistierte Strukturbeschreibung");
                     }
                     clusters.add(new RoomCluster(

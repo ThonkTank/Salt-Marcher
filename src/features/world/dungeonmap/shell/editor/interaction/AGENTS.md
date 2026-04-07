@@ -1,23 +1,23 @@
 # AGENTS.md
 
-This file covers `src/features/world/dungeonmap/shell/editor/interaction/`. Use it together with `shell/AGENTS.md`, the parent `dungeonmap/AGENTS.md`, and the repository root `AGENTS.md`.
+This file covers `src/features/world/dungeonmap/shell/editor/interaction/`.
 
 ## Purpose
 
-This file only records editor-interaction-local seams beneath `dungeonmap/`. Shared owner placement already lives in the parent files.
+`shell/editor/interaction` owns editor gesture interpretation, tool dispatch, hover intent, and shared cross-tool interaction state.
 
 ## Canonical Types and APIs
 
 - `EditorInteraction` — hit snapshot plus active tool — resolves hover intent and dispatches press, drag, and release.
-- `EditorTool.interactionCapabilities(...)` — tool context — declares the ordered interaction capabilities a tool reacts to.
-- `EditorInteractionState` — shared cross-tool interaction state — stores explicit hover intent, previews, and selection coordination.
-- `CellWindowDragSession` — rectangular drag helper — shared drag seam for paint-style tools.
+- `EditorTool.interactionCapabilities(...)` — ordered declaration of what a tool reacts to.
+- `EditorInteractionState` — shared cross-tool interaction state for hover intent, previews, and selection coordination.
+- `CellWindowDragSession` — shared drag helper for paint-style tools.
 
 ## Where New Code Goes
 
 - Put new gesture meaning on the responsible tool first.
 - Put shared editor interaction policy here only when it is genuinely cross-tool.
-- Keep shared state narrow: selection, explicit hover intent, and previews that multiple tools need.
+- Keep shared state narrow: selection, explicit hover intent, and previews needed by multiple tools.
 
 ## Forbidden Drift
 

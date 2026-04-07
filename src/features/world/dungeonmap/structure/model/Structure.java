@@ -289,53 +289,6 @@ public final class Structure {
     }
 
 
-    private static List<Set<CellCoord>> connectedProjectedComponents(Collection<CellCoord> cells) {
-        Set<CellCoord> remaining = CellCoord.normalize(cells);
-        if (remaining.isEmpty()) {
-            return List.of();
-        }
-        ArrayList<Set<CellCoord>> components = new ArrayList<>();
-        LinkedHashSet<CellCoord> unvisited = new LinkedHashSet<>(remaining);
-        while (!unvisited.isEmpty()) {
-            CellCoord seed = unvisited.iterator().next();
-            ArrayDeque<CellCoord> queue = new ArrayDeque<>();
-            LinkedHashSet<CellCoord> component = new LinkedHashSet<>();
-            queue.add(seed);
-            unvisited.remove(seed);
-            while (!queue.isEmpty()) {
-                CellCoord current = queue.removeFirst();
-                if (!component.add(current)) {
-                    continue;
-                }
-                for (CellCoord step : CellCoord.CARDINAL_STEPS) {
-                    CellCoord neighbor = current.add(step);
-                    if (unvisited.remove(neighbor)) {
-                        queue.addLast(neighbor);
-                    }
-                }
-            }
-            components.add(Set.copyOf(component));
-        }
-        return components.isEmpty() ? List.of() : List.copyOf(components);
-    }
-
-    private static Set<CellCoord> intersectCells(Collection<CellCoord> left, Collection<CellCoord> right) {
-        if (left == null || right == null) {
-            return Set.of();
-        }
-        Set<CellCoord> rightSet = right instanceof Set<CellCoord> set ? set : new LinkedHashSet<>(right);
-        if (rightSet.isEmpty()) {
-            return Set.of();
-        }
-        LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
-        for (CellCoord cell : left) {
-            if (rightSet.contains(cell)) {
-                result.add(cell);
-            }
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
     @Override
     public boolean equals(Object other) {
         if (this == other) {
@@ -443,18 +396,6 @@ public final class Structure {
                     StructureBoundary.fromBoundaryEdges(surface.cellCoords(), boundaryEdges, doors, walls));
         }
 
-        public CellCoord anchorCell() {
-            return surface.anchorCell();
-        }
-
-        public TileShape surfaceShape() {
-            return surface.surfaceShape();
-        }
-
-        public TileShape floorShape() {
-            return surface.floorShape();
-        }
-
         public StructureSurface surface() {
             return surface;
         }
@@ -463,18 +404,10 @@ public final class Structure {
             return boundary;
         }
 
-        public Set<CellCoord> floorCells() {
-            return surface.floorCells();
-        }
-
         public LevelStructure translatedByCells(CellCoord delta) {
             return new LevelStructure(
                     surface.translatedByCells(delta),
                     boundary.translatedByCells(delta));
-        }
-
-        public LevelStructure withFloorCells(Collection<CellCoord> floorCells) {
-            return new LevelStructure(surface.withFloorCells(floorCells), boundary);
         }
 
         public LevelStructure withBoundary(StructureBoundary boundary) {
@@ -508,9 +441,7 @@ public final class Structure {
         }
 
         public boolean isEmpty() {
-            return surface.isEmpty()
-                    && boundary.isEmpty()
-                    && surface.floorShape().isEmpty();
+            return surface.isEmpty() && boundary.isEmpty();
         }
 
         @Override
@@ -522,21 +453,18 @@ public final class Structure {
                 return false;
             }
             return Objects.equals(surface, that.surface)
-                    && Objects.equals(boundary, that.boundary)
-                    && Objects.equals(floorCells(), that.floorCells());
+                    && Objects.equals(boundary, that.boundary);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(surface, boundary, floorCells());
+            return Objects.hash(surface, boundary);
         }
 
         @Override
         public String toString() {
             return "LevelStructure[surface=" + surface
-                    + ", boundary=" + boundary
-                    + ", floorCells=" + floorCells()
-                    + "]";
+                    + ", boundary=" + boundary + "]";
         }
     }
 }

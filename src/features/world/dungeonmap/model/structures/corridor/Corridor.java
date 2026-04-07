@@ -149,7 +149,7 @@ public final class Corridor {
         this.nodes = normalizeNodes(resolvedLayout, levelZ, nodes);
         this.segments = normalizeSegments(segments);
         validateTopology(this.nodes, this.segments);
-        if (hydratedStructure.levelStructure(levelZ) == null) {
+        if (hydratedStructure.surfaceAtLevel(levelZ).isEmpty()) {
             throw new IllegalArgumentException("Persisted corridor structure must exist at the corridor level");
         }
         this.structure = hydratedStructure;

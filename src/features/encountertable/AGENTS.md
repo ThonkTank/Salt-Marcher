@@ -1,11 +1,21 @@
 # Encounter Table Feature
 
-This file uses the root owner-slice architecture. The package names mentioned below describe the current boundary and current homes, not the target shape for future package invention.
+## Purpose
 
-| Public API | Internal | Allowed consumers |
-| --- | --- | --- |
-| `features.encountertable.api` | `model`, `repository`, `service`, `recovery`, `ui` | `ui.bootstrap`, `features.encounter`, importer maintenance flows |
+`features.encountertable` owns encounter tables, their recovery flows, and the public API consumed by shell and encounter-owned features.
 
-Boundary notes:
-- `api/` exposes cross-feature DTOs and service facades, not consumer-specific decision policy.
-- Consumer-specific rules such as how to interpret multiple linked loot tables belong in the consuming feature.
+## Canonical Types and APIs
+
+- `features.encountertable.api` — public encounter-table boundary.
+- `api/` — cross-feature DTOs and service facades for encounter-table reads and recovery entry points.
+- `recovery/` — encounter-table-owned recovery workflows and persistence.
+
+## Where New Code Goes
+
+- Put encounter-table reads, writes, and recovery behavior in this feature.
+- Keep consumer-specific interpretation rules in the consuming feature rather than in the API seam.
+
+## Forbidden Drift
+
+- Do not move consumer-specific decision policy into `api/`.
+- Do not let recovery behavior become a generic shared utility outside encounter-table ownership.

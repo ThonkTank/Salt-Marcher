@@ -1,18 +1,22 @@
 # Loot Tables Feature
 
-This file uses the root owner-slice architecture. The package names mentioned below describe current homes and seams, not the default shape for future package invention.
+## Purpose
 
-`features.loottable` owns loot-table state, mutations, and the item-catalog composition used to edit a table.
+`features.loottable` owns loot-table state, loot-table mutations, and the loot-table composition of item-catalog UI.
 
-## Ownership
+## Canonical Types and APIs
 
-- Loot-table creation, rename, delete, entry weights, and duplicate/exclusion rules belong here.
-- `LootTableEditorView` composes the neutral item browser from `features.items.api` with loot-table-specific add/exclusion behavior.
-- Item search, filter options, and item detail rendering remain item-owned and are consumed through `features.items.api`.
-- Bootstrap should activate the module via `LootTableModule.start(...)`, which wires the inspector handler and kicks off item filter loading.
+- `LootTableEditorView` — loot-table editor surface.
+- `LootTableModule.start(...)` — module startup seam that wires inspector handling and item-filter loading.
+- `features.items.api` — external item-owned seam consumed by the loot-table feature.
 
-## Where changes belong
+## Where New Code Goes
 
-- Change how loot tables add/remove/update entries in `features.loottable`.
-- Change loot-table-specific browser actions or exclusion behavior in `features.loottable.ui`.
-- Change item search/filter/detail semantics in `features.items`.
+- Put loot-table creation, rename, delete, entry weights, duplicate rules, and exclusion rules here.
+- Keep loot-table-specific browser actions and exclusion behavior in the loot-table feature.
+- Keep item search, filter, and item detail semantics in `features.items`.
+
+## Forbidden Drift
+
+- Do not move loot-table-specific browser policy into the items feature.
+- Do not let bootstrap bypass the module startup seam for loot-table wiring.

@@ -32,7 +32,7 @@ public final class StructureBoundary {
         return new StructureBoundary(Set.of(), EdgeShape.empty(), List.of(), List.of());
     }
 
-    public static StructureBoundary fromSurfaceAndFeatures(
+    static StructureBoundary fromSurfaceAndFeatures(
             Collection<CellCoord> surfaceCells,
             Collection<Door> doors,
             Collection<Wall> walls
@@ -50,7 +50,7 @@ public final class StructureBoundary {
         return new StructureBoundary(normalizedSurfaceCells, edgeShape, doors, normalizedWalls);
     }
 
-    public static StructureBoundary fromBoundaryEdges(
+    static StructureBoundary fromBoundaryEdges(
             Collection<CellCoord> surfaceCells,
             Collection<GridSegment2x> boundaryEdges,
             Collection<Door> doors,
@@ -80,10 +80,6 @@ public final class StructureBoundary {
         this.edgeShape = edgeShape == null ? EdgeShape.empty() : edgeShape;
         this.doors = normalizeDoors(this.edgeShape, doors);
         this.walls = normalizeWalls(this.edgeShape, walls);
-    }
-
-    public Set<CellCoord> surfaceCells() {
-        return surfaceCells;
     }
 
     public EdgeShape edgeShape() {
@@ -262,7 +258,7 @@ public final class StructureBoundary {
                         .toList());
     }
 
-    public StructureBoundary clippedToSurface(Collection<CellCoord> clippedSurfaceCells) {
+    StructureBoundary clippedToSurface(Collection<CellCoord> clippedSurfaceCells) {
         TileShape clippedSurfaceShape = TileShape.of(clippedSurfaceCells);
         if (clippedSurfaceShape.isEmpty()) {
             return empty();

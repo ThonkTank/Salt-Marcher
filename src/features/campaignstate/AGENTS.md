@@ -1,11 +1,23 @@
 # Campaign State Feature
 
-This file uses the root owner-slice architecture. The package names mentioned below describe the current public boundary and current homes, not permission to invent new sibling package families.
+## Purpose
 
-| Public API | Internal | Allowed consumers |
-| --- | --- | --- |
-| `features.campaignstate.api` | `model`, `repository` | `features.world`, future campaign-state workflows |
+`features.campaignstate` owns the persisted world-session aggregate in `campaign_state`.
 
-`campaign_state` is the current world-session aggregate and its schema is owned here.
-It persists cross-mode party position for overworld flows plus tile-only dungeon runtime position until a
-dedicated world-session feature exists.
+## Canonical Types and APIs
+
+- `features.campaignstate.api` — public campaign-state boundary consumed by world-owned features.
+- `CampaignStateApi` — mutation seam for persisted session state.
+- `CampaignStateReadApi` — read seam for persisted session state.
+- `DungeonTilePosition` — lightweight dungeon runtime position value exported through the API.
+
+## Where New Code Goes
+
+- Put persisted world-session reads and writes here.
+- Keep overworld and dungeon position persistence behind the campaign-state API instead of writing the table from consuming features.
+
+## Forbidden Drift
+
+- Do not move `campaign_state` ownership into `features.world`.
+- Do not add consumer-specific policy to the API layer.
+- Do not treat this file as a roadmap for a different future feature.

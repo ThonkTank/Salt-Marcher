@@ -287,7 +287,7 @@ public final class RoomCluster {
     }
 
     public boolean overlapsCells(Collection<CellCoord> candidateCells) {
-        Set<CellCoord> clusterCells = cells();
+        Set<CellCoord> clusterCells = Topology.projectedSurfaceCells(structure);
         if (candidateCells == null || candidateCells.isEmpty() || clusterCells.isEmpty()) {
             return false;
         }
@@ -354,16 +354,8 @@ public final class RoomCluster {
         return structure.boundaryAtLevel(primaryLevel()).isEditableWallVertex(vertex, deleteMode);
     }
 
-    public Set<CellCoord> cells() {
-        return structure.cellCoords();
-    }
-
-    public Map<Integer, Set<CellCoord>> cellsByLevel() {
-        return Topology.surfaceCellsByLevel(structure);
-    }
-
     public int primaryLevel() {
-        return cellsByLevel().keySet().stream()
+        return structure.levels().stream()
                 .mapToInt(Integer::intValue)
                 .min()
                 .orElse(0);
@@ -406,10 +398,6 @@ public final class RoomCluster {
 
     public Room roomAt(CubePoint point) {
         return point == null ? null : roomTopology().roomAt(point);
-    }
-
-    public boolean contains(CellCoord cell) {
-        return cell != null && structure.contains(cell);
     }
 
     public boolean contains(CellCoord cell, int levelZ) {
@@ -640,7 +628,7 @@ public final class RoomCluster {
                 return List.of();
             }
 
-            Map<Integer, Set<CellCoord>> remainingFloorCellsByLevel = mutableCellsByLevel(floorCellsByLevel(cluster.structure()));
+            Map<Integer, Set<CellCoord>> remainingFloorCellsByLevel = mutableCellsByLevel(copyStructureFloorCellsByLevel(cluster.structure()));
             Set<CellCoord> remainingDeleteLevelFloorCells = new LinkedHashSet<>(remainingFloorCellsByLevel.getOrDefault(deleteLevel, Set.of()));
             remainingDeleteLevelFloorCells.removeAll(deletedCells);
             if (remainingDeleteLevelFloorCells.isEmpty()) {
@@ -905,7 +893,7 @@ public final class RoomCluster {
             return result.isEmpty() ? List.of() : List.copyOf(result);
         }
 
-        private static Map<Integer, Set<CellCoord>> surfaceCellsByLevel(Structure structure) {
+        private static Map<Integer, Set<CellCoord>> copyStructureSurfaceCellsByLevel(Structure structure) {
             if (structure == null || structure.levels().isEmpty()) {
                 return Map.of();
             }
@@ -919,7 +907,7 @@ public final class RoomCluster {
             return result.isEmpty() ? Map.of() : Map.copyOf(result);
         }
 
-        private static Map<Integer, Set<CellCoord>> floorCellsByLevel(Structure structure) {
+        private static Map<Integer, Set<CellCoord>> copyStructureFloorCellsByLevel(Structure structure) {
             if (structure == null || structure.levels().isEmpty()) {
                 return Map.of();
             }
@@ -933,15 +921,15 @@ public final class RoomCluster {
             return result.isEmpty() ? Map.of() : Map.copyOf(result);
         }
 
-        private static List<Map<Integer, Set<CellCoord>>> projectedSurfaceComponents(Structure structure) {
+        private static List<Map<Integer, Set<CellCoord>>> splitProjectedSurfaceIntoComponents(Structure structure) {
             if (structure == null || structure.levels().isEmpty()) {
                 return List.of();
             }
-            Set<CellCoord> projectedCells = structure.cellCoords();
+            Set<CellCoord> projectedCells = projectedSurfaceCells(structure);
             if (projectedCells.isEmpty()) {
                 return List.of();
             }
-            List<Set<CellCoord>> components = connectedProjectedComponents(projectedCells);
+            List<Set<CellCoord>> components = connectedProjectedCellComponents(projectedCells);
             ArrayList<Map<Integer, Set<CellCoord>>> result = new ArrayList<>(components.size());
             for (Set<CellCoord> component : components) {
                 Map<Integer, Set<CellCoord>> componentByLevel = new LinkedHashMap<>();
@@ -958,7 +946,18 @@ public final class RoomCluster {
             return result.isEmpty() ? List.of() : List.copyOf(result);
         }
 
-        private static List<Set<CellCoord>> connectedProjectedComponents(Collection<CellCoord> cells) {
+        private static Set<CellCoord> projectedSurfaceCells(Structure structure) {
+            if (structure == null || structure.levels().isEmpty()) {
+                return Set.of();
+            }
+            LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
+            for (Integer levelZ : structure.levels().stream().sorted().toList()) {
+                result.addAll(structure.surfaceAtLevel(levelZ).cellCoords());
+            }
+            return result.isEmpty() ? Set.of() : Set.copyOf(result);
+        }
+
+        private static List<Set<CellCoord>> connectedProjectedCellComponents(Collection<CellCoord> cells) {
             Set<CellCoord> remaining = CellCoord.normalize(cells);
             if (remaining.isEmpty()) {
                 return List.of();
@@ -992,7 +991,7 @@ public final class RoomCluster {
             if (result == null || structure == null) {
                 return;
             }
-            for (Map.Entry<Integer, Set<CellCoord>> entry : surfaceCellsByLevel(structure).entrySet()) {
+            for (Map.Entry<Integer, Set<CellCoord>> entry : copyStructureSurfaceCellsByLevel(structure).entrySet()) {
                 result.computeIfAbsent(entry.getKey(), ignored -> new LinkedHashSet<>()).addAll(entry.getValue());
             }
         }
@@ -1001,7 +1000,7 @@ public final class RoomCluster {
             if (result == null || structure == null) {
                 return;
             }
-            for (Map.Entry<Integer, Set<CellCoord>> entry : floorCellsByLevel(structure).entrySet()) {
+            for (Map.Entry<Integer, Set<CellCoord>> entry : copyStructureFloorCellsByLevel(structure).entrySet()) {
                 result.computeIfAbsent(entry.getKey(), ignored -> new LinkedHashSet<>()).addAll(entry.getValue());
             }
         }
@@ -1093,7 +1092,7 @@ public final class RoomCluster {
             }
             Map<Integer, List<Door>> doorsByLevel = doorsByLevel(rewrittenStructure);
             Map<Integer, List<Wall>> wallsByLevel = wallsByLevel(rewrittenStructure);
-            List<Map<Integer, Set<CellCoord>>> projectedComponents = projectedSurfaceComponents(rewrittenStructure);
+            List<Map<Integer, Set<CellCoord>>> projectedComponents = splitProjectedSurfaceIntoComponents(rewrittenStructure);
             if (projectedComponents.isEmpty()) {
                 return List.of();
             }
@@ -1105,7 +1104,7 @@ public final class RoomCluster {
                     .map(componentCellsByLevel -> componentCluster(
                             originalCluster,
                             componentCellsByLevel,
-                            floorCellsByLevel(rewrittenStructure),
+                            copyStructureFloorCellsByLevel(rewrittenStructure),
                             doorsByLevel,
                             wallsByLevel))
                     .filter(Objects::nonNull)
@@ -1174,7 +1173,7 @@ public final class RoomCluster {
         }
 
         private static Map<Integer, Set<CellCoord>> mutableClusterCellsByLevel(RoomCluster cluster) {
-            return mutableCellsByLevel(cluster == null ? Map.of() : surfaceCellsByLevel(cluster.structure()));
+            return mutableCellsByLevel(cluster == null ? Map.of() : copyStructureSurfaceCellsByLevel(cluster.structure()));
         }
 
         private static Set<CellCoord> flattenCells(Map<Integer, Set<CellCoord>> cellsByLevel) {

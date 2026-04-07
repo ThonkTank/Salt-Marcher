@@ -731,7 +731,7 @@ public final class DungeonLayout {
 
     public Room roomAtCell(CellCoord cell) {
         for (RoomCluster cluster : clusters) {
-            if (cluster.contains(cell)) {
+            if (clusterContainsProjectedCell(cluster, cell)) {
                 return cluster.roomAt(cell);
             }
         }
@@ -776,7 +776,7 @@ public final class DungeonLayout {
 
     public RoomCluster clusterAtCell(CellCoord cell) {
         for (RoomCluster cluster : clusters) {
-            if (cluster.contains(cell)) {
+            if (clusterContainsProjectedCell(cluster, cell)) {
                 return cluster;
             }
         }
@@ -1609,6 +1609,14 @@ public final class DungeonLayout {
         return Map.copyOf(result);
     }
 
+    private static boolean clusterContainsProjectedCell(RoomCluster cluster, CellCoord cell) {
+        if (cluster == null || cell == null) {
+            return false;
+        }
+        return cluster.structure().levels().stream()
+                .anyMatch(levelZ -> cluster.structure().surfaceAtLevel(levelZ).contains(cell));
+    }
+
     private static Set<CellCoord> indexTraversableCells(
             List<RoomCluster> clusters,
             List<Corridor> corridors,
@@ -1630,7 +1638,7 @@ public final class DungeonLayout {
         }
         for (Corridor corridor : corridors) {
             if (corridor != null) {
-                result.addAll(corridor.structure().cellCoords());
+                result.addAll(corridor.structure().surfaceAtLevel(corridor.levelZ()).cellCoords());
             }
         }
         for (DungeonStair stair : stairs) {
@@ -1719,7 +1727,7 @@ public final class DungeonLayout {
             if (corridor == null || corridor.corridorId() == null) {
                 continue;
             }
-            for (CellCoord cell : corridor.structure().cellCoords()) {
+            for (CellCoord cell : corridor.structure().surfaceAtLevel(corridor.levelZ()).cellCoords()) {
                 mutable.computeIfAbsent(cell, ignored -> new ArrayList<>()).add(corridor.corridorId());
             }
         }
