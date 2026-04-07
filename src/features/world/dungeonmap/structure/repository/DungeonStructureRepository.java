@@ -4,11 +4,11 @@ import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.structure.model.Structure;
-import features.world.dungeonmap.structure.model.StructureSurface;
 import features.world.dungeonmap.structure.model.boundary.Door;
 import features.world.dungeonmap.structure.model.boundary.StructureBoundary;
 import features.world.dungeonmap.structure.model.boundary.Wall;
 import features.world.dungeonmap.structure.model.boundary.WallKind;
+import features.world.dungeonmap.structure.model.surface.StructureSurface;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -92,7 +92,7 @@ public final class DungeonStructureRepository {
         Map<Long, Structure> result = new LinkedHashMap<>();
         for (Map.Entry<Long, Map<Integer, CellCoord>> structureEntry : anchorsByStructureId.entrySet()) {
             Long structureId = structureEntry.getKey();
-            Map<Integer, Structure.PersistenceLevel> snapshotLevels = new LinkedHashMap<>();
+            Map<Integer, Structure.LevelStructure.PersistenceSnapshot> snapshotLevels = new LinkedHashMap<>();
             for (Map.Entry<Integer, CellCoord> levelEntry : structureEntry.getValue().entrySet()) {
                 int levelZ = levelEntry.getKey();
                 Set<CellCoord> surfaceCells = surfaceCellsByStructureId
@@ -109,7 +109,7 @@ public final class DungeonStructureRepository {
                 StructureBoundary.PersistenceSnapshot boundarySnapshot = new StructureBoundary.PersistenceSnapshot(
                         doorsByStructureId.getOrDefault(structureId, Map.of()).getOrDefault(levelZ, List.of()),
                         wallsByStructureId.getOrDefault(structureId, Map.of()).getOrDefault(levelZ, List.of()));
-                snapshotLevels.put(levelZ, new Structure.PersistenceLevel(surfaceSnapshot, boundarySnapshot));
+                snapshotLevels.put(levelZ, new Structure.LevelStructure.PersistenceSnapshot(surfaceSnapshot, boundarySnapshot));
             }
             Structure persistedStructure = Structure.fromPersistenceSnapshot(
                     new Structure.PersistenceSnapshot(snapshotLevels));
@@ -136,10 +136,10 @@ public final class DungeonStructureRepository {
         }
         long nextWallId = nextId(conn, "dungeon_structure_walls", "wall_id");
         long nextDoorId = nextId(conn, "dungeon_structure_doors", "door_id");
-        Map<Integer, Structure.PersistenceLevel> updatedLevels = new LinkedHashMap<>();
+        Map<Integer, Structure.LevelStructure.PersistenceSnapshot> updatedLevels = new LinkedHashMap<>();
         boolean changed = false;
-        for (Map.Entry<Integer, Structure.PersistenceLevel> entry : snapshot.levelsByZ().entrySet()) {
-            Structure.PersistenceLevel level = entry.getValue();
+        for (Map.Entry<Integer, Structure.LevelStructure.PersistenceSnapshot> entry : snapshot.levelsByZ().entrySet()) {
+            Structure.LevelStructure.PersistenceSnapshot level = entry.getValue();
             StructureBoundary.PersistenceSnapshot boundary = level.boundary();
             ArrayList<Wall> persistedWalls = new ArrayList<>();
             for (Wall wall : boundary.authoredWalls()) {
@@ -165,7 +165,7 @@ public final class DungeonStructureRepository {
                 }
                 persistedDoors.add(persistedDoor);
             }
-            updatedLevels.put(entry.getKey(), new Structure.PersistenceLevel(
+            updatedLevels.put(entry.getKey(), new Structure.LevelStructure.PersistenceSnapshot(
                     level.surface(),
                     new StructureBoundary.PersistenceSnapshot(persistedDoors, persistedWalls)));
         }
@@ -234,9 +234,9 @@ public final class DungeonStructureRepository {
              PreparedStatement insertDoorSegment = conn.prepareStatement(
                      "INSERT INTO dungeon_structure_door_segments(door_id, start_x2, start_y2, end_x2, end_y2)"
                              + " VALUES(?,?,?,?,?)")) {
-            for (Map.Entry<Integer, Structure.PersistenceLevel> entry : snapshot.levelsByZ().entrySet()) {
+            for (Map.Entry<Integer, Structure.LevelStructure.PersistenceSnapshot> entry : snapshot.levelsByZ().entrySet()) {
                 int levelZ = entry.getKey();
-                Structure.PersistenceLevel level = entry.getValue();
+                Structure.LevelStructure.PersistenceSnapshot level = entry.getValue();
                 StructureSurface.PersistenceSnapshot surface = level.surface();
                 StructureBoundary.PersistenceSnapshot boundary = level.boundary();
                 insertLevel.setLong(1, structureObjectId);

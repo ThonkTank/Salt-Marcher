@@ -8,19 +8,19 @@ This file covers `src/features/world/dungeonmap/structure/`.
 
 ## Canonical Types and APIs
 
-- `Structure` — shared physical structure aggregate — composes `StructureSurface`, the local `boundary` sub-owner, and attached room-topology state for each level; it does not mirror level-local surface or boundary state back onto the aggregate API.
+- `Structure` — shared physical structure aggregate — composes the local `surface` and `boundary` sub-owners plus attached room-topology state for each level; it does not mirror level-local surface or boundary state back onto the aggregate API.
 - `StructureSurface` — level-local surface owner for anchor, surface cells, floor cells, and surface queries; this is the only public surface-truth seam.
 - `StructureBoundary` — level-local boundary owner for wall and door capability sets, boundary edges, boundary-local mutations, and boundary persistence snapshots.
 - `StructureRoomTopology` — room projection over one `Structure` — resolves room surfaces, anchors, adjacency, components, and room-to-room connections.
-- `DungeonStructureRepository` — shared structure persistence seam that mirrors the runtime split into `StructureSurface` plus `StructureBoundary`.
+- `DungeonStructureRepository` — shared structure persistence seam that mirrors the runtime split into `Structure.LevelStructure`, `StructureSurface`, and `StructureBoundary`.
 - `DungeonWallKindRepository` — wall-kind catalog seam used by structure loading.
 
 ## Where New Code Goes
 
 - Put shared physical topology, boundary identity, and shared room-projection logic here.
-- Put level-local surface behavior on `StructureSurface` and keep callers on `structure.surfaceAtLevel(levelZ)`.
+- Put level-local surface behavior on the local `model/surface/` sub-owner and keep callers on `structure.surfaceAtLevel(levelZ)`.
 - Put level-local wall, door, and boundary-edge behavior on the local `model/boundary/` sub-owner and keep callers on `structure.boundaryAtLevel(levelZ)`.
-- Put level-local boundary persistence data on `StructureBoundary.PersistenceSnapshot` and level-local surface persistence data on `StructureSurface.PersistenceSnapshot`; `Structure` should only compose those owner snapshots.
+- Put level-local boundary persistence data on `StructureBoundary.PersistenceSnapshot`, level-local surface persistence data on `StructureSurface.PersistenceSnapshot`, and let `Structure.LevelStructure.PersistenceSnapshot` compose those owner snapshots.
 - Keep room- or corridor-specific workflow logic in their owners; only reused physical structure truth belongs here.
 - Keep internal mutation and invariant protection on `Structure`, `StructureSurface`, and `StructureBoundary`.
 

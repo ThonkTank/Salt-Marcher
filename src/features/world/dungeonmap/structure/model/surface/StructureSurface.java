@@ -1,4 +1,4 @@
-package features.world.dungeonmap.structure.model;
+package features.world.dungeonmap.structure.model.surface;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;

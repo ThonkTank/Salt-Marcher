@@ -8,6 +8,7 @@ import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.structure.model.boundary.Door;
 import features.world.dungeonmap.structure.model.boundary.StructureBoundary;
 import features.world.dungeonmap.structure.model.boundary.Wall;
+import features.world.dungeonmap.structure.model.surface.StructureSurface;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -23,19 +24,9 @@ import java.util.Set;
  */
 public final class Structure {
 
-    public record PersistenceSnapshot(Map<Integer, PersistenceLevel> levelsByZ) {
+    public record PersistenceSnapshot(Map<Integer, LevelStructure.PersistenceSnapshot> levelsByZ) {
         public PersistenceSnapshot {
             levelsByZ = levelsByZ == null ? Map.of() : Map.copyOf(new LinkedHashMap<>(levelsByZ));
-        }
-    }
-
-    public record PersistenceLevel(
-            StructureSurface.PersistenceSnapshot surface,
-            StructureBoundary.PersistenceSnapshot boundary
-    ) {
-        public PersistenceLevel {
-            surface = surface == null ? StructureSurface.emptySnapshot() : surface;
-            boundary = boundary == null ? StructureBoundary.emptySnapshot() : boundary;
         }
     }
 
@@ -182,7 +173,7 @@ public final class Structure {
     }
 
     public PersistenceSnapshot persistenceSnapshot() {
-        Map<Integer, PersistenceLevel> snapshotLevels = new LinkedHashMap<>();
+        Map<Integer, LevelStructure.PersistenceSnapshot> snapshotLevels = new LinkedHashMap<>();
         for (Map.Entry<Integer, LevelStructure> entry : levelsByZ.entrySet()) {
             if (entry.getKey() == null || entry.getValue() == null || entry.getValue().isEmpty()) {
                 continue;
@@ -296,6 +287,16 @@ public final class Structure {
     }
 
     public static final class LevelStructure {
+
+        public record PersistenceSnapshot(
+                StructureSurface.PersistenceSnapshot surface,
+                StructureBoundary.PersistenceSnapshot boundary
+        ) {
+            public PersistenceSnapshot {
+                surface = surface == null ? StructureSurface.emptySnapshot() : surface;
+                boundary = boundary == null ? StructureBoundary.emptySnapshot() : boundary;
+            }
+        }
 
         private final StructureSurface surface;
         private final StructureBoundary boundary;
@@ -423,9 +424,9 @@ public final class Structure {
             return new LevelStructure(surface, boundary);
         }
 
-        public static LevelStructure fromPersistenceSnapshot(PersistenceLevel snapshot) {
-            PersistenceLevel resolvedSnapshot = snapshot == null
-                    ? new PersistenceLevel(StructureSurface.emptySnapshot(), StructureBoundary.emptySnapshot())
+        public static LevelStructure fromPersistenceSnapshot(PersistenceSnapshot snapshot) {
+            PersistenceSnapshot resolvedSnapshot = snapshot == null
+                    ? new PersistenceSnapshot(StructureSurface.emptySnapshot(), StructureBoundary.emptySnapshot())
                     : snapshot;
             StructureSurface surface = StructureSurface.fromPersistenceSnapshot(resolvedSnapshot.surface());
             if (surface.isEmpty()) {
@@ -440,8 +441,8 @@ public final class Structure {
             return surface.isEmpty() && boundary.isEmpty();
         }
 
-        public PersistenceLevel persistenceSnapshot() {
-            return new PersistenceLevel(surface.persistenceSnapshot(), boundary.persistenceSnapshot());
+        public PersistenceSnapshot persistenceSnapshot() {
+            return new PersistenceSnapshot(surface.persistenceSnapshot(), boundary.persistenceSnapshot());
         }
 
         @Override
