@@ -13,7 +13,7 @@ import java.util.Set;
 /**
  * Canonical owner for anchor and surface-cell truth on one structure level.
  */
-public final class StructureSurfaceArea {
+public final class StructureSurfaceArea extends StructureSurfaceObject {
 
     public record PersistenceSnapshot(
             CellCoord anchorCell,
@@ -25,8 +25,6 @@ public final class StructureSurfaceArea {
     }
 
     private final CellCoord anchorCell;
-    private final TileShape tileShape;
-
     public static StructureSurfaceArea empty() {
         return new StructureSurfaceArea(null, TileShape.empty());
     }
@@ -55,50 +53,37 @@ public final class StructureSurfaceArea {
             CellCoord anchorCell,
             TileShape tileShape
     ) {
-        this.tileShape = tileShape == null ? TileShape.empty() : tileShape;
-        this.anchorCell = normalizeAnchor(anchorCell, this.tileShape);
+        super(tileShape);
+        this.anchorCell = normalizeAnchor(anchorCell, tileShape());
     }
 
     public CellCoord anchorCell() {
         return anchorCell;
     }
 
-    public Set<CellCoord> cellCoords() {
-        return tileShape.cellCoords();
-    }
-
-    public CellCoord centerCellCoord() {
-        Set<CellCoord> cells = cellCoords();
-        return cells.isEmpty() ? null : CellCoord.bestCenter(cells);
-    }
-
     public Set<CubePoint> cubePoints(int levelZ) {
-        return tileShape.cubePoints(levelZ);
-    }
-
-    public boolean contains(CellCoord cell) {
-        return cell != null && tileShape.contains(cell);
+        return tileShape().cubePoints(levelZ);
     }
 
     public Set<CellCoord> reachableFrom(CellCoord startCell, Collection<GridSegment2x> boundaryEdges) {
         if (startCell == null || !contains(startCell)) {
             return Set.of();
         }
-        return tileShape.reachableFrom(startCell, boundaryEdges).cellCoords();
+        return tileShape().reachableFrom(startCell, boundaryEdges).cellCoords();
     }
 
     public StructureSurfaceArea translatedByCells(CellCoord delta) {
-        CellCoord resolvedDelta = delta == null ? new CellCoord(0, 0) : delta;
+        CellCoord resolvedDelta = resolvedDelta(delta);
         if (resolvedDelta.x() == 0 && resolvedDelta.y() == 0) {
             return this;
         }
         return new StructureSurfaceArea(
                 anchorCell == null ? null : anchorCell.add(resolvedDelta),
-                tileShape.translatedByCells(resolvedDelta));
+                translatedTileShape(resolvedDelta));
     }
 
     public StructureSurfaceArea clippedTo(Collection<CellCoord> clippedCells, CellCoord preferredAnchor) {
-        TileShape clippedSurface = tileShape.intersection(clippedCells);
+        TileShape clippedSurface = intersectedTileShape(clippedCells);
         if (clippedSurface.isEmpty()) {
             return empty();
         }
@@ -112,14 +97,6 @@ public final class StructureSurfaceArea {
 
     public PersistenceSnapshot persistenceSnapshot() {
         return new PersistenceSnapshot(anchorCell, cellCoords());
-    }
-
-    public boolean isEmpty() {
-        return tileShape.isEmpty();
-    }
-
-    TileShape tileShape() {
-        return tileShape;
     }
 
     @Override

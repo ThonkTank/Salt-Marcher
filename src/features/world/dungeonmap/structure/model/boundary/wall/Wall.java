@@ -1,16 +1,15 @@
 package features.world.dungeonmap.structure.model.boundary.wall;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.structure.model.boundary.BoundaryObject;
 import features.world.dungeonmap.model.geometry.EdgeShape;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * Canonical single-wall owner beneath {@code boundary}.
@@ -19,10 +18,8 @@ import java.util.Set;
  * so aggregate callers do not reconstruct wall behavior from raw segment lists.</p>
  */
 
-public final class Wall extends EdgeShape {
+public final class Wall extends BoundaryObject {
 
-    private final Long wallId;
-    private final GridSegment2x anchorSegment2x;
     private final WallKind wallKind;
 
     public Wall(Collection<GridSegment2x> segments) {
@@ -34,14 +31,13 @@ public final class Wall extends EdgeShape {
     }
 
     public Wall(Long wallId, Collection<GridSegment2x> segments, GridSegment2x anchorSegment2x, WallKind wallKind) {
-        super(EdgeShape.normalizeBoundarySegments(segments));
-        this.wallId = wallId;
-        this.anchorSegment2x = resolveAnchorSegment(anchorSegment2x, segments2x());
+        super(wallId, segments, anchorSegment2x);
         this.wallKind = wallKind == null ? WallKind.solid() : wallKind;
     }
 
     public Wall(Long wallId, EdgeShape shape, GridSegment2x anchorSegment2x, WallKind wallKind) {
-        this(wallId, shape == null ? List.of() : shape.segments2x(), anchorSegment2x, wallKind);
+        super(wallId, shape, anchorSegment2x);
+        this.wallKind = wallKind == null ? WallKind.solid() : wallKind;
     }
 
     public static Wall fromSegments(Collection<GridSegment2x> segments) {
@@ -66,34 +62,11 @@ public final class Wall extends EdgeShape {
     }
 
     public Long wallId() {
-        return wallId;
+        return objectId();
     }
 
     public GridSegment2x anchorSegment2x() {
-        return anchorSegment2x;
-    }
-
-    public GridSegment2x persistedAnchorSegment2x() {
-        return anchorSegment2x == null ? firstSegment2x() : anchorSegment2x;
-    }
-
-    public Set<GridSegment2x> boundarySegments() {
-        Set<GridSegment2x> segments = segmentSet2x();
-        return segments.isEmpty() ? Set.of() : Set.copyOf(new LinkedHashSet<>(segments));
-    }
-
-    public List<GridSegment2x> orderedBoundarySegments() {
-        return boundarySegments().stream()
-                .sorted(GridSegment2x.ORDER)
-                .toList();
-    }
-
-    public boolean hasBoundarySegment(GridSegment2x segment2x) {
-        return segment2x != null && contains(segment2x);
-    }
-
-    public boolean hasBoundarySegments() {
-        return !isEmpty();
+        return anchorSegment2xInternal();
     }
 
     public WallKind wallKind() {
@@ -105,18 +78,15 @@ public final class Wall extends EdgeShape {
         if (resolvedDelta.x() == 0 && resolvedDelta.y() == 0) {
             return this;
         }
-        return new Wall(wallId, segments2x().stream()
-                .map(segment -> segment.translatedByCells(resolvedDelta))
-                .toList(),
-                anchorSegment2x == null ? null : anchorSegment2x.translatedByCells(resolvedDelta),
+        return new Wall(wallId(), translatedBoundarySegments(resolvedDelta), translatedAnchorSegment2x(resolvedDelta),
                 wallKind);
     }
 
     public Wall withWallId(Long wallId) {
-        if (Objects.equals(this.wallId, wallId)) {
+        if (Objects.equals(wallId(), wallId)) {
             return this;
         }
-        return new Wall(wallId, segments2x(), anchorSegment2x, wallKind);
+        return new Wall(wallId, segments2x(), anchorSegment2x(), wallKind);
     }
 
     public Wall withWallKind(WallKind wallKind) {
@@ -124,47 +94,30 @@ public final class Wall extends EdgeShape {
         if (Objects.equals(this.wallKind, resolvedWallKind)) {
             return this;
         }
-        return new Wall(wallId, segments2x(), anchorSegment2x, resolvedWallKind);
+        return new Wall(wallId(), segments2x(), anchorSegment2x(), resolvedWallKind);
     }
 
     public Wall clippedToBoundary(Collection<GridSegment2x> boundarySegments) {
-        if (!hasBoundarySegments()) {
-            return null;
-        }
-        EdgeShape boundaryShape = EdgeShape.fromBoundarySegments(boundarySegments);
-        if (boundaryShape.isEmpty()) {
-            return null;
-        }
-        EdgeShape clippedShape = boundaryShape.intersection(boundarySegments());
+        EdgeShape clippedShape = clippedBoundaryShape(boundarySegments);
         if (clippedShape.isEmpty()) {
             return null;
         }
-        GridSegment2x clippedAnchor = clippedShape.contains(anchorSegment2x)
-                ? anchorSegment2x
-                : clippedShape.firstSegment2x();
-        return Wall.fromShape(wallId, clippedShape, clippedAnchor, wallKind);
+        return Wall.fromShape(wallId(), clippedShape, repairedAnchorSegment2x(clippedShape), wallKind);
     }
 
     public List<Wall> withoutBoundarySegments(Collection<GridSegment2x> removedBoundarySegments) {
-        if (!hasBoundarySegments()) {
-            return List.of();
-        }
-        EdgeShape remainingShape = EdgeShape.fromBoundarySegments(boundarySegments()).without(removedBoundarySegments);
-        List<EdgeShape> components = remainingShape.connectedComponents();
+        List<EdgeShape> components = remainingBoundaryComponents(removedBoundarySegments);
         if (components.isEmpty()) {
             return List.of();
         }
-        int idRetainingIndex = retainingComponentIndex(components, anchorSegment2x);
+        int idRetainingIndex = retainingComponentIndex(components, anchorSegment2x());
         ArrayList<Wall> result = new ArrayList<>();
         for (int index = 0; index < components.size(); index++) {
             EdgeShape component = components.get(index);
-            GridSegment2x repairedAnchor = component.contains(anchorSegment2x)
-                    ? anchorSegment2x
-                    : component.firstSegment2x();
             result.add(Wall.fromShape(
-                    index == idRetainingIndex ? wallId : null,
+                    index == idRetainingIndex ? wallId() : null,
                     component,
-                    repairedAnchor,
+                    repairedAnchorSegment2x(component),
                     wallKind));
         }
         result.sort(Comparator.comparing(Wall::anchorSegment2x, GridSegment2x.ORDER));
@@ -175,12 +128,8 @@ public final class Wall extends EdgeShape {
             Collection<GridSegment2x> boundarySegments,
             WallKind wallKind
     ) {
-        EdgeShape shape = EdgeShape.fromBoundarySegments(boundarySegments);
-        if (shape.isEmpty()) {
-            return List.of();
-        }
         ArrayList<Wall> result = new ArrayList<>();
-        for (EdgeShape component : shape.connectedComponents()) {
+        for (EdgeShape component : boundaryComponents(boundarySegments)) {
             if (!component.isEmpty()) {
                 result.add(Wall.fromShape(null, component, component.firstSegment2x(), wallKind));
             }
@@ -199,19 +148,6 @@ public final class Wall extends EdgeShape {
 
     public boolean supportsDoorAttachments() {
         return wallKind.supportsDoorAttachments();
-    }
-
-    private static GridSegment2x resolveAnchorSegment(
-            GridSegment2x requestedAnchorSegment2x,
-            List<GridSegment2x> segments2x
-    ) {
-        if (requestedAnchorSegment2x != null && segments2x.contains(requestedAnchorSegment2x)) {
-            return requestedAnchorSegment2x;
-        }
-        return segments2x.stream()
-                .sorted(GridSegment2x.ORDER)
-                .findFirst()
-                .orElse(null);
     }
 
     private static int retainingComponentIndex(
@@ -234,14 +170,11 @@ public final class Wall extends EdgeShape {
         if (!(other instanceof Wall wall)) {
             return false;
         }
-        return Objects.equals(wallId, wall.wallId)
-                && Objects.equals(segments2x(), wall.segments2x())
-                && Objects.equals(anchorSegment2x, wall.anchorSegment2x)
-                && Objects.equals(wallKind, wall.wallKind);
+        return sameBaseState(wall) && Objects.equals(wallKind, wall.wallKind);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(wallId, segments2x(), anchorSegment2x, wallKind);
+        return Objects.hash(baseHashCode(), wallKind);
     }
 }

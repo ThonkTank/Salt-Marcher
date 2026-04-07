@@ -11,15 +11,13 @@ import java.util.Set;
 /**
  * Canonical owner for floor-cell truth constrained to one surface area.
  */
-public final class StructureFloor {
+public final class StructureFloor extends StructureSurfaceObject {
 
     public record PersistenceSnapshot(Set<CellCoord> cells) {
         public PersistenceSnapshot {
             cells = cells == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(cells));
         }
     }
-
-    private final TileShape tileShape;
 
     public static StructureFloor empty() {
         return new StructureFloor(TileShape.empty());
@@ -49,19 +47,7 @@ public final class StructureFloor {
     }
 
     private StructureFloor(TileShape tileShape) {
-        this.tileShape = tileShape == null ? TileShape.empty() : tileShape;
-    }
-
-    public Set<CellCoord> cellCoords() {
-        return tileShape.cellCoords();
-    }
-
-    public boolean contains(CellCoord cell) {
-        return cell != null && tileShape.contains(cell);
-    }
-
-    public CellCoord centerCellCoord() {
-        return tileShape.isEmpty() ? null : tileShape.centerCellCoord();
+        super(tileShape);
     }
 
     public StructureFloor withCells(
@@ -72,11 +58,11 @@ public final class StructureFloor {
     }
 
     public StructureFloor translatedByCells(CellCoord delta) {
-        CellCoord resolvedDelta = delta == null ? new CellCoord(0, 0) : delta;
+        CellCoord resolvedDelta = resolvedDelta(delta);
         if (resolvedDelta.x() == 0 && resolvedDelta.y() == 0) {
             return this;
         }
-        return new StructureFloor(tileShape.translatedByCells(resolvedDelta));
+        return new StructureFloor(translatedTileShape(resolvedDelta));
     }
 
     public StructureFloor clippedTo(StructureSurfaceArea surfaceArea) {
@@ -85,14 +71,6 @@ public final class StructureFloor {
 
     public PersistenceSnapshot persistenceSnapshot() {
         return new PersistenceSnapshot(cellCoords());
-    }
-
-    public boolean isEmpty() {
-        return tileShape.isEmpty();
-    }
-
-    TileShape tileShape() {
-        return tileShape;
     }
 
     @Override

@@ -10,6 +10,7 @@ This file covers `src/features/world/dungeonmap/structure/model/surface/`.
 ## Canonical Types and APIs
 
 - `StructureSurface` — level-local surface aggregate — owns the composed surface and floor state for one level and the surface-local persistence snapshot.
+- `StructureSurfaceObject` — internal shared base — owns tile-shape-backed behavior common to `StructureSurfaceArea` and `StructureFloor`; this is not a public consumer seam.
 - `StructureSurfaceArea` — surface-area owner — owns anchors, surface cells, clipping, reachability, and surface translation.
 - `StructureFloor` — floor owner — owns floor-cell truth constrained to one `StructureSurfaceArea`.
 - `StructureSurface.PersistenceSnapshot` — surface-owned aggregate persistence shape — composes `StructureSurfaceArea.PersistenceSnapshot` and `StructureFloor.PersistenceSnapshot`.
@@ -20,6 +21,7 @@ This file covers `src/features/world/dungeonmap/structure/model/surface/`.
 - Keep callers on `Structure.surfaceAtLevel(levelZ)` and then continue on `.surface()` or `.floor()`.
 - Put anchor and surface-cell behavior on `StructureSurfaceArea`.
 - Put floor-cell behavior on `StructureFloor`.
+- Keep shared tile-shape-backed behavior on the internal `StructureSurfaceObject` instead of duplicating it across both child owners.
 - Keep surface persistence shaped like the runtime owner so repositories save and reload the same concept graph with minimal conversion.
 
 ## Forbidden Drift

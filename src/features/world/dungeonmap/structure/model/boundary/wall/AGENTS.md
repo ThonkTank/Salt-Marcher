@@ -8,7 +8,7 @@ This file covers `src/features/world/dungeonmap/structure/model/boundary/wall/`.
 
 ## Canonical Types and APIs
 
-- `Wall` — single-wall owner — owns wall-local segment identity, anchor repair, clipping, split-on-delete behavior, translation, and persisted segment access.
+- `Wall` — single-wall owner — extends the internal `BoundaryObject` base and owns wall-local state plus wall-specific split-on-delete behavior and kind semantics.
 - `WallKind` — shared wall behavior definition used by `Wall`.
 
 ## Where New Code Goes

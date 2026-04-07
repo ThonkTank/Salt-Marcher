@@ -8,7 +8,7 @@ This file covers `src/features/world/dungeonmap/structure/model/boundary/door/`.
 
 ## Canonical Types and APIs
 
-- `Door` — single-door owner — owns door-local segment identity, anchor repair, clipping, removal semantics, translation, and persisted segment access.
+- `Door` — single-door owner — extends the internal `BoundaryObject` base and owns door-local state plus door-specific removal semantics and passage blocking.
 - `DoorRef` — stable reference to one persisted door.
 
 ## Where New Code Goes

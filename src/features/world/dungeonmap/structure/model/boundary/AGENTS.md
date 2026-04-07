@@ -9,6 +9,7 @@ This file covers `src/features/world/dungeonmap/structure/model/boundary/`.
 
 ## Canonical Types and APIs
 
+- `BoundaryObject` — internal shared base for `Door` and `Wall` — owns duplicated anchor, boundary-segment, clipping, and component helpers; callers must not widen onto it.
 - `StructureBoundary` — level-local boundary aggregate — owns boundary edges, the aggregate wall/door collections, wall-kind lookups, cross-object boundary rules, and the boundary persistence snapshot.
 - `door/Door`, `door/DoorRef` — single-door owner plus stable reference — own door-local clipping, segment removal, anchor repair, and persisted segment access.
 - `wall/Wall`, `wall/WallKind` — single-wall owner plus shared wall-kind definition — own wall-local clipping, split-on-delete behavior, anchor repair, and persisted segment access.
@@ -18,6 +19,7 @@ This file covers `src/features/world/dungeonmap/structure/model/boundary/`.
 
 - Put boundary-local state, mutation, and persistence shape here.
 - Keep callers on `Structure.boundaryAtLevel(levelZ)` and let that hand them this owner.
+- Put duplicated door/wall object mechanics on `BoundaryObject` before copying them between `Door` and `Wall`.
 - Put door-specific rewrite, clipping, and anchor normalization on `door/Door`.
 - Put wall-specific rewrite, clipping, split, and anchor normalization on `wall/Wall`.
 - Keep boundary persistence shaped like the runtime owner so repositories save and reload the same concept graph with minimal conversion.
@@ -26,5 +28,6 @@ This file covers `src/features/world/dungeonmap/structure/model/boundary/`.
 
 - Do not mirror boundary state or mutations back onto `Structure`, `StructureRoomTopology`, `RoomCluster`, `DungeonLayout`, or renderer helpers.
 - Do not move door- or wall-owned primitives back into the flat `structure/model/` package.
+- Do not expose `BoundaryObject` as a new public working surface for callers; it is an internal implementation seam only.
 - Do not rebuild door or wall edits from raw `EdgeShape` surgery in `StructureBoundary`, `RoomCluster`, `Corridor`, repositories, or shell helpers when `Door` and `Wall` already expose the needed API.
 - Do not introduce a second boundary persistence DTO outside this sub-owner when `StructureBoundary.PersistenceSnapshot` already describes the persisted boundary state.
