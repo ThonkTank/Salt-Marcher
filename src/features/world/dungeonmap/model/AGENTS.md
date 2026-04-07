@@ -11,7 +11,7 @@ This package is the current home of layout, geometry, interaction refs, and aggr
 - `DungeonLayout` — loaded map snapshot — resolves cross-owner lookups, traversal, and canonical door or structure queries.
 - `RoomCluster` — cluster aggregate — owns cluster-level room behavior over canonical `structure` truth.
 - `Corridor` — corridor aggregate — owns corridor routing, path traces, segments, nodes, and realized corridor topology over canonical `structure` truth.
-- `DungeonStair` — stair aggregate — owns authored stair behavior and validation over stair path truth.
+- `DungeonStair` — stair aggregate — owns authored stair behavior, stair path geometry, and exit validation.
 
 ## Where New Code Goes
 

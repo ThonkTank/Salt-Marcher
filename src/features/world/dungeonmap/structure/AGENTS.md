@@ -6,6 +6,13 @@ This file covers `src/features/world/dungeonmap/structure/`. Use it together wit
 
 This package is the current home of the `structure` owner slice. It owns shared physical dungeon topology and the persistence that keeps that topology canonical across room and corridor owners.
 
+## Owner Atlas
+
+- `Structure` — single owner of the concrete topology aggregate shared by room clusters and corridors.
+- `StructureRoomTopology` — structure-owned room projection over persisted room metadata and reachable surface.
+- `DungeonStructureRepository` — canonical persistence seam for concrete structure snapshots.
+- `DungeonWallKindRepository` — wall-kind catalog seam consumed by structure persistence and loading.
+
 ## Canonical Types and APIs
 
 - `Structure` — shared physical structure aggregate — owns surface, floor, wall, door, and attached room-topology state.
@@ -18,10 +25,12 @@ This package is the current home of the `structure` owner slice. It owns shared 
 
 - Put shared physical topology, boundary identity, and shared room-projection logic here.
 - Keep room- or corridor-specific workflow logic in their owners; only the reused physical structure truth belongs here.
+- Keep stair path geometry on the `stair` owner and corridor path traces on the `corridor` owner; `structure` only owns the realized physical topology they reference.
 - Keep internal mutation and invariant protection on `Structure` and related owner types. Value carriers under this slice may stay transparent only when they are immutable transport or geometry shapes.
 
 ## Forbidden Drift
 
 - Do not mirror shared physical topology into room, corridor, runtime, renderer, or storage helper types.
 - Do not bypass `Structure` by letting consumers patch wall, door, or floor state through ad-hoc writable data structures.
+- Do not pull corridor routing traces or stair geometry back into `Structure`.
 - Do not create a second persistence path for shared structure truth outside this slice.

@@ -11,8 +11,8 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `layout` — map loading, authoritative rebuilds, shared lookups, and cross-owner navigation queries. Current homes: `model/DungeonLayout`, `loading/`, `state/DungeonMapState`, `repository/DungeonLayoutRepository`.
 - `structure` — shared physical topology for clusters and corridors, including doors, walls, floors, and room projection over physical structure. Current homes: `structure/model`, `structure/repository`.
 - `room` — room metadata plus cluster-level room behavior over shared structure truth. Current homes: `model/structures/room`, `model/structures/cluster`, `application/room`, `repository/DungeonRoomRepository`.
-- `corridor` — corridor routing, corridor-specific behavior, and realized corridor topology over shared structure truth. Current homes: `model/structures/corridor`, `application/corridor`, `repository/DungeonCorridorRepository`.
-- `stair` — authored stair topology, editor drafts, and stair persistence. Current homes: `model/structures/stair`, `application/stair`, `repository/DungeonStairRepository`.
+- `corridor` — corridor routing, path traces, corridor-specific behavior, and realized corridor topology over shared structure truth. Current homes: `model/structures/corridor`, `application/corridor`, `repository/DungeonCorridorRepository`.
+- `stair` — authored stair topology, stair path and exit geometry, editor drafts, and stair persistence. Current homes: `model/structures/stair`, `application/stair`, `repository/DungeonStairRepository`.
 - `transition` — inter-map exits and their placement workflows. Current homes: `model/structures/transition`, `application/transition`, `repository/DungeonTransitionRepository`.
 - `runtime` — party navigation, runtime action resolution, and runtime description projection. Current homes: `application/runtime`, `shell/runtime`, `state/DungeonRuntimeState`.
 - `editor interaction` — editor hit resolution, tool dispatch, hover or preview intent, and selection semantics. Current homes: `shell/interaction`, `shell/editor/interaction`, parts of `state/`.
@@ -25,7 +25,7 @@ These owner slices are the target architecture. The package names above are curr
 
 - `DungeonLayout` — loaded map snapshot — resolves canonical room, corridor, stair, transition, door, and traversal lookups.
 - `DungeonMapLoadingService` — map selection plus authoritative load or reload — updates `DungeonMapState` and is the required post-write rebuild seam.
-- `DungeonRoomApplicationService` — room or cluster mutations — persists room-facing edits such as paint, floor, wall, door, move, and narration changes.
+- `DungeonRoomApplicationService` — current room or cluster workflow seam — persists room-facing metadata changes and still hosts the existing shared-topology editor write paths until a dedicated structure workflow owner exists.
 - `DungeonCorridorApplicationService` — corridor mutations — persists corridor creation, endpoint changes, node moves, and topology edits.
 - `DungeonStairApplicationService` — stair editor workflows — creates, updates, moves, deletes, and loads stair editor specs.
 - `DungeonTransitionApplicationService` — transition workflows — creates, places, deletes, and resolves transition targets.
@@ -33,6 +33,7 @@ These owner slices are the target architecture. The package names above are curr
 - `DungeonMapCatalogService` — catalog commands — creates, renames, and deletes maps.
 - `Structure` — canonical physical structure truth for clusters and corridors — owns surface, floor, wall, door, and attached room-topology state.
 - `StructureRoomTopology` — cluster-owned room projection over `Structure` — resolves room surfaces, anchors, adjacency, components, and local room-to-room connections.
+- `CorridorPathTrace` and `CorridorRouting` — corridor-owned routing projection seam — store traced corridor paths and derive realized corridor surface against shared structure truth.
 
 ## Where New Code Goes
 
@@ -50,4 +51,5 @@ These owner slices are the target architecture. The package names above are curr
 - Do not add a second shared physical topology owner beside `Structure` and `StructureRoomTopology`.
 - Do not duplicate room, corridor, stair, transition, or runtime semantics in tool-local state, render models, or storage helper types.
 - Do not create a new service, helper, support, or wrapper class before checking whether one of the documented owners already exposes the needed seam.
+- Do not document a future owner or workflow seam as canonical before it exists in code.
 - Do not create alternate load, repair, or compatibility paths outside `DungeonMapLoadingService` and the canonical owner workflows.
