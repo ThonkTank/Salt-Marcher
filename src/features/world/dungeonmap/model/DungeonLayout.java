@@ -126,6 +126,33 @@ public final class DungeonLayout {
             return room == null ? null : room.roomId();
         }
 
+        public boolean isRoomLocal() {
+            return role == DoorRole.ROOM_LOCAL;
+        }
+
+        public boolean isRoomExterior() {
+            return role == DoorRole.ROOM_EXTERIOR;
+        }
+
+        public boolean isCorridorBoundary() {
+            return role == DoorRole.CORRIDOR_BOUNDARY;
+        }
+
+        public boolean supportsTransitionPlacement() {
+            return connectionEndpoint() != null;
+        }
+
+        public ConnectionEndpoint connectionEndpoint() {
+            if (isRoomExterior()) {
+                Long roomId = roomId();
+                return roomId == null ? null : ConnectionEndpoint.room(roomId);
+            }
+            if (isCorridorBoundary()) {
+                return corridorId == null ? null : ConnectionEndpoint.corridor(corridorId);
+            }
+            return null;
+        }
+
         public DungeonSelectionRef ownerRef() {
             return switch (role) {
                 case ROOM_LOCAL -> clusterId == null ? null : new DungeonSelectionRef.ClusterRef(clusterId);
@@ -373,8 +400,16 @@ public final class DungeonLayout {
         return ref == null ? null : doorsById.get(ref.doorId());
     }
 
+    public Door resolveDoor(DungeonSelectionRef.DoorRef ref) {
+        return ref == null ? null : resolveDoor(new DoorRef(ref.doorId()));
+    }
+
     public DoorDescription describeDoor(DoorRef ref) {
         return ref == null ? null : doorDescriptionsById.get(ref.doorId());
+    }
+
+    public DoorDescription describeDoor(DungeonSelectionRef.DoorRef ref) {
+        return ref == null ? null : describeDoor(new DoorRef(ref.doorId()));
     }
 
     public DungeonSelectionRef.DoorRef doorSelectionRefAt(int levelZ, GridSegment2x segment2x) {
@@ -387,6 +422,22 @@ public final class DungeonLayout {
     public DoorDescription describeDoorAt(int levelZ, GridSegment2x segment2x) {
         DoorEntry entry = doorEntryAt(levelZ, segment2x);
         return entry == null ? null : entry.description();
+    }
+
+    public DoorDescription existingExteriorRoomDoor(DungeonSelectionRef.RoomBoundaryRef ref, int levelZ) {
+        if (ref == null) {
+            return null;
+        }
+        RoomBoundaryDescription boundary = describeRoomBoundary(ref, levelZ);
+        if (boundary == null || !boundary.exterior()) {
+            return null;
+        }
+        DoorDescription description = describeDoorAt(levelZ, ref.boundarySegment2x());
+        return description != null
+                && description.isRoomExterior()
+                && Objects.equals(description.roomId(), ref.roomId())
+                ? description
+                : null;
     }
 
     public Room findRoom(Long roomId) {
@@ -403,6 +454,10 @@ public final class DungeonLayout {
 
     public Connection connectionForDoor(DoorRef ref) {
         return ref == null ? null : connectionsByDoorId.get(ref.doorId());
+    }
+
+    public Connection connectionForDoor(DungeonSelectionRef.DoorRef ref) {
+        return ref == null ? null : connectionForDoor(new DoorRef(ref.doorId()));
     }
 
     public Connection connectionAt(int levelZ, GridSegment2x segment2x) {
@@ -585,10 +640,18 @@ public final class DungeonLayout {
      */
     public DungeonSelectionRef ownerRef(DungeonSelectionRef ref) {
         if (ref instanceof DungeonSelectionRef.DoorRef doorRef) {
-            DoorDescription description = describeDoor(new DoorRef(doorRef.doorId()));
+            DoorDescription description = describeDoor(doorRef);
             return description == null ? null : description.ownerRef();
         }
         return ref == null ? null : ref.ownerRef();
+    }
+
+    public boolean canAttachCorridor(DoorDescription description) {
+        if (description == null || !description.isRoomExterior()) {
+            return false;
+        }
+        RoomCluster cluster = findCluster(description.clusterId());
+        return cluster != null && cluster.canDeleteExteriorDoor(description.levelZ(), description.anchorSegment2x());
     }
 
     /**

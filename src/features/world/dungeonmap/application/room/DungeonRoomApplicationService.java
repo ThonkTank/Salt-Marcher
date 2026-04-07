@@ -795,7 +795,7 @@ public final class DungeonRoomApplicationService {
                         : layout.describeDoor(node.doorRef());
                 if (node != null
                         && description != null
-                        && description.role() == DungeonLayout.DoorRole.ROOM_EXTERIOR
+                        && description.isRoomExterior()
                         && Objects.equals(description.roomId(), room.roomId())
                         && description.anchorSegment2x().touchingCells().stream().anyMatch(removedFloorCells::contains)) {
                     throw new SQLException("Boden unter einem Corridor-Anker kann nicht entfernt werden.");

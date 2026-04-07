@@ -1258,11 +1258,10 @@ public final class TransitionTool implements EditorTool {
     ) {
         DungeonLayout.DoorDescription description = layout == null || doorRef == null
                 ? null
-                : layout.describeDoor(new DoorRef(doorRef.doorId()));
+                : layout.describeDoor(doorRef);
         return description != null
                 && description.levelZ() == levelZ
-                && (description.role() == DungeonLayout.DoorRole.ROOM_EXTERIOR
-                || description.role() == DungeonLayout.DoorRole.CORRIDOR_BOUNDARY);
+                && description.supportsTransitionPlacement();
     }
 
     private void refreshStatePane() {

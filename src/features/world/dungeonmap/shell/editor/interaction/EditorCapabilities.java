@@ -20,7 +20,7 @@ public final class EditorCapabilities {
     }
 
     public static EditorInteractionCapability owner(Predicate<DungeonSelectionRef> matcher) {
-        return owner(matcher, (ctx, hitRef) -> hitRef == null ? null : hitRef.ownerRef());
+        return owner(matcher, (ctx, hitRef) -> ctx == null ? null : ctx.ownerRef(hitRef));
     }
 
     public static EditorInteractionCapability owner(
@@ -109,7 +109,7 @@ public final class EditorCapabilities {
             return null;
         }
         DungeonSelectionRef hoverRef = switch (hoverScope) {
-            case OWNER -> resolvedRef == null ? hitRef.ownerRef() : resolvedRef;
+            case OWNER -> resolvedRef == null ? null : resolvedRef;
             case PART -> hitRef;
         };
         return hoverRef == null ? null : new EditorHover(hoverRef, hoverScope);

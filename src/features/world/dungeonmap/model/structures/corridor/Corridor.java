@@ -964,7 +964,7 @@ public final class Corridor {
         DungeonLayout.DoorDescription description = layout == null || doorRef == null ? null : layout.describeDoor(doorRef);
         if (description == null
                 || description.levelZ() != levelZ
-                || description.role() != DungeonLayout.DoorRole.ROOM_EXTERIOR
+                || !description.isRoomExterior()
                 || description.roomId() == null) {
             throw new IllegalArgumentException("Corridor door node must reference an existing exterior room door");
         }

@@ -117,13 +117,13 @@ public final class DoorTool implements EditorTool {
         return List.of(
                 EditorCapabilities.part(ref ->
                         ref instanceof DungeonSelectionRef.DoorRef doorRef
-                                && isLocalDoor(layout, doorRef)),
+                                && doorDescription(layout, doorRef, levelZ, DungeonLayout.DoorDescription::isRoomLocal) != null),
                 EditorCapabilities.part(ref ->
                         ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundary
-                                && ConnectionSurfaceSupport.isExistingExteriorRoomDoor(layout, roomBoundary, levelZ)),
+                                && layout.existingExteriorRoomDoor(roomBoundary, levelZ) != null),
                 EditorCapabilities.part(ref ->
                         ref instanceof DungeonSelectionRef.DoorRef doorRef
-                                && isExteriorDoor(layout, doorRef)),
+                                && doorDescription(layout, doorRef, levelZ, DungeonLayout.DoorDescription::isRoomExterior) != null),
                 EditorCapabilities.part(ref ->
                         ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundary
                                 && isEditableLocalDoorBoundary(
@@ -164,11 +164,13 @@ public final class DoorTool implements EditorTool {
             return false;
         }
         int levelZ = ctx == null || ctx.probe() == null ? mapState.activeProjectionLevel() : ctx.probe().levelZ();
-        if (hit instanceof DungeonSelectionRef.DoorRef doorHit && isLocalDoor(layout, doorHit)) {
+        if (hit instanceof DungeonSelectionRef.DoorRef doorHit
+                && doorDescription(layout, doorHit, levelZ, DungeonLayout.DoorDescription::isRoomLocal) != null) {
             applySelection(ctx.resolvedRef());
             return true;
         }
-        if (hit instanceof DungeonSelectionRef.DoorRef doorHit && isExteriorDoor(layout, doorHit)) {
+        if (hit instanceof DungeonSelectionRef.DoorRef doorHit
+                && doorDescription(layout, doorHit, levelZ, DungeonLayout.DoorDescription::isRoomExterior) != null) {
             state.selectRef(doorHit);
             return true;
         }
@@ -179,7 +181,7 @@ public final class DoorTool implements EditorTool {
         if (boundary == null || boundary.clusterId() == null) {
             return false;
         }
-        if (ConnectionSurfaceSupport.isExistingExteriorRoomDoor(layout, roomBoundaryHit, levelZ)) {
+        if (layout.existingExteriorRoomDoor(roomBoundaryHit, levelZ) != null) {
             state.selectRef(layout.doorSelectionRefAt(levelZ, roomBoundaryHit.boundarySegment2x()));
             return true;
         }
@@ -204,20 +206,29 @@ public final class DoorTool implements EditorTool {
             return false;
         }
         int levelZ = mapState.activeProjectionLevel();
-        if (hit instanceof DungeonSelectionRef.DoorRef doorHit
-                && isLocalDoor(layout, doorHit)) {
-            DungeonLayout.DoorDescription description = doorDescription(layout, doorHit);
-            deleteLocalDoor(description == null ? null : description.clusterId(), levelZ, anchorSegment(layout, doorHit));
-            return true;
-        }
-        if (hit instanceof DungeonSelectionRef.DoorRef doorHit
-                && isExteriorDoor(layout, doorHit)) {
-            DungeonLayout.DoorDescription description = doorDescription(layout, doorHit);
-            Room room = description == null ? null : layout.findRoom(description.roomId());
+        if (hit instanceof DungeonSelectionRef.DoorRef doorHit) {
+            DungeonLayout.DoorDescription localDoor = doorDescription(
+                    layout,
+                    doorHit,
+                    levelZ,
+                    DungeonLayout.DoorDescription::isRoomLocal);
+            if (localDoor != null) {
+                deleteLocalDoor(localDoor.clusterId(), levelZ, localDoor.anchorSegment2x());
+                return true;
+            }
+            DungeonLayout.DoorDescription exteriorDoor = doorDescription(
+                    layout,
+                    doorHit,
+                    levelZ,
+                    DungeonLayout.DoorDescription::isRoomExterior);
+            if (exteriorDoor == null) {
+                return false;
+            }
+            Room room = layout.findRoom(exteriorDoor.roomId());
             if (room == null) {
                 return false;
             }
-            deleteExteriorDoor(room.clusterId(), levelZ, anchorSegment(layout, doorHit));
+            deleteExteriorDoor(room.clusterId(), levelZ, exteriorDoor.anchorSegment2x());
             return true;
         }
         if (!(hit instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundaryHit)) {
@@ -225,7 +236,7 @@ public final class DoorTool implements EditorTool {
         }
         DungeonLayout.RoomBoundaryDescription boundary = layout.describeRoomBoundary(roomBoundaryHit, levelZ);
         if (boundary == null || boundary.clusterId() == null
-                || !ConnectionSurfaceSupport.isExistingExteriorRoomDoor(layout, roomBoundaryHit, levelZ)) {
+                || layout.existingExteriorRoomDoor(roomBoundaryHit, levelZ) == null) {
             return false;
         }
         deleteExteriorDoor(boundary.clusterId(), levelZ, roomBoundaryHit.boundarySegment2x());
@@ -321,49 +332,42 @@ public final class DoorTool implements EditorTool {
 
     private void renderExteriorDoorPane(DungeonSelectionRef.DoorRef doorRef) {
         DungeonLayout layout = mapState.activeMap();
-        DungeonLayout.DoorDescription description = doorDescription(layout, doorRef);
+        DungeonLayout.DoorDescription description = layout.describeDoor(doorRef);
         Room room = description == null ? null : layout.findRoom(description.roomId());
         summaryLabel.setText("Außentür");
         detailLabel.setText(room == null ? "Raum" : roomName(room.roomId()));
-        metaLabel.setText(segmentText(anchorSegment(layout, doorRef)));
+        metaLabel.setText(segmentText(description == null ? null : description.anchorSegment2x()));
     }
 
     private Connection selectedLocalDoor() {
         DungeonLayout layout = mapState.activeMap();
         if (!(state.selectedRef() instanceof DungeonSelectionRef.DoorRef doorRef)
-                || !isLocalDoor(layout, doorRef)) {
+                || doorDescription(layout, doorRef, mapState.activeProjectionLevel(), DungeonLayout.DoorDescription::isRoomLocal) == null) {
             return null;
         }
-        return layout.connectionForDoor(new DoorRef(doorRef.doorId()));
+        return layout.connectionForDoor(doorRef);
     }
 
     private DungeonSelectionRef.DoorRef selectedExteriorDoorRef() {
         DungeonLayout layout = mapState.activeMap();
         return state.selectedRef() instanceof DungeonSelectionRef.DoorRef doorRef
-                && isExteriorDoor(layout, doorRef)
+                && doorDescription(layout, doorRef, mapState.activeProjectionLevel(), DungeonLayout.DoorDescription::isRoomExterior) != null
                 ? doorRef
                 : null;
     }
 
-    private GridSegment2x anchorSegment(DungeonLayout layout, DungeonSelectionRef.DoorRef doorRef) {
-        DungeonLayout.DoorDescription description = doorDescription(layout, doorRef);
-        return description == null ? null : description.anchorSegment2x();
-    }
-
-    private static DungeonLayout.DoorDescription doorDescription(DungeonLayout layout, DungeonSelectionRef.DoorRef doorRef) {
-        return layout == null || doorRef == null
-                ? null
-                : layout.describeDoor(new DoorRef(doorRef.doorId()));
-    }
-
-    private static boolean isLocalDoor(DungeonLayout layout, DungeonSelectionRef.DoorRef doorRef) {
-        DungeonLayout.DoorDescription description = doorDescription(layout, doorRef);
-        return description != null && description.role() == DungeonLayout.DoorRole.ROOM_LOCAL;
-    }
-
-    private static boolean isExteriorDoor(DungeonLayout layout, DungeonSelectionRef.DoorRef doorRef) {
-        DungeonLayout.DoorDescription description = doorDescription(layout, doorRef);
-        return description != null && description.role() == DungeonLayout.DoorRole.ROOM_EXTERIOR;
+    private static DungeonLayout.DoorDescription doorDescription(
+            DungeonLayout layout,
+            DungeonSelectionRef.DoorRef doorRef,
+            int levelZ,
+            java.util.function.Predicate<DungeonLayout.DoorDescription> predicate
+    ) {
+        DungeonLayout.DoorDescription description = layout == null || doorRef == null ? null : layout.describeDoor(doorRef);
+        return description != null
+                && description.levelZ() == levelZ
+                && predicate.test(description)
+                ? description
+                : null;
     }
 
     private boolean isEditableLocalDoorBoundary(

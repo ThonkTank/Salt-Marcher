@@ -164,7 +164,7 @@ public final class SelectionTool implements EditorTool {
             state.selectRef(resolvedSelectionRef);
             return true;
         }
-        if (resolvedSelectionRef != null && resolvedSelectionRef.ownerRef() != null) {
+        if (resolvedSelectionRef != null && mapState.activeMap().ownerRef(resolvedSelectionRef) != null) {
             state.selectRef(resolvedSelectionRef);
             return true;
         }
@@ -555,10 +555,9 @@ public final class SelectionTool implements EditorTool {
                 session.levelZ(),
                 session.targetBoundaryRef().boundarySegment2x());
         if (corridor == null
-                || !ConnectionSurfaceSupport.isExistingExteriorRoomDoor(
-                session.baseMap(),
+                || session.baseMap().existingExteriorRoomDoor(
                 session.targetBoundaryRef(),
-                session.levelZ())
+                session.levelZ()) == null
                 || targetDoorRef == null) {
             return null;
         }
@@ -603,10 +602,9 @@ public final class SelectionTool implements EditorTool {
         DungeonSelectionRef.DoorRef targetDoorRef = session.baseMap().doorSelectionRefAt(
                 session.levelZ(),
                 session.targetBoundaryRef().boundarySegment2x());
-        if (!ConnectionSurfaceSupport.isExistingExteriorRoomDoor(
-                session.baseMap(),
+        if (session.baseMap().existingExteriorRoomDoor(
                 session.targetBoundaryRef(),
-                session.levelZ())
+                session.levelZ()) == null
                 || targetDoorRef == null) {
             return;
         }
@@ -810,17 +808,17 @@ public final class SelectionTool implements EditorTool {
         ) {
             DungeonLayout.DoorDescription description = baseMap == null || sourceRef == null
                     ? null
-                    : baseMap.describeDoor(new DoorRef(sourceRef.doorId()));
+                    : baseMap.describeDoor(sourceRef);
             if (description == null
                     || description.levelZ() != levelZ
-                    || description.role() == DungeonLayout.DoorRole.ROOM_EXTERIOR) {
+                    || description.isRoomExterior()) {
                 return null;
             }
             return new DoorDragSession(
                     baseMap,
                     levelZ,
-                    description.role() == DungeonLayout.DoorRole.ROOM_LOCAL ? description.clusterId() : null,
-                    description.role() == DungeonLayout.DoorRole.CORRIDOR_BOUNDARY ? description.corridorId() : null,
+                    description.isRoomLocal() ? description.clusterId() : null,
+                    description.isCorridorBoundary() ? description.corridorId() : null,
                     doorAnchorSegment(baseMap, sourceRef),
                     null);
         }
@@ -832,7 +830,7 @@ public final class SelectionTool implements EditorTool {
         if (resolvedLayout == null || doorRef == null) {
             return null;
         }
-        DungeonLayout.DoorDescription description = resolvedLayout.describeDoor(new DoorRef(doorRef.doorId()));
+        DungeonLayout.DoorDescription description = resolvedLayout.describeDoor(doorRef);
         return description == null ? null : description.anchorSegment2x();
     }
 }

@@ -19,4 +19,8 @@ public record EditorToolContext(
     public EditorToolContext {
         activeMap = activeMap == null ? DungeonLayout.empty() : activeMap;
     }
+
+    public DungeonSelectionRef ownerRef(DungeonSelectionRef ref) {
+        return activeMap.ownerRef(ref);
+    }
 }

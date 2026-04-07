@@ -304,11 +304,10 @@ public final class DungeonTransitionRepository {
                 if (description == null) {
                     throw new SQLException("Transition door placement references missing door " + doorId);
                 }
-                ConnectionEndpoint sourceEndpoint = switch (description.role()) {
-                    case ROOM_EXTERIOR -> ConnectionEndpoint.room(description.roomId());
-                    case CORRIDOR_BOUNDARY -> ConnectionEndpoint.corridor(description.corridorId());
-                    case ROOM_LOCAL -> throw new SQLException("Transition door placement may not bind to a local room door");
-                };
+                if (!description.supportsTransitionPlacement()) {
+                    throw new SQLException("Transition door placement may not bind to a local room door");
+                }
+                ConnectionEndpoint sourceEndpoint = description.connectionEndpoint();
                 yield new DungeonConnection(
                         ConnectionKind.TRANSITION,
                         transitionId,

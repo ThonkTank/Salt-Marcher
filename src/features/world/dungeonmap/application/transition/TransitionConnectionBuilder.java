@@ -43,18 +43,17 @@ public final class TransitionConnectionBuilder {
             throw new IllegalArgumentException("Kein aktiver Dungeon geladen");
         }
         if (sourceRef instanceof DungeonSelectionRef.DoorRef doorRef) {
-            DungeonLayout.DoorDescription description = layout.describeDoor(new DoorRef(doorRef.doorId()));
+            DungeonLayout.DoorDescription description = layout.describeDoor(doorRef);
             if (description == null || description.levelZ() != levelZ) {
                 throw new IllegalArgumentException("Tür-Übergänge benötigen eine vorhandene Tür");
             }
             if (occupiedByOtherConnection(layout.connectionForDoor(description.ref()))) {
                 throw new IllegalArgumentException("An dieser Grenze existiert bereits eine Verbindung");
             }
-            ConnectionEndpoint sourceEndpoint = switch (description.role()) {
-                case ROOM_EXTERIOR -> ConnectionEndpoint.room(description.roomId());
-                case CORRIDOR_BOUNDARY -> ConnectionEndpoint.corridor(description.corridorId());
-                case ROOM_LOCAL -> throw new IllegalArgumentException("Tür-Übergänge unterstützen keine lokalen Raumtüren");
-            };
+            if (!description.supportsTransitionPlacement()) {
+                throw new IllegalArgumentException("Tür-Übergänge unterstützen keine lokalen Raumtüren");
+            }
+            ConnectionEndpoint sourceEndpoint = description.connectionEndpoint();
             return transitionDoorConnection(
                     transitionId,
                     mapId,

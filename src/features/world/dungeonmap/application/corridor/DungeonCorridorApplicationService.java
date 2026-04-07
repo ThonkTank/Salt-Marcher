@@ -247,11 +247,10 @@ public final class DungeonCorridorApplicationService {
             throw new IllegalArgumentException("Corridor endpoint requires an existing exterior door");
         }
         DungeonLayout.DoorDescription description = layout.describeDoor(doorRef);
-        if (description == null || description.levelZ() != levelZ || description.role() != DungeonLayout.DoorRole.ROOM_EXTERIOR) {
+        if (description == null || description.levelZ() != levelZ || !description.isRoomExterior()) {
             throw new IllegalArgumentException("Korridore dürfen nur an vorhandene Außentüren andocken");
         }
-        RoomCluster cluster = layout.findCluster(description.clusterId());
-        if (cluster == null || !cluster.canDeleteExteriorDoor(levelZ, description.anchorSegment2x())) {
+        if (!layout.canAttachCorridor(description)) {
             throw new IllegalArgumentException("Korridore dürfen nur an vorhandene Außentüren andocken");
         }
         return description;
