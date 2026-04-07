@@ -74,7 +74,7 @@ public final class DoorExitCatalog {
                 if (segment2x == null) {
                     continue;
                 }
-                Set<GridPoint> touchingCells = segment2x.touchingCells().cells();
+                Set<GridPoint> touchingCells = segment2x.cellFootprint().cells();
                 if (touchingCells.size() != 2) {
                     continue;
                 }

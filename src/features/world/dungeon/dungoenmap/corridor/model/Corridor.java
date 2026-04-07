@@ -5,6 +5,7 @@ import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridBoundary;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
+import features.world.dungeon.geometry.GridTranslation;
 import features.world.dungeon.dungoenmap.structure.model.Structure;
 import features.world.dungeon.dungoenmap.structure.model.StructureSpecification;
 import features.world.dungeon.dungoenmap.structure.model.boundary.StructureBoundary;
@@ -314,8 +315,8 @@ public final class Corridor extends Structure {
             return this;
         }
         Corridor reboundCorridor = resolvedAgainst(input.updatedResolution(), updatedNodes, segments);
-        if ((input.translationDelta() == null || (input.translationDelta().cellX() == 0 && input.translationDelta().cellY() == 0))
-                && input.levelDelta() == 0
+        GridTranslation translation = input.translation() == null ? GridTranslation.none() : input.translation();
+        if (translation.isZero()
                 && !reboundCorridor.pathTraces().equals(pathTraces)) {
             throw new IllegalArgumentException("Corridor room rewrite may not reroute corridor");
         }

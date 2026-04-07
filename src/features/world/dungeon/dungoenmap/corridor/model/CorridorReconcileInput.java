@@ -1,6 +1,6 @@
 package features.world.dungeon.dungoenmap.corridor.model;
 
-import features.world.dungeon.geometry.GridPoint;
+import features.world.dungeon.geometry.GridTranslation;
 import features.world.dungeon.dungoenmap.structure.model.boundary.door.DoorRef;
 
 import java.util.LinkedHashMap;
@@ -15,8 +15,7 @@ public record CorridorReconcileInput(
         Set<Long> affectedRoomIds,
         Map<DoorRef, CorridorResolutionInput.ExteriorDoorInput> originalDoorsByRef,
         Map<DoorRef, CorridorResolutionInput.ExteriorDoorInput> updatedDoorsByRef,
-        GridPoint translationDelta,
-        int levelDelta,
+        GridTranslation translation,
         CorridorResolutionInput updatedResolution
 ) {
     public CorridorReconcileInput {

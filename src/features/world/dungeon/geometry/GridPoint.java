@@ -102,7 +102,7 @@ public final class GridPoint extends GridObject {
         return null;
     }
 
-    public GridArea touchingCells() {
+    GridArea touchingCells() {
         return GridArea.of(touchingCellSet());
     }
 

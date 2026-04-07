@@ -980,7 +980,7 @@ public final class DungeonClusterApplicationService {
                         && description != null
                         && description.isRoomExterior()
                         && Objects.equals(description.roomId(), room.roomId())
-                        && description.anchorSegment().touchingCells().cells().stream().anyMatch(removedFloorCells::contains)) {
+                        && description.anchorSegment().cellFootprint().cells().stream().anyMatch(removedFloorCells::contains)) {
                     throw new SQLException("Boden unter einem Corridor-Anker kann nicht entfernt werden.");
                 }
             }
@@ -989,7 +989,7 @@ public final class DungeonClusterApplicationService {
             if (transition != null
                     && transition.transitionId() != null
                     && transition.localConnection() != null
-                    && transition.localConnection().occupiedPositions(layout).stream()
+                    && transition.localConnection().cellFootprint(layout).cells().stream()
                     .filter(point -> point != null && point.z() == levelZ)
                     .anyMatch(removedFloorCells::contains)) {
                 throw new SQLException("Boden unter einem platzierten Übergang kann nicht entfernt werden.");

@@ -100,7 +100,7 @@ public final class GridSegment extends GridObject {
         return null;
     }
 
-    public GridArea touchingCells() {
+    GridArea touchingCells() {
         return GridArea.of(touchingCellSet());
     }
 
@@ -182,7 +182,7 @@ public final class GridSegment extends GridObject {
         if (!isBoundaryStep()) {
             return Set.of();
         }
-        return midpoint().touchingCells().cells();
+        return midpoint().cellFootprint().cells();
     }
 
     private int length2() {

@@ -2,6 +2,7 @@ package features.world.dungeon.dungoenmap.structure.model.boundary.door;
 
 import features.world.dungeon.geometry.GridBoundary;
 import features.world.dungeon.geometry.GridSegment;
+import features.world.dungeon.geometry.GridTranslatable;
 import features.world.dungeon.geometry.GridTranslation;
 import features.world.dungeon.dungoenmap.structure.model.boundary.BoundaryObject;
 
@@ -10,7 +11,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
-public final class Door extends BoundaryObject {
+public final class Door extends BoundaryObject implements GridTranslatable<Door> {
 
     private final DoorState doorState;
 
@@ -39,7 +40,8 @@ public final class Door extends BoundaryObject {
         return anchorSegmentInternal();
     }
 
-    public Door movedBy(GridTranslation translation) {
+    @Override
+    public Door translated(GridTranslation translation) {
         GridTranslation resolvedTranslation = translation == null ? GridTranslation.none() : translation;
         return resolvedTranslation.isZero()
                 ? this
@@ -83,8 +85,10 @@ public final class Door extends BoundaryObject {
         ArrayList<Door> result = new ArrayList<>();
         for (GridBoundary component : boundaryComponents(boundarySegments)) {
             if (!component.isEmpty()) {
-                GridSegment anchorSegment = component.segments().stream().sorted(GridSegment.ORDER).findFirst().orElse(null);
-                result.add(Door.fromBoundary(component, anchorSegment, doorState));
+                result.add(Door.fromBoundary(
+                        component,
+                        canonicalAnchorSegment(component.segments(), null),
+                        doorState));
             }
         }
         result.sort(Comparator.comparing(Door::anchorSegment, GridSegment.ORDER));

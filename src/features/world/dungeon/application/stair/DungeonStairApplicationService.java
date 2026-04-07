@@ -3,7 +3,7 @@ package features.world.dungeon.application.stair;
 import database.DatabaseManager;
 import features.world.dungeon.application.support.DungeonTransactionRunner;
 import features.world.dungeon.dungoenmap.model.DungeonMap;
-import features.world.dungeon.geometry.GridPoint;
+import features.world.dungeon.geometry.GridTranslation;
 import features.world.dungeon.model.structures.stair.DungeonStair;
 import features.world.dungeon.dungoenmap.repository.DungeonMapRepository;
 import features.world.dungeon.repository.DungeonStairRepository;
@@ -89,8 +89,7 @@ public final class DungeonStairApplicationService {
             throw new IllegalArgumentException("Treppe fehlt");
         }
         StairDraft resolvedDraft = Objects.requireNonNull(resolvedRequest.draft(), "draft");
-        if ((resolvedRequest.delta() == null || (resolvedRequest.delta().cellX() == 0 && resolvedRequest.delta().cellY() == 0))
-                && resolvedRequest.levelDelta() == 0) {
+        if (resolvedRequest.translation() == null || resolvedRequest.translation().isZero()) {
             return;
         }
         try (Connection conn = DatabaseManager.getConnection()) {
@@ -101,8 +100,7 @@ public final class DungeonStairApplicationService {
                 }
                 StairDraft movedDraft = StairDraftResolver.shiftedDraft(
                         resolvedDraft,
-                        resolvedRequest.delta(),
-                        resolvedRequest.levelDelta());
+                        resolvedRequest.translation());
                 DungeonStair stair = StairDraftResolver.resolveCommitted(
                         layout,
                         resolvedRequest.stairId(),
@@ -222,7 +220,7 @@ public final class DungeonStairApplicationService {
     public record UpdateStairRequest(long mapId, long stairId, StairDraft draft) {
     }
 
-    public record MoveStairRequest(long mapId, long stairId, StairDraft draft, GridPoint delta, int levelDelta) {
+    public record MoveStairRequest(long mapId, long stairId, StairDraft draft, GridTranslation translation) {
     }
 
     public record DeleteStairRequest(long mapId, long stairId) {

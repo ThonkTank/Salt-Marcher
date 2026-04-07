@@ -286,11 +286,11 @@ public final class StructureBoundary {
         return new StructureBoundary(
                 GridArea.of(surfaceCells).translated(resolvedTranslation).cells(),
                 doors.stream()
-                        .map(door -> door == null ? null : door.movedBy(resolvedTranslation))
+                        .map(door -> door == null ? null : door.translated(resolvedTranslation))
                         .filter(Objects::nonNull)
                         .toList(),
                 walls.stream()
-                        .map(wall -> wall == null ? null : wall.movedBy(resolvedTranslation))
+                        .map(wall -> wall == null ? null : wall.translated(resolvedTranslation))
                         .filter(Objects::nonNull)
                         .toList());
     }
@@ -445,7 +445,7 @@ public final class StructureBoundary {
         if (surfaceCells == null || surfaceCells.isEmpty() || segment == null) {
             return 0L;
         }
-        return segment.touchingCells().cells().stream().filter(surfaceCells::contains).count();
+        return segment.cellFootprint().cells().stream().filter(surfaceCells::contains).count();
     }
 
     private static List<Door> normalizeDoors(GridBoundary boundaryShape, Collection<Door> doors) {

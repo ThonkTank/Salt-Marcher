@@ -2,6 +2,7 @@ package features.world.dungeon.model.structures.connection;
 
 import features.world.dungeon.dungoenmap.model.DungeonMap;
 import features.world.dungeon.geometry.CardinalDirection;
+import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
 import features.world.dungeon.dungoenmap.structure.model.boundary.door.Door;
@@ -131,13 +132,13 @@ public interface Connection {
         return entryPoint(layout);
     }
 
-    default Set<GridPoint> occupiedPositions(DungeonMap layout) {
+    default GridArea cellFootprint(DungeonMap layout) {
         StairConnectionCarrier stairCarrier = stairCarrier();
         if (stairCarrier != null) {
-            return stairCarrier.stair().occupiedPositions();
+            return stairCarrier.stair().cellFootprint();
         }
         GridPoint focus = focusPosition(layout);
-        return focus == null ? Set.of() : Set.of(focus);
+        return focus == null ? GridArea.empty() : GridArea.of(Set.of(focus));
     }
 
     default ConnectionEndpoint entryEndpoint() {

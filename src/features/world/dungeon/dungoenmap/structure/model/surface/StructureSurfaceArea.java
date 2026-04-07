@@ -38,6 +38,17 @@ public final class StructureSurfaceArea extends StructureSurfaceObject {
         return resolvedArea.isEmpty() ? empty() : new StructureSurfaceArea(anchorCell, resolvedArea);
     }
 
+    static StructureSurfaceArea fromCells(
+            GridArea area,
+            GridPoint currentAnchorCell,
+            GridPoint preferredAnchorCell
+    ) {
+        GridArea resolvedArea = area == null ? GridArea.empty() : area;
+        return resolvedArea.isEmpty()
+                ? empty()
+                : new StructureSurfaceArea(resolveAnchor(resolvedArea, currentAnchorCell, preferredAnchorCell), resolvedArea);
+    }
+
     private StructureSurfaceArea(GridPoint anchorCell, GridArea area) {
         super(area);
         this.anchorCell = normalizeAnchor(anchorCell, area());
@@ -70,12 +81,7 @@ public final class StructureSurfaceArea extends StructureSurfaceObject {
         if (clippedArea.isEmpty()) {
             return empty();
         }
-        Set<GridPoint> clippedSurfaceCells = clippedArea.cells();
-        return fromCells(
-                preferredAnchor != null && clippedSurfaceCells.contains(preferredAnchor)
-                        ? preferredAnchor
-                        : clippedArea.center(),
-                clippedArea);
+        return fromCells(clippedArea, anchorCell, preferredAnchor);
     }
 
     PersistenceSnapshot persistenceSnapshot() {
@@ -113,5 +119,19 @@ public final class StructureSurfaceArea extends StructureSurfaceObject {
         }
         GridPoint center = area.center();
         return center == null ? null : center;
+    }
+
+    private static GridPoint resolveAnchor(
+            GridArea area,
+            GridPoint currentAnchorCell,
+            GridPoint preferredAnchorCell
+    ) {
+        if (area == null || area.isEmpty()) {
+            return null;
+        }
+        if (preferredAnchorCell != null && area.contains(preferredAnchorCell)) {
+            return preferredAnchorCell;
+        }
+        return normalizeAnchor(currentAnchorCell, area);
     }
 }

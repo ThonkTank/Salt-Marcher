@@ -111,7 +111,7 @@ public final class StructureRoomTopology {
                 clusterId,
                 movedStructure,
                 rooms().stream()
-                        .map(room -> room == null ? null : room.movedBy(resolvedTranslation))
+                        .map(room -> room == null ? null : room.translated(resolvedTranslation))
                         .toList());
     }
 

@@ -3,6 +3,7 @@ package features.world.dungeon.application.stair;
 import features.world.dungeon.dungoenmap.model.DungeonMap;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridPath;
+import features.world.dungeon.geometry.GridTranslation;
 import features.world.dungeon.dungoenmap.cluster.model.Cluster;
 import features.world.dungeon.model.structures.room.Room;
 import features.world.dungeon.model.structures.stair.DungeonStair;
@@ -96,23 +97,22 @@ public final class StairDraftResolver {
 
     public static DungeonStairApplicationService.StairDraft shiftedDraft(
             DungeonStairApplicationService.StairDraft draft,
-            GridPoint delta,
-            int levelDelta
+            GridTranslation translation
     ) {
         DungeonStairApplicationService.StairDraft resolvedDraft = Objects.requireNonNull(draft, "draft");
-        GridPoint resolvedDelta = delta == null ? GridPoint.cell(0, 0, 0) : delta;
+        GridTranslation resolvedTranslation = translation == null ? GridTranslation.none() : translation;
         return new DungeonStairApplicationService.StairDraft(
                 resolvedDraft.name(),
                 GridPoint.cell(
-                        resolvedDraft.anchorCell().cellX() + resolvedDelta.cellX(),
-                        resolvedDraft.anchorCell().cellY() + resolvedDelta.cellY(),
+                        resolvedDraft.anchorCell().cellX() + resolvedTranslation.dxCells(),
+                        resolvedDraft.anchorCell().cellY() + resolvedTranslation.dyCells(),
                         resolvedDraft.anchorCell().z()),
-                resolvedDraft.anchorLevelZ() + levelDelta,
+                resolvedDraft.anchorLevelZ() + resolvedTranslation.dzLevels(),
                 resolvedDraft.shapeSpec(),
-                resolvedDraft.minLevelZ() + levelDelta,
-                resolvedDraft.maxLevelZ() + levelDelta,
+                resolvedDraft.minLevelZ() + resolvedTranslation.dzLevels(),
+                resolvedDraft.maxLevelZ() + resolvedTranslation.dzLevels(),
                 resolvedDraft.stopLevels().stream()
-                        .map(level -> level == null ? null : level + levelDelta)
+                        .map(level -> level == null ? null : level + resolvedTranslation.dzLevels())
                         .filter(Objects::nonNull)
                         .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new)));
     }

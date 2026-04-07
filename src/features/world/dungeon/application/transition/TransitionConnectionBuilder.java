@@ -132,8 +132,8 @@ public final class TransitionConnectionBuilder {
             DungeonConnection candidate,
             Long ignoredTransitionId
     ) {
-        Set<GridPoint> occupiedPositions = candidate == null ? Set.of() : candidate.occupiedPositions(layout);
-        if (layout == null || occupiedPositions.isEmpty()) {
+        GridArea occupiedCells = candidate == null ? GridArea.empty() : candidate.cellFootprint(layout);
+        if (layout == null || occupiedCells.isEmpty()) {
             return;
         }
         boolean occupied = layout.transitions().stream()
@@ -142,8 +142,9 @@ public final class TransitionConnectionBuilder {
                 .filter(transition -> !Objects.equals(transition.transitionId(), ignoredTransitionId))
                 .map(DungeonTransition::localConnection)
                 .filter(Objects::nonNull)
-                .flatMap(connection -> connection.occupiedPositions(layout).stream())
-                .anyMatch(occupiedPositions::contains);
+                .map(connection -> connection.cellFootprint(layout))
+                .filter(Objects::nonNull)
+                .anyMatch(occupiedCells::overlaps);
         if (occupied) {
             throw new IllegalArgumentException("Ein anderer Übergang belegt bereits Teile dieser Treppe");
         }

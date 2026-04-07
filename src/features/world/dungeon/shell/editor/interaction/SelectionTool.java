@@ -180,11 +180,11 @@ public final class SelectionTool implements EditorTool {
             if (event == null || !event.isPrimaryButtonDown()) {
                 return false;
             }
-            GridPoint delta = deltaCell(event.gridCell(), stairDragSession.pressCell());
-            if (Objects.equals(delta, stairDragSession.currentDelta())) {
+            GridTranslation translation = dragTranslation(event.gridCell(), stairDragSession.pressCell());
+            if (Objects.equals(translation, stairDragSession.currentDelta())) {
                 return true;
             }
-            stairDragSession = stairDragSession.withCurrentDelta(delta);
+            stairDragSession = stairDragSession.withCurrentDelta(translation);
             DungeonMap preview = previewStairMap(stairDragSession);
             if (preview == null) {
                 state.clearPreview();
@@ -241,11 +241,11 @@ public final class SelectionTool implements EditorTool {
         if (dragSession == null || event == null || !event.isPrimaryButtonDown()) {
             return false;
         }
-        GridPoint delta = deltaCell(event.gridCell(), dragSession.pressCell());
-        if (Objects.equals(delta, dragSession.currentDelta())) {
+        GridTranslation translation = dragTranslation(event.gridCell(), dragSession.pressCell());
+        if (Objects.equals(translation, dragSession.currentDelta())) {
             return true;
         }
-        dragSession = dragSession.withCurrentDelta(delta);
+        dragSession = dragSession.withCurrentDelta(translation);
         state.showPreview(new EditorPreview.LayoutPreview(previewMap()));
         return true;
     }
@@ -317,16 +317,16 @@ public final class SelectionTool implements EditorTool {
         if (dragSession == null || event == null) {
             return false;
         }
-        GridPoint delta = deltaCell(event.gridCell(), dragSession.pressCell());
-        int levelDelta = dragSession.currentLevel() - dragSession.startLevel();
+        GridTranslation translation = dragSession.currentDelta()
+                .combinedWith(GridTranslation.levels(dragSession.currentLevel() - dragSession.startLevel()));
         Long mapId = dragSession.baseMap().mapId() > 0 ? dragSession.baseMap().mapId() : null;
         Long clusterId = dragSession.clusterId();
         state.clearPreview();
         dragSession = null;
-        if (mapId != null && clusterId != null && (delta.cellX() != 0 || delta.cellY() != 0 || levelDelta != 0)) {
+        if (mapId != null && clusterId != null && !translation.isZero()) {
             loadingService.submitMutation(
                     () -> {
-                        roomApplicationService.move(mapId, clusterId, GridTranslation.cells(delta.cellX(), delta.cellY(), levelDelta));
+                        roomApplicationService.move(mapId, clusterId, translation);
                         return mapId;
                     },
                     updatedMapId -> updatedMapId,
@@ -458,10 +458,8 @@ public final class SelectionTool implements EditorTool {
         }
         return dragSession.baseMap().withMovedCluster(
                 dragSession.clusterId(),
-                GridTranslation.cells(
-                        dragSession.currentDelta().cellX(),
-                        dragSession.currentDelta().cellY(),
-                        dragSession.currentLevel() - dragSession.startLevel()));
+                dragSession.currentDelta()
+                        .combinedWith(GridTranslation.levels(dragSession.currentLevel() - dragSession.startLevel())));
     }
 
     private DungeonMap previewStairMap(StairDragSession session) {
@@ -637,13 +635,13 @@ public final class SelectionTool implements EditorTool {
         if (session == null) {
             return;
         }
-        GridPoint delta = session.currentDelta();
-        int levelDelta = session.currentLevel() - session.startLevel();
+        GridTranslation translation = session.currentDelta()
+                .combinedWith(GridTranslation.levels(session.currentLevel() - session.startLevel()));
         Long mapId = session.baseMap().mapId() > 0 ? session.baseMap().mapId() : null;
         DungeonStairApplicationService.StairDraft movedDraft = movedStairDraft(session);
         if (mapId == null
                 || movedDraft == null
-                || (delta.cellX() == 0 && delta.cellY() == 0 && levelDelta == 0)
+                || translation.isZero()
                 || previewStairMap(session) == null) {
             return;
         }
@@ -653,8 +651,7 @@ public final class SelectionTool implements EditorTool {
                             mapId,
                             session.stairId(),
                             session.baseDraft(),
-                            delta,
-                            levelDelta));
+                            translation));
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,
@@ -671,8 +668,8 @@ public final class SelectionTool implements EditorTool {
         }
         return StairDraftResolver.shiftedDraft(
                 session.baseDraft(),
-                session.currentDelta(),
-                session.currentLevel() - session.startLevel());
+                session.currentDelta()
+                        .combinedWith(GridTranslation.levels(session.currentLevel() - session.startLevel())));
     }
 
     private DungeonSelectionRef.RoomBoundaryRef currentDoorTargetRef(
@@ -709,21 +706,20 @@ public final class SelectionTool implements EditorTool {
                 new DoorRef(doorRef.doorId()));
     }
 
-    private static GridPoint deltaCell(GridPoint currentCell, GridPoint startCell) {
-        GridTranslation translation = GridTranslation.betweenCells(startCell, currentCell);
-        return GridPoint.cell(translation.dxCells(), translation.dyCells(), 0);
+    private static GridTranslation dragTranslation(GridPoint currentCell, GridPoint startCell) {
+        return GridTranslation.betweenCells(startCell, currentCell);
     }
 
     private record ClusterDragSession(
             Long clusterId,
             DungeonMap baseMap,
             GridPoint pressCell,
-            GridPoint currentDelta,
+            GridTranslation currentDelta,
             int startLevel,
             int currentLevel
     ) {
-        private ClusterDragSession withCurrentDelta(GridPoint delta) {
-            return new ClusterDragSession(clusterId, baseMap, pressCell, delta, startLevel, currentLevel);
+        private ClusterDragSession withCurrentDelta(GridTranslation translation) {
+            return new ClusterDragSession(clusterId, baseMap, pressCell, translation, startLevel, currentLevel);
         }
 
         private ClusterDragSession withCurrentLevel(int nextLevel) {
@@ -736,7 +732,7 @@ public final class SelectionTool implements EditorTool {
                 GridPoint pressCell,
                 int startLevel
         ) {
-                return new ClusterDragSession(clusterId, baseMap, pressCell, GridPoint.cell(0, 0, 0), startLevel, startLevel);
+                return new ClusterDragSession(clusterId, baseMap, pressCell, GridTranslation.none(), startLevel, startLevel);
         }
     }
 
@@ -745,12 +741,12 @@ public final class SelectionTool implements EditorTool {
             DungeonMap baseMap,
             DungeonStairApplicationService.StairDraft baseDraft,
             GridPoint pressCell,
-            GridPoint currentDelta,
+            GridTranslation currentDelta,
             int startLevel,
             int currentLevel
     ) {
-        private StairDragSession withCurrentDelta(GridPoint delta) {
-            return new StairDragSession(stairId, baseMap, baseDraft, pressCell, delta, startLevel, currentLevel);
+        private StairDragSession withCurrentDelta(GridTranslation translation) {
+            return new StairDragSession(stairId, baseMap, baseDraft, pressCell, translation, startLevel, currentLevel);
         }
 
         private StairDragSession withCurrentLevel(int nextLevel) {
@@ -769,7 +765,7 @@ public final class SelectionTool implements EditorTool {
                     baseMap,
                     baseDraft,
                     pressCell,
-                    GridPoint.cell(0, 0, 0),
+                    GridTranslation.none(),
                     startLevel,
                     startLevel);
         }

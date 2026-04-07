@@ -91,7 +91,7 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
             }
             if (transition.localConnection().doorCarrier() != null) {
                 GridSegment anchorSegment = transition.localConnection().anchorSegment(layout);
-                if (anchorSegment == null || !anchorSegment.touchingCells().contains(probe.gridCell())) {
+                if (anchorSegment == null || !anchorSegment.cellFootprint().contains(probe.gridCell())) {
                     continue;
                 }
                 descriptors.add(new DungeonHitDescriptor(
@@ -101,7 +101,7 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
                                 transition.localConnection().levelZ()))));
                 continue;
             }
-            Set<GridPoint> occupiedCells = transition.localConnection().occupiedPositions(layout).stream()
+            Set<GridPoint> occupiedCells = transition.localConnection().cellFootprint(layout).cells().stream()
                     .filter(point -> point != null && point.z() == probe.levelZ())
                     .filter(cell -> cell.equals(probe.gridCell()))
                     .collect(java.util.stream.Collectors.toSet());

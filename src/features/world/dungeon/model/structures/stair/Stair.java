@@ -1,7 +1,10 @@
 package features.world.dungeon.model.structures.stair;
 
+import features.world.dungeon.geometry.GridArea;
+import features.world.dungeon.geometry.GridOccupant;
 import features.world.dungeon.geometry.GridPath;
 import features.world.dungeon.geometry.GridPoint;
+import features.world.dungeon.geometry.GridTranslatable;
 import features.world.dungeon.geometry.GridTranslation;
 
 import java.util.Collections;
@@ -14,7 +17,7 @@ import java.util.Set;
 /**
  * Passive stair object over canonical ordered path topology.
  */
-public final class Stair {
+public final class Stair implements GridTranslatable<Stair>, GridOccupant {
 
     private final GridPath path;
     private final Set<Integer> stopLevels;
@@ -46,17 +49,19 @@ public final class Stair {
         return path.levels();
     }
 
-    public Set<GridPoint> occupiedPositions() {
-        return path.cellFootprint().cells();
-    }
-
     public List<StairExit> exitsAtLevel(int levelZ) {
         return exits.stream()
                 .filter(exit -> exit.cell().z() == levelZ)
                 .toList();
     }
 
-    public Stair movedBy(GridTranslation translation) {
+    @Override
+    public GridArea cellFootprint() {
+        return path.cellFootprint();
+    }
+
+    @Override
+    public Stair translated(GridTranslation translation) {
         GridTranslation resolvedTranslation = translation == null ? GridTranslation.none() : translation;
         if (resolvedTranslation.isZero()) {
             return this;

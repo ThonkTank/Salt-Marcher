@@ -1,7 +1,10 @@
 package features.world.dungeon.model.structures.stair;
 
+import features.world.dungeon.geometry.GridArea;
+import features.world.dungeon.geometry.GridOccupant;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridPath;
+import features.world.dungeon.geometry.GridTranslatable;
 import features.world.dungeon.geometry.GridTranslation;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.model.interaction.InteractiveLabelHandle;
@@ -13,7 +16,7 @@ import java.util.Set;
 /**
  * Metadata owner for one persisted dungeon stair.
  */
-public final class DungeonStair {
+public final class DungeonStair implements GridTranslatable<DungeonStair>, GridOccupant {
 
     private final Long stairId;
     private final long mapId;
@@ -94,12 +97,13 @@ public final class DungeonStair {
         return stair.reachableLevels();
     }
 
-    public Set<GridPoint> occupiedPositions() {
-        return stair.occupiedPositions();
-    }
-
     public List<StairExit> exitsAtLevel(int levelZ) {
         return stair.exitsAtLevel(levelZ);
+    }
+
+    @Override
+    public GridArea cellFootprint() {
+        return stair.cellFootprint();
     }
 
     public InteractiveLabelHandle labelHandle(int levelZ) {
@@ -148,20 +152,13 @@ public final class DungeonStair {
                 + "]";
     }
 
-    public DungeonStair movedBy(GridTranslation translation) {
+    @Override
+    public DungeonStair translated(GridTranslation translation) {
         GridTranslation resolvedTranslation = translation == null ? GridTranslation.none() : translation;
         if (resolvedTranslation.isZero()) {
             return this;
         }
-        return new DungeonStair(stairId, mapId, name, stair.movedBy(resolvedTranslation));
-    }
-
-    public DungeonStair movedBy(int levelDelta) {
-        GridTranslation translation = new GridTranslation(0, 0, levelDelta);
-        if (translation.isZero()) {
-            return this;
-        }
-        return new DungeonStair(stairId, mapId, name, stair.movedBy(translation));
+        return new DungeonStair(stairId, mapId, name, stair.translated(resolvedTranslation));
     }
 
     private static String normalizeName(String name) {

@@ -182,7 +182,7 @@ public final class GridBoundary extends GridObject {
         int levelZ = 0;
         for (GridSegment segment : boundaryEdges) {
             levelZ = segment.start().z();
-            for (GridPoint cell : segment.touchingCells().cells()) {
+            for (GridPoint cell : segment.cellFootprint().cells()) {
                 minX = Math.min(minX, cell.cellX());
                 maxX = Math.max(maxX, cell.cellX());
                 minY = Math.min(minY, cell.cellY());

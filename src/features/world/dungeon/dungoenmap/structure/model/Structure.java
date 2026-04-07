@@ -472,7 +472,7 @@ public abstract class Structure {
         for (GridPoint point : points) {
             if (point != null) {
                 cellsByLevel.computeIfAbsent(point.z(), ignored -> new LinkedHashSet<>())
-                        .addAll(point.touchingCells().onLevel(point.z()).cells());
+                        .addAll(point.cellFootprint().onLevel(point.z()).cells());
             }
         }
         Map<Integer, StructureSpecification.LevelSpecification> levelsByZ = new LinkedHashMap<>();

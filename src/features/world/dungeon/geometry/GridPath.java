@@ -59,7 +59,7 @@ public final class GridPath extends GridObject {
     public GridArea cellFootprint() {
         LinkedHashSet<GridPoint> cells = new LinkedHashSet<>();
         for (GridPoint point : points) {
-            cells.addAll(point.touchingCells().cells());
+            cells.addAll(point.cellFootprint().cells());
         }
         return cells.isEmpty() ? GridArea.empty() : GridArea.of(cells);
     }

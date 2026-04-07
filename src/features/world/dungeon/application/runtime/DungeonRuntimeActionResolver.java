@@ -274,7 +274,7 @@ public final class DungeonRuntimeActionResolver {
                 .filter(transition -> transition != null)
                 .map(transition -> transition.localConnection() == null ? null : java.util.Map.entry(transition, transition.localConnection()))
                 .filter(Objects::nonNull)
-                .filter(entry -> entry.getValue().occupiedPositions(layout).stream()
+                .filter(entry -> entry.getValue().cellFootprint(layout).cells().stream()
                         .filter(point -> point != null && point.z() == levelZ)
                         .anyMatch(cells::contains))
                 .sorted(Comparator.comparing(entry -> entry.getKey().transitionId()))

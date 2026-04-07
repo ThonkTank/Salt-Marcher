@@ -152,10 +152,11 @@ public final class StructureSurface {
         Set<GridPoint> nextFloorCells = floorSyncPolicy == StructureMutation.FloorSyncPolicy.MATCH_SURFACE_EDIT
                 ? editedCells(floor.cells(), cells, mode)
                 : floor.cells();
-        return fromCells(
-                preferredAnchorCell(surface.anchorCell(), preferredAnchorCell, nextSurfaceCells),
+        StructureSurfaceArea nextSurface = StructureSurfaceArea.fromCells(
                 GridArea.of(nextSurfaceCells),
-                GridArea.of(nextFloorCells));
+                surface.anchorCell(),
+                preferredAnchorCell);
+        return fromSurfaceAndFloor(nextSurface, StructureFloor.fromCells(GridArea.of(nextFloorCells), nextSurface));
     }
 
     public StructureSurface editedFloorCells(GridArea cells, StructureMutation.CellEditMode mode) {
@@ -212,20 +213,6 @@ public final class StructureSurface {
             result.removeAll(normalizedEditedCells);
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
-    private static GridPoint preferredAnchorCell(
-            GridPoint currentAnchorCell,
-            GridPoint preferredAnchorCell,
-            Set<GridPoint> surfaceCells
-    ) {
-        if (preferredAnchorCell != null && surfaceCells.contains(preferredAnchorCell)) {
-            return preferredAnchorCell;
-        }
-        if (currentAnchorCell != null && surfaceCells.contains(currentAnchorCell)) {
-            return currentAnchorCell;
-        }
-        return surfaceCells.isEmpty() ? null : GridArea.of(surfaceCells).center();
     }
 
     private static Set<GridPoint> normalizedCells(GridArea area) {

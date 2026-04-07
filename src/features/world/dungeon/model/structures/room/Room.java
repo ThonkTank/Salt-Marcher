@@ -1,7 +1,8 @@
 package features.world.dungeon.model.structures.room;
 
-import features.world.dungeon.geometry.GridTranslation;
 import features.world.dungeon.geometry.GridPoint;
+import features.world.dungeon.geometry.GridTranslatable;
+import features.world.dungeon.geometry.GridTranslation;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -17,7 +18,7 @@ public record Room(
         String name,
         Map<Integer, GridPoint> anchorsByLevel,
         RoomNarration narration
-) {
+) implements GridTranslatable<Room> {
     public static Room metadata(
             Long roomId,
             long mapId,
@@ -65,7 +66,8 @@ public record Room(
         return anchorsByLevel.get(levelZ);
     }
 
-    public Room movedBy(GridTranslation translation) {
+    @Override
+    public Room translated(GridTranslation translation) {
         GridTranslation resolvedTranslation = translation == null ? GridTranslation.none() : translation;
         if (resolvedTranslation.isZero()) {
             return this;
@@ -81,14 +83,6 @@ public record Room(
                 name,
                 movedAnchors,
                 narration);
-    }
-
-    public Room movedToLevel(int targetPrimaryLevel) {
-        return movedBy(GridTranslation.cells(0, 0, targetPrimaryLevel - primaryLevel()));
-    }
-
-    public Room movedByLevel(int levelDelta) {
-        return movedBy(GridTranslation.cells(0, 0, levelDelta));
     }
 
     private static Map<Integer, GridPoint> normalizeAnchors(Map<Integer, GridPoint> anchorsByLevel) {

@@ -627,7 +627,7 @@ public final class DungeonMap {
         if (room == null || ref.boundarySegment() == null) {
             return null;
         }
-        for (GridPoint cell : ref.boundarySegment().touchingCells().cells().stream().sorted(GridPoint.ORDER).toList()) {
+        for (GridPoint cell : ref.boundarySegment().cellFootprint().cells().stream().sorted(GridPoint.ORDER).toList()) {
             if (!roomStructure(room).surfaceAtLevel(levelZ).surface().contains(cell)) {
                 continue;
             }
@@ -730,7 +730,7 @@ public final class DungeonMap {
         if (corridor == null || !corridor.boundaryAtLevel(levelZ).boundaryEdges().contains(ref.boundarySegment())) {
             return null;
         }
-        List<GridPoint> corridorCells = ref.boundarySegment().touchingCells().cells().stream()
+        List<GridPoint> corridorCells = ref.boundarySegment().cellFootprint().cells().stream()
                 .filter(cell -> corridor.surfaceAtLevel(levelZ).surface().contains(cell))
                 .sorted(GridPoint.ORDER)
                 .toList();
@@ -976,7 +976,7 @@ public final class DungeonMap {
         }
         for (Corridor corridor : corridors) {
             if (corridor != null && touchesAffectedRooms(corridor, affectedRoomIds)) {
-                corridor.validateReconcile(corridorReconcileInput(corridor, rewrittenMap, affectedRoomIds, null, 0));
+                corridor.validateReconcile(corridorReconcileInput(corridor, rewrittenMap, affectedRoomIds, GridTranslation.none()));
             }
         }
     }
@@ -988,7 +988,7 @@ public final class DungeonMap {
         ArrayList<Corridor> reboundCorridors = new ArrayList<>();
         for (Corridor corridor : corridors) {
             if (corridor != null && touchesAffectedRooms(corridor, affectedRoomIds)) {
-                reboundCorridors.add(corridor.reconciled(corridorReconcileInput(corridor, rewrittenMap, affectedRoomIds, null, 0)));
+                reboundCorridors.add(corridor.reconciled(corridorReconcileInput(corridor, rewrittenMap, affectedRoomIds, GridTranslation.none())));
             }
         }
         return reboundCorridors.isEmpty() ? List.of() : List.copyOf(reboundCorridors);
@@ -998,8 +998,7 @@ public final class DungeonMap {
             Corridor corridor,
             DungeonMap updatedMap,
             Set<Long> affectedRoomIds,
-            GridPoint translationDelta,
-            int levelDelta
+            GridTranslation translation
     ) {
         Corridor resolvedCorridor = Objects.requireNonNull(corridor, "corridor");
         DungeonMap resolvedUpdatedMap = Objects.requireNonNull(updatedMap, "updatedMap");
@@ -1011,8 +1010,7 @@ public final class DungeonMap {
                 affectedRoomIds,
                 exteriorDoorInputs(corridorLevel),
                 resolvedUpdatedMap.exteriorDoorInputs(corridorLevel),
-                translationDelta,
-                levelDelta,
+                translation,
                 updatedResolution);
     }
 
@@ -1294,9 +1292,8 @@ public final class DungeonMap {
         if (clusterId == null || cluster == null || resolvedTranslation.isZero()) {
             return this;
         }
-        GridPoint delta = GridPoint.cell(resolvedTranslation.dxCells(), resolvedTranslation.dyCells(), 0);
         int levelDelta = resolvedTranslation.dzLevels();
-        Cluster movedCluster = cluster.movedBy(resolvedTranslation);
+        Cluster movedCluster = cluster.translated(resolvedTranslation);
         List<Cluster> updatedClusters = clusters.stream()
                 .map(existing -> Objects.equals(clusterId, existing.clusterId()) ? movedCluster : existing)
                 .toList();
@@ -1322,7 +1319,7 @@ public final class DungeonMap {
         for (Corridor corridor : corridors) {
             Corridor updatedCorridor = corridor == null
                     ? null
-                    : corridor.reconciled(corridorReconcileInput(corridor, movedLayout, movedRoomIds, delta, levelDelta));
+                    : corridor.reconciled(corridorReconcileInput(corridor, movedLayout, movedRoomIds, resolvedTranslation));
             updatedCorridors.add(updatedCorridor);
             corridorsChanged |= updatedCorridor != corridor;
         }
@@ -1644,7 +1641,7 @@ public final class DungeonMap {
             return List.of();
         }
         LinkedHashSet<Room> rooms = new LinkedHashSet<>();
-        for (GridPoint cell : door.touchingCells().stream().sorted(GridPoint.ORDER).toList()) {
+        for (GridPoint cell : door.cellFootprint().cells().stream().sorted(GridPoint.ORDER).toList()) {
             Room room = cluster.roomTopology().roomAt(cell, levelZ);
             if (room != null) {
                 rooms.add(room);
@@ -1756,14 +1753,14 @@ public final class DungeonMap {
         }
         for (DungeonStair stair : stairs) {
             if (stair != null) {
-                result.addAll(stair.occupiedPositions());
+                result.addAll(stair.cellFootprint().cells());
             }
         }
         for (DungeonTransition transition : transitions) {
             if (transition == null || transition.localConnection() == null || transition.localConnection().stairCarrier() == null) {
                 continue;
             }
-            result.addAll(transition.localConnection().stairCarrier().stair().occupiedPositions());
+            result.addAll(transition.localConnection().stairCarrier().stair().cellFootprint().cells());
         }
         return Set.copyOf(result);
     }
@@ -1798,7 +1795,7 @@ public final class DungeonMap {
         }
         for (DungeonStair stair : stairs) {
             if (stair != null) {
-                for (GridPoint point : stair.occupiedPositions()) {
+                for (GridPoint point : stair.cellFootprint().cells()) {
                     if (point != null) {
                         mutable.computeIfAbsent(point.z(), ignored -> new LinkedHashSet<>())
                                 .add(point);
@@ -1868,7 +1865,7 @@ public final class DungeonMap {
             if (stair == null || stair.stairId() == null) {
                 continue;
             }
-            for (GridPoint point : stair.occupiedPositions()) {
+            for (GridPoint point : stair.cellFootprint().cells()) {
                 if (point == null) {
                     continue;
                 }
@@ -1886,7 +1883,7 @@ public final class DungeonMap {
             if (transition == null || transition.transitionId() == null || !transition.isPlaced()) {
                 continue;
             }
-            for (GridPoint point : transition.localConnection().occupiedPositions(this)) {
+            for (GridPoint point : transition.localConnection().cellFootprint(this).cells()) {
                 if (point == null) {
                     continue;
                 }

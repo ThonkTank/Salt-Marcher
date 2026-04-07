@@ -2,6 +2,7 @@ package features.world.dungeon.dungoenmap.structure.model.boundary;
 
 import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridBoundary;
+import features.world.dungeon.geometry.GridOccupant;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
 import features.world.dungeon.geometry.GridTranslation;
@@ -14,7 +15,7 @@ import java.util.Set;
 /**
  * Shared internal base for boundary-local single-object owners.
  */
-public abstract class BoundaryObject {
+public abstract class BoundaryObject implements GridOccupant {
 
     private final Long objectId;
     private final GridBoundary boundary;
@@ -56,22 +57,23 @@ public abstract class BoundaryObject {
         return !boundary.isEmpty();
     }
 
-    public final Set<GridPoint> touchingCells() {
+    @Override
+    public final GridArea cellFootprint() {
         if (!hasBoundarySegments()) {
-            return Set.of();
+            return GridArea.empty();
         }
         LinkedHashSet<GridPoint> result = new LinkedHashSet<>();
-        orderedBoundarySegments().forEach(segment -> segment.touchingCells().cells().stream()
+        orderedBoundarySegments().forEach(segment -> segment.cellFootprint().cells().stream()
                 .sorted(GridPoint.ORDER)
                 .forEach(result::add));
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+        return result.isEmpty() ? GridArea.empty() : GridArea.of(result);
     }
 
     public final boolean touchesAnyCell(GridArea cells) {
         if (cells == null || cells.isEmpty() || !hasBoundarySegments()) {
             return false;
         }
-        return touchingCells().stream().anyMatch(cells::contains);
+        return cellFootprint().overlaps(cells);
     }
 
     protected final List<GridSegment> translatedBoundarySegments(GridTranslation translation) {
@@ -104,13 +106,7 @@ public abstract class BoundaryObject {
     }
 
     protected final GridSegment repairedAnchorSegment(GridBoundary boundary) {
-        if (boundary == null || boundary.isEmpty()) {
-            return null;
-        }
-        if (anchorSegment != null && boundary.contains(anchorSegment)) {
-            return anchorSegment;
-        }
-        return boundary.segments().stream().sorted(GridSegment.ORDER).findFirst().orElse(null);
+        return canonicalAnchorSegment(boundary == null ? Set.of() : boundary.segments(), anchorSegment);
     }
 
     protected final boolean sameBaseState(BoundaryObject other) {
@@ -128,10 +124,17 @@ public abstract class BoundaryObject {
         return boundary.isEmpty() ? List.of() : boundary.components();
     }
 
-    private static GridSegment resolveAnchorSegment(GridSegment requestedAnchorSegment, Set<GridSegment> segments) {
-        if (requestedAnchorSegment != null && segments.contains(requestedAnchorSegment)) {
-            return requestedAnchorSegment;
+    protected static final GridSegment canonicalAnchorSegment(
+            Set<GridSegment> segments,
+            GridSegment preferredAnchorSegment
+    ) {
+        if (preferredAnchorSegment != null && segments.contains(preferredAnchorSegment)) {
+            return preferredAnchorSegment;
         }
         return segments.stream().sorted(GridSegment.ORDER).findFirst().orElse(null);
+    }
+
+    private static GridSegment resolveAnchorSegment(GridSegment requestedAnchorSegment, Set<GridSegment> segments) {
+        return canonicalAnchorSegment(segments, requestedAnchorSegment);
     }
 }

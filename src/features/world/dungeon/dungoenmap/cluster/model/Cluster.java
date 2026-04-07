@@ -4,6 +4,7 @@ import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridBoundary;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
+import features.world.dungeon.geometry.GridTranslatable;
 import features.world.dungeon.geometry.GridTranslation;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.model.interaction.InteractiveLabelHandle;
@@ -33,7 +34,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-public final class Cluster extends Structure {
+public final class Cluster extends Structure implements GridTranslatable<Cluster> {
 
     private final Long clusterId;
     private final Long structureObjectId;
@@ -228,7 +229,8 @@ public final class Cluster extends Structure {
         return false;
     }
 
-    public Cluster movedBy(GridTranslation translation) {
+    @Override
+    public Cluster translated(GridTranslation translation) {
         GridTranslation resolvedTranslation = translation == null ? GridTranslation.none() : translation;
         if (resolvedTranslation.isZero()) {
             return this;
@@ -239,7 +241,7 @@ public final class Cluster extends Structure {
                 clusterId,
                 structureObjectId,
                 mapId,
-                center.translated(GridTranslation.cells(resolvedTranslation.dxCells(), resolvedTranslation.dyCells(), 0)),
+                center.translated(GridTranslation.planar(resolvedTranslation.dxCells(), resolvedTranslation.dyCells())),
                 movedStructure,
                 movedStructure.roomTopology().rooms());
     }
@@ -324,7 +326,7 @@ public final class Cluster extends Structure {
         if (cluster == null || segment2x == null) {
             return null;
         }
-        List<GridPoint> touchingCells = segment2x.touchingCells().cells().stream()
+        List<GridPoint> touchingCells = segment2x.cellFootprint().cells().stream()
                 .sorted(GridPoint.ORDER)
                 .toList();
         if (touchingCells.size() != 2) {

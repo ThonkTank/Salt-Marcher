@@ -88,7 +88,7 @@ public final class CorridorRouting {
             return List.of(new AnchorAttachment(anchorPoint, List.of(anchorPoint)));
         }
         Set<GridPoint> blocked = blockedCells == null ? Set.of() : blockedCells.cells();
-        Set<GridPoint> candidates = anchorPoint.touchingCells().cells();
+        Set<GridPoint> candidates = anchorPoint.cellFootprint().cells();
         ArrayList<AnchorAttachment> attachments = new ArrayList<>();
         for (GridPoint candidate : candidates.stream().sorted(GridPoint.ORDER).toList()) {
             if (blocked.contains(candidate)) {
