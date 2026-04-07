@@ -1,6 +1,6 @@
 package features.world.api;
 
-import features.world.dungeonmap.bootstrap.DungeonMapModule;
+import features.world.dungeon.bootstrap.DungeonMapModule;
 import features.world.hexmap.api.HexMapModule;
 import ui.shell.AppView;
 import ui.shell.DetailsNavigator;

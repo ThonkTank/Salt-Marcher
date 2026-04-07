@@ -92,12 +92,12 @@ Left column is a VBox (Controls takes natural height, Main fills rest — not re
 - `src/features/partyanalysis/AGENTS.md` — party-analysis public-boundary rules
 - `src/features/world/AGENTS.md` — world feature boundary and subfeature ownership rules
 - `src/features/world/hexmap/AGENTS.md` — hex map and overworld-specific rules
-- `src/features/world/dungeonmap/AGENTS.md` — dungeonmap owner atlas and canonical dungeon seams
-- `src/features/world/dungeonmap/map/AGENTS.md` — map owner rules for loaded dungeon snapshots, load/reload workflows, and map session state
-- `src/features/world/dungeonmap/map/cluster/AGENTS.md` — cluster owner rules for top-level room-cluster aggregates, workflows, and persistence
-- `src/features/world/dungeonmap/map/corridor/AGENTS.md` — corridor owner rules for standalone corridor aggregates, workflows, and persistence
-- `src/features/world/dungeonmap/geometry/AGENTS.md` — canonical dungeon grid algebra and shared geometry rules
-- `src/features/world/dungeonmap/map/structure/AGENTS.md` — shared structure-topology owner rules and persistence seams
+- `src/features/world/dungeon/AGENTS.md` — dungeonmap owner atlas and canonical dungeon seams
+- `src/features/world/dungeon/dungoenmap/AGENTS.md` — map owner rules for loaded dungeon snapshots, load/reload workflows, and map session state
+- `src/features/world/dungeon/dungoenmap/cluster/AGENTS.md` — cluster owner rules for top-level room-cluster aggregates, workflows, and persistence
+- `src/features/world/dungeon/dungoenmap/corridor/AGENTS.md` — corridor owner rules for standalone corridor aggregates, workflows, and persistence
+- `src/features/world/dungeon/geometry/AGENTS.md` — canonical dungeon grid algebra and shared geometry rules
+- `src/features/world/dungeon/dungoenmap/structure/AGENTS.md` — shared structure-topology owner rules and persistence seams
 
 Non-feature local rules may also live under shared or tooling directories such as `src/shared/AGENTS.md` and `sync/AGENTS.md` when those directories need durable agent guidance.
 

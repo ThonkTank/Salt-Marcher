@@ -3,7 +3,7 @@ package database;
 import features.campaignstate.repository.CampaignStateSchemaSupport;
 import features.encounter.repository.EncounterSchemaSupport;
 import features.partyanalysis.model.AnalysisModelVersion;
-import features.world.dungeonmap.repository.DungeonStorageSupport;
+import features.world.dungeon.repository.DungeonStorageSupport;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
