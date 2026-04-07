@@ -47,7 +47,7 @@ public final class TransitionConnectionBuilder {
             if (description == null || description.levelZ() != levelZ) {
                 throw new IllegalArgumentException("Tür-Übergänge benötigen eine vorhandene Tür");
             }
-            if (occupiedByOtherConnection(layout.connectionAt(levelZ, description.anchorSegment2x()))) {
+            if (occupiedByOtherConnection(layout.connectionForDoor(description.ref()))) {
                 throw new IllegalArgumentException("An dieser Grenze existiert bereits eine Verbindung");
             }
             ConnectionEndpoint sourceEndpoint = switch (description.role()) {
@@ -60,7 +60,6 @@ public final class TransitionConnectionBuilder {
                     mapId,
                     levelZ,
                     description.ref(),
-                    description.anchorSegment2x(),
                     sourceEndpoint);
         }
         throw new IllegalArgumentException("Tür-Übergänge unterstützen nur vorhandene Türen");
@@ -105,7 +104,6 @@ public final class TransitionConnectionBuilder {
             long mapId,
             int levelZ,
             DoorRef doorRef,
-            features.world.dungeonmap.model.geometry.GridSegment2x anchorSegment2x,
             ConnectionEndpoint sourceEndpoint
     ) {
         return new DungeonConnection(

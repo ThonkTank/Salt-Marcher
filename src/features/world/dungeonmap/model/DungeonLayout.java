@@ -1313,9 +1313,24 @@ public final class DungeonLayout {
             if (connection == null || connection.doorRef() == null) {
                 continue;
             }
-            result.putIfAbsent(connection.doorRef().doorId(), connection);
+            Connection existing = result.putIfAbsent(connection.doorRef().doorId(), connection);
+            if (existing != null && !existing.equals(connection)) {
+                throw new IllegalStateException("Door " + connection.doorRef().doorId()
+                        + " is referenced by multiple connections: "
+                        + connectionKey(existing) + " and " + connectionKey(connection));
+            }
         }
         return Map.copyOf(result);
+    }
+
+    private static String connectionKey(Connection connection) {
+        if (connection == null) {
+            return "null";
+        }
+        return connection.kind()
+                + "(ownerId=" + connection.ownerId()
+                + ", levelZ=" + connection.levelZ()
+                + ")";
     }
 
     private static Map<ConnectionSegmentKey, Connection> indexConnectionsBySegmentAndLevel2x(
