@@ -8,9 +8,9 @@ import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.structure.model.Structure;
-import features.world.dungeonmap.structure.model.boundary.Door;
-import features.world.dungeonmap.structure.model.boundary.DoorRef;
 import features.world.dungeonmap.structure.model.boundary.StructureBoundary;
+import features.world.dungeonmap.structure.model.boundary.door.Door;
+import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionKind;
 import features.world.dungeonmap.model.structures.connection.DoorConnectionCarrier;
@@ -241,25 +241,16 @@ public final class Corridor {
         ArrayList<Door> nextDoors = new ArrayList<>();
         boolean changed = false;
         for (Door door : structure.boundaryAtLevel(levelZ).doors()) {
-            if (door == null || door.isEmpty()) {
+            if (door == null || !door.hasBoundarySegments()) {
                 continue;
             }
-            if (!door.segments2x().contains(boundarySegment2x)) {
+            if (!door.hasBoundarySegment(boundarySegment2x)) {
                 nextDoors.add(door);
                 continue;
             }
-            EdgeShape remaining = EdgeShape.fromBoundarySegments(door.segments2x()).without(List.of(boundarySegment2x));
-            List<EdgeShape> components = remaining.connectedComponents();
-            if (components.size() > 1) {
-                throw new IllegalArgumentException("Corridor door delete would split an existing door");
-            }
-            if (!components.isEmpty()) {
-                EdgeShape component = components.getFirst();
-                nextDoors.add(Door.fromShape(
-                        door.doorId(),
-                        component,
-                        component.contains(door.anchorSegment2x()) ? door.anchorSegment2x() : component.firstSegment2x(),
-                        door.doorState()));
+            Door updatedDoor = door.withoutBoundarySegments(List.of(boundarySegment2x));
+            if (updatedDoor != null) {
+                nextDoors.add(updatedDoor);
             }
             changed = true;
         }
@@ -719,7 +710,7 @@ public final class Corridor {
         }
         return doors.stream()
                 .filter(Objects::nonNull)
-                .filter(door -> door.segments2x().stream().anyMatch(segment2x ->
+                .filter(door -> door.boundarySegments().stream().anyMatch(segment2x ->
                         segment2x.touchingCells().stream().anyMatch(componentCells::contains)))
                 .toList();
     }
@@ -1052,7 +1043,7 @@ public final class Corridor {
         LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
         for (Door door : doors == null ? List.<Door>of() : doors) {
             if (door != null) {
-                result.addAll(door.segments2x());
+                result.addAll(door.boundarySegments());
             }
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);

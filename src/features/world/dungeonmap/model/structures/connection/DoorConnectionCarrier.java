@@ -1,6 +1,6 @@
 package features.world.dungeonmap.model.structures.connection;
 
-import features.world.dungeonmap.structure.model.boundary.DoorRef;
+import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
 
 import java.util.Objects;
 

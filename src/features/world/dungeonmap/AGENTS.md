@@ -7,7 +7,7 @@
 ## Owner Atlas
 
 - `layout` — `DungeonLayout`, `DungeonMapLoadingService`, `DungeonLayoutRepository`, `DungeonMapState`
-- `structure` — `Structure`, `StructureRoomTopology`, the local `surface` and `boundary` sub-owners, `DungeonStructureRepository`, `DungeonWallKindRepository`
+- `structure` — `Structure`, `StructureRoomTopology`, the local `surface` and `boundary` sub-owners plus boundary-local `door` and `wall` object sub-owners, `DungeonStructureRepository`, `DungeonWallKindRepository`
 - `room` — `Room`, `RoomCluster`, `DungeonRoomApplicationService`, `DungeonRoomRepository`
 - `corridor` — `Corridor`, `CorridorRouting`, `CorridorPathTrace`, `DungeonCorridorApplicationService`, `DungeonCorridorRepository`
 - `stair` — `DungeonStair`, `Stair`, `StairExit`, `DungeonStairApplicationService`, `DungeonStairRepository`
@@ -32,15 +32,17 @@
 
 - Put new behavior on the documented owner first.
 - Put shared physical topology on `structure`, not on room, corridor, runtime, or renderer helpers.
-- Route level-local surface behavior only through `structure.surfaceAtLevel(levelZ).something()`.
+- Route level-local surface-area behavior only through `structure.surfaceAtLevel(levelZ).surface().something()`.
+- Route level-local floor behavior only through `structure.surfaceAtLevel(levelZ).floor().something()`.
 - Route level-local wall, door, and boundary-edge behavior only through `structure.boundaryAtLevel(levelZ).something()`.
-- Keep shared structure persistence shaped like the runtime `Structure -> level -> surface + boundary` composition so save and reload do not rebuild a second flattened structure model.
+- Let door- and wall-specific edits terminate on the explicit `Door` and `Wall` APIs returned from that boundary owner instead of rebuilding raw `EdgeShape` surgery in callers.
+- Keep shared structure persistence shaped like the runtime `Structure -> level -> surface(surface area + floor) + boundary` composition so save and reload do not rebuild a second flattened structure model.
 - Route authoritative reloads through `DungeonMapLoadingService`.
 - Keep runtime-only semantics under `runtime` and gesture meaning under `editor interaction`.
 
 ## Forbidden Drift
 
-- Do not add a second shared physical topology owner beside `Structure`, `StructureSurface`, `StructureBoundary`, and `StructureRoomTopology`.
+- Do not add a second shared physical topology owner beside `Structure`, `StructureSurface`, `StructureSurfaceArea`, `StructureFloor`, `StructureBoundary`, and `StructureRoomTopology`.
 - Do not mirror room, corridor, stair, transition, or runtime semantics into tool-local state, render models, or storage helper types.
-- Do not add convenience wrapper APIs that mirror `StructureSurface` or `StructureBoundary` state on `Structure`, `RoomCluster`, `DungeonLayout`, renderer helpers, or other unrelated owners.
+- Do not add convenience wrapper APIs that mirror `StructureSurfaceArea`, `StructureFloor`, or `StructureBoundary` state on `Structure`, `RoomCluster`, `DungeonLayout`, renderer helpers, or other unrelated owners.
 - Do not create alternate load, repair, or compatibility paths outside `DungeonMapLoadingService` and the canonical owner workflows.

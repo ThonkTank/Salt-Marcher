@@ -7,7 +7,7 @@ import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.structure.model.Structure;
-import features.world.dungeonmap.structure.model.boundary.Door;
+import features.world.dungeonmap.structure.model.boundary.door.Door;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -41,7 +41,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
             if (door == null) {
                 continue;
             }
-            segments.addAll(door.segments2x());
+            segments.addAll(door.boundarySegments());
         }
         return Set.copyOf(segments);
     }
@@ -86,7 +86,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
             if (door == null) {
                 continue;
             }
-            for (GridSegment2x segment2x : door.segments2x()) {
+            for (GridSegment2x segment2x : door.boundarySegments()) {
                 DungeonSelectionRef.DoorRef ref = layout.doorSelectionRefAt(levelZ, segment2x);
                 if (ref == null) {
                     continue;

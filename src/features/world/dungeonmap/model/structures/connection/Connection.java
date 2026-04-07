@@ -4,8 +4,8 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.structure.model.boundary.Door;
-import features.world.dungeonmap.structure.model.boundary.DoorRef;
+import features.world.dungeonmap.structure.model.boundary.door.Door;
+import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -60,10 +60,10 @@ public interface Connection {
         if (door == null) {
             return Set.of();
         }
-        if (door.isEmpty()) {
+        if (!door.hasBoundarySegments()) {
             return Set.of();
         }
-        return Set.copyOf(new LinkedHashSet<>(door.segments2x()));
+        return door.boundarySegments();
     }
 
     default boolean blocksPassage(DungeonLayout layout) {

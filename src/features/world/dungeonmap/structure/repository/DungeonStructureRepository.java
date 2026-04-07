@@ -4,11 +4,13 @@ import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.structure.model.Structure;
-import features.world.dungeonmap.structure.model.boundary.Door;
 import features.world.dungeonmap.structure.model.boundary.StructureBoundary;
-import features.world.dungeonmap.structure.model.boundary.Wall;
-import features.world.dungeonmap.structure.model.boundary.WallKind;
+import features.world.dungeonmap.structure.model.boundary.door.Door;
+import features.world.dungeonmap.structure.model.boundary.wall.Wall;
+import features.world.dungeonmap.structure.model.boundary.wall.WallKind;
+import features.world.dungeonmap.structure.model.surface.StructureFloor;
 import features.world.dungeonmap.structure.model.surface.StructureSurface;
+import features.world.dungeonmap.structure.model.surface.StructureSurfaceArea;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -103,9 +105,9 @@ public final class DungeonStructureRepository {
                             "Structure " + structureId + " hat keine persistierten Surface-Zellen auf Ebene " + levelZ);
                 }
                 StructureSurface.PersistenceSnapshot surfaceSnapshot = new StructureSurface.PersistenceSnapshot(
-                        levelEntry.getValue(),
-                        surfaceCells,
-                        floorCellsByStructureId.getOrDefault(structureId, Map.of()).getOrDefault(levelZ, Set.of()));
+                        new StructureSurfaceArea.PersistenceSnapshot(levelEntry.getValue(), surfaceCells),
+                        new StructureFloor.PersistenceSnapshot(
+                                floorCellsByStructureId.getOrDefault(structureId, Map.of()).getOrDefault(levelZ, Set.of())));
                 StructureBoundary.PersistenceSnapshot boundarySnapshot = new StructureBoundary.PersistenceSnapshot(
                         doorsByStructureId.getOrDefault(structureId, Map.of()).getOrDefault(levelZ, List.of()),
                         wallsByStructureId.getOrDefault(structureId, Map.of()).getOrDefault(levelZ, List.of()));
@@ -143,7 +145,7 @@ public final class DungeonStructureRepository {
             StructureBoundary.PersistenceSnapshot boundary = level.boundary();
             ArrayList<Wall> persistedWalls = new ArrayList<>();
             for (Wall wall : boundary.authoredWalls()) {
-                if (wall == null || wall.isEmpty()) {
+                if (wall == null || !wall.hasBoundarySegments()) {
                     continue;
                 }
                 Wall persistedWall = wall;
@@ -155,7 +157,7 @@ public final class DungeonStructureRepository {
             }
             ArrayList<Door> persistedDoors = new ArrayList<>();
             for (Door door : boundary.doors()) {
-                if (door == null || door.isEmpty()) {
+                if (door == null || !door.hasBoundarySegments()) {
                     continue;
                 }
                 Door persistedDoor = door;
@@ -238,14 +240,16 @@ public final class DungeonStructureRepository {
                 int levelZ = entry.getKey();
                 Structure.LevelStructure.PersistenceSnapshot level = entry.getValue();
                 StructureSurface.PersistenceSnapshot surface = level.surface();
+                StructureSurfaceArea.PersistenceSnapshot area = surface.surface();
+                StructureFloor.PersistenceSnapshot floor = surface.floor();
                 StructureBoundary.PersistenceSnapshot boundary = level.boundary();
                 insertLevel.setLong(1, structureObjectId);
                 insertLevel.setInt(2, levelZ);
-                insertLevel.setInt(3, persistedCellX2(surface.anchorCell()));
-                insertLevel.setInt(4, persistedCellY2(surface.anchorCell()));
+                insertLevel.setInt(3, persistedCellX2(area.anchorCell()));
+                insertLevel.setInt(4, persistedCellY2(area.anchorCell()));
                 insertLevel.addBatch();
-                addCells(insertSurfaceCell, structureObjectId, levelZ, surface.surfaceCells());
-                addCells(insertFloorCell, structureObjectId, levelZ, surface.floorCells());
+                addCells(insertSurfaceCell, structureObjectId, levelZ, area.cells());
+                addCells(insertFloorCell, structureObjectId, levelZ, floor.cells());
                 addWalls(insertWall, insertWallSegment, structureObjectId, levelZ, boundary.authoredWalls());
                 addDoors(insertDoor, insertDoorSegment, structureObjectId, levelZ, boundary.doors());
             }
@@ -285,10 +289,10 @@ public final class DungeonStructureRepository {
             Collection<Wall> walls
     ) throws SQLException {
         for (Wall wall : walls == null ? List.<Wall>of() : walls) {
-            if (wall == null || wall.isEmpty() || wall.wallId() == null || wall.wallId() <= 0L) {
+            if (wall == null || !wall.hasBoundarySegments() || wall.wallId() == null || wall.wallId() <= 0L) {
                 throw new IllegalArgumentException("Persisted walls require a stable positive wall id");
             }
-            GridSegment2x anchorSegment2x = wall.anchorSegment2x() == null ? wall.firstSegment2x() : wall.anchorSegment2x();
+            GridSegment2x anchorSegment2x = wall.persistedAnchorSegment2x();
             insertWall.setLong(1, structureObjectId);
             insertWall.setLong(2, wall.wallId());
             insertWall.setInt(3, levelZ);
@@ -298,7 +302,7 @@ public final class DungeonStructureRepository {
             insertWall.setInt(7, anchorSegment2x.end().x2());
             insertWall.setInt(8, anchorSegment2x.end().y2());
             insertWall.addBatch();
-            for (GridSegment2x segment2x : wall.segments2x().stream().sorted(GridSegment2x.ORDER).toList()) {
+            for (GridSegment2x segment2x : wall.orderedBoundarySegments()) {
                 insertWallSegment.setLong(1, wall.wallId());
                 insertWallSegment.setInt(2, segment2x.start().x2());
                 insertWallSegment.setInt(3, segment2x.start().y2());
@@ -317,10 +321,10 @@ public final class DungeonStructureRepository {
             Collection<Door> doors
     ) throws SQLException {
         for (Door door : doors == null ? List.<Door>of() : doors) {
-            if (door == null || door.isEmpty() || door.doorId() == null || door.doorId() <= 0L) {
+            if (door == null || !door.hasBoundarySegments() || door.doorId() == null || door.doorId() <= 0L) {
                 throw new IllegalArgumentException("Persisted doors require a stable positive door id");
             }
-            GridSegment2x anchorSegment2x = door.anchorSegment2x() == null ? door.firstSegment2x() : door.anchorSegment2x();
+            GridSegment2x anchorSegment2x = door.persistedAnchorSegment2x();
             insertDoor.setLong(1, structureObjectId);
             insertDoor.setLong(2, door.doorId());
             insertDoor.setInt(3, levelZ);
@@ -330,7 +334,7 @@ public final class DungeonStructureRepository {
             insertDoor.setInt(7, anchorSegment2x.end().y2());
             insertDoor.setString(8, door.doorState().name());
             insertDoor.addBatch();
-            for (GridSegment2x segment2x : door.segments2x().stream().sorted(GridSegment2x.ORDER).toList()) {
+            for (GridSegment2x segment2x : door.orderedBoundarySegments()) {
                 insertDoorSegment.setLong(1, door.doorId());
                 insertDoorSegment.setInt(2, segment2x.start().x2());
                 insertDoorSegment.setInt(3, segment2x.start().y2());

@@ -1,4 +1,4 @@
-package features.world.dungeonmap.structure.model.boundary;
+package features.world.dungeonmap.structure.model.boundary.door;
 
 public record DoorRef(long doorId) {
 

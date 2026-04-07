@@ -5,6 +5,9 @@ import features.world.dungeonmap.model.geometry.EdgeShape;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.geometry.TileShape;
+import features.world.dungeonmap.structure.model.boundary.door.Door;
+import features.world.dungeonmap.structure.model.boundary.wall.Wall;
+import features.world.dungeonmap.structure.model.boundary.wall.WallKind;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -126,7 +129,7 @@ public final class StructureBoundary {
 
     public List<EdgeShape> doorComponentShapes() {
         return doors.stream()
-                .map(door -> EdgeShape.fromBoundarySegments(door.segments2x()))
+                .map(door -> EdgeShape.fromBoundarySegments(door.boundarySegments()))
                 .sorted(Comparator.comparing(EdgeShape::firstSegment2x, GridSegment2x.ORDER))
                 .toList();
     }
@@ -139,7 +142,7 @@ public final class StructureBoundary {
         LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
         for (Door door : doors) {
             if (door != null) {
-                result.addAll(door.segments2x());
+                result.addAll(door.boundarySegments());
             }
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
@@ -159,7 +162,7 @@ public final class StructureBoundary {
             return null;
         }
         for (Wall wall : walls) {
-            if (wall != null && wall.contains(segment2x)) {
+            if (wall != null && wall.hasBoundarySegment(segment2x)) {
                 return wall.wallKind();
             }
         }
@@ -456,23 +459,17 @@ public final class StructureBoundary {
             return List.of();
         }
         ArrayList<Door> result = new ArrayList<>();
-        EdgeShape resolvedBoundaryShape = EdgeShape.fromBoundarySegments(boundaryShape.segments2x());
+        List<GridSegment2x> resolvedBoundarySegments = boundaryShape.segments2x();
         for (Door door : doors) {
-            if (door == null || door.isEmpty()) {
+            Door normalizedDoor = door == null ? null : door.clippedToBoundary(resolvedBoundarySegments);
+            if (normalizedDoor == null) {
                 continue;
             }
-            EdgeShape clippedShape = resolvedBoundaryShape.intersection(door.segments2x());
-            if (clippedShape.isEmpty()) {
-                continue;
-            }
-            GridSegment2x anchorSegment2x = clippedShape.contains(door.anchorSegment2x())
-                    ? door.anchorSegment2x()
-                    : clippedShape.firstSegment2x();
-            Long doorId = door.doorId();
+            Long doorId = normalizedDoor.doorId();
             if (doorId == null || doorId == 0L) {
-                doorId = syntheticDoorId(clippedShape, anchorSegment2x, door.doorState());
+                doorId = syntheticDoorId(normalizedDoor);
             }
-            result.add(Door.fromShape(doorId, clippedShape, anchorSegment2x, door.doorState()));
+            result.add(normalizedDoor.withDoorId(doorId));
         }
         result.sort(Comparator.comparing(Door::anchorSegment2x, GridSegment2x.ORDER));
         return result.isEmpty() ? List.of() : List.copyOf(result);
@@ -484,24 +481,18 @@ public final class StructureBoundary {
         }
         ArrayList<Wall> result = new ArrayList<>();
         LinkedHashSet<GridSegment2x> occupiedSegments = new LinkedHashSet<>();
-        EdgeShape resolvedBoundaryShape = EdgeShape.fromBoundarySegments(boundaryShape.segments2x());
+        List<GridSegment2x> resolvedBoundarySegments = boundaryShape.segments2x();
         for (Wall wall : walls) {
-            if (wall == null || wall.isEmpty()) {
+            Wall normalizedWall = wall == null ? null : wall.clippedToBoundary(resolvedBoundarySegments);
+            if (normalizedWall == null) {
                 continue;
             }
-            EdgeShape clippedShape = resolvedBoundaryShape.intersection(wall.segments2x());
-            if (clippedShape.isEmpty()) {
-                continue;
-            }
-            for (GridSegment2x segment2x : clippedShape.segments2x()) {
+            for (GridSegment2x segment2x : normalizedWall.boundarySegments()) {
                 if (!occupiedSegments.add(segment2x)) {
                     throw new IllegalArgumentException("Authored walls may not overlap on the same boundary segment");
                 }
             }
-            GridSegment2x anchorSegment2x = clippedShape.contains(wall.anchorSegment2x())
-                    ? wall.anchorSegment2x()
-                    : clippedShape.firstSegment2x();
-            result.add(Wall.fromShape(wall.wallId(), clippedShape, anchorSegment2x, wall.wallKind()));
+            result.add(normalizedWall);
         }
         result.sort(Comparator.comparing(Wall::anchorSegment2x, GridSegment2x.ORDER));
         return result.isEmpty() ? List.of() : List.copyOf(result);
@@ -511,7 +502,7 @@ public final class StructureBoundary {
         LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
         for (Wall wall : walls == null ? List.<Wall>of() : walls) {
             if (wall != null) {
-                result.addAll(wall.segments2x());
+                result.addAll(wall.boundarySegments());
             }
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
@@ -526,10 +517,7 @@ public final class StructureBoundary {
             return existingWalls == null ? List.of() : List.copyOf(existingWalls);
         }
         ArrayList<Wall> result = new ArrayList<>(existingWalls == null ? List.<Wall>of() : existingWalls);
-        EdgeShape shape = EdgeShape.fromBoundarySegments(newSegments);
-        if (!shape.isEmpty()) {
-            result.add(Wall.fromShape(null, shape, shape.firstSegment2x(), WallKind.solid()));
-        }
+        result.addAll(Wall.fromBoundaryComponents(newSegments, WallKind.solid()));
         return result.stream()
                 .filter(Objects::nonNull)
                 .sorted(Comparator.comparing(Wall::anchorSegment2x, GridSegment2x.ORDER))
@@ -552,18 +540,8 @@ public final class StructureBoundary {
         }
         ArrayList<Wall> result = new ArrayList<>();
         for (Wall wall : existingWalls) {
-            if (wall == null || wall.isEmpty()) {
-                continue;
-            }
-            EdgeShape remainingShape = EdgeShape.fromBoundarySegments(wall.segments2x()).without(removedSegments);
-            List<EdgeShape> remainingComponents = remainingShape.connectedComponents();
-            for (int index = 0; index < remainingComponents.size(); index++) {
-                EdgeShape component = remainingComponents.get(index);
-                GridSegment2x anchorSegment2x = component.contains(wall.anchorSegment2x())
-                        ? wall.anchorSegment2x()
-                        : component.firstSegment2x();
-                Long wallId = index == 0 ? wall.wallId() : null;
-                result.add(Wall.fromShape(wallId, component, anchorSegment2x, wall.wallKind()));
+            if (wall != null) {
+                result.addAll(wall.withoutBoundarySegments(removedSegments));
             }
         }
         return result.stream()
@@ -577,19 +555,11 @@ public final class StructureBoundary {
             return List.of();
         }
         ArrayList<Door> result = new ArrayList<>();
-        EdgeShape boundaryShape = EdgeShape.fromBoundarySegments(boundaryEdges);
         for (Door door : doors) {
-            if (door == null || door.isEmpty()) {
-                continue;
+            Door clippedDoor = door == null ? null : door.clippedToBoundary(boundaryEdges);
+            if (clippedDoor != null) {
+                result.add(clippedDoor);
             }
-            EdgeShape clippedShape = boundaryShape.intersection(door.segments2x());
-            if (clippedShape.isEmpty()) {
-                continue;
-            }
-            GridSegment2x clippedAnchor = clippedShape.contains(door.anchorSegment2x())
-                    ? door.anchorSegment2x()
-                    : clippedShape.firstSegment2x();
-            result.add(Door.fromShape(door.doorId(), clippedShape, clippedAnchor, door.doorState()));
         }
         return result.isEmpty() ? List.of() : List.copyOf(result);
     }
@@ -599,28 +569,20 @@ public final class StructureBoundary {
             return List.of();
         }
         ArrayList<Wall> result = new ArrayList<>();
-        EdgeShape boundaryShape = EdgeShape.fromBoundarySegments(boundaryEdges);
         for (Wall wall : walls) {
-            if (wall == null || wall.isEmpty()) {
-                continue;
+            Wall clippedWall = wall == null ? null : wall.clippedToBoundary(boundaryEdges);
+            if (clippedWall != null) {
+                result.add(clippedWall);
             }
-            EdgeShape clippedShape = boundaryShape.intersection(wall.segments2x());
-            if (clippedShape.isEmpty()) {
-                continue;
-            }
-            GridSegment2x clippedAnchor = clippedShape.contains(wall.anchorSegment2x())
-                    ? wall.anchorSegment2x()
-                    : clippedShape.firstSegment2x();
-            result.add(Wall.fromShape(wall.wallId(), clippedShape, clippedAnchor, wall.wallKind()));
         }
         return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
-    private static long syntheticDoorId(EdgeShape shape, GridSegment2x anchorSegment2x, Door.DoorState doorState) {
+    private static long syntheticDoorId(Door door) {
         long result = 17L;
-        result = 31L * result + (doorState == null ? 0L : doorState.ordinal());
-        result = 31L * result + (anchorSegment2x == null ? 0L : anchorSegment2x.hashCode());
-        for (GridSegment2x segment2x : shape == null ? List.<GridSegment2x>of() : shape.segments2x()) {
+        result = 31L * result + (door == null || door.doorState() == null ? 0L : door.doorState().ordinal());
+        result = 31L * result + (door == null || door.persistedAnchorSegment2x() == null ? 0L : door.persistedAnchorSegment2x().hashCode());
+        for (GridSegment2x segment2x : door == null ? List.<GridSegment2x>of() : door.orderedBoundarySegments()) {
             result = 31L * result + segment2x.hashCode();
         }
         if (result == 0L) {

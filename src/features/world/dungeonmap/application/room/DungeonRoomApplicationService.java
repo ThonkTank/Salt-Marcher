@@ -5,8 +5,9 @@ import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.structure.model.boundary.DoorRef;
 import features.world.dungeonmap.structure.model.Structure;
+import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
+import features.world.dungeonmap.structure.model.surface.StructureSurface;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.DoorConnectionCarrier;
@@ -275,7 +276,8 @@ public final class DungeonRoomApplicationService {
                 continue;
             }
             Set<CellCoord> requestedCells = requestedByClusterId.getOrDefault(clusterId, Set.of());
-            Set<CellCoord> currentFloorCells = new LinkedHashSet<>(cluster.structure().surfaceAtLevel(levelZ).floorCells());
+            StructureSurface structureSurface = cluster.structure().surfaceAtLevel(levelZ);
+            Set<CellCoord> currentFloorCells = new LinkedHashSet<>(structureSurface.floor().cellCoords());
             Set<CellCoord> nextFloorCells = new LinkedHashSet<>(currentFloorCells);
             boolean changed;
             if (deleteFloor) {
@@ -291,7 +293,9 @@ public final class DungeonRoomApplicationService {
                     cluster.structureObjectId(),
                     cluster.mapId(),
                     cluster.center(),
-                    cluster.structure().withSurfaceAtLevel(levelZ, cluster.structure().surfaceAtLevel(levelZ).withFloorCells(nextFloorCells)),
+                    cluster.structure().withSurfaceAtLevel(
+                            levelZ,
+                            structureSurface.withFloor(structureSurface.floor().withCells(nextFloorCells, structureSurface.surface()))),
                     cluster.rooms());
             persistClusterRewrite(conn, mapId, workingLayout, List.of(cluster), List.of(updatedCluster));
             workingLayout = requireLayout(conn, mapId);

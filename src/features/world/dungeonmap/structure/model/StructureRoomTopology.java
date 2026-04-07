@@ -9,8 +9,8 @@ import features.world.dungeonmap.model.structures.connection.DoorConnectionCarri
 import features.world.dungeonmap.model.structures.connection.DungeonConnection;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
-import features.world.dungeonmap.structure.model.boundary.DoorRef;
-import features.world.dungeonmap.structure.model.boundary.Door;
+import features.world.dungeonmap.structure.model.boundary.door.Door;
+import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeonmap.structure.model.boundary.StructureBoundary;
 import features.world.dungeonmap.structure.model.surface.StructureSurface;
 
@@ -64,7 +64,7 @@ public final class StructureRoomTopology {
                 .toList();
         Map<Integer, Set<CellCoord>> remainingCellsByLevel = new LinkedHashMap<>();
         for (Integer levelZ : resolvedStructure.levels().stream().sorted().toList()) {
-            remainingCellsByLevel.put(levelZ, new LinkedHashSet<>(resolvedStructure.surfaceAtLevel(levelZ).cellCoords()));
+            remainingCellsByLevel.put(levelZ, new LinkedHashSet<>(resolvedStructure.surfaceAtLevel(levelZ).surface().cellCoords()));
         }
 
         List<Room> result = new ArrayList<>();
@@ -84,7 +84,8 @@ public final class StructureRoomTopology {
                     continue;
                 }
                 Set<CellCoord> roomCells = intersectCells(
-                        resolvedStructure.surfaceAtLevel(levelZ).reachableFrom(anchor, resolvedStructure.boundaryAtLevel(levelZ).boundaryEdges()),
+                        resolvedStructure.surfaceAtLevel(levelZ).surface()
+                                .reachableFrom(anchor, resolvedStructure.boundaryAtLevel(levelZ).boundaryEdges()),
                         remainingLevelCells);
                 if (roomCells.isEmpty()) {
                     continue;
@@ -112,7 +113,8 @@ public final class StructureRoomTopology {
                     break;
                 }
                 Set<CellCoord> roomCells = intersectCells(
-                        resolvedStructure.surfaceAtLevel(levelZ).reachableFrom(seed, resolvedStructure.boundaryAtLevel(levelZ).boundaryEdges()),
+                        resolvedStructure.surfaceAtLevel(levelZ).surface()
+                                .reachableFrom(seed, resolvedStructure.boundaryAtLevel(levelZ).boundaryEdges()),
                         unassigned);
                 if (roomCells.isEmpty()) {
                     unassigned.remove(seed);
@@ -250,7 +252,7 @@ public final class StructureRoomTopology {
 
     public List<Integer> roomRelevantLevels(Room room, CellCoord focusCell, int focusLevelZ) {
         Structure roomStructure = structureFor(room);
-        if (focusCell != null && roomStructure.surfaceAtLevel(focusLevelZ).contains(focusCell)) {
+        if (focusCell != null && roomStructure.surfaceAtLevel(focusLevelZ).surface().contains(focusCell)) {
             return List.of(focusLevelZ);
         }
         return roomStructure.levels().stream()
@@ -259,11 +261,11 @@ public final class StructureRoomTopology {
     }
 
     public CellCoord roomAnchorCellAtLevel(Room room, int levelZ) {
-        return structureFor(room).surfaceAtLevel(levelZ).anchorCell();
+        return structureFor(room).surfaceAtLevel(levelZ).surface().anchorCell();
     }
 
     public CellCoord roomAnchorCellAtLevel(Long roomId, int levelZ) {
-        return structureFor(roomId).surfaceAtLevel(levelZ).anchorCell();
+        return structureFor(roomId).surfaceAtLevel(levelZ).surface().anchorCell();
     }
 
     public CellCoord roomCenterCellAtLevel(Room room, int levelZ) {
@@ -275,39 +277,39 @@ public final class StructureRoomTopology {
     }
 
     public CellCoord roomSurfaceCenterCellAtLevel(Room room, int levelZ) {
-        return structureFor(room).surfaceAtLevel(levelZ).surfaceCenterCellCoord();
+        return structureFor(room).surfaceAtLevel(levelZ).surface().centerCellCoord();
     }
 
     public Set<CellCoord> roomCellsAtLevel(Room room, int levelZ) {
-        return structureFor(room).surfaceAtLevel(levelZ).cellCoords();
+        return structureFor(room).surfaceAtLevel(levelZ).surface().cellCoords();
     }
 
     public Set<CellCoord> roomCellsAtLevel(Long roomId, int levelZ) {
-        return structureFor(roomId).surfaceAtLevel(levelZ).cellCoords();
+        return structureFor(roomId).surfaceAtLevel(levelZ).surface().cellCoords();
     }
 
     public Set<CellCoord> roomFloorCellsAtLevel(Room room, int levelZ) {
-        return structureFor(room).surfaceAtLevel(levelZ).floorCells();
+        return structureFor(room).surfaceAtLevel(levelZ).floor().cellCoords();
     }
 
     public Set<CellCoord> roomFloorCellsAtLevel(Long roomId, int levelZ) {
-        return structureFor(roomId).surfaceAtLevel(levelZ).floorCells();
+        return structureFor(roomId).surfaceAtLevel(levelZ).floor().cellCoords();
     }
 
     public boolean roomContainsCell(Room room, CellCoord cell, int levelZ) {
-        return structureFor(room).surfaceAtLevel(levelZ).contains(cell);
+        return structureFor(room).surfaceAtLevel(levelZ).surface().contains(cell);
     }
 
     public boolean roomContainsCell(Long roomId, CellCoord cell, int levelZ) {
-        return structureFor(roomId).surfaceAtLevel(levelZ).contains(cell);
+        return structureFor(roomId).surfaceAtLevel(levelZ).surface().contains(cell);
     }
 
     public boolean roomHasFloorCell(Room room, CellCoord cell, int levelZ) {
-        return structureFor(room).surfaceAtLevel(levelZ).hasFloorCell(cell);
+        return structureFor(room).surfaceAtLevel(levelZ).floor().contains(cell);
     }
 
     public boolean roomHasFloorCell(Long roomId, CellCoord cell, int levelZ) {
-        return structureFor(roomId).surfaceAtLevel(levelZ).hasFloorCell(cell);
+        return structureFor(roomId).surfaceAtLevel(levelZ).floor().contains(cell);
     }
 
     public Room findRoom(Long roomId) {
@@ -474,7 +476,7 @@ public final class StructureRoomTopology {
                     clusterStructure);
             for (Integer levelZ : roomStructure.levels()) {
                 for (Door door : roomStructure.boundaryAtLevel(levelZ).doors()) {
-                    if (door != null && !door.isEmpty()) {
+                    if (door != null && door.hasBoundarySegments()) {
                         String key = doorKey(levelZ, door);
                         if (seenKeys.add(key)) {
                             DoorComponent doorComponent = new DoorComponent(levelZ, door);
@@ -537,9 +539,7 @@ public final class StructureRoomTopology {
         StringBuilder builder = new StringBuilder();
         builder.append(levelZ).append(':');
         boolean first = true;
-        for (GridSegment2x segment2x : (door == null ? List.<GridSegment2x>of() : door.segments2x()).stream()
-                .sorted(GridSegment2x.ORDER)
-                .toList()) {
+        for (GridSegment2x segment2x : door == null ? List.<GridSegment2x>of() : door.orderedBoundarySegments()) {
             if (!first) {
                 builder.append('|');
             }
@@ -572,7 +572,8 @@ public final class StructureRoomTopology {
             if (clippedSurface.isEmpty()) {
                 continue;
             }
-            StructureBoundary clippedBoundary = clusterStructure.boundaryAtLevel(levelZ).clippedToSurface(clippedSurface.cellCoords());
+            StructureBoundary clippedBoundary = clusterStructure.boundaryAtLevel(levelZ)
+                    .clippedToSurface(clippedSurface.surface().cellCoords());
             levelsByZ.put(levelZ, Structure.LevelStructure.fromSurfaceAndBoundary(clippedSurface, clippedBoundary));
         }
         return levelsByZ.isEmpty() ? Structure.empty() : Structure.fromLevels(levelsByZ);

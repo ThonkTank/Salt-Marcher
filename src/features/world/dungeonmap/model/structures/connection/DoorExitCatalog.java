@@ -4,7 +4,7 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.structure.model.boundary.DoorRef;
+import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;

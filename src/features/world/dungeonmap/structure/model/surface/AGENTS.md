@@ -5,20 +5,27 @@ This file covers `src/features/world/dungeonmap/structure/model/surface/`.
 ## Purpose
 
 `surface` is the local sub-owner beneath `structure` for level-local anchor, surface-cell, and floor-cell truth.
+`StructureSurface` is the aggregate owner for that level-local truth; `StructureSurfaceArea` and `StructureFloor` are its local sub-owners.
 
 ## Canonical Types and APIs
 
-- `StructureSurface` — level-local surface owner — owns anchors, surface cells, floor cells, clipping, reachability, and surface-local mutations.
-- `StructureSurface.PersistenceSnapshot` — surface-owned persistence shape — mirrors the runtime surface state used for save and reload.
+- `StructureSurface` — level-local surface aggregate — owns the composed surface and floor state for one level and the surface-local persistence snapshot.
+- `StructureSurfaceArea` — surface-area owner — owns anchors, surface cells, clipping, reachability, and surface translation.
+- `StructureFloor` — floor owner — owns floor-cell truth constrained to one `StructureSurfaceArea`.
+- `StructureSurface.PersistenceSnapshot` — surface-owned aggregate persistence shape — composes `StructureSurfaceArea.PersistenceSnapshot` and `StructureFloor.PersistenceSnapshot`.
 
 ## Where New Code Goes
 
 - Put surface-local state, mutation, and persistence shape here.
-- Keep callers on `Structure.surfaceAtLevel(levelZ)` and let that hand them this owner.
+- Keep callers on `Structure.surfaceAtLevel(levelZ)` and then continue on `.surface()` or `.floor()`.
+- Put anchor and surface-cell behavior on `StructureSurfaceArea`.
+- Put floor-cell behavior on `StructureFloor`.
 - Keep surface persistence shaped like the runtime owner so repositories save and reload the same concept graph with minimal conversion.
 
 ## Forbidden Drift
 
 - Do not mirror surface state or mutations back onto `Structure`, `StructureRoomTopology`, `RoomCluster`, `DungeonLayout`, or renderer helpers.
 - Do not move surface-owned primitives back into the flat `structure/model/` package.
+- Do not keep `StructureSurfaceArea`- or `StructureFloor`-specific mutation logic on `StructureSurface` when the sub-owner can carry it directly.
+- Do not keep convenience mirrors like `StructureSurface.cellCoords()` or `StructureSurface.floorCells()` once `StructureSurfaceArea` and `StructureFloor` already expose that truth.
 - Do not introduce a second surface persistence DTO outside this sub-owner when `StructureSurface.PersistenceSnapshot` already describes the persisted surface state.

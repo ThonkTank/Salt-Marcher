@@ -1,11 +1,23 @@
-package features.world.dungeonmap.structure.model.boundary;
+package features.world.dungeonmap.structure.model.boundary.door;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.EdgeShape;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+
+/**
+ * Canonical single-door owner beneath {@code boundary}.
+ *
+ * <p>Door-specific clipping, segment removal, anchor repair, and persistence-facing segment access stay here so
+ * callers do not rebuild door edits from generic boundary-shape surgery.</p>
+ */
 
 public final class Door extends EdgeShape {
 
@@ -76,6 +88,29 @@ public final class Door extends EdgeShape {
         return anchorSegment2x;
     }
 
+    public GridSegment2x persistedAnchorSegment2x() {
+        return anchorSegment2x == null ? firstSegment2x() : anchorSegment2x;
+    }
+
+    public Set<GridSegment2x> boundarySegments() {
+        Set<GridSegment2x> segments = segmentSet2x();
+        return segments.isEmpty() ? Set.of() : Set.copyOf(new LinkedHashSet<>(segments));
+    }
+
+    public List<GridSegment2x> orderedBoundarySegments() {
+        return boundarySegments().stream()
+                .sorted(GridSegment2x.ORDER)
+                .toList();
+    }
+
+    public boolean hasBoundarySegment(GridSegment2x segment2x) {
+        return segment2x != null && contains(segment2x);
+    }
+
+    public boolean hasBoundarySegments() {
+        return !isEmpty();
+    }
+
     public Door movedBy(CellCoord delta) {
         CellCoord resolvedDelta = delta == null ? new CellCoord(0, 0) : delta;
         if (resolvedDelta.x() == 0 && resolvedDelta.y() == 0) {
@@ -101,6 +136,61 @@ public final class Door extends EdgeShape {
             return this;
         }
         return new Door(doorId, segments2x(), anchorSegment2x, resolvedDoorState);
+    }
+
+    public Door clippedToBoundary(Collection<GridSegment2x> boundarySegments) {
+        if (!hasBoundarySegments()) {
+            return null;
+        }
+        EdgeShape boundaryShape = EdgeShape.fromBoundarySegments(boundarySegments);
+        if (boundaryShape.isEmpty()) {
+            return null;
+        }
+        EdgeShape clippedShape = boundaryShape.intersection(boundarySegments());
+        if (clippedShape.isEmpty()) {
+            return null;
+        }
+        GridSegment2x clippedAnchor = clippedShape.contains(anchorSegment2x)
+                ? anchorSegment2x
+                : clippedShape.firstSegment2x();
+        return Door.fromShape(doorId, clippedShape, clippedAnchor, doorState);
+    }
+
+    public Door withoutBoundarySegments(Collection<GridSegment2x> removedBoundarySegments) {
+        if (!hasBoundarySegments()) {
+            return null;
+        }
+        EdgeShape remainingShape = EdgeShape.fromBoundarySegments(boundarySegments()).without(removedBoundarySegments);
+        List<EdgeShape> components = remainingShape.connectedComponents();
+        if (components.size() > 1) {
+            throw new IllegalArgumentException("Door edit would split an existing door");
+        }
+        if (components.isEmpty()) {
+            return null;
+        }
+        EdgeShape remainingComponent = components.getFirst();
+        GridSegment2x repairedAnchor = remainingComponent.contains(anchorSegment2x)
+                ? anchorSegment2x
+                : remainingComponent.firstSegment2x();
+        return Door.fromShape(doorId, remainingComponent, repairedAnchor, doorState);
+    }
+
+    public static List<Door> fromBoundaryComponents(
+            Collection<GridSegment2x> boundarySegments,
+            DoorState doorState
+    ) {
+        EdgeShape shape = EdgeShape.fromBoundarySegments(boundarySegments);
+        if (shape.isEmpty()) {
+            return List.of();
+        }
+        ArrayList<Door> result = new ArrayList<>();
+        for (EdgeShape component : shape.connectedComponents()) {
+            if (!component.isEmpty()) {
+                result.add(Door.fromShape(component, component.firstSegment2x(), doorState));
+            }
+        }
+        result.sort(Comparator.comparing(Door::anchorSegment2x, GridSegment2x.ORDER));
+        return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
     public DoorState doorState() {
@@ -147,14 +237,14 @@ public final class Door extends EdgeShape {
         if (!(other instanceof Door door)) {
             return false;
         }
-        return java.util.Objects.equals(doorId, door.doorId)
-                && java.util.Objects.equals(segments2x(), door.segments2x())
-                && java.util.Objects.equals(anchorSegment2x, door.anchorSegment2x)
+        return Objects.equals(doorId, door.doorId)
+                && Objects.equals(segments2x(), door.segments2x())
+                && Objects.equals(anchorSegment2x, door.anchorSegment2x)
                 && doorState == door.doorState;
     }
 
     @Override
     public int hashCode() {
-        return java.util.Objects.hash(doorId, segments2x(), anchorSegment2x, doorState);
+        return Objects.hash(doorId, segments2x(), anchorSegment2x, doorState);
     }
 }

@@ -4,7 +4,8 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
-import features.world.dungeonmap.structure.model.boundary.Door;
+import features.world.dungeonmap.structure.model.boundary.door.Door;
+import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
@@ -114,7 +115,7 @@ public final class DungeonSelectionHighlightResolver {
         if (corridor == null) {
             return List.of();
         }
-        Set<CellCoord> cells = corridor.structure().surfaceAtLevel(levelZ).cellCoords();
+        Set<CellCoord> cells = corridor.structure().surfaceAtLevel(levelZ).surface().cellCoords();
         return cells.isEmpty() ? List.of() : List.of(new DungeonHitSurface.CellSurface(cells, levelZ));
     }
 
@@ -176,13 +177,13 @@ public final class DungeonSelectionHighlightResolver {
             return List.of();
         }
         DungeonLayout.DoorDescription description = layout.describeDoor(
-                new features.world.dungeonmap.structure.model.boundary.DoorRef(doorRef.doorId()));
+                new DoorRef(doorRef.doorId()));
         if (description == null || description.levelZ() != levelZ) {
             return List.of();
         }
         Door door = description.door();
-        return door == null || door.isEmpty()
+        return door == null || !door.hasBoundarySegments()
                 ? List.of()
-                : List.of(new DungeonHitSurface.SegmentSurface(Set.copyOf(door.segments2x()), levelZ));
+                : List.of(new DungeonHitSurface.SegmentSurface(door.boundarySegments(), levelZ));
     }
 }

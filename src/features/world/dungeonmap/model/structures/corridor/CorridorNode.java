@@ -1,7 +1,7 @@
 package features.world.dungeonmap.model.structures.corridor;
 
 import features.world.dungeonmap.model.geometry.GridPoint2x;
-import features.world.dungeonmap.structure.model.boundary.DoorRef;
+import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
 
 import java.util.Objects;
 

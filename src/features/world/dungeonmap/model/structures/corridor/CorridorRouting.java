@@ -126,7 +126,7 @@ public final class CorridorRouting {
                 Map.of(levelZ, occupiedCells),
                 Map.of(levelZ, occupiedCells),
                 Map.of(levelZ, CellCoord.bestCenter(occupiedCells)));
-        Set<CellCoord> hydratedCells = CellCoord.normalize(structure.surfaceAtLevel(levelZ).cellCoords());
+        Set<CellCoord> hydratedCells = CellCoord.normalize(structure.surfaceAtLevel(levelZ).surface().cellCoords());
         if (!hydratedCells.equals(CellCoord.normalize(occupiedCells))) {
             throw new IllegalStateException("Corridor route projection changed the routed occupied cells");
         }

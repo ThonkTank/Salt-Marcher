@@ -8,12 +8,12 @@ import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 import features.world.dungeonmap.structure.model.Structure;
-import features.world.dungeonmap.structure.model.boundary.Door;
-import features.world.dungeonmap.structure.model.boundary.DoorRef;
 import features.world.dungeonmap.structure.model.boundary.StructureBoundary;
 import features.world.dungeonmap.structure.model.StructureRoomTopology;
-import features.world.dungeonmap.structure.model.boundary.Wall;
-import features.world.dungeonmap.structure.model.boundary.WallKind;
+import features.world.dungeonmap.structure.model.boundary.door.Door;
+import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
+import features.world.dungeonmap.structure.model.boundary.wall.Wall;
+import features.world.dungeonmap.structure.model.boundary.wall.WallKind;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionKind;
 import features.world.dungeonmap.model.structures.connection.DoorConnectionCarrier;
@@ -757,11 +757,7 @@ public final class RoomCluster {
                 return null;
             }
             ArrayList<Door> nextDoors = new ArrayList<>(cluster.structure().boundaryAtLevel(levelZ).doors());
-            for (EdgeShape component : EdgeShape.fromBoundarySegments(editableSegments).connectedComponents()) {
-                if (!component.isEmpty()) {
-                    nextDoors.add(Door.fromShape(component, component.firstSegment2x(), Door.DoorState.OPEN));
-                }
-            }
+            nextDoors.addAll(Door.fromBoundaryComponents(editableSegments, Door.DoorState.OPEN));
             return sortedDoors(nextDoors);
         }
 
@@ -783,24 +779,14 @@ public final class RoomCluster {
             boolean changed = false;
             ArrayList<Door> nextDoors = new ArrayList<>();
             for (Door door : cluster.structure().boundaryAtLevel(levelZ).doors()) {
-                if (door == null || door.isEmpty()) {
+                if (door == null || !door.hasBoundarySegments()) {
                     continue;
                 }
-                EdgeShape remainingShape = EdgeShape.fromBoundarySegments(door.segments2x()).without(removableSegments);
-                List<EdgeShape> remainingComponents = remainingShape.connectedComponents();
-                if (remainingComponents.size() > 1) {
-                    throw new IllegalArgumentException("Door edit would split an existing door");
-                }
-                if (remainingComponents.isEmpty()) {
+                Door updatedDoor = door.withoutBoundarySegments(removableSegments);
+                if (updatedDoor == null) {
                     changed = true;
                     continue;
                 }
-                EdgeShape remainingComponent = remainingComponents.getFirst();
-                Door updatedDoor = Door.fromShape(
-                        door.doorId(),
-                        remainingComponent,
-                        remainingComponent.contains(door.anchorSegment2x()) ? door.anchorSegment2x() : remainingComponent.firstSegment2x(),
-                        door.doorState());
                 nextDoors.add(updatedDoor);
                 changed |= !updatedDoor.equals(door);
             }
@@ -899,7 +885,7 @@ public final class RoomCluster {
             }
             Map<Integer, Set<CellCoord>> result = new LinkedHashMap<>();
             for (Integer levelZ : structure.levels().stream().sorted().toList()) {
-                Set<CellCoord> levelCells = structure.surfaceAtLevel(levelZ).cellCoords();
+                Set<CellCoord> levelCells = structure.surfaceAtLevel(levelZ).surface().cellCoords();
                 if (!levelCells.isEmpty()) {
                     result.put(levelZ, levelCells);
                 }
@@ -913,7 +899,7 @@ public final class RoomCluster {
             }
             Map<Integer, Set<CellCoord>> result = new LinkedHashMap<>();
             for (Integer levelZ : structure.levels().stream().sorted().toList()) {
-                Set<CellCoord> floorCells = structure.surfaceAtLevel(levelZ).floorCells();
+                Set<CellCoord> floorCells = structure.surfaceAtLevel(levelZ).floor().cellCoords();
                 if (!floorCells.isEmpty()) {
                     result.put(levelZ, floorCells);
                 }
@@ -934,7 +920,7 @@ public final class RoomCluster {
             for (Set<CellCoord> component : components) {
                 Map<Integer, Set<CellCoord>> componentByLevel = new LinkedHashMap<>();
                 for (Integer levelZ : structure.levels().stream().sorted().toList()) {
-                    Set<CellCoord> levelCells = intersectCells(structure.surfaceAtLevel(levelZ).cellCoords(), component);
+                    Set<CellCoord> levelCells = intersectCells(structure.surfaceAtLevel(levelZ).surface().cellCoords(), component);
                     if (!levelCells.isEmpty()) {
                         componentByLevel.put(levelZ, levelCells);
                     }
@@ -952,7 +938,7 @@ public final class RoomCluster {
             }
             LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
             for (Integer levelZ : structure.levels().stream().sorted().toList()) {
-                result.addAll(structure.surfaceAtLevel(levelZ).cellCoords());
+                result.addAll(structure.surfaceAtLevel(levelZ).surface().cellCoords());
             }
             return result.isEmpty() ? Set.of() : Set.copyOf(result);
         }
@@ -1130,14 +1116,14 @@ public final class RoomCluster {
                 Set<CellCoord> levelFloorCells = intersectCells(clusterFloorCellsByLevel.get(levelZ), levelComponentCells);
                 componentFloorCellsByLevel.put(levelZ, levelFloorCells);
                 List<Door> levelDoors = clusterDoorsByLevel.getOrDefault(levelZ, List.of()).stream()
-                        .filter(door -> door != null && door.segments2x().stream()
+                        .filter(door -> door != null && door.boundarySegments().stream()
                                 .anyMatch(segment2x -> segment2x.touchingCells().stream().anyMatch(levelComponentCells::contains)))
                         .toList();
                 if (!levelDoors.isEmpty()) {
                     componentDoorsByLevel.put(levelZ, levelDoors);
                 }
                 List<Wall> levelWalls = clusterWallsByLevel.getOrDefault(levelZ, List.of()).stream()
-                        .filter(wall -> wall != null && wall.segments2x().stream()
+                        .filter(wall -> wall != null && wall.boundarySegments().stream()
                                 .anyMatch(segment2x -> segment2x.touchingCells().stream().anyMatch(levelComponentCells::contains)))
                         .toList();
                 if (!levelWalls.isEmpty()) {
@@ -1167,7 +1153,7 @@ public final class RoomCluster {
             }
             return rooms.stream()
                     .filter(room -> room != null && roomAnchorsByLevel(room).entrySet().stream()
-                            .anyMatch(entry -> componentStructure.surfaceAtLevel(entry.getKey()).contains(entry.getValue())))
+                            .anyMatch(entry -> componentStructure.surfaceAtLevel(entry.getKey()).surface().contains(entry.getValue())))
                     .sorted(Comparator.comparing(Room::roomId, Comparator.nullsLast(Long::compareTo)))
                     .toList();
         }

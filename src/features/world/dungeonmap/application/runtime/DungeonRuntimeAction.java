@@ -2,7 +2,7 @@ package features.world.dungeonmap.application.runtime;
 
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.structure.model.boundary.DoorRef;
+import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
 
 import java.util.Objects;
 

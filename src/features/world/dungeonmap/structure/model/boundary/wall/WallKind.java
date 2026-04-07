@@ -1,4 +1,4 @@
-package features.world.dungeonmap.structure.model.boundary;
+package features.world.dungeonmap.structure.model.boundary.wall;
 
 import java.util.Objects;
 

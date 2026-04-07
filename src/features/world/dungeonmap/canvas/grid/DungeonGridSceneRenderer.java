@@ -341,7 +341,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             }
             boolean selected = selectedCorridor(pass.projected(), pass.selectedRef(), corridor.corridorId());
             WalkableSurface surface = walkableSurface(
-                    corridor.structure().surfaceAtLevel(pass.projectionLevel()).floorCells(),
+                    corridor.structure().surfaceAtLevel(pass.projectionLevel()).floor().cellCoords(),
                     corridor.structure().boundaryAtLevel(pass.projectionLevel()).boundaryEdges(),
                     corridor.boundaryDoorSegments(pass.projected()));
             if (surface.tiles().isEmpty() && surface.doorSegments().isEmpty()) {
@@ -971,7 +971,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             return WalkableSurface.empty();
         }
         return walkableSurface(
-                structure.surfaceAtLevel(levelZ).floorCells(),
+                structure.surfaceAtLevel(levelZ).floor().cellCoords(),
                 structure.boundaryAtLevel(levelZ).boundaryEdges(),
                 structure.boundaryAtLevel(levelZ).doorEdges());
     }

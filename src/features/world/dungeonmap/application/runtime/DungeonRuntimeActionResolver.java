@@ -113,14 +113,14 @@ public final class DungeonRuntimeActionResolver {
         }
         appendStructureStairs(
                 location.layout(),
-                corridor.structure().surfaceAtLevel(corridor.levelZ()).cellCoords(),
+                corridor.structure().surfaceAtLevel(corridor.levelZ()).surface().cellCoords(),
                 corridor.levelZ(),
                 location.activeCell(),
                 location.activeLevelZ(),
                 actions);
         appendStructureTransitions(
                 location.layout(),
-                corridor.structure().surfaceAtLevel(corridor.levelZ()).cellCoords(),
+                corridor.structure().surfaceAtLevel(corridor.levelZ()).surface().cellCoords(),
                 corridor.levelZ(),
                 actions);
     }

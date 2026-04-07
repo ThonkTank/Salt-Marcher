@@ -5,9 +5,9 @@ import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.structures.connection.DungeonConnection;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.structure.model.boundary.Door;
 import features.world.dungeonmap.structure.model.boundary.StructureBoundary;
-import features.world.dungeonmap.structure.model.boundary.Wall;
+import features.world.dungeonmap.structure.model.boundary.door.Door;
+import features.world.dungeonmap.structure.model.boundary.wall.Wall;
 import features.world.dungeonmap.structure.model.surface.StructureSurface;
 
 import java.util.ArrayList;
@@ -335,7 +335,7 @@ public final class Structure {
             }
             return new LevelStructure(
                     surface,
-                    StructureBoundary.fromSurfaceAndFeatures(surface.cellCoords(), doors, walls));
+                    StructureBoundary.fromSurfaceAndFeatures(surface.surface().cellCoords(), doors, walls));
         }
 
         public static LevelStructure fromTopology(
@@ -377,7 +377,7 @@ public final class Structure {
             }
             return new LevelStructure(
                     surface,
-                    StructureBoundary.fromBoundaryEdges(surface.cellCoords(), boundaryEdges, doors, walls));
+                    StructureBoundary.fromBoundaryEdges(surface.surface().cellCoords(), boundaryEdges, doors, walls));
         }
 
         public StructureSurface surface() {
@@ -398,7 +398,7 @@ public final class Structure {
             StructureBoundary resolvedBoundary = boundary == null
                     ? StructureBoundary.empty()
                     : StructureBoundary.fromBoundaryEdges(
-                    surface.cellCoords(),
+                    surface.surface().cellCoords(),
                     boundary.boundaryEdges(),
                     boundary.doors(),
                     boundary.authoredWalls());
@@ -410,7 +410,7 @@ public final class Structure {
             StructureBoundary resolvedBoundary = resolvedSurface.isEmpty()
                     ? StructureBoundary.empty()
                     : StructureBoundary.fromBoundaryEdges(
-                    resolvedSurface.cellCoords(),
+                    resolvedSurface.surface().cellCoords(),
                     boundary.boundaryEdges(),
                     boundary.doors(),
                     boundary.authoredWalls());
@@ -434,7 +434,7 @@ public final class Structure {
             }
             return new LevelStructure(
                     surface,
-                    StructureBoundary.fromPersistenceSnapshot(surface.cellCoords(), resolvedSnapshot.boundary()));
+                    StructureBoundary.fromPersistenceSnapshot(surface.surface().cellCoords(), resolvedSnapshot.boundary()));
         }
 
         public boolean isEmpty() {
