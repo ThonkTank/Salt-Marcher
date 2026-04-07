@@ -15,12 +15,27 @@ import java.util.Set;
  */
 public final class StructureSurface {
 
+    public record PersistenceSnapshot(
+            CellCoord anchorCell,
+            Set<CellCoord> surfaceCells,
+            Set<CellCoord> floorCells
+    ) {
+        public PersistenceSnapshot {
+            surfaceCells = surfaceCells == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(surfaceCells));
+            floorCells = floorCells == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(floorCells));
+        }
+    }
+
     private final CellCoord anchorCell;
     private final TileShape surfaceShape;
     private final TileShape floorShape;
 
     public static StructureSurface empty() {
         return new StructureSurface(null, TileShape.empty(), TileShape.empty());
+    }
+
+    public static PersistenceSnapshot emptySnapshot() {
+        return new PersistenceSnapshot(null, Set.of(), Set.of());
     }
 
     public static StructureSurface fromCells(
@@ -33,6 +48,11 @@ public final class StructureSurface {
             return empty();
         }
         return new StructureSurface(anchorCell, surface, surface.intersection(floorCells));
+    }
+
+    public static StructureSurface fromPersistenceSnapshot(PersistenceSnapshot snapshot) {
+        PersistenceSnapshot resolvedSnapshot = snapshot == null ? emptySnapshot() : snapshot;
+        return fromCells(resolvedSnapshot.anchorCell(), resolvedSnapshot.surfaceCells(), resolvedSnapshot.floorCells());
     }
 
     private StructureSurface(
@@ -63,6 +83,10 @@ public final class StructureSurface {
 
     public Set<CellCoord> floorCells() {
         return floorShape.cellCoords();
+    }
+
+    public PersistenceSnapshot persistenceSnapshot() {
+        return new PersistenceSnapshot(anchorCell, cellCoords(), floorCells());
     }
 
     public CellCoord centerCellCoord() {

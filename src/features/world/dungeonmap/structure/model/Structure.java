@@ -5,6 +5,9 @@ import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.structures.connection.DungeonConnection;
 import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.structure.model.boundary.Door;
+import features.world.dungeonmap.structure.model.boundary.StructureBoundary;
+import features.world.dungeonmap.structure.model.boundary.Wall;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,17 +30,12 @@ public final class Structure {
     }
 
     public record PersistenceLevel(
-            CellCoord anchorCell,
-            Set<CellCoord> surfaceCells,
-            Set<CellCoord> floorCells,
-            List<Wall> authoredWalls,
-            List<Door> doors
+            StructureSurface.PersistenceSnapshot surface,
+            StructureBoundary.PersistenceSnapshot boundary
     ) {
         public PersistenceLevel {
-            surfaceCells = surfaceCells == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(surfaceCells));
-            floorCells = floorCells == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(floorCells));
-            authoredWalls = authoredWalls == null ? List.of() : List.copyOf(authoredWalls);
-            doors = doors == null ? List.of() : List.copyOf(doors);
+            surface = surface == null ? StructureSurface.emptySnapshot() : surface;
+            boundary = boundary == null ? StructureBoundary.emptySnapshot() : boundary;
         }
     }
 
@@ -131,18 +129,9 @@ public final class Structure {
                 .filter(entry -> entry != null && entry.getKey() != null)
                 .sorted(Map.Entry.comparingByKey())
                 .forEach(entry -> {
-                    int levelZ = entry.getKey();
-                    PersistenceLevel persistedLevel = entry.getValue();
-                    LevelStructure level = persistedLevel == null
-                            ? null
-                            : LevelStructure.fromSurfaceAndFeatures(
-                            persistedLevel.anchorCell(),
-                            persistedLevel.surfaceCells(),
-                            persistedLevel.doors(),
-                            persistedLevel.authoredWalls(),
-                            persistedLevel.floorCells());
+                    LevelStructure level = LevelStructure.fromPersistenceSnapshot(entry.getValue());
                     if (!level.isEmpty()) {
-                        levels.put(levelZ, level);
+                        levels.put(entry.getKey(), level);
                     }
                 });
         return levels.isEmpty() ? empty() : fromLevels(levels);
@@ -198,13 +187,7 @@ public final class Structure {
             if (entry.getKey() == null || entry.getValue() == null || entry.getValue().isEmpty()) {
                 continue;
             }
-            LevelStructure level = entry.getValue();
-            snapshotLevels.put(entry.getKey(), new PersistenceLevel(
-                    level.surface().anchorCell(),
-                    level.surface().cellCoords(),
-                    level.surface().floorCells(),
-                    level.boundary().authoredWalls(),
-                    level.boundary().doors()));
+            snapshotLevels.put(entry.getKey(), entry.getValue().persistenceSnapshot());
         }
         return new PersistenceSnapshot(snapshotLevels);
     }
@@ -440,8 +423,25 @@ public final class Structure {
             return new LevelStructure(surface, boundary);
         }
 
+        public static LevelStructure fromPersistenceSnapshot(PersistenceLevel snapshot) {
+            PersistenceLevel resolvedSnapshot = snapshot == null
+                    ? new PersistenceLevel(StructureSurface.emptySnapshot(), StructureBoundary.emptySnapshot())
+                    : snapshot;
+            StructureSurface surface = StructureSurface.fromPersistenceSnapshot(resolvedSnapshot.surface());
+            if (surface.isEmpty()) {
+                return new LevelStructure(StructureSurface.empty(), StructureBoundary.empty());
+            }
+            return new LevelStructure(
+                    surface,
+                    StructureBoundary.fromPersistenceSnapshot(surface.cellCoords(), resolvedSnapshot.boundary()));
+        }
+
         public boolean isEmpty() {
             return surface.isEmpty() && boundary.isEmpty();
+        }
+
+        public PersistenceLevel persistenceSnapshot() {
+            return new PersistenceLevel(surface.persistenceSnapshot(), boundary.persistenceSnapshot());
         }
 
         @Override

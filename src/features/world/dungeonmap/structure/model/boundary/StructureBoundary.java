@@ -1,4 +1,4 @@
-package features.world.dungeonmap.structure.model;
+package features.world.dungeonmap.structure.model.boundary;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.EdgeShape;
@@ -23,6 +23,16 @@ import java.util.Set;
  */
 public final class StructureBoundary {
 
+    public record PersistenceSnapshot(
+            List<Door> doors,
+            List<Wall> authoredWalls
+    ) {
+        public PersistenceSnapshot {
+            doors = doors == null ? List.of() : List.copyOf(doors);
+            authoredWalls = authoredWalls == null ? List.of() : List.copyOf(authoredWalls);
+        }
+    }
+
     private final Set<CellCoord> surfaceCells;
     private final EdgeShape edgeShape;
     private final List<Door> doors;
@@ -32,7 +42,11 @@ public final class StructureBoundary {
         return new StructureBoundary(Set.of(), EdgeShape.empty(), List.of(), List.of());
     }
 
-    static StructureBoundary fromSurfaceAndFeatures(
+    public static PersistenceSnapshot emptySnapshot() {
+        return new PersistenceSnapshot(List.of(), List.of());
+    }
+
+    public static StructureBoundary fromSurfaceAndFeatures(
             Collection<CellCoord> surfaceCells,
             Collection<Door> doors,
             Collection<Wall> walls
@@ -50,7 +64,7 @@ public final class StructureBoundary {
         return new StructureBoundary(normalizedSurfaceCells, edgeShape, doors, normalizedWalls);
     }
 
-    static StructureBoundary fromBoundaryEdges(
+    public static StructureBoundary fromBoundaryEdges(
             Collection<CellCoord> surfaceCells,
             Collection<GridSegment2x> boundaryEdges,
             Collection<Door> doors,
@@ -68,6 +82,14 @@ public final class StructureBoundary {
                 ? EdgeShape.fromBoundarySegments(surfaceShape.boundaryShape().segmentSet2x())
                 : EdgeShape.fromBoundarySegments(normalizedBoundaryEdges);
         return new StructureBoundary(normalizedSurfaceCells, edgeShape, doors, walls);
+    }
+
+    public static StructureBoundary fromPersistenceSnapshot(
+            Collection<CellCoord> surfaceCells,
+            PersistenceSnapshot snapshot
+    ) {
+        PersistenceSnapshot resolvedSnapshot = snapshot == null ? emptySnapshot() : snapshot;
+        return fromSurfaceAndFeatures(surfaceCells, resolvedSnapshot.doors(), resolvedSnapshot.authoredWalls());
     }
 
     private StructureBoundary(
@@ -92,6 +114,10 @@ public final class StructureBoundary {
 
     public List<Wall> authoredWalls() {
         return walls;
+    }
+
+    public PersistenceSnapshot persistenceSnapshot() {
+        return new PersistenceSnapshot(doors, walls);
     }
 
     public Set<GridSegment2x> authoredWallEdges() {
@@ -258,7 +284,7 @@ public final class StructureBoundary {
                         .toList());
     }
 
-    StructureBoundary clippedToSurface(Collection<CellCoord> clippedSurfaceCells) {
+    public StructureBoundary clippedToSurface(Collection<CellCoord> clippedSurfaceCells) {
         TileShape clippedSurfaceShape = TileShape.of(clippedSurfaceCells);
         if (clippedSurfaceShape.isEmpty()) {
             return empty();

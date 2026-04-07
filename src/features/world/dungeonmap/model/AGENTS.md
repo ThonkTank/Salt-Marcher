@@ -18,6 +18,7 @@ This file covers `src/features/world/dungeonmap/model/`.
 - Put new dungeon semantics on the lowest stable model owner that enforces the invariant.
 - Put shared geometry behavior in `geometry/` only when it is owner-neutral and canonical.
 - Let `RoomCluster` and `Corridor` consume `StructureSurface` and `StructureBoundary` only through `Structure.surfaceAtLevel(levelZ)` and `Structure.boundaryAtLevel(levelZ)`.
+- Treat `StructureBoundary` as the `structure` slice's local `boundary` sub-owner; model callers may depend on its public API but must not re-home boundary truth back into `model/structures`.
 - If room-facing code needs the derived room structure, expose that `Structure` and continue from its public sub-object seams instead of adding room-local surface or boundary forwarding methods.
 - Keep immutable geometry and similar value types transparent; put invariant-protecting mutation on the actual owner type.
 

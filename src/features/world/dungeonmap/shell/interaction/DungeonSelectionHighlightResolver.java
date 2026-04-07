@@ -4,7 +4,7 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
-import features.world.dungeonmap.structure.model.Door;
+import features.world.dungeonmap.structure.model.boundary.Door;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
@@ -176,7 +176,7 @@ public final class DungeonSelectionHighlightResolver {
             return List.of();
         }
         DungeonLayout.DoorDescription description = layout.describeDoor(
-                new features.world.dungeonmap.structure.model.DoorRef(doorRef.doorId()));
+                new features.world.dungeonmap.structure.model.boundary.DoorRef(doorRef.doorId()));
         if (description == null || description.levelZ() != levelZ) {
             return List.of();
         }

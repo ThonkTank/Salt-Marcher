@@ -7,7 +7,7 @@
 ## Owner Atlas
 
 - `layout` — `DungeonLayout`, `DungeonMapLoadingService`, `DungeonLayoutRepository`, `DungeonMapState`
-- `structure` — `Structure`, `StructureSurface`, `StructureBoundary`, `StructureRoomTopology`, `DungeonStructureRepository`, `DungeonWallKindRepository`
+- `structure` — `Structure`, `StructureSurface`, `StructureRoomTopology`, the local `boundary` sub-owner, `DungeonStructureRepository`, `DungeonWallKindRepository`
 - `room` — `Room`, `RoomCluster`, `DungeonRoomApplicationService`, `DungeonRoomRepository`
 - `corridor` — `Corridor`, `CorridorRouting`, `CorridorPathTrace`, `DungeonCorridorApplicationService`, `DungeonCorridorRepository`
 - `stair` — `DungeonStair`, `Stair`, `StairExit`, `DungeonStairApplicationService`, `DungeonStairRepository`
@@ -34,6 +34,7 @@
 - Put shared physical topology on `structure`, not on room, corridor, runtime, or renderer helpers.
 - Route level-local surface behavior only through `structure.surfaceAtLevel(levelZ).something()`.
 - Route level-local wall, door, and boundary-edge behavior only through `structure.boundaryAtLevel(levelZ).something()`.
+- Keep shared structure persistence shaped like the runtime `Structure -> level -> surface + boundary` composition so save and reload do not rebuild a second flattened structure model.
 - Route authoritative reloads through `DungeonMapLoadingService`.
 - Keep runtime-only semantics under `runtime` and gesture meaning under `editor interaction`.
 

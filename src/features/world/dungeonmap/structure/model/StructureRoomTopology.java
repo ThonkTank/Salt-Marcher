@@ -9,6 +9,9 @@ import features.world.dungeonmap.model.structures.connection.DoorConnectionCarri
 import features.world.dungeonmap.model.structures.connection.DungeonConnection;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
+import features.world.dungeonmap.structure.model.boundary.StructureBoundary;
+import features.world.dungeonmap.structure.model.boundary.Door;
+import features.world.dungeonmap.structure.model.boundary.DoorRef;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
