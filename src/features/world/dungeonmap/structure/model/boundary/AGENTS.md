@@ -9,8 +9,8 @@ This file covers `src/features/world/dungeonmap/structure/model/boundary/`.
 
 ## Canonical Types and APIs
 
-- `BoundaryObject` — internal shared base for `Door` and `Wall` — owns duplicated anchor, boundary-segment, clipping, and component helpers; callers must not widen onto it.
-- `StructureBoundary` — level-local boundary aggregate — owns boundary edges, the aggregate wall/door collections, wall-kind lookups, cross-object boundary rules, and the boundary persistence snapshot.
+- `BoundaryObject` — internal shared base for `Door` and `Wall` — owns duplicated anchor, boundary-segment, touching-cell, clipping, and component helpers; callers may use only its explicit object API through `Door` and `Wall`, not the inherited generic `EdgeShape` methods.
+- `StructureBoundary` — level-local boundary aggregate — owns boundary edges, the aggregate wall/door collections, segment-to-object lookups such as `doorAtBoundarySegment(...)` and `effectiveWallAtBoundarySegment(...)`, cross-object boundary rules, and the boundary persistence snapshot.
 - `door/Door`, `door/DoorRef` — single-door owner plus stable reference — own door-local clipping, segment removal, anchor repair, and persisted segment access.
 - `wall/Wall`, `wall/WallKind` — single-wall owner plus shared wall-kind definition — own wall-local clipping, split-on-delete behavior, anchor repair, and persisted segment access.
 - `StructureBoundary.PersistenceSnapshot` — boundary-owned persistence shape — mirrors the runtime boundary state used for save and reload.
@@ -29,5 +29,6 @@ This file covers `src/features/world/dungeonmap/structure/model/boundary/`.
 - Do not mirror boundary state or mutations back onto `Structure`, `StructureRoomTopology`, `RoomCluster`, `DungeonLayout`, or renderer helpers.
 - Do not move door- or wall-owned primitives back into the flat `structure/model/` package.
 - Do not expose `BoundaryObject` as a new public working surface for callers; it is an internal implementation seam only.
+- Because `Door` and `Wall` still inherit `EdgeShape` through `BoundaryObject`, Java still exposes generic geometry methods technically. Outside the boundary owner subtree, treat those inherited methods as forbidden and stay on the explicit `BoundaryObject` / `Door` / `Wall` API instead.
 - Do not rebuild door or wall edits from raw `EdgeShape` surgery in `StructureBoundary`, `RoomCluster`, `Corridor`, repositories, or shell helpers when `Door` and `Wall` already expose the needed API.
 - Do not introduce a second boundary persistence DTO outside this sub-owner when `StructureBoundary.PersistenceSnapshot` already describes the persisted boundary state.

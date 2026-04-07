@@ -35,7 +35,7 @@
 - Route level-local surface-area behavior only through `structure.surfaceAtLevel(levelZ).surface().something()`.
 - Route level-local floor behavior only through `structure.surfaceAtLevel(levelZ).floor().something()`.
 - Route level-local wall, door, and boundary-edge behavior only through `structure.boundaryAtLevel(levelZ).something()`.
-- Let door- and wall-specific edits terminate on the explicit `Door` and `Wall` APIs returned from that boundary owner instead of rebuilding raw `EdgeShape` surgery in callers.
+- Let door- and wall-specific reads and edits terminate on the explicit `BoundaryObject`, `Door`, and `Wall` APIs returned from that boundary owner instead of rebuilding raw `EdgeShape` surgery or derived mirrors in callers.
 - Keep shared structure persistence shaped like the runtime `Structure -> level -> surface(surface area + floor) + boundary` composition so save and reload do not rebuild a second flattened structure model.
 - Route authoritative reloads through `DungeonMapLoadingService`.
 - Keep runtime-only semantics under `runtime` and gesture meaning under `editor interaction`.
@@ -45,4 +45,5 @@
 - Do not add a second shared physical topology owner beside `Structure`, `StructureSurface`, `StructureSurfaceArea`, `StructureFloor`, `StructureBoundary`, and `StructureRoomTopology`.
 - Do not mirror room, corridor, stair, transition, or runtime semantics into tool-local state, render models, or storage helper types.
 - Do not add convenience wrapper APIs that mirror `StructureSurfaceArea`, `StructureFloor`, or `StructureBoundary` state on `Structure`, `RoomCluster`, `DungeonLayout`, renderer helpers, or other unrelated owners.
+- Do not call inherited generic `EdgeShape` methods on `Door` or `Wall` outside the boundary owner subtree; if a read is truly missing, add it to the explicit object API instead.
 - Do not create alternate load, repair, or compatibility paths outside `DungeonMapLoadingService` and the canonical owner workflows.

@@ -17,7 +17,7 @@ This file covers `src/features/world/dungeonmap/repository/`.
 
 - Put SQL, row mapping, and schema ordering here.
 - Route shared physical structure persistence through `structure/repository` and the canonical `Structure` snapshot.
-- Mirror the runtime structure shape as closely as practical when persisting shared structure truth: map level-local anchors and surface rows into `StructureSurfaceArea.PersistenceSnapshot`, level-local floor rows into `StructureFloor.PersistenceSnapshot`, compose them into `StructureSurface.PersistenceSnapshot`, map level-local boundary rows into `StructureBoundary.PersistenceSnapshot`, and compose them through `Structure.LevelStructure.PersistenceSnapshot` instead of rebuilding a second flattened structure DTO.
+- Mirror the runtime structure shape as closely as practical when persisting shared structure truth: map level-local anchors, surface rows, and floor rows directly through `StructureSurface.PersistenceSnapshot`, map level-local boundary rows into `StructureBoundary.PersistenceSnapshot`, and compose them through `Structure.LevelStructure.PersistenceSnapshot` instead of rebuilding a second flattened structure DTO.
 - Keep owner-local metadata in the owner repository rather than inventing shared helper mirrors.
 
 ## Forbidden Drift

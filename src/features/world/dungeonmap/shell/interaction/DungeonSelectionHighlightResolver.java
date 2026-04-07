@@ -97,7 +97,7 @@ public final class DungeonSelectionHighlightResolver {
         LinkedHashSet<CellCoord> cells = new LinkedHashSet<>();
         for (Room room : cluster.rooms()) {
             if (room != null) {
-                cells.addAll(layout.roomCellsAtLevel(room, levelZ));
+                cells.addAll(layout.roomStructure(room).surfaceAtLevel(levelZ).surface().cellCoords());
             }
         }
         return cells.isEmpty() ? List.of() : List.of(new DungeonHitSurface.CellSurface(cells, levelZ));
@@ -107,7 +107,7 @@ public final class DungeonSelectionHighlightResolver {
         if (room == null) {
             return List.of();
         }
-        Set<CellCoord> cells = layout.roomCellsAtLevel(room, levelZ);
+        Set<CellCoord> cells = layout.roomStructure(room).surfaceAtLevel(levelZ).surface().cellCoords();
         return cells.isEmpty() ? List.of() : List.of(new DungeonHitSurface.CellSurface(cells, levelZ));
     }
 

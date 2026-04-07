@@ -260,58 +260,6 @@ public final class StructureRoomTopology {
                 .toList();
     }
 
-    public CellCoord roomAnchorCellAtLevel(Room room, int levelZ) {
-        return structureFor(room).surfaceAtLevel(levelZ).surface().anchorCell();
-    }
-
-    public CellCoord roomAnchorCellAtLevel(Long roomId, int levelZ) {
-        return structureFor(roomId).surfaceAtLevel(levelZ).surface().anchorCell();
-    }
-
-    public CellCoord roomCenterCellAtLevel(Room room, int levelZ) {
-        return structureFor(room).surfaceAtLevel(levelZ).centerCellCoord();
-    }
-
-    public CellCoord roomCenterCellAtLevel(Long roomId, int levelZ) {
-        return structureFor(roomId).surfaceAtLevel(levelZ).centerCellCoord();
-    }
-
-    public CellCoord roomSurfaceCenterCellAtLevel(Room room, int levelZ) {
-        return structureFor(room).surfaceAtLevel(levelZ).surface().centerCellCoord();
-    }
-
-    public Set<CellCoord> roomCellsAtLevel(Room room, int levelZ) {
-        return structureFor(room).surfaceAtLevel(levelZ).surface().cellCoords();
-    }
-
-    public Set<CellCoord> roomCellsAtLevel(Long roomId, int levelZ) {
-        return structureFor(roomId).surfaceAtLevel(levelZ).surface().cellCoords();
-    }
-
-    public Set<CellCoord> roomFloorCellsAtLevel(Room room, int levelZ) {
-        return structureFor(room).surfaceAtLevel(levelZ).floor().cellCoords();
-    }
-
-    public Set<CellCoord> roomFloorCellsAtLevel(Long roomId, int levelZ) {
-        return structureFor(roomId).surfaceAtLevel(levelZ).floor().cellCoords();
-    }
-
-    public boolean roomContainsCell(Room room, CellCoord cell, int levelZ) {
-        return structureFor(room).surfaceAtLevel(levelZ).surface().contains(cell);
-    }
-
-    public boolean roomContainsCell(Long roomId, CellCoord cell, int levelZ) {
-        return structureFor(roomId).surfaceAtLevel(levelZ).surface().contains(cell);
-    }
-
-    public boolean roomHasFloorCell(Room room, CellCoord cell, int levelZ) {
-        return structureFor(room).surfaceAtLevel(levelZ).floor().contains(cell);
-    }
-
-    public boolean roomHasFloorCell(Long roomId, CellCoord cell, int levelZ) {
-        return structureFor(roomId).surfaceAtLevel(levelZ).floor().contains(cell);
-    }
-
     public Room findRoom(Long roomId) {
         return roomId == null ? null : roomsById.get(roomId);
     }
@@ -498,16 +446,14 @@ public final class StructureRoomTopology {
             long clusterId,
             Map<CubePoint, Room> roomsByPoint
     ) {
-        if (doorComponent == null || doorComponent.door() == null || doorComponent.door().isEmpty()) {
+        if (doorComponent == null || doorComponent.door() == null || !doorComponent.door().hasBoundarySegments()) {
             return null;
         }
         List<Room> touchingRooms = new ArrayList<>();
-        for (GridSegment2x segment2x : doorComponent.door().segments2x()) {
-            for (CellCoord cell : segment2x.touchingCells().stream().sorted(CellCoord.ORDER).toList()) {
-                Room room = roomsByPoint.get(CubePoint.at(cell, doorComponent.levelZ()));
-                if (room != null && !touchingRooms.contains(room)) {
-                    touchingRooms.add(room);
-                }
+        for (CellCoord cell : doorComponent.door().touchingCells().stream().sorted(CellCoord.ORDER).toList()) {
+            Room room = roomsByPoint.get(CubePoint.at(cell, doorComponent.levelZ()));
+            if (room != null && !touchingRooms.contains(room)) {
+                touchingRooms.add(room);
             }
         }
         List<ConnectionEndpoint> endpoints = endpointsForDoor(touchingRooms);

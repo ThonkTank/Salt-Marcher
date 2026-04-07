@@ -114,64 +114,12 @@ public final class RoomCluster {
         return roomTopology().roomRelevantLevels(room, focusCell, focusLevelZ);
     }
 
-    public CellCoord roomAnchorCellAtLevel(Room room, int levelZ) {
-        return roomTopology().roomAnchorCellAtLevel(room, levelZ);
-    }
-
-    public CellCoord roomAnchorCellAtLevel(Long roomId, int levelZ) {
-        return roomTopology().roomAnchorCellAtLevel(roomId, levelZ);
-    }
-
-    public CellCoord roomCenterCellAtLevel(Room room, int levelZ) {
-        return roomTopology().roomCenterCellAtLevel(room, levelZ);
-    }
-
-    public CellCoord roomCenterCellAtLevel(Long roomId, int levelZ) {
-        return roomTopology().roomCenterCellAtLevel(roomId, levelZ);
-    }
-
-    public CellCoord roomSurfaceCenterCellAtLevel(Room room, int levelZ) {
-        return roomTopology().roomSurfaceCenterCellAtLevel(room, levelZ);
-    }
-
-    public Set<CellCoord> roomCellsAtLevel(Room room, int levelZ) {
-        return roomTopology().roomCellsAtLevel(room, levelZ);
-    }
-
-    public Set<CellCoord> roomCellsAtLevel(Long roomId, int levelZ) {
-        return roomTopology().roomCellsAtLevel(roomId, levelZ);
-    }
-
-    public Set<CellCoord> roomFloorCellsAtLevel(Room room, int levelZ) {
-        return roomTopology().roomFloorCellsAtLevel(room, levelZ);
-    }
-
-    public Set<CellCoord> roomFloorCellsAtLevel(Long roomId, int levelZ) {
-        return roomTopology().roomFloorCellsAtLevel(roomId, levelZ);
-    }
-
     public Structure roomStructure(Room room) {
         return roomTopology().structureFor(room);
     }
 
     public Structure roomStructure(Long roomId) {
         return roomTopology().structureFor(roomId);
-    }
-
-    public boolean roomContainsCell(Room room, CellCoord cell, int levelZ) {
-        return roomTopology().roomContainsCell(room, cell, levelZ);
-    }
-
-    public boolean roomContainsCell(Long roomId, CellCoord cell, int levelZ) {
-        return roomTopology().roomContainsCell(roomId, cell, levelZ);
-    }
-
-    public boolean roomHasFloorCell(Room room, CellCoord cell, int levelZ) {
-        return roomTopology().roomHasFloorCell(room, cell, levelZ);
-    }
-
-    public boolean roomHasFloorCell(Long roomId, CellCoord cell, int levelZ) {
-        return roomTopology().roomHasFloorCell(roomId, cell, levelZ);
     }
 
     public List<Room> rooms() {
@@ -231,11 +179,13 @@ public final class RoomCluster {
         // semantics for local room-to-room connections.
         StructureBoundary boundary = structure.boundaryAtLevel(levelZ);
         if (boundarySegment2x == null
-                || boundary.hasDoorAt(boundarySegment2x)) {
+                || boundary.doorAtBoundarySegment(boundarySegment2x) != null) {
             return false;
         }
+        Wall effectiveWall = boundary.effectiveWallAtBoundarySegment(boundarySegment2x);
         if (!boundary.boundaryEdges().contains(boundarySegment2x)
-                || !boundary.supportsDoorAt(boundarySegment2x)
+                || effectiveWall == null
+                || !effectiveWall.supportsDoorAttachments()
                 || !boundary.isInteriorBoundary(boundarySegment2x)) {
             return false;
         }
@@ -252,22 +202,24 @@ public final class RoomCluster {
         StructureBoundary boundary = structure.boundaryAtLevel(levelZ);
         return boundarySegment2x != null
                 && boundary.isInteriorBoundary(boundarySegment2x)
-                && boundary.hasDoorAt(boundarySegment2x);
+                && boundary.doorAtBoundarySegment(boundarySegment2x) != null;
     }
 
     public boolean canCreateExteriorDoor(int levelZ, GridSegment2x boundarySegment2x) {
         StructureBoundary boundary = structure.boundaryAtLevel(levelZ);
+        Wall effectiveWall = boundary.effectiveWallAtBoundarySegment(boundarySegment2x);
         return boundarySegment2x != null
                 && boundary.boundaryEdges().contains(boundarySegment2x)
-                && !boundary.hasDoorAt(boundarySegment2x)
-                && boundary.supportsDoorAt(boundarySegment2x)
+                && boundary.doorAtBoundarySegment(boundarySegment2x) == null
+                && effectiveWall != null
+                && effectiveWall.supportsDoorAttachments()
                 && boundary.isExteriorBoundary(boundarySegment2x);
     }
 
     public boolean canDeleteExteriorDoor(int levelZ, GridSegment2x boundarySegment2x) {
         StructureBoundary boundary = structure.boundaryAtLevel(levelZ);
         return boundarySegment2x != null
-                && boundary.hasDoorAt(boundarySegment2x)
+                && boundary.doorAtBoundarySegment(boundarySegment2x) != null
                 && boundary.isExteriorBoundary(boundarySegment2x);
     }
 
@@ -851,7 +803,7 @@ public final class RoomCluster {
             if (room == null || paintCells == null || paintCells.isEmpty()) {
                 return false;
             }
-            return !disjoint(cluster.roomCellsAtLevel(room, levelZ), paintCells);
+            return !disjoint(cluster.roomStructure(room).surfaceAtLevel(levelZ).surface().cellCoords(), paintCells);
         }
 
         private static List<Room> normalizedMetadataRooms(List<Room> rooms) {
@@ -1116,15 +1068,13 @@ public final class RoomCluster {
                 Set<CellCoord> levelFloorCells = intersectCells(clusterFloorCellsByLevel.get(levelZ), levelComponentCells);
                 componentFloorCellsByLevel.put(levelZ, levelFloorCells);
                 List<Door> levelDoors = clusterDoorsByLevel.getOrDefault(levelZ, List.of()).stream()
-                        .filter(door -> door != null && door.boundarySegments().stream()
-                                .anyMatch(segment2x -> segment2x.touchingCells().stream().anyMatch(levelComponentCells::contains)))
+                        .filter(door -> door != null && door.touchesAnyCell(levelComponentCells))
                         .toList();
                 if (!levelDoors.isEmpty()) {
                     componentDoorsByLevel.put(levelZ, levelDoors);
                 }
                 List<Wall> levelWalls = clusterWallsByLevel.getOrDefault(levelZ, List.of()).stream()
-                        .filter(wall -> wall != null && wall.boundarySegments().stream()
-                                .anyMatch(segment2x -> segment2x.touchingCells().stream().anyMatch(levelComponentCells::contains)))
+                        .filter(wall -> wall != null && wall.touchesAnyCell(levelComponentCells))
                         .toList();
                 if (!levelWalls.isEmpty()) {
                     componentWallsByLevel.put(levelZ, levelWalls);

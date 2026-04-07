@@ -88,16 +88,17 @@ public final class DungeonRuntimeActionResolver {
             return;
         }
         for (int levelZ : location.layout().roomRelevantLevels(room, location.activeCell(), location.activeLevelZ())) {
+            Set<CellCoord> roomFloorCells = location.layout().roomStructure(room).surfaceAtLevel(levelZ).floor().cellCoords();
             appendStructureStairs(
                     location.layout(),
-                    location.layout().roomFloorCellsAtLevel(room, levelZ),
+                    roomFloorCells,
                     levelZ,
                     location.activeCell(),
                     location.activeLevelZ(),
                     actions);
             appendStructureTransitions(
                     location.layout(),
-                    location.layout().roomFloorCellsAtLevel(room, levelZ),
+                    roomFloorCells,
                     levelZ,
                     actions);
         }

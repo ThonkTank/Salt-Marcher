@@ -15,7 +15,7 @@ import java.util.Set;
  */
 public final class StructureSurfaceArea extends StructureSurfaceObject {
 
-    public record PersistenceSnapshot(
+    record PersistenceSnapshot(
             CellCoord anchorCell,
             Set<CellCoord> cells
     ) {
@@ -25,15 +25,16 @@ public final class StructureSurfaceArea extends StructureSurfaceObject {
     }
 
     private final CellCoord anchorCell;
-    public static StructureSurfaceArea empty() {
+
+    static StructureSurfaceArea empty() {
         return new StructureSurfaceArea(null, TileShape.empty());
     }
 
-    public static PersistenceSnapshot emptySnapshot() {
+    static PersistenceSnapshot emptySnapshot() {
         return new PersistenceSnapshot(null, Set.of());
     }
 
-    public static StructureSurfaceArea fromCells(
+    static StructureSurfaceArea fromCells(
             CellCoord anchorCell,
             Collection<CellCoord> cells
     ) {
@@ -44,7 +45,7 @@ public final class StructureSurfaceArea extends StructureSurfaceObject {
         return new StructureSurfaceArea(anchorCell, tileShape);
     }
 
-    public static StructureSurfaceArea fromPersistenceSnapshot(PersistenceSnapshot snapshot) {
+    static StructureSurfaceArea fromPersistenceSnapshot(PersistenceSnapshot snapshot) {
         PersistenceSnapshot resolvedSnapshot = snapshot == null ? emptySnapshot() : snapshot;
         return fromCells(resolvedSnapshot.anchorCell(), resolvedSnapshot.cells());
     }
@@ -72,7 +73,7 @@ public final class StructureSurfaceArea extends StructureSurfaceObject {
         return tileShape().reachableFrom(startCell, boundaryEdges).cellCoords();
     }
 
-    public StructureSurfaceArea translatedByCells(CellCoord delta) {
+    StructureSurfaceArea translatedByCells(CellCoord delta) {
         CellCoord resolvedDelta = resolvedDelta(delta);
         if (resolvedDelta.x() == 0 && resolvedDelta.y() == 0) {
             return this;
@@ -82,7 +83,7 @@ public final class StructureSurfaceArea extends StructureSurfaceObject {
                 translatedTileShape(resolvedDelta));
     }
 
-    public StructureSurfaceArea clippedTo(Collection<CellCoord> clippedCells, CellCoord preferredAnchor) {
+    StructureSurfaceArea clippedTo(Collection<CellCoord> clippedCells, CellCoord preferredAnchor) {
         TileShape clippedSurface = intersectedTileShape(clippedCells);
         if (clippedSurface.isEmpty()) {
             return empty();
@@ -95,7 +96,7 @@ public final class StructureSurfaceArea extends StructureSurfaceObject {
                 normalizedSurfaceCells);
     }
 
-    public PersistenceSnapshot persistenceSnapshot() {
+    PersistenceSnapshot persistenceSnapshot() {
         return new PersistenceSnapshot(anchorCell, cellCoords());
     }
 

@@ -62,6 +62,25 @@ public abstract class BoundaryObject extends EdgeShape {
         return !isEmpty();
     }
 
+    public final Set<CellCoord> touchingCells() {
+        if (!hasBoundarySegments()) {
+            return Set.of();
+        }
+        LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
+        orderedBoundarySegments().forEach(segment2x -> segment2x.touchingCells().stream()
+                .sorted(CellCoord.ORDER)
+                .forEach(result::add));
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
+    public final boolean touchesAnyCell(Collection<CellCoord> cells) {
+        if (cells == null || cells.isEmpty() || !hasBoundarySegments()) {
+            return false;
+        }
+        Set<CellCoord> candidates = Set.copyOf(cells);
+        return touchingCells().stream().anyMatch(candidates::contains);
+    }
+
     protected final List<GridSegment2x> translatedBoundarySegments(CellCoord delta) {
         CellCoord resolvedDelta = delta == null ? new CellCoord(0, 0) : delta;
         return segments2x().stream()

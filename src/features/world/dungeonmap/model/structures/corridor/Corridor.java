@@ -211,7 +211,7 @@ public final class Corridor {
 
     public Set<GridSegment2x> boundaryDoorSegments(DungeonLayout layout) {
         StructureBoundary boundary = structure.boundaryAtLevel(levelZ);
-        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>(boundary.doorEdges());
+        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>(boundaryDoorSegments(boundary.doors()));
         for (CorridorNode node : nodes) {
             if (node == null || !node.isDoorBound()) {
                 continue;
@@ -220,7 +220,7 @@ public final class Corridor {
             if (description == null || description.levelZ() != levelZ) {
                 continue;
             }
-            result.addAll(description.door().segments2x().stream()
+            result.addAll(description.door().boundarySegments().stream()
                     .filter(boundary.boundaryEdges()::contains)
                     .toList());
         }
@@ -710,9 +710,21 @@ public final class Corridor {
         }
         return doors.stream()
                 .filter(Objects::nonNull)
-                .filter(door -> door.boundarySegments().stream().anyMatch(segment2x ->
-                        segment2x.touchingCells().stream().anyMatch(componentCells::contains)))
+                .filter(door -> door.touchesAnyCell(componentCells))
                 .toList();
+    }
+
+    private static Set<GridSegment2x> boundaryDoorSegments(Collection<Door> doors) {
+        if (doors == null || doors.isEmpty()) {
+            return Set.of();
+        }
+        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
+        for (Door door : doors) {
+            if (door != null) {
+                result.addAll(door.boundarySegments());
+            }
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
     private static void validateTopology(List<CorridorNode> nodes, List<CorridorSegment> segments) {
@@ -906,7 +918,7 @@ public final class Corridor {
             if (room == null) {
                 continue;
             }
-            blocked.addAll(layout.roomCellsAtLevel(room, levelZ));
+            blocked.addAll(layout.roomStructure(room).surfaceAtLevel(levelZ).surface().cellCoords());
         }
         return Set.copyOf(blocked);
     }

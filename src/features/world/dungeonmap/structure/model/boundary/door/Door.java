@@ -97,7 +97,7 @@ public final class Door extends BoundaryObject {
         if (Objects.equals(doorId(), doorId)) {
             return this;
         }
-        return new Door(doorId, segments2x(), anchorSegment2x(), doorState);
+        return new Door(doorId, orderedBoundarySegments(), anchorSegment2x(), doorState);
     }
 
     public Door withDoorState(DoorState doorState) {
@@ -105,7 +105,7 @@ public final class Door extends BoundaryObject {
         if (resolvedDoorState == this.doorState) {
             return this;
         }
-        return new Door(doorId(), segments2x(), anchorSegment2x(), resolvedDoorState);
+        return new Door(doorId(), orderedBoundarySegments(), anchorSegment2x(), resolvedDoorState);
     }
 
     public Door clippedToBoundary(Collection<GridSegment2x> boundarySegments) {

@@ -33,7 +33,9 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
 
     private static List<DungeonHitDescriptor> roomDescriptors(DungeonLayout layout, DungeonHitProbe probe) {
         Room room = layout.roomAtCell(probe.gridCell(), probe.levelZ());
-        Set<CellCoord> roomCells = room == null ? Set.of() : layout.roomCellsAtLevel(room, probe.levelZ());
+        Set<CellCoord> roomCells = room == null
+                ? Set.of()
+                : layout.roomStructure(room).surfaceAtLevel(probe.levelZ()).surface().cellCoords();
         if (room == null || room.roomId() == null || roomCells.isEmpty()) {
             return List.of();
         }

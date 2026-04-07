@@ -13,21 +13,21 @@ import java.util.Set;
  */
 public final class StructureFloor extends StructureSurfaceObject {
 
-    public record PersistenceSnapshot(Set<CellCoord> cells) {
+    record PersistenceSnapshot(Set<CellCoord> cells) {
         public PersistenceSnapshot {
             cells = cells == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(cells));
         }
     }
 
-    public static StructureFloor empty() {
+    static StructureFloor empty() {
         return new StructureFloor(TileShape.empty());
     }
 
-    public static PersistenceSnapshot emptySnapshot() {
+    static PersistenceSnapshot emptySnapshot() {
         return new PersistenceSnapshot(Set.of());
     }
 
-    public static StructureFloor fromCells(
+    static StructureFloor fromCells(
             Collection<CellCoord> cells,
             StructureSurfaceArea surfaceArea
     ) {
@@ -38,7 +38,7 @@ public final class StructureFloor extends StructureSurfaceObject {
         return new StructureFloor(resolvedSurfaceArea.tileShape().intersection(cells));
     }
 
-    public static StructureFloor fromPersistenceSnapshot(
+    static StructureFloor fromPersistenceSnapshot(
             PersistenceSnapshot snapshot,
             StructureSurfaceArea surfaceArea
     ) {
@@ -57,7 +57,7 @@ public final class StructureFloor extends StructureSurfaceObject {
         return fromCells(cells, surfaceArea);
     }
 
-    public StructureFloor translatedByCells(CellCoord delta) {
+    StructureFloor translatedByCells(CellCoord delta) {
         CellCoord resolvedDelta = resolvedDelta(delta);
         if (resolvedDelta.x() == 0 && resolvedDelta.y() == 0) {
             return this;
@@ -65,11 +65,11 @@ public final class StructureFloor extends StructureSurfaceObject {
         return new StructureFloor(translatedTileShape(resolvedDelta));
     }
 
-    public StructureFloor clippedTo(StructureSurfaceArea surfaceArea) {
+    StructureFloor clippedTo(StructureSurfaceArea surfaceArea) {
         return fromCells(cellCoords(), surfaceArea);
     }
 
-    public PersistenceSnapshot persistenceSnapshot() {
+    PersistenceSnapshot persistenceSnapshot() {
         return new PersistenceSnapshot(cellCoords());
     }
 

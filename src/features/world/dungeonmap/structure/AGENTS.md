@@ -14,7 +14,7 @@ This file covers `src/features/world/dungeonmap/structure/`.
 - `StructureBoundary` — level-local boundary aggregate for wall and door capability sets, boundary edges, cross-object boundary rules, and boundary persistence snapshots.
 - `boundary/door/Door`, `boundary/door/DoorRef` — single-door sub-owner plus stable reference.
 - `boundary/wall/Wall`, `boundary/wall/WallKind` — single-wall sub-owner plus shared wall-kind definition.
-- `StructureRoomTopology` — room projection over one `Structure` — resolves room surfaces, anchors, adjacency, components, and room-to-room connections.
+- `StructureRoomTopology` — room projection over one `Structure` — resolves derived room structures, adjacency, components, and room-to-room connections.
 - `DungeonStructureRepository` — shared structure persistence seam that mirrors the runtime split into `Structure.LevelStructure`, `StructureSurface`, and `StructureBoundary`.
 - `DungeonWallKindRepository` — wall-kind catalog seam used by structure loading.
 
@@ -25,7 +25,9 @@ This file covers `src/features/world/dungeonmap/structure/`.
 - Put object-local surface-area and floor behavior on the `model/surface/` subtree instead of expanding `StructureSurface`.
 - Put level-local wall, door, and boundary-edge behavior on the local `model/boundary/` sub-owner and keep callers on `structure.boundaryAtLevel(levelZ)`.
 - Put object-local door behavior on `model/boundary/door/` and object-local wall behavior on `model/boundary/wall/`.
+- If callers need one boundary object at one segment, resolve it through `StructureBoundary` object lookups and continue on that `Door` or `Wall`; do not add second boolean or projected-edge mirrors for door or wall truth.
 - Put level-local boundary persistence data on `StructureBoundary.PersistenceSnapshot`, let `StructureSurface.PersistenceSnapshot` compose the `StructureSurfaceArea` and `StructureFloor` snapshots, and let `Structure.LevelStructure.PersistenceSnapshot` compose those owner snapshots.
+- If room-facing code needs one derived room's surface or floor truth, expose the derived `Structure` and continue on `surfaceAtLevel(levelZ).surface()` or `.floor()` instead of adding room-level mirrors back onto `StructureRoomTopology`.
 - Keep room- or corridor-specific workflow logic in their owners; only reused physical structure truth belongs here.
 - Keep internal mutation and invariant protection on `Structure`, `StructureSurface`, `StructureSurfaceArea`, `StructureFloor`, and `StructureBoundary`.
 
@@ -33,7 +35,9 @@ This file covers `src/features/world/dungeonmap/structure/`.
 
 - Do not mirror shared physical topology into room, corridor, runtime, renderer, or storage helper types.
 - Do not bypass `StructureSurfaceArea` or `StructureFloor` by rebuilding anchor, surface, floor, or clipping logic ad hoc, and do not re-export those capabilities from `Structure`, `LevelStructure`, or `StructureBoundary`.
+- Do not re-export derived room anchors, room cell sets, room floor sets, or room containment checks from `StructureRoomTopology`; those callers must go through `structureFor(...)`.
 - Do not bypass `StructureBoundary` by patching wall or door state through ad-hoc writable data structures.
+- Do not add convenience APIs on `StructureBoundary` that only mirror `Door`, `Wall`, or `BoundaryObject` truth as projected sets, booleans, or `WallKind` lookups when callers can resolve the object and stay on its explicit API.
 - Do not keep door- or wall-specific rewrite logic on `StructureBoundary` when one `Door` or `Wall` can own it directly.
 - Do not flatten surface and boundary persistence back into a second structure-only snapshot shape when the runtime owners already provide the canonical composition.
 - Do not pull corridor routing traces or stair geometry back into `Structure`.

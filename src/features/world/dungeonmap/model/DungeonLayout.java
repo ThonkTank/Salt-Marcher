@@ -309,7 +309,7 @@ public final class DungeonLayout {
                 .orElse(null);
         if (defaultRoom != null) {
             int levelZ = roomPrimaryLevel(defaultRoom);
-            CellCoord preferred = roomCenterCellAtLevel(defaultRoom, levelZ);
+            CellCoord preferred = roomStructure(defaultRoom).surfaceAtLevel(levelZ).centerCellCoord();
             CellCoord resolved = nearestTraversableCell(preferred, levelZ);
             if (resolved != null) {
                 return CubePoint.at(resolved, levelZ);
@@ -500,7 +500,7 @@ public final class DungeonLayout {
                 .sorted()
                 .flatMap(levelZ -> DoorExitCatalog.describe(
                         this,
-                        roomCellsAtLevel(room, levelZ),
+                        roomStructure(room).surfaceAtLevel(levelZ).surface().cellCoords(),
                         levelZ,
                         connectionsForRoom(room.roomId())).stream())
                 .toList();
@@ -543,29 +543,14 @@ public final class DungeonLayout {
         return cluster == null ? List.of() : cluster.roomRelevantLevels(room, focusCell, focusLevelZ);
     }
 
-    public CellCoord roomAnchorCellAtLevel(Room room, int levelZ) {
+    public Structure roomStructure(Room room) {
         RoomCluster cluster = clusterForRoom(room);
-        return cluster == null ? room == null ? null : room.anchorAtLevel(levelZ) : cluster.roomAnchorCellAtLevel(room, levelZ);
+        return cluster == null ? Structure.empty() : cluster.roomStructure(room);
     }
 
-    public CellCoord roomCenterCellAtLevel(Room room, int levelZ) {
-        RoomCluster cluster = clusterForRoom(room);
-        return cluster == null ? null : cluster.roomCenterCellAtLevel(room, levelZ);
-    }
-
-    public Set<CellCoord> roomCellsAtLevel(Room room, int levelZ) {
-        RoomCluster cluster = clusterForRoom(room);
-        return cluster == null ? Set.of() : cluster.roomCellsAtLevel(room, levelZ);
-    }
-
-    public Set<CellCoord> roomFloorCellsAtLevel(Room room, int levelZ) {
-        RoomCluster cluster = clusterForRoom(room);
-        return cluster == null ? Set.of() : cluster.roomFloorCellsAtLevel(room, levelZ);
-    }
-
-    public boolean roomHasFloorCell(Room room, CellCoord cell, int levelZ) {
-        RoomCluster cluster = clusterForRoom(room);
-        return cluster != null && cluster.roomHasFloorCell(room, cell, levelZ);
+    public Structure roomStructure(Long roomId) {
+        RoomCluster cluster = clusterForRoom(roomId);
+        return cluster == null ? Structure.empty() : cluster.roomStructure(roomId);
     }
 
     public DungeonStair findStair(Long stairId) {
@@ -664,7 +649,7 @@ public final class DungeonLayout {
             return null;
         }
         for (CellCoord cell : ref.boundarySegment2x().touchingCells().stream().sorted(CellCoord.ORDER).toList()) {
-            if (!roomCellsAtLevel(room, levelZ).contains(cell)) {
+            if (!roomStructure(room).surfaceAtLevel(levelZ).surface().contains(cell)) {
                 continue;
             }
             CardinalDirection outwardDirection = ref.boundarySegment2x().directionFrom(cell);
@@ -750,7 +735,7 @@ public final class DungeonLayout {
 
     public Room roomWithFloorAtCell(CellCoord cell, int levelZ) {
         Room room = roomAtCell(cell, levelZ);
-        return room != null && roomHasFloorCell(room, cell, levelZ) ? room : null;
+        return room != null && roomStructure(room).surfaceAtLevel(levelZ).floor().contains(cell) ? room : null;
     }
 
     private CorridorBoundaryDescription connectedCorridorBoundary(
@@ -1327,7 +1312,7 @@ public final class DungeonLayout {
             if (doorEntry == null || doorEntry.door() == null) {
                 continue;
             }
-            for (GridSegment2x segment2x : doorEntry.door().segments2x()) {
+            for (GridSegment2x segment2x : doorEntry.door().boundarySegments()) {
                 result.putIfAbsent(new ConnectionSegmentKey(doorEntry.description().levelZ(), segment2x), doorEntry);
             }
         }
@@ -1518,12 +1503,10 @@ public final class DungeonLayout {
             return List.of();
         }
         LinkedHashSet<Room> rooms = new LinkedHashSet<>();
-        for (GridSegment2x segment2x : door.boundarySegments()) {
-            for (CellCoord cell : segment2x.touchingCells().stream().sorted(CellCoord.ORDER).toList()) {
-                Room room = cluster.roomAt(cell, levelZ);
-                if (room != null) {
-                    rooms.add(room);
-                }
+        for (CellCoord cell : door.touchingCells().stream().sorted(CellCoord.ORDER).toList()) {
+            Room room = cluster.roomAt(cell, levelZ);
+            if (room != null) {
+                rooms.add(room);
             }
         }
         return rooms.isEmpty() ? List.of() : List.copyOf(rooms);
@@ -1631,7 +1614,7 @@ public final class DungeonLayout {
             for (Room room : cluster.rooms()) {
                 if (room != null) {
                     for (Integer levelZ : cluster.roomLevels(room)) {
-                        result.addAll(cluster.roomFloorCellsAtLevel(room, levelZ));
+                        result.addAll(cluster.roomStructure(room).surfaceAtLevel(levelZ).floor().cellCoords());
                     }
                 }
             }
@@ -1676,7 +1659,7 @@ public final class DungeonLayout {
                 }
                 for (Integer levelZ : cluster.roomLevels(room)) {
                     mutable.computeIfAbsent(levelZ, ignored -> new LinkedHashSet<>())
-                            .addAll(cluster.roomFloorCellsAtLevel(room, levelZ));
+                            .addAll(cluster.roomStructure(room).surfaceAtLevel(levelZ).floor().cellCoords());
                 }
             }
         }

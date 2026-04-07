@@ -8,9 +8,7 @@ import features.world.dungeonmap.structure.model.boundary.StructureBoundary;
 import features.world.dungeonmap.structure.model.boundary.door.Door;
 import features.world.dungeonmap.structure.model.boundary.wall.Wall;
 import features.world.dungeonmap.structure.model.boundary.wall.WallKind;
-import features.world.dungeonmap.structure.model.surface.StructureFloor;
 import features.world.dungeonmap.structure.model.surface.StructureSurface;
-import features.world.dungeonmap.structure.model.surface.StructureSurfaceArea;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -104,10 +102,10 @@ public final class DungeonStructureRepository {
                     throw new IllegalStateException(
                             "Structure " + structureId + " hat keine persistierten Surface-Zellen auf Ebene " + levelZ);
                 }
-                StructureSurface.PersistenceSnapshot surfaceSnapshot = new StructureSurface.PersistenceSnapshot(
-                        new StructureSurfaceArea.PersistenceSnapshot(levelEntry.getValue(), surfaceCells),
-                        new StructureFloor.PersistenceSnapshot(
-                                floorCellsByStructureId.getOrDefault(structureId, Map.of()).getOrDefault(levelZ, Set.of())));
+                StructureSurface.PersistenceSnapshot surfaceSnapshot = StructureSurface.PersistenceSnapshot.fromCells(
+                        levelEntry.getValue(),
+                        surfaceCells,
+                        floorCellsByStructureId.getOrDefault(structureId, Map.of()).getOrDefault(levelZ, Set.of()));
                 StructureBoundary.PersistenceSnapshot boundarySnapshot = new StructureBoundary.PersistenceSnapshot(
                         doorsByStructureId.getOrDefault(structureId, Map.of()).getOrDefault(levelZ, List.of()),
                         wallsByStructureId.getOrDefault(structureId, Map.of()).getOrDefault(levelZ, List.of()));
@@ -240,16 +238,14 @@ public final class DungeonStructureRepository {
                 int levelZ = entry.getKey();
                 Structure.LevelStructure.PersistenceSnapshot level = entry.getValue();
                 StructureSurface.PersistenceSnapshot surface = level.surface();
-                StructureSurfaceArea.PersistenceSnapshot area = surface.surface();
-                StructureFloor.PersistenceSnapshot floor = surface.floor();
                 StructureBoundary.PersistenceSnapshot boundary = level.boundary();
                 insertLevel.setLong(1, structureObjectId);
                 insertLevel.setInt(2, levelZ);
-                insertLevel.setInt(3, persistedCellX2(area.anchorCell()));
-                insertLevel.setInt(4, persistedCellY2(area.anchorCell()));
+                insertLevel.setInt(3, persistedCellX2(surface.anchorCell()));
+                insertLevel.setInt(4, persistedCellY2(surface.anchorCell()));
                 insertLevel.addBatch();
-                addCells(insertSurfaceCell, structureObjectId, levelZ, area.cells());
-                addCells(insertFloorCell, structureObjectId, levelZ, floor.cells());
+                addCells(insertSurfaceCell, structureObjectId, levelZ, surface.surfaceCells());
+                addCells(insertFloorCell, structureObjectId, levelZ, surface.floorCells());
                 addWalls(insertWall, insertWallSegment, structureObjectId, levelZ, boundary.authoredWalls());
                 addDoors(insertDoor, insertDoorSegment, structureObjectId, levelZ, boundary.doors());
             }

@@ -256,12 +256,17 @@ public final class DungeonRoomApplicationService {
             if (room == null || room.roomId() == null) {
                 continue;
             }
-            Set<CellCoord> requestedCells = intersect(workingLayout.roomCellsAtLevel(room, levelZ), cells);
+            Structure roomStructure = workingLayout.roomStructure(room);
+            Set<CellCoord> requestedCells = intersect(
+                    roomStructure.surfaceAtLevel(levelZ).surface().cellCoords(),
+                    cells);
             if (requestedCells.isEmpty()) {
                 continue;
             }
             if (deleteFloor) {
-                Set<CellCoord> removedFloorCells = intersect(workingLayout.roomFloorCellsAtLevel(room, levelZ), requestedCells);
+                Set<CellCoord> removedFloorCells = intersect(
+                        roomStructure.surfaceAtLevel(levelZ).floor().cellCoords(),
+                        requestedCells);
                 if (removedFloorCells.isEmpty()) {
                     continue;
                 }
@@ -511,7 +516,7 @@ public final class DungeonRoomApplicationService {
         return layout.rooms().stream()
                 .filter(room -> room != null
                         && room.roomId() != null
-                        && !intersect(layout.roomCellsAtLevel(room, levelZ), cells).isEmpty())
+                        && !intersect(layout.roomStructure(room).surfaceAtLevel(levelZ).surface().cellCoords(), cells).isEmpty())
                 .sorted(Comparator.comparing(Room::roomId))
                 .toList();
     }

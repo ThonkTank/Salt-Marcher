@@ -86,7 +86,7 @@ public final class Wall extends BoundaryObject {
         if (Objects.equals(wallId(), wallId)) {
             return this;
         }
-        return new Wall(wallId, segments2x(), anchorSegment2x(), wallKind);
+        return new Wall(wallId, orderedBoundarySegments(), anchorSegment2x(), wallKind);
     }
 
     public Wall withWallKind(WallKind wallKind) {
@@ -94,7 +94,7 @@ public final class Wall extends BoundaryObject {
         if (Objects.equals(this.wallKind, resolvedWallKind)) {
             return this;
         }
-        return new Wall(wallId(), segments2x(), anchorSegment2x(), resolvedWallKind);
+        return new Wall(wallId(), orderedBoundarySegments(), anchorSegment2x(), resolvedWallKind);
     }
 
     public Wall clippedToBoundary(Collection<GridSegment2x> boundarySegments) {

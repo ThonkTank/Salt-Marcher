@@ -3,20 +3,75 @@ package features.world.dungeonmap.structure.model.surface;
 import features.world.dungeonmap.model.geometry.CellCoord;
 
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Canonical level-local aggregate over the surface and floor objects attached to one structure level.
  */
 public final class StructureSurface {
 
-    public record PersistenceSnapshot(
-            StructureSurfaceArea.PersistenceSnapshot surface,
-            StructureFloor.PersistenceSnapshot floor
-    ) {
-        public PersistenceSnapshot {
-            surface = surface == null ? StructureSurfaceArea.emptySnapshot() : surface;
-            floor = floor == null ? StructureFloor.emptySnapshot() : floor;
+    public static final class PersistenceSnapshot {
+
+        private final StructureSurfaceArea.PersistenceSnapshot surface;
+        private final StructureFloor.PersistenceSnapshot floor;
+
+        private PersistenceSnapshot(
+                StructureSurfaceArea.PersistenceSnapshot surface,
+                StructureFloor.PersistenceSnapshot floor
+        ) {
+            this.surface = surface == null ? StructureSurfaceArea.emptySnapshot() : surface;
+            this.floor = floor == null ? StructureFloor.emptySnapshot() : floor;
+        }
+
+        public static PersistenceSnapshot empty() {
+            return new PersistenceSnapshot(StructureSurfaceArea.emptySnapshot(), StructureFloor.emptySnapshot());
+        }
+
+        public static PersistenceSnapshot fromCells(
+                CellCoord anchorCell,
+                Collection<CellCoord> surfaceCells,
+                Collection<CellCoord> floorCells
+        ) {
+            return new PersistenceSnapshot(
+                    new StructureSurfaceArea.PersistenceSnapshot(anchorCell, normalizedCells(surfaceCells)),
+                    new StructureFloor.PersistenceSnapshot(normalizedCells(floorCells)));
+        }
+
+        public CellCoord anchorCell() {
+            return surface.anchorCell();
+        }
+
+        public Set<CellCoord> surfaceCells() {
+            return surface.cells();
+        }
+
+        public Set<CellCoord> floorCells() {
+            return floor.cells();
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (!(other instanceof PersistenceSnapshot that)) {
+                return false;
+            }
+            return Objects.equals(surface, that.surface)
+                    && Objects.equals(floor, that.floor);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(surface, floor);
+        }
+
+        @Override
+        public String toString() {
+            return "PersistenceSnapshot[surface=" + surface
+                    + ", floor=" + floor + "]";
         }
     }
 
@@ -28,7 +83,7 @@ public final class StructureSurface {
     }
 
     public static PersistenceSnapshot emptySnapshot() {
-        return new PersistenceSnapshot(StructureSurfaceArea.emptySnapshot(), StructureFloor.emptySnapshot());
+        return PersistenceSnapshot.empty();
     }
 
     public static StructureSurface fromCells(
@@ -42,8 +97,10 @@ public final class StructureSurface {
 
     public static StructureSurface fromPersistenceSnapshot(PersistenceSnapshot snapshot) {
         PersistenceSnapshot resolvedSnapshot = snapshot == null ? emptySnapshot() : snapshot;
-        StructureSurfaceArea surface = StructureSurfaceArea.fromPersistenceSnapshot(resolvedSnapshot.surface());
-        return fromSurfaceAndFloor(surface, StructureFloor.fromPersistenceSnapshot(resolvedSnapshot.floor(), surface));
+        StructureSurfaceArea surface = StructureSurfaceArea.fromCells(
+                resolvedSnapshot.anchorCell(),
+                resolvedSnapshot.surfaceCells());
+        return fromSurfaceAndFloor(surface, StructureFloor.fromCells(resolvedSnapshot.floorCells(), surface));
     }
 
     public static StructureSurface fromSurfaceAndFloor(
@@ -129,5 +186,18 @@ public final class StructureSurface {
     public String toString() {
         return "StructureSurface[surface=" + surface
                 + ", floor=" + floor + "]";
+    }
+
+    private static Set<CellCoord> normalizedCells(Collection<CellCoord> cells) {
+        if (cells == null || cells.isEmpty()) {
+            return Set.of();
+        }
+        LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
+        for (CellCoord cell : cells) {
+            if (cell != null) {
+                result.add(cell);
+            }
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 }
