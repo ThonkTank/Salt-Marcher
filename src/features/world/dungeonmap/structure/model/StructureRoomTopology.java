@@ -2,7 +2,6 @@ package features.world.dungeonmap.structure.model;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionKind;
 import features.world.dungeonmap.model.structures.connection.DoorConnectionCarrier;
@@ -36,6 +35,8 @@ public final class StructureRoomTopology {
     private final List<Room> rooms;
     private final Map<Room, Map<Integer, Set<CellCoord>>> roomCellsByRoom;
     private final Map<Long, Room> roomsById;
+    private final Map<Room, Structure> derivedStructuresByRoom;
+    private final Map<Long, Structure> derivedStructuresByRoomId;
     private final Map<CubePoint, Room> roomsByPoint;
     private final boolean hasOverlaps;
     private final List<DungeonConnection> localConnections;
@@ -170,9 +171,12 @@ public final class StructureRoomTopology {
         this.rooms = rooms == null ? List.of() : List.copyOf(rooms);
         this.roomCellsByRoom = roomCellsByRoom == null ? Map.of() : immutableRoomCellsByRoom(roomCellsByRoom);
         this.roomsById = roomsById == null ? Map.of() : Map.copyOf(roomsById);
+        DerivedStructureIndex derivedStructureIndex = indexDerivedStructures(this.roomCellsByRoom, this.clusterStructure);
+        this.derivedStructuresByRoom = derivedStructureIndex.structuresByRoom();
+        this.derivedStructuresByRoomId = derivedStructureIndex.structuresByRoomId();
         this.roomsByPoint = roomsByPoint == null ? Map.of() : Map.copyOf(roomsByPoint);
         this.hasOverlaps = hasOverlaps;
-        this.localConnections = deriveLocalConnections(mapId, clusterId, this.clusterStructure, this.roomCellsByRoom, this.roomsByPoint, this.rooms);
+        this.localConnections = deriveLocalConnections(mapId, clusterId, this.derivedStructuresByRoom, this.roomsByPoint);
         this.adjacentRoomIdsByRoomId = null;
         this.components = null;
         this.componentByRoomId = null;
@@ -354,28 +358,18 @@ public final class StructureRoomTopology {
         if (room == null) {
             return Structure.empty();
         }
-        Map<Integer, Set<CellCoord>> roomCellsByLevel = roomCellsByRoom.get(room);
-        if (roomCellsByLevel != null) {
-            return structureForDerivedRoom(roomCellsByLevel, room.anchorsByLevel(), clusterStructure);
+        Structure derivedStructure = derivedStructuresByRoom.get(room);
+        if (derivedStructure != null) {
+            return derivedStructure;
         }
         if (room.roomId() == null) {
             return Structure.empty();
         }
-        return structureFor(room.roomId());
+        return derivedStructuresByRoomId.getOrDefault(room.roomId(), Structure.empty());
     }
 
     public Structure structureFor(Long roomId) {
-        if (roomId == null) {
-            return Structure.empty();
-        }
-        Room room = roomsById.get(roomId);
-        if (room == null) {
-            return Structure.empty();
-        }
-        Map<Integer, Set<CellCoord>> roomCellsByLevel = roomCellsByRoom.get(room);
-        return roomCellsByLevel == null
-                ? Structure.empty()
-                : structureForDerivedRoom(roomCellsByLevel, room.anchorsByLevel(), clusterStructure);
+        return roomId == null ? Structure.empty() : derivedStructuresByRoomId.getOrDefault(roomId, Structure.empty());
     }
 
     private Map<Long, Set<Long>> adjacency() {
@@ -402,36 +396,29 @@ public final class StructureRoomTopology {
     private static List<DungeonConnection> deriveLocalConnections(
             long mapId,
             Long clusterId,
-            Structure clusterStructure,
-            Map<Room, Map<Integer, Set<CellCoord>>> roomCellsByRoom,
-            Map<CubePoint, Room> roomsByPoint,
-            List<Room> rooms
+            Map<Room, Structure> derivedStructuresByRoom,
+            Map<CubePoint, Room> roomsByPoint
     ) {
-        if (rooms.isEmpty()) {
+        if (derivedStructuresByRoom.isEmpty()) {
             return List.of();
         }
         long resolvedClusterId = clusterId == null ? 0L : clusterId;
-        Map<String, DoorComponent> doorsByKey = new LinkedHashMap<>();
         List<DungeonConnection> result = new ArrayList<>();
-        Set<String> seenKeys = new LinkedHashSet<>();
-        for (Room room : rooms) {
-            if (room == null) {
-                continue;
-            }
-            Structure roomStructure = structureForDerivedRoom(
-                    roomCellsByLevel(room, roomCellsByRoom),
-                    room.anchorsByLevel(),
-                    clusterStructure);
+        Set<DoorIdentity> seenDoors = new LinkedHashSet<>();
+        for (Map.Entry<Room, Structure> entry : derivedStructuresByRoom.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey(Comparator.comparing(Room::roomId, Comparator.nullsLast(Long::compareTo))))
+                .toList()) {
+            Structure roomStructure = entry.getValue();
             for (Integer levelZ : roomStructure.levels()) {
                 for (Door door : roomStructure.boundaryAtLevel(levelZ).doors()) {
                     if (door != null && door.hasBoundarySegments()) {
-                        String key = doorKey(levelZ, door);
-                        if (seenKeys.add(key)) {
-                            DoorComponent doorComponent = new DoorComponent(levelZ, door);
-                            DungeonConnection connection = localConnectionForDoor(doorComponent, mapId, resolvedClusterId, roomsByPoint);
-                            if (connection != null) {
-                                result.add(connection);
-                            }
+                        DoorIdentity doorIdentity = doorIdentity(levelZ, door);
+                        if (doorIdentity == null || !seenDoors.add(doorIdentity)) {
+                            continue;
+                        }
+                        DungeonConnection connection = localConnectionForDoor(levelZ, door, mapId, resolvedClusterId, roomsByPoint);
+                        if (connection != null) {
+                            result.add(connection);
                         }
                     }
                 }
@@ -441,17 +428,18 @@ public final class StructureRoomTopology {
     }
 
     private static DungeonConnection localConnectionForDoor(
-            DoorComponent doorComponent,
+            int levelZ,
+            Door door,
             long mapId,
             long clusterId,
             Map<CubePoint, Room> roomsByPoint
     ) {
-        if (doorComponent == null || doorComponent.door() == null || !doorComponent.door().hasBoundarySegments()) {
+        if (door == null || !door.hasBoundarySegments()) {
             return null;
         }
         List<Room> touchingRooms = new ArrayList<>();
-        for (CellCoord cell : doorComponent.door().touchingCells().stream().sorted(CellCoord.ORDER).toList()) {
-            Room room = roomsByPoint.get(CubePoint.at(cell, doorComponent.levelZ()));
+        for (CellCoord cell : door.touchingCells().stream().sorted(CellCoord.ORDER).toList()) {
+            Room room = roomsByPoint.get(CubePoint.at(cell, levelZ));
             if (room != null && !touchingRooms.contains(room)) {
                 touchingRooms.add(room);
             }
@@ -464,8 +452,8 @@ public final class StructureRoomTopology {
                 ConnectionKind.LOCAL,
                 clusterId,
                 mapId,
-                doorComponent.levelZ(),
-                new DoorConnectionCarrier(new DoorRef(doorComponent.door().doorId())),
+                levelZ,
+                new DoorConnectionCarrier(new DoorRef(door.doorId())),
                 endpoints);
     }
 
@@ -481,20 +469,11 @@ public final class StructureRoomTopology {
         return List.of(ConnectionEndpoint.room(leftRoom.roomId()), ConnectionEndpoint.room(rightRoom.roomId()));
     }
 
-    private static String doorKey(int levelZ, Door door) {
-        StringBuilder builder = new StringBuilder();
-        builder.append(levelZ).append(':');
-        boolean first = true;
-        for (GridSegment2x segment2x : door == null ? List.<GridSegment2x>of() : door.orderedBoundarySegments()) {
-            if (!first) {
-                builder.append('|');
-            }
-            first = false;
-            builder.append(segment2x.start().x2()).append(',').append(segment2x.start().y2())
-                    .append('-')
-                    .append(segment2x.end().x2()).append(',').append(segment2x.end().y2());
+    private static DoorIdentity doorIdentity(int levelZ, Door door) {
+        if (door == null || door.doorId() == null || door.doorId() == 0L) {
+            return null;
         }
-        return builder.toString();
+        return new DoorIdentity(levelZ, new DoorRef(door.doorId()));
     }
 
     private static Structure structureForDerivedRoom(
@@ -732,6 +711,36 @@ public final class StructureRoomTopology {
                 : CellCoord.bestCenter(roomCells);
     }
 
+    private static DerivedStructureIndex indexDerivedStructures(
+            Map<Room, Map<Integer, Set<CellCoord>>> roomCellsByRoom,
+            Structure clusterStructure
+    ) {
+        if (roomCellsByRoom == null || roomCellsByRoom.isEmpty()) {
+            return new DerivedStructureIndex(Map.of(), Map.of());
+        }
+        Map<Room, Structure> structuresByRoom = new LinkedHashMap<>();
+        Map<Long, Structure> structuresByRoomId = new LinkedHashMap<>();
+        for (Map.Entry<Room, Map<Integer, Set<CellCoord>>> entry : roomCellsByRoom.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey(Comparator.comparing(Room::roomId, Comparator.nullsLast(Long::compareTo))))
+                .toList()) {
+            Room room = entry.getKey();
+            if (room == null) {
+                continue;
+            }
+            Structure derivedStructure = structureForDerivedRoom(entry.getValue(), room.anchorsByLevel(), clusterStructure);
+            if (derivedStructure.levels().isEmpty()) {
+                continue;
+            }
+            structuresByRoom.put(room, derivedStructure);
+            if (room.roomId() != null) {
+                structuresByRoomId.put(room.roomId(), derivedStructure);
+            }
+        }
+        return new DerivedStructureIndex(
+                structuresByRoom.isEmpty() ? Map.of() : Map.copyOf(structuresByRoom),
+                structuresByRoomId.isEmpty() ? Map.of() : Map.copyOf(structuresByRoomId));
+    }
+
     @Override
     public boolean equals(Object other) {
         if (this == other) {
@@ -763,7 +772,10 @@ public final class StructureRoomTopology {
                 + ", hasOverlaps=" + hasOverlaps + "]";
     }
 
-    private record DoorComponent(int levelZ, Door door) {
+    private record DoorIdentity(int levelZ, DoorRef doorRef) {
+    }
+
+    private record DerivedStructureIndex(Map<Room, Structure> structuresByRoom, Map<Long, Structure> structuresByRoomId) {
     }
 
     private record PartitionedRoom(Room room, Map<Integer, Set<CellCoord>> roomCellsByLevel) {

@@ -211,7 +211,7 @@ public final class Corridor {
 
     public Set<GridSegment2x> boundaryDoorSegments(DungeonLayout layout) {
         StructureBoundary boundary = structure.boundaryAtLevel(levelZ);
-        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>(boundaryDoorSegments(boundary.doors()));
+        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>(boundary.doorBoundaryEdges());
         for (CorridorNode node : nodes) {
             if (node == null || !node.isDoorBound()) {
                 continue;
@@ -712,19 +712,6 @@ public final class Corridor {
                 .filter(Objects::nonNull)
                 .filter(door -> door.touchesAnyCell(componentCells))
                 .toList();
-    }
-
-    private static Set<GridSegment2x> boundaryDoorSegments(Collection<Door> doors) {
-        if (doors == null || doors.isEmpty()) {
-            return Set.of();
-        }
-        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
-        for (Door door : doors) {
-            if (door != null) {
-                result.addAll(door.boundarySegments());
-            }
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
     private static void validateTopology(List<CorridorNode> nodes, List<CorridorSegment> segments) {

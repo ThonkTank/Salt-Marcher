@@ -15,7 +15,6 @@ import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 import features.world.dungeonmap.structure.model.Structure;
-import features.world.dungeonmap.structure.model.boundary.door.Door;
 import features.world.dungeonmap.model.structures.connection.StairConnectionCarrier;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
@@ -123,7 +122,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 WalkableSurface surface = walkableSurface(
                         roomStructure.surfaceAtLevel(pass.projectionLevel()).floor().cellCoords(),
                         boundary.boundaryEdges(),
-                        boundaryDoorSegments(boundary.doors()));
+                        boundary.doorBoundaryEdges());
                 boolean selectedRoom = selectedRoom(pass.projected(), pass.selectedRef(), room.roomId());
                 if (!surface.tiles().isEmpty()) {
                     fillRoomTiles(gc, pass.camera(), pass.gridSize(), surface.tiles());
@@ -974,20 +973,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         return walkableSurface(
                 structure.surfaceAtLevel(levelZ).floor().cellCoords(),
                 structure.boundaryAtLevel(levelZ).boundaryEdges(),
-                boundaryDoorSegments(structure.boundaryAtLevel(levelZ).doors()));
-    }
-
-    private static Set<GridSegment2x> boundaryDoorSegments(Collection<Door> doors) {
-        if (doors == null || doors.isEmpty()) {
-            return Set.of();
-        }
-        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
-        for (Door door : doors) {
-            if (door != null) {
-                result.addAll(door.boundarySegments());
-            }
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+                structure.boundaryAtLevel(levelZ).doorBoundaryEdges());
     }
 
     private static WalkableSurface walkableSurface(

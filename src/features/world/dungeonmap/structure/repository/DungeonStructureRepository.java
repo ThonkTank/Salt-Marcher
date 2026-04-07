@@ -142,7 +142,7 @@ public final class DungeonStructureRepository {
             Structure.LevelStructure.PersistenceSnapshot level = entry.getValue();
             StructureBoundary.PersistenceSnapshot boundary = level.boundary();
             ArrayList<Wall> persistedWalls = new ArrayList<>();
-            for (Wall wall : boundary.authoredWalls()) {
+            for (Wall wall : boundary.walls()) {
                 if (wall == null || !wall.hasBoundarySegments()) {
                     continue;
                 }
@@ -246,7 +246,7 @@ public final class DungeonStructureRepository {
                 insertLevel.addBatch();
                 addCells(insertSurfaceCell, structureObjectId, levelZ, surface.surfaceCells());
                 addCells(insertFloorCell, structureObjectId, levelZ, surface.floorCells());
-                addWalls(insertWall, insertWallSegment, structureObjectId, levelZ, boundary.authoredWalls());
+                addWalls(insertWall, insertWallSegment, structureObjectId, levelZ, boundary.walls());
                 addDoors(insertDoor, insertDoorSegment, structureObjectId, levelZ, boundary.doors());
             }
             insertLevel.executeBatch();

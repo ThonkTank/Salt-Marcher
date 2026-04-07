@@ -14,17 +14,18 @@ import java.util.Set;
  * Shared internal base for boundary-local single-object owners.
  *
  * <p>This type centralizes anchor, segment, and clipping mechanics that both doors and walls use. Callers should stay
- * on the concrete door and wall APIs instead of widening onto this base.</p>
+ * on the concrete door and wall APIs instead of widening onto a generic shape carrier.</p>
  */
-public abstract class BoundaryObject extends EdgeShape {
+public abstract class BoundaryObject {
 
     private final Long objectId;
+    private final EdgeShape boundaryShape;
     private final GridSegment2x anchorSegment2x;
 
     protected BoundaryObject(Long objectId, Collection<GridSegment2x> segments, GridSegment2x anchorSegment2x) {
-        super(EdgeShape.normalizeBoundarySegments(segments));
+        this.boundaryShape = EdgeShape.fromBoundarySegments(segments);
         this.objectId = objectId;
-        this.anchorSegment2x = resolveAnchorSegment(anchorSegment2x, segments2x());
+        this.anchorSegment2x = resolveAnchorSegment(anchorSegment2x, boundaryShape.segments2x());
     }
 
     protected BoundaryObject(Long objectId, EdgeShape shape, GridSegment2x anchorSegment2x) {
@@ -40,26 +41,24 @@ public abstract class BoundaryObject extends EdgeShape {
     }
 
     public final GridSegment2x persistedAnchorSegment2x() {
-        return anchorSegment2x == null ? firstSegment2x() : anchorSegment2x;
+        return anchorSegment2x == null ? boundaryShape.firstSegment2x() : anchorSegment2x;
     }
 
     public final Set<GridSegment2x> boundarySegments() {
-        Set<GridSegment2x> segments = segmentSet2x();
+        Set<GridSegment2x> segments = boundaryShape.segmentSet2x();
         return segments.isEmpty() ? Set.of() : Set.copyOf(new LinkedHashSet<>(segments));
     }
 
     public final List<GridSegment2x> orderedBoundarySegments() {
-        return boundarySegments().stream()
-                .sorted(GridSegment2x.ORDER)
-                .toList();
+        return boundaryShape.segments2x();
     }
 
     public final boolean hasBoundarySegment(GridSegment2x segment2x) {
-        return segment2x != null && contains(segment2x);
+        return segment2x != null && boundaryShape.contains(segment2x);
     }
 
     public final boolean hasBoundarySegments() {
-        return !isEmpty();
+        return !boundaryShape.isEmpty();
     }
 
     public final Set<CellCoord> touchingCells() {
@@ -83,7 +82,7 @@ public abstract class BoundaryObject extends EdgeShape {
 
     protected final List<GridSegment2x> translatedBoundarySegments(CellCoord delta) {
         CellCoord resolvedDelta = delta == null ? new CellCoord(0, 0) : delta;
-        return segments2x().stream()
+        return orderedBoundarySegments().stream()
                 .map(segment -> segment.translatedByCells(resolvedDelta))
                 .toList();
     }
@@ -98,7 +97,7 @@ public abstract class BoundaryObject extends EdgeShape {
             return EdgeShape.empty();
         }
         EdgeShape boundaryShape = EdgeShape.fromBoundarySegments(boundarySegments);
-        return boundaryShape.isEmpty() ? EdgeShape.empty() : boundaryShape.intersection(boundarySegments());
+        return boundaryShape.isEmpty() ? EdgeShape.empty() : boundaryShape.intersection(this.boundarySegments());
     }
 
     protected final List<EdgeShape> remainingBoundaryComponents(Collection<GridSegment2x> removedBoundarySegments) {
@@ -118,12 +117,12 @@ public abstract class BoundaryObject extends EdgeShape {
 
     protected final boolean sameBaseState(BoundaryObject other) {
         return Objects.equals(objectId, other.objectId)
-                && Objects.equals(segments2x(), other.segments2x())
+                && Objects.equals(orderedBoundarySegments(), other.orderedBoundarySegments())
                 && Objects.equals(anchorSegment2x, other.anchorSegment2x);
     }
 
     protected final int baseHashCode() {
-        return Objects.hash(objectId, segments2x(), anchorSegment2x);
+        return Objects.hash(objectId, orderedBoundarySegments(), anchorSegment2x);
     }
 
     protected static final List<EdgeShape> boundaryComponents(Collection<GridSegment2x> boundarySegments) {

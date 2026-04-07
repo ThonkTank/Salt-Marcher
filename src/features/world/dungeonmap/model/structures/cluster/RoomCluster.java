@@ -14,6 +14,7 @@ import features.world.dungeonmap.structure.model.boundary.door.Door;
 import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeonmap.structure.model.boundary.wall.Wall;
 import features.world.dungeonmap.structure.model.boundary.wall.WallKind;
+import features.world.dungeonmap.structure.model.surface.StructureSurface;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionKind;
 import features.world.dungeonmap.model.structures.connection.DoorConnectionCarrier;
@@ -182,7 +183,7 @@ public final class RoomCluster {
                 || boundary.doorAtBoundarySegment(boundarySegment2x) != null) {
             return false;
         }
-        Wall effectiveWall = boundary.effectiveWallAtBoundarySegment(boundarySegment2x);
+        Wall effectiveWall = boundary.wallAtBoundarySegment(boundarySegment2x);
         if (!boundary.boundaryEdges().contains(boundarySegment2x)
                 || effectiveWall == null
                 || !effectiveWall.supportsDoorAttachments()
@@ -207,7 +208,7 @@ public final class RoomCluster {
 
     public boolean canCreateExteriorDoor(int levelZ, GridSegment2x boundarySegment2x) {
         StructureBoundary boundary = structure.boundaryAtLevel(levelZ);
-        Wall effectiveWall = boundary.effectiveWallAtBoundarySegment(boundarySegment2x);
+        Wall effectiveWall = boundary.wallAtBoundarySegment(boundarySegment2x);
         return boundarySegment2x != null
                 && boundary.boundaryEdges().contains(boundarySegment2x)
                 && boundary.doorAtBoundarySegment(boundarySegment2x) == null
@@ -265,13 +266,14 @@ public final class RoomCluster {
             return this;
         }
         CellCoord resolvedDelta = delta == null ? new CellCoord(0, 0) : delta;
+        Structure movedStructure = structure.movedBy(resolvedDelta, levelDelta);
         return new RoomCluster(
                 clusterId,
                 structureObjectId,
                 mapId,
                 center.add(resolvedDelta),
-                structure.movedBy(resolvedDelta, levelDelta),
-                structure.movedBy(resolvedDelta, levelDelta).rooms());
+                movedStructure,
+                movedStructure.rooms());
     }
 
     public BoundaryPath findCreateWallPath(GridPoint2x start, GridPoint2x goal) {
@@ -545,6 +547,7 @@ public final class RoomCluster {
                 mergeWallsByLevel(mergedWallsByLevel, overlappingCluster.structure());
                 mergedMetadataRooms.addAll(overlappingCluster.rooms());
             }
+            Map<Integer, Set<CellCoord>> previousClusterCellsByLevel = immutableCellsByLevel(mergedClusterCellsByLevel);
             mergedClusterCellsByLevel.computeIfAbsent(paintLevel, ignored -> new LinkedHashSet<>()).addAll(paintCells);
             mergedClusterFloorCellsByLevel.computeIfAbsent(paintLevel, ignored -> new LinkedHashSet<>()).addAll(paintCells);
 
@@ -552,7 +555,8 @@ public final class RoomCluster {
                     mergedClusterCellsByLevel,
                     mergedClusterFloorCellsByLevel,
                     mergedDoorsByLevel,
-                    mergedWallsByLevel);
+                    mergedWallsByLevel,
+                    previousClusterCellsByLevel);
             return new RoomCluster(
                     cluster.clusterId(),
                     cluster.structureObjectId(),
@@ -593,7 +597,8 @@ public final class RoomCluster {
                     remainingCellsByLevel,
                     remainingFloorCellsByLevel,
                     doorsByLevel(cluster.structure()),
-                    wallsByLevel(cluster.structure()));
+                    wallsByLevel(cluster.structure()),
+                    copyStructureSurfaceCellsByLevel(cluster.structure()));
             List<RoomCluster> componentClusters = splitDeletedCluster(cluster, rewrittenStructure);
             if (componentClusters.isEmpty()) {
                 return List.of();
@@ -987,7 +992,7 @@ public final class RoomCluster {
             }
             Map<Integer, List<Wall>> result = new LinkedHashMap<>();
             for (Integer levelZ : structure.levels().stream().sorted().toList()) {
-                List<Wall> walls = structure.boundaryAtLevel(levelZ).authoredWalls();
+                List<Wall> walls = structure.boundaryAtLevel(levelZ).walls();
                 if (!walls.isEmpty()) {
                     result.put(levelZ, walls);
                 }
@@ -1000,6 +1005,16 @@ public final class RoomCluster {
                 Map<Integer, Set<CellCoord>> floorCellsByLevel,
                 Map<Integer, List<Door>> doorsByLevel,
                 Map<Integer, List<Wall>> wallsByLevel
+        ) {
+            return buildClusterStructure(cellsByLevel, floorCellsByLevel, doorsByLevel, wallsByLevel, null);
+        }
+
+        private static Structure buildClusterStructure(
+                Map<Integer, Set<CellCoord>> cellsByLevel,
+                Map<Integer, Set<CellCoord>> floorCellsByLevel,
+                Map<Integer, List<Door>> doorsByLevel,
+                Map<Integer, List<Wall>> wallsByLevel,
+                Map<Integer, Set<CellCoord>> previousCellsByLevel
         ) {
             Map<Integer, Set<CellCoord>> normalizedCellsByLevel = immutableCellsByLevel(cellsByLevel);
             if (normalizedCellsByLevel.isEmpty()) {
@@ -1014,12 +1029,19 @@ public final class RoomCluster {
                     continue;
                 }
                 List<Wall> levelWalls = wallsByLevel == null ? List.of() : wallsByLevel.getOrDefault(levelZ, List.of());
-                levelsByZ.put(levelZ, Structure.LevelStructure.fromSurfaceAndFeatures(
+                List<Door> levelDoors = doorsByLevel == null ? List.of() : doorsByLevel.getOrDefault(levelZ, List.of());
+                StructureSurface surface = StructureSurface.fromCells(
                         CellCoord.bestCenter(levelCells),
                         levelCells,
-                        doorsByLevel == null ? List.of() : doorsByLevel.getOrDefault(levelZ, List.of()),
-                        levelWalls,
-                        normalizedFloorCellsByLevel.getOrDefault(levelZ, Set.of())));
+                        normalizedFloorCellsByLevel.getOrDefault(levelZ, Set.of()));
+                StructureBoundary boundary = previousCellsByLevel == null
+                        ? StructureBoundary.fromSurfaceAndFeatures(levelCells, levelDoors, levelWalls)
+                        : StructureBoundary.rewrittenForSurface(
+                        previousCellsByLevel.getOrDefault(levelZ, Set.of()),
+                        levelCells,
+                        levelDoors,
+                        levelWalls);
+                levelsByZ.put(levelZ, Structure.LevelStructure.fromSurfaceAndBoundary(surface, boundary));
             }
             return Structure.fromLevels(levelsByZ);
         }

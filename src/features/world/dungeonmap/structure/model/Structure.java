@@ -2,7 +2,6 @@ package features.world.dungeonmap.structure.model;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.structures.connection.DungeonConnection;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.structure.model.boundary.StructureBoundary;
@@ -76,33 +75,6 @@ public final class Structure {
                     LevelStructure level = LevelStructure.fromSurfaceCells(
                             anchorsByLevel == null ? null : anchorsByLevel.get(levelZ),
                             entry.getValue(),
-                            floorCellsByLevel == null ? null : floorCellsByLevel.get(levelZ));
-                    if (!level.isEmpty()) {
-                        levels.put(levelZ, level);
-                    }
-                });
-        return levels.isEmpty() ? empty() : fromLevels(levels);
-    }
-
-    public static Structure fromTopologyByLevel(
-            Map<Integer, ? extends Collection<CellCoord>> surfaceCellsByLevel,
-            Map<Integer, ? extends Collection<GridSegment2x>> boundaryEdgesByLevel,
-            Map<Integer, ? extends Collection<CellCoord>> floorCellsByLevel,
-            Map<Integer, CellCoord> anchorsByLevel
-    ) {
-        if (surfaceCellsByLevel == null || surfaceCellsByLevel.isEmpty()) {
-            return empty();
-        }
-        Map<Integer, LevelStructure> levels = new LinkedHashMap<>();
-        surfaceCellsByLevel.entrySet().stream()
-                .filter(entry -> entry != null && entry.getKey() != null)
-                .sorted(Map.Entry.comparingByKey())
-                .forEach(entry -> {
-                    int levelZ = entry.getKey();
-                    LevelStructure level = LevelStructure.fromTopology(
-                            anchorsByLevel == null ? null : anchorsByLevel.get(levelZ),
-                            entry.getValue(),
-                            boundaryEdgesByLevel == null ? null : boundaryEdgesByLevel.get(levelZ),
                             floorCellsByLevel == null ? null : floorCellsByLevel.get(levelZ));
                     if (!level.isEmpty()) {
                         levels.put(levelZ, level);
@@ -338,48 +310,6 @@ public final class Structure {
                     StructureBoundary.fromSurfaceAndFeatures(surface.surface().cellCoords(), doors, walls));
         }
 
-        public static LevelStructure fromTopology(
-                CellCoord anchorCell,
-                Collection<CellCoord> surfaceCells,
-                Collection<GridSegment2x> boundaryEdges,
-                Collection<CellCoord> floorCells
-        ) {
-            return fromTopologyWithDoorsAndWalls(anchorCell, surfaceCells, boundaryEdges, List.of(), List.of(), floorCells);
-        }
-
-        public static LevelStructure fromTopologyWithDoors(
-                CellCoord anchorCell,
-                Collection<CellCoord> surfaceCells,
-                Collection<GridSegment2x> boundaryEdges,
-                Collection<Door> doors,
-                Collection<CellCoord> floorCells
-        ) {
-            return fromTopologyWithDoorsAndWalls(
-                    anchorCell,
-                    surfaceCells,
-                    boundaryEdges,
-                    doors,
-                    List.of(),
-                    floorCells);
-        }
-
-        public static LevelStructure fromTopologyWithDoorsAndWalls(
-                CellCoord anchorCell,
-                Collection<CellCoord> surfaceCells,
-                Collection<GridSegment2x> boundaryEdges,
-                Collection<Door> doors,
-                Collection<Wall> walls,
-                Collection<CellCoord> floorCells
-        ) {
-            StructureSurface surface = StructureSurface.fromCells(anchorCell, surfaceCells, floorCells);
-            if (surface.isEmpty()) {
-                return new LevelStructure(StructureSurface.empty(), StructureBoundary.empty());
-            }
-            return new LevelStructure(
-                    surface,
-                    StructureBoundary.fromBoundaryEdges(surface.surface().cellCoords(), boundaryEdges, doors, walls));
-        }
-
         public StructureSurface surface() {
             return surface;
         }
@@ -397,11 +327,10 @@ public final class Structure {
         public LevelStructure withBoundary(StructureBoundary boundary) {
             StructureBoundary resolvedBoundary = boundary == null
                     ? StructureBoundary.empty()
-                    : StructureBoundary.fromBoundaryEdges(
+                    : StructureBoundary.fromSurfaceAndFeatures(
                     surface.surface().cellCoords(),
-                    boundary.boundaryEdges(),
                     boundary.doors(),
-                    boundary.authoredWalls());
+                    boundary.walls());
             return new LevelStructure(surface, resolvedBoundary);
         }
 
@@ -409,11 +338,7 @@ public final class Structure {
             StructureSurface resolvedSurface = surface == null ? StructureSurface.empty() : surface;
             StructureBoundary resolvedBoundary = resolvedSurface.isEmpty()
                     ? StructureBoundary.empty()
-                    : StructureBoundary.fromBoundaryEdges(
-                    resolvedSurface.surface().cellCoords(),
-                    boundary.boundaryEdges(),
-                    boundary.doors(),
-                    boundary.authoredWalls());
+                    : boundary.rewrittenToSurface(resolvedSurface.surface().cellCoords());
             return new LevelStructure(resolvedSurface, resolvedBoundary);
         }
 
@@ -421,7 +346,17 @@ public final class Structure {
                 StructureSurface surface,
                 StructureBoundary boundary
         ) {
-            return new LevelStructure(surface, boundary);
+            StructureSurface resolvedSurface = surface == null ? StructureSurface.empty() : surface;
+            if (resolvedSurface.isEmpty()) {
+                return new LevelStructure(StructureSurface.empty(), StructureBoundary.empty());
+            }
+            StructureBoundary resolvedBoundary = boundary == null
+                    ? StructureBoundary.empty()
+                    : StructureBoundary.fromSurfaceAndFeatures(
+                    resolvedSurface.surface().cellCoords(),
+                    boundary.doors(),
+                    boundary.walls());
+            return new LevelStructure(resolvedSurface, resolvedBoundary);
         }
 
         public static LevelStructure fromPersistenceSnapshot(PersistenceSnapshot snapshot) {

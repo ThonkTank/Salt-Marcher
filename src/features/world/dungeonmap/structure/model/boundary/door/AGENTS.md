@@ -8,7 +8,7 @@ This file covers `src/features/world/dungeonmap/structure/model/boundary/door/`.
 
 ## Canonical Types and APIs
 
-- `Door` — single-door owner — extends the internal `BoundaryObject` base and owns door-local state plus door-specific removal semantics and passage blocking.
+- `Door` — single-door owner — uses the internal `BoundaryObject` mechanics and owns door-local state plus door-specific removal semantics and passage blocking.
 - `DoorRef` — stable reference to one persisted door.
 
 ## Where New Code Goes
@@ -20,6 +20,5 @@ This file covers `src/features/world/dungeonmap/structure/model/boundary/door/`.
 ## Forbidden Drift
 
 - Do not rebuild door-local edit behavior from raw `EdgeShape` operations in callers.
-- Do not rely on inherited generic `EdgeShape` methods from `Door` outside the owner subtree when the explicit `Door` or `BoundaryObject` API already covers the read.
 - Do not introduce a second door aggregate owner unless there is a concrete aggregate invariant that one `Door` cannot enforce.
 - Do not re-home stable door references outside `DoorRef`.
