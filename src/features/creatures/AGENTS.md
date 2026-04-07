@@ -1,5 +1,7 @@
 # Creatures Platform
 
+This file uses the root owner-slice architecture. The package names mentioned below describe current homes and exported seams, not the default shape for new package invention.
+
 `features/creatures` is a core platform domain. It owns creature data, creature-facing application APIs, and the reusable public Creature UI consumed by encounter workflows and shell surfaces.
 
 ## Ownership

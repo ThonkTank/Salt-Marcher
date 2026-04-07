@@ -2,6 +2,8 @@
 
 This file defines encounter-specific operating constraints for agents working under `src/features/encounter/`. Apply the root `AGENTS.md` first, then this file for feature-local architecture and behavior.
 
+This file uses the root owner-slice architecture. Existing package families here describe current homes and stable feature seams, not permission to keep inventing new sibling structures.
+
 ## Scope
 
 This file covers the encounter feature: encounter building, generation, difficulty feedback, and combat tracking behavior. Do not copy these rules back into the root `AGENTS.md`; feature-local behavior belongs here.

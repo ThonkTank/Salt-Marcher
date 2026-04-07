@@ -790,6 +790,37 @@ public final class StructureRoomTopology {
                 : CellCoord.bestCenter(roomCells);
     }
 
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (!(other instanceof StructureRoomTopology that)) {
+            return false;
+        }
+        return mapId == that.mapId
+                && hasOverlaps == that.hasOverlaps
+                && Objects.equals(clusterId, that.clusterId)
+                && Objects.equals(rooms, that.rooms)
+                && Objects.equals(roomCellsByRoom, that.roomCellsByRoom)
+                && Objects.equals(roomsById, that.roomsById)
+                && Objects.equals(roomsByPoint, that.roomsByPoint)
+                && Objects.equals(localConnections, that.localConnections);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(mapId, clusterId, rooms, roomCellsByRoom, roomsById, roomsByPoint, hasOverlaps, localConnections);
+    }
+
+    @Override
+    public String toString() {
+        return "StructureRoomTopology[mapId=" + mapId
+                + ", clusterId=" + clusterId
+                + ", rooms=" + rooms
+                + ", hasOverlaps=" + hasOverlaps + "]";
+    }
+
     private record DoorComponent(int levelZ, Door door) {
     }
 

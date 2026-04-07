@@ -1,5 +1,7 @@
 # World Feature
 
+This file uses the root owner-slice architecture. `hexmap` and `dungeonmap` are the current world-owned subfeature homes and boundaries, not permission to add more world package families without first naming a stable owner.
+
 | Public API | Internal | Allowed consumers |
 | --- | --- | --- |
 | `features.world.api` | `hexmap`, `dungeonmap` | `ui.bootstrap` |

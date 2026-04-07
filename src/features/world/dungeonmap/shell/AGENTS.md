@@ -4,22 +4,20 @@ This file covers `src/features/world/dungeonmap/shell/`. Use it together with th
 
 ## Purpose
 
-`shell/` owns dungeon-facing UI wiring: views, hit probing, editor/runtime interaction, and publication into the shared inspector. It consumes canonical model and application seams instead of redefining them.
+This package is the current UI home for dungeon-facing surfaces. Shared owner placement already lives in the parent file; this file only records shell-local seams.
 
-## Current Durable Structure
+## Canonical Types and APIs
 
-- `AbstractDungeonMapView` owns the shared view lifecycle around a view-local `DungeonCanvasWorkspace`.
-- `interaction/` owns hit collection, hit surfaces, placement validation, drag helpers, and selection highlighting shared by editor and runtime.
-- `editor/` owns the editor view and editor-only controls and panes.
-- `runtime/` owns the runtime view and runtime-only interaction/controller code.
-- `EditorInteractionState`, `DungeonEditorSessionState`, `DungeonMapState`, and `DungeonRuntimeState` split shared state by role and should stay narrow.
+- `AbstractDungeonMapView` — shared view lifecycle — owns the shell-facing workspace lifecycle for dungeon surfaces.
+- `DungeonHitCollector` — canonical hit collection seam — gathers raw hit candidates for tools and runtime consumers.
+- `DungeonSelectionHighlightResolver` — semantic selection ref — resolves highlight surfaces from canonical model ownership.
+- `DungeonEditorView` and `DungeonRuntimeView` — top-level shell surfaces — present editor and runtime dungeon flows.
 
-## Rules
+## Where New Code Goes
 
-- `DungeonHitCollector` owns raw hit candidates. Tools and runtime policies consume the shared hit snapshot instead of walking hit sources independently.
-- `DungeonSelectionHighlightResolver` is the shared `DungeonSelectionRef -> DungeonHitSurface` seam for hover rendering.
-- Runtime details publish through the shared `DetailsNavigator`.
-- Runtime selection and movement resolve from the active navigation snapshot plus shared layout ownership, not from view-local mirrors.
+- Put shell-only view lifecycle and inspector publication here.
+- Put semantic hit resolution on the shared hit seams here before adding tool-specific hit walkers.
+- Keep runtime details on the shared inspector path instead of inventing feature-local details panes.
 
 ## Forbidden Drift
 

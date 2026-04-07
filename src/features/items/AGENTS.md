@@ -1,5 +1,7 @@
 # Items Feature
 
+This file uses the root owner-slice architecture. The package names mentioned below describe current homes and exported seams, not the default shape for new sibling package families.
+
 `features.items` owns item data, item search/read use cases, and the reusable item-catalog UI building blocks that other features can compose.
 
 | Public API | Internal | Allowed consumers |

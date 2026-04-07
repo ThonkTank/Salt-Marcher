@@ -4,30 +4,25 @@ This file covers `src/features/world/dungeonmap/model/`. Use it together with th
 
 ## Purpose
 
-`model/` owns canonical dungeon truth. Geometry, interaction refs, structure semantics, and layout queries must stay here so upper layers consume one stable interpretation instead of rebuilding it.
+This package is the current home of canonical dungeon truth. Shared dungeonmap ownership already lives in the parent file; this file only documents model-local additions.
 
-## Current Durable Structure
+## Canonical Types and APIs
 
-- `geometry/` owns pure grid math and the reusable shape families `TileShape`, `EdgeShape`, and `TilePath`.
-- `interaction/` owns semantic selection, hit, and label refs that other layers consume but do not reinterpret.
-- `objects/` owns gameplay objects over geometry. `StructureObject` is the only aggregate that combines boundary topology, authored walls, doors, and stair topology.
-- `structures/` owns dungeon structures and their structure-specific behavior over canonical objects.
-- `DungeonLayout` is the read/query index over current structure owners and shared relationship lookups.
+- `DungeonLayout` — loaded map snapshot — resolves cross-owner lookups, traversal, and canonical door or structure queries.
+- `StructureObject` — physical structure aggregate — owns surface, floor, wall, door, and stair topology plus attached room metadata projection.
+- `StructureRoomTopology` — room projection index — resolves room surfaces, anchors, adjacency, components, and local connections for one cluster structure.
+- `RoomCluster` — cluster aggregate — owns cluster-level room behavior over canonical structure truth.
+- `Corridor` — corridor aggregate — owns corridor routing, segments, nodes, and realized corridor topology.
 
-## Rules
+## Where New Code Goes
 
-- Geometry algebra belongs only in `geometry/`.
-- Gameplay semantics belong on object or structure owners, not in repositories, renderers, or tools.
-- `StructureObject` owns the canonical serializable physical structure form for clusters and corridors; repositories map rows to and from that snapshot instead of inventing a second boundary model.
-- `Wall` is an authored boundary-path object with stable identity and a resolved `WallKind`; uncovered boundary segments fall back to the built-in solid wall kind.
-- `Door` remains a separate boundary-attached object. Doors occupy compatible wall segments; they do not replace wall ownership or create a second topology aggregate.
-- `Room` owns identity, narration, and anchors only. Room surfaces and boundaries resolve through `RoomCluster` or `DungeonLayout`.
-- `Corridor`, `DungeonStair`, and `DungeonTransition` are first-class structure owners with stable ids.
-- `Corridor` owns corridor-specific routing data such as nodes, segments, and realized path traces. `StructureObject` only owns the final physical surface, wall, floor, and door topology produced from that routing.
-- `DungeonSelectionRef` carries semantic ids plus canonical geometry only. `DoorRef` is pure door identity; current owner semantics for doors resolve through `DungeonLayout`.
+- Put new dungeon semantics on the lowest stable model owner that actually enforces the invariant.
+- Put new shared geometry behavior in `geometry/` only when it is owner-neutral and genuinely canonical.
+- Put room-projection logic on `StructureRoomTopology` or `RoomCluster`, not on repositories, views, or workflow helpers.
 
 ## Forbidden Drift
 
 - Do not add a second geometry seam beside `geometry/`.
 - Do not add a second topology aggregate beside `StructureObject`.
-- Do not persist or cache structure-local mirrors for room, corridor, stair, or transition topology when the canonical owner already exists.
+- Do not move canonical semantic decisions into repositories, renderers, tools, or workflow coordinators.
+- Do not cache structure-local mirrors of room, corridor, stair, or transition truth when the canonical owner already exists here.

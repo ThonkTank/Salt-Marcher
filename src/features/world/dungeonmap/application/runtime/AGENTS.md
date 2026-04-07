@@ -4,17 +4,22 @@ This file covers `src/features/world/dungeonmap/application/runtime/`. Use it to
 
 ## Purpose
 
-`application/runtime/` owns runtime navigation and runtime-facing projections over canonical dungeon owners.
+This package is the current home of the `runtime` owner slice. Shared owner placement already lives in the parent file; this file only records runtime-local seams.
 
-## Current Durable Structure
+## Canonical Types and APIs
 
-- `DungeonRuntimeApplicationService` owns runtime navigation workflows, tile-only campaign-state persistence, and repair of persisted runtime state.
-- `DungeonRuntimeLocation` is the shared parsed runtime location used by both action assembly and description writing.
-- `DungeonRuntimeActionResolver` owns executable runtime actions.
-- `description/` owns read-only runtime description projections.
+- `DungeonRuntimeApplicationService` — navigation requests or loaded layout — returns runtime navigation snapshots and persists tile-only campaign-state movement.
+- `DungeonRuntimeActionResolver` — runtime context plus navigation snapshot — returns executable runtime actions.
+- `DungeonRuntimeLocation` — parsed runtime location — shared location seam for action and description assembly.
+- `DungeonRuntimeDescriptionResolver` — navigation snapshot — returns the read-only description payload shown by runtime UI.
+
+## Where New Code Goes
+
+- Put runtime-only navigation policy here before reaching for view controllers or shell helpers.
+- Keep description builders read-only and subordinate to the runtime owner.
 
 ## Forbidden Drift
 
-- Do not make description builders a second workflow owner.
+- Do not turn description builders into a second workflow owner.
 - Do not reparse layout ownership independently at every runtime UI sink.
 - Do not turn runtime projections into alternate model truth or write-capable objects.

@@ -4,17 +4,21 @@ This file covers `src/features/world/dungeonmap/canvas/`. Use it together with t
 
 ## Purpose
 
-`canvas/` owns dungeon rendering and raw pointer/scroll input. It should be easy to understand what gets drawn without making canvas code a second owner of dungeon semantics.
+This package is the current home of the `render/input` owner slice. Shared owner placement already lives in the parent file; this file only records render-local seams.
 
-## Current Durable Structure
+## Canonical Types and APIs
 
-- `canvas/base/` owns the workspace, camera, input handler interfaces, render payloads, and scene-frame assembly.
-- `canvas/grid/` owns the grid renderer and interactive label drawing.
-- `DungeonCanvasWorkspace` observes `DungeonMapState`, coalesces redraws, and hands one `DungeonSceneFrame` to the renderer.
-- `DungeonEditorRenderState` and `DungeonRuntimeRenderOverlay` are display payloads only.
+- `DungeonCanvasWorkspace` — observed map state plus interaction handler — renders one dungeon workspace and forwards raw pointer or scroll input.
+- `DungeonSceneFrame` — render payload — bundles the canonical data required for one draw pass.
+- `DungeonGridSceneRenderer` — scene frame — paints the grid and canonical dungeon overlays.
+
+## Where New Code Goes
+
+- Put pure rendering behavior, camera math, and raw pointer translation here.
+- Keep render payloads display-only; if a field would change persistence or domain behavior, it belongs on another owner.
 
 ## Forbidden Drift
 
 - Do not put workflow or persistence state into render payloads.
 - Do not rebuild hover, selection, or runtime ownership semantics inside the renderer.
-- Do not create temporary model owners just to draw previews that can already be expressed as cells or segments.
+- Do not create temporary model owners just to draw previews that can already be expressed through canonical geometry or state.

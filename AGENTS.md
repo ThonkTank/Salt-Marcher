@@ -6,8 +6,20 @@ This file defines the repository-specific operating constraints for Claude Code 
 
 **Language:** Java (no modules), JavaFX UI, SQLite via raw JDBC. Build via Gradle wrapper (`./gradlew`) with Java 21 toolchain and OpenJFX plugin.
 
-**Structure** (feature-first):
-- `src/features/<feature>/{model,application,repository,state,ui,api,bootstrap}` — canonical architecture by ownership layer; each feature uses only the roles it actually needs
+**Target structure:** Salt Marcher is a feature-oriented monolith with one binding target architecture:
+- `src/features/<feature>/...` is the top-level product boundary
+- inside a feature, organize new work by **owner slice first**
+- only inside an owner slice may you use local technical layers such as `model`, `application`, `repository`, `state`, `ui`, `api`, or `bootstrap`
+- non-feature code stays in shared homes such as `src/database/`, `src/importer/`, `src/shared/`, `src/ui/`, and `resources/`
+
+**Owner slices:** a slice is the single central owner of one capability family. Allowed slice kinds are:
+- aggregate owners such as `room`, `corridor`, `stair`, `transition`
+- shared kernels such as `layout` or geometry only when they are the one canonical truth shared by several owners
+- workflow or surface owners such as `runtime`, `catalog`, `editor interaction`, or `render/input` only when the workflow or surface is itself the stable central owner
+
+**Legacy package names:** directories such as `service`, `builder`, `loading`, `shell`, `canvas`, `internal`, `maintenance`, or `support` may still exist as current homes. They do **not** define the target architecture by themselves. Treat them as current locations that future touched code should converge away from unless a nearer local `AGENTS.md` explicitly declares one of them as a stable owner slice.
+
+**Stable infrastructure homes:**
 - `src/database/DatabaseManager` — connection factory. `getConnection()` returns a fresh Connection with `PRAGMA foreign_keys=ON` and `journal_mode=WAL`; callers own it via try-with-resources. `setupDatabase()` uses idempotent `CREATE TABLE IF NOT EXISTS` + `INSERT OR IGNORE` seeding
 - `src/importer/` and `src/shared/crawler/` — crawler/import pipeline
 - `src/ui/` — JavaFX shell/bootstrap (`src/ui/bootstrap/`) plus shared UI-only components (`src/ui/components/`)
@@ -70,48 +82,35 @@ Left column is a VBox (Controls takes natural height, Main fills rest — not re
 
 ### Feature-Local AGENTS Files
 
-- `src/features/campaignstate/AGENTS.md` — `campaign_state` ownership and campaign-state boundary rules
-- `src/features/creatures/AGENTS.md` — creatures platform ownership and reusable creature UI/API boundary rules
-- `src/features/encounter/AGENTS.md` — encounter-specific interaction, generation, and combat/runtime behavior
+- `src/features/campaignstate/AGENTS.md` — campaign-state ownership and public boundary rules
+- `src/features/creatures/AGENTS.md` — creatures platform ownership and reusable creature UI/API rules
+- `src/features/encounter/AGENTS.md` — encounter-specific workflow and runtime behavior
 - `src/features/encountertable/AGENTS.md` — encounter-table boundary and consumer-ownership rules
-- `src/features/items/AGENTS.md` — item API ownership and reusable item-catalog UI boundary rules
+- `src/features/items/AGENTS.md` — item ownership and reusable item-catalog UI boundary rules
 - `src/features/loottable/AGENTS.md` — loot-table ownership and item-catalog composition rules
 - `src/features/party/AGENTS.md` — party feature public-boundary rules
 - `src/features/partyanalysis/AGENTS.md` — party-analysis public-boundary rules
-- `src/features/world/AGENTS.md` — world feature boundary and shared world-UI rules
-- `src/features/world/hexmap/AGENTS.md` — hex map and overworld-specific rendering, editing, and calendar rules
-- `src/features/world/dungeonmap/AGENTS.md` — dungeon editor architecture, canonical 2D primitive contract, model layering, and package roles
+- `src/features/world/AGENTS.md` — world feature boundary and subfeature ownership rules
+- `src/features/world/hexmap/AGENTS.md` — hex map and overworld-specific rules
+- `src/features/world/dungeonmap/AGENTS.md` — dungeonmap owner atlas and canonical dungeon seams
 
-Non-feature local rules may also live under shared or tooling directories such as `src/shared/AGENTS.md` and
-`sync/AGENTS.md` when those directories need durable agent guidance.
+Non-feature local rules may also live under shared or tooling directories such as `src/shared/AGENTS.md` and `sync/AGENTS.md` when those directories need durable agent guidance.
 
 ## Architecture Guidelines
 
-Salt Marcher is a feature-oriented monolith.
-Code is organized primarily under `src/features/<feature>/`.
-This architecture exists to prevent drift: every capability should be defined once, owned once, and subordinated to the layer that is responsible for keeping it coherent.
+Salt Marcher is a feature-oriented monolith. The binding target architecture is:
 
-This root file is binding for the entire repository.
-Local `AGENTS.md` files refine these rules for a feature.
-Local `AGENTS.md` files may define additional local structure, but they must not weaken the global ownership and dependency rules.
+1. choose the owning feature
+2. choose the single owner slice inside that feature
+3. only then choose the local technical layer inside that slice if one is needed
 
-If a package layer, filename role, or global rule is not defined here, it is not part of the repository-wide architecture.
-Additional structure belongs only in the nearest feature-local `AGENTS.md`, or as a precise domain name that does not pretend to be a new global role.
+Do not reverse that decision order. A capability does not belong in a package because the package name sounds familiar; it belongs with the owner that keeps the capability coherent.
 
-### Guidelines
+### Core Rules
 
 - Give every capability one central owner.
 - Place each capability on the lowest common owner that is actually edited, described, or constrained by it.
 - Objects and types may gain capabilities through composition, inheritance, or references, but ownership of the capability stays with the central owner instead of being mirrored in consumers.
-- Treat package layers as ownership boundaries. A capability belongs to the layer that subordinates it to its owner, not to the first caller that happens to use it.
-- Decide layer and owner before naming.
-- The repository-wide hard owner and boundary suffixes are `*ApplicationService`, `*Repository`, `*State`, `*View`, `*Api`, and `*Module`.
-- Use one of those exact suffixes only when it clearly matches the file's central owner or boundary. Do not invent near-synonyms for the same job.
-- If none of the hard roles fits cleanly, use a precise domain name or helper name instead of stretching a role.
-- Helper suffixes such as `*Projection`, `*Lookup`, `*Port`, `*Session`, `*Mapper`, `*Codec`, `*Policy`, `*Factory`, `*Descriptor`, and `*Snapshot` do not declare architectural ownership.
-- `*Reconciler`, `*Maintenance`, and `*Hydrator` remain smell markers and should stay rare.
-- In `model/`, the central owner will usually be a precise domain type, not a generic role suffix. Prefer the domain name when the type itself is the canonical owner.
-- If several sibling files in one directory share the same descriptive helper suffix, treat that as a smell: either the package focus is too broad or ownership is duplicated.
 - New code must follow the target architecture immediately.
 - Touched code should move toward the target architecture at the nearest safe seam without widening scope.
 - Preserve behavior, storage assumptions, user workflows, and explicit invariants unless the task explicitly requires changing them.
@@ -120,88 +119,48 @@ Additional structure belongs only in the nearest feature-local `AGENTS.md`, or a
 - Do not do rename-only churn just to satisfy the naming system. Rename when it clarifies ownership, removes a misleading role signal, or accompanies a real boundary change.
 - When goals compete, use this order: preserve correctness and satisfy the user request; preserve explicit repository invariants and local `AGENTS.md` rules; keep the change small enough to verify safely; then move the touched code toward the target architecture.
 
-### Layers
+### Local Layer Vocabulary
 
-Reason about ownership in this order:
-- domain and editor truth live in `model/`
-- use-case and workflow logic live in `application/`
-- persistence access lives in `repository/`
-- shared transient runtime state lives in `state/`
-- feature-local presentation and interaction live in `ui/`
-- public feature boundaries live in `api/`
-- internal wiring lives in `bootstrap/`
+Technical layers are subordinate tools inside an owner slice, not the primary architecture story:
+- `model` — canonical business and editor truth for that owner
+- `application` — workflows and use cases for that owner
+- `repository` — storage access for that owner
+- `state` — shared transient UI or workflow state for that owner
+- `ui` — presentation and interaction owned by that owner
+- `api` — deliberate exported boundary for that owner or feature
+- `bootstrap` — internal composition and wiring
 
-The default dependency direction is `ui -> application -> repository -> model`.
-`state/` may be observed by `ui/` and coordinated by `application/`, while `model/` remains the canonical truth.
-Typical read flow still starts at `ui/` and follows dependencies inward.
-If a feature defines a nearer `AGENTS.md`, that file is required context before any change in that subtree.
+Use these layer names only when they clearly describe a local responsibility inside the already-chosen owner slice.
 
-#### `model/`
+### AGENTS Contract
 
-- Owns canonical business and editor truth.
-- Carries behavior on the lowest stable owner that actually enforces the invariant.
-- Stays framework- and storage-agnostic.
-- Canonical owners in `model/` are usually precise domain names without a role suffix. Do not rename them into generic owner wrappers just to satisfy a naming system.
-- Model-local helper names such as `*Ref`, `*Binding`, `*Plan`, `*Projection`, `*Policy`, and `*Session` are allowed.
+`AGENTS.md` files are architecture libraries, not changelogs and not implementation walkthroughs. A durable AGENTS file should usually provide these sections:
+- `Purpose`
+- `Owner Atlas`
+- `Canonical Types and APIs`
+- `Where New Code Goes`
+- `Forbidden Drift`
 
-#### `application/`
+`Canonical Types and APIs` should document only the central seams an implementer should reuse. Use short entries of the form `Type or entrypoint - input summary - output or side effect`.
 
-- Owns use-case orchestration.
-- Sequences workflows, async work, transactions, reload-after-write behavior, and cross-feature coordination.
-- Coordinates repositories, state containers, and feature APIs without becoming canonical domain truth.
-- Use `*ApplicationService` for the central, user-visible workflow owner in this layer.
-- Other names in `application/` should be precise workflow helper or data names such as `*Request`, `*Result`, `*Summary`, `*Target`, `*Snapshot`, `*Descriptor`, `*Lookup`, `*Resolver`, `*Projection`, `*Committer`, `*Session`, or `*Port`.
-- Prefer removing the drift that requires `*Reconciler` or `*Maintenance` over introducing new ones.
+Do not use AGENTS files to:
+- restate obvious implementation details that the edited file already shows clearly
+- dump per-method control flow or table-by-table storage layout
+- preserve stale migration notes after the migration is over
+- present the current folder layout as the target architecture when the target has already changed
 
-#### `repository/`
+### Agent Compliance Checklist
 
-- Owns direct storage access.
-- Carries SQL, row mapping, query construction, persistence ordering, and storage-specific lookups.
-- Remains stateless; callers provide the `Connection`.
-- Use `*Repository` for the central storage owner in this layer. Read-only, write-only, search-focused, lookup-focused, or cache-focused variants still belong to the repository family.
-- Support types may use names such as `*Store`, `*Schema`, `*Write`, `*Mapper`, `*Codec`, or `*Hydrator`.
-- Prefer folding `*Hydrator` work back into a clearer repository or mapper seam over introducing additional hydrators.
+Before adding new code:
+1. Read the root `AGENTS.md` and the nearest governing local `AGENTS.md` files.
+2. Identify the owner slice before choosing a package.
+3. Inspect the documented canonical owner and entry points before introducing a new class, service, helper, or package.
+4. Extend the listed owner first. Create a new owner, public seam, or package family only when the current owners truly cannot absorb the change.
 
-#### `state/`
-
-- Owns shared transient UI, editor, and workflow state.
-- Carries selection, drafts, previews, modes, and other runtime interaction truth.
-- Supports the workflow around canonical truth without replacing it.
-- Use `*State` for shared transient mutable owners in this layer.
-- Names such as `*Draft`, `*Preview`, `*Settings`, and `*Mode` describe subordinate state artifacts.
-
-#### `ui/`
-
-- Owns feature-local presentation and interaction code.
-- Contains views, panes, dropdowns, canvases, controls, and UI controllers.
-- Talks to application services and state containers, not directly to persistence policy.
-- Use `*View` for top-level application surfaces in the shell/navigation model.
-- UI names such as `*Shell`, `*Workspace`, `*Pane`, `*Controls`, `*Canvas`, `*Dropdown`, `*Controller`, `*Navigator`, `*Registry`, `*RenderState`, `*Tool`, and UI-local `*Handle` types are local surface vocabulary.
-- Keep `*RenderState` display-only.
-
-#### `api/`
-
-- Is the cross-feature entrypoint.
-- Contains deliberate boundary contracts, boundary data, and explicitly exported public feature surfaces only.
-- Use `*Api` for deliberate cross-feature boundary surfaces.
-- Use `*Module` in `api/` only when the module itself is the public feature entrypoint or exported composition root.
-- Other names such as `*Port`, `*Summary`, `*Request`, `*Result`, `*Ref`, `*Handle`, and `*Lookup` describe boundary shapes.
-- When `api/` intentionally exports another central owner, keep that exact name instead of inventing an api-only wrapper.
-- Boundary-facing `*Mapper` and `*Codec` types may live here when they serve the public API seam rather than persistence.
-
-#### `bootstrap/`
-
-- Owns internal composition roots and assembly-only wiring.
-- Wires collaborators and exposes feature entrypoints.
-- Use `*Module` for internal feature composition roots by default. Only place a `*Module` in `api/` when the module itself is the public feature entrypoint.
-- `SaltMarcherApp` remains the cross-feature top-level composition root.
-- `*App` and `*Preloader` are allowed for startup lifecycle code.
-
-### Existing Names
-
-- New code should use the hard owner and boundary roles above when one clearly fits.
-- Existing names may remain unless they actively obscure ownership or send a misleading boundary signal.
-- Prefer a precise domain or helper name over generic catch-all names such as `*Manager`, `*Helper`, `*Util`, `*Processor`, `*Support`, or `*Surface`.
+When adding a genuinely new owner or public seam:
+1. Update the governing `AGENTS.md` files in the same change.
+2. Document the new owner, its purpose, and the small set of canonical entry points other agents should reuse.
+3. Explain current location versus target placement when the code still lives in a legacy package.
 
 ## Key Conventions
 
@@ -229,7 +188,7 @@ The rules in this section are decision filters, not soft preferences. When multi
 - Application workflows may propagate `SQLException` from repositories and transaction boundaries, but business validation must use domain/argument exceptions (`IllegalArgumentException` or a feature-specific edit exception), not `SQLException`
 - Precise helper types such as `*Factory`, `*Generator`, `*Calculator`, `*Classifier`, `*Normalizer`, `*Assembler`, `*Coordinator`, `*Planner`, `*Matcher`, and comparable pure helpers are static-only with private constructor unless they need explicit state
 - Stateful workflow entrypoints (`*ApplicationService`, `*Session`) are instance-based
-- Some existing feature areas still use `service/` packages. Keep their public workflow entrypoints at the package root, place new code in `application/`, and move close collaborators into focused subpackages when touching that area
+- Some existing feature areas still use `service/` packages. Keep their public workflow entrypoints at the package root, place new code in `application/`, and move close collaborators into focused owner slices when touching that area
 - Cross-feature read DTOs belong in `src/features/<feature>/api/`, not in `model/`. Use the `*Summary` naming pattern for lightweight selector DTOs. Keep `model/` focused on domain/editor state, not transport shapes for other features
 - Feature module APIs should expose narrow, role-specific setup methods. Do not hide unrelated wiring behind a generic `initialize(...)` entrypoint
 

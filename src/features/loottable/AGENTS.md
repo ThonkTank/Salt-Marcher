@@ -1,5 +1,7 @@
 # Loot Tables Feature
 
+This file uses the root owner-slice architecture. The package names mentioned below describe current homes and seams, not the default shape for future package invention.
+
 `features.loottable` owns loot-table state, mutations, and the item-catalog composition used to edit a table.
 
 ## Ownership
