@@ -2,7 +2,7 @@ package features.world.dungeonmap.application.runtime;
 
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.objects.DoorRef;
 
 import java.util.Objects;
 
@@ -39,12 +39,10 @@ public record DungeonRuntimeAction(
     }
 
     public record DoorTarget(
-            GridSegment2x anchorSegment2x,
-            CellTarget destination
+            DoorRef doorRef
     ) implements Target {
         public DoorTarget {
-            anchorSegment2x = Objects.requireNonNull(anchorSegment2x, "anchorSegment2x");
-            destination = Objects.requireNonNull(destination, "destination");
+            doorRef = Objects.requireNonNull(doorRef, "doorRef");
         }
     }
 

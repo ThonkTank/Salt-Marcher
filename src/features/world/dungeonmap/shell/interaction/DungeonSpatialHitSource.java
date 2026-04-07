@@ -2,6 +2,7 @@ package features.world.dungeonmap.shell.interaction;
 
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
@@ -82,13 +83,14 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
                 continue;
             }
             if (transition.localConnection().doorCarrier() != null) {
-                if (!transition.localConnection().anchorSegment2x().touchingCells().contains(probe.gridCell())) {
+                GridSegment2x anchorSegment2x = transition.localConnection().anchorSegment2x(layout);
+                if (anchorSegment2x == null || !anchorSegment2x.touchingCells().contains(probe.gridCell())) {
                     continue;
                 }
                 descriptors.add(new DungeonHitDescriptor(
                         new DungeonSelectionRef.TransitionRef(transition.transitionId()),
                         List.of(new DungeonHitSurface.SegmentSurface(
-                                Set.of(transition.localConnection().anchorSegment2x()),
+                                Set.of(anchorSegment2x),
                                 transition.localConnection().levelZ()))));
                 continue;
             }

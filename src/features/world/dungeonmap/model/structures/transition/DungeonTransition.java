@@ -44,14 +44,7 @@ public record DungeonTransition(
         }
         DoorConnectionCarrier doorCarrier = localConnection.doorCarrier();
         if (doorCarrier != null) {
-            GridSegment2x anchorSegment2x = localConnection.anchorSegment2x();
-            if (anchorSegment2x == null) {
-                return null;
-            }
-            return new InteractiveLabelHandle(
-                    new DungeonSelectionRef.TransitionRef(transitionId),
-                    label(),
-                    anchorSegment2x.midpoint());
+            return null;
         }
         StairConnectionCarrier stairCarrier = localConnection.stairCarrier();
         if (stairCarrier == null) {

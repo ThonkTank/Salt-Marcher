@@ -3,15 +3,12 @@ package features.world.dungeonmap.application.runtime.description;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.structures.connection.Connection;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpointType;
-import features.world.dungeonmap.model.structures.connection.RoomExitDescriptor;
+import features.world.dungeonmap.model.structures.connection.DoorExitDescriptor;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
-
-import java.util.Objects;
 
 final class DungeonRuntimeExitFactory {
 
@@ -21,12 +18,12 @@ final class DungeonRuntimeExitFactory {
 
     static DungeonRuntimeExit roomExit(
             DungeonRuntimeLocation location,
-            RoomExitDescriptor exit
+            DoorExitDescriptor exit
     ) {
         Room room = location == null ? null : location.room();
         String narration = room == null || room.roomId() == null || exit == null
                 ? ""
-                : room.narration().exitDescription(exit.levelZ(), exit.roomCell(), exit.direction());
+                : room.narration().exitDescription(exit.levelZ(), exit.localCell(), exit.direction());
         return create(
                 location,
                 exit,
@@ -36,7 +33,7 @@ final class DungeonRuntimeExitFactory {
 
     static DungeonRuntimeExit corridorExit(
             DungeonRuntimeLocation location,
-            RoomExitDescriptor exit
+            DoorExitDescriptor exit
     ) {
         Corridor corridor = location == null ? null : location.corridor();
         return create(
@@ -48,7 +45,7 @@ final class DungeonRuntimeExitFactory {
 
     private static DungeonRuntimeExit create(
             DungeonRuntimeLocation location,
-            RoomExitDescriptor exit,
+            DoorExitDescriptor exit,
             ConnectionEndpoint activeEndpoint,
             String narration
     ) {
@@ -56,21 +53,15 @@ final class DungeonRuntimeExitFactory {
             return null;
         }
         DungeonLayout layout = location == null ? null : location.layout();
-        Connection connection = layout == null ? null : layout.connectionAt(exit.levelZ(), exit.anchorSegment2x());
-        ConnectionEndpoint destinationEndpoint = oppositeEndpoint(connection, activeEndpoint);
+        var connection = layout == null ? null : layout.connectionForDoor(exit.doorRef());
+        ConnectionEndpoint destinationEndpoint = connection == null ? null : connection.oppositeOf(activeEndpoint);
         String destinationLabel = doorDestinationLabel(layout, destinationEndpoint, activeEndpoint);
         return new DungeonRuntimeExit(
                 exit.label(),
                 exit.number(),
-                exit.anchorSegment2x(),
+                exit.doorRef(),
                 destinationLabel,
-                doorDescription(location == null ? null : location.heading(), exit.direction(), narration),
-                exit.outsideCell(),
-                exit.levelZ(),
-                exit.direction(),
-                destinationEndpoint != null && destinationEndpoint.type() == ConnectionEndpointType.TRANSITION
-                        ? destinationEndpoint.id()
-                        : null);
+                doorDescription(location == null ? null : location.heading(), exit.direction(), narration));
     }
 
     private static String doorDescription(
@@ -113,25 +104,6 @@ final class DungeonRuntimeExitFactory {
             return transition == null ? "Übergang" : transition.label();
         }
         return "";
-    }
-
-    private static ConnectionEndpoint oppositeEndpoint(Connection connection, ConnectionEndpoint activeEndpoint) {
-        if (connection == null) {
-            return null;
-        }
-        if (activeEndpoint != null) {
-            ConnectionEndpoint opposite = connection.oppositeOf(activeEndpoint);
-            if (opposite != null) {
-                return opposite;
-            }
-        }
-        return connection.endpoints().stream()
-                .filter(endpoint -> endpoint != null && endpoint.type() == ConnectionEndpointType.TRANSITION)
-                .findFirst()
-                .orElseGet(() -> connection.endpoints().stream()
-                        .filter(Objects::nonNull)
-                        .findFirst()
-                        .orElse(null));
     }
 
     private static String roomLabel(DungeonLayout layout, Long roomId) {

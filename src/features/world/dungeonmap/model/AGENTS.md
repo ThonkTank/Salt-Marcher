@@ -48,7 +48,7 @@ It answers object-level meaning and validation, while delegating geometry algebr
   - `Wall` and `Door` extend `EdgeShape`.
   - passive object-side `Stair` extends `TilePath`.
 - Each object may own only object semantics: allowed/forbidden forms, placement constraints, stateful gameplay flags, and object-specific behavior.
-- `StructureObject` is the only object aggregate owner. It combines walls, doors, floors, and stairs into one coherent topology and owns object-aggregate capabilities (room closure checks, selected-room-by-click queries, boundary/opening derivation, reachability, component splits).
+- `StructureObject` is the only object aggregate owner. It combines walls, doors, floors, and stairs into one coherent topology and owns object-aggregate capabilities (room closure checks, selected-room-by-click queries, wall-vs-door boundary derivation, reachability, component splits).
 
 ### Forbidden in `objects/`
 
@@ -91,7 +91,7 @@ It answers object-level meaning and validation, while delegating geometry algebr
 
 - `Room` owns room identity, narration, and per-level anchors only. It does not cache or expose topology.
 - `RoomCluster` owns cluster metadata plus room/door workflow semantics over `StructureObject`-owned topology queries.
-- Room-surface queries such as cells, floors, boundaries, openings, and centers must resolve through `RoomCluster` or `DungeonLayout`, not directly from `Room`.
+- Room-surface queries such as cells, floors, boundaries, door segments, and centers must resolve through `RoomCluster` or `DungeonLayout`, not directly from `Room`.
 - Room paint/delete/boundary/floor edits mutate cluster-owned `StructureObject` level truth plus room metadata. They do not reroute or regenerate corridors or stairs.
 - `Connection` owns connectivity, entry resolution, occupied-position projection, and passive physical carrier data.
 - `Corridor` is a first-class structure with stable identity, nodes, segments, room bindings, and direct graph transforms.

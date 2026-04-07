@@ -314,7 +314,7 @@ public final class DungeonTransitionRepository {
                         transitionId,
                         mapId,
                         description.levelZ(),
-                        new DoorConnectionCarrier(description.ref(), description.anchorSegment2x()),
+                        new DoorConnectionCarrier(description.ref()),
                         List.of(sourceEndpoint, ConnectionEndpoint.transition(transitionId)));
             }
             case "STAIR" -> new DungeonConnection(

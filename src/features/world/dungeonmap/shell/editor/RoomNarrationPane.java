@@ -84,9 +84,9 @@ public final class RoomNarrationPane {
                         .map(exit -> new RoomExitCard(
                                 exit.label(),
                                 exit.levelZ(),
-                                exit.roomCell(),
+                                exit.localCell(),
                                 exit.direction(),
-                                room.narration().exitDescription(exit.levelZ(), exit.roomCell(), exit.direction())))
+                                room.narration().exitDescription(exit.levelZ(), exit.localCell(), exit.direction())))
                         .toList());
     }
 

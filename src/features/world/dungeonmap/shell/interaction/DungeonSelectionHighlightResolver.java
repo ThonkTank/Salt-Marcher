@@ -2,6 +2,7 @@ package features.world.dungeonmap.shell.interaction;
 
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
@@ -41,7 +42,7 @@ public final class DungeonSelectionHighlightResolver {
             case DungeonSelectionRef.RoomRef roomRef -> roomOwnerSurfaces(layout, layout.findRoom(roomRef.roomId()), levelZ);
             case DungeonSelectionRef.CorridorRef corridorRef -> corridorOwnerSurfaces(layout.findCorridor(corridorRef.corridorId()), levelZ);
             case DungeonSelectionRef.StairRef stairRef -> stairOwnerSurfaces(layout.findStair(stairRef.stairId()), levelZ);
-            case DungeonSelectionRef.TransitionRef transitionRef -> transitionOwnerSurfaces(layout.findTransition(transitionRef.transitionId()), levelZ);
+            case DungeonSelectionRef.TransitionRef transitionRef -> transitionOwnerSurfaces(layout, layout.findTransition(transitionRef.transitionId()), levelZ);
             default -> List.of();
         };
     }
@@ -129,13 +130,15 @@ public final class DungeonSelectionHighlightResolver {
         return cells.isEmpty() ? List.of() : List.of(new DungeonHitSurface.CellSurface(cells, levelZ));
     }
 
-    private static List<DungeonHitSurface> transitionOwnerSurfaces(DungeonTransition transition, int levelZ) {
+    private static List<DungeonHitSurface> transitionOwnerSurfaces(DungeonLayout layout, DungeonTransition transition, int levelZ) {
         if (transition == null || transition.localConnection() == null) {
             return List.of();
         }
         if (transition.localConnection().doorCarrier() != null) {
+            GridSegment2x anchorSegment2x = transition.localConnection().anchorSegment2x(layout);
             return transition.localConnection().levelZ() == levelZ
-                    ? List.of(new DungeonHitSurface.SegmentSurface(Set.of(transition.localConnection().anchorSegment2x()), levelZ))
+                    && anchorSegment2x != null
+                    ? List.of(new DungeonHitSurface.SegmentSurface(Set.of(anchorSegment2x), levelZ))
                     : List.of();
         }
         Set<CellCoord> cells = transition.localConnection().stairCarrier() == null
@@ -178,9 +181,8 @@ public final class DungeonSelectionHighlightResolver {
             return List.of();
         }
         Door door = description.door();
-        if (door == null || door.isEmpty()) {
-            return List.of(new DungeonHitSurface.SegmentSurface(Set.of(doorRef.anchorSegment2x()), levelZ));
-        }
-        return List.of(new DungeonHitSurface.SegmentSurface(Set.copyOf(door.segments2x()), levelZ));
+        return door == null || door.isEmpty()
+                ? List.of()
+                : List.of(new DungeonHitSurface.SegmentSurface(Set.copyOf(door.segments2x()), levelZ));
     }
 }

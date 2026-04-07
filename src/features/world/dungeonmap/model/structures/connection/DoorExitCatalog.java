@@ -4,6 +4,7 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.objects.DoorRef;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -22,7 +23,7 @@ public final class DoorExitCatalog {
         throw new AssertionError("No instances");
     }
 
-    public static List<RoomExitDescriptor> describe(
+    public static List<DoorExitDescriptor> describe(
             DungeonLayout layout,
             Set<CellCoord> cells,
             int levelZ,
@@ -36,20 +37,19 @@ public final class DoorExitCatalog {
             return List.of();
         }
         List<List<ExitEdge>> openings = groupOpenings(exitEdges);
-        List<RoomExitDescriptor> result = new ArrayList<>();
+        List<DoorExitDescriptor> result = new ArrayList<>();
         for (int index = 0; index < openings.size(); index++) {
             List<ExitEdge> opening = openings.get(index);
             ExitEdge representative = opening.getFirst();
             int number = index + 1;
-            result.add(new RoomExitDescriptor(
+            result.add(new DoorExitDescriptor(
+                    representative.doorRef(),
                     number,
                     levelZ,
                     representative.roomCell(),
                     representative.roomCell().add(representative.direction().delta()),
                     representative.direction(),
-                    "Tür " + number,
-                    representative.segment2x(),
-                    opening.stream().map(ExitEdge::segment2x).sorted(GridSegment2x.ORDER).toList()));
+                    "Tür " + number));
         }
         return List.copyOf(result);
     }
@@ -87,7 +87,13 @@ public final class DoorExitCatalog {
             if (direction == null) {
                 continue;
             }
-            result.add(new ExitEdge(roomCell, direction, segment2x));
+            DoorRef doorRef = layout.connectionAt(levelZ, segment2x) == null
+                    ? null
+                    : layout.connectionAt(levelZ, segment2x).doorRef();
+            if (doorRef == null) {
+                continue;
+            }
+            result.add(new ExitEdge(roomCell, direction, segment2x, doorRef));
         }
         result.sort(EXIT_EDGE_ORDER);
         return List.copyOf(result);
@@ -121,6 +127,6 @@ public final class DoorExitCatalog {
         return List.copyOf(result);
     }
 
-    private record ExitEdge(CellCoord roomCell, CardinalDirection direction, GridSegment2x segment2x) {
+    private record ExitEdge(CellCoord roomCell, CardinalDirection direction, GridSegment2x segment2x, DoorRef doorRef) {
     }
 }

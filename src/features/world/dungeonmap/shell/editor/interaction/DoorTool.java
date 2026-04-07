@@ -6,6 +6,7 @@ import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
+import features.world.dungeonmap.model.objects.DoorRef;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.Connection;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
@@ -199,7 +200,7 @@ public final class DoorTool implements EditorTool {
         int levelZ = mapState.activeProjectionLevel();
         if (hit instanceof DungeonSelectionRef.DoorRef doorHit
                 && doorHit.clusterId() != null) {
-            deleteLocalDoor(doorHit.clusterId(), levelZ, doorHit.anchorSegment2x());
+            deleteLocalDoor(doorHit.clusterId(), levelZ, anchorSegment(doorHit));
             return true;
         }
         if (hit instanceof DungeonSelectionRef.DoorRef doorHit
@@ -208,7 +209,7 @@ public final class DoorTool implements EditorTool {
             if (room == null) {
                 return false;
             }
-            deleteExteriorDoor(room.clusterId(), levelZ, doorHit.anchorSegment2x());
+            deleteExteriorDoor(room.clusterId(), levelZ, anchorSegment(doorHit));
             return true;
         }
         if (!(hit instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundaryHit)) {
@@ -307,14 +308,14 @@ public final class DoorTool implements EditorTool {
                 .map(this::endpointLabel)
                 .filter(label -> label != null && !label.isBlank())
                 .collect(Collectors.joining(", ")));
-        metaLabel.setText(segmentText(connection.anchorSegment2x()));
+        metaLabel.setText(segmentText(connection == null ? null : connection.anchorSegment2x(mapState.activeMap())));
     }
 
     private void renderExteriorDoorPane(DungeonSelectionRef.DoorRef doorRef) {
         Room room = doorRef == null ? null : mapState.activeMap().findRoom(doorRef.roomId());
         summaryLabel.setText("Außentür");
         detailLabel.setText(room == null ? "Raum" : roomName(room.roomId()));
-        metaLabel.setText(segmentText(doorRef == null ? null : doorRef.anchorSegment2x()));
+        metaLabel.setText(segmentText(anchorSegment(doorRef)));
     }
 
     private Connection selectedLocalDoor() {
@@ -322,7 +323,7 @@ public final class DoorTool implements EditorTool {
                 || doorRef.clusterId() == null) {
             return null;
         }
-        return mapState.activeMap().connectionAt(mapState.activeProjectionLevel(), doorRef.anchorSegment2x());
+        return mapState.activeMap().connectionForDoor(new DoorRef(doorRef.doorId()));
     }
 
     private DungeonSelectionRef.DoorRef selectedExteriorDoorRef() {
@@ -330,6 +331,17 @@ public final class DoorTool implements EditorTool {
                 && doorRef.roomId() != null
                 ? doorRef
                 : null;
+    }
+
+    private GridSegment2x anchorSegment(DungeonSelectionRef.DoorRef doorRef) {
+        DungeonLayout.DoorDescription description = doorDescription(doorRef);
+        return description == null ? null : description.anchorSegment2x();
+    }
+
+    private DungeonLayout.DoorDescription doorDescription(DungeonSelectionRef.DoorRef doorRef) {
+        return mapState.activeMap() == null || doorRef == null
+                ? null
+                : mapState.activeMap().describeDoor(new DoorRef(doorRef.doorId()));
     }
 
     private boolean isEditableLocalDoorBoundary(

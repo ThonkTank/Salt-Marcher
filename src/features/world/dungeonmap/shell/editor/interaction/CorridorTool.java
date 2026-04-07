@@ -162,14 +162,18 @@ public final class CorridorTool implements EditorTool {
         int levelZ = ctx == null || ctx.probe() == null ? mapState.activeProjectionLevel() : ctx.probe().levelZ();
         if (hit instanceof DungeonSelectionRef.DoorRef doorHit && exteriorRoomDoor(layout, doorHit, levelZ)) {
             CorridorEndpoint endpoint = corridorEndpoint(doorHit);
+            GridSegment2x anchorSegment2x = anchorSegment(layout, doorHit);
+            if (anchorSegment2x == null) {
+                return false;
+            }
             if (pendingEndpoint != null) {
-                if (Objects.equals(pendingEndpoint.boundarySegment2x(), doorHit.anchorSegment2x())) {
+                if (Objects.equals(pendingEndpoint.boundarySegment2x(), anchorSegment2x)) {
                     return true;
                 }
                 createDoorToDoor(pendingEndpoint.endpoint(), endpoint);
                 return true;
             }
-            startPendingEndpoint(new PendingRoomDoor(endpoint, doorHit.anchorSegment2x()));
+            startPendingEndpoint(new PendingRoomDoor(endpoint, anchorSegment2x));
             return true;
         }
         if (hit instanceof DungeonSelectionRef.CorridorBoundaryRef corridorBoundaryHit) {
@@ -197,7 +201,7 @@ public final class CorridorTool implements EditorTool {
         }
         if (hit instanceof DungeonSelectionRef.DoorRef doorHit
                 && doorHit.corridorId() != null) {
-            deleteCorridorDoor(doorHit.corridorId(), doorHit.anchorSegment2x());
+            deleteCorridorDoor(doorHit.corridorId(), anchorSegment(layout, doorHit));
             return true;
         }
         if (hit instanceof DungeonSelectionRef.CorridorNodeRef corridorNodeHit
@@ -324,7 +328,7 @@ public final class CorridorTool implements EditorTool {
                     .map(this::endpointLabel)
                     .filter(label -> label != null && !label.isBlank())
                     .collect(Collectors.joining(", ")));
-            metaLabel.setText(segmentText(connection.anchorSegment2x()));
+            metaLabel.setText(segmentText(connection.anchorSegment2x(mapState.activeMap())));
             return;
         }
         if (corridor == null) {
@@ -384,7 +388,7 @@ public final class CorridorTool implements EditorTool {
                 || doorRef.corridorId() == null) {
             return null;
         }
-        return mapState.activeMap().connectionAt(mapState.activeProjectionLevel(), doorRef.anchorSegment2x());
+        return mapState.activeMap().connectionForDoor(new DoorRef(doorRef.doorId()));
     }
 
     private Corridor selectedCorridor() {
@@ -454,6 +458,16 @@ public final class CorridorTool implements EditorTool {
         return description != null
                 && description.levelZ() == levelZ
                 && description.role() == DungeonLayout.DoorRole.ROOM_EXTERIOR;
+    }
+
+    private static GridSegment2x anchorSegment(
+            DungeonLayout layout,
+            DungeonSelectionRef.DoorRef doorRef
+    ) {
+        DungeonLayout.DoorDescription description = layout == null || doorRef == null
+                ? null
+                : layout.describeDoor(new DoorRef(doorRef.doorId()));
+        return description == null ? null : description.anchorSegment2x();
     }
 
     private record PendingRoomDoor(

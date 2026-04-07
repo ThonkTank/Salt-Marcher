@@ -2,7 +2,7 @@ package features.world.dungeonmap.canvas.base;
 
 import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationSnapshot;
 import features.world.dungeonmap.application.runtime.description.DungeonRuntimeDescription;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.objects.DoorRef;
 
 import java.util.List;
 
@@ -22,7 +22,7 @@ public record DungeonRuntimeRenderOverlay(
         List<ExitMarker> exitMarkers = description == null
                 ? List.of()
                 : description.exits().stream()
-                        .map(exit -> new ExitMarker(exit.number(), exit.anchorSegment2x()))
+                        .map(exit -> new ExitMarker(exit.number(), exit.doorRef()))
                         .toList();
         return new DungeonRuntimeRenderOverlay(navigation, exitMarkers);
     }
@@ -33,7 +33,7 @@ public record DungeonRuntimeRenderOverlay(
 
     public record ExitMarker(
             int number,
-            GridSegment2x anchorSegment2x
+            DoorRef doorRef
     ) {
         public ExitMarker {
             number = number <= 0 ? 1 : number;

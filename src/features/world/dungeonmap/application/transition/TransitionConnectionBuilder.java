@@ -113,7 +113,7 @@ public final class TransitionConnectionBuilder {
                 transitionId,
                 mapId,
                 levelZ,
-                new DoorConnectionCarrier(doorRef, anchorSegment2x),
+                new DoorConnectionCarrier(doorRef),
                 List.of(sourceEndpoint, ConnectionEndpoint.transition(transitionId)));
     }
 

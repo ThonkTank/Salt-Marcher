@@ -5,6 +5,7 @@ import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
+import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
@@ -79,6 +80,19 @@ public record DungeonRuntimeLocation(
         return structure instanceof DungeonLayout.CellStructure.TransitionStructure transitionStructure
                 ? transitionStructure.transition()
                 : null;
+    }
+
+    public ConnectionEndpoint activeEndpoint() {
+        if (ownerRef instanceof DungeonSelectionRef.RoomRef roomRef) {
+            return roomRef.roomId() == null ? null : ConnectionEndpoint.room(roomRef.roomId());
+        }
+        if (ownerRef instanceof DungeonSelectionRef.CorridorRef corridorRef) {
+            return corridorRef.corridorId() == null ? null : ConnectionEndpoint.corridor(corridorRef.corridorId());
+        }
+        if (ownerRef instanceof DungeonSelectionRef.TransitionRef transitionRef) {
+            return transitionRef.transitionId() == null ? null : ConnectionEndpoint.transition(transitionRef.transitionId());
+        }
+        return null;
     }
 
     private static DungeonSelectionRef ownerRef(DungeonLayout.CellStructure structure) {

@@ -347,7 +347,10 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 continue;
             }
             boolean selected = selectedCorridor(pass.selectedRef(), corridor.corridorId());
-            WalkableSurface surface = walkableSurface(corridor.structure(), pass.projectionLevel());
+            WalkableSurface surface = walkableSurface(
+                    corridor.structure().floorCellCoordsAtLevel(pass.projectionLevel()),
+                    corridor.structure().boundaryEdgesAtLevel(pass.projectionLevel()),
+                    corridor.boundaryDoorSegments(pass.projected()));
             if (surface.tiles().isEmpty() && surface.doorSegments().isEmpty()) {
                 continue;
             }
@@ -809,7 +812,10 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             return;
         }
         GraphicsContext gc = pass.gc();
-        GridSegment2x segment2x = transition.localConnection().anchorSegment2x();
+        GridSegment2x segment2x = transition.localConnection().anchorSegment2x(pass.projected());
+        if (segment2x == null) {
+            return;
+        }
         double centerX = pass.camera().panX() + (segment2x.midpoint().x2() + 1) * pass.gridSize() / 2.0;
         double centerY = pass.camera().panY() + (segment2x.midpoint().y2() + 1) * pass.gridSize() / 2.0;
         double radius = Math.max(7.0, pass.gridSize() * 0.18);
@@ -865,14 +871,15 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
     private static void drawDoorNumbers(
             GraphicsContext gc,
             DungeonCanvasCamera camera,
-            DungeonRuntimeRenderOverlay runtime
+            DungeonRuntimeRenderOverlay runtime,
+            DungeonSceneFrame frame
     ) {
         if (runtime == null || runtime.exitMarkers().isEmpty()) {
             return;
         }
         double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
         for (DungeonRuntimeRenderOverlay.ExitMarker doorNumber : runtime.exitMarkers()) {
-            drawDoorNumber(gc, camera, gridSize, doorNumber);
+            drawDoorNumber(gc, camera, gridSize, doorNumber, frame);
         }
     }
 
@@ -880,12 +887,17 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             GraphicsContext gc,
             DungeonCanvasCamera camera,
             double gridSize,
-            DungeonRuntimeRenderOverlay.ExitMarker doorNumber
+            DungeonRuntimeRenderOverlay.ExitMarker doorNumber,
+            DungeonSceneFrame frame
     ) {
-        if (doorNumber == null || doorNumber.anchorSegment2x() == null) {
+        if (doorNumber == null || doorNumber.doorRef() == null || frame == null || frame.layout() == null) {
             return;
         }
-        GridSegment2x segment2x = doorNumber.anchorSegment2x();
+        var description = frame.layout().describeDoor(doorNumber.doorRef());
+        GridSegment2x segment2x = description == null ? null : description.anchorSegment2x();
+        if (segment2x == null) {
+            return;
+        }
         GridPoint2x midpoint = segment2x.midpoint();
         double centerX = camera.panX() + (midpoint.x2() + 1) * gridSize / 2.0;
         double centerY = camera.panY() + (midpoint.y2() + 1) * gridSize / 2.0;
@@ -962,7 +974,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         return walkableSurface(
                 structure.floorCellCoordsAtLevel(levelZ),
                 structure.boundaryEdgesAtLevel(levelZ),
-                structure.openingEdgesAtLevel(levelZ));
+                structure.doorSegmentsAtLevel(levelZ));
     }
 
     private static WalkableSurface walkableSurface(
@@ -1189,7 +1201,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             DungeonRuntimeRenderOverlay runtime = frame.runtime();
             drawPartyToken(gc, frame.camera(), runtime, frame.projectionLevel());
             if (!frame.editorMode()) {
-                drawDoorNumbers(gc, frame.camera(), runtime);
+                drawDoorNumbers(gc, frame.camera(), runtime, frame);
             }
         }
     }

@@ -154,6 +154,23 @@ public final class Corridor {
         return connections;
     }
 
+    public Set<GridSegment2x> boundaryDoorSegments(DungeonLayout layout) {
+        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>(structure.doorSegmentsAtLevel(levelZ));
+        for (CorridorNode node : nodes) {
+            if (node == null || !node.isDoorBound()) {
+                continue;
+            }
+            DungeonLayout.DoorDescription description = layout == null ? null : layout.describeDoor(node.doorRef());
+            if (description == null || description.levelZ() != levelZ) {
+                continue;
+            }
+            result.addAll(description.door().segments2x().stream()
+                    .filter(structure.boundaryEdgesAtLevel(levelZ)::contains)
+                    .toList());
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
     public Corridor withDoors(DungeonLayout layout, Collection<Door> doors) {
         if (layout == null) {
             return this;
@@ -800,9 +817,7 @@ public final class Corridor {
                 levelZ,
                 routedNodes,
                 routedLinks,
-                blockedCells,
-                corridorOpeningSegments(layout, levelZ, nodes),
-                doorSegments(doors));
+                blockedCells);
         StructureObject structure = routedProjection.structure().withDoorsAtLevel(levelZ, doors == null ? List.of() : doors);
         return new DerivedProjection(
                 structure,
@@ -817,25 +832,6 @@ public final class Corridor {
         return anchorPoint.equals(node.point2x())
                 ? node
                 : new CorridorNode(node.nodeId(), anchorPoint, node.doorRef());
-    }
-
-    private static Set<GridSegment2x> corridorOpeningSegments(
-            DungeonLayout layout,
-            int levelZ,
-            List<CorridorNode> nodes
-    ) {
-        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
-        for (CorridorNode node : nodes) {
-            if (node == null || !node.isDoorBound()) {
-                continue;
-            }
-            GridSegment2x boundaryEdge = doorBoundaryEdge(node, levelZ, layout);
-            if (boundaryEdge == null) {
-                continue;
-            }
-            result.add(boundaryEdge);
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
     private static Map<Long, CorridorNode> indexNodes(List<CorridorNode> nodes) {
@@ -915,7 +911,7 @@ public final class Corridor {
                     corridorId,
                     mapId,
                     levelZ,
-                    new DoorConnectionCarrier(description.ref(), description.anchorSegment2x()),
+                    new DoorConnectionCarrier(description.ref()),
                     List.of(ConnectionEndpoint.room(description.roomId()), ConnectionEndpoint.corridor(corridorId))));
         }
         return result.isEmpty() ? List.of() : List.copyOf(result);

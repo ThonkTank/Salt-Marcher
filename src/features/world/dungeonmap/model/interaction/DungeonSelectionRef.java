@@ -131,14 +131,12 @@ public sealed interface DungeonSelectionRef permits
 
     record DoorRef(
             long doorId,
-            DungeonSelectionRef ownerRef,
-            GridSegment2x anchorSegment2x
+            DungeonSelectionRef ownerRef
     ) implements DungeonSelectionRef {
         public DoorRef {
             if (doorId <= 0) {
                 throw new IllegalArgumentException("Door refs require doorId");
             }
-            anchorSegment2x = Objects.requireNonNull(anchorSegment2x, "anchorSegment2x");
         }
 
         @Override

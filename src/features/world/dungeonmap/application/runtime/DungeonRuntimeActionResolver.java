@@ -5,6 +5,7 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.objects.StructureObject;
+import features.world.dungeonmap.model.structures.connection.ConnectionTraversalTarget;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
@@ -40,7 +41,8 @@ public final class DungeonRuntimeActionResolver {
         List<DungeonRuntimeExit> resolvedExits = exits == null ? List.of() : exits;
         ArrayList<DungeonRuntimeAction> actions = new ArrayList<>(resolvedExits.size() + 4);
         resolvedExits.stream()
-                .map(DungeonRuntimeActionResolver::doorAction)
+                .map(exit -> doorAction(location, exit))
+                .filter(Objects::nonNull)
                 .forEach(actions::add);
         switch (location.structure()) {
             case DungeonLayout.CellStructure.RoomStructure ignored -> appendRoomActions(location, actions);
@@ -51,24 +53,30 @@ public final class DungeonRuntimeActionResolver {
         return List.copyOf(actions);
     }
 
-    private static DungeonRuntimeAction doorAction(DungeonRuntimeExit exit) {
-        if (exit.transitionId() != null && exit.transitionId() > 0) {
+    private static DungeonRuntimeAction doorAction(DungeonRuntimeLocation location, DungeonRuntimeExit exit) {
+        if (location == null || exit == null || location.layout() == null) {
+            return null;
+        }
+        var connection = location.layout().connectionForDoor(exit.doorRef());
+        if (connection == null) {
+            return null;
+        }
+        ConnectionTraversalTarget target = connection.resolveTraversalTarget(location.layout(), location.activeEndpoint());
+        if (target == null) {
+            return null;
+        }
+        if (target.transitionId() != null && target.transitionId() > 0) {
             return new DungeonRuntimeAction(
                     doorActionLabel(exit.label(), exit.destinationLabel()),
                     "",
                     "Übergang konnte nicht benutzt werden",
-                    new DungeonRuntimeAction.TransitionTarget(exit.transitionId()));
+                    new DungeonRuntimeAction.TransitionTarget(target.transitionId()));
         }
         return new DungeonRuntimeAction(
                 doorActionLabel(exit.label(), exit.destinationLabel()),
                 "",
                 "Verbindung konnte nicht benutzt werden",
-                new DungeonRuntimeAction.DoorTarget(
-                        exit.anchorSegment2x(),
-                        new DungeonRuntimeAction.CellTarget(
-                                exit.destinationCell(),
-                                exit.destinationLevelZ(),
-                                exit.destinationHeading())));
+                new DungeonRuntimeAction.DoorTarget(exit.doorRef()));
     }
 
     private static void appendRoomActions(

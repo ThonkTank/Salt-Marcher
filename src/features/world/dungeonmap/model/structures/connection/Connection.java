@@ -45,9 +45,9 @@ public interface Connection {
         return carrier() instanceof StairConnectionCarrier stairCarrier ? stairCarrier : null;
     }
 
-    default GridSegment2x anchorSegment2x() {
-        DoorConnectionCarrier carrier = doorCarrier();
-        return carrier == null ? null : carrier.anchorSegment2x();
+    default GridSegment2x anchorSegment2x(DungeonLayout layout) {
+        Door door = door(layout);
+        return door == null ? null : door.anchorSegment2x();
     }
 
     default Door door(DungeonLayout layout) {
@@ -58,8 +58,7 @@ public interface Connection {
     default Set<GridSegment2x> boundarySegments2x(DungeonLayout layout) {
         Door door = door(layout);
         if (door == null) {
-            GridSegment2x anchorSegment2x = anchorSegment2x();
-            return anchorSegment2x == null ? Set.of() : Set.of(anchorSegment2x);
+            return Set.of();
         }
         if (door.isEmpty()) {
             return Set.of();
@@ -100,7 +99,7 @@ public interface Connection {
             return CubePoint.at(stairCarrier.anchorCell(), stairCarrier.anchorLevelZ());
         }
         ConnectionEndpoint endpoint = entryEndpoint();
-        GridSegment2x anchorSegment2x = anchorSegment2x();
+        GridSegment2x anchorSegment2x = anchorSegment2x(layout);
         if (layout == null || endpoint == null || anchorSegment2x == null) {
             return null;
         }
@@ -113,7 +112,7 @@ public interface Connection {
 
     default CardinalDirection entryHeading(DungeonLayout layout) {
         ConnectionEndpoint endpoint = entryEndpoint();
-        GridSegment2x anchorSegment2x = anchorSegment2x();
+        GridSegment2x anchorSegment2x = anchorSegment2x(layout);
         if (layout == null || endpoint == null || anchorSegment2x == null) {
             return null;
         }
@@ -175,5 +174,33 @@ public interface Connection {
             return null;
         }
         return endpoints.get(0).equals(endpoint) ? endpoints.get(1) : endpoints.get(0);
+    }
+
+    default ConnectionTraversalTarget resolveTraversalTarget(
+            DungeonLayout layout,
+            ConnectionEndpoint activeEndpoint
+    ) {
+        ConnectionEndpoint destinationEndpoint = activeEndpoint == null ? null : oppositeOf(activeEndpoint);
+        if (destinationEndpoint == null) {
+            return null;
+        }
+        if (destinationEndpoint.type() == ConnectionEndpointType.TRANSITION) {
+            return new ConnectionTraversalTarget(null, levelZ(), null, destinationEndpoint.id());
+        }
+        GridSegment2x anchorSegment2x = anchorSegment2x(layout);
+        if (layout == null || anchorSegment2x == null) {
+            return null;
+        }
+        DungeonLayout.ConnectionSurfaceDescription surface = layout.describeConnectionSurface(
+                destinationEndpoint,
+                anchorSegment2x,
+                levelZ());
+        return surface == null
+                ? null
+                : new ConnectionTraversalTarget(
+                        surface.localCell(),
+                        levelZ(),
+                        surface.outwardDirection(),
+                        null);
     }
 }

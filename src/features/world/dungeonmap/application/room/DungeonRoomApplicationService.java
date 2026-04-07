@@ -690,7 +690,7 @@ public final class DungeonRoomApplicationService {
                     localConnection.ownerId(),
                     localConnection.mapId(),
                     localConnection.levelZ(),
-                    new DoorConnectionCarrier(reboundDoor.ref(), reboundDoor.anchorSegment2x()),
+                    new DoorConnectionCarrier(reboundDoor.ref()),
                     List.of(ConnectionEndpoint.room(reboundRoom.roomId()), ConnectionEndpoint.transition(transition.transitionId())));
         }
         if (localConnection.stairCarrier() != null) {

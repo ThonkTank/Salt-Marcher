@@ -560,7 +560,7 @@ public final class SelectionTool implements EditorTool {
             Corridor updated = corridor.movedDoor(
                     session.baseMap(),
                     session.sourceBoundarySegment2x(),
-                    corridorDoorNode(targetDoorRef));
+                    corridorDoorNode(session.baseMap(), targetDoorRef));
             return session.baseMap()
                     .withUpdatedCorridor(updated)
                     .projectedToLevel(session.levelZ());
@@ -682,13 +682,17 @@ public final class SelectionTool implements EditorTool {
         return previewDoorMap(session.withTargetBoundaryRef(roomBoundaryRef)) != null;
     }
 
-    private static CorridorNode corridorDoorNode(DungeonSelectionRef.DoorRef doorRef) {
+    private static CorridorNode corridorDoorNode(DungeonLayout layout, DungeonSelectionRef.DoorRef doorRef) {
         if (doorRef == null) {
+            return null;
+        }
+        GridSegment2x anchorSegment2x = doorAnchorSegment(layout, doorRef);
+        if (anchorSegment2x == null) {
             return null;
         }
         return new CorridorNode(
                 -1L,
-                doorRef.anchorSegment2x().midpoint(),
+                anchorSegment2x.midpoint(),
                 new DoorRef(doorRef.doorId()));
     }
 
@@ -806,9 +810,18 @@ public final class SelectionTool implements EditorTool {
                     levelZ,
                     sourceRef.clusterId(),
                     sourceRef.corridorId(),
-                    sourceRef.anchorSegment2x(),
+                    doorAnchorSegment(baseMap, sourceRef),
                     null);
         }
 
+    }
+
+    private static GridSegment2x doorAnchorSegment(DungeonLayout layout, DungeonSelectionRef.DoorRef doorRef) {
+        DungeonLayout resolvedLayout = layout;
+        if (resolvedLayout == null || doorRef == null) {
+            return null;
+        }
+        DungeonLayout.DoorDescription description = resolvedLayout.describeDoor(new DoorRef(doorRef.doorId()));
+        return description == null ? null : description.anchorSegment2x();
     }
 }

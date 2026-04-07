@@ -9,6 +9,7 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.objects.DoorRef;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
 import features.world.dungeonmap.repository.DungeonLayoutRepository;
@@ -153,22 +154,26 @@ public final class DungeonRuntimeApplicationService {
             DungeonRuntimeAction.DoorTarget target,
             DungeonRuntimeNavigationSnapshot currentNavigation
     ) throws SQLException {
-        DungeonRuntimeAction.CellTarget destination = target.destination();
-        var connection = layout.connectionAt(destination.levelZ(), target.anchorSegment2x());
+        DoorRef doorRef = target.doorRef();
+        var connection = layout.connectionForDoor(doorRef);
         if (connection == null) {
             throw new SQLException("Verbindung konnte nicht aufgelöst werden");
         }
         if (!connection.isTraversable(layout)) {
             throw new SQLException("Verbindung ist blockiert");
         }
-        CellCoord resolvedCell = nearestTraversableCell(layout, destination.cell(), destination.levelZ());
+        DungeonRuntimeLocation location = DungeonRuntimeLocation.resolve(layout, currentNavigation);
+        var traversalTarget = connection.resolveTraversalTarget(
+                layout,
+                location == null ? null : location.activeEndpoint());
+        if (traversalTarget == null || traversalTarget.transitionId() != null) {
+            throw new SQLException("Ziel hinter der Verbindung ist nicht begehbar");
+        }
+        CellCoord resolvedCell = nearestTraversableCell(layout, traversalTarget.cell(), traversalTarget.levelZ());
         if (resolvedCell == null) {
             throw new SQLException("Ziel hinter der Verbindung ist nicht begehbar");
         }
-        CardinalDirection nextHeading = destination.headingOverride() == null
-                ? navigationHeading(currentNavigation)
-                : destination.headingOverride();
-        return persistNavigation(layout.mapId(), resolvedCell, destination.levelZ(), nextHeading);
+        return persistNavigation(layout.mapId(), resolvedCell, traversalTarget.levelZ(), traversalTarget.heading());
     }
 
     private DungeonRuntimeNavigationSnapshot moveThroughTransition(
