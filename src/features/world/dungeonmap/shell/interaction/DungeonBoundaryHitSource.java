@@ -112,7 +112,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
                 continue;
             }
             Set<GridSegment2x> openingEdges = corridor.boundaryDoorSegments(projectedLayout);
-            for (GridSegment2x segment2x : corridor.structure().boundaryEdgesAtLevel(levelZ)) {
+            for (GridSegment2x segment2x : corridor.structure().boundaryAtLevel(levelZ).boundaryEdges()) {
                 if (segment2x == null || openingEdges.contains(segment2x) || connectionSegments.contains(segment2x)) {
                     continue;
                 }

@@ -10,6 +10,7 @@ import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.structure.model.Door;
 import features.world.dungeonmap.structure.model.DoorRef;
 import features.world.dungeonmap.structure.model.Structure;
+import features.world.dungeonmap.structure.model.StructureBoundary;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionKind;
 import features.world.dungeonmap.model.structures.connection.DoorConnectionCarrier;
@@ -209,7 +210,8 @@ public final class Corridor {
     }
 
     public Set<GridSegment2x> boundaryDoorSegments(DungeonLayout layout) {
-        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>(structure.doorSegmentsAtLevel(levelZ));
+        StructureBoundary boundary = structure.boundaryAtLevel(levelZ);
+        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>(boundary.doorEdges());
         for (CorridorNode node : nodes) {
             if (node == null || !node.isDoorBound()) {
                 continue;
@@ -219,7 +221,7 @@ public final class Corridor {
                 continue;
             }
             result.addAll(description.door().segments2x().stream()
-                    .filter(structure.boundaryEdgesAtLevel(levelZ)::contains)
+                    .filter(boundary.boundaryEdges()::contains)
                     .toList());
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
@@ -875,7 +877,9 @@ public final class Corridor {
                 routedNodes,
                 routedLinks,
                 blockedCells);
-        Structure structure = routedProjection.structure().withDoorsAtLevel(levelZ, doors == null ? List.of() : doors);
+        Structure structure = routedProjection.structure().withBoundaryAtLevel(
+                levelZ,
+                routedProjection.structure().boundaryAtLevel(levelZ).withDoors(doors == null ? List.of() : doors));
         return new DerivedProjection(
                 structure,
                 routedProjection.traces(),

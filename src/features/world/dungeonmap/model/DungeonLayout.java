@@ -766,7 +766,7 @@ public final class DungeonLayout {
             return null;
         }
         Corridor corridor = corridor(ref);
-        if (corridor == null || !corridor.structure().boundaryEdgesAtLevel(levelZ).contains(ref.boundarySegment2x())) {
+        if (corridor == null || !corridor.structure().boundaryAtLevel(levelZ).boundaryEdges().contains(ref.boundarySegment2x())) {
             return null;
         }
         List<CellCoord> corridorCells = ref.boundarySegment2x().touchingCells().stream()
@@ -1284,7 +1284,7 @@ public final class DungeonLayout {
                 continue;
             }
             for (Integer levelZ : cluster.structure().levels()) {
-                for (Door door : cluster.structure().doorsAtLevel(levelZ)) {
+                for (Door door : cluster.structure().boundaryAtLevel(levelZ).doors()) {
                     DoorEntry entry = clusterDoorEntry(cluster, levelZ, door);
                     if (entry != null) {
                         result.putIfAbsent(entry.ref().doorId(), entry);
@@ -1296,7 +1296,7 @@ public final class DungeonLayout {
             if (corridor == null) {
                 continue;
             }
-            for (Door door : corridor.structure().doorsAtLevel(corridor.levelZ())) {
+            for (Door door : corridor.structure().boundaryAtLevel(corridor.levelZ()).doors()) {
                 DoorEntry entry = corridorDoorEntry(corridor, door);
                 if (entry != null) {
                     result.putIfAbsent(entry.ref().doorId(), entry);

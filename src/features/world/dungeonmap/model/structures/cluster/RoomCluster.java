@@ -10,6 +10,7 @@ import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 import features.world.dungeonmap.structure.model.Door;
 import features.world.dungeonmap.structure.model.DoorRef;
 import features.world.dungeonmap.structure.model.Structure;
+import features.world.dungeonmap.structure.model.StructureBoundary;
 import features.world.dungeonmap.structure.model.StructureRoomTopology;
 import features.world.dungeonmap.structure.model.Wall;
 import features.world.dungeonmap.structure.model.WallKind;
@@ -244,13 +245,14 @@ public final class RoomCluster {
     public boolean canCreateDoor(int levelZ, GridSegment2x boundarySegment2x) {
         // Door eligibility belongs to the cluster owner so editor tools do not become the only source of boundary
         // semantics for local room-to-room connections.
+        StructureBoundary boundary = structure.boundaryAtLevel(levelZ);
         if (boundarySegment2x == null
-                || structure.hasDoorAtLevel(levelZ, boundarySegment2x)) {
+                || boundary.hasDoorAt(boundarySegment2x)) {
             return false;
         }
-        if (!structure.boundaryEdgesAtLevel(levelZ).contains(boundarySegment2x)
-                || !structure.supportsDoorAtLevel(levelZ, boundarySegment2x)
-                || !structure.isInteriorBoundaryAtLevel(levelZ, boundarySegment2x)) {
+        if (!boundary.boundaryEdges().contains(boundarySegment2x)
+                || !boundary.supportsDoorAt(boundarySegment2x)
+                || !boundary.isInteriorBoundary(boundarySegment2x)) {
             return false;
         }
         RoomPair roomPair = roomPairAtLevel(this, boundarySegment2x, levelZ);
@@ -263,23 +265,26 @@ public final class RoomCluster {
     }
 
     public boolean canDeleteDoor(int levelZ, GridSegment2x boundarySegment2x) {
+        StructureBoundary boundary = structure.boundaryAtLevel(levelZ);
         return boundarySegment2x != null
-                && structure.isInteriorBoundaryAtLevel(levelZ, boundarySegment2x)
-                && structure.hasDoorAtLevel(levelZ, boundarySegment2x);
+                && boundary.isInteriorBoundary(boundarySegment2x)
+                && boundary.hasDoorAt(boundarySegment2x);
     }
 
     public boolean canCreateExteriorDoor(int levelZ, GridSegment2x boundarySegment2x) {
+        StructureBoundary boundary = structure.boundaryAtLevel(levelZ);
         return boundarySegment2x != null
-                && structure.boundaryEdgesAtLevel(levelZ).contains(boundarySegment2x)
-                && !structure.hasDoorAtLevel(levelZ, boundarySegment2x)
-                && structure.supportsDoorAtLevel(levelZ, boundarySegment2x)
-                && structure.isExteriorBoundaryAtLevel(levelZ, boundarySegment2x);
+                && boundary.boundaryEdges().contains(boundarySegment2x)
+                && !boundary.hasDoorAt(boundarySegment2x)
+                && boundary.supportsDoorAt(boundarySegment2x)
+                && boundary.isExteriorBoundary(boundarySegment2x);
     }
 
     public boolean canDeleteExteriorDoor(int levelZ, GridSegment2x boundarySegment2x) {
+        StructureBoundary boundary = structure.boundaryAtLevel(levelZ);
         return boundarySegment2x != null
-                && structure.hasDoorAtLevel(levelZ, boundarySegment2x)
-                && structure.isExteriorBoundaryAtLevel(levelZ, boundarySegment2x);
+                && boundary.hasDoorAt(boundarySegment2x)
+                && boundary.isExteriorBoundary(boundarySegment2x);
     }
 
     public RoomCluster withDoorSegments(int levelZ, Collection<GridSegment2x> segments2x, boolean deleteDoor) {
@@ -338,8 +343,7 @@ public final class RoomCluster {
             return BoundaryPath.empty();
         }
         int levelZ = primaryLevel();
-        Set<GridSegment2x> traversableEdges = structure.creatableWallEdgesAtLevel(levelZ);
-        List<GridSegment2x> route = Structure.shortestEdgePath(start, goal, traversableEdges);
+        List<GridSegment2x> route = structure.boundaryAtLevel(levelZ).findCreatableWallPath(start, goal);
         if (route.isEmpty()) {
             return BoundaryPath.empty();
         }
@@ -351,7 +355,7 @@ public final class RoomCluster {
             return BoundaryPath.empty();
         }
         int levelZ = primaryLevel();
-        List<GridSegment2x> route = Structure.shortestEdgePath(start, goal, structure.deletableWallEdgesAtLevel(levelZ));
+        List<GridSegment2x> route = structure.boundaryAtLevel(levelZ).findDeletableWallPath(start, goal);
         if (route.isEmpty()) {
             return BoundaryPath.empty();
         }
@@ -359,11 +363,11 @@ public final class RoomCluster {
     }
 
     public boolean touchesExistingWall(GridPoint2x vertex) {
-        return structure.touchesBoundaryVertexAtLevel(primaryLevel(), vertex);
+        return structure.boundaryAtLevel(primaryLevel()).touchesBoundaryVertex(vertex);
     }
 
     public boolean isEditableWallVertex(GridPoint2x vertex, boolean deleteMode) {
-        return structure.isEditableWallVertexAtLevel(primaryLevel(), vertex, deleteMode);
+        return structure.boundaryAtLevel(primaryLevel()).isEditableWallVertex(vertex, deleteMode);
     }
 
     public Set<CellCoord> cells() {
@@ -382,7 +386,11 @@ public final class RoomCluster {
     }
 
     public Set<GridSegment2x> outerBoundarySegments2x() {
-        return structure.exteriorBoundaryEdges();
+        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
+        for (Integer levelZ : structure.levels().stream().sorted().toList()) {
+            result.addAll(structure.boundaryAtLevel(levelZ).exteriorBoundaryEdges());
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
     public Room findRoom(Long roomId) {
@@ -984,7 +992,7 @@ public final class RoomCluster {
             }
             List<GridSegment2x> editedSegments = segments2x.stream()
                     .filter(Objects::nonNull)
-                    .filter(segment2x -> cluster.structure().interiorAdjacencyEdgesAtLevel(levelZ).contains(segment2x))
+                    .filter(segment2x -> cluster.structure().boundaryAtLevel(levelZ).interiorAdjacencyEdges().contains(segment2x))
                     .filter(segment2x -> {
                         RoomPair roomPair = roomPairAtLevel(cluster, segment2x, levelZ);
                         return roomPair != null && !sameRoomId(roomPair.left(), roomPair.right());
@@ -994,9 +1002,10 @@ public final class RoomCluster {
             if (editedSegments.isEmpty()) {
                 return null;
             }
-            Structure updatedStructure = deleteWall
-                    ? cluster.structure().withDeletedWallPathAtLevel(levelZ, editedSegments)
-                    : cluster.structure().withCreatedWallPathAtLevel(levelZ, editedSegments);
+            StructureBoundary updatedBoundary = deleteWall
+                    ? cluster.structure().boundaryAtLevel(levelZ).withDeletedWallPath(editedSegments)
+                    : cluster.structure().boundaryAtLevel(levelZ).withCreatedWallPath(editedSegments);
+            Structure updatedStructure = cluster.structure().withBoundaryAtLevel(levelZ, updatedBoundary);
             if (Objects.equals(updatedStructure, cluster.structure())) {
                 return null;
             }
@@ -1025,7 +1034,9 @@ public final class RoomCluster {
             if (nextDoors == null) {
                 return null;
             }
-            Structure updatedStructure = cluster.structure().withDoorsAtLevel(levelZ, nextDoors);
+            Structure updatedStructure = cluster.structure().withBoundaryAtLevel(
+                    levelZ,
+                    cluster.structure().boundaryAtLevel(levelZ).withDoors(nextDoors));
             if (Objects.equals(updatedStructure, cluster.structure())) {
                 return null;
             }
@@ -1074,7 +1085,7 @@ public final class RoomCluster {
             if (editableSegments.isEmpty()) {
                 return null;
             }
-            ArrayList<Door> nextDoors = new ArrayList<>(cluster.structure().doorsAtLevel(levelZ));
+            ArrayList<Door> nextDoors = new ArrayList<>(cluster.structure().boundaryAtLevel(levelZ).doors());
             for (EdgeShape component : EdgeShape.fromBoundarySegments(editableSegments).connectedComponents()) {
                 if (!component.isEmpty()) {
                     nextDoors.add(Door.fromShape(component, component.firstSegment2x(), Door.DoorState.OPEN));
@@ -1100,7 +1111,7 @@ public final class RoomCluster {
             }
             boolean changed = false;
             ArrayList<Door> nextDoors = new ArrayList<>();
-            for (Door door : cluster.structure().doorsAtLevel(levelZ)) {
+            for (Door door : cluster.structure().boundaryAtLevel(levelZ).doors()) {
                 if (door == null || door.isEmpty()) {
                     continue;
                 }
@@ -1259,7 +1270,7 @@ public final class RoomCluster {
             }
             Map<Integer, List<Door>> result = new LinkedHashMap<>();
             for (Integer levelZ : structure.levels().stream().sorted().toList()) {
-                List<Door> doors = structure.doorsAtLevel(levelZ);
+                List<Door> doors = structure.boundaryAtLevel(levelZ).doors();
                 if (!doors.isEmpty()) {
                     result.put(levelZ, doors);
                 }
@@ -1273,7 +1284,7 @@ public final class RoomCluster {
             }
             Map<Integer, List<Wall>> result = new LinkedHashMap<>();
             for (Integer levelZ : structure.levels().stream().sorted().toList()) {
-                List<Wall> walls = structure.authoredWallsAtLevel(levelZ);
+                List<Wall> walls = structure.boundaryAtLevel(levelZ).authoredWalls();
                 if (!walls.isEmpty()) {
                     result.put(levelZ, walls);
                 }
@@ -1493,7 +1504,7 @@ public final class RoomCluster {
             }
             Structure roomStructure = roomPartition.structureFor(room);
             for (Integer levelZ : roomStructure.levels()) {
-                for (Door door : roomStructure.doorsAtLevel(levelZ)) {
+                for (Door door : roomStructure.boundaryAtLevel(levelZ).doors()) {
                     if (door != null && !door.isEmpty()) {
                         doorsByKey.putIfAbsent(doorKey(levelZ, door), new DoorComponent(levelZ, door));
                     }

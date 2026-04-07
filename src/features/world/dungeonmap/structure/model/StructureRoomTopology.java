@@ -281,27 +281,27 @@ public final class StructureRoomTopology {
     }
 
     public Set<GridSegment2x> roomBoundaryEdgesAtLevel(Room room, int levelZ) {
-        return structureFor(room).boundaryEdgesAtLevel(levelZ);
+        return structureFor(room).boundaryAtLevel(levelZ).boundaryEdges();
     }
 
     public Set<GridSegment2x> roomBoundaryEdgesAtLevel(Long roomId, int levelZ) {
-        return structureFor(roomId).boundaryEdgesAtLevel(levelZ);
+        return structureFor(roomId).boundaryAtLevel(levelZ).boundaryEdges();
     }
 
     public Set<GridSegment2x> roomDoorSegmentsAtLevel(Room room, int levelZ) {
-        return structureFor(room).doorSegmentsAtLevel(levelZ);
+        return structureFor(room).boundaryAtLevel(levelZ).doorEdges();
     }
 
     public Set<GridSegment2x> roomDoorSegmentsAtLevel(Long roomId, int levelZ) {
-        return structureFor(roomId).doorSegmentsAtLevel(levelZ);
+        return structureFor(roomId).boundaryAtLevel(levelZ).doorEdges();
     }
 
     public List<Door> roomDoorsAtLevel(Room room, int levelZ) {
-        return structureFor(room).doorsAtLevel(levelZ);
+        return structureFor(room).boundaryAtLevel(levelZ).doors();
     }
 
     public List<Door> roomDoorsAtLevel(Long roomId, int levelZ) {
-        return structureFor(roomId).doorsAtLevel(levelZ);
+        return structureFor(roomId).boundaryAtLevel(levelZ).doors();
     }
 
     public boolean roomContainsCell(Room room, CellCoord cell, int levelZ) {
@@ -483,7 +483,7 @@ public final class StructureRoomTopology {
                     room.anchorsByLevel(),
                     clusterStructure);
             for (Integer levelZ : roomStructure.levels()) {
-                for (Door door : roomStructure.doorsAtLevel(levelZ)) {
+                for (Door door : roomStructure.boundaryAtLevel(levelZ).doors()) {
                     if (door != null && !door.isEmpty()) {
                         String key = doorKey(levelZ, door);
                         if (seenKeys.add(key)) {
