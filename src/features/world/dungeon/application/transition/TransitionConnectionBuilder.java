@@ -3,6 +3,7 @@ package features.world.dungeon.application.transition;
 import features.world.dungeon.application.stair.DungeonStairApplicationService;
 import features.world.dungeon.application.stair.StairDraftResolver;
 import features.world.dungeon.dungoenmap.model.DungeonMap;
+import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.dungoenmap.cluster.model.Cluster;

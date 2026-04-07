@@ -6,6 +6,7 @@ import features.world.dungeon.dungoenmap.structure.model.boundary.door.DoorRef;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -22,6 +23,10 @@ public record CorridorReconcileInput(
         affectedRoomIds = affectedRoomIds == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(affectedRoomIds));
         originalDoorsByRef = originalDoorsByRef == null ? Map.of() : Map.copyOf(new LinkedHashMap<>(originalDoorsByRef));
         updatedDoorsByRef = updatedDoorsByRef == null ? Map.of() : Map.copyOf(new LinkedHashMap<>(updatedDoorsByRef));
+        translation = translation == null ? GridTranslation.none() : translation;
+        if (!affectedRoomIds.isEmpty()) {
+            updatedResolution = Objects.requireNonNull(updatedResolution, "updatedResolution");
+        }
     }
 
     public boolean hasAffectedRooms() {

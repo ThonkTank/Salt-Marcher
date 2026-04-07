@@ -12,7 +12,7 @@ public sealed interface CorridorMutation permits
         CorridorMutation.TileNodePromotionAndMove,
         CorridorMutation.AttachRoomDoorAtBoundary,
         CorridorMutation.DoorMove,
-        CorridorMutation.ReplaceDoors,
+        CorridorMutation.DeleteDoor,
         CorridorMutation.DeleteSegment,
         CorridorMutation.DeleteNode {
 
@@ -28,11 +28,7 @@ public sealed interface CorridorMutation permits
     record DoorMove(GridSegment sourceBoundarySegment, DoorRef targetDoorRef) implements CorridorMutation {
     }
 
-    record ReplaceDoors(java.util.List<features.world.dungeon.dungoenmap.structure.model.boundary.door.Door> doors)
-            implements CorridorMutation {
-        public ReplaceDoors {
-            doors = doors == null ? java.util.List.of() : java.util.List.copyOf(doors);
-        }
+    record DeleteDoor(GridSegment boundarySegment) implements CorridorMutation {
     }
 
     record DeleteSegment(Long segmentId) implements CorridorMutation {

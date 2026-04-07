@@ -35,9 +35,20 @@ public record CorridorResolutionInput(
                 ? Set.of()
                 : Set.copyOf(new LinkedHashSet<>(occupiedConnectionSegments));
         corridorDoors = corridorDoors == null ? List.of() : List.copyOf(corridorDoors);
+        if (exteriorDoorsByRef.keySet().stream().anyMatch(Objects::isNull)
+                || exteriorDoorsByRef.values().stream().anyMatch(Objects::isNull)) {
+            throw new IllegalArgumentException("Corridor exterior door inputs must stay complete");
+        }
+        if (attachableBoundariesBySegment.keySet().stream().anyMatch(Objects::isNull)
+                || attachableBoundariesBySegment.values().stream().anyMatch(Objects::isNull)) {
+            throw new IllegalArgumentException("Corridor boundary attachment inputs must stay complete");
+        }
+        if (corridorDoors.stream().anyMatch(Objects::isNull)) {
+            throw new IllegalArgumentException("Corridor door collection may not contain null entries");
+        }
     }
 
-    public CorridorResolutionInput withDoors(Collection<Door> doors) {
+    CorridorResolutionInput withDoors(Collection<Door> doors) {
         return new CorridorResolutionInput(
                 levelZ,
                 blockedCells,
@@ -47,7 +58,7 @@ public record CorridorResolutionInput(
                 doors == null ? List.of() : List.copyOf(doors));
     }
 
-    public ExteriorDoorInput requiredExteriorDoor(DoorRef doorRef) {
+    ExteriorDoorInput requiredExteriorDoor(DoorRef doorRef) {
         ExteriorDoorInput description = doorRef == null ? null : exteriorDoorsByRef.get(doorRef);
         if (description == null || description.roomId() == null) {
             throw new IllegalArgumentException("Corridor door node must reference an existing exterior room door");
@@ -55,7 +66,7 @@ public record CorridorResolutionInput(
         return description;
     }
 
-    public BoundaryAttachmentInput requiredBoundaryAttachment(GridSegment boundarySegment) {
+    BoundaryAttachmentInput requiredBoundaryAttachment(GridSegment boundarySegment) {
         BoundaryAttachmentInput attachment = boundarySegment == null ? null : attachableBoundariesBySegment.get(boundarySegment);
         if (attachment == null) {
             throw new IllegalArgumentException("Corridor attachment target must be a free corridor wall");
@@ -63,7 +74,7 @@ public record CorridorResolutionInput(
         return attachment;
     }
 
-    public boolean hasOccupiedConnection(GridSegment boundarySegment) {
+    boolean hasOccupiedConnection(GridSegment boundarySegment) {
         return boundarySegment != null && occupiedConnectionSegments.contains(boundarySegment);
     }
 

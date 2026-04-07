@@ -10,7 +10,7 @@ This file covers `src/features/world/dungeon/dungoenmap/structure/model/surface/
 ## Canonical Types and APIs
 
 - `StructureSurface` — level-local surface aggregate — owns the composed surface and floor state for one level and the surface-local persistence snapshot.
-- `StructureSurface.editedSurfaceCells(...)` / `StructureSurface.editedFloorCells(...)` — aggregate-owned edit seams — own `GridArea`-backed cell mutation, floor clipping, and anchor retention so `Structure` only orchestrates level lifecycle.
+- `StructureSurface.editedSurfaceCells(...)` / `StructureSurface.editedFloorCells(...)` — aggregate-owned edit seams — own `GridArea`-backed cell mutation and floor clipping; anchor choice must delegate to `StructureSurfaceArea`, not reimplement a second anchor policy.
 - `StructureSurfaceObject` — internal shared base — owns tile-shape-backed behavior common to `StructureSurfaceArea` and `StructureFloor`; this is not a public consumer seam.
 - `StructureSurfaceArea` — surface-area owner — owns anchors, surface cells, clipping, reachability, and surface translation.
 - `StructureFloor` — floor owner — owns floor-cell truth constrained to one `StructureSurfaceArea`.
@@ -22,6 +22,7 @@ This file covers `src/features/world/dungeon/dungoenmap/structure/model/surface/
 - Keep callers on `Structure.surfaceAtLevel(levelZ)` and then continue on `.surface()` or `.floor()`.
 - Keep surface/floor cell edit orchestration on `StructureSurface` instead of rebuilding raw set mutation in `Structure`.
 - Put anchor and surface-cell behavior on `StructureSurfaceArea`.
+- Keep anchor normalization and preferred-anchor fallback on `StructureSurfaceArea`; `StructureSurface` should orchestrate, not invent a parallel anchor policy.
 - Put floor-cell behavior on `StructureFloor`.
 - Use `GridArea` and `GridBoundary` as the public collection carriers for clipping, reachability, and edit inputs instead of raw `Collection<GridPoint>` or `Collection<GridSegment>`.
 - Keep shared tile-shape-backed behavior on the internal `StructureSurfaceObject` instead of duplicating it across both child owners.

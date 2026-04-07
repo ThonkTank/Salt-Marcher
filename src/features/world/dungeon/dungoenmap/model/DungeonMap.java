@@ -655,9 +655,7 @@ public final class DungeonMap {
         }
         CorridorBoundaryDescription boundary = connectedCorridorBoundary(ref, levelZ);
         if (boundary == null
-                || boundary.corridor().boundaryDoorSegments(corridorResolutionInput(
-                        boundary.corridor(),
-                        boundary.corridor().boundaryAtLevel(levelZ).doors())).contains(ref.boundarySegment())
+                || boundary.corridor().boundaryDoorSegments().contains(ref.boundarySegment())
                 || connectionAt(levelZ, ref.boundarySegment()) != null) {
             return null;
         }
@@ -1051,7 +1049,7 @@ public final class DungeonMap {
                         new DungeonSelectionRef.CorridorBoundaryRef(corridor.corridorId(), segment),
                         levelZ);
                 if (boundary == null
-                        || corridor.boundaryDoorSegments(input).contains(segment)
+                        || corridor.boundaryDoorSegments().contains(segment)
                         || connectionAt(levelZ, segment) != null) {
                     continue;
                 }
@@ -1101,72 +1099,25 @@ public final class DungeonMap {
      * Corridor graph edits resolve against the layout that already owns room bindings and connection context; callers
      * should not keep re-threading room collections through separate helper seams.
      */
-    public Corridor planCorridor(int levelZ, List<CorridorNode> nodes, List<CorridorSegment> segments) {
+    public Corridor resolveCorridor(CorridorResolutionRequest request) {
+        CorridorResolutionRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        CorridorSpecification specification = resolvedRequest.specification();
         return Corridor.fromSpecification(
-                new CorridorSpecification(null, null, mapId, levelZ, nodes, segments),
-                corridorResolutionInput(levelZ));
+                specification,
+                corridorResolutionInput(specification.levelZ(), resolvedRequest.corridorDoors()));
     }
 
-    public Corridor planCorridor(
-            int levelZ,
-            List<CorridorNode> nodes,
-            List<CorridorSegment> segments,
-            Collection<Door> doors
-    ) {
-        return Corridor.fromSpecification(
-                new CorridorSpecification(null, null, mapId, levelZ, nodes, segments),
-                corridorResolutionInput(levelZ, doors));
-    }
-
-    public Corridor resolveCorridor(Long corridorId, int levelZ, List<CorridorNode> nodes, List<CorridorSegment> segments) {
-        return Corridor.fromSpecification(
-                new CorridorSpecification(corridorId, null, mapId, levelZ, nodes, segments),
-                corridorResolutionInput(levelZ));
-    }
-
-    public Corridor resolveCorridor(
-            Long corridorId,
-            int levelZ,
-            List<CorridorNode> nodes,
-            List<CorridorSegment> segments,
-            Collection<Door> doors
-    ) {
-        return Corridor.fromSpecification(
-                new CorridorSpecification(corridorId, null, mapId, levelZ, nodes, segments),
-                corridorResolutionInput(levelZ, doors));
-    }
-
-    public Corridor resolveCorridor(
-            Long corridorId,
-            Long structureObjectId,
-            int levelZ,
-            List<CorridorNode> nodes,
-            List<CorridorSegment> segments,
-            Collection<Door> doors
-    ) {
-        CorridorSpecification specification = new CorridorSpecification(corridorId, structureObjectId, mapId, levelZ, nodes, segments);
-        Corridor resolvedCorridor = Corridor.fromSpecification(specification, corridorResolutionInput(levelZ, doors));
+    public Corridor rehydrateCorridor(CorridorRehydrationRequest request) {
+        CorridorRehydrationRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        CorridorSpecification specification = resolvedRequest.specification();
+        Structure structure = resolvedRequest.structure();
         return Corridor.rehydrated(
                 specification,
-                resolvedCorridor,
-                resolvedCorridor.pathTraces(),
-                corridorResolutionInput(levelZ, doors));
-    }
-
-    public Corridor rehydrateCorridor(
-            Long corridorId,
-            Long structureObjectId,
-            int levelZ,
-            List<CorridorNode> nodes,
-            List<CorridorSegment> segments,
-            Structure structure,
-            List<CorridorPathTrace> pathTraces
-    ) {
-        return Corridor.rehydrated(
-                new CorridorSpecification(corridorId, structureObjectId, mapId, levelZ, nodes, segments),
                 structure,
-                pathTraces,
-                corridorResolutionInput(levelZ, structure == null ? List.of() : structure.boundaryAtLevel(levelZ).doors()));
+                resolvedRequest.pathTraces(),
+                corridorResolutionInput(
+                        specification.levelZ(),
+                        structure.boundaryAtLevel(specification.levelZ()).doors()));
     }
 
     public DungeonMap withAddedCorridor(Corridor corridor) {

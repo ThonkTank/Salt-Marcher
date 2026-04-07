@@ -21,7 +21,7 @@
 
 ## Canonical Types and APIs
 
-- `GridObject` and the `geometry` slice — canonical dungeon grid algebra — every topology owner must express shared spatial truth through `GridPoint`, `GridSegment`, `GridArea`, `GridBoundary`, or `GridPath`.
+- `GridObject` and the `geometry` slice — canonical dungeon grid algebra — every topology owner must express shared spatial truth through `GridPoint`, `GridSegment`, `GridArea`, `GridBoundary`, or `GridPath`, movement through `GridTranslation`, and occupancy through `cellFootprint(): GridArea`.
 - `map` slice — authoritative loaded map snapshot plus load/reload and map-state seams — other owners rebuild through this slice after writes.
 - `DungeonClusterApplicationService` — cluster mutation seam — persists top-level cluster edits, cluster-backed room rewrites, and cluster bootstrap flows.
 - `DungeonRoomApplicationService` — room metadata seam — persists room-local narration and other room-owned metadata writes.
@@ -40,6 +40,8 @@
 - Route level-local wall, door, and boundary-edge behavior only through `structure.boundaryAtLevel(levelZ).something()`.
 - Route public structure-backed topology creation through `Structure.fromSpecification(...)`.
 - Route public structure-backed topology mutation through `structure.mutated(...)`.
+- Keep public movement on `translated(GridTranslation)` and keep drag/drop deltas, stair moves, and corridor reconciliation on `GridTranslation` instead of `GridPoint` stand-ins.
+- Keep public occupied-cell reads on `cellFootprint()`; if a caller truly needs raw cells, it should unwrap `.cells()` at the leaf instead of adding a second owner-level occupancy API.
 - Treat `floor` as the only traversable/runtime/exit truth. `surface` remains explicit owned geometry for projection, editing, and hit/selection areas; it must not be used as a fallback for "walkable anyway".
 - Let door- and wall-specific reads and edits terminate on the explicit `BoundaryObject`, `Door`, and `Wall` APIs returned from that boundary owner instead of rebuilding raw `GridBoundary` surgery or derived mirrors in callers.
 - Keep shared structure persistence shaped like the runtime `Structure -> level -> surface(surface area + floor) + boundary` composition so save and reload do not rebuild a second flattened structure model.
@@ -51,6 +53,7 @@
 
 - Do not add a second shared physical topology owner beside `Structure`, `StructureSurface`, `StructureSurfaceArea`, `StructureFloor`, `StructureBoundary`, and `Structure.roomTopology()`.
 - Do not add a second shared dungeon geometry vocabulary beside the `geometry` slice and its `GridObject` family.
+- Do not let stair, room, cluster, boundary, runtime, or shell code reintroduce `occupiedPositions()`/`movedBy(...)`-style public aliases once `cellFootprint()` and `translated(GridTranslation)` exist.
 - Do not mirror room, corridor, stair, transition, or runtime semantics into tool-local state, render models, or storage helper types.
 - Do not add convenience wrapper APIs that mirror `StructureSurfaceArea`, `StructureFloor`, or `StructureBoundary` state on `Structure`, `Cluster`, `DungeonMap`, renderer helpers, or other unrelated owners.
 - Do not add second public structure creation or mutation workflows beside `Structure.fromSpecification(...)` and `structure.mutated(...)`.

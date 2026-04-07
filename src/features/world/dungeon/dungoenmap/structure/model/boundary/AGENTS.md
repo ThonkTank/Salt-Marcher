@@ -9,7 +9,7 @@ This file covers `src/features/world/dungeon/dungoenmap/structure/model/boundary
 
 ## Canonical Types and APIs
 
-- `BoundaryObject` — internal shared base for `Door` and `Wall` — owns duplicated anchor, boundary-segment, touching-cell, clipping, and component helpers through its explicit object API.
+- `BoundaryObject` — internal shared base for `Door` and `Wall` — owns duplicated anchor, canonical `cellFootprint()`, clipping, component splitting, and anchor-repair helpers through its explicit object API.
 - `StructureBoundary` — level-local boundary aggregate — owns boundary edges, aggregate door-opening reads such as `doorBoundaryEdges()`, segment-to-object lookups such as `doorAtBoundarySegment(...)` and `wallAtBoundarySegment(...)`, `GridBoundary`-based wall/door edits such as `withCreatedDoorSegments(...)` and `withDeletedDoorSegments(...)`, `GridArea`-based surface rewrites, and the boundary persistence snapshot.
 - `door/Door`, `door/DoorRef` — single-door owner plus stable reference — own door-local clipping, segment removal, anchor repair, and persisted segment access.
 - `wall/Wall`, `wall/WallKind` — single-wall owner plus shared wall-kind definition — own wall-local clipping, split-on-delete behavior, anchor repair, and persisted segment access.
@@ -20,6 +20,7 @@ This file covers `src/features/world/dungeon/dungoenmap/structure/model/boundary
 - Put boundary-local state, mutation, and persistence shape here.
 - Keep callers on `Structure.boundaryAtLevel(levelZ)` and let that hand them this owner.
 - Put duplicated door/wall object mechanics on `BoundaryObject` before copying them between `Door` and `Wall`.
+- Keep canonical component-anchor selection on `BoundaryObject`; `Door` and `Wall` should not each rediscover the first valid anchor segment themselves.
 - Keep aggregate door create/delete/move dispatch on `StructureBoundary` so `Structure` does not rebuild boundary object rewrites itself.
 - Keep public boundary rewrites on canonical geometry carriers (`GridBoundary`, `GridArea`) instead of raw segment or cell collections.
 - Put door-specific rewrite, clipping, and anchor normalization on `door/Door`.
