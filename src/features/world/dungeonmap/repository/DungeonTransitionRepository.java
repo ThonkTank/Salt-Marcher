@@ -6,13 +6,13 @@ import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.TileShapeKind;
 import features.world.dungeonmap.model.geometry.TileShapeSpec;
-import features.world.dungeonmap.model.objects.DoorRef;
-import features.world.dungeonmap.model.objects.StructureObject;
+import features.world.dungeonmap.structure.model.DoorRef;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionKind;
 import features.world.dungeonmap.model.structures.connection.DoorConnectionCarrier;
 import features.world.dungeonmap.model.structures.connection.DungeonConnection;
 import features.world.dungeonmap.model.structures.connection.StairConnectionCarrier;
+import features.world.dungeonmap.model.structures.stair.Stair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
 
@@ -331,7 +331,7 @@ public final class DungeonTransitionRepository {
                                     rs.getInt("stair_shape_param2")),
                             rs.getInt("stair_min_level_z"),
                             rs.getInt("stair_max_level_z"),
-                            StructureObject.fromPathPoints(pathNodes, stopLevels)),
+                            Stair.of(pathNodes, stopLevels)),
                     List.of(ConnectionEndpoint.transition(transitionId)));
             default -> throw new SQLException("Unbekannter dungeon transition placement_type: " + placementType);
         };

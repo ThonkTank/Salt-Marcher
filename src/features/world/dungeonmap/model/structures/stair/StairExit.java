@@ -1,4 +1,4 @@
-package features.world.dungeonmap.model.objects;
+package features.world.dungeonmap.model.structures.stair;
 
 import features.world.dungeonmap.model.geometry.CubePoint;
 

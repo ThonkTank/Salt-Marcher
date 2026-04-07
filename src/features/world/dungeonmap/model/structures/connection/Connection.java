@@ -4,8 +4,8 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CardinalDirection;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.objects.Door;
-import features.world.dungeonmap.model.objects.DoorRef;
+import features.world.dungeonmap.structure.model.Door;
+import features.world.dungeonmap.structure.model.DoorRef;
 
 import java.util.LinkedHashSet;
 import java.util.List;

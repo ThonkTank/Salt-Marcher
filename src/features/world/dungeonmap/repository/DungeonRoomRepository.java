@@ -2,7 +2,7 @@ package features.world.dungeonmap.repository;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
-import features.world.dungeonmap.model.objects.StructureObject;
+import features.world.dungeonmap.structure.model.Structure;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
@@ -80,7 +80,7 @@ public final class DungeonRoomRepository {
                 }
             }
         }
-        Map<Long, StructureObject> structuresById = structureRepository.loadByIds(conn, structureIdsByClusterId.values());
+        Map<Long, Structure> structuresById = structureRepository.loadByIds(conn, structureIdsByClusterId.values());
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT cluster_id, dungeon_map_id, structure_object_id, center_x, center_y FROM dungeon_room_clusters"
                         + " WHERE dungeon_map_id=? ORDER BY cluster_id")) {
@@ -89,7 +89,7 @@ public final class DungeonRoomRepository {
                 while (rs.next()) {
                     long clusterId = rs.getLong("cluster_id");
                     long structureObjectId = rs.getLong("structure_object_id");
-                    StructureObject structure = structuresById.get(structureObjectId);
+                    Structure structure = structuresById.get(structureObjectId);
                     if (structure == null || structure.levelStructures().isEmpty()) {
                         throw new IllegalStateException("Cluster " + clusterId + " hat keine persistierte Strukturbeschreibung");
                     }
@@ -127,7 +127,7 @@ public final class DungeonRoomRepository {
         if (resolvedCells.isEmpty()) {
             return;
         }
-        StructureObject structure = StructureObject.fromSurfaceCellsByLevel(
+        Structure structure = Structure.fromSurfaceCellsByLevel(
                 Map.of(levelZ, resolvedCells),
                 Map.of(levelZ, resolvedCells),
                 Map.of(levelZ, CellCoord.bestCenter(resolvedCells)));

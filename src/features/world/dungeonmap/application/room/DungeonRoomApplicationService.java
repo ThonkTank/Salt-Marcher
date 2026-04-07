@@ -5,9 +5,8 @@ import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.objects.DoorRef;
-import features.world.dungeonmap.model.objects.StairExit;
-import features.world.dungeonmap.model.objects.StructureObject;
+import features.world.dungeonmap.structure.model.DoorRef;
+import features.world.dungeonmap.structure.model.Structure;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.DoorConnectionCarrier;
@@ -17,6 +16,8 @@ import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNode;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
+import features.world.dungeonmap.model.structures.stair.Stair;
+import features.world.dungeonmap.model.structures.stair.StairExit;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.repository.DungeonCorridorRepository;
@@ -755,7 +756,7 @@ public final class DungeonRoomApplicationService {
                             stairCarrier.shapeSpec(),
                             stairCarrier.minLevelZ(),
                             stairCarrier.maxLevelZ(),
-                            StructureObject.fromTilePath(stairCarrier.tilePath(), stairCarrier.stopLevels())),
+                            Stair.of(stairCarrier.tilePath(), stairCarrier.stopLevels())),
                     List.of(ConnectionEndpoint.room(reboundRoom.roomId()), ConnectionEndpoint.transition(transition.transitionId())));
         }
         return localConnection;
@@ -854,7 +855,7 @@ public final class DungeonRoomApplicationService {
                 continue;
             }
             boolean usesRemovedExit = stair.exitsAtLevel(levelZ).stream()
-                    .map(StructureObject.StairStop::position)
+                    .map(StairExit::position)
                     .filter(Objects::nonNull)
                     .map(position -> position.projectedCell())
                     .anyMatch(removedFloorCells::contains);

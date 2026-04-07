@@ -1,6 +1,6 @@
-package features.world.dungeonmap.repository;
+package features.world.dungeonmap.structure.repository;
 
-import features.world.dungeonmap.model.objects.WallKind;
+import features.world.dungeonmap.structure.model.WallKind;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

@@ -6,9 +6,9 @@ import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
-import features.world.dungeonmap.model.objects.Door;
-import features.world.dungeonmap.model.objects.DoorRef;
-import features.world.dungeonmap.model.objects.StructureObject;
+import features.world.dungeonmap.structure.model.Door;
+import features.world.dungeonmap.structure.model.DoorRef;
+import features.world.dungeonmap.structure.model.Structure;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.Connection;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
@@ -1028,7 +1028,7 @@ public final class DungeonLayout {
             int levelZ,
             List<CorridorNode> nodes,
             List<CorridorSegment> segments,
-            StructureObject structure
+            Structure structure
     ) {
         return Corridor.rehydrated(this, corridorId, structureObjectId, levelZ, nodes, segments, structure);
     }

@@ -5,7 +5,6 @@ import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
-import features.world.dungeonmap.model.objects.StructureObject;
 
 import java.util.List;
 import java.util.Objects;
@@ -19,18 +18,18 @@ public final class DungeonStair {
     private final Long stairId;
     private final long mapId;
     private final String name;
-    private final StructureObject structure;
+    private final Stair stair;
 
     private DungeonStair(
             Long stairId,
             long mapId,
             String name,
-            StructureObject structure
+            Stair stair
     ) {
         this.stairId = stairId;
         this.mapId = mapId;
         this.name = normalizeName(name);
-        this.structure = structure == null ? StructureObject.empty() : structure;
+        this.stair = Objects.requireNonNull(stair, "stair");
     }
 
     public static DungeonStair resolved(
@@ -44,16 +43,16 @@ public final class DungeonStair {
                 stairId,
                 mapId,
                 name,
-                StructureObject.fromPathPoints(path, stopLevels));
+                Stair.of(path, stopLevels));
     }
 
     public static DungeonStair resolved(
             Long stairId,
             long mapId,
             String name,
-            StructureObject structure
+            Stair stair
     ) {
-        return new DungeonStair(stairId, mapId, name, structure);
+        return new DungeonStair(stairId, mapId, name, stair);
     }
 
     public Long stairId() {
@@ -68,20 +67,20 @@ public final class DungeonStair {
         return name;
     }
 
-    public StructureObject structure() {
-        return structure;
+    public Stair stair() {
+        return stair;
     }
 
     public List<CubePoint> path() {
-        return structure.stairPath();
+        return stair.path();
     }
 
     public Set<Integer> stopLevels() {
-        return structure.stairStopLevels();
+        return stair.stopLevels();
     }
 
-    public List<StructureObject.StairStop> exits() {
-        return structure.stairStops();
+    public List<StairExit> exits() {
+        return stair.exits();
     }
 
     public String label() {
@@ -92,20 +91,20 @@ public final class DungeonStair {
     }
 
     public Set<Integer> reachableLevels() {
-        return structure.stairStopLevels().isEmpty() ? structure.levels() : structure.stairStopLevels();
+        return stair.reachableLevels();
     }
 
     public Set<CubePoint> occupiedPositions() {
-        return structure.cubePoints();
+        return stair.occupiedPositions();
     }
 
-    public List<StructureObject.StairStop> exitsAtLevel(int levelZ) {
-        return structure.stairStopsAtLevel(levelZ);
+    public List<StairExit> exitsAtLevel(int levelZ) {
+        return stair.exitsAtLevel(levelZ);
     }
 
     public InteractiveLabelHandle labelHandle(int levelZ) {
         CubePoint anchorPoint = exits().stream()
-                .map(StructureObject.StairStop::position)
+                .map(StairExit::position)
                 .filter(position -> position.z() == levelZ)
                 .findFirst()
                 .orElseGet(() -> path().stream()
@@ -132,12 +131,12 @@ public final class DungeonStair {
         return mapId == stair.mapId
                 && Objects.equals(stairId, stair.stairId)
                 && Objects.equals(name, stair.name)
-                && Objects.equals(structure, stair.structure);
+                && Objects.equals(this.stair, stair.stair);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(stairId, mapId, name, structure);
+        return Objects.hash(stairId, mapId, name, stair);
     }
 
     @Override
@@ -145,7 +144,7 @@ public final class DungeonStair {
         return "DungeonStair[stairId=" + stairId
                 + ", mapId=" + mapId
                 + ", name=" + name
-                + ", structure=" + structure
+                + ", stair=" + stair
                 + "]";
     }
 
@@ -154,7 +153,7 @@ public final class DungeonStair {
         if ((resolvedDelta.x() == 0 && resolvedDelta.y() == 0) && levelDelta == 0) {
             return this;
         }
-        return new DungeonStair(stairId, mapId, name, structure.movedBy(resolvedDelta, levelDelta));
+        return new DungeonStair(stairId, mapId, name, stair.movedBy(resolvedDelta, levelDelta));
     }
 
     private static String normalizeName(String name) {

@@ -5,14 +5,14 @@ import features.world.dungeonmap.application.stair.StairDraftResolver;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
-import features.world.dungeonmap.model.objects.DoorRef;
-import features.world.dungeonmap.model.objects.StructureObject;
+import features.world.dungeonmap.structure.model.DoorRef;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionKind;
 import features.world.dungeonmap.model.structures.connection.DoorConnectionCarrier;
 import features.world.dungeonmap.model.structures.connection.DungeonConnection;
 import features.world.dungeonmap.model.structures.connection.StairConnectionCarrier;
 import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.model.structures.stair.Stair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 
 import java.util.LinkedHashSet;
@@ -86,7 +86,7 @@ public final class TransitionConnectionBuilder {
                 resolvedDraft.draft().shapeSpec(),
                 resolvedDraft.draft().minLevelZ(),
                 resolvedDraft.draft().maxLevelZ(),
-                StructureObject.fromTilePath(resolvedDraft.path(), resolvedDraft.stopLevels()));
+                Stair.of(resolvedDraft.path(), resolvedDraft.stopLevels()));
         DungeonConnection candidate = new DungeonConnection(
                 ConnectionKind.TRANSITION,
                 transitionId,

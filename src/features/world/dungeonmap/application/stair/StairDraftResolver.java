@@ -3,9 +3,9 @@ package features.world.dungeonmap.application.stair;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.TilePath;
-import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
+import features.world.dungeonmap.model.structures.stair.Stair;
 
 import java.util.Objects;
 import java.util.Set;
@@ -123,7 +123,7 @@ public final class StairDraftResolver {
                 stairId,
                 mapId,
                 resolution.draft().name(),
-                StructureObject.fromTilePath(resolution.path(), resolution.stopLevels()));
+                Stair.of(resolution.path(), resolution.stopLevels()));
     }
 
     private static void validateAnchor(DungeonLayout layout, CellCoord anchorCell, int anchorLevelZ) {

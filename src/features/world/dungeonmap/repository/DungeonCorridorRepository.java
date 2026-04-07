@@ -2,8 +2,8 @@ package features.world.dungeonmap.repository;
 
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
-import features.world.dungeonmap.model.objects.DoorRef;
-import features.world.dungeonmap.model.objects.StructureObject;
+import features.world.dungeonmap.structure.model.DoorRef;
+import features.world.dungeonmap.structure.model.Structure;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNode;
 import features.world.dungeonmap.model.structures.corridor.CorridorSegment;
@@ -49,7 +49,7 @@ public final class DungeonCorridorRepository {
                         row.getLong("corridor_segment_id"),
                         row.getLong("start_node_id"),
                         row.getLong("end_node_id")));
-        Map<Long, List<StructureObject.PathTrace>> pathTracesByCorridorId = loadPathTracesByCorridorId(conn, mapId);
+        Map<Long, List<Structure.PathTrace>> pathTracesByCorridorId = loadPathTracesByCorridorId(conn, mapId);
         Map<Long, Long> structureIdsByCorridorId = new LinkedHashMap<>();
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT corridor_id, structure_object_id FROM dungeon_corridors WHERE dungeon_map_id=? ORDER BY corridor_id")) {
@@ -60,7 +60,7 @@ public final class DungeonCorridorRepository {
                 }
             }
         }
-        Map<Long, StructureObject> structuresById = structureRepository.loadByIds(conn, structureIdsByCorridorId.values());
+        Map<Long, Structure> structuresById = structureRepository.loadByIds(conn, structureIdsByCorridorId.values());
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT corridor_id, dungeon_map_id, structure_object_id, level_z"
                         + " FROM dungeon_corridors WHERE dungeon_map_id=? ORDER BY corridor_id")) {
@@ -71,9 +71,9 @@ public final class DungeonCorridorRepository {
                     long corridorId = rs.getLong("corridor_id");
                     long structureObjectId = rs.getLong("structure_object_id");
                     int levelZ = rs.getInt("level_z");
-                    StructureObject structure = structuresById.get(structureObjectId);
+                    Structure structure = structuresById.get(structureObjectId);
                     if (structure == null || structure.levelStructure(levelZ) == null) {
-                        throw new IllegalStateException("Corridor " + corridorId + " hat kein persistiertes StructureObject");
+                        throw new IllegalStateException("Corridor " + corridorId + " hat kein persistiertes Structure");
                     }
                     result.add(resolvedLayout.rehydrateCorridor(
                             corridorId,
@@ -96,7 +96,7 @@ public final class DungeonCorridorRepository {
         Long structureObjectId = persisted.structureObjectId();
         DungeonStructureRepository.PersistedStructure persistedStructure =
                 structureRepository.save(conn, structureObjectId, persisted.structure());
-        StructureObject runtimeStructure = persistedStructure.structure()
+        Structure runtimeStructure = persistedStructure.structure()
                 .withPathTracesAtLevel(persisted.levelZ(), persisted.structure().pathTracesAtLevel(persisted.levelZ()));
         if (corridorId == null) {
             corridorId = insertCorridor(conn, mapId, persisted.levelZ(), persistedStructure.structureObjectId());
@@ -197,10 +197,10 @@ public final class DungeonCorridorRepository {
     private void replacePathPoints(
             Connection conn,
             List<CorridorSegment> segments,
-            List<StructureObject.PathTrace> pathTraces
+            List<Structure.PathTrace> pathTraces
     ) throws SQLException {
-        Map<Long, StructureObject.PathTrace> tracesById = new LinkedHashMap<>();
-        for (StructureObject.PathTrace trace : pathTraces == null ? List.<StructureObject.PathTrace>of() : pathTraces) {
+        Map<Long, Structure.PathTrace> tracesById = new LinkedHashMap<>();
+        for (Structure.PathTrace trace : pathTraces == null ? List.<Structure.PathTrace>of() : pathTraces) {
             if (trace != null && trace.traceId() != null) {
                 tracesById.put(trace.traceId(), trace);
             }
@@ -211,7 +211,7 @@ public final class DungeonCorridorRepository {
                 if (segment.segmentId() == null) {
                     continue;
                 }
-                StructureObject.PathTrace trace = tracesById.get(segment.segmentId());
+                Structure.PathTrace trace = tracesById.get(segment.segmentId());
                 if (trace == null) {
                     continue;
                 }
@@ -258,11 +258,11 @@ public final class DungeonCorridorRepository {
             }
             segments.add(new CorridorSegment(persistedSegmentId, startNodeId, endNodeId));
         }
-        List<StructureObject.PathTrace> remappedTraces = remappedPathTraces(
+        List<Structure.PathTrace> remappedTraces = remappedPathTraces(
                 resolvedCorridor.structure().pathTracesAtLevel(resolvedCorridor.levelZ()),
                 syntheticNodeIds,
                 remappedSegmentIds);
-        StructureObject runtimeStructure = resolvedCorridor.structure().withPathTracesAtLevel(resolvedCorridor.levelZ(), remappedTraces);
+        Structure runtimeStructure = resolvedCorridor.structure().withPathTracesAtLevel(resolvedCorridor.levelZ(), remappedTraces);
         return layout.rehydrateCorridor(
                 resolvedCorridor.corridorId(),
                 resolvedCorridor.structureObjectId(),
@@ -279,8 +279,8 @@ public final class DungeonCorridorRepository {
         return syntheticNodeIds.getOrDefault(nodeId, nodeId);
     }
 
-    private static List<StructureObject.PathTrace> remappedPathTraces(
-            List<StructureObject.PathTrace> pathTraces,
+    private static List<Structure.PathTrace> remappedPathTraces(
+            List<Structure.PathTrace> pathTraces,
             Map<Long, Long> remappedNodeIds,
             Map<Long, Long> remappedSegmentIds
     ) {
@@ -289,7 +289,7 @@ public final class DungeonCorridorRepository {
         }
         return pathTraces.stream()
                 .filter(Objects::nonNull)
-                .map(trace -> new StructureObject.PathTrace(
+                .map(trace -> new Structure.PathTrace(
                         remappedSegmentIds.getOrDefault(trace.traceId(), trace.traceId()),
                         remappedNodeIds.getOrDefault(trace.startNodeId(), trace.startNodeId()),
                         remappedNodeIds.getOrDefault(trace.endNodeId(), trace.endNodeId()),
@@ -389,7 +389,7 @@ public final class DungeonCorridorRepository {
                 doorId == null ? null : new DoorRef(doorId));
     }
 
-    private Map<Long, List<StructureObject.PathTrace>> loadPathTracesByCorridorId(Connection conn, long mapId) throws SQLException {
+    private Map<Long, List<Structure.PathTrace>> loadPathTracesByCorridorId(Connection conn, long mapId) throws SQLException {
         Map<Long, CorridorSegment> segmentsById = new LinkedHashMap<>();
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT corridor_id, corridor_segment_id, start_node_id, end_node_id"
@@ -423,15 +423,15 @@ public final class DungeonCorridorRepository {
                 }
             }
         }
-        Map<Long, List<StructureObject.PathTrace>> result = new LinkedHashMap<>();
+        Map<Long, List<Structure.PathTrace>> result = new LinkedHashMap<>();
         for (Map.Entry<Long, LinkedHashMap<Long, ArrayList<GridPoint2x>>> corridorEntry : pointsByCorridorAndSegment.entrySet()) {
-            List<StructureObject.PathTrace> traces = new ArrayList<>();
+            List<Structure.PathTrace> traces = new ArrayList<>();
             for (Map.Entry<Long, ArrayList<GridPoint2x>> segmentEntry : corridorEntry.getValue().entrySet()) {
                 CorridorSegment segment = segmentsById.get(segmentEntry.getKey());
                 if (segment == null) {
                     throw new SQLException("Missing corridor segment " + segmentEntry.getKey() + " for persisted path trace");
                 }
-                traces.add(new StructureObject.PathTrace(
+                traces.add(new Structure.PathTrace(
                         segment.segmentId(),
                         segment.startNodeId(),
                         segment.endNodeId(),

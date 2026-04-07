@@ -437,7 +437,7 @@ public final class StairTool implements EditorTool {
         }
         return stair.exits().stream()
                 .min(Comparator
-                        .comparingInt((features.world.dungeonmap.model.objects.StructureObject.StairStop exit) ->
+                        .comparingInt((features.world.dungeonmap.model.structures.stair.StairExit exit) ->
                                 stairExitDistance(clickedPoint, exit.position()))
                         .thenComparingInt(exit -> stairExitTieRank(stairId, exit.position().z()))
                         .thenComparingInt(exit -> exit.position().z()))

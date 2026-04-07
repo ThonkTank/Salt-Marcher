@@ -7,9 +7,9 @@ import features.world.dungeonmap.model.geometry.EdgeShape;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
-import features.world.dungeonmap.model.objects.Door;
-import features.world.dungeonmap.model.objects.DoorRef;
-import features.world.dungeonmap.model.objects.StructureObject;
+import features.world.dungeonmap.structure.model.Door;
+import features.world.dungeonmap.structure.model.DoorRef;
+import features.world.dungeonmap.structure.model.Structure;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionKind;
 import features.world.dungeonmap.model.structures.connection.DoorConnectionCarrier;
@@ -31,7 +31,7 @@ import java.util.Set;
  * Corridors are edited and persisted as standalone structures.
  *
  * <p>The behavior to preserve here is: corridor routing data stays corridor-owned, the referenced
- * {@link StructureObject} carries the realized physical topology, room attachments stay explicit, and callers must get
+ * {@link Structure} carries the realized physical topology, room attachments stay explicit, and callers must get
  * the same corridor behavior without any second physical boundary owner.
  */
 public final class Corridor {
@@ -42,7 +42,7 @@ public final class Corridor {
     private final int levelZ;
     private final List<CorridorNode> nodes;
     private final List<CorridorSegment> segments;
-    private final StructureObject structure;
+    private final Structure structure;
     private final List<DungeonConnection> connections;
 
     public static Corridor resolved(
@@ -92,7 +92,7 @@ public final class Corridor {
             int levelZ,
             List<CorridorNode> nodes,
             List<CorridorSegment> segments,
-            StructureObject structure
+            Structure structure
     ) {
         return new Corridor(layout, corridorId, structureObjectId, levelZ, nodes, segments, structure);
     }
@@ -133,10 +133,10 @@ public final class Corridor {
             int levelZ,
             List<CorridorNode> nodes,
             List<CorridorSegment> segments,
-            StructureObject structure
+            Structure structure
     ) {
         DungeonLayout resolvedLayout = Objects.requireNonNull(layout, "layout");
-        StructureObject hydratedStructure = Objects.requireNonNull(structure, "structure");
+        Structure hydratedStructure = Objects.requireNonNull(structure, "structure");
         this.corridorId = corridorId;
         this.structureObjectId = structureObjectId;
         this.mapId = resolvedLayout.mapId();
@@ -191,7 +191,7 @@ public final class Corridor {
                 .toList();
     }
 
-    public StructureObject structure() {
+    public Structure structure() {
         return structure;
     }
 
@@ -326,7 +326,7 @@ public final class Corridor {
         LinkedHashSet<String> seenEdges = new LinkedHashSet<>();
         boolean changed = false;
         for (CorridorSegment segment : segments) {
-            StructureObject.PathTrace trace = traceForSegment(this, segment == null ? null : segment.segmentId());
+            Structure.PathTrace trace = traceForSegment(this, segment == null ? null : segment.segmentId());
             if (segment == null || trace == null || !trace.path2x().contains(tilePoint)) {
                 addUniqueSegment(updatedSegments, seenEdges, segment);
                 continue;
@@ -589,7 +589,7 @@ public final class Corridor {
         return layout.resolveCorridor(corridorId, structureObjectId, levelZ, updatedNodes, updatedSegments, updatedDoors);
     }
 
-    private static StructureObject.PathTrace traceForSegment(Corridor corridor, Long segmentId) {
+    private static Structure.PathTrace traceForSegment(Corridor corridor, Long segmentId) {
         if (corridor == null || segmentId == null) {
             return null;
         }
@@ -697,7 +697,7 @@ public final class Corridor {
                 .map(CorridorSegment::segmentId)
                 .filter(Objects::nonNull)
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
-        Set<CellCoord> componentCells = StructureObject.surfaceCellsForTraces(structure.pathTracesAtLevel(levelZ).stream()
+        Set<CellCoord> componentCells = Structure.surfaceCellsForTraces(structure.pathTracesAtLevel(levelZ).stream()
                 .filter(trace -> trace != null && componentSegmentIds.contains(trace.traceId()))
                 .toList());
         if (componentCells.isEmpty()) {
@@ -851,19 +851,19 @@ public final class Corridor {
             Collection<Door> doors
     ) {
         Set<CellCoord> blockedCells = blockedRoomCells(layout, levelZ);
-        List<StructureObject.RoutedNode> routedNodes = nodes.stream()
+        List<Structure.RoutedNode> routedNodes = nodes.stream()
                 .map(node -> routedNode(layout, node, levelZ, blockedCells))
                 .toList();
-        List<StructureObject.RoutedLink> routedLinks = segments.stream()
+        List<Structure.RoutedLink> routedLinks = segments.stream()
                 .filter(Objects::nonNull)
-                .map(segment -> new StructureObject.RoutedLink(segment.segmentId(), segment.startNodeId(), segment.endNodeId()))
+                .map(segment -> new Structure.RoutedLink(segment.segmentId(), segment.startNodeId(), segment.endNodeId()))
                 .toList();
-        StructureObject.RoutedProjection routedProjection = StructureObject.routeSurfaceProjection(
+        Structure.RoutedProjection routedProjection = Structure.routeSurfaceProjection(
                 levelZ,
                 routedNodes,
                 routedLinks,
                 blockedCells);
-        StructureObject structure = routedProjection.structure().withDoorsAtLevel(levelZ, doors == null ? List.of() : doors);
+        Structure structure = routedProjection.structure().withDoorsAtLevel(levelZ, doors == null ? List.of() : doors);
         return new DerivedProjection(
                 structure,
                 materializeConnections(layout, corridorId, mapId, levelZ, nodes));
@@ -903,7 +903,7 @@ public final class Corridor {
         return Set.copyOf(blocked);
     }
 
-    private static StructureObject.RoutedNode routedNode(
+    private static Structure.RoutedNode routedNode(
             DungeonLayout layout,
             CorridorNode node,
             int levelZ,
@@ -912,10 +912,10 @@ public final class Corridor {
         if (node == null || node.nodeId() == null) {
             throw new IllegalArgumentException("Corridor routed node requires a stable id");
         }
-        return new StructureObject.RoutedNode(node.nodeId(), attachmentsForNode(layout, node, levelZ, blockedCells));
+        return new Structure.RoutedNode(node.nodeId(), attachmentsForNode(layout, node, levelZ, blockedCells));
     }
 
-    private static List<StructureObject.AnchorAttachment> attachmentsForNode(
+    private static List<Structure.AnchorAttachment> attachmentsForNode(
             DungeonLayout layout,
             CorridorNode node,
             int levelZ,
@@ -928,11 +928,11 @@ public final class Corridor {
             DungeonLayout.RoomBoundaryDescription boundary = requiredExteriorDoorBoundary(layout, levelZ, node.doorRef());
             GridSegment2x boundarySegment2x = requiredExteriorDoor(layout, levelZ, node.doorRef()).anchorSegment2x();
             CellCoord exteriorCell = boundary.roomCell().add(boundary.outwardDirection().delta());
-            return List.of(new StructureObject.AnchorAttachment(
+            return List.of(new Structure.AnchorAttachment(
                     exteriorCell,
                     List.of(boundarySegment2x.midpoint(), GridPoint2x.cell(exteriorCell))));
         }
-        return StructureObject.attachmentsForPoint(node.point2x(), blockedCells);
+        return Structure.attachmentsForPoint(node.point2x(), blockedCells);
     }
 
     private static List<DungeonConnection> materializeConnections(
@@ -1042,7 +1042,7 @@ public final class Corridor {
     }
 
     private record DerivedProjection(
-            StructureObject structure,
+            Structure structure,
             List<DungeonConnection> connections
     ) {
     }

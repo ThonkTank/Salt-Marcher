@@ -14,7 +14,7 @@ import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
-import features.world.dungeonmap.model.objects.StructureObject;
+import features.world.dungeonmap.structure.model.Structure;
 import features.world.dungeonmap.model.structures.connection.StairConnectionCarrier;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
@@ -380,7 +380,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                     pass.palette().highlightStroke(),
                     Math.max(5.0, pass.gridSize() * 0.16));
         }
-        for (StructureObject.PathTrace trace : corridor.structure().pathTracesAtLevel(corridor.levelZ())) {
+        for (Structure.PathTrace trace : corridor.structure().pathTracesAtLevel(corridor.levelZ())) {
             for (GridPoint2x corner : trace.cornerPoints2x()) {
                 drawCorridorHandle(
                         pass.gc(),
@@ -961,7 +961,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
     }
 
     private static WalkableSurface walkableSurface(
-            StructureObject structure,
+            Structure structure,
             int levelZ
     ) {
         if (structure == null) {

@@ -1,4 +1,4 @@
-package features.world.dungeonmap.model.objects;
+package features.world.dungeonmap.structure.model;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
@@ -27,7 +27,7 @@ import java.util.Set;
 /**
  * Shared topology orchestrator over shape-backed floor, wall, door, and stair objects.
  */
-public final class StructureObject {
+public final class Structure {
 
     public record StairStop(CubePoint position, String label) {
     }
@@ -58,18 +58,18 @@ public final class StructureObject {
     private final Map<Integer, List<PathTrace>> pathTracesByLevel;
     private final StructureRoomTopology roomTopology;
 
-    public static StructureObject empty() {
-        return new StructureObject(Map.of(), null, Map.of(), null);
+    public static Structure empty() {
+        return new Structure(Map.of(), null, Map.of(), null);
     }
 
-    public static StructureObject fromLevels(Map<Integer, LevelStructure> levelsByZ) {
+    public static Structure fromLevels(Map<Integer, LevelStructure> levelsByZ) {
         if (levelsByZ == null || levelsByZ.isEmpty()) {
             return empty();
         }
-        return new StructureObject(levelsByZ, null, Map.of(), null);
+        return new Structure(levelsByZ, null, Map.of(), null);
     }
 
-    public static StructureObject fromCubePoints(Collection<CubePoint> cubePoints) {
+    public static Structure fromCubePoints(Collection<CubePoint> cubePoints) {
         if (cubePoints == null || cubePoints.isEmpty()) {
             return empty();
         }
@@ -84,7 +84,7 @@ public final class StructureObject {
         return fromSurfaceCellsByLevel(cellsByLevel, Map.of(), Map.of());
     }
 
-    public static StructureObject fromSurfaceCellsByLevel(
+    public static Structure fromSurfaceCellsByLevel(
             Map<Integer, ? extends Collection<CellCoord>> cellsByLevel,
             Map<Integer, ? extends Collection<CellCoord>> floorCellsByLevel,
             Map<Integer, CellCoord> anchorsByLevel
@@ -109,7 +109,7 @@ public final class StructureObject {
         return levels.isEmpty() ? empty() : fromLevels(levels);
     }
 
-    public static StructureObject fromTopologyByLevel(
+    public static Structure fromTopologyByLevel(
             Map<Integer, ? extends Collection<CellCoord>> surfaceCellsByLevel,
             Map<Integer, ? extends Collection<GridSegment2x>> boundaryEdgesByLevel,
             Map<Integer, ? extends Collection<CellCoord>> floorCellsByLevel,
@@ -136,7 +136,7 @@ public final class StructureObject {
         return levels.isEmpty() ? empty() : fromLevels(levels);
     }
 
-    public static StructureObject fromPersistenceSnapshot(PersistenceSnapshot snapshot) {
+    public static Structure fromPersistenceSnapshot(PersistenceSnapshot snapshot) {
         if (snapshot == null || snapshot.levelsByZ().isEmpty()) {
             return empty();
         }
@@ -162,25 +162,25 @@ public final class StructureObject {
         return levels.isEmpty() ? empty() : fromLevels(levels);
     }
 
-    public static StructureObject fromTilePath(TilePath path, Set<Integer> stopLevels) {
+    public static Structure fromTilePath(TilePath path, Set<Integer> stopLevels) {
         if (path == null || path.isEmpty()) {
             return empty();
         }
         return fromStair(Stair.of(path, stopLevels));
     }
 
-    public static StructureObject fromPathPoints(Collection<CubePoint> pathPoints, Set<Integer> stopLevels) {
+    public static Structure fromPathPoints(Collection<CubePoint> pathPoints, Set<Integer> stopLevels) {
         if (pathPoints == null || pathPoints.isEmpty()) {
             return empty();
         }
         return fromTilePath(TilePath.of(pathPoints), stopLevels);
     }
 
-    public static StructureObject fromStair(Stair stair) {
+    public static Structure fromStair(Stair stair) {
         if (stair == null) {
             return empty();
         }
-        return new StructureObject(Map.of(), stair, Map.of(), null);
+        return new Structure(Map.of(), stair, Map.of(), null);
     }
 
     private static Set<GridSegment2x> derivedBoundaryEdgesForSurface(
@@ -312,7 +312,7 @@ public final class StructureObject {
         if (boundaryEdges.isEmpty()) {
             return new RoutedProjection(empty(), List.copyOf(traces), Set.of());
         }
-        StructureObject structure = new StructureObject(
+        Structure structure = new Structure(
                 Map.of(levelZ, LevelStructure.fromTopology(
                         CellCoord.bestCenter(occupiedCells),
                         occupiedCells,
@@ -323,19 +323,19 @@ public final class StructureObject {
                 null);
         Set<CellCoord> hydratedCells = CellCoord.normalize(structure.cellCoordsAtLevel(levelZ));
         if (!hydratedCells.equals(CellCoord.normalize(occupiedCells))) {
-            throw new IllegalStateException("StructureObject route projection changed the routed occupied cells");
+            throw new IllegalStateException("Structure route projection changed the routed occupied cells");
         }
         return new RoutedProjection(structure, traces, Set.of());
     }
 
-    private StructureObject(
+    private Structure(
             Map<Integer, LevelStructure> levelsByZ,
             Stair stair
     ) {
         this(levelsByZ, stair, Map.of(), null);
     }
 
-    private StructureObject(
+    private Structure(
             Map<Integer, LevelStructure> levelsByZ,
             Stair stair,
             Map<Integer, ? extends Collection<PathTrace>> pathTracesByLevel
@@ -343,7 +343,7 @@ public final class StructureObject {
         this(levelsByZ, stair, pathTracesByLevel, null);
     }
 
-    private StructureObject(
+    private Structure(
             Map<Integer, LevelStructure> levelsByZ,
             Stair stair,
             Map<Integer, ? extends Collection<PathTrace>> pathTracesByLevel,
@@ -363,8 +363,8 @@ public final class StructureObject {
         return roomTopology;
     }
 
-    public StructureObject withRoomMetadata(long mapId, Long clusterId, List<Room> rooms) {
-        return new StructureObject(levelsByZ, stair, pathTracesByLevel, StructureRoomTopology.derive(mapId, clusterId, this, rooms));
+    public Structure withRoomMetadata(long mapId, Long clusterId, List<Room> rooms) {
+        return new Structure(levelsByZ, stair, pathTracesByLevel, StructureRoomTopology.derive(mapId, clusterId, this, rooms));
     }
 
     public List<Room> rooms() {
@@ -375,18 +375,18 @@ public final class StructureObject {
         return roomTopology == null ? List.of() : roomTopology.localConnections();
     }
 
-    private StructureObject reattachedWithSameRooms(StructureObject structure) {
+    private Structure reattachedWithSameRooms(Structure structure) {
         if (roomTopology == null || structure == null || structure.levelStructures().isEmpty()) {
             return structure;
         }
         return structure.withRoomMetadata(roomTopology.mapId(), roomTopology.clusterId(), roomTopology.rooms());
     }
 
-    private static StructureObject reattachTopology(StructureObject structure, StructureRoomTopology topology) {
+    private static Structure reattachTopology(Structure structure, StructureRoomTopology topology) {
         if (structure == null || topology == null || structure.levelStructures().isEmpty()) {
             return structure;
         }
-        return new StructureObject(structure.levelsByZ, structure.stair, structure.pathTracesByLevel, topology);
+        return new Structure(structure.levelsByZ, structure.stair, structure.pathTracesByLevel, topology);
     }
 
     public PersistenceSnapshot persistenceSnapshot() {
@@ -410,7 +410,7 @@ public final class StructureObject {
         return levelsByZ.get(levelZ);
     }
 
-    public StructureObject projectedToLevel(int levelZ) {
+    public Structure projectedToLevel(int levelZ) {
         LevelStructure level = levelStructure(levelZ);
         Stair projectedStair = stair == null || !stair.levels().contains(levelZ)
                 ? null
@@ -423,7 +423,7 @@ public final class StructureObject {
         if (level == null && projectedStair == null && projectedTraces.isEmpty()) {
             return empty();
         }
-        StructureObject projected = new StructureObject(
+        Structure projected = new Structure(
                 level == null ? Map.of() : Map.of(levelZ, level),
                 projectedStair,
                 projectedTraces.isEmpty() ? Map.of() : Map.of(levelZ, projectedTraces),
@@ -433,50 +433,50 @@ public final class StructureObject {
                 : reattachTopology(projected, roomTopology.projectedToLevel(levelZ, projected));
     }
 
-    public StructureObject withDoorsAtLevel(int levelZ, Collection<Door> doors) {
+    public Structure withDoorsAtLevel(int levelZ, Collection<Door> doors) {
         LevelStructure level = levelStructure(levelZ);
         if (level == null) {
             return this;
         }
         Map<Integer, LevelStructure> updated = new LinkedHashMap<>(levelsByZ);
         updated.put(levelZ, level.withDoors(doors));
-        return reattachedWithSameRooms(new StructureObject(updated, stair, pathTracesByLevel, null));
+        return reattachedWithSameRooms(new Structure(updated, stair, pathTracesByLevel, null));
     }
 
-    public StructureObject withCreatedWallPathAtLevel(int levelZ, Collection<GridSegment2x> segments2x) {
+    public Structure withCreatedWallPathAtLevel(int levelZ, Collection<GridSegment2x> segments2x) {
         LevelStructure level = levelStructure(levelZ);
         if (level == null) {
             return this;
         }
         Map<Integer, LevelStructure> updated = new LinkedHashMap<>(levelsByZ);
         updated.put(levelZ, level.withCreatedWallPath(segments2x));
-        return reattachedWithSameRooms(new StructureObject(updated, stair, pathTracesByLevel, null));
+        return reattachedWithSameRooms(new Structure(updated, stair, pathTracesByLevel, null));
     }
 
-    public StructureObject withDeletedWallPathAtLevel(int levelZ, Collection<GridSegment2x> segments2x) {
+    public Structure withDeletedWallPathAtLevel(int levelZ, Collection<GridSegment2x> segments2x) {
         LevelStructure level = levelStructure(levelZ);
         if (level == null) {
             return this;
         }
         Map<Integer, LevelStructure> updated = new LinkedHashMap<>(levelsByZ);
         updated.put(levelZ, level.withDeletedWallPath(segments2x));
-        return reattachedWithSameRooms(new StructureObject(updated, stair, pathTracesByLevel, null));
+        return reattachedWithSameRooms(new Structure(updated, stair, pathTracesByLevel, null));
     }
 
-    public StructureObject withFloorCellsAtLevel(int levelZ, Collection<CellCoord> floorCells) {
+    public Structure withFloorCellsAtLevel(int levelZ, Collection<CellCoord> floorCells) {
         LevelStructure level = levelStructure(levelZ);
         if (level == null) {
             return this;
         }
         Map<Integer, LevelStructure> updated = new LinkedHashMap<>(levelsByZ);
         updated.put(levelZ, level.withFloorCells(floorCells));
-        return reattachedWithSameRooms(new StructureObject(updated, stair, pathTracesByLevel, null));
+        return reattachedWithSameRooms(new Structure(updated, stair, pathTracesByLevel, null));
     }
 
     /**
      * Path traces stay runtime-only corridor routing data even when the physical structure is loaded from persistence.
      */
-    public StructureObject withPathTracesAtLevel(int levelZ, Collection<PathTrace> pathTraces) {
+    public Structure withPathTracesAtLevel(int levelZ, Collection<PathTrace> pathTraces) {
         Map<Integer, List<PathTrace>> updatedPathTraces = new LinkedHashMap<>(pathTracesByLevel);
         List<PathTrace> normalized = normalizePathTraces(Map.of(levelZ, pathTraces)).getOrDefault(levelZ, List.of());
         if (normalized.isEmpty()) {
@@ -484,7 +484,7 @@ public final class StructureObject {
         } else {
             updatedPathTraces.put(levelZ, normalized);
         }
-        return reattachedWithSameRooms(new StructureObject(levelsByZ, stair, updatedPathTraces, null));
+        return reattachedWithSameRooms(new Structure(levelsByZ, stair, updatedPathTraces, null));
     }
 
     public TileShape surfaceShapeAtLevel(int levelZ) {
@@ -809,7 +809,7 @@ public final class StructureObject {
         return surfaceCells.isEmpty() ? null : CellCoord.bestCenter(surfaceCells);
     }
 
-    public StructureObject clippedToSurface(
+    public Structure clippedToSurface(
             Map<Integer, ? extends Collection<CellCoord>> surfaceCellsByLevel,
             Map<Integer, CellCoord> preferredAnchorsByLevel
     ) {
@@ -839,7 +839,7 @@ public final class StructureObject {
                             clippedWalls,
                             floorCells));
                 });
-        StructureObject clipped = levels.isEmpty() ? empty() : new StructureObject(levels, null, Map.of(), null);
+        Structure clipped = levels.isEmpty() ? empty() : new Structure(levels, null, Map.of(), null);
         return reattachedWithSameRooms(clipped);
     }
 
@@ -865,7 +865,7 @@ public final class StructureObject {
         return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
-    public StructureObject movedBy(CellCoord delta, int levelDelta) {
+    public Structure movedBy(CellCoord delta, int levelDelta) {
         CellCoord resolvedDelta = delta == null ? new CellCoord(0, 0) : delta;
         if (resolvedDelta.x() == 0 && resolvedDelta.y() == 0 && levelDelta == 0) {
             return this;
@@ -882,7 +882,7 @@ public final class StructureObject {
                     .toList());
         }
         Stair translatedStair = stair == null ? null : stair.movedBy(resolvedDelta, levelDelta);
-        StructureObject moved = new StructureObject(translatedLevels, translatedStair, translatedTraces, null);
+        Structure moved = new Structure(translatedLevels, translatedStair, translatedTraces, null);
         return roomTopology == null
                 ? moved
                 : reattachTopology(moved, roomTopology.translatedBy(resolvedDelta, levelDelta, moved));
@@ -1033,7 +1033,7 @@ public final class StructureObject {
             }
         }
         if (bestPlan == null) {
-            throw new IllegalArgumentException("StructureObject route trace could not be resolved");
+            throw new IllegalArgumentException("Structure route trace could not be resolved");
         }
         return bestPlan;
     }
@@ -1289,7 +1289,7 @@ public final class StructureObject {
         if (this == other) {
             return true;
         }
-        if (!(other instanceof StructureObject that)) {
+        if (!(other instanceof Structure that)) {
             return false;
         }
         return Objects.equals(levelsByZ, that.levelsByZ)
@@ -1305,7 +1305,7 @@ public final class StructureObject {
 
     @Override
     public String toString() {
-        return "StructureObject[levelsByZ=" + levelsByZ
+        return "Structure[levelsByZ=" + levelsByZ
                 + ", stair=" + stair
                 + ", pathTracesByLevel=" + pathTracesByLevel
                 + ", roomTopology=" + roomTopology + "]";
@@ -1337,12 +1337,12 @@ public final class StructureObject {
     }
 
     public record RoutedProjection(
-            StructureObject structure,
+            Structure structure,
             List<PathTrace> traces,
             Set<GridSegment2x> boundaryOpeningEdges
     ) {
         public RoutedProjection {
-            structure = structure == null ? StructureObject.empty() : structure;
+            structure = structure == null ? Structure.empty() : structure;
             traces = traces == null ? List.of() : List.copyOf(traces);
             boundaryOpeningEdges = boundaryOpeningEdges == null ? Set.of() : Set.copyOf(boundaryOpeningEdges);
         }
@@ -1521,7 +1521,7 @@ public final class StructureObject {
             if (surfaceShape.isEmpty()) {
                 return new LevelStructure(anchorCell, surfaceShape, EdgeShape.empty(), List.of(), List.of(), TileShape.empty());
             }
-            Set<GridSegment2x> normalizedBoundaryEdges = StructureObject.normalizedBoundaryEdges(
+            Set<GridSegment2x> normalizedBoundaryEdges = Structure.normalizedBoundaryEdges(
                     surfaceShape.boundaryShape().segmentSet2x(),
                     boundaryEdges);
             EdgeShape boundaryShape = normalizedBoundaryEdges.isEmpty()

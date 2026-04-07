@@ -1,12 +1,12 @@
-package features.world.dungeonmap.repository;
+package features.world.dungeonmap.structure.repository;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.objects.Door;
-import features.world.dungeonmap.model.objects.StructureObject;
-import features.world.dungeonmap.model.objects.Wall;
-import features.world.dungeonmap.model.objects.WallKind;
+import features.world.dungeonmap.structure.model.Door;
+import features.world.dungeonmap.structure.model.Structure;
+import features.world.dungeonmap.structure.model.Wall;
+import features.world.dungeonmap.structure.model.WallKind;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -25,7 +25,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Canonical storage owner for persisted {@link StructureObject} topology.
+ * Canonical storage owner for persisted {@link Structure} topology.
  *
  * <p>Clusters and corridors may keep their own workflow metadata, but all persisted physical structure data must flow
  * through this repository so load and save share one serial form.
@@ -34,11 +34,11 @@ public final class DungeonStructureRepository {
 
     private final DungeonWallKindRepository wallKindRepository = new DungeonWallKindRepository();
 
-    public record PersistedStructure(long structureObjectId, StructureObject structure) {
+    public record PersistedStructure(long structureObjectId, Structure structure) {
     }
 
-    public PersistedStructure save(Connection conn, Long structureObjectId, StructureObject structure) throws SQLException {
-        StructureObject resolvedStructure = assignPersistentIds(conn, requiredStructure(structure));
+    public PersistedStructure save(Connection conn, Long structureObjectId, Structure structure) throws SQLException {
+        Structure resolvedStructure = assignPersistentIds(conn, requiredStructure(structure));
         long resolvedStructureId = structureObjectId == null || structureObjectId <= 0L
                 ? insertStructureObject(conn)
                 : structureObjectId;
@@ -57,7 +57,7 @@ public final class DungeonStructureRepository {
         }
     }
 
-    public Map<Long, StructureObject> loadByIds(Connection conn, Collection<Long> structureObjectIds) throws SQLException {
+    public Map<Long, Structure> loadByIds(Connection conn, Collection<Long> structureObjectIds) throws SQLException {
         List<Long> ids = sanitizedIds(structureObjectIds);
         if (ids.isEmpty()) {
             return Map.of();
@@ -87,10 +87,10 @@ public final class DungeonStructureRepository {
                         + " ORDER BY structure_object_id, level_z, cell_y2, cell_x2",
                 floorCellsByStructureId);
 
-        Map<Long, StructureObject> result = new LinkedHashMap<>();
+        Map<Long, Structure> result = new LinkedHashMap<>();
         for (Map.Entry<Long, Map<Integer, CellCoord>> structureEntry : anchorsByStructureId.entrySet()) {
             Long structureId = structureEntry.getKey();
-            Map<Integer, StructureObject.PersistenceLevel> snapshotLevels = new LinkedHashMap<>();
+            Map<Integer, Structure.PersistenceLevel> snapshotLevels = new LinkedHashMap<>();
             for (Map.Entry<Integer, CellCoord> levelEntry : structureEntry.getValue().entrySet()) {
                 int levelZ = levelEntry.getKey();
                 Set<CellCoord> surfaceCells = surfaceCellsByStructureId
@@ -98,44 +98,44 @@ public final class DungeonStructureRepository {
                         .getOrDefault(levelZ, Set.of());
                 if (surfaceCells.isEmpty()) {
                     throw new IllegalStateException(
-                            "StructureObject " + structureId + " hat keine persistierten Surface-Zellen auf Ebene " + levelZ);
+                            "Structure " + structureId + " hat keine persistierten Surface-Zellen auf Ebene " + levelZ);
                 }
-                snapshotLevels.put(levelZ, new StructureObject.PersistenceLevel(
+                snapshotLevels.put(levelZ, new Structure.PersistenceLevel(
                         levelEntry.getValue(),
                         surfaceCells,
                         floorCellsByStructureId.getOrDefault(structureId, Map.of()).getOrDefault(levelZ, Set.of()),
                         wallsByStructureId.getOrDefault(structureId, Map.of()).getOrDefault(levelZ, List.of()),
                         doorsByStructureId.getOrDefault(structureId, Map.of()).getOrDefault(levelZ, List.of())));
             }
-            StructureObject persistedStructure = StructureObject.fromPersistenceSnapshot(
-                    new StructureObject.PersistenceSnapshot(snapshotLevels));
+            Structure persistedStructure = Structure.fromPersistenceSnapshot(
+                    new Structure.PersistenceSnapshot(snapshotLevels));
             if (persistedStructure.levelStructures().isEmpty()) {
-                throw new IllegalStateException("StructureObject " + structureId + " hat keine persistierte Struktur");
+                throw new IllegalStateException("Structure " + structureId + " hat keine persistierte Struktur");
             }
             result.put(structureId, persistedStructure);
         }
         return result.isEmpty() ? Map.of() : Map.copyOf(result);
     }
 
-    private static StructureObject requiredStructure(StructureObject structure) {
-        StructureObject resolvedStructure = structure == null ? StructureObject.empty() : structure;
+    private static Structure requiredStructure(Structure structure) {
+        Structure resolvedStructure = structure == null ? Structure.empty() : structure;
         if (resolvedStructure.levelStructures().isEmpty()) {
-            throw new IllegalArgumentException("StructureObject must not be empty");
+            throw new IllegalArgumentException("Structure must not be empty");
         }
         return resolvedStructure;
     }
 
-    private StructureObject assignPersistentIds(Connection conn, StructureObject structure) throws SQLException {
-        StructureObject.PersistenceSnapshot snapshot = structure.persistenceSnapshot();
+    private Structure assignPersistentIds(Connection conn, Structure structure) throws SQLException {
+        Structure.PersistenceSnapshot snapshot = structure.persistenceSnapshot();
         if (snapshot.levelsByZ().isEmpty()) {
             return structure;
         }
         long nextWallId = nextId(conn, "dungeon_structure_walls", "wall_id");
         long nextDoorId = nextId(conn, "dungeon_structure_doors", "door_id");
-        Map<Integer, StructureObject.PersistenceLevel> updatedLevels = new LinkedHashMap<>();
+        Map<Integer, Structure.PersistenceLevel> updatedLevels = new LinkedHashMap<>();
         boolean changed = false;
-        for (Map.Entry<Integer, StructureObject.PersistenceLevel> entry : snapshot.levelsByZ().entrySet()) {
-            StructureObject.PersistenceLevel level = entry.getValue();
+        for (Map.Entry<Integer, Structure.PersistenceLevel> entry : snapshot.levelsByZ().entrySet()) {
+            Structure.PersistenceLevel level = entry.getValue();
             ArrayList<Wall> persistedWalls = new ArrayList<>();
             for (Wall wall : level.authoredWalls()) {
                 if (wall == null || wall.isEmpty()) {
@@ -160,7 +160,7 @@ public final class DungeonStructureRepository {
                 }
                 persistedDoors.add(persistedDoor);
             }
-            updatedLevels.put(entry.getKey(), new StructureObject.PersistenceLevel(
+            updatedLevels.put(entry.getKey(), new Structure.PersistenceLevel(
                     level.anchorCell(),
                     level.surfaceCells(),
                     level.floorCells(),
@@ -168,7 +168,7 @@ public final class DungeonStructureRepository {
                     persistedDoors));
         }
         return changed
-                ? StructureObject.fromPersistenceSnapshot(new StructureObject.PersistenceSnapshot(updatedLevels))
+                ? Structure.fromPersistenceSnapshot(new Structure.PersistenceSnapshot(updatedLevels))
                 : structure;
     }
 
@@ -189,7 +189,7 @@ public final class DungeonStructureRepository {
     private void replaceStructure(
             Connection conn,
             long structureObjectId,
-            StructureObject.PersistenceSnapshot snapshot
+            Structure.PersistenceSnapshot snapshot
     ) throws SQLException {
         try (PreparedStatement deleteWalls = conn.prepareStatement(
                 "DELETE FROM dungeon_structure_walls WHERE structure_object_id=?");
@@ -232,9 +232,9 @@ public final class DungeonStructureRepository {
              PreparedStatement insertDoorSegment = conn.prepareStatement(
                      "INSERT INTO dungeon_structure_door_segments(door_id, start_x2, start_y2, end_x2, end_y2)"
                              + " VALUES(?,?,?,?,?)")) {
-            for (Map.Entry<Integer, StructureObject.PersistenceLevel> entry : snapshot.levelsByZ().entrySet()) {
+            for (Map.Entry<Integer, Structure.PersistenceLevel> entry : snapshot.levelsByZ().entrySet()) {
                 int levelZ = entry.getKey();
-                StructureObject.PersistenceLevel level = entry.getValue();
+                Structure.PersistenceLevel level = entry.getValue();
                 insertLevel.setLong(1, structureObjectId);
                 insertLevel.setInt(2, levelZ);
                 insertLevel.setInt(3, persistedCellX2(level.anchorCell()));
