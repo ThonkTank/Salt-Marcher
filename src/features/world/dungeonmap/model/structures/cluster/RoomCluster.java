@@ -10,6 +10,7 @@ import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.objects.DoorRef;
 import features.world.dungeonmap.model.objects.StructureObject;
+import features.world.dungeonmap.model.objects.StructureRoomTopology;
 import features.world.dungeonmap.model.objects.Wall;
 import features.world.dungeonmap.model.objects.WallKind;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
@@ -37,14 +38,6 @@ public final class RoomCluster {
     private final long mapId;
     private final CellCoord center;
     private final StructureObject structure;
-    // A cluster owns the physical structure; rooms are derived enclosed-space projections plus metadata.
-    private final List<Room> rooms;
-    private final RoomPartition roomPartition;
-    private final List<DungeonConnection> localConnections;
-    // Lazy-computed on first access; safe because RoomCluster is only accessed on the FX application thread.
-    private Map<Long, Set<Long>> adjacentRoomIdsByRoomId;
-    private List<Set<Long>> components;
-    private Map<Long, Set<Long>> componentByRoomId;
 
     public RoomCluster(
             Long clusterId,
@@ -73,21 +66,11 @@ public final class RoomCluster {
             StructureObject structure,
             List<Room> rooms
     ) {
-        StructureObject resolvedStructure = normalizeClusterStructure(structure, rooms);
-        RoomPartition resolvedRoomPartition = deriveRoomPartition(clusterId, mapId, resolvedStructure, rooms);
-        List<Room> resolvedRooms = resolvedRoomPartition.rooms();
-
         this.clusterId = clusterId;
         this.structureObjectId = structureObjectId;
         this.mapId = mapId;
         this.center = center == null ? new CellCoord(0, 0) : center;
-        this.structure = resolvedStructure;
-        this.rooms = resolvedRooms;
-        this.roomPartition = resolvedRoomPartition;
-        this.localConnections = deriveLocalConnections(mapId, clusterId, resolvedRoomPartition);
-        this.adjacentRoomIdsByRoomId = null;
-        this.components = null;
-        this.componentByRoomId = null;
+        this.structure = normalizeClusterStructure(structure, rooms).withRoomMetadata(mapId, clusterId, rooms);
     }
 
     public Long clusterId() {
@@ -111,107 +94,107 @@ public final class RoomCluster {
     }
 
     public Set<Integer> roomLevels(Room room) {
-        return structureFor(room).levels();
+        return roomTopology().roomLevels(room);
     }
 
     public Set<Integer> roomLevels(Long roomId) {
-        return structureFor(roomId).levels();
+        return roomTopology().roomLevels(roomId);
     }
 
     public int roomPrimaryLevel(Room room) {
-        return structureFor(room).primaryLevel();
+        return roomTopology().roomPrimaryLevel(room);
     }
 
     public int roomPrimaryLevel(Long roomId) {
-        return structureFor(roomId).primaryLevel();
+        return roomTopology().roomPrimaryLevel(roomId);
     }
 
     public List<Integer> roomRelevantLevels(Room room, CellCoord focusCell, int focusLevelZ) {
-        return structureFor(room).relevantLevels(focusCell, focusLevelZ);
+        return roomTopology().roomRelevantLevels(room, focusCell, focusLevelZ);
     }
 
     public CellCoord roomAnchorCellAtLevel(Room room, int levelZ) {
-        return structureFor(room).anchorCellCoordAtLevel(levelZ);
+        return roomTopology().roomAnchorCellAtLevel(room, levelZ);
     }
 
     public CellCoord roomAnchorCellAtLevel(Long roomId, int levelZ) {
-        return structureFor(roomId).anchorCellCoordAtLevel(levelZ);
+        return roomTopology().roomAnchorCellAtLevel(roomId, levelZ);
     }
 
     public CellCoord roomCenterCellAtLevel(Room room, int levelZ) {
-        return structureFor(room).centerCellCoordAtLevel(levelZ);
+        return roomTopology().roomCenterCellAtLevel(room, levelZ);
     }
 
     public CellCoord roomCenterCellAtLevel(Long roomId, int levelZ) {
-        return structureFor(roomId).centerCellCoordAtLevel(levelZ);
+        return roomTopology().roomCenterCellAtLevel(roomId, levelZ);
     }
 
     public CellCoord roomSurfaceCenterCellAtLevel(Room room, int levelZ) {
-        return structureFor(room).surfaceCenterCellCoordAtLevel(levelZ);
+        return roomTopology().roomSurfaceCenterCellAtLevel(room, levelZ);
     }
 
     public Set<CellCoord> roomCellsAtLevel(Room room, int levelZ) {
-        return structureFor(room).cellCoordsAtLevel(levelZ);
+        return roomTopology().roomCellsAtLevel(room, levelZ);
     }
 
     public Set<CellCoord> roomCellsAtLevel(Long roomId, int levelZ) {
-        return structureFor(roomId).cellCoordsAtLevel(levelZ);
+        return roomTopology().roomCellsAtLevel(roomId, levelZ);
     }
 
     public Set<CellCoord> roomFloorCellsAtLevel(Room room, int levelZ) {
-        return structureFor(room).floorCellCoordsAtLevel(levelZ);
+        return roomTopology().roomFloorCellsAtLevel(room, levelZ);
     }
 
     public Set<CellCoord> roomFloorCellsAtLevel(Long roomId, int levelZ) {
-        return structureFor(roomId).floorCellCoordsAtLevel(levelZ);
+        return roomTopology().roomFloorCellsAtLevel(roomId, levelZ);
     }
 
     public Set<GridSegment2x> roomBoundaryEdgesAtLevel(Room room, int levelZ) {
-        return structureFor(room).boundaryEdgesAtLevel(levelZ);
+        return roomTopology().roomBoundaryEdgesAtLevel(room, levelZ);
     }
 
     public Set<GridSegment2x> roomBoundaryEdgesAtLevel(Long roomId, int levelZ) {
-        return structureFor(roomId).boundaryEdgesAtLevel(levelZ);
+        return roomTopology().roomBoundaryEdgesAtLevel(roomId, levelZ);
     }
 
     public Set<GridSegment2x> roomDoorSegmentsAtLevel(Room room, int levelZ) {
-        return structureFor(room).doorSegmentsAtLevel(levelZ);
+        return roomTopology().roomDoorSegmentsAtLevel(room, levelZ);
     }
 
     public Set<GridSegment2x> roomDoorSegmentsAtLevel(Long roomId, int levelZ) {
-        return structureFor(roomId).doorSegmentsAtLevel(levelZ);
+        return roomTopology().roomDoorSegmentsAtLevel(roomId, levelZ);
     }
 
     public List<Door> roomDoorsAtLevel(Room room, int levelZ) {
-        return structureFor(room).doorsAtLevel(levelZ);
+        return roomTopology().roomDoorsAtLevel(room, levelZ);
     }
 
     public List<Door> roomDoorsAtLevel(Long roomId, int levelZ) {
-        return structureFor(roomId).doorsAtLevel(levelZ);
+        return roomTopology().roomDoorsAtLevel(roomId, levelZ);
     }
 
     public boolean roomContainsCell(Room room, CellCoord cell, int levelZ) {
-        return structureFor(room).contains(cell, levelZ);
+        return roomTopology().roomContainsCell(room, cell, levelZ);
     }
 
     public boolean roomContainsCell(Long roomId, CellCoord cell, int levelZ) {
-        return structureFor(roomId).contains(cell, levelZ);
+        return roomTopology().roomContainsCell(roomId, cell, levelZ);
     }
 
     public boolean roomHasFloorCell(Room room, CellCoord cell, int levelZ) {
-        return structureFor(room).hasFloorCell(cell, levelZ);
+        return roomTopology().roomHasFloorCell(room, cell, levelZ);
     }
 
     public boolean roomHasFloorCell(Long roomId, CellCoord cell, int levelZ) {
-        return structureFor(roomId).hasFloorCell(cell, levelZ);
+        return roomTopology().roomHasFloorCell(roomId, cell, levelZ);
     }
 
     public List<Room> rooms() {
-        return rooms;
+        return structure.rooms();
     }
 
     public List<DungeonConnection> localConnections() {
-        return localConnections;
+        return structure.localRoomConnections();
     }
 
     public RoomCluster withRooms(List<Room> rooms) {
@@ -226,21 +209,14 @@ public final class RoomCluster {
                 mapId,
                 center,
                 structure,
-                rooms.stream()
+                rooms().stream()
                         .map(room -> room == null ? null : room.withClusterId(resolvedClusterId))
                         .toList());
     }
 
     public RoomCluster projectedToLevel(int levelZ) {
         StructureObject projectedStructure = structure.projectedToLevel(levelZ);
-        if (projectedStructure.levels().isEmpty()) {
-            return null;
-        }
-        List<Room> projectedRooms = rooms.stream()
-                .map(room -> projectRoomToLevel(room, levelZ))
-                .filter(room -> room != null)
-                .toList();
-        if (projectedRooms.isEmpty()) {
+        if (projectedStructure == null || projectedStructure.levels().isEmpty() || projectedStructure.rooms().isEmpty()) {
             return null;
         }
         return new RoomCluster(
@@ -249,7 +225,7 @@ public final class RoomCluster {
                 mapId,
                 center,
                 projectedStructure,
-                projectedRooms);
+                projectedStructure.rooms());
     }
 
     public RoomCluster createWallPath(int levelZ, Collection<GridSegment2x> segments2x) {
@@ -318,7 +294,7 @@ public final class RoomCluster {
         return new InteractiveLabelHandle(
                 new DungeonSelectionRef.ClusterRef(clusterId),
                 clusterId == null ? "Cluster" : "Cluster " + clusterId,
-                GridPoint2x.cell(CellCoord.bestCenter(cells())));
+                GridPoint2x.cell(center));
     }
 
     public boolean overlapsCells(Collection<CellCoord> candidateCells) {
@@ -335,7 +311,7 @@ public final class RoomCluster {
     }
 
     public Room singleRoom() {
-        return rooms.size() == 1 ? rooms.getFirst() : null;
+        return rooms().size() == 1 ? rooms().getFirst() : null;
     }
 
     public RoomCluster movedBy(CellCoord delta) {
@@ -354,9 +330,7 @@ public final class RoomCluster {
                 mapId,
                 center.add(resolvedDelta),
                 structure.movedBy(resolvedDelta, levelDelta),
-                rooms.stream()
-                        .map(room -> room == null ? null : room.movedBy(resolvedDelta, levelDelta))
-                        .toList());
+                structure.movedBy(resolvedDelta, levelDelta).rooms());
     }
 
     public BoundaryPath findCreateWallPath(GridPoint2x start, GridPoint2x goal) {
@@ -412,15 +386,15 @@ public final class RoomCluster {
     }
 
     public Room findRoom(Long roomId) {
-        return roomId == null ? null : roomPartition.roomsById().get(roomId);
+        return roomTopology().findRoom(roomId);
     }
 
     public Set<Long> roomIds() {
-        return roomPartition.roomsById().keySet();
+        return roomTopology().roomIds();
     }
 
     public boolean containsRoom(Long roomId) {
-        return roomId != null && roomPartition.roomsById().containsKey(roomId);
+        return roomTopology().containsRoom(roomId);
     }
 
     /**
@@ -435,11 +409,11 @@ public final class RoomCluster {
      * Canonical 3D room lookup used by topology-sensitive APIs.
      */
     public Room roomAt(CellCoord cell, int levelZ) {
-        return cell == null ? null : roomPartition.roomsByPoint().get(CubePoint.at(cell, levelZ));
+        return cell == null ? null : roomTopology().roomAt(cell, levelZ);
     }
 
     public Room roomAt(CubePoint point) {
-        return point == null ? null : roomPartition.roomsByPoint().get(point);
+        return point == null ? null : roomTopology().roomAt(point);
     }
 
     public boolean contains(CellCoord cell) {
@@ -451,7 +425,7 @@ public final class RoomCluster {
     }
 
     public Set<CubePoint> cubePoints() {
-        return Set.copyOf(roomPartition.roomsByPoint().keySet());
+        return roomTopology().cubePoints();
     }
 
     public List<Room> adjacentRooms(Room room) {
@@ -465,15 +439,15 @@ public final class RoomCluster {
     }
 
     public Set<Long> adjacentRoomIds(Long roomId) {
-        return roomId == null ? Set.of() : adjacency().getOrDefault(roomId, Set.of());
+        return roomTopology().adjacentRoomIds(roomId);
     }
 
     public List<Set<Long>> components() {
-        return componentsLazy();
+        return roomTopology().components();
     }
 
     public Set<Long> componentContaining(Long roomId) {
-        return roomId == null ? Set.of() : componentByRoomId().getOrDefault(roomId, Set.of());
+        return roomTopology().componentContaining(roomId);
     }
 
     public Set<Long> componentContaining(CellCoord cell) {
@@ -485,39 +459,19 @@ public final class RoomCluster {
      * Canonical 3D component lookup. Prefer this overload for semantic decisions.
      */
     public Set<Long> componentContaining(CellCoord cell, int levelZ) {
-        Room room = roomAt(cell, levelZ);
-        return room == null ? Set.of() : componentContaining(room.roomId());
+        return roomTopology().componentContaining(cell, levelZ);
     }
 
     public boolean isConnected() {
-        return roomPartition.roomsById().isEmpty() || componentsLazy().size() <= 1;
+        return roomTopology().isConnected();
     }
 
     public boolean hasOverlappingRooms() {
-        return roomPartition.hasOverlaps();
+        return roomTopology().hasOverlappingRooms();
     }
 
     public boolean canMergeRooms(Set<Long> roomIds) {
-        Set<Long> selected = normalizedRoomIds(roomIds);
-        if (selected.size() < 2 || !roomPartition.roomsById().keySet().containsAll(selected)) {
-            return false;
-        }
-        ArrayDeque<Long> queue = new ArrayDeque<>();
-        Set<Long> visited = new LinkedHashSet<>();
-        Long seed = selected.iterator().next();
-        queue.add(seed);
-        while (!queue.isEmpty()) {
-            Long current = queue.removeFirst();
-            if (!visited.add(current)) {
-                continue;
-            }
-            for (Long neighbor : adjacentRoomIds(current)) {
-                if (selected.contains(neighbor) && !visited.contains(neighbor)) {
-                    queue.addLast(neighbor);
-                }
-            }
-        }
-        return visited.equals(selected);
+        return roomTopology().canMergeRooms(roomIds);
     }
 
     public RoomCluster applyPaint(Set<CellCoord> paintCells, List<RoomCluster> overlappingClusters, int paintLevel) {
@@ -529,11 +483,15 @@ public final class RoomCluster {
     }
 
     private StructureObject structureFor(Room room) {
-        return roomPartition.structureFor(room);
+        return roomTopology().structureFor(room);
     }
 
     private StructureObject structureFor(Long roomId) {
-        return roomPartition.structureFor(roomId);
+        return roomTopology().structureFor(roomId);
+    }
+
+    private StructureRoomTopology roomTopology() {
+        return structure.roomTopology() == null ? StructureRoomTopology.empty() : structure.roomTopology();
     }
 
     private static Map<Long, Room> indexRoomsById(List<Room> rooms) {
@@ -899,24 +857,15 @@ public final class RoomCluster {
     }
 
     private Map<Long, Set<Long>> adjacency() {
-        if (adjacentRoomIdsByRoomId == null) {
-            adjacentRoomIdsByRoomId = immutableSetMap(indexAdjacentRoomIds(roomPartition));
-        }
-        return adjacentRoomIdsByRoomId;
+        return roomTopology().adjacencyIndex();
     }
 
     private List<Set<Long>> componentsLazy() {
-        if (components == null) {
-            components = components(roomPartition.roomsById().keySet(), adjacency());
-        }
-        return components;
+        return roomTopology().components();
     }
 
     private Map<Long, Set<Long>> componentByRoomId() {
-        if (componentByRoomId == null) {
-            componentByRoomId = indexComponentByRoomId(componentsLazy());
-        }
-        return componentByRoomId;
+        return roomTopology().componentByRoomIdIndex();
     }
 
     private static Set<Long> normalizedRoomIds(Set<Long> roomIds) {

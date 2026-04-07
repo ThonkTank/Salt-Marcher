@@ -1,0 +1,801 @@
+package features.world.dungeonmap.model.objects;
+
+import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.model.objects.StructureObject;
+import features.world.dungeonmap.model.objects.DoorRef;
+import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
+import features.world.dungeonmap.model.structures.connection.ConnectionKind;
+import features.world.dungeonmap.model.structures.connection.DoorConnectionCarrier;
+import features.world.dungeonmap.model.structures.connection.DungeonConnection;
+import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.model.structures.room.RoomNarration;
+
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+
+/**
+ * Structure-owned room topology derived from one physical structure plus persisted room metadata.
+ */
+public final class StructureRoomTopology {
+
+    private final long mapId;
+    private final Long clusterId;
+    private final StructureObject clusterStructure;
+    private final List<Room> rooms;
+    private final Map<Room, Map<Integer, Set<CellCoord>>> roomCellsByRoom;
+    private final Map<Long, Room> roomsById;
+    private final Map<CubePoint, Room> roomsByPoint;
+    private final boolean hasOverlaps;
+    private final List<DungeonConnection> localConnections;
+
+    private Map<Long, Set<Long>> adjacentRoomIdsByRoomId;
+    private List<Set<Long>> components;
+    private Map<Long, Set<Long>> componentByRoomId;
+
+    public static StructureRoomTopology empty() {
+        return new StructureRoomTopology(0L, null, StructureObject.empty(), List.of(), Map.of(), Map.of(), Map.of(), false);
+    }
+
+    public static StructureRoomTopology derive(
+            long mapId,
+            Long clusterId,
+            StructureObject clusterStructure,
+            List<Room> roomMetadata
+    ) {
+        StructureObject resolvedStructure = clusterStructure == null ? StructureObject.empty() : clusterStructure;
+        if (resolvedStructure.levels().isEmpty()) {
+            return new StructureRoomTopology(mapId, clusterId, resolvedStructure, List.of(), Map.of(), Map.of(), Map.of(), false);
+        }
+        List<Room> metadata = roomMetadata == null ? List.of() : roomMetadata.stream()
+                .filter(Objects::nonNull)
+                .sorted(Comparator.comparing(Room::roomId, Comparator.nullsLast(Long::compareTo)))
+                .toList();
+        Map<Integer, Set<CellCoord>> remainingCellsByLevel = new LinkedHashMap<>();
+        for (Integer levelZ : resolvedStructure.levels().stream().sorted().toList()) {
+            remainingCellsByLevel.put(levelZ, new LinkedHashSet<>(resolvedStructure.cellCoordsAtLevel(levelZ)));
+        }
+
+        List<Room> result = new ArrayList<>();
+        Map<Room, Map<Integer, Set<CellCoord>>> roomCellsByRoom = new LinkedHashMap<>();
+        for (Room metadataRoom : metadata) {
+            Map<Integer, Set<CellCoord>> roomCellsByLevel = new LinkedHashMap<>();
+            for (Map.Entry<Integer, CellCoord> anchorEntry : metadataRoom.anchorsByLevel().entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .toList()) {
+                Integer levelZ = anchorEntry.getKey();
+                CellCoord anchor = anchorEntry.getValue();
+                if (levelZ == null || anchor == null) {
+                    continue;
+                }
+                Set<CellCoord> remainingLevelCells = remainingCellsByLevel.get(levelZ);
+                if (remainingLevelCells == null || !remainingLevelCells.contains(anchor)) {
+                    continue;
+                }
+                Set<CellCoord> roomCells = intersectCells(resolvedStructure.reachableSurfaceFrom(anchor, levelZ), remainingLevelCells);
+                if (roomCells.isEmpty()) {
+                    continue;
+                }
+                remainingLevelCells.removeAll(roomCells);
+                if (remainingLevelCells.isEmpty()) {
+                    remainingCellsByLevel.remove(levelZ);
+                }
+                roomCellsByLevel.put(levelZ, Set.copyOf(roomCells));
+            }
+            if (roomCellsByLevel.isEmpty()) {
+                continue;
+            }
+            PartitionedRoom projection = resolvedDerivedRoom(clusterId, mapId, metadataRoom, roomCellsByLevel, metadataRoom.narration());
+            result.add(projection.room());
+            roomCellsByRoom.put(projection.room(), projection.roomCellsByLevel());
+        }
+
+        for (Map.Entry<Integer, Set<CellCoord>> entry : new LinkedHashMap<>(remainingCellsByLevel).entrySet()) {
+            Integer levelZ = entry.getKey();
+            LinkedHashSet<CellCoord> unassigned = new LinkedHashSet<>(entry.getValue());
+            while (!unassigned.isEmpty()) {
+                CellCoord seed = unassigned.stream().min(CellCoord.ORDER).orElse(null);
+                if (seed == null) {
+                    break;
+                }
+                Set<CellCoord> roomCells = intersectCells(resolvedStructure.reachableSurfaceFrom(seed, levelZ), unassigned);
+                if (roomCells.isEmpty()) {
+                    unassigned.remove(seed);
+                    continue;
+                }
+                unassigned.removeAll(roomCells);
+                Room metadataRoom = Room.metadata(
+                        null,
+                        mapId,
+                        clusterId == null ? 0L : clusterId,
+                        null,
+                        Map.of(levelZ, seed),
+                        RoomNarration.empty());
+                PartitionedRoom projection = resolvedDerivedRoom(
+                        clusterId,
+                        mapId,
+                        metadataRoom,
+                        Map.of(levelZ, Set.copyOf(roomCells)),
+                        metadataRoom.narration());
+                result.add(projection.room());
+                roomCellsByRoom.put(projection.room(), projection.roomCellsByLevel());
+            }
+        }
+
+        List<Room> partitionedRooms = result.isEmpty() ? List.of() : List.copyOf(result);
+        Map<Room, Map<Integer, Set<CellCoord>>> resolvedRoomCellsByRoom = immutableRoomCellsByRoom(roomCellsByRoom);
+        Map<Long, Room> roomsById = indexRoomsById(partitionedRooms);
+        OverlapIndex overlapIndex = indexRoomsByPoint(partitionedRooms, resolvedRoomCellsByRoom);
+        return new StructureRoomTopology(
+                mapId,
+                clusterId,
+                resolvedStructure,
+                partitionedRooms,
+                resolvedRoomCellsByRoom,
+                roomsById,
+                overlapIndex.roomsByPoint(),
+                overlapIndex.hasOverlaps());
+    }
+
+    private StructureRoomTopology(
+            long mapId,
+            Long clusterId,
+            StructureObject clusterStructure,
+            List<Room> rooms,
+            Map<Room, Map<Integer, Set<CellCoord>>> roomCellsByRoom,
+            Map<Long, Room> roomsById,
+            Map<CubePoint, Room> roomsByPoint,
+            boolean hasOverlaps
+    ) {
+        this.mapId = mapId;
+        this.clusterId = clusterId;
+        this.clusterStructure = clusterStructure == null ? StructureObject.empty() : clusterStructure;
+        this.rooms = rooms == null ? List.of() : List.copyOf(rooms);
+        this.roomCellsByRoom = roomCellsByRoom == null ? Map.of() : immutableRoomCellsByRoom(roomCellsByRoom);
+        this.roomsById = roomsById == null ? Map.of() : Map.copyOf(roomsById);
+        this.roomsByPoint = roomsByPoint == null ? Map.of() : Map.copyOf(roomsByPoint);
+        this.hasOverlaps = hasOverlaps;
+        this.localConnections = deriveLocalConnections(mapId, clusterId, this.clusterStructure, this.roomCellsByRoom, this.roomsByPoint, this.rooms);
+        this.adjacentRoomIdsByRoomId = null;
+        this.components = null;
+        this.componentByRoomId = null;
+    }
+
+    public long mapId() {
+        return mapId;
+    }
+
+    public Long clusterId() {
+        return clusterId;
+    }
+
+    public List<Room> rooms() {
+        return rooms;
+    }
+
+    public List<DungeonConnection> localConnections() {
+        return localConnections;
+    }
+
+    public StructureRoomTopology withRooms(List<Room> rooms) {
+        return derive(mapId, clusterId, clusterStructure, rooms);
+    }
+
+    public StructureRoomTopology withClusterId(Long clusterId) {
+        long resolvedClusterId = clusterId == null ? (this.clusterId == null ? 0L : this.clusterId) : clusterId;
+        return derive(
+                mapId,
+                clusterId,
+                clusterStructure,
+                rooms.stream()
+                        .map(room -> room == null ? null : room.withClusterId(resolvedClusterId))
+                        .toList());
+    }
+
+    public StructureRoomTopology rebasedTo(StructureObject structure) {
+        return derive(mapId, clusterId, structure, rooms);
+    }
+
+    public StructureRoomTopology translatedBy(CellCoord delta, int levelDelta, StructureObject movedStructure) {
+        return derive(
+                mapId,
+                clusterId,
+                movedStructure,
+                rooms.stream()
+                        .map(room -> room == null ? null : room.movedBy(delta, levelDelta))
+                        .toList());
+    }
+
+    public StructureRoomTopology projectedToLevel(int levelZ, StructureObject projectedStructure) {
+        if (projectedStructure == null || projectedStructure.levels().isEmpty()) {
+            return empty();
+        }
+        List<Room> projectedRooms = rooms.stream()
+                .map(room -> projectRoomToLevel(room, levelZ))
+                .filter(Objects::nonNull)
+                .toList();
+        return derive(mapId, clusterId, projectedStructure, projectedRooms);
+    }
+
+    public Set<Integer> roomLevels(Room room) {
+        return structureFor(room).levels();
+    }
+
+    public Set<Integer> roomLevels(Long roomId) {
+        return structureFor(roomId).levels();
+    }
+
+    public int roomPrimaryLevel(Room room) {
+        return structureFor(room).primaryLevel();
+    }
+
+    public int roomPrimaryLevel(Long roomId) {
+        return structureFor(roomId).primaryLevel();
+    }
+
+    public List<Integer> roomRelevantLevels(Room room, CellCoord focusCell, int focusLevelZ) {
+        return structureFor(room).relevantLevels(focusCell, focusLevelZ);
+    }
+
+    public CellCoord roomAnchorCellAtLevel(Room room, int levelZ) {
+        return structureFor(room).anchorCellCoordAtLevel(levelZ);
+    }
+
+    public CellCoord roomAnchorCellAtLevel(Long roomId, int levelZ) {
+        return structureFor(roomId).anchorCellCoordAtLevel(levelZ);
+    }
+
+    public CellCoord roomCenterCellAtLevel(Room room, int levelZ) {
+        return structureFor(room).centerCellCoordAtLevel(levelZ);
+    }
+
+    public CellCoord roomCenterCellAtLevel(Long roomId, int levelZ) {
+        return structureFor(roomId).centerCellCoordAtLevel(levelZ);
+    }
+
+    public CellCoord roomSurfaceCenterCellAtLevel(Room room, int levelZ) {
+        return structureFor(room).surfaceCenterCellCoordAtLevel(levelZ);
+    }
+
+    public Set<CellCoord> roomCellsAtLevel(Room room, int levelZ) {
+        return structureFor(room).cellCoordsAtLevel(levelZ);
+    }
+
+    public Set<CellCoord> roomCellsAtLevel(Long roomId, int levelZ) {
+        return structureFor(roomId).cellCoordsAtLevel(levelZ);
+    }
+
+    public Set<CellCoord> roomFloorCellsAtLevel(Room room, int levelZ) {
+        return structureFor(room).floorCellCoordsAtLevel(levelZ);
+    }
+
+    public Set<CellCoord> roomFloorCellsAtLevel(Long roomId, int levelZ) {
+        return structureFor(roomId).floorCellCoordsAtLevel(levelZ);
+    }
+
+    public Set<GridSegment2x> roomBoundaryEdgesAtLevel(Room room, int levelZ) {
+        return structureFor(room).boundaryEdgesAtLevel(levelZ);
+    }
+
+    public Set<GridSegment2x> roomBoundaryEdgesAtLevel(Long roomId, int levelZ) {
+        return structureFor(roomId).boundaryEdgesAtLevel(levelZ);
+    }
+
+    public Set<GridSegment2x> roomDoorSegmentsAtLevel(Room room, int levelZ) {
+        return structureFor(room).doorSegmentsAtLevel(levelZ);
+    }
+
+    public Set<GridSegment2x> roomDoorSegmentsAtLevel(Long roomId, int levelZ) {
+        return structureFor(roomId).doorSegmentsAtLevel(levelZ);
+    }
+
+    public List<Door> roomDoorsAtLevel(Room room, int levelZ) {
+        return structureFor(room).doorsAtLevel(levelZ);
+    }
+
+    public List<Door> roomDoorsAtLevel(Long roomId, int levelZ) {
+        return structureFor(roomId).doorsAtLevel(levelZ);
+    }
+
+    public boolean roomContainsCell(Room room, CellCoord cell, int levelZ) {
+        return structureFor(room).contains(cell, levelZ);
+    }
+
+    public boolean roomContainsCell(Long roomId, CellCoord cell, int levelZ) {
+        return structureFor(roomId).contains(cell, levelZ);
+    }
+
+    public boolean roomHasFloorCell(Room room, CellCoord cell, int levelZ) {
+        return structureFor(room).hasFloorCell(cell, levelZ);
+    }
+
+    public boolean roomHasFloorCell(Long roomId, CellCoord cell, int levelZ) {
+        return structureFor(roomId).hasFloorCell(cell, levelZ);
+    }
+
+    public Room findRoom(Long roomId) {
+        return roomId == null ? null : roomsById.get(roomId);
+    }
+
+    public Set<Long> roomIds() {
+        return roomsById.keySet();
+    }
+
+    public boolean containsRoom(Long roomId) {
+        return roomId != null && roomsById.containsKey(roomId);
+    }
+
+    public Room roomAt(CellCoord cell, int levelZ) {
+        return cell == null ? null : roomsByPoint.get(CubePoint.at(cell, levelZ));
+    }
+
+    public Room roomAt(CubePoint point) {
+        return point == null ? null : roomsByPoint.get(point);
+    }
+
+    public Set<CubePoint> cubePoints() {
+        return Set.copyOf(roomsByPoint.keySet());
+    }
+
+    public List<Room> adjacentRooms(Room room) {
+        if (room == null || room.roomId() == null) {
+            return List.of();
+        }
+        return adjacentRoomIds(room.roomId()).stream()
+                .map(this::findRoom)
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    public Set<Long> adjacentRoomIds(Long roomId) {
+        return roomId == null ? Set.of() : adjacency().getOrDefault(roomId, Set.of());
+    }
+
+    public List<Set<Long>> components() {
+        return componentsLazy();
+    }
+
+    public Set<Long> componentContaining(Long roomId) {
+        return roomId == null ? Set.of() : componentByRoomId().getOrDefault(roomId, Set.of());
+    }
+
+    public Set<Long> componentContaining(CellCoord cell, int levelZ) {
+        Room room = roomAt(cell, levelZ);
+        return room == null ? Set.of() : componentContaining(room.roomId());
+    }
+
+    public boolean isConnected() {
+        return roomsById.isEmpty() || componentsLazy().size() <= 1;
+    }
+
+    public boolean hasOverlappingRooms() {
+        return hasOverlaps;
+    }
+
+    public boolean canMergeRooms(Set<Long> roomIds) {
+        Set<Long> selected = normalizedRoomIds(roomIds);
+        if (selected.size() < 2 || !roomsById.keySet().containsAll(selected)) {
+            return false;
+        }
+        ArrayDeque<Long> queue = new ArrayDeque<>();
+        Set<Long> visited = new LinkedHashSet<>();
+        Long seed = selected.iterator().next();
+        queue.add(seed);
+        while (!queue.isEmpty()) {
+            Long current = queue.removeFirst();
+            if (!visited.add(current)) {
+                continue;
+            }
+            for (Long neighbor : adjacentRoomIds(current)) {
+                if (selected.contains(neighbor) && !visited.contains(neighbor)) {
+                    queue.addLast(neighbor);
+                }
+            }
+        }
+        return visited.equals(selected);
+    }
+
+    public Map<Long, Set<Long>> adjacencyIndex() {
+        return adjacency();
+    }
+
+    public Map<Long, Set<Long>> componentByRoomIdIndex() {
+        return componentByRoomId();
+    }
+
+    public StructureObject structureFor(Room room) {
+        if (room == null) {
+            return StructureObject.empty();
+        }
+        Map<Integer, Set<CellCoord>> roomCellsByLevel = roomCellsByRoom.get(room);
+        if (roomCellsByLevel != null) {
+            return structureForDerivedRoom(roomCellsByLevel, room.anchorsByLevel(), clusterStructure);
+        }
+        if (room.roomId() == null) {
+            return StructureObject.empty();
+        }
+        return structureFor(room.roomId());
+    }
+
+    public StructureObject structureFor(Long roomId) {
+        if (roomId == null) {
+            return StructureObject.empty();
+        }
+        Room room = roomsById.get(roomId);
+        if (room == null) {
+            return StructureObject.empty();
+        }
+        Map<Integer, Set<CellCoord>> roomCellsByLevel = roomCellsByRoom.get(room);
+        return roomCellsByLevel == null
+                ? StructureObject.empty()
+                : structureForDerivedRoom(roomCellsByLevel, room.anchorsByLevel(), clusterStructure);
+    }
+
+    private Map<Long, Set<Long>> adjacency() {
+        if (adjacentRoomIdsByRoomId == null) {
+            adjacentRoomIdsByRoomId = immutableSetMap(indexAdjacentRoomIds(roomCellsByRoom, roomsById, roomsByPoint));
+        }
+        return adjacentRoomIdsByRoomId;
+    }
+
+    private List<Set<Long>> componentsLazy() {
+        if (components == null) {
+            components = components(roomsById.keySet(), adjacency());
+        }
+        return components;
+    }
+
+    private Map<Long, Set<Long>> componentByRoomId() {
+        if (componentByRoomId == null) {
+            componentByRoomId = indexComponentByRoomId(componentsLazy());
+        }
+        return componentByRoomId;
+    }
+
+    private static List<DungeonConnection> deriveLocalConnections(
+            long mapId,
+            Long clusterId,
+            StructureObject clusterStructure,
+            Map<Room, Map<Integer, Set<CellCoord>>> roomCellsByRoom,
+            Map<CubePoint, Room> roomsByPoint,
+            List<Room> rooms
+    ) {
+        if (rooms.isEmpty()) {
+            return List.of();
+        }
+        long resolvedClusterId = clusterId == null ? 0L : clusterId;
+        Map<String, DoorComponent> doorsByKey = new LinkedHashMap<>();
+        List<DungeonConnection> result = new ArrayList<>();
+        Set<String> seenKeys = new LinkedHashSet<>();
+        for (Room room : rooms) {
+            if (room == null) {
+                continue;
+            }
+            StructureObject roomStructure = structureForDerivedRoom(
+                    roomCellsByLevel(room, roomCellsByRoom),
+                    room.anchorsByLevel(),
+                    clusterStructure);
+            for (Integer levelZ : roomStructure.levels()) {
+                for (Door door : roomStructure.doorsAtLevel(levelZ)) {
+                    if (door != null && !door.isEmpty()) {
+                        String key = doorKey(levelZ, door);
+                        if (seenKeys.add(key)) {
+                            DoorComponent doorComponent = new DoorComponent(levelZ, door);
+                            DungeonConnection connection = localConnectionForDoor(doorComponent, mapId, resolvedClusterId, roomsByPoint);
+                            if (connection != null) {
+                                result.add(connection);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return List.copyOf(result);
+    }
+
+    private static DungeonConnection localConnectionForDoor(
+            DoorComponent doorComponent,
+            long mapId,
+            long clusterId,
+            Map<CubePoint, Room> roomsByPoint
+    ) {
+        if (doorComponent == null || doorComponent.door() == null || doorComponent.door().isEmpty()) {
+            return null;
+        }
+        List<Room> touchingRooms = new ArrayList<>();
+        for (GridSegment2x segment2x : doorComponent.door().segments2x()) {
+            for (CellCoord cell : segment2x.touchingCells().stream().sorted(CellCoord.ORDER).toList()) {
+                Room room = roomsByPoint.get(CubePoint.at(cell, doorComponent.levelZ()));
+                if (room != null && !touchingRooms.contains(room)) {
+                    touchingRooms.add(room);
+                }
+            }
+        }
+        List<ConnectionEndpoint> endpoints = endpointsForDoor(touchingRooms);
+        if (endpoints.size() != 2) {
+            return null;
+        }
+        return new DungeonConnection(
+                ConnectionKind.LOCAL,
+                clusterId,
+                mapId,
+                doorComponent.levelZ(),
+                new DoorConnectionCarrier(new DoorRef(doorComponent.door().doorId())),
+                endpoints);
+    }
+
+    private static List<ConnectionEndpoint> endpointsForDoor(List<Room> touchingRooms) {
+        if (touchingRooms == null || touchingRooms.size() < 2) {
+            return List.of();
+        }
+        Room leftRoom = touchingRooms.getFirst();
+        Room rightRoom = touchingRooms.get(1);
+        if (leftRoom.roomId() == null || rightRoom.roomId() == null || leftRoom.roomId().equals(rightRoom.roomId())) {
+            return List.of();
+        }
+        return List.of(ConnectionEndpoint.room(leftRoom.roomId()), ConnectionEndpoint.room(rightRoom.roomId()));
+    }
+
+    private static String doorKey(int levelZ, Door door) {
+        StringBuilder builder = new StringBuilder();
+        builder.append(levelZ).append(':');
+        boolean first = true;
+        for (GridSegment2x segment2x : (door == null ? List.<GridSegment2x>of() : door.segments2x()).stream()
+                .sorted(GridSegment2x.ORDER)
+                .toList()) {
+            if (!first) {
+                builder.append('|');
+            }
+            first = false;
+            builder.append(segment2x.start().x2()).append(',').append(segment2x.start().y2())
+                    .append('-')
+                    .append(segment2x.end().x2()).append(',').append(segment2x.end().y2());
+        }
+        return builder.toString();
+    }
+
+    private static StructureObject structureForDerivedRoom(
+            Map<Integer, Set<CellCoord>> roomCellsByLevel,
+            Map<Integer, CellCoord> preferredAnchorsByLevel,
+            StructureObject clusterStructure
+    ) {
+        Map<Integer, CellCoord> anchorsByLevel = new LinkedHashMap<>();
+        for (Map.Entry<Integer, Set<CellCoord>> entry : roomCellsByLevel.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .toList()) {
+            Integer levelZ = entry.getKey();
+            Set<CellCoord> roomCells = entry.getValue();
+            if (levelZ == null || roomCells == null || roomCells.isEmpty()) {
+                continue;
+            }
+            CellCoord preferredAnchor = preferredAnchorsByLevel == null ? null : preferredAnchorsByLevel.get(levelZ);
+            anchorsByLevel.put(levelZ, anchorCell(roomCells, preferredAnchor));
+        }
+        return clusterStructure.clippedToSurface(roomCellsByLevel, anchorsByLevel);
+    }
+
+    private static PartitionedRoom resolvedDerivedRoom(
+            Long clusterId,
+            long mapId,
+            Room metadataRoom,
+            Map<Integer, Set<CellCoord>> roomCellsByLevel,
+            RoomNarration narration
+    ) {
+        Room room = new Room(
+                metadataRoom.roomId(),
+                mapId,
+                clusterId == null ? 0L : clusterId,
+                metadataRoom.name(),
+                metadataRoom.anchorsByLevel(),
+                narration);
+        return new PartitionedRoom(room, immutableCellsByLevel(roomCellsByLevel));
+    }
+
+    private static Room projectRoomToLevel(Room room, int levelZ) {
+        if (room == null || room.anchorAtLevel(levelZ) == null) {
+            return null;
+        }
+        return Room.metadata(
+                room.roomId(),
+                room.mapId(),
+                room.clusterId(),
+                room.name(),
+                Map.of(levelZ, room.anchorAtLevel(levelZ)),
+                room.narration());
+    }
+
+    private static Map<Long, Room> indexRoomsById(List<Room> rooms) {
+        Map<Long, Room> result = new LinkedHashMap<>();
+        for (Room room : rooms) {
+            if (room != null && room.roomId() != null) {
+                result.put(room.roomId(), room);
+            }
+        }
+        return Map.copyOf(result);
+    }
+
+    private static OverlapIndex indexRoomsByPoint(List<Room> rooms, Map<Room, Map<Integer, Set<CellCoord>>> roomCellsByRoom) {
+        Map<CubePoint, Room> result = new LinkedHashMap<>();
+        boolean hasOverlaps = false;
+        for (Room room : rooms) {
+            if (room == null) {
+                continue;
+            }
+            for (Map.Entry<Integer, Set<CellCoord>> entry : roomCellsByLevel(room, roomCellsByRoom).entrySet()) {
+                Integer levelZ = entry.getKey();
+                if (levelZ == null) {
+                    continue;
+                }
+                for (CellCoord cell : entry.getValue()) {
+                    CubePoint point = CubePoint.at(cell, levelZ);
+                    if (result.containsKey(point) && result.get(point) != room) {
+                        hasOverlaps = true;
+                    }
+                    result.put(point, room);
+                }
+            }
+        }
+        return new OverlapIndex(Map.copyOf(result), hasOverlaps);
+    }
+
+    private static Map<Long, Set<Long>> indexAdjacentRoomIds(
+            Map<Room, Map<Integer, Set<CellCoord>>> roomCellsByRoom,
+            Map<Long, Room> roomsById,
+            Map<CubePoint, Room> roomsByPoint
+    ) {
+        Map<Long, Set<Long>> result = new LinkedHashMap<>();
+        for (Long roomId : roomsById.keySet()) {
+            result.put(roomId, new LinkedHashSet<>());
+        }
+        for (Map.Entry<Room, Map<Integer, Set<CellCoord>>> roomEntry : roomCellsByRoom.entrySet()) {
+            Room room = roomEntry.getKey();
+            if (room == null || room.roomId() == null) {
+                continue;
+            }
+            for (Map.Entry<Integer, Set<CellCoord>> levelEntry : roomEntry.getValue().entrySet()) {
+                int levelZ = levelEntry.getKey();
+                for (CellCoord cell : levelEntry.getValue()) {
+                    for (CellCoord step : CellCoord.CARDINAL_STEPS) {
+                        Room neighbor = roomsByPoint.get(CubePoint.at(cell.add(step), levelZ));
+                        if (neighbor == null || neighbor.roomId() == null || neighbor.roomId().equals(room.roomId())) {
+                            continue;
+                        }
+                        result.get(room.roomId()).add(neighbor.roomId());
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    private static List<Set<Long>> components(Set<Long> roomIds, Map<Long, Set<Long>> adjacency) {
+        Set<Long> unvisited = new LinkedHashSet<>(roomIds);
+        List<Set<Long>> result = new ArrayList<>();
+        while (!unvisited.isEmpty()) {
+            Long seed = unvisited.iterator().next();
+            Set<Long> component = new LinkedHashSet<>();
+            ArrayDeque<Long> queue = new ArrayDeque<>();
+            queue.add(seed);
+            unvisited.remove(seed);
+            while (!queue.isEmpty()) {
+                Long current = queue.removeFirst();
+                if (!component.add(current)) {
+                    continue;
+                }
+                for (Long neighbor : adjacency.getOrDefault(current, Set.of())) {
+                    if (unvisited.remove(neighbor)) {
+                        queue.addLast(neighbor);
+                    }
+                }
+            }
+            result.add(Set.copyOf(component));
+        }
+        return List.copyOf(result);
+    }
+
+    private static Map<Long, Set<Long>> indexComponentByRoomId(List<Set<Long>> components) {
+        Map<Long, Set<Long>> result = new LinkedHashMap<>();
+        for (Set<Long> component : components) {
+            for (Long roomId : component) {
+                result.put(roomId, component);
+            }
+        }
+        return Map.copyOf(result);
+    }
+
+    private static Map<Long, Set<Long>> immutableSetMap(Map<Long, Set<Long>> mutable) {
+        Map<Long, Set<Long>> result = new LinkedHashMap<>();
+        for (Map.Entry<Long, Set<Long>> entry : mutable.entrySet()) {
+            result.put(entry.getKey(), Set.copyOf(entry.getValue()));
+        }
+        return Map.copyOf(result);
+    }
+
+    private static Set<Long> normalizedRoomIds(Set<Long> roomIds) {
+        Set<Long> result = new LinkedHashSet<>();
+        if (roomIds == null) {
+            return result;
+        }
+        for (Long roomId : roomIds) {
+            if (roomId != null) {
+                result.add(roomId);
+            }
+        }
+        return Set.copyOf(result);
+    }
+
+    private static Map<Integer, Set<CellCoord>> roomCellsByLevel(
+            Room room,
+            Map<Room, Map<Integer, Set<CellCoord>>> roomCellsByRoom
+    ) {
+        if (room == null || roomCellsByRoom == null || roomCellsByRoom.isEmpty()) {
+            return Map.of();
+        }
+        return roomCellsByRoom.getOrDefault(room, Map.of());
+    }
+
+    private static Map<Room, Map<Integer, Set<CellCoord>>> immutableRoomCellsByRoom(
+            Map<Room, Map<Integer, Set<CellCoord>>> mutable
+    ) {
+        if (mutable == null || mutable.isEmpty()) {
+            return Map.of();
+        }
+        Map<Room, Map<Integer, Set<CellCoord>>> result = new LinkedHashMap<>();
+        for (Map.Entry<Room, Map<Integer, Set<CellCoord>>> entry : mutable.entrySet()) {
+            if (entry != null && entry.getKey() != null) {
+                result.put(entry.getKey(), immutableCellsByLevel(entry.getValue()));
+            }
+        }
+        return result.isEmpty() ? Map.of() : Map.copyOf(result);
+    }
+
+    private static Map<Integer, Set<CellCoord>> immutableCellsByLevel(Map<Integer, Set<CellCoord>> source) {
+        if (source == null || source.isEmpty()) {
+            return Map.of();
+        }
+        Map<Integer, Set<CellCoord>> result = new LinkedHashMap<>();
+        source.entrySet().stream()
+                .filter(entry -> entry != null && entry.getKey() != null)
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(entry -> result.put(entry.getKey(), CellCoord.normalize(entry.getValue())));
+        return result.isEmpty() ? Map.of() : Map.copyOf(result);
+    }
+
+    private static Set<CellCoord> intersectCells(Collection<CellCoord> left, Collection<CellCoord> right) {
+        if (left == null || right == null) {
+            return Set.of();
+        }
+        LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
+        Set<CellCoord> rightSet = right instanceof Set<CellCoord> set ? set : new LinkedHashSet<>(right);
+        for (CellCoord cell : left) {
+            if (rightSet.contains(cell)) {
+                result.add(cell);
+            }
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
+    private static CellCoord anchorCell(Set<CellCoord> roomCells, CellCoord preferredAnchor) {
+        return preferredAnchor != null && roomCells.contains(preferredAnchor)
+                ? preferredAnchor
+                : CellCoord.bestCenter(roomCells);
+    }
+
+    private record DoorComponent(int levelZ, Door door) {
+    }
+
+    private record PartitionedRoom(Room room, Map<Integer, Set<CellCoord>> roomCellsByLevel) {
+    }
+
+    private record OverlapIndex(Map<CubePoint, Room> roomsByPoint, boolean hasOverlaps) {
+    }
+}
