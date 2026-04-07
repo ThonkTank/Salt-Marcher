@@ -3,11 +3,9 @@ package features.world.dungeonmap.structure.model;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.structures.connection.DungeonConnection;
 import features.world.dungeonmap.model.structures.room.Room;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -164,10 +162,6 @@ public final class Structure {
         this.roomTopology = roomTopology;
     }
 
-    public Map<Integer, LevelStructure> levelStructures() {
-        return levelsByZ;
-    }
-
     public StructureRoomTopology roomTopology() {
         return roomTopology;
     }
@@ -185,14 +179,14 @@ public final class Structure {
     }
 
     private Structure reattachedWithSameRooms(Structure structure) {
-        if (roomTopology == null || structure == null || structure.levelStructures().isEmpty()) {
+        if (roomTopology == null || structure == null || structure.levels().isEmpty()) {
             return structure;
         }
         return structure.withRoomMetadata(roomTopology.mapId(), roomTopology.clusterId(), roomTopology.rooms());
     }
 
     private static Structure reattachTopology(Structure structure, StructureRoomTopology topology) {
-        if (structure == null || topology == null || structure.levelStructures().isEmpty()) {
+        if (structure == null || topology == null || structure.levels().isEmpty()) {
             return structure;
         }
         return new Structure(structure.levelsByZ, topology);
@@ -206,21 +200,17 @@ public final class Structure {
             }
             LevelStructure level = entry.getValue();
             snapshotLevels.put(entry.getKey(), new PersistenceLevel(
-                    level.anchorCell(),
-                    level.surfaceShape().cellCoords(),
-                    level.floorCells(),
+                    level.surface().anchorCell(),
+                    level.surface().cellCoords(),
+                    level.surface().floorCells(),
                     level.boundary().authoredWalls(),
                     level.boundary().doors()));
         }
         return new PersistenceSnapshot(snapshotLevels);
     }
 
-    public LevelStructure levelStructure(int levelZ) {
-        return levelsByZ.get(levelZ);
-    }
-
     public Structure projectedToLevel(int levelZ) {
-        LevelStructure level = levelStructure(levelZ);
+        LevelStructure level = levelsByZ.get(levelZ);
         if (level == null) {
             return empty();
         }
@@ -231,17 +221,17 @@ public final class Structure {
     }
 
     public StructureBoundary boundaryAtLevel(int levelZ) {
-        LevelStructure level = levelStructure(levelZ);
+        LevelStructure level = levelsByZ.get(levelZ);
         return level == null ? StructureBoundary.empty() : level.boundary();
     }
 
     public StructureSurface surfaceAtLevel(int levelZ) {
-        LevelStructure level = levelStructure(levelZ);
+        LevelStructure level = levelsByZ.get(levelZ);
         return level == null ? StructureSurface.empty() : level.surface();
     }
 
     public Structure withBoundaryAtLevel(int levelZ, StructureBoundary boundary) {
-        LevelStructure level = levelStructure(levelZ);
+        LevelStructure level = levelsByZ.get(levelZ);
         if (level == null) {
             return this;
         }
@@ -251,7 +241,7 @@ public final class Structure {
     }
 
     public Structure withSurfaceAtLevel(int levelZ, StructureSurface surface) {
-        LevelStructure level = levelStructure(levelZ);
+        LevelStructure level = levelsByZ.get(levelZ);
         if (level == null) {
             return this;
         }
@@ -264,97 +254,11 @@ public final class Structure {
         return levelsByZ.isEmpty() ? Set.of() : Set.copyOf(new LinkedHashSet<>(levelsByZ.keySet()));
     }
 
-    public List<Integer> relevantLevels(CellCoord focusCell, int focusLevelZ) {
-        if (focusCell != null && surfaceAtLevel(focusLevelZ).contains(focusCell)) {
-            return List.of(focusLevelZ);
-        }
-        return levels().stream()
-                .sorted()
-                .toList();
-    }
-
     public int primaryLevel() {
         return levels().stream()
                 .mapToInt(Integer::intValue)
                 .min()
                 .orElse(0);
-    }
-
-    public CubePoint centerPointAtLevel(int levelZ) {
-        CellCoord centerCell = surfaceAtLevel(levelZ).centerCellCoord();
-        return centerCell == null ? null : CubePoint.at(centerCell, levelZ);
-    }
-
-    public Set<CellCoord> cellCoords() {
-        LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
-        for (Integer levelZ : levels()) {
-            result.addAll(surfaceAtLevel(levelZ).cellCoords());
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
-    public Set<CubePoint> cubePoints() {
-        LinkedHashSet<CubePoint> result = new LinkedHashSet<>();
-        for (Map.Entry<Integer, LevelStructure> entry : levelsByZ.entrySet()) {
-            result.addAll(entry.getValue().surface().cubePoints(entry.getKey()));
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
-    public boolean contains(CellCoord cell) {
-        return cell != null && levels().stream().anyMatch(levelZ -> surfaceAtLevel(levelZ).contains(cell));
-    }
-
-    public boolean contains(CubePoint point) {
-        return point != null && surfaceAtLevel(point.z()).contains(point.projectedCell());
-    }
-
-    public Structure clippedToSurface(
-            Map<Integer, ? extends Collection<CellCoord>> surfaceCellsByLevel,
-            Map<Integer, CellCoord> preferredAnchorsByLevel
-    ) {
-        if (surfaceCellsByLevel == null || surfaceCellsByLevel.isEmpty()) {
-            return empty();
-        }
-        Map<Integer, LevelStructure> levels = new LinkedHashMap<>();
-        surfaceCellsByLevel.entrySet().stream()
-                .filter(entry -> entry != null && entry.getKey() != null)
-                .sorted(Map.Entry.comparingByKey())
-                .forEach(entry -> {
-                    int levelZ = entry.getKey();
-                    StructureSurface clippedSurface = surfaceAtLevel(levelZ).clippedTo(
-                            entry.getValue(),
-                            preferredAnchorsByLevel == null ? null : preferredAnchorsByLevel.get(levelZ));
-                    if (clippedSurface.isEmpty()) {
-                        return;
-                    }
-                    StructureBoundary clippedBoundary = boundaryAtLevel(levelZ).clippedToSurface(clippedSurface.cellCoords());
-                    levels.put(levelZ, LevelStructure.fromSurfaceAndBoundary(clippedSurface, clippedBoundary));
-                });
-        Structure clipped = levels.isEmpty() ? empty() : new Structure(levels, null);
-        return reattachedWithSameRooms(clipped);
-    }
-
-    public List<Map<Integer, Set<CellCoord>>> projectedSurfaceComponents() {
-        Set<CellCoord> projectedCells = cellCoords();
-        if (projectedCells.isEmpty()) {
-            return List.of();
-        }
-        List<Set<CellCoord>> components = connectedProjectedComponents(projectedCells);
-        ArrayList<Map<Integer, Set<CellCoord>>> result = new ArrayList<>(components.size());
-        for (Set<CellCoord> component : components) {
-            Map<Integer, Set<CellCoord>> componentByLevel = new LinkedHashMap<>();
-            for (Integer levelZ : levels().stream().sorted().toList()) {
-                Set<CellCoord> levelCells = intersectCells(surfaceAtLevel(levelZ).cellCoords(), component);
-                if (!levelCells.isEmpty()) {
-                    componentByLevel.put(levelZ, levelCells);
-                }
-            }
-            if (!componentByLevel.isEmpty()) {
-                result.add(Map.copyOf(componentByLevel));
-            }
-        }
-        return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
     public Structure movedBy(CellCoord delta, int levelDelta) {
