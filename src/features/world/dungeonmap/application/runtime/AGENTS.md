@@ -16,6 +16,7 @@ This file covers `src/features/world/dungeonmap/application/runtime/`.
 ## Where New Code Goes
 
 - Put runtime-only navigation policy here before reaching for shell helpers or views.
+- Resolve runtime actions from explicit floor-backed traversable cells, not by treating surface ownership as an implicit walkability fallback.
 - Keep description builders read-only and subordinate to the runtime owner.
 
 ## Forbidden Drift

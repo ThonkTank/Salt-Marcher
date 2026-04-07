@@ -112,16 +112,18 @@ public final class DungeonRuntimeActionResolver {
         if (corridor == null) {
             return;
         }
+        // Runtime exits must terminate on explicit floor truth instead of assuming corridor surface implies walkable area.
+        Set<CellCoord> corridorFloorCells = corridor.structure().surfaceAtLevel(corridor.levelZ()).floor().cellCoords();
         appendStructureStairs(
                 location.layout(),
-                corridor.structure().surfaceAtLevel(corridor.levelZ()).surface().cellCoords(),
+                corridorFloorCells,
                 corridor.levelZ(),
                 location.activeCell(),
                 location.activeLevelZ(),
                 actions);
         appendStructureTransitions(
                 location.layout(),
-                corridor.structure().surfaceAtLevel(corridor.levelZ()).surface().cellCoords(),
+                corridorFloorCells,
                 corridor.levelZ(),
                 actions);
     }

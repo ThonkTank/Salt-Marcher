@@ -500,7 +500,7 @@ public final class DungeonLayout {
                 .sorted()
                 .flatMap(levelZ -> DoorExitCatalog.describe(
                         this,
-                        roomStructure(room).surfaceAtLevel(levelZ).surface().cellCoords(),
+                        roomStructure(room).surfaceAtLevel(levelZ).floor().cellCoords(),
                         levelZ,
                         connectionsForRoom(room.roomId())).stream())
                 .toList();
@@ -512,7 +512,7 @@ public final class DungeonLayout {
         }
         return DoorExitCatalog.describe(
                 this,
-                corridor.structure().surfaceAtLevel(corridor.levelZ()).surface().cellCoords(),
+                corridor.structure().surfaceAtLevel(corridor.levelZ()).floor().cellCoords(),
                 corridor.levelZ(),
                 connectionsForCorridor(corridor.corridorId()));
     }
@@ -1218,7 +1218,7 @@ public final class DungeonLayout {
 
     private static boolean corridorReachesLevel(Corridor corridor, int levelZ) {
         return corridor != null
-                && !corridor.structure().surfaceAtLevel(levelZ).surface().cellCoords().isEmpty();
+                && !corridor.structure().surfaceAtLevel(levelZ).floor().cellCoords().isEmpty();
     }
 
     private static List<RoomCluster> normalizedClusters(List<RoomCluster> clusters) {
@@ -1621,7 +1621,9 @@ public final class DungeonLayout {
         }
         for (Corridor corridor : corridors) {
             if (corridor != null) {
-                result.addAll(corridor.structure().surfaceAtLevel(corridor.levelZ()).surface().cellCoords());
+                // Traversable layout indexes must follow the explicit floor set even when a structure also owns
+                // non-walkable surface cells.
+                result.addAll(corridor.structure().surfaceAtLevel(corridor.levelZ()).floor().cellCoords());
             }
         }
         for (DungeonStair stair : stairs) {
@@ -1668,7 +1670,7 @@ public final class DungeonLayout {
                 continue;
             }
             mutable.computeIfAbsent(corridor.levelZ(), ignored -> new LinkedHashSet<>())
-                    .addAll(corridor.structure().surfaceAtLevel(corridor.levelZ()).surface().cellCoords());
+                    .addAll(corridor.structure().surfaceAtLevel(corridor.levelZ()).floor().cellCoords());
         }
         for (DungeonStair stair : stairs) {
             if (stair != null) {

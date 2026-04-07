@@ -23,6 +23,7 @@ This file covers `src/features/world/dungeonmap/structure/`.
 - Put shared physical topology, boundary identity, and shared room-projection logic here.
 - Put level-local surface behavior on the local `model/surface/` sub-owner and keep callers on `structure.surfaceAtLevel(levelZ).surface()` or `.floor()`.
 - Put object-local surface-area and floor behavior on the `model/surface/` subtree instead of expanding `StructureSurface`.
+- Keep structure construction explicit: new structures must materialize both surface and floor sets directly instead of creating a surface-only shell and letting callers infer walkability later.
 - Put level-local wall, door, and boundary-edge behavior on the local `model/boundary/` sub-owner and keep callers on `structure.boundaryAtLevel(levelZ)`.
 - Put object-local door behavior on `model/boundary/door/` and object-local wall behavior on `model/boundary/wall/`.
 - Put structure-local room projection, lookup, adjacency, and local room-connection behavior on the local `model/room/` sub-owner and keep callers on `structure.roomTopology()`.

@@ -55,7 +55,7 @@ public final class Structure {
             cellsByLevel.computeIfAbsent(cubePoint.z(), ignored -> new LinkedHashSet<>())
                     .add(cubePoint.projectedCell());
         }
-        return fromSurfaceCellsByLevel(cellsByLevel, Map.of(), Map.of());
+        return fromSurfaceCellsByLevel(cellsByLevel, cellsByLevel, Map.of());
     }
 
     public static Structure fromSurfaceCellsByLevel(
