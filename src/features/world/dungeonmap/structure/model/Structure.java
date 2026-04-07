@@ -2,11 +2,11 @@ package features.world.dungeonmap.structure.model;
 
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.structures.connection.DungeonConnection;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.structure.model.boundary.StructureBoundary;
 import features.world.dungeonmap.structure.model.boundary.door.Door;
 import features.world.dungeonmap.structure.model.boundary.wall.Wall;
+import features.world.dungeonmap.structure.model.room.StructureRoomTopology;
 import features.world.dungeonmap.structure.model.surface.StructureSurface;
 
 import java.util.ArrayList;
@@ -33,7 +33,7 @@ public final class Structure {
     private final StructureRoomTopology roomTopology;
 
     public static Structure empty() {
-        return new Structure(Map.of(), null);
+        return new Structure(Map.of(), StructureRoomTopology.empty());
     }
 
     public static Structure fromLevels(Map<Integer, LevelStructure> levelsByZ) {
@@ -103,7 +103,7 @@ public final class Structure {
     private Structure(
             Map<Integer, LevelStructure> levelsByZ
     ) {
-        this(levelsByZ, null);
+        this(levelsByZ, StructureRoomTopology.empty());
     }
 
     private Structure(
@@ -111,7 +111,7 @@ public final class Structure {
             StructureRoomTopology roomTopology
     ) {
         this.levelsByZ = normalizeLevels(levelsByZ);
-        this.roomTopology = roomTopology;
+        this.roomTopology = roomTopology == null ? StructureRoomTopology.empty() : roomTopology;
     }
 
     public StructureRoomTopology roomTopology() {
@@ -122,23 +122,15 @@ public final class Structure {
         return new Structure(levelsByZ, StructureRoomTopology.derive(mapId, clusterId, this, rooms));
     }
 
-    public List<Room> rooms() {
-        return roomTopology == null ? List.of() : roomTopology.rooms();
-    }
-
-    public List<DungeonConnection> localRoomConnections() {
-        return roomTopology == null ? List.of() : roomTopology.localConnections();
-    }
-
     private Structure reattachedWithSameRooms(Structure structure) {
-        if (roomTopology == null || structure == null || structure.levels().isEmpty()) {
+        if (structure == null || structure.levels().isEmpty() || roomTopology.isEmpty()) {
             return structure;
         }
         return structure.withRoomMetadata(roomTopology.mapId(), roomTopology.clusterId(), roomTopology.rooms());
     }
 
     private static Structure reattachTopology(Structure structure, StructureRoomTopology topology) {
-        if (structure == null || topology == null || structure.levels().isEmpty()) {
+        if (structure == null || structure.levels().isEmpty()) {
             return structure;
         }
         return new Structure(structure.levelsByZ, topology);
@@ -160,8 +152,8 @@ public final class Structure {
         if (level == null) {
             return empty();
         }
-        Structure projected = new Structure(Map.of(levelZ, level), null);
-        return roomTopology == null
+        Structure projected = new Structure(Map.of(levelZ, level), StructureRoomTopology.empty());
+        return roomTopology.isEmpty()
                 ? projected
                 : reattachTopology(projected, roomTopology.projectedToLevel(levelZ, projected));
     }
@@ -216,8 +208,8 @@ public final class Structure {
         for (Map.Entry<Integer, LevelStructure> entry : levelsByZ.entrySet()) {
             translatedLevels.put(entry.getKey() + levelDelta, entry.getValue().translatedByCells(resolvedDelta));
         }
-        Structure moved = new Structure(translatedLevels, null);
-        return roomTopology == null
+        Structure moved = new Structure(translatedLevels, StructureRoomTopology.empty());
+        return roomTopology.isEmpty()
                 ? moved
                 : reattachTopology(moved, roomTopology.translatedBy(resolvedDelta, levelDelta, moved));
     }

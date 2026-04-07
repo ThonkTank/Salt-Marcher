@@ -9,11 +9,11 @@ import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 import features.world.dungeonmap.structure.model.Structure;
 import features.world.dungeonmap.structure.model.boundary.StructureBoundary;
-import features.world.dungeonmap.structure.model.StructureRoomTopology;
 import features.world.dungeonmap.structure.model.boundary.door.Door;
 import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeonmap.structure.model.boundary.wall.Wall;
 import features.world.dungeonmap.structure.model.boundary.wall.WallKind;
+import features.world.dungeonmap.structure.model.room.StructureRoomTopology;
 import features.world.dungeonmap.structure.model.surface.StructureSurface;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionKind;
@@ -124,11 +124,11 @@ public final class RoomCluster {
     }
 
     public List<Room> rooms() {
-        return structure.rooms();
+        return roomTopology().rooms();
     }
 
     public List<DungeonConnection> localConnections() {
-        return structure.localRoomConnections();
+        return roomTopology().localConnections();
     }
 
     public RoomCluster withRooms(List<Room> rooms) {
@@ -150,7 +150,8 @@ public final class RoomCluster {
 
     public RoomCluster projectedToLevel(int levelZ) {
         Structure projectedStructure = structure.projectedToLevel(levelZ);
-        if (projectedStructure == null || projectedStructure.levels().isEmpty() || projectedStructure.rooms().isEmpty()) {
+        StructureRoomTopology projectedTopology = projectedStructure.roomTopology();
+        if (projectedStructure == null || projectedStructure.levels().isEmpty() || projectedTopology.rooms().isEmpty()) {
             return null;
         }
         return new RoomCluster(
@@ -159,7 +160,7 @@ public final class RoomCluster {
                 mapId,
                 center,
                 projectedStructure,
-                projectedStructure.rooms());
+                projectedTopology.rooms());
     }
 
     public RoomCluster createWallPath(int levelZ, Collection<GridSegment2x> segments2x) {
@@ -273,7 +274,7 @@ public final class RoomCluster {
                 mapId,
                 center.add(resolvedDelta),
                 movedStructure,
-                movedStructure.rooms());
+                movedStructure.roomTopology().rooms());
     }
 
     public BoundaryPath findCreateWallPath(GridPoint2x start, GridPoint2x goal) {
@@ -417,7 +418,7 @@ public final class RoomCluster {
     }
 
     private StructureRoomTopology roomTopology() {
-        return structure.roomTopology() == null ? StructureRoomTopology.empty() : structure.roomTopology();
+        return structure.roomTopology();
     }
 
     private static Map<Long, Room> indexRoomsById(List<Room> rooms) {

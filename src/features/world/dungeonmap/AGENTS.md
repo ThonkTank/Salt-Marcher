@@ -7,7 +7,7 @@
 ## Owner Atlas
 
 - `layout` — `DungeonLayout`, `DungeonMapLoadingService`, `DungeonLayoutRepository`, `DungeonMapState`
-- `structure` — `Structure`, `StructureRoomTopology`, the local `surface` and `boundary` sub-owners plus boundary-local `door` and `wall` object sub-owners, `DungeonStructureRepository`, `DungeonWallKindRepository`
+- `structure` — `Structure`, `Structure.roomTopology()`, the local `surface`, `boundary`, and `room` sub-owners plus boundary-local `door` and `wall` object sub-owners, `DungeonStructureRepository`, `DungeonWallKindRepository`
 - `room` — `Room`, `RoomCluster`, `DungeonRoomApplicationService`, `DungeonRoomRepository`
 - `corridor` — `Corridor`, `CorridorRouting`, `CorridorPathTrace`, `DungeonCorridorApplicationService`, `DungeonCorridorRepository`
 - `stair` — `DungeonStair`, `Stair`, `StairExit`, `DungeonStairApplicationService`, `DungeonStairRepository`
@@ -42,7 +42,7 @@
 
 ## Forbidden Drift
 
-- Do not add a second shared physical topology owner beside `Structure`, `StructureSurface`, `StructureSurfaceArea`, `StructureFloor`, `StructureBoundary`, and `StructureRoomTopology`.
+- Do not add a second shared physical topology owner beside `Structure`, `StructureSurface`, `StructureSurfaceArea`, `StructureFloor`, `StructureBoundary`, and `Structure.roomTopology()`.
 - Do not mirror room, corridor, stair, transition, or runtime semantics into tool-local state, render models, or storage helper types.
 - Do not add convenience wrapper APIs that mirror `StructureSurfaceArea`, `StructureFloor`, or `StructureBoundary` state on `Structure`, `RoomCluster`, `DungeonLayout`, renderer helpers, or other unrelated owners.
 - Do not call inherited generic `EdgeShape` methods on `Door` or `Wall` outside the boundary owner subtree; if a read is truly missing, add it to the explicit object API instead.
