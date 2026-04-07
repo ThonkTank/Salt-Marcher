@@ -4,6 +4,7 @@ import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridBoundary;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
+import features.world.dungeon.geometry.GridSegmentPath;
 import features.world.dungeon.geometry.GridTranslatable;
 import features.world.dungeon.geometry.GridTranslation;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
@@ -150,22 +151,22 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
         };
     }
 
-    public boolean canCreateDoor(int levelZ, GridSegment boundarySegment2x) {
+    public boolean canCreateDoor(int levelZ, GridSegment boundarySegment) {
         // Door eligibility belongs to the cluster owner so editor tools do not become the only source of boundary
         // semantics for local room-to-room connections.
         StructureBoundary boundary = boundaryAtLevel(levelZ);
-        if (boundarySegment2x == null
-                || boundary.doorAtBoundarySegment(boundarySegment2x) != null) {
+        if (boundarySegment == null
+                || boundary.doorAtBoundarySegment(boundarySegment) != null) {
             return false;
         }
-        Wall effectiveWall = boundary.wallAtBoundarySegment(boundarySegment2x);
-        if (!boundary.boundary().contains(boundarySegment2x)
+        Wall effectiveWall = boundary.wallAtBoundarySegment(boundarySegment);
+        if (!boundary.boundary().contains(boundarySegment)
                 || effectiveWall == null
                 || !effectiveWall.supportsDoorAttachments()
-                || !boundary.isInteriorBoundary(boundarySegment2x)) {
+                || !boundary.isInteriorBoundary(boundarySegment)) {
             return false;
         }
-        RoomPair roomPair = roomPairAtLevel(this, boundarySegment2x, levelZ);
+        RoomPair roomPair = roomPairAtLevel(this, boundarySegment, levelZ);
         return roomPair != null
                 && roomPair.left() != null
                 && roomPair.right() != null
@@ -174,29 +175,29 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
                 && !roomPair.left().roomId().equals(roomPair.right().roomId());
     }
 
-    public boolean canDeleteDoor(int levelZ, GridSegment boundarySegment2x) {
+    public boolean canDeleteDoor(int levelZ, GridSegment boundarySegment) {
         StructureBoundary boundary = boundaryAtLevel(levelZ);
-        return boundarySegment2x != null
-                && boundary.isInteriorBoundary(boundarySegment2x)
-                && boundary.doorAtBoundarySegment(boundarySegment2x) != null;
+        return boundarySegment != null
+                && boundary.isInteriorBoundary(boundarySegment)
+                && boundary.doorAtBoundarySegment(boundarySegment) != null;
     }
 
-    public boolean canCreateExteriorDoor(int levelZ, GridSegment boundarySegment2x) {
+    public boolean canCreateExteriorDoor(int levelZ, GridSegment boundarySegment) {
         StructureBoundary boundary = boundaryAtLevel(levelZ);
-        Wall effectiveWall = boundary.wallAtBoundarySegment(boundarySegment2x);
-        return boundarySegment2x != null
-                && boundary.boundary().contains(boundarySegment2x)
-                && boundary.doorAtBoundarySegment(boundarySegment2x) == null
+        Wall effectiveWall = boundary.wallAtBoundarySegment(boundarySegment);
+        return boundarySegment != null
+                && boundary.boundary().contains(boundarySegment)
+                && boundary.doorAtBoundarySegment(boundarySegment) == null
                 && effectiveWall != null
                 && effectiveWall.supportsDoorAttachments()
-                && boundary.isExteriorBoundary(boundarySegment2x);
+                && boundary.isExteriorBoundary(boundarySegment);
     }
 
-    public boolean canDeleteExteriorDoor(int levelZ, GridSegment boundarySegment2x) {
+    public boolean canDeleteExteriorDoor(int levelZ, GridSegment boundarySegment) {
         StructureBoundary boundary = boundaryAtLevel(levelZ);
-        return boundarySegment2x != null
-                && boundary.doorAtBoundarySegment(boundarySegment2x) != null
-                && boundary.isExteriorBoundary(boundarySegment2x);
+        return boundarySegment != null
+                && boundary.doorAtBoundarySegment(boundarySegment) != null
+                && boundary.isExteriorBoundary(boundarySegment);
     }
 
     public InteractiveLabelHandle labelHandle() {
@@ -235,28 +236,20 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
                 movedStructure.roomTopology().rooms()));
     }
 
-    public BoundaryPath findCreateWallPath(GridPoint start, GridPoint goal) {
+    public GridSegmentPath findCreateWallPath(GridPoint start, GridPoint goal) {
         if (start == null || goal == null) {
-            return BoundaryPath.empty();
+            return GridSegmentPath.empty();
         }
         int levelZ = primaryLevel();
-        List<GridSegment> route = boundaryAtLevel(levelZ).findCreatableWallPath(start, goal);
-        if (route.isEmpty()) {
-            return BoundaryPath.empty();
-        }
-        return new BoundaryPath(route, new LinkedHashSet<>(route));
+        return boundaryAtLevel(levelZ).findCreatableWallPath(start, goal);
     }
 
-    public BoundaryPath findDeleteWallPath(GridPoint start, GridPoint goal) {
+    public GridSegmentPath findDeleteWallPath(GridPoint start, GridPoint goal) {
         if (start == null || goal == null) {
-            return BoundaryPath.empty();
+            return GridSegmentPath.empty();
         }
         int levelZ = primaryLevel();
-        List<GridSegment> route = boundaryAtLevel(levelZ).findDeletableWallPath(start, goal);
-        if (route.isEmpty()) {
-            return BoundaryPath.empty();
-        }
-        return new BoundaryPath(route, new LinkedHashSet<>(route));
+        return boundaryAtLevel(levelZ).findDeletableWallPath(start, goal);
     }
 
     public boolean touchesExistingWall(GridPoint vertex) {
@@ -299,11 +292,11 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
         return cell == null ? null : roomTopology().roomAt(cell, levelZ);
     }
 
-    private static RoomPair roomPairAtLevel(Cluster cluster, GridSegment segment2x, int levelZ) {
-        if (cluster == null || segment2x == null) {
+    private static RoomPair roomPairAtLevel(Cluster cluster, GridSegment segment, int levelZ) {
+        if (cluster == null || segment == null) {
             return null;
         }
-        List<GridPoint> touchingCells = segment2x.cellFootprint().cells().stream()
+        List<GridPoint> touchingCells = segment.cellFootprint().cells().stream()
                 .sorted(GridPoint.ORDER)
                 .toList();
         if (touchingCells.size() != 2) {
@@ -517,21 +510,4 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
         }
     }
 
-    public record BoundaryPath(
-            List<GridSegment> routeEdges,
-            Set<GridSegment> committedEdges
-    ) {
-        public BoundaryPath {
-            routeEdges = routeEdges == null ? List.of() : List.copyOf(routeEdges);
-            committedEdges = committedEdges == null ? Set.of() : Set.copyOf(committedEdges);
-        }
-
-        public static BoundaryPath empty() {
-            return new BoundaryPath(List.of(), Set.of());
-        }
-
-        public boolean hasRoute() {
-            return !routeEdges.isEmpty();
-        }
-    }
 }

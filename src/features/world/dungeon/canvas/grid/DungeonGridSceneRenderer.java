@@ -183,8 +183,8 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             Collection<GridPoint> tiles
     ) {
         for (GridPoint tile : tiles) {
-            double x = camera.panX() + tile.cellX() * gridSize;
-            double y = camera.panY() + tile.cellY() * gridSize;
+            double x = camera.panX() + cellX(tile) * gridSize;
+            double y = camera.panY() + cellY(tile) * gridSize;
             gc.fillRect(x, y, gridSize, gridSize);
         }
     }
@@ -200,8 +200,8 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         gc.setStroke(stroke);
         gc.setLineWidth(lineWidth);
         for (GridPoint tile : tiles) {
-            double x = camera.panX() + tile.cellX() * gridSize;
-            double y = camera.panY() + tile.cellY() * gridSize;
+            double x = camera.panX() + cellX(tile) * gridSize;
+            double y = camera.panY() + cellY(tile) * gridSize;
             gc.strokeRect(x, y, gridSize, gridSize);
         }
     }
@@ -614,8 +614,8 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 if (node.z() != pass.projectionLevel()) {
                     continue;
                 }
-                double x = pass.camera().panX() + node.cellX() * pass.gridSize();
-                double y = pass.camera().panY() + node.cellY() * pass.gridSize();
+                double x = pass.camera().panX() + cellX(node) * pass.gridSize();
+                double y = pass.camera().panY() + cellY(node) * pass.gridSize();
                 gc.fillRoundRect(x + pass.gridSize() * 0.18, y + pass.gridSize() * 0.18, pass.gridSize() * 0.64, pass.gridSize() * 0.64, 10, 10);
                 gc.strokeRoundRect(x + pass.gridSize() * 0.18, y + pass.gridSize() * 0.18, pass.gridSize() * 0.64, pass.gridSize() * 0.64, 10, 10);
             }
@@ -623,8 +623,8 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 if (exit.cell().z() != pass.projectionLevel()) {
                     continue;
                 }
-                double centerX = pass.camera().panX() + (exit.cell().cellX() + 0.5) * pass.gridSize();
-                double centerY = pass.camera().panY() + (exit.cell().cellY() + 0.5) * pass.gridSize();
+                double centerX = pass.camera().panX() + (cellX(exit.cell()) + 0.5) * pass.gridSize();
+                double centerY = pass.camera().panY() + (cellY(exit.cell()) + 0.5) * pass.gridSize();
                 double radius = Math.max(6.0, pass.gridSize() * 0.18);
                 gc.setFill(selected ? pass.palette().highlightAccent() : pass.palette().stairExitFill());
                 gc.fillOval(centerX - radius, centerY - radius, radius * 2, radius * 2);
@@ -739,8 +739,8 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             return;
         }
         double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
-        double centerX = camera.panX() + (activeCell.cellX() + 0.5) * gridSize;
-        double centerY = camera.panY() + (activeCell.cellY() + 0.5) * gridSize;
+        double centerX = camera.panX() + (cellX(activeCell) + 0.5) * gridSize;
+        double centerY = camera.panY() + (cellY(activeCell) + 0.5) * gridSize;
         double outerRadius = Math.max(7.5, gridSize * 0.26);
         double innerRadius = Math.max(3.2, outerRadius * 0.42);
         CardinalDirection resolvedHeading = runtime.navigation().heading();
@@ -842,8 +842,8 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             if (node == null || node.z() != pass.projectionLevel()) {
                 continue;
             }
-            double x = pass.camera().panX() + node.cellX() * pass.gridSize();
-            double y = pass.camera().panY() + node.cellY() * pass.gridSize();
+            double x = pass.camera().panX() + cellX(node) * pass.gridSize();
+            double y = pass.camera().panY() + cellY(node) * pass.gridSize();
             gc.fillRoundRect(x + pass.gridSize() * 0.18, y + pass.gridSize() * 0.18, pass.gridSize() * 0.64, pass.gridSize() * 0.64, 10, 10);
             gc.strokeRoundRect(x + pass.gridSize() * 0.18, y + pass.gridSize() * 0.18, pass.gridSize() * 0.64, pass.gridSize() * 0.64, 10, 10);
         }
@@ -855,8 +855,8 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             if (exitPoint == null || exitPoint.z() != pass.projectionLevel()) {
                 continue;
             }
-            double centerX = pass.camera().panX() + (exitPoint.cellX() + 0.5) * pass.gridSize();
-            double centerY = pass.camera().panY() + (exitPoint.cellY() + 0.5) * pass.gridSize();
+            double centerX = pass.camera().panX() + (cellX(exitPoint) + 0.5) * pass.gridSize();
+            double centerY = pass.camera().panY() + (cellY(exitPoint) + 0.5) * pass.gridSize();
             double radius = Math.max(6.0, pass.gridSize() * 0.18);
             gc.setFill(selected ? pass.palette().highlightAccent() : pass.palette().transitionStroke());
             gc.fillOval(centerX - radius, centerY - radius, radius * 2, radius * 2);
@@ -1004,8 +1004,8 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         gc.setStroke(deleteMode ? DungeonCanvasTheme.DELETE_PREVIEW_STROKE : DungeonCanvasTheme.PAINT_PREVIEW_STROKE);
         gc.setLineWidth(1.5);
         for (GridPoint tile : previewCells) {
-            double x = camera.panX() + tile.cellX() * gridSize;
-            double y = camera.panY() + tile.cellY() * gridSize;
+            double x = camera.panX() + cellX(tile) * gridSize;
+            double y = camera.panY() + cellY(tile) * gridSize;
             gc.fillRect(x, y, gridSize, gridSize);
             gc.strokeRect(x, y, gridSize, gridSize);
         }
@@ -1376,5 +1376,13 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             }
             return magnitude;
         }
+    }
+
+    private static int cellX(GridPoint point) {
+        return point.x2() / 2;
+    }
+
+    private static int cellY(GridPoint point) {
+        return point.y2() / 2;
     }
 }

@@ -178,8 +178,8 @@ public final class PaintTool implements EditorTool {
             return null;
         }
         return new DungeonSelectionRef.GridCellRef(GridPoint.cell(
-                ctx.probe().gridCell().cellX(),
-                ctx.probe().gridCell().cellY(),
+                ctx.probe().gridCell().x2() / 2,
+                ctx.probe().gridCell().y2() / 2,
                 ctx.probe().levelZ()));
     }
 }

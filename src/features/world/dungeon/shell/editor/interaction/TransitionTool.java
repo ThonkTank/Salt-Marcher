@@ -706,7 +706,7 @@ public final class TransitionTool implements EditorTool {
         int levelZ = ctx.probe().levelZ();
         return roomWithFloorAtCell(ctx.activeMap(), cell, levelZ) == null
                 ? null
-                : new DungeonSelectionRef.FloorCellRef(GridPoint.cell(cell.cellX(), cell.cellY(), levelZ));
+                : new DungeonSelectionRef.FloorCellRef(GridPoint.cell(cell.x2() / 2, cell.y2() / 2, levelZ));
     }
 
     private static Room roomWithFloorAtCell(DungeonMap layout, GridPoint cell, int levelZ) {
@@ -1006,7 +1006,7 @@ public final class TransitionTool implements EditorTool {
         if (stairAnchorCell == null || stairAnchorLevelZ == null) {
             return "Kein Treppenanker";
         }
-        return "Anker: z=" + stairAnchorLevelZ + " · " + stairAnchorCell.cellX() + "," + stairAnchorCell.cellY();
+        return "Anker: z=" + stairAnchorLevelZ + " · " + (stairAnchorCell.x2() / 2) + "," + (stairAnchorCell.y2() / 2);
     }
 
     private String stairStatusText(TransitionStairDraftResolution resolution) {

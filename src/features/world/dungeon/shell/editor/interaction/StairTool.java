@@ -464,7 +464,7 @@ public final class StairTool implements EditorTool {
             return null;
         }
         GridPoint cell = ctx.probe().gridCell();
-        return cell == null ? null : GridPoint.cell(cell.cellX(), cell.cellY(), ctx.probe().levelZ());
+        return cell == null ? null : GridPoint.cell(cell.x2() / 2, cell.y2() / 2, ctx.probe().levelZ());
     }
 
     private static GridPoint exitPointAtLevel(DungeonStair stair, int level) {
@@ -486,8 +486,8 @@ public final class StairTool implements EditorTool {
         if (clickedPoint == null || exitPoint == null) {
             return Integer.MAX_VALUE;
         }
-        return Math.abs(clickedPoint.cellX() - exitPoint.cellX())
-                + Math.abs(clickedPoint.cellY() - exitPoint.cellY())
+        return Math.abs(clickedPoint.x2() / 2 - exitPoint.x2() / 2)
+                + Math.abs(clickedPoint.y2() / 2 - exitPoint.y2() / 2)
                 + Math.abs(clickedPoint.z() - exitPoint.z());
     }
 
@@ -859,7 +859,7 @@ public final class StairTool implements EditorTool {
         if (stairAnchorCell == null || stairAnchorLevelZ == null) {
             return "Kein Treppenanker";
         }
-        return "Anker: z=" + stairAnchorLevelZ + " · " + stairAnchorCell.cellX() + "," + stairAnchorCell.cellY();
+        return "Anker: z=" + stairAnchorLevelZ + " · " + (stairAnchorCell.x2() / 2) + "," + (stairAnchorCell.y2() / 2);
     }
 
     private String stairStatusText(StairDraftResolution resolution) {
@@ -882,7 +882,7 @@ public final class StairTool implements EditorTool {
         if (roomWithFloorAtCell(layout, gridCell, levelZ) == null) {
             return null;
         }
-        return new DungeonSelectionRef.FloorCellRef(GridPoint.cell(gridCell.cellX(), gridCell.cellY(), levelZ));
+        return new DungeonSelectionRef.FloorCellRef(GridPoint.cell(gridCell.x2() / 2, gridCell.y2() / 2, levelZ));
     }
 
     private static Room roomWithFloorAtCell(DungeonMap layout, GridPoint cell, int levelZ) {

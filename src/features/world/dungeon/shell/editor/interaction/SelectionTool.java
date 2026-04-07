@@ -128,11 +128,11 @@ public final class SelectionTool implements EditorTool {
         }
         if (hit instanceof DungeonSelectionRef.CorridorNodeRef corridorNodeHit
                 && corridorNodeHit.corridorId() != null
-                && corridorNodeHit.nodeId() != null) {
+                && corridorNodeHit.waypointId() != null) {
             state.selectRef(resolvedSelectionRef);
             corridorNodeDragSession = new CorridorNodeDragSession(
                     corridorNodeHit.corridorId(),
-                    corridorNodeHit.nodeId(),
+                    corridorNodeHit.waypointId(),
                     corridorNodeHit.point(),
                     corridorNodeHit.point());
             return true;
@@ -219,7 +219,7 @@ public final class SelectionTool implements EditorTool {
             }
             GridPoint point2x = ctx == null || ctx.probe() == null
                     ? event.gridCell()
-                    : ctx.probe().probePoint2x();
+                    : ctx.probe().probePoint();
             if (Objects.equals(point2x, corridorNodeDragSession.currentPoint())) {
                 return true;
             }
@@ -233,7 +233,7 @@ public final class SelectionTool implements EditorTool {
             }
             GridPoint point2x = ctx == null || ctx.probe() == null
                     ? event.gridCell()
-                    : ctx.probe().probePoint2x();
+                    : ctx.probe().probePoint();
             if (Objects.equals(point2x, corridorTileDragSession.currentPoint())) {
                 return true;
             }
@@ -281,14 +281,14 @@ public final class SelectionTool implements EditorTool {
                             corridorApplicationService.moveNode(new DungeonCorridorApplicationService.MoveCorridorNodeRequest(
                                     mapId,
                                     current.corridorId(),
-                                    current.nodeId(),
+                                    current.waypointId(),
                                     current.currentPoint()));
                             return mapId;
                         },
                         updatedMapId -> updatedMapId,
                         ignored -> state.selectRef(corridorNodeRef(
                                 current.corridorId(),
-                                current.nodeId(),
+                                current.waypointId(),
                                 current.currentPoint())),
                         throwable -> UiErrorReporter.reportBackgroundFailure("SelectionTool.released()", throwable));
             }
@@ -437,8 +437,8 @@ public final class SelectionTool implements EditorTool {
                 || ref instanceof DungeonSelectionRef.TransitionRef;
     }
 
-    private static DungeonSelectionRef corridorNodeRef(long corridorId, Long nodeId, GridPoint point2x) {
-        return new DungeonSelectionRef.CorridorNodeRef(corridorId, nodeId, point2x);
+    private static DungeonSelectionRef corridorNodeRef(long corridorId, Long waypointId, GridPoint point2x) {
+        return new DungeonSelectionRef.CorridorNodeRef(corridorId, waypointId, point2x);
     }
 
     private void commitDoorMove(DoorDragSession session) {
@@ -499,7 +499,7 @@ public final class SelectionTool implements EditorTool {
         }
         Corridor updated = corridor.mutated(
                 new CorridorMutation.NodeMove(
-                        corridorNodeDragSession.nodeId(),
+                        corridorNodeDragSession.waypointId(),
                         corridorNodeDragSession.currentPoint()),
                 mapState.activeMap().corridorResolutionInput(CorridorResolutionContextRequest.forCorridor(corridor)));
         return mapState.activeMap()
@@ -779,12 +779,12 @@ public final class SelectionTool implements EditorTool {
 
     private record CorridorNodeDragSession(
             long corridorId,
-            Long nodeId,
+            Long waypointId,
             GridPoint startPoint,
             GridPoint currentPoint
     ) {
         private CorridorNodeDragSession withCurrentPoint(GridPoint currentPoint) {
-            return new CorridorNodeDragSession(corridorId, nodeId, startPoint, currentPoint);
+            return new CorridorNodeDragSession(corridorId, waypointId, startPoint, currentPoint);
         }
     }
 

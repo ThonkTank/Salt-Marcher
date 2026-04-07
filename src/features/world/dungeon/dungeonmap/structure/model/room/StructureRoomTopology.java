@@ -161,7 +161,7 @@ public final class StructureRoomTopology {
         return projectionIndex.roomAt(point);
     }
 
-    public Set<GridPoint> cubePoints() {
+    Set<GridPoint> cubePoints() {
         return projectionIndex.cubePoints();
     }
 

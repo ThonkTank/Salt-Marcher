@@ -222,14 +222,14 @@ public final class CorridorTool implements EditorTool {
         }
         if (hit instanceof DungeonSelectionRef.CorridorNodeRef corridorNodeHit
                 && corridorNodeHit.corridorId() != null
-                && corridorNodeHit.nodeId() != null) {
-            deleteCorridorNode(corridorNodeHit.corridorId(), corridorNodeHit.nodeId());
+                && corridorNodeHit.waypointId() != null) {
+            deleteCorridorNode(corridorNodeHit.corridorId(), corridorNodeHit.waypointId());
             return true;
         }
         if (hit instanceof DungeonSelectionRef.CorridorSegmentRef corridorSegmentHit
                 && corridorSegmentHit.corridorId() != null
-                && corridorSegmentHit.segmentId() != null) {
-            deleteCorridorSegment(corridorSegmentHit.corridorId(), corridorSegmentHit.segmentId());
+                && corridorSegmentHit.memberId() != null) {
+            deleteCorridorSegment(corridorSegmentHit.corridorId(), corridorSegmentHit.memberId(), corridorSegmentHit.segmentOrdinal());
             return true;
         }
         return false;
@@ -283,9 +283,9 @@ public final class CorridorTool implements EditorTool {
                 throwable -> UiErrorReporter.reportBackgroundFailure("CorridorTool.attachDoorToBoundary()", throwable));
     }
 
-    private void deleteCorridorNode(Long corridorId, Long nodeId) {
+    private void deleteCorridorNode(Long corridorId, Long waypointId) {
         Long mapId = mapState.activeMapId();
-        if (mapId == null || corridorId == null || nodeId == null) {
+        if (mapId == null || corridorId == null || waypointId == null) {
             return;
         }
         loadingService.submitMutation(
@@ -293,7 +293,7 @@ public final class CorridorTool implements EditorTool {
                     corridorApplicationService.deleteNode(new DungeonCorridorApplicationService.DeleteCorridorNodeRequest(
                             mapId,
                             corridorId,
-                            nodeId));
+                            waypointId));
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,
@@ -301,9 +301,9 @@ public final class CorridorTool implements EditorTool {
                 throwable -> UiErrorReporter.reportBackgroundFailure("CorridorTool.deleteCorridorNode()", throwable));
     }
 
-    private void deleteCorridorSegment(Long corridorId, Long segmentId) {
+    private void deleteCorridorSegment(Long corridorId, Long memberId, int segmentOrdinal) {
         Long mapId = mapState.activeMapId();
-        if (mapId == null || corridorId == null || segmentId == null) {
+        if (mapId == null || corridorId == null || memberId == null || segmentOrdinal < 0) {
             return;
         }
         loadingService.submitMutation(
@@ -311,7 +311,8 @@ public final class CorridorTool implements EditorTool {
                     corridorApplicationService.deleteSegment(new DungeonCorridorApplicationService.DeleteCorridorSegmentRequest(
                             mapId,
                             corridorId,
-                            segmentId));
+                            memberId,
+                            segmentOrdinal));
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,

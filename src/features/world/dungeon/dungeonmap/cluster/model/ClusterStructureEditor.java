@@ -419,11 +419,12 @@ public final class ClusterStructureEditor {
             }
             List<Wall> levelWalls = wallsByLevel == null ? List.of() : wallsByLevel.getOrDefault(levelZ, List.of());
             List<Door> levelDoors = doorsByLevel == null ? List.of() : doorsByLevel.getOrDefault(levelZ, List.of());
+            features.world.dungeon.geometry.GridArea levelArea = features.world.dungeon.geometry.GridArea.of(levelCells);
             StructureBoundary boundary = previousCellsByLevel == null
-                    ? StructureBoundary.fromSurfaceAndFeatures(levelCells, levelDoors, levelWalls)
+                    ? StructureBoundary.fromSurfaceAndFeatures(levelArea, levelDoors, levelWalls)
                     : StructureBoundary.rewrittenForSurface(
-                    previousCellsByLevel.getOrDefault(levelZ, Set.of()),
-                    levelCells,
+                    features.world.dungeon.geometry.GridArea.of(previousCellsByLevel.getOrDefault(levelZ, Set.of())),
+                    levelArea,
                     levelDoors,
                     levelWalls);
             levelsByZ.put(levelZ, new StructureSpecification.LevelSpecification(
@@ -537,7 +538,15 @@ public final class ClusterStructureEditor {
         if (start == null || end == null) {
             return Integer.MAX_VALUE;
         }
-        return Math.abs(start.cellX() - end.cellX()) + Math.abs(start.cellY() - end.cellY());
+        return Math.abs(cellX(start) - cellX(end)) + Math.abs(cellY(start) - cellY(end));
+    }
+
+    private static int cellX(GridPoint point) {
+        return point.x2() / 2;
+    }
+
+    private static int cellY(GridPoint point) {
+        return point.y2() / 2;
     }
 
     private static Map<Integer, Set<GridPoint>> mutableCellsByLevel(Map<Integer, Set<GridPoint>> source) {

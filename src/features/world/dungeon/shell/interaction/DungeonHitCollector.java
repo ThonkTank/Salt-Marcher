@@ -143,13 +143,13 @@ public final class DungeonHitCollector {
     }
 
     private static double distanceToSegment(GridSegment segment2x, DungeonHitProbe probe) {
-        Point2D start = probe.canvasPointForPoint2x(segment2x.start());
-        Point2D end = probe.canvasPointForPoint2x(segment2x.end());
+        Point2D start = probe.canvasPointForGridPoint(segment2x.start());
+        Point2D end = probe.canvasPointForGridPoint(segment2x.end());
         return distanceToSegment(probe.canvasPoint(), start, end);
     }
 
     private static double distanceToPoint(GridPoint point2x, DungeonHitProbe probe) {
-        return probe.canvasPoint().distance(probe.canvasPointForPoint2x(point2x));
+        return probe.canvasPoint().distance(probe.canvasPointForGridPoint(point2x));
     }
 
     private record SurfaceMatch(DungeonHitSurface surface, double distancePx) {

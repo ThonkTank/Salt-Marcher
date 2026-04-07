@@ -5,8 +5,8 @@ import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.dungeonmap.corridor.model.Corridor;
-import features.world.dungeon.dungeonmap.corridor.model.CorridorNode;
 import features.world.dungeon.dungeonmap.corridor.model.CorridorPathTrace;
+import features.world.dungeon.dungeonmap.corridor.model.CorridorWaypoint;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,10 +34,10 @@ public final class DungeonCorridorGraphHitSource implements DungeonHitSource {
 
     private static List<DungeonHitDescriptor> nodeDescriptors(Corridor corridor, int levelZ) {
         ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
-        for (CorridorNode node : corridor.persistedManualNodes()) {
+        for (CorridorWaypoint waypoint : corridor.waypoints()) {
             descriptors.add(new DungeonHitDescriptor(
-                    new DungeonSelectionRef.CorridorNodeRef(corridor.corridorId(), node.nodeId(), node.point()),
-                    List.of(new DungeonHitSurface.PointSurface(Set.of(node.point()), levelZ))));
+                    new DungeonSelectionRef.CorridorNodeRef(corridor.corridorId(), waypoint.waypointId(), waypoint.point()),
+                    List.of(new DungeonHitSurface.PointSurface(Set.of(waypoint.point()), levelZ))));
         }
         return List.copyOf(descriptors);
     }
@@ -45,7 +45,7 @@ public final class DungeonCorridorGraphHitSource implements DungeonHitSource {
     private static List<DungeonHitDescriptor> segmentDescriptors(Corridor corridor, int levelZ) {
         ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
         for (CorridorPathTrace trace : corridor.pathTraces()) {
-            if (trace.traceId() == null || trace.path().isEmpty()) {
+            if (trace.path().isEmpty()) {
                 continue;
             }
             Set<GridSegment> segments2x = Set.copyOf(trace.segments());
@@ -55,7 +55,8 @@ public final class DungeonCorridorGraphHitSource implements DungeonHitSource {
             descriptors.add(new DungeonHitDescriptor(
                     new DungeonSelectionRef.CorridorSegmentRef(
                             corridor.corridorId(),
-                            trace.traceId(),
+                            trace.memberId(),
+                            trace.segmentOrdinal(),
                             trace.canonicalPoint()),
                     List.of(new DungeonHitSurface.SegmentSurface(segments2x, levelZ))));
         }

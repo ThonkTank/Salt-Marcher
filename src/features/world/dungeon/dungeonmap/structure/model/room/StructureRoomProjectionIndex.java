@@ -192,7 +192,7 @@ final class StructureRoomProjectionIndex {
     }
 
     Room roomAt(GridPoint cell, int levelZ) {
-        return cell == null ? null : roomsByPoint.get(GridPoint.cell(cell.cellX(), cell.cellY(), levelZ));
+        return cell == null ? null : roomsByPoint.get(GridPoint.cell(cell.x2() / 2, cell.y2() / 2, levelZ));
     }
 
     Room roomAt(GridPoint point) {
@@ -281,7 +281,7 @@ final class StructureRoomProjectionIndex {
                     continue;
                 }
                 for (GridPoint cell : entry.getValue()) {
-                    GridPoint point = GridPoint.cell(cell.cellX(), cell.cellY(), levelZ);
+                    GridPoint point = GridPoint.cell(cell.x2() / 2, cell.y2() / 2, levelZ);
                     if (result.containsKey(point) && result.get(point) != room) {
                         hasOverlaps = true;
                     }

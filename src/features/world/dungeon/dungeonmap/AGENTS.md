@@ -17,8 +17,8 @@
 
 - `model/DungeonMap` — loaded map snapshot — resolves canonical room, corridor, stair, transition, door, connection, and traversability lookups.
 - `model/CorridorResolutionContextRequest` — typed map-owned corridor-context request — the only public input for `DungeonMap.corridorResolutionInput(...)`.
-- `model/CorridorResolutionRequest`, `model/CorridorRehydrationRequest` — typed map-owned corridor materialization requests — carry authored corridor state into `DungeonMap.resolveCorridor(...)` and `DungeonMap.rehydrateCorridor(...)`.
-- `repository/DungeonMapRepository` — map id plus connection — rehydrates one authoritative `DungeonMap` from persisted owner slices; clusters load from structure plus room metadata, corridors load from structure plus graph metadata.
+- `model/CorridorResolutionRequest`, `model/CorridorRehydrationRequest` — typed map-owned corridor materialization requests — carry authored corridor draft state into `DungeonMap.resolveCorridor(...)` and `DungeonMap.rehydrateCorridor(...)`.
+- `repository/DungeonMapRepository` — map id plus connection — rehydrates one authoritative `DungeonMap` from persisted owner slices; clusters load from structure plus room metadata, corridors load from structure plus corridor draft metadata.
 - `application/DungeonMapLoadResolver` — synchronous selection and repair policy — resolves which map should load or reload next.
 - `application/DungeonMapLoadingService` — async load and post-write reload seam — updates `DungeonMapState` from authoritative reloads.
 - `state/DungeonMapState` — shared map session state for active map, projection level, overlay settings, and loading flags.

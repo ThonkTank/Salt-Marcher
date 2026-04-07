@@ -192,14 +192,14 @@ public final class GridPoint extends GridObject<GridPoint> {
         };
     }
 
-    public int cellX() {
+    int cellX() {
         if (kind() != Kind.CELL) {
             throw new IllegalStateException("GridPoint is not a cell");
         }
         return x2 / 2;
     }
 
-    public int cellY() {
+    int cellY() {
         if (kind() != Kind.CELL) {
             throw new IllegalStateException("GridPoint is not a cell");
         }

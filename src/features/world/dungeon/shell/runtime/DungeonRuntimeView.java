@@ -360,7 +360,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
     }
 
     private static String cellLabel(GridPoint cell, int levelZ) {
-        return cell == null ? "—" : cell.cellX() + ", " + cell.cellY() + ", z=" + levelZ;
+        return cell == null ? "—" : (cell.x2() / 2) + ", " + (cell.y2() / 2) + ", z=" + levelZ;
     }
 
     private static String headingLabel(CardinalDirection heading) {

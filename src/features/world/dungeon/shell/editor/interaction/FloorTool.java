@@ -194,7 +194,7 @@ public final class FloorTool implements EditorTool {
         if (room == null || room.roomId() == null) {
             return null;
         }
-        return new DungeonSelectionRef.RoomCellRef(room.roomId(), GridPoint.cell(gridCell.cellX(), gridCell.cellY(), levelZ));
+        return new DungeonSelectionRef.RoomCellRef(room.roomId(), GridPoint.cell(gridCell.x2() / 2, gridCell.y2() / 2, levelZ));
     }
 
     private static Set<GridPoint> validRoomCells(DungeonMap layout, int levelZ, Set<GridPoint> cells) {

@@ -17,10 +17,10 @@ public record CellWindowDragSession(
         if (startCell == null || endCell == null) {
             return Set.of();
         }
-        int minX = Math.min(startCell.cellX(), endCell.cellX());
-        int maxX = Math.max(startCell.cellX(), endCell.cellX());
-        int minY = Math.min(startCell.cellY(), endCell.cellY());
-        int maxY = Math.max(startCell.cellY(), endCell.cellY());
+        int minX = Math.min(startCell.x2() / 2, endCell.x2() / 2);
+        int maxX = Math.max(startCell.x2() / 2, endCell.x2() / 2);
+        int minY = Math.min(startCell.y2() / 2, endCell.y2() / 2);
+        int maxY = Math.max(startCell.y2() / 2, endCell.y2() / 2);
         LinkedHashSet<GridPoint> cells = new LinkedHashSet<>();
         for (int x = minX; x <= maxX; x++) {
             for (int y = minY; y <= maxY; y++) {

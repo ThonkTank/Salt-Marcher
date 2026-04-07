@@ -239,8 +239,8 @@ public final class DungeonTransitionRepository {
                 GridPoint node = pathNodes.get(index);
                 insert.setLong(1, transitionId);
                 insert.setInt(2, index);
-                insert.setInt(3, node.cellX());
-                insert.setInt(4, node.cellY());
+                insert.setInt(3, node.x2() / 2);
+                insert.setInt(4, node.y2() / 2);
                 insert.setInt(5, node.z());
                 insert.addBatch();
             }
@@ -415,8 +415,8 @@ public final class DungeonTransitionRepository {
                     : stairPlacementSpec;
             ps.setString(startIndex, "STAIR");
             clearDoorPlacement(ps, startIndex + 1);
-            ps.setInt(startIndex + 2, placementSpec.anchorCell().cellX());
-            ps.setInt(startIndex + 3, placementSpec.anchorCell().cellY());
+            ps.setInt(startIndex + 2, placementSpec.anchorCell().x2() / 2);
+            ps.setInt(startIndex + 3, placementSpec.anchorCell().y2() / 2);
             ps.setInt(startIndex + 4, placementSpec.anchorLevelZ());
             ps.setString(startIndex + 5, placementSpec.shapeSpec().kind().name());
             ps.setInt(startIndex + 6, placementSpec.shapeSpec().direction().code());

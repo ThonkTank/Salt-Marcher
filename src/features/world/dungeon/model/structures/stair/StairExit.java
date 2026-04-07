@@ -12,7 +12,7 @@ public record StairExit(
             throw new IllegalArgumentException("Treppenausgänge müssen Zellpunkte sein");
         }
         label = label == null || label.isBlank()
-                ? "Ausgang z=" + cell.z() + " (" + cell.cellX() + "," + cell.cellY() + ")"
+                ? "Ausgang z=" + cell.z() + " (" + (cell.x2() / 2) + "," + (cell.y2() / 2) + ")"
                 : label.trim();
     }
 }

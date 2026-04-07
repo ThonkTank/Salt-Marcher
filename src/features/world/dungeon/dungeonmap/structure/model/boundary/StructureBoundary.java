@@ -5,6 +5,7 @@ import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridBoundary;
 import features.world.dungeon.geometry.GridBounded;
 import features.world.dungeon.geometry.GridSegment;
+import features.world.dungeon.geometry.GridSegmentPath;
 import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridTranslatable;
 import features.world.dungeon.geometry.GridTranslation;
@@ -57,25 +58,25 @@ public final class StructureBoundary implements GridBounded, GridTranslatable<St
     }
 
     public static StructureBoundary fromSurfaceAndFeatures(
-            Collection<GridPoint> surfaceCells,
+            GridArea surfaceArea,
             Collection<Door> doors,
             Collection<Wall> walls
     ) {
-        return rewrittenForSurface(surfaceCells, surfaceCells, doors, walls);
+        return rewrittenForSurface(surfaceArea, surfaceArea, doors, walls);
     }
 
     public static StructureBoundary rewrittenForSurface(
-            Collection<GridPoint> previousSurfaceCells,
-            Collection<GridPoint> surfaceCells,
+            GridArea previousSurfaceArea,
+            GridArea surfaceArea,
             Collection<Door> doors,
             Collection<Wall> walls
     ) {
-        GridArea surfaceShape = GridArea.of(surfaceCells);
+        GridArea surfaceShape = surfaceArea == null ? GridArea.empty() : surfaceArea;
         if (surfaceShape.isEmpty()) {
             return empty();
         }
         Set<GridPoint> normalizedSurfaceCells = surfaceShape.cells();
-        Set<GridPoint> normalizedPreviousSurfaceCells = GridArea.of(previousSurfaceCells).cells();
+        Set<GridPoint> normalizedPreviousSurfaceCells = previousSurfaceArea == null ? Set.of() : previousSurfaceArea.cells();
         return new StructureBoundary(
                 normalizedSurfaceCells,
                 doors,
@@ -83,11 +84,11 @@ public final class StructureBoundary implements GridBounded, GridTranslatable<St
     }
 
     public static StructureBoundary fromPersistenceSnapshot(
-            Collection<GridPoint> surfaceCells,
+            GridArea surfaceArea,
             PersistenceSnapshot snapshot
     ) {
         PersistenceSnapshot resolvedSnapshot = snapshot == null ? emptySnapshot() : snapshot;
-        return fromSurfaceAndFeatures(surfaceCells, resolvedSnapshot.doors(), resolvedSnapshot.walls());
+        return fromSurfaceAndFeatures(surfaceArea, resolvedSnapshot.doors(), resolvedSnapshot.walls());
     }
 
     private StructureBoundary(
@@ -171,36 +172,36 @@ public final class StructureBoundary implements GridBounded, GridTranslatable<St
         return edgeShape.segments();
     }
 
-    public Door doorAtBoundarySegment(GridSegment segment2x) {
-        if (segment2x == null || !boundary().contains(segment2x)) {
+    public Door doorAtBoundarySegment(GridSegment segment) {
+        if (segment == null || !boundary().contains(segment)) {
             return null;
         }
         for (Door door : doors) {
-            if (door != null && door.hasBoundarySegment(segment2x)) {
+            if (door != null && door.hasBoundarySegment(segment)) {
                 return door;
             }
         }
         return null;
     }
 
-    public Wall wallAtBoundarySegment(GridSegment segment2x) {
-        if (segment2x == null || !boundary().contains(segment2x)) {
+    public Wall wallAtBoundarySegment(GridSegment segment) {
+        if (segment == null || !boundary().contains(segment)) {
             return null;
         }
         for (Wall wall : walls) {
-            if (wall != null && wall.hasBoundarySegment(segment2x)) {
+            if (wall != null && wall.hasBoundarySegment(segment)) {
                 return wall;
             }
         }
         return null;
     }
 
-    public boolean isInteriorBoundary(GridSegment segment2x) {
-        return segment2x != null && touchingSurfaceCellCount(surfaceCells, segment2x) == 2L;
+    public boolean isInteriorBoundary(GridSegment segment) {
+        return segment != null && touchingSurfaceCellCount(surfaceCells, segment) == 2L;
     }
 
-    public boolean isExteriorBoundary(GridSegment segment2x) {
-        return segment2x != null && touchingSurfaceCellCount(surfaceCells, segment2x) == 1L;
+    public boolean isExteriorBoundary(GridSegment segment) {
+        return segment != null && touchingSurfaceCellCount(surfaceCells, segment) == 1L;
     }
 
     public boolean touchesBoundaryVertex(GridPoint vertex) {
@@ -208,7 +209,7 @@ public final class StructureBoundary implements GridBounded, GridTranslatable<St
             return false;
         }
         return boundary().segments().stream()
-                .anyMatch(segment2x -> segment2x.start().equals(vertex) || segment2x.end().equals(vertex));
+                .anyMatch(segment -> segment.start().equals(vertex) || segment.end().equals(vertex));
     }
 
     public boolean isEditableWallVertex(GridPoint vertex, boolean deleteMode) {
@@ -219,31 +220,31 @@ public final class StructureBoundary implements GridBounded, GridTranslatable<St
                 ? deletableWallBoundary().segments()
                 : creatableWallBoundary().segments();
         return candidateEdges.stream()
-                .anyMatch(segment2x -> segment2x.start().equals(vertex) || segment2x.end().equals(vertex));
+                .anyMatch(segment -> segment.start().equals(vertex) || segment.end().equals(vertex));
     }
 
-    public List<GridSegment> findCreatableWallPath(GridPoint start, GridPoint goal) {
+    public GridSegmentPath findCreatableWallPath(GridPoint start, GridPoint goal) {
         return shortestEdgePath(start, goal, creatableWallBoundary().segments());
     }
 
-    public List<GridSegment> findDeletableWallPath(GridPoint start, GridPoint goal) {
+    public GridSegmentPath findDeletableWallPath(GridPoint start, GridPoint goal) {
         return shortestEdgePath(start, goal, deletableWallBoundary().segments());
     }
 
     public StructureBoundary withDoors(Collection<Door> doors) {
-        return fromSurfaceAndFeatures(surfaceCells, doors, walls);
+        return fromSurfaceAndFeatures(GridArea.of(surfaceCells), doors, walls);
     }
 
     public StructureBoundary withCreatedWallPath(GridBoundary segments) {
         return fromSurfaceAndFeatures(
-                surfaceCells,
+                GridArea.of(surfaceCells),
                 doors,
                 createdWalls(walls, normalizedBoundaryEdges(creatableWallBoundary().segments(), segments == null ? Set.of() : segments.segments())));
     }
 
     public StructureBoundary withDeletedWallPath(GridBoundary segments) {
         return fromSurfaceAndFeatures(
-                surfaceCells,
+                GridArea.of(surfaceCells),
                 doors,
                 deletedWalls(walls, normalizedBoundaryEdges(deletableWallBoundary().segments(), segments == null ? Set.of() : segments.segments())));
     }
@@ -263,28 +264,28 @@ public final class StructureBoundary implements GridBounded, GridTranslatable<St
      * and replacement semantics without rebuilding them in higher-level workflows.
      */
     public StructureBoundary withMovedDoor(
-            GridSegment sourceBoundarySegment2x,
-            GridSegment targetBoundarySegment2x
+            GridSegment sourceBoundarySegment,
+            GridSegment targetBoundarySegment
     ) {
-        if (Objects.equals(sourceBoundarySegment2x, targetBoundarySegment2x)) {
+        if (Objects.equals(sourceBoundarySegment, targetBoundarySegment)) {
             return this;
         }
-        if (doorAtBoundarySegment(sourceBoundarySegment2x) == null) {
+        if (doorAtBoundarySegment(sourceBoundarySegment) == null) {
             throw new IllegalArgumentException("Door move source must already contain a door");
         }
-        if (doorAtBoundarySegment(targetBoundarySegment2x) != null) {
+        if (doorAtBoundarySegment(targetBoundarySegment) != null) {
             throw new IllegalArgumentException("Door move target is already occupied");
         }
-        Wall targetWall = wallAtBoundarySegment(targetBoundarySegment2x);
-        if (!boundary().contains(targetBoundarySegment2x)
+        Wall targetWall = wallAtBoundarySegment(targetBoundarySegment);
+        if (!boundary().contains(targetBoundarySegment)
                 || targetWall == null
                 || !targetWall.supportsDoorAttachments()) {
             throw new IllegalArgumentException("Door move target must be a valid boundary wall");
         }
-        StructureBoundary withoutSource = withDeletedDoorSegments(GridBoundary.of(List.of(sourceBoundarySegment2x)));
+        StructureBoundary withoutSource = withDeletedDoorSegments(GridBoundary.of(List.of(sourceBoundarySegment)));
         return withoutSource == this
                 ? this
-                : withoutSource.withCreatedDoorSegments(GridBoundary.of(List.of(targetBoundarySegment2x)));
+                : withoutSource.withCreatedDoorSegments(GridBoundary.of(List.of(targetBoundarySegment)));
     }
 
     @Override
@@ -306,7 +307,7 @@ public final class StructureBoundary implements GridBounded, GridTranslatable<St
     }
 
     public StructureBoundary rewrittenToSurface(GridArea surfaceCells) {
-        return rewrittenForSurface(this.surfaceCells, surfaceCells == null ? Set.of() : surfaceCells.cells(), doors, walls);
+        return rewrittenForSurface(GridArea.of(this.surfaceCells), surfaceCells == null ? GridArea.empty() : surfaceCells, doors, walls);
     }
 
     public StructureBoundary clippedToSurface(GridArea clippedSurfaceCells) {
@@ -346,20 +347,20 @@ public final class StructureBoundary implements GridBounded, GridTranslatable<St
                 + ", walls=" + walls + "]";
     }
 
-    private static List<GridSegment> shortestEdgePath(
+    private static GridSegmentPath shortestEdgePath(
             GridPoint start,
             GridPoint goal,
             Collection<GridSegment> traversableEdges
     ) {
         if (start == null || goal == null || traversableEdges == null || traversableEdges.isEmpty()) {
-            return List.of();
+            return GridSegmentPath.empty();
         }
         if (Objects.equals(start, goal)) {
-            return List.of();
+            return GridSegmentPath.empty();
         }
         Map<GridPoint, Set<GridPoint>> adjacency = edgeAdjacency(traversableEdges);
         if (!adjacency.containsKey(start) || !adjacency.containsKey(goal)) {
-            return List.of();
+            return GridSegmentPath.empty();
         }
         ArrayDeque<GridPoint> queue = new ArrayDeque<>();
         Map<GridPoint, GridPoint> previous = new LinkedHashMap<>();
@@ -379,20 +380,20 @@ public final class StructureBoundary implements GridBounded, GridTranslatable<St
             }
         }
         if (!previous.containsKey(goal)) {
-            return List.of();
+            return GridSegmentPath.empty();
         }
         ArrayList<GridSegment> path = new ArrayList<>();
         GridPoint current = goal;
         while (!Objects.equals(current, start)) {
             GridPoint parent = previous.get(current);
             if (parent == null) {
-                return List.of();
+                return GridSegmentPath.empty();
             }
             path.add(new GridSegment(parent, current));
             current = parent;
         }
         Collections.reverse(path);
-        return List.copyOf(path);
+        return GridSegmentPath.of(path);
     }
 
     private static Map<GridPoint, Set<GridPoint>> edgeAdjacency(Collection<GridSegment> edges) {

@@ -304,8 +304,8 @@ public final class DungeonClusterRepository {
             ps.setLong(1, mapId);
             ps.setLong(2, clusterId);
             ps.setString(3, name);
-            ps.setInt(4, primaryAnchor.cellX());
-            ps.setInt(5, primaryAnchor.cellY());
+            ps.setInt(4, primaryAnchor.x2() / 2);
+            ps.setInt(5, primaryAnchor.y2() / 2);
             ps.setInt(6, primaryLevel);
             ps.executeUpdate();
             try (ResultSet rs = ps.getGeneratedKeys()) {
@@ -331,8 +331,8 @@ public final class DungeonClusterRepository {
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE dungeon_rooms SET name=?, component_x=?, component_y=?, level_z=? WHERE room_id=?")) {
             ps.setString(1, name);
-            ps.setInt(2, primaryAnchor.cellX());
-            ps.setInt(3, primaryAnchor.cellY());
+            ps.setInt(2, primaryAnchor.x2() / 2);
+            ps.setInt(3, primaryAnchor.y2() / 2);
             ps.setInt(4, primaryLevel);
             ps.setLong(5, roomId);
             ps.executeUpdate();
@@ -360,8 +360,8 @@ public final class DungeonClusterRepository {
             for (RoomExitNarration exitNarration : resolvedNarration.exitNarrations()) {
                 insert.setLong(1, roomId);
                 insert.setInt(2, exitNarration.levelZ());
-                insert.setInt(3, exitNarration.roomCell().cellX());
-                insert.setInt(4, exitNarration.roomCell().cellY());
+                insert.setInt(3, exitNarration.roomCell().x2() / 2);
+                insert.setInt(4, exitNarration.roomCell().y2() / 2);
                 insert.setString(5, DungeonPersistenceDirections.toPersistedEdgeDirection(exitNarration.direction()));
                 insert.setString(6, exitNarration.description());
                 insert.setInt(7, sortOrder++);

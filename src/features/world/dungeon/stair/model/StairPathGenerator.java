@@ -45,16 +45,16 @@ public final class StairPathGenerator {
         List<GridPoint> relativePath = projectedPath(resolvedSpec, GridPoint.cell(0, 0, 0), stepCount);
         int anchorIndex = anchorLevelZ - minLevelZ;
         GridPoint relativeAnchor = relativePath.get(anchorIndex);
-        int dxCells = anchorCell.cellX() - relativeAnchor.cellX();
-        int dyCells = anchorCell.cellY() - relativeAnchor.cellY();
+        int dxCells = cellX(anchorCell) - cellX(relativeAnchor);
+        int dyCells = cellY(anchorCell) - cellY(relativeAnchor);
         List<GridPoint> planarPath = relativePath.stream()
-                .map(point -> GridPoint.cell(point.cellX() + dxCells, point.cellY() + dyCells, 0))
+                .map(point -> GridPoint.cell(cellX(point) + dxCells, cellY(point) + dyCells, 0))
                 .toList();
         validateEdgeConnectivity(planarPath);
         ArrayList<GridPoint> result = new ArrayList<>(planarPath.size());
         for (int index = 0; index < planarPath.size(); index++) {
             GridPoint point = planarPath.get(index);
-            result.add(GridPoint.cell(point.cellX(), point.cellY(), minLevelZ + index));
+            result.add(GridPoint.cell(cellX(point), cellY(point), minLevelZ + index));
         }
         return GridPath.of(result);
     }
@@ -144,8 +144,8 @@ public final class StairPathGenerator {
         return ringPoints.stream()
                 .sorted(Comparator
                         .comparingDouble((GridPoint point) -> normalizedAngle(anchor, point))
-                        .thenComparingInt(GridPoint::cellY)
-                        .thenComparingInt(GridPoint::cellX))
+                        .thenComparingInt(StairPathGenerator::cellY)
+                        .thenComparingInt(StairPathGenerator::cellX))
                 .toList();
     }
 
@@ -168,18 +168,18 @@ public final class StairPathGenerator {
     }
 
     private static void addCircleOctants(Set<GridPoint> target, GridPoint anchor, int x, int y) {
-        target.add(GridPoint.cell(anchor.cellX() + x, anchor.cellY() + y, anchor.z()));
-        target.add(GridPoint.cell(anchor.cellX() + y, anchor.cellY() + x, anchor.z()));
-        target.add(GridPoint.cell(anchor.cellX() - y, anchor.cellY() + x, anchor.z()));
-        target.add(GridPoint.cell(anchor.cellX() - x, anchor.cellY() + y, anchor.z()));
-        target.add(GridPoint.cell(anchor.cellX() - x, anchor.cellY() - y, anchor.z()));
-        target.add(GridPoint.cell(anchor.cellX() - y, anchor.cellY() - x, anchor.z()));
-        target.add(GridPoint.cell(anchor.cellX() + y, anchor.cellY() - x, anchor.z()));
-        target.add(GridPoint.cell(anchor.cellX() + x, anchor.cellY() - y, anchor.z()));
+        target.add(GridPoint.cell(cellX(anchor) + x, cellY(anchor) + y, anchor.z()));
+        target.add(GridPoint.cell(cellX(anchor) + y, cellY(anchor) + x, anchor.z()));
+        target.add(GridPoint.cell(cellX(anchor) - y, cellY(anchor) + x, anchor.z()));
+        target.add(GridPoint.cell(cellX(anchor) - x, cellY(anchor) + y, anchor.z()));
+        target.add(GridPoint.cell(cellX(anchor) - x, cellY(anchor) - y, anchor.z()));
+        target.add(GridPoint.cell(cellX(anchor) - y, cellY(anchor) - x, anchor.z()));
+        target.add(GridPoint.cell(cellX(anchor) + y, cellY(anchor) - x, anchor.z()));
+        target.add(GridPoint.cell(cellX(anchor) + x, cellY(anchor) - y, anchor.z()));
     }
 
     private static double normalizedAngle(GridPoint anchor, GridPoint point) {
-        double angle = Math.atan2(point.cellY() - anchor.cellY(), point.cellX() - anchor.cellX());
+        double angle = Math.atan2(cellY(point) - cellY(anchor), cellX(point) - cellX(anchor));
         return angle < 0 ? angle + Math.PI * 2.0 : angle;
     }
 
@@ -198,13 +198,21 @@ public final class StairPathGenerator {
         GridPoint previous = null;
         for (GridPoint current : points) {
             if (previous != null) {
-                int distance = Math.abs(previous.cellX() - current.cellX())
-                        + Math.abs(previous.cellY() - current.cellY());
+                int distance = Math.abs(cellX(previous) - cellX(current))
+                        + Math.abs(cellY(previous) - cellY(current));
                 if (distance > 1) {
                     throw new IllegalArgumentException("Treppenpfad verletzt die 1:1-Steigung");
                 }
             }
             previous = current;
         }
+    }
+
+    private static int cellX(GridPoint point) {
+        return point.x2() / 2;
+    }
+
+    private static int cellY(GridPoint point) {
+        return point.y2() / 2;
     }
 }

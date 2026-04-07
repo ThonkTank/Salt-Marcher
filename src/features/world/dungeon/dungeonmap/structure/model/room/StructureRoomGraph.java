@@ -151,7 +151,7 @@ final class StructureRoomGraph {
         }
         List<Room> touchingRooms = new ArrayList<>();
         for (GridPoint cell : door.cellFootprint().cells().stream().sorted(GridPoint.ORDER).toList()) {
-            Room room = roomsByPoint.get(GridPoint.cell(cell.cellX(), cell.cellY(), levelZ));
+            Room room = roomsByPoint.get(GridPoint.cell(cell.x2() / 2, cell.y2() / 2, levelZ));
             if (room != null && !touchingRooms.contains(room)) {
                 touchingRooms.add(room);
             }
@@ -207,8 +207,8 @@ final class StructureRoomGraph {
                 for (GridPoint cell : levelEntry.getValue()) {
                     for (CardinalDirection direction : CardinalDirection.values()) {
                         Room neighbor = roomsByPoint.get(GridPoint.cell(
-                                cell.cellX() + direction.dxCells(),
-                                cell.cellY() + direction.dyCells(),
+                                cell.x2() / 2 + direction.dxCells(),
+                                cell.y2() / 2 + direction.dyCells(),
                                 levelZ));
                         if (neighbor == null || neighbor.roomId() == null || neighbor.roomId().equals(room.roomId())) {
                             continue;

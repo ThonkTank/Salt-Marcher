@@ -146,8 +146,8 @@ public final class DungeonStairRepository {
                         + "shape_kind=?, shape_direction_code=?, shape_param1=?, shape_param2=?, min_level_z=?, max_level_z=? "
                         + "WHERE stair_id=?")) {
             ps.setString(1, resolvedStair.name());
-            ps.setInt(2, resolvedEditorData.anchorCell().cellX());
-            ps.setInt(3, resolvedEditorData.anchorCell().cellY());
+            ps.setInt(2, resolvedEditorData.anchorCell().x2() / 2);
+            ps.setInt(3, resolvedEditorData.anchorCell().y2() / 2);
             ps.setInt(4, resolvedEditorData.anchorLevelZ());
             ps.setString(5, resolvedEditorData.shapeSpec().kind().name());
             ps.setInt(6, resolvedEditorData.shapeSpec().direction().code());
@@ -173,8 +173,8 @@ public final class DungeonStairRepository {
                 GridPoint node = pathNodes.get(index);
                 insert.setLong(1, stairId);
                 insert.setInt(2, index);
-                insert.setInt(3, node.cellX());
-                insert.setInt(4, node.cellY());
+                insert.setInt(3, node.x2() / 2);
+                insert.setInt(4, node.y2() / 2);
                 insert.setInt(5, node.z());
                 insert.addBatch();
             }
@@ -218,8 +218,8 @@ public final class DungeonStairRepository {
     ) throws SQLException {
         ps.setLong(1, mapId);
         ps.setString(2, stair.name());
-        ps.setInt(3, editorData.anchorCell().cellX());
-        ps.setInt(4, editorData.anchorCell().cellY());
+        ps.setInt(3, editorData.anchorCell().x2() / 2);
+        ps.setInt(4, editorData.anchorCell().y2() / 2);
         ps.setInt(5, editorData.anchorLevelZ());
         ps.setString(6, editorData.shapeSpec().kind().name());
         ps.setInt(7, editorData.shapeSpec().direction().code());

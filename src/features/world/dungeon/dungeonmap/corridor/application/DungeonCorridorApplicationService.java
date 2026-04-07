@@ -2,26 +2,22 @@ package features.world.dungeon.dungeonmap.corridor.application;
 
 import database.DatabaseManager;
 import features.world.dungeon.application.support.DungeonTransactionRunner;
-import features.world.dungeon.dungeonmap.model.DungeonMap;
+import features.world.dungeon.dungeonmap.corridor.model.Corridor;
+import features.world.dungeon.dungeonmap.corridor.model.CorridorDraft;
+import features.world.dungeon.dungeonmap.corridor.model.CorridorMember;
+import features.world.dungeon.dungeonmap.corridor.model.CorridorMutation;
+import features.world.dungeon.dungeonmap.corridor.model.CorridorTerminal;
 import features.world.dungeon.dungeonmap.model.CorridorResolutionContextRequest;
 import features.world.dungeon.dungeonmap.model.CorridorResolutionRequest;
+import features.world.dungeon.dungeonmap.model.DungeonMap;
+import features.world.dungeon.dungeonmap.repository.DungeonMapRepository;
+import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
+import features.world.dungeon.dungeonmap.corridor.repository.DungeonCorridorRepository;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
-import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
-import features.world.dungeon.dungeonmap.cluster.model.Cluster;
-import features.world.dungeon.dungeonmap.corridor.model.Corridor;
-import features.world.dungeon.dungeonmap.corridor.model.CorridorMutation;
-import features.world.dungeon.dungeonmap.corridor.model.CorridorNode;
-import features.world.dungeon.dungeonmap.corridor.model.CorridorSegment;
-import features.world.dungeon.dungeonmap.corridor.model.CorridorSpecification;
-import features.world.dungeon.dungeonmap.corridor.model.CorridorTopologyMutation;
-import features.world.dungeon.dungeonmap.corridor.repository.DungeonCorridorRepository;
-import features.world.dungeon.dungeonmap.repository.DungeonMapRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
@@ -46,16 +42,17 @@ public final class DungeonCorridorApplicationService {
         try (Connection conn = DatabaseManager.getConnection()) {
             return DungeonTransactionRunner.inTransaction(conn, () -> {
                 DungeonMap layout = requireLayout(conn, resolvedRequest.mapId());
-                CorridorNode startNode = roomBoundaryNode(layout, resolvedRequest.levelZ(), -1L, resolvedRequest.start());
-                CorridorNode endNode = roomBoundaryNode(layout, resolvedRequest.levelZ(), -2L, resolvedRequest.end());
+                requiredExistingExteriorDoor(layout, resolvedRequest.levelZ(), resolvedRequest.start());
+                requiredExistingExteriorDoor(layout, resolvedRequest.levelZ(), resolvedRequest.end());
                 Corridor corridor = layout.resolveCorridor(new CorridorResolutionRequest(
-                        new CorridorSpecification(
+                        new CorridorDraft(
                                 null,
                                 null,
                                 layout.mapId(),
                                 resolvedRequest.levelZ(),
-                                List.of(startNode, endNode),
-                                List.of(new CorridorSegment(-1L, startNode.nodeId(), endNode.nodeId()))),
+                                new CorridorTerminal.DoorTerminal(resolvedRequest.start()),
+                                List.of(new CorridorMember(-1L, new CorridorTerminal.DoorTerminal(resolvedRequest.end()), null, null)),
+                                List.of()),
                         List.of()));
                 Corridor persisted = corridorRepository.save(conn, corridor, layout);
                 if (persisted.corridorId() == null) {
@@ -119,16 +116,16 @@ public final class DungeonCorridorApplicationService {
         MoveCorridorNodeRequest resolvedRequest = Objects.requireNonNull(request, "request");
         if (resolvedRequest.mapId() <= 0
                 || resolvedRequest.corridorId() <= 0
-                || resolvedRequest.nodeId() <= 0
+                || resolvedRequest.waypointId() == null
                 || resolvedRequest.point() == null) {
-            throw new IllegalArgumentException("Corridor node move requires mapId, corridorId, nodeId, and point");
+            throw new IllegalArgumentException("Corridor waypoint move requires mapId, corridorId, waypointId, and point");
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
                 DungeonMap layout = requireLayout(conn, resolvedRequest.mapId());
                 Corridor corridor = requireCorridor(layout, resolvedRequest.corridorId());
                 Corridor updated = corridor.mutated(
-                        new CorridorMutation.NodeMove(resolvedRequest.nodeId(), resolvedRequest.point()),
+                        new CorridorMutation.NodeMove(resolvedRequest.waypointId(), resolvedRequest.point()),
                         layout.corridorResolutionInput(CorridorResolutionContextRequest.forCorridor(corridor)));
                 if (updated != corridor) {
                     corridorRepository.save(conn, updated, layout);
@@ -170,36 +167,36 @@ public final class DungeonCorridorApplicationService {
 
     public void deleteSegment(DeleteCorridorSegmentRequest request) throws SQLException {
         DeleteCorridorSegmentRequest resolvedRequest = Objects.requireNonNull(request, "request");
-        if (resolvedRequest.mapId() <= 0 || resolvedRequest.corridorId() <= 0 || resolvedRequest.segmentId() <= 0) {
-            throw new IllegalArgumentException("Corridor segment delete requires mapId, corridorId, and segmentId");
+        if (resolvedRequest.mapId() <= 0 || resolvedRequest.corridorId() <= 0 || resolvedRequest.memberId() == null || resolvedRequest.segmentOrdinal() < 0) {
+            throw new IllegalArgumentException("Corridor segment delete requires mapId, corridorId, memberId, and segmentOrdinal");
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
                 DungeonMap layout = requireLayout(conn, resolvedRequest.mapId());
                 Corridor corridor = requireCorridor(layout, resolvedRequest.corridorId());
-                persistTopologyUpdate(
-                        conn,
-                        layout,
+                CorridorDraftPlan plan = CorridorDraftPlanner.plan(
                         corridor,
-                        corridor.topologyUpdated(new CorridorTopologyMutation.DeleteSegment(resolvedRequest.segmentId())));
+                        new CorridorTopologyEdit.DeleteSegment(resolvedRequest.memberId(), resolvedRequest.segmentOrdinal()),
+                        layout.corridorResolutionInput(CorridorResolutionContextRequest.forCorridor(corridor)));
+                persistDraftPlan(conn, layout, corridor, plan);
             });
         }
     }
 
     public void deleteNode(DeleteCorridorNodeRequest request) throws SQLException {
         DeleteCorridorNodeRequest resolvedRequest = Objects.requireNonNull(request, "request");
-        if (resolvedRequest.mapId() <= 0 || resolvedRequest.corridorId() <= 0 || resolvedRequest.nodeId() <= 0) {
-            throw new IllegalArgumentException("Corridor node delete requires mapId, corridorId, and nodeId");
+        if (resolvedRequest.mapId() <= 0 || resolvedRequest.corridorId() <= 0 || resolvedRequest.waypointId() == null) {
+            throw new IllegalArgumentException("Corridor waypoint delete requires mapId, corridorId, and waypointId");
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
                 DungeonMap layout = requireLayout(conn, resolvedRequest.mapId());
                 Corridor corridor = requireCorridor(layout, resolvedRequest.corridorId());
-                persistTopologyUpdate(
-                        conn,
-                        layout,
+                CorridorDraftPlan plan = CorridorDraftPlanner.plan(
                         corridor,
-                        corridor.topologyUpdated(new CorridorTopologyMutation.DeleteNode(resolvedRequest.nodeId())));
+                        new CorridorTopologyEdit.DeleteWaypoint(resolvedRequest.waypointId()),
+                        layout.corridorResolutionInput(CorridorResolutionContextRequest.forCorridor(corridor)));
+                persistDraftPlan(conn, layout, corridor, plan);
             });
         }
     }
@@ -215,58 +212,39 @@ public final class DungeonCorridorApplicationService {
             DungeonTransactionRunner.inTransaction(conn, () -> {
                 DungeonMap layout = requireLayout(conn, resolvedRequest.mapId());
                 Corridor corridor = requireCorridor(layout, resolvedRequest.corridorId());
-                persistTopologyUpdate(
-                        conn,
-                        layout,
+                CorridorDraftPlan plan = CorridorDraftPlanner.plan(
                         corridor,
-                        corridor.topologyUpdated(new CorridorTopologyMutation.DeleteDoor(resolvedRequest.boundarySegment())));
+                        new CorridorTopologyEdit.DeleteDoor(resolvedRequest.boundarySegment()),
+                        layout.corridorResolutionInput(CorridorResolutionContextRequest.forCorridor(corridor)));
+                persistDraftPlan(conn, layout, corridor, plan);
             });
         }
     }
 
-    private void persistTopologyUpdate(
+    private void persistDraftPlan(
             Connection conn,
             DungeonMap layout,
             Corridor originalCorridor,
-            Corridor.CorridorTopologyUpdate update
+            CorridorDraftPlan plan
     ) throws SQLException {
-        if (conn == null || layout == null || originalCorridor == null || !update.changed() || originalCorridor.corridorId() == null) {
+        if (conn == null || layout == null || originalCorridor == null || !plan.changed() || originalCorridor.corridorId() == null) {
             return;
         }
-        if (update.components().isEmpty()) {
+        if (plan.requests().isEmpty()) {
             corridorRepository.delete(conn, originalCorridor.corridorId());
             return;
         }
         DungeonMap workingLayout = layout;
-        ArrayList<Corridor.CorridorComponent> components = new ArrayList<>(update.components());
-        components.sort(Comparator
-                .comparingInt((Corridor.CorridorComponent component) -> component.segments().size())
-                .thenComparingInt(component -> component.nodes().size())
-                .reversed());
-        Corridor.CorridorComponent primaryComponent = components.removeFirst();
-        Corridor primaryCorridor = workingLayout.resolveCorridor(new CorridorResolutionRequest(
-                new CorridorSpecification(
-                        originalCorridor.corridorId(),
-                        originalCorridor.structureObjectId(),
-                        workingLayout.mapId(),
-                        originalCorridor.levelZ(),
-                        primaryComponent.nodes(),
-                        primaryComponent.segments()),
-                primaryComponent.doors()));
-        Corridor persistedPrimary = corridorRepository.save(conn, primaryCorridor, workingLayout);
-        workingLayout = workingLayout.withUpdatedCorridor(persistedPrimary);
-        for (Corridor.CorridorComponent component : components) {
-            Corridor splitCorridor = workingLayout.resolveCorridor(new CorridorResolutionRequest(
-                    new CorridorSpecification(
-                            null,
-                            null,
-                            workingLayout.mapId(),
-                            originalCorridor.levelZ(),
-                            component.nodes(),
-                            component.segments()),
-                    component.doors()));
-            Corridor persistedSplit = corridorRepository.save(conn, splitCorridor, workingLayout);
-            workingLayout = workingLayout.withAddedCorridor(persistedSplit);
+        boolean first = true;
+        for (CorridorResolutionRequest request : plan.requests()) {
+            Corridor resolved = workingLayout.resolveCorridor(request);
+            Corridor persisted = corridorRepository.save(conn, resolved, workingLayout);
+            if (first) {
+                workingLayout = workingLayout.withUpdatedCorridor(persisted);
+                first = false;
+            } else {
+                workingLayout = workingLayout.withAddedCorridor(persisted);
+            }
         }
     }
 
@@ -304,14 +282,6 @@ public final class DungeonCorridorApplicationService {
         return corridor;
     }
 
-    private static CorridorNode roomBoundaryNode(DungeonMap layout, int levelZ, long nodeId, DoorRef doorRef) {
-        DungeonMap.DoorDescription description = requiredExistingExteriorDoor(layout, levelZ, doorRef);
-        return new CorridorNode(
-                nodeId,
-                description.anchorSegment().midpoint(),
-                description.ref());
-    }
-
     public record CreateDoorToDoorRequest(
             long mapId,
             int levelZ,
@@ -337,7 +307,7 @@ public final class DungeonCorridorApplicationService {
     ) {
     }
 
-    public record MoveCorridorNodeRequest(long mapId, long corridorId, long nodeId, GridPoint point) {
+    public record MoveCorridorNodeRequest(long mapId, long corridorId, Long waypointId, GridPoint point) {
     }
 
     public record MoveCorridorDoorRequest(
@@ -348,10 +318,10 @@ public final class DungeonCorridorApplicationService {
     ) {
     }
 
-    public record DeleteCorridorSegmentRequest(long mapId, long corridorId, long segmentId) {
+    public record DeleteCorridorSegmentRequest(long mapId, long corridorId, Long memberId, int segmentOrdinal) {
     }
 
-    public record DeleteCorridorNodeRequest(long mapId, long corridorId, long nodeId) {
+    public record DeleteCorridorNodeRequest(long mapId, long corridorId, Long waypointId) {
     }
 
     public record DeleteCorridorDoorRequest(long mapId, long corridorId, GridSegment boundarySegment) {

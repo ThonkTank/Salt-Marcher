@@ -26,9 +26,11 @@ public record GridTranslation(
         if (startCell == null || endCell == null) {
             return none();
         }
+        requireCell(startCell, "startCell");
+        requireCell(endCell, "endCell");
         return new GridTranslation(
-                endCell.cellX() - startCell.cellX(),
-                endCell.cellY() - startCell.cellY(),
+                (endCell.x2() - startCell.x2()) / 2,
+                (endCell.y2() - startCell.y2()) / 2,
                 endCell.z() - startCell.z());
     }
 
@@ -42,5 +44,11 @@ public record GridTranslation(
 
     public boolean isZero() {
         return dxCells == 0 && dyCells == 0 && dzLevels == 0;
+    }
+
+    private static void requireCell(GridPoint point, String name) {
+        if (point.kind() != GridPoint.Kind.CELL) {
+            throw new IllegalArgumentException(name + " must be a cell");
+        }
     }
 }

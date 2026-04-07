@@ -292,8 +292,8 @@ public final class DungeonRuntimeApplicationService {
         return new DungeonTilePosition(
                 snapshot.mapId(),
                 snapshot.levelZ(),
-                snapshot.cell().cellX(),
-                snapshot.cell().cellY(),
+                snapshot.cell().x2() / 2,
+                snapshot.cell().y2() / 2,
                 normalizeHeading(snapshot.heading()).name());
     }
 

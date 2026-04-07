@@ -177,11 +177,12 @@ public final class DungeonSelectionHighlightResolver {
             int levelZ
     ) {
         Corridor corridor = layout.corridor(corridorSegmentRef);
-        if (corridor == null || corridorSegmentRef.segmentId() == null) {
+        if (corridor == null || corridorSegmentRef.memberId() == null || corridorSegmentRef.segmentOrdinal() < 0) {
             return List.of();
         }
         return corridor.pathTraces().stream()
-                .filter(trace -> Objects.equals(trace.traceId(), corridorSegmentRef.segmentId()))
+                .filter(trace -> Objects.equals(trace.memberId(), corridorSegmentRef.memberId())
+                        && trace.segmentOrdinal() == corridorSegmentRef.segmentOrdinal())
                 .findFirst()
                 .map(trace -> List.<DungeonHitSurface>of(
                         new DungeonHitSurface.SegmentSurface(Set.copyOf(trace.segments()), levelZ)))

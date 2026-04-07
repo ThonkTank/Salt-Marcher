@@ -316,7 +316,7 @@ public final class DungeonMap {
             GridPoint preferred = roomStructure(defaultRoom).surfaceAtLevel(levelZ).center();
             GridPoint resolved = nearestTraversableCell(preferred, levelZ);
             if (resolved != null) {
-                return resolved == null ? null : GridPoint.cell(resolved.cellX(), resolved.cellY(), levelZ);
+                return GridPoint.cell(cellX(resolved), cellY(resolved), levelZ);
             }
         }
         for (int levelZ : reachableLevels) {
@@ -325,7 +325,7 @@ public final class DungeonMap {
                     .findFirst()
                     .orElse(null);
             if (fallback != null) {
-                return fallback == null ? null : GridPoint.cell(fallback.cellX(), fallback.cellY(), levelZ);
+                return GridPoint.cell(cellX(fallback), cellY(fallback), levelZ);
             }
         }
         return null;
@@ -839,7 +839,7 @@ public final class DungeonMap {
         return transition == null ? null : new CellStructure.TransitionStructure(transition);
     }
 
-    public Set<GridPoint> traversableCells() {
+    Set<GridPoint> traversableCells() {
         return traversableCells;
     }
 
@@ -857,7 +857,7 @@ public final class DungeonMap {
         }
         return traversableCells.stream()
                 .min(Comparator
-                        .comparingInt((GridPoint candidate) -> Math.abs(candidate.cellX() - cell.cellX()) + Math.abs(candidate.cellY() - cell.cellY()))
+                        .comparingInt((GridPoint candidate) -> Math.abs(cellX(candidate) - cellX(cell)) + Math.abs(cellY(candidate) - cellY(cell)))
                         .thenComparing(GridPoint.ORDER))
                 .orElse(null);
     }
@@ -869,7 +869,7 @@ public final class DungeonMap {
         }
         return candidates.stream()
                 .min(Comparator
-                        .comparingInt((GridPoint candidate) -> Math.abs(candidate.cellX() - cell.cellX()) + Math.abs(candidate.cellY() - cell.cellY()))
+                        .comparingInt((GridPoint candidate) -> Math.abs(cellX(candidate) - cellX(cell)) + Math.abs(cellY(candidate) - cellY(cell)))
                         .thenComparing(GridPoint.ORDER))
                 .orElse(null);
     }
@@ -2101,6 +2101,14 @@ public final class DungeonMap {
             result.put(levelEntry.getKey(), Map.copyOf(perCell));
         }
         return Map.copyOf(result);
+    }
+
+    private static int cellX(GridPoint point) {
+        return point.x2() / 2;
+    }
+
+    private static int cellY(GridPoint point) {
+        return point.y2() / 2;
     }
 
     private record ConnectionSegmentKey(int levelZ, GridSegment segment2x) {

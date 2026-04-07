@@ -56,8 +56,8 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
                     new DungeonSelectionRef.CorridorTileRef(
                             corridor.corridorId(),
                             features.world.dungeon.geometry.GridPoint.cell(
-                                    probe.gridCell().cellX(),
-                                    probe.gridCell().cellY(),
+                                    probe.gridCell().x2() / 2,
+                                    probe.gridCell().y2() / 2,
                                     probe.levelZ()),
                             probe.gridCell()),
                     List.of(new DungeonHitSurface.CellSurface(Set.of(probe.gridCell()), probe.levelZ()))));

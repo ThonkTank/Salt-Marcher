@@ -6,6 +6,7 @@ import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
+import features.world.dungeon.geometry.GridSegmentPath;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.dungeonmap.cluster.model.Cluster;
 import features.world.dungeon.shell.editor.EditorCards;
@@ -168,10 +169,10 @@ public final class BoundaryTool implements EditorTool {
             return true;
         }
 
-        Cluster.BoundaryPath result = deleteMode
+        GridSegmentPath result = deleteMode
                 ? cluster.findDeleteWallPath(draft.currentVertex(), vertex)
                 : cluster.findCreateWallPath(draft.currentVertex(), vertex);
-        if (!result.hasRoute()) {
+        if (result.isEmpty()) {
             showDraft(new Draft(
                     draft.clusterId(),
                     draft.deleteMode(),
@@ -185,7 +186,7 @@ public final class BoundaryTool implements EditorTool {
         }
 
         Set<GridSegment> nextPreview = new LinkedHashSet<>(draft.previewEdges());
-        nextPreview.addAll(result.committedEdges());
+        nextPreview.addAll(result.boundary().segments());
         showDraft(new Draft(
                 draft.clusterId(),
                 draft.deleteMode(),

@@ -143,7 +143,7 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
         DungeonHitProbe probe = new DungeonHitProbe(
                 event.canvasPoint(),
                 event.gridCell(),
-                DungeonHitProbe.point2xForCanvas(event.canvasPoint(), camera.panX(), camera.panY(), gridSize),
+                DungeonHitProbe.gridPointForCanvas(event.canvasPoint(), camera.panX(), camera.panY(), gridSize),
                 mapState.activeProjectionLevel(),
                 camera.panX(),
                 camera.panY(),

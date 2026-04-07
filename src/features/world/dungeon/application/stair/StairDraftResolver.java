@@ -104,8 +104,8 @@ public final class StairDraftResolver {
         return new DungeonStairApplicationService.StairDraft(
                 resolvedDraft.name(),
                 GridPoint.cell(
-                        resolvedDraft.anchorCell().cellX() + resolvedTranslation.dxCells(),
-                        resolvedDraft.anchorCell().cellY() + resolvedTranslation.dyCells(),
+                        resolvedDraft.anchorCell().x2() / 2 + resolvedTranslation.dxCells(),
+                        resolvedDraft.anchorCell().y2() / 2 + resolvedTranslation.dyCells(),
                         resolvedDraft.anchorCell().z()),
                 resolvedDraft.anchorLevelZ() + resolvedTranslation.dzLevels(),
                 resolvedDraft.shapeSpec(),

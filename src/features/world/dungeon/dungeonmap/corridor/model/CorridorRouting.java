@@ -69,7 +69,7 @@ public final class CorridorRouting {
         }
     }
 
-    public static Set<GridPoint> surfaceCellsForTraces(Collection<CorridorPathTrace> traces) {
+    public static GridArea surfaceAreaForTraces(Collection<CorridorPathTrace> traces) {
         LinkedHashSet<GridPoint> result = new LinkedHashSet<>();
         for (CorridorPathTrace trace : traces == null ? List.<CorridorPathTrace>of() : traces) {
             if (trace == null) {
@@ -81,7 +81,7 @@ public final class CorridorRouting {
                 }
             }
         }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+        return result.isEmpty() ? GridArea.empty() : GridArea.of(result);
     }
 
     /**
@@ -229,21 +229,20 @@ public final class CorridorRouting {
         if (traces.isEmpty()) {
             return new RoutedProjection(Structure.empty(), List.of(), Set.of());
         }
-        Set<GridPoint> occupiedCells = surfaceCellsForTraces(traces);
-        if (occupiedCells.isEmpty()) {
+        GridArea occupiedArea = surfaceAreaForTraces(traces);
+        if (occupiedArea.isEmpty()) {
             return new RoutedProjection(Structure.empty(), List.copyOf(traces), Set.of());
         }
         Structure structure = Structure.fromSpecification(StructureSpecification.ofLevel(
                 levelZ,
                 new StructureSpecification.LevelSpecification(
-                        features.world.dungeon.geometry.GridArea.of(occupiedCells).center(),
-                        features.world.dungeon.geometry.GridArea.of(occupiedCells),
-                        features.world.dungeon.geometry.GridArea.of(occupiedCells),
+                        occupiedArea.center(),
+                        occupiedArea,
+                        occupiedArea,
                         List.of(),
                         List.of())));
-        Set<GridPoint> hydratedCells = features.world.dungeon.geometry.GridArea.of(
-                structure.surfaceAtLevel(levelZ).surface().cellFootprint().cells()).cells();
-        if (!hydratedCells.equals(features.world.dungeon.geometry.GridArea.of(occupiedCells).cells())) {
+        Set<GridPoint> hydratedCells = structure.surfaceAtLevel(levelZ).surface().cellFootprint().cells();
+        if (!hydratedCells.equals(occupiedArea.cells())) {
             throw new IllegalStateException("Corridor route projection changed the routed occupied cells");
         }
         return new RoutedProjection(structure, traces, Set.of());
@@ -363,15 +362,15 @@ public final class CorridorRouting {
         if (start.equals(end)) {
             return new CellRoute(List.of(start), 0.0d);
         }
-        int minX = Math.min(start.cellX(), end.cellX());
-        int maxX = Math.max(start.cellX(), end.cellX());
-        int minY = Math.min(start.cellY(), end.cellY());
-        int maxY = Math.max(start.cellY(), end.cellY());
+        int minX = Math.min(cellX(start), cellX(end));
+        int maxX = Math.max(cellX(start), cellX(end));
+        int minY = Math.min(cellY(start), cellY(end));
+        int maxY = Math.max(cellY(start), cellY(end));
         for (GridPoint blocked : blockedCells == null ? List.<GridPoint>of() : blockedCells) {
-            minX = Math.min(minX, blocked.cellX());
-            maxX = Math.max(maxX, blocked.cellX());
-            minY = Math.min(minY, blocked.cellY());
-            maxY = Math.max(maxY, blocked.cellY());
+            minX = Math.min(minX, cellX(blocked));
+            maxX = Math.max(maxX, cellX(blocked));
+            minY = Math.min(minY, cellY(blocked));
+            maxY = Math.max(maxY, cellY(blocked));
         }
         minX -= 4;
         maxX += 4;
@@ -402,7 +401,7 @@ public final class CorridorRouting {
             }
             for (CardinalDirection step : CardinalDirection.values()) {
                 GridPoint neighbor = current.cell().step(step);
-                if (neighbor.cellX() < minX || neighbor.cellX() > maxX || neighbor.cellY() < minY || neighbor.cellY() > maxY) {
+                if (cellX(neighbor) < minX || cellX(neighbor) > maxX || cellY(neighbor) < minY || cellY(neighbor) > maxY) {
                     continue;
                 }
                 if (effectiveBlocked.contains(neighbor)) {
@@ -501,7 +500,8 @@ public final class CorridorRouting {
         return segments.stream()
                 .filter(Objects::nonNull)
                 .sorted(Comparator
-                        .comparing((CorridorSegment segment) -> segment.segmentId() == null ? Long.MAX_VALUE : segment.segmentId())
+                        .comparing((CorridorSegment segment) -> segment.memberId() == null ? Long.MAX_VALUE : segment.memberId())
+                        .thenComparingInt(CorridorSegment::segmentOrdinal)
                         .thenComparing(CorridorSegment::startNodeId)
                         .thenComparing(CorridorSegment::endNodeId))
                 .toList();
@@ -576,7 +576,23 @@ public final class CorridorRouting {
     }
 
     private static int manhattanDistance(GridPoint start, GridPoint end) {
-        return Math.abs(start.cellX() - end.cellX()) + Math.abs(start.cellY() - end.cellY());
+        return Math.abs(cellX(start) - cellX(end)) + Math.abs(cellY(start) - cellY(end));
+    }
+
+    private static int cellX(GridPoint point) {
+        GridPoint resolvedPoint = Objects.requireNonNull(point, "point");
+        if (resolvedPoint.kind() != GridPoint.Kind.CELL) {
+            throw new IllegalArgumentException("GridPoint must be a cell");
+        }
+        return resolvedPoint.x2() / 2;
+    }
+
+    private static int cellY(GridPoint point) {
+        GridPoint resolvedPoint = Objects.requireNonNull(point, "point");
+        if (resolvedPoint.kind() != GridPoint.Kind.CELL) {
+            throw new IllegalArgumentException("GridPoint must be a cell");
+        }
+        return resolvedPoint.y2() / 2;
     }
 
     private static int manhattanDistance2x(GridPoint start, GridPoint end) {
