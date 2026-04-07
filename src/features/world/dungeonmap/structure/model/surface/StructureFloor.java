@@ -50,7 +50,7 @@ public final class StructureFloor extends StructureSurfaceObject {
         super(tileShape);
     }
 
-    public StructureFloor withCells(
+    StructureFloor withCells(
             Collection<CellCoord> cells,
             StructureSurfaceArea surfaceArea
     ) {

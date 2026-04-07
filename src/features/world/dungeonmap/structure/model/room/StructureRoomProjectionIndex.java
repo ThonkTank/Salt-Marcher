@@ -5,6 +5,7 @@ import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
 import features.world.dungeonmap.structure.model.Structure;
+import features.world.dungeonmap.structure.model.StructureSpecification;
 import features.world.dungeonmap.structure.model.boundary.StructureBoundary;
 import features.world.dungeonmap.structure.model.surface.StructureSurface;
 
@@ -377,7 +378,7 @@ final class StructureRoomProjectionIndex {
             Map<Integer, CellCoord> preferredAnchorsByLevel,
             Structure clusterStructure
     ) {
-        Map<Integer, Structure.LevelStructure> levelsByZ = new LinkedHashMap<>();
+        Map<Integer, StructureSpecification.LevelSpecification> levelsByZ = new LinkedHashMap<>();
         for (Map.Entry<Integer, Set<CellCoord>> entry : roomCellsByLevel.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
                 .toList()) {
@@ -395,9 +396,14 @@ final class StructureRoomProjectionIndex {
             }
             StructureBoundary clippedBoundary = clusterStructure.boundaryAtLevel(levelZ)
                     .clippedToSurface(clippedSurface.surface().cellCoords());
-            levelsByZ.put(levelZ, Structure.LevelStructure.fromSurfaceAndBoundary(clippedSurface, clippedBoundary));
+            levelsByZ.put(levelZ, StructureSpecification.LevelSpecification.of(
+                    clippedSurface.surface().anchorCell(),
+                    clippedSurface.surface().cellCoords(),
+                    clippedSurface.floor().cellCoords(),
+                    clippedBoundary.doors(),
+                    clippedBoundary.walls()));
         }
-        return levelsByZ.isEmpty() ? Structure.empty() : Structure.fromLevels(levelsByZ);
+        return levelsByZ.isEmpty() ? Structure.empty() : Structure.fromSpecification(new StructureSpecification(levelsByZ));
     }
 
     private record DerivedStructureIndex(Map<Room, Structure> structuresByRoom, Map<Long, Structure> structuresByRoomId) {

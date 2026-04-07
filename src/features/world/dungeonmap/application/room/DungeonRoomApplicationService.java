@@ -6,6 +6,7 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.structure.model.Structure;
+import features.world.dungeonmap.structure.model.StructureMutation;
 import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeonmap.structure.model.surface.StructureSurface;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
@@ -298,9 +299,10 @@ public final class DungeonRoomApplicationService {
                     cluster.structureObjectId(),
                     cluster.mapId(),
                     cluster.center(),
-                    cluster.structure().withSurfaceAtLevel(
+                    cluster.structure().mutated(new StructureMutation.FloorCellsEdit(
                             levelZ,
-                            structureSurface.withFloor(structureSurface.floor().withCells(nextFloorCells, structureSurface.surface()))),
+                            requestedCells,
+                            deleteFloor ? StructureMutation.CellEditMode.REMOVE : StructureMutation.CellEditMode.ADD)),
                     cluster.rooms());
             persistClusterRewrite(conn, mapId, workingLayout, List.of(cluster), List.of(updatedCluster));
             workingLayout = requireLayout(conn, mapId);

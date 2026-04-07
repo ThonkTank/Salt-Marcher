@@ -3,6 +3,7 @@ package features.world.dungeonmap.repository;
 import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.structure.model.Structure;
+import features.world.dungeonmap.structure.model.StructureSpecification;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
@@ -128,10 +129,14 @@ public final class DungeonRoomRepository {
         if (resolvedCells.isEmpty()) {
             return;
         }
-        Structure structure = Structure.fromSurfaceCellsByLevel(
-                Map.of(levelZ, resolvedCells),
-                Map.of(levelZ, resolvedCells),
-                Map.of(levelZ, CellCoord.bestCenter(resolvedCells)));
+        Structure structure = Structure.fromSpecification(StructureSpecification.ofLevel(
+                levelZ,
+                StructureSpecification.LevelSpecification.of(
+                        CellCoord.bestCenter(resolvedCells),
+                        resolvedCells,
+                        resolvedCells,
+                        List.of(),
+                        List.of())));
         DungeonStructureRepository.PersistedStructure persistedStructure = structureRepository.save(conn, null, structure);
         long clusterId = insertCluster(conn, mapId, CellCoord.bestCenter(resolvedCells), persistedStructure.structureObjectId());
         insertRoom(

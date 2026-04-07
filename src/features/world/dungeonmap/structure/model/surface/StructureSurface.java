@@ -141,11 +141,11 @@ public final class StructureSurface {
         return floorCenter != null ? floorCenter : surface.centerCellCoord();
     }
 
-    public StructureSurface withSurface(StructureSurfaceArea surface) {
+    StructureSurface withSurface(StructureSurfaceArea surface) {
         return fromSurfaceAndFloor(surface, floor);
     }
 
-    public StructureSurface withFloor(StructureFloor floor) {
+    StructureSurface withFloor(StructureFloor floor) {
         return fromSurfaceAndFloor(surface, floor);
     }
 

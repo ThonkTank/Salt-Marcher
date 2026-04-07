@@ -8,6 +8,7 @@ import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.structure.model.Structure;
+import features.world.dungeonmap.structure.model.StructureSpecification;
 import features.world.dungeonmap.structure.model.boundary.StructureBoundary;
 import features.world.dungeonmap.structure.model.boundary.door.Door;
 import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
@@ -867,13 +868,30 @@ public final class Corridor {
                 routedNodes,
                 routedLinks,
                 blockedCells);
-        Structure structure = routedProjection.structure().withBoundaryAtLevel(
-                levelZ,
-                routedProjection.structure().boundaryAtLevel(levelZ).withDoors(doors == null ? List.of() : doors));
+        Structure structure = structureWithResolvedDoors(routedProjection.structure(), levelZ, doors);
         return new DerivedProjection(
                 structure,
                 routedProjection.traces(),
                 materializeConnections(layout, corridorId, mapId, levelZ, nodes));
+    }
+
+    private static Structure structureWithResolvedDoors(
+            Structure routedStructure,
+            int levelZ,
+            Collection<Door> doors
+    ) {
+        if (routedStructure == null || routedStructure.surfaceAtLevel(levelZ).isEmpty()) {
+            return Structure.empty();
+        }
+        StructureBoundary boundary = routedStructure.boundaryAtLevel(levelZ);
+        return Structure.fromSpecification(StructureSpecification.ofLevel(
+                levelZ,
+                StructureSpecification.LevelSpecification.of(
+                        routedStructure.surfaceAtLevel(levelZ).surface().anchorCell(),
+                        routedStructure.surfaceAtLevel(levelZ).surface().cellCoords(),
+                        routedStructure.surfaceAtLevel(levelZ).floor().cellCoords(),
+                        doors == null ? List.of() : doors,
+                        boundary.walls())));
     }
 
     private static CorridorNode canonicalizeDoorBoundNode(CorridorNode node, int levelZ, DungeonLayout layout) {

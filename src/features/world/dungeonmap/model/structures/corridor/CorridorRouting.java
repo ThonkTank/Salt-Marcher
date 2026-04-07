@@ -4,6 +4,7 @@ import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.structure.model.Structure;
+import features.world.dungeonmap.structure.model.StructureSpecification;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -122,10 +123,14 @@ public final class CorridorRouting {
         if (occupiedCells.isEmpty()) {
             return new RoutedProjection(Structure.empty(), List.copyOf(traces), Set.of());
         }
-        Structure structure = Structure.fromSurfaceCellsByLevel(
-                Map.of(levelZ, occupiedCells),
-                Map.of(levelZ, occupiedCells),
-                Map.of(levelZ, CellCoord.bestCenter(occupiedCells)));
+        Structure structure = Structure.fromSpecification(StructureSpecification.ofLevel(
+                levelZ,
+                StructureSpecification.LevelSpecification.of(
+                        CellCoord.bestCenter(occupiedCells),
+                        occupiedCells,
+                        occupiedCells,
+                        List.of(),
+                        List.of())));
         Set<CellCoord> hydratedCells = CellCoord.normalize(structure.surfaceAtLevel(levelZ).surface().cellCoords());
         if (!hydratedCells.equals(CellCoord.normalize(occupiedCells))) {
             throw new IllegalStateException("Corridor route projection changed the routed occupied cells");
