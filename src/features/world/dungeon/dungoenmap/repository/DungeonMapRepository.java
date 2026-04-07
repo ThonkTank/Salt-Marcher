@@ -19,12 +19,12 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Repository-owned dungeon layout rehydration from direct persisted structure owners.
+ * Repository-owned dungeon-map rehydration from direct persisted structure owners.
  *
- * <p>Selection and fallback policy belong to loading workflows. This repository only assembles a layout for a
- * requested persisted map.
+ * <p>Selection and fallback policy belong to loading workflows. This repository only assembles the authoritative map
+ * snapshot for a requested persisted map.
  */
-public final class DungeonLayoutRepository {
+public final class DungeonMapRepository {
 
     private final DungeonClusterRepository clusterRepository = new DungeonClusterRepository();
     private final DungeonRoomRepository roomRepository = new DungeonRoomRepository();
@@ -32,30 +32,30 @@ public final class DungeonLayoutRepository {
     private final DungeonStairRepository stairRepository = new DungeonStairRepository();
     private final DungeonTransitionRepository transitionRepository = new DungeonTransitionRepository();
 
-    public DungeonMap loadLayout(Connection conn, long mapId) throws SQLException {
+    public DungeonMap loadMap(Connection conn, long mapId) throws SQLException {
         requireConnection(conn);
         String mapName = loadMapName(conn, mapId);
         if (mapName == null) {
             return null;
         }
-        return loadLayout(conn, new DungeonMapCatalogEntry(mapId, mapName));
+        return loadMap(conn, new DungeonMapCatalogEntry(mapId, mapName));
     }
 
-    public DungeonMap loadLayout(Connection conn, DungeonMapCatalogEntry map) throws SQLException {
+    public DungeonMap loadMap(Connection conn, DungeonMapCatalogEntry map) throws SQLException {
         requireConnection(conn);
         if (map == null || map.mapId() <= 0) {
             return null;
         }
-        return loadLayout(conn, map.mapId(), map.name());
+        return loadMap(conn, map.mapId(), map.name());
     }
 
-    private DungeonMap loadLayout(Connection conn, long mapId, String mapName) throws SQLException {
+    private DungeonMap loadMap(Connection conn, long mapId, String mapName) throws SQLException {
         List<Room> roomMetadata = roomRepository.loadRooms(conn, mapId);
         List<Cluster> clusters = clusterRepository.loadClusters(conn, mapId, roomMetadata);
         Map<Long, Integer> clusterLevels = clusterRepository.loadClusterLevels(conn, mapId);
-        DungeonMap roomLayout = new DungeonMap(mapId, mapName, List.of(), clusters, List.of(), List.of(), clusterLevels);
-        List<Corridor> corridors = corridorRepository.loadByMap(conn, roomLayout);
-        DungeonMap structureLayout = new DungeonMap(
+        DungeonMap roomMap = new DungeonMap(mapId, mapName, List.of(), clusters, List.of(), List.of(), clusterLevels);
+        List<Corridor> corridors = corridorRepository.loadByMap(conn, roomMap);
+        DungeonMap structureMap = new DungeonMap(
                 mapId,
                 mapName,
                 corridors,
@@ -68,8 +68,8 @@ public final class DungeonLayoutRepository {
                 mapName,
                 corridors,
                 clusters,
-                structureLayout.stairs(),
-                transitionRepository.loadByMap(conn, structureLayout),
+                structureMap.stairs(),
+                transitionRepository.loadByMap(conn, structureMap),
                 clusterLevels);
     }
 

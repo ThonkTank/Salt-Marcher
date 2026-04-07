@@ -343,7 +343,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             WalkableSurface surface = walkableSurface(
                     corridor.surfaceAtLevel(pass.projectionLevel()).floor().cells(),
                     corridor.boundaryAtLevel(pass.projectionLevel()).boundaryEdges(),
-                    corridor.boundaryDoorSegments(pass.projected()));
+                    corridor.boundaryDoorSegments(pass.projected().corridorResolutionInput(corridor)));
             if (surface.tiles().isEmpty() && surface.doorSegments().isEmpty()) {
                 continue;
             }
@@ -610,7 +610,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             gc.setFill(selected ? pass.palette().highlightFill() : pass.palette().stairFill());
             gc.setStroke(selected ? pass.palette().highlightStroke() : pass.palette().stairStroke());
             gc.setLineWidth(selected ? 2.5 : 1.8);
-            for (var node : stair.path()) {
+            for (var node : stair.gridPath().points()) {
                 if (node.z() != pass.projectionLevel()) {
                     continue;
                 }
@@ -620,17 +620,17 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 gc.strokeRoundRect(x + pass.gridSize() * 0.18, y + pass.gridSize() * 0.18, pass.gridSize() * 0.64, pass.gridSize() * 0.64, 10, 10);
             }
             for (var exit : stair.exits()) {
-                if (exit.position().z() != pass.projectionLevel()) {
+                if (exit.cell().z() != pass.projectionLevel()) {
                     continue;
                 }
-                double centerX = pass.camera().panX() + (exit.position().cellX() + 0.5) * pass.gridSize();
-                double centerY = pass.camera().panY() + (exit.position().cellY() + 0.5) * pass.gridSize();
+                double centerX = pass.camera().panX() + (exit.cell().cellX() + 0.5) * pass.gridSize();
+                double centerY = pass.camera().panY() + (exit.cell().cellY() + 0.5) * pass.gridSize();
                 double radius = Math.max(6.0, pass.gridSize() * 0.18);
                 gc.setFill(selected ? pass.palette().highlightAccent() : pass.palette().stairExitFill());
                 gc.fillOval(centerX - radius, centerY - radius, radius * 2, radius * 2);
                 if (pass.editorMode() && !pass.overlayPass()) {
                     gc.setFill(pass.palette().roomText());
-                    gc.fillText(Integer.toString(exit.position().z()), centerX, centerY - pass.gridSize() * 0.38);
+                    gc.fillText(Integer.toString(exit.cell().z()), centerX, centerY - pass.gridSize() * 0.38);
                 }
             }
         }
@@ -838,7 +838,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         gc.setFill(selected ? pass.palette().highlightFill() : pass.palette().transitionFill());
         gc.setStroke(selected ? pass.palette().highlightStroke() : pass.palette().transitionStroke());
         gc.setLineWidth(selected ? 2.5 : 1.8);
-        for (GridPoint node : stairPlacement.path()) {
+        for (GridPoint node : stairPlacement.stair().gridPath().points()) {
             if (node == null || node.z() != pass.projectionLevel()) {
                 continue;
             }
@@ -847,8 +847,8 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             gc.fillRoundRect(x + pass.gridSize() * 0.18, y + pass.gridSize() * 0.18, pass.gridSize() * 0.64, pass.gridSize() * 0.64, 10, 10);
             gc.strokeRoundRect(x + pass.gridSize() * 0.18, y + pass.gridSize() * 0.18, pass.gridSize() * 0.64, pass.gridSize() * 0.64, 10, 10);
         }
-        for (Integer stopLevel : stairPlacement.stopLevels().stream().sorted().toList()) {
-            GridPoint exitPoint = stairPlacement.path().stream()
+        for (Integer stopLevel : stairPlacement.stair().stopLevels().stream().sorted().toList()) {
+            GridPoint exitPoint = stairPlacement.stair().gridPath().points().stream()
                     .filter(point -> point != null && point.z() == stopLevel)
                     .findFirst()
                     .orElse(null);

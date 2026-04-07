@@ -201,7 +201,7 @@ public abstract class Structure {
         LevelStructure currentLevel = levelsByZ.get(edit.levelZ());
         StructureSurface currentSurface = currentLevel == null ? StructureSurface.empty() : currentLevel.surface();
         StructureSurface nextSurface = currentSurface.editedSurfaceCells(
-                edit.cells().cells(),
+                edit.cells(),
                 edit.mode(),
                 edit.floorSyncPolicy(),
                 edit.preferredAnchorCell());
@@ -368,8 +368,8 @@ public abstract class Structure {
             }
             StructureSurface surface = StructureSurface.fromCells(
                     specification.anchorCell(),
-                    specification.surfaceArea().cells(),
-                    specification.floorArea().cells());
+                    specification.surfaceArea(),
+                    specification.floorArea());
             if (surface.isEmpty()) {
                 return new LevelStructure(StructureSurface.empty(), StructureBoundary.empty());
             }

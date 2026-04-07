@@ -2,12 +2,10 @@ package features.world.dungeon.dungoenmap.structure.model.boundary.wall;
 
 import features.world.dungeon.geometry.GridBoundary;
 import features.world.dungeon.geometry.GridSegment;
-import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridTranslation;
 import features.world.dungeon.dungoenmap.structure.model.boundary.BoundaryObject;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -19,19 +17,6 @@ public final class Wall extends BoundaryObject {
     private Wall(Long wallId, GridBoundary boundary, GridSegment anchorSegment, WallKind wallKind) {
         super(wallId, boundary, anchorSegment);
         this.wallKind = wallKind == null ? WallKind.solid() : wallKind;
-    }
-
-    public static Wall fromSegments(Collection<GridSegment> segments) {
-        return new Wall(null, GridBoundary.of(segments), null, WallKind.solid());
-    }
-
-    public static Wall fromSegments(
-            Long wallId,
-            Collection<GridSegment> segments,
-            GridSegment anchorSegment,
-            WallKind wallKind
-    ) {
-        return new Wall(wallId, GridBoundary.of(segments), anchorSegment, wallKind);
     }
 
     public static Wall fromBoundary(GridBoundary boundary) {
@@ -62,13 +47,6 @@ public final class Wall extends BoundaryObject {
                 translatedAnchorSegment(resolvedTranslation), wallKind);
     }
 
-    public Wall movedBy(GridPoint delta) {
-        if (delta == null) {
-            return this;
-        }
-        return movedBy(new GridTranslation(delta.cellX(), delta.cellY(), delta.z()));
-    }
-
     public Wall withWallId(Long wallId) {
         return Objects.equals(wallId(), wallId)
                 ? this
@@ -82,14 +60,14 @@ public final class Wall extends BoundaryObject {
                 : new Wall(wallId(), GridBoundary.of(orderedBoundarySegments()), anchorSegment(), resolvedWallKind);
     }
 
-    public Wall clippedToBoundary(Collection<GridSegment> boundarySegments) {
+    public Wall clippedToBoundary(GridBoundary boundarySegments) {
         GridBoundary clippedBoundary = clippedBoundary(boundarySegments);
         return clippedBoundary.isEmpty()
                 ? null
                 : Wall.fromBoundary(wallId(), clippedBoundary, repairedAnchorSegment(clippedBoundary), wallKind);
     }
 
-    public List<Wall> withoutBoundarySegments(Collection<GridSegment> removedBoundarySegments) {
+    public List<Wall> withoutBoundarySegments(GridBoundary removedBoundarySegments) {
         List<GridBoundary> components = remainingBoundaryComponents(removedBoundarySegments);
         if (components.isEmpty()) {
             return List.of();
@@ -108,7 +86,7 @@ public final class Wall extends BoundaryObject {
         return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
-    public static List<Wall> fromBoundaryComponents(Collection<GridSegment> boundarySegments, WallKind wallKind) {
+    public static List<Wall> fromBoundaryComponents(GridBoundary boundarySegments, WallKind wallKind) {
         ArrayList<Wall> result = new ArrayList<>();
         for (GridBoundary component : boundaryComponents(boundarySegments)) {
             if (!component.isEmpty()) {

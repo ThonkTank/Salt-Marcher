@@ -38,12 +38,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Layout is only the global lookup surface over direct structure owners.
+ * DungeonMap is only the global lookup and orchestration surface over direct structure owners.
  *
- * <p>The behavior to preserve is that rooms/clusters, corridors, stairs, and transitions answer queries directly.
- * Do not move active behavior back into a second aggregate layer.
+ * <p>The behavior to preserve is that clusters, corridors, stairs, and transitions answer their own invariants
+ * directly. Do not move active behavior back into a second aggregate layer.
  *
- * <p>Layout indices and runtime-facing cell lookups stay on `GridPoint`; shared half-step geometry belongs to
+ * <p>Map indices and runtime-facing cell lookups stay on `GridPoint`; shared half-step geometry belongs to
  * `GridSegment`.
  */
 public final class DungeonMap {
@@ -1296,7 +1296,7 @@ public final class DungeonMap {
         }
         GridPoint delta = GridPoint.cell(resolvedTranslation.dxCells(), resolvedTranslation.dyCells(), 0);
         int levelDelta = resolvedTranslation.dzLevels();
-        Cluster movedCluster = cluster.movedBy(delta, levelDelta);
+        Cluster movedCluster = cluster.movedBy(resolvedTranslation);
         List<Cluster> updatedClusters = clusters.stream()
                 .map(existing -> Objects.equals(clusterId, existing.clusterId()) ? movedCluster : existing)
                 .toList();
@@ -1756,18 +1756,14 @@ public final class DungeonMap {
         }
         for (DungeonStair stair : stairs) {
             if (stair != null) {
-                stair.occupiedPositions().stream()
-                        .map(DungeonMap::projectedCell)
-                        .forEach(result::add);
+                result.addAll(stair.occupiedPositions());
             }
         }
         for (DungeonTransition transition : transitions) {
             if (transition == null || transition.localConnection() == null || transition.localConnection().stairCarrier() == null) {
                 continue;
             }
-            transition.localConnection().stairCarrier().path().stream()
-                    .map(DungeonMap::projectedCell)
-                    .forEach(result::add);
+            result.addAll(transition.localConnection().stairCarrier().stair().occupiedPositions());
         }
         return Set.copyOf(result);
     }
@@ -1805,7 +1801,7 @@ public final class DungeonMap {
                 for (GridPoint point : stair.occupiedPositions()) {
                     if (point != null) {
                         mutable.computeIfAbsent(point.z(), ignored -> new LinkedHashSet<>())
-                                .add(projectedCell(point));
+                                .add(point);
                     }
                 }
             }
@@ -1814,10 +1810,10 @@ public final class DungeonMap {
             if (transition == null || transition.localConnection() == null || transition.localConnection().stairCarrier() == null) {
                 continue;
             }
-            for (GridPoint point : transition.localConnection().stairCarrier().path()) {
+            for (GridPoint point : transition.localConnection().stairCarrier().stair().gridPath().points()) {
                 if (point != null) {
                     mutable.computeIfAbsent(point.z(), ignored -> new LinkedHashSet<>())
-                            .add(projectedCell(point));
+                            .add(point);
                 }
             }
         }
@@ -1877,7 +1873,7 @@ public final class DungeonMap {
                     continue;
                 }
                 mutable.computeIfAbsent(point.z(), ignored -> new LinkedHashMap<>())
-                        .computeIfAbsent(projectedCell(point), ignored -> new ArrayList<>())
+                        .computeIfAbsent(point, ignored -> new ArrayList<>())
                         .add(stair.stairId());
             }
         }
@@ -1895,7 +1891,7 @@ public final class DungeonMap {
                     continue;
                 }
                 mutable.computeIfAbsent(point.z(), ignored -> new LinkedHashMap<>())
-                        .computeIfAbsent(projectedCell(point), ignored -> new ArrayList<>())
+                        .computeIfAbsent(point, ignored -> new ArrayList<>())
                         .add(transition.transitionId());
             }
         }
@@ -1916,10 +1912,6 @@ public final class DungeonMap {
                 .map(resolver)
                 .filter(Objects::nonNull)
                 .toList();
-    }
-
-    private static GridPoint projectedCell(GridPoint point) {
-        return point == null ? null : point.touchingCells().center();
     }
 
     private static Map<Integer, Map<GridPoint, List<Long>>> immutableIdIndex(

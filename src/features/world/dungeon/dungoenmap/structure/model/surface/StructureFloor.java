@@ -4,7 +4,6 @@ import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridTranslation;
 
-import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -28,11 +27,11 @@ public final class StructureFloor extends StructureSurfaceObject {
         return new PersistenceSnapshot(Set.of());
     }
 
-    static StructureFloor fromCells(Collection<GridPoint> cells, StructureSurfaceArea surfaceArea) {
+    static StructureFloor fromCells(GridArea cells, StructureSurfaceArea surfaceArea) {
         StructureSurfaceArea resolvedSurfaceArea = surfaceArea == null ? StructureSurfaceArea.empty() : surfaceArea;
         return resolvedSurfaceArea.isEmpty()
                 ? empty()
-                : new StructureFloor(resolvedSurfaceArea.area().intersection(GridArea.of(cells)));
+                : new StructureFloor(resolvedSurfaceArea.area().intersection(cells == null ? GridArea.empty() : cells));
     }
 
     private StructureFloor(GridArea area) {
@@ -45,7 +44,7 @@ public final class StructureFloor extends StructureSurfaceObject {
     }
 
     StructureFloor clippedTo(StructureSurfaceArea surfaceArea) {
-        return fromCells(cells(), surfaceArea);
+        return fromCells(GridArea.of(cells()), surfaceArea);
     }
 
     PersistenceSnapshot persistenceSnapshot() {

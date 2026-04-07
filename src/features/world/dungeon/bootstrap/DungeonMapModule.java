@@ -12,7 +12,7 @@ import features.world.dungeon.dungoenmap.cluster.repository.DungeonClusterReposi
 import features.world.dungeon.dungoenmap.application.DungeonMapLoadResolver;
 import features.world.dungeon.dungoenmap.application.DungeonMapLoadingService;
 import features.world.dungeon.dungoenmap.corridor.repository.DungeonCorridorRepository;
-import features.world.dungeon.dungoenmap.repository.DungeonLayoutRepository;
+import features.world.dungeon.dungoenmap.repository.DungeonMapRepository;
 import features.world.dungeon.repository.DungeonRoomRepository;
 import features.world.dungeon.repository.DungeonStairRepository;
 import features.world.dungeon.repository.DungeonTransitionRepository;
@@ -52,34 +52,34 @@ public final class DungeonMapModule {
 
     public DungeonMapModule(DetailsNavigator detailsNavigator, WorldTravelSurface travelSurface) {
         Objects.requireNonNull(detailsNavigator, "detailsNavigator");
-        DungeonLayoutRepository layoutRepository = new DungeonLayoutRepository();
+        DungeonMapRepository mapRepository = new DungeonMapRepository();
         DungeonClusterRepository clusterRepository = new DungeonClusterRepository();
         DungeonRoomRepository roomRepository = new DungeonRoomRepository();
         DungeonCorridorRepository corridorRepository = new DungeonCorridorRepository();
         DungeonStairRepository stairRepository = new DungeonStairRepository();
         DungeonTransitionRepository transitionRepository = new DungeonTransitionRepository();
-        DungeonMapLoadResolver loadResolver = new DungeonMapLoadResolver(layoutRepository);
+        DungeonMapLoadResolver loadResolver = new DungeonMapLoadResolver(mapRepository);
         DungeonClusterApplicationService clusterApplicationService = new DungeonClusterApplicationService(
-                layoutRepository,
+                mapRepository,
                 clusterRepository,
                 corridorRepository,
                 roomRepository,
                 transitionRepository);
         DungeonRoomApplicationService roomApplicationService = new DungeonRoomApplicationService(roomRepository);
         DungeonStairApplicationService stairApplicationService = new DungeonStairApplicationService(
-                layoutRepository,
+                mapRepository,
                 stairRepository);
         DungeonTransitionApplicationService transitionApplicationService = new DungeonTransitionApplicationService(
-                layoutRepository,
+                mapRepository,
                 transitionRepository);
         DungeonRuntimeApplicationService runtimeApplicationService = new DungeonRuntimeApplicationService(
-                layoutRepository,
+                mapRepository,
                 loadResolver);
         DungeonMapCatalogService mapCatalogService = new DungeonMapCatalogService(
                 clusterApplicationService,
                 runtimeApplicationService);
         DungeonCorridorApplicationService corridorApplicationService = new DungeonCorridorApplicationService(
-                layoutRepository,
+                mapRepository,
                 corridorRepository);
         DungeonMapState state = new DungeonMapState();
         DungeonMapLoadingService loadingService = new DungeonMapLoadingService(

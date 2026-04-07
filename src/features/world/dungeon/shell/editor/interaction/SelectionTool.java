@@ -14,6 +14,7 @@ import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.dungoenmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeon.dungoenmap.cluster.model.Cluster;
 import features.world.dungeon.dungoenmap.corridor.model.Corridor;
+import features.world.dungeon.dungoenmap.corridor.model.CorridorMutation;
 import features.world.dungeon.dungoenmap.corridor.model.CorridorNode;
 import features.world.dungeon.shell.editor.RoomNarrationPane;
 import features.world.dungeon.state.DungeonEditorTool;
@@ -138,7 +139,7 @@ public final class SelectionTool implements EditorTool {
             state.selectRef(resolvedSelectionRef);
             corridorTileDragSession = new CorridorTileDragSession(
                     corridorTileHit.corridorId(),
-                    corridorTileHit.cell().touchingCells().center(),
+                    corridorTileHit.cell(),
                     corridorTileHit.point(),
                     corridorTileHit.point());
             return true;
@@ -492,7 +493,11 @@ public final class SelectionTool implements EditorTool {
         if (corridor == null) {
             return null;
         }
-        Corridor updated = corridor.movedNode(mapState.activeMap(), corridorNodeDragSession.nodeId(), corridorNodeDragSession.currentPoint());
+        Corridor updated = corridor.mutated(
+                new CorridorMutation.NodeMove(
+                        corridorNodeDragSession.nodeId(),
+                        corridorNodeDragSession.currentPoint()),
+                mapState.activeMap().corridorResolutionInput(corridor));
         return mapState.activeMap()
                 .withUpdatedCorridor(updated)
                 .projectedToLevel(mapState.activeProjectionLevel());
@@ -519,10 +524,11 @@ public final class SelectionTool implements EditorTool {
         if (corridor == null) {
             return null;
         }
-        Corridor updated = corridor.promotedTileNodeAndMoved(
-                mapState.activeMap(),
-                corridorTileDragSession.tileCell(),
-                corridorTileDragSession.currentPoint());
+        Corridor updated = corridor.mutated(
+                new CorridorMutation.TileNodePromotionAndMove(
+                        corridorTileDragSession.tileCell(),
+                        corridorTileDragSession.currentPoint()),
+                mapState.activeMap().corridorResolutionInput(corridor));
         return mapState.activeMap()
                 .withUpdatedCorridor(updated)
                 .projectedToLevel(mapState.activeProjectionLevel());
@@ -564,10 +570,11 @@ public final class SelectionTool implements EditorTool {
             return null;
         }
         try {
-            Corridor updated = corridor.movedDoor(
-                    session.baseMap(),
-                    session.sourceBoundarySegment2x(),
-                    corridorDoorNode(session.baseMap(), targetDoorRef));
+            Corridor updated = corridor.mutated(
+                    new CorridorMutation.DoorMove(
+                            session.sourceBoundarySegment2x(),
+                            new DoorRef(targetDoorRef.doorId())),
+                    session.baseMap().corridorResolutionInput(corridor));
             return session.baseMap()
                     .withUpdatedCorridor(updated)
                     .projectedToLevel(session.levelZ());

@@ -3,13 +3,16 @@ package features.world.dungeon.model.structures.stair;
 import features.world.dungeon.geometry.GridPoint;
 
 public record StairExit(
-        GridPoint position,
+        GridPoint cell,
         String label
 ) {
     public StairExit {
-        position = position == null ? GridPoint.cell(0, 0, 0) : position;
+        cell = cell == null ? GridPoint.cell(0, 0, 0) : cell;
+        if (cell.kind() != GridPoint.Kind.CELL) {
+            throw new IllegalArgumentException("Treppenausgänge müssen Zellpunkte sein");
+        }
         label = label == null || label.isBlank()
-                ? "Ausgang z=" + position.z() + " (" + (position.x2() / 2) + "," + (position.y2() / 2) + ")"
+                ? "Ausgang z=" + cell.z() + " (" + cell.cellX() + "," + cell.cellY() + ")"
                 : label.trim();
     }
 }

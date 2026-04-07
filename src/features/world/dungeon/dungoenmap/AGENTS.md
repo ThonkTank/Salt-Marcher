@@ -2,11 +2,11 @@
 
 ## Purpose
 
-`map` owns the loaded dungeon-map snapshot, authoritative map load and reload workflows, map-scoped session state, and the top-level map-object owner slices beneath `dungeonmap`.
+`dungoenmap` owns the loaded dungeon-map snapshot, authoritative map load and reload workflows, map-scoped session state, and the top-level map-object owner slices beneath `dungeon`.
 
 ## Owner Atlas
 
-- `model/DungeonMap` — loaded map snapshot and global lookup surface over map-owned objects.
+- `model/DungeonMap` — loaded map snapshot and global lookup plus cross-owner orchestration surface over map-owned objects.
 - `application/` and `repository/` — authoritative map selection, load, reload, and rehydration seams.
 - `state/` — active-map, projection, overlay, and loading session state.
 - `structure/` — shared physical topology owner; `Structure` is the abstract base type for structure-backed map objects.
@@ -16,15 +16,18 @@
 ## Canonical Types and APIs
 
 - `model/DungeonMap` — loaded map snapshot — resolves canonical room, corridor, stair, transition, door, connection, and traversability lookups.
-- `repository/DungeonLayoutRepository` — map id plus connection — rehydrates one authoritative `DungeonMap` from persisted owner slices.
+- `repository/DungeonMapRepository` — map id plus connection — rehydrates one authoritative `DungeonMap` from persisted owner slices.
 - `application/DungeonMapLoadResolver` — synchronous selection and repair policy — resolves which map should load or reload next.
 - `application/DungeonMapLoadingService` — async load and post-write reload seam — updates `DungeonMapState` from authoritative reloads.
 - `state/DungeonMapState` — shared map session state for active map, projection level, overlay settings, and loading flags.
 - `state/DungeonLevelOverlayMode`, `state/DungeonLevelOverlaySettings` — map-owned overlay policy state consumed by shell and canvas surfaces.
+- `model/DungeonMap.corridorResolutionInput(...)` — corridor-external fact builder — materializes the fixed corridor input contract from current map state.
+- `model/DungeonMap.validateCorridorRoomRewrite(...)`, `model/DungeonMap.reboundCorridors(...)` — cross-owner corridor reconcile seam — validates and reapplies corridor bindings after room or cluster rewrites.
 
 ## Where New Code Goes
 
 - Put loaded-map lookup behavior on `DungeonMap`.
+- Put cross-owner orchestration on `DungeonMap` when a workflow must compare room, cluster, corridor, stair, or transition truth without moving those invariants into the map owner.
 - Put map selection, fallback, and reload policy on `DungeonMapLoadResolver` or `DungeonMapLoadingService`, not in views or repositories.
 - Put map rehydration and staged owner loading in `repository/`.
 - Put active-map and overlay session state in `state/`.
@@ -37,3 +40,4 @@
 - Do not duplicate map selection or reload policy in shell, runtime, or owner-local workflow services.
 - Do not reintroduce top-level `structure`, `cluster`, or `corridor` owners beside `map`.
 - Do not turn `DungeonMap` into a second physical topology owner when `structure`, `cluster`, `corridor`, `stair`, and `transition` already own their underlying truth.
+- Do not let corridor callers bypass the fixed corridor input contract by passing raw map state, room lookups, or ad-hoc door resolution directly into `Corridor`.

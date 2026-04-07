@@ -2,6 +2,7 @@ package features.world.dungeon.repository;
 
 import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.geometry.GridPoint;
+import features.world.dungeon.geometry.GridPath;
 import features.world.dungeon.model.structures.stair.DungeonStair;
 import features.world.dungeon.stair.model.StairPathPatternKind;
 import features.world.dungeon.stair.model.StairPathPatternSpec;
@@ -67,7 +68,7 @@ public final class DungeonStairRepository {
                             stairId,
                             rs.getLong("dungeon_map_id"),
                             rs.getString("name"),
-                            pathByStairId.getOrDefault(stairId, List.of()),
+                            GridPath.of(pathByStairId.getOrDefault(stairId, List.of())),
                             stopLevelsByStairId.getOrDefault(stairId, Set.of())));
                 }
                 return result.isEmpty() ? List.of() : List.copyOf(result);

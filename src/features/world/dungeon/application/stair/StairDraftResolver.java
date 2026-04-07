@@ -6,7 +6,6 @@ import features.world.dungeon.geometry.GridPath;
 import features.world.dungeon.dungoenmap.cluster.model.Cluster;
 import features.world.dungeon.model.structures.room.Room;
 import features.world.dungeon.model.structures.stair.DungeonStair;
-import features.world.dungeon.model.structures.stair.Stair;
 import features.world.dungeon.stair.model.StairPathGenerator;
 
 import java.util.Objects;
@@ -128,7 +127,8 @@ public final class StairDraftResolver {
                 stairId,
                 mapId,
                 resolution.draft().name(),
-                Stair.of(resolution.path(), resolution.stopLevels()));
+                resolution.path(),
+                resolution.stopLevels());
     }
 
     private static void validateAnchor(DungeonMap layout, GridPoint anchorCell, int anchorLevelZ) {

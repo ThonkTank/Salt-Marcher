@@ -11,7 +11,7 @@ import features.world.dungeon.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeon.model.structures.connection.DungeonConnection;
 import features.world.dungeon.model.structures.transition.DungeonTransition;
 import features.world.dungeon.model.structures.transition.DungeonTransitionDestination;
-import features.world.dungeon.dungoenmap.repository.DungeonLayoutRepository;
+import features.world.dungeon.dungoenmap.repository.DungeonMapRepository;
 import features.world.dungeon.repository.DungeonTransitionRepository;
 import features.world.dungeon.stair.model.StairPlacementSpec;
 
@@ -28,14 +28,14 @@ import java.util.List;
  */
 public final class DungeonTransitionApplicationService {
 
-    private final DungeonLayoutRepository layoutRepository;
+    private final DungeonMapRepository mapRepository;
     private final DungeonTransitionRepository transitionRepository;
 
     public DungeonTransitionApplicationService(
-            DungeonLayoutRepository layoutRepository,
+            DungeonMapRepository mapRepository,
             DungeonTransitionRepository transitionRepository
     ) {
-        this.layoutRepository = Objects.requireNonNull(layoutRepository, "layoutRepository");
+        this.mapRepository = Objects.requireNonNull(mapRepository, "mapRepository");
         this.transitionRepository = Objects.requireNonNull(transitionRepository, "transitionRepository");
     }
 
@@ -302,7 +302,7 @@ public final class DungeonTransitionApplicationService {
     }
 
     private DungeonMap requireLayout(Connection conn, long mapId) throws SQLException {
-        DungeonMap layout = layoutRepository.loadLayout(conn, mapId);
+        DungeonMap layout = mapRepository.loadMap(conn, mapId);
         if (layout == null) {
             throw new SQLException("Dungeon " + mapId + " konnte nicht geladen werden");
         }

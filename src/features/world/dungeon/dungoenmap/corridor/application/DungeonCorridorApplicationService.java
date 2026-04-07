@@ -12,7 +12,7 @@ import features.world.dungeon.dungoenmap.corridor.model.CorridorMutation;
 import features.world.dungeon.dungoenmap.corridor.model.CorridorNode;
 import features.world.dungeon.dungoenmap.corridor.model.CorridorSegment;
 import features.world.dungeon.dungoenmap.corridor.repository.DungeonCorridorRepository;
-import features.world.dungeon.dungoenmap.repository.DungeonLayoutRepository;
+import features.world.dungeon.dungoenmap.repository.DungeonMapRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -23,14 +23,14 @@ import java.util.Objects;
 
 public final class DungeonCorridorApplicationService {
 
-    private final DungeonLayoutRepository layoutRepository;
+    private final DungeonMapRepository mapRepository;
     private final DungeonCorridorRepository corridorRepository;
 
     public DungeonCorridorApplicationService(
-            DungeonLayoutRepository layoutRepository,
+            DungeonMapRepository mapRepository,
             DungeonCorridorRepository corridorRepository
     ) {
-        this.layoutRepository = Objects.requireNonNull(layoutRepository, "layoutRepository");
+        this.mapRepository = Objects.requireNonNull(mapRepository, "mapRepository");
         this.corridorRepository = Objects.requireNonNull(corridorRepository, "corridorRepository");
     }
 
@@ -277,7 +277,7 @@ public final class DungeonCorridorApplicationService {
     }
 
     private DungeonMap requireLayout(Connection conn, long mapId) throws SQLException {
-        DungeonMap layout = layoutRepository.loadLayout(conn, mapId);
+        DungeonMap layout = mapRepository.loadMap(conn, mapId);
         if (layout == null) {
             throw new SQLException("Dungeon " + mapId + " konnte nicht geladen werden");
         }

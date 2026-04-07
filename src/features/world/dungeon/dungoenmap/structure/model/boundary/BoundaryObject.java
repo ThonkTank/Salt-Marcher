@@ -6,7 +6,6 @@ import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
 import features.world.dungeon.geometry.GridTranslation;
 
-import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
@@ -20,10 +19,6 @@ public abstract class BoundaryObject {
     private final Long objectId;
     private final GridBoundary boundary;
     private final GridSegment anchorSegment;
-
-    protected BoundaryObject(Long objectId, Collection<GridSegment> segments, GridSegment anchorSegment) {
-        this(objectId, GridBoundary.of(segments), anchorSegment);
-    }
 
     protected BoundaryObject(Long objectId, GridBoundary boundary, GridSegment anchorSegment) {
         this.objectId = objectId;
@@ -91,19 +86,19 @@ public abstract class BoundaryObject {
         return anchorSegment == null ? null : anchorSegment.translated(resolvedTranslation);
     }
 
-    protected final GridBoundary clippedBoundary(Collection<GridSegment> boundarySegments) {
+    protected final GridBoundary clippedBoundary(GridBoundary boundarySegments) {
         if (!hasBoundarySegments()) {
             return GridBoundary.empty();
         }
-        GridBoundary clippedBoundary = GridBoundary.of(boundarySegments);
+        GridBoundary clippedBoundary = boundarySegments == null ? GridBoundary.empty() : boundarySegments;
         return clippedBoundary.isEmpty() ? GridBoundary.empty() : clippedBoundary.intersection(boundary);
     }
 
-    protected final List<GridBoundary> remainingBoundaryComponents(Collection<GridSegment> removedBoundarySegments) {
+    protected final List<GridBoundary> remainingBoundaryComponents(GridBoundary removedBoundarySegments) {
         if (!hasBoundarySegments()) {
             return List.of();
         }
-        GridBoundary removed = GridBoundary.of(removedBoundarySegments);
+        GridBoundary removed = removedBoundarySegments == null ? GridBoundary.empty() : removedBoundarySegments;
         GridBoundary remaining = boundary.without(removed);
         return remaining.components();
     }
@@ -128,12 +123,12 @@ public abstract class BoundaryObject {
         return Objects.hash(objectId, orderedBoundarySegments(), anchorSegment);
     }
 
-    protected static final List<GridBoundary> boundaryComponents(Collection<GridSegment> boundarySegments) {
-        GridBoundary boundary = GridBoundary.of(boundarySegments);
+    protected static final List<GridBoundary> boundaryComponents(GridBoundary boundarySegments) {
+        GridBoundary boundary = boundarySegments == null ? GridBoundary.empty() : boundarySegments;
         return boundary.isEmpty() ? List.of() : boundary.components();
     }
 
-    private static GridSegment resolveAnchorSegment(GridSegment requestedAnchorSegment, Collection<GridSegment> segments) {
+    private static GridSegment resolveAnchorSegment(GridSegment requestedAnchorSegment, Set<GridSegment> segments) {
         if (requestedAnchorSegment != null && segments.contains(requestedAnchorSegment)) {
             return requestedAnchorSegment;
         }

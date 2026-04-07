@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`features.world` owns world navigation surfaces and the world-owned boundary that composes `hexmap` and `dungeonmap`.
+`features.world` owns world navigation surfaces and the world-owned boundary that composes `hexmap` and `dungeon`.
 
 ## Canonical Types and APIs
 

@@ -162,7 +162,7 @@ public final class PaintTool implements EditorTool {
             return null;
         }
         return switch (ctx.hitRef()) {
-            case DungeonSelectionRef.GridCellRef gridCellRef -> gridCellRef.cell().touchingCells().center();
+            case DungeonSelectionRef.GridCellRef gridCellRef -> gridCellRef.cell();
             default -> null;
         };
     }

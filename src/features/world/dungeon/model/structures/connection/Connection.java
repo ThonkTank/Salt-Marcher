@@ -85,7 +85,7 @@ public interface Connection {
             return Set.of(levelZ());
         }
         LinkedHashSet<Integer> levels = new LinkedHashSet<>();
-        for (GridPoint point : stairCarrier.path()) {
+        for (GridPoint point : stairCarrier.stair().gridPath().points()) {
             if (point != null) {
                 levels.add(point.z());
             }
@@ -134,7 +134,7 @@ public interface Connection {
     default Set<GridPoint> occupiedPositions(DungeonMap layout) {
         StairConnectionCarrier stairCarrier = stairCarrier();
         if (stairCarrier != null) {
-            return stairCarrier.occupiedPositions();
+            return stairCarrier.stair().occupiedPositions();
         }
         GridPoint focus = focusPosition(layout);
         return focus == null ? Set.of() : Set.of(focus);

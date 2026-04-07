@@ -5,7 +5,6 @@ import features.world.dungeon.geometry.GridBoundary;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridTranslation;
 
-import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -34,9 +33,9 @@ public final class StructureSurfaceArea extends StructureSurfaceObject {
         return new PersistenceSnapshot(null, Set.of());
     }
 
-    static StructureSurfaceArea fromCells(GridPoint anchorCell, Collection<GridPoint> cells) {
-        GridArea area = GridArea.of(cells);
-        return area.isEmpty() ? empty() : new StructureSurfaceArea(anchorCell, area);
+    static StructureSurfaceArea fromCells(GridPoint anchorCell, GridArea area) {
+        GridArea resolvedArea = area == null ? GridArea.empty() : area;
+        return resolvedArea.isEmpty() ? empty() : new StructureSurfaceArea(anchorCell, resolvedArea);
     }
 
     private StructureSurfaceArea(GridPoint anchorCell, GridArea area) {
@@ -76,7 +75,7 @@ public final class StructureSurfaceArea extends StructureSurfaceObject {
                 preferredAnchor != null && clippedSurfaceCells.contains(preferredAnchor)
                         ? preferredAnchor
                         : clippedArea.center(),
-                clippedSurfaceCells);
+                clippedArea);
     }
 
     PersistenceSnapshot persistenceSnapshot() {

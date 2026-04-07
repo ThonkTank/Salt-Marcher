@@ -1,6 +1,7 @@
 package features.world.dungeon.dungoenmap.corridor.model;
 
 import features.world.dungeon.geometry.CardinalDirection;
+import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridBoundary;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
@@ -259,7 +260,9 @@ public final class Corridor extends Structure {
             case CorridorMutation.AttachRoomDoorAtBoundary edit -> attachedRoomNodeAtBoundary(edit.doorRef(), edit.boundarySegment(), input);
             case CorridorMutation.DoorMove edit -> movedDoor(edit.sourceBoundarySegment(), edit.targetDoorRef(), input);
             case CorridorMutation.ReplaceDoors edit -> withDoors(edit.doors(), input);
-            case CorridorMutation.DeleteNode ignored, CorridorMutation.DeleteSegment ignored ->
+            case CorridorMutation.DeleteNode ignored ->
+                    throw new IllegalArgumentException("Topology deletes must go through topologyUpdated(...)");
+            case CorridorMutation.DeleteSegment ignored ->
                     throw new IllegalArgumentException("Topology deletes must go through topologyUpdated(...)");
         };
     }
@@ -843,8 +846,9 @@ public final class Corridor extends Structure {
     ) {
         CorridorResolutionInput resolvedInput = requireInput(levelZ, input);
         Set<GridPoint> blockedCells = resolvedInput.blockedCells();
+        GridArea blockedArea = GridArea.of(blockedCells);
         List<CorridorRouting.RoutedNode> routedNodes = nodes.stream()
-                .map(node -> routedNode(resolvedInput, node, levelZ, blockedCells))
+                .map(node -> routedNode(resolvedInput, node, levelZ, blockedArea))
                 .toList();
         List<CorridorRouting.RoutedLink> routedLinks = segments.stream()
                 .filter(Objects::nonNull)
@@ -854,7 +858,7 @@ public final class Corridor extends Structure {
                 levelZ,
                 routedNodes,
                 routedLinks,
-                blockedCells);
+                blockedArea);
         Structure structure = structureWithResolvedDoors(routedProjection.structure(), levelZ, resolvedInput.corridorDoors());
         return new DerivedProjection(
                 structure,
@@ -905,7 +909,7 @@ public final class Corridor extends Structure {
             CorridorResolutionInput input,
             CorridorNode node,
             int levelZ,
-            Set<GridPoint> blockedCells
+            GridArea blockedCells
     ) {
         if (node == null || node.nodeId() == null) {
             throw new IllegalArgumentException("Corridor routed node requires a stable id");
@@ -917,7 +921,7 @@ public final class Corridor extends Structure {
             CorridorResolutionInput input,
             CorridorNode node,
             int levelZ,
-            Set<GridPoint> blockedCells
+            GridArea blockedCells
     ) {
         if (node == null) {
             return List.of();

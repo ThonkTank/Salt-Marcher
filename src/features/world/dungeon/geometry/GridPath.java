@@ -1,7 +1,6 @@
 package features.world.dungeon.geometry;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
@@ -15,11 +14,11 @@ public final class GridPath extends GridObject {
         return new GridPath(List.of());
     }
 
-    public static GridPath of(Collection<GridPoint> points) {
+    public static GridPath of(List<GridPoint> points) {
         return new GridPath(points);
     }
 
-    private GridPath(Collection<GridPoint> points) {
+    private GridPath(List<GridPoint> points) {
         this.points = normalizePoints(points);
     }
 
@@ -65,7 +64,7 @@ public final class GridPath extends GridObject {
         return cells.isEmpty() ? GridArea.empty() : GridArea.of(cells);
     }
 
-    private static List<GridPoint> normalizePoints(Collection<GridPoint> points) {
+    private static List<GridPoint> normalizePoints(List<GridPoint> points) {
         if (points == null || points.isEmpty()) {
             return List.of();
         }

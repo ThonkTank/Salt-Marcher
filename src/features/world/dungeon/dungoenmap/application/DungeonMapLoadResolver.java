@@ -3,7 +3,7 @@ package features.world.dungeon.dungoenmap.application;
 import features.world.dungeon.catalog.application.DungeonMapCatalogEntry;
 import features.world.dungeon.catalog.persistence.DungeonMapCatalogRepository;
 import features.world.dungeon.dungoenmap.model.DungeonMap;
-import features.world.dungeon.dungoenmap.repository.DungeonLayoutRepository;
+import features.world.dungeon.dungoenmap.repository.DungeonMapRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -17,10 +17,10 @@ import java.util.Set;
  */
 public final class DungeonMapLoadResolver {
 
-    private final DungeonLayoutRepository layoutRepository;
+    private final DungeonMapRepository mapRepository;
 
-    public DungeonMapLoadResolver(DungeonLayoutRepository layoutRepository) {
-        this.layoutRepository = Objects.requireNonNull(layoutRepository, "layoutRepository");
+    public DungeonMapLoadResolver(DungeonMapRepository mapRepository) {
+        this.mapRepository = Objects.requireNonNull(mapRepository, "mapRepository");
     }
 
     public LoadResolution resolveInitial(Connection conn) throws SQLException {
@@ -35,7 +35,7 @@ public final class DungeonMapLoadResolver {
                 continue;
             }
             try {
-                DungeonMap layout = layoutRepository.loadLayout(conn, map);
+                DungeonMap layout = mapRepository.loadMap(conn, map);
                 if (layout == null) {
                     failedMapCount++;
                     if (firstFailureName == null) {
@@ -78,7 +78,7 @@ public final class DungeonMapLoadResolver {
                     "Dungeon " + mapId + " existiert nicht mehr");
         }
         try {
-            DungeonMap layout = layoutRepository.loadLayout(conn, requestedMap);
+            DungeonMap layout = mapRepository.loadMap(conn, requestedMap);
             if (layout != null) {
                 return new LoadResolution(maps, layout, null);
             }
@@ -123,7 +123,7 @@ public final class DungeonMapLoadResolver {
         String message = primaryMessage;
         for (DungeonMapCatalogEntry fallbackMap : candidateMaps(maps, preferredMapIds, excludedMapIds)) {
             try {
-                DungeonMap layout = layoutRepository.loadLayout(conn, fallbackMap);
+                DungeonMap layout = mapRepository.loadMap(conn, fallbackMap);
                 if (layout != null) {
                     return new LoadResolution(maps, layout, message);
                 }
@@ -142,7 +142,7 @@ public final class DungeonMapLoadResolver {
             return null;
         }
         try {
-            return layoutRepository.loadLayout(conn, map);
+            return mapRepository.loadMap(conn, map);
         } catch (RuntimeException exception) {
             return null;
         }

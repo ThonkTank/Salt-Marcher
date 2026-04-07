@@ -106,13 +106,12 @@ public final class StructureRoomTopology {
 
     public StructureRoomTopology translatedBy(GridTranslation translation, Structure movedStructure) {
         GridTranslation resolvedTranslation = translation == null ? GridTranslation.none() : translation;
-        GridPoint planarDelta = GridPoint.cell(resolvedTranslation.dxCells(), resolvedTranslation.dyCells(), 0);
         return derive(
                 mapId,
                 clusterId,
                 movedStructure,
                 rooms().stream()
-                        .map(room -> room == null ? null : room.movedBy(planarDelta, resolvedTranslation.dzLevels()))
+                        .map(room -> room == null ? null : room.movedBy(resolvedTranslation))
                         .toList());
     }
 

@@ -228,23 +228,18 @@ public final class Cluster extends Structure {
         return false;
     }
 
-    public Cluster movedBy(GridPoint delta) {
-        return movedBy(delta, 0);
-    }
-
-    public Cluster movedBy(GridPoint delta, int levelDelta) {
-        boolean translate = delta != null && (delta.cellX() != 0 || delta.cellY() != 0);
-        if (!translate && levelDelta == 0) {
+    public Cluster movedBy(GridTranslation translation) {
+        GridTranslation resolvedTranslation = translation == null ? GridTranslation.none() : translation;
+        if (resolvedTranslation.isZero()) {
             return this;
         }
-        GridPoint resolvedDelta = delta == null ? GridPoint.cell(0, 0, 0) : delta;
         Structure movedStructure = mutated(new StructureMutation.Translation(
-                new GridTranslation(resolvedDelta.cellX(), resolvedDelta.cellY(), levelDelta)));
+                resolvedTranslation));
         return new Cluster(
                 clusterId,
                 structureObjectId,
                 mapId,
-                center.translated(GridTranslation.cells(resolvedDelta.cellX(), resolvedDelta.cellY(), 0)),
+                center.translated(GridTranslation.cells(resolvedTranslation.dxCells(), resolvedTranslation.dyCells(), 0)),
                 movedStructure,
                 movedStructure.roomTopology().rooms());
     }

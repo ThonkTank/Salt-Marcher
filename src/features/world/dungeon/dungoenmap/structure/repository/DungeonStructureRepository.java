@@ -1,6 +1,7 @@
 package features.world.dungeon.dungoenmap.structure.repository;
 
-import features.world.dungeon.geometry.GridPoint;
+import features.world.dungeon.geometry.GridArea;
+import features.world.dungeon.geometry.GridBoundary;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
 import features.world.dungeon.dungoenmap.structure.model.Structure;
@@ -104,8 +105,8 @@ public final class DungeonStructureRepository {
                 }
                 StructureSurface.PersistenceSnapshot surfaceSnapshot = StructureSurface.PersistenceSnapshot.fromCells(
                         levelEntry.getValue(),
-                        surfaceCells,
-                        floorCellsByStructureId.getOrDefault(structureId, Map.of()).getOrDefault(levelZ, Set.of()));
+                        GridArea.of(surfaceCells),
+                        GridArea.of(floorCellsByStructureId.getOrDefault(structureId, Map.of()).getOrDefault(levelZ, Set.of())));
                 StructureBoundary.PersistenceSnapshot boundarySnapshot = new StructureBoundary.PersistenceSnapshot(
                         doorsByStructureId.getOrDefault(structureId, Map.of()).getOrDefault(levelZ, List.of()),
                         wallsByStructureId.getOrDefault(structureId, Map.of()).getOrDefault(levelZ, List.of()));
@@ -553,7 +554,7 @@ public final class DungeonStructureRepository {
         }
 
         private Door toDoor() {
-            return Door.fromSegments(doorId, segments, anchorSegment2x, doorState);
+            return Door.fromBoundary(doorId, GridBoundary.of(segments), anchorSegment2x, doorState);
         }
     }
 
@@ -568,7 +569,7 @@ public final class DungeonStructureRepository {
         }
 
         private Wall toWall() {
-            return Wall.fromSegments(wallId, segments, anchorSegment2x, wallKind);
+            return Wall.fromBoundary(wallId, GridBoundary.of(segments), anchorSegment2x, wallKind);
         }
     }
 }

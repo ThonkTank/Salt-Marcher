@@ -1,6 +1,7 @@
 package features.world.dungeon.model.structures.stair;
 
 import features.world.dungeon.geometry.GridPoint;
+import features.world.dungeon.geometry.GridPath;
 import features.world.dungeon.geometry.GridTranslation;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.model.interaction.InteractiveLabelHandle;
@@ -35,7 +36,7 @@ public final class DungeonStair {
             Long stairId,
             long mapId,
             String name,
-            List<GridPoint> path,
+            GridPath path,
             Set<Integer> stopLevels
     ) {
         return new DungeonStair(
@@ -70,8 +71,8 @@ public final class DungeonStair {
         return stair;
     }
 
-    public List<GridPoint> path() {
-        return stair.path();
+    public GridPath gridPath() {
+        return stair.gridPath();
     }
 
     public Set<Integer> stopLevels() {
@@ -103,10 +104,10 @@ public final class DungeonStair {
 
     public InteractiveLabelHandle labelHandle(int levelZ) {
         GridPoint anchorPoint = exits().stream()
-                .map(StairExit::position)
+                .map(StairExit::cell)
                 .filter(position -> position.z() == levelZ)
                 .findFirst()
-                .orElseGet(() -> path().stream()
+                .orElseGet(() -> gridPath().points().stream()
                         .filter(position -> position.z() == levelZ)
                         .findFirst()
                         .orElse(null));
@@ -147,10 +148,16 @@ public final class DungeonStair {
                 + "]";
     }
 
-    public DungeonStair movedBy(GridPoint delta, int levelDelta) {
-        GridTranslation translation = delta == null
-                ? new GridTranslation(0, 0, levelDelta)
-                : new GridTranslation(delta.x2() / 2, delta.y2() / 2, levelDelta);
+    public DungeonStair movedBy(GridTranslation translation) {
+        GridTranslation resolvedTranslation = translation == null ? GridTranslation.none() : translation;
+        if (resolvedTranslation.isZero()) {
+            return this;
+        }
+        return new DungeonStair(stairId, mapId, name, stair.movedBy(resolvedTranslation));
+    }
+
+    public DungeonStair movedBy(int levelDelta) {
+        GridTranslation translation = new GridTranslation(0, 0, levelDelta);
         if (translation.isZero()) {
             return this;
         }

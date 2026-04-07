@@ -432,17 +432,17 @@ public final class StairTool implements EditorTool {
             return null;
         }
         for (var exit : stair.exits()) {
-            if (Objects.equals(exit.position(), clickedPoint)) {
-                return exit.position().z();
+            if (Objects.equals(exit.cell(), clickedPoint)) {
+                return exit.cell().z();
             }
         }
         return stair.exits().stream()
                 .min(Comparator
                         .comparingInt((features.world.dungeon.model.structures.stair.StairExit exit) ->
-                                stairExitDistance(clickedPoint, exit.position()))
-                        .thenComparingInt(exit -> stairExitTieRank(stairId, exit.position().z()))
-                        .thenComparingInt(exit -> exit.position().z()))
-                .map(exit -> exit.position().z())
+                                stairExitDistance(clickedPoint, exit.cell()))
+                        .thenComparingInt(exit -> stairExitTieRank(stairId, exit.cell().z()))
+                        .thenComparingInt(exit -> exit.cell().z()))
+                .map(exit -> exit.cell().z())
                 .orElse(null);
     }
 
@@ -472,7 +472,7 @@ public final class StairTool implements EditorTool {
             return null;
         }
         return stair.exits().stream()
-                .map(exit -> exit.position())
+                .map(exit -> exit.cell())
                 .filter(position -> position.z() == level)
                 .findFirst()
                 .orElse(null);

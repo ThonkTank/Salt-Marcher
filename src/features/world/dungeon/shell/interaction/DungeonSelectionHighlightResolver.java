@@ -66,7 +66,7 @@ public final class DungeonSelectionHighlightResolver {
                     doorPartSurfaces(layout, doorRef, levelZ);
             case DungeonSelectionRef.CorridorTileRef corridorTileRef ->
                     corridorTileRef.cell().z() == levelZ
-                            ? List.of(new DungeonHitSurface.CellSurface(Set.of(projectedCell(corridorTileRef.cell())), levelZ))
+                            ? List.of(new DungeonHitSurface.CellSurface(Set.of(corridorTileRef.cell()), levelZ))
                             : List.of();
             case DungeonSelectionRef.CorridorNodeRef corridorNodeRef ->
                     List.of(new DungeonHitSurface.PointSurface(Set.of(corridorNodeRef.point()), levelZ));
@@ -77,15 +77,15 @@ public final class DungeonSelectionHighlightResolver {
                     List.of(new DungeonHitSurface.PointSurface(Set.of(vertexRef.vertex()), levelZ));
             case DungeonSelectionRef.GridCellRef gridCellRef ->
                     gridCellRef.cell().z() == levelZ
-                            ? List.of(new DungeonHitSurface.CellSurface(Set.of(projectedCell(gridCellRef.cell())), levelZ))
+                            ? List.of(new DungeonHitSurface.CellSurface(Set.of(gridCellRef.cell()), levelZ))
                             : List.of();
             case DungeonSelectionRef.RoomCellRef roomCellRef ->
                     roomCellRef.cell().z() == levelZ
-                            ? List.of(new DungeonHitSurface.CellSurface(Set.of(projectedCell(roomCellRef.cell())), levelZ))
+                            ? List.of(new DungeonHitSurface.CellSurface(Set.of(roomCellRef.cell()), levelZ))
                             : List.of();
             case DungeonSelectionRef.FloorCellRef floorCellRef ->
                     floorCellRef.cell().z() == levelZ
-                            ? List.of(new DungeonHitSurface.CellSurface(Set.of(projectedCell(floorCellRef.cell())), levelZ))
+                            ? List.of(new DungeonHitSurface.CellSurface(Set.of(floorCellRef.cell()), levelZ))
                             : List.of();
             default -> List.of();
         };
@@ -146,9 +146,8 @@ public final class DungeonSelectionHighlightResolver {
             return List.of();
         }
         LinkedHashSet<GridPoint> cells = new LinkedHashSet<>();
-        stair.path().stream()
+        stair.gridPath().points().stream()
                 .filter(point -> point != null && point.z() == levelZ)
-                .map(DungeonSelectionHighlightResolver::projectedCell)
                 .forEach(cells::add);
         return cells.isEmpty() ? List.of() : List.of(new DungeonHitSurface.CellSurface(cells, levelZ));
     }
@@ -166,15 +165,10 @@ public final class DungeonSelectionHighlightResolver {
         }
         Set<GridPoint> cells = transition.localConnection().stairCarrier() == null
                 ? Set.of()
-                : transition.localConnection().stairCarrier().path().stream()
+                : transition.localConnection().stairCarrier().stair().gridPath().points().stream()
                 .filter(point -> point != null && point.z() == levelZ)
-                .map(DungeonSelectionHighlightResolver::projectedCell)
                 .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
         return cells.isEmpty() ? List.of() : List.of(new DungeonHitSurface.CellSurface(cells, levelZ));
-    }
-
-    private static GridPoint projectedCell(GridPoint point) {
-        return point == null ? null : point.touchingCells().center();
     }
 
     private static List<DungeonHitSurface> corridorSegmentSurfaces(

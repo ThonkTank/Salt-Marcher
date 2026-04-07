@@ -4,7 +4,6 @@ import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridTranslation;
 
-import java.util.Collection;
 import java.util.Set;
 
 /**
@@ -43,8 +42,8 @@ abstract sealed class StructureSurfaceObject permits StructureSurfaceArea, Struc
         return resolvedTranslation.isZero() ? area : area.translated(resolvedTranslation);
     }
 
-    final GridArea intersectedArea(Collection<GridPoint> cells) {
-        return area.intersection(GridArea.of(cells));
+    final GridArea intersectedArea(GridArea cells) {
+        return area.intersection(cells == null ? GridArea.empty() : cells);
     }
 
     final GridTranslation resolvedTranslation(GridTranslation translation) {

@@ -5,7 +5,7 @@ import features.world.dungeon.application.support.DungeonTransactionRunner;
 import features.world.dungeon.dungoenmap.model.DungeonMap;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.model.structures.stair.DungeonStair;
-import features.world.dungeon.dungoenmap.repository.DungeonLayoutRepository;
+import features.world.dungeon.dungoenmap.repository.DungeonMapRepository;
 import features.world.dungeon.repository.DungeonStairRepository;
 import features.world.dungeon.stair.model.StairPathPatternSpec;
 
@@ -23,14 +23,14 @@ import java.util.Set;
  */
 public final class DungeonStairApplicationService {
 
-    private final DungeonLayoutRepository layoutRepository;
+    private final DungeonMapRepository mapRepository;
     private final DungeonStairRepository stairRepository;
 
     public DungeonStairApplicationService(
-            DungeonLayoutRepository layoutRepository,
+            DungeonMapRepository mapRepository,
             DungeonStairRepository stairRepository
     ) {
-        this.layoutRepository = Objects.requireNonNull(layoutRepository, "layoutRepository");
+        this.mapRepository = Objects.requireNonNull(mapRepository, "mapRepository");
         this.stairRepository = Objects.requireNonNull(stairRepository, "stairRepository");
     }
 
@@ -49,7 +49,7 @@ public final class DungeonStairApplicationService {
                         namedDraft);
                 DungeonStairRepository.StairEditorData editorData = toEditorData(namedDraft);
                 long stairId = stairRepository.insertStair(conn, resolvedRequest.mapId(), stair, editorData);
-                stairRepository.replacePathNodes(conn, stairId, stair.path());
+                stairRepository.replacePathNodes(conn, stairId, stair.gridPath().points());
                 stairRepository.replaceStopLevels(conn, stairId, stair.stopLevels());
                 return stairId;
             });
@@ -75,7 +75,7 @@ public final class DungeonStairApplicationService {
                         resolvedRequest.mapId(),
                         draft);
                 stairRepository.updateStair(conn, resolvedRequest.stairId(), stair, toEditorData(draft));
-                stairRepository.replacePathNodes(conn, resolvedRequest.stairId(), stair.path());
+                stairRepository.replacePathNodes(conn, resolvedRequest.stairId(), stair.gridPath().points());
                 stairRepository.replaceStopLevels(conn, resolvedRequest.stairId(), stair.stopLevels());
                 return null;
             });
@@ -109,7 +109,7 @@ public final class DungeonStairApplicationService {
                         resolvedRequest.mapId(),
                         movedDraft);
                 stairRepository.updateStair(conn, resolvedRequest.stairId(), stair, toEditorData(movedDraft));
-                stairRepository.replacePathNodes(conn, resolvedRequest.stairId(), stair.path());
+                stairRepository.replacePathNodes(conn, resolvedRequest.stairId(), stair.gridPath().points());
                 stairRepository.replaceStopLevels(conn, resolvedRequest.stairId(), stair.stopLevels());
                 return null;
             });
@@ -160,7 +160,7 @@ public final class DungeonStairApplicationService {
     }
 
     private DungeonMap requireLayout(Connection conn, long mapId) throws SQLException {
-        DungeonMap layout = layoutRepository.loadLayout(conn, mapId);
+        DungeonMap layout = mapRepository.loadMap(conn, mapId);
         if (layout == null) {
             throw new SQLException("Dungeon " + mapId + " konnte nicht geladen werden");
         }

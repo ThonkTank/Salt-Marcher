@@ -172,7 +172,7 @@ public final class FloorTool implements EditorTool {
             return null;
         }
         return switch (ctx.hitRef()) {
-            case DungeonSelectionRef.RoomCellRef roomCellRef -> roomCellRef.cell().touchingCells().center();
+            case DungeonSelectionRef.RoomCellRef roomCellRef -> roomCellRef.cell();
             default -> null;
         };
     }

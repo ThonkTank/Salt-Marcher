@@ -103,7 +103,6 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
             }
             Set<GridPoint> occupiedCells = transition.localConnection().occupiedPositions(layout).stream()
                     .filter(point -> point != null && point.z() == probe.levelZ())
-                    .map(DungeonSpatialHitSource::projectedCell)
                     .filter(cell -> cell.equals(probe.gridCell()))
                     .collect(java.util.stream.Collectors.toSet());
             if (occupiedCells.isEmpty()) {
@@ -127,9 +126,5 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
         }
         Cluster cluster = layout.findCluster(room.clusterId());
         return cluster == null ? Structure.empty() : cluster.roomTopology().structureFor(room);
-    }
-
-    private static GridPoint projectedCell(GridPoint point) {
-        return point == null ? null : point.touchingCells().center();
     }
 }

@@ -2,12 +2,10 @@ package features.world.dungeon.dungoenmap.structure.model.boundary.door;
 
 import features.world.dungeon.geometry.GridBoundary;
 import features.world.dungeon.geometry.GridSegment;
-import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridTranslation;
 import features.world.dungeon.dungoenmap.structure.model.boundary.BoundaryObject;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -19,18 +17,6 @@ public final class Door extends BoundaryObject {
     private Door(Long doorId, GridBoundary boundary, GridSegment anchorSegment, DoorState doorState) {
         super(doorId, boundary, anchorSegment);
         this.doorState = doorState == null ? DoorState.CLOSED : doorState;
-    }
-
-    public static Door fromSegments(Collection<GridSegment> segments, DoorState doorState) {
-        return new Door(null, GridBoundary.of(segments), null, doorState);
-    }
-
-    public static Door fromSegments(Collection<GridSegment> segments, GridSegment anchorSegment, DoorState doorState) {
-        return new Door(null, GridBoundary.of(segments), anchorSegment, doorState);
-    }
-
-    public static Door fromSegments(Long doorId, Collection<GridSegment> segments, GridSegment anchorSegment, DoorState doorState) {
-        return new Door(doorId, GridBoundary.of(segments), anchorSegment, doorState);
     }
 
     public static Door fromBoundary(GridBoundary boundary, DoorState doorState) {
@@ -61,13 +47,6 @@ public final class Door extends BoundaryObject {
                 translatedAnchorSegment(resolvedTranslation), doorState);
     }
 
-    public Door movedBy(GridPoint delta) {
-        if (delta == null) {
-            return this;
-        }
-        return movedBy(new GridTranslation(delta.cellX(), delta.cellY(), delta.z()));
-    }
-
     public Door withDoorId(Long doorId) {
         return Objects.equals(doorId(), doorId)
                 ? this
@@ -81,14 +60,14 @@ public final class Door extends BoundaryObject {
                 : new Door(doorId(), GridBoundary.of(orderedBoundarySegments()), anchorSegment(), resolvedDoorState);
     }
 
-    public Door clippedToBoundary(Collection<GridSegment> boundarySegments) {
+    public Door clippedToBoundary(GridBoundary boundarySegments) {
         GridBoundary clippedBoundary = clippedBoundary(boundarySegments);
         return clippedBoundary.isEmpty()
                 ? null
                 : Door.fromBoundary(doorId(), clippedBoundary, repairedAnchorSegment(clippedBoundary), doorState);
     }
 
-    public Door withoutBoundarySegments(Collection<GridSegment> removedBoundarySegments) {
+    public Door withoutBoundarySegments(GridBoundary removedBoundarySegments) {
         List<GridBoundary> components = remainingBoundaryComponents(removedBoundarySegments);
         if (components.size() > 1) {
             throw new IllegalArgumentException("Door edit would split an existing door");
@@ -100,7 +79,7 @@ public final class Door extends BoundaryObject {
         return Door.fromBoundary(doorId(), remainingComponent, repairedAnchorSegment(remainingComponent), doorState);
     }
 
-    public static List<Door> fromBoundaryComponents(Collection<GridSegment> boundarySegments, DoorState doorState) {
+    public static List<Door> fromBoundaryComponents(GridBoundary boundarySegments, DoorState doorState) {
         ArrayList<Door> result = new ArrayList<>();
         for (GridBoundary component : boundaryComponents(boundarySegments)) {
             if (!component.isEmpty()) {

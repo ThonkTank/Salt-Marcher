@@ -1,6 +1,7 @@
 package features.world.dungeon.dungoenmap.corridor.model;
 
 import features.world.dungeon.geometry.CardinalDirection;
+import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
 import features.world.dungeon.geometry.GridPath;
@@ -79,14 +80,14 @@ public final class CorridorRouting {
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
-    public static List<AnchorAttachment> attachmentsForPoint(GridPoint anchorPoint, Collection<GridPoint> blockedCells) {
+    public static List<AnchorAttachment> attachmentsForPoint(GridPoint anchorPoint, GridArea blockedCells) {
         if (anchorPoint == null) {
             return List.of();
         }
         if (anchorPoint.kind() == GridPoint.Kind.CELL) {
             return List.of(new AnchorAttachment(anchorPoint, List.of(anchorPoint)));
         }
-        LinkedHashSet<GridPoint> blocked = new LinkedHashSet<>(blockedCells == null ? Set.<GridPoint>of() : blockedCells);
+        Set<GridPoint> blocked = blockedCells == null ? Set.of() : blockedCells.cells();
         Set<GridPoint> candidates = anchorPoint.touchingCells().cells();
         ArrayList<AnchorAttachment> attachments = new ArrayList<>();
         for (GridPoint candidate : candidates.stream().sorted(GridPoint.ORDER).toList()) {
@@ -104,7 +105,7 @@ public final class CorridorRouting {
             int levelZ,
             Collection<RoutedNode> nodes,
             Collection<RoutedLink> links,
-            Collection<GridPoint> blockedCells
+            GridArea blockedCells
     ) {
         Map<Long, RoutedNode> nodesById = indexRoutedNodes(nodes);
         ArrayList<CorridorPathTrace> traces = new ArrayList<>();
@@ -174,7 +175,7 @@ public final class CorridorRouting {
     private static RoutePlan findBestTrace(
             Collection<AnchorAttachment> startAttachments,
             Collection<AnchorAttachment> endAttachments,
-            Collection<GridPoint> blockedCells
+            GridArea blockedCells
     ) {
         RoutePlan bestPlan = null;
         for (AnchorAttachment startAttachment : startAttachments == null ? List.<AnchorAttachment>of() : startAttachments) {
@@ -188,7 +189,7 @@ public final class CorridorRouting {
                 CellRoute cellRoute = findCellRoute(
                         startAttachment.cell(),
                         endAttachment.cell(),
-                        blockedCells == null ? Set.of() : Set.copyOf(blockedCells));
+                        blockedCells == null ? Set.of() : blockedCells.cells());
                 if (cellRoute == null) {
                     continue;
                 }

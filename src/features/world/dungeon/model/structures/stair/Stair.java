@@ -20,18 +20,10 @@ public final class Stair {
     private final Set<Integer> stopLevels;
     private final List<StairExit> exits;
 
-    public Stair(List<GridPoint> path, Set<Integer> stopLevels) {
-        this(GridPath.of(normalizePath(path)), stopLevels);
-    }
-
     public Stair(GridPath path, Set<Integer> stopLevels) {
-        this.path = path == null ? GridPath.empty() : path;
+        this.path = normalizePath(path);
         this.stopLevels = normalizeStopLevels(this.path.points(), stopLevels);
         this.exits = deriveExits(this.path.points(), this.stopLevels);
-    }
-
-    public static Stair of(List<GridPoint> path, Set<Integer> stopLevels) {
-        return new Stair(path, stopLevels);
     }
 
     public static Stair of(GridPath path, Set<Integer> stopLevels) {
@@ -40,10 +32,6 @@ public final class Stair {
 
     public GridPath gridPath() {
         return path;
-    }
-
-    public List<GridPoint> path() {
-        return path.points();
     }
 
     public Set<Integer> stopLevels() {
@@ -59,12 +47,12 @@ public final class Stair {
     }
 
     public Set<GridPoint> occupiedPositions() {
-        return Set.copyOf(path.points());
+        return path.cellFootprint().cells();
     }
 
     public List<StairExit> exitsAtLevel(int levelZ) {
         return exits.stream()
-                .filter(exit -> exit.position().z() == levelZ)
+                .filter(exit -> exit.cell().z() == levelZ)
                 .toList();
     }
 
@@ -79,10 +67,14 @@ public final class Stair {
         return Stair.of(path.translated(resolvedTranslation), translatedStops);
     }
 
-    private static List<GridPoint> normalizePath(List<GridPoint> path) {
+    private static GridPath normalizePath(GridPath path) {
+        List<GridPoint> rawPoints = path == null ? List.of() : path.points();
         java.util.ArrayList<GridPoint> result = new java.util.ArrayList<>();
-        for (GridPoint node : path == null ? List.<GridPoint>of() : path) {
+        for (GridPoint node : rawPoints) {
             if (node != null) {
+                if (node.kind() != GridPoint.Kind.CELL) {
+                    throw new IllegalArgumentException("Treppenpfad darf nur Zellpunkte enthalten");
+                }
                 result.add(node);
             }
         }
@@ -107,7 +99,7 @@ public final class Stair {
             }
             previous = current;
         }
-        return List.copyOf(result);
+        return GridPath.of(List.copyOf(result));
     }
 
     private static Set<Integer> normalizeStopLevels(List<GridPoint> path, Set<Integer> stopLevels) {

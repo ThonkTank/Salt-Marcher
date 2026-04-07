@@ -3,6 +3,7 @@ package features.world.dungeon.repository;
 import features.world.dungeon.dungoenmap.model.DungeonMap;
 import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.geometry.GridPoint;
+import features.world.dungeon.geometry.GridPath;
 import features.world.dungeon.dungoenmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeon.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeon.model.structures.connection.ConnectionKind;
@@ -218,8 +219,8 @@ public final class DungeonTransitionRepository {
 
     private void replaceCarrierDetails(Connection conn, long transitionId, DungeonConnection localConnection) throws SQLException {
         StairConnectionCarrier stairCarrier = localConnection == null ? null : localConnection.stairCarrier();
-        replacePathNodes(conn, transitionId, stairCarrier == null ? List.of() : stairCarrier.path());
-        replaceStopLevels(conn, transitionId, stairCarrier == null ? Set.of() : stairCarrier.stopLevels());
+        replacePathNodes(conn, transitionId, stairCarrier == null ? List.of() : stairCarrier.stair().gridPath().points());
+        replaceStopLevels(conn, transitionId, stairCarrier == null ? Set.of() : stairCarrier.stair().stopLevels());
     }
 
     private void replacePathNodes(Connection conn, long transitionId, List<GridPoint> pathNodes) throws SQLException {
@@ -330,7 +331,7 @@ public final class DungeonTransitionRepository {
                     new StairConnectionCarrier(
                             GridPoint.cell(rs.getInt("stair_anchor_cell_x"), rs.getInt("stair_anchor_cell_y"), 0),
                             rs.getInt("stair_anchor_level_z"),
-                            Stair.of(pathNodes, stopLevels)),
+                            Stair.of(GridPath.of(pathNodes), stopLevels)),
                     List.of(ConnectionEndpoint.transition(transitionId)));
             default -> throw new SQLException("Unbekannter dungeon transition placement_type: " + placementType);
         };
@@ -410,7 +411,7 @@ public final class DungeonTransitionRepository {
                             StairPathPatternSpec.defaultSpec(),
                             stairCarrier.anchorLevelZ(),
                             stairCarrier.anchorLevelZ(),
-                            stairCarrier.stopLevels())
+                            stairCarrier.stair().stopLevels())
                     : stairPlacementSpec;
             ps.setString(startIndex, "STAIR");
             clearDoorPlacement(ps, startIndex + 1);

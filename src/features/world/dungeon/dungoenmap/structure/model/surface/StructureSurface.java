@@ -5,7 +5,6 @@ import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridTranslation;
 import features.world.dungeon.dungoenmap.structure.model.StructureMutation;
 
-import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -34,12 +33,12 @@ public final class StructureSurface {
 
         public static PersistenceSnapshot fromCells(
                 GridPoint anchorCell,
-                Collection<GridPoint> surfaceCells,
-                Collection<GridPoint> floorCells
+                GridArea surfaceArea,
+                GridArea floorArea
         ) {
             return new PersistenceSnapshot(
-                    new StructureSurfaceArea.PersistenceSnapshot(anchorCell, normalizedCells(surfaceCells)),
-                    new StructureFloor.PersistenceSnapshot(normalizedCells(floorCells)));
+                    new StructureSurfaceArea.PersistenceSnapshot(anchorCell, normalizedCells(surfaceArea)),
+                    new StructureFloor.PersistenceSnapshot(normalizedCells(floorArea)));
         }
 
         public GridPoint anchorCell() {
@@ -89,19 +88,19 @@ public final class StructureSurface {
 
     public static StructureSurface fromCells(
             GridPoint anchorCell,
-            Collection<GridPoint> surfaceCells,
-            Collection<GridPoint> floorCells
+            GridArea surfaceArea,
+            GridArea floorArea
     ) {
-        StructureSurfaceArea surface = StructureSurfaceArea.fromCells(anchorCell, surfaceCells);
-        return fromSurfaceAndFloor(surface, StructureFloor.fromCells(floorCells, surface));
+        StructureSurfaceArea surface = StructureSurfaceArea.fromCells(anchorCell, surfaceArea);
+        return fromSurfaceAndFloor(surface, StructureFloor.fromCells(floorArea, surface));
     }
 
     public static StructureSurface fromPersistenceSnapshot(PersistenceSnapshot snapshot) {
         PersistenceSnapshot resolvedSnapshot = snapshot == null ? emptySnapshot() : snapshot;
         StructureSurfaceArea surface = StructureSurfaceArea.fromCells(
                 resolvedSnapshot.anchorCell(),
-                resolvedSnapshot.surfaceCells());
-        return fromSurfaceAndFloor(surface, StructureFloor.fromCells(resolvedSnapshot.floorCells(), surface));
+                GridArea.of(resolvedSnapshot.surfaceCells()));
+        return fromSurfaceAndFloor(surface, StructureFloor.fromCells(GridArea.of(resolvedSnapshot.floorCells()), surface));
     }
 
     public static StructureSurface fromSurfaceAndFloor(StructureSurfaceArea surface, StructureFloor floor) {
@@ -113,7 +112,7 @@ public final class StructureSurface {
         this.surface = surface == null ? StructureSurfaceArea.empty() : surface;
         this.floor = this.surface.isEmpty()
                 ? StructureFloor.empty()
-                : StructureFloor.fromCells(floor == null ? null : floor.cells(), this.surface);
+                : StructureFloor.fromCells(floor == null ? GridArea.empty() : GridArea.of(floor.cells()), this.surface);
     }
 
     public StructureSurfaceArea surface() {
@@ -138,7 +137,7 @@ public final class StructureSurface {
     }
 
     public StructureSurface editedSurfaceCells(
-            Collection<GridPoint> cells,
+            GridArea cells,
             StructureMutation.CellEditMode mode,
             StructureMutation.FloorSyncPolicy floorSyncPolicy,
             GridPoint preferredAnchorCell
@@ -155,16 +154,16 @@ public final class StructureSurface {
                 : floor.cells();
         return fromCells(
                 preferredAnchorCell(surface.anchorCell(), preferredAnchorCell, nextSurfaceCells),
-                nextSurfaceCells,
-                nextFloorCells);
+                GridArea.of(nextSurfaceCells),
+                GridArea.of(nextFloorCells));
     }
 
     public StructureSurface editedFloorCells(GridArea cells, StructureMutation.CellEditMode mode) {
-        Set<GridPoint> nextFloorCells = editedCells(floor.cells(), cells == null ? Set.of() : cells.cells(), mode);
+        Set<GridPoint> nextFloorCells = editedCells(floor.cells(), cells, mode);
         if (Objects.equals(nextFloorCells, floor.cells())) {
             return this;
         }
-        return fromCells(surface.anchorCell(), surface.cells(), nextFloorCells);
+        return fromCells(surface.anchorCell(), GridArea.of(surface.cells()), GridArea.of(nextFloorCells));
     }
 
     public StructureSurface clippedTo(GridArea clippedSurfaceCells, GridPoint preferredAnchor) {
@@ -198,11 +197,11 @@ public final class StructureSurface {
     }
 
     private static Set<GridPoint> editedCells(
-            Collection<GridPoint> existingCells,
-            Collection<GridPoint> editedCells,
+            Set<GridPoint> existingCells,
+            GridArea editedCells,
             StructureMutation.CellEditMode mode
     ) {
-        LinkedHashSet<GridPoint> result = new LinkedHashSet<>(normalizedCells(existingCells));
+        LinkedHashSet<GridPoint> result = new LinkedHashSet<>(existingCells == null ? Set.<GridPoint>of() : existingCells);
         Set<GridPoint> normalizedEditedCells = normalizedCells(editedCells);
         if (normalizedEditedCells.isEmpty()) {
             return result.isEmpty() ? Set.of() : Set.copyOf(result);
@@ -229,12 +228,12 @@ public final class StructureSurface {
         return surfaceCells.isEmpty() ? null : GridArea.of(surfaceCells).center();
     }
 
-    private static Set<GridPoint> normalizedCells(Collection<GridPoint> cells) {
-        if (cells == null || cells.isEmpty()) {
+    private static Set<GridPoint> normalizedCells(GridArea area) {
+        if (area == null || area.isEmpty()) {
             return Set.of();
         }
         LinkedHashSet<GridPoint> result = new LinkedHashSet<>();
-        for (GridPoint cell : cells) {
+        for (GridPoint cell : area.cells()) {
             if (cell != null && cell.kind() == GridPoint.Kind.CELL) {
                 result.add(cell);
             }

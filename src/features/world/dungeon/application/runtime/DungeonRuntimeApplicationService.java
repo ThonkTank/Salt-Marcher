@@ -8,11 +8,10 @@ import features.world.dungeon.dungoenmap.application.DungeonMapLoadResolver;
 import features.world.dungeon.dungoenmap.model.DungeonMap;
 import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.geometry.GridPoint;
-import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.dungoenmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeon.model.structures.transition.DungeonTransition;
 import features.world.dungeon.model.structures.transition.DungeonTransitionDestination;
-import features.world.dungeon.dungoenmap.repository.DungeonLayoutRepository;
+import features.world.dungeon.dungoenmap.repository.DungeonMapRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -24,14 +23,14 @@ import java.util.Optional;
  */
 public final class DungeonRuntimeApplicationService {
 
-    private final DungeonLayoutRepository layoutRepository;
+    private final DungeonMapRepository mapRepository;
     private final DungeonMapLoadResolver loadResolver;
 
     public DungeonRuntimeApplicationService(
-            DungeonLayoutRepository layoutRepository,
+            DungeonMapRepository mapRepository,
             DungeonMapLoadResolver loadResolver
     ) {
-        this.layoutRepository = Objects.requireNonNull(layoutRepository, "layoutRepository");
+        this.mapRepository = Objects.requireNonNull(mapRepository, "mapRepository");
         this.loadResolver = Objects.requireNonNull(loadResolver, "loadResolver");
     }
 
@@ -203,7 +202,7 @@ public final class DungeonRuntimeApplicationService {
             try {
                 targetLayout = dungeon.mapId() == layout.mapId()
                         ? layout
-                        : layoutRepository.loadLayout(conn, dungeon.mapId());
+                        : mapRepository.loadMap(conn, dungeon.mapId());
             } catch (RuntimeException exception) {
                 throw new SQLException("Ziel-Dungeon konnte nicht geladen werden", exception);
             }
@@ -236,7 +235,7 @@ public final class DungeonRuntimeApplicationService {
         }
         GridPoint resolvedCell = nearestTraversableCell(
                 layout,
-                projectedCell(entryPoint),
+                entryPoint,
                 entryPoint.z());
         if (resolvedCell == null) {
             throw new SQLException("Ziel-Übergang ist nicht begehbar");
@@ -263,7 +262,7 @@ public final class DungeonRuntimeApplicationService {
         GridPoint fallback = layout.defaultRuntimePosition();
         return fallback == null
                 ? DungeonRuntimeNavigationSnapshot.empty()
-                : navigationSnapshot(layout.mapId(), projectedCell(fallback), fallback.z(), heading);
+                : navigationSnapshot(layout.mapId(), fallback, fallback.z(), heading);
     }
 
     private GridPoint nearestTraversableCell(DungeonMap layout, GridPoint preferredCell, int preferredLevelZ) {
@@ -322,10 +321,6 @@ public final class DungeonRuntimeApplicationService {
             CardinalDirection heading
     ) {
         return new DungeonRuntimeNavigationSnapshot(mapId, cell, levelZ, normalizeHeading(heading));
-    }
-
-    private static GridPoint projectedCell(GridPoint point) {
-        return point == null ? null : point.touchingCells().center();
     }
 
     private static CardinalDirection normalizeHeading(CardinalDirection heading) {

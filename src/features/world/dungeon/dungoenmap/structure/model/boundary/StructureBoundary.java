@@ -453,11 +453,8 @@ public final class StructureBoundary {
             return List.of();
         }
         ArrayList<Door> result = new ArrayList<>();
-        List<GridSegment> resolvedBoundarySegments = boundaryShape.segments().stream()
-                .sorted(GridSegment.ORDER)
-                .toList();
         for (Door door : doors) {
-            Door normalizedDoor = door == null ? null : door.clippedToBoundary(resolvedBoundarySegments);
+            Door normalizedDoor = door == null ? null : door.clippedToBoundary(boundaryShape);
             if (normalizedDoor == null) {
                 continue;
             }
@@ -489,7 +486,7 @@ public final class StructureBoundary {
             return doors;
         }
         LinkedHashSet<Door> nextDoors = new LinkedHashSet<>(doors);
-        nextDoors.addAll(Door.fromBoundaryComponents(editableSegments, DoorState.OPEN));
+        nextDoors.addAll(Door.fromBoundaryComponents(GridBoundary.of(editableSegments), DoorState.OPEN));
         return nextDoors.stream()
                 .filter(Objects::nonNull)
                 .sorted(Comparator.comparing(Door::anchorSegment, GridSegment.ORDER))
@@ -509,7 +506,7 @@ public final class StructureBoundary {
         }
         List<Door> nextDoors = doors.stream()
                 .filter(Objects::nonNull)
-                .map(door -> door.withoutBoundarySegments(removableSegments))
+                .map(door -> door.withoutBoundarySegments(GridBoundary.of(removableSegments)))
                 .filter(Objects::nonNull)
                 .sorted(Comparator.comparing(Door::anchorSegment, GridSegment.ORDER))
                 .toList();
@@ -525,7 +522,7 @@ public final class StructureBoundary {
             return existingWalls == null ? List.of() : List.copyOf(existingWalls);
         }
         ArrayList<Wall> result = new ArrayList<>(existingWalls == null ? List.<Wall>of() : existingWalls);
-        result.addAll(Wall.fromBoundaryComponents(newSegments, WallKind.solid()));
+        result.addAll(Wall.fromBoundaryComponents(GridBoundary.of(newSegments), WallKind.solid()));
         return immutableWalls(result);
     }
 
@@ -543,7 +540,7 @@ public final class StructureBoundary {
         ArrayList<Wall> result = new ArrayList<>();
         for (Wall wall : existingWalls) {
             if (wall != null) {
-                result.addAll(wall.withoutBoundarySegments(removedSegments));
+                result.addAll(wall.withoutBoundarySegments(GridBoundary.of(removedSegments)));
             }
         }
         return immutableWalls(result);
@@ -575,12 +572,14 @@ public final class StructureBoundary {
 
         ArrayList<Wall> result = new ArrayList<>();
         LinkedHashSet<GridSegment> occupiedSegments = new LinkedHashSet<>();
+        GridBoundary interiorBoundary = GridBoundary.of(formerPerimeterBecomingInterior);
+        GridBoundary legalBoundary = GridBoundary.of(legalEdges);
         for (Wall wall : sortedWalls(walls)) {
             List<Wall> retainedComponents = formerPerimeterBecomingInterior.isEmpty()
                     ? List.of(wall)
-                    : wall.withoutBoundarySegments(formerPerimeterBecomingInterior);
+                    : wall.withoutBoundarySegments(interiorBoundary);
             for (Wall retainedComponent : retainedComponents) {
-                Wall clippedWall = retainedComponent == null ? null : retainedComponent.clippedToBoundary(legalEdges);
+                Wall clippedWall = retainedComponent == null ? null : retainedComponent.clippedToBoundary(legalBoundary);
                 if (clippedWall == null) {
                     continue;
                 }
@@ -591,7 +590,7 @@ public final class StructureBoundary {
 
         LinkedHashSet<GridSegment> missingPerimeterEdges = new LinkedHashSet<>(perimeterEdges);
         missingPerimeterEdges.removeAll(occupiedSegments);
-        for (Wall materializedPerimeterWall : Wall.fromBoundaryComponents(missingPerimeterEdges, WallKind.solid())) {
+        for (Wall materializedPerimeterWall : Wall.fromBoundaryComponents(GridBoundary.of(missingPerimeterEdges), WallKind.solid())) {
             addOccupiedSegments(occupiedSegments, materializedPerimeterWall);
             result.add(materializedPerimeterWall);
         }

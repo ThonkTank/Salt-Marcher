@@ -28,7 +28,7 @@ import features.world.dungeon.model.structures.stair.StairExit;
 import features.world.dungeon.model.structures.stair.DungeonStair;
 import features.world.dungeon.model.structures.transition.DungeonTransition;
 import features.world.dungeon.dungoenmap.corridor.repository.DungeonCorridorRepository;
-import features.world.dungeon.dungoenmap.repository.DungeonLayoutRepository;
+import features.world.dungeon.dungoenmap.repository.DungeonMapRepository;
 import features.world.dungeon.repository.DungeonRoomRepository;
 import features.world.dungeon.repository.DungeonTransitionRepository;
 
@@ -36,11 +36,14 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * Central cluster workflow owner for editor-visible cluster mutations.
@@ -50,20 +53,20 @@ import java.util.function.Supplier;
  */
 public final class DungeonClusterApplicationService {
 
-    private final DungeonLayoutRepository layoutRepository;
+    private final DungeonMapRepository mapRepository;
     private final DungeonClusterRepository clusterRepository;
     private final DungeonCorridorRepository corridorRepository;
     private final DungeonRoomRepository roomRepository;
     private final DungeonTransitionRepository transitionRepository;
 
     public DungeonClusterApplicationService(
-            DungeonLayoutRepository layoutRepository,
+            DungeonMapRepository mapRepository,
             DungeonClusterRepository clusterRepository,
             DungeonCorridorRepository corridorRepository,
             DungeonRoomRepository roomRepository,
             DungeonTransitionRepository transitionRepository
     ) {
-        this.layoutRepository = Objects.requireNonNull(layoutRepository, "layoutRepository");
+        this.mapRepository = Objects.requireNonNull(mapRepository, "mapRepository");
         this.clusterRepository = Objects.requireNonNull(clusterRepository, "clusterRepository");
         this.corridorRepository = Objects.requireNonNull(corridorRepository, "corridorRepository");
         this.roomRepository = Objects.requireNonNull(roomRepository, "roomRepository");
@@ -572,7 +575,7 @@ public final class DungeonClusterApplicationService {
     }
 
     private DungeonMap requireLayout(Connection conn, long mapId) throws SQLException {
-        DungeonMap layout = layoutRepository.loadLayout(conn, mapId);
+        DungeonMap layout = mapRepository.loadMap(conn, mapId);
         if (layout == null) {
             throw new SQLException("Dungeon " + mapId + " konnte nicht geladen werden");
         }
@@ -988,7 +991,6 @@ public final class DungeonClusterApplicationService {
                     && transition.localConnection() != null
                     && transition.localConnection().occupiedPositions(layout).stream()
                     .filter(point -> point != null && point.z() == levelZ)
-                    .map(DungeonClusterApplicationService::projectedCell)
                     .anyMatch(removedFloorCells::contains)) {
                 throw new SQLException("Boden unter einem platzierten Übergang kann nicht entfernt werden.");
             }
@@ -998,9 +1000,8 @@ public final class DungeonClusterApplicationService {
                 continue;
             }
             boolean usesRemovedExit = stair.exitsAtLevel(levelZ).stream()
-                    .map(StairExit::position)
+                    .map(StairExit::cell)
                     .filter(Objects::nonNull)
-                    .map(DungeonClusterApplicationService::projectedCell)
                     .anyMatch(removedFloorCells::contains);
             if (usesRemovedExit) {
                 throw new SQLException("Boden unter einem Treppenanschluss kann nicht entfernt werden.");
@@ -1033,10 +1034,6 @@ public final class DungeonClusterApplicationService {
     private static Room roomWithFloorAtCell(DungeonMap layout, GridPoint cell, int levelZ) {
         Room room = roomAtCell(layout, cell, levelZ);
         return room != null && roomStructure(layout, room).surfaceAtLevel(levelZ).floor().contains(cell) ? room : null;
-    }
-
-    private static GridPoint projectedCell(GridPoint point) {
-        return point == null ? null : point.touchingCells().center();
     }
 
     public record MoveDoorRequest(
