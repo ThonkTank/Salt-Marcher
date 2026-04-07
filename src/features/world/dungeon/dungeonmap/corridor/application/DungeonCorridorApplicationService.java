@@ -3,6 +3,7 @@ package features.world.dungeon.dungeonmap.corridor.application;
 import database.DatabaseManager;
 import features.world.dungeon.application.support.DungeonTransactionRunner;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
+import features.world.dungeon.dungeonmap.model.CorridorResolutionContextRequest;
 import features.world.dungeon.dungeonmap.model.CorridorResolutionRequest;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
@@ -13,6 +14,7 @@ import features.world.dungeon.dungeonmap.corridor.model.CorridorMutation;
 import features.world.dungeon.dungeonmap.corridor.model.CorridorNode;
 import features.world.dungeon.dungeonmap.corridor.model.CorridorSegment;
 import features.world.dungeon.dungeonmap.corridor.model.CorridorSpecification;
+import features.world.dungeon.dungeonmap.corridor.model.CorridorTopologyMutation;
 import features.world.dungeon.dungeonmap.corridor.repository.DungeonCorridorRepository;
 import features.world.dungeon.dungeonmap.repository.DungeonMapRepository;
 
@@ -81,7 +83,7 @@ public final class DungeonCorridorApplicationService {
                         new CorridorMutation.AttachRoomDoorAtBoundary(
                                 resolvedRequest.doorRef(),
                                 resolvedRequest.boundarySegment()),
-                        layout.corridorResolutionInput(corridor));
+                        layout.corridorResolutionInput(CorridorResolutionContextRequest.forCorridor(corridor)));
                 if (updated != corridor) {
                     corridorRepository.save(conn, updated, layout);
                 }
@@ -105,7 +107,7 @@ public final class DungeonCorridorApplicationService {
                         new CorridorMutation.TileNodePromotionAndMove(
                                 resolvedRequest.tileCell(),
                                 resolvedRequest.targetPoint()),
-                        layout.corridorResolutionInput(corridor));
+                        layout.corridorResolutionInput(CorridorResolutionContextRequest.forCorridor(corridor)));
                 if (updated != corridor) {
                     corridorRepository.save(conn, updated, layout);
                 }
@@ -127,7 +129,7 @@ public final class DungeonCorridorApplicationService {
                 Corridor corridor = requireCorridor(layout, resolvedRequest.corridorId());
                 Corridor updated = corridor.mutated(
                         new CorridorMutation.NodeMove(resolvedRequest.nodeId(), resolvedRequest.point()),
-                        layout.corridorResolutionInput(corridor));
+                        layout.corridorResolutionInput(CorridorResolutionContextRequest.forCorridor(corridor)));
                 if (updated != corridor) {
                     corridorRepository.save(conn, updated, layout);
                 }
@@ -158,7 +160,7 @@ public final class DungeonCorridorApplicationService {
                         new CorridorMutation.DoorMove(
                                 resolvedRequest.sourceBoundarySegment(),
                                 resolvedRequest.targetDoorRef()),
-                        layout.corridorResolutionInput(corridor));
+                        layout.corridorResolutionInput(CorridorResolutionContextRequest.forCorridor(corridor)));
                 if (updated != corridor) {
                     corridorRepository.save(conn, updated, layout);
                 }
@@ -179,7 +181,7 @@ public final class DungeonCorridorApplicationService {
                         conn,
                         layout,
                         corridor,
-                        corridor.topologyUpdated(new CorridorMutation.DeleteSegment(resolvedRequest.segmentId())));
+                        corridor.topologyUpdated(new CorridorTopologyMutation.DeleteSegment(resolvedRequest.segmentId())));
             });
         }
     }
@@ -197,7 +199,7 @@ public final class DungeonCorridorApplicationService {
                         conn,
                         layout,
                         corridor,
-                        corridor.topologyUpdated(new CorridorMutation.DeleteNode(resolvedRequest.nodeId())));
+                        corridor.topologyUpdated(new CorridorTopologyMutation.DeleteNode(resolvedRequest.nodeId())));
             });
         }
     }
@@ -217,7 +219,7 @@ public final class DungeonCorridorApplicationService {
                         conn,
                         layout,
                         corridor,
-                        corridor.topologyUpdated(new CorridorMutation.DeleteDoor(resolvedRequest.boundarySegment())));
+                        corridor.topologyUpdated(new CorridorTopologyMutation.DeleteDoor(resolvedRequest.boundarySegment())));
             });
         }
     }

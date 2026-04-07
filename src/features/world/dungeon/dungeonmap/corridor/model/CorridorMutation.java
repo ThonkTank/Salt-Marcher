@@ -11,10 +11,7 @@ public sealed interface CorridorMutation permits
         CorridorMutation.NodeMove,
         CorridorMutation.TileNodePromotionAndMove,
         CorridorMutation.AttachRoomDoorAtBoundary,
-        CorridorMutation.DoorMove,
-        CorridorMutation.DeleteDoor,
-        CorridorMutation.DeleteSegment,
-        CorridorMutation.DeleteNode {
+        CorridorMutation.DoorMove {
 
     record NodeMove(Long nodeId, GridPoint point) implements CorridorMutation {
     }
@@ -26,14 +23,5 @@ public sealed interface CorridorMutation permits
     }
 
     record DoorMove(GridSegment sourceBoundarySegment, DoorRef targetDoorRef) implements CorridorMutation {
-    }
-
-    record DeleteDoor(GridSegment boundarySegment) implements CorridorMutation {
-    }
-
-    record DeleteSegment(Long segmentId) implements CorridorMutation {
-    }
-
-    record DeleteNode(Long nodeId) implements CorridorMutation {
     }
 }

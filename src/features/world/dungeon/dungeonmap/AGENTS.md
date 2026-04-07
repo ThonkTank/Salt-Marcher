@@ -16,17 +16,18 @@
 ## Canonical Types and APIs
 
 - `model/DungeonMap` — loaded map snapshot — resolves canonical room, corridor, stair, transition, door, connection, and traversability lookups.
+- `model/CorridorResolutionContextRequest` — typed map-owned corridor-context request — the only public input for `DungeonMap.corridorResolutionInput(...)`.
 - `model/CorridorResolutionRequest`, `model/CorridorRehydrationRequest` — typed map-owned corridor materialization requests — carry authored corridor state into `DungeonMap.resolveCorridor(...)` and `DungeonMap.rehydrateCorridor(...)`.
 - `repository/DungeonMapRepository` — map id plus connection — rehydrates one authoritative `DungeonMap` from persisted owner slices.
 - `application/DungeonMapLoadResolver` — synchronous selection and repair policy — resolves which map should load or reload next.
 - `application/DungeonMapLoadingService` — async load and post-write reload seam — updates `DungeonMapState` from authoritative reloads.
 - `state/DungeonMapState` — shared map session state for active map, projection level, overlay settings, and loading flags.
 - `state/DungeonLevelOverlayMode`, `state/DungeonLevelOverlaySettings` — map-owned overlay policy state consumed by shell and canvas surfaces.
-- `model/DungeonMap.corridorResolutionInput(...)` — corridor-external fact builder — materializes the fixed corridor input contract from current map state.
+- `model/DungeonMap.corridorResolutionInput(...)` — corridor-external fact builder — materializes the fixed corridor input contract from current map state from exactly one typed context request.
 - `model/DungeonMap.resolveCorridor(...)`, `model/DungeonMap.rehydrateCorridor(...)` — typed corridor build and reload seam — constructs `Corridor` only from fixed corridor requests plus map-owned external input facts.
 - `model/DungeonMap.validateClusterRewrite(...)` — cross-owner pre-persist rewrite validation seam — checks corridor and transition consistency against the post-rewrite cluster snapshot.
 - `model/DungeonMap.reconcileClusterRewrite(...)` — cross-owner post-persist reconcile seam — returns rebound corridors and transition local connections after persisted cluster rewrites.
-- `model/DungeonMap.assertClusterFloorDeletionAllowed(...)` — cluster-external occupancy guard — rejects floor deletions that would orphan corridor, transition, or stair anchors.
+- `model/DungeonMap.assertClusterFloorDeletionAllowed(...)` — cluster-external occupancy guard — rejects floor deletions that would orphan corridor, transition, or stair anchors while letting each owner answer its own anchor semantics.
 
 ## Where New Code Goes
 
@@ -46,4 +47,5 @@
 - Do not reintroduce top-level `structure`, `cluster`, or `corridor` owners beside `dungeonmap`.
 - Do not turn `DungeonMap` into a second physical topology owner when `structure`, `cluster`, `corridor`, `stair`, and `transition` already own their underlying truth.
 - Do not let corridor callers bypass the fixed corridor input contract by passing raw map state, room lookups, primitive corridor bundles, or ad-hoc door resolution directly into `Corridor`.
+- Do not add a second public `corridorResolutionInput(...)` entry shape beside `CorridorResolutionContextRequest`.
 - Do not let cluster rewrite workflows keep separate corridor-only and transition-only validation paths outside `DungeonMap`.

@@ -945,17 +945,10 @@ public final class DungeonMap {
         return withReplacedClusters(plan.originalClusters(), plan.finalClusters());
     }
 
-    public CorridorResolutionInput corridorResolutionInput(int levelZ) {
-        return corridorResolutionInput(levelZ, List.of());
-    }
-
-    public CorridorResolutionInput corridorResolutionInput(Corridor corridor) {
-        return corridor == null
-                ? corridorResolutionInput(0)
-                : corridorResolutionInput(corridor.levelZ(), corridor.boundaryAtLevel(corridor.levelZ()).doors());
-    }
-
-    public CorridorResolutionInput corridorResolutionInput(int levelZ, Collection<Door> corridorDoors) {
+    public CorridorResolutionInput corridorResolutionInput(CorridorResolutionContextRequest request) {
+        CorridorResolutionContextRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        int levelZ = resolvedRequest.levelZ();
+        Collection<Door> corridorDoors = resolvedRequest.corridorDoors();
         Map<DoorRef, CorridorResolutionInput.ExteriorDoorInput> exteriorDoors = exteriorDoorInputs(levelZ);
         CorridorResolutionInput seed = new CorridorResolutionInput(
                 levelZ,
@@ -971,12 +964,6 @@ public final class DungeonMap {
                 corridorBoundaryAttachments(levelZ, seed),
                 seed.occupiedConnectionSegments(),
                 seed.corridorDoors());
-    }
-
-    public CorridorResolutionInput corridorResolutionInput(Corridor corridor, Collection<Door> corridorDoors) {
-        return corridor == null
-                ? corridorResolutionInput(0, corridorDoors)
-                : corridorResolutionInput(corridor.levelZ(), corridorDoors);
     }
 
     public void validateClusterRewrite(ClusterRewritePlan plan) {
@@ -1017,17 +1004,8 @@ public final class DungeonMap {
             if (corridor == null || corridor.levelZ() != levelZ) {
                 continue;
             }
-            for (var node : corridor.nodes()) {
-                DoorDescription description = node == null || !node.isDoorBound()
-                        ? null
-                        : describeDoor(node.doorRef());
-                if (node != null
-                        && description != null
-                        && description.isRoomExterior()
-                        && Objects.equals(description.roomId(), room.roomId())
-                        && description.anchorSegment().cellFootprint().cells().stream().anyMatch(removedFloorCells::contains)) {
-                    throw new IllegalArgumentException("Boden unter einem Corridor-Anker kann nicht entfernt werden.");
-                }
+            if (corridor.touchesRoomAnchorCells(room.roomId(), removedFloorCells)) {
+                throw new IllegalArgumentException("Boden unter einem Corridor-Anker kann nicht entfernt werden.");
             }
         }
         for (DungeonTransition transition : transitionsAtLevel(levelZ)) {
@@ -1100,8 +1078,9 @@ public final class DungeonMap {
         DungeonMap resolvedUpdatedMap = Objects.requireNonNull(updatedMap, "updatedMap");
         int corridorLevel = resolvedCorridor.levelZ();
         CorridorResolutionInput updatedResolution = resolvedUpdatedMap.corridorResolutionInput(
-                corridorLevel,
-                resolvedCorridor.boundaryAtLevel(corridorLevel).doors());
+                new CorridorResolutionContextRequest(
+                        corridorLevel,
+                        resolvedCorridor.boundaryAtLevel(corridorLevel).doors()));
         return new CorridorReconcileInput(
                 affectedRoomIds,
                 exteriorDoorInputs(corridorLevel),
@@ -1342,7 +1321,9 @@ public final class DungeonMap {
         CorridorSpecification specification = resolvedRequest.specification();
         return Corridor.fromSpecification(
                 specification,
-                corridorResolutionInput(specification.levelZ(), resolvedRequest.corridorDoors()));
+                corridorResolutionInput(new CorridorResolutionContextRequest(
+                        specification.levelZ(),
+                        resolvedRequest.corridorDoors())));
     }
 
     public Corridor rehydrateCorridor(CorridorRehydrationRequest request) {
@@ -1353,9 +1334,9 @@ public final class DungeonMap {
                 specification,
                 structure,
                 resolvedRequest.pathTraces(),
-                corridorResolutionInput(
+                corridorResolutionInput(new CorridorResolutionContextRequest(
                         specification.levelZ(),
-                        structure.boundaryAtLevel(specification.levelZ()).doors()));
+                        structure.boundaryAtLevel(specification.levelZ()).doors())));
     }
 
     public DungeonMap withAddedCorridor(Corridor corridor) {

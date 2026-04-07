@@ -8,6 +8,7 @@ import features.world.dungeon.application.stair.DungeonStairApplicationService;
 import features.world.dungeon.application.stair.StairDraftResolver;
 import features.world.dungeon.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
+import features.world.dungeon.dungeonmap.model.CorridorResolutionContextRequest;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
@@ -500,7 +501,7 @@ public final class SelectionTool implements EditorTool {
                 new CorridorMutation.NodeMove(
                         corridorNodeDragSession.nodeId(),
                         corridorNodeDragSession.currentPoint()),
-                mapState.activeMap().corridorResolutionInput(corridor));
+                mapState.activeMap().corridorResolutionInput(CorridorResolutionContextRequest.forCorridor(corridor)));
         return mapState.activeMap()
                 .withUpdatedCorridor(updated)
                 .projectedToLevel(mapState.activeProjectionLevel());
@@ -531,7 +532,7 @@ public final class SelectionTool implements EditorTool {
                 new CorridorMutation.TileNodePromotionAndMove(
                         corridorTileDragSession.tileCell(),
                         corridorTileDragSession.currentPoint()),
-                mapState.activeMap().corridorResolutionInput(corridor));
+                mapState.activeMap().corridorResolutionInput(CorridorResolutionContextRequest.forCorridor(corridor)));
         return mapState.activeMap()
                 .withUpdatedCorridor(updated)
                 .projectedToLevel(mapState.activeProjectionLevel());
@@ -577,7 +578,7 @@ public final class SelectionTool implements EditorTool {
                     new CorridorMutation.DoorMove(
                             session.sourceBoundarySegment2x(),
                             new DoorRef(targetDoorRef.doorId())),
-                    session.baseMap().corridorResolutionInput(corridor));
+                    session.baseMap().corridorResolutionInput(CorridorResolutionContextRequest.forCorridor(corridor)));
             return session.baseMap()
                     .withUpdatedCorridor(updated)
                     .projectedToLevel(session.levelZ());
