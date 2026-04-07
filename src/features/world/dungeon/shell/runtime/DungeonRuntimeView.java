@@ -9,14 +9,14 @@ import features.world.dungeon.application.runtime.DungeonRuntimeNavigationSnapsh
 import features.world.dungeon.application.runtime.description.DungeonRuntimeDescription;
 import features.world.dungeon.application.runtime.description.DungeonRuntimeDescriptionResolver;
 import features.world.dungeon.canvas.base.DungeonRuntimeRenderOverlay;
-import features.world.dungeon.dungoenmap.application.DungeonMapLoadingService;
+import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
 import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.shell.AbstractDungeonMapView;
 import features.world.dungeon.shell.controls.DungeonLevelOverlayControls;
 import features.world.dungeon.shell.interaction.DungeonHitCollector;
-import features.world.dungeon.dungoenmap.state.DungeonMapState;
+import features.world.dungeon.dungeonmap.state.DungeonMapState;
 import features.world.dungeon.state.DungeonRuntimeState;
 import features.world.dungeon.state.DungeonViewMode;
 import javafx.geometry.Insets;

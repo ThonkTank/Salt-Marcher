@@ -1,7 +1,7 @@
 package features.world.dungeon.application.runtime.description;
 
 import features.world.dungeon.application.runtime.DungeonRuntimeLocation;
-import features.world.dungeon.dungoenmap.model.DungeonMap;
+import features.world.dungeon.dungeonmap.model.DungeonMap;
 
 /**
  * Runtime descriptions should read from the same direct owners that the rest of the feature uses.

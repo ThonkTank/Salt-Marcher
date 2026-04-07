@@ -7,11 +7,11 @@
 ## Owner Atlas
 
 - `geometry` — `GridObject`, `GridPoint`, `GridSegment`, `GridArea`, `GridBoundary`, `GridPath`, `CardinalDirection`
-- `dungoenmap` — `DungeonMap`, `DungeonMapLoadResolver`, `DungeonMapLoadingService`, `DungeonMapRepository`, `DungeonMapState`, and the nested map-object owners `dungoenmap/structure`, `dungoenmap/cluster`, and `dungoenmap/corridor`
-- `dungoenmap/structure` — `Structure`, derived `Structure.roomTopology()`, the local `surface`, `boundary`, and `room` sub-owners plus boundary-local `door` and `wall` object sub-owners, `DungeonStructureRepository`, `DungeonWallKindRepository`
+- `dungeonmap` — `DungeonMap`, `DungeonMapLoadResolver`, `DungeonMapLoadingService`, `DungeonMapRepository`, `DungeonMapState`, and the nested map-object owners `dungeonmap/structure`, `dungeonmap/cluster`, and `dungeonmap/corridor`
+- `dungeonmap/structure` — `Structure`, derived `Structure.roomTopology()`, the local `surface`, `boundary`, and `room` sub-owners plus boundary-local `door` and `wall` object sub-owners, `DungeonStructureRepository`, `DungeonWallKindRepository`
 - `room` — `Room`, `DungeonRoomApplicationService`, `DungeonRoomRepository`
-- `dungoenmap/cluster` — `Cluster`, `DungeonClusterApplicationService`, `DungeonClusterRepository`
-- `dungoenmap/corridor` — `Corridor`, `CorridorRouting`, `CorridorPathTrace`, `DungeonCorridorApplicationService`, `DungeonCorridorRepository`
+- `dungeonmap/cluster` — `Cluster`, `DungeonClusterApplicationService`, `DungeonClusterRepository`
+- `dungeonmap/corridor` — `Corridor`, `CorridorRouting`, `CorridorPathTrace`, `DungeonCorridorApplicationService`, `DungeonCorridorRepository`
 - `stair` — `DungeonStair`, `Stair`, `StairExit`, `StairPathPatternSpec`, `StairPathGenerator`, `DungeonStairApplicationService`, `DungeonStairRepository`
 - `transition` — `DungeonTransition`, `DungeonTransitionApplicationService`, `DungeonTransitionRepository`
 - `runtime` — `DungeonRuntimeApplicationService`, `DungeonRuntimeActionResolver`, runtime description types, `DungeonRuntimeState`
@@ -22,7 +22,7 @@
 ## Canonical Types and APIs
 
 - `GridObject` and the `geometry` slice — canonical dungeon grid algebra — every topology owner must express shared spatial truth through `GridPoint`, `GridSegment`, `GridArea`, `GridBoundary`, or `GridPath`, movement through `GridTranslation`, and occupancy through `cellFootprint(): GridArea`.
-- `map` slice — authoritative loaded map snapshot plus load/reload and map-state seams — other owners rebuild through this slice after writes.
+- `dungeonmap` slice — authoritative loaded map snapshot plus load/reload and map-state seams — other owners rebuild through this slice after writes.
 - `DungeonClusterApplicationService` — cluster mutation seam — persists top-level cluster edits, cluster-backed room rewrites, and cluster bootstrap flows.
 - `DungeonRoomApplicationService` — room metadata seam — persists room-local narration and other room-owned metadata writes.
 - `DungeonCorridorApplicationService` — corridor mutation seam — persists corridor creation, endpoint changes, node moves, and topology edits.
@@ -34,7 +34,7 @@
 ## Where New Code Goes
 
 - Put new behavior on the documented owner first.
-- Put shared physical topology on `dungoenmap/structure`, not on room, corridor, runtime, or renderer helpers.
+- Put shared physical topology on `dungeonmap/structure`, not on room, corridor, runtime, or renderer helpers.
 - Route level-local surface-area behavior only through `structure.surfaceAtLevel(levelZ).surface().something()`.
 - Route level-local floor behavior only through `structure.surfaceAtLevel(levelZ).floor().something()`.
 - Route level-local wall, door, and boundary-edge behavior only through `structure.boundaryAtLevel(levelZ).something()`.
@@ -45,9 +45,9 @@
 - Treat `floor` as the only traversable/runtime/exit truth. `surface` remains explicit owned geometry for projection, editing, and hit/selection areas; it must not be used as a fallback for "walkable anyway".
 - Let door- and wall-specific reads and edits terminate on the explicit `BoundaryObject`, `Door`, and `Wall` APIs returned from that boundary owner instead of rebuilding raw `GridBoundary` surgery or derived mirrors in callers.
 - Keep shared structure persistence shaped like the runtime `Structure -> level -> surface(surface area + floor) + boundary` composition so save and reload do not rebuild a second flattened structure model.
-- Route authoritative reloads through `map/application/DungeonMapLoadingService`.
+- Route authoritative reloads through `dungeonmap/application/DungeonMapLoadingService`.
 - Keep runtime-only semantics under `runtime` and gesture meaning under `editor interaction`.
-- Keep loaded-map ownership, selection policy, and map-scoped overlay state under `dungoenmap`, and keep structure-backed map objects under `dungoenmap/structure`, `dungoenmap/cluster`, and `dungoenmap/corridor` instead of reviving top-level owners.
+- Keep loaded-map ownership, selection policy, and map-scoped overlay state under `dungeonmap`, and keep structure-backed map objects under `dungeonmap/structure`, `dungeonmap/cluster`, and `dungeonmap/corridor` instead of reviving top-level owners.
 
 ## Forbidden Drift
 

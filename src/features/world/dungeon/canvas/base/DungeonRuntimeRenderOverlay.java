@@ -2,7 +2,7 @@ package features.world.dungeon.canvas.base;
 
 import features.world.dungeon.application.runtime.DungeonRuntimeNavigationSnapshot;
 import features.world.dungeon.application.runtime.description.DungeonRuntimeDescription;
-import features.world.dungeon.dungoenmap.structure.model.boundary.door.DoorRef;
+import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
 
 import java.util.List;
 

@@ -1,6 +1,6 @@
 package features.world.dungeon.state;
 
-import features.world.dungeon.dungoenmap.model.DungeonMap;
+import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;

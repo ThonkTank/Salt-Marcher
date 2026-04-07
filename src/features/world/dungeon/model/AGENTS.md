@@ -4,7 +4,7 @@ This file covers `src/features/world/dungeon/model/`.
 
 ## Purpose
 
-`model` owns legacy shared dungeon value types that are not yet split into their own top-level owner slices, plus interaction refs and cross-owner connection semantics. The loaded map snapshot now lives in the sibling `dungoenmap` slice.
+`model` owns legacy shared dungeon value types that are not yet split into their own top-level owner slices, plus interaction refs and cross-owner connection semantics. The loaded map snapshot now lives in the sibling `dungeonmap` slice.
 
 ## Canonical Types and APIs
 
@@ -15,7 +15,7 @@ This file covers `src/features/world/dungeon/model/`.
 ## Where New Code Goes
 
 - Put new dungeon semantics on the lowest stable owner that enforces the invariant.
-- Put loaded-map snapshot, map loading, map rehydration, and map-scoped session state on the sibling `dungoenmap` owner.
+- Put loaded-map snapshot, map loading, map rehydration, and map-scoped session state on the sibling `dungeonmap` owner.
 - Put shared geometry behavior in the sibling `geometry/` slice only when it is owner-neutral and canonical.
 - Let top-level owners such as `Cluster` consume surface truth only through `Structure.surfaceAtLevel(levelZ).surface()` or `.floor()`, and boundary truth only through `Structure.boundaryAtLevel(levelZ)`.
 - When room or corridor workflows need to create or mutate physical structure, translate that request into `StructureSpecification` or `StructureMutation` and let `Structure` own the result.
@@ -30,7 +30,7 @@ This file covers `src/features/world/dungeon/model/`.
 ## Forbidden Drift
 
 - Do not add a second geometry seam beside `geometry/`.
-- Do not recreate shared physical topology logic here when the `dungoenmap/structure` slice already owns it.
+- Do not recreate shared physical topology logic here when the `dungeonmap/structure` slice already owns it.
 - Do not keep parallel physical structure builder or mutation APIs on `Cluster`, tools, or legacy model helpers once the same change can be expressed as `StructureSpecification` or `StructureMutation`.
 - Do not move canonical semantic decisions into repositories, renderers, tools, or workflow coordinators.
 - Do not move `DungeonMap`, map loading, or map state ownership back into `model/`.

@@ -1,12 +1,12 @@
 package features.world.dungeon.model.structures.connection;
 
-import features.world.dungeon.dungoenmap.model.DungeonMap;
+import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
-import features.world.dungeon.dungoenmap.structure.model.boundary.door.Door;
-import features.world.dungeon.dungoenmap.structure.model.boundary.door.DoorRef;
+import features.world.dungeon.dungeonmap.structure.model.boundary.door.Door;
+import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
 
 import java.util.LinkedHashSet;
 import java.util.List;

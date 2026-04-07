@@ -1,12 +1,12 @@
 package features.world.dungeon.shell.interaction;
 
-import features.world.dungeon.dungoenmap.model.DungeonMap;
+import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
-import features.world.dungeon.dungoenmap.structure.model.Structure;
-import features.world.dungeon.dungoenmap.cluster.model.Cluster;
-import features.world.dungeon.dungoenmap.corridor.model.Corridor;
+import features.world.dungeon.dungeonmap.structure.model.Structure;
+import features.world.dungeon.dungeonmap.cluster.model.Cluster;
+import features.world.dungeon.dungeonmap.corridor.model.Corridor;
 import features.world.dungeon.model.structures.room.Room;
 import features.world.dungeon.model.structures.stair.DungeonStair;
 import features.world.dungeon.model.structures.transition.DungeonTransition;

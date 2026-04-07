@@ -2,12 +2,12 @@ package features.world.dungeon.application.transition;
 
 import features.world.dungeon.application.stair.DungeonStairApplicationService;
 import features.world.dungeon.application.stair.StairDraftResolver;
-import features.world.dungeon.dungoenmap.model.DungeonMap;
+import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
-import features.world.dungeon.dungoenmap.cluster.model.Cluster;
-import features.world.dungeon.dungoenmap.structure.model.boundary.door.DoorRef;
+import features.world.dungeon.dungeonmap.cluster.model.Cluster;
+import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeon.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeon.model.structures.connection.ConnectionKind;
 import features.world.dungeon.model.structures.connection.DoorConnectionCarrier;

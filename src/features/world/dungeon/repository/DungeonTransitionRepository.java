@@ -1,10 +1,10 @@
 package features.world.dungeon.repository;
 
-import features.world.dungeon.dungoenmap.model.DungeonMap;
+import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridPath;
-import features.world.dungeon.dungoenmap.structure.model.boundary.door.DoorRef;
+import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeon.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeon.model.structures.connection.ConnectionKind;
 import features.world.dungeon.model.structures.connection.DoorConnectionCarrier;

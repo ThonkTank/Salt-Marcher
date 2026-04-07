@@ -1,7 +1,7 @@
 package features.world.dungeon.canvas.base;
 
-import features.world.dungeon.dungoenmap.model.DungeonMap;
-import features.world.dungeon.dungoenmap.state.DungeonLevelOverlaySettings;
+import features.world.dungeon.dungeonmap.model.DungeonMap;
+import features.world.dungeon.dungeonmap.state.DungeonLevelOverlaySettings;
 
 import java.util.Objects;
 

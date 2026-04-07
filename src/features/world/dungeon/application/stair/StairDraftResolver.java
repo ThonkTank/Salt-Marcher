@@ -1,10 +1,10 @@
 package features.world.dungeon.application.stair;
 
-import features.world.dungeon.dungoenmap.model.DungeonMap;
+import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridPath;
 import features.world.dungeon.geometry.GridTranslation;
-import features.world.dungeon.dungoenmap.cluster.model.Cluster;
+import features.world.dungeon.dungeonmap.cluster.model.Cluster;
 import features.world.dungeon.model.structures.room.Room;
 import features.world.dungeon.model.structures.stair.DungeonStair;
 import features.world.dungeon.stair.model.StairPathGenerator;

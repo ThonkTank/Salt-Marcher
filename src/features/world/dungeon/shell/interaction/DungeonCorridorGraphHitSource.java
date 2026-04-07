@@ -1,12 +1,12 @@
 package features.world.dungeon.shell.interaction;
 
-import features.world.dungeon.dungoenmap.model.DungeonMap;
+import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
-import features.world.dungeon.dungoenmap.corridor.model.Corridor;
-import features.world.dungeon.dungoenmap.corridor.model.CorridorNode;
-import features.world.dungeon.dungoenmap.corridor.model.CorridorPathTrace;
+import features.world.dungeon.dungeonmap.corridor.model.Corridor;
+import features.world.dungeon.dungeonmap.corridor.model.CorridorNode;
+import features.world.dungeon.dungeonmap.corridor.model.CorridorPathTrace;
 
 import java.util.ArrayList;
 import java.util.List;

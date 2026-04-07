@@ -1,11 +1,11 @@
 package features.world.dungeon.application.runtime.description;
 
 import features.world.dungeon.application.runtime.DungeonRuntimeLocation;
-import features.world.dungeon.dungoenmap.model.DungeonMap;
-import features.world.dungeon.dungoenmap.cluster.model.Cluster;
-import features.world.dungeon.dungoenmap.corridor.model.Corridor;
+import features.world.dungeon.dungeonmap.model.DungeonMap;
+import features.world.dungeon.dungeonmap.cluster.model.Cluster;
+import features.world.dungeon.dungeonmap.corridor.model.Corridor;
 import features.world.dungeon.model.structures.room.Room;
-import features.world.dungeon.dungoenmap.structure.model.Structure;
+import features.world.dungeon.dungeonmap.structure.model.Structure;
 
 import java.util.List;
 

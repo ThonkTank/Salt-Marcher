@@ -5,14 +5,14 @@ import features.world.dungeon.canvas.base.DungeonCanvasInteractionHandler;
 import features.world.dungeon.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeon.canvas.base.DungeonCanvasTheme;
 import features.world.dungeon.application.runtime.DungeonRuntimeNavigationSnapshot;
-import features.world.dungeon.dungoenmap.model.DungeonMap;
+import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.shell.interaction.DungeonDragService;
 import features.world.dungeon.shell.interaction.DungeonHitCollector;
 import features.world.dungeon.shell.interaction.DungeonHitProbe;
 import features.world.dungeon.shell.interaction.DungeonHitSnapshot;
 import features.world.dungeon.shell.interaction.DungeonPlacementValidator;
-import features.world.dungeon.dungoenmap.state.DungeonMapState;
+import features.world.dungeon.dungeonmap.state.DungeonMapState;
 import features.world.dungeon.state.DungeonRuntimeState;
 
 import java.util.Objects;

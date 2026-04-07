@@ -1,10 +1,10 @@
 package features.world.dungeon.shell.interaction;
 
 import features.world.dungeon.canvas.grid.DungeonGridInteractiveLabels;
-import features.world.dungeon.dungoenmap.model.DungeonMap;
+import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.model.interaction.InteractiveLabelHandle;
-import features.world.dungeon.dungoenmap.cluster.model.Cluster;
+import features.world.dungeon.dungeonmap.cluster.model.Cluster;
 import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
 

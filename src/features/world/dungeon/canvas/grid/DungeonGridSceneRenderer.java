@@ -6,7 +6,7 @@ import features.world.dungeon.canvas.base.DungeonEditorRenderState;
 import features.world.dungeon.canvas.base.DungeonRuntimeRenderOverlay;
 import features.world.dungeon.canvas.base.DungeonSceneFrame;
 import features.world.dungeon.canvas.base.DungeonSceneRenderer;
-import features.world.dungeon.dungoenmap.model.DungeonMap;
+import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridPoint;
@@ -14,12 +14,12 @@ import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.model.interaction.InteractiveLabelHandle;
-import features.world.dungeon.dungoenmap.structure.model.Structure;
+import features.world.dungeon.dungeonmap.structure.model.Structure;
 import features.world.dungeon.model.structures.connection.StairConnectionCarrier;
-import features.world.dungeon.dungoenmap.cluster.model.Cluster;
-import features.world.dungeon.dungoenmap.corridor.model.Corridor;
-import features.world.dungeon.dungoenmap.corridor.model.CorridorNode;
-import features.world.dungeon.dungoenmap.corridor.model.CorridorPathTrace;
+import features.world.dungeon.dungeonmap.cluster.model.Cluster;
+import features.world.dungeon.dungeonmap.corridor.model.Corridor;
+import features.world.dungeon.dungeonmap.corridor.model.CorridorNode;
+import features.world.dungeon.dungeonmap.corridor.model.CorridorPathTrace;
 import features.world.dungeon.model.structures.room.Room;
 import features.world.dungeon.model.structures.stair.DungeonStair;
 import features.world.dungeon.model.structures.transition.DungeonTransition;
@@ -343,7 +343,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             WalkableSurface surface = walkableSurface(
                     corridor.surfaceAtLevel(pass.projectionLevel()).floor().cells(),
                     corridor.boundaryAtLevel(pass.projectionLevel()).boundaryEdges(),
-                    corridor.boundaryDoorSegments(pass.projected().corridorResolutionInput(corridor)));
+                    corridor.boundaryDoorSegments());
             if (surface.tiles().isEmpty() && surface.doorSegments().isEmpty()) {
                 continue;
             }

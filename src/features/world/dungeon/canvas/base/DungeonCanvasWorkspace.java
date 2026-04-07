@@ -1,11 +1,11 @@
 package features.world.dungeon.canvas.base;
 
 import features.world.dungeon.canvas.grid.DungeonGridSceneRenderer;
-import features.world.dungeon.dungoenmap.model.DungeonMap;
+import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.state.DungeonViewMode;
-import features.world.dungeon.dungoenmap.state.DungeonLevelOverlaySettings;
-import features.world.dungeon.dungoenmap.state.DungeonMapState;
+import features.world.dungeon.dungeonmap.state.DungeonLevelOverlaySettings;
+import features.world.dungeon.dungeonmap.state.DungeonMapState;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Point2D;

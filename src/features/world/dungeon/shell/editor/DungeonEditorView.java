@@ -2,11 +2,11 @@ package features.world.dungeon.shell.editor;
 
 import features.world.dungeon.catalog.application.DungeonMapCatalogService;
 import features.world.dungeon.canvas.base.DungeonEditorRenderState;
-import features.world.dungeon.dungoenmap.application.DungeonMapLoadingService;
+import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
 import features.world.dungeon.shell.AbstractDungeonMapView;
 import features.world.dungeon.shell.editor.interaction.EditorInteraction;
 import features.world.dungeon.state.DungeonEditorSessionState;
-import features.world.dungeon.dungoenmap.state.DungeonMapState;
+import features.world.dungeon.dungeonmap.state.DungeonMapState;
 import features.world.dungeon.state.EditorInteractionState;
 import javafx.scene.Node;
 import ui.shell.NavigationIcons;

@@ -1,13 +1,13 @@
 package features.world.dungeon.shell.interaction;
 
-import features.world.dungeon.dungoenmap.model.DungeonMap;
+import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.GridSegment;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
-import features.world.dungeon.dungoenmap.cluster.model.Cluster;
-import features.world.dungeon.dungoenmap.corridor.model.Corridor;
+import features.world.dungeon.dungeonmap.cluster.model.Cluster;
+import features.world.dungeon.dungeonmap.corridor.model.Corridor;
 import features.world.dungeon.model.structures.room.Room;
-import features.world.dungeon.dungoenmap.structure.model.Structure;
-import features.world.dungeon.dungoenmap.structure.model.boundary.door.Door;
+import features.world.dungeon.dungeonmap.structure.model.Structure;
+import features.world.dungeon.dungeonmap.structure.model.boundary.door.Door;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -114,7 +114,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
             if (corridor == null || corridor.corridorId() == null) {
                 continue;
             }
-            Set<GridSegment> openingEdges = corridor.boundaryDoorSegments(projectedLayout.corridorResolutionInput(corridor));
+            Set<GridSegment> openingEdges = corridor.boundaryDoorSegments();
             for (GridSegment segment2x : corridor.boundaryAtLevel(levelZ).boundaryEdges()) {
                 if (segment2x == null || openingEdges.contains(segment2x) || connectionSegments.contains(segment2x)) {
                     continue;

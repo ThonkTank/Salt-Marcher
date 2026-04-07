@@ -1,6 +1,6 @@
 package features.world.dungeon.shell.interaction;
 
-import features.world.dungeon.dungoenmap.model.DungeonMap;
+import features.world.dungeon.dungeonmap.model.DungeonMap;
 
 import java.util.List;
 

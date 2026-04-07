@@ -2,11 +2,11 @@ package features.world.dungeon.application.stair;
 
 import database.DatabaseManager;
 import features.world.dungeon.application.support.DungeonTransactionRunner;
-import features.world.dungeon.dungoenmap.model.DungeonMap;
+import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridTranslation;
 import features.world.dungeon.model.structures.stair.DungeonStair;
-import features.world.dungeon.dungoenmap.repository.DungeonMapRepository;
+import features.world.dungeon.dungeonmap.repository.DungeonMapRepository;
 import features.world.dungeon.repository.DungeonStairRepository;
 import features.world.dungeon.stair.model.StairPathPatternSpec;
 

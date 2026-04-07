@@ -1,7 +1,7 @@
 package features.world.dungeon.shell.editor.interaction;
 
 import features.world.dungeon.canvas.base.DungeonCanvasPointerEvent;
-import features.world.dungeon.dungoenmap.model.DungeonMap;
+import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.shell.interaction.DungeonHitProbe;
 import features.world.dungeon.shell.interaction.DungeonHitSnapshot;

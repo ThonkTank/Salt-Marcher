@@ -5,13 +5,13 @@ import features.world.api.OverworldTransitionTargetSummary;
 import features.world.api.WorldReadApi;
 import features.world.dungeon.application.stair.DungeonStairApplicationService;
 import features.world.dungeon.application.support.DungeonTransactionRunner;
-import features.world.dungeon.dungoenmap.model.DungeonMap;
+import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeon.model.structures.connection.DungeonConnection;
 import features.world.dungeon.model.structures.transition.DungeonTransition;
 import features.world.dungeon.model.structures.transition.DungeonTransitionDestination;
-import features.world.dungeon.dungoenmap.repository.DungeonMapRepository;
+import features.world.dungeon.dungeonmap.repository.DungeonMapRepository;
 import features.world.dungeon.repository.DungeonTransitionRepository;
 import features.world.dungeon.stair.model.StairPlacementSpec;
 

@@ -1,8 +1,8 @@
 package features.world.dungeon.shell;
 
 import features.world.dungeon.canvas.base.DungeonCanvasWorkspace;
-import features.world.dungeon.dungoenmap.application.DungeonMapLoadingService;
-import features.world.dungeon.dungoenmap.state.DungeonMapState;
+import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
+import features.world.dungeon.dungeonmap.state.DungeonMapState;
 import ui.shell.AppView;
 
 /**
