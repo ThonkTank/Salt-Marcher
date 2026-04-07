@@ -5,7 +5,7 @@ import features.world.dungeonmap.map.application.DungeonMapLoadingService;
 import features.world.dungeonmap.geometry.CardinalDirection;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.map.model.DungeonLayout;
-import features.world.dungeonmap.cluster.model.RoomCluster;
+import features.world.dungeonmap.map.cluster.model.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.DoorExitCatalog;
 import features.world.dungeonmap.model.structures.room.Room;
@@ -76,7 +76,7 @@ public final class RoomNarrationPane {
         if (cluster == null) {
             return List.of();
         }
-        return cluster.structure().roomTopology().rooms().stream()
+        return cluster.roomTopology().rooms().stream()
                 .filter(Objects::nonNull)
                 .sorted(Comparator
                         .comparing(Room::name, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
@@ -128,7 +128,7 @@ public final class RoomNarrationPane {
             return null;
         }
         for (RoomCluster cluster : layout.clusters()) {
-            Room room = cluster == null ? null : cluster.structure().roomTopology().findRoom(roomId);
+            Room room = cluster == null ? null : cluster.roomTopology().findRoom(roomId);
             if (room != null) {
                 return room;
             }
@@ -144,11 +144,11 @@ public final class RoomNarrationPane {
         if (layout == null || cluster == null || room == null || room.roomId() == null) {
             return List.of();
         }
-        return cluster.structure().roomTopology().roomLevels(room).stream()
+        return cluster.roomTopology().roomLevels(room).stream()
                 .sorted()
                 .flatMap(levelZ -> DoorExitCatalog.describe(
                         layout,
-                        cluster.structure().roomTopology().structureFor(room).surfaceAtLevel(levelZ).floor().cells(),
+                        cluster.roomTopology().structureFor(room).surfaceAtLevel(levelZ).floor().cells(),
                         levelZ,
                         layout.connectionsForEndpoint(ConnectionEndpoint.room(room.roomId()))).stream())
                 .toList();

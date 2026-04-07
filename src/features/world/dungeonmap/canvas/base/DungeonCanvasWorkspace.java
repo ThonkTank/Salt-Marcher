@@ -403,7 +403,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
         double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
         int cellX = (int) Math.floor((canvasX - camera.panX()) / gridSize);
         int cellY = (int) Math.floor((canvasY - camera.panY()) / gridSize);
-        return new GridPoint(cellX, cellY);
+        return GridPoint.cell(cellX, cellY, 0);
     }
 
     private static boolean isInteractionPress(MouseEvent event) {

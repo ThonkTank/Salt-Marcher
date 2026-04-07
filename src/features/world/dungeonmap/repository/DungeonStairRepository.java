@@ -2,10 +2,9 @@ package features.world.dungeonmap.repository;
 
 import features.world.dungeonmap.geometry.CardinalDirection;
 import features.world.dungeonmap.geometry.GridPoint;
-import features.world.dungeonmap.geometry.GridPoint;
-import features.world.dungeonmap.geometry.GridPathPatternKind;
-import features.world.dungeonmap.geometry.GridPathPatternSpec;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
+import features.world.dungeonmap.stair.model.StairPathPatternKind;
+import features.world.dungeonmap.stair.model.StairPathPatternSpec;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -33,14 +32,14 @@ public final class DungeonStairRepository {
             String name,
             GridPoint anchorCell,
             int anchorLevelZ,
-            GridPathPatternSpec shapeSpec,
+            StairPathPatternSpec shapeSpec,
             int minLevelZ,
             int maxLevelZ,
             Set<Integer> stopLevels
     ) {
         public StairEditorData {
             anchorCell = Objects.requireNonNull(anchorCell, "anchorCell");
-            shapeSpec = shapeSpec == null ? GridPathPatternSpec.defaultSpec() : shapeSpec;
+            shapeSpec = shapeSpec == null ? StairPathPatternSpec.defaultSpec() : shapeSpec;
             stopLevels = stopLevels == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(stopLevels));
         }
     }
@@ -54,7 +53,7 @@ public final class DungeonStairRepository {
                         + " ORDER BY stair_id, sort_order",
                 mapId,
                 rs -> rs.getLong("stair_id"),
-                rs -> new GridPoint(rs.getInt("cell_x"), rs.getInt("cell_y"), rs.getInt("cell_z")));
+                rs -> GridPoint.cell(rs.getInt("cell_x"), rs.getInt("cell_y"), rs.getInt("cell_z")));
         Map<Long, Set<Integer>> stopLevelsByStairId = loadStopLevelsByStairId(conn, mapId);
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT stair_id, dungeon_map_id, name"
@@ -93,10 +92,10 @@ public final class DungeonStairRepository {
                 }
                 return new StairEditorData(
                         rs.getString("name"),
-                        new GridPoint(rs.getInt("anchor_cell_x"), rs.getInt("anchor_cell_y")),
+                        GridPoint.cell(rs.getInt("anchor_cell_x"), rs.getInt("anchor_cell_y"), 0),
                         rs.getInt("anchor_level_z"),
-                        new GridPathPatternSpec(
-                                GridPathPatternKind.parse(rs.getString("shape_kind")),
+                        new StairPathPatternSpec(
+                                StairPathPatternKind.parse(rs.getString("shape_kind")),
                                 CardinalDirection.fromCode(rs.getInt("shape_direction_code")),
                                 rs.getInt("shape_param1"),
                                 rs.getInt("shape_param2")),
@@ -146,8 +145,8 @@ public final class DungeonStairRepository {
                         + "shape_kind=?, shape_direction_code=?, shape_param1=?, shape_param2=?, min_level_z=?, max_level_z=? "
                         + "WHERE stair_id=?")) {
             ps.setString(1, resolvedStair.name());
-            ps.setInt(2, resolvedEditorData.anchorCell().x());
-            ps.setInt(3, resolvedEditorData.anchorCell().y());
+            ps.setInt(2, resolvedEditorData.anchorCell().cellX());
+            ps.setInt(3, resolvedEditorData.anchorCell().cellY());
             ps.setInt(4, resolvedEditorData.anchorLevelZ());
             ps.setString(5, resolvedEditorData.shapeSpec().kind().name());
             ps.setInt(6, resolvedEditorData.shapeSpec().direction().code());
@@ -173,8 +172,8 @@ public final class DungeonStairRepository {
                 GridPoint node = pathNodes.get(index);
                 insert.setLong(1, stairId);
                 insert.setInt(2, index);
-                insert.setInt(3, node.x());
-                insert.setInt(4, node.y());
+                insert.setInt(3, node.cellX());
+                insert.setInt(4, node.cellY());
                 insert.setInt(5, node.z());
                 insert.addBatch();
             }
@@ -218,8 +217,8 @@ public final class DungeonStairRepository {
     ) throws SQLException {
         ps.setLong(1, mapId);
         ps.setString(2, stair.name());
-        ps.setInt(3, editorData.anchorCell().x());
-        ps.setInt(4, editorData.anchorCell().y());
+        ps.setInt(3, editorData.anchorCell().cellX());
+        ps.setInt(4, editorData.anchorCell().cellY());
         ps.setInt(5, editorData.anchorLevelZ());
         ps.setString(6, editorData.shapeSpec().kind().name());
         ps.setInt(7, editorData.shapeSpec().direction().code());

@@ -4,7 +4,7 @@ import features.world.dungeonmap.application.runtime.description.DungeonRuntimeE
 import features.world.dungeonmap.map.model.DungeonLayout;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridPoint;
-import features.world.dungeonmap.cluster.model.RoomCluster;
+import features.world.dungeonmap.map.cluster.model.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.ConnectionTraversalTarget;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
@@ -92,8 +92,8 @@ public final class DungeonRuntimeActionResolver {
         if (cluster == null) {
             return;
         }
-        for (int levelZ : cluster.structure().roomTopology().roomRelevantLevels(room, location.activeCell(), location.activeLevelZ())) {
-            Set<GridPoint> roomFloorCells = cluster.structure().roomTopology().structureFor(room).surfaceAtLevel(levelZ).floor().cells();
+        for (int levelZ : cluster.roomTopology().roomRelevantLevels(room, location.activeCell(), location.activeLevelZ())) {
+            Set<GridPoint> roomFloorCells = cluster.roomTopology().structureFor(room).surfaceAtLevel(levelZ).floor().cells();
             appendStructureStairs(
                     location.layout(),
                     roomFloorCells,
@@ -118,7 +118,7 @@ public final class DungeonRuntimeActionResolver {
             return;
         }
         // Runtime exits must terminate on explicit floor truth instead of assuming corridor surface implies walkable area.
-        Set<GridPoint> corridorFloorCells = corridor.structure().surfaceAtLevel(corridor.levelZ()).floor().cells();
+        Set<GridPoint> corridorFloorCells = corridor.surfaceAtLevel(corridor.levelZ()).floor().cells();
         appendStructureStairs(
                 location.layout(),
                 corridorFloorCells,
@@ -177,7 +177,7 @@ public final class DungeonRuntimeActionResolver {
                 .filter(stair -> stair != null && stair.stairId() != null)
                 .filter(stair -> stair.exitsAtLevel(levelZ).stream()
                         .map(StairExit::position)
-                        .map(GridPoint::projectedCell)
+                        .map(DungeonRuntimeActionResolver::projectedCell)
                         .anyMatch(surfaceCells::contains))
                 .sorted(Comparator.comparing(DungeonStair::label, String.CASE_INSENSITIVE_ORDER)
                         .thenComparing(DungeonStair::stairId))
@@ -204,15 +204,15 @@ public final class DungeonRuntimeActionResolver {
                 .filter(exit -> !originPositions.contains(exit.position()))
                 .filter(exit -> activeCell == null
                         || exit.position().z() != activeLevelZ
-                        || !activeCell.equals(exit.position().projectedCell()))
+                        || !activeCell.equals(projectedCell(exit.position())))
                 .sorted(Comparator.comparingInt((StairExit exit) -> exit.position().z())
-                        .thenComparing(exit -> exit.position(), GridPoint.POINT_ORDER))
+                        .thenComparing(exit -> exit.position(), GridPoint.ORDER))
                 .forEach(exit -> actions.add(new DungeonRuntimeAction(
                         stairActionLabel(stair, exit),
                         stairDescription(stair, exit),
                         "Treppe konnte nicht benutzt werden",
                         new DungeonRuntimeAction.CellTarget(
-                                exit.position().projectedCell(),
+                                projectedCell(exit.position()),
                                 exit.position().z(),
                                 null))));
     }
@@ -229,7 +229,7 @@ public final class DungeonRuntimeActionResolver {
                 .map(StairExit::position)
                 .filter(Objects::nonNull)
                 .filter(position -> position.z() == activeLevelZ)
-                .filter(position -> activeCell == null || activeCell.equals(position.projectedCell()))
+                .filter(position -> activeCell == null || activeCell.equals(projectedCell(position)))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
         if (!activeOrigins.isEmpty()) {
             return activeOrigins;
@@ -259,8 +259,12 @@ public final class DungeonRuntimeActionResolver {
         }
         return stair.exitsAtLevel(levelZ).stream()
                 .map(StairExit::position)
-                .filter(position -> position != null && surfaceCells.contains(position.projectedCell()))
+                .filter(position -> position != null && surfaceCells.contains(projectedCell(position)))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private static GridPoint projectedCell(GridPoint point) {
+        return point == null ? null : point.touchingCells().center();
     }
 
     private static void appendStructureTransitions(
@@ -278,7 +282,7 @@ public final class DungeonRuntimeActionResolver {
                 .filter(Objects::nonNull)
                 .filter(entry -> entry.getValue().occupiedPositions(layout).stream()
                         .filter(point -> point != null && point.z() == levelZ)
-                        .map(GridPoint::projectedCell)
+                        .map(DungeonRuntimeActionResolver::projectedCell)
                         .anyMatch(cells::contains))
                 .sorted(Comparator.comparing(entry -> entry.getKey().transitionId()))
                 .map(entry -> transitionAction(entry.getKey()))

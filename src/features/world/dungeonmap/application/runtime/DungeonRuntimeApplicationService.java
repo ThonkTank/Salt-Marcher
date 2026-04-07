@@ -9,7 +9,7 @@ import features.world.dungeonmap.map.model.DungeonLayout;
 import features.world.dungeonmap.geometry.CardinalDirection;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridPoint;
-import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
+import features.world.dungeonmap.map.structure.model.boundary.door.DoorRef;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
 import features.world.dungeonmap.map.repository.DungeonLayoutRepository;
@@ -236,7 +236,7 @@ public final class DungeonRuntimeApplicationService {
         }
         GridPoint resolvedCell = nearestTraversableCell(
                 layout,
-                entryPoint.projectedCell(),
+                projectedCell(entryPoint),
                 entryPoint.z());
         if (resolvedCell == null) {
             throw new SQLException("Ziel-Übergang ist nicht begehbar");
@@ -263,7 +263,7 @@ public final class DungeonRuntimeApplicationService {
         GridPoint fallback = layout.defaultRuntimePosition();
         return fallback == null
                 ? DungeonRuntimeNavigationSnapshot.empty()
-                : navigationSnapshot(layout.mapId(), fallback.projectedCell(), fallback.z(), heading);
+                : navigationSnapshot(layout.mapId(), projectedCell(fallback), fallback.z(), heading);
     }
 
     private GridPoint nearestTraversableCell(DungeonLayout layout, GridPoint preferredCell, int preferredLevelZ) {
@@ -293,8 +293,8 @@ public final class DungeonRuntimeApplicationService {
         return new DungeonTilePosition(
                 snapshot.mapId(),
                 snapshot.levelZ(),
-                snapshot.cell().x(),
-                snapshot.cell().y(),
+                snapshot.cell().cellX(),
+                snapshot.cell().cellY(),
                 normalizeHeading(snapshot.heading()).name());
     }
 
@@ -304,7 +304,7 @@ public final class DungeonRuntimeApplicationService {
         if (storedPosition == null || storedPosition.cellX() == null || storedPosition.cellY() == null) {
             return null;
         }
-        return new GridPoint(storedPosition.cellX(), storedPosition.cellY());
+        return GridPoint.cell(storedPosition.cellX(), storedPosition.cellY(), 0);
     }
 
     private static int storedLevel(DungeonTilePosition storedPosition) {
@@ -322,6 +322,10 @@ public final class DungeonRuntimeApplicationService {
             CardinalDirection heading
     ) {
         return new DungeonRuntimeNavigationSnapshot(mapId, cell, levelZ, normalizeHeading(heading));
+    }
+
+    private static GridPoint projectedCell(GridPoint point) {
+        return point == null ? null : point.touchingCells().center();
     }
 
     private static CardinalDirection normalizeHeading(CardinalDirection heading) {

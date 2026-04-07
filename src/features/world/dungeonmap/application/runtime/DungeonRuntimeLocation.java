@@ -4,8 +4,8 @@ import features.world.dungeonmap.map.model.DungeonLayout;
 import features.world.dungeonmap.geometry.CardinalDirection;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
-import features.world.dungeonmap.cluster.model.RoomCluster;
-import features.world.dungeonmap.corridor.model.Corridor;
+import features.world.dungeonmap.map.cluster.model.RoomCluster;
+import features.world.dungeonmap.map.corridor.model.Corridor;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
@@ -64,7 +64,7 @@ public record DungeonRuntimeLocation(
             return null;
         }
         RoomCluster cluster = roomStructure.clusterId() == null ? null : layout.findCluster(roomStructure.clusterId());
-        return cluster == null ? null : cluster.structure().roomTopology().findRoom(roomStructure.roomId());
+        return cluster == null ? null : cluster.roomTopology().findRoom(roomStructure.roomId());
     }
 
     public Corridor corridor() {

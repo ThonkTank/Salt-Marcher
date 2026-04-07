@@ -1,6 +1,6 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
-import features.world.dungeonmap.cluster.application.DungeonClusterApplicationService;
+import features.world.dungeonmap.map.cluster.application.DungeonClusterApplicationService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.map.application.DungeonMapLoadingService;
 import features.world.dungeonmap.geometry.GridPoint;
@@ -122,9 +122,9 @@ public final class PaintTool implements EditorTool {
         loadingService.submitMutation(
                 () -> {
                     if (finishedSession.deleteMode()) {
-                        roomApplicationService.deleteCells(mapId, activeLevel, cells);
+                        roomApplicationService.deleteCells(mapId, activeLevel, features.world.dungeonmap.geometry.GridArea.of(cells));
                     } else {
-                        roomApplicationService.paintCells(mapId, activeLevel, cells);
+                        roomApplicationService.paintCells(mapId, activeLevel, features.world.dungeonmap.geometry.GridArea.of(cells));
                     }
                     return mapId;
                 },
@@ -162,7 +162,7 @@ public final class PaintTool implements EditorTool {
             return null;
         }
         return switch (ctx.hitRef()) {
-            case DungeonSelectionRef.GridCellRef gridCellRef -> gridCellRef.cell().projectedCell();
+            case DungeonSelectionRef.GridCellRef gridCellRef -> gridCellRef.cell().touchingCells().center();
             default -> null;
         };
     }
@@ -171,6 +171,9 @@ public final class PaintTool implements EditorTool {
         if (ctx == null || ctx.probe() == null) {
             return null;
         }
-        return new DungeonSelectionRef.GridCellRef(GridPoint.at(ctx.probe().gridCell(), ctx.probe().levelZ()));
+        return new DungeonSelectionRef.GridCellRef(GridPoint.cell(
+                ctx.probe().gridCell().cellX(),
+                ctx.probe().gridCell().cellY(),
+                ctx.probe().levelZ()));
     }
 }

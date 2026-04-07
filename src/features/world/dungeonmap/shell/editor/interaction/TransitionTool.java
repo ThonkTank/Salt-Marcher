@@ -10,16 +10,15 @@ import features.world.dungeonmap.map.application.DungeonMapLoadingService;
 import features.world.dungeonmap.map.model.DungeonLayout;
 import features.world.dungeonmap.geometry.CardinalDirection;
 import features.world.dungeonmap.geometry.GridPoint;
-import features.world.dungeonmap.geometry.GridPoint;
-import features.world.dungeonmap.geometry.GridPathPatternKind;
-import features.world.dungeonmap.geometry.GridPathPatternSpec;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
-import features.world.dungeonmap.cluster.model.RoomCluster;
+import features.world.dungeonmap.map.cluster.model.RoomCluster;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
+import features.world.dungeonmap.map.structure.model.boundary.door.DoorRef;
 import features.world.dungeonmap.model.structures.connection.DungeonConnection;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
+import features.world.dungeonmap.stair.model.StairPathPatternKind;
+import features.world.dungeonmap.stair.model.StairPathPatternSpec;
 import features.world.dungeonmap.shell.editor.EditorCards;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
 import features.world.dungeonmap.state.DungeonEditorTool;
@@ -93,7 +92,7 @@ public final class TransitionTool implements EditorTool {
     private final Label stairDimension2Label = fieldLabel("Maß");
     private final Label stairExitLevelInputLabel = fieldLabel("Exit-Level");
     private final Label stairExitChipsLabel = fieldLabel("Exits");
-    private final ComboBox<GridPathPatternKind> stairShapeBox = new ComboBox<>();
+    private final ComboBox<StairPathPatternKind> stairShapeBox = new ComboBox<>();
     private final ComboBox<CardinalDirection> stairDirectionBox = new ComboBox<>();
     private final TextField stairDimension1Field = new TextField();
     private final TextField stairDimension2Field = new TextField();
@@ -380,15 +379,15 @@ public final class TransitionTool implements EditorTool {
         HBox.setHgrow(stairActionSpacer, Priority.ALWAYS);
         HBox.setHgrow(stairExitLevelField, Priority.ALWAYS);
         stairExitLevelRow.setMaxWidth(Double.MAX_VALUE);
-        stairShapeBox.setItems(FXCollections.observableArrayList(GridPathPatternKind.values()));
+        stairShapeBox.setItems(FXCollections.observableArrayList(StairPathPatternKind.values()));
         stairShapeBox.setConverter(new javafx.util.StringConverter<>() {
             @Override
-            public String toString(GridPathPatternKind value) {
+            public String toString(StairPathPatternKind value) {
                 return value == null ? "" : value.label();
             }
 
             @Override
-            public GridPathPatternKind fromString(String string) {
+            public StairPathPatternKind fromString(String string) {
                 return null;
             }
         });
@@ -671,7 +670,7 @@ public final class TransitionTool implements EditorTool {
         }
         clearPlacementError();
         state.clearSelection();
-        startStairDraft(floorCellRef.cell().projectedCell(), floorCellRef.cell().z());
+        startStairDraft(floorCellRef.cell(), floorCellRef.cell().z());
         return true;
     }
 
@@ -707,13 +706,13 @@ public final class TransitionTool implements EditorTool {
         int levelZ = ctx.probe().levelZ();
         return roomWithFloorAtCell(ctx.activeMap(), cell, levelZ) == null
                 ? null
-                : new DungeonSelectionRef.FloorCellRef(GridPoint.at(cell, levelZ));
+                : new DungeonSelectionRef.FloorCellRef(GridPoint.cell(cell.cellX(), cell.cellY(), levelZ));
     }
 
     private static Room roomWithFloorAtCell(DungeonLayout layout, GridPoint cell, int levelZ) {
         RoomCluster cluster = layout == null || cell == null ? null : layout.clusterAtCell(cell, levelZ);
-        Room room = cluster == null ? null : cluster.structure().roomTopology().roomAt(cell, levelZ);
-        return room != null && cluster.structure().roomTopology().structureFor(room).surfaceAtLevel(levelZ).floor().contains(cell)
+        Room room = cluster == null ? null : cluster.roomTopology().roomAt(cell, levelZ);
+        return room != null && cluster.roomTopology().structureFor(room).surfaceAtLevel(levelZ).floor().contains(cell)
                 ? room
                 : null;
     }
@@ -722,7 +721,7 @@ public final class TransitionTool implements EditorTool {
         TransitionStairDraftResolution resolution = resolveCurrentStairDraft(true);
         stairSummaryLabel.setText(stairSummaryText());
         stairAnchorLabel.setText(stairAnchorText());
-        GridPathPatternKind shapeKind = currentStairShape();
+        StairPathPatternKind shapeKind = currentStairShape();
         updateStairFieldLayout(shapeKind);
         renderExitChips();
         stairApplyButton.setDisable(stairAnchorCell == null || !placementReadyForCommit());
@@ -738,7 +737,7 @@ public final class TransitionTool implements EditorTool {
         stairStopLevels.add(levelZ);
         clearStairStatusOverride();
         syncingStairFields = true;
-        stairShapeBox.setValue(GridPathPatternKind.STACK);
+        stairShapeBox.setValue(StairPathPatternKind.STACK);
         stairDirectionBox.setValue(CardinalDirection.defaultDirection());
         stairDimension1Field.setText("2");
         stairDimension2Field.setText("2");
@@ -755,7 +754,7 @@ public final class TransitionTool implements EditorTool {
         stairStopLevels.clear();
         clearStairStatusOverride();
         syncingStairFields = true;
-        stairShapeBox.setValue(GridPathPatternKind.STACK);
+        stairShapeBox.setValue(StairPathPatternKind.STACK);
         stairDirectionBox.setValue(CardinalDirection.defaultDirection());
         stairDimension1Field.setText("2");
         stairDimension2Field.setText("2");
@@ -832,11 +831,11 @@ public final class TransitionTool implements EditorTool {
         if (stairAnchorCell == null || stairAnchorLevelZ == null) {
             return new TransitionStairDraftResolution(null, null, "Raum-Floor-Tile anklicken.");
         }
-        GridPathPatternKind shape = currentStairShape();
+        StairPathPatternKind shape = currentStairShape();
         CardinalDirection direction = currentDirection();
         int dimension1 = resolvedDimension(stairDimension1Field.getText());
         int dimension2 = resolvedDimension(stairDimension2Field.getText());
-        GridPathPatternSpec shapeSpec = new GridPathPatternSpec(shape, direction, dimension1, dimension2);
+        StairPathPatternSpec shapeSpec = new StairPathPatternSpec(shape, direction, dimension1, dimension2);
         LinkedHashSet<Integer> stopLevels = stairStopLevels.stream()
                 .filter(Objects::nonNull)
                 .sorted()
@@ -886,7 +885,8 @@ public final class TransitionTool implements EditorTool {
                 base == null ? description : base.description(),
                 localConnection,
                 base == null ? selectedDestination : base.destination(),
-                base == null ? null : base.linkedTransitionId());
+                base == null ? null : base.linkedTransitionId(),
+                base == null ? null : base.stairPlacementSpec());
     }
 
     private DungeonTransition preparedTransition() {
@@ -970,8 +970,8 @@ public final class TransitionTool implements EditorTool {
         refreshStatePane();
     }
 
-    private void updateStairFieldLayout(GridPathPatternKind shape) {
-        GridPathPatternKind resolvedShape = shape == null ? GridPathPatternKind.STACK : shape;
+    private void updateStairFieldLayout(StairPathPatternKind shape) {
+        StairPathPatternKind resolvedShape = shape == null ? StairPathPatternKind.STACK : shape;
         boolean showDirection = resolvedShape.needsDirection();
         boolean showDimension1 = resolvedShape.needsParameter1();
         boolean showDimension2 = resolvedShape.needsParameter2();
@@ -986,9 +986,9 @@ public final class TransitionTool implements EditorTool {
         stairDimension2Field.setPromptText(showDimension2 ? stairDimension2Label.getText() : "");
     }
 
-    private GridPathPatternKind currentStairShape() {
-        GridPathPatternKind shape = stairShapeBox.getValue();
-        return shape == null ? GridPathPatternKind.STACK : shape;
+    private StairPathPatternKind currentStairShape() {
+        StairPathPatternKind shape = stairShapeBox.getValue();
+        return shape == null ? StairPathPatternKind.STACK : shape;
     }
 
     private CardinalDirection currentDirection() {
@@ -1006,7 +1006,7 @@ public final class TransitionTool implements EditorTool {
         if (stairAnchorCell == null || stairAnchorLevelZ == null) {
             return "Kein Treppenanker";
         }
-        return "Anker: z=" + stairAnchorLevelZ + " · " + stairAnchorCell.x() + "," + stairAnchorCell.y();
+        return "Anker: z=" + stairAnchorLevelZ + " · " + stairAnchorCell.cellX() + "," + stairAnchorCell.cellY();
     }
 
     private String stairStatusText(TransitionStairDraftResolution resolution) {

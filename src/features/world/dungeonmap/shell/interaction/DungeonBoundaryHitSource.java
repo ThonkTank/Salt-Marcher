@@ -3,11 +3,11 @@ package features.world.dungeonmap.shell.interaction;
 import features.world.dungeonmap.map.model.DungeonLayout;
 import features.world.dungeonmap.geometry.GridSegment;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
-import features.world.dungeonmap.cluster.model.RoomCluster;
-import features.world.dungeonmap.corridor.model.Corridor;
+import features.world.dungeonmap.map.cluster.model.RoomCluster;
+import features.world.dungeonmap.map.corridor.model.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
-import features.world.dungeonmap.structure.model.Structure;
-import features.world.dungeonmap.structure.model.boundary.door.Door;
+import features.world.dungeonmap.map.structure.model.Structure;
+import features.world.dungeonmap.map.structure.model.boundary.door.Door;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -54,11 +54,11 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
     ) {
         ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
         for (RoomCluster cluster : projectedClusters) {
-            for (Room room : cluster.structure().roomTopology().rooms()) {
+            for (Room room : cluster.roomTopology().rooms()) {
                 if (room == null || room.roomId() == null) {
                     continue;
                 }
-                Structure roomStructure = cluster.structure().roomTopology().structureFor(room);
+                Structure roomStructure = cluster.roomTopology().structureFor(room);
                 var boundary = roomStructure.boundaryAtLevel(levelZ);
                 for (GridSegment segment2x : boundary.boundaryEdges()) {
                     if (segment2x == null || connectionSegments.contains(segment2x)) {
@@ -115,7 +115,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
                 continue;
             }
             Set<GridSegment> openingEdges = corridor.boundaryDoorSegments(projectedLayout);
-            for (GridSegment segment2x : corridor.structure().boundaryAtLevel(levelZ).boundaryEdges()) {
+            for (GridSegment segment2x : corridor.boundaryAtLevel(levelZ).boundaryEdges()) {
                 if (segment2x == null || openingEdges.contains(segment2x) || connectionSegments.contains(segment2x)) {
                     continue;
                 }

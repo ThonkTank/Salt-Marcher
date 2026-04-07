@@ -38,7 +38,7 @@ public final class Stair {
         return new Stair(path, stopLevels);
     }
 
-    public GridPath tilePath() {
+    public GridPath gridPath() {
         return path;
     }
 

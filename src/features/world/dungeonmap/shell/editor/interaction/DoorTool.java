@@ -1,13 +1,13 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
-import features.world.dungeonmap.cluster.application.DungeonClusterApplicationService;
+import features.world.dungeonmap.map.cluster.application.DungeonClusterApplicationService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.map.application.DungeonMapLoadingService;
 import features.world.dungeonmap.map.model.DungeonLayout;
 import features.world.dungeonmap.geometry.GridSegment;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
-import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
-import features.world.dungeonmap.cluster.model.RoomCluster;
+import features.world.dungeonmap.map.structure.model.boundary.door.DoorRef;
+import features.world.dungeonmap.map.cluster.model.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.Connection;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.room.Room;
@@ -182,22 +182,22 @@ public final class DoorTool implements EditorTool {
             return false;
         }
         if (layout.existingExteriorRoomDoor(roomBoundaryHit, levelZ) != null) {
-            state.selectRef(layout.doorSelectionRefAt(levelZ, roomBoundaryHit.boundarySegment2x()));
+            state.selectRef(layout.doorSelectionRefAt(levelZ, roomBoundaryHit.boundarySegment()));
             return true;
         }
         if (boundary.exterior()) {
             createExteriorDoor(
                     boundary.clusterId(),
                     levelZ,
-                    roomBoundaryHit.boundarySegment2x(),
-                    roomBoundaryHit.boundarySegment2x());
+                    roomBoundaryHit.boundarySegment(),
+                    roomBoundaryHit.boundarySegment());
             return true;
         }
         if (!isEditableLocalDoorBoundary(roomBoundaryHit, boundary, layout, levelZ)) {
             return false;
         }
-        createLocalDoor(boundary.clusterId(), levelZ, roomBoundaryHit.boundarySegment2x(),
-                roomBoundaryHit.boundarySegment2x());
+        createLocalDoor(boundary.clusterId(), levelZ, roomBoundaryHit.boundarySegment(),
+                roomBoundaryHit.boundarySegment());
         return true;
     }
 
@@ -239,7 +239,7 @@ public final class DoorTool implements EditorTool {
                 || layout.existingExteriorRoomDoor(roomBoundaryHit, levelZ) == null) {
             return false;
         }
-        deleteExteriorDoor(boundary.clusterId(), levelZ, roomBoundaryHit.boundarySegment2x());
+        deleteExteriorDoor(boundary.clusterId(), levelZ, roomBoundaryHit.boundarySegment());
         return true;
     }
 
@@ -250,7 +250,7 @@ public final class DoorTool implements EditorTool {
         }
         loadingService.submitMutation(
                 () -> {
-                    roomApplicationService.createDoor(mapId, clusterId, levelZ, List.of(segment2x));
+                    roomApplicationService.createDoor(mapId, clusterId, levelZ, features.world.dungeonmap.geometry.GridBoundary.of(List.of(segment2x)));
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,
@@ -274,7 +274,7 @@ public final class DoorTool implements EditorTool {
         }
         loadingService.submitMutation(
                 () -> {
-                    roomApplicationService.deleteDoor(mapId, clusterId, levelZ, List.of(segment2x));
+                    roomApplicationService.deleteDoor(mapId, clusterId, levelZ, features.world.dungeonmap.geometry.GridBoundary.of(List.of(segment2x)));
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,
@@ -289,7 +289,7 @@ public final class DoorTool implements EditorTool {
         }
         loadingService.submitMutation(
                 () -> {
-                    roomApplicationService.createExteriorDoor(mapId, clusterId, levelZ, List.of(segment2x));
+                    roomApplicationService.createExteriorDoor(mapId, clusterId, levelZ, features.world.dungeonmap.geometry.GridBoundary.of(List.of(segment2x)));
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,
@@ -313,7 +313,7 @@ public final class DoorTool implements EditorTool {
         }
         loadingService.submitMutation(
                 () -> {
-                    roomApplicationService.deleteExteriorDoor(mapId, clusterId, levelZ, List.of(segment2x));
+                    roomApplicationService.deleteExteriorDoor(mapId, clusterId, levelZ, features.world.dungeonmap.geometry.GridBoundary.of(List.of(segment2x)));
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,
@@ -381,7 +381,7 @@ public final class DoorTool implements EditorTool {
         }
         RoomCluster cluster = layout.findCluster(boundary.clusterId());
         RoomCluster projectedCluster = cluster == null ? null : cluster.projectedToLevel(levelZ);
-        return projectedCluster != null && projectedCluster.canCreateDoor(levelZ, hit.boundarySegment2x());
+        return projectedCluster != null && projectedCluster.canCreateDoor(levelZ, hit.boundarySegment());
     }
 
     private void applySelection(DungeonSelectionRef resolvedRef) {
@@ -413,7 +413,7 @@ public final class DoorTool implements EditorTool {
             return null;
         }
         for (RoomCluster cluster : layout.clusters()) {
-            Room room = cluster == null ? null : cluster.structure().roomTopology().findRoom(roomId);
+            Room room = cluster == null ? null : cluster.roomTopology().findRoom(roomId);
             if (room != null) {
                 return room;
             }

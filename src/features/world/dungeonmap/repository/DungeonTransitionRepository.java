@@ -3,10 +3,7 @@ package features.world.dungeonmap.repository;
 import features.world.dungeonmap.map.model.DungeonLayout;
 import features.world.dungeonmap.geometry.CardinalDirection;
 import features.world.dungeonmap.geometry.GridPoint;
-import features.world.dungeonmap.geometry.GridPoint;
-import features.world.dungeonmap.geometry.GridPathPatternKind;
-import features.world.dungeonmap.geometry.GridPathPatternSpec;
-import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
+import features.world.dungeonmap.map.structure.model.boundary.door.DoorRef;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionKind;
 import features.world.dungeonmap.model.structures.connection.DoorConnectionCarrier;
@@ -15,6 +12,9 @@ import features.world.dungeonmap.model.structures.connection.StairConnectionCarr
 import features.world.dungeonmap.model.structures.stair.Stair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
+import features.world.dungeonmap.stair.model.StairPlacementSpec;
+import features.world.dungeonmap.stair.model.StairPathPatternKind;
+import features.world.dungeonmap.stair.model.StairPathPatternSpec;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -50,7 +50,7 @@ public final class DungeonTransitionRepository {
                         + " ORDER BY transition_id, sort_order",
                 mapId,
                 rs -> rs.getLong("transition_id"),
-                rs -> new GridPoint(rs.getInt("cell_x"), rs.getInt("cell_y"), rs.getInt("cell_z")));
+                rs -> GridPoint.cell(rs.getInt("cell_x"), rs.getInt("cell_y"), rs.getInt("cell_z")));
         Map<Long, Set<Integer>> stopLevelsByTransitionId = loadStopLevelsByTransitionId(conn, mapId);
         try (PreparedStatement ps = conn.prepareStatement(
                 SELECT_COLUMNS + " FROM dungeon_transitions WHERE dungeon_map_id=? ORDER BY transition_id")) {
@@ -133,7 +133,12 @@ public final class DungeonTransitionRepository {
         }
     }
 
-    public void updateLocalConnection(Connection conn, long transitionId, DungeonConnection localConnection) throws SQLException {
+    public void updateLocalConnection(
+            Connection conn,
+            long transitionId,
+            DungeonConnection localConnection,
+            StairPlacementSpec stairPlacementSpec
+    ) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE dungeon_transitions SET "
                         + "placement_type=?,"
@@ -141,7 +146,7 @@ public final class DungeonTransitionRepository {
                         + "stair_anchor_cell_x=?, stair_anchor_cell_y=?, stair_anchor_level_z=?, stair_shape_kind=?, stair_shape_direction_code=?,"
                         + "stair_shape_param1=?, stair_shape_param2=?, stair_min_level_z=?, stair_max_level_z=? "
                         + "WHERE transition_id=?")) {
-            bindLocalConnection(ps, localConnection, 1);
+            bindLocalConnection(ps, localConnection, stairPlacementSpec, 1);
             ps.setLong(12, transitionId);
             ps.executeUpdate();
         }
@@ -233,8 +238,8 @@ public final class DungeonTransitionRepository {
                 GridPoint node = pathNodes.get(index);
                 insert.setLong(1, transitionId);
                 insert.setInt(2, index);
-                insert.setInt(3, node.x());
-                insert.setInt(4, node.y());
+                insert.setInt(3, node.cellX());
+                insert.setInt(4, node.cellY());
                 insert.setInt(5, node.z());
                 insert.addBatch();
             }
@@ -279,7 +284,8 @@ public final class DungeonTransitionRepository {
                 rs.getString("description"),
                 mapLocalConnection(rs, layout, pathNodes, stopLevels, transitionId, mapId),
                 mapDestination(rs),
-                nullableLong(rs, "linked_transition_id"));
+                nullableLong(rs, "linked_transition_id"),
+                mapStairPlacementSpec(rs));
     }
 
     private static DungeonConnection mapLocalConnection(
@@ -322,15 +328,8 @@ public final class DungeonTransitionRepository {
                     mapId,
                     rs.getInt("stair_anchor_level_z"),
                     new StairConnectionCarrier(
-                            new GridPoint(rs.getInt("stair_anchor_cell_x"), rs.getInt("stair_anchor_cell_y")),
+                            GridPoint.cell(rs.getInt("stair_anchor_cell_x"), rs.getInt("stair_anchor_cell_y"), 0),
                             rs.getInt("stair_anchor_level_z"),
-                            new GridPathPatternSpec(
-                                    GridPathPatternKind.parse(rs.getString("stair_shape_kind")),
-                                    CardinalDirection.fromCode(rs.getInt("stair_shape_direction_code")),
-                                    rs.getInt("stair_shape_param1"),
-                                    rs.getInt("stair_shape_param2")),
-                            rs.getInt("stair_min_level_z"),
-                            rs.getInt("stair_max_level_z"),
                             Stair.of(pathNodes, stopLevels)),
                     List.of(ConnectionEndpoint.transition(transitionId)));
             default -> throw new SQLException("Unbekannter dungeon transition placement_type: " + placementType);
@@ -356,7 +355,7 @@ public final class DungeonTransitionRepository {
         }
         ps.setLong(startIndex, transition.mapId());
         ps.setString(startIndex + 1, transition.description());
-        bindLocalConnection(ps, transition.localConnection(), startIndex + 2);
+        bindLocalConnection(ps, transition.localConnection(), transition.stairPlacementSpec(), startIndex + 2);
         DungeonTransitionDestination destination = transition.destination();
         ps.setString(startIndex + 13, destination == null ? "OVERWORLD_TILE" : destination.typeKey());
         if (destination instanceof DungeonTransitionDestination.OverworldTileDestination overworld) {
@@ -386,7 +385,12 @@ public final class DungeonTransitionRepository {
         }
     }
 
-    private static void bindLocalConnection(PreparedStatement ps, DungeonConnection localConnection, int startIndex) throws SQLException {
+    private static void bindLocalConnection(
+            PreparedStatement ps,
+            DungeonConnection localConnection,
+            StairPlacementSpec stairPlacementSpec,
+            int startIndex
+    ) throws SQLException {
         if (localConnection != null && localConnection.doorCarrier() != null) {
             DoorRef doorRef = localConnection.doorRef();
             if (doorRef == null) {
@@ -399,17 +403,26 @@ public final class DungeonTransitionRepository {
         }
         if (localConnection != null && localConnection.stairCarrier() != null) {
             StairConnectionCarrier stairCarrier = localConnection.stairCarrier();
+            StairPlacementSpec placementSpec = stairPlacementSpec == null
+                    ? new StairPlacementSpec(
+                            stairCarrier.anchorCell(),
+                            stairCarrier.anchorLevelZ(),
+                            StairPathPatternSpec.defaultSpec(),
+                            stairCarrier.anchorLevelZ(),
+                            stairCarrier.anchorLevelZ(),
+                            stairCarrier.stopLevels())
+                    : stairPlacementSpec;
             ps.setString(startIndex, "STAIR");
             clearDoorPlacement(ps, startIndex + 1);
-            ps.setInt(startIndex + 2, stairCarrier.anchorCell().x());
-            ps.setInt(startIndex + 3, stairCarrier.anchorCell().y());
-            ps.setInt(startIndex + 4, stairCarrier.anchorLevelZ());
-            ps.setString(startIndex + 5, stairCarrier.shapeSpec().kind().name());
-            ps.setInt(startIndex + 6, stairCarrier.shapeSpec().direction().code());
-            ps.setInt(startIndex + 7, stairCarrier.shapeSpec().parameter1());
-            ps.setInt(startIndex + 8, stairCarrier.shapeSpec().parameter2());
-            ps.setInt(startIndex + 9, stairCarrier.minLevelZ());
-            ps.setInt(startIndex + 10, stairCarrier.maxLevelZ());
+            ps.setInt(startIndex + 2, placementSpec.anchorCell().cellX());
+            ps.setInt(startIndex + 3, placementSpec.anchorCell().cellY());
+            ps.setInt(startIndex + 4, placementSpec.anchorLevelZ());
+            ps.setString(startIndex + 5, placementSpec.shapeSpec().kind().name());
+            ps.setInt(startIndex + 6, placementSpec.shapeSpec().direction().code());
+            ps.setInt(startIndex + 7, placementSpec.shapeSpec().parameter1());
+            ps.setInt(startIndex + 8, placementSpec.shapeSpec().parameter2());
+            ps.setInt(startIndex + 9, placementSpec.minLevelZ());
+            ps.setInt(startIndex + 10, placementSpec.maxLevelZ());
             return;
         }
         ps.setNull(startIndex, java.sql.Types.VARCHAR);
@@ -431,6 +444,24 @@ public final class DungeonTransitionRepository {
         ps.setNull(startIndex + 6, java.sql.Types.INTEGER);
         ps.setNull(startIndex + 7, java.sql.Types.INTEGER);
         ps.setNull(startIndex + 8, java.sql.Types.INTEGER);
+    }
+
+    private static StairPlacementSpec mapStairPlacementSpec(ResultSet rs) throws SQLException {
+        String placementType = rs.getString("placement_type");
+        if (!"STAIR".equals(placementType)) {
+            return null;
+        }
+        return new StairPlacementSpec(
+                GridPoint.cell(rs.getInt("stair_anchor_cell_x"), rs.getInt("stair_anchor_cell_y"), 0),
+                rs.getInt("stair_anchor_level_z"),
+                new StairPathPatternSpec(
+                        StairPathPatternKind.parse(rs.getString("stair_shape_kind")),
+                        CardinalDirection.fromCode(rs.getInt("stair_shape_direction_code")),
+                        rs.getInt("stair_shape_param1"),
+                        rs.getInt("stair_shape_param2")),
+                rs.getInt("stair_min_level_z"),
+                rs.getInt("stair_max_level_z"),
+                Set.of());
     }
 
     private static Map<Long, Set<Integer>> loadStopLevelsByTransitionId(Connection conn, long mapId) throws SQLException {
@@ -477,7 +508,7 @@ public final class DungeonTransitionRepository {
             ps.setLong(1, transitionId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    result.add(new GridPoint(rs.getInt("cell_x"), rs.getInt("cell_y"), rs.getInt("cell_z")));
+                    result.add(GridPoint.cell(rs.getInt("cell_x"), rs.getInt("cell_y"), rs.getInt("cell_z")));
                 }
             }
         }

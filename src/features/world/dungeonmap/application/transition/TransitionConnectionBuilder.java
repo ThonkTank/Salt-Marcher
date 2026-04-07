@@ -5,8 +5,8 @@ import features.world.dungeonmap.application.stair.StairDraftResolver;
 import features.world.dungeonmap.map.model.DungeonLayout;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
-import features.world.dungeonmap.cluster.model.RoomCluster;
-import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
+import features.world.dungeonmap.map.cluster.model.RoomCluster;
+import features.world.dungeonmap.map.structure.model.boundary.door.DoorRef;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionKind;
 import features.world.dungeonmap.model.structures.connection.DoorConnectionCarrier;
@@ -84,9 +84,6 @@ public final class TransitionConnectionBuilder {
         StairConnectionCarrier carrier = new StairConnectionCarrier(
                 resolvedDraft.draft().anchorCell(),
                 resolvedDraft.draft().anchorLevelZ(),
-                resolvedDraft.draft().shapeSpec(),
-                resolvedDraft.draft().minLevelZ(),
-                resolvedDraft.draft().maxLevelZ(),
                 Stair.of(resolvedDraft.path(), resolvedDraft.stopLevels()));
         DungeonConnection candidate = new DungeonConnection(
                 ConnectionKind.TRANSITION,
@@ -164,8 +161,8 @@ public final class TransitionConnectionBuilder {
             int levelZ
     ) {
         RoomCluster cluster = layout == null ? null : layout.clusterAtCell(cell, levelZ);
-        Room room = cluster == null ? null : cluster.structure().roomTopology().roomAt(cell, levelZ);
-        return room != null && cluster.structure().roomTopology().structureFor(room).surfaceAtLevel(levelZ).floor().contains(cell)
+        Room room = cluster == null ? null : cluster.roomTopology().roomAt(cell, levelZ);
+        return room != null && cluster.roomTopology().structureFor(room).surfaceAtLevel(levelZ).floor().contains(cell)
                 ? room
                 : null;
     }

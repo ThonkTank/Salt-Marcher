@@ -1,7 +1,6 @@
 package features.world.dungeonmap.model.interaction;
 
 import features.world.dungeonmap.geometry.GridPoint;
-import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridSegment;
 import java.util.Objects;
 
@@ -91,15 +90,15 @@ public sealed interface DungeonSelectionRef permits
         }
     }
 
-    record VertexRef(GridPoint vertex2x) implements DungeonSelectionRef {
+    record VertexRef(GridPoint vertex) implements DungeonSelectionRef {
         public VertexRef {
-            vertex2x = Objects.requireNonNull(vertex2x, "vertex2x");
+            vertex = Objects.requireNonNull(vertex, "vertex");
         }
     }
 
-    record RoomBoundaryRef(Long roomId, GridSegment boundarySegment2x) implements DungeonSelectionRef {
+    record RoomBoundaryRef(Long roomId, GridSegment boundarySegment) implements DungeonSelectionRef {
         public RoomBoundaryRef {
-            boundarySegment2x = Objects.requireNonNull(boundarySegment2x, "boundarySegment2x");
+            boundarySegment = Objects.requireNonNull(boundarySegment, "boundarySegment");
         }
 
         @Override
@@ -108,9 +107,9 @@ public sealed interface DungeonSelectionRef permits
         }
     }
 
-    record CorridorBoundaryRef(Long corridorId, GridSegment boundarySegment2x) implements DungeonSelectionRef {
+    record CorridorBoundaryRef(Long corridorId, GridSegment boundarySegment) implements DungeonSelectionRef {
         public CorridorBoundaryRef {
-            boundarySegment2x = Objects.requireNonNull(boundarySegment2x, "boundarySegment2x");
+            boundarySegment = Objects.requireNonNull(boundarySegment, "boundarySegment");
         }
 
         @Override
@@ -127,10 +126,10 @@ public sealed interface DungeonSelectionRef permits
         }
     }
 
-    record CorridorTileRef(Long corridorId, GridPoint cell, GridPoint point2x) implements DungeonSelectionRef {
+    record CorridorTileRef(Long corridorId, GridPoint cell, GridPoint point) implements DungeonSelectionRef {
         public CorridorTileRef {
             cell = Objects.requireNonNull(cell, "cell");
-            point2x = Objects.requireNonNull(point2x, "point2x");
+            point = Objects.requireNonNull(point, "point");
         }
 
         @Override
@@ -139,9 +138,9 @@ public sealed interface DungeonSelectionRef permits
         }
     }
 
-    record CorridorNodeRef(Long corridorId, Long nodeId, GridPoint point2x) implements DungeonSelectionRef {
+    record CorridorNodeRef(Long corridorId, Long nodeId, GridPoint point) implements DungeonSelectionRef {
         public CorridorNodeRef {
-            point2x = Objects.requireNonNull(point2x, "point2x");
+            point = Objects.requireNonNull(point, "point");
         }
 
         @Override
@@ -150,12 +149,12 @@ public sealed interface DungeonSelectionRef permits
         }
     }
 
-    record CorridorCornerRef(Long corridorId, Long segmentId, GridPoint point2x) implements DungeonSelectionRef {
+    record CorridorCornerRef(Long corridorId, Long segmentId, GridPoint point) implements DungeonSelectionRef {
         public CorridorCornerRef {
             if (segmentId == null) {
                 throw new IllegalArgumentException("Corridor corner refs require segmentId");
             }
-            point2x = Objects.requireNonNull(point2x, "point2x");
+            point = Objects.requireNonNull(point, "point");
         }
 
         @Override
@@ -164,12 +163,12 @@ public sealed interface DungeonSelectionRef permits
         }
     }
 
-    record CorridorSegmentRef(Long corridorId, Long segmentId, GridPoint point2x) implements DungeonSelectionRef {
+    record CorridorSegmentRef(Long corridorId, Long segmentId, GridPoint point) implements DungeonSelectionRef {
         public CorridorSegmentRef {
             if (segmentId == null) {
                 throw new IllegalArgumentException("Corridor segment refs require segmentId");
             }
-            point2x = Objects.requireNonNull(point2x, "point2x");
+            point = Objects.requireNonNull(point, "point");
         }
 
         @Override

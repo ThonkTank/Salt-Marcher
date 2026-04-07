@@ -23,19 +23,15 @@ public sealed interface DungeonHitSurface permits DungeonHitSurface.CellSurface,
         }
     }
 
-    record SegmentSurface(Set<GridSegment> segments2x, int levelZ) implements DungeonHitSurface {
+    record SegmentSurface(Set<GridSegment> segments, int levelZ) implements DungeonHitSurface {
         public SegmentSurface {
-            segments2x = normalizedMembers(segments2x);
-        }
-
-        public Set<GridSegment> segments() {
-            return segments2x;
+            segments = normalizedMembers(segments);
         }
     }
 
-    record PointSurface(Set<GridPoint> points2x, int levelZ) implements DungeonHitSurface {
+    record PointSurface(Set<GridPoint> points, int levelZ) implements DungeonHitSurface {
         public PointSurface {
-            points2x = normalizedMembers(points2x);
+            points = normalizedMembers(points);
         }
     }
 

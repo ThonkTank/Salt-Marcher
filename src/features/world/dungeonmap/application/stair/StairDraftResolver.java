@@ -3,10 +3,11 @@ package features.world.dungeonmap.application.stair;
 import features.world.dungeonmap.map.model.DungeonLayout;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridPath;
-import features.world.dungeonmap.cluster.model.RoomCluster;
+import features.world.dungeonmap.map.cluster.model.RoomCluster;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.stair.Stair;
+import features.world.dungeonmap.stair.model.StairPathGenerator;
 
 import java.util.Objects;
 import java.util.Set;
@@ -85,7 +86,7 @@ public final class StairDraftResolver {
         validateAnchor(resolvedLayout, resolvedDraft.anchorCell(), resolvedDraft.anchorLevelZ());
         return new ResolvedStairDraft(
                 resolvedDraft,
-                GridPath.generate(
+                StairPathGenerator.generate(
                         resolvedDraft.shapeSpec(),
                         resolvedDraft.anchorCell(),
                         resolvedDraft.anchorLevelZ(),
@@ -100,10 +101,13 @@ public final class StairDraftResolver {
             int levelDelta
     ) {
         DungeonStairApplicationService.StairDraft resolvedDraft = Objects.requireNonNull(draft, "draft");
-        GridPoint resolvedDelta = delta == null ? new GridPoint(0, 0) : delta;
+        GridPoint resolvedDelta = delta == null ? GridPoint.cell(0, 0, 0) : delta;
         return new DungeonStairApplicationService.StairDraft(
                 resolvedDraft.name(),
-                resolvedDraft.anchorCell().add(resolvedDelta),
+                GridPoint.cell(
+                        resolvedDraft.anchorCell().cellX() + resolvedDelta.cellX(),
+                        resolvedDraft.anchorCell().cellY() + resolvedDelta.cellY(),
+                        resolvedDraft.anchorCell().z()),
                 resolvedDraft.anchorLevelZ() + levelDelta,
                 resolvedDraft.shapeSpec(),
                 resolvedDraft.minLevelZ() + levelDelta,
@@ -128,10 +132,10 @@ public final class StairDraftResolver {
     }
 
     private static void validateAnchor(DungeonLayout layout, GridPoint anchorCell, int anchorLevelZ) {
-        GridPoint anchorCoord = anchorCell == null ? null : anchorCell.projectedCell();
+        GridPoint anchorCoord = anchorCell;
         RoomCluster cluster = layout == null ? null : layout.clusterAtCell(anchorCoord, anchorLevelZ);
-        Room room = cluster == null ? null : cluster.structure().roomTopology().roomAt(anchorCoord, anchorLevelZ);
-        if (room != null && !cluster.structure().roomTopology().structureFor(room).surfaceAtLevel(anchorLevelZ).floor().contains(anchorCoord)) {
+        Room room = cluster == null ? null : cluster.roomTopology().roomAt(anchorCoord, anchorLevelZ);
+        if (room != null && !cluster.roomTopology().structureFor(room).surfaceAtLevel(anchorLevelZ).floor().contains(anchorCoord)) {
             room = null;
         }
         if (room == null) {

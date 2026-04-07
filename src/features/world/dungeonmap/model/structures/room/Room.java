@@ -1,6 +1,7 @@
 package features.world.dungeonmap.model.structures.room;
 
 import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridTranslation;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -69,10 +70,11 @@ public record Room(
     }
 
     public Room movedBy(GridPoint delta, int levelDelta) {
-        GridPoint resolvedDelta = delta == null ? new GridPoint(0, 0) : delta;
+        GridPoint resolvedDelta = delta == null ? GridPoint.cell(0, 0, 0) : delta;
+        GridTranslation translation = GridTranslation.cells(resolvedDelta.cellX(), resolvedDelta.cellY(), 0);
         Map<Integer, GridPoint> movedAnchors = new LinkedHashMap<>();
         for (Map.Entry<Integer, GridPoint> entry : anchorsByLevel.entrySet()) {
-            movedAnchors.put(entry.getKey() + levelDelta, entry.getValue().add(resolvedDelta));
+            movedAnchors.put(entry.getKey() + levelDelta, entry.getValue().translated(translation));
         }
         return new Room(
                 roomId,
@@ -84,11 +86,11 @@ public record Room(
     }
 
     public Room movedToLevel(int targetPrimaryLevel) {
-        return movedBy(new GridPoint(0, 0), targetPrimaryLevel - primaryLevel());
+        return movedBy(GridPoint.cell(0, 0, 0), targetPrimaryLevel - primaryLevel());
     }
 
     public Room movedByLevel(int levelDelta) {
-        return movedBy(new GridPoint(0, 0), levelDelta);
+        return movedBy(GridPoint.cell(0, 0, 0), levelDelta);
     }
 
     private static Map<Integer, GridPoint> normalizeAnchors(Map<Integer, GridPoint> anchorsByLevel) {

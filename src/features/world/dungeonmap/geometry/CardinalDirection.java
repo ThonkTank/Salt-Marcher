@@ -36,10 +36,6 @@ public enum CardinalDirection {
         return label;
     }
 
-    public GridPoint delta() {
-        return GridPoint.cell(dxCells, dyCells, 0);
-    }
-
     public CardinalDirection clockwise() {
         return switch (this) {
             case NORTH -> EAST;

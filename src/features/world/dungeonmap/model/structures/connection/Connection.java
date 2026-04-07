@@ -4,8 +4,8 @@ import features.world.dungeonmap.map.model.DungeonLayout;
 import features.world.dungeonmap.geometry.CardinalDirection;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridSegment;
-import features.world.dungeonmap.structure.model.boundary.door.Door;
-import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
+import features.world.dungeonmap.map.structure.model.boundary.door.Door;
+import features.world.dungeonmap.map.structure.model.boundary.door.DoorRef;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -134,7 +134,7 @@ public interface Connection {
     default Set<GridPoint> occupiedPositions(DungeonLayout layout) {
         StairConnectionCarrier stairCarrier = stairCarrier();
         if (stairCarrier != null) {
-            return stairCarrier.pathPositions();
+            return stairCarrier.occupiedPositions();
         }
         GridPoint focus = focusPosition(layout);
         return focus == null ? Set.of() : Set.of(focus);

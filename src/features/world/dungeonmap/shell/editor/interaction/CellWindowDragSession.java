@@ -17,14 +17,14 @@ public record CellWindowDragSession(
         if (startCell == null || endCell == null) {
             return Set.of();
         }
-        int minX = Math.min(startCell.x(), endCell.x());
-        int maxX = Math.max(startCell.x(), endCell.x());
-        int minY = Math.min(startCell.y(), endCell.y());
-        int maxY = Math.max(startCell.y(), endCell.y());
+        int minX = Math.min(startCell.cellX(), endCell.cellX());
+        int maxX = Math.max(startCell.cellX(), endCell.cellX());
+        int minY = Math.min(startCell.cellY(), endCell.cellY());
+        int maxY = Math.max(startCell.cellY(), endCell.cellY());
         LinkedHashSet<GridPoint> cells = new LinkedHashSet<>();
         for (int x = minX; x <= maxX; x++) {
             for (int y = minY; y <= maxY; y++) {
-                cells.add(new GridPoint(x, y));
+                cells.add(GridPoint.cell(x, y, startCell.z()));
             }
         }
         return cells.isEmpty() ? Set.of() : Set.copyOf(cells);

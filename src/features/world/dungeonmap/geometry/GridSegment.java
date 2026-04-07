@@ -73,14 +73,6 @@ public final class GridSegment extends GridObject {
         return start.y2() == end.y2() ? Orientation.HORIZONTAL : Orientation.VERTICAL;
     }
 
-    public boolean isHorizontal() {
-        return orientation() == Orientation.HORIZONTAL;
-    }
-
-    public boolean isVertical() {
-        return orientation() == Orientation.VERTICAL;
-    }
-
     public GridPoint midpoint() {
         return GridPoint.lattice((start.x2() + end.x2()) / 2, (start.y2() + end.y2()) / 2, start.z());
     }
@@ -114,10 +106,6 @@ public final class GridSegment extends GridObject {
 
     public GridBoundary boundarySteps() {
         return GridBoundary.of(stepSegments());
-    }
-
-    public static Set<GridSegment> boundarySteps(Collection<GridSegment> segments) {
-        return GridBoundary.of(segments).segments();
     }
 
     public CardinalDirection directionFrom(GridPoint cell) {

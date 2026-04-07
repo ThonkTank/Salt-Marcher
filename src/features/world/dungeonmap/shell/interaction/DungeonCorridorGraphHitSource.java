@@ -4,9 +4,9 @@ import features.world.dungeonmap.map.model.DungeonLayout;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridSegment;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
-import features.world.dungeonmap.corridor.model.Corridor;
-import features.world.dungeonmap.corridor.model.CorridorNode;
-import features.world.dungeonmap.corridor.model.CorridorPathTrace;
+import features.world.dungeonmap.map.corridor.model.Corridor;
+import features.world.dungeonmap.map.corridor.model.CorridorNode;
+import features.world.dungeonmap.map.corridor.model.CorridorPathTrace;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,8 +36,8 @@ public final class DungeonCorridorGraphHitSource implements DungeonHitSource {
         ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
         for (CorridorNode node : corridor.persistedManualNodes()) {
             descriptors.add(new DungeonHitDescriptor(
-                    new DungeonSelectionRef.CorridorNodeRef(corridor.corridorId(), node.nodeId(), node.point2x()),
-                    List.of(new DungeonHitSurface.PointSurface(Set.of(node.point2x()), levelZ))));
+                    new DungeonSelectionRef.CorridorNodeRef(corridor.corridorId(), node.nodeId(), node.point()),
+                    List.of(new DungeonHitSurface.PointSurface(Set.of(node.point()), levelZ))));
         }
         return List.copyOf(descriptors);
     }

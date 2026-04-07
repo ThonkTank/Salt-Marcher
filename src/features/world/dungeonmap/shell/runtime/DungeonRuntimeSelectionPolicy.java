@@ -5,7 +5,7 @@ import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationSna
 import features.world.dungeonmap.map.model.DungeonLayout;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
-import features.world.dungeonmap.cluster.model.RoomCluster;
+import features.world.dungeonmap.map.cluster.model.RoomCluster;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.shell.interaction.DungeonDragService;
 import features.world.dungeonmap.shell.interaction.DungeonHitSnapshot;
@@ -88,8 +88,8 @@ public final class DungeonRuntimeSelectionPolicy {
             DungeonSelectionRef.RoomRef roomRef
     ) {
         RoomCluster cluster = activeMap == null || activeCell == null ? null : activeMap.clusterAtCell(activeCell, activeLevelZ);
-        Room room = cluster == null ? null : cluster.structure().roomTopology().roomAt(activeCell, activeLevelZ);
-        if (room != null && !cluster.structure().roomTopology().structureFor(room).surfaceAtLevel(activeLevelZ).floor().contains(activeCell)) {
+        Room room = cluster == null ? null : cluster.roomTopology().roomAt(activeCell, activeLevelZ);
+        if (room != null && !cluster.roomTopology().structureFor(room).surfaceAtLevel(activeLevelZ).floor().contains(activeCell)) {
             room = null;
         }
         return room != null && Objects.equals(room.roomId(), roomRef.roomId());

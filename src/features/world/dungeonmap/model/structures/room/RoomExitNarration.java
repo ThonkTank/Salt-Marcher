@@ -10,7 +10,7 @@ public record RoomExitNarration(
         String description
 ) {
     public RoomExitNarration {
-        roomCell = roomCell == null ? new GridPoint(0, 0) : roomCell;
+        roomCell = roomCell == null ? GridPoint.cell(0, 0, 0) : roomCell;
         direction = direction == null ? CardinalDirection.defaultDirection() : direction;
         description = description == null ? "" : description.trim();
     }

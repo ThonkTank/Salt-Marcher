@@ -13,6 +13,7 @@ import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
 import features.world.dungeonmap.map.repository.DungeonLayoutRepository;
 import features.world.dungeonmap.repository.DungeonTransitionRepository;
+import features.world.dungeonmap.stair.model.StairPlacementSpec;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -112,6 +113,7 @@ public final class DungeonTransitionApplicationService {
                         description,
                         localConnection,
                         validatedDestination,
+                        null,
                         null));
                 if (bidirectional
                         && validatedDestination instanceof DungeonTransitionDestination.DungeonMapDestination dungeonDestination) {
@@ -121,7 +123,8 @@ public final class DungeonTransitionApplicationService {
                             description,
                             null,
                             new DungeonTransitionDestination.DungeonMapDestination(mapId, insertedTransitionId),
-                            insertedTransitionId));
+                            insertedTransitionId,
+                            null));
                     transitionRepository.linkPair(conn, insertedTransitionId, counterpartId);
                 }
                 return null;
@@ -147,6 +150,7 @@ public final class DungeonTransitionApplicationService {
                 DungeonLayout layout = requireLayout(conn, mapId);
                 DungeonTransitionDestination validatedDestination = requireDestination(conn, destination, bidirectional);
                 long reservedTransitionId = transitionRepository.nextTransitionId(conn);
+                StairPlacementSpec placementSpec = toPlacementSpec(stairDraft);
                 DungeonConnection localConnection = requireStairConnection(layout, mapId, reservedTransitionId, stairDraft, null);
                 long insertedTransitionId = transitionRepository.insert(conn, new DungeonTransition(
                         reservedTransitionId,
@@ -154,7 +158,8 @@ public final class DungeonTransitionApplicationService {
                         description,
                         localConnection,
                         validatedDestination,
-                        null));
+                        null,
+                        placementSpec));
                 if (bidirectional
                         && validatedDestination instanceof DungeonTransitionDestination.DungeonMapDestination dungeonDestination) {
                     long counterpartId = transitionRepository.insert(conn, new DungeonTransition(
@@ -163,7 +168,8 @@ public final class DungeonTransitionApplicationService {
                             description,
                             null,
                             new DungeonTransitionDestination.DungeonMapDestination(mapId, insertedTransitionId),
-                            insertedTransitionId));
+                            insertedTransitionId,
+                            null));
                     transitionRepository.linkPair(conn, insertedTransitionId, counterpartId);
                 }
                 return null;
@@ -183,7 +189,7 @@ public final class DungeonTransitionApplicationService {
                 DungeonTransition transition = requireTransition(conn, transitionId);
                 DungeonLayout layout = requireLayout(conn, transition.mapId());
                 DungeonConnection updatedLocalConnection = requireDoorConnection(layout, transition.mapId(), transitionId, sourceRef, levelZ);
-                transitionRepository.updateLocalConnection(conn, transitionId, updatedLocalConnection);
+                transitionRepository.updateLocalConnection(conn, transitionId, updatedLocalConnection, null);
                 return null;
             });
         }
@@ -203,7 +209,8 @@ public final class DungeonTransitionApplicationService {
                 transitionRepository.updateLocalConnection(
                         conn,
                         transitionId,
-                        requireStairConnection(layout, transition.mapId(), transitionId, stairDraft, transitionId));
+                        requireStairConnection(layout, transition.mapId(), transitionId, stairDraft, transitionId),
+                        toPlacementSpec(stairDraft));
                 return null;
             });
         }
@@ -300,5 +307,18 @@ public final class DungeonTransitionApplicationService {
             throw new SQLException("Dungeon " + mapId + " konnte nicht geladen werden");
         }
         return layout;
+    }
+
+    private static StairPlacementSpec toPlacementSpec(DungeonStairApplicationService.StairDraft draft) {
+        if (draft == null) {
+            return null;
+        }
+        return new StairPlacementSpec(
+                draft.anchorCell(),
+                draft.anchorLevelZ(),
+                draft.shapeSpec(),
+                draft.minLevelZ(),
+                draft.maxLevelZ(),
+                draft.stopLevels());
     }
 }

@@ -7,6 +7,7 @@ import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 import features.world.dungeonmap.model.structures.connection.DungeonConnection;
 import features.world.dungeonmap.model.structures.connection.StairConnectionCarrier;
+import features.world.dungeonmap.stair.model.StairPlacementSpec;
 
 public record DungeonTransition(
         Long transitionId,
@@ -14,7 +15,8 @@ public record DungeonTransition(
         String description,
         DungeonConnection localConnection,
         DungeonTransitionDestination destination,
-        Long linkedTransitionId
+        Long linkedTransitionId,
+        StairPlacementSpec stairPlacementSpec
 ) {
     public DungeonTransition {
         description = description == null ? "" : description.trim();
@@ -33,7 +35,7 @@ public record DungeonTransition(
     }
 
     public DungeonTransition withLocalConnection(DungeonConnection localConnection) {
-        return new DungeonTransition(transitionId, mapId, description, localConnection, destination, linkedTransitionId);
+        return new DungeonTransition(transitionId, mapId, description, localConnection, destination, linkedTransitionId, stairPlacementSpec);
     }
 
     public InteractiveLabelHandle labelHandle(DungeonLayout layout) {
@@ -57,7 +59,7 @@ public record DungeonTransition(
         return new InteractiveLabelHandle(
                 new DungeonSelectionRef.TransitionRef(transitionId),
                 label(),
-                GridPoint.cell(stairCarrier.anchorCell()));
+                stairCarrier.anchorCell());
     }
 
     public int levelZ() {

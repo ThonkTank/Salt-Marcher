@@ -44,16 +44,17 @@ public record DungeonHitProbe(
         double halfGrid = gridSizePx / 2.0;
         // Pixel projection treats the top-left corner of GridPoint(0,0) as GridPoint(-1,-1), so raw 2x values map
         // to canvas space with a fixed half-cell offset rather than a storage compatibility codec.
-        return GridPoint.raw(
+        return GridPoint.lattice(
                 (int) Math.round((resolvedPoint.getX() - panX) / halfGrid) - 1,
-                (int) Math.round((resolvedPoint.getY() - panY) / halfGrid) - 1);
+                (int) Math.round((resolvedPoint.getY() - panY) / halfGrid) - 1,
+                0);
     }
 
     public Point2D canvasPointForGrid(GridPoint cell) {
         GridPoint resolvedCell = Objects.requireNonNull(cell, "cell");
         return new Point2D(
-                panX + resolvedCell.x() * gridSizePx,
-                panY + resolvedCell.y() * gridSizePx);
+                panX + resolvedCell.cellX() * gridSizePx,
+                panY + resolvedCell.cellY() * gridSizePx);
     }
 
     public Point2D canvasPointForPoint2x(GridPoint point2x) {

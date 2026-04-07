@@ -30,7 +30,7 @@ public final class DungeonRoomRepository {
                 rs -> rs.getLong("room_id"),
                 rs -> new RoomExitNarration(
                         rs.getInt("level_z"),
-                        new GridPoint(rs.getInt("cell_x"), rs.getInt("cell_y")),
+                        GridPoint.cell(rs.getInt("cell_x"), rs.getInt("cell_y"), 0),
                         DungeonPersistenceDirections.fromPersistedEdgeDirection(rs.getString("edge_direction")),
                         rs.getString("description")));
         try (PreparedStatement ps = conn.prepareStatement(
@@ -111,8 +111,8 @@ public final class DungeonRoomRepository {
             for (RoomExitNarration exitNarration : resolvedNarration.exitNarrations()) {
                 insert.setLong(1, roomId);
                 insert.setInt(2, exitNarration.levelZ());
-                insert.setInt(3, exitNarration.roomCell().x());
-                insert.setInt(4, exitNarration.roomCell().y());
+                insert.setInt(3, exitNarration.roomCell().cellX());
+                insert.setInt(4, exitNarration.roomCell().cellY());
                 insert.setString(5, DungeonPersistenceDirections.toPersistedEdgeDirection(exitNarration.direction()));
                 insert.setString(6, exitNarration.description());
                 insert.setInt(7, sortOrder++);
@@ -147,8 +147,8 @@ public final class DungeonRoomRepository {
             ps.setLong(1, mapId);
             ps.setLong(2, clusterId);
             ps.setString(3, name);
-            ps.setInt(4, primaryAnchor.x());
-            ps.setInt(5, primaryAnchor.y());
+            ps.setInt(4, primaryAnchor.cellX());
+            ps.setInt(5, primaryAnchor.cellY());
             ps.setInt(6, primaryLevel);
             ps.executeUpdate();
             try (ResultSet rs = ps.getGeneratedKeys()) {
@@ -174,8 +174,8 @@ public final class DungeonRoomRepository {
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE dungeon_rooms SET name=?, component_x=?, component_y=?, level_z=? WHERE room_id=?")) {
             ps.setString(1, name);
-            ps.setInt(2, primaryAnchor.x());
-            ps.setInt(3, primaryAnchor.y());
+            ps.setInt(2, primaryAnchor.cellX());
+            ps.setInt(3, primaryAnchor.cellY());
             ps.setInt(4, primaryLevel);
             ps.setLong(5, roomId);
             ps.executeUpdate();
@@ -226,17 +226,17 @@ public final class DungeonRoomRepository {
     }
 
     private static GridPoint primaryAnchorCell(Map<Integer, GridPoint> anchorsByLevel) {
-        return anchorsByLevel.getOrDefault(primaryLevel(anchorsByLevel), new GridPoint(0, 0));
+        return anchorsByLevel.getOrDefault(primaryLevel(anchorsByLevel), GridPoint.cell(0, 0, 0));
     }
 
     private static int persistedCellX2(GridPoint cell) {
-        GridPoint resolvedCell = cell == null ? new GridPoint(0, 0) : cell;
-        return GridPoint.cell(resolvedCell).x2();
+        GridPoint resolvedCell = cell == null ? GridPoint.cell(0, 0, 0) : cell;
+        return resolvedCell.x2();
     }
 
     private static int persistedCellY2(GridPoint cell) {
-        GridPoint resolvedCell = cell == null ? new GridPoint(0, 0) : cell;
-        return GridPoint.cell(resolvedCell).y2();
+        GridPoint resolvedCell = cell == null ? GridPoint.cell(0, 0, 0) : cell;
+        return resolvedCell.y2();
     }
 
     private static Map<Long, Map<Integer, GridPoint>> loadRoomAnchors(Connection conn, long mapId) throws SQLException {
@@ -267,8 +267,11 @@ public final class DungeonRoomRepository {
     }
 
     private static GridPoint requireStoredCellCenter(int persistedX2, int persistedY2, String label, long roomId, int levelZ) {
-        return GridPoint.raw(persistedX2, persistedY2).asCell().orElseThrow(() -> new IllegalArgumentException(
-                label + " must be a tile center for room " + roomId + " at level " + levelZ));
+        GridPoint point = GridPoint.lattice(persistedX2, persistedY2, 0);
+        if (point.kind() != GridPoint.Kind.CELL) {
+            throw new IllegalArgumentException(label + " must be a tile center for room " + roomId + " at level " + levelZ);
+        }
+        return point;
     }
 
     private static <K, V> Map<K, List<V>> loadGrouped(

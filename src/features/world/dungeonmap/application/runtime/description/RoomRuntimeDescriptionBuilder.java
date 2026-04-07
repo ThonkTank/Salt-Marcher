@@ -2,7 +2,7 @@ package features.world.dungeonmap.application.runtime.description;
 
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeonmap.map.model.DungeonLayout;
-import features.world.dungeonmap.cluster.model.RoomCluster;
+import features.world.dungeonmap.map.cluster.model.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.connection.DoorExitCatalog;
@@ -25,11 +25,11 @@ final class RoomRuntimeDescriptionBuilder {
         if (cluster == null) {
             return null;
         }
-        List<DungeonRuntimeExit> exits = cluster.structure().roomTopology().roomLevels(room).stream()
+        List<DungeonRuntimeExit> exits = cluster.roomTopology().roomLevels(room).stream()
                 .sorted()
                 .flatMap(levelZ -> DoorExitCatalog.describe(
                         layout,
-                        cluster.structure().roomTopology().structureFor(room).surfaceAtLevel(levelZ).floor().cells(),
+                        cluster.roomTopology().structureFor(room).surfaceAtLevel(levelZ).floor().cells(),
                         levelZ,
                         layout.connectionsForEndpoint(ConnectionEndpoint.room(room.roomId()))).stream())
                 .map(exit -> DungeonRuntimeExitFactory.roomExit(location, exit))

@@ -21,24 +21,10 @@ public final class GridPoint extends GridObject {
             .comparingInt(GridPoint::z)
             .thenComparingInt(GridPoint::y2)
             .thenComparingInt(GridPoint::x2);
-    public static final Comparator<GridPoint> POINT_ORDER = ORDER;
-    public static final List<GridPoint> CARDINAL_STEPS = List.of(
-            GridPoint.cell(0, -1, 0),
-            GridPoint.cell(1, 0, 0),
-            GridPoint.cell(0, 1, 0),
-            GridPoint.cell(-1, 0, 0));
 
     private final int x2;
     private final int y2;
     private final int z;
-
-    public GridPoint(int x, int y) {
-        this(x, y, 0);
-    }
-
-    public GridPoint(int x, int y, int z) {
-        this(x * 2, y * 2, z, true);
-    }
 
     private GridPoint(int x2, int y2, int z, boolean lattice) {
         this.x2 = x2;
@@ -47,14 +33,6 @@ public final class GridPoint extends GridObject {
     }
 
     public static GridPoint lattice(int x2, int y2, int z) {
-        return new GridPoint(x2, y2, z, true);
-    }
-
-    public static GridPoint raw(int x2, int y2) {
-        return new GridPoint(x2, y2, 0, true);
-    }
-
-    public static GridPoint raw(int x2, int y2, int z) {
         return new GridPoint(x2, y2, z, true);
     }
 
@@ -73,15 +51,6 @@ public final class GridPoint extends GridObject {
         return new GridPoint(resolvedBaseCell.x2 + dx, resolvedBaseCell.y2 + dy, resolvedBaseCell.z, true);
     }
 
-    public static GridPoint cell(GridPoint point) {
-        GridPoint resolvedPoint = Objects.requireNonNull(point, "point");
-        return resolvedPoint.projectedCell();
-    }
-
-    public static GridPoint at(GridPoint point, int z) {
-        return point == null ? null : point.withLevel(z);
-    }
-
     public int x2() {
         return x2;
     }
@@ -92,14 +61,6 @@ public final class GridPoint extends GridObject {
 
     public int z() {
         return z;
-    }
-
-    public int x() {
-        return x2 / 2;
-    }
-
-    public int y() {
-        return y2 / 2;
     }
 
     public Kind kind() {
@@ -114,38 +75,8 @@ public final class GridPoint extends GridObject {
         return Kind.EDGE;
     }
 
-    public boolean isCell() {
-        return kind() == Kind.CELL;
-    }
-
-    public java.util.Optional<GridPoint> asCell() {
-        return isCell() ? java.util.Optional.of(this) : java.util.Optional.empty();
-    }
-
     public GridPoint withLevel(int levelZ) {
         return levelZ == z ? this : new GridPoint(x2, y2, levelZ, true);
-    }
-
-    public GridPoint projectedCell() {
-        if (kind() == Kind.CELL) {
-            return this;
-        }
-        GridPoint center = touchingCells().center();
-        return center == null ? this : center;
-    }
-
-    public GridPoint add(GridPoint other) {
-        if (other == null) {
-            return this;
-        }
-        return new GridPoint(x2 + other.x2, y2 + other.y2, z + other.z, true);
-    }
-
-    public GridPoint subtract(GridPoint other) {
-        if (other == null) {
-            return this;
-        }
-        return new GridPoint(x2 - other.x2, y2 - other.y2, z - other.z, true);
     }
 
     public GridPoint step(CardinalDirection direction) {
@@ -171,28 +102,8 @@ public final class GridPoint extends GridObject {
         return null;
     }
 
-    public CardinalDirection directionTo4(GridPoint other) {
-        return cardinalDirectionTo(other);
-    }
-
     public GridArea touchingCells() {
         return GridArea.of(touchingCellSet());
-    }
-
-    public int manhattanDistance(GridPoint other) {
-        return other == null
-                ? Integer.MAX_VALUE
-                : Math.abs(x() - other.x()) + Math.abs(y() - other.y());
-    }
-
-    public int manhattanDistance2x(GridPoint other) {
-        return other == null
-                ? Integer.MAX_VALUE
-                : Math.abs(x2 - other.x2) + Math.abs(y2 - other.y2);
-    }
-
-    public long encodedKey() {
-        return 31L * (31L * x2 + y2) + z;
     }
 
     @Override
@@ -230,10 +141,6 @@ public final class GridPoint extends GridObject {
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
-    public static Set<GridPoint> normalize(Collection<GridPoint> points) {
-        return normalizeCells(points);
-    }
-
     static GridPoint centerOfCells(Collection<GridPoint> points) {
         Set<GridPoint> normalizedPoints = normalizeCells(points);
         if (normalizedPoints.isEmpty()) {
@@ -246,10 +153,6 @@ public final class GridPoint extends GridObject {
                         .comparingDouble((GridPoint point) -> squaredDistance2(point, averageX2, averageY2))
                         .thenComparing(ORDER))
                 .orElse(null);
-    }
-
-    public static GridPoint bestCenter(Collection<GridPoint> points) {
-        return centerOfCells(points);
     }
 
     static List<Set<GridPoint>> connectedCellComponents(Collection<GridPoint> points) {
@@ -289,14 +192,14 @@ public final class GridPoint extends GridObject {
         };
     }
 
-    int cellX() {
+    public int cellX() {
         if (kind() != Kind.CELL) {
             throw new IllegalStateException("GridPoint is not a cell");
         }
         return x2 / 2;
     }
 
-    int cellY() {
+    public int cellY() {
         if (kind() != Kind.CELL) {
             throw new IllegalStateException("GridPoint is not a cell");
         }

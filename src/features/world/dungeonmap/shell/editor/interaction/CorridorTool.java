@@ -1,6 +1,6 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
-import features.world.dungeonmap.corridor.application.DungeonCorridorApplicationService;
+import features.world.dungeonmap.map.corridor.application.DungeonCorridorApplicationService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.map.application.DungeonMapLoadingService;
 import features.world.dungeonmap.map.model.DungeonLayout;
@@ -8,11 +8,11 @@ import features.world.dungeonmap.geometry.CardinalDirection;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridSegment;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
-import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
-import features.world.dungeonmap.cluster.model.RoomCluster;
+import features.world.dungeonmap.map.structure.model.boundary.door.DoorRef;
+import features.world.dungeonmap.map.cluster.model.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.Connection;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
-import features.world.dungeonmap.corridor.model.Corridor;
+import features.world.dungeonmap.map.corridor.model.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.shell.editor.EditorCards;
 import features.world.dungeonmap.state.DungeonEditorTool;
@@ -197,7 +197,7 @@ public final class CorridorTool implements EditorTool {
             attachDoorToBoundary(
                     pendingEndpoint.endpoint(),
                     corridorBoundaryHit.corridorId(),
-                    corridorBoundaryHit.boundarySegment2x());
+                    corridorBoundaryHit.boundarySegment());
             return true;
         }
         if (hit instanceof DungeonSelectionRef.CorridorRef) {
@@ -435,7 +435,7 @@ public final class CorridorTool implements EditorTool {
             return null;
         }
         for (RoomCluster cluster : layout.clusters()) {
-            Room room = cluster == null ? null : cluster.structure().roomTopology().findRoom(roomId);
+            Room room = cluster == null ? null : cluster.roomTopology().findRoom(roomId);
             if (room != null) {
                 return room;
             }

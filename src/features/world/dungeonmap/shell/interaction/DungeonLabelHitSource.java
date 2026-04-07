@@ -4,7 +4,7 @@ import features.world.dungeonmap.canvas.grid.DungeonGridInteractiveLabels;
 import features.world.dungeonmap.map.model.DungeonLayout;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
-import features.world.dungeonmap.cluster.model.RoomCluster;
+import features.world.dungeonmap.map.cluster.model.RoomCluster;
 import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
 

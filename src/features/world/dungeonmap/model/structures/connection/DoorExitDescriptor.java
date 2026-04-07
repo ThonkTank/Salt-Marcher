@@ -2,7 +2,7 @@ package features.world.dungeonmap.model.structures.connection;
 
 import features.world.dungeonmap.geometry.CardinalDirection;
 import features.world.dungeonmap.geometry.GridPoint;
-import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
+import features.world.dungeonmap.map.structure.model.boundary.door.DoorRef;
 
 public record DoorExitDescriptor(
         DoorRef doorRef,

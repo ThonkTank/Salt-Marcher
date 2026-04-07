@@ -4,10 +4,10 @@ import database.DatabaseManager;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.map.model.DungeonLayout;
 import features.world.dungeonmap.geometry.GridPoint;
-import features.world.dungeonmap.geometry.GridPathPatternSpec;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.map.repository.DungeonLayoutRepository;
 import features.world.dungeonmap.repository.DungeonStairRepository;
+import features.world.dungeonmap.stair.model.StairPathPatternSpec;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -89,7 +89,7 @@ public final class DungeonStairApplicationService {
             throw new IllegalArgumentException("Treppe fehlt");
         }
         StairDraft resolvedDraft = Objects.requireNonNull(resolvedRequest.draft(), "draft");
-        if ((resolvedRequest.delta() == null || (resolvedRequest.delta().x() == 0 && resolvedRequest.delta().y() == 0))
+        if ((resolvedRequest.delta() == null || (resolvedRequest.delta().cellX() == 0 && resolvedRequest.delta().cellY() == 0))
                 && resolvedRequest.levelDelta() == 0) {
             return;
         }
@@ -203,14 +203,14 @@ public final class DungeonStairApplicationService {
             String name,
             GridPoint anchorCell,
             int anchorLevelZ,
-            GridPathPatternSpec shapeSpec,
+            StairPathPatternSpec shapeSpec,
             int minLevelZ,
             int maxLevelZ,
             Set<Integer> stopLevels
     ) {
         public StairDraft {
             anchorCell = Objects.requireNonNull(anchorCell, "anchorCell");
-            shapeSpec = shapeSpec == null ? GridPathPatternSpec.defaultSpec() : shapeSpec;
+            shapeSpec = shapeSpec == null ? StairPathPatternSpec.defaultSpec() : shapeSpec;
             stopLevels = stopLevels == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(stopLevels));
             name = name == null || name.isBlank() ? null : name.trim();
         }
@@ -236,14 +236,14 @@ public final class DungeonStairApplicationService {
             String name,
             GridPoint anchorCell,
             int anchorLevelZ,
-            GridPathPatternSpec shapeSpec,
+            StairPathPatternSpec shapeSpec,
             int minLevelZ,
             int maxLevelZ,
             Set<Integer> stopLevels
     ) {
         public LoadedStairEditorSpec {
             anchorCell = Objects.requireNonNull(anchorCell, "anchorCell");
-            shapeSpec = shapeSpec == null ? GridPathPatternSpec.defaultSpec() : shapeSpec;
+            shapeSpec = shapeSpec == null ? StairPathPatternSpec.defaultSpec() : shapeSpec;
             stopLevels = stopLevels == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(stopLevels));
             name = name == null || name.isBlank() ? null : name.trim();
         }

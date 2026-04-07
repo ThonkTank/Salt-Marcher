@@ -1,13 +1,13 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
-import features.world.dungeonmap.cluster.application.DungeonClusterApplicationService;
+import features.world.dungeonmap.map.cluster.application.DungeonClusterApplicationService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.map.application.DungeonMapLoadingService;
 import features.world.dungeonmap.map.model.DungeonLayout;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridSegment;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
-import features.world.dungeonmap.cluster.model.RoomCluster;
+import features.world.dungeonmap.map.cluster.model.RoomCluster;
 import features.world.dungeonmap.shell.editor.EditorCards;
 import features.world.dungeonmap.state.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
@@ -218,13 +218,13 @@ public final class BoundaryTool implements EditorTool {
                                 mapId,
                                 currentDraft.clusterId(),
                                 mapState.activeProjectionLevel(),
-                                edges);
+                                features.world.dungeonmap.geometry.GridBoundary.of(edges));
                     } else {
                         roomApplicationService.createWallPath(
                                 mapId,
                                 currentDraft.clusterId(),
                                 mapState.activeProjectionLevel(),
-                                edges);
+                                features.world.dungeonmap.geometry.GridBoundary.of(edges));
                     }
                     return mapId;
                 },
@@ -282,14 +282,14 @@ public final class BoundaryTool implements EditorTool {
                 ? null
                 : snapshot.firstRefMatching(candidate -> candidate instanceof DungeonSelectionRef.VertexRef);
         if (ref instanceof DungeonSelectionRef.VertexRef vertexRef) {
-            return vertexRef.vertex2x();
+            return vertexRef.vertex();
         }
         return null;
     }
 
     private static GridPoint selectedVertex(EditorToolContext ctx) {
         return ctx != null && ctx.hitRef() instanceof DungeonSelectionRef.VertexRef vertexRef
-                ? vertexRef.vertex2x()
+                ? vertexRef.vertex()
                 : null;
     }
 

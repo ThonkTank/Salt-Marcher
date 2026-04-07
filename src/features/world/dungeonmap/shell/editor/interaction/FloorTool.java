@@ -1,13 +1,13 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
-import features.world.dungeonmap.cluster.application.DungeonClusterApplicationService;
+import features.world.dungeonmap.map.cluster.application.DungeonClusterApplicationService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.map.application.DungeonMapLoadingService;
 import features.world.dungeonmap.map.model.DungeonLayout;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
-import features.world.dungeonmap.cluster.model.RoomCluster;
+import features.world.dungeonmap.map.cluster.model.RoomCluster;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.state.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
@@ -120,9 +120,9 @@ public final class FloorTool implements EditorTool {
         loadingService.submitMutation(
                 () -> {
                     if (finishedSession.deleteMode()) {
-                        roomApplicationService.deleteFloorCells(mapId, activeLevel, cells);
+                        roomApplicationService.deleteFloorCells(mapId, activeLevel, features.world.dungeonmap.geometry.GridArea.of(cells));
                     } else {
-                        roomApplicationService.addFloorCells(mapId, activeLevel, cells);
+                        roomApplicationService.addFloorCells(mapId, activeLevel, features.world.dungeonmap.geometry.GridArea.of(cells));
                     }
                     return mapId;
                 },
@@ -172,7 +172,7 @@ public final class FloorTool implements EditorTool {
             return null;
         }
         return switch (ctx.hitRef()) {
-            case DungeonSelectionRef.RoomCellRef roomCellRef -> roomCellRef.cell().projectedCell();
+            case DungeonSelectionRef.RoomCellRef roomCellRef -> roomCellRef.cell().touchingCells().center();
             default -> null;
         };
     }
@@ -188,7 +188,7 @@ public final class FloorTool implements EditorTool {
         if (room == null || room.roomId() == null) {
             return null;
         }
-        return new DungeonSelectionRef.RoomCellRef(room.roomId(), GridPoint.at(gridCell, levelZ));
+        return new DungeonSelectionRef.RoomCellRef(room.roomId(), GridPoint.cell(gridCell.cellX(), gridCell.cellY(), levelZ));
     }
 
     private static Set<GridPoint> validRoomCells(DungeonLayout layout, int levelZ, Set<GridPoint> cells) {
@@ -206,6 +206,6 @@ public final class FloorTool implements EditorTool {
 
     private static Room roomAtCell(DungeonLayout layout, GridPoint cell, int levelZ) {
         RoomCluster cluster = layout == null || cell == null ? null : layout.clusterAtCell(cell, levelZ);
-        return cluster == null ? null : cluster.structure().roomTopology().roomAt(cell, levelZ);
+        return cluster == null ? null : cluster.roomTopology().roomAt(cell, levelZ);
     }
 }

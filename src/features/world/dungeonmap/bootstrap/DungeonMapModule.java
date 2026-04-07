@@ -1,17 +1,17 @@
 package features.world.dungeonmap.bootstrap;
 
 import features.world.api.WorldTravelSurface;
-import features.world.dungeonmap.corridor.application.DungeonCorridorApplicationService;
+import features.world.dungeonmap.map.corridor.application.DungeonCorridorApplicationService;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeApplicationService;
 import features.world.dungeonmap.application.room.DungeonRoomApplicationService;
 import features.world.dungeonmap.application.stair.DungeonStairApplicationService;
 import features.world.dungeonmap.application.transition.DungeonTransitionApplicationService;
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
-import features.world.dungeonmap.cluster.application.DungeonClusterApplicationService;
-import features.world.dungeonmap.cluster.repository.DungeonClusterRepository;
+import features.world.dungeonmap.map.cluster.application.DungeonClusterApplicationService;
+import features.world.dungeonmap.map.cluster.repository.DungeonClusterRepository;
 import features.world.dungeonmap.map.application.DungeonMapLoadResolver;
 import features.world.dungeonmap.map.application.DungeonMapLoadingService;
-import features.world.dungeonmap.corridor.repository.DungeonCorridorRepository;
+import features.world.dungeonmap.map.corridor.repository.DungeonCorridorRepository;
 import features.world.dungeonmap.map.repository.DungeonLayoutRepository;
 import features.world.dungeonmap.repository.DungeonRoomRepository;
 import features.world.dungeonmap.repository.DungeonStairRepository;

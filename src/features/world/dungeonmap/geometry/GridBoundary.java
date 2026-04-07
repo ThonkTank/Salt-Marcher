@@ -21,10 +21,6 @@ public final class GridBoundary extends GridObject {
         return new GridBoundary(normalizeBoundarySegments(segments));
     }
 
-    public static GridBoundary fromBoundarySegments(Collection<GridSegment> segments) {
-        return of(segments);
-    }
-
     private GridBoundary(Set<GridSegment> segments) {
         this.segments = segments == null || segments.isEmpty() ? Set.of() : Set.copyOf(segments);
     }
