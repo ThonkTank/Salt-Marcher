@@ -26,7 +26,6 @@ import java.util.Set;
 public final class DungeonRoomRepository {
 
     private final DungeonDoorRepository doorRepository = new DungeonDoorRepository();
-    private final DungeonWallRepository wallRepository = new DungeonWallRepository();
     private final DungeonWallKindRepository wallKindRepository = new DungeonWallKindRepository();
 
     public List<Room> loadRooms(Connection conn, long mapId) throws SQLException {
@@ -364,19 +363,15 @@ public final class DungeonRoomRepository {
     private void replaceClusterStructure(Connection conn, long clusterId, StructureObject structure) throws SQLException {
         StructureObject resolvedStructure = doorRepository.assignPersistentIds(
                 conn,
-                wallRepository.assignPersistentIds(conn, requiredStructure(structure)));
+                requiredStructure(structure));
         try (PreparedStatement deleteSurfaceCells = conn.prepareStatement(
                 "DELETE FROM dungeon_room_cluster_level_surface_cells WHERE cluster_id=?");
-             PreparedStatement deleteSegments = conn.prepareStatement(
-                "DELETE FROM dungeon_room_cluster_level_segments WHERE cluster_id=?");
              PreparedStatement deleteFloorCells = conn.prepareStatement(
                      "DELETE FROM dungeon_room_cluster_level_floor_cells WHERE cluster_id=?");
              PreparedStatement deleteLevels = conn.prepareStatement(
                      "DELETE FROM dungeon_room_cluster_levels WHERE cluster_id=?")) {
             deleteSurfaceCells.setLong(1, clusterId);
             deleteSurfaceCells.executeUpdate();
-            deleteSegments.setLong(1, clusterId);
-            deleteSegments.executeUpdate();
             deleteFloorCells.setLong(1, clusterId);
             deleteFloorCells.executeUpdate();
             deleteLevels.setLong(1, clusterId);
@@ -387,11 +382,7 @@ public final class DungeonRoomRepository {
              PreparedStatement insertSurfaceCell = conn.prepareStatement(
                      "INSERT INTO dungeon_room_cluster_level_surface_cells(cluster_id, level_z, cell_x2, cell_y2) VALUES(?,?,?,?)");
              PreparedStatement insertFloorCell = conn.prepareStatement(
-                     "INSERT INTO dungeon_room_cluster_level_floor_cells(cluster_id, level_z, cell_x2, cell_y2) VALUES(?,?,?,?)");
-             PreparedStatement insertSegment = conn.prepareStatement(
-                     "INSERT INTO dungeon_room_cluster_level_segments("
-                             + "cluster_id, level_z, start_x2, start_y2, end_x2, end_y2"
-                             + ") VALUES(?,?,?,?,?,?)")) {
+                     "INSERT INTO dungeon_room_cluster_level_floor_cells(cluster_id, level_z, cell_x2, cell_y2) VALUES(?,?,?,?)")) {
             for (var entry : resolvedStructure.levelStructures().entrySet()) {
                 int levelZ = entry.getKey();
                 StructureObject.LevelStructure level = entry.getValue();
@@ -402,15 +393,12 @@ public final class DungeonRoomRepository {
                 insertLevel.addBatch();
                 addCells(insertSurfaceCell, clusterId, levelZ, level.surfaceShape().cellCoords());
                 addCells(insertFloorCell, clusterId, levelZ, level.floorCells());
-                addSegments(insertSegment, clusterId, levelZ, level.boundaryEdges());
             }
             insertLevel.executeBatch();
             insertSurfaceCell.executeBatch();
             insertFloorCell.executeBatch();
-            insertSegment.executeBatch();
         }
         doorRepository.replaceClusterDoors(conn, clusterId, resolvedStructure);
-        wallRepository.replaceClusterWalls(conn, clusterId, resolvedStructure);
     }
 
     private static void addCells(
@@ -548,11 +536,10 @@ public final class DungeonRoomRepository {
         Map<Long, Map<Integer, CellCoord>> anchorsByClusterId = new LinkedHashMap<>();
         Map<Long, Map<Integer, Set<CellCoord>>> surfaceCellsByClusterId = new LinkedHashMap<>();
         Map<Long, Map<Integer, Set<CellCoord>>> floorCellsByClusterId = new LinkedHashMap<>();
-        Map<Long, Map<Integer, Set<GridSegment2x>>> boundarySegmentsByClusterId = new LinkedHashMap<>();
         Map<Long, Map<Integer, List<features.world.dungeonmap.model.objects.Door>>> doorsByClusterId =
                 new DungeonDoorRepository().loadClusterDoorsByClusterId(conn, mapId);
         Map<Long, Map<Integer, List<Wall>>> wallsByClusterId =
-                wallRepository.loadClusterWallsByClusterId(conn, mapId, wallKindsById);
+                new LinkedHashMap<>();
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT cluster_id, level_z, anchor_x2, anchor_y2"
                         + " FROM dungeon_room_cluster_levels"
@@ -609,24 +596,6 @@ public final class DungeonRoomRepository {
                 }
             }
         }
-        try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT cluster_id, level_z, start_x2, start_y2, end_x2, end_y2"
-                        + " FROM dungeon_room_cluster_level_segments"
-                        + " WHERE cluster_id IN (SELECT cluster_id FROM dungeon_room_clusters WHERE dungeon_map_id=?)"
-                        + " ORDER BY cluster_id, level_z, start_y2, start_x2, end_y2, end_x2")) {
-            ps.setLong(1, mapId);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    long clusterId = rs.getLong("cluster_id");
-                    int levelZ = rs.getInt("level_z");
-                    boundarySegmentsByClusterId.computeIfAbsent(clusterId, ignored -> new LinkedHashMap<>())
-                            .computeIfAbsent(levelZ, ignored -> new LinkedHashSet<>())
-                            .add(new GridSegment2x(
-                                    GridPoint2x.raw(rs.getInt("start_x2"), rs.getInt("start_y2")),
-                                    GridPoint2x.raw(rs.getInt("end_x2"), rs.getInt("end_y2"))));
-                }
-            }
-        }
         Map<Long, StructureObject> result = new LinkedHashMap<>();
         for (Map.Entry<Long, Map<Integer, CellCoord>> clusterEntry : anchorsByClusterId.entrySet()) {
             Long clusterId = clusterEntry.getKey();
@@ -640,7 +609,7 @@ public final class DungeonRoomRepository {
                 StructureObject.LevelStructure level = StructureObject.LevelStructure.fromTopologyWithDoorsAndWalls(
                         levelEntry.getValue(),
                         surfaceCells,
-                        boundarySegmentsByClusterId.getOrDefault(clusterId, Map.of()).getOrDefault(levelZ, Set.of()),
+                        Set.of(),
                         doorsByClusterId.getOrDefault(clusterId, Map.of()).getOrDefault(levelZ, List.of()),
                         wallsByClusterId.getOrDefault(clusterId, Map.of()).getOrDefault(levelZ, List.of()),
                         floorCellsByClusterId.getOrDefault(clusterId, Map.of()).get(levelZ));

@@ -8,7 +8,6 @@ import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.objects.DoorRef;
 import features.world.dungeonmap.model.objects.StairExit;
 import features.world.dungeonmap.model.objects.StructureObject;
-import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.DoorConnectionCarrier;
@@ -113,7 +112,6 @@ public final class DungeonRoomApplicationService {
             long clusterId,
             int levelZ,
             Collection<GridSegment2x> segments2x,
-            InternalBoundaryType type,
             boolean deleteBoundary
     ) throws SQLException {
         if (segments2x == null || segments2x.isEmpty()) {
@@ -121,7 +119,7 @@ public final class DungeonRoomApplicationService {
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                editBoundary(conn, mapId, clusterId, levelZ, segments2x, type, deleteBoundary);
+                editBoundary(conn, mapId, clusterId, levelZ, segments2x, deleteBoundary);
                 return null;
             });
         }
@@ -341,7 +339,6 @@ public final class DungeonRoomApplicationService {
             long clusterId,
             int levelZ,
             Collection<GridSegment2x> segments2x,
-            InternalBoundaryType type,
             boolean deleteBoundary
     ) throws SQLException {
         if (segments2x == null || segments2x.isEmpty()) {
@@ -352,7 +349,7 @@ public final class DungeonRoomApplicationService {
         if (cluster == null) {
             return;
         }
-        RoomCluster updatedCluster = cluster.editBoundary(levelZ, segments2x, type, deleteBoundary);
+        RoomCluster updatedCluster = cluster.editBoundary(levelZ, segments2x, deleteBoundary);
         if (updatedCluster == null) {
             return;
         }

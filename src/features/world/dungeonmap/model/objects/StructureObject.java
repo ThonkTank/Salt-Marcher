@@ -112,22 +112,6 @@ public final class StructureObject {
         return levels.isEmpty() ? empty() : fromLevels(levels);
     }
 
-    public static StructureObject fromTopologyWithDoorsByLevel(
-            Map<Integer, ? extends Collection<CellCoord>> surfaceCellsByLevel,
-            Map<Integer, ? extends Collection<GridSegment2x>> boundaryEdgesByLevel,
-            Map<Integer, ? extends Collection<Door>> doorsByLevel,
-            Map<Integer, ? extends Collection<CellCoord>> floorCellsByLevel,
-            Map<Integer, CellCoord> anchorsByLevel
-    ) {
-        return fromTopologyWithDoorsAndWallsByLevel(
-                surfaceCellsByLevel,
-                boundaryEdgesByLevel,
-                doorsByLevel,
-                null,
-                floorCellsByLevel,
-                anchorsByLevel);
-    }
-
     public static StructureObject fromTopologyWithDoorsAndWallsByLevel(
             Map<Integer, ? extends Collection<CellCoord>> surfaceCellsByLevel,
             Map<Integer, ? extends Collection<GridSegment2x>> boundaryEdgesByLevel,
@@ -413,16 +397,6 @@ public final class StructureObject {
         return new TileShape(result);
     }
 
-    public List<Wall> wallsAtLevel(int levelZ) {
-        EdgeShape wallShape = wallShapeAtLevel(levelZ);
-        if (wallShape.isEmpty()) {
-            return List.of();
-        }
-        return wallShape.connectedComponents().stream()
-                .map(Wall::fromShape)
-                .toList();
-    }
-
     public List<Door> doorsAtLevel(int levelZ) {
         LevelStructure level = levelStructure(levelZ);
         return level == null ? List.of() : level.doors();
@@ -433,19 +407,11 @@ public final class StructureObject {
         return level == null ? List.of() : level.walls();
     }
 
-    public List<EdgeShape> wallComponentShapesAtLevel(int levelZ) {
-        return wallShapeAtLevel(levelZ).connectedComponents();
-    }
-
     public List<EdgeShape> doorComponentShapesAtLevel(int levelZ) {
         return doorsAtLevel(levelZ).stream()
                 .map(door -> EdgeShape.fromBoundarySegments(door.segments2x()))
                 .sorted(Comparator.comparing(EdgeShape::firstSegment2x, GridSegment2x.ORDER))
                 .toList();
-    }
-
-    public Set<GridSegment2x> wallSegmentsAtLevel(int levelZ) {
-        return wallShapeAtLevel(levelZ).segmentSet2x();
     }
 
     public Set<GridSegment2x> doorSegmentsAtLevel(int levelZ) {

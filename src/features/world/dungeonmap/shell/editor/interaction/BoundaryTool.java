@@ -7,7 +7,6 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
-import features.world.dungeonmap.model.structures.cluster.InternalBoundaryType;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.shell.editor.EditorCards;
 import features.world.dungeonmap.state.DungeonEditorTool;
@@ -224,7 +223,6 @@ public final class BoundaryTool implements EditorTool {
                             currentDraft.clusterId(),
                             mapState.activeProjectionLevel(),
                             edges,
-                            InternalBoundaryType.WALL,
                             currentDraft.deleteMode());
                     return mapId;
                 },

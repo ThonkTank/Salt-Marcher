@@ -11,7 +11,7 @@ This file covers `src/features/world/dungeonmap/repository/`. Use it together wi
 - `DungeonLayoutRepository` is the authoritative rehydration seam for one concrete persisted map.
 - `DungeonRoomRepository`, `DungeonCorridorRepository`, `DungeonStairRepository`, and `DungeonTransitionRepository` own direct structure persistence.
 - `DungeonDoorRepository` owns physical door persistence shared by clusters, corridors, and connections.
-- `DungeonWallRepository` owns authored cluster-wall persistence; `DungeonWallKindRepository` owns the app-global wall-kind catalog used to resolve wall behavior on load.
+- `DungeonWallKindRepository` owns the app-global wall-kind catalog used to resolve wall behavior on load.
 - `DungeonStorageSupport` owns current dungeon DDL only.
 
 ## Rules
