@@ -33,6 +33,7 @@ import java.util.Set;
 public final class RoomCluster {
 
     private final Long clusterId;
+    private final Long structureObjectId;
     private final long mapId;
     private final CellCoord center;
     private final StructureObject structure;
@@ -51,11 +52,22 @@ public final class RoomCluster {
             CellCoord center,
             List<Room> rooms
     ) {
-        this(clusterId, mapId, center, StructureObject.empty(), requireExplicitStructure(rooms));
+        this(clusterId, null, mapId, center, StructureObject.empty(), requireExplicitStructure(rooms));
     }
 
     public RoomCluster(
             Long clusterId,
+            long mapId,
+            CellCoord center,
+            StructureObject structure,
+            List<Room> rooms
+    ) {
+        this(clusterId, null, mapId, center, structure, rooms);
+    }
+
+    public RoomCluster(
+            Long clusterId,
+            Long structureObjectId,
             long mapId,
             CellCoord center,
             StructureObject structure,
@@ -66,6 +78,7 @@ public final class RoomCluster {
         List<Room> resolvedRooms = resolvedRoomPartition.rooms();
 
         this.clusterId = clusterId;
+        this.structureObjectId = structureObjectId;
         this.mapId = mapId;
         this.center = center == null ? new CellCoord(0, 0) : center;
         this.structure = resolvedStructure;
@@ -83,6 +96,10 @@ public final class RoomCluster {
 
     public long mapId() {
         return mapId;
+    }
+
+    public Long structureObjectId() {
+        return structureObjectId;
     }
 
     public CellCoord center() {
@@ -198,13 +215,14 @@ public final class RoomCluster {
     }
 
     public RoomCluster withRooms(List<Room> rooms) {
-        return new RoomCluster(clusterId, mapId, center, structure, rooms);
+        return new RoomCluster(clusterId, structureObjectId, mapId, center, structure, rooms);
     }
 
     public RoomCluster withClusterId(Long clusterId) {
         long resolvedClusterId = clusterId == null ? (this.clusterId == null ? 0L : this.clusterId) : clusterId;
         return new RoomCluster(
                 clusterId,
+                structureObjectId,
                 mapId,
                 center,
                 structure,
@@ -227,6 +245,7 @@ public final class RoomCluster {
         }
         return new RoomCluster(
                 clusterId,
+                structureObjectId,
                 mapId,
                 center,
                 projectedStructure,
@@ -331,6 +350,7 @@ public final class RoomCluster {
         CellCoord resolvedDelta = delta == null ? new CellCoord(0, 0) : delta;
         return new RoomCluster(
                 clusterId,
+                structureObjectId,
                 mapId,
                 center.add(resolvedDelta),
                 structure.movedBy(resolvedDelta, levelDelta),
@@ -955,6 +975,7 @@ public final class RoomCluster {
                     mergedWallsByLevel);
             return new RoomCluster(
                     cluster.clusterId(),
+                    cluster.structureObjectId(),
                     cluster.mapId(),
                     CellCoord.bestCenter(flattenCells(mergedClusterCellsByLevel)),
                     mergedStructure,
@@ -1032,6 +1053,7 @@ public final class RoomCluster {
             }
             return new RoomCluster(
                     cluster.clusterId(),
+                    cluster.structureObjectId(),
                     cluster.mapId(),
                     cluster.center(),
                     updatedStructure,
@@ -1060,6 +1082,7 @@ public final class RoomCluster {
             }
             return new RoomCluster(
                     cluster.clusterId(),
+                    cluster.structureObjectId(),
                     cluster.mapId(),
                     cluster.center(),
                     updatedStructure,
@@ -1405,6 +1428,7 @@ public final class RoomCluster {
                     componentDoorsByLevel,
                     componentWallsByLevel);
             return new RoomCluster(
+                    null,
                     null,
                     originalCluster.mapId(),
                     CellCoord.bestCenter(flattenCells(componentCellsByLevel)),

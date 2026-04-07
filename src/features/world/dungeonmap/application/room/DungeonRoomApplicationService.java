@@ -287,6 +287,7 @@ public final class DungeonRoomApplicationService {
             }
             RoomCluster updatedCluster = new RoomCluster(
                     cluster.clusterId(),
+                    cluster.structureObjectId(),
                     cluster.mapId(),
                     cluster.center(),
                     cluster.structure().withFloorCellsAtLevel(levelZ, nextFloorCells),
@@ -881,6 +882,7 @@ public final class DungeonRoomApplicationService {
             }
             renamedClusters.add(new RoomCluster(
                     cluster.clusterId(),
+                    cluster.structureObjectId(),
                     cluster.mapId(),
                     cluster.center(),
                     cluster.structure(),

@@ -8,6 +8,7 @@ import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.objects.DoorRef;
+import features.world.dungeonmap.model.objects.StructureObject;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.Connection;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
@@ -1001,6 +1002,35 @@ public final class DungeonLayout {
             Collection<Door> doors
     ) {
         return Corridor.resolved(this, corridorId, levelZ, nodes, segments, doors);
+    }
+
+    public Corridor resolveCorridor(
+            Long corridorId,
+            Long structureObjectId,
+            int levelZ,
+            List<CorridorNode> nodes,
+            List<CorridorSegment> segments,
+            Collection<Door> doors
+    ) {
+        return Corridor.rehydrated(
+                this,
+                corridorId,
+                structureObjectId,
+                levelZ,
+                nodes,
+                segments,
+                Corridor.resolved(this, corridorId, levelZ, nodes, segments, doors).structure());
+    }
+
+    public Corridor rehydrateCorridor(
+            Long corridorId,
+            Long structureObjectId,
+            int levelZ,
+            List<CorridorNode> nodes,
+            List<CorridorSegment> segments,
+            StructureObject structure
+    ) {
+        return Corridor.rehydrated(this, corridorId, structureObjectId, levelZ, nodes, segments, structure);
     }
 
     public DungeonLayout withAddedCorridor(Corridor corridor) {

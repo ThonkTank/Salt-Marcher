@@ -30,12 +30,14 @@ import java.util.Set;
 /**
  * Corridors are edited and persisted as standalone structures.
  *
- * <p>The behavior to preserve here is: the graph is canonical, shared structure geometry is derived from it, room
- * attachments stay explicit, and callers must get the same corridor behavior without any second aggregate owner.
+ * <p>The behavior to preserve here is: corridor routing data stays corridor-owned, the referenced
+ * {@link StructureObject} carries the realized physical topology, room attachments stay explicit, and callers must get
+ * the same corridor behavior without any second physical boundary owner.
  */
 public final class Corridor {
 
     private final Long corridorId;
+    private final Long structureObjectId;
     private final long mapId;
     private final int levelZ;
     private final List<CorridorNode> nodes;
@@ -50,7 +52,7 @@ public final class Corridor {
             List<CorridorNode> nodes,
             List<CorridorSegment> segments
     ) {
-        return new Corridor(layout, corridorId, levelZ, nodes, segments, List.of());
+        return new Corridor(layout, corridorId, null, levelZ, nodes, segments, List.of());
     }
 
     public static Corridor resolved(
@@ -61,7 +63,7 @@ public final class Corridor {
             List<CorridorSegment> segments,
             Collection<Door> doors
     ) {
-        return new Corridor(layout, corridorId, levelZ, nodes, segments, doors);
+        return new Corridor(layout, corridorId, null, levelZ, nodes, segments, doors);
     }
 
     public static Corridor planned(
@@ -70,7 +72,7 @@ public final class Corridor {
             List<CorridorNode> nodes,
             List<CorridorSegment> segments
     ) {
-        return new Corridor(layout, null, levelZ, nodes, segments, List.of());
+        return new Corridor(layout, null, null, levelZ, nodes, segments, List.of());
     }
 
     public static Corridor planned(
@@ -80,12 +82,25 @@ public final class Corridor {
             List<CorridorSegment> segments,
             Collection<Door> doors
     ) {
-        return new Corridor(layout, null, levelZ, nodes, segments, doors);
+        return new Corridor(layout, null, null, levelZ, nodes, segments, doors);
+    }
+
+    public static Corridor rehydrated(
+            DungeonLayout layout,
+            Long corridorId,
+            Long structureObjectId,
+            int levelZ,
+            List<CorridorNode> nodes,
+            List<CorridorSegment> segments,
+            StructureObject structure
+    ) {
+        return new Corridor(layout, corridorId, structureObjectId, levelZ, nodes, segments, structure);
     }
 
     private Corridor(
             DungeonLayout layout,
             Long corridorId,
+            Long structureObjectId,
             int levelZ,
             List<CorridorNode> nodes,
             List<CorridorSegment> segments,
@@ -93,6 +108,7 @@ public final class Corridor {
     ) {
         DungeonLayout resolvedLayout = Objects.requireNonNull(layout, "layout");
         this.corridorId = corridorId;
+        this.structureObjectId = structureObjectId;
         this.mapId = resolvedLayout.mapId();
         this.levelZ = levelZ;
         this.nodes = normalizeNodes(resolvedLayout, levelZ, nodes);
@@ -110,12 +126,41 @@ public final class Corridor {
         this.connections = projection.connections();
     }
 
-    public Corridor withIdentity(DungeonLayout layout, Long corridorId) {
-        return new Corridor(layout, corridorId, levelZ, nodes, segments, structure.doorsAtLevel(levelZ));
+    private Corridor(
+            DungeonLayout layout,
+            Long corridorId,
+            Long structureObjectId,
+            int levelZ,
+            List<CorridorNode> nodes,
+            List<CorridorSegment> segments,
+            StructureObject structure
+    ) {
+        DungeonLayout resolvedLayout = Objects.requireNonNull(layout, "layout");
+        StructureObject hydratedStructure = Objects.requireNonNull(structure, "structure");
+        this.corridorId = corridorId;
+        this.structureObjectId = structureObjectId;
+        this.mapId = resolvedLayout.mapId();
+        this.levelZ = levelZ;
+        this.nodes = normalizeNodes(resolvedLayout, levelZ, nodes);
+        this.segments = normalizeSegments(segments);
+        validateTopology(this.nodes, this.segments);
+        if (hydratedStructure.levelStructure(levelZ) == null) {
+            throw new IllegalArgumentException("Persisted corridor structure must exist at the corridor level");
+        }
+        this.structure = hydratedStructure;
+        this.connections = materializeConnections(resolvedLayout, corridorId, mapId, levelZ, this.nodes);
+    }
+
+    public Corridor withPersistentIds(DungeonLayout layout, Long corridorId, Long structureObjectId) {
+        return new Corridor(layout, corridorId, structureObjectId, levelZ, nodes, segments, structure);
     }
 
     public Long corridorId() {
         return corridorId;
+    }
+
+    public Long structureObjectId() {
+        return structureObjectId;
     }
 
     public long mapId() {
@@ -541,7 +586,7 @@ public final class Corridor {
         if (layout == null) {
             return this;
         }
-        return layout.resolveCorridor(corridorId, levelZ, updatedNodes, updatedSegments, updatedDoors);
+        return layout.resolveCorridor(corridorId, structureObjectId, levelZ, updatedNodes, updatedSegments, updatedDoors);
     }
 
     private static StructureObject.PathTrace traceForSegment(Corridor corridor, Long segmentId) {

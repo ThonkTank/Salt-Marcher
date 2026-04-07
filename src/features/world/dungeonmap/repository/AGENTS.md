@@ -9,19 +9,20 @@ This file covers `src/features/world/dungeonmap/repository/`. Use it together wi
 ## Current Durable Structure
 
 - `DungeonLayoutRepository` is the authoritative rehydration seam for one concrete persisted map.
+- `DungeonStructureRepository` owns the persisted `StructureObject` tables shared by clusters and corridors.
 - `DungeonRoomRepository`, `DungeonCorridorRepository`, `DungeonStairRepository`, and `DungeonTransitionRepository` own direct structure persistence.
-- `DungeonDoorRepository` owns physical door persistence shared by clusters, corridors, and connections.
 - `DungeonWallKindRepository` owns the app-global wall-kind catalog used to resolve wall behavior on load.
 - `DungeonStorageSupport` owns current dungeon DDL only.
 
 ## Rules
 
 - Repository methods stay storage-focused and stateless; application services own workflow sequencing and retries.
+- Room clusters and corridors persist only owner metadata plus `structure_object_id`; physical surface, wall, floor, and door rows belong to `DungeonStructureRepository`.
 - Corridor endpoint persistence is door-reference based. Room-bound corridor nodes persist `door_id` and must validate that the referenced exterior room door still matches the node.
+- Corridor path points remain corridor-owned routing data. They may rebuild runtime handles, but they must not become a second persisted wall/boundary truth.
 - Transition door placement persists the referenced canonical door, not copied door geometry.
 - Stair repositories persist authored path truth plus editor reopen metadata; stair generation policy stays in application code.
-- `DungeonRoomRepository` persists room-cluster structure only through `StructureObject.PersistenceSnapshot` data: level anchors, surface cells, floor cells, authored walls, and doors.
-- Repositories may own SQL for wall and door row shapes, but they must not keep a second copied boundary-truth beside the canonical `StructureObject` snapshot.
+- Repositories may own SQL for owner-local routing rows, but they must not keep a second copied physical boundary truth beside the canonical `StructureObject` snapshot.
 
 ## Forbidden Drift
 

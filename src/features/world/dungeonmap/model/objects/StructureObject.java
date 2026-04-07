@@ -425,6 +425,20 @@ public final class StructureObject {
         return new StructureObject(updated, stair, pathTracesByLevel);
     }
 
+    /**
+     * Path traces stay runtime-only corridor routing data even when the physical structure is loaded from persistence.
+     */
+    public StructureObject withPathTracesAtLevel(int levelZ, Collection<PathTrace> pathTraces) {
+        Map<Integer, List<PathTrace>> updatedPathTraces = new LinkedHashMap<>(pathTracesByLevel);
+        List<PathTrace> normalized = normalizePathTraces(Map.of(levelZ, pathTraces)).getOrDefault(levelZ, List.of());
+        if (normalized.isEmpty()) {
+            updatedPathTraces.remove(levelZ);
+        } else {
+            updatedPathTraces.put(levelZ, normalized);
+        }
+        return new StructureObject(levelsByZ, stair, updatedPathTraces);
+    }
+
     public TileShape surfaceShapeAtLevel(int levelZ) {
         LevelStructure level = levelStructure(levelZ);
         TileShape descriptorShape = level == null ? TileShape.empty() : level.surfaceShape();
