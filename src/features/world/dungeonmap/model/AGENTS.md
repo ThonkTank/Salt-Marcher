@@ -10,7 +10,7 @@ This file covers `src/features/world/dungeonmap/model/`. Use it together with th
 
 - `geometry/` owns pure grid math and the reusable shape families `TileShape`, `EdgeShape`, and `TilePath`.
 - `interaction/` owns semantic selection, hit, and label refs that other layers consume but do not reinterpret.
-- `objects/` owns gameplay objects over geometry. `StructureObject` is the only aggregate that combines floor, wall, door, and stair topology.
+- `objects/` owns gameplay objects over geometry. `StructureObject` is the only aggregate that combines boundary topology, authored walls, doors, and stair topology.
 - `structures/` owns dungeon structures and their structure-specific behavior over canonical objects.
 - `DungeonLayout` is the read/query index over current structure owners and shared relationship lookups.
 
@@ -18,6 +18,8 @@ This file covers `src/features/world/dungeonmap/model/`. Use it together with th
 
 - Geometry algebra belongs only in `geometry/`.
 - Gameplay semantics belong on object or structure owners, not in repositories, renderers, or tools.
+- `Wall` is an authored boundary-path object with stable identity and a resolved `WallKind`; uncovered boundary segments fall back to the built-in solid wall kind.
+- `Door` remains a separate boundary-attached object. Doors occupy compatible wall segments; they do not replace wall ownership or create a second topology aggregate.
 - `Room` owns identity, narration, and anchors only. Room surfaces and boundaries resolve through `RoomCluster` or `DungeonLayout`.
 - `Corridor`, `DungeonStair`, and `DungeonTransition` are first-class structure owners with stable ids.
 - `DungeonSelectionRef` carries semantic ids plus canonical geometry only. `DoorRef` is pure door identity; current owner semantics for doors resolve through `DungeonLayout`.

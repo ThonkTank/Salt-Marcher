@@ -979,7 +979,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         }
         return walkableSurface(
                 structure.floorCellCoordsAtLevel(levelZ),
-                structure.boundaryEdgesAtLevel(levelZ),
+                structure.wallSegmentsAtLevel(levelZ),
                 structure.doorSegmentsAtLevel(levelZ));
     }
 

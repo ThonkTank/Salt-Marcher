@@ -10,6 +10,8 @@ import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 import features.world.dungeonmap.model.objects.Door;
 import features.world.dungeonmap.model.objects.DoorRef;
 import features.world.dungeonmap.model.objects.StructureObject;
+import features.world.dungeonmap.model.objects.Wall;
+import features.world.dungeonmap.model.objects.WallKind;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionKind;
 import features.world.dungeonmap.model.structures.connection.DoorConnectionCarrier;
@@ -260,6 +262,7 @@ public final class RoomCluster {
                 && roomPair.right() != null
                 && roomPair.left().roomId() != null
                 && roomPair.right().roomId() != null
+                && wallSupportsDoor(levelZ, boundarySegment2x)
                 && !roomPair.left().roomId().equals(roomPair.right().roomId());
     }
 
@@ -273,6 +276,7 @@ public final class RoomCluster {
         return boundarySegment2x != null
                 && structure.boundaryEdgesAtLevel(levelZ).contains(boundarySegment2x)
                 && !structure.doorSegmentsAtLevel(levelZ).contains(boundarySegment2x)
+                && wallSupportsDoor(levelZ, boundarySegment2x)
                 && isExteriorBoundarySegment(levelZ, boundarySegment2x);
     }
 
@@ -394,6 +398,11 @@ public final class RoomCluster {
                 .filter(cell -> structure.cellCoordsAtLevel(levelZ).contains(cell))
                 .count();
         return touchingClusterCells == 1L;
+    }
+
+    private boolean wallSupportsDoor(int levelZ, GridSegment2x boundarySegment2x) {
+        WallKind wallKind = structure.wallKindAtLevel(levelZ, boundarySegment2x);
+        return wallKind != null && wallKind.supportsDoorAttachments();
     }
 
     public Map<Integer, Set<CellCoord>> cellsByLevel() {
@@ -1012,12 +1021,14 @@ public final class RoomCluster {
             Map<Integer, Set<CellCoord>> mergedClusterFloorCellsByLevel = new LinkedHashMap<>();
             Map<BoundaryLevelKey, InternalBoundaryType> mergedBoundaryKinds = new LinkedHashMap<>();
             Map<Integer, List<Door>> mergedDoorsByLevel = new LinkedHashMap<>();
+            Map<Integer, List<Wall>> mergedWallsByLevel = new LinkedHashMap<>();
             List<Room> mergedMetadataRooms = new ArrayList<>();
             for (RoomCluster overlappingCluster : resolvedClusters) {
                 mergeClusterCellsByLevel(mergedClusterCellsByLevel, overlappingCluster.structure());
                 mergeClusterFloorCellsByLevel(mergedClusterFloorCellsByLevel, overlappingCluster.structure());
                 mergedBoundaryKinds.putAll(overlappingCluster.internalBoundaryKinds());
                 mergeDoorsByLevel(mergedDoorsByLevel, overlappingCluster.structure());
+                mergeWallsByLevel(mergedWallsByLevel, overlappingCluster.structure());
                 mergedMetadataRooms.addAll(overlappingCluster.rooms());
             }
             mergedClusterCellsByLevel.computeIfAbsent(paintLevel, ignored -> new LinkedHashSet<>()).addAll(paintCells);
@@ -1027,7 +1038,8 @@ public final class RoomCluster {
                     mergedClusterCellsByLevel,
                     mergedClusterFloorCellsByLevel,
                     mergedBoundaryKinds,
-                    mergedDoorsByLevel);
+                    mergedDoorsByLevel,
+                    mergedWallsByLevel);
             return new RoomCluster(
                     cluster.clusterId(),
                     cluster.mapId(),
@@ -1067,7 +1079,8 @@ public final class RoomCluster {
                     remainingCellsByLevel,
                     remainingFloorCellsByLevel,
                     cluster.internalBoundaryKinds(),
-                    doorsByLevel(cluster.structure()));
+                    doorsByLevel(cluster.structure()),
+                    wallsByLevel(cluster.structure()));
             List<RoomCluster> componentClusters = splitDeletedCluster(cluster, rewrittenStructure);
             if (componentClusters.isEmpty()) {
                 return List.of();
@@ -1089,20 +1102,21 @@ public final class RoomCluster {
                 return null;
             }
             Map<BoundaryLevelKey, InternalBoundaryType> updatedBoundaryKinds = new LinkedHashMap<>(cluster.internalBoundaryKinds());
+            List<GridSegment2x> editedSegments = segments2x.stream()
+                    .filter(Objects::nonNull)
+                    .filter(segment2x -> cluster.structure().interiorAdjacencyEdgesAtLevel(levelZ).contains(segment2x))
+                    .filter(segment2x -> {
+                        RoomPair roomPair = roomPairAtLevel(cluster, segment2x, levelZ);
+                        return roomPair != null && !sameRoomId(roomPair.left(), roomPair.right());
+                    })
+                    .sorted(GridSegment2x.ORDER)
+                    .toList();
             InternalBoundaryType resolvedType = type == null ? InternalBoundaryType.WALL : type;
             if (resolvedType != InternalBoundaryType.WALL) {
                 throw new IllegalArgumentException("Boundary editing only supports wall semantics");
             }
             boolean changed = false;
-            for (GridSegment2x segment2x : segments2x) {
-                if (segment2x == null || !cluster.structure().interiorAdjacencyEdgesAtLevel(levelZ).contains(segment2x)) {
-                    continue;
-                }
-                RoomPair roomPair = roomPairAtLevel(cluster, segment2x, levelZ);
-                boolean spansDistinctRooms = roomPair != null && !sameRoomId(roomPair.left(), roomPair.right());
-                if (!spansDistinctRooms) {
-                    continue;
-                }
+            for (GridSegment2x segment2x : editedSegments) {
                 BoundaryLevelKey boundaryKey = new BoundaryLevelKey(levelZ, segment2x);
                 InternalBoundaryType currentType = updatedBoundaryKinds.get(boundaryKey);
                 if (deleteBoundary) {
@@ -1124,11 +1138,21 @@ public final class RoomCluster {
                 return null;
             }
 
+            Map<Integer, List<Wall>> updatedWallsByLevel = new LinkedHashMap<>(wallsByLevel(cluster.structure()));
+            List<Wall> levelWalls = deleteBoundary
+                    ? deletedWalls(cluster.structure().wallsAtLevelExplicit(levelZ), editedSegments)
+                    : createdWalls(cluster.structure().wallsAtLevelExplicit(levelZ), editedSegments);
+            if (levelWalls.isEmpty()) {
+                updatedWallsByLevel.remove(levelZ);
+            } else {
+                updatedWallsByLevel.put(levelZ, levelWalls);
+            }
             StructureObject updatedStructure = buildClusterStructure(
                     cluster.structure().surfaceCellsByLevel(),
                     cluster.structure().floorCellsByLevel(),
                     updatedBoundaryKinds,
-                    doorsByLevel(cluster.structure()));
+                    doorsByLevel(cluster.structure()),
+                    updatedWallsByLevel);
             return new RoomCluster(
                     cluster.clusterId(),
                     cluster.mapId(),
@@ -1266,6 +1290,62 @@ public final class RoomCluster {
                     .toList();
         }
 
+        private static List<Wall> createdWalls(Collection<Wall> existingWalls, Collection<GridSegment2x> segments2x) {
+            List<GridSegment2x> newSegments = (segments2x == null ? List.<GridSegment2x>of() : segments2x).stream()
+                    .filter(Objects::nonNull)
+                    .sorted(GridSegment2x.ORDER)
+                    .toList();
+            if (newSegments.isEmpty()) {
+                return existingWalls == null ? List.of() : List.copyOf(existingWalls);
+            }
+            ArrayList<Wall> result = new ArrayList<>(existingWalls == null ? List.<Wall>of() : existingWalls);
+            EdgeShape shape = EdgeShape.fromBoundarySegments(newSegments);
+            if (!shape.isEmpty()) {
+                result.add(Wall.fromShape(null, shape, shape.firstSegment2x(), WallKind.solid()));
+            }
+            return sortedWalls(result);
+        }
+
+        private static List<Wall> deletedWalls(Collection<Wall> existingWalls, Collection<GridSegment2x> segments2x) {
+            if (existingWalls == null || existingWalls.isEmpty()) {
+                return List.of();
+            }
+            List<GridSegment2x> removedSegments = (segments2x == null ? List.<GridSegment2x>of() : segments2x).stream()
+                    .filter(Objects::nonNull)
+                    .sorted(GridSegment2x.ORDER)
+                    .toList();
+            if (removedSegments.isEmpty()) {
+                return sortedWalls(existingWalls);
+            }
+            ArrayList<Wall> result = new ArrayList<>();
+            for (Wall wall : existingWalls) {
+                if (wall == null || wall.isEmpty()) {
+                    continue;
+                }
+                EdgeShape remainingShape = EdgeShape.fromBoundarySegments(wall.segments2x()).without(removedSegments);
+                List<EdgeShape> remainingComponents = remainingShape.connectedComponents();
+                if (remainingComponents.isEmpty()) {
+                    continue;
+                }
+                for (int index = 0; index < remainingComponents.size(); index++) {
+                    EdgeShape component = remainingComponents.get(index);
+                    GridSegment2x anchorSegment2x = component.contains(wall.anchorSegment2x())
+                            ? wall.anchorSegment2x()
+                            : component.firstSegment2x();
+                    Long wallId = index == 0 ? wall.wallId() : null;
+                    result.add(Wall.fromShape(wallId, component, anchorSegment2x, wall.wallKind()));
+                }
+            }
+            return sortedWalls(result);
+        }
+
+        private static List<Wall> sortedWalls(Collection<Wall> walls) {
+            return (walls == null ? List.<Wall>of() : walls).stream()
+                    .filter(Objects::nonNull)
+                    .sorted(Comparator.comparing(Wall::anchorSegment2x, GridSegment2x.ORDER))
+                    .toList();
+        }
+
         private static List<RoomCluster> normalizedClusters(List<RoomCluster> clusters) {
             if (clusters == null || clusters.isEmpty()) {
                 return List.of();
@@ -1396,6 +1476,18 @@ public final class RoomCluster {
             }
         }
 
+        private static void mergeWallsByLevel(
+                Map<Integer, List<Wall>> result,
+                StructureObject structure
+        ) {
+            if (result == null || structure == null) {
+                return;
+            }
+            for (Map.Entry<Integer, List<Wall>> entry : wallsByLevel(structure).entrySet()) {
+                result.computeIfAbsent(entry.getKey(), ignored -> new ArrayList<>()).addAll(entry.getValue());
+            }
+        }
+
         private static Map<Integer, List<Door>> doorsByLevel(StructureObject structure) {
             if (structure == null || structure.levels().isEmpty()) {
                 return Map.of();
@@ -1410,11 +1502,26 @@ public final class RoomCluster {
             return result.isEmpty() ? Map.of() : Map.copyOf(result);
         }
 
+        private static Map<Integer, List<Wall>> wallsByLevel(StructureObject structure) {
+            if (structure == null || structure.levels().isEmpty()) {
+                return Map.of();
+            }
+            Map<Integer, List<Wall>> result = new LinkedHashMap<>();
+            for (Integer levelZ : structure.levels().stream().sorted().toList()) {
+                List<Wall> walls = structure.wallsAtLevelExplicit(levelZ);
+                if (!walls.isEmpty()) {
+                    result.put(levelZ, walls);
+                }
+            }
+            return result.isEmpty() ? Map.of() : Map.copyOf(result);
+        }
+
         private static StructureObject buildClusterStructure(
                 Map<Integer, Set<CellCoord>> cellsByLevel,
                 Map<Integer, Set<CellCoord>> floorCellsByLevel,
                 Map<BoundaryLevelKey, InternalBoundaryType> boundaryKinds,
-                Map<Integer, List<Door>> doorsByLevel
+                Map<Integer, List<Door>> doorsByLevel,
+                Map<Integer, List<Wall>> wallsByLevel
         ) {
             Map<Integer, Set<CellCoord>> normalizedCellsByLevel = immutableCellsByLevel(cellsByLevel);
             if (normalizedCellsByLevel.isEmpty()) {
@@ -1440,14 +1547,24 @@ public final class RoomCluster {
                     }
                     interiorBoundaryEdges.add(segment2x);
                 }
+                List<Wall> levelWalls = wallsByLevel == null ? List.of() : wallsByLevel.getOrDefault(levelZ, List.of());
+                LinkedHashSet<GridSegment2x> authoredWallSegments = new LinkedHashSet<>();
+                for (Wall wall : levelWalls) {
+                    if (wall != null) {
+                        authoredWallSegments.addAll(wall.segments2x());
+                    }
+                }
+                authoredWallSegments.removeIf(segment2x -> !isInternalSegment(levelCells, segment2x));
+                interiorBoundaryEdges.addAll(authoredWallSegments);
                 Set<GridSegment2x> boundaryEdges = StructureObject.boundaryEdgesForSurface(levelCells, interiorBoundaryEdges);
                 anchorsByLevel.put(levelZ, CellCoord.bestCenter(levelCells));
                 boundaryEdgesByLevel.put(levelZ, boundaryEdges);
             }
-            return StructureObject.fromTopologyWithDoorsByLevel(
+            return StructureObject.fromTopologyWithDoorsAndWallsByLevel(
                     normalizedCellsByLevel,
                     boundaryEdgesByLevel,
                     doorsByLevel,
+                    wallsByLevel,
                     normalizedFloorCellsByLevel,
                     anchorsByLevel);
         }
@@ -1458,6 +1575,7 @@ public final class RoomCluster {
             }
             Map<BoundaryLevelKey, InternalBoundaryType> boundaryKinds = originalCluster.internalBoundaryKinds();
             Map<Integer, List<Door>> doorsByLevel = doorsByLevel(rewrittenStructure);
+            Map<Integer, List<Wall>> wallsByLevel = wallsByLevel(rewrittenStructure);
             List<Map<Integer, Set<CellCoord>>> projectedComponents = rewrittenStructure.projectedSurfaceComponents();
             if (projectedComponents.isEmpty()) {
                 return List.of();
@@ -1472,7 +1590,8 @@ public final class RoomCluster {
                             componentCellsByLevel,
                             rewrittenStructure.floorCellsByLevel(),
                             boundaryKinds,
-                            doorsByLevel))
+                            doorsByLevel,
+                            wallsByLevel))
                     .filter(Objects::nonNull)
                     .toList();
         }
@@ -1482,10 +1601,12 @@ public final class RoomCluster {
                 Map<Integer, Set<CellCoord>> componentCellsByLevel,
                 Map<Integer, Set<CellCoord>> clusterFloorCellsByLevel,
                 Map<BoundaryLevelKey, InternalBoundaryType> boundaryKinds,
-                Map<Integer, List<Door>> clusterDoorsByLevel
+                Map<Integer, List<Door>> clusterDoorsByLevel,
+                Map<Integer, List<Wall>> clusterWallsByLevel
         ) {
             Map<Integer, Set<CellCoord>> componentFloorCellsByLevel = new LinkedHashMap<>();
             Map<Integer, List<Door>> componentDoorsByLevel = new LinkedHashMap<>();
+            Map<Integer, List<Wall>> componentWallsByLevel = new LinkedHashMap<>();
             for (Map.Entry<Integer, Set<CellCoord>> entry : componentCellsByLevel.entrySet()) {
                 Integer levelZ = entry.getKey();
                 Set<CellCoord> levelComponentCells = entry.getValue();
@@ -1501,6 +1622,13 @@ public final class RoomCluster {
                 if (!levelDoors.isEmpty()) {
                     componentDoorsByLevel.put(levelZ, levelDoors);
                 }
+                List<Wall> levelWalls = clusterWallsByLevel.getOrDefault(levelZ, List.of()).stream()
+                        .filter(wall -> wall != null && wall.segments2x().stream()
+                                .anyMatch(segment2x -> segment2x.touchingCells().stream().anyMatch(levelComponentCells::contains)))
+                        .toList();
+                if (!levelWalls.isEmpty()) {
+                    componentWallsByLevel.put(levelZ, levelWalls);
+                }
             }
             if (componentCellsByLevel.isEmpty()) {
                 return null;
@@ -1509,7 +1637,8 @@ public final class RoomCluster {
                     componentCellsByLevel,
                     componentFloorCellsByLevel,
                     boundaryKinds,
-                    componentDoorsByLevel);
+                    componentDoorsByLevel,
+                    componentWallsByLevel);
             return new RoomCluster(
                     null,
                     originalCluster.mapId(),

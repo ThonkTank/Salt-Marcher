@@ -24,6 +24,8 @@ This file covers `src/features/world/dungeonmap/`. Use it together with the root
 - `DungeonLayout` is the immutable lookup over direct structure owners. Do not turn it into a second mutation owner.
 - `Room` is metadata only. Physical room surfaces and boundaries are derived from the owning `RoomCluster`.
 - Corridors, stairs, and transitions are first-class persisted structures. Their physical form must flow through canonical model owners instead of feature-local mirrors.
+- Boundary topology stays on `StructureObject.LevelStructure`; authored wall identity and wall-kind semantics ride on top of that topology instead of replacing it with renderer- or tool-local mirrors.
+- Authored `Wall` objects are typed boundary polylines owned by the structure aggregate. `WallKind` definitions are app-global catalog data; uncovered boundary segments still resolve to the built-in solid kind.
 - Physical doors are canonical shared objects. Other structures may refer to doors by id, but must not copy door geometry or state into parallel owners.
 - Interaction-layer `DoorRef` values stay as pure door ids. Owner semantics for a door must be derived from the live `DungeonLayout`, not mirrored into selection payloads.
 - Editor and runtime must resolve surfaces and interaction subjects from the same model owners. Do not add runtime-only or editor-only topology mirrors.

@@ -4,6 +4,8 @@ import features.world.dungeonmap.model.geometry.CellCoord;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
 import features.world.dungeonmap.model.objects.StructureObject;
+import features.world.dungeonmap.model.objects.Wall;
+import features.world.dungeonmap.model.objects.WallKind;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
@@ -24,6 +26,8 @@ import java.util.Set;
 public final class DungeonRoomRepository {
 
     private final DungeonDoorRepository doorRepository = new DungeonDoorRepository();
+    private final DungeonWallRepository wallRepository = new DungeonWallRepository();
+    private final DungeonWallKindRepository wallKindRepository = new DungeonWallKindRepository();
 
     public List<Room> loadRooms(Connection conn, long mapId) throws SQLException {
         Map<Long, Map<Integer, CellCoord>> anchorsByRoomId = loadRoomAnchors(conn, mapId);
@@ -70,7 +74,8 @@ public final class DungeonRoomRepository {
     public List<RoomCluster> loadClusters(Connection conn, long mapId, List<Room> rooms) throws SQLException {
         List<RoomCluster> clusters = new ArrayList<>();
         Map<Long, List<Room>> roomsByClusterId = roomsByClusterId(rooms);
-        Map<Long, StructureObject> structuresByClusterId = loadClusterStructures(conn, mapId);
+        Map<Long, WallKind> wallKindsById = wallKindRepository.loadWallKinds(conn);
+        Map<Long, StructureObject> structuresByClusterId = loadClusterStructures(conn, mapId, wallKindsById);
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT cluster_id, dungeon_map_id, center_x, center_y FROM dungeon_room_clusters"
                         + " WHERE dungeon_map_id=? ORDER BY cluster_id")) {
@@ -357,7 +362,9 @@ public final class DungeonRoomRepository {
     }
 
     private void replaceClusterStructure(Connection conn, long clusterId, StructureObject structure) throws SQLException {
-        StructureObject resolvedStructure = doorRepository.assignPersistentIds(conn, requiredStructure(structure));
+        StructureObject resolvedStructure = doorRepository.assignPersistentIds(
+                conn,
+                wallRepository.assignPersistentIds(conn, requiredStructure(structure)));
         try (PreparedStatement deleteSurfaceCells = conn.prepareStatement(
                 "DELETE FROM dungeon_room_cluster_level_surface_cells WHERE cluster_id=?");
              PreparedStatement deleteSegments = conn.prepareStatement(
@@ -403,6 +410,7 @@ public final class DungeonRoomRepository {
             insertSegment.executeBatch();
         }
         doorRepository.replaceClusterDoors(conn, clusterId, resolvedStructure);
+        wallRepository.replaceClusterWalls(conn, clusterId, resolvedStructure);
     }
 
     private static void addCells(
@@ -532,13 +540,19 @@ public final class DungeonRoomRepository {
         return result.isEmpty() ? Map.of() : Map.copyOf(result);
     }
 
-    private static Map<Long, StructureObject> loadClusterStructures(Connection conn, long mapId) throws SQLException {
+    private Map<Long, StructureObject> loadClusterStructures(
+            Connection conn,
+            long mapId,
+            Map<Long, WallKind> wallKindsById
+    ) throws SQLException {
         Map<Long, Map<Integer, CellCoord>> anchorsByClusterId = new LinkedHashMap<>();
         Map<Long, Map<Integer, Set<CellCoord>>> surfaceCellsByClusterId = new LinkedHashMap<>();
         Map<Long, Map<Integer, Set<CellCoord>>> floorCellsByClusterId = new LinkedHashMap<>();
         Map<Long, Map<Integer, Set<GridSegment2x>>> boundarySegmentsByClusterId = new LinkedHashMap<>();
         Map<Long, Map<Integer, List<features.world.dungeonmap.model.objects.Door>>> doorsByClusterId =
                 new DungeonDoorRepository().loadClusterDoorsByClusterId(conn, mapId);
+        Map<Long, Map<Integer, List<Wall>>> wallsByClusterId =
+                wallRepository.loadClusterWallsByClusterId(conn, mapId, wallKindsById);
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT cluster_id, level_z, anchor_x2, anchor_y2"
                         + " FROM dungeon_room_cluster_levels"
@@ -623,11 +637,12 @@ public final class DungeonRoomRepository {
                 if (surfaceCells.isEmpty()) {
                     throw new IllegalStateException("Cluster " + clusterId + " hat keine persistierten Surface-Zellen auf Ebene " + levelZ);
                 }
-                StructureObject.LevelStructure level = StructureObject.LevelStructure.fromTopologyWithDoors(
+                StructureObject.LevelStructure level = StructureObject.LevelStructure.fromTopologyWithDoorsAndWalls(
                         levelEntry.getValue(),
                         surfaceCells,
                         boundarySegmentsByClusterId.getOrDefault(clusterId, Map.of()).getOrDefault(levelZ, Set.of()),
                         doorsByClusterId.getOrDefault(clusterId, Map.of()).getOrDefault(levelZ, List.of()),
+                        wallsByClusterId.getOrDefault(clusterId, Map.of()).getOrDefault(levelZ, List.of()),
                         floorCellsByClusterId.getOrDefault(clusterId, Map.of()).get(levelZ));
                 if (level.isEmpty()) {
                     throw new IllegalStateException("Cluster " + clusterId + " hat eine leere Topologie auf Ebene " + levelZ);
