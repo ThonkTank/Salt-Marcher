@@ -2,7 +2,7 @@ package features.world.dungeonmap.application.runtime.description;
 
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.structures.cluster.RoomCluster;
+import features.world.dungeonmap.cluster.model.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.connection.DoorExitCatalog;

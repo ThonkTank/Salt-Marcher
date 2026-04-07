@@ -12,7 +12,7 @@ This file covers `src/features/world/dungeonmap/structure/model/room/`.
 - `StructureRoomTopology` — room aggregate seam — owns derived room structures, room lookup, adjacency, components, merge eligibility, and local room connections for one structure-backed cluster.
 - `StructureRoomProjectionIndex` — internal projection sub-owner — owns room partitioning over structure cells, per-room derived structures, and point-to-room lookup truth.
 - `StructureRoomGraph` — internal graph sub-owner — owns adjacency, connected components, component lookup, and local room connection derivation over the projection index.
-- `StructureRoomClusterEditor` — internal rewrite helper — owns the reusable structure-backed cluster paint/delete rewrite logic used by room workflows.
+- `ClusterStructureEditor` — internal rewrite helper — owns the reusable structure-backed cluster paint/delete rewrite logic used by room workflows.
 
 ## Where New Code Goes
 
@@ -20,7 +20,7 @@ This file covers `src/features/world/dungeonmap/structure/model/room/`.
 - Keep callers on `Structure.roomTopology()` and then continue on the explicit `StructureRoomTopology` API.
 - Put partitioning and derived-structure indexing on `StructureRoomProjectionIndex`.
 - Put adjacency, components, and local room-connection derivation on `StructureRoomGraph`.
-- Put reusable structure-backed cluster paint/delete rewrite mechanics on `StructureRoomClusterEditor` instead of duplicating them in room workflows.
+- Put reusable structure-backed cluster paint/delete rewrite mechanics on `ClusterStructureEditor` instead of duplicating them in room workflows.
 
 ## Forbidden Drift
 

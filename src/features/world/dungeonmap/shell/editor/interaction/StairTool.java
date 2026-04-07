@@ -12,7 +12,7 @@ import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridPathPatternKind;
 import features.world.dungeonmap.geometry.GridPathPatternSpec;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
-import features.world.dungeonmap.model.structures.cluster.RoomCluster;
+import features.world.dungeonmap.cluster.model.RoomCluster;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.shell.editor.EditorCards;

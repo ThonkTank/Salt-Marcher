@@ -1,8 +1,7 @@
-package features.world.dungeonmap.structure.model.room;
+package features.world.dungeonmap.cluster.model;
 
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridSegment;
-import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.structure.model.Structure;
 import features.world.dungeonmap.structure.model.StructureMutation;
@@ -24,14 +23,14 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 /**
- * Room rewrite owner for cluster-backed room edits.
+ * Cluster rewrite owner for structure-backed cluster edits.
  *
  * <p>These workflows still return cluster carriers for persistence, but the room semantics themselves live under the
  * structure-owned room subtree instead of on {@link RoomCluster}.</p>
  */
-public final class StructureRoomClusterEditor {
+public final class ClusterStructureEditor {
 
-    private StructureRoomClusterEditor() {
+    private ClusterStructureEditor() {
     }
 
     public static RoomCluster applyPaint(

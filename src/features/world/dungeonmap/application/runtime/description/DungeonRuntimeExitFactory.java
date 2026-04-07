@@ -7,7 +7,7 @@ import features.world.dungeonmap.structure.model.Structure;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpointType;
 import features.world.dungeonmap.model.structures.connection.DoorExitDescriptor;
-import features.world.dungeonmap.model.structures.cluster.RoomCluster;
+import features.world.dungeonmap.cluster.model.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;

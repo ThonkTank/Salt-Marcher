@@ -1,7 +1,5 @@
-package features.world.dungeonmap.model.structures.cluster;
+package features.world.dungeonmap.cluster.model;
 
-import features.world.dungeonmap.geometry.GridPoint;
-import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridBoundary;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridSegment;

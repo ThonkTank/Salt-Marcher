@@ -1,4 +1,4 @@
-package features.world.dungeonmap.repository;
+package features.world.dungeonmap.cluster.repository;
 
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridPoint;
@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public final class DungeonRoomRepository {
+public final class DungeonClusterRepository {
 
     private final DungeonStructureRepository structureRepository = new DungeonStructureRepository();
 
