@@ -19,6 +19,7 @@ import features.world.dungeonmap.model.structures.connection.StairConnectionCarr
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNode;
+import features.world.dungeonmap.model.structures.corridor.CorridorPathTrace;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
@@ -380,7 +381,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                     pass.palette().highlightStroke(),
                     Math.max(5.0, pass.gridSize() * 0.16));
         }
-        for (Structure.PathTrace trace : corridor.structure().pathTracesAtLevel(corridor.levelZ())) {
+        for (CorridorPathTrace trace : corridor.pathTraces()) {
             for (GridPoint2x corner : trace.cornerPoints2x()) {
                 drawCorridorHandle(
                         pass.gc(),

@@ -218,7 +218,7 @@ public final class DungeonRuntimeActionResolver {
             return Set.of();
         }
         Set<CubePoint> activeOrigins = stair.exits().stream()
-                .map(Structure.StairStop::position)
+                .map(StairExit::position)
                 .filter(Objects::nonNull)
                 .filter(position -> position.z() == activeLevelZ)
                 .filter(position -> activeCell == null || activeCell.equals(position.projectedCell()))
@@ -227,7 +227,7 @@ public final class DungeonRuntimeActionResolver {
             return activeOrigins;
         }
         Set<CubePoint> sameLevelOrigins = stair.exits().stream()
-                .map(Structure.StairStop::position)
+                .map(StairExit::position)
                 .filter(Objects::nonNull)
                 .filter(position -> position.z() == activeLevelZ)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
@@ -235,7 +235,7 @@ public final class DungeonRuntimeActionResolver {
             return sameLevelOrigins;
         }
         return stair.exits().stream()
-                .map(Structure.StairStop::position)
+                .map(StairExit::position)
                 .filter(Objects::nonNull)
                 .limit(1)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
@@ -250,7 +250,7 @@ public final class DungeonRuntimeActionResolver {
             return Set.of();
         }
         return stair.exitsAtLevel(levelZ).stream()
-                .map(Structure.StairStop::position)
+                .map(StairExit::position)
                 .filter(position -> position != null && surfaceCells.contains(position.projectedCell()))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }

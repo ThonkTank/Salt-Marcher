@@ -111,6 +111,8 @@ Do not reverse that decision order. A capability does not belong in a package be
 - Give every capability one central owner.
 - Place each capability on the lowest common owner that is actually edited, described, or constrained by it.
 - Objects and types may gain capabilities through composition, inheritance, or references, but ownership of the capability stays with the central owner instead of being mirrored in consumers.
+- Central owner types should hold their own mutable state and behavior. Keep invariants and mutation behind explicit owner APIs instead of exposing writable internals.
+- Do not force every type into owner-style encapsulation. Immutable geometry types, DTOs, requests, projections, snapshots, render payloads, and similar value carriers may stay transparent values when they do not own invariants or workflow state.
 - New code must follow the target architecture immediately.
 - Touched code should move toward the target architecture at the nearest safe seam without widening scope.
 - Preserve behavior, storage assumptions, user workflows, and explicit invariants unless the task explicitly requires changing them.
@@ -131,6 +133,12 @@ Technical layers are subordinate tools inside an owner slice, not the primary ar
 - `bootstrap` — internal composition and wiring
 
 Use these layer names only when they clearly describe a local responsibility inside the already-chosen owner slice.
+
+### Owner Types vs Value Types
+
+- Treat aggregates, workflow owners, and shared mutable state holders as owner types. They should expose narrow, intentional APIs and keep internal mutation private.
+- Treat immutable records and small transport shapes as value types. They may expose their data directly when they do not enforce invariants beyond construction.
+- When deciding between the two, ask whether callers should be able to freely combine and inspect the data, or whether all meaningful changes must pass through one owner that protects invariants.
 
 ### AGENTS Contract
 

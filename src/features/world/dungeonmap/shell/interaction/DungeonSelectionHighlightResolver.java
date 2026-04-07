@@ -159,7 +159,7 @@ public final class DungeonSelectionHighlightResolver {
         if (corridor == null || corridorSegmentRef.segmentId() == null) {
             return List.of();
         }
-        return corridor.structure().pathTracesAtLevel(levelZ).stream()
+        return corridor.pathTraces().stream()
                 .filter(trace -> Objects.equals(trace.traceId(), corridorSegmentRef.segmentId()))
                 .findFirst()
                 .map(trace -> List.<DungeonHitSurface>of(

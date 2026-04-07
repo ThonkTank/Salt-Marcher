@@ -5,7 +5,6 @@ import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.EdgeShape;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.geometry.TilePath;
 import features.world.dungeonmap.model.geometry.TileShape;
 import features.world.dungeonmap.model.structures.connection.DungeonConnection;
 import features.world.dungeonmap.model.structures.room.Room;
@@ -15,22 +14,17 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.PriorityQueue;
 import java.util.Set;
 
 /**
- * Shared topology orchestrator over shape-backed floor, wall, door, and stair objects.
+ * Shared topology orchestrator over shape-backed floor, wall, and door objects.
  */
 public final class Structure {
-
-    public record StairStop(CubePoint position, String label) {
-    }
 
     public record PersistenceSnapshot(Map<Integer, PersistenceLevel> levelsByZ) {
         public PersistenceSnapshot {
@@ -54,19 +48,17 @@ public final class Structure {
     }
 
     private final Map<Integer, LevelStructure> levelsByZ;
-    private final Stair stair;
-    private final Map<Integer, List<PathTrace>> pathTracesByLevel;
     private final StructureRoomTopology roomTopology;
 
     public static Structure empty() {
-        return new Structure(Map.of(), null, Map.of(), null);
+        return new Structure(Map.of(), null);
     }
 
     public static Structure fromLevels(Map<Integer, LevelStructure> levelsByZ) {
         if (levelsByZ == null || levelsByZ.isEmpty()) {
             return empty();
         }
-        return new Structure(levelsByZ, null, Map.of(), null);
+        return new Structure(levelsByZ, null);
     }
 
     public static Structure fromCubePoints(Collection<CubePoint> cubePoints) {
@@ -162,27 +154,6 @@ public final class Structure {
         return levels.isEmpty() ? empty() : fromLevels(levels);
     }
 
-    public static Structure fromTilePath(TilePath path, Set<Integer> stopLevels) {
-        if (path == null || path.isEmpty()) {
-            return empty();
-        }
-        return fromStair(Stair.of(path, stopLevels));
-    }
-
-    public static Structure fromPathPoints(Collection<CubePoint> pathPoints, Set<Integer> stopLevels) {
-        if (pathPoints == null || pathPoints.isEmpty()) {
-            return empty();
-        }
-        return fromTilePath(TilePath.of(pathPoints), stopLevels);
-    }
-
-    public static Structure fromStair(Stair stair) {
-        if (stair == null) {
-            return empty();
-        }
-        return new Structure(Map.of(), stair, Map.of(), null);
-    }
-
     private static Set<GridSegment2x> derivedBoundaryEdgesForSurface(
             Collection<CellCoord> surfaceCells,
             Collection<GridSegment2x> authoredWallEdges
@@ -194,45 +165,6 @@ public final class Structure {
         LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>(surfaceShape.boundaryShape().segmentSet2x());
         result.addAll(normalizedBoundaryEdges(interiorAdjacencyEdgesForSurface(surfaceShape.cellCoords()), authoredWallEdges));
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
-    public static Set<CellCoord> surfaceCellsForTraces(Collection<PathTrace> traces) {
-        LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
-        for (PathTrace trace : traces == null ? List.<PathTrace>of() : traces) {
-            if (trace == null) {
-                continue;
-            }
-            for (GridPoint2x point2x : trace.path2x()) {
-                if (point2x != null) {
-                    point2x.asCell().ifPresent(result::add);
-                }
-            }
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
-    public static List<AnchorAttachment> attachmentsForPoint(GridPoint2x anchorPoint, Collection<CellCoord> blockedCells) {
-        if (anchorPoint == null) {
-            return List.of();
-        }
-        if (anchorPoint.isCell()) {
-            return List.of(new AnchorAttachment(anchorPoint.asCell().orElseThrow(), List.of(anchorPoint)));
-        }
-        Set<CellCoord> blocked = blockedCells == null ? Set.of() : Set.copyOf(blockedCells);
-        List<CellCoord> touchingCells = anchorPoint.touchingCells().stream()
-                .sorted(CellCoord.ORDER)
-                .toList();
-        List<CellCoord> preferredCells = touchingCells.stream()
-                .filter(cell -> !blocked.contains(cell))
-                .toList();
-        List<CellCoord> candidateCells = preferredCells.isEmpty() ? touchingCells : preferredCells;
-        ArrayList<AnchorAttachment> attachments = new ArrayList<>();
-        for (CellCoord cell : candidateCells) {
-            for (List<GridPoint2x> anchorPath : anchorPaths(anchorPoint, cell)) {
-                attachments.add(new AnchorAttachment(cell, anchorPath));
-            }
-        }
-        return attachments.isEmpty() ? List.of() : List.copyOf(attachments);
     }
 
     public static List<GridSegment2x> shortestEdgePath(
@@ -284,74 +216,17 @@ public final class Structure {
         return List.copyOf(path);
     }
 
-    public static RoutedProjection routeSurfaceProjection(
-            int levelZ,
-            Collection<RoutedNode> nodes,
-            Collection<RoutedLink> links,
-            Collection<CellCoord> blockedCells
+    private Structure(
+            Map<Integer, LevelStructure> levelsByZ
     ) {
-        Map<Long, RoutedNode> nodesById = indexRoutedNodes(nodes);
-        ArrayList<PathTrace> traces = new ArrayList<>();
-        for (RoutedLink link : sanitizedLinks(links)) {
-            RoutedNode start = nodesById.get(link.startNodeId());
-            RoutedNode end = nodesById.get(link.endNodeId());
-            if (start == null || end == null) {
-                throw new IllegalArgumentException("Trace link references missing node");
-            }
-            RoutePlan routePlan = findBestTrace(start.attachments(), end.attachments(), blockedCells);
-            traces.add(new PathTrace(link.traceId(), link.startNodeId(), link.endNodeId(), routePlan.path2x()));
-        }
-        if (traces.isEmpty()) {
-            return new RoutedProjection(empty(), List.of(), Set.of());
-        }
-        Set<CellCoord> occupiedCells = surfaceCellsForTraces(traces);
-        if (occupiedCells.isEmpty()) {
-            return new RoutedProjection(empty(), List.copyOf(traces), Set.of());
-        }
-        Set<GridSegment2x> boundaryEdges = derivedBoundaryEdgesForSurface(occupiedCells, Set.of());
-        if (boundaryEdges.isEmpty()) {
-            return new RoutedProjection(empty(), List.copyOf(traces), Set.of());
-        }
-        Structure structure = new Structure(
-                Map.of(levelZ, LevelStructure.fromTopology(
-                        CellCoord.bestCenter(occupiedCells),
-                        occupiedCells,
-                        boundaryEdges,
-                        occupiedCells)),
-                null,
-                Map.of(levelZ, traces),
-                null);
-        Set<CellCoord> hydratedCells = CellCoord.normalize(structure.cellCoordsAtLevel(levelZ));
-        if (!hydratedCells.equals(CellCoord.normalize(occupiedCells))) {
-            throw new IllegalStateException("Structure route projection changed the routed occupied cells");
-        }
-        return new RoutedProjection(structure, traces, Set.of());
+        this(levelsByZ, null);
     }
 
     private Structure(
             Map<Integer, LevelStructure> levelsByZ,
-            Stair stair
-    ) {
-        this(levelsByZ, stair, Map.of(), null);
-    }
-
-    private Structure(
-            Map<Integer, LevelStructure> levelsByZ,
-            Stair stair,
-            Map<Integer, ? extends Collection<PathTrace>> pathTracesByLevel
-    ) {
-        this(levelsByZ, stair, pathTracesByLevel, null);
-    }
-
-    private Structure(
-            Map<Integer, LevelStructure> levelsByZ,
-            Stair stair,
-            Map<Integer, ? extends Collection<PathTrace>> pathTracesByLevel,
             StructureRoomTopology roomTopology
     ) {
         this.levelsByZ = normalizeLevels(levelsByZ);
-        this.stair = stair;
-        this.pathTracesByLevel = normalizePathTraces(pathTracesByLevel);
         this.roomTopology = roomTopology;
     }
 
@@ -364,7 +239,7 @@ public final class Structure {
     }
 
     public Structure withRoomMetadata(long mapId, Long clusterId, List<Room> rooms) {
-        return new Structure(levelsByZ, stair, pathTracesByLevel, StructureRoomTopology.derive(mapId, clusterId, this, rooms));
+        return new Structure(levelsByZ, StructureRoomTopology.derive(mapId, clusterId, this, rooms));
     }
 
     public List<Room> rooms() {
@@ -386,7 +261,7 @@ public final class Structure {
         if (structure == null || topology == null || structure.levelStructures().isEmpty()) {
             return structure;
         }
-        return new Structure(structure.levelsByZ, structure.stair, structure.pathTracesByLevel, topology);
+        return new Structure(structure.levelsByZ, topology);
     }
 
     public PersistenceSnapshot persistenceSnapshot() {
@@ -412,22 +287,10 @@ public final class Structure {
 
     public Structure projectedToLevel(int levelZ) {
         LevelStructure level = levelStructure(levelZ);
-        Stair projectedStair = stair == null || !stair.levels().contains(levelZ)
-                ? null
-                : Stair.of(
-                        stair.path().stream()
-                                .filter(point -> point != null && point.z() == levelZ)
-                                .toList(),
-                        Set.of(levelZ));
-        List<PathTrace> projectedTraces = pathTracesAtLevel(levelZ);
-        if (level == null && projectedStair == null && projectedTraces.isEmpty()) {
+        if (level == null) {
             return empty();
         }
-        Structure projected = new Structure(
-                level == null ? Map.of() : Map.of(levelZ, level),
-                projectedStair,
-                projectedTraces.isEmpty() ? Map.of() : Map.of(levelZ, projectedTraces),
-                null);
+        Structure projected = new Structure(Map.of(levelZ, level), null);
         return roomTopology == null
                 ? projected
                 : reattachTopology(projected, roomTopology.projectedToLevel(levelZ, projected));
@@ -440,7 +303,7 @@ public final class Structure {
         }
         Map<Integer, LevelStructure> updated = new LinkedHashMap<>(levelsByZ);
         updated.put(levelZ, level.withDoors(doors));
-        return reattachedWithSameRooms(new Structure(updated, stair, pathTracesByLevel, null));
+        return reattachedWithSameRooms(new Structure(updated, null));
     }
 
     public Structure withCreatedWallPathAtLevel(int levelZ, Collection<GridSegment2x> segments2x) {
@@ -450,7 +313,7 @@ public final class Structure {
         }
         Map<Integer, LevelStructure> updated = new LinkedHashMap<>(levelsByZ);
         updated.put(levelZ, level.withCreatedWallPath(segments2x));
-        return reattachedWithSameRooms(new Structure(updated, stair, pathTracesByLevel, null));
+        return reattachedWithSameRooms(new Structure(updated, null));
     }
 
     public Structure withDeletedWallPathAtLevel(int levelZ, Collection<GridSegment2x> segments2x) {
@@ -460,7 +323,7 @@ public final class Structure {
         }
         Map<Integer, LevelStructure> updated = new LinkedHashMap<>(levelsByZ);
         updated.put(levelZ, level.withDeletedWallPath(segments2x));
-        return reattachedWithSameRooms(new Structure(updated, stair, pathTracesByLevel, null));
+        return reattachedWithSameRooms(new Structure(updated, null));
     }
 
     public Structure withFloorCellsAtLevel(int levelZ, Collection<CellCoord> floorCells) {
@@ -470,36 +333,12 @@ public final class Structure {
         }
         Map<Integer, LevelStructure> updated = new LinkedHashMap<>(levelsByZ);
         updated.put(levelZ, level.withFloorCells(floorCells));
-        return reattachedWithSameRooms(new Structure(updated, stair, pathTracesByLevel, null));
-    }
-
-    /**
-     * Path traces stay runtime-only corridor routing data even when the physical structure is loaded from persistence.
-     */
-    public Structure withPathTracesAtLevel(int levelZ, Collection<PathTrace> pathTraces) {
-        Map<Integer, List<PathTrace>> updatedPathTraces = new LinkedHashMap<>(pathTracesByLevel);
-        List<PathTrace> normalized = normalizePathTraces(Map.of(levelZ, pathTraces)).getOrDefault(levelZ, List.of());
-        if (normalized.isEmpty()) {
-            updatedPathTraces.remove(levelZ);
-        } else {
-            updatedPathTraces.put(levelZ, normalized);
-        }
-        return reattachedWithSameRooms(new Structure(levelsByZ, stair, updatedPathTraces, null));
+        return reattachedWithSameRooms(new Structure(updated, null));
     }
 
     public TileShape surfaceShapeAtLevel(int levelZ) {
         LevelStructure level = levelStructure(levelZ);
-        TileShape descriptorShape = level == null ? TileShape.empty() : level.surfaceShape();
-        TileShape stairShape = stairShapeAtLevel(levelZ);
-        if (descriptorShape.isEmpty()) {
-            return stairShape;
-        }
-        if (stairShape.isEmpty()) {
-            return descriptorShape;
-        }
-        LinkedHashSet<CellCoord> result = new LinkedHashSet<>(descriptorShape.cellCoords());
-        result.addAll(stairShape.cellCoords());
-        return new TileShape(result);
+        return level == null ? TileShape.empty() : level.surfaceShape();
     }
 
     public List<Door> doorsAtLevel(int levelZ) {
@@ -549,46 +388,8 @@ public final class Structure {
         return level == null ? null : new Floor(level.floorShape());
     }
 
-    public List<Stair> stairs() {
-        return stair == null ? List.of() : List.of(stair);
-    }
-
-    public Stair stair() {
-        return stair;
-    }
-
-    public List<CubePoint> stairPath() {
-        Stair stair = stair();
-        return stair == null ? List.of() : stair.path();
-    }
-
-    public Set<Integer> stairStopLevels() {
-        Stair stair = stair();
-        return stair == null ? Set.of() : stair.stopLevels();
-    }
-
-    public List<StairStop> stairStops() {
-        Stair stair = stair();
-        if (stair == null) {
-            return List.of();
-        }
-        return stair.exits().stream()
-                .map(exit -> new StairStop(exit.position(), exit.label()))
-                .toList();
-    }
-
-    public List<StairStop> stairStopsAtLevel(int levelZ) {
-        return stairStops().stream()
-                .filter(stop -> stop.position() != null && stop.position().z() == levelZ)
-                .toList();
-    }
-
     public Set<Integer> levels() {
-        LinkedHashSet<Integer> result = new LinkedHashSet<>(levelsByZ.keySet());
-        if (stair != null) {
-            result.addAll(stair.levels());
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+        return levelsByZ.isEmpty() ? Set.of() : Set.copyOf(new LinkedHashSet<>(levelsByZ.keySet()));
     }
 
     public List<Integer> relevantLevels(CellCoord focusCell, int focusLevelZ) {
@@ -745,27 +546,10 @@ public final class Structure {
         return result.isEmpty() ? Map.of() : Map.copyOf(result);
     }
 
-    public List<PathTrace> pathTracesAtLevel(int levelZ) {
-        return pathTracesByLevel.getOrDefault(levelZ, List.of());
-    }
-
-    public PathTrace pathTraceAtLevel(int levelZ, Long traceId) {
-        if (traceId == null) {
-            return null;
-        }
-        return pathTracesAtLevel(levelZ).stream()
-                .filter(trace -> trace != null && Objects.equals(trace.traceId(), traceId))
-                .findFirst()
-                .orElse(null);
-    }
-
     public Set<CubePoint> cubePoints() {
         LinkedHashSet<CubePoint> result = new LinkedHashSet<>();
         for (Map.Entry<Integer, LevelStructure> entry : levelsByZ.entrySet()) {
             result.addAll(entry.getValue().surfaceShape().cubePoints(entry.getKey()));
-        }
-        if (stair != null) {
-            result.addAll(stair.pointSet());
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
@@ -797,11 +581,7 @@ public final class Structure {
 
     public CellCoord anchorCellCoordAtLevel(int levelZ) {
         LevelStructure level = levelStructure(levelZ);
-        if (level != null) {
-            return level.anchorCell();
-        }
-        TileShape stairShape = stairShapeAtLevel(levelZ);
-        return stairShape.isEmpty() ? null : stairShape.centerCellCoord();
+        return level == null ? null : level.anchorCell();
     }
 
     public CellCoord surfaceCenterCellCoordAtLevel(int levelZ) {
@@ -839,7 +619,7 @@ public final class Structure {
                             clippedWalls,
                             floorCells));
                 });
-        Structure clipped = levels.isEmpty() ? empty() : new Structure(levels, null, Map.of(), null);
+        Structure clipped = levels.isEmpty() ? empty() : new Structure(levels, null);
         return reattachedWithSameRooms(clipped);
     }
 
@@ -874,22 +654,10 @@ public final class Structure {
         for (Map.Entry<Integer, LevelStructure> entry : levelsByZ.entrySet()) {
             translatedLevels.put(entry.getKey() + levelDelta, entry.getValue().translatedByCells(resolvedDelta));
         }
-        Map<Integer, List<PathTrace>> translatedTraces = new LinkedHashMap<>();
-        for (Map.Entry<Integer, List<PathTrace>> entry : pathTracesByLevel.entrySet()) {
-            translatedTraces.put(entry.getKey() + levelDelta, entry.getValue().stream()
-                    .map(trace -> trace == null ? null : trace.translatedByCells(resolvedDelta))
-                    .filter(Objects::nonNull)
-                    .toList());
-        }
-        Stair translatedStair = stair == null ? null : stair.movedBy(resolvedDelta, levelDelta);
-        Structure moved = new Structure(translatedLevels, translatedStair, translatedTraces, null);
+        Structure moved = new Structure(translatedLevels, null);
         return roomTopology == null
                 ? moved
                 : reattachTopology(moved, roomTopology.translatedBy(resolvedDelta, levelDelta, moved));
-    }
-
-    private TileShape stairShapeAtLevel(int levelZ) {
-        return stair == null ? TileShape.empty() : stair.shapeAtLevel(levelZ);
     }
 
     private static List<Door> clippedDoorsForBoundary(Collection<Door> doors, Collection<GridSegment2x> boundaryEdges) {
@@ -947,176 +715,6 @@ public final class Structure {
         return result.isEmpty() ? Map.of() : Map.copyOf(result);
     }
 
-    private static Map<Integer, List<PathTrace>> normalizePathTraces(
-            Map<Integer, ? extends Collection<PathTrace>> pathTracesByLevel
-    ) {
-        if (pathTracesByLevel == null || pathTracesByLevel.isEmpty()) {
-            return Map.of();
-        }
-        Map<Integer, List<PathTrace>> result = new LinkedHashMap<>();
-        pathTracesByLevel.entrySet().stream()
-                .filter(entry -> entry != null && entry.getKey() != null && entry.getValue() != null)
-                .sorted(Map.Entry.comparingByKey())
-                .forEach(entry -> {
-                    List<PathTrace> traces = entry.getValue().stream()
-                            .filter(Objects::nonNull)
-                            .sorted(Comparator
-                                    .comparing((PathTrace trace) -> trace.traceId() == null ? Long.MAX_VALUE : trace.traceId())
-                                    .thenComparing(trace -> trace.startNodeId() == null ? Long.MAX_VALUE : trace.startNodeId())
-                                    .thenComparing(trace -> trace.endNodeId() == null ? Long.MAX_VALUE : trace.endNodeId()))
-                            .toList();
-                    if (!traces.isEmpty()) {
-                        result.put(entry.getKey(), traces);
-                    }
-                });
-        return result.isEmpty() ? Map.of() : Map.copyOf(result);
-    }
-
-    private static Map<Long, RoutedNode> indexRoutedNodes(Collection<RoutedNode> nodes) {
-        if (nodes == null || nodes.isEmpty()) {
-            return Map.of();
-        }
-        Map<Long, RoutedNode> result = new LinkedHashMap<>();
-        for (RoutedNode node : nodes) {
-            if (node == null || node.nodeId() == null) {
-                continue;
-            }
-            result.put(node.nodeId(), node);
-        }
-        return result.isEmpty() ? Map.of() : Map.copyOf(result);
-    }
-
-    private static List<RoutedLink> sanitizedLinks(Collection<RoutedLink> links) {
-        if (links == null || links.isEmpty()) {
-            return List.of();
-        }
-        return links.stream()
-                .filter(Objects::nonNull)
-                .sorted(Comparator
-                        .comparing((RoutedLink link) -> link.traceId() == null ? Long.MAX_VALUE : link.traceId())
-                        .thenComparing(link -> link.startNodeId() == null ? Long.MAX_VALUE : link.startNodeId())
-                        .thenComparing(link -> link.endNodeId() == null ? Long.MAX_VALUE : link.endNodeId()))
-                .toList();
-    }
-
-    private static RoutePlan findBestTrace(
-            Collection<AnchorAttachment> startAttachments,
-            Collection<AnchorAttachment> endAttachments,
-            Collection<CellCoord> blockedCells
-    ) {
-        RoutePlan bestPlan = null;
-        for (AnchorAttachment startAttachment : startAttachments == null ? List.<AnchorAttachment>of() : startAttachments) {
-            if (startAttachment == null) {
-                continue;
-            }
-            for (AnchorAttachment endAttachment : endAttachments == null ? List.<AnchorAttachment>of() : endAttachments) {
-                if (endAttachment == null) {
-                    continue;
-                }
-                CellRoute cellRoute = findCellRoute(
-                        startAttachment.cell(),
-                        endAttachment.cell(),
-                        blockedCells == null ? Set.of() : Set.copyOf(blockedCells));
-                if (cellRoute == null) {
-                    continue;
-                }
-                List<GridPoint2x> path2x = assemblePath2x(
-                        startAttachment.anchorPath(),
-                        cellRoute.cells(),
-                        endAttachment.anchorPath());
-                double totalCost = cellRoute.cost()
-                        + startAttachment.anchorPathCost()
-                        + endAttachment.anchorPathCost();
-                if (bestPlan == null || totalCost < bestPlan.cost()) {
-                    bestPlan = new RoutePlan(path2x, totalCost);
-                }
-            }
-        }
-        if (bestPlan == null) {
-            throw new IllegalArgumentException("Structure route trace could not be resolved");
-        }
-        return bestPlan;
-    }
-
-    private static CellRoute findCellRoute(CellCoord start, CellCoord end, Set<CellCoord> blockedCells) {
-        if (start == null || end == null) {
-            return null;
-        }
-        if (start.equals(end)) {
-            return new CellRoute(List.of(start), 0.0d);
-        }
-        int minX = Math.min(start.x(), end.x());
-        int maxX = Math.max(start.x(), end.x());
-        int minY = Math.min(start.y(), end.y());
-        int maxY = Math.max(start.y(), end.y());
-        for (CellCoord blocked : blockedCells == null ? List.<CellCoord>of() : blockedCells) {
-            minX = Math.min(minX, blocked.x());
-            maxX = Math.max(maxX, blocked.x());
-            minY = Math.min(minY, blocked.y());
-            maxY = Math.max(maxY, blocked.y());
-        }
-        minX -= 4;
-        maxX += 4;
-        minY -= 4;
-        maxY += 4;
-
-        double turnPenalty = turnPenalty(start, end);
-        Set<CellCoord> effectiveBlocked = new LinkedHashSet<>(blockedCells == null ? Set.<CellCoord>of() : blockedCells);
-        effectiveBlocked.remove(start);
-        effectiveBlocked.remove(end);
-
-        SearchState startState = new SearchState(start, null);
-        PriorityQueue<QueueEntry> frontier = new PriorityQueue<>(Comparator.comparingDouble(QueueEntry::estimatedTotalCost));
-        Map<SearchState, Double> bestCosts = new HashMap<>();
-        Map<SearchState, SearchState> cameFrom = new HashMap<>();
-        frontier.add(new QueueEntry(startState, heuristic(start, end)));
-        bestCosts.put(startState, 0.0d);
-
-        while (!frontier.isEmpty()) {
-            QueueEntry currentEntry = frontier.poll();
-            SearchState current = currentEntry.state();
-            double currentCost = bestCosts.getOrDefault(current, Double.POSITIVE_INFINITY);
-            if (currentEntry.estimatedTotalCost() - heuristic(current.cell(), end) > currentCost + 1e-9) {
-                continue;
-            }
-            if (current.cell().equals(end)) {
-                return new CellRoute(reconstructCellPath(cameFrom, current), currentCost);
-            }
-            for (CellCoord step : CellCoord.CARDINAL_STEPS) {
-                CellCoord neighbor = current.cell().add(step);
-                if (neighbor.x() < minX || neighbor.x() > maxX || neighbor.y() < minY || neighbor.y() > maxY) {
-                    continue;
-                }
-                if (effectiveBlocked.contains(neighbor)) {
-                    continue;
-                }
-                double nextCost = currentCost + 1.0d;
-                if (current.direction() != null && !current.direction().equals(step)) {
-                    nextCost += turnPenalty;
-                }
-                SearchState next = new SearchState(neighbor, step);
-                if (nextCost + 1e-9 >= bestCosts.getOrDefault(next, Double.POSITIVE_INFINITY)) {
-                    continue;
-                }
-                bestCosts.put(next, nextCost);
-                cameFrom.put(next, current);
-                frontier.add(new QueueEntry(next, nextCost + heuristic(neighbor, end)));
-            }
-        }
-        return null;
-    }
-
-    private static List<CellCoord> reconstructCellPath(Map<SearchState, SearchState> cameFrom, SearchState endState) {
-        ArrayList<CellCoord> path = new ArrayList<>();
-        SearchState current = endState;
-        path.add(current.cell());
-        while (cameFrom.containsKey(current)) {
-            current = cameFrom.get(current);
-            path.add(current.cell());
-        }
-        Collections.reverse(path);
-        return List.copyOf(path);
-    }
 
     private static List<GridPoint2x> assemblePath2x(
             List<GridPoint2x> startAnchorPath,
@@ -1145,33 +743,6 @@ public final class Structure {
             }
             target.add(point);
         }
-    }
-
-    private static List<List<GridPoint2x>> anchorPaths(GridPoint2x anchorPoint, CellCoord cell) {
-        if (anchorPoint == null || cell == null) {
-            return List.of();
-        }
-        GridPoint2x cellCenter = GridPoint2x.cell(cell);
-        if (anchorPoint.equals(cellCenter)) {
-            return List.of(List.of(anchorPoint));
-        }
-        if (anchorPoint.manhattanDistance2x(cellCenter) == 1) {
-            return List.of(List.of(anchorPoint, cellCenter));
-        }
-        GridPoint2x firstMidpoint = GridPoint2x.raw(anchorPoint.x2(), cellCenter.y2());
-        GridPoint2x secondMidpoint = GridPoint2x.raw(cellCenter.x2(), anchorPoint.y2());
-        return List.of(
-                List.of(anchorPoint, firstMidpoint, cellCenter),
-                List.of(anchorPoint, secondMidpoint, cellCenter));
-    }
-
-    private static double heuristic(CellCoord current, CellCoord end) {
-        return current == null || end == null ? 0.0d : current.manhattanDistance(end);
-    }
-
-    private static double turnPenalty(CellCoord start, CellCoord end) {
-        int cellDistance = Math.max(1, start.manhattanDistance(end));
-        return Math.max(0.15d, Math.min(0.75d, 0.75d / Math.sqrt(cellDistance)));
     }
 
     private static Map<GridPoint2x, Set<GridPoint2x>> edgeAdjacency(Collection<GridSegment2x> edges) {
@@ -1293,137 +864,18 @@ public final class Structure {
             return false;
         }
         return Objects.equals(levelsByZ, that.levelsByZ)
-                && Objects.equals(stair, that.stair)
-                && Objects.equals(pathTracesByLevel, that.pathTracesByLevel)
                 && Objects.equals(roomTopology, that.roomTopology);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(levelsByZ, stair, pathTracesByLevel, roomTopology);
+        return Objects.hash(levelsByZ, roomTopology);
     }
 
     @Override
     public String toString() {
         return "Structure[levelsByZ=" + levelsByZ
-                + ", stair=" + stair
-                + ", pathTracesByLevel=" + pathTracesByLevel
                 + ", roomTopology=" + roomTopology + "]";
-    }
-
-    public record AnchorAttachment(CellCoord cell, List<GridPoint2x> anchorPath) {
-        public AnchorAttachment {
-            cell = Objects.requireNonNull(cell, "cell");
-            anchorPath = anchorPath == null ? List.of() : List.copyOf(anchorPath);
-        }
-
-        public double anchorPathCost() {
-            return Math.max(0, anchorPath.size() - 1);
-        }
-    }
-
-    public record RoutedNode(Long nodeId, List<AnchorAttachment> attachments) {
-        public RoutedNode {
-            nodeId = Objects.requireNonNull(nodeId, "nodeId");
-            attachments = attachments == null ? List.of() : List.copyOf(attachments);
-        }
-    }
-
-    public record RoutedLink(Long traceId, Long startNodeId, Long endNodeId) {
-        public RoutedLink {
-            startNodeId = Objects.requireNonNull(startNodeId, "startNodeId");
-            endNodeId = Objects.requireNonNull(endNodeId, "endNodeId");
-        }
-    }
-
-    public record RoutedProjection(
-            Structure structure,
-            List<PathTrace> traces,
-            Set<GridSegment2x> boundaryOpeningEdges
-    ) {
-        public RoutedProjection {
-            structure = structure == null ? Structure.empty() : structure;
-            traces = traces == null ? List.of() : List.copyOf(traces);
-            boundaryOpeningEdges = boundaryOpeningEdges == null ? Set.of() : Set.copyOf(boundaryOpeningEdges);
-        }
-    }
-
-    public record PathTrace(
-            Long traceId,
-            Long startNodeId,
-            Long endNodeId,
-            List<GridPoint2x> path2x
-    ) {
-        public PathTrace {
-            path2x = path2x == null ? List.of() : List.copyOf(path2x);
-        }
-
-        public List<GridSegment2x> segments2x() {
-            if (path2x.size() < 2) {
-                return List.of();
-            }
-            ArrayList<GridSegment2x> result = new ArrayList<>();
-            for (int index = 1; index < path2x.size(); index++) {
-                result.add(new GridSegment2x(path2x.get(index - 1), path2x.get(index)));
-            }
-            return List.copyOf(result);
-        }
-
-        public List<GridPoint2x> cornerPoints2x() {
-            if (path2x.size() < 3) {
-                return List.of();
-            }
-            ArrayList<GridPoint2x> result = new ArrayList<>();
-            for (int index = 1; index < path2x.size() - 1; index++) {
-                GridPoint2x previous = path2x.get(index - 1);
-                GridPoint2x current = path2x.get(index);
-                GridPoint2x next = path2x.get(index + 1);
-                int incomingDx2 = current.x2() - previous.x2();
-                int incomingDy2 = current.y2() - previous.y2();
-                int outgoingDx2 = next.x2() - current.x2();
-                int outgoingDy2 = next.y2() - current.y2();
-                if (incomingDx2 != outgoingDx2 || incomingDy2 != outgoingDy2) {
-                    result.add(current);
-                }
-            }
-            return List.copyOf(result);
-        }
-
-        public PathTrace translatedByCells(CellCoord delta) {
-            CellCoord resolvedDelta = delta == null ? new CellCoord(0, 0) : delta;
-            if (resolvedDelta.x() == 0 && resolvedDelta.y() == 0) {
-                return this;
-            }
-            return new PathTrace(
-                    traceId,
-                    startNodeId,
-                    endNodeId,
-                    path2x.stream().map(point -> point == null ? null : point.translatedByCells(resolvedDelta)).toList());
-        }
-    }
-
-    private record SearchState(CellCoord cell, CellCoord direction) {
-        private SearchState {
-            cell = Objects.requireNonNull(cell, "cell");
-        }
-    }
-
-    private record QueueEntry(SearchState state, double estimatedTotalCost) {
-        private QueueEntry {
-            state = Objects.requireNonNull(state, "state");
-        }
-    }
-
-    private record CellRoute(List<CellCoord> cells, double cost) {
-        private CellRoute {
-            cells = cells == null ? List.of() : List.copyOf(cells);
-        }
-    }
-
-    private record RoutePlan(List<GridPoint2x> path2x, double cost) {
-        private RoutePlan {
-            path2x = path2x == null ? List.of() : List.copyOf(path2x);
-        }
     }
 
     public static final class LevelStructure {

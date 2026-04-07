@@ -16,6 +16,7 @@ import features.world.dungeonmap.model.structures.connection.DoorExitCatalog;
 import features.world.dungeonmap.model.structures.connection.DoorExitDescriptor;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNode;
+import features.world.dungeonmap.model.structures.corridor.CorridorPathTrace;
 import features.world.dungeonmap.model.structures.corridor.CorridorSegment;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
@@ -1012,6 +1013,7 @@ public final class DungeonLayout {
             List<CorridorSegment> segments,
             Collection<Door> doors
     ) {
+        Corridor resolvedCorridor = Corridor.resolved(this, corridorId, levelZ, nodes, segments, doors);
         return Corridor.rehydrated(
                 this,
                 corridorId,
@@ -1019,7 +1021,8 @@ public final class DungeonLayout {
                 levelZ,
                 nodes,
                 segments,
-                Corridor.resolved(this, corridorId, levelZ, nodes, segments, doors).structure());
+                resolvedCorridor.structure(),
+                resolvedCorridor.pathTraces());
     }
 
     public Corridor rehydrateCorridor(
@@ -1028,9 +1031,10 @@ public final class DungeonLayout {
             int levelZ,
             List<CorridorNode> nodes,
             List<CorridorSegment> segments,
-            Structure structure
+            Structure structure,
+            List<CorridorPathTrace> pathTraces
     ) {
-        return Corridor.rehydrated(this, corridorId, structureObjectId, levelZ, nodes, segments, structure);
+        return Corridor.rehydrated(this, corridorId, structureObjectId, levelZ, nodes, segments, structure, pathTraces);
     }
 
     public DungeonLayout withAddedCorridor(Corridor corridor) {

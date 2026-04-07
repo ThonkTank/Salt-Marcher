@@ -7,6 +7,7 @@ import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
 import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.structure.repository.DungeonStructureRepository;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

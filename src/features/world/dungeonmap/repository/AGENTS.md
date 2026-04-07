@@ -9,14 +9,12 @@ This package is the current storage home for dungeonmap persistence seams. Share
 ## Canonical Types and APIs
 
 - `DungeonLayoutRepository` — map id plus connection — rehydrates one authoritative `DungeonLayout`.
-- `DungeonStructureRepository` — shared `StructureObject` rows — persists canonical physical structure snapshots used by clusters and corridors.
-- `DungeonRoomRepository`, `DungeonCorridorRepository`, `DungeonStairRepository`, `DungeonTransitionRepository` — owner-local rows plus `StructureObject` references — persist owner metadata for their respective slices.
-- `DungeonWallKindRepository` — wall-kind catalog read seam — resolves app-global wall semantics on load.
+- `DungeonRoomRepository`, `DungeonCorridorRepository`, `DungeonStairRepository`, `DungeonTransitionRepository` — owner-local rows plus shared structure references — persist owner metadata for their respective slices.
 
 ## Where New Code Goes
 
 - Put SQL, row mapping, and schema ordering here.
-- When persistence touches physical structure truth, route it through `DungeonStructureRepository` and the canonical `StructureObject` snapshot.
+- When persistence touches shared physical structure truth, route it through the sibling `structure` repositories and the canonical `Structure` snapshot.
 - When persistence touches owner-local metadata, keep it in that owner repository rather than inventing shared helper mirrors.
 
 ## Forbidden Drift
