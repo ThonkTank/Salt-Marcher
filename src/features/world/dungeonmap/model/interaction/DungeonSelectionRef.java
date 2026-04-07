@@ -3,7 +3,6 @@ package features.world.dungeonmap.model.interaction;
 import features.world.dungeonmap.model.geometry.CubePoint;
 import features.world.dungeonmap.model.geometry.GridPoint2x;
 import features.world.dungeonmap.model.geometry.GridSegment2x;
-
 import java.util.Objects;
 
 public sealed interface DungeonSelectionRef permits
@@ -50,20 +49,11 @@ public sealed interface DungeonSelectionRef permits
     }
 
     /**
-     * Selection refs carry typed ownership directly so callers can compare semantic owners without reconstructing
-     * generic ids or parsing intermediate keys.
+     * Non-door refs may expose their semantic owner directly. Door refs stay as pure identity and rely on
+     * `DungeonLayout` to resolve current owner semantics from the live door classification.
      */
     default DungeonSelectionRef ownerRef() {
         return null;
-    }
-
-    default boolean sameOwnerAs(DungeonSelectionRef other) {
-        if (other == null) {
-            return false;
-        }
-        DungeonSelectionRef leftOwner = ownerRef();
-        DungeonSelectionRef rightOwner = other.ownerRef();
-        return leftOwner != null && Objects.equals(leftOwner, rightOwner);
     }
 
     record ClusterRef(Long clusterId) implements DungeonSelectionRef {
@@ -129,31 +119,11 @@ public sealed interface DungeonSelectionRef permits
         }
     }
 
-    record DoorRef(
-            long doorId,
-            DungeonSelectionRef ownerRef
-    ) implements DungeonSelectionRef {
+    record DoorRef(long doorId) implements DungeonSelectionRef {
         public DoorRef {
             if (doorId <= 0) {
                 throw new IllegalArgumentException("Door refs require doorId");
             }
-        }
-
-        @Override
-        public DungeonSelectionRef ownerRef() {
-            return ownerRef;
-        }
-
-        public Long clusterId() {
-            return ownerRef instanceof ClusterRef clusterRef ? clusterRef.clusterId() : null;
-        }
-
-        public Long roomId() {
-            return ownerRef instanceof RoomRef roomRef ? roomRef.roomId() : null;
-        }
-
-        public Long corridorId() {
-            return ownerRef instanceof CorridorRef corridorRef ? corridorRef.corridorId() : null;
         }
     }
 

@@ -61,39 +61,37 @@ public final class DoorExitCatalog {
             List<? extends Connection> connections
     ) {
         List<ExitEdge> result = new ArrayList<>();
-        Set<GridSegment2x> boundarySegments = new LinkedHashSet<>();
         for (Connection connection : connections) {
-            if (connection != null && connection.levelZ() == levelZ && connection.doorCarrier() != null) {
-                boundarySegments.addAll(connection.boundarySegments2x(layout));
-            }
-        }
-        for (GridSegment2x segment2x : boundarySegments) {
-            if (segment2x == null) {
+            if (connection == null || connection.levelZ() != levelZ || connection.doorCarrier() == null) {
                 continue;
             }
-            Set<CellCoord> touchingCells = segment2x.touchingCells();
-            if (touchingCells.size() != 2) {
-                continue;
-            }
-            CellCoord roomCell = touchingCells.stream()
-                    .filter(cells::contains)
-                    .sorted(CellCoord.ORDER)
-                    .findFirst()
-                    .orElse(null);
-            if (roomCell == null) {
-                continue;
-            }
-            CardinalDirection direction = segment2x.directionFrom(roomCell);
-            if (direction == null) {
-                continue;
-            }
-            DoorRef doorRef = layout.connectionAt(levelZ, segment2x) == null
-                    ? null
-                    : layout.connectionAt(levelZ, segment2x).doorRef();
+            DoorRef doorRef = connection.doorRef();
             if (doorRef == null) {
                 continue;
             }
-            result.add(new ExitEdge(roomCell, direction, segment2x, doorRef));
+            Set<GridSegment2x> boundarySegments = new LinkedHashSet<>(connection.boundarySegments2x(layout));
+            for (GridSegment2x segment2x : boundarySegments) {
+                if (segment2x == null) {
+                    continue;
+                }
+                Set<CellCoord> touchingCells = segment2x.touchingCells();
+                if (touchingCells.size() != 2) {
+                    continue;
+                }
+                CellCoord roomCell = touchingCells.stream()
+                        .filter(cells::contains)
+                        .sorted(CellCoord.ORDER)
+                        .findFirst()
+                        .orElse(null);
+                if (roomCell == null) {
+                    continue;
+                }
+                CardinalDirection direction = segment2x.directionFrom(roomCell);
+                if (direction == null) {
+                    continue;
+                }
+                result.add(new ExitEdge(roomCell, direction, segment2x, doorRef));
+            }
         }
         result.sort(EXIT_EDGE_ORDER);
         return List.copyOf(result);

@@ -3,6 +3,12 @@ package features.world.dungeonmap.state;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+/**
+ * Shared editor session choices.
+ *
+ * <p>The selected tool and active view mode live here because multiple editor collaborators observe them. Concrete
+ * tool workflow state belongs elsewhere.</p>
+ */
 public final class DungeonEditorSessionState {
 
     private final List<Runnable> listeners = new CopyOnWriteArrayList<>();

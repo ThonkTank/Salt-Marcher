@@ -46,6 +46,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Editor tool for transition create, place, and delete interactions.
+ *
+ * <p>This tool owns transition form state and gesture interpretation, but canonical connection construction and
+ * validation stay in transition workflow seams instead of being reimplemented in UI code.</p>
+ */
 public final class TransitionTool implements EditorTool {
 
     private final DungeonMapState mapState;

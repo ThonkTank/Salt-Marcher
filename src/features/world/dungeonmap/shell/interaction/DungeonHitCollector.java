@@ -10,13 +10,13 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Shared hit-collection seam for dungeon shell interaction.
+ *
+ * <p>This class gathers raw candidates from all hit sources, applies one ordering policy, and returns the snapshot
+ * that editor and runtime consumers share. New hit sources should plug in here instead of running parallel hit walks.</p>
+ */
 public final class DungeonHitCollector {
-
-    private static final Comparator<DungeonHitCandidate> CANDIDATE_ORDER =
-            Comparator.comparingLong(DungeonHitCandidate::effectivePriority).reversed()
-                    .thenComparingDouble(DungeonHitCandidate::distancePx)
-                    .thenComparing(candidate -> String.valueOf(candidate.descriptor().ref().ownerRef()))
-                    .thenComparing(candidate -> String.valueOf(candidate.descriptor().ref()));
 
     private final List<DungeonHitSource> sources;
 
@@ -40,6 +40,12 @@ public final class DungeonHitCollector {
     public DungeonHitSnapshot collect(DungeonLayout layout, DungeonHitProbe probe) {
         DungeonHitProbe resolvedProbe = Objects.requireNonNull(probe, "probe");
         DungeonLayout resolvedLayout = layout == null ? DungeonLayout.empty() : layout;
+        Comparator<DungeonHitCandidate> candidateOrder =
+                Comparator.comparingLong(DungeonHitCandidate::effectivePriority).reversed()
+                        .thenComparingDouble(DungeonHitCandidate::distancePx)
+                        .thenComparing(candidate -> String.valueOf(
+                                resolvedLayout.ownerRef(candidate.descriptor().ref())))
+                        .thenComparing(candidate -> String.valueOf(candidate.descriptor().ref()));
         ArrayList<DungeonHitCandidate> candidates = new ArrayList<>();
         for (DungeonHitSource source : sources) {
             for (DungeonHitDescriptor descriptor : source.describe(resolvedLayout, resolvedProbe)) {
@@ -59,7 +65,7 @@ public final class DungeonHitCollector {
                         basePriority));
             }
         }
-        candidates.sort(CANDIDATE_ORDER);
+        candidates.sort(candidateOrder);
         return new DungeonHitSnapshot(resolvedProbe, candidates);
     }
 

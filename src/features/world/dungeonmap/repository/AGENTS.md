@@ -1,27 +1,27 @@
 # AGENTS.md
 
-This file covers `src/features/world/dungeonmap/repository/`.
-Use it together with the parent `dungeonmap/AGENTS.md` and the repository root `AGENTS.md`.
+This file covers `src/features/world/dungeonmap/repository/`. Use it together with the parent `dungeonmap/AGENTS.md` and the repository root `AGENTS.md`.
 
-## Ownership
+## Purpose
 
-- `DungeonLayoutRepository` is the authoritative layout rehydration seam. It assembles one concrete persisted map per call and delegates structure reads to focused repositories.
-- `DungeonRoomRepository`, `DungeonCorridorRepository`, `DungeonStairRepository`, and `DungeonTransitionRepository` own direct reads and writes for their structures.
-- `DungeonStorageSupport` owns current dungeon schema DDL only. `DatabaseManager.setupDatabase()` creates it once at startup; feature reads and writes do not run compatibility normalization.
+`repository/` owns direct dungeon persistence. Repositories read and write the current schema; they do not own fallback policy, workflow repair, or alternate model truth.
 
-## Write Semantics
+## Current Durable Structure
 
-- `DungeonRoomRepository` owns concrete write ordering for replacing original clusters with final cluster owners, plus moved-cluster persistence.
-- Room rewrite workflows must validate and rebind affected room-bound corridor endpoints from stable `roomCell` plus exterior boundary before commit. The same rule applies to room-bound transition doors and stair anchors. Split/merge flows must not leave persisted corridor or transition bindings pointing at stale `roomId`s.
-- `DungeonCorridorRepository` owns corridor row writes, synthetic-to-persistent id assignment, node/segment replacement order, direct persistence of absolute room-bound endpoint cells, and persisted free corridor boundary doors. It validates room-bound endpoint cells against the current cluster-owned room surfaces exposed by `DungeonLayout`.
-- `DungeonStairRepository` owns persisted stair-owner rows, ordered path-node persistence for the passive stair object carried by `StructureObject`, authored stop-level persistence, and editor reopen metadata. Stair generation policy stays out of the repository.
-- `DungeonTransitionRepository` owns dungeon-side transition lookups and writes, including placed-target queries, transition-local `DungeonConnection` carrier persistence, and dungeon-map existence checks. Overworld target discovery stays at the `WorldReadApi` boundary.
+- `DungeonLayoutRepository` is the authoritative rehydration seam for one concrete persisted map.
+- `DungeonRoomRepository`, `DungeonCorridorRepository`, `DungeonStairRepository`, and `DungeonTransitionRepository` own direct structure persistence.
+- `DungeonDoorRepository` owns physical door persistence shared by clusters, corridors, and connections.
+- `DungeonStorageSupport` owns current dungeon DDL only.
 
-## Storage Model
+## Rules
 
-- Clusters persist membership ownership plus derived center/level metadata and canonical per-level `StructureObject.LevelStructure` rows for anchors, explicit surface cells, boundary edges, and optional floor cells.
-- Rooms persist the room row plus per-level anchor rows only.
-- Corridors persist stable identity plus node/segment tables and free boundary-door rows.
-- Stairs persist stable identity plus ordered path nodes, authored stop levels, and reopen metadata.
-- Transitions persist a nullable placed-connection discriminator plus door-carrier fields or stair geometry/reopen rows alongside the destination discriminator.
-- Current code targets only the current schema. Broken or stale rows should fail fast during load instead of being normalized silently.
+- Repository methods stay storage-focused and stateless; application services own workflow sequencing and retries.
+- Corridor endpoint persistence is door-reference based. Room-bound corridor nodes persist `door_id` and must validate that the referenced exterior room door still matches the node.
+- Transition door placement persists the referenced canonical door, not copied door geometry.
+- Stair repositories persist authored path truth plus editor reopen metadata; stair generation policy stays in application code.
+
+## Forbidden Drift
+
+- Do not add runtime compatibility normalization for stale rows.
+- Do not move selection, fallback, or reload policy into repositories.
+- Do not duplicate canonical room, door, or stair semantics in storage helper types.

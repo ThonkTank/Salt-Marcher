@@ -103,7 +103,6 @@ public final class DungeonLayout {
             Door door,
             int levelZ,
             DoorRole role,
-            DungeonSelectionRef ownerRef,
             Long clusterId,
             Long corridorId,
             List<Room> touchingRooms
@@ -112,7 +111,6 @@ public final class DungeonLayout {
             ref = Objects.requireNonNull(ref, "ref");
             door = Objects.requireNonNull(door, "door");
             role = Objects.requireNonNull(role, "role");
-            ownerRef = Objects.requireNonNull(ownerRef, "ownerRef");
             touchingRooms = touchingRooms == null ? List.of() : List.copyOf(touchingRooms);
         }
 
@@ -126,6 +124,20 @@ public final class DungeonLayout {
             }
             Room room = touchingRooms.getFirst();
             return room == null ? null : room.roomId();
+        }
+
+        public DungeonSelectionRef ownerRef() {
+            return switch (role) {
+                case ROOM_LOCAL -> clusterId == null ? null : new DungeonSelectionRef.ClusterRef(clusterId);
+                case ROOM_EXTERIOR -> {
+                    Long roomId = roomId();
+                    if (roomId != null) {
+                        yield new DungeonSelectionRef.RoomRef(roomId);
+                    }
+                    yield clusterId == null ? null : new DungeonSelectionRef.ClusterRef(clusterId);
+                }
+                case CORRIDOR_BOUNDARY -> corridorId == null ? null : new DungeonSelectionRef.CorridorRef(corridorId);
+            };
         }
     }
 
@@ -369,9 +381,7 @@ public final class DungeonLayout {
         DoorDescription description = describeDoorAt(levelZ, segment2x);
         return description == null
                 ? null
-                : new DungeonSelectionRef.DoorRef(
-                        description.ref().doorId(),
-                        description.ownerRef());
+                : new DungeonSelectionRef.DoorRef(description.ref().doorId());
     }
 
     public DoorDescription describeDoorAt(int levelZ, GridSegment2x segment2x) {
@@ -533,7 +543,7 @@ public final class DungeonLayout {
     }
 
     public RoomCluster clusterOnLevel(DungeonSelectionRef ref, int levelZ) {
-        RoomCluster cluster = switch (ref == null ? null : ref.ownerRef()) {
+        RoomCluster cluster = switch (ownerRef(ref)) {
             case DungeonSelectionRef.ClusterRef clusterRef -> findCluster(clusterRef.clusterId());
             case DungeonSelectionRef.RoomRef roomRef -> clusterForRoom(roomRef.roomId());
             case null, default -> null;
@@ -542,31 +552,43 @@ public final class DungeonLayout {
     }
 
     public Room room(DungeonSelectionRef ref) {
-        return switch (ref == null ? null : ref.ownerRef()) {
+        return switch (ownerRef(ref)) {
             case DungeonSelectionRef.RoomRef roomRef -> findRoom(roomRef.roomId());
             case null, default -> null;
         };
     }
 
     public Corridor corridor(DungeonSelectionRef ref) {
-        return switch (ref == null ? null : ref.ownerRef()) {
+        return switch (ownerRef(ref)) {
             case DungeonSelectionRef.CorridorRef corridorRef -> findCorridor(corridorRef.corridorId());
             case null, default -> null;
         };
     }
 
     public DungeonStair stair(DungeonSelectionRef ref) {
-        return switch (ref == null ? null : ref.ownerRef()) {
+        return switch (ownerRef(ref)) {
             case DungeonSelectionRef.StairRef stairRef -> findStair(stairRef.stairId());
             case null, default -> null;
         };
     }
 
     public DungeonTransition transition(DungeonSelectionRef ref) {
-        return switch (ref == null ? null : ref.ownerRef()) {
+        return switch (ownerRef(ref)) {
             case DungeonSelectionRef.TransitionRef transitionRef -> findTransition(transitionRef.transitionId());
             case null, default -> null;
         };
+    }
+
+    /**
+     * Door refs stay as pure identity in interaction state. Current owner semantics are derived from the live layout
+     * so hover, selection, and tool routing cannot drift from canonical door classification.
+     */
+    public DungeonSelectionRef ownerRef(DungeonSelectionRef ref) {
+        if (ref instanceof DungeonSelectionRef.DoorRef doorRef) {
+            DoorDescription description = describeDoor(new DoorRef(doorRef.doorId()));
+            return description == null ? null : description.ownerRef();
+        }
+        return ref == null ? null : ref.ownerRef();
     }
 
     /**
@@ -1367,11 +1389,6 @@ public final class DungeonLayout {
         }
         List<Room> touchingRooms = touchingRooms(cluster, levelZ, door);
         DoorRole role = touchingRooms.size() >= 2 ? DoorRole.ROOM_LOCAL : DoorRole.ROOM_EXTERIOR;
-        DungeonSelectionRef ownerRef = role == DoorRole.ROOM_LOCAL
-                ? new DungeonSelectionRef.ClusterRef(cluster.clusterId())
-                : touchingRooms.isEmpty()
-                ? new DungeonSelectionRef.ClusterRef(cluster.clusterId())
-                : new DungeonSelectionRef.RoomRef(touchingRooms.getFirst().roomId());
         DoorRef ref = new DoorRef(door.doorId());
         return new DoorEntry(
                 ref,
@@ -1381,7 +1398,6 @@ public final class DungeonLayout {
                         door,
                         levelZ,
                         role,
-                        ownerRef,
                         cluster.clusterId(),
                         null,
                         touchingRooms));
@@ -1400,7 +1416,6 @@ public final class DungeonLayout {
                         door,
                         corridor.levelZ(),
                         DoorRole.CORRIDOR_BOUNDARY,
-                        new DungeonSelectionRef.CorridorRef(corridor.corridorId()),
                         null,
                         corridor.corridorId(),
                         List.of()));

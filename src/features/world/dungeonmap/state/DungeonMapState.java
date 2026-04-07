@@ -7,6 +7,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+/**
+ * Shared map-level session state for the dungeon feature.
+ *
+ * <p>This state owns the active catalog entry, active layout, projection level, overlay settings, and loading flags.
+ * It does not own tool drafts or runtime navigation state.</p>
+ */
 public final class DungeonMapState {
 
     private final List<Runnable> listeners = new CopyOnWriteArrayList<>();

@@ -15,6 +15,12 @@ import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Async loading and reload-after-write coordinator for dungeon maps.
+ *
+ * <p>This service owns initial-load deduplication, stale-request suppression, and the handoff from transactional writes
+ * back to authoritative reloads. Map-selection policy itself stays in {@link DungeonMapLoadResolver}.</p>
+ */
 public final class DungeonMapLoadingService {
 
     private static final Logger LOGGER = Logger.getLogger(DungeonMapLoadingService.class.getName());

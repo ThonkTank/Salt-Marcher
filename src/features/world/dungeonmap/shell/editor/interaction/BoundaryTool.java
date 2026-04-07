@@ -27,6 +27,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Editor tool for drafting room boundary edits.
+ *
+ * <p>This tool owns wall-path gesture meaning and only publishes preview geometry through shared editor state. Local
+ * door removal as part of one boundary path remains part of this tool's draft semantics.</p>
+ */
 public final class BoundaryTool implements EditorTool {
 
     private final DungeonMapState mapState;

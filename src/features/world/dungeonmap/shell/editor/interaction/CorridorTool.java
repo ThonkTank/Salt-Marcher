@@ -27,6 +27,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Editor tool for corridor authoring and corridor graph deletion.
+ *
+ * <p>This tool owns the UI-side meaning of door-to-door and door-to-wall corridor gestures. Canonical corridor graph
+ * validation and persistence stay in model and application owners.</p>
+ */
 public final class CorridorTool implements EditorTool {
 
     private final DungeonMapState mapState;
@@ -120,7 +126,7 @@ public final class CorridorTool implements EditorTool {
                                     && exteriorRoomDoor(layout, doorRef, levelZ)),
                     EditorCapabilities.part(ref ->
                             ref instanceof DungeonSelectionRef.DoorRef doorRef
-                                    && doorRef.corridorId() != null),
+                                    && corridorBoundaryDoor(layout, doorRef, levelZ)),
                     EditorCapabilities.owner(ref -> ref instanceof DungeonSelectionRef.CorridorRef));
         }
         return List.of(
@@ -200,8 +206,9 @@ public final class CorridorTool implements EditorTool {
             return false;
         }
         if (hit instanceof DungeonSelectionRef.DoorRef doorHit
-                && doorHit.corridorId() != null) {
-            deleteCorridorDoor(doorHit.corridorId(), anchorSegment(layout, doorHit));
+                && corridorBoundaryDoor(layout, doorHit, mapState.activeProjectionLevel())) {
+            DungeonLayout.DoorDescription description = doorDescription(layout, doorHit);
+            deleteCorridorDoor(description == null ? null : description.corridorId(), anchorSegment(layout, doorHit));
             return true;
         }
         if (hit instanceof DungeonSelectionRef.CorridorNodeRef corridorNodeHit
@@ -384,11 +391,12 @@ public final class CorridorTool implements EditorTool {
     }
 
     private Connection selectedConnection() {
+        DungeonLayout layout = mapState.activeMap();
         if (!(state.selectedRef() instanceof DungeonSelectionRef.DoorRef doorRef)
-                || doorRef.corridorId() == null) {
+                || !corridorBoundaryDoor(layout, doorRef, mapState.activeProjectionLevel())) {
             return null;
         }
-        return mapState.activeMap().connectionForDoor(new DoorRef(doorRef.doorId()));
+        return layout.connectionForDoor(new DoorRef(doorRef.doorId()));
     }
 
     private Corridor selectedCorridor() {
@@ -460,13 +468,31 @@ public final class CorridorTool implements EditorTool {
                 && description.role() == DungeonLayout.DoorRole.ROOM_EXTERIOR;
     }
 
+    private static boolean corridorBoundaryDoor(
+            DungeonLayout layout,
+            DungeonSelectionRef.DoorRef doorRef,
+            int levelZ
+    ) {
+        DungeonLayout.DoorDescription description = doorDescription(layout, doorRef);
+        return description != null
+                && description.levelZ() == levelZ
+                && description.role() == DungeonLayout.DoorRole.CORRIDOR_BOUNDARY;
+    }
+
+    private static DungeonLayout.DoorDescription doorDescription(
+            DungeonLayout layout,
+            DungeonSelectionRef.DoorRef doorRef
+    ) {
+        return layout == null || doorRef == null
+                ? null
+                : layout.describeDoor(new DoorRef(doorRef.doorId()));
+    }
+
     private static GridSegment2x anchorSegment(
             DungeonLayout layout,
             DungeonSelectionRef.DoorRef doorRef
     ) {
-        DungeonLayout.DoorDescription description = layout == null || doorRef == null
-                ? null
-                : layout.describeDoor(new DoorRef(doorRef.doorId()));
+        DungeonLayout.DoorDescription description = doorDescription(layout, doorRef);
         return description == null ? null : description.anchorSegment2x();
     }
 

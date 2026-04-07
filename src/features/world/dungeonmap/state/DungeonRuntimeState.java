@@ -4,6 +4,12 @@ import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationSna
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+/**
+ * Shared runtime navigation state for the dungeon view.
+ *
+ * <p>Persisted navigation, drag preview, pending cross-map continuation, and runtime loading/move flags live here so
+ * runtime UI and workflows can coordinate without duplicating navigation truth in the view.</p>
+ */
 public final class DungeonRuntimeState {
 
     private final List<Runnable> listeners = new CopyOnWriteArrayList<>();

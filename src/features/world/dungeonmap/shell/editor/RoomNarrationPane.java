@@ -24,6 +24,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * Shared room narration editor for the current semantic room selection.
+ *
+ * <p>Room narration UI stays centralized here so selection tooling can expose narration editing without embedding a
+ * second copy of the form logic.</p>
+ */
 public final class RoomNarrationPane {
 
     private final DungeonMapState mapState;

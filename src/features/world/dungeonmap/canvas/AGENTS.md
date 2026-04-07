@@ -1,27 +1,20 @@
 # AGENTS.md
 
-This file covers `src/features/world/dungeonmap/canvas/`.
-Use it together with the parent `dungeonmap/AGENTS.md` and the repository root `AGENTS.md`.
+This file covers `src/features/world/dungeonmap/canvas/`. Use it together with the parent `dungeonmap/AGENTS.md` and the repository root `AGENTS.md`.
 
-## Ownership
+## Purpose
 
-- `canvas/base/` owns the workspace, camera, pointer events, theme, render payloads, and scene-frame assembly.
-- `canvas/grid/` owns grid rendering and interactive label drawing.
-- Canvas code renders and captures raw input. Domain meaning stays in shell, application, and model owners.
+`canvas/` owns dungeon rendering and raw pointer/scroll input. It should be easy to understand what gets drawn without making canvas code a second owner of dungeon semantics.
 
-## Rendering Contract
+## Current Durable Structure
 
-- `DungeonCanvasWorkspace` observes `DungeonMapState` for active layout, level, and overlay changes.
-- Rendering is explicit and coalesced: state changes request redraw, redraw builds one `DungeonSceneFrame`, and the renderer consumes that snapshot.
-- Editor and runtime views pass display-only render payloads into the workspace. Workflow state does not belong in render payloads.
-- `DungeonGridSceneRenderer` renders room and corridor floors from `CellCoord` surfaces and boundaries/overlays from final `GridPoint2x` and `GridSegment2x`. Corridor surfaces come from `StructureObject`; room surfaces come from cluster/layout room-surface queries instead of `Room`-owned topology.
-- Editor hover rendering resolves generic `DungeonHitSurface` overlays through `DungeonSelectionHighlightResolver`; do not rebuild hover geometry from ref variants directly in the renderer.
-- Paint previews are direct `CellCoord` overlays. Do not build temporary `StructureObject`s just to render them.
-- Corridor graph handles are an editor-only overlay on top of shared structure geometry and must read corner/segment traces from `StructureObject.PathTrace`, not a corridor-owned route list.
-- `DungeonEditorRenderState` is display-only and carries selection, hover, and preview geometry only.
-- `DungeonRuntimeRenderOverlay` carries the active navigation snapshot plus runtime exit markers derived from the resolved runtime description. Canvas does not interpret runtime actions or reparse runtime ownership.
+- `canvas/base/` owns the workspace, camera, input handler interfaces, render payloads, and scene-frame assembly.
+- `canvas/grid/` owns the grid renderer and interactive label drawing.
+- `DungeonCanvasWorkspace` observes `DungeonMapState`, coalesces redraws, and hands one `DungeonSceneFrame` to the renderer.
+- `DungeonEditorRenderState` and `DungeonRuntimeRenderOverlay` are display payloads only.
 
-## Workspace Interaction
+## Forbidden Drift
 
-- The workspace owns zoom, pan, and default level scrolling.
-- Runtime may override level-scroll handling to clamp against reachable levels.
+- Do not put workflow or persistence state into render payloads.
+- Do not rebuild hover, selection, or runtime ownership semantics inside the renderer.
+- Do not create temporary model owners just to draw previews that can already be expressed as cells or segments.

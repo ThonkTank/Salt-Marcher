@@ -20,6 +20,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * Canonical editor interaction pipeline.
+ *
+ * <p>This coordinator turns raw hits into tool-specific interaction by collecting one shared hit snapshot, asking the
+ * active tool for ordered capabilities, recording hover intent from the resolved capability, and then dispatching the
+ * gesture to that tool. Hover and click handling must stay aligned through this path.</p>
+ */
 public final class EditorInteraction implements DungeonCanvasInteractionHandler {
 
     private final DungeonMapState mapState;

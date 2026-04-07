@@ -34,6 +34,13 @@ import ui.shell.NavigationIcons;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Shell wiring for the dungeon runtime surface.
+ *
+ * <p>The view resolves one shared runtime location per refresh pass, publishes read-only details from that location,
+ * and delegates executable travel to runtime application owners. Runtime workflow state stays in shared state, not in
+ * view-local mirrors.</p>
+ */
 public final class DungeonRuntimeView extends AbstractDungeonMapView {
 
     private final String title;

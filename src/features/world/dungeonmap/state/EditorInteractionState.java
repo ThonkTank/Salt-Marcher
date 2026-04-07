@@ -6,6 +6,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+/**
+ * Shared editor coordination state.
+ *
+ * <p>This state is intentionally narrow: semantic selection, explicit hover intent, and active preview. Tool-private
+ * drafts stay on the owning tool unless another collaborator truly needs them.</p>
+ */
 public final class EditorInteractionState {
 
     private final List<Runnable> listeners = new CopyOnWriteArrayList<>();

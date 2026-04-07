@@ -18,6 +18,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Editor tool for room paint and delete gestures.
+ *
+ * <p>This tool owns paint-window draft semantics and publishes preview cells only. Room mutation rules themselves stay
+ * in room workflows.</p>
+ */
 public final class PaintTool implements EditorTool {
 
     private final DungeonMapState mapState;

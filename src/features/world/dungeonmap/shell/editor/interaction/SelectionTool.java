@@ -27,6 +27,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Editor tool for semantic selection and drag-style edits on existing dungeon subjects.
+ *
+ * <p>Selection, cluster drag, corridor node drag, door drag, and stair reopen/move semantics stay centralized here so
+ * the editor does not grow parallel interaction paths for already-authored structures.</p>
+ */
 public final class SelectionTool implements EditorTool {
 
     private final DungeonMapState mapState;
@@ -802,14 +808,19 @@ public final class SelectionTool implements EditorTool {
                 int levelZ,
                 DungeonSelectionRef.DoorRef sourceRef
         ) {
-            if (sourceRef == null || sourceRef.roomId() != null) {
+            DungeonLayout.DoorDescription description = baseMap == null || sourceRef == null
+                    ? null
+                    : baseMap.describeDoor(new DoorRef(sourceRef.doorId()));
+            if (description == null
+                    || description.levelZ() != levelZ
+                    || description.role() == DungeonLayout.DoorRole.ROOM_EXTERIOR) {
                 return null;
             }
             return new DoorDragSession(
                     baseMap,
                     levelZ,
-                    sourceRef.clusterId(),
-                    sourceRef.corridorId(),
+                    description.role() == DungeonLayout.DoorRole.ROOM_LOCAL ? description.clusterId() : null,
+                    description.role() == DungeonLayout.DoorRole.CORRIDOR_BOUNDARY ? description.corridorId() : null,
                     doorAnchorSegment(baseMap, sourceRef),
                     null);
         }

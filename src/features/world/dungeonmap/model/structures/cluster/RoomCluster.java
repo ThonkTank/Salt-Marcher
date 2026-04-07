@@ -155,11 +155,11 @@ public final class RoomCluster {
         return structureFor(roomId).boundaryEdgesAtLevel(levelZ);
     }
 
-    public Set<GridSegment2x> roomOpeningEdgesAtLevel(Room room, int levelZ) {
+    public Set<GridSegment2x> roomDoorSegmentsAtLevel(Room room, int levelZ) {
         return structureFor(room).doorSegmentsAtLevel(levelZ);
     }
 
-    public Set<GridSegment2x> roomOpeningEdgesAtLevel(Long roomId, int levelZ) {
+    public Set<GridSegment2x> roomDoorSegmentsAtLevel(Long roomId, int levelZ) {
         return structureFor(roomId).doorSegmentsAtLevel(levelZ);
     }
 

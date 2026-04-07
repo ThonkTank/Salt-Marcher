@@ -37,6 +37,12 @@ import ui.shell.DetailsNavigator;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Internal composition root for the dungeon feature.
+ *
+ * <p>This module wires one shared set of state, loading, hit, and workflow owners and exposes the paired editor and
+ * runtime views. Feature wiring should stay here instead of being rebuilt inside views or tools.</p>
+ */
 public final class DungeonMapModule {
 
     private final AppView dungeonView;

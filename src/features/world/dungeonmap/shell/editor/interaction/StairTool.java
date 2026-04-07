@@ -39,6 +39,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Editor tool for stair draft, edit, and delete interactions.
+ *
+ * <p>The tool owns stair form state and preview publication, while stair validation and path resolution stay in the
+ * shared stair workflow seams so preview and commit cannot drift apart.</p>
+ */
 public final class StairTool implements EditorTool {
 
     private final DungeonMapState mapState;

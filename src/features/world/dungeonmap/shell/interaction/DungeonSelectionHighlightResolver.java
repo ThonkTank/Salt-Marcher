@@ -33,7 +33,7 @@ public final class DungeonSelectionHighlightResolver {
         if (layout == null || ref == null) {
             return List.of();
         }
-        DungeonSelectionRef ownerRef = ref.ownerRef();
+        DungeonSelectionRef ownerRef = layout.ownerRef(ref);
         if (ownerRef != null && !Objects.equals(ownerRef, ref)) {
             return resolveOwnerSurfaces(layout, ownerRef, levelZ);
         }

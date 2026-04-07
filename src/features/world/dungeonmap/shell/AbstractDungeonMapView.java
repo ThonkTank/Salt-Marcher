@@ -5,6 +5,12 @@ import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.state.DungeonMapState;
 import ui.shell.AppView;
 
+/**
+ * Shared dungeon shell view base around one view-local canvas workspace.
+ *
+ * <p>Views inherit the same load-on-show lifecycle and workspace ownership from here so editor and runtime screens do
+ * not drift into separate shell contracts.</p>
+ */
 public abstract class AbstractDungeonMapView implements AppView {
 
     private final DungeonCanvasWorkspace workspace;

@@ -21,6 +21,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Editor tool for floor-only paint and delete inside existing room surfaces.
+ *
+ * <p>The drag-window interaction is shared with paint mode, but this tool is the owner of the extra filtering that
+ * keeps previews and commits inside valid room cells on the active level.</p>
+ */
 public final class FloorTool implements EditorTool {
 
     private final DungeonMapState mapState;

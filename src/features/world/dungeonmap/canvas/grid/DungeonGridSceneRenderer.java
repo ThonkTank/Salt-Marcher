@@ -114,13 +114,13 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         Set<GridSegment2x> selectedRoomDoorSegments = new LinkedHashSet<>();
         for (RoomCluster cluster : mapModel.clusters()) {
             InteractiveLabelHandle handle = cluster.labelHandle();
-            boolean selectedCluster = selectedCluster(pass.selectedRef(), cluster.clusterId());
+            boolean selectedCluster = selectedCluster(pass.projected(), pass.selectedRef(), cluster.clusterId());
             for (Room room : cluster.rooms()) {
                 WalkableSurface surface = walkableSurface(
                         cluster.roomFloorCellsAtLevel(room, pass.projectionLevel()),
                         cluster.roomBoundaryEdgesAtLevel(room, pass.projectionLevel()),
-                        cluster.roomOpeningEdgesAtLevel(room, pass.projectionLevel()));
-                boolean selectedRoom = selectedRoom(pass.selectedRef(), room.roomId());
+                        cluster.roomDoorSegmentsAtLevel(room, pass.projectionLevel()));
+                boolean selectedRoom = selectedRoom(pass.projected(), pass.selectedRef(), room.roomId());
                 if (!surface.tiles().isEmpty()) {
                     fillRoomTiles(gc, pass.camera(), pass.gridSize(), surface.tiles());
                     strokeRoomTiles(gc, pass.camera(), pass.gridSize(), surface.tiles(), pass.palette().roomStroke(), 1.0);
@@ -327,7 +327,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         for (RoomCluster cluster : pass.projected().clusters()) {
             InteractiveLabelHandle handle = cluster.labelHandle();
             javafx.geometry.Rectangle2D bounds = DungeonGridInteractiveLabels.bounds(handle, pass.camera(), pass.gridSize());
-            boolean selected = selectedCluster(pass.selectedRef(), cluster.clusterId());
+            boolean selected = selectedCluster(pass.projected(), pass.selectedRef(), cluster.clusterId());
             gc.setFill(selected ? DungeonCanvasTheme.GRAPH_NODE_FILL : DungeonCanvasTheme.LABEL_FILL);
             gc.fillRoundRect(bounds.getMinX(), bounds.getMinY(), bounds.getWidth(), bounds.getHeight(), 14, 14);
             gc.setStroke(selected ? DungeonCanvasTheme.ROOM_SELECTED_WALL_STROKE : DungeonCanvasTheme.LABEL_BORDER);
@@ -346,7 +346,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             if (corridor == null) {
                 continue;
             }
-            boolean selected = selectedCorridor(pass.selectedRef(), corridor.corridorId());
+            boolean selected = selectedCorridor(pass.projected(), pass.selectedRef(), corridor.corridorId());
             WalkableSurface surface = walkableSurface(
                     corridor.structure().floorCellCoordsAtLevel(pass.projectionLevel()),
                     corridor.structure().boundaryEdgesAtLevel(pass.projectionLevel()),
@@ -454,7 +454,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
     }
 
     private static void drawHoveredTarget(StructureRenderPass pass, DungeonSelectionRef ref) {
-        if (ref == null || sameOwner(pass.selectedRef(), ref)) {
+        if (ref == null || sameOwner(pass.projected(), pass.selectedRef(), ref)) {
             return;
         }
         drawHighlightSurfaces(
@@ -466,35 +466,41 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 false);
     }
 
-    private static boolean sameOwner(DungeonSelectionRef left, DungeonSelectionRef right) {
+    private static boolean sameOwner(DungeonLayout layout, DungeonSelectionRef left, DungeonSelectionRef right) {
         if (left == null || right == null) {
             return false;
         }
-        return Objects.equals(left, right) || left.sameOwnerAs(right);
+        DungeonSelectionRef leftOwner = layout == null ? null : layout.ownerRef(left);
+        DungeonSelectionRef rightOwner = layout == null ? null : layout.ownerRef(right);
+        return Objects.equals(left, right) || leftOwner != null && Objects.equals(leftOwner, rightOwner);
     }
 
-    private static boolean selectedCluster(DungeonSelectionRef selectedRef, Long clusterId) {
-        return selectedOwner(selectedRef, clusterOwnerRef(clusterId));
+    private static boolean selectedCluster(DungeonLayout layout, DungeonSelectionRef selectedRef, Long clusterId) {
+        return selectedOwner(layout, selectedRef, clusterOwnerRef(clusterId));
     }
 
-    private static boolean selectedRoom(DungeonSelectionRef selectedRef, Long roomId) {
-        return selectedOwner(selectedRef, roomOwnerRef(roomId));
+    private static boolean selectedRoom(DungeonLayout layout, DungeonSelectionRef selectedRef, Long roomId) {
+        return selectedOwner(layout, selectedRef, roomOwnerRef(roomId));
     }
 
-    private static boolean selectedCorridor(DungeonSelectionRef selectedRef, Long corridorId) {
-        return selectedOwner(selectedRef, corridorOwnerRef(corridorId));
+    private static boolean selectedCorridor(DungeonLayout layout, DungeonSelectionRef selectedRef, Long corridorId) {
+        return selectedOwner(layout, selectedRef, corridorOwnerRef(corridorId));
     }
 
-    private static boolean selectedStair(DungeonSelectionRef selectedRef, Long stairId) {
-        return selectedOwner(selectedRef, stairOwnerRef(stairId));
+    private static boolean selectedStair(DungeonLayout layout, DungeonSelectionRef selectedRef, Long stairId) {
+        return selectedOwner(layout, selectedRef, stairOwnerRef(stairId));
     }
 
-    private static boolean selectedTransition(DungeonSelectionRef selectedRef, Long transitionId) {
-        return selectedOwner(selectedRef, transitionOwnerRef(transitionId));
+    private static boolean selectedTransition(DungeonLayout layout, DungeonSelectionRef selectedRef, Long transitionId) {
+        return selectedOwner(layout, selectedRef, transitionOwnerRef(transitionId));
     }
 
-    private static boolean selectedOwner(DungeonSelectionRef selectedRef, DungeonSelectionRef ownerRef) {
-        return selectedRef != null && ownerRef != null && selectedRef.sameOwnerAs(ownerRef);
+    private static boolean selectedOwner(DungeonLayout layout, DungeonSelectionRef selectedRef, DungeonSelectionRef ownerRef) {
+        if (layout == null || selectedRef == null || ownerRef == null) {
+            return false;
+        }
+        DungeonSelectionRef selectedOwner = layout.ownerRef(selectedRef);
+        return selectedOwner != null && Objects.equals(selectedOwner, ownerRef);
     }
 
     private static DungeonSelectionRef clusterOwnerRef(Long clusterId) {
@@ -607,7 +613,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             if (stair == null) {
                 continue;
             }
-            boolean selected = selectedStair(pass.selectedRef(), stair.stairId());
+            boolean selected = selectedStair(pass.projected(), pass.selectedRef(), stair.stairId());
             gc.setFill(selected ? pass.palette().highlightFill() : pass.palette().stairFill());
             gc.setStroke(selected ? pass.palette().highlightStroke() : pass.palette().stairStroke());
             gc.setLineWidth(selected ? 2.5 : 1.8);
@@ -795,7 +801,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             if (transition == null || !transition.isPlaced()) {
                 continue;
             }
-            boolean selected = selectedTransition(pass.selectedRef(), transition.transitionId());
+            boolean selected = selectedTransition(pass.projected(), pass.selectedRef(), transition.transitionId());
             if (transition.localConnection() != null && transition.localConnection().doorCarrier() != null) {
                 drawDoorTransition(pass, transition, selected);
                 continue;

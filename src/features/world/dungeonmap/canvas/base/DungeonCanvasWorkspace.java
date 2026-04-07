@@ -21,6 +21,12 @@ import javafx.scene.layout.StackPane;
 import java.util.Objects;
 import java.util.function.IntConsumer;
 
+/**
+ * Shared dungeon canvas workspace for both editor and runtime surfaces.
+ *
+ * <p>The workspace observes map state, coalesces redraws into scene frames, and owns raw canvas interaction. It does
+ * not own dungeon semantics beyond rendering and input dispatch.</p>
+ */
 public final class DungeonCanvasWorkspace extends BorderPane {
 
     private static final DungeonCanvasInteractionHandler NOOP_HANDLER = new DungeonCanvasInteractionHandler() {
