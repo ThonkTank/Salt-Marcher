@@ -8,6 +8,7 @@ import features.world.dungeonmap.cluster.model.RoomCluster;
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
 import features.world.dungeonmap.model.structures.room.Room;
+import features.world.dungeonmap.repository.DungeonPersistenceDirections;
 import features.world.dungeonmap.structure.repository.DungeonStructureRepository;
 
 import java.sql.Connection;
@@ -24,7 +25,44 @@ import java.util.Set;
 
 public final class DungeonClusterRepository {
 
+    public record PersistedCluster(
+            long clusterId,
+            long structureObjectId,
+            Structure structure
+    ) {
+    }
+
     private final DungeonStructureRepository structureRepository = new DungeonStructureRepository();
+
+    public PersistedCluster createCluster(Connection conn, long mapId, GridPoint center, Structure structure) throws SQLException {
+        if (conn == null || structure == null) {
+            throw new IllegalArgumentException("conn und structure dürfen nicht null sein");
+        }
+        DungeonStructureRepository.PersistedStructure persistedStructure = structureRepository.save(conn, null, structure);
+        long clusterId = insertCluster(conn, mapId, center, persistedStructure.structureObjectId());
+        return new PersistedCluster(clusterId, persistedStructure.structureObjectId(), persistedStructure.structure());
+    }
+
+    public PersistedCluster saveCluster(Connection conn, RoomCluster cluster) throws SQLException {
+        if (conn == null || cluster == null || cluster.clusterId() == null) {
+            throw new IllegalArgumentException("Persisted cluster save requires conn and cluster id");
+        }
+        if (cluster.structureObjectId() == null || cluster.structureObjectId() <= 0L) {
+            throw new IllegalArgumentException("Persisted cluster requires a structure object id");
+        }
+        updateClusterMetadata(conn, cluster.clusterId(), cluster.center());
+        DungeonStructureRepository.PersistedStructure persistedStructure =
+                structureRepository.save(conn, cluster.structureObjectId(), cluster.structure());
+        return new PersistedCluster(cluster.clusterId(), persistedStructure.structureObjectId(), persistedStructure.structure());
+    }
+
+    public void deleteCluster(Connection conn, RoomCluster cluster) throws SQLException {
+        if (conn == null || cluster == null || cluster.clusterId() == null) {
+            return;
+        }
+        deleteCluster(conn, cluster.clusterId());
+        structureRepository.delete(conn, cluster.structureObjectId());
+    }
 
     public List<Room> loadRooms(Connection conn, long mapId) throws SQLException {
         Map<Long, Map<Integer, GridPoint>> anchorsByRoomId = loadRoomAnchors(conn, mapId);

@@ -1,8 +1,7 @@
 package features.world.dungeonmap.model.structures.stair;
 
 import features.world.dungeonmap.geometry.GridPoint;
-import features.world.dungeonmap.geometry.GridPoint;
-import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridTranslation;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 
@@ -117,7 +116,7 @@ public final class DungeonStair {
         return new InteractiveLabelHandle(
                 new DungeonSelectionRef.StairRef(stairId),
                 label(),
-                GridPoint.cell(anchorPoint.projectedCell()));
+                anchorPoint);
     }
 
     @Override
@@ -149,11 +148,13 @@ public final class DungeonStair {
     }
 
     public DungeonStair movedBy(GridPoint delta, int levelDelta) {
-        GridPoint resolvedDelta = delta == null ? new GridPoint(0, 0) : delta;
-        if ((resolvedDelta.x() == 0 && resolvedDelta.y() == 0) && levelDelta == 0) {
+        GridTranslation translation = delta == null
+                ? new GridTranslation(0, 0, levelDelta)
+                : new GridTranslation(delta.x2() / 2, delta.y2() / 2, levelDelta);
+        if (translation.isZero()) {
             return this;
         }
-        return new DungeonStair(stairId, mapId, name, stair.movedBy(resolvedDelta, levelDelta));
+        return new DungeonStair(stairId, mapId, name, stair.movedBy(translation));
     }
 
     private static String normalizeName(String name) {

@@ -3,7 +3,7 @@ package features.world.dungeonmap.application.runtime.description;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.cluster.model.RoomCluster;
-import features.world.dungeonmap.model.structures.corridor.Corridor;
+import features.world.dungeonmap.corridor.model.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.structure.model.Structure;
 

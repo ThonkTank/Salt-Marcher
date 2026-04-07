@@ -8,7 +8,7 @@ import features.world.dungeonmap.structure.model.Structure;
 import features.world.dungeonmap.structure.model.boundary.door.Door;
 import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeonmap.cluster.model.RoomCluster;
-import features.world.dungeonmap.model.structures.corridor.Corridor;
+import features.world.dungeonmap.corridor.model.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
@@ -98,7 +98,7 @@ public final class DungeonSelectionHighlightResolver {
         LinkedHashSet<GridPoint> cells = new LinkedHashSet<>();
         for (Room room : cluster.structure().roomTopology().rooms()) {
             if (room != null) {
-                cells.addAll(roomStructure(layout, room).surfaceAtLevel(levelZ).surface().cellCoords());
+                cells.addAll(roomStructure(layout, room).surfaceAtLevel(levelZ).surface().cells());
             }
         }
         return cells.isEmpty() ? List.of() : List.of(new DungeonHitSurface.CellSurface(cells, levelZ));
@@ -108,7 +108,7 @@ public final class DungeonSelectionHighlightResolver {
         if (room == null) {
             return List.of();
         }
-        Set<GridPoint> cells = roomStructure(layout, room).surfaceAtLevel(levelZ).surface().cellCoords();
+        Set<GridPoint> cells = roomStructure(layout, room).surfaceAtLevel(levelZ).surface().cells();
         return cells.isEmpty() ? List.of() : List.of(new DungeonHitSurface.CellSurface(cells, levelZ));
     }
 
@@ -137,7 +137,7 @@ public final class DungeonSelectionHighlightResolver {
         if (corridor == null) {
             return List.of();
         }
-        Set<GridPoint> cells = corridor.structure().surfaceAtLevel(levelZ).surface().cellCoords();
+        Set<GridPoint> cells = corridor.structure().surfaceAtLevel(levelZ).surface().cells();
         return cells.isEmpty() ? List.of() : List.of(new DungeonHitSurface.CellSurface(cells, levelZ));
     }
 
@@ -186,7 +186,7 @@ public final class DungeonSelectionHighlightResolver {
                 .filter(trace -> Objects.equals(trace.traceId(), corridorSegmentRef.segmentId()))
                 .findFirst()
                 .map(trace -> List.<DungeonHitSurface>of(
-                        new DungeonHitSurface.SegmentSurface(Set.copyOf(trace.segments2x()), levelZ)))
+                        new DungeonHitSurface.SegmentSurface(Set.copyOf(trace.segments()), levelZ)))
                 .orElse(List.of());
     }
 

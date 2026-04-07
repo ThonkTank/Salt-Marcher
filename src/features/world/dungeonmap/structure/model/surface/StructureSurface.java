@@ -1,6 +1,8 @@
 package features.world.dungeonmap.structure.model.surface;
 
 import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridArea;
+import features.world.dungeonmap.geometry.GridTranslation;
 import features.world.dungeonmap.structure.model.StructureMutation;
 
 import java.util.Collection;
@@ -60,8 +62,7 @@ public final class StructureSurface {
             if (!(other instanceof PersistenceSnapshot that)) {
                 return false;
             }
-            return Objects.equals(surface, that.surface)
-                    && Objects.equals(floor, that.floor);
+            return Objects.equals(surface, that.surface) && Objects.equals(floor, that.floor);
         }
 
         @Override
@@ -71,8 +72,7 @@ public final class StructureSurface {
 
         @Override
         public String toString() {
-            return "PersistenceSnapshot[surface=" + surface
-                    + ", floor=" + floor + "]";
+            return "PersistenceSnapshot[surface=" + surface + ", floor=" + floor + "]";
         }
     }
 
@@ -104,25 +104,16 @@ public final class StructureSurface {
         return fromSurfaceAndFloor(surface, StructureFloor.fromCells(resolvedSnapshot.floorCells(), surface));
     }
 
-    public static StructureSurface fromSurfaceAndFloor(
-            StructureSurfaceArea surface,
-            StructureFloor floor
-    ) {
+    public static StructureSurface fromSurfaceAndFloor(StructureSurfaceArea surface, StructureFloor floor) {
         StructureSurfaceArea resolvedSurface = surface == null ? StructureSurfaceArea.empty() : surface;
-        if (resolvedSurface.isEmpty()) {
-            return empty();
-        }
-        return new StructureSurface(resolvedSurface, floor);
+        return resolvedSurface.isEmpty() ? empty() : new StructureSurface(resolvedSurface, floor);
     }
 
-    private StructureSurface(
-            StructureSurfaceArea surface,
-            StructureFloor floor
-    ) {
+    private StructureSurface(StructureSurfaceArea surface, StructureFloor floor) {
         this.surface = surface == null ? StructureSurfaceArea.empty() : surface;
         this.floor = this.surface.isEmpty()
                 ? StructureFloor.empty()
-                : StructureFloor.fromCells(floor == null ? null : floor.cellCoords(), this.surface);
+                : StructureFloor.fromCells(floor == null ? null : floor.cells(), this.surface);
     }
 
     public StructureSurfaceArea surface() {
@@ -137,13 +128,13 @@ public final class StructureSurface {
         return new PersistenceSnapshot(surface.persistenceSnapshot(), floor.persistenceSnapshot());
     }
 
-    public GridPoint centerGridPoint() {
-        GridPoint floorCenter = floor.centerGridPoint();
-        return floorCenter != null ? floorCenter : surface.centerGridPoint();
+    public GridPoint center() {
+        GridPoint floorCenter = floor.center();
+        return floorCenter != null ? floorCenter : surface.center();
     }
 
-    public StructureSurface translatedByCells(GridPoint delta) {
-        return fromSurfaceAndFloor(surface.translatedByCells(delta), floor.translatedByCells(delta));
+    public StructureSurface translated(GridTranslation translation) {
+        return fromSurfaceAndFloor(surface.translated(translation), floor.translated(translation));
     }
 
     public StructureSurface editedSurfaceCells(
@@ -152,38 +143,33 @@ public final class StructureSurface {
             StructureMutation.FloorSyncPolicy floorSyncPolicy,
             GridPoint preferredAnchorCell
     ) {
-        Set<GridPoint> nextSurfaceCells = editedCells(surface.cellCoords(), cells, mode);
-        if (Objects.equals(nextSurfaceCells, surface.cellCoords())) {
+        Set<GridPoint> nextSurfaceCells = editedCells(surface.cells(), cells, mode);
+        if (Objects.equals(nextSurfaceCells, surface.cells())) {
             return this;
         }
         if (nextSurfaceCells.isEmpty()) {
             return empty();
         }
         Set<GridPoint> nextFloorCells = floorSyncPolicy == StructureMutation.FloorSyncPolicy.MATCH_SURFACE_EDIT
-                ? editedCells(floor.cellCoords(), cells, mode)
-                : floor.cellCoords();
-        return fromCells(preferredAnchorCell(surface.anchorCell(), preferredAnchorCell, nextSurfaceCells),
+                ? editedCells(floor.cells(), cells, mode)
+                : floor.cells();
+        return fromCells(
+                preferredAnchorCell(surface.anchorCell(), preferredAnchorCell, nextSurfaceCells),
                 nextSurfaceCells,
                 nextFloorCells);
     }
 
-    public StructureSurface editedFloorCells(
-            Collection<GridPoint> cells,
-            StructureMutation.CellEditMode mode
-    ) {
-        Set<GridPoint> nextFloorCells = editedCells(floor.cellCoords(), cells, mode);
-        if (Objects.equals(nextFloorCells, floor.cellCoords())) {
+    public StructureSurface editedFloorCells(Collection<GridPoint> cells, StructureMutation.CellEditMode mode) {
+        Set<GridPoint> nextFloorCells = editedCells(floor.cells(), cells, mode);
+        if (Objects.equals(nextFloorCells, floor.cells())) {
             return this;
         }
-        return fromCells(surface.anchorCell(), surface.cellCoords(), nextFloorCells);
+        return fromCells(surface.anchorCell(), surface.cells(), nextFloorCells);
     }
 
     public StructureSurface clippedTo(Collection<GridPoint> clippedSurfaceCells, GridPoint preferredAnchor) {
         StructureSurfaceArea clippedSurface = surface.clippedTo(clippedSurfaceCells, preferredAnchor);
-        if (clippedSurface.isEmpty()) {
-            return empty();
-        }
-        return fromSurfaceAndFloor(clippedSurface, floor.clippedTo(clippedSurface));
+        return clippedSurface.isEmpty() ? empty() : fromSurfaceAndFloor(clippedSurface, floor.clippedTo(clippedSurface));
     }
 
     public boolean isEmpty() {
@@ -198,8 +184,7 @@ public final class StructureSurface {
         if (!(other instanceof StructureSurface that)) {
             return false;
         }
-        return Objects.equals(surface, that.surface)
-                && Objects.equals(floor, that.floor);
+        return Objects.equals(surface, that.surface) && Objects.equals(floor, that.floor);
     }
 
     @Override
@@ -209,8 +194,7 @@ public final class StructureSurface {
 
     @Override
     public String toString() {
-        return "StructureSurface[surface=" + surface
-                + ", floor=" + floor + "]";
+        return "StructureSurface[surface=" + surface + ", floor=" + floor + "]";
     }
 
     private static Set<GridPoint> editedCells(
@@ -242,7 +226,7 @@ public final class StructureSurface {
         if (currentAnchorCell != null && surfaceCells.contains(currentAnchorCell)) {
             return currentAnchorCell;
         }
-        return GridPoint.bestCenter(surfaceCells);
+        return surfaceCells.isEmpty() ? null : GridArea.of(surfaceCells).center();
     }
 
     private static Set<GridPoint> normalizedCells(Collection<GridPoint> cells) {
@@ -251,7 +235,7 @@ public final class StructureSurface {
         }
         LinkedHashSet<GridPoint> result = new LinkedHashSet<>();
         for (GridPoint cell : cells) {
-            if (cell != null) {
+            if (cell != null && cell.kind() == GridPoint.Kind.CELL) {
                 result.add(cell);
             }
         }

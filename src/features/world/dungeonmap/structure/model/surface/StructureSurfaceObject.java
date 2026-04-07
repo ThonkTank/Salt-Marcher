@@ -1,55 +1,53 @@
 package features.world.dungeonmap.structure.model.surface;
 
-import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridArea;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridTranslation;
 
 import java.util.Collection;
 import java.util.Set;
 
 /**
- * Internal shared tile-shape base for surface child owners.
+ * Internal shared area-backed base for surface child owners.
  */
 abstract sealed class StructureSurfaceObject permits StructureSurfaceArea, StructureFloor {
 
-    private final GridArea tileShape;
+    private final GridArea area;
 
-    StructureSurfaceObject(GridArea tileShape) {
-        this.tileShape = tileShape == null ? GridArea.empty() : tileShape;
+    StructureSurfaceObject(GridArea area) {
+        this.area = area == null ? GridArea.empty() : area;
     }
 
-    public final Set<GridPoint> cellCoords() {
-        return tileShape.cellCoords();
+    public final Set<GridPoint> cells() {
+        return area.cells();
     }
 
     public final boolean contains(GridPoint cell) {
-        return cell != null && tileShape.contains(cell);
+        return cell != null && area.contains(cell);
     }
 
-    public final GridPoint centerGridPoint() {
-        return tileShape.isEmpty() ? null : tileShape.centerGridPoint();
+    public final GridPoint center() {
+        return area.center();
     }
 
     public final boolean isEmpty() {
-        return tileShape.isEmpty();
+        return area.isEmpty();
     }
 
-    final GridArea tileShape() {
-        return tileShape;
+    final GridArea area() {
+        return area;
     }
 
-    final GridArea translatedGridArea(GridPoint delta) {
-        GridPoint resolvedDelta = resolvedDelta(delta);
-        if (resolvedDelta.x() == 0 && resolvedDelta.y() == 0) {
-            return tileShape;
-        }
-        return tileShape.translatedByCells(resolvedDelta);
+    final GridArea translatedArea(GridTranslation translation) {
+        GridTranslation resolvedTranslation = translation == null ? GridTranslation.none() : translation;
+        return resolvedTranslation.isZero() ? area : area.translated(resolvedTranslation);
     }
 
-    final GridArea intersectedGridArea(Collection<GridPoint> cells) {
-        return tileShape.intersection(cells);
+    final GridArea intersectedArea(Collection<GridPoint> cells) {
+        return area.intersection(GridArea.of(cells));
     }
 
-    final GridPoint resolvedDelta(GridPoint delta) {
-        return delta == null ? new GridPoint(0, 0) : delta;
+    final GridTranslation resolvedTranslation(GridTranslation translation) {
+        return translation == null ? GridTranslation.none() : translation;
     }
 }

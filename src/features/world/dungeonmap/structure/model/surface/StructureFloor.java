@@ -1,7 +1,8 @@
 package features.world.dungeonmap.structure.model.surface;
 
-import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridArea;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridTranslation;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -9,7 +10,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Canonical owner for floor-cell truth constrained to one surface area.
+ * Canonical owner for traversable floor cells constrained to one surface area.
  */
 public final class StructureFloor extends StructureSurfaceObject {
 
@@ -27,35 +28,28 @@ public final class StructureFloor extends StructureSurfaceObject {
         return new PersistenceSnapshot(Set.of());
     }
 
-    static StructureFloor fromCells(
-            Collection<GridPoint> cells,
-            StructureSurfaceArea surfaceArea
-    ) {
+    static StructureFloor fromCells(Collection<GridPoint> cells, StructureSurfaceArea surfaceArea) {
         StructureSurfaceArea resolvedSurfaceArea = surfaceArea == null ? StructureSurfaceArea.empty() : surfaceArea;
-        if (resolvedSurfaceArea.isEmpty()) {
-            return empty();
-        }
-        return new StructureFloor(resolvedSurfaceArea.tileShape().intersection(cells));
+        return resolvedSurfaceArea.isEmpty()
+                ? empty()
+                : new StructureFloor(resolvedSurfaceArea.area().intersection(GridArea.of(cells)));
     }
 
-    private StructureFloor(GridArea tileShape) {
-        super(tileShape);
+    private StructureFloor(GridArea area) {
+        super(area);
     }
 
-    StructureFloor translatedByCells(GridPoint delta) {
-        GridPoint resolvedDelta = resolvedDelta(delta);
-        if (resolvedDelta.x() == 0 && resolvedDelta.y() == 0) {
-            return this;
-        }
-        return new StructureFloor(translatedGridArea(resolvedDelta));
+    StructureFloor translated(GridTranslation translation) {
+        GridTranslation resolvedTranslation = resolvedTranslation(translation);
+        return resolvedTranslation.isZero() ? this : new StructureFloor(translatedArea(resolvedTranslation));
     }
 
     StructureFloor clippedTo(StructureSurfaceArea surfaceArea) {
-        return fromCells(cellCoords(), surfaceArea);
+        return fromCells(cells(), surfaceArea);
     }
 
     PersistenceSnapshot persistenceSnapshot() {
-        return new PersistenceSnapshot(cellCoords());
+        return new PersistenceSnapshot(cells());
     }
 
     @Override
@@ -66,16 +60,16 @@ public final class StructureFloor extends StructureSurfaceObject {
         if (!(other instanceof StructureFloor that)) {
             return false;
         }
-        return Objects.equals(cellCoords(), that.cellCoords());
+        return Objects.equals(cells(), that.cells());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(cellCoords());
+        return Objects.hash(cells());
     }
 
     @Override
     public String toString() {
-        return "StructureFloor[cells=" + cellCoords() + "]";
+        return "StructureFloor[cells=" + cells() + "]";
     }
 }

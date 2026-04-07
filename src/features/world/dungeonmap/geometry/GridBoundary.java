@@ -6,110 +6,61 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 public final class GridBoundary extends GridObject {
 
-    private final List<GridSegment> segments;
+    private final Set<GridSegment> segments;
 
     public static GridBoundary empty() {
-        return new GridBoundary(List.of());
+        return new GridBoundary(Set.of());
     }
 
-    public static GridBoundary fromBoundarySegments(Collection<GridSegment> segments) {
+    public static GridBoundary of(Collection<GridSegment> segments) {
         return new GridBoundary(normalizeBoundarySegments(segments));
     }
 
-    public GridBoundary(Collection<GridSegment> segments) {
-        this.segments = normalizeSegments(segments);
+    private GridBoundary(Set<GridSegment> segments) {
+        this.segments = segments == null || segments.isEmpty() ? Set.of() : Set.copyOf(segments);
     }
 
     public boolean isEmpty() {
         return segments.isEmpty();
     }
 
-    public List<GridSegment> segments() {
+    public Set<GridSegment> segments() {
         return segments;
-    }
-
-    public List<GridSegment> segments2x() {
-        return segments();
-    }
-
-    public Set<GridSegment> segmentSet() {
-        return segments.isEmpty() ? Set.of() : Set.copyOf(new LinkedHashSet<>(segments));
-    }
-
-    public Set<GridSegment> segmentSet2x() {
-        return segmentSet();
     }
 
     public boolean contains(GridSegment segment) {
         return segment != null && segments.contains(segment);
     }
 
-    public GridSegment firstSegment() {
-        return segments.stream().findFirst().orElse(null);
-    }
-
-    public GridSegment firstSegment2x() {
-        return firstSegment();
-    }
-
-    public Set<GridSegment> boundaryStepSet() {
-        return GridSegment.boundarySteps(segments);
-    }
-
-    public Set<GridSegment> boundaryStepSet2x() {
-        return boundaryStepSet();
-    }
-
-    public GridBoundary boundaryStepsShape() {
-        Set<GridSegment> boundarySteps = boundaryStepSet();
-        return boundarySteps.isEmpty() ? empty() : GridBoundary.fromBoundarySegments(boundarySteps);
-    }
-
-    public GridBoundary intersection(Collection<GridSegment> candidateSegments) {
-        Set<GridSegment> ownBoundarySteps = boundaryStepSet();
-        Set<GridSegment> normalizedCandidates = GridSegment.boundarySteps(candidateSegments);
-        if (ownBoundarySteps.isEmpty() || normalizedCandidates.isEmpty()) {
+    public GridBoundary intersection(GridBoundary other) {
+        Set<GridSegment> otherSegments = other == null ? Set.of() : other.segments();
+        if (segments.isEmpty() || otherSegments.isEmpty()) {
             return empty();
         }
-        LinkedHashSet<GridSegment> result = new LinkedHashSet<>();
-        for (GridSegment segment : ownBoundarySteps) {
-            if (normalizedCandidates.contains(segment)) {
-                result.add(segment);
-            }
-        }
-        return result.isEmpty() ? empty() : GridBoundary.fromBoundarySegments(result);
+        return GridBoundary.of(segments.stream().filter(otherSegments::contains).toList());
     }
 
-    public GridBoundary without(Collection<GridSegment> candidateSegments) {
-        Set<GridSegment> ownBoundarySteps = boundaryStepSet();
-        Set<GridSegment> normalizedCandidates = GridSegment.boundarySteps(candidateSegments);
-        if (ownBoundarySteps.isEmpty()) {
+    public GridBoundary without(GridBoundary other) {
+        Set<GridSegment> otherSegments = other == null ? Set.of() : other.segments();
+        if (segments.isEmpty()) {
             return empty();
         }
-        if (normalizedCandidates.isEmpty()) {
-            return boundaryStepsShape();
+        if (otherSegments.isEmpty()) {
+            return this;
         }
-        LinkedHashSet<GridSegment> result = new LinkedHashSet<>();
-        for (GridSegment segment : ownBoundarySteps) {
-            if (!normalizedCandidates.contains(segment)) {
-                result.add(segment);
-            }
-        }
-        return result.isEmpty() ? empty() : GridBoundary.fromBoundarySegments(result);
+        return GridBoundary.of(segments.stream().filter(segment -> !otherSegments.contains(segment)).toList());
     }
 
-    public List<GridBoundary> connectedComponents() {
-        Set<GridSegment> boundarySteps = boundaryStepSet();
-        if (boundarySteps.isEmpty()) {
+    public List<GridBoundary> components() {
+        if (segments.isEmpty()) {
             return List.of();
         }
-        LinkedHashSet<GridSegment> remaining = new LinkedHashSet<>(boundarySteps.stream()
-                .sorted(GridSegment.ORDER)
-                .toList());
+        LinkedHashSet<GridSegment> remaining = new LinkedHashSet<>(segments);
         ArrayList<GridBoundary> result = new ArrayList<>();
         while (!remaining.isEmpty()) {
             GridSegment seed = remaining.iterator().next();
@@ -124,7 +75,7 @@ public final class GridBoundary extends GridObject {
                 }
                 ArrayList<GridSegment> attached = new ArrayList<>();
                 for (GridSegment candidate : remaining) {
-                    if (current.sharesEndpoint(candidate)) {
+                    if (current.sharedEndpoint(candidate).isPresent()) {
                         attached.add(candidate);
                     }
                 }
@@ -134,47 +85,36 @@ public final class GridBoundary extends GridObject {
                     queue.addLast(candidate);
                 }
             }
-            result.add(GridBoundary.fromBoundarySegments(component));
+            result.add(GridBoundary.of(component));
         }
-        result.sort(Comparator.comparing(GridBoundary::firstSegment, GridSegment.ORDER));
+        result.sort(Comparator.comparing(GridBoundary::firstSegmentOrNull, GridSegment.ORDER));
         return List.copyOf(result);
     }
 
     public GridArea surface() {
-        Set<GridSegment> boundaryEdges = boundaryStepSet();
-        if (boundaryEdges.isEmpty()) {
+        if (segments.isEmpty()) {
             return GridArea.empty();
         }
-        CellBounds bounds = cellBounds(boundaryEdges);
-        LinkedHashSet<GridPoint> result = new LinkedHashSet<>();
+        CellBounds bounds = cellBounds(segments);
+        LinkedHashSet<GridPoint> cells = new LinkedHashSet<>();
         for (int y = bounds.minY(); y <= bounds.maxY(); y++) {
             for (int x = bounds.minX(); x <= bounds.maxX(); x++) {
-                GridPoint candidate = new GridPoint(x, y, bounds.levelZ());
-                if (isInsideEvenOdd(candidate, boundaryEdges)) {
-                    result.add(candidate);
+                GridPoint candidate = GridPoint.cell(x, y, bounds.levelZ());
+                if (isInsideEvenOdd(candidate)) {
+                    cells.add(candidate);
                 }
             }
         }
-        return result.isEmpty() ? GridArea.empty() : new GridArea(result);
-    }
-
-    public GridArea surfaceShape() {
-        return surface();
+        return cells.isEmpty() ? GridArea.empty() : GridArea.of(cells);
     }
 
     @Override
-    public GridBoundary translatedByCells(int dx, int dy, int dz) {
-        if (dx == 0 && dy == 0 && dz == 0) {
+    public GridBoundary translated(GridTranslation translation) {
+        GridTranslation resolvedTranslation = translation == null ? GridTranslation.none() : translation;
+        if (resolvedTranslation.isZero()) {
             return this;
         }
-        return new GridBoundary(segments.stream()
-                .map(segment -> segment.translatedByCells(dx, dy, dz))
-                .toList());
-    }
-
-    public GridBoundary translatedByCells(GridPoint delta) {
-        GridPoint resolvedDelta = delta == null ? new GridPoint(0, 0) : delta;
-        return translatedByCells(resolvedDelta.x(), resolvedDelta.y(), resolvedDelta.z());
+        return GridBoundary.of(segments.stream().map(segment -> segment.translated(resolvedTranslation)).toList());
     }
 
     @Override
@@ -194,35 +134,42 @@ public final class GridBoundary extends GridObject {
         return surface();
     }
 
-    static List<GridSegment> normalizeSegments(Collection<GridSegment> segments) {
+    GridSegment firstSegmentOrNull() {
+        return segments.stream().sorted(GridSegment.ORDER).findFirst().orElse(null);
+    }
+
+    static Set<GridSegment> normalizeBoundarySegments(Collection<GridSegment> segments) {
         if (segments == null || segments.isEmpty()) {
-            return List.of();
+            return Set.of();
         }
         LinkedHashSet<GridSegment> result = new LinkedHashSet<>();
-        segments.stream()
-                .filter(segment -> segment != null)
-                .sorted(GridSegment.ORDER)
-                .forEach(result::add);
-        return result.isEmpty() ? List.of() : List.copyOf(result);
-    }
-
-    static List<GridSegment> normalizeBoundarySegments(Collection<GridSegment> segments) {
-        List<GridSegment> normalized = normalizeSegments(GridSegment.boundarySteps(segments));
-        for (GridSegment segment : normalized) {
-            if (!segment.isBoundaryEdge()) {
-                throw new IllegalArgumentException("Boundary segments must be boundary edges");
+        Integer levelZ = null;
+        for (GridSegment segment : segments) {
+            if (segment == null) {
+                continue;
+            }
+            for (GridSegment step : segment.stepSegments()) {
+                if (!step.isBoundaryStep()) {
+                    throw new IllegalArgumentException("Boundary segments must be boundary-step segments");
+                }
+                if (levelZ == null) {
+                    levelZ = step.start().z();
+                } else if (levelZ != step.start().z()) {
+                    throw new IllegalArgumentException("Boundary segments must lie on one level");
+                }
+                result.add(step);
             }
         }
-        return normalized;
+        return result.isEmpty()
+                ? Set.of()
+                : result.stream().sorted(GridSegment.ORDER).collect(LinkedHashSet::new, Set::add, Set::addAll);
     }
 
-    private static boolean isInsideEvenOdd(GridPoint cell, Set<GridSegment> boundaryEdges) {
-        int centerX2 = cell.x2();
-        int centerY2 = cell.y2();
-        long crossings = boundaryEdges.stream()
-                .filter(GridSegment::isVertical)
-                .filter(segment -> segment.start().y2() < centerY2 && segment.end().y2() > centerY2)
-                .filter(segment -> segment.start().x2() > centerX2)
+    private boolean isInsideEvenOdd(GridPoint cell) {
+        long crossings = segments.stream()
+                .filter(segment -> segment.orientation() == GridSegment.Orientation.VERTICAL)
+                .filter(segment -> segment.start().y2() < cell.y2() && segment.end().y2() > cell.y2())
+                .filter(segment -> segment.start().x2() > cell.x2())
                 .count();
         return (crossings & 1L) == 1L;
     }
@@ -235,11 +182,11 @@ public final class GridBoundary extends GridObject {
         int levelZ = 0;
         for (GridSegment segment : boundaryEdges) {
             levelZ = segment.start().z();
-            for (GridPoint cell : segment.touchingCells()) {
-                minX = Math.min(minX, cell.x());
-                maxX = Math.max(maxX, cell.x());
-                minY = Math.min(minY, cell.y());
-                maxY = Math.max(maxY, cell.y());
+            for (GridPoint cell : segment.touchingCells().cells()) {
+                minX = Math.min(minX, cell.cellX());
+                maxX = Math.max(maxX, cell.cellX());
+                minY = Math.min(minY, cell.cellY());
+                maxY = Math.max(maxY, cell.cellY());
             }
         }
         if (minX == Integer.MAX_VALUE) {
@@ -249,5 +196,26 @@ public final class GridBoundary extends GridObject {
     }
 
     private record CellBounds(int minX, int minY, int maxX, int maxY, int levelZ) {
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (!(other instanceof GridBoundary boundary)) {
+            return false;
+        }
+        return Objects.equals(segments, boundary.segments);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(segments);
+    }
+
+    @Override
+    public String toString() {
+        return "GridBoundary[segments=" + segments + "]";
     }
 }

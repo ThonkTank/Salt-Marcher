@@ -9,8 +9,8 @@ This file covers `src/features/world/dungeonmap/repository/`.
 ## Canonical Types and APIs
 
 - `DungeonLayoutRepository` — map id plus connection — rehydrates one authoritative `DungeonLayout`.
-- `DungeonRoomRepository` — persists room metadata and cluster references.
-- `DungeonCorridorRepository` — persists corridor-local topology metadata and corridor path traces.
+- `DungeonRoomRepository` — persists room metadata and room-to-cluster membership.
+- `cluster/DungeonClusterRepository` — persists top-level cluster rows and cluster-owned structure references.
 - `DungeonStairRepository`, `DungeonTransitionRepository` — persist owner-local stair and transition metadata.
 
 ## Where New Code Goes

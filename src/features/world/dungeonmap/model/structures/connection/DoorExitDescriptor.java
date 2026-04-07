@@ -16,9 +16,9 @@ public record DoorExitDescriptor(
     public DoorExitDescriptor {
         doorRef = java.util.Objects.requireNonNull(doorRef, "doorRef");
         number = number <= 0 ? 1 : number;
-        localCell = localCell == null ? new GridPoint(0, 0) : localCell;
+        localCell = localCell == null ? GridPoint.cell(0, 0, levelZ) : localCell;
         direction = direction == null ? CardinalDirection.defaultDirection() : direction;
-        outsideCell = outsideCell == null ? localCell.add(direction.delta()) : outsideCell;
+        outsideCell = outsideCell == null ? localCell.step(direction) : outsideCell;
         label = label == null || label.isBlank() ? "Tür " + number : label;
     }
 }

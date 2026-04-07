@@ -29,7 +29,7 @@ final class RoomRuntimeDescriptionBuilder {
                 .sorted()
                 .flatMap(levelZ -> DoorExitCatalog.describe(
                         layout,
-                        cluster.structure().roomTopology().structureFor(room).surfaceAtLevel(levelZ).floor().cellCoords(),
+                        cluster.structure().roomTopology().structureFor(room).surfaceAtLevel(levelZ).floor().cells(),
                         levelZ,
                         layout.connectionsForEndpoint(ConnectionEndpoint.room(room.roomId()))).stream())
                 .map(exit -> DungeonRuntimeExitFactory.roomExit(location, exit))

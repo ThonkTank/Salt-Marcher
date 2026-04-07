@@ -1,13 +1,13 @@
-package features.world.dungeonmap.repository;
+package features.world.dungeonmap.corridor.repository;
 
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.structure.model.Structure;
 import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
-import features.world.dungeonmap.model.structures.corridor.Corridor;
-import features.world.dungeonmap.model.structures.corridor.CorridorNode;
-import features.world.dungeonmap.model.structures.corridor.CorridorPathTrace;
-import features.world.dungeonmap.model.structures.corridor.CorridorSegment;
+import features.world.dungeonmap.corridor.model.Corridor;
+import features.world.dungeonmap.corridor.model.CorridorNode;
+import features.world.dungeonmap.corridor.model.CorridorPathTrace;
+import features.world.dungeonmap.corridor.model.CorridorSegment;
 import features.world.dungeonmap.structure.repository.DungeonStructureRepository;
 
 import java.sql.Connection;
@@ -326,7 +326,7 @@ public final class DungeonCorridorRepository {
         if (description == null || description.levelZ() != levelZ || description.role() != DungeonLayout.DoorRole.ROOM_EXTERIOR) {
             throw new SQLException("Corridor node references missing exterior room door at level " + levelZ);
         }
-        if (!description.anchorSegment2x().midpoint().equals(node.point2x())) {
+        if (!description.anchorSegment().midpoint().equals(node.point2x())) {
             throw new SQLException("Corridor node point no longer matches its referenced exterior room door");
         }
         return description.ref();

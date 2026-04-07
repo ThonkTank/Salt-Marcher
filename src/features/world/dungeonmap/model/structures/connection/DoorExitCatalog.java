@@ -47,7 +47,7 @@ public final class DoorExitCatalog {
                     number,
                     levelZ,
                     representative.roomCell(),
-                    representative.roomCell().add(representative.direction().delta()),
+                    representative.roomCell().step(representative.direction()),
                     representative.direction(),
                     "Tür " + number));
         }
@@ -69,12 +69,12 @@ public final class DoorExitCatalog {
             if (doorRef == null) {
                 continue;
             }
-            Set<GridSegment> boundarySegments = new LinkedHashSet<>(connection.boundarySegments2x(layout));
+            Set<GridSegment> boundarySegments = new LinkedHashSet<>(connection.boundarySegments(layout));
             for (GridSegment segment2x : boundarySegments) {
                 if (segment2x == null) {
                     continue;
                 }
-                Set<GridPoint> touchingCells = segment2x.touchingCells();
+                Set<GridPoint> touchingCells = segment2x.touchingCells().cells();
                 if (touchingCells.size() != 2) {
                     continue;
                 }
@@ -111,7 +111,7 @@ public final class DoorExitCatalog {
                 for (int index = remaining.size() - 1; index >= 0; index--) {
                     ExitEdge candidate = remaining.get(index);
                     if (!candidate.direction().equals(current.direction())
-                            || !candidate.segment2x().sharesEndpoint(current.segment2x())) {
+                            || current.segment2x().sharedEndpoint(candidate.segment2x()).isEmpty()) {
                         continue;
                     }
                     remaining.remove(index);

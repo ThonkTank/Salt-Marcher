@@ -8,8 +8,9 @@
 
 - `geometry` — `GridObject`, `GridPoint`, `GridSegment`, `GridArea`, `GridBoundary`, `GridPath`, `GridPathPatternSpec`, `CardinalDirection`
 - `layout` — `DungeonLayout`, `DungeonMapLoadingService`, `DungeonLayoutRepository`, `DungeonMapState`
+- `cluster` — `RoomCluster`, `DungeonClusterApplicationService`, `DungeonClusterRepository`
 - `structure` — `Structure`, derived `Structure.roomTopology()`, the local `surface`, `boundary`, and `room` sub-owners plus boundary-local `door` and `wall` object sub-owners, `DungeonStructureRepository`, `DungeonWallKindRepository`
-- `room` — `Room`, `RoomCluster`, `DungeonRoomApplicationService`, `DungeonRoomRepository`
+- `room` — `Room`, `DungeonRoomApplicationService`, `DungeonRoomRepository`
 - `corridor` — `Corridor`, `CorridorRouting`, `CorridorPathTrace`, `DungeonCorridorApplicationService`, `DungeonCorridorRepository`
 - `stair` — `DungeonStair`, `Stair`, `StairExit`, `DungeonStairApplicationService`, `DungeonStairRepository`
 - `transition` — `DungeonTransition`, `DungeonTransitionApplicationService`, `DungeonTransitionRepository`
@@ -23,7 +24,8 @@
 - `GridObject` and the `geometry` slice — canonical dungeon grid algebra — every topology owner must express shared spatial truth through `GridPoint`, `GridSegment`, `GridArea`, `GridBoundary`, or `GridPath`.
 - `DungeonLayout` — loaded map snapshot — resolves canonical room, corridor, stair, transition, door, and traversal lookups.
 - `DungeonMapLoadingService` — map selection plus authoritative load or reload — updates `DungeonMapState` and is the required post-write rebuild seam.
-- `DungeonRoomApplicationService` — room and cluster mutation seam — persists room metadata changes and structure-backed room edits.
+- `DungeonClusterApplicationService` — cluster mutation seam — persists top-level cluster edits, cluster-backed room rewrites, and cluster bootstrap flows.
+- `DungeonRoomApplicationService` — room metadata seam — persists room-local narration and other room-owned metadata writes.
 - `DungeonCorridorApplicationService` — corridor mutation seam — persists corridor creation, endpoint changes, node moves, and topology edits.
 - `DungeonStairApplicationService` — stair editor workflow seam — creates, updates, moves, deletes, and loads stair editor specs.
 - `DungeonTransitionApplicationService` — transition workflow seam — creates, places, deletes, and resolves transition targets.

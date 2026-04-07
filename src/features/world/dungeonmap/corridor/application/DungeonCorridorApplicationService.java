@@ -1,17 +1,16 @@
-package features.world.dungeonmap.application.corridor;
+package features.world.dungeonmap.corridor.application;
 
 import database.DatabaseManager;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.geometry.GridPoint;
-import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridSegment;
 import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeonmap.cluster.model.RoomCluster;
-import features.world.dungeonmap.model.structures.corridor.Corridor;
-import features.world.dungeonmap.model.structures.corridor.CorridorNode;
-import features.world.dungeonmap.model.structures.corridor.CorridorSegment;
-import features.world.dungeonmap.repository.DungeonCorridorRepository;
+import features.world.dungeonmap.corridor.model.Corridor;
+import features.world.dungeonmap.corridor.model.CorridorNode;
+import features.world.dungeonmap.corridor.model.CorridorSegment;
+import features.world.dungeonmap.corridor.repository.DungeonCorridorRepository;
 import features.world.dungeonmap.repository.DungeonLayoutRepository;
 
 import java.sql.Connection;
@@ -136,7 +135,7 @@ public final class DungeonCorridorApplicationService {
                 GridSegment targetBoundarySegment2x = requiredExistingExteriorDoor(
                         layout,
                         corridor.levelZ(),
-                        resolvedRequest.targetDoorRef()).anchorSegment2x();
+                        resolvedRequest.targetDoorRef()).anchorSegment();
                 if (resolvedRequest.sourceBoundarySegment2x().equals(targetBoundarySegment2x)) {
                     return;
                 }
@@ -276,7 +275,7 @@ public final class DungeonCorridorApplicationService {
         DungeonLayout.DoorDescription description = requiredExistingExteriorDoor(layout, levelZ, doorRef);
         return new CorridorNode(
                 nodeId,
-                description.anchorSegment2x().midpoint(),
+                description.anchorSegment().midpoint(),
                 description.ref());
     }
 

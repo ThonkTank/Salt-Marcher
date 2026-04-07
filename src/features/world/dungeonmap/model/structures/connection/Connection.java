@@ -45,9 +45,9 @@ public interface Connection {
         return carrier() instanceof StairConnectionCarrier stairCarrier ? stairCarrier : null;
     }
 
-    default GridSegment anchorSegment2x(DungeonLayout layout) {
+    default GridSegment anchorSegment(DungeonLayout layout) {
         Door door = door(layout);
-        return door == null ? null : door.anchorSegment2x();
+        return door == null ? null : door.anchorSegment();
     }
 
     default Door door(DungeonLayout layout) {
@@ -55,7 +55,7 @@ public interface Connection {
         return layout == null || doorRef == null ? null : layout.resolveDoor(doorRef);
     }
 
-    default Set<GridSegment> boundarySegments2x(DungeonLayout layout) {
+    default Set<GridSegment> boundarySegments(DungeonLayout layout) {
         Door door = door(layout);
         if (door == null) {
             return Set.of();
@@ -96,29 +96,29 @@ public interface Connection {
     default GridPoint entryPoint(DungeonLayout layout) {
         StairConnectionCarrier stairCarrier = stairCarrier();
         if (stairCarrier != null) {
-            return GridPoint.at(stairCarrier.anchorCell(), stairCarrier.anchorLevelZ());
+            return stairCarrier.anchorCell() == null ? null : stairCarrier.anchorCell().withLevel(stairCarrier.anchorLevelZ());
         }
         ConnectionEndpoint endpoint = entryEndpoint();
-        GridSegment anchorSegment2x = anchorSegment2x(layout);
-        if (layout == null || endpoint == null || anchorSegment2x == null) {
+        GridSegment anchorSegment = anchorSegment(layout);
+        if (layout == null || endpoint == null || anchorSegment == null) {
             return null;
         }
         DungeonLayout.ConnectionSurfaceDescription surface = layout.describeConnectionSurface(
                 endpoint,
-                anchorSegment2x,
+                anchorSegment,
                 levelZ());
-        return surface == null ? null : GridPoint.at(surface.localCell(), levelZ());
+        return surface == null || surface.localCell() == null ? null : surface.localCell().withLevel(levelZ());
     }
 
     default CardinalDirection entryHeading(DungeonLayout layout) {
         ConnectionEndpoint endpoint = entryEndpoint();
-        GridSegment anchorSegment2x = anchorSegment2x(layout);
-        if (layout == null || endpoint == null || anchorSegment2x == null) {
+        GridSegment anchorSegment = anchorSegment(layout);
+        if (layout == null || endpoint == null || anchorSegment == null) {
             return null;
         }
         DungeonLayout.ConnectionSurfaceDescription surface = layout.describeConnectionSurface(
                 endpoint,
-                anchorSegment2x,
+                anchorSegment,
                 levelZ());
         return surface == null ? null : surface.outwardDirection();
     }
@@ -126,7 +126,7 @@ public interface Connection {
     default GridPoint focusPosition(DungeonLayout layout) {
         StairConnectionCarrier stairCarrier = stairCarrier();
         if (stairCarrier != null) {
-            return GridPoint.at(stairCarrier.anchorCell(), stairCarrier.anchorLevelZ());
+            return stairCarrier.anchorCell() == null ? null : stairCarrier.anchorCell().withLevel(stairCarrier.anchorLevelZ());
         }
         return entryPoint(layout);
     }
@@ -187,13 +187,13 @@ public interface Connection {
         if (destinationEndpoint.type() == ConnectionEndpointType.TRANSITION) {
             return new ConnectionTraversalTarget(null, levelZ(), null, destinationEndpoint.id());
         }
-        GridSegment anchorSegment2x = anchorSegment2x(layout);
-        if (layout == null || anchorSegment2x == null) {
+        GridSegment anchorSegment = anchorSegment(layout);
+        if (layout == null || anchorSegment == null) {
             return null;
         }
         DungeonLayout.ConnectionSurfaceDescription surface = layout.describeConnectionSurface(
                 destinationEndpoint,
-                anchorSegment2x,
+                anchorSegment,
                 levelZ());
         return surface == null
                 ? null

@@ -1,4 +1,4 @@
-package features.world.dungeonmap.model.structures.corridor;
+package features.world.dungeonmap.corridor.model;
 
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.structure.model.boundary.door.DoorRef;

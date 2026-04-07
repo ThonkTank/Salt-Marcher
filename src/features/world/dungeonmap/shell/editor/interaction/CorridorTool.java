@@ -1,6 +1,6 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
-import features.world.dungeonmap.application.corridor.DungeonCorridorApplicationService;
+import features.world.dungeonmap.corridor.application.DungeonCorridorApplicationService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
@@ -12,7 +12,7 @@ import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeonmap.cluster.model.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.Connection;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
-import features.world.dungeonmap.model.structures.corridor.Corridor;
+import features.world.dungeonmap.corridor.model.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.shell.editor.EditorCards;
 import features.world.dungeonmap.state.DungeonEditorTool;
@@ -178,7 +178,7 @@ public final class CorridorTool implements EditorTool {
                 return false;
             }
             CorridorEndpoint endpoint = corridorEndpoint(doorHit);
-            GridSegment anchorSegment2x = exteriorDoor.anchorSegment2x();
+            GridSegment anchorSegment2x = exteriorDoor.anchorSegment();
             if (pendingEndpoint != null) {
                 if (Objects.equals(pendingEndpoint.boundarySegment2x(), anchorSegment2x)) {
                     return true;
@@ -504,7 +504,7 @@ public final class CorridorTool implements EditorTool {
             DungeonSelectionRef.DoorRef doorRef
     ) {
         DungeonLayout.DoorDescription description = layout == null || doorRef == null ? null : layout.describeDoor(doorRef);
-        return description == null ? null : description.anchorSegment2x();
+        return description == null ? null : description.anchorSegment();
     }
 
     private record PendingRoomDoor(

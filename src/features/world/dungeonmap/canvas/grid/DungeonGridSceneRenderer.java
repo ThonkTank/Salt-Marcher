@@ -17,9 +17,9 @@ import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 import features.world.dungeonmap.structure.model.Structure;
 import features.world.dungeonmap.model.structures.connection.StairConnectionCarrier;
 import features.world.dungeonmap.cluster.model.RoomCluster;
-import features.world.dungeonmap.model.structures.corridor.Corridor;
-import features.world.dungeonmap.model.structures.corridor.CorridorNode;
-import features.world.dungeonmap.model.structures.corridor.CorridorPathTrace;
+import features.world.dungeonmap.corridor.model.Corridor;
+import features.world.dungeonmap.corridor.model.CorridorNode;
+import features.world.dungeonmap.corridor.model.CorridorPathTrace;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
@@ -120,7 +120,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 Structure roomStructure = cluster.structure().roomTopology().structureFor(room);
                 var boundary = roomStructure.boundaryAtLevel(pass.projectionLevel());
                 WalkableSurface surface = walkableSurface(
-                        roomStructure.surfaceAtLevel(pass.projectionLevel()).floor().cellCoords(),
+                        roomStructure.surfaceAtLevel(pass.projectionLevel()).floor().cells(),
                         boundary.boundaryEdges(),
                         boundary.doorBoundaryEdges());
                 boolean selectedRoom = selectedRoom(pass.projected(), pass.selectedRef(), room.roomId());
@@ -341,7 +341,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             }
             boolean selected = selectedCorridor(pass.projected(), pass.selectedRef(), corridor.corridorId());
             WalkableSurface surface = walkableSurface(
-                    corridor.structure().surfaceAtLevel(pass.projectionLevel()).floor().cellCoords(),
+                    corridor.structure().surfaceAtLevel(pass.projectionLevel()).floor().cells(),
                     corridor.structure().boundaryAtLevel(pass.projectionLevel()).boundaryEdges(),
                     corridor.boundaryDoorSegments(pass.projected()));
             if (surface.tiles().isEmpty() && surface.doorSegments().isEmpty()) {
@@ -384,7 +384,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                     Math.max(5.0, pass.gridSize() * 0.16));
         }
         for (CorridorPathTrace trace : corridor.pathTraces()) {
-            for (GridPoint corner : trace.cornerPoints2x()) {
+            for (GridPoint corner : trace.turnPoints()) {
                 drawCorridorHandle(
                         pass.gc(),
                         pass.camera(),
@@ -527,7 +527,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         for (DungeonHitSurface surface : surfaces) {
             switch (surface) {
                 case DungeonHitSurface.CellSurface cellSurface -> drawHighlightedCells(pass, cellSurface.cells(), partHighlight);
-                case DungeonHitSurface.SegmentSurface segmentSurface -> drawHighlightedSegments(pass, segmentSurface.segments2x(), partHighlight);
+                case DungeonHitSurface.SegmentSurface segmentSurface -> drawHighlightedSegments(pass, segmentSurface.segments(), partHighlight);
                 case DungeonHitSurface.PointSurface pointSurface -> drawHighlightedPoints(pass, pointSurface.points2x(), partHighlight);
                 case DungeonHitSurface.LabelSurface ignored -> {
                 }
@@ -893,7 +893,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             return;
         }
         var description = frame.layout().describeDoor(doorNumber.doorRef());
-        GridSegment segment2x = description == null ? null : description.anchorSegment2x();
+        GridSegment segment2x = description == null ? null : description.anchorSegment();
         if (segment2x == null) {
             return;
         }
@@ -971,7 +971,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             return WalkableSurface.empty();
         }
         return walkableSurface(
-                structure.surfaceAtLevel(levelZ).floor().cellCoords(),
+                structure.surfaceAtLevel(levelZ).floor().cells(),
                 structure.boundaryAtLevel(levelZ).boundaryEdges(),
                 structure.boundaryAtLevel(levelZ).doorBoundaryEdges());
     }

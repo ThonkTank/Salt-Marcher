@@ -1,17 +1,24 @@
 package features.world.dungeonmap.geometry;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
 public final class GridSegment extends GridObject {
 
-    public static final Comparator<GridSegment> ORDER =
-            Comparator.comparing(GridSegment::start, GridPoint.ORDER)
-                    .thenComparing(GridSegment::end, GridPoint.ORDER);
+    public enum Orientation {
+        HORIZONTAL,
+        VERTICAL
+    }
+
+    public static final Comparator<GridSegment> ORDER = Comparator
+            .comparing(GridSegment::start, GridPoint.ORDER)
+            .thenComparing(GridSegment::end, GridPoint.ORDER);
 
     private final GridPoint start;
     private final GridPoint end;
@@ -37,27 +44,21 @@ public final class GridSegment extends GridObject {
         }
     }
 
-    public static GridSegment boundaryEdge(GridPoint cell, CardinalDirection dir) {
-        GridPoint resolvedCell = GridPoint.cell(Objects.requireNonNull(cell, "cell"));
-        CardinalDirection resolvedDirection = Objects.requireNonNull(dir, "dir");
-        GridPoint edgeCenter = GridPoint.edgeCenter(resolvedCell, resolvedDirection);
+    public static GridSegment boundaryEdge(GridPoint cell, CardinalDirection direction) {
+        GridPoint resolvedCell = requireCell(cell);
+        CardinalDirection resolvedDirection = Objects.requireNonNull(direction, "direction");
+        GridPoint edgeCenter = GridPoint.lattice(
+                resolvedCell.x2() + resolvedDirection.dxCells(),
+                resolvedCell.y2() + resolvedDirection.dyCells(),
+                resolvedCell.z());
         return switch (resolvedDirection) {
-            case NORTH, SOUTH -> new GridSegment(edgeCenter.offset2x(-1, 0), edgeCenter.offset2x(1, 0));
-            case EAST, WEST -> new GridSegment(edgeCenter.offset2x(0, -1), edgeCenter.offset2x(0, 1));
+            case NORTH, SOUTH -> new GridSegment(
+                    GridPoint.lattice(edgeCenter.x2() - 1, edgeCenter.y2(), edgeCenter.z()),
+                    GridPoint.lattice(edgeCenter.x2() + 1, edgeCenter.y2(), edgeCenter.z()));
+            case EAST, WEST -> new GridSegment(
+                    GridPoint.lattice(edgeCenter.x2(), edgeCenter.y2() - 1, edgeCenter.z()),
+                    GridPoint.lattice(edgeCenter.x2(), edgeCenter.y2() + 1, edgeCenter.z()));
         };
-    }
-
-    public static Set<GridSegment> boundarySteps(Collection<GridSegment> segments) {
-        if (segments == null || segments.isEmpty()) {
-            return Set.of();
-        }
-        LinkedHashSet<GridSegment> result = new LinkedHashSet<>();
-        for (GridSegment segment : segments) {
-            if (segment != null) {
-                result.addAll(segment.boundarySteps());
-            }
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
     public GridPoint start() {
@@ -68,20 +69,12 @@ public final class GridSegment extends GridObject {
         return end;
     }
 
-    public boolean isHorizontal() {
-        return start.y2() == end.y2();
+    public Orientation orientation() {
+        return start.y2() == end.y2() ? Orientation.HORIZONTAL : Orientation.VERTICAL;
     }
 
-    public boolean isVertical() {
-        return start.x2() == end.x2();
-    }
-
-    public int length2() {
-        return start.manhattanDistance2x(end);
-    }
-
-    public boolean sharesEndpoint(GridSegment other) {
-        return sharedEndpoint(other).isPresent();
+    public GridPoint midpoint() {
+        return GridPoint.lattice((start.x2() + end.x2()) / 2, (start.y2() + end.y2()) / 2, start.z());
     }
 
     public Optional<GridPoint> sharedEndpoint(GridSegment other) {
@@ -107,63 +100,34 @@ public final class GridSegment extends GridObject {
         return null;
     }
 
-    @Override
-    public GridSegment translatedByCells(int dx, int dy, int dz) {
-        return new GridSegment(start.translatedByCells(dx, dy, dz), end.translatedByCells(dx, dy, dz));
+    public GridArea touchingCells() {
+        return GridArea.of(touchingCellSet());
     }
 
-    public GridSegment translatedByCells(GridPoint delta) {
-        GridPoint resolvedDelta = delta == null ? new GridPoint(0, 0) : delta;
-        return translatedByCells(resolvedDelta.x(), resolvedDelta.y(), resolvedDelta.z());
-    }
-
-    public GridPoint midpoint() {
-        return GridPoint.raw((start.x2() + end.x2()) / 2, (start.y2() + end.y2()) / 2, start.z());
-    }
-
-    public boolean isBoundaryEdge() {
-        return start.isVertex() && end.isVertex() && length2() == 2;
-    }
-
-    public Set<GridPoint> touchingCells() {
-        if (!isBoundaryEdge()) {
-            return Set.of();
-        }
-        return midpoint().touchingCells();
+    public GridBoundary boundarySteps() {
+        return GridBoundary.of(stepSegments());
     }
 
     public CardinalDirection directionFrom(GridPoint cell) {
-        if (cell == null) {
-            return null;
-        }
-        Set<GridPoint> touchingCells = touchingCells();
-        if (!touchingCells.contains(cell)) {
+        GridPoint resolvedCell = requireCell(cell);
+        Set<GridPoint> touchingCells = touchingCellSet();
+        if (!touchingCells.contains(resolvedCell)) {
             return null;
         }
         return touchingCells.stream()
-                .filter(touchingCell -> !touchingCell.equals(cell))
+                .filter(candidate -> !candidate.equals(resolvedCell))
                 .findFirst()
-                .map(cell::directionTo4)
+                .map(resolvedCell::cardinalDirectionTo)
                 .orElse(null);
     }
 
-    public Set<GridSegment> boundarySteps() {
-        if (length2() == 2) {
-            return Set.of(this);
+    @Override
+    public GridSegment translated(GridTranslation translation) {
+        GridTranslation resolvedTranslation = translation == null ? GridTranslation.none() : translation;
+        if (resolvedTranslation.isZero()) {
+            return this;
         }
-        LinkedHashSet<GridSegment> result = new LinkedHashSet<>();
-        if (isHorizontal()) {
-            int y2 = start.y2();
-            for (int x2 = start.x2(); x2 < end.x2(); x2 += 2) {
-                result.add(new GridSegment(GridPoint.raw(x2, y2, start.z()), GridPoint.raw(x2 + 2, y2, start.z())));
-            }
-        } else {
-            int x2 = start.x2();
-            for (int y2 = start.y2(); y2 < end.y2(); y2 += 2) {
-                result.add(new GridSegment(GridPoint.raw(x2, y2, start.z()), GridPoint.raw(x2, y2 + 2, start.z())));
-            }
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+        return new GridSegment(start.translated(resolvedTranslation), end.translated(resolvedTranslation));
     }
 
     @Override
@@ -173,7 +137,64 @@ public final class GridSegment extends GridObject {
 
     @Override
     public GridArea cellFootprint() {
-        return new GridArea(touchingCells());
+        return touchingCells();
+    }
+
+    static Set<GridSegment> normalize(Collection<GridSegment> segments) {
+        LinkedHashSet<GridSegment> result = new LinkedHashSet<>();
+        if (segments != null) {
+            segments.stream()
+                    .filter(Objects::nonNull)
+                    .sorted(ORDER)
+                    .forEach(result::add);
+        }
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
+    boolean isBoundaryStep() {
+        return start.kind() == GridPoint.Kind.VERTEX
+                && end.kind() == GridPoint.Kind.VERTEX
+                && length2() == 2;
+    }
+
+    List<GridSegment> stepSegments() {
+        if (length2() == 2) {
+            return List.of(this);
+        }
+        ArrayList<GridSegment> result = new ArrayList<>();
+        if (orientation() == Orientation.HORIZONTAL) {
+            for (int x2 = start.x2(); x2 < end.x2(); x2 += 2) {
+                result.add(new GridSegment(
+                        GridPoint.lattice(x2, start.y2(), start.z()),
+                        GridPoint.lattice(x2 + 2, start.y2(), start.z())));
+            }
+        } else {
+            for (int y2 = start.y2(); y2 < end.y2(); y2 += 2) {
+                result.add(new GridSegment(
+                        GridPoint.lattice(start.x2(), y2, start.z()),
+                        GridPoint.lattice(start.x2(), y2 + 2, start.z())));
+            }
+        }
+        return List.copyOf(result);
+    }
+
+    Set<GridPoint> touchingCellSet() {
+        if (!isBoundaryStep()) {
+            return Set.of();
+        }
+        return midpoint().touchingCells().cells();
+    }
+
+    private int length2() {
+        return Math.abs(start.x2() - end.x2()) + Math.abs(start.y2() - end.y2());
+    }
+
+    private static GridPoint requireCell(GridPoint point) {
+        GridPoint resolvedPoint = Objects.requireNonNull(point, "point");
+        if (resolvedPoint.kind() != GridPoint.Kind.CELL) {
+            throw new IllegalArgumentException("GridPoint must be a cell");
+        }
+        return resolvedPoint;
     }
 
     @Override

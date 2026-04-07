@@ -7,9 +7,9 @@ public record StairExit(
         String label
 ) {
     public StairExit {
-        position = position == null ? new GridPoint(0, 0, 0) : position;
+        position = position == null ? GridPoint.cell(0, 0, 0) : position;
         label = label == null || label.isBlank()
-                ? "Ausgang z=" + position.z() + " (" + position.x() + "," + position.y() + ")"
+                ? "Ausgang z=" + position.z() + " (" + (position.x2() / 2) + "," + (position.y2() / 2) + ")"
                 : label.trim();
     }
 }

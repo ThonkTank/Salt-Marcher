@@ -1,18 +1,17 @@
 package features.world.dungeonmap.structure.model;
 
+import features.world.dungeonmap.geometry.GridArea;
+import features.world.dungeonmap.geometry.GridBoundary;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridSegment;
+import features.world.dungeonmap.geometry.GridTranslation;
 
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * Canonical public structure mutation vocabulary.
  *
- * <p>Callers may vary in semantics, but they must normalize the physical change down to one of these requests before
+ * <p>Callers may vary in workflow semantics, but they must reduce the physical change to one of these requests before
  * mutating a {@link Structure}.</p>
  */
 public sealed interface StructureMutation permits
@@ -40,13 +39,13 @@ public sealed interface StructureMutation permits
 
     record SurfaceCellsEdit(
             int levelZ,
-            Set<GridPoint> cells,
+            GridArea cells,
             CellEditMode mode,
             FloorSyncPolicy floorSyncPolicy,
             GridPoint preferredAnchorCell
     ) implements StructureMutation {
         public SurfaceCellsEdit {
-            cells = normalizedCells(cells);
+            cells = cells == null ? GridArea.empty() : cells.onLevel(levelZ);
             mode = Objects.requireNonNull(mode, "mode");
             floorSyncPolicy = Objects.requireNonNull(floorSyncPolicy, "floorSyncPolicy");
         }
@@ -54,78 +53,51 @@ public sealed interface StructureMutation permits
 
     record FloorCellsEdit(
             int levelZ,
-            Set<GridPoint> cells,
+            GridArea cells,
             CellEditMode mode
     ) implements StructureMutation {
         public FloorCellsEdit {
-            cells = normalizedCells(cells);
+            cells = cells == null ? GridArea.empty() : cells.onLevel(levelZ);
             mode = Objects.requireNonNull(mode, "mode");
         }
     }
 
     record WallPathEdit(
             int levelZ,
-            List<GridSegment> segments2x,
+            GridBoundary segments,
             BoundaryEditMode mode
     ) implements StructureMutation {
         public WallPathEdit {
-            segments2x = normalizedSegments(segments2x);
+            segments = segments == null ? GridBoundary.empty() : segments;
             mode = Objects.requireNonNull(mode, "mode");
         }
     }
 
     record DoorSegmentsEdit(
             int levelZ,
-            List<GridSegment> segments2x,
+            GridBoundary segments,
             BoundaryEditMode mode
     ) implements StructureMutation {
         public DoorSegmentsEdit {
-            segments2x = normalizedSegments(segments2x);
+            segments = segments == null ? GridBoundary.empty() : segments;
             mode = Objects.requireNonNull(mode, "mode");
         }
     }
 
     record DoorMove(
             int levelZ,
-            GridSegment sourceBoundarySegment2x,
-            GridSegment targetBoundarySegment2x
+            GridSegment sourceBoundarySegment,
+            GridSegment targetBoundarySegment
     ) implements StructureMutation {
         public DoorMove {
-            Objects.requireNonNull(sourceBoundarySegment2x, "sourceBoundarySegment2x");
-            Objects.requireNonNull(targetBoundarySegment2x, "targetBoundarySegment2x");
+            Objects.requireNonNull(sourceBoundarySegment, "sourceBoundarySegment");
+            Objects.requireNonNull(targetBoundarySegment, "targetBoundarySegment");
         }
     }
 
-    record Translation(
-            GridPoint delta,
-            int levelDelta
-    ) implements StructureMutation {
+    record Translation(GridTranslation translation) implements StructureMutation {
         public Translation {
-            delta = delta == null ? new GridPoint(0, 0) : delta;
+            translation = translation == null ? GridTranslation.none() : translation;
         }
-    }
-
-    private static Set<GridPoint> normalizedCells(Collection<GridPoint> cells) {
-        if (cells == null || cells.isEmpty()) {
-            return Set.of();
-        }
-        LinkedHashSet<GridPoint> result = new LinkedHashSet<>();
-        for (GridPoint cell : cells) {
-            if (cell != null) {
-                result.add(cell);
-            }
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
-    private static List<GridSegment> normalizedSegments(Collection<GridSegment> segments2x) {
-        if (segments2x == null || segments2x.isEmpty()) {
-            return List.of();
-        }
-        return segments2x.stream()
-                .filter(Objects::nonNull)
-                .distinct()
-                .sorted(GridSegment.ORDER)
-                .toList();
     }
 }

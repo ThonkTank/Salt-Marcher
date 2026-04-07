@@ -1,7 +1,7 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
-import features.world.dungeonmap.application.corridor.DungeonCorridorApplicationService;
-import features.world.dungeonmap.application.room.DungeonRoomApplicationService;
+import features.world.dungeonmap.corridor.application.DungeonCorridorApplicationService;
+import features.world.dungeonmap.cluster.application.DungeonClusterApplicationService;
 import features.world.dungeonmap.application.stair.DungeonStairApplicationService;
 import features.world.dungeonmap.application.stair.StairDraftResolver;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
@@ -13,8 +13,8 @@ import features.world.dungeonmap.geometry.GridSegment;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeonmap.cluster.model.RoomCluster;
-import features.world.dungeonmap.model.structures.corridor.Corridor;
-import features.world.dungeonmap.model.structures.corridor.CorridorNode;
+import features.world.dungeonmap.corridor.model.Corridor;
+import features.world.dungeonmap.corridor.model.CorridorNode;
 import features.world.dungeonmap.shell.editor.RoomNarrationPane;
 import features.world.dungeonmap.state.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonMapState;
@@ -37,7 +37,7 @@ public final class SelectionTool implements EditorTool {
 
     private final DungeonMapState mapState;
     private final DungeonMapLoadingService loadingService;
-    private final DungeonRoomApplicationService roomApplicationService;
+    private final DungeonClusterApplicationService roomApplicationService;
     private final DungeonCorridorApplicationService corridorApplicationService;
     private final DungeonStairApplicationService stairApplicationService;
     private final EditorInteractionState state;
@@ -58,7 +58,7 @@ public final class SelectionTool implements EditorTool {
     public SelectionTool(
             DungeonMapState mapState,
             DungeonMapLoadingService loadingService,
-            DungeonRoomApplicationService roomApplicationService,
+            DungeonClusterApplicationService roomApplicationService,
             DungeonCorridorApplicationService corridorApplicationService,
             DungeonStairApplicationService stairApplicationService,
             RoomNarrationPane roomNarrationPane,
@@ -580,7 +580,7 @@ public final class SelectionTool implements EditorTool {
         }
         loadingService.submitMutation(
                 () -> {
-                    roomApplicationService.moveDoor(new DungeonRoomApplicationService.MoveDoorRequest(
+                    roomApplicationService.moveDoor(new DungeonClusterApplicationService.MoveDoorRequest(
                             mapId,
                             session.clusterId(),
                             session.levelZ(),
@@ -831,6 +831,6 @@ public final class SelectionTool implements EditorTool {
             return null;
         }
         DungeonLayout.DoorDescription description = resolvedLayout.describeDoor(doorRef);
-        return description == null ? null : description.anchorSegment2x();
+        return description == null ? null : description.anchorSegment();
     }
 }

@@ -288,7 +288,7 @@ public final class DungeonStructureRepository {
             if (wall == null || !wall.hasBoundarySegments() || wall.wallId() == null || wall.wallId() <= 0L) {
                 throw new IllegalArgumentException("Persisted walls require a stable positive wall id");
             }
-            GridSegment anchorSegment2x = wall.persistedAnchorSegment2x();
+            GridSegment anchorSegment2x = wall.persistedAnchorSegment();
             insertWall.setLong(1, structureObjectId);
             insertWall.setLong(2, wall.wallId());
             insertWall.setInt(3, levelZ);
@@ -320,7 +320,7 @@ public final class DungeonStructureRepository {
             if (door == null || !door.hasBoundarySegments() || door.doorId() == null || door.doorId() <= 0L) {
                 throw new IllegalArgumentException("Persisted doors require a stable positive door id");
             }
-            GridSegment anchorSegment2x = door.persistedAnchorSegment2x();
+            GridSegment anchorSegment2x = door.persistedAnchorSegment();
             insertDoor.setLong(1, structureObjectId);
             insertDoor.setLong(2, door.doorId());
             insertDoor.setInt(3, levelZ);

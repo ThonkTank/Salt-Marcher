@@ -1,9 +1,9 @@
 package features.world.dungeonmap.structure.model.boundary.door;
 
-import features.world.dungeonmap.geometry.GridPoint;
-import features.world.dungeonmap.structure.model.boundary.BoundaryObject;
 import features.world.dungeonmap.geometry.GridBoundary;
 import features.world.dungeonmap.geometry.GridSegment;
+import features.world.dungeonmap.geometry.GridTranslation;
+import features.world.dungeonmap.structure.model.boundary.BoundaryObject;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -11,109 +11,73 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Canonical single-door owner beneath {@code boundary}.
- *
- * <p>Door-specific clipping, segment removal, anchor repair, and persistence-facing segment access stay here so
- * callers do not rebuild door edits from generic boundary-shape surgery.</p>
- */
-
 public final class Door extends BoundaryObject {
 
     private final DoorState doorState;
 
-    private Door(Collection<GridSegment> segments) {
-        this(null, segments, null, DoorState.CLOSED);
-    }
-
-    private Door(Collection<GridSegment> segments, DoorState doorState) {
-        this(null, segments, null, doorState);
-    }
-
-    private Door(Collection<GridSegment> segments, GridSegment anchorSegment2x, DoorState doorState) {
-        this(null, segments, anchorSegment2x, doorState);
-    }
-
-    private Door(Long doorId, Collection<GridSegment> segments, GridSegment anchorSegment2x, DoorState doorState) {
-        super(doorId, segments, anchorSegment2x);
-        this.doorState = doorState == null ? DoorState.CLOSED : doorState;
-    }
-
-    private Door(GridBoundary shape, DoorState doorState) {
-        this(null, shape, null, doorState);
-    }
-
-    private Door(GridBoundary shape, GridSegment anchorSegment2x, DoorState doorState) {
-        this(null, shape, anchorSegment2x, doorState);
-    }
-
-    private Door(Long doorId, GridBoundary shape, GridSegment anchorSegment2x, DoorState doorState) {
-        super(doorId, shape, anchorSegment2x);
+    private Door(Long doorId, GridBoundary boundary, GridSegment anchorSegment, DoorState doorState) {
+        super(doorId, boundary, anchorSegment);
         this.doorState = doorState == null ? DoorState.CLOSED : doorState;
     }
 
     public static Door fromSegments(Collection<GridSegment> segments, DoorState doorState) {
-        return new Door(null, segments, null, doorState);
+        return new Door(null, GridBoundary.of(segments), null, doorState);
     }
 
-    public static Door fromSegments(Collection<GridSegment> segments, GridSegment anchorSegment2x, DoorState doorState) {
-        return new Door(null, segments, anchorSegment2x, doorState);
+    public static Door fromSegments(Collection<GridSegment> segments, GridSegment anchorSegment, DoorState doorState) {
+        return new Door(null, GridBoundary.of(segments), anchorSegment, doorState);
     }
 
-    public static Door fromSegments(Long doorId, Collection<GridSegment> segments, GridSegment anchorSegment2x, DoorState doorState) {
-        return new Door(doorId, segments, anchorSegment2x, doorState);
+    public static Door fromSegments(Long doorId, Collection<GridSegment> segments, GridSegment anchorSegment, DoorState doorState) {
+        return new Door(doorId, GridBoundary.of(segments), anchorSegment, doorState);
     }
 
-    public static Door fromShape(GridBoundary shape, DoorState doorState) {
-        return new Door(null, shape, null, doorState);
+    public static Door fromBoundary(GridBoundary boundary, DoorState doorState) {
+        return new Door(null, boundary, null, doorState);
     }
 
-    public static Door fromShape(GridBoundary shape, GridSegment anchorSegment2x, DoorState doorState) {
-        return new Door(null, shape, anchorSegment2x, doorState);
+    public static Door fromBoundary(GridBoundary boundary, GridSegment anchorSegment, DoorState doorState) {
+        return new Door(null, boundary, anchorSegment, doorState);
     }
 
-    public static Door fromShape(Long doorId, GridBoundary shape, GridSegment anchorSegment2x, DoorState doorState) {
-        return new Door(doorId, shape, anchorSegment2x, doorState);
+    public static Door fromBoundary(Long doorId, GridBoundary boundary, GridSegment anchorSegment, DoorState doorState) {
+        return new Door(doorId, boundary, anchorSegment, doorState);
     }
 
     public Long doorId() {
         return objectId();
     }
 
-    public GridSegment anchorSegment2x() {
-        return anchorSegment2xInternal();
+    public GridSegment anchorSegment() {
+        return anchorSegmentInternal();
     }
 
-    public Door movedBy(GridPoint delta) {
-        GridPoint resolvedDelta = delta == null ? new GridPoint(0, 0) : delta;
-        if (resolvedDelta.x() == 0 && resolvedDelta.y() == 0) {
-            return this;
-        }
-        return new Door(doorId(), translatedBoundarySegments(resolvedDelta), translatedAnchorSegment2x(resolvedDelta),
-                doorState);
+    public Door movedBy(GridTranslation translation) {
+        GridTranslation resolvedTranslation = translation == null ? GridTranslation.none() : translation;
+        return resolvedTranslation.isZero()
+                ? this
+                : new Door(doorId(), GridBoundary.of(translatedBoundarySegments(resolvedTranslation)),
+                translatedAnchorSegment(resolvedTranslation), doorState);
     }
 
     public Door withDoorId(Long doorId) {
-        if (Objects.equals(doorId(), doorId)) {
-            return this;
-        }
-        return new Door(doorId, orderedBoundarySegments(), anchorSegment2x(), doorState);
+        return Objects.equals(doorId(), doorId)
+                ? this
+                : new Door(doorId, GridBoundary.of(orderedBoundarySegments()), anchorSegment(), doorState);
     }
 
     public Door withDoorState(DoorState doorState) {
         DoorState resolvedDoorState = doorState == null ? DoorState.CLOSED : doorState;
-        if (resolvedDoorState == this.doorState) {
-            return this;
-        }
-        return new Door(doorId(), orderedBoundarySegments(), anchorSegment2x(), resolvedDoorState);
+        return resolvedDoorState == this.doorState
+                ? this
+                : new Door(doorId(), GridBoundary.of(orderedBoundarySegments()), anchorSegment(), resolvedDoorState);
     }
 
     public Door clippedToBoundary(Collection<GridSegment> boundarySegments) {
-        GridBoundary clippedShape = clippedBoundaryShape(boundarySegments);
-        if (clippedShape.isEmpty()) {
-            return null;
-        }
-        return Door.fromShape(doorId(), clippedShape, repairedAnchorSegment2x(clippedShape), doorState);
+        GridBoundary clippedBoundary = clippedBoundary(boundarySegments);
+        return clippedBoundary.isEmpty()
+                ? null
+                : Door.fromBoundary(doorId(), clippedBoundary, repairedAnchorSegment(clippedBoundary), doorState);
     }
 
     public Door withoutBoundarySegments(Collection<GridSegment> removedBoundarySegments) {
@@ -125,20 +89,18 @@ public final class Door extends BoundaryObject {
             return null;
         }
         GridBoundary remainingComponent = components.getFirst();
-        return Door.fromShape(doorId(), remainingComponent, repairedAnchorSegment2x(remainingComponent), doorState);
+        return Door.fromBoundary(doorId(), remainingComponent, repairedAnchorSegment(remainingComponent), doorState);
     }
 
-    public static List<Door> fromBoundaryComponents(
-            Collection<GridSegment> boundarySegments,
-            DoorState doorState
-    ) {
+    public static List<Door> fromBoundaryComponents(Collection<GridSegment> boundarySegments, DoorState doorState) {
         ArrayList<Door> result = new ArrayList<>();
         for (GridBoundary component : boundaryComponents(boundarySegments)) {
             if (!component.isEmpty()) {
-                result.add(Door.fromShape(component, component.firstSegment2x(), doorState));
+                GridSegment anchorSegment = component.segments().stream().sorted(GridSegment.ORDER).findFirst().orElse(null);
+                result.add(Door.fromBoundary(component, anchorSegment, doorState));
             }
         }
-        result.sort(Comparator.comparing(Door::anchorSegment2x, GridSegment.ORDER));
+        result.sort(Comparator.comparing(Door::anchorSegment, GridSegment.ORDER));
         return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 

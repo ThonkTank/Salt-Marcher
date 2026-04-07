@@ -6,7 +6,7 @@ import features.world.dungeonmap.geometry.GridSegment;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.structure.model.Structure;
 import features.world.dungeonmap.cluster.model.RoomCluster;
-import features.world.dungeonmap.model.structures.corridor.Corridor;
+import features.world.dungeonmap.corridor.model.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
@@ -37,7 +37,7 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
         Room room = roomAtCell(layout, probe.gridCell(), probe.levelZ());
         Set<GridPoint> roomCells = room == null
                 ? Set.of()
-                : roomStructure(layout, room).surfaceAtLevel(probe.levelZ()).surface().cellCoords();
+                : roomStructure(layout, room).surfaceAtLevel(probe.levelZ()).surface().cells();
         if (room == null || room.roomId() == null || roomCells.isEmpty()) {
             return List.of();
         }
@@ -61,7 +61,7 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
             descriptors.add(new DungeonHitDescriptor(
                     new DungeonSelectionRef.CorridorRef(corridor.corridorId()),
                     List.of(new DungeonHitSurface.CellSurface(
-                            corridor.structure().surfaceAtLevel(probe.levelZ()).surface().cellCoords(),
+                            corridor.structure().surfaceAtLevel(probe.levelZ()).surface().cells(),
                             probe.levelZ()))));
         }
         return List.copyOf(descriptors);

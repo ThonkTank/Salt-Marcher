@@ -32,5 +32,5 @@ This file covers `src/features/world/dungeonmap/structure/model/surface/`.
 - Do not mirror surface state or mutations back onto `Structure`, `StructureRoomTopology`, `RoomCluster`, `DungeonLayout`, or renderer helpers.
 - Do not move surface-owned primitives back into the flat `structure/model/` package.
 - Do not keep `StructureSurfaceArea`- or `StructureFloor`-specific mutation logic on `StructureSurface` when the sub-owner can carry it directly.
-- Do not keep convenience mirrors like `StructureSurface.cellCoords()` or `StructureSurface.floorCells()` once `StructureSurfaceArea` and `StructureFloor` already expose that truth.
+- Do not keep convenience mirrors like `StructureSurface.cells()` or `StructureSurface.floorCells()` once `StructureSurfaceArea` and `StructureFloor` already expose that truth.
 - Do not expose child persistence records or child rehydration helpers outside this package; `StructureSurface.PersistenceSnapshot` is the only public persistence truth for the surface aggregate.

@@ -1,6 +1,5 @@
-package features.world.dungeonmap.model.structures.corridor;
+package features.world.dungeonmap.corridor.model;
 
-import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridSegment;
 import features.world.dungeonmap.structure.model.Structure;
@@ -131,7 +130,7 @@ public final class CorridorRouting {
                         occupiedCells,
                         List.of(),
                         List.of())));
-        Set<GridPoint> hydratedCells = GridPoint.normalize(structure.surfaceAtLevel(levelZ).surface().cellCoords());
+        Set<GridPoint> hydratedCells = GridPoint.normalize(structure.surfaceAtLevel(levelZ).surface().cells());
         if (!hydratedCells.equals(GridPoint.normalize(occupiedCells))) {
             throw new IllegalStateException("Corridor route projection changed the routed occupied cells");
         }

@@ -1,4 +1,4 @@
-package features.world.dungeonmap.model.structures.corridor;
+package features.world.dungeonmap.corridor.model;
 
 public record CorridorSegment(
         Long segmentId,

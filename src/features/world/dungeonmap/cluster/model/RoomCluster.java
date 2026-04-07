@@ -305,7 +305,7 @@ public final class RoomCluster {
         if (cluster == null || segment2x == null) {
             return null;
         }
-        List<GridPoint> touchingCells = segment2x.touchingCells().stream()
+        List<GridPoint> touchingCells = segment2x.touchingCells().cells().stream()
                 .sorted(GridPoint.ORDER)
                 .toList();
         if (touchingCells.size() != 2) {
@@ -446,7 +446,7 @@ public final class RoomCluster {
             }
             LinkedHashSet<GridPoint> result = new LinkedHashSet<>();
             for (Integer levelZ : structure.levels().stream().sorted().toList()) {
-                result.addAll(structure.surfaceAtLevel(levelZ).surface().cellCoords());
+                result.addAll(structure.surfaceAtLevel(levelZ).surface().cells());
             }
             return result.isEmpty() ? Set.of() : Set.copyOf(result);
         }

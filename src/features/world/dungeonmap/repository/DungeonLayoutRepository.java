@@ -1,9 +1,11 @@
 package features.world.dungeonmap.repository;
 
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogEntry;
+import features.world.dungeonmap.cluster.repository.DungeonClusterRepository;
+import features.world.dungeonmap.corridor.repository.DungeonCorridorRepository;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.cluster.model.RoomCluster;
-import features.world.dungeonmap.model.structures.corridor.Corridor;
+import features.world.dungeonmap.corridor.model.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 
 import java.sql.Connection;
@@ -21,6 +23,7 @@ import java.util.Map;
  */
 public final class DungeonLayoutRepository {
 
+    private final DungeonClusterRepository clusterRepository = new DungeonClusterRepository();
     private final DungeonRoomRepository roomRepository = new DungeonRoomRepository();
     private final DungeonCorridorRepository corridorRepository = new DungeonCorridorRepository();
     private final DungeonStairRepository stairRepository = new DungeonStairRepository();
@@ -45,8 +48,8 @@ public final class DungeonLayoutRepository {
 
     private DungeonLayout loadLayout(Connection conn, long mapId, String mapName) throws SQLException {
         List<Room> roomMetadata = roomRepository.loadRooms(conn, mapId);
-        List<RoomCluster> clusters = roomRepository.loadClusters(conn, mapId, roomMetadata);
-        Map<Long, Integer> clusterLevels = roomRepository.loadClusterLevels(conn, mapId);
+        List<RoomCluster> clusters = clusterRepository.loadClusters(conn, mapId, roomMetadata);
+        Map<Long, Integer> clusterLevels = clusterRepository.loadClusterLevels(conn, mapId);
         DungeonLayout roomLayout = new DungeonLayout(mapId, mapName, List.of(), clusters, List.of(), List.of(), clusterLevels);
         List<Corridor> corridors = corridorRepository.loadByMap(conn, roomLayout);
         DungeonLayout structureLayout = new DungeonLayout(

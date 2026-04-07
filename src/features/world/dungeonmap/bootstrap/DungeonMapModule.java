@@ -1,15 +1,17 @@
 package features.world.dungeonmap.bootstrap;
 
 import features.world.api.WorldTravelSurface;
-import features.world.dungeonmap.application.corridor.DungeonCorridorApplicationService;
-import features.world.dungeonmap.application.room.DungeonRoomApplicationService;
+import features.world.dungeonmap.corridor.application.DungeonCorridorApplicationService;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeApplicationService;
+import features.world.dungeonmap.application.room.DungeonRoomApplicationService;
 import features.world.dungeonmap.application.stair.DungeonStairApplicationService;
 import features.world.dungeonmap.application.transition.DungeonTransitionApplicationService;
 import features.world.dungeonmap.catalog.application.DungeonMapCatalogService;
+import features.world.dungeonmap.cluster.application.DungeonClusterApplicationService;
+import features.world.dungeonmap.cluster.repository.DungeonClusterRepository;
 import features.world.dungeonmap.loading.DungeonMapLoadResolver;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
-import features.world.dungeonmap.repository.DungeonCorridorRepository;
+import features.world.dungeonmap.corridor.repository.DungeonCorridorRepository;
 import features.world.dungeonmap.repository.DungeonLayoutRepository;
 import features.world.dungeonmap.repository.DungeonRoomRepository;
 import features.world.dungeonmap.repository.DungeonStairRepository;
@@ -51,16 +53,19 @@ public final class DungeonMapModule {
     public DungeonMapModule(DetailsNavigator detailsNavigator, WorldTravelSurface travelSurface) {
         Objects.requireNonNull(detailsNavigator, "detailsNavigator");
         DungeonLayoutRepository layoutRepository = new DungeonLayoutRepository();
+        DungeonClusterRepository clusterRepository = new DungeonClusterRepository();
         DungeonRoomRepository roomRepository = new DungeonRoomRepository();
         DungeonCorridorRepository corridorRepository = new DungeonCorridorRepository();
         DungeonStairRepository stairRepository = new DungeonStairRepository();
         DungeonTransitionRepository transitionRepository = new DungeonTransitionRepository();
         DungeonMapLoadResolver loadResolver = new DungeonMapLoadResolver(layoutRepository);
-        DungeonRoomApplicationService roomApplicationService = new DungeonRoomApplicationService(
+        DungeonClusterApplicationService clusterApplicationService = new DungeonClusterApplicationService(
                 layoutRepository,
+                clusterRepository,
                 corridorRepository,
                 roomRepository,
                 transitionRepository);
+        DungeonRoomApplicationService roomApplicationService = new DungeonRoomApplicationService(roomRepository);
         DungeonStairApplicationService stairApplicationService = new DungeonStairApplicationService(
                 layoutRepository,
                 stairRepository);
@@ -71,7 +76,7 @@ public final class DungeonMapModule {
                 layoutRepository,
                 loadResolver);
         DungeonMapCatalogService mapCatalogService = new DungeonMapCatalogService(
-                roomApplicationService,
+                clusterApplicationService,
                 runtimeApplicationService);
         DungeonCorridorApplicationService corridorApplicationService = new DungeonCorridorApplicationService(
                 layoutRepository,
@@ -97,7 +102,7 @@ public final class DungeonMapModule {
                 new SelectionTool(
                         state,
                         loadingService,
-                        roomApplicationService,
+                        clusterApplicationService,
                         corridorApplicationService,
                         stairApplicationService,
                         roomNarrationPane,
@@ -107,24 +112,24 @@ public final class DungeonMapModule {
                         state,
                         loadingService,
                         editorSessionState,
-                        roomApplicationService,
+                        clusterApplicationService,
                         editorInteractionState),
                 new FloorTool(
                         state,
                         loadingService,
                         editorSessionState,
-                        roomApplicationService,
+                        clusterApplicationService,
                         editorInteractionState),
                 new BoundaryTool(
                         state,
                         loadingService,
                         editorSessionState,
-                        roomApplicationService,
+                        clusterApplicationService,
                         editorInteractionState),
                 new DoorTool(
                         state,
                         loadingService,
-                        roomApplicationService,
+                        clusterApplicationService,
                         editorInteractionState),
                 new CorridorTool(
                         state,

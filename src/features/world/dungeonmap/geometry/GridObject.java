@@ -4,7 +4,7 @@ import java.util.Set;
 
 public abstract class GridObject {
 
-    public abstract GridObject translatedByCells(int dx, int dy, int dz);
+    public abstract GridObject translated(GridTranslation translation);
 
     public abstract Set<Integer> levels();
 

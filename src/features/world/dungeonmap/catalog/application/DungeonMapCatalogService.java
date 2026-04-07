@@ -1,8 +1,8 @@
 package features.world.dungeonmap.catalog.application;
 
 import database.DatabaseManager;
+import features.world.dungeonmap.cluster.application.DungeonClusterApplicationService;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeApplicationService;
-import features.world.dungeonmap.application.room.DungeonRoomApplicationService;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.catalog.persistence.DungeonMapCatalogRepository;
 
@@ -12,14 +12,14 @@ import java.util.Objects;
 
 public final class DungeonMapCatalogService {
 
-    private final DungeonRoomApplicationService roomApplicationService;
+    private final DungeonClusterApplicationService clusterApplicationService;
     private final DungeonRuntimeApplicationService runtimeApplicationService;
 
     public DungeonMapCatalogService(
-            DungeonRoomApplicationService roomApplicationService,
+            DungeonClusterApplicationService clusterApplicationService,
             DungeonRuntimeApplicationService runtimeApplicationService
     ) {
-        this.roomApplicationService = Objects.requireNonNull(roomApplicationService, "roomApplicationService");
+        this.clusterApplicationService = Objects.requireNonNull(clusterApplicationService, "clusterApplicationService");
         this.runtimeApplicationService = Objects.requireNonNull(runtimeApplicationService, "runtimeApplicationService");
     }
 
@@ -33,7 +33,7 @@ public final class DungeonMapCatalogService {
                     throw new SQLException("Dungeon map insert failed", exception);
                 }
                 try {
-                    roomApplicationService.createDefaultRoom(conn, mapId);
+                    clusterApplicationService.createDefaultRoom(conn, mapId);
                 } catch (SQLException | RuntimeException exception) {
                     throw new SQLException("Default room bootstrap failed for dungeon " + mapId, exception);
                 }

@@ -2,6 +2,7 @@ package features.world.dungeonmap.structure.model;
 
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridSegment;
+import features.world.dungeonmap.geometry.GridTranslation;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.structure.model.boundary.StructureBoundary;
 import features.world.dungeonmap.structure.model.room.StructureRoomTopology;
@@ -150,7 +151,7 @@ public final class Structure {
             case StructureMutation.WallPathEdit edit -> mutateWallPath(edit);
             case StructureMutation.DoorSegmentsEdit edit -> mutateDoorSegments(edit);
             case StructureMutation.DoorMove edit -> mutateDoorMove(edit);
-            case StructureMutation.Translation edit -> translated(edit.delta(), edit.levelDelta());
+            case StructureMutation.Translation edit -> translated(edit.translation());
         };
     }
 
@@ -165,19 +166,19 @@ public final class Structure {
                 .orElse(0);
     }
 
-    private Structure translated(GridPoint delta, int levelDelta) {
-        GridPoint resolvedDelta = delta == null ? new GridPoint(0, 0) : delta;
-        if (resolvedDelta.x() == 0 && resolvedDelta.y() == 0 && levelDelta == 0) {
+    private Structure translated(GridTranslation translation) {
+        GridTranslation resolvedTranslation = translation == null ? GridTranslation.none() : translation;
+        if (resolvedTranslation.isZero()) {
             return this;
         }
         Map<Integer, LevelStructure> translatedLevels = new LinkedHashMap<>();
         for (Map.Entry<Integer, LevelStructure> entry : levelsByZ.entrySet()) {
-            translatedLevels.put(entry.getKey() + levelDelta, entry.getValue().translatedByCells(resolvedDelta));
+            translatedLevels.put(entry.getKey() + resolvedTranslation.dzLevels(), entry.getValue().translated(resolvedTranslation));
         }
         Structure moved = new Structure(translatedLevels, StructureRoomTopology.empty());
         return roomTopology.isEmpty()
                 ? moved
-                : reattachTopology(moved, roomTopology.translatedBy(resolvedDelta, levelDelta, moved));
+                : reattachTopology(moved, roomTopology.translatedBy(resolvedTranslation, moved));
     }
 
     private Structure mutateSurfaceCells(StructureMutation.SurfaceCellsEdit edit) {
@@ -219,7 +220,7 @@ public final class Structure {
     }
 
     private Structure mutateWallPath(StructureMutation.WallPathEdit edit) {
-        if (edit.segments2x().isEmpty()) {
+        if (edit.segments().isEmpty()) {
             return this;
         }
         LevelStructure currentLevel = levelsByZ.get(edit.levelZ());
@@ -228,8 +229,8 @@ public final class Structure {
         }
         StructureBoundary currentBoundary = currentLevel.boundary();
         StructureBoundary nextBoundary = edit.mode() == StructureMutation.BoundaryEditMode.CREATE
-                ? currentBoundary.withCreatedWallPath(edit.segments2x())
-                : currentBoundary.withDeletedWallPath(edit.segments2x());
+                ? currentBoundary.withCreatedWallPath(edit.segments().segments())
+                : currentBoundary.withDeletedWallPath(edit.segments().segments());
         if (Objects.equals(nextBoundary, currentBoundary)) {
             return this;
         }
@@ -237,7 +238,7 @@ public final class Structure {
     }
 
     private Structure mutateDoorSegments(StructureMutation.DoorSegmentsEdit edit) {
-        if (edit.segments2x().isEmpty()) {
+        if (edit.segments().isEmpty()) {
             return this;
         }
         LevelStructure currentLevel = levelsByZ.get(edit.levelZ());
@@ -246,8 +247,8 @@ public final class Structure {
         }
         StructureBoundary currentBoundary = currentLevel.boundary();
         StructureBoundary nextBoundary = edit.mode() == StructureMutation.BoundaryEditMode.CREATE
-                ? currentBoundary.withCreatedDoorSegments(edit.segments2x())
-                : currentBoundary.withDeletedDoorSegments(edit.segments2x());
+                ? currentBoundary.withCreatedDoorSegments(edit.segments().segments())
+                : currentBoundary.withDeletedDoorSegments(edit.segments().segments());
         if (Objects.equals(nextBoundary, currentBoundary)) {
             return this;
         }
@@ -255,7 +256,7 @@ public final class Structure {
     }
 
     private Structure mutateDoorMove(StructureMutation.DoorMove edit) {
-        if (Objects.equals(edit.sourceBoundarySegment2x(), edit.targetBoundarySegment2x())) {
+        if (Objects.equals(edit.sourceBoundarySegment(), edit.targetBoundarySegment())) {
             return this;
         }
         LevelStructure currentLevel = levelsByZ.get(edit.levelZ());
@@ -264,8 +265,8 @@ public final class Structure {
         }
         StructureBoundary currentBoundary = currentLevel.boundary();
         StructureBoundary nextBoundary = currentBoundary.withMovedDoor(
-                edit.sourceBoundarySegment2x(),
-                edit.targetBoundarySegment2x());
+                edit.sourceBoundarySegment(),
+                edit.targetBoundarySegment());
         if (Objects.equals(nextBoundary, currentBoundary)) {
             return this;
         }
@@ -354,14 +355,14 @@ public final class Structure {
             }
             StructureSurface surface = StructureSurface.fromCells(
                     specification.anchorCell(),
-                    specification.surfaceCells(),
-                    specification.floorCells());
+                    specification.surfaceArea().cells(),
+                    specification.floorArea().cells());
             if (surface.isEmpty()) {
                 return new LevelStructure(StructureSurface.empty(), StructureBoundary.empty());
             }
             return new LevelStructure(
                     surface,
-                    StructureBoundary.fromSurfaceAndFeatures(surface.surface().cellCoords(), specification.doors(), specification.walls()));
+                    StructureBoundary.fromSurfaceAndFeatures(surface.surface().cells(), specification.doors(), specification.walls()));
         }
 
         private static LevelStructure fromSurface(StructureSurface surface) {
@@ -371,20 +372,20 @@ public final class Structure {
             }
             return new LevelStructure(
                     resolvedSurface,
-                    StructureBoundary.fromSurfaceAndFeatures(resolvedSurface.surface().cellCoords(), List.of(), List.of()));
+                    StructureBoundary.fromSurfaceAndFeatures(resolvedSurface.surface().cells(), List.of(), List.of()));
         }
 
-        private LevelStructure translatedByCells(GridPoint delta) {
+        private LevelStructure translated(GridTranslation translation) {
             return new LevelStructure(
-                    surface.translatedByCells(delta),
-                    boundary.translatedByCells(delta));
+                    surface.translated(translation),
+                    boundary.translated(translation));
         }
 
         private LevelStructure withBoundary(StructureBoundary boundary) {
             StructureBoundary resolvedBoundary = boundary == null
                     ? StructureBoundary.empty()
                     : StructureBoundary.fromSurfaceAndFeatures(
-                    surface.surface().cellCoords(),
+                    surface.surface().cells(),
                     boundary.doors(),
                     boundary.walls());
             return new LevelStructure(surface, resolvedBoundary);
@@ -394,7 +395,7 @@ public final class Structure {
             StructureSurface resolvedSurface = surface == null ? StructureSurface.empty() : surface;
             StructureBoundary resolvedBoundary = resolvedSurface.isEmpty()
                     ? StructureBoundary.empty()
-                    : boundary.rewrittenToSurface(resolvedSurface.surface().cellCoords());
+                    : boundary.rewrittenToSurface(resolvedSurface.surface().cells());
             return new LevelStructure(resolvedSurface, resolvedBoundary);
         }
 
@@ -408,7 +409,7 @@ public final class Structure {
             }
             return new LevelStructure(
                     surface,
-                    StructureBoundary.fromPersistenceSnapshot(surface.surface().cellCoords(), resolvedSnapshot.boundary()));
+                    StructureBoundary.fromPersistenceSnapshot(surface.surface().cells(), resolvedSnapshot.boundary()));
         }
 
         public boolean isEmpty() {
@@ -450,20 +451,21 @@ public final class Structure {
         return new Structure(levelsByZ, null);
     }
 
-    private static Structure fromGridPoints(Collection<GridPoint> cubePoints) {
-        if (cubePoints == null || cubePoints.isEmpty()) {
+    private static Structure fromGridPoints(Collection<GridPoint> points) {
+        if (points == null || points.isEmpty()) {
             return empty();
         }
         Map<Integer, Set<GridPoint>> cellsByLevel = new LinkedHashMap<>();
-        for (GridPoint cubePoint : cubePoints) {
-            if (cubePoint != null) {
-                cellsByLevel.computeIfAbsent(cubePoint.z(), ignored -> new LinkedHashSet<>()).add(cubePoint.projectedCell());
+        for (GridPoint point : points) {
+            if (point != null) {
+                cellsByLevel.computeIfAbsent(point.z(), ignored -> new LinkedHashSet<>())
+                        .addAll(point.touchingCells().onLevel(point.z()).cells());
             }
         }
         Map<Integer, StructureSpecification.LevelSpecification> levelsByZ = new LinkedHashMap<>();
         for (Map.Entry<Integer, Set<GridPoint>> entry : cellsByLevel.entrySet()) {
             levelsByZ.put(entry.getKey(), StructureSpecification.LevelSpecification.of(
-                    GridPoint.bestCenter(entry.getValue()),
+                    features.world.dungeonmap.geometry.GridArea.of(entry.getValue()).center(),
                     entry.getValue(),
                     entry.getValue(),
                     List.of(),

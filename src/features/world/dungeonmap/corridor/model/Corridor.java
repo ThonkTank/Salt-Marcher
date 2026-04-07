@@ -1,8 +1,7 @@
-package features.world.dungeonmap.model.structures.corridor;
+package features.world.dungeonmap.corridor.model;
 
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.geometry.CardinalDirection;
-import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridBoundary;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridSegment;
@@ -292,7 +291,7 @@ public final class Corridor {
         if (!Objects.equals(sourceDoor.roomId(), targetDoor.roomId())) {
             throw new IllegalArgumentException("Corridor door move must stay on the same room");
         }
-        GridSegment targetBoundarySegment2x = targetDoor.anchorSegment2x();
+        GridSegment targetBoundarySegment2x = targetDoor.anchorSegment();
         if (Objects.equals(sourceBoundarySegment2x, targetBoundarySegment2x)) {
             return this;
         }
@@ -305,7 +304,7 @@ public final class Corridor {
         for (CorridorNode node : nodes) {
             CorridorNode updatedNode = node;
             if (Objects.equals(node.nodeId(), sourceNode.nodeId())) {
-                updatedNode = new CorridorNode(node.nodeId(), targetDoor.anchorSegment2x().midpoint(), targetDoor.ref());
+                updatedNode = new CorridorNode(node.nodeId(), targetDoor.anchorSegment().midpoint(), targetDoor.ref());
             }
             updatedNodes.add(updatedNode);
             changed |= !Objects.equals(updatedNode, node);
@@ -361,7 +360,7 @@ public final class Corridor {
         if (layout == null || roomNode == null || !roomNode.isDoorBound() || tileCell == null) {
             return this;
         }
-        GridSegment boundarySegment2x = requiredExteriorDoor(layout, levelZ, roomNode.doorRef()).anchorSegment2x();
+        GridSegment boundarySegment2x = requiredExteriorDoor(layout, levelZ, roomNode.doorRef()).anchorSegment();
         if (boundarySegment2x != null && findRoomBoundNodeAtBoundary(boundarySegment2x) != null) {
             return this;
         }
@@ -440,7 +439,7 @@ public final class Corridor {
                     DungeonLayout.DoorDescription movedDoor = layout.describeDoor(node.doorRef());
                     updatedNode = movedDoor == null
                             ? new CorridorNode(node.nodeId(), node.point2x(), null)
-                            : new CorridorNode(node.nodeId(), movedDoor.anchorSegment2x().midpoint(), node.doorRef());
+                            : new CorridorNode(node.nodeId(), movedDoor.anchorSegment().midpoint(), node.doorRef());
                 }
             }
             updatedNodes.add(updatedNode);
@@ -889,8 +888,8 @@ public final class Corridor {
                 levelZ,
                 StructureSpecification.LevelSpecification.of(
                         routedStructure.surfaceAtLevel(levelZ).surface().anchorCell(),
-                        routedStructure.surfaceAtLevel(levelZ).surface().cellCoords(),
-                        routedStructure.surfaceAtLevel(levelZ).floor().cellCoords(),
+                        routedStructure.surfaceAtLevel(levelZ).surface().cells(),
+                        routedStructure.surfaceAtLevel(levelZ).floor().cells(),
                         doors == null ? List.of() : doors,
                         boundary.walls())));
     }
@@ -926,7 +925,7 @@ public final class Corridor {
             }
             for (var room : cluster.structure().roomTopology().rooms()) {
                 if (room != null) {
-                    blocked.addAll(cluster.structure().roomTopology().structureFor(room).surfaceAtLevel(levelZ).surface().cellCoords());
+                    blocked.addAll(cluster.structure().roomTopology().structureFor(room).surfaceAtLevel(levelZ).surface().cells());
                 }
             }
         }
@@ -956,7 +955,7 @@ public final class Corridor {
         }
         if (node.isDoorBound()) {
             DungeonLayout.RoomBoundaryDescription boundary = requiredExteriorDoorBoundary(layout, levelZ, node.doorRef());
-            GridSegment boundarySegment2x = requiredExteriorDoor(layout, levelZ, node.doorRef()).anchorSegment2x();
+            GridSegment boundarySegment2x = requiredExteriorDoor(layout, levelZ, node.doorRef()).anchorSegment();
             GridPoint exteriorCell = boundary.roomCell().add(boundary.outwardDirection().delta());
             return List.of(new CorridorRouting.AnchorAttachment(
                     exteriorCell,
@@ -1023,12 +1022,12 @@ public final class Corridor {
         if (requirePersistedRoomId && reboundDoor.roomId() == null) {
             throw new IllegalArgumentException("Corridor node rebound requires a persisted room id at level " + levelZ);
         }
-        return new DoorRewriteBinding(reboundDoor.ref(), reboundDoor.anchorSegment2x().midpoint());
+        return new DoorRewriteBinding(reboundDoor.ref(), reboundDoor.anchorSegment().midpoint());
     }
 
     private static GridSegment doorBoundaryEdge(CorridorNode node, int levelZ, DungeonLayout layout) {
         DungeonLayout.DoorDescription description = requiredExteriorDoor(layout, levelZ, node == null ? null : node.doorRef());
-        return description.anchorSegment2x();
+        return description.anchorSegment();
     }
 
     private static DungeonLayout.DoorDescription requiredExteriorDoor(
@@ -1053,7 +1052,7 @@ public final class Corridor {
     ) {
         DungeonLayout.DoorDescription description = requiredExteriorDoor(layout, levelZ, doorRef);
         DungeonLayout.RoomBoundaryDescription boundary = layout.describeRoomBoundary(
-                new DungeonSelectionRef.RoomBoundaryRef(description.roomId(), description.anchorSegment2x()),
+                new DungeonSelectionRef.RoomBoundaryRef(description.roomId(), description.anchorSegment()),
                 levelZ);
         if (boundary == null || !boundary.exterior()) {
             throw new IllegalArgumentException("Corridor door node must reference an exterior room door");

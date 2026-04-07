@@ -3,18 +3,20 @@ package features.world.dungeonmap.geometry;
 import java.util.Locale;
 
 public enum CardinalDirection {
-    NORTH(0, new GridPoint(0, -1), "Nord"),
-    EAST(1, new GridPoint(1, 0), "Ost"),
-    SOUTH(2, new GridPoint(0, 1), "Süd"),
-    WEST(3, new GridPoint(-1, 0), "West");
+    NORTH(0, 0, -1, "Nord"),
+    EAST(1, 1, 0, "Ost"),
+    SOUTH(2, 0, 1, "Süd"),
+    WEST(3, -1, 0, "West");
 
     private final int code;
-    private final GridPoint delta;
+    private final int dxCells;
+    private final int dyCells;
     private final String label;
 
-    CardinalDirection(int code, GridPoint delta, String label) {
+    CardinalDirection(int code, int dxCells, int dyCells, String label) {
         this.code = code;
-        this.delta = delta;
+        this.dxCells = dxCells;
+        this.dyCells = dyCells;
         this.label = label;
     }
 
@@ -22,8 +24,12 @@ public enum CardinalDirection {
         return code;
     }
 
-    public GridPoint delta() {
-        return delta;
+    public int dxCells() {
+        return dxCells;
+    }
+
+    public int dyCells() {
+        return dyCells;
     }
 
     public String label() {
@@ -48,18 +54,17 @@ public enum CardinalDirection {
         };
     }
 
-    public String relativeLabel(GridPoint absoluteDirection) {
-        CardinalDirection direction = fromDirection(absoluteDirection);
-        if (direction == null) {
+    public String relativeLabel(CardinalDirection absoluteDirection) {
+        if (absoluteDirection == null) {
             return "Unklar";
         }
-        if (direction == this) {
+        if (absoluteDirection == this) {
             return "Direkt vor euch";
         }
-        if (direction == clockwise()) {
+        if (absoluteDirection == clockwise()) {
             return "Rechts von euch";
         }
-        if (direction == opposite()) {
+        if (absoluteDirection == opposite()) {
             return "Hinter euch";
         }
         return "Links von euch";
@@ -89,19 +94,11 @@ public enum CardinalDirection {
         return defaultDirection();
     }
 
-    public static CardinalDirection fromDirection(GridPoint direction) {
-        if (direction == null) {
-            return null;
-        }
-        for (CardinalDirection candidate : values()) {
-            if (candidate.delta.equals(direction)) {
-                return candidate;
-            }
-        }
-        return null;
-    }
-
     public static CardinalDirection fromTravel(GridPoint from, GridPoint to, CardinalDirection fallback) {
-        return GridPoint.fromTravel(from, to, fallback);
+        if (from == null || to == null) {
+            return fallback;
+        }
+        CardinalDirection direction = from.cardinalDirectionTo(to);
+        return direction == null ? fallback : direction;
     }
 }

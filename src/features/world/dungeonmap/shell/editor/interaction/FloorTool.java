@@ -1,6 +1,6 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
-import features.world.dungeonmap.application.room.DungeonRoomApplicationService;
+import features.world.dungeonmap.cluster.application.DungeonClusterApplicationService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
@@ -33,7 +33,7 @@ public final class FloorTool implements EditorTool {
     private final DungeonMapState mapState;
     private final DungeonMapLoadingService loadingService;
     private final DungeonEditorSessionState sessionState;
-    private final DungeonRoomApplicationService roomApplicationService;
+    private final DungeonClusterApplicationService roomApplicationService;
     private final EditorInteractionState state;
 
     private CellWindowDragSession dragSession;
@@ -42,7 +42,7 @@ public final class FloorTool implements EditorTool {
             DungeonMapState mapState,
             DungeonMapLoadingService loadingService,
             DungeonEditorSessionState sessionState,
-            DungeonRoomApplicationService roomApplicationService,
+            DungeonClusterApplicationService roomApplicationService,
             EditorInteractionState state
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");

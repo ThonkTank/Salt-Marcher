@@ -101,7 +101,7 @@ public final class DungeonHitCollector {
 
     private static SurfaceMatch matchSegment(DungeonHitSurface.SegmentSurface surface, DungeonHitProbe probe) {
         double distance = Double.POSITIVE_INFINITY;
-        for (GridSegment segment2x : surface.segments2x()) {
+        for (GridSegment segment2x : surface.segments()) {
             distance = Math.min(distance, distanceToSegment(segment2x, probe));
         }
         return Double.isFinite(distance) && distance <= DungeonHitConventions.edgeTolerancePx(probe.gridSizePx())

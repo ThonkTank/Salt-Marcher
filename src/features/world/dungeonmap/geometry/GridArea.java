@@ -1,122 +1,100 @@
 package features.world.dungeonmap.geometry;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 public final class GridArea extends GridObject {
 
-    private final Set<GridPoint> cellPoints;
+    private final Set<GridPoint> cells;
 
     public static GridArea empty() {
         return new GridArea(Set.of());
     }
 
-    public static GridArea of(Collection<GridPoint> cellPoints) {
-        return new GridArea(cellPoints);
+    public static GridArea of(Collection<GridPoint> cells) {
+        return new GridArea(cells);
     }
 
-    public GridArea(Collection<GridPoint> cellPoints) {
-        this.cellPoints = normalizeCellPoints(cellPoints);
+    public GridArea(Collection<GridPoint> cells) {
+        this.cells = GridPoint.normalizeCells(cells);
     }
 
     public boolean isEmpty() {
-        return cellPoints.isEmpty();
+        return cells.isEmpty();
     }
 
-    public Set<GridPoint> cellPoints() {
-        return cellPoints;
-    }
-
-    public Set<GridPoint> cellCoords() {
-        return cellPoints();
+    public Set<GridPoint> cells() {
+        return cells;
     }
 
     public boolean contains(GridPoint cell) {
-        return cell != null && cellPoints.contains(GridPoint.cell(cell));
+        return cell != null && cells.contains(cell);
     }
 
-    public GridPoint centerCell() {
-        return cellPoints.isEmpty() ? null : GridPoint.bestCenter(cellPoints);
-    }
-
-    public GridPoint centerGridPoint() {
-        return centerCell();
-    }
-
-    public GridArea intersection(Collection<GridPoint> cells) {
-        Set<GridPoint> normalizedCells = normalizeCellPoints(cells);
-        if (cellPoints.isEmpty() || normalizedCells.isEmpty()) {
+    public GridArea onLevel(int levelZ) {
+        if (cells.isEmpty()) {
             return empty();
         }
-        LinkedHashSet<GridPoint> result = new LinkedHashSet<>();
-        for (GridPoint cell : cellPoints) {
-            if (normalizedCells.contains(cell)) {
-                result.add(cell);
-            }
-        }
-        return result.isEmpty() ? empty() : new GridArea(result);
+        return new GridArea(cells.stream().filter(cell -> cell.z() == levelZ).toList());
     }
 
-    public boolean overlaps(Collection<GridPoint> cells) {
-        Set<GridPoint> normalizedCells = normalizeCellPoints(cells);
-        if (cellPoints.isEmpty() || normalizedCells.isEmpty()) {
+    public GridPoint center() {
+        if (cells.isEmpty()) {
+            return null;
+        }
+        if (levels().size() > 1) {
+            throw new IllegalStateException("GridArea.center requires a single-level area");
+        }
+        return GridPoint.centerOfCells(cells);
+    }
+
+    public GridArea intersection(GridArea other) {
+        Set<GridPoint> otherCells = other == null ? Set.of() : other.cells();
+        if (cells.isEmpty() || otherCells.isEmpty()) {
+            return empty();
+        }
+        return new GridArea(cells.stream().filter(otherCells::contains).toList());
+    }
+
+    public boolean overlaps(GridArea other) {
+        Set<GridPoint> otherCells = other == null ? Set.of() : other.cells();
+        if (cells.isEmpty() || otherCells.isEmpty()) {
             return false;
         }
-        for (GridPoint cell : normalizedCells) {
-            if (cellPoints.contains(cell)) {
-                return true;
-            }
-        }
-        return false;
+        return cells.stream().anyMatch(otherCells::contains);
     }
 
-    public Set<GridPoint> cubePoints(int levelZ) {
-        if (cellPoints.isEmpty()) {
-            return Set.of();
-        }
-        LinkedHashSet<GridPoint> result = new LinkedHashSet<>();
-        for (GridPoint cell : cellPoints) {
-            result.add(GridPoint.at(cell, levelZ));
-        }
-        return Set.copyOf(result);
-    }
-
-    public List<GridArea> connectedComponents() {
-        if (cellPoints.isEmpty()) {
-            return List.of();
-        }
-        return GridPoint.connectedComponents(cellPoints).stream()
+    public List<GridArea> components() {
+        return GridPoint.connectedCellComponents(cells).stream()
                 .map(GridArea::new)
                 .toList();
     }
 
-    public GridArea reachableFrom(GridPoint startCell, Collection<GridSegment> barriers) {
-        GridPoint resolvedStart = startCell == null ? null : GridPoint.cell(startCell);
-        if (resolvedStart == null || !contains(resolvedStart)) {
+    public GridArea reachableFrom(GridPoint startCell, GridBoundary barriers) {
+        if (startCell == null || !cells.contains(startCell)) {
             return empty();
         }
-        LinkedHashSet<GridPoint> remaining = new LinkedHashSet<>(cellPoints);
+        GridBoundary blocked = barriers == null ? GridBoundary.empty() : barriers;
+        LinkedHashSet<GridPoint> remaining = new LinkedHashSet<>(cells);
         LinkedHashSet<GridPoint> visited = new LinkedHashSet<>();
         ArrayDeque<GridPoint> queue = new ArrayDeque<>();
-        Set<GridSegment> blockedEdges = GridSegment.boundarySteps(barriers);
-        queue.add(resolvedStart);
-        remaining.remove(resolvedStart);
+        queue.add(startCell);
+        remaining.remove(startCell);
         while (!queue.isEmpty()) {
             GridPoint current = queue.removeFirst();
             if (!visited.add(current)) {
                 continue;
             }
-            for (GridPoint step : GridPoint.CARDINAL_STEPS) {
-                GridPoint neighbor = current.add(step);
+            for (CardinalDirection direction : CardinalDirection.values()) {
+                GridPoint neighbor = current.step(direction);
                 if (!remaining.contains(neighbor)) {
                     continue;
                 }
-                GridSegment boundary = GridSegment.boundaryEdge(current, current.directionTo4(neighbor));
-                if (blockedEdges.contains(boundary)) {
+                if (blocked.contains(GridSegment.boundaryEdge(current, direction))) {
                     continue;
                 }
                 remaining.remove(neighbor);
@@ -126,48 +104,38 @@ public final class GridArea extends GridObject {
         return visited.isEmpty() ? empty() : new GridArea(visited);
     }
 
-    @Override
-    public GridArea translatedByCells(int dx, int dy, int dz) {
-        if (dx == 0 && dy == 0 && dz == 0) {
-            return this;
-        }
-        return new GridArea(cellPoints.stream()
-                .map(cell -> cell.translatedByCells(dx, dy, dz))
-                .toList());
-    }
-
-    public GridArea translatedByCells(GridPoint delta) {
-        GridPoint resolvedDelta = delta == null ? new GridPoint(0, 0) : delta;
-        return translatedByCells(resolvedDelta.x(), resolvedDelta.y(), resolvedDelta.z());
-    }
-
     public GridBoundary boundary() {
-        if (cellPoints.isEmpty()) {
+        if (cells.isEmpty()) {
             return GridBoundary.empty();
         }
-        LinkedHashSet<GridSegment> boundarySegments = new LinkedHashSet<>();
-        for (GridPoint cell : cellPoints) {
-            for (GridPoint step : GridPoint.CARDINAL_STEPS) {
-                GridPoint neighbor = cell.add(step);
-                if (!cellPoints.contains(neighbor)) {
-                    boundarySegments.add(GridSegment.boundaryEdge(cell, cell.directionTo4(neighbor)));
+        LinkedHashSet<GridSegment> result = new LinkedHashSet<>();
+        for (GridPoint cell : cells) {
+            for (CardinalDirection direction : CardinalDirection.values()) {
+                GridPoint neighbor = cell.step(direction);
+                if (!cells.contains(neighbor)) {
+                    result.add(GridSegment.boundaryEdge(cell, direction));
                 }
             }
         }
-        return boundarySegments.isEmpty() ? GridBoundary.empty() : GridBoundary.fromBoundarySegments(boundarySegments);
+        return result.isEmpty() ? GridBoundary.empty() : GridBoundary.of(result);
     }
 
-    public GridBoundary boundaryShape() {
-        return boundary();
+    @Override
+    public GridArea translated(GridTranslation translation) {
+        GridTranslation resolvedTranslation = translation == null ? GridTranslation.none() : translation;
+        if (resolvedTranslation.isZero()) {
+            return this;
+        }
+        return new GridArea(cells.stream().map(cell -> cell.translated(resolvedTranslation)).toList());
     }
 
     @Override
     public Set<Integer> levels() {
-        if (cellPoints.isEmpty()) {
+        if (cells.isEmpty()) {
             return Set.of();
         }
         LinkedHashSet<Integer> levels = new LinkedHashSet<>();
-        for (GridPoint cell : cellPoints) {
+        for (GridPoint cell : cells) {
             levels.add(cell.z());
         }
         return Set.copyOf(levels);
@@ -178,14 +146,24 @@ public final class GridArea extends GridObject {
         return this;
     }
 
-    static Set<GridPoint> normalizeCellPoints(Collection<GridPoint> cellPoints) {
-        LinkedHashSet<GridPoint> result = new LinkedHashSet<>();
-        if (cellPoints != null) {
-            cellPoints.stream()
-                    .filter(point -> point != null && point.isCell())
-                    .sorted(GridPoint.ORDER)
-                    .forEach(result::add);
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
         }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+        if (!(other instanceof GridArea area)) {
+            return false;
+        }
+        return Objects.equals(cells, area.cells);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(cells);
+    }
+
+    @Override
+    public String toString() {
+        return "GridArea[cells=" + cells + "]";
     }
 }

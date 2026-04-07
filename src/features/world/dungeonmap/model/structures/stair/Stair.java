@@ -1,31 +1,33 @@
 package features.world.dungeonmap.model.structures.stair;
 
-import features.world.dungeonmap.geometry.GridPoint;
-import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.geometry.GridPath;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridTranslation;
 
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 /**
  * Passive stair object over canonical ordered path topology.
  */
-public final class Stair extends GridPath {
+public final class Stair {
 
+    private final GridPath path;
     private final Set<Integer> stopLevels;
     private final List<StairExit> exits;
 
     public Stair(List<GridPoint> path, Set<Integer> stopLevels) {
-        super(normalizePath(path));
-        this.stopLevels = normalizeStopLevels(points(), stopLevels);
-        this.exits = deriveExits(points(), this.stopLevels);
+        this(GridPath.of(normalizePath(path)), stopLevels);
     }
 
     public Stair(GridPath path, Set<Integer> stopLevels) {
-        this(path == null ? List.of() : path.points(), stopLevels);
+        this.path = path == null ? GridPath.empty() : path;
+        this.stopLevels = normalizeStopLevels(this.path.points(), stopLevels);
+        this.exits = deriveExits(this.path.points(), this.stopLevels);
     }
 
     public static Stair of(List<GridPoint> path, Set<Integer> stopLevels) {
@@ -37,11 +39,11 @@ public final class Stair extends GridPath {
     }
 
     public GridPath tilePath() {
-        return this;
+        return path;
     }
 
     public List<GridPoint> path() {
-        return points();
+        return path.points();
     }
 
     public Set<Integer> stopLevels() {
@@ -53,11 +55,11 @@ public final class Stair extends GridPath {
     }
 
     public Set<Integer> reachableLevels() {
-        return levels();
+        return path.levels();
     }
 
     public Set<GridPoint> occupiedPositions() {
-        return pointSet();
+        return Set.copyOf(path.points());
     }
 
     public List<StairExit> exitsAtLevel(int levelZ) {
@@ -66,15 +68,15 @@ public final class Stair extends GridPath {
                 .toList();
     }
 
-    public Stair movedBy(GridPoint delta, int levelDelta) {
-        GridPoint resolvedDelta = delta == null ? new GridPoint(0, 0) : delta;
-        if ((resolvedDelta.x() == 0 && resolvedDelta.y() == 0) && levelDelta == 0) {
+    public Stair movedBy(GridTranslation translation) {
+        GridTranslation resolvedTranslation = translation == null ? GridTranslation.none() : translation;
+        if (resolvedTranslation.isZero()) {
             return this;
         }
         Set<Integer> translatedStops = stopLevels.stream()
-                .map(stopLevel -> stopLevel + levelDelta)
+                .map(stopLevel -> stopLevel + resolvedTranslation.dzLevels())
                 .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
-        return Stair.of(translatedBy(resolvedDelta, levelDelta), translatedStops);
+        return Stair.of(path.translated(resolvedTranslation), translatedStops);
     }
 
     private static List<GridPoint> normalizePath(List<GridPoint> path) {
@@ -97,7 +99,8 @@ public final class Stair extends GridPath {
                 if (current.z() != previous.z() + 1) {
                     throw new IllegalArgumentException("Treppenpfad muss Ebenen in 1er-Schritten verbinden");
                 }
-                int planarDistance = Math.abs(current.x() - previous.x()) + Math.abs(current.y() - previous.y());
+                int planarDistance = Math.abs(current.x2() - previous.x2()) / 2
+                        + Math.abs(current.y2() - previous.y2()) / 2;
                 if (planarDistance > 1) {
                     throw new IllegalArgumentException("Treppenpfad verletzt die 1:1-Steigung");
                 }
@@ -127,10 +130,7 @@ public final class Stair extends GridPath {
         return Collections.unmodifiableSet(normalizedStops);
     }
 
-    private static List<StairExit> deriveExits(
-            List<GridPoint> path,
-            Set<Integer> stopLevels
-    ) {
+    private static List<StairExit> deriveExits(List<GridPoint> path, Set<Integer> stopLevels) {
         LinkedHashSet<GridPoint> exitPositions = new LinkedHashSet<>();
         for (GridPoint node : path) {
             if (stopLevels.contains(node.z())) {
@@ -138,9 +138,25 @@ public final class Stair extends GridPath {
             }
         }
         return exitPositions.stream()
-                .sorted(Comparator.comparing(GridPoint::z)
-                        .thenComparing(GridPoint.POINT_ORDER))
+                .sorted(Comparator.comparingInt(GridPoint::z).thenComparing(GridPoint.ORDER))
                 .map(position -> new StairExit(position, null))
                 .toList();
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (!(other instanceof Stair stair)) {
+            return false;
+        }
+        return Objects.equals(path, stair.path)
+                && Objects.equals(stopLevels, stair.stopLevels);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(path, stopLevels);
     }
 }

@@ -1,6 +1,6 @@
 package features.world.dungeonmap.shell.editor.interaction;
 
-import features.world.dungeonmap.application.room.DungeonRoomApplicationService;
+import features.world.dungeonmap.cluster.application.DungeonClusterApplicationService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
@@ -35,7 +35,7 @@ public final class DoorTool implements EditorTool {
 
     private final DungeonMapState mapState;
     private final DungeonMapLoadingService loadingService;
-    private final DungeonRoomApplicationService roomApplicationService;
+    private final DungeonClusterApplicationService roomApplicationService;
     private final EditorInteractionState state;
 
     private final Label summaryLabel = new Label();
@@ -49,7 +49,7 @@ public final class DoorTool implements EditorTool {
     public DoorTool(
             DungeonMapState mapState,
             DungeonMapLoadingService loadingService,
-            DungeonRoomApplicationService roomApplicationService,
+            DungeonClusterApplicationService roomApplicationService,
             EditorInteractionState state
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
@@ -213,7 +213,7 @@ public final class DoorTool implements EditorTool {
                     levelZ,
                     DungeonLayout.DoorDescription::isRoomLocal);
             if (localDoor != null) {
-                deleteLocalDoor(localDoor.clusterId(), levelZ, localDoor.anchorSegment2x());
+                deleteLocalDoor(localDoor.clusterId(), levelZ, localDoor.anchorSegment());
                 return true;
             }
             DungeonLayout.DoorDescription exteriorDoor = doorDescription(
@@ -228,7 +228,7 @@ public final class DoorTool implements EditorTool {
             if (room == null) {
                 return false;
             }
-            deleteExteriorDoor(room.clusterId(), levelZ, exteriorDoor.anchorSegment2x());
+            deleteExteriorDoor(room.clusterId(), levelZ, exteriorDoor.anchorSegment());
             return true;
         }
         if (!(hit instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundaryHit)) {
@@ -336,7 +336,7 @@ public final class DoorTool implements EditorTool {
         Room room = description == null ? null : findRoom(layout, description.roomId());
         summaryLabel.setText("Außentür");
         detailLabel.setText(room == null ? "Raum" : roomName(room.roomId()));
-        metaLabel.setText(segmentText(description == null ? null : description.anchorSegment2x()));
+        metaLabel.setText(segmentText(description == null ? null : description.anchorSegment()));
     }
 
     private Connection selectedLocalDoor() {

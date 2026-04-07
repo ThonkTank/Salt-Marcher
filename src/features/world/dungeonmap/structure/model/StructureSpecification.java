@@ -1,21 +1,18 @@
 package features.world.dungeonmap.structure.model;
 
+import features.world.dungeonmap.geometry.GridArea;
 import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.structure.model.boundary.door.Door;
 import features.world.dungeonmap.structure.model.boundary.wall.Wall;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Objects;
 
 /**
  * Canonical full-structure creation payload.
- *
- * <p>All public structure creation workflows must reduce to this explicit runtime-shaped specification so callers do
- * not keep competing builder seams alive.</p>
  */
 public record StructureSpecification(Map<Integer, LevelSpecification> levelsByZ) {
 
@@ -48,16 +45,16 @@ public record StructureSpecification(Map<Integer, LevelSpecification> levelsByZ)
 
     public record LevelSpecification(
             GridPoint anchorCell,
-            Set<GridPoint> surfaceCells,
-            Set<GridPoint> floorCells,
+            GridArea surfaceArea,
+            GridArea floorArea,
             List<Door> doors,
             List<Wall> walls
     ) {
         public LevelSpecification {
-            surfaceCells = normalizedCells(surfaceCells);
-            floorCells = normalizedCells(floorCells);
-            doors = doors == null ? List.of() : List.copyOf(doors.stream().filter(java.util.Objects::nonNull).toList());
-            walls = walls == null ? List.of() : List.copyOf(walls.stream().filter(java.util.Objects::nonNull).toList());
+            surfaceArea = surfaceArea == null ? GridArea.empty() : surfaceArea;
+            floorArea = floorArea == null ? GridArea.empty() : floorArea.intersection(surfaceArea);
+            doors = normalizeObjects(doors);
+            walls = normalizeObjects(walls);
         }
 
         public static LevelSpecification of(
@@ -69,27 +66,21 @@ public record StructureSpecification(Map<Integer, LevelSpecification> levelsByZ)
         ) {
             return new LevelSpecification(
                     anchorCell,
-                    normalizedCells(surfaceCells),
-                    normalizedCells(floorCells),
-                    doors == null ? List.of() : List.copyOf(doors.stream().filter(java.util.Objects::nonNull).toList()),
-                    walls == null ? List.of() : List.copyOf(walls.stream().filter(java.util.Objects::nonNull).toList()));
+                    GridArea.of(surfaceCells),
+                    GridArea.of(floorCells),
+                    normalizeObjects(doors),
+                    normalizeObjects(walls));
         }
 
         public boolean isEmpty() {
-            return surfaceCells.isEmpty();
+            return surfaceArea.isEmpty();
         }
 
-        private static Set<GridPoint> normalizedCells(Collection<GridPoint> cells) {
-            if (cells == null || cells.isEmpty()) {
-                return Set.of();
+        private static <T> List<T> normalizeObjects(Collection<T> objects) {
+            if (objects == null || objects.isEmpty()) {
+                return List.of();
             }
-            LinkedHashSet<GridPoint> result = new LinkedHashSet<>();
-            for (GridPoint cell : cells) {
-                if (cell != null) {
-                    result.add(cell);
-                }
-            }
-            return result.isEmpty() ? Set.of() : Set.copyOf(result);
+            return objects.stream().filter(Objects::nonNull).toList();
         }
     }
 }

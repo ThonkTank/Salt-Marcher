@@ -70,8 +70,8 @@ public final class StructureBoundary {
         if (surfaceShape.isEmpty()) {
             return empty();
         }
-        Set<GridPoint> normalizedSurfaceCells = surfaceShape.cellCoords();
-        Set<GridPoint> normalizedPreviousSurfaceCells = GridArea.of(previousSurfaceCells).cellCoords();
+        Set<GridPoint> normalizedSurfaceCells = surfaceShape.cells();
+        Set<GridPoint> normalizedPreviousSurfaceCells = GridArea.of(previousSurfaceCells).cells();
         return new StructureBoundary(
                 normalizedSurfaceCells,
                 doors,
@@ -110,7 +110,7 @@ public final class StructureBoundary {
     }
 
     public Set<GridSegment> boundaryEdges() {
-        return edgeShape.segmentSet2x();
+        return edgeShape.segments();
     }
 
     public Set<GridSegment> doorBoundaryEdges() {
@@ -436,14 +436,14 @@ public final class StructureBoundary {
             return Set.of();
         }
         GridArea surfaceShape = GridArea.of(surfaceCells);
-        return surfaceShape.isEmpty() ? Set.of() : surfaceShape.boundaryShape().segmentSet2x();
+        return surfaceShape.isEmpty() ? Set.of() : surfaceShape.boundaryShape().segments();
     }
 
     private static long touchingSurfaceCellCount(Set<GridPoint> surfaceCells, GridSegment segment) {
         if (surfaceCells == null || surfaceCells.isEmpty() || segment == null) {
             return 0L;
         }
-        return segment.touchingCells().stream().filter(surfaceCells::contains).count();
+        return segment.touchingCells().cells().stream().filter(surfaceCells::contains).count();
     }
 
     private static List<Door> normalizeDoors(GridBoundary boundaryShape, Collection<Door> doors) {
@@ -451,7 +451,7 @@ public final class StructureBoundary {
             return List.of();
         }
         ArrayList<Door> result = new ArrayList<>();
-        List<GridSegment> resolvedBoundarySegments = boundaryShape.segments2x();
+        List<GridSegment> resolvedBoundarySegments = boundaryShape.segments();
         for (Door door : doors) {
             Door normalizedDoor = door == null ? null : door.clippedToBoundary(resolvedBoundarySegments);
             if (normalizedDoor == null) {
@@ -622,7 +622,7 @@ public final class StructureBoundary {
     private static long syntheticDoorId(Door door) {
         long result = 17L;
         result = 31L * result + (door == null || door.doorState() == null ? 0L : door.doorState().ordinal());
-        result = 31L * result + (door == null || door.persistedAnchorSegment2x() == null ? 0L : door.persistedAnchorSegment2x().hashCode());
+        result = 31L * result + (door == null || door.persistedAnchorSegment() == null ? 0L : door.persistedAnchorSegment().hashCode());
         for (GridSegment segment2x : door == null ? List.<GridSegment>of() : door.orderedBoundarySegments()) {
             result = 31L * result + segment2x.hashCode();
         }
