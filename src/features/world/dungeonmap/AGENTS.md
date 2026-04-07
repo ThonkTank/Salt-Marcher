@@ -1,7 +1,5 @@
 # AGENTS.md
 
-This file covers `src/features/world/dungeonmap/`. Use it together with the root `AGENTS.md` and `src/features/world/AGENTS.md`.
-
 ## Purpose
 
 `dungeonmap` owns the dungeon editor and the matching runtime surface. Editor, runtime, loading, and persistence must all resolve the same dungeon topology.

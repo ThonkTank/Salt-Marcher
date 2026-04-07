@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`sync/` holds temporary transfer files used for device-to-device sync.
+`sync/` holds short-lived transfer files used for device-to-device sync.
 
 ## Where New Code Goes
 

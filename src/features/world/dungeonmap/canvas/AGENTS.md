@@ -21,4 +21,4 @@ This file covers `src/features/world/dungeonmap/canvas/`.
 
 - Do not put workflow or persistence state into render payloads.
 - Do not rebuild hover, selection, or runtime ownership semantics inside the renderer.
-- Do not create temporary model owners just to draw previews that canonical geometry or state already express.
+- Do not introduce preview-only model owners when canonical geometry or shared state already express the draw input.

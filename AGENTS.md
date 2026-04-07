@@ -17,7 +17,7 @@ This file defines the repository-specific operating constraints for Claude Code 
 - shared kernels such as `layout` or geometry only when they are the one canonical truth shared by several owners
 - workflow or surface owners such as `runtime`, `catalog`, `editor interaction`, or `render/input` only when the workflow or surface is itself the stable central owner
 
-**Legacy package names:** directories such as `service`, `builder`, `loading`, `shell`, `canvas`, `internal`, `maintenance`, or `support` may still exist in the tree. They do **not** define architecture precedent by themselves. Treat them as exceptions that require an explicit local owner rule before using them as precedent.
+**Legacy package names:** directories such as `service`, `builder`, `loading`, `shell`, `canvas`, `internal`, `maintenance`, or `support` may appear in the tree. They do **not** define architecture precedent by themselves. Treat them as exceptions that require an explicit local owner rule before using them as precedent.
 
 **Stable infrastructure homes:**
 - `src/database/DatabaseManager` — connection factory. `getConnection()` returns a fresh Connection with `PRAGMA foreign_keys=ON` and `journal_mode=WAL`; callers own it via try-with-resources. `setupDatabase()` uses idempotent `CREATE TABLE IF NOT EXISTS` + `INSERT OR IGNORE` seeding
@@ -118,7 +118,7 @@ Do not reverse that decision order. A capability does not belong in a package be
 - Touched code should move toward the target architecture at the nearest safe seam without widening scope.
 - Preserve behavior, storage assumptions, user workflows, and explicit invariants unless the task explicitly requires changing them.
 - Avoid wrappers, adapters, or intermediate packages whose only purpose is to rename existing complexity.
-- Existing code may keep older local shapes until touched. Use the target architecture as the precedent for new or edited work.
+- Existing code may keep older local shapes until touched. Use the target architecture as the editing precedent for new or changed work.
 - Do not do rename-only churn just to satisfy the naming system. Rename when it clarifies ownership, removes a misleading role signal, or accompanies a real boundary change.
 - When goals compete, use this order: preserve correctness and satisfy the user request; preserve explicit repository invariants and local `AGENTS.md` rules; keep the change small enough to verify safely; then move the touched code toward the target architecture.
 
@@ -202,7 +202,7 @@ The rules in this section are decision filters, not soft preferences. When multi
 - Application workflows may propagate `SQLException` from repositories and transaction boundaries, but business validation must use domain/argument exceptions (`IllegalArgumentException` or a feature-specific edit exception), not `SQLException`
 - Precise helper types such as `*Factory`, `*Generator`, `*Calculator`, `*Classifier`, `*Normalizer`, `*Assembler`, `*Coordinator`, `*Planner`, `*Matcher`, and comparable pure helpers are static-only with private constructor unless they need explicit state
 - Stateful workflow entrypoints (`*ApplicationService`, `*Session`) are instance-based
-- Some existing feature areas still use `service/` packages. Keep their public workflow entrypoints at the package root, place new code in `application/`, and move close collaborators into focused owner slices when touching that area
+- Some existing feature areas use `service/` packages. Keep their public workflow entrypoints at the package root, place new code in `application/`, and move close collaborators into focused owner slices when touching that area
 - Cross-feature read DTOs belong in `src/features/<feature>/api/`, not in `model/`. Use the `*Summary` naming pattern for lightweight selector DTOs. Keep `model/` focused on domain/editor state, not transport shapes for other features
 - Feature module APIs should expose narrow, role-specific setup methods. Do not hide unrelated wiring behind a generic `initialize(...)` entrypoint
 

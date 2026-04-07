@@ -20,4 +20,4 @@
 
 - Do not move `campaign_state` ownership into `features.world`.
 - Do not add consumer-specific policy to the API layer.
-- Do not treat this file as a roadmap for a different future feature.
+- Do not split this persisted world-session aggregate across consumer features.
