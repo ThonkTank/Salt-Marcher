@@ -4,11 +4,12 @@ import features.world.dungeonmap.application.corridor.DungeonCorridorApplication
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.geometry.CardinalDirection;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridSegment;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
+import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.Connection;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
@@ -177,7 +178,7 @@ public final class CorridorTool implements EditorTool {
                 return false;
             }
             CorridorEndpoint endpoint = corridorEndpoint(doorHit);
-            GridSegment2x anchorSegment2x = exteriorDoor.anchorSegment2x();
+            GridSegment anchorSegment2x = exteriorDoor.anchorSegment2x();
             if (pendingEndpoint != null) {
                 if (Objects.equals(pendingEndpoint.boundarySegment2x(), anchorSegment2x)) {
                     return true;
@@ -256,7 +257,7 @@ public final class CorridorTool implements EditorTool {
                 throwable -> UiErrorReporter.reportBackgroundFailure("CorridorTool.createDoorToDoor()", throwable));
     }
 
-    private void attachDoorToBoundary(CorridorEndpoint endpoint, Long corridorId, GridSegment2x boundarySegment2x) {
+    private void attachDoorToBoundary(CorridorEndpoint endpoint, Long corridorId, GridSegment boundarySegment2x) {
         if (endpoint == null || corridorId == null || boundarySegment2x == null) {
             return;
         }
@@ -318,7 +319,7 @@ public final class CorridorTool implements EditorTool {
                 throwable -> UiErrorReporter.reportBackgroundFailure("CorridorTool.deleteCorridorSegment()", throwable));
     }
 
-    private void deleteCorridorDoor(Long corridorId, GridSegment2x boundarySegment2x) {
+    private void deleteCorridorDoor(Long corridorId, GridSegment boundarySegment2x) {
         Long mapId = mapState.activeMapId();
         if (mapId == null || corridorId == null || boundarySegment2x == null) {
             return;
@@ -423,10 +424,23 @@ public final class CorridorTool implements EditorTool {
     }
 
     private String roomName(Long roomId) {
-        Room room = roomId == null ? null : mapState.activeMap().findRoom(roomId);
+        Room room = findRoom(mapState.activeMap(), roomId);
         return room == null || room.name() == null || room.name().isBlank()
                 ? "Raum " + roomId
                 : room.name();
+    }
+
+    private static Room findRoom(DungeonLayout layout, Long roomId) {
+        if (layout == null || roomId == null) {
+            return null;
+        }
+        for (RoomCluster cluster : layout.clusters()) {
+            Room room = cluster == null ? null : cluster.structure().roomTopology().findRoom(roomId);
+            if (room != null) {
+                return room;
+            }
+        }
+        return null;
     }
 
     private String corridorLabel(Long corridorId) {
@@ -443,7 +457,7 @@ public final class CorridorTool implements EditorTool {
         return rooms.isBlank() ? "" : "Verbunden: " + rooms;
     }
 
-    private static String segmentText(GridSegment2x segment2x) {
+    private static String segmentText(GridSegment segment2x) {
         if (segment2x == null) {
             return "";
         }
@@ -485,7 +499,7 @@ public final class CorridorTool implements EditorTool {
                 : null;
     }
 
-    private static GridSegment2x anchorSegment(
+    private static GridSegment anchorSegment(
             DungeonLayout layout,
             DungeonSelectionRef.DoorRef doorRef
     ) {
@@ -495,7 +509,7 @@ public final class CorridorTool implements EditorTool {
 
     private record PendingRoomDoor(
             CorridorEndpoint endpoint,
-            GridSegment2x boundarySegment2x
+            GridSegment boundarySegment2x
     ) {
     }
 

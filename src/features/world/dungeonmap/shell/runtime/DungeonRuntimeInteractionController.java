@@ -6,7 +6,7 @@ import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.canvas.base.DungeonCanvasTheme;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationSnapshot;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.shell.interaction.DungeonDragService;
 import features.world.dungeonmap.shell.interaction.DungeonHitCollector;
 import features.world.dungeonmap.shell.interaction.DungeonHitProbe;
@@ -23,7 +23,7 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
 
     private final DungeonMapState mapState;
     private final DungeonRuntimeState runtimeState;
-    private final Function<CellCoord, CellCoord> nearestTraversableCell;
+    private final Function<GridPoint, GridPoint> nearestTraversableCell;
     private final Consumer<DungeonRuntimeNavigationSnapshot> previewHandler;
     private final Consumer<DungeonRuntimeNavigationSnapshot> moveHandler;
     private final DungeonHitCollector hitCollector;
@@ -36,7 +36,7 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
     DungeonRuntimeInteractionController(
             DungeonMapState mapState,
             DungeonRuntimeState runtimeState,
-            Function<CellCoord, CellCoord> nearestTraversableCell,
+            Function<GridPoint, GridPoint> nearestTraversableCell,
             Consumer<DungeonRuntimeNavigationSnapshot> previewHandler,
             Consumer<DungeonRuntimeNavigationSnapshot> moveHandler,
             DungeonHitCollector hitCollector
@@ -65,7 +65,7 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
             dragSession = null;
             return false;
         }
-        CellCoord activeCell = runtimeState.activeNavigation().cell();
+        GridPoint activeCell = runtimeState.activeNavigation().cell();
         if (activeCell == null) {
             dragSession = null;
             return false;
@@ -160,7 +160,7 @@ final class DungeonRuntimeInteractionController implements DungeonCanvasInteract
         return layout == null ? DungeonLayout.empty() : layout;
     }
 
-    private DungeonRuntimeNavigationSnapshot navigationAt(CellCoord cell, int levelZ) {
+    private DungeonRuntimeNavigationSnapshot navigationAt(GridPoint cell, int levelZ) {
         Long mapId = mapState.activeMapId();
         return new DungeonRuntimeNavigationSnapshot(mapId, cell, levelZ, runtimeState.activeNavigation().heading());
     }

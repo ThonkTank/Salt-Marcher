@@ -10,8 +10,8 @@ import features.world.dungeonmap.application.runtime.description.DungeonRuntimeD
 import features.world.dungeonmap.application.runtime.description.DungeonRuntimeDescriptionResolver;
 import features.world.dungeonmap.canvas.base.DungeonRuntimeRenderOverlay;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
-import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.geometry.CardinalDirection;
+import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.shell.AbstractDungeonMapView;
 import features.world.dungeonmap.shell.controls.DungeonLevelOverlayControls;
@@ -359,7 +359,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         return label;
     }
 
-    private static String cellLabel(CellCoord cell, int levelZ) {
+    private static String cellLabel(GridPoint cell, int levelZ) {
         return cell == null ? "—" : cell.x() + ", " + cell.y() + ", z=" + levelZ;
     }
 

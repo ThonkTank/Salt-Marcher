@@ -1,6 +1,6 @@
 package features.world.dungeonmap.model.structures.corridor;
 
-import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
 
 import java.util.Objects;
@@ -11,7 +11,7 @@ import java.util.Objects;
  */
 public record CorridorNode(
         Long nodeId,
-        GridPoint2x point2x,
+        GridPoint point2x,
         DoorRef doorRef
 ) {
 

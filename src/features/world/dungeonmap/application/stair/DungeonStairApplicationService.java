@@ -3,8 +3,8 @@ package features.world.dungeonmap.application.stair;
 import database.DatabaseManager;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.TileShapeSpec;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridPathPatternSpec;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.repository.DungeonLayoutRepository;
 import features.world.dungeonmap.repository.DungeonStairRepository;
@@ -201,16 +201,16 @@ public final class DungeonStairApplicationService {
 
     public record StairDraft(
             String name,
-            CellCoord anchorCell,
+            GridPoint anchorCell,
             int anchorLevelZ,
-            TileShapeSpec shapeSpec,
+            GridPathPatternSpec shapeSpec,
             int minLevelZ,
             int maxLevelZ,
             Set<Integer> stopLevels
     ) {
         public StairDraft {
             anchorCell = Objects.requireNonNull(anchorCell, "anchorCell");
-            shapeSpec = shapeSpec == null ? TileShapeSpec.defaultSpec() : shapeSpec;
+            shapeSpec = shapeSpec == null ? GridPathPatternSpec.defaultSpec() : shapeSpec;
             stopLevels = stopLevels == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(stopLevels));
             name = name == null || name.isBlank() ? null : name.trim();
         }
@@ -222,7 +222,7 @@ public final class DungeonStairApplicationService {
     public record UpdateStairRequest(long mapId, long stairId, StairDraft draft) {
     }
 
-    public record MoveStairRequest(long mapId, long stairId, StairDraft draft, CellCoord delta, int levelDelta) {
+    public record MoveStairRequest(long mapId, long stairId, StairDraft draft, GridPoint delta, int levelDelta) {
     }
 
     public record DeleteStairRequest(long mapId, long stairId) {
@@ -234,16 +234,16 @@ public final class DungeonStairApplicationService {
     public record LoadedStairEditorSpec(
             long stairId,
             String name,
-            CellCoord anchorCell,
+            GridPoint anchorCell,
             int anchorLevelZ,
-            TileShapeSpec shapeSpec,
+            GridPathPatternSpec shapeSpec,
             int minLevelZ,
             int maxLevelZ,
             Set<Integer> stopLevels
     ) {
         public LoadedStairEditorSpec {
             anchorCell = Objects.requireNonNull(anchorCell, "anchorCell");
-            shapeSpec = shapeSpec == null ? TileShapeSpec.defaultSpec() : shapeSpec;
+            shapeSpec = shapeSpec == null ? GridPathPatternSpec.defaultSpec() : shapeSpec;
             stopLevels = stopLevels == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(stopLevels));
             name = name == null || name.isBlank() ? null : name.trim();
         }

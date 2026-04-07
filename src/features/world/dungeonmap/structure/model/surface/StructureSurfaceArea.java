@@ -1,9 +1,9 @@
 package features.world.dungeonmap.structure.model.surface;
 
-import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
-import features.world.dungeonmap.model.geometry.TileShape;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridSegment;
+import features.world.dungeonmap.geometry.GridArea;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -16,18 +16,18 @@ import java.util.Set;
 public final class StructureSurfaceArea extends StructureSurfaceObject {
 
     record PersistenceSnapshot(
-            CellCoord anchorCell,
-            Set<CellCoord> cells
+            GridPoint anchorCell,
+            Set<GridPoint> cells
     ) {
         public PersistenceSnapshot {
             cells = cells == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(cells));
         }
     }
 
-    private final CellCoord anchorCell;
+    private final GridPoint anchorCell;
 
     static StructureSurfaceArea empty() {
-        return new StructureSurfaceArea(null, TileShape.empty());
+        return new StructureSurfaceArea(null, GridArea.empty());
     }
 
     static PersistenceSnapshot emptySnapshot() {
@@ -35,10 +35,10 @@ public final class StructureSurfaceArea extends StructureSurfaceObject {
     }
 
     static StructureSurfaceArea fromCells(
-            CellCoord anchorCell,
-            Collection<CellCoord> cells
+            GridPoint anchorCell,
+            Collection<GridPoint> cells
     ) {
-        TileShape tileShape = TileShape.of(cells);
+        GridArea tileShape = GridArea.of(cells);
         if (tileShape.isEmpty()) {
             return empty();
         }
@@ -51,48 +51,48 @@ public final class StructureSurfaceArea extends StructureSurfaceObject {
     }
 
     private StructureSurfaceArea(
-            CellCoord anchorCell,
-            TileShape tileShape
+            GridPoint anchorCell,
+            GridArea tileShape
     ) {
         super(tileShape);
         this.anchorCell = normalizeAnchor(anchorCell, tileShape());
     }
 
-    public CellCoord anchorCell() {
+    public GridPoint anchorCell() {
         return anchorCell;
     }
 
-    public Set<CubePoint> cubePoints(int levelZ) {
+    public Set<GridPoint> cubePoints(int levelZ) {
         return tileShape().cubePoints(levelZ);
     }
 
-    public Set<CellCoord> reachableFrom(CellCoord startCell, Collection<GridSegment2x> boundaryEdges) {
+    public Set<GridPoint> reachableFrom(GridPoint startCell, Collection<GridSegment> boundaryEdges) {
         if (startCell == null || !contains(startCell)) {
             return Set.of();
         }
         return tileShape().reachableFrom(startCell, boundaryEdges).cellCoords();
     }
 
-    StructureSurfaceArea translatedByCells(CellCoord delta) {
-        CellCoord resolvedDelta = resolvedDelta(delta);
+    StructureSurfaceArea translatedByCells(GridPoint delta) {
+        GridPoint resolvedDelta = resolvedDelta(delta);
         if (resolvedDelta.x() == 0 && resolvedDelta.y() == 0) {
             return this;
         }
         return new StructureSurfaceArea(
                 anchorCell == null ? null : anchorCell.add(resolvedDelta),
-                translatedTileShape(resolvedDelta));
+                translatedGridArea(resolvedDelta));
     }
 
-    StructureSurfaceArea clippedTo(Collection<CellCoord> clippedCells, CellCoord preferredAnchor) {
-        TileShape clippedSurface = intersectedTileShape(clippedCells);
+    StructureSurfaceArea clippedTo(Collection<GridPoint> clippedCells, GridPoint preferredAnchor) {
+        GridArea clippedSurface = intersectedGridArea(clippedCells);
         if (clippedSurface.isEmpty()) {
             return empty();
         }
-        Set<CellCoord> normalizedSurfaceCells = clippedSurface.cellCoords();
+        Set<GridPoint> normalizedSurfaceCells = clippedSurface.cellCoords();
         return fromCells(
                 preferredAnchor != null && normalizedSurfaceCells.contains(preferredAnchor)
                         ? preferredAnchor
-                        : CellCoord.bestCenter(normalizedSurfaceCells),
+                        : GridPoint.bestCenter(normalizedSurfaceCells),
                 normalizedSurfaceCells);
     }
 
@@ -123,14 +123,14 @@ public final class StructureSurfaceArea extends StructureSurfaceObject {
                 + ", cells=" + cellCoords() + "]";
     }
 
-    private static CellCoord normalizeAnchor(CellCoord anchorCell, TileShape tileShape) {
+    private static GridPoint normalizeAnchor(GridPoint anchorCell, GridArea tileShape) {
         if (tileShape == null || tileShape.isEmpty()) {
             return anchorCell;
         }
         if (anchorCell != null && tileShape.contains(anchorCell)) {
             return anchorCell;
         }
-        CellCoord centerCell = tileShape.centerCellCoord();
-        return centerCell == null ? new CellCoord(0, 0) : centerCell;
+        GridPoint centerCell = tileShape.centerGridPoint();
+        return centerCell == null ? new GridPoint(0, 0) : centerCell;
     }
 }

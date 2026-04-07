@@ -1,7 +1,7 @@
 package features.world.dungeonmap.application.runtime;
 
-import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.geometry.CardinalDirection;
+import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
 
 import java.util.Objects;
@@ -29,7 +29,7 @@ public record DungeonRuntimeAction(
     }
 
     public record CellTarget(
-            CellCoord cell,
+            GridPoint cell,
             int levelZ,
             CardinalDirection headingOverride
     ) implements Target {

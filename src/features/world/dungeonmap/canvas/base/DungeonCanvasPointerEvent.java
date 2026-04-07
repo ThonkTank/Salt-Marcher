@@ -1,12 +1,12 @@
 package features.world.dungeonmap.canvas.base;
 
-import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.geometry.GridPoint;
 import javafx.geometry.Point2D;
 import javafx.scene.input.MouseButton;
 
 public record DungeonCanvasPointerEvent(
         Point2D canvasPoint,
-        CellCoord gridCell,
+        GridPoint gridCell,
         DungeonCanvasCamera camera,
         MouseButton button,
         boolean primaryButtonDown,

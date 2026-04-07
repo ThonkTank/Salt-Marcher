@@ -1,11 +1,11 @@
 package features.world.dungeonmap.repository;
 
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.TileShapeKind;
-import features.world.dungeonmap.model.geometry.TileShapeSpec;
+import features.world.dungeonmap.geometry.CardinalDirection;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridPathPatternKind;
+import features.world.dungeonmap.geometry.GridPathPatternSpec;
 import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionKind;
@@ -42,7 +42,7 @@ public final class DungeonTransitionRepository {
     public List<DungeonTransition> loadByMap(Connection conn, DungeonLayout layout) throws SQLException {
         DungeonLayout resolvedLayout = Objects.requireNonNull(layout, "layout");
         long mapId = resolvedLayout.mapId();
-        Map<Long, List<CubePoint>> pathByTransitionId = loadGrouped(
+        Map<Long, List<GridPoint>> pathByTransitionId = loadGrouped(
                 conn,
                 "SELECT transition_id, cell_x, cell_y, cell_z"
                         + " FROM dungeon_transition_stair_path_nodes"
@@ -50,7 +50,7 @@ public final class DungeonTransitionRepository {
                         + " ORDER BY transition_id, sort_order",
                 mapId,
                 rs -> rs.getLong("transition_id"),
-                rs -> new CubePoint(rs.getInt("cell_x"), rs.getInt("cell_y"), rs.getInt("cell_z")));
+                rs -> new GridPoint(rs.getInt("cell_x"), rs.getInt("cell_y"), rs.getInt("cell_z")));
         Map<Long, Set<Integer>> stopLevelsByTransitionId = loadStopLevelsByTransitionId(conn, mapId);
         try (PreparedStatement ps = conn.prepareStatement(
                 SELECT_COLUMNS + " FROM dungeon_transitions WHERE dungeon_map_id=? ORDER BY transition_id")) {
@@ -217,7 +217,7 @@ public final class DungeonTransitionRepository {
         replaceStopLevels(conn, transitionId, stairCarrier == null ? Set.of() : stairCarrier.stopLevels());
     }
 
-    private void replacePathNodes(Connection conn, long transitionId, List<CubePoint> pathNodes) throws SQLException {
+    private void replacePathNodes(Connection conn, long transitionId, List<GridPoint> pathNodes) throws SQLException {
         try (PreparedStatement delete = conn.prepareStatement(
                 "DELETE FROM dungeon_transition_stair_path_nodes WHERE transition_id=?")) {
             delete.setLong(1, transitionId);
@@ -230,7 +230,7 @@ public final class DungeonTransitionRepository {
                 "INSERT INTO dungeon_transition_stair_path_nodes(transition_id, sort_order, cell_x, cell_y, cell_z)"
                         + " VALUES(?,?,?,?,?)")) {
             for (int index = 0; index < pathNodes.size(); index++) {
-                CubePoint node = pathNodes.get(index);
+                GridPoint node = pathNodes.get(index);
                 insert.setLong(1, transitionId);
                 insert.setInt(2, index);
                 insert.setInt(3, node.x());
@@ -268,7 +268,7 @@ public final class DungeonTransitionRepository {
     private static DungeonTransition mapTransition(
             ResultSet rs,
             DungeonLayout layout,
-            List<CubePoint> pathNodes,
+            List<GridPoint> pathNodes,
             Set<Integer> stopLevels
     ) throws SQLException {
         long transitionId = rs.getLong("transition_id");
@@ -285,7 +285,7 @@ public final class DungeonTransitionRepository {
     private static DungeonConnection mapLocalConnection(
             ResultSet rs,
             DungeonLayout layout,
-            List<CubePoint> pathNodes,
+            List<GridPoint> pathNodes,
             Set<Integer> stopLevels,
             long transitionId,
             long mapId
@@ -322,10 +322,10 @@ public final class DungeonTransitionRepository {
                     mapId,
                     rs.getInt("stair_anchor_level_z"),
                     new StairConnectionCarrier(
-                            new CellCoord(rs.getInt("stair_anchor_cell_x"), rs.getInt("stair_anchor_cell_y")),
+                            new GridPoint(rs.getInt("stair_anchor_cell_x"), rs.getInt("stair_anchor_cell_y")),
                             rs.getInt("stair_anchor_level_z"),
-                            new TileShapeSpec(
-                                    TileShapeKind.parse(rs.getString("stair_shape_kind")),
+                            new GridPathPatternSpec(
+                                    GridPathPatternKind.parse(rs.getString("stair_shape_kind")),
                                     CardinalDirection.fromCode(rs.getInt("stair_shape_direction_code")),
                                     rs.getInt("stair_shape_param1"),
                                     rs.getInt("stair_shape_param2")),
@@ -469,15 +469,15 @@ public final class DungeonTransitionRepository {
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
-    private static List<CubePoint> loadPathNodes(Connection conn, long transitionId) throws SQLException {
-        List<CubePoint> result = new ArrayList<>();
+    private static List<GridPoint> loadPathNodes(Connection conn, long transitionId) throws SQLException {
+        List<GridPoint> result = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT cell_x, cell_y, cell_z FROM dungeon_transition_stair_path_nodes"
                         + " WHERE transition_id=? ORDER BY sort_order")) {
             ps.setLong(1, transitionId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    result.add(new CubePoint(rs.getInt("cell_x"), rs.getInt("cell_y"), rs.getInt("cell_z")));
+                    result.add(new GridPoint(rs.getInt("cell_x"), rs.getInt("cell_y"), rs.getInt("cell_z")));
                 }
             }
         }

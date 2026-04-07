@@ -1,11 +1,11 @@
 package features.world.dungeonmap.application.runtime;
 
-import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.geometry.CardinalDirection;
+import features.world.dungeonmap.geometry.GridPoint;
 
 public record DungeonRuntimeNavigationSnapshot(
         Long mapId,
-        CellCoord cell,
+        GridPoint cell,
         int levelZ,
         CardinalDirection heading
 ) {

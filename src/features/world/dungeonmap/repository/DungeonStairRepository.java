@@ -1,10 +1,10 @@
 package features.world.dungeonmap.repository;
 
-import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.TileShapeKind;
-import features.world.dungeonmap.model.geometry.TileShapeSpec;
+import features.world.dungeonmap.geometry.CardinalDirection;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridPathPatternKind;
+import features.world.dungeonmap.geometry.GridPathPatternSpec;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 
 import java.sql.Connection;
@@ -31,22 +31,22 @@ public final class DungeonStairRepository {
 
     public record StairEditorData(
             String name,
-            CellCoord anchorCell,
+            GridPoint anchorCell,
             int anchorLevelZ,
-            TileShapeSpec shapeSpec,
+            GridPathPatternSpec shapeSpec,
             int minLevelZ,
             int maxLevelZ,
             Set<Integer> stopLevels
     ) {
         public StairEditorData {
             anchorCell = Objects.requireNonNull(anchorCell, "anchorCell");
-            shapeSpec = shapeSpec == null ? TileShapeSpec.defaultSpec() : shapeSpec;
+            shapeSpec = shapeSpec == null ? GridPathPatternSpec.defaultSpec() : shapeSpec;
             stopLevels = stopLevels == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(stopLevels));
         }
     }
 
     public List<DungeonStair> loadByMap(Connection conn, long mapId) throws SQLException {
-        Map<Long, List<CubePoint>> pathByStairId = loadGrouped(
+        Map<Long, List<GridPoint>> pathByStairId = loadGrouped(
                 conn,
                 "SELECT stair_id, cell_x, cell_y, cell_z"
                         + " FROM dungeon_stair_path_nodes"
@@ -54,7 +54,7 @@ public final class DungeonStairRepository {
                         + " ORDER BY stair_id, sort_order",
                 mapId,
                 rs -> rs.getLong("stair_id"),
-                rs -> new CubePoint(rs.getInt("cell_x"), rs.getInt("cell_y"), rs.getInt("cell_z")));
+                rs -> new GridPoint(rs.getInt("cell_x"), rs.getInt("cell_y"), rs.getInt("cell_z")));
         Map<Long, Set<Integer>> stopLevelsByStairId = loadStopLevelsByStairId(conn, mapId);
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT stair_id, dungeon_map_id, name"
@@ -93,10 +93,10 @@ public final class DungeonStairRepository {
                 }
                 return new StairEditorData(
                         rs.getString("name"),
-                        new CellCoord(rs.getInt("anchor_cell_x"), rs.getInt("anchor_cell_y")),
+                        new GridPoint(rs.getInt("anchor_cell_x"), rs.getInt("anchor_cell_y")),
                         rs.getInt("anchor_level_z"),
-                        new TileShapeSpec(
-                                TileShapeKind.parse(rs.getString("shape_kind")),
+                        new GridPathPatternSpec(
+                                GridPathPatternKind.parse(rs.getString("shape_kind")),
                                 CardinalDirection.fromCode(rs.getInt("shape_direction_code")),
                                 rs.getInt("shape_param1"),
                                 rs.getInt("shape_param2")),
@@ -160,7 +160,7 @@ public final class DungeonStairRepository {
         }
     }
 
-    public void replacePathNodes(Connection conn, long stairId, List<CubePoint> pathNodes) throws SQLException {
+    public void replacePathNodes(Connection conn, long stairId, List<GridPoint> pathNodes) throws SQLException {
         try (PreparedStatement delete = conn.prepareStatement(
                 "DELETE FROM dungeon_stair_path_nodes WHERE stair_id=?")) {
             delete.setLong(1, stairId);
@@ -170,7 +170,7 @@ public final class DungeonStairRepository {
                 "INSERT INTO dungeon_stair_path_nodes(stair_id, sort_order, cell_x, cell_y, cell_z) VALUES(?,?,?,?,?)")) {
             // Path order is the whole stair geometry contract.
             for (int index = 0; index < pathNodes.size(); index++) {
-                CubePoint node = pathNodes.get(index);
+                GridPoint node = pathNodes.get(index);
                 insert.setLong(1, stairId);
                 insert.setInt(2, index);
                 insert.setInt(3, node.x());

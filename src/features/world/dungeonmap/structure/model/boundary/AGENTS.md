@@ -29,5 +29,5 @@ This file covers `src/features/world/dungeonmap/structure/model/boundary/`.
 - Do not mirror boundary state or mutations back onto `Structure`, `StructureRoomTopology`, `RoomCluster`, `DungeonLayout`, or renderer helpers.
 - Do not move door- or wall-owned primitives back into the flat `structure/model/` package.
 - Do not expose `BoundaryObject` as a new public working surface for callers; it is an internal implementation seam only.
-- Do not rebuild door or wall edits from raw `EdgeShape` surgery in `StructureBoundary`, `RoomCluster`, `Corridor`, repositories, or shell helpers when `Door` and `Wall` already expose the needed API.
+- Do not rebuild door or wall edits from raw `GridBoundary` surgery in `StructureBoundary`, `RoomCluster`, `Corridor`, repositories, or shell helpers when `Door` and `Wall` already expose the needed API.
 - Do not introduce a second boundary persistence DTO outside this sub-owner when `StructureBoundary.PersistenceSnapshot` already describes the persisted boundary state.

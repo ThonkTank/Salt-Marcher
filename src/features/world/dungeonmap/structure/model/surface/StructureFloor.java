@@ -1,7 +1,7 @@
 package features.world.dungeonmap.structure.model.surface;
 
-import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.TileShape;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridArea;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -13,14 +13,14 @@ import java.util.Set;
  */
 public final class StructureFloor extends StructureSurfaceObject {
 
-    record PersistenceSnapshot(Set<CellCoord> cells) {
+    record PersistenceSnapshot(Set<GridPoint> cells) {
         public PersistenceSnapshot {
             cells = cells == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(cells));
         }
     }
 
     static StructureFloor empty() {
-        return new StructureFloor(TileShape.empty());
+        return new StructureFloor(GridArea.empty());
     }
 
     static PersistenceSnapshot emptySnapshot() {
@@ -28,7 +28,7 @@ public final class StructureFloor extends StructureSurfaceObject {
     }
 
     static StructureFloor fromCells(
-            Collection<CellCoord> cells,
+            Collection<GridPoint> cells,
             StructureSurfaceArea surfaceArea
     ) {
         StructureSurfaceArea resolvedSurfaceArea = surfaceArea == null ? StructureSurfaceArea.empty() : surfaceArea;
@@ -46,23 +46,23 @@ public final class StructureFloor extends StructureSurfaceObject {
         return fromCells(resolvedSnapshot.cells(), surfaceArea);
     }
 
-    private StructureFloor(TileShape tileShape) {
+    private StructureFloor(GridArea tileShape) {
         super(tileShape);
     }
 
     StructureFloor withCells(
-            Collection<CellCoord> cells,
+            Collection<GridPoint> cells,
             StructureSurfaceArea surfaceArea
     ) {
         return fromCells(cells, surfaceArea);
     }
 
-    StructureFloor translatedByCells(CellCoord delta) {
-        CellCoord resolvedDelta = resolvedDelta(delta);
+    StructureFloor translatedByCells(GridPoint delta) {
+        GridPoint resolvedDelta = resolvedDelta(delta);
         if (resolvedDelta.x() == 0 && resolvedDelta.y() == 0) {
             return this;
         }
-        return new StructureFloor(translatedTileShape(resolvedDelta));
+        return new StructureFloor(translatedGridArea(resolvedDelta));
     }
 
     StructureFloor clippedTo(StructureSurfaceArea surfaceArea) {

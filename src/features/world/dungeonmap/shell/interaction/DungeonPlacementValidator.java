@@ -2,7 +2,7 @@ package features.world.dungeonmap.shell.interaction;
 
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 
 import java.util.Objects;
@@ -11,13 +11,13 @@ public final class DungeonPlacementValidator {
 
     public sealed interface PlacementResult permits PlacementResult.Valid, PlacementResult.Invalid {
 
-        record Valid(CellCoord cell, int level) implements PlacementResult {
+        record Valid(GridPoint cell, int level) implements PlacementResult {
             public Valid {
                 Objects.requireNonNull(cell, "cell");
             }
         }
 
-        record Invalid(CellCoord cell, int level, String reason) implements PlacementResult {
+        record Invalid(GridPoint cell, int level, String reason) implements PlacementResult {
             public Invalid {
                 Objects.requireNonNull(cell, "cell");
                 Objects.requireNonNull(reason, "reason");
@@ -38,7 +38,7 @@ public final class DungeonPlacementValidator {
 
     public PlacementResult validateTraversable(
             DungeonLayout layout,
-            CellCoord cell,
+            GridPoint cell,
             int level
     ) {
         if (layout == null || cell == null) {
@@ -52,7 +52,7 @@ public final class DungeonPlacementValidator {
 
     public PlacementResult validateTransitionPlacement(
             DungeonLayout layout,
-            CellCoord cell,
+            GridPoint cell,
             int level,
             Long ignoredTransitionId
     ) {

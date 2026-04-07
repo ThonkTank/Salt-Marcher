@@ -1,8 +1,8 @@
 package features.world.dungeonmap.model.interaction;
 
-import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.GridPoint2x;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridSegment;
 import java.util.Objects;
 
 public sealed interface DungeonSelectionRef permits
@@ -91,13 +91,13 @@ public sealed interface DungeonSelectionRef permits
         }
     }
 
-    record VertexRef(GridPoint2x vertex2x) implements DungeonSelectionRef {
+    record VertexRef(GridPoint vertex2x) implements DungeonSelectionRef {
         public VertexRef {
             vertex2x = Objects.requireNonNull(vertex2x, "vertex2x");
         }
     }
 
-    record RoomBoundaryRef(Long roomId, GridSegment2x boundarySegment2x) implements DungeonSelectionRef {
+    record RoomBoundaryRef(Long roomId, GridSegment boundarySegment2x) implements DungeonSelectionRef {
         public RoomBoundaryRef {
             boundarySegment2x = Objects.requireNonNull(boundarySegment2x, "boundarySegment2x");
         }
@@ -108,7 +108,7 @@ public sealed interface DungeonSelectionRef permits
         }
     }
 
-    record CorridorBoundaryRef(Long corridorId, GridSegment2x boundarySegment2x) implements DungeonSelectionRef {
+    record CorridorBoundaryRef(Long corridorId, GridSegment boundarySegment2x) implements DungeonSelectionRef {
         public CorridorBoundaryRef {
             boundarySegment2x = Objects.requireNonNull(boundarySegment2x, "boundarySegment2x");
         }
@@ -127,7 +127,7 @@ public sealed interface DungeonSelectionRef permits
         }
     }
 
-    record CorridorTileRef(Long corridorId, CubePoint cell, GridPoint2x point2x) implements DungeonSelectionRef {
+    record CorridorTileRef(Long corridorId, GridPoint cell, GridPoint point2x) implements DungeonSelectionRef {
         public CorridorTileRef {
             cell = Objects.requireNonNull(cell, "cell");
             point2x = Objects.requireNonNull(point2x, "point2x");
@@ -139,7 +139,7 @@ public sealed interface DungeonSelectionRef permits
         }
     }
 
-    record CorridorNodeRef(Long corridorId, Long nodeId, GridPoint2x point2x) implements DungeonSelectionRef {
+    record CorridorNodeRef(Long corridorId, Long nodeId, GridPoint point2x) implements DungeonSelectionRef {
         public CorridorNodeRef {
             point2x = Objects.requireNonNull(point2x, "point2x");
         }
@@ -150,7 +150,7 @@ public sealed interface DungeonSelectionRef permits
         }
     }
 
-    record CorridorCornerRef(Long corridorId, Long segmentId, GridPoint2x point2x) implements DungeonSelectionRef {
+    record CorridorCornerRef(Long corridorId, Long segmentId, GridPoint point2x) implements DungeonSelectionRef {
         public CorridorCornerRef {
             if (segmentId == null) {
                 throw new IllegalArgumentException("Corridor corner refs require segmentId");
@@ -164,7 +164,7 @@ public sealed interface DungeonSelectionRef permits
         }
     }
 
-    record CorridorSegmentRef(Long corridorId, Long segmentId, GridPoint2x point2x) implements DungeonSelectionRef {
+    record CorridorSegmentRef(Long corridorId, Long segmentId, GridPoint point2x) implements DungeonSelectionRef {
         public CorridorSegmentRef {
             if (segmentId == null) {
                 throw new IllegalArgumentException("Corridor segment refs require segmentId");
@@ -178,13 +178,13 @@ public sealed interface DungeonSelectionRef permits
         }
     }
 
-    record GridCellRef(CubePoint cell) implements DungeonSelectionRef {
+    record GridCellRef(GridPoint cell) implements DungeonSelectionRef {
         public GridCellRef {
             cell = Objects.requireNonNull(cell, "cell");
         }
     }
 
-    record RoomCellRef(Long roomId, CubePoint cell) implements DungeonSelectionRef {
+    record RoomCellRef(Long roomId, GridPoint cell) implements DungeonSelectionRef {
         public RoomCellRef {
             cell = Objects.requireNonNull(cell, "cell");
         }
@@ -195,7 +195,7 @@ public sealed interface DungeonSelectionRef permits
         }
     }
 
-    record FloorCellRef(CubePoint cell) implements DungeonSelectionRef {
+    record FloorCellRef(GridPoint cell) implements DungeonSelectionRef {
         public FloorCellRef {
             cell = Objects.requireNonNull(cell, "cell");
         }

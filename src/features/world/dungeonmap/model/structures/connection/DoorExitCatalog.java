@@ -1,9 +1,9 @@
 package features.world.dungeonmap.model.structures.connection;
 
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.geometry.CardinalDirection;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridSegment;
 import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -16,8 +16,8 @@ public final class DoorExitCatalog {
 
     private static final Comparator<ExitEdge> EXIT_EDGE_ORDER = Comparator
             .comparing(ExitEdge::direction, Comparator.comparingInt(CardinalDirection::code))
-            .thenComparing(ExitEdge::roomCell, CellCoord.ORDER)
-            .thenComparing(ExitEdge::segment2x, GridSegment2x.ORDER);
+            .thenComparing(ExitEdge::roomCell, GridPoint.ORDER)
+            .thenComparing(ExitEdge::segment2x, GridSegment.ORDER);
 
     private DoorExitCatalog() {
         throw new AssertionError("No instances");
@@ -25,7 +25,7 @@ public final class DoorExitCatalog {
 
     public static List<DoorExitDescriptor> describe(
             DungeonLayout layout,
-            Set<CellCoord> cells,
+            Set<GridPoint> cells,
             int levelZ,
             List<? extends Connection> connections
     ) {
@@ -56,7 +56,7 @@ public final class DoorExitCatalog {
 
     private static List<ExitEdge> collectExitEdges(
             DungeonLayout layout,
-            Set<CellCoord> cells,
+            Set<GridPoint> cells,
             int levelZ,
             List<? extends Connection> connections
     ) {
@@ -69,18 +69,18 @@ public final class DoorExitCatalog {
             if (doorRef == null) {
                 continue;
             }
-            Set<GridSegment2x> boundarySegments = new LinkedHashSet<>(connection.boundarySegments2x(layout));
-            for (GridSegment2x segment2x : boundarySegments) {
+            Set<GridSegment> boundarySegments = new LinkedHashSet<>(connection.boundarySegments2x(layout));
+            for (GridSegment segment2x : boundarySegments) {
                 if (segment2x == null) {
                     continue;
                 }
-                Set<CellCoord> touchingCells = segment2x.touchingCells();
+                Set<GridPoint> touchingCells = segment2x.touchingCells();
                 if (touchingCells.size() != 2) {
                     continue;
                 }
-                CellCoord roomCell = touchingCells.stream()
+                GridPoint roomCell = touchingCells.stream()
                         .filter(cells::contains)
-                        .sorted(CellCoord.ORDER)
+                        .sorted(GridPoint.ORDER)
                         .findFirst()
                         .orElse(null);
                 if (roomCell == null) {
@@ -125,6 +125,6 @@ public final class DoorExitCatalog {
         return List.copyOf(result);
     }
 
-    private record ExitEdge(CellCoord roomCell, CardinalDirection direction, GridSegment2x segment2x, DoorRef doorRef) {
+    private record ExitEdge(GridPoint roomCell, CardinalDirection direction, GridSegment segment2x, DoorRef doorRef) {
     }
 }

@@ -19,6 +19,6 @@ This file covers `src/features/world/dungeonmap/structure/model/boundary/door/`.
 
 ## Forbidden Drift
 
-- Do not rebuild door-local edit behavior from raw `EdgeShape` operations in callers.
+- Do not rebuild door-local edit behavior from raw `GridBoundary` operations in callers.
 - Do not introduce a second door aggregate owner unless there is a concrete aggregate invariant that one `Door` cannot enforce.
 - Do not re-home stable door references outside `DoorRef`.

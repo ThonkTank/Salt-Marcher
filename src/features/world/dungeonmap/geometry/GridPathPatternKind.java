@@ -1,9 +1,9 @@
-package features.world.dungeonmap.model.geometry;
+package features.world.dungeonmap.geometry;
 
 import java.util.Locale;
 import java.util.Optional;
 
-public enum TileShapeKind {
+public enum GridPathPatternKind {
     STACK("Gleiche Zelle", false, null, null),
     LINE("Linie", true, null, null),
     SQUARE("Quadrat", true, "Seitenlänge", null),
@@ -15,7 +15,7 @@ public enum TileShapeKind {
     private final String parameter1Label;
     private final String parameter2Label;
 
-    TileShapeKind(
+    GridPathPatternKind(
             String label,
             boolean needsDirection,
             String parameter1Label,
@@ -64,12 +64,12 @@ public enum TileShapeKind {
         return Optional.empty();
     }
 
-    public static TileShapeKind parse(String value) {
+    public static GridPathPatternKind parse(String value) {
         if (value == null || value.isBlank()) {
             return STACK;
         }
         try {
-            return TileShapeKind.valueOf(value.trim().toUpperCase(Locale.ROOT));
+            return GridPathPatternKind.valueOf(value.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException ignored) {
             return STACK;
         }

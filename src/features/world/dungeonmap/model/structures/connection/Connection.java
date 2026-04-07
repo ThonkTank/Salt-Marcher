@@ -1,9 +1,9 @@
 package features.world.dungeonmap.model.structures.connection;
 
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.geometry.CardinalDirection;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridSegment;
 import features.world.dungeonmap.structure.model.boundary.door.Door;
 import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
 
@@ -45,7 +45,7 @@ public interface Connection {
         return carrier() instanceof StairConnectionCarrier stairCarrier ? stairCarrier : null;
     }
 
-    default GridSegment2x anchorSegment2x(DungeonLayout layout) {
+    default GridSegment anchorSegment2x(DungeonLayout layout) {
         Door door = door(layout);
         return door == null ? null : door.anchorSegment2x();
     }
@@ -55,7 +55,7 @@ public interface Connection {
         return layout == null || doorRef == null ? null : layout.resolveDoor(doorRef);
     }
 
-    default Set<GridSegment2x> boundarySegments2x(DungeonLayout layout) {
+    default Set<GridSegment> boundarySegments2x(DungeonLayout layout) {
         Door door = door(layout);
         if (door == null) {
             return Set.of();
@@ -85,7 +85,7 @@ public interface Connection {
             return Set.of(levelZ());
         }
         LinkedHashSet<Integer> levels = new LinkedHashSet<>();
-        for (CubePoint point : stairCarrier.path()) {
+        for (GridPoint point : stairCarrier.path()) {
             if (point != null) {
                 levels.add(point.z());
             }
@@ -93,13 +93,13 @@ public interface Connection {
         return levels.isEmpty() ? Set.of(levelZ()) : Set.copyOf(levels);
     }
 
-    default CubePoint entryPoint(DungeonLayout layout) {
+    default GridPoint entryPoint(DungeonLayout layout) {
         StairConnectionCarrier stairCarrier = stairCarrier();
         if (stairCarrier != null) {
-            return CubePoint.at(stairCarrier.anchorCell(), stairCarrier.anchorLevelZ());
+            return GridPoint.at(stairCarrier.anchorCell(), stairCarrier.anchorLevelZ());
         }
         ConnectionEndpoint endpoint = entryEndpoint();
-        GridSegment2x anchorSegment2x = anchorSegment2x(layout);
+        GridSegment anchorSegment2x = anchorSegment2x(layout);
         if (layout == null || endpoint == null || anchorSegment2x == null) {
             return null;
         }
@@ -107,12 +107,12 @@ public interface Connection {
                 endpoint,
                 anchorSegment2x,
                 levelZ());
-        return surface == null ? null : CubePoint.at(surface.localCell(), levelZ());
+        return surface == null ? null : GridPoint.at(surface.localCell(), levelZ());
     }
 
     default CardinalDirection entryHeading(DungeonLayout layout) {
         ConnectionEndpoint endpoint = entryEndpoint();
-        GridSegment2x anchorSegment2x = anchorSegment2x(layout);
+        GridSegment anchorSegment2x = anchorSegment2x(layout);
         if (layout == null || endpoint == null || anchorSegment2x == null) {
             return null;
         }
@@ -123,20 +123,20 @@ public interface Connection {
         return surface == null ? null : surface.outwardDirection();
     }
 
-    default CubePoint focusPosition(DungeonLayout layout) {
+    default GridPoint focusPosition(DungeonLayout layout) {
         StairConnectionCarrier stairCarrier = stairCarrier();
         if (stairCarrier != null) {
-            return CubePoint.at(stairCarrier.anchorCell(), stairCarrier.anchorLevelZ());
+            return GridPoint.at(stairCarrier.anchorCell(), stairCarrier.anchorLevelZ());
         }
         return entryPoint(layout);
     }
 
-    default Set<CubePoint> occupiedPositions(DungeonLayout layout) {
+    default Set<GridPoint> occupiedPositions(DungeonLayout layout) {
         StairConnectionCarrier stairCarrier = stairCarrier();
         if (stairCarrier != null) {
             return stairCarrier.pathPositions();
         }
-        CubePoint focus = focusPosition(layout);
+        GridPoint focus = focusPosition(layout);
         return focus == null ? Set.of() : Set.of(focus);
     }
 
@@ -187,7 +187,7 @@ public interface Connection {
         if (destinationEndpoint.type() == ConnectionEndpointType.TRANSITION) {
             return new ConnectionTraversalTarget(null, levelZ(), null, destinationEndpoint.id());
         }
-        GridSegment2x anchorSegment2x = anchorSegment2x(layout);
+        GridSegment anchorSegment2x = anchorSegment2x(layout);
         if (layout == null || anchorSegment2x == null) {
             return null;
         }

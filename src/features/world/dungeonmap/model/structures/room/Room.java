@@ -1,6 +1,6 @@
 package features.world.dungeonmap.model.structures.room;
 
-import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.geometry.GridPoint;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -14,7 +14,7 @@ public record Room(
         long mapId,
         long clusterId,
         String name,
-        Map<Integer, CellCoord> anchorsByLevel,
+        Map<Integer, GridPoint> anchorsByLevel,
         RoomNarration narration
 ) {
     public static Room metadata(
@@ -22,7 +22,7 @@ public record Room(
             long mapId,
             long clusterId,
             String name,
-            Map<Integer, CellCoord> anchorsByLevel,
+            Map<Integer, GridPoint> anchorsByLevel,
             RoomNarration narration
     ) {
         return new Room(roomId, mapId, clusterId, name, anchorsByLevel, narration);
@@ -45,7 +45,7 @@ public record Room(
         return new Room(roomId, mapId, clusterId, name, anchorsByLevel, narration);
     }
 
-    public Room withAnchorsByLevel(Map<Integer, CellCoord> anchorsByLevel) {
+    public Room withAnchorsByLevel(Map<Integer, GridPoint> anchorsByLevel) {
         return new Room(roomId, mapId, clusterId, name, anchorsByLevel, narration);
     }
 
@@ -60,18 +60,18 @@ public record Room(
                 .orElse(0);
     }
 
-    public CellCoord anchorAtLevel(int levelZ) {
+    public GridPoint anchorAtLevel(int levelZ) {
         return anchorsByLevel.get(levelZ);
     }
 
-    public Room movedBy(CellCoord delta) {
+    public Room movedBy(GridPoint delta) {
         return movedBy(delta, 0);
     }
 
-    public Room movedBy(CellCoord delta, int levelDelta) {
-        CellCoord resolvedDelta = delta == null ? new CellCoord(0, 0) : delta;
-        Map<Integer, CellCoord> movedAnchors = new LinkedHashMap<>();
-        for (Map.Entry<Integer, CellCoord> entry : anchorsByLevel.entrySet()) {
+    public Room movedBy(GridPoint delta, int levelDelta) {
+        GridPoint resolvedDelta = delta == null ? new GridPoint(0, 0) : delta;
+        Map<Integer, GridPoint> movedAnchors = new LinkedHashMap<>();
+        for (Map.Entry<Integer, GridPoint> entry : anchorsByLevel.entrySet()) {
             movedAnchors.put(entry.getKey() + levelDelta, entry.getValue().add(resolvedDelta));
         }
         return new Room(
@@ -84,15 +84,15 @@ public record Room(
     }
 
     public Room movedToLevel(int targetPrimaryLevel) {
-        return movedBy(new CellCoord(0, 0), targetPrimaryLevel - primaryLevel());
+        return movedBy(new GridPoint(0, 0), targetPrimaryLevel - primaryLevel());
     }
 
     public Room movedByLevel(int levelDelta) {
-        return movedBy(new CellCoord(0, 0), levelDelta);
+        return movedBy(new GridPoint(0, 0), levelDelta);
     }
 
-    private static Map<Integer, CellCoord> normalizeAnchors(Map<Integer, CellCoord> anchorsByLevel) {
-        Map<Integer, CellCoord> resolved = new LinkedHashMap<>();
+    private static Map<Integer, GridPoint> normalizeAnchors(Map<Integer, GridPoint> anchorsByLevel) {
+        Map<Integer, GridPoint> resolved = new LinkedHashMap<>();
         if (anchorsByLevel != null) {
             anchorsByLevel.entrySet().stream()
                     .filter(entry -> entry != null && entry.getKey() != null && entry.getValue() != null)

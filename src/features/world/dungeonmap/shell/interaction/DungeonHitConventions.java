@@ -1,6 +1,6 @@
 package features.world.dungeonmap.shell.interaction;
 
-import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.model.interaction.DungeonHitKind;
 import javafx.geometry.Point2D;
 

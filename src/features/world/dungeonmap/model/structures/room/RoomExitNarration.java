@@ -1,16 +1,16 @@
 package features.world.dungeonmap.model.structures.room;
 
-import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.geometry.CardinalDirection;
+import features.world.dungeonmap.geometry.GridPoint;
 
 public record RoomExitNarration(
         int levelZ,
-        CellCoord roomCell,
+        GridPoint roomCell,
         CardinalDirection direction,
         String description
 ) {
     public RoomExitNarration {
-        roomCell = roomCell == null ? new CellCoord(0, 0) : roomCell;
+        roomCell = roomCell == null ? new GridPoint(0, 0) : roomCell;
         direction = direction == null ? CardinalDirection.defaultDirection() : direction;
         description = description == null ? "" : description.trim();
     }

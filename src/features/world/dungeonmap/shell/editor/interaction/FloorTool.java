@@ -4,9 +4,10 @@ import features.world.dungeonmap.application.room.DungeonRoomApplicationService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
+import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.state.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
@@ -72,7 +73,7 @@ public final class FloorTool implements EditorTool {
             clear();
             return false;
         }
-        CellCoord cell = resolvedCell(ctx);
+        GridPoint cell = resolvedCell(ctx);
         if (cell == null || !sessionState.selectedTool().isFloorTool()) {
             clear();
             return false;
@@ -89,7 +90,7 @@ public final class FloorTool implements EditorTool {
         if (event == null || !event.isPrimaryButtonDown()) {
             return false;
         }
-        CellCoord cell = resolvedCell(ctx);
+        GridPoint cell = resolvedCell(ctx);
         if (dragSession == null || cell == null || !sessionState.selectedTool().isFloorTool()) {
             return false;
         }
@@ -104,13 +105,13 @@ public final class FloorTool implements EditorTool {
     @Override
     public boolean released(EditorToolContext ctx) {
         DungeonCanvasPointerEvent event = ctx == null ? null : ctx.event();
-        CellCoord cell = resolvedCell(ctx);
+        GridPoint cell = resolvedCell(ctx);
         if (event == null || dragSession == null) {
             return false;
         }
         CellWindowDragSession finishedSession = cell == null ? dragSession : dragSession.withEndCell(cell);
         int activeLevel = mapState.activeProjectionLevel();
-        Set<CellCoord> cells = validRoomCells(ctx == null ? null : ctx.activeMap(), activeLevel, finishedSession.previewCells());
+        Set<GridPoint> cells = validRoomCells(ctx == null ? null : ctx.activeMap(), activeLevel, finishedSession.previewCells());
         clear();
         Long mapId = mapState.activeMapId();
         if (mapId == null || cells.isEmpty()) {
@@ -166,7 +167,7 @@ public final class FloorTool implements EditorTool {
                 dragSession.deleteMode()));
     }
 
-    private static CellCoord resolvedCell(EditorToolContext ctx) {
+    private static GridPoint resolvedCell(EditorToolContext ctx) {
         if (ctx == null || ctx.hitRef() == null) {
             return null;
         }
@@ -182,24 +183,29 @@ public final class FloorTool implements EditorTool {
         }
         DungeonLayout layout = ctx.activeMap();
         int levelZ = ctx.probe().levelZ();
-        CellCoord gridCell = ctx.probe().gridCell();
-        Room room = layout == null ? null : layout.roomAtCell(gridCell, levelZ);
+        GridPoint gridCell = ctx.probe().gridCell();
+        Room room = roomAtCell(layout, gridCell, levelZ);
         if (room == null || room.roomId() == null) {
             return null;
         }
-        return new DungeonSelectionRef.RoomCellRef(room.roomId(), CubePoint.at(gridCell, levelZ));
+        return new DungeonSelectionRef.RoomCellRef(room.roomId(), GridPoint.at(gridCell, levelZ));
     }
 
-    private static Set<CellCoord> validRoomCells(DungeonLayout layout, int levelZ, Set<CellCoord> cells) {
+    private static Set<GridPoint> validRoomCells(DungeonLayout layout, int levelZ, Set<GridPoint> cells) {
         if (layout == null || cells == null || cells.isEmpty()) {
             return Set.of();
         }
-        LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
-        for (CellCoord cell : cells) {
-            if (layout.roomAtCell(cell, levelZ) != null) {
+        LinkedHashSet<GridPoint> result = new LinkedHashSet<>();
+        for (GridPoint cell : cells) {
+            if (roomAtCell(layout, cell, levelZ) != null) {
                 result.add(cell);
             }
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
+    }
+
+    private static Room roomAtCell(DungeonLayout layout, GridPoint cell, int levelZ) {
+        RoomCluster cluster = layout == null || cell == null ? null : layout.clusterAtCell(cell, levelZ);
+        return cluster == null ? null : cluster.structure().roomTopology().roomAt(cell, levelZ);
     }
 }

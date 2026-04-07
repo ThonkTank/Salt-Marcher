@@ -2,9 +2,12 @@ package features.world.dungeonmap.shell.editor;
 
 import features.world.dungeonmap.application.room.DungeonRoomApplicationService;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
-import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.geometry.CardinalDirection;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
+import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
+import features.world.dungeonmap.model.structures.connection.DoorExitCatalog;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.room.RoomExitNarration;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
@@ -64,29 +67,31 @@ public final class RoomNarrationPane {
     }
 
     private List<RoomNarrationCard> narrationCards() {
-        Room room = mapState.activeMap().room(editorState.selectedRef());
+        DungeonLayout layout = mapState.activeMap();
+        Room room = selectedRoom(layout, editorState.selectedRef());
         if (room != null) {
-            return List.of(roomNarrationCard(room));
+            return List.of(roomNarrationCard(layout, room));
         }
-        RoomCluster cluster = mapState.activeMap().clusterOnLevel(editorState.selectedRef(), mapState.activeProjectionLevel());
+        RoomCluster cluster = layout.clusterOnLevel(editorState.selectedRef(), mapState.activeProjectionLevel());
         if (cluster == null) {
             return List.of();
         }
-        return cluster.rooms().stream()
+        return cluster.structure().roomTopology().rooms().stream()
                 .filter(Objects::nonNull)
                 .sorted(Comparator
                         .comparing(Room::name, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
                         .thenComparing(Room::roomId, Comparator.nullsLast(Long::compareTo)))
-                .map(this::roomNarrationCard)
+                .map(roomCard -> roomNarrationCard(layout, roomCard))
                 .toList();
     }
 
-    private RoomNarrationCard roomNarrationCard(Room room) {
+    private RoomNarrationCard roomNarrationCard(DungeonLayout layout, Room room) {
+        RoomCluster cluster = room == null ? null : layout.findCluster(room.clusterId());
         return new RoomNarrationCard(
                 room.roomId() == null ? 0L : room.roomId(),
                 room.name(),
                 room.narration().visualDescription(),
-                mapState.activeMap().describeRoomExits(room).stream()
+                describeRoomExits(layout, cluster, room).stream()
                         .map(exit -> new RoomExitCard(
                                 exit.label(),
                                 exit.levelZ(),
@@ -109,6 +114,44 @@ public final class RoomNarrationPane {
         narrationContent.getChildren().clear();
         narrationSaveButtons.clear();
         narrationStatusLabels.clear();
+    }
+
+    private static Room selectedRoom(DungeonLayout layout, features.world.dungeonmap.model.interaction.DungeonSelectionRef ref) {
+        if (!(layout != null && ref instanceof features.world.dungeonmap.model.interaction.DungeonSelectionRef.RoomRef roomRef)) {
+            return null;
+        }
+        return findRoom(layout, roomRef.roomId());
+    }
+
+    private static Room findRoom(DungeonLayout layout, Long roomId) {
+        if (layout == null || roomId == null) {
+            return null;
+        }
+        for (RoomCluster cluster : layout.clusters()) {
+            Room room = cluster == null ? null : cluster.structure().roomTopology().findRoom(roomId);
+            if (room != null) {
+                return room;
+            }
+        }
+        return null;
+    }
+
+    private static List<features.world.dungeonmap.model.structures.connection.DoorExitDescriptor> describeRoomExits(
+            DungeonLayout layout,
+            RoomCluster cluster,
+            Room room
+    ) {
+        if (layout == null || cluster == null || room == null || room.roomId() == null) {
+            return List.of();
+        }
+        return cluster.structure().roomTopology().roomLevels(room).stream()
+                .sorted()
+                .flatMap(levelZ -> DoorExitCatalog.describe(
+                        layout,
+                        cluster.structure().roomTopology().structureFor(room).surfaceAtLevel(levelZ).floor().cellCoords(),
+                        levelZ,
+                        layout.connectionsForEndpoint(ConnectionEndpoint.room(room.roomId()))).stream())
+                .toList();
     }
 
     private VBox buildNarrationCardUi(RoomNarrationCard card) {
@@ -189,7 +232,7 @@ public final class RoomNarrationPane {
     private record RoomExitCard(
             String label,
             int levelZ,
-            CellCoord roomCell,
+            GridPoint roomCell,
             CardinalDirection direction,
             String description
     ) {

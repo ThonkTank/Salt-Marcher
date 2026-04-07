@@ -1,6 +1,6 @@
 package features.world.dungeonmap.repository;
 
-import features.world.dungeonmap.model.geometry.CardinalDirection;
+import features.world.dungeonmap.geometry.CardinalDirection;
 
 public final class DungeonPersistenceDirections {
 

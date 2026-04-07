@@ -1,9 +1,9 @@
 package features.world.dungeonmap.structure.model.boundary.wall;
 
-import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.structure.model.boundary.BoundaryObject;
-import features.world.dungeonmap.model.geometry.EdgeShape;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.geometry.GridBoundary;
+import features.world.dungeonmap.geometry.GridSegment;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,42 +22,42 @@ public final class Wall extends BoundaryObject {
 
     private final WallKind wallKind;
 
-    public Wall(Collection<GridSegment2x> segments) {
+    public Wall(Collection<GridSegment> segments) {
         this(null, segments, null, WallKind.solid());
     }
 
-    public Wall(EdgeShape shape) {
+    public Wall(GridBoundary shape) {
         this(null, shape, null, WallKind.solid());
     }
 
-    public Wall(Long wallId, Collection<GridSegment2x> segments, GridSegment2x anchorSegment2x, WallKind wallKind) {
+    public Wall(Long wallId, Collection<GridSegment> segments, GridSegment anchorSegment2x, WallKind wallKind) {
         super(wallId, segments, anchorSegment2x);
         this.wallKind = wallKind == null ? WallKind.solid() : wallKind;
     }
 
-    public Wall(Long wallId, EdgeShape shape, GridSegment2x anchorSegment2x, WallKind wallKind) {
+    public Wall(Long wallId, GridBoundary shape, GridSegment anchorSegment2x, WallKind wallKind) {
         super(wallId, shape, anchorSegment2x);
         this.wallKind = wallKind == null ? WallKind.solid() : wallKind;
     }
 
-    public static Wall fromSegments(Collection<GridSegment2x> segments) {
+    public static Wall fromSegments(Collection<GridSegment> segments) {
         return new Wall(segments);
     }
 
     public static Wall fromSegments(
             Long wallId,
-            Collection<GridSegment2x> segments,
-            GridSegment2x anchorSegment2x,
+            Collection<GridSegment> segments,
+            GridSegment anchorSegment2x,
             WallKind wallKind
     ) {
         return new Wall(wallId, segments, anchorSegment2x, wallKind);
     }
 
-    public static Wall fromShape(EdgeShape shape) {
+    public static Wall fromShape(GridBoundary shape) {
         return new Wall(shape);
     }
 
-    public static Wall fromShape(Long wallId, EdgeShape shape, GridSegment2x anchorSegment2x, WallKind wallKind) {
+    public static Wall fromShape(Long wallId, GridBoundary shape, GridSegment anchorSegment2x, WallKind wallKind) {
         return new Wall(wallId, shape, anchorSegment2x, wallKind);
     }
 
@@ -65,7 +65,7 @@ public final class Wall extends BoundaryObject {
         return objectId();
     }
 
-    public GridSegment2x anchorSegment2x() {
+    public GridSegment anchorSegment2x() {
         return anchorSegment2xInternal();
     }
 
@@ -73,8 +73,8 @@ public final class Wall extends BoundaryObject {
         return wallKind;
     }
 
-    public Wall movedBy(CellCoord delta) {
-        CellCoord resolvedDelta = delta == null ? new CellCoord(0, 0) : delta;
+    public Wall movedBy(GridPoint delta) {
+        GridPoint resolvedDelta = delta == null ? new GridPoint(0, 0) : delta;
         if (resolvedDelta.x() == 0 && resolvedDelta.y() == 0) {
             return this;
         }
@@ -97,44 +97,44 @@ public final class Wall extends BoundaryObject {
         return new Wall(wallId(), orderedBoundarySegments(), anchorSegment2x(), resolvedWallKind);
     }
 
-    public Wall clippedToBoundary(Collection<GridSegment2x> boundarySegments) {
-        EdgeShape clippedShape = clippedBoundaryShape(boundarySegments);
+    public Wall clippedToBoundary(Collection<GridSegment> boundarySegments) {
+        GridBoundary clippedShape = clippedBoundaryShape(boundarySegments);
         if (clippedShape.isEmpty()) {
             return null;
         }
         return Wall.fromShape(wallId(), clippedShape, repairedAnchorSegment2x(clippedShape), wallKind);
     }
 
-    public List<Wall> withoutBoundarySegments(Collection<GridSegment2x> removedBoundarySegments) {
-        List<EdgeShape> components = remainingBoundaryComponents(removedBoundarySegments);
+    public List<Wall> withoutBoundarySegments(Collection<GridSegment> removedBoundarySegments) {
+        List<GridBoundary> components = remainingBoundaryComponents(removedBoundarySegments);
         if (components.isEmpty()) {
             return List.of();
         }
         int idRetainingIndex = retainingComponentIndex(components, anchorSegment2x());
         ArrayList<Wall> result = new ArrayList<>();
         for (int index = 0; index < components.size(); index++) {
-            EdgeShape component = components.get(index);
+            GridBoundary component = components.get(index);
             result.add(Wall.fromShape(
                     index == idRetainingIndex ? wallId() : null,
                     component,
                     repairedAnchorSegment2x(component),
                     wallKind));
         }
-        result.sort(Comparator.comparing(Wall::anchorSegment2x, GridSegment2x.ORDER));
+        result.sort(Comparator.comparing(Wall::anchorSegment2x, GridSegment.ORDER));
         return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
     public static List<Wall> fromBoundaryComponents(
-            Collection<GridSegment2x> boundarySegments,
+            Collection<GridSegment> boundarySegments,
             WallKind wallKind
     ) {
         ArrayList<Wall> result = new ArrayList<>();
-        for (EdgeShape component : boundaryComponents(boundarySegments)) {
+        for (GridBoundary component : boundaryComponents(boundarySegments)) {
             if (!component.isEmpty()) {
                 result.add(Wall.fromShape(null, component, component.firstSegment2x(), wallKind));
             }
         }
-        result.sort(Comparator.comparing(Wall::anchorSegment2x, GridSegment2x.ORDER));
+        result.sort(Comparator.comparing(Wall::anchorSegment2x, GridSegment.ORDER));
         return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
@@ -151,8 +151,8 @@ public final class Wall extends BoundaryObject {
     }
 
     private static int retainingComponentIndex(
-            List<EdgeShape> components,
-            GridSegment2x preferredAnchorSegment2x
+            List<GridBoundary> components,
+            GridSegment preferredAnchorSegment2x
     ) {
         for (int index = 0; index < components.size(); index++) {
             if (components.get(index).contains(preferredAnchorSegment2x)) {

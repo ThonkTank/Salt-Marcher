@@ -1,7 +1,7 @@
 package features.world.dungeonmap.shell.interaction;
 
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.geometry.GridSegment;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
@@ -27,7 +27,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
         DungeonLayout projectedLayout = layout.projectedToLevel(probe.levelZ());
         ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
         List<RoomCluster> projectedClusters = projectedLayout.clusters();
-        Set<GridSegment2x> connectionSegments = occupiedDoorSegments(projectedLayout);
+        Set<GridSegment> connectionSegments = occupiedDoorSegments(projectedLayout);
 
         descriptors.addAll(roomBoundaryDescriptors(projectedClusters, projectedLayout, connectionSegments, probe.levelZ()));
         descriptors.addAll(corridorBoundaryDescriptors(projectedLayout.corridors(), projectedLayout, connectionSegments, probe.levelZ()));
@@ -35,8 +35,8 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
         return List.copyOf(descriptors);
     }
 
-    private static Set<GridSegment2x> occupiedDoorSegments(DungeonLayout layout) {
-        LinkedHashSet<GridSegment2x> segments = new LinkedHashSet<>();
+    private static Set<GridSegment> occupiedDoorSegments(DungeonLayout layout) {
+        LinkedHashSet<GridSegment> segments = new LinkedHashSet<>();
         for (Door door : layout == null ? List.<Door>of() : layout.doors()) {
             if (door == null) {
                 continue;
@@ -49,18 +49,18 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
     private static List<DungeonHitDescriptor> roomBoundaryDescriptors(
             List<RoomCluster> projectedClusters,
             DungeonLayout projectedLayout,
-            Set<GridSegment2x> connectionSegments,
+            Set<GridSegment> connectionSegments,
             int levelZ
     ) {
         ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
         for (RoomCluster cluster : projectedClusters) {
-            for (Room room : cluster.rooms()) {
+            for (Room room : cluster.structure().roomTopology().rooms()) {
                 if (room == null || room.roomId() == null) {
                     continue;
                 }
-                Structure roomStructure = cluster.roomStructure(room);
+                Structure roomStructure = cluster.structure().roomTopology().structureFor(room);
                 var boundary = roomStructure.boundaryAtLevel(levelZ);
-                for (GridSegment2x segment2x : boundary.boundaryEdges()) {
+                for (GridSegment segment2x : boundary.boundaryEdges()) {
                     if (segment2x == null || connectionSegments.contains(segment2x)) {
                         continue;
                     }
@@ -81,12 +81,12 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
             DungeonLayout layout,
             int levelZ
     ) {
-        Map<DungeonSelectionRef.DoorRef, LinkedHashSet<GridSegment2x>> segmentsByDoor = new LinkedHashMap<>();
+        Map<DungeonSelectionRef.DoorRef, LinkedHashSet<GridSegment>> segmentsByDoor = new LinkedHashMap<>();
         for (Door door : layout == null ? List.<Door>of() : layout.doors()) {
             if (door == null) {
                 continue;
             }
-            for (GridSegment2x segment2x : door.boundarySegments()) {
+            for (GridSegment segment2x : door.boundarySegments()) {
                 DungeonSelectionRef.DoorRef ref = layout.doorSelectionRefAt(levelZ, segment2x);
                 if (ref == null) {
                     continue;
@@ -95,7 +95,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
             }
         }
         ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
-        for (Map.Entry<DungeonSelectionRef.DoorRef, LinkedHashSet<GridSegment2x>> entry : segmentsByDoor.entrySet()) {
+        for (Map.Entry<DungeonSelectionRef.DoorRef, LinkedHashSet<GridSegment>> entry : segmentsByDoor.entrySet()) {
             descriptors.add(new DungeonHitDescriptor(
                     entry.getKey(),
                     List.of(new DungeonHitSurface.SegmentSurface(Set.copyOf(entry.getValue()), levelZ))));
@@ -106,7 +106,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
     private static List<DungeonHitDescriptor> corridorBoundaryDescriptors(
             List<Corridor> corridors,
             DungeonLayout projectedLayout,
-            Set<GridSegment2x> connectionSegments,
+            Set<GridSegment> connectionSegments,
             int levelZ
     ) {
         ArrayList<DungeonHitDescriptor> descriptors = new ArrayList<>();
@@ -114,8 +114,8 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
             if (corridor == null || corridor.corridorId() == null) {
                 continue;
             }
-            Set<GridSegment2x> openingEdges = corridor.boundaryDoorSegments(projectedLayout);
-            for (GridSegment2x segment2x : corridor.structure().boundaryAtLevel(levelZ).boundaryEdges()) {
+            Set<GridSegment> openingEdges = corridor.boundaryDoorSegments(projectedLayout);
+            for (GridSegment segment2x : corridor.structure().boundaryAtLevel(levelZ).boundaryEdges()) {
                 if (segment2x == null || openingEdges.contains(segment2x) || connectionSegments.contains(segment2x)) {
                     continue;
                 }

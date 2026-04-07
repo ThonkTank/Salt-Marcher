@@ -2,7 +2,7 @@ package features.world.dungeonmap.canvas.base;
 
 import features.world.dungeonmap.canvas.grid.DungeonGridSceneRenderer;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.state.DungeonViewMode;
 import features.world.dungeonmap.state.DungeonLevelOverlaySettings;
 import features.world.dungeonmap.state.DungeonMapState;
@@ -399,11 +399,11 @@ public final class DungeonCanvasWorkspace extends BorderPane {
                 event.isMiddleButtonDown());
     }
 
-    private CellCoord cellAt(double canvasX, double canvasY) {
+    private GridPoint cellAt(double canvasX, double canvasY) {
         double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
         int cellX = (int) Math.floor((canvasX - camera.panX()) / gridSize);
         int cellY = (int) Math.floor((canvasY - camera.panY()) / gridSize);
-        return new CellCoord(cellX, cellY);
+        return new GridPoint(cellX, cellY);
     }
 
     private static boolean isInteractionPress(MouseEvent event) {

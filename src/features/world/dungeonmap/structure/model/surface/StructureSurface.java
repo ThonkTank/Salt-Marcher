@@ -1,6 +1,6 @@
 package features.world.dungeonmap.structure.model.surface;
 
-import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.geometry.GridPoint;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -30,24 +30,24 @@ public final class StructureSurface {
         }
 
         public static PersistenceSnapshot fromCells(
-                CellCoord anchorCell,
-                Collection<CellCoord> surfaceCells,
-                Collection<CellCoord> floorCells
+                GridPoint anchorCell,
+                Collection<GridPoint> surfaceCells,
+                Collection<GridPoint> floorCells
         ) {
             return new PersistenceSnapshot(
                     new StructureSurfaceArea.PersistenceSnapshot(anchorCell, normalizedCells(surfaceCells)),
                     new StructureFloor.PersistenceSnapshot(normalizedCells(floorCells)));
         }
 
-        public CellCoord anchorCell() {
+        public GridPoint anchorCell() {
             return surface.anchorCell();
         }
 
-        public Set<CellCoord> surfaceCells() {
+        public Set<GridPoint> surfaceCells() {
             return surface.cells();
         }
 
-        public Set<CellCoord> floorCells() {
+        public Set<GridPoint> floorCells() {
             return floor.cells();
         }
 
@@ -87,9 +87,9 @@ public final class StructureSurface {
     }
 
     public static StructureSurface fromCells(
-            CellCoord anchorCell,
-            Collection<CellCoord> surfaceCells,
-            Collection<CellCoord> floorCells
+            GridPoint anchorCell,
+            Collection<GridPoint> surfaceCells,
+            Collection<GridPoint> floorCells
     ) {
         StructureSurfaceArea surface = StructureSurfaceArea.fromCells(anchorCell, surfaceCells);
         return fromSurfaceAndFloor(surface, StructureFloor.fromCells(floorCells, surface));
@@ -136,9 +136,9 @@ public final class StructureSurface {
         return new PersistenceSnapshot(surface.persistenceSnapshot(), floor.persistenceSnapshot());
     }
 
-    public CellCoord centerCellCoord() {
-        CellCoord floorCenter = floor.centerCellCoord();
-        return floorCenter != null ? floorCenter : surface.centerCellCoord();
+    public GridPoint centerGridPoint() {
+        GridPoint floorCenter = floor.centerGridPoint();
+        return floorCenter != null ? floorCenter : surface.centerGridPoint();
     }
 
     StructureSurface withSurface(StructureSurfaceArea surface) {
@@ -149,11 +149,11 @@ public final class StructureSurface {
         return fromSurfaceAndFloor(surface, floor);
     }
 
-    public StructureSurface translatedByCells(CellCoord delta) {
+    public StructureSurface translatedByCells(GridPoint delta) {
         return fromSurfaceAndFloor(surface.translatedByCells(delta), floor.translatedByCells(delta));
     }
 
-    public StructureSurface clippedTo(Collection<CellCoord> clippedSurfaceCells, CellCoord preferredAnchor) {
+    public StructureSurface clippedTo(Collection<GridPoint> clippedSurfaceCells, GridPoint preferredAnchor) {
         StructureSurfaceArea clippedSurface = surface.clippedTo(clippedSurfaceCells, preferredAnchor);
         if (clippedSurface.isEmpty()) {
             return empty();
@@ -188,12 +188,12 @@ public final class StructureSurface {
                 + ", floor=" + floor + "]";
     }
 
-    private static Set<CellCoord> normalizedCells(Collection<CellCoord> cells) {
+    private static Set<GridPoint> normalizedCells(Collection<GridPoint> cells) {
         if (cells == null || cells.isEmpty()) {
             return Set.of();
         }
-        LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
-        for (CellCoord cell : cells) {
+        LinkedHashSet<GridPoint> result = new LinkedHashSet<>();
+        for (GridPoint cell : cells) {
             if (cell != null) {
                 result.add(cell);
             }

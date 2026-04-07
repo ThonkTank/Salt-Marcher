@@ -3,8 +3,9 @@ package features.world.dungeonmap.shell.runtime;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.application.runtime.DungeonRuntimeNavigationSnapshot;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
+import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.shell.interaction.DungeonDragService;
 import features.world.dungeonmap.shell.interaction.DungeonHitSnapshot;
@@ -41,7 +42,7 @@ public final class DungeonRuntimeSelectionPolicy {
             DungeonLayout activeMap,
             DungeonCanvasPointerEvent event,
             DungeonHitSnapshot snapshot,
-            CellCoord activeCell,
+            GridPoint activeCell,
             int activeLevelZ
     ) {
         if (!event.isPrimaryButton()
@@ -64,7 +65,7 @@ public final class DungeonRuntimeSelectionPolicy {
 
     private static boolean refOwnsActiveCell(
             DungeonLayout activeMap,
-            CellCoord activeCell,
+            GridPoint activeCell,
             int activeLevelZ,
             DungeonSelectionRef ref
     ) {
@@ -82,11 +83,15 @@ public final class DungeonRuntimeSelectionPolicy {
 
     private static boolean roomOwnsActiveCell(
             DungeonLayout activeMap,
-            CellCoord activeCell,
+            GridPoint activeCell,
             int activeLevelZ,
             DungeonSelectionRef.RoomRef roomRef
     ) {
-        Room room = activeMap.roomWithFloorAtCell(activeCell, activeLevelZ);
+        RoomCluster cluster = activeMap == null || activeCell == null ? null : activeMap.clusterAtCell(activeCell, activeLevelZ);
+        Room room = cluster == null ? null : cluster.structure().roomTopology().roomAt(activeCell, activeLevelZ);
+        if (room != null && !cluster.structure().roomTopology().structureFor(room).surfaceAtLevel(activeLevelZ).floor().contains(activeCell)) {
+            room = null;
+        }
         return room != null && Objects.equals(room.roomId(), roomRef.roomId());
     }
 }

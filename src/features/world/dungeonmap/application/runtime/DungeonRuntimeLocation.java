@@ -1,9 +1,10 @@
 package features.world.dungeonmap.application.runtime;
 
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.geometry.CardinalDirection;
+import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
+import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.room.Room;
@@ -21,7 +22,7 @@ import java.util.Objects;
 public record DungeonRuntimeLocation(
         DungeonLayout layout,
         DungeonRuntimeNavigationSnapshot navigation,
-        CellCoord activeCell,
+        GridPoint activeCell,
         int activeLevelZ,
         CardinalDirection heading,
         DungeonLayout.CellStructure structure,
@@ -59,9 +60,11 @@ public record DungeonRuntimeLocation(
     }
 
     public Room room() {
-        return structure instanceof DungeonLayout.CellStructure.RoomStructure roomStructure
-                ? roomStructure.room()
-                : null;
+        if (!(structure instanceof DungeonLayout.CellStructure.RoomStructure roomStructure)) {
+            return null;
+        }
+        RoomCluster cluster = roomStructure.clusterId() == null ? null : layout.findCluster(roomStructure.clusterId());
+        return cluster == null ? null : cluster.structure().roomTopology().findRoom(roomStructure.roomId());
     }
 
     public Corridor corridor() {
@@ -97,7 +100,7 @@ public record DungeonRuntimeLocation(
 
     private static DungeonSelectionRef ownerRef(DungeonLayout.CellStructure structure) {
         if (structure instanceof DungeonLayout.CellStructure.RoomStructure roomStructure) {
-            Long roomId = roomStructure.room() == null ? null : roomStructure.room().roomId();
+            Long roomId = roomStructure.roomId();
             return roomId == null ? null : new DungeonSelectionRef.RoomRef(roomId);
         }
         if (structure instanceof DungeonLayout.CellStructure.CorridorStructure corridorStructure) {

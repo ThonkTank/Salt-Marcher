@@ -1,8 +1,8 @@
 package features.world.dungeonmap.model.structures.stair;
 
-import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 
@@ -36,7 +36,7 @@ public final class DungeonStair {
             Long stairId,
             long mapId,
             String name,
-            List<CubePoint> path,
+            List<GridPoint> path,
             Set<Integer> stopLevels
     ) {
         return new DungeonStair(
@@ -71,7 +71,7 @@ public final class DungeonStair {
         return stair;
     }
 
-    public List<CubePoint> path() {
+    public List<GridPoint> path() {
         return stair.path();
     }
 
@@ -94,7 +94,7 @@ public final class DungeonStair {
         return stair.reachableLevels();
     }
 
-    public Set<CubePoint> occupiedPositions() {
+    public Set<GridPoint> occupiedPositions() {
         return stair.occupiedPositions();
     }
 
@@ -103,7 +103,7 @@ public final class DungeonStair {
     }
 
     public InteractiveLabelHandle labelHandle(int levelZ) {
-        CubePoint anchorPoint = exits().stream()
+        GridPoint anchorPoint = exits().stream()
                 .map(StairExit::position)
                 .filter(position -> position.z() == levelZ)
                 .findFirst()
@@ -117,7 +117,7 @@ public final class DungeonStair {
         return new InteractiveLabelHandle(
                 new DungeonSelectionRef.StairRef(stairId),
                 label(),
-                GridPoint2x.cell(anchorPoint.projectedCell()));
+                GridPoint.cell(anchorPoint.projectedCell()));
     }
 
     @Override
@@ -148,8 +148,8 @@ public final class DungeonStair {
                 + "]";
     }
 
-    public DungeonStair movedBy(CellCoord delta, int levelDelta) {
-        CellCoord resolvedDelta = delta == null ? new CellCoord(0, 0) : delta;
+    public DungeonStair movedBy(GridPoint delta, int levelDelta) {
+        GridPoint resolvedDelta = delta == null ? new GridPoint(0, 0) : delta;
         if ((resolvedDelta.x() == 0 && resolvedDelta.y() == 0) && levelDelta == 0) {
             return this;
         }

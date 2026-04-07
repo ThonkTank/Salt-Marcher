@@ -1,7 +1,7 @@
 package features.world.dungeonmap.structure.model.room;
 
-import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
 import features.world.dungeonmap.structure.model.Structure;
@@ -30,11 +30,11 @@ final class StructureRoomProjectionIndex {
             false);
 
     private final List<Room> rooms;
-    private final Map<Room, Map<Integer, Set<CellCoord>>> roomCellsByRoom;
+    private final Map<Room, Map<Integer, Set<GridPoint>>> roomCellsByRoom;
     private final Map<Long, Room> roomsById;
     private final Map<Room, Structure> derivedStructuresByRoom;
     private final Map<Long, Structure> derivedStructuresByRoomId;
-    private final Map<CubePoint, Room> roomsByPoint;
+    private final Map<GridPoint, Room> roomsByPoint;
     private final boolean hasOverlaps;
 
     static StructureRoomProjectionIndex empty() {
@@ -55,28 +55,28 @@ final class StructureRoomProjectionIndex {
                 .filter(Objects::nonNull)
                 .sorted(Comparator.comparing(Room::roomId, Comparator.nullsLast(Long::compareTo)))
                 .toList();
-        Map<Integer, Set<CellCoord>> remainingCellsByLevel = new LinkedHashMap<>();
+        Map<Integer, Set<GridPoint>> remainingCellsByLevel = new LinkedHashMap<>();
         for (Integer levelZ : resolvedStructure.levels().stream().sorted().toList()) {
             remainingCellsByLevel.put(levelZ, new LinkedHashSet<>(resolvedStructure.surfaceAtLevel(levelZ).surface().cellCoords()));
         }
 
         List<Room> result = new java.util.ArrayList<>();
-        Map<Room, Map<Integer, Set<CellCoord>>> roomCellsByRoom = new LinkedHashMap<>();
+        Map<Room, Map<Integer, Set<GridPoint>>> roomCellsByRoom = new LinkedHashMap<>();
         for (Room metadataRoom : metadata) {
-            Map<Integer, Set<CellCoord>> roomCellsByLevel = new LinkedHashMap<>();
-            for (Map.Entry<Integer, CellCoord> anchorEntry : metadataRoom.anchorsByLevel().entrySet().stream()
+            Map<Integer, Set<GridPoint>> roomCellsByLevel = new LinkedHashMap<>();
+            for (Map.Entry<Integer, GridPoint> anchorEntry : metadataRoom.anchorsByLevel().entrySet().stream()
                     .sorted(Map.Entry.comparingByKey())
                     .toList()) {
                 Integer levelZ = anchorEntry.getKey();
-                CellCoord anchor = anchorEntry.getValue();
+                GridPoint anchor = anchorEntry.getValue();
                 if (levelZ == null || anchor == null) {
                     continue;
                 }
-                Set<CellCoord> remainingLevelCells = remainingCellsByLevel.get(levelZ);
+                Set<GridPoint> remainingLevelCells = remainingCellsByLevel.get(levelZ);
                 if (remainingLevelCells == null || !remainingLevelCells.contains(anchor)) {
                     continue;
                 }
-                Set<CellCoord> roomCells = intersectCells(
+                Set<GridPoint> roomCells = intersectCells(
                         resolvedStructure.surfaceAtLevel(levelZ).surface()
                                 .reachableFrom(anchor, resolvedStructure.boundaryAtLevel(levelZ).boundaryEdges()),
                         remainingLevelCells);
@@ -97,15 +97,15 @@ final class StructureRoomProjectionIndex {
             roomCellsByRoom.put(projection.room(), projection.roomCellsByLevel());
         }
 
-        for (Map.Entry<Integer, Set<CellCoord>> entry : new LinkedHashMap<>(remainingCellsByLevel).entrySet()) {
+        for (Map.Entry<Integer, Set<GridPoint>> entry : new LinkedHashMap<>(remainingCellsByLevel).entrySet()) {
             Integer levelZ = entry.getKey();
-            LinkedHashSet<CellCoord> unassigned = new LinkedHashSet<>(entry.getValue());
+            LinkedHashSet<GridPoint> unassigned = new LinkedHashSet<>(entry.getValue());
             while (!unassigned.isEmpty()) {
-                CellCoord seed = unassigned.stream().min(CellCoord.ORDER).orElse(null);
+                GridPoint seed = unassigned.stream().min(GridPoint.ORDER).orElse(null);
                 if (seed == null) {
                     break;
                 }
-                Set<CellCoord> roomCells = intersectCells(
+                Set<GridPoint> roomCells = intersectCells(
                         resolvedStructure.surfaceAtLevel(levelZ).surface()
                                 .reachableFrom(seed, resolvedStructure.boundaryAtLevel(levelZ).boundaryEdges()),
                         unassigned);
@@ -133,7 +133,7 @@ final class StructureRoomProjectionIndex {
         }
 
         List<Room> partitionedRooms = result.isEmpty() ? List.of() : List.copyOf(result);
-        Map<Room, Map<Integer, Set<CellCoord>>> resolvedRoomCellsByRoom = immutableRoomCellsByRoom(roomCellsByRoom);
+        Map<Room, Map<Integer, Set<GridPoint>>> resolvedRoomCellsByRoom = immutableRoomCellsByRoom(roomCellsByRoom);
         Map<Long, Room> roomsById = indexRoomsById(partitionedRooms);
         DerivedStructureIndex derivedStructureIndex = indexDerivedStructures(resolvedRoomCellsByRoom, resolvedStructure);
         OverlapIndex overlapIndex = indexRoomsByPoint(partitionedRooms, resolvedRoomCellsByRoom);
@@ -149,11 +149,11 @@ final class StructureRoomProjectionIndex {
 
     private StructureRoomProjectionIndex(
             List<Room> rooms,
-            Map<Room, Map<Integer, Set<CellCoord>>> roomCellsByRoom,
+            Map<Room, Map<Integer, Set<GridPoint>>> roomCellsByRoom,
             Map<Long, Room> roomsById,
             Map<Room, Structure> derivedStructuresByRoom,
             Map<Long, Structure> derivedStructuresByRoomId,
-            Map<CubePoint, Room> roomsByPoint,
+            Map<GridPoint, Room> roomsByPoint,
             boolean hasOverlaps
     ) {
         this.rooms = rooms == null ? List.of() : List.copyOf(rooms);
@@ -185,15 +185,15 @@ final class StructureRoomProjectionIndex {
         return roomId != null && roomsById.containsKey(roomId);
     }
 
-    Room roomAt(CellCoord cell, int levelZ) {
-        return cell == null ? null : roomsByPoint.get(CubePoint.at(cell, levelZ));
+    Room roomAt(GridPoint cell, int levelZ) {
+        return cell == null ? null : roomsByPoint.get(GridPoint.at(cell, levelZ));
     }
 
-    Room roomAt(CubePoint point) {
+    Room roomAt(GridPoint point) {
         return point == null ? null : roomsByPoint.get(point);
     }
 
-    Set<CubePoint> cubePoints() {
+    Set<GridPoint> cubePoints() {
         return Set.copyOf(roomsByPoint.keySet());
     }
 
@@ -215,7 +215,7 @@ final class StructureRoomProjectionIndex {
         return roomId == null ? Structure.empty() : derivedStructuresByRoomId.getOrDefault(roomId, Structure.empty());
     }
 
-    Map<Room, Map<Integer, Set<CellCoord>>> roomCellsByRoom() {
+    Map<Room, Map<Integer, Set<GridPoint>>> roomCellsByRoom() {
         return roomCellsByRoom;
     }
 
@@ -227,7 +227,7 @@ final class StructureRoomProjectionIndex {
         return derivedStructuresByRoom;
     }
 
-    Map<CubePoint, Room> roomsByPoint() {
+    Map<GridPoint, Room> roomsByPoint() {
         return roomsByPoint;
     }
 
@@ -239,7 +239,7 @@ final class StructureRoomProjectionIndex {
             Long clusterId,
             long mapId,
             Room metadataRoom,
-            Map<Integer, Set<CellCoord>> roomCellsByLevel,
+            Map<Integer, Set<GridPoint>> roomCellsByLevel,
             features.world.dungeonmap.model.structures.room.RoomNarration narration
     ) {
         Room room = new Room(
@@ -262,20 +262,20 @@ final class StructureRoomProjectionIndex {
         return Map.copyOf(result);
     }
 
-    private static OverlapIndex indexRoomsByPoint(List<Room> rooms, Map<Room, Map<Integer, Set<CellCoord>>> roomCellsByRoom) {
-        Map<CubePoint, Room> result = new LinkedHashMap<>();
+    private static OverlapIndex indexRoomsByPoint(List<Room> rooms, Map<Room, Map<Integer, Set<GridPoint>>> roomCellsByRoom) {
+        Map<GridPoint, Room> result = new LinkedHashMap<>();
         boolean hasOverlaps = false;
         for (Room room : rooms) {
             if (room == null) {
                 continue;
             }
-            for (Map.Entry<Integer, Set<CellCoord>> entry : roomCellsByLevel(room, roomCellsByRoom).entrySet()) {
+            for (Map.Entry<Integer, Set<GridPoint>> entry : roomCellsByLevel(room, roomCellsByRoom).entrySet()) {
                 Integer levelZ = entry.getKey();
                 if (levelZ == null) {
                     continue;
                 }
-                for (CellCoord cell : entry.getValue()) {
-                    CubePoint point = CubePoint.at(cell, levelZ);
+                for (GridPoint cell : entry.getValue()) {
+                    GridPoint point = GridPoint.at(cell, levelZ);
                     if (result.containsKey(point) && result.get(point) != room) {
                         hasOverlaps = true;
                     }
@@ -286,9 +286,9 @@ final class StructureRoomProjectionIndex {
         return new OverlapIndex(Map.copyOf(result), hasOverlaps);
     }
 
-    private static Map<Integer, Set<CellCoord>> roomCellsByLevel(
+    private static Map<Integer, Set<GridPoint>> roomCellsByLevel(
             Room room,
-            Map<Room, Map<Integer, Set<CellCoord>>> roomCellsByRoom
+            Map<Room, Map<Integer, Set<GridPoint>>> roomCellsByRoom
     ) {
         if (room == null || roomCellsByRoom == null || roomCellsByRoom.isEmpty()) {
             return Map.of();
@@ -296,14 +296,14 @@ final class StructureRoomProjectionIndex {
         return roomCellsByRoom.getOrDefault(room, Map.of());
     }
 
-    private static Map<Room, Map<Integer, Set<CellCoord>>> immutableRoomCellsByRoom(
-            Map<Room, Map<Integer, Set<CellCoord>>> mutable
+    private static Map<Room, Map<Integer, Set<GridPoint>>> immutableRoomCellsByRoom(
+            Map<Room, Map<Integer, Set<GridPoint>>> mutable
     ) {
         if (mutable == null || mutable.isEmpty()) {
             return Map.of();
         }
-        Map<Room, Map<Integer, Set<CellCoord>>> result = new LinkedHashMap<>();
-        for (Map.Entry<Room, Map<Integer, Set<CellCoord>>> entry : mutable.entrySet()) {
+        Map<Room, Map<Integer, Set<GridPoint>>> result = new LinkedHashMap<>();
+        for (Map.Entry<Room, Map<Integer, Set<GridPoint>>> entry : mutable.entrySet()) {
             if (entry != null && entry.getKey() != null) {
                 result.put(entry.getKey(), immutableCellsByLevel(entry.getValue()));
             }
@@ -311,25 +311,25 @@ final class StructureRoomProjectionIndex {
         return result.isEmpty() ? Map.of() : Map.copyOf(result);
     }
 
-    private static Map<Integer, Set<CellCoord>> immutableCellsByLevel(Map<Integer, Set<CellCoord>> source) {
+    private static Map<Integer, Set<GridPoint>> immutableCellsByLevel(Map<Integer, Set<GridPoint>> source) {
         if (source == null || source.isEmpty()) {
             return Map.of();
         }
-        Map<Integer, Set<CellCoord>> result = new LinkedHashMap<>();
+        Map<Integer, Set<GridPoint>> result = new LinkedHashMap<>();
         source.entrySet().stream()
                 .filter(entry -> entry != null && entry.getKey() != null)
                 .sorted(Map.Entry.comparingByKey())
-                .forEach(entry -> result.put(entry.getKey(), CellCoord.normalize(entry.getValue())));
+                .forEach(entry -> result.put(entry.getKey(), GridPoint.normalize(entry.getValue())));
         return result.isEmpty() ? Map.of() : Map.copyOf(result);
     }
 
-    private static Set<CellCoord> intersectCells(Collection<CellCoord> left, Collection<CellCoord> right) {
+    private static Set<GridPoint> intersectCells(Collection<GridPoint> left, Collection<GridPoint> right) {
         if (left == null || right == null) {
             return Set.of();
         }
-        LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
-        Set<CellCoord> rightSet = right instanceof Set<CellCoord> set ? set : new LinkedHashSet<>(right);
-        for (CellCoord cell : left) {
+        LinkedHashSet<GridPoint> result = new LinkedHashSet<>();
+        Set<GridPoint> rightSet = right instanceof Set<GridPoint> set ? set : new LinkedHashSet<>(right);
+        for (GridPoint cell : left) {
             if (rightSet.contains(cell)) {
                 result.add(cell);
             }
@@ -337,14 +337,14 @@ final class StructureRoomProjectionIndex {
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
-    private static CellCoord anchorCell(Set<CellCoord> roomCells, CellCoord preferredAnchor) {
+    private static GridPoint anchorCell(Set<GridPoint> roomCells, GridPoint preferredAnchor) {
         return preferredAnchor != null && roomCells.contains(preferredAnchor)
                 ? preferredAnchor
-                : CellCoord.bestCenter(roomCells);
+                : GridPoint.bestCenter(roomCells);
     }
 
     private static DerivedStructureIndex indexDerivedStructures(
-            Map<Room, Map<Integer, Set<CellCoord>>> roomCellsByRoom,
+            Map<Room, Map<Integer, Set<GridPoint>>> roomCellsByRoom,
             Structure clusterStructure
     ) {
         if (roomCellsByRoom == null || roomCellsByRoom.isEmpty()) {
@@ -352,7 +352,7 @@ final class StructureRoomProjectionIndex {
         }
         Map<Room, Structure> structuresByRoom = new LinkedHashMap<>();
         Map<Long, Structure> structuresByRoomId = new LinkedHashMap<>();
-        for (Map.Entry<Room, Map<Integer, Set<CellCoord>>> entry : roomCellsByRoom.entrySet().stream()
+        for (Map.Entry<Room, Map<Integer, Set<GridPoint>>> entry : roomCellsByRoom.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey(Comparator.comparing(Room::roomId, Comparator.nullsLast(Long::compareTo))))
                 .toList()) {
             Room room = entry.getKey();
@@ -374,20 +374,20 @@ final class StructureRoomProjectionIndex {
     }
 
     private static Structure structureForDerivedRoom(
-            Map<Integer, Set<CellCoord>> roomCellsByLevel,
-            Map<Integer, CellCoord> preferredAnchorsByLevel,
+            Map<Integer, Set<GridPoint>> roomCellsByLevel,
+            Map<Integer, GridPoint> preferredAnchorsByLevel,
             Structure clusterStructure
     ) {
         Map<Integer, StructureSpecification.LevelSpecification> levelsByZ = new LinkedHashMap<>();
-        for (Map.Entry<Integer, Set<CellCoord>> entry : roomCellsByLevel.entrySet().stream()
+        for (Map.Entry<Integer, Set<GridPoint>> entry : roomCellsByLevel.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
                 .toList()) {
             Integer levelZ = entry.getKey();
-            Set<CellCoord> roomCells = entry.getValue();
+            Set<GridPoint> roomCells = entry.getValue();
             if (levelZ == null || roomCells == null || roomCells.isEmpty()) {
                 continue;
             }
-            CellCoord preferredAnchor = preferredAnchorsByLevel == null ? null : preferredAnchorsByLevel.get(levelZ);
+            GridPoint preferredAnchor = preferredAnchorsByLevel == null ? null : preferredAnchorsByLevel.get(levelZ);
             StructureSurface clippedSurface = clusterStructure.surfaceAtLevel(levelZ).clippedTo(
                     roomCells,
                     anchorCell(roomCells, preferredAnchor));
@@ -409,9 +409,9 @@ final class StructureRoomProjectionIndex {
     private record DerivedStructureIndex(Map<Room, Structure> structuresByRoom, Map<Long, Structure> structuresByRoomId) {
     }
 
-    private record PartitionedRoom(Room room, Map<Integer, Set<CellCoord>> roomCellsByLevel) {
+    private record PartitionedRoom(Room room, Map<Integer, Set<GridPoint>> roomCellsByLevel) {
     }
 
-    private record OverlapIndex(Map<CubePoint, Room> roomsByPoint, boolean hasOverlaps) {
+    private record OverlapIndex(Map<GridPoint, Room> roomsByPoint, boolean hasOverlaps) {
     }
 }

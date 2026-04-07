@@ -1,7 +1,7 @@
 package features.world.dungeonmap.shell.interaction;
 
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
-import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.geometry.GridPoint;
 
 import java.util.Objects;
 import java.util.function.Function;
@@ -10,9 +10,9 @@ public final class DungeonDragService {
 
     public sealed interface DungeonDragTarget permits DungeonDragTarget.TileDragTarget {
 
-        CellCoord originCell();
+        GridPoint originCell();
 
-        record TileDragTarget(CellCoord originCell) implements DungeonDragTarget {
+        record TileDragTarget(GridPoint originCell) implements DungeonDragTarget {
             public TileDragTarget {
                 Objects.requireNonNull(originCell, "originCell");
             }
@@ -44,13 +44,13 @@ public final class DungeonDragService {
         }
     }
 
-    public record DungeonDragSession(DungeonDragTarget target, CellCoord currentCell) {
+    public record DungeonDragSession(DungeonDragTarget target, GridPoint currentCell) {
         public DungeonDragSession {
             Objects.requireNonNull(target, "target");
             Objects.requireNonNull(currentCell, "currentCell");
         }
 
-        public DungeonDragSession movedTo(CellCoord nextCell) {
+        public DungeonDragSession movedTo(GridPoint nextCell) {
             Objects.requireNonNull(nextCell, "nextCell");
             return nextCell.equals(currentCell) ? this : new DungeonDragSession(target, nextCell);
         }
@@ -75,12 +75,12 @@ public final class DungeonDragService {
     public DungeonDragResult update(
             DungeonCanvasPointerEvent event,
             DungeonDragSession session,
-            Function<CellCoord, CellCoord> snapTarget
+            Function<GridPoint, GridPoint> snapTarget
     ) {
         if (event == null || session == null || snapTarget == null) {
             return new DungeonDragResult.Idle();
         }
-        CellCoord snapped = snapTarget.apply(event.gridCell());
+        GridPoint snapped = snapTarget.apply(event.gridCell());
         if (snapped == null) {
             return new DungeonDragResult.Rejected("Pointer is outside a draggable target.");
         }
@@ -90,12 +90,12 @@ public final class DungeonDragService {
     public DungeonDragResult drop(
             DungeonCanvasPointerEvent event,
             DungeonDragSession session,
-            Function<CellCoord, CellCoord> snapTarget
+            Function<GridPoint, GridPoint> snapTarget
     ) {
         if (event == null || session == null || snapTarget == null) {
             return new DungeonDragResult.Idle();
         }
-        CellCoord snapped = snapTarget.apply(event.gridCell());
+        GridPoint snapped = snapTarget.apply(event.gridCell());
         if (snapped == null) {
             return new DungeonDragResult.Rejected("Drop target is not traversable.");
         }

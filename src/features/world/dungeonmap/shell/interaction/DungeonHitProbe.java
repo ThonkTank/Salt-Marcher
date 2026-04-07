@@ -1,7 +1,7 @@
 package features.world.dungeonmap.shell.interaction;
 
-import features.world.dungeonmap.model.geometry.GridPoint2x;
-import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridPoint;
 import javafx.geometry.Point2D;
 
 import java.util.Objects;
@@ -13,8 +13,8 @@ import java.util.Objects;
  */
 public record DungeonHitProbe(
         Point2D canvasPoint,
-        CellCoord gridCell,
-        GridPoint2x probePoint2x,
+        GridPoint gridCell,
+        GridPoint probePoint2x,
         int levelZ,
         double panX,
         double panY,
@@ -33,7 +33,7 @@ public record DungeonHitProbe(
         }
     }
 
-    public static GridPoint2x point2xForCanvas(Point2D canvasPoint, double panX, double panY, double gridSizePx) {
+    public static GridPoint point2xForCanvas(Point2D canvasPoint, double panX, double panY, double gridSizePx) {
         Point2D resolvedPoint = Objects.requireNonNull(canvasPoint, "canvasPoint");
         requireFinite(panX, "panX");
         requireFinite(panY, "panY");
@@ -42,22 +42,22 @@ public record DungeonHitProbe(
             throw new IllegalArgumentException("gridSizePx must be > 0");
         }
         double halfGrid = gridSizePx / 2.0;
-        // Pixel projection treats the top-left corner of CellCoord(0,0) as GridPoint2x(-1,-1), so raw 2x values map
+        // Pixel projection treats the top-left corner of GridPoint(0,0) as GridPoint(-1,-1), so raw 2x values map
         // to canvas space with a fixed half-cell offset rather than a storage compatibility codec.
-        return GridPoint2x.raw(
+        return GridPoint.raw(
                 (int) Math.round((resolvedPoint.getX() - panX) / halfGrid) - 1,
                 (int) Math.round((resolvedPoint.getY() - panY) / halfGrid) - 1);
     }
 
-    public Point2D canvasPointForGrid(CellCoord cell) {
-        CellCoord resolvedCell = Objects.requireNonNull(cell, "cell");
+    public Point2D canvasPointForGrid(GridPoint cell) {
+        GridPoint resolvedCell = Objects.requireNonNull(cell, "cell");
         return new Point2D(
                 panX + resolvedCell.x() * gridSizePx,
                 panY + resolvedCell.y() * gridSizePx);
     }
 
-    public Point2D canvasPointForPoint2x(GridPoint2x point2x) {
-        GridPoint2x resolvedPoint = Objects.requireNonNull(point2x, "point2x");
+    public Point2D canvasPointForPoint2x(GridPoint point2x) {
+        GridPoint resolvedPoint = Objects.requireNonNull(point2x, "point2x");
         return new Point2D(
                 panX + (resolvedPoint.x2() + 1) * gridSizePx / 2.0,
                 panY + (resolvedPoint.y2() + 1) * gridSizePx / 2.0);

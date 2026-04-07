@@ -2,10 +2,12 @@ package features.world.dungeonmap.application.runtime.description;
 
 import features.world.dungeonmap.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.CardinalDirection;
+import features.world.dungeonmap.geometry.CardinalDirection;
+import features.world.dungeonmap.structure.model.Structure;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpointType;
 import features.world.dungeonmap.model.structures.connection.DoorExitDescriptor;
+import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
@@ -110,7 +112,13 @@ final class DungeonRuntimeExitFactory {
         if (roomId == null) {
             return "Raum";
         }
-        Room room = layout == null ? null : layout.findRoom(roomId);
+        Room room = layout == null ? null : layout.clusters().stream()
+                .map(RoomCluster::structure)
+                .map(Structure::roomTopology)
+                .map(topology -> topology.findRoom(roomId))
+                .filter(java.util.Objects::nonNull)
+                .findFirst()
+                .orElse(null);
         return room == null || room.name() == null || room.name().isBlank() ? "Raum " + roomId : room.name();
     }
 }

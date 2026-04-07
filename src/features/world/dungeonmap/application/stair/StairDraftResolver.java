@@ -1,8 +1,9 @@
 package features.world.dungeonmap.application.stair;
 
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.TilePath;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridPath;
+import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
 import features.world.dungeonmap.model.structures.stair.Stair;
@@ -84,7 +85,7 @@ public final class StairDraftResolver {
         validateAnchor(resolvedLayout, resolvedDraft.anchorCell(), resolvedDraft.anchorLevelZ());
         return new ResolvedStairDraft(
                 resolvedDraft,
-                TilePath.generate(
+                GridPath.generate(
                         resolvedDraft.shapeSpec(),
                         resolvedDraft.anchorCell(),
                         resolvedDraft.anchorLevelZ(),
@@ -95,11 +96,11 @@ public final class StairDraftResolver {
 
     public static DungeonStairApplicationService.StairDraft shiftedDraft(
             DungeonStairApplicationService.StairDraft draft,
-            CellCoord delta,
+            GridPoint delta,
             int levelDelta
     ) {
         DungeonStairApplicationService.StairDraft resolvedDraft = Objects.requireNonNull(draft, "draft");
-        CellCoord resolvedDelta = delta == null ? new CellCoord(0, 0) : delta;
+        GridPoint resolvedDelta = delta == null ? new GridPoint(0, 0) : delta;
         return new DungeonStairApplicationService.StairDraft(
                 resolvedDraft.name(),
                 resolvedDraft.anchorCell().add(resolvedDelta),
@@ -126,8 +127,13 @@ public final class StairDraftResolver {
                 Stair.of(resolution.path(), resolution.stopLevels()));
     }
 
-    private static void validateAnchor(DungeonLayout layout, CellCoord anchorCell, int anchorLevelZ) {
-        Room room = layout.roomWithFloorAtCell(anchorCell, anchorLevelZ);
+    private static void validateAnchor(DungeonLayout layout, GridPoint anchorCell, int anchorLevelZ) {
+        GridPoint anchorCoord = anchorCell == null ? null : anchorCell.projectedCell();
+        RoomCluster cluster = layout == null ? null : layout.clusterAtCell(anchorCoord, anchorLevelZ);
+        Room room = cluster == null ? null : cluster.structure().roomTopology().roomAt(anchorCoord, anchorLevelZ);
+        if (room != null && !cluster.structure().roomTopology().structureFor(room).surfaceAtLevel(anchorLevelZ).floor().contains(anchorCoord)) {
+            room = null;
+        }
         if (room == null) {
             throw new IllegalArgumentException("Treppenstart muss auf einem Raum-Floor liegen");
         }
@@ -135,12 +141,12 @@ public final class StairDraftResolver {
 
     public record ResolvedStairDraft(
             DungeonStairApplicationService.StairDraft draft,
-            TilePath path,
+            GridPath path,
             Set<Integer> stopLevels
     ) {
         public ResolvedStairDraft {
             draft = Objects.requireNonNull(draft, "draft");
-            path = path == null ? TilePath.empty() : path;
+            path = path == null ? GridPath.empty() : path;
             stopLevels = Set.copyOf(stopLevels == null ? Set.<Integer>of() : stopLevels);
         }
     }

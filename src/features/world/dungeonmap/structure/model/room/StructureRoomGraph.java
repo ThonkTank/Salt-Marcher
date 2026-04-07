@@ -1,7 +1,7 @@
 package features.world.dungeonmap.structure.model.room;
 
-import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionKind;
 import features.world.dungeonmap.model.structures.connection.DoorConnectionCarrier;
@@ -113,7 +113,7 @@ final class StructureRoomGraph {
             long mapId,
             Long clusterId,
             Structure clusterStructure,
-            Map<CubePoint, Room> roomsByPoint
+            Map<GridPoint, Room> roomsByPoint
     ) {
         if (clusterStructure == null || clusterStructure.levels().isEmpty()) {
             return List.of();
@@ -144,14 +144,14 @@ final class StructureRoomGraph {
             Door door,
             long mapId,
             long clusterId,
-            Map<CubePoint, Room> roomsByPoint
+            Map<GridPoint, Room> roomsByPoint
     ) {
         if (door == null || !door.hasBoundarySegments()) {
             return null;
         }
         List<Room> touchingRooms = new ArrayList<>();
-        for (CellCoord cell : door.touchingCells().stream().sorted(CellCoord.ORDER).toList()) {
-            Room room = roomsByPoint.get(CubePoint.at(cell, levelZ));
+        for (GridPoint cell : door.touchingCells().stream().sorted(GridPoint.ORDER).toList()) {
+            Room room = roomsByPoint.get(GridPoint.at(cell, levelZ));
             if (room != null && !touchingRooms.contains(room)) {
                 touchingRooms.add(room);
             }
@@ -189,24 +189,24 @@ final class StructureRoomGraph {
     }
 
     private static Map<Long, Set<Long>> indexAdjacentRoomIds(
-            Map<Room, Map<Integer, Set<CellCoord>>> roomCellsByRoom,
+            Map<Room, Map<Integer, Set<GridPoint>>> roomCellsByRoom,
             Map<Long, Room> roomsById,
-            Map<CubePoint, Room> roomsByPoint
+            Map<GridPoint, Room> roomsByPoint
     ) {
         Map<Long, Set<Long>> result = new LinkedHashMap<>();
         for (Long roomId : roomsById.keySet()) {
             result.put(roomId, new LinkedHashSet<>());
         }
-        for (Map.Entry<Room, Map<Integer, Set<CellCoord>>> roomEntry : roomCellsByRoom.entrySet()) {
+        for (Map.Entry<Room, Map<Integer, Set<GridPoint>>> roomEntry : roomCellsByRoom.entrySet()) {
             Room room = roomEntry.getKey();
             if (room == null || room.roomId() == null) {
                 continue;
             }
-            for (Map.Entry<Integer, Set<CellCoord>> levelEntry : roomEntry.getValue().entrySet()) {
+            for (Map.Entry<Integer, Set<GridPoint>> levelEntry : roomEntry.getValue().entrySet()) {
                 int levelZ = levelEntry.getKey();
-                for (CellCoord cell : levelEntry.getValue()) {
-                    for (CellCoord step : CellCoord.CARDINAL_STEPS) {
-                        Room neighbor = roomsByPoint.get(CubePoint.at(cell.add(step), levelZ));
+                for (GridPoint cell : levelEntry.getValue()) {
+                    for (GridPoint step : GridPoint.CARDINAL_STEPS) {
+                        Room neighbor = roomsByPoint.get(GridPoint.at(cell.add(step), levelZ));
                         if (neighbor == null || neighbor.roomId() == null || neighbor.roomId().equals(room.roomId())) {
                             continue;
                         }

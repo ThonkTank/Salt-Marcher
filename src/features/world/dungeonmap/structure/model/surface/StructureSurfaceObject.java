@@ -1,7 +1,7 @@
 package features.world.dungeonmap.structure.model.surface;
 
-import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.TileShape;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridArea;
 
 import java.util.Collection;
 import java.util.Set;
@@ -11,45 +11,45 @@ import java.util.Set;
  */
 abstract sealed class StructureSurfaceObject permits StructureSurfaceArea, StructureFloor {
 
-    private final TileShape tileShape;
+    private final GridArea tileShape;
 
-    StructureSurfaceObject(TileShape tileShape) {
-        this.tileShape = tileShape == null ? TileShape.empty() : tileShape;
+    StructureSurfaceObject(GridArea tileShape) {
+        this.tileShape = tileShape == null ? GridArea.empty() : tileShape;
     }
 
-    public final Set<CellCoord> cellCoords() {
+    public final Set<GridPoint> cellCoords() {
         return tileShape.cellCoords();
     }
 
-    public final boolean contains(CellCoord cell) {
+    public final boolean contains(GridPoint cell) {
         return cell != null && tileShape.contains(cell);
     }
 
-    public final CellCoord centerCellCoord() {
-        return tileShape.isEmpty() ? null : tileShape.centerCellCoord();
+    public final GridPoint centerGridPoint() {
+        return tileShape.isEmpty() ? null : tileShape.centerGridPoint();
     }
 
     public final boolean isEmpty() {
         return tileShape.isEmpty();
     }
 
-    final TileShape tileShape() {
+    final GridArea tileShape() {
         return tileShape;
     }
 
-    final TileShape translatedTileShape(CellCoord delta) {
-        CellCoord resolvedDelta = resolvedDelta(delta);
+    final GridArea translatedGridArea(GridPoint delta) {
+        GridPoint resolvedDelta = resolvedDelta(delta);
         if (resolvedDelta.x() == 0 && resolvedDelta.y() == 0) {
             return tileShape;
         }
         return tileShape.translatedByCells(resolvedDelta);
     }
 
-    final TileShape intersectedTileShape(Collection<CellCoord> cells) {
+    final GridArea intersectedGridArea(Collection<GridPoint> cells) {
         return tileShape.intersection(cells);
     }
 
-    final CellCoord resolvedDelta(CellCoord delta) {
-        return delta == null ? new CellCoord(0, 0) : delta;
+    final GridPoint resolvedDelta(GridPoint delta) {
+        return delta == null ? new GridPoint(0, 0) : delta;
     }
 }

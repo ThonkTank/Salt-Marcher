@@ -1,8 +1,8 @@
 package features.world.dungeonmap.model.structures.corridor;
 
-import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.GridPoint2x;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridSegment;
 import features.world.dungeonmap.structure.model.Structure;
 import features.world.dungeonmap.structure.model.StructureSpecification;
 
@@ -26,7 +26,7 @@ public final class CorridorRouting {
         throw new AssertionError("No instances");
     }
 
-    public record AnchorAttachment(CellCoord cell, List<GridPoint2x> anchorPath) {
+    public record AnchorAttachment(GridPoint cell, List<GridPoint> anchorPath) {
         public AnchorAttachment {
             cell = Objects.requireNonNull(cell, "cell");
             anchorPath = anchorPath == null ? List.of() : List.copyOf(anchorPath);
@@ -54,7 +54,7 @@ public final class CorridorRouting {
     public record RoutedProjection(
             Structure structure,
             List<CorridorPathTrace> traces,
-            Set<GridSegment2x> boundaryOpeningEdges
+            Set<GridSegment> boundaryOpeningEdges
     ) {
         public RoutedProjection {
             structure = structure == null ? Structure.empty() : structure;
@@ -63,13 +63,13 @@ public final class CorridorRouting {
         }
     }
 
-    public static Set<CellCoord> surfaceCellsForTraces(Collection<CorridorPathTrace> traces) {
-        LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
+    public static Set<GridPoint> surfaceCellsForTraces(Collection<CorridorPathTrace> traces) {
+        LinkedHashSet<GridPoint> result = new LinkedHashSet<>();
         for (CorridorPathTrace trace : traces == null ? List.<CorridorPathTrace>of() : traces) {
             if (trace == null) {
                 continue;
             }
-            for (GridPoint2x point2x : trace.path2x()) {
+            for (GridPoint point2x : trace.path2x()) {
                 if (point2x != null) {
                     point2x.asCell().ifPresent(result::add);
                 }
@@ -78,21 +78,21 @@ public final class CorridorRouting {
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
-    public static List<AnchorAttachment> attachmentsForPoint(GridPoint2x anchorPoint, Collection<CellCoord> blockedCells) {
+    public static List<AnchorAttachment> attachmentsForPoint(GridPoint anchorPoint, Collection<GridPoint> blockedCells) {
         if (anchorPoint == null) {
             return List.of();
         }
         if (anchorPoint.isCell()) {
             return List.of(new AnchorAttachment(anchorPoint.asCell().orElseThrow(), List.of(anchorPoint)));
         }
-        LinkedHashSet<CellCoord> blocked = new LinkedHashSet<>(blockedCells == null ? Set.<CellCoord>of() : blockedCells);
-        Set<CellCoord> candidates = anchorPoint.touchingCells();
+        LinkedHashSet<GridPoint> blocked = new LinkedHashSet<>(blockedCells == null ? Set.<GridPoint>of() : blockedCells);
+        Set<GridPoint> candidates = anchorPoint.touchingCells();
         ArrayList<AnchorAttachment> attachments = new ArrayList<>();
-        for (CellCoord candidate : candidates.stream().sorted(CellCoord.ORDER).toList()) {
+        for (GridPoint candidate : candidates.stream().sorted(GridPoint.ORDER).toList()) {
             if (blocked.contains(candidate)) {
                 continue;
             }
-            for (List<GridPoint2x> path : anchorPaths(anchorPoint, candidate)) {
+            for (List<GridPoint> path : anchorPaths(anchorPoint, candidate)) {
                 attachments.add(new AnchorAttachment(candidate, path));
             }
         }
@@ -103,7 +103,7 @@ public final class CorridorRouting {
             int levelZ,
             Collection<RoutedNode> nodes,
             Collection<RoutedLink> links,
-            Collection<CellCoord> blockedCells
+            Collection<GridPoint> blockedCells
     ) {
         Map<Long, RoutedNode> nodesById = indexRoutedNodes(nodes);
         ArrayList<CorridorPathTrace> traces = new ArrayList<>();
@@ -119,20 +119,20 @@ public final class CorridorRouting {
         if (traces.isEmpty()) {
             return new RoutedProjection(Structure.empty(), List.of(), Set.of());
         }
-        Set<CellCoord> occupiedCells = surfaceCellsForTraces(traces);
+        Set<GridPoint> occupiedCells = surfaceCellsForTraces(traces);
         if (occupiedCells.isEmpty()) {
             return new RoutedProjection(Structure.empty(), List.copyOf(traces), Set.of());
         }
         Structure structure = Structure.fromSpecification(StructureSpecification.ofLevel(
                 levelZ,
                 StructureSpecification.LevelSpecification.of(
-                        CellCoord.bestCenter(occupiedCells),
+                        GridPoint.bestCenter(occupiedCells),
                         occupiedCells,
                         occupiedCells,
                         List.of(),
                         List.of())));
-        Set<CellCoord> hydratedCells = CellCoord.normalize(structure.surfaceAtLevel(levelZ).surface().cellCoords());
-        if (!hydratedCells.equals(CellCoord.normalize(occupiedCells))) {
+        Set<GridPoint> hydratedCells = GridPoint.normalize(structure.surfaceAtLevel(levelZ).surface().cellCoords());
+        if (!hydratedCells.equals(GridPoint.normalize(occupiedCells))) {
             throw new IllegalStateException("Corridor route projection changed the routed occupied cells");
         }
         return new RoutedProjection(structure, traces, Set.of());
@@ -168,7 +168,7 @@ public final class CorridorRouting {
     private static RoutePlan findBestTrace(
             Collection<AnchorAttachment> startAttachments,
             Collection<AnchorAttachment> endAttachments,
-            Collection<CellCoord> blockedCells
+            Collection<GridPoint> blockedCells
     ) {
         RoutePlan bestPlan = null;
         for (AnchorAttachment startAttachment : startAttachments == null ? List.<AnchorAttachment>of() : startAttachments) {
@@ -186,7 +186,7 @@ public final class CorridorRouting {
                 if (cellRoute == null) {
                     continue;
                 }
-                List<GridPoint2x> path2x = assemblePath2x(
+                List<GridPoint> path2x = assemblePath2x(
                         startAttachment.anchorPath(),
                         cellRoute.cells(),
                         endAttachment.anchorPath());
@@ -204,7 +204,7 @@ public final class CorridorRouting {
         return bestPlan;
     }
 
-    private static CellRoute findCellRoute(CellCoord start, CellCoord end, Set<CellCoord> blockedCells) {
+    private static CellRoute findCellRoute(GridPoint start, GridPoint end, Set<GridPoint> blockedCells) {
         if (start == null || end == null) {
             return null;
         }
@@ -215,7 +215,7 @@ public final class CorridorRouting {
         int maxX = Math.max(start.x(), end.x());
         int minY = Math.min(start.y(), end.y());
         int maxY = Math.max(start.y(), end.y());
-        for (CellCoord blocked : blockedCells == null ? List.<CellCoord>of() : blockedCells) {
+        for (GridPoint blocked : blockedCells == null ? List.<GridPoint>of() : blockedCells) {
             minX = Math.min(minX, blocked.x());
             maxX = Math.max(maxX, blocked.x());
             minY = Math.min(minY, blocked.y());
@@ -227,7 +227,7 @@ public final class CorridorRouting {
         maxY += 4;
 
         double turnPenalty = turnPenalty(start, end);
-        Set<CellCoord> effectiveBlocked = new LinkedHashSet<>(blockedCells == null ? Set.<CellCoord>of() : blockedCells);
+        Set<GridPoint> effectiveBlocked = new LinkedHashSet<>(blockedCells == null ? Set.<GridPoint>of() : blockedCells);
         effectiveBlocked.remove(start);
         effectiveBlocked.remove(end);
 
@@ -248,8 +248,8 @@ public final class CorridorRouting {
             if (current.cell().equals(end)) {
                 return new CellRoute(reconstructCellPath(cameFrom, current), currentCost);
             }
-            for (CellCoord step : CellCoord.CARDINAL_STEPS) {
-                CellCoord neighbor = current.cell().add(step);
+            for (GridPoint step : GridPoint.CARDINAL_STEPS) {
+                GridPoint neighbor = current.cell().add(step);
                 if (neighbor.x() < minX || neighbor.x() > maxX || neighbor.y() < minY || neighbor.y() > maxY) {
                     continue;
                 }
@@ -272,8 +272,8 @@ public final class CorridorRouting {
         return null;
     }
 
-    private static List<CellCoord> reconstructCellPath(Map<SearchState, SearchState> cameFrom, SearchState endState) {
-        ArrayList<CellCoord> path = new ArrayList<>();
+    private static List<GridPoint> reconstructCellPath(Map<SearchState, SearchState> cameFrom, SearchState endState) {
+        ArrayList<GridPoint> path = new ArrayList<>();
         SearchState current = endState;
         path.add(current.cell());
         while (cameFrom.containsKey(current)) {
@@ -284,25 +284,25 @@ public final class CorridorRouting {
         return List.copyOf(path);
     }
 
-    private static List<GridPoint2x> assemblePath2x(
-            List<GridPoint2x> startAnchorPath,
-            List<CellCoord> cellRoute,
-            List<GridPoint2x> endAnchorPath
+    private static List<GridPoint> assemblePath2x(
+            List<GridPoint> startAnchorPath,
+            List<GridPoint> cellRoute,
+            List<GridPoint> endAnchorPath
     ) {
-        ArrayList<GridPoint2x> result = new ArrayList<>();
+        ArrayList<GridPoint> result = new ArrayList<>();
         appendUnique(result, startAnchorPath);
-        appendUnique(result, cellRoute == null ? List.of() : cellRoute.stream().map(GridPoint2x::cell).toList());
-        ArrayList<GridPoint2x> reversedEnd = new ArrayList<>(endAnchorPath == null ? List.of() : endAnchorPath);
+        appendUnique(result, cellRoute == null ? List.of() : cellRoute.stream().map(GridPoint::cell).toList());
+        ArrayList<GridPoint> reversedEnd = new ArrayList<>(endAnchorPath == null ? List.of() : endAnchorPath);
         Collections.reverse(reversedEnd);
         appendUnique(result, reversedEnd);
         return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
-    private static void appendUnique(List<GridPoint2x> target, List<GridPoint2x> points) {
+    private static void appendUnique(List<GridPoint> target, List<GridPoint> points) {
         if (target == null || points == null) {
             return;
         }
-        for (GridPoint2x point : points) {
+        for (GridPoint point : points) {
             if (point == null) {
                 continue;
             }
@@ -313,34 +313,34 @@ public final class CorridorRouting {
         }
     }
 
-    private static List<List<GridPoint2x>> anchorPaths(GridPoint2x anchorPoint, CellCoord cell) {
+    private static List<List<GridPoint>> anchorPaths(GridPoint anchorPoint, GridPoint cell) {
         if (anchorPoint == null || cell == null) {
             return List.of();
         }
-        GridPoint2x cellCenter = GridPoint2x.cell(cell);
+        GridPoint cellCenter = GridPoint.cell(cell);
         if (anchorPoint.equals(cellCenter)) {
             return List.of(List.of(anchorPoint));
         }
         if (anchorPoint.manhattanDistance2x(cellCenter) == 1) {
             return List.of(List.of(anchorPoint, cellCenter));
         }
-        GridPoint2x firstMidpoint = GridPoint2x.raw(anchorPoint.x2(), cellCenter.y2());
-        GridPoint2x secondMidpoint = GridPoint2x.raw(cellCenter.x2(), anchorPoint.y2());
+        GridPoint firstMidpoint = GridPoint.raw(anchorPoint.x2(), cellCenter.y2());
+        GridPoint secondMidpoint = GridPoint.raw(cellCenter.x2(), anchorPoint.y2());
         return List.of(
                 List.of(anchorPoint, firstMidpoint, cellCenter),
                 List.of(anchorPoint, secondMidpoint, cellCenter));
     }
 
-    private static double heuristic(CellCoord current, CellCoord end) {
+    private static double heuristic(GridPoint current, GridPoint end) {
         return current == null || end == null ? 0.0d : current.manhattanDistance(end);
     }
 
-    private static double turnPenalty(CellCoord start, CellCoord end) {
+    private static double turnPenalty(GridPoint start, GridPoint end) {
         int cellDistance = Math.max(1, start.manhattanDistance(end));
         return Math.max(0.15d, Math.min(0.75d, 0.75d / Math.sqrt(cellDistance)));
     }
 
-    private record SearchState(CellCoord cell, CellCoord direction) {
+    private record SearchState(GridPoint cell, GridPoint direction) {
         private SearchState {
             cell = Objects.requireNonNull(cell, "cell");
         }
@@ -352,13 +352,13 @@ public final class CorridorRouting {
         }
     }
 
-    private record CellRoute(List<CellCoord> cells, double cost) {
+    private record CellRoute(List<GridPoint> cells, double cost) {
         private CellRoute {
             cells = cells == null ? List.of() : List.copyOf(cells);
         }
     }
 
-    private record RoutePlan(List<GridPoint2x> path2x, double cost) {
+    private record RoutePlan(List<GridPoint> path2x, double cost) {
         private RoutePlan {
             path2x = path2x == null ? List.of() : List.copyOf(path2x);
         }

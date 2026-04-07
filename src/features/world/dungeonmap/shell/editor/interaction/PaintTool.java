@@ -3,8 +3,8 @@ package features.world.dungeonmap.shell.editor.interaction;
 import features.world.dungeonmap.application.room.DungeonRoomApplicationService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
-import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.state.DungeonEditorTool;
 import features.world.dungeonmap.state.DungeonEditorSessionState;
@@ -69,7 +69,7 @@ public final class PaintTool implements EditorTool {
             clear();
             return false;
         }
-        CellCoord cell = resolvedCell(ctx);
+        GridPoint cell = resolvedCell(ctx);
         if (cell == null || !sessionState.selectedTool().isRoomTool()) {
             clear();
             return false;
@@ -89,7 +89,7 @@ public final class PaintTool implements EditorTool {
         if (event == null || !event.isPrimaryButtonDown()) {
             return false;
         }
-        CellCoord cell = resolvedCell(ctx);
+        GridPoint cell = resolvedCell(ctx);
         if (paintSession == null || cell == null || !sessionState.selectedTool().isRoomTool()) {
             return false;
         }
@@ -110,10 +110,10 @@ public final class PaintTool implements EditorTool {
         if (event == null || paintSession == null) {
             return false;
         }
-        CellCoord cell = resolvedCell(ctx);
+        GridPoint cell = resolvedCell(ctx);
         CellWindowDragSession finishedSession = cell == null ? paintSession : paintSession.withEndCell(cell);
         int activeLevel = mapState.activeProjectionLevel();
-        Set<CellCoord> cells = finishedSession.previewCells();
+        Set<GridPoint> cells = finishedSession.previewCells();
         clear();
         Long mapId = mapState.activeMapId();
         if (mapId == null || cells.isEmpty()) {
@@ -157,7 +157,7 @@ public final class PaintTool implements EditorTool {
         state.clearPreview();
     }
 
-    private static CellCoord resolvedCell(EditorToolContext ctx) {
+    private static GridPoint resolvedCell(EditorToolContext ctx) {
         if (ctx == null || ctx.hitRef() == null) {
             return null;
         }
@@ -171,6 +171,6 @@ public final class PaintTool implements EditorTool {
         if (ctx == null || ctx.probe() == null) {
             return null;
         }
-        return new DungeonSelectionRef.GridCellRef(CubePoint.at(ctx.probe().gridCell(), ctx.probe().levelZ()));
+        return new DungeonSelectionRef.GridCellRef(GridPoint.at(ctx.probe().gridCell(), ctx.probe().levelZ()));
     }
 }

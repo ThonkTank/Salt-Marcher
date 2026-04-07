@@ -1,22 +1,22 @@
-package features.world.dungeonmap.model.geometry;
+package features.world.dungeonmap.geometry;
 
 import java.util.Objects;
 import java.util.Optional;
 
-public record TileShapeSpec(
-        TileShapeKind kind,
+public record GridPathPatternSpec(
+        GridPathPatternKind kind,
         CardinalDirection direction,
         int parameter1,
         int parameter2
 ) {
 
-    public TileShapeSpec {
-        kind = kind == null ? TileShapeKind.STACK : kind;
+    public GridPathPatternSpec {
+        kind = kind == null ? GridPathPatternKind.STACK : kind;
         direction = direction == null ? CardinalDirection.defaultDirection() : direction;
     }
 
-    public static TileShapeSpec defaultSpec() {
-        return new TileShapeSpec(TileShapeKind.STACK, CardinalDirection.defaultDirection(), 0, 0);
+    public static GridPathPatternSpec defaultSpec() {
+        return new GridPathPatternSpec(GridPathPatternKind.STACK, CardinalDirection.defaultDirection(), 0, 0);
     }
 
     public boolean needsDirection() {
@@ -43,9 +43,9 @@ public record TileShapeSpec(
         return kind.validateParameters(parameter1, parameter2);
     }
 
-    public TileShapeSpec withKind(TileShapeKind nextKind) {
-        return new TileShapeSpec(
-                Objects.requireNonNullElse(nextKind, TileShapeKind.STACK),
+    public GridPathPatternSpec withKind(GridPathPatternKind nextKind) {
+        return new GridPathPatternSpec(
+                Objects.requireNonNullElse(nextKind, GridPathPatternKind.STACK),
                 direction,
                 parameter1,
                 parameter2);

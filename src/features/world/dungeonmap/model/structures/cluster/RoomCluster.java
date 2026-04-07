@@ -1,10 +1,10 @@
 package features.world.dungeonmap.model.structures.cluster;
 
-import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.EdgeShape;
-import features.world.dungeonmap.model.geometry.GridPoint2x;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridBoundary;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridSegment;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.interaction.InteractiveLabelHandle;
 import features.world.dungeonmap.structure.model.Structure;
@@ -19,7 +19,6 @@ import features.world.dungeonmap.structure.model.room.StructureRoomTopology;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionKind;
 import features.world.dungeonmap.model.structures.connection.DoorConnectionCarrier;
-import features.world.dungeonmap.model.structures.connection.DungeonConnection;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.room.RoomNarration;
 
@@ -39,13 +38,13 @@ public final class RoomCluster {
     private final Long clusterId;
     private final Long structureObjectId;
     private final long mapId;
-    private final CellCoord center;
+    private final GridPoint center;
     private final Structure structure;
 
     public RoomCluster(
             Long clusterId,
             long mapId,
-            CellCoord center,
+            GridPoint center,
             List<Room> rooms
     ) {
         this(clusterId, null, mapId, center, Structure.empty(), requireExplicitStructure(rooms));
@@ -54,7 +53,7 @@ public final class RoomCluster {
     public RoomCluster(
             Long clusterId,
             long mapId,
-            CellCoord center,
+            GridPoint center,
             Structure structure,
             List<Room> rooms
     ) {
@@ -65,14 +64,14 @@ public final class RoomCluster {
             Long clusterId,
             Long structureObjectId,
             long mapId,
-            CellCoord center,
+            GridPoint center,
             Structure structure,
             List<Room> rooms
     ) {
         this.clusterId = clusterId;
         this.structureObjectId = structureObjectId;
         this.mapId = mapId;
-        this.center = center == null ? new CellCoord(0, 0) : center;
+        this.center = center == null ? new GridPoint(0, 0) : center;
         this.structure = normalizeClusterStructure(structure, rooms).withRoomMetadata(mapId, clusterId, rooms);
     }
 
@@ -88,65 +87,12 @@ public final class RoomCluster {
         return structureObjectId;
     }
 
-    public CellCoord center() {
+    public GridPoint center() {
         return center;
     }
 
     public Structure structure() {
         return structure;
-    }
-
-    public Set<Integer> roomLevels(Room room) {
-        return roomTopology().roomLevels(room);
-    }
-
-    public Set<Integer> roomLevels(Long roomId) {
-        return roomTopology().roomLevels(roomId);
-    }
-
-    public int roomPrimaryLevel(Room room) {
-        return roomTopology().roomPrimaryLevel(room);
-    }
-
-    public int roomPrimaryLevel(Long roomId) {
-        return roomTopology().roomPrimaryLevel(roomId);
-    }
-
-    public List<Integer> roomRelevantLevels(Room room, CellCoord focusCell, int focusLevelZ) {
-        return roomTopology().roomRelevantLevels(room, focusCell, focusLevelZ);
-    }
-
-    public Structure roomStructure(Room room) {
-        return roomTopology().structureFor(room);
-    }
-
-    public Structure roomStructure(Long roomId) {
-        return roomTopology().structureFor(roomId);
-    }
-
-    public List<Room> rooms() {
-        return roomTopology().rooms();
-    }
-
-    public List<DungeonConnection> localConnections() {
-        return roomTopology().localConnections();
-    }
-
-    public RoomCluster withRooms(List<Room> rooms) {
-        return new RoomCluster(clusterId, structureObjectId, mapId, center, structure, rooms);
-    }
-
-    public RoomCluster withClusterId(Long clusterId) {
-        long resolvedClusterId = clusterId == null ? (this.clusterId == null ? 0L : this.clusterId) : clusterId;
-        return new RoomCluster(
-                clusterId,
-                structureObjectId,
-                mapId,
-                center,
-                structure,
-                rooms().stream()
-                        .map(room -> room == null ? null : room.withClusterId(resolvedClusterId))
-                        .toList());
     }
 
     public RoomCluster projectedToLevel(int levelZ) {
@@ -164,20 +110,20 @@ public final class RoomCluster {
                 projectedTopology.rooms());
     }
 
-    public RoomCluster createWallPath(int levelZ, Collection<GridSegment2x> segments2x) {
+    public RoomCluster createWallPath(int levelZ, Collection<GridSegment> segments2x) {
         return Topology.editWallPath(this, levelZ, segments2x, false);
     }
 
-    public RoomCluster deleteWallPath(int levelZ, Collection<GridSegment2x> segments2x) {
+    public RoomCluster deleteWallPath(int levelZ, Collection<GridSegment> segments2x) {
         return Topology.editWallPath(this, levelZ, segments2x, true);
     }
 
-    public RoomCluster moveDoor(int levelZ, GridSegment2x sourceBoundarySegment2x, GridSegment2x targetBoundarySegment2x) {
+    public RoomCluster moveDoor(int levelZ, GridSegment sourceBoundarySegment2x, GridSegment targetBoundarySegment2x) {
         // Door movement stays cluster-owned so SELECT drag and write workflows reuse the same local boundary rules.
         return Topology.moveDoor(this, levelZ, sourceBoundarySegment2x, targetBoundarySegment2x);
     }
 
-    public boolean canCreateDoor(int levelZ, GridSegment2x boundarySegment2x) {
+    public boolean canCreateDoor(int levelZ, GridSegment boundarySegment2x) {
         // Door eligibility belongs to the cluster owner so editor tools do not become the only source of boundary
         // semantics for local room-to-room connections.
         StructureBoundary boundary = structure.boundaryAtLevel(levelZ);
@@ -201,14 +147,14 @@ public final class RoomCluster {
                 && !roomPair.left().roomId().equals(roomPair.right().roomId());
     }
 
-    public boolean canDeleteDoor(int levelZ, GridSegment2x boundarySegment2x) {
+    public boolean canDeleteDoor(int levelZ, GridSegment boundarySegment2x) {
         StructureBoundary boundary = structure.boundaryAtLevel(levelZ);
         return boundarySegment2x != null
                 && boundary.isInteriorBoundary(boundarySegment2x)
                 && boundary.doorAtBoundarySegment(boundarySegment2x) != null;
     }
 
-    public boolean canCreateExteriorDoor(int levelZ, GridSegment2x boundarySegment2x) {
+    public boolean canCreateExteriorDoor(int levelZ, GridSegment boundarySegment2x) {
         StructureBoundary boundary = structure.boundaryAtLevel(levelZ);
         Wall effectiveWall = boundary.wallAtBoundarySegment(boundarySegment2x);
         return boundarySegment2x != null
@@ -219,18 +165,18 @@ public final class RoomCluster {
                 && boundary.isExteriorBoundary(boundarySegment2x);
     }
 
-    public boolean canDeleteExteriorDoor(int levelZ, GridSegment2x boundarySegment2x) {
+    public boolean canDeleteExteriorDoor(int levelZ, GridSegment boundarySegment2x) {
         StructureBoundary boundary = structure.boundaryAtLevel(levelZ);
         return boundarySegment2x != null
                 && boundary.doorAtBoundarySegment(boundarySegment2x) != null
                 && boundary.isExteriorBoundary(boundarySegment2x);
     }
 
-    public RoomCluster withDoorSegments(int levelZ, Collection<GridSegment2x> segments2x, boolean deleteDoor) {
+    public RoomCluster withDoorSegments(int levelZ, Collection<GridSegment> segments2x, boolean deleteDoor) {
         return Topology.editDoors(this, levelZ, segments2x, deleteDoor, false);
     }
 
-    public RoomCluster withExteriorDoors(int levelZ, Collection<GridSegment2x> segments2x, boolean deleteDoor) {
+    public RoomCluster withExteriorDoors(int levelZ, Collection<GridSegment> segments2x, boolean deleteDoor) {
         return Topology.editDoors(this, levelZ, segments2x, deleteDoor, true);
     }
 
@@ -238,15 +184,15 @@ public final class RoomCluster {
         return new InteractiveLabelHandle(
                 new DungeonSelectionRef.ClusterRef(clusterId),
                 clusterId == null ? "Cluster" : "Cluster " + clusterId,
-                GridPoint2x.cell(center));
+                GridPoint.cell(center));
     }
 
-    public boolean overlapsCells(Collection<CellCoord> candidateCells) {
-        Set<CellCoord> clusterCells = Topology.projectedSurfaceCells(structure);
+    public boolean overlapsCells(Collection<GridPoint> candidateCells) {
+        Set<GridPoint> clusterCells = Topology.projectedSurfaceCells(structure);
         if (candidateCells == null || candidateCells.isEmpty() || clusterCells.isEmpty()) {
             return false;
         }
-        for (CellCoord cell : candidateCells) {
+        for (GridPoint cell : candidateCells) {
             if (cell != null && clusterCells.contains(cell)) {
                 return true;
             }
@@ -254,20 +200,16 @@ public final class RoomCluster {
         return false;
     }
 
-    public Room singleRoom() {
-        return rooms().size() == 1 ? rooms().getFirst() : null;
-    }
-
-    public RoomCluster movedBy(CellCoord delta) {
+    public RoomCluster movedBy(GridPoint delta) {
         return movedBy(delta, 0);
     }
 
-    public RoomCluster movedBy(CellCoord delta, int levelDelta) {
+    public RoomCluster movedBy(GridPoint delta, int levelDelta) {
         boolean translate = delta != null && (delta.x() != 0 || delta.y() != 0);
         if (!translate && levelDelta == 0) {
             return this;
         }
-        CellCoord resolvedDelta = delta == null ? new CellCoord(0, 0) : delta;
+        GridPoint resolvedDelta = delta == null ? new GridPoint(0, 0) : delta;
         Structure movedStructure = structure.mutated(new StructureMutation.Translation(resolvedDelta, levelDelta));
         return new RoomCluster(
                 clusterId,
@@ -278,35 +220,35 @@ public final class RoomCluster {
                 movedStructure.roomTopology().rooms());
     }
 
-    public BoundaryPath findCreateWallPath(GridPoint2x start, GridPoint2x goal) {
+    public BoundaryPath findCreateWallPath(GridPoint start, GridPoint goal) {
         if (start == null || goal == null) {
             return BoundaryPath.empty();
         }
         int levelZ = primaryLevel();
-        List<GridSegment2x> route = structure.boundaryAtLevel(levelZ).findCreatableWallPath(start, goal);
+        List<GridSegment> route = structure.boundaryAtLevel(levelZ).findCreatableWallPath(start, goal);
         if (route.isEmpty()) {
             return BoundaryPath.empty();
         }
         return new BoundaryPath(route, new LinkedHashSet<>(route));
     }
 
-    public BoundaryPath findDeleteWallPath(GridPoint2x start, GridPoint2x goal) {
+    public BoundaryPath findDeleteWallPath(GridPoint start, GridPoint goal) {
         if (start == null || goal == null) {
             return BoundaryPath.empty();
         }
         int levelZ = primaryLevel();
-        List<GridSegment2x> route = structure.boundaryAtLevel(levelZ).findDeletableWallPath(start, goal);
+        List<GridSegment> route = structure.boundaryAtLevel(levelZ).findDeletableWallPath(start, goal);
         if (route.isEmpty()) {
             return BoundaryPath.empty();
         }
         return new BoundaryPath(route, new LinkedHashSet<>(route));
     }
 
-    public boolean touchesExistingWall(GridPoint2x vertex) {
+    public boolean touchesExistingWall(GridPoint vertex) {
         return structure.boundaryAtLevel(primaryLevel()).touchesBoundaryVertex(vertex);
     }
 
-    public boolean isEditableWallVertex(GridPoint2x vertex, boolean deleteMode) {
+    public boolean isEditableWallVertex(GridPoint vertex, boolean deleteMode) {
         return structure.boundaryAtLevel(primaryLevel()).isEditableWallVertex(vertex, deleteMode);
     }
 
@@ -317,109 +259,40 @@ public final class RoomCluster {
                 .orElse(0);
     }
 
-    public Set<GridSegment2x> outerBoundarySegments2x() {
-        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
+    public Set<GridSegment> outerBoundarySegments2x() {
+        LinkedHashSet<GridSegment> result = new LinkedHashSet<>();
         for (Integer levelZ : structure.levels().stream().sorted().toList()) {
             result.addAll(structure.boundaryAtLevel(levelZ).exteriorBoundaryEdges());
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
-    public Room findRoom(Long roomId) {
-        return roomTopology().findRoom(roomId);
-    }
-
-    public Set<Long> roomIds() {
-        return roomTopology().roomIds();
-    }
-
-    public boolean containsRoom(Long roomId) {
-        return roomTopology().containsRoom(roomId);
-    }
-
-    /**
-     * Convenience shortcut for UI-only callers that do not have an explicit level context.
-     * This lookup only checks {@link #primaryLevel()} and must not be used for topology decisions.
-     */
-    public Room roomAt(CellCoord cell) {
-        return cell == null ? null : roomAt(cell, primaryLevel());
-    }
-
-    /**
-     * Canonical 3D room lookup used by topology-sensitive APIs.
-     */
-    public Room roomAt(CellCoord cell, int levelZ) {
-        return cell == null ? null : roomTopology().roomAt(cell, levelZ);
-    }
-
-    public Room roomAt(CubePoint point) {
-        return point == null ? null : roomTopology().roomAt(point);
-    }
-
-    public boolean contains(CellCoord cell, int levelZ) {
+    public boolean contains(GridPoint cell, int levelZ) {
         return roomAt(cell, levelZ) != null;
-    }
-
-    public Set<CubePoint> cubePoints() {
-        return roomTopology().cubePoints();
-    }
-
-    public List<Room> adjacentRooms(Room room) {
-        if (room == null || room.roomId() == null) {
-            return List.of();
-        }
-        return adjacentRoomIds(room.roomId()).stream()
-                .map(this::findRoom)
-                .filter(candidate -> candidate != null)
-                .toList();
-    }
-
-    public Set<Long> adjacentRoomIds(Long roomId) {
-        return roomTopology().adjacentRoomIds(roomId);
-    }
-
-    public List<Set<Long>> components() {
-        return roomTopology().components();
-    }
-
-    public Set<Long> componentContaining(Long roomId) {
-        return roomTopology().componentContaining(roomId);
-    }
-
-    public Set<Long> componentContaining(CellCoord cell) {
-        Room room = roomAt(cell);
-        return room == null ? Set.of() : componentContaining(room.roomId());
-    }
-
-    /**
-     * Canonical 3D component lookup. Prefer this overload for semantic decisions.
-     */
-    public Set<Long> componentContaining(CellCoord cell, int levelZ) {
-        return roomTopology().componentContaining(cell, levelZ);
-    }
-
-    public boolean isConnected() {
-        return roomTopology().isConnected();
-    }
-
-    public boolean hasOverlappingRooms() {
-        return roomTopology().hasOverlappingRooms();
-    }
-
-    public boolean canMergeRooms(Set<Long> roomIds) {
-        return roomTopology().canMergeRooms(roomIds);
-    }
-
-    public RoomCluster applyPaint(Set<CellCoord> paintCells, List<RoomCluster> overlappingClusters, int paintLevel) {
-        return Topology.applyPaint(this, paintCells, overlappingClusters, paintLevel);
-    }
-
-    public List<RoomCluster> applyDelete(Set<CellCoord> deletedCells, int deleteLevel) {
-        return Topology.applyDelete(this, deletedCells, deleteLevel);
     }
 
     private StructureRoomTopology roomTopology() {
         return structure.roomTopology();
+    }
+
+    private List<Room> rooms() {
+        return roomTopology().rooms();
+    }
+
+    private Structure roomStructure(Room room) {
+        return roomTopology().structureFor(room);
+    }
+
+    private Set<Integer> roomLevels(Room room) {
+        return roomTopology().roomLevels(room);
+    }
+
+    private Room roomAt(GridPoint cell) {
+        return cell == null ? null : roomAt(cell, primaryLevel());
+    }
+
+    private Room roomAt(GridPoint cell, int levelZ) {
+        return cell == null ? null : roomTopology().roomAt(cell, levelZ);
     }
 
     private static List<Room> requireExplicitStructure(List<Room> rooms) {
@@ -430,12 +303,12 @@ public final class RoomCluster {
         return resolvedRooms;
     }
 
-    private static RoomPair roomPairAtLevel(RoomCluster cluster, GridSegment2x segment2x, int levelZ) {
+    private static RoomPair roomPairAtLevel(RoomCluster cluster, GridSegment segment2x, int levelZ) {
         if (cluster == null || segment2x == null) {
             return null;
         }
-        List<CellCoord> touchingCells = segment2x.touchingCells().stream()
-                .sorted(CellCoord.ORDER)
+        List<GridPoint> touchingCells = segment2x.touchingCells().stream()
+                .sorted(GridPoint.ORDER)
                 .toList();
         if (touchingCells.size() != 2) {
             return null;
@@ -463,7 +336,7 @@ public final class RoomCluster {
         private Topology() {
         }
 
-        static RoomCluster applyPaint(RoomCluster cluster, Set<CellCoord> paintCells, List<RoomCluster> overlappingClusters, int paintLevel) {
+        static RoomCluster applyPaint(RoomCluster cluster, Set<GridPoint> paintCells, List<RoomCluster> overlappingClusters, int paintLevel) {
             if (cluster == null || paintCells == null || paintCells.isEmpty()) {
                 return null;
             }
@@ -479,8 +352,8 @@ public final class RoomCluster {
                 return null;
             }
 
-            Map<Integer, Set<CellCoord>> mergedClusterCellsByLevel = new LinkedHashMap<>();
-            Map<Integer, Set<CellCoord>> mergedClusterFloorCellsByLevel = new LinkedHashMap<>();
+            Map<Integer, Set<GridPoint>> mergedClusterCellsByLevel = new LinkedHashMap<>();
+            Map<Integer, Set<GridPoint>> mergedClusterFloorCellsByLevel = new LinkedHashMap<>();
             Map<Integer, List<Door>> mergedDoorsByLevel = new LinkedHashMap<>();
             Map<Integer, List<Wall>> mergedWallsByLevel = new LinkedHashMap<>();
             List<Room> mergedMetadataRooms = new ArrayList<>();
@@ -491,7 +364,7 @@ public final class RoomCluster {
                 mergeWallsByLevel(mergedWallsByLevel, overlappingCluster.structure());
                 mergedMetadataRooms.addAll(overlappingCluster.rooms());
             }
-            Map<Integer, Set<CellCoord>> previousClusterCellsByLevel = immutableCellsByLevel(mergedClusterCellsByLevel);
+            Map<Integer, Set<GridPoint>> previousClusterCellsByLevel = immutableCellsByLevel(mergedClusterCellsByLevel);
             mergedClusterCellsByLevel.computeIfAbsent(paintLevel, ignored -> new LinkedHashSet<>()).addAll(paintCells);
             mergedClusterFloorCellsByLevel.computeIfAbsent(paintLevel, ignored -> new LinkedHashSet<>()).addAll(paintCells);
 
@@ -505,17 +378,17 @@ public final class RoomCluster {
                     cluster.clusterId(),
                     cluster.structureObjectId(),
                     cluster.mapId(),
-                    CellCoord.bestCenter(flattenCells(mergedClusterCellsByLevel)),
+                    GridPoint.bestCenter(flattenCells(mergedClusterCellsByLevel)),
                     mergedStructure,
                     normalizedMetadataRooms(mergedMetadataRooms));
         }
 
-        static List<RoomCluster> applyDelete(RoomCluster cluster, Set<CellCoord> deletedCells, int deleteLevel) {
+        static List<RoomCluster> applyDelete(RoomCluster cluster, Set<GridPoint> deletedCells, int deleteLevel) {
             if (cluster == null || deletedCells == null || deletedCells.isEmpty()) {
                 return null;
             }
-            Map<Integer, Set<CellCoord>> remainingCellsByLevel = mutableClusterCellsByLevel(cluster);
-            Set<CellCoord> remainingDeleteLevelCells = new LinkedHashSet<>(remainingCellsByLevel.getOrDefault(deleteLevel, Set.of()));
+            Map<Integer, Set<GridPoint>> remainingCellsByLevel = mutableClusterCellsByLevel(cluster);
+            Set<GridPoint> remainingDeleteLevelCells = new LinkedHashSet<>(remainingCellsByLevel.getOrDefault(deleteLevel, Set.of()));
             if (!remainingDeleteLevelCells.removeAll(deletedCells)) {
                 return null;
             }
@@ -528,8 +401,8 @@ public final class RoomCluster {
                 return List.of();
             }
 
-            Map<Integer, Set<CellCoord>> remainingFloorCellsByLevel = mutableCellsByLevel(copyStructureFloorCellsByLevel(cluster.structure()));
-            Set<CellCoord> remainingDeleteLevelFloorCells = new LinkedHashSet<>(remainingFloorCellsByLevel.getOrDefault(deleteLevel, Set.of()));
+            Map<Integer, Set<GridPoint>> remainingFloorCellsByLevel = mutableCellsByLevel(copyStructureFloorCellsByLevel(cluster.structure()));
+            Set<GridPoint> remainingDeleteLevelFloorCells = new LinkedHashSet<>(remainingFloorCellsByLevel.getOrDefault(deleteLevel, Set.of()));
             remainingDeleteLevelFloorCells.removeAll(deletedCells);
             if (remainingDeleteLevelFloorCells.isEmpty()) {
                 remainingFloorCellsByLevel.remove(deleteLevel);
@@ -548,7 +421,15 @@ public final class RoomCluster {
                 return List.of();
             }
             ArrayList<RoomCluster> finalClusters = new ArrayList<>(componentClusters.size());
-            finalClusters.add(componentClusters.getFirst().withClusterId(cluster.clusterId()));
+            finalClusters.add(new RoomCluster(
+                    cluster.clusterId(),
+                    componentClusters.getFirst().structureObjectId(),
+                    componentClusters.getFirst().mapId(),
+                    componentClusters.getFirst().center(),
+                    componentClusters.getFirst().structure(),
+                    componentClusters.getFirst().structure().roomTopology().rooms().stream()
+                            .map(room -> room == null ? null : room.withClusterId(cluster.clusterId() == null ? 0L : cluster.clusterId()))
+                            .toList()));
             finalClusters.addAll(componentClusters.stream().skip(1).toList());
             return List.copyOf(finalClusters);
         }
@@ -556,20 +437,20 @@ public final class RoomCluster {
         static RoomCluster editWallPath(
                 RoomCluster cluster,
                 int levelZ,
-                Collection<GridSegment2x> segments2x,
+                Collection<GridSegment> segments2x,
                 boolean deleteWall
         ) {
             if (cluster == null || segments2x == null || segments2x.isEmpty()) {
                 return null;
             }
-            List<GridSegment2x> editedSegments = segments2x.stream()
+            List<GridSegment> editedSegments = segments2x.stream()
                     .filter(Objects::nonNull)
                     .filter(segment2x -> cluster.structure().boundaryAtLevel(levelZ).interiorAdjacencyEdges().contains(segment2x))
                     .filter(segment2x -> {
                         RoomPair roomPair = roomPairAtLevel(cluster, segment2x, levelZ);
                         return roomPair != null && !sameRoomId(roomPair.left(), roomPair.right());
                     })
-                    .sorted(GridSegment2x.ORDER)
+                    .sorted(GridSegment.ORDER)
                     .toList();
             if (editedSegments.isEmpty()) {
                 return null;
@@ -593,14 +474,14 @@ public final class RoomCluster {
         static RoomCluster editDoors(
                 RoomCluster cluster,
                 int levelZ,
-                Collection<GridSegment2x> segments2x,
+                Collection<GridSegment> segments2x,
                 boolean deleteDoor,
                 boolean exteriorDoor
         ) {
             if (cluster == null || segments2x == null || segments2x.isEmpty()) {
                 return null;
             }
-            List<GridSegment2x> editableSegments = deleteDoor
+            List<GridSegment> editableSegments = deleteDoor
                     ? deletedEditableSegments(cluster, levelZ, segments2x, exteriorDoor)
                     : createdEditableSegments(cluster, levelZ, segments2x, exteriorDoor);
             if (editableSegments.isEmpty()) {
@@ -625,8 +506,8 @@ public final class RoomCluster {
         static RoomCluster moveDoor(
                 RoomCluster cluster,
                 int levelZ,
-                GridSegment2x sourceBoundarySegment2x,
-                GridSegment2x targetBoundarySegment2x
+                GridSegment sourceBoundarySegment2x,
+                GridSegment targetBoundarySegment2x
         ) {
             if (cluster == null
                     || sourceBoundarySegment2x == null
@@ -652,13 +533,13 @@ public final class RoomCluster {
                     cluster.rooms());
         }
 
-        private static List<GridSegment2x> createdEditableSegments(
+        private static List<GridSegment> createdEditableSegments(
                 RoomCluster cluster,
                 int levelZ,
-                Collection<GridSegment2x> segments2x,
+                Collection<GridSegment> segments2x,
                 boolean exteriorDoor
         ) {
-            return (segments2x == null ? List.<GridSegment2x>of() : segments2x).stream()
+            return (segments2x == null ? List.<GridSegment>of() : segments2x).stream()
                     .filter(Objects::nonNull)
                     .filter(segment2x -> exteriorDoor
                             ? cluster.canCreateExteriorDoor(levelZ, segment2x)
@@ -666,13 +547,13 @@ public final class RoomCluster {
                     .toList();
         }
 
-        private static List<GridSegment2x> deletedEditableSegments(
+        private static List<GridSegment> deletedEditableSegments(
                 RoomCluster cluster,
                 int levelZ,
-                Collection<GridSegment2x> segments2x,
+                Collection<GridSegment> segments2x,
                 boolean exteriorDoor
         ) {
-            return (segments2x == null ? List.<GridSegment2x>of() : segments2x).stream()
+            return (segments2x == null ? List.<GridSegment>of() : segments2x).stream()
                     .filter(Objects::nonNull)
                     .filter(segment2x -> exteriorDoor
                             ? cluster.canDeleteExteriorDoor(levelZ, segment2x)
@@ -693,8 +574,8 @@ public final class RoomCluster {
             return List.copyOf(result.values());
         }
 
-        private static boolean isInternalSegment(Set<CellCoord> clusterCells, GridSegment2x segment2x) {
-            Set<CellCoord> touchingCells = segment2x == null ? Set.of() : segment2x.touchingCells();
+        private static boolean isInternalSegment(Set<GridPoint> clusterCells, GridSegment segment2x) {
+            Set<GridPoint> touchingCells = segment2x == null ? Set.of() : segment2x.touchingCells();
             return touchingCells.size() == 2 && clusterCells.containsAll(touchingCells);
         }
 
@@ -705,8 +586,8 @@ public final class RoomCluster {
                     && left.roomId().equals(right.roomId());
         }
 
-        private static boolean disjoint(Set<CellCoord> left, Set<CellCoord> right) {
-            for (CellCoord point : left) {
+        private static boolean disjoint(Set<GridPoint> left, Set<GridPoint> right) {
+            for (GridPoint point : left) {
                 if (right.contains(point)) {
                     return false;
                 }
@@ -720,7 +601,7 @@ public final class RoomCluster {
                     : name.trim();
         }
 
-        private static boolean overlapsAtLevel(RoomCluster cluster, Room room, Set<CellCoord> paintCells, int levelZ) {
+        private static boolean overlapsAtLevel(RoomCluster cluster, Room room, Set<GridPoint> paintCells, int levelZ) {
             if (room == null || paintCells == null || paintCells.isEmpty()) {
                 return false;
             }
@@ -752,13 +633,13 @@ public final class RoomCluster {
             return result.isEmpty() ? List.of() : List.copyOf(result);
         }
 
-        private static Map<Integer, Set<CellCoord>> copyStructureSurfaceCellsByLevel(Structure structure) {
+        private static Map<Integer, Set<GridPoint>> copyStructureSurfaceCellsByLevel(Structure structure) {
             if (structure == null || structure.levels().isEmpty()) {
                 return Map.of();
             }
-            Map<Integer, Set<CellCoord>> result = new LinkedHashMap<>();
+            Map<Integer, Set<GridPoint>> result = new LinkedHashMap<>();
             for (Integer levelZ : structure.levels().stream().sorted().toList()) {
-                Set<CellCoord> levelCells = structure.surfaceAtLevel(levelZ).surface().cellCoords();
+                Set<GridPoint> levelCells = structure.surfaceAtLevel(levelZ).surface().cellCoords();
                 if (!levelCells.isEmpty()) {
                     result.put(levelZ, levelCells);
                 }
@@ -766,13 +647,13 @@ public final class RoomCluster {
             return result.isEmpty() ? Map.of() : Map.copyOf(result);
         }
 
-        private static Map<Integer, Set<CellCoord>> copyStructureFloorCellsByLevel(Structure structure) {
+        private static Map<Integer, Set<GridPoint>> copyStructureFloorCellsByLevel(Structure structure) {
             if (structure == null || structure.levels().isEmpty()) {
                 return Map.of();
             }
-            Map<Integer, Set<CellCoord>> result = new LinkedHashMap<>();
+            Map<Integer, Set<GridPoint>> result = new LinkedHashMap<>();
             for (Integer levelZ : structure.levels().stream().sorted().toList()) {
-                Set<CellCoord> floorCells = structure.surfaceAtLevel(levelZ).floor().cellCoords();
+                Set<GridPoint> floorCells = structure.surfaceAtLevel(levelZ).floor().cellCoords();
                 if (!floorCells.isEmpty()) {
                     result.put(levelZ, floorCells);
                 }
@@ -780,20 +661,20 @@ public final class RoomCluster {
             return result.isEmpty() ? Map.of() : Map.copyOf(result);
         }
 
-        private static List<Map<Integer, Set<CellCoord>>> splitProjectedSurfaceIntoComponents(Structure structure) {
+        private static List<Map<Integer, Set<GridPoint>>> splitProjectedSurfaceIntoComponents(Structure structure) {
             if (structure == null || structure.levels().isEmpty()) {
                 return List.of();
             }
-            Set<CellCoord> projectedCells = projectedSurfaceCells(structure);
+            Set<GridPoint> projectedCells = projectedSurfaceCells(structure);
             if (projectedCells.isEmpty()) {
                 return List.of();
             }
-            List<Set<CellCoord>> components = connectedProjectedCellComponents(projectedCells);
-            ArrayList<Map<Integer, Set<CellCoord>>> result = new ArrayList<>(components.size());
-            for (Set<CellCoord> component : components) {
-                Map<Integer, Set<CellCoord>> componentByLevel = new LinkedHashMap<>();
+            List<Set<GridPoint>> components = connectedProjectedCellComponents(projectedCells);
+            ArrayList<Map<Integer, Set<GridPoint>>> result = new ArrayList<>(components.size());
+            for (Set<GridPoint> component : components) {
+                Map<Integer, Set<GridPoint>> componentByLevel = new LinkedHashMap<>();
                 for (Integer levelZ : structure.levels().stream().sorted().toList()) {
-                    Set<CellCoord> levelCells = intersectCells(structure.surfaceAtLevel(levelZ).surface().cellCoords(), component);
+                    Set<GridPoint> levelCells = intersectCells(structure.surfaceAtLevel(levelZ).surface().cellCoords(), component);
                     if (!levelCells.isEmpty()) {
                         componentByLevel.put(levelZ, levelCells);
                     }
@@ -805,37 +686,37 @@ public final class RoomCluster {
             return result.isEmpty() ? List.of() : List.copyOf(result);
         }
 
-        private static Set<CellCoord> projectedSurfaceCells(Structure structure) {
+        private static Set<GridPoint> projectedSurfaceCells(Structure structure) {
             if (structure == null || structure.levels().isEmpty()) {
                 return Set.of();
             }
-            LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
+            LinkedHashSet<GridPoint> result = new LinkedHashSet<>();
             for (Integer levelZ : structure.levels().stream().sorted().toList()) {
                 result.addAll(structure.surfaceAtLevel(levelZ).surface().cellCoords());
             }
             return result.isEmpty() ? Set.of() : Set.copyOf(result);
         }
 
-        private static List<Set<CellCoord>> connectedProjectedCellComponents(Collection<CellCoord> cells) {
-            Set<CellCoord> remaining = CellCoord.normalize(cells);
+        private static List<Set<GridPoint>> connectedProjectedCellComponents(Collection<GridPoint> cells) {
+            Set<GridPoint> remaining = GridPoint.normalize(cells);
             if (remaining.isEmpty()) {
                 return List.of();
             }
-            ArrayList<Set<CellCoord>> components = new ArrayList<>();
-            LinkedHashSet<CellCoord> unvisited = new LinkedHashSet<>(remaining);
+            ArrayList<Set<GridPoint>> components = new ArrayList<>();
+            LinkedHashSet<GridPoint> unvisited = new LinkedHashSet<>(remaining);
             while (!unvisited.isEmpty()) {
-                CellCoord seed = unvisited.iterator().next();
-                ArrayDeque<CellCoord> queue = new ArrayDeque<>();
-                LinkedHashSet<CellCoord> component = new LinkedHashSet<>();
+                GridPoint seed = unvisited.iterator().next();
+                ArrayDeque<GridPoint> queue = new ArrayDeque<>();
+                LinkedHashSet<GridPoint> component = new LinkedHashSet<>();
                 queue.add(seed);
                 unvisited.remove(seed);
                 while (!queue.isEmpty()) {
-                    CellCoord current = queue.removeFirst();
+                    GridPoint current = queue.removeFirst();
                     if (!component.add(current)) {
                         continue;
                     }
-                    for (CellCoord step : CellCoord.CARDINAL_STEPS) {
-                        CellCoord neighbor = current.add(step);
+                    for (GridPoint step : GridPoint.CARDINAL_STEPS) {
+                        GridPoint neighbor = current.add(step);
                         if (unvisited.remove(neighbor)) {
                             queue.addLast(neighbor);
                         }
@@ -846,20 +727,20 @@ public final class RoomCluster {
             return components.isEmpty() ? List.of() : List.copyOf(components);
         }
 
-        private static void mergeClusterCellsByLevel(Map<Integer, Set<CellCoord>> result, Structure structure) {
+        private static void mergeClusterCellsByLevel(Map<Integer, Set<GridPoint>> result, Structure structure) {
             if (result == null || structure == null) {
                 return;
             }
-            for (Map.Entry<Integer, Set<CellCoord>> entry : copyStructureSurfaceCellsByLevel(structure).entrySet()) {
+            for (Map.Entry<Integer, Set<GridPoint>> entry : copyStructureSurfaceCellsByLevel(structure).entrySet()) {
                 result.computeIfAbsent(entry.getKey(), ignored -> new LinkedHashSet<>()).addAll(entry.getValue());
             }
         }
 
-        private static void mergeClusterFloorCellsByLevel(Map<Integer, Set<CellCoord>> result, Structure structure) {
+        private static void mergeClusterFloorCellsByLevel(Map<Integer, Set<GridPoint>> result, Structure structure) {
             if (result == null || structure == null) {
                 return;
             }
-            for (Map.Entry<Integer, Set<CellCoord>> entry : copyStructureFloorCellsByLevel(structure).entrySet()) {
+            for (Map.Entry<Integer, Set<GridPoint>> entry : copyStructureFloorCellsByLevel(structure).entrySet()) {
                 result.computeIfAbsent(entry.getKey(), ignored -> new LinkedHashSet<>()).addAll(entry.getValue());
             }
         }
@@ -917,8 +798,8 @@ public final class RoomCluster {
         }
 
         private static Structure buildClusterStructure(
-                Map<Integer, Set<CellCoord>> cellsByLevel,
-                Map<Integer, Set<CellCoord>> floorCellsByLevel,
+                Map<Integer, Set<GridPoint>> cellsByLevel,
+                Map<Integer, Set<GridPoint>> floorCellsByLevel,
                 Map<Integer, List<Door>> doorsByLevel,
                 Map<Integer, List<Wall>> wallsByLevel
         ) {
@@ -926,21 +807,21 @@ public final class RoomCluster {
         }
 
         private static Structure buildClusterStructure(
-                Map<Integer, Set<CellCoord>> cellsByLevel,
-                Map<Integer, Set<CellCoord>> floorCellsByLevel,
+                Map<Integer, Set<GridPoint>> cellsByLevel,
+                Map<Integer, Set<GridPoint>> floorCellsByLevel,
                 Map<Integer, List<Door>> doorsByLevel,
                 Map<Integer, List<Wall>> wallsByLevel,
-                Map<Integer, Set<CellCoord>> previousCellsByLevel
+                Map<Integer, Set<GridPoint>> previousCellsByLevel
         ) {
-            Map<Integer, Set<CellCoord>> normalizedCellsByLevel = immutableCellsByLevel(cellsByLevel);
+            Map<Integer, Set<GridPoint>> normalizedCellsByLevel = immutableCellsByLevel(cellsByLevel);
             if (normalizedCellsByLevel.isEmpty()) {
                 return Structure.empty();
             }
-            Map<Integer, Set<CellCoord>> normalizedFloorCellsByLevel = immutableFloorCellsByLevel(floorCellsByLevel);
+            Map<Integer, Set<GridPoint>> normalizedFloorCellsByLevel = immutableFloorCellsByLevel(floorCellsByLevel);
             Map<Integer, StructureSpecification.LevelSpecification> levelsByZ = new LinkedHashMap<>();
-            for (Map.Entry<Integer, Set<CellCoord>> entry : normalizedCellsByLevel.entrySet()) {
+            for (Map.Entry<Integer, Set<GridPoint>> entry : normalizedCellsByLevel.entrySet()) {
                 Integer levelZ = entry.getKey();
-                Set<CellCoord> levelCells = entry.getValue();
+                Set<GridPoint> levelCells = entry.getValue();
                 if (levelZ == null || levelCells == null || levelCells.isEmpty()) {
                     continue;
                 }
@@ -954,7 +835,7 @@ public final class RoomCluster {
                         levelDoors,
                         levelWalls);
                 levelsByZ.put(levelZ, StructureSpecification.LevelSpecification.of(
-                        CellCoord.bestCenter(levelCells),
+                        GridPoint.bestCenter(levelCells),
                         levelCells,
                         normalizedFloorCellsByLevel.getOrDefault(levelZ, Set.of()),
                         boundary.doors(),
@@ -969,15 +850,15 @@ public final class RoomCluster {
             }
             Map<Integer, List<Door>> doorsByLevel = doorsByLevel(rewrittenStructure);
             Map<Integer, List<Wall>> wallsByLevel = wallsByLevel(rewrittenStructure);
-            List<Map<Integer, Set<CellCoord>>> projectedComponents = splitProjectedSurfaceIntoComponents(rewrittenStructure);
+            List<Map<Integer, Set<GridPoint>>> projectedComponents = splitProjectedSurfaceIntoComponents(rewrittenStructure);
             if (projectedComponents.isEmpty()) {
                 return List.of();
             }
             return projectedComponents.stream()
                     .sorted(Comparator
-                            .comparing((Map<Integer, Set<CellCoord>> component) -> !flattenCells(component).contains(originalCluster.center()))
-                            .thenComparingInt(component -> CellCoord.bestCenter(flattenCells(component)).manhattanDistance(originalCluster.center()))
-                            .thenComparing(component -> CellCoord.bestCenter(flattenCells(component)), CellCoord.ORDER))
+                            .comparing((Map<Integer, Set<GridPoint>> component) -> !flattenCells(component).contains(originalCluster.center()))
+                            .thenComparingInt(component -> GridPoint.bestCenter(flattenCells(component)).manhattanDistance(originalCluster.center()))
+                            .thenComparing(component -> GridPoint.bestCenter(flattenCells(component)), GridPoint.ORDER))
                     .map(componentCellsByLevel -> componentCluster(
                             originalCluster,
                             componentCellsByLevel,
@@ -990,21 +871,21 @@ public final class RoomCluster {
 
         private static RoomCluster componentCluster(
                 RoomCluster originalCluster,
-                Map<Integer, Set<CellCoord>> componentCellsByLevel,
-                Map<Integer, Set<CellCoord>> clusterFloorCellsByLevel,
+                Map<Integer, Set<GridPoint>> componentCellsByLevel,
+                Map<Integer, Set<GridPoint>> clusterFloorCellsByLevel,
                 Map<Integer, List<Door>> clusterDoorsByLevel,
                 Map<Integer, List<Wall>> clusterWallsByLevel
         ) {
-            Map<Integer, Set<CellCoord>> componentFloorCellsByLevel = new LinkedHashMap<>();
+            Map<Integer, Set<GridPoint>> componentFloorCellsByLevel = new LinkedHashMap<>();
             Map<Integer, List<Door>> componentDoorsByLevel = new LinkedHashMap<>();
             Map<Integer, List<Wall>> componentWallsByLevel = new LinkedHashMap<>();
-            for (Map.Entry<Integer, Set<CellCoord>> entry : componentCellsByLevel.entrySet()) {
+            for (Map.Entry<Integer, Set<GridPoint>> entry : componentCellsByLevel.entrySet()) {
                 Integer levelZ = entry.getKey();
-                Set<CellCoord> levelComponentCells = entry.getValue();
+                Set<GridPoint> levelComponentCells = entry.getValue();
                 if (levelComponentCells.isEmpty()) {
                     continue;
                 }
-                Set<CellCoord> levelFloorCells = intersectCells(clusterFloorCellsByLevel.get(levelZ), levelComponentCells);
+                Set<GridPoint> levelFloorCells = intersectCells(clusterFloorCellsByLevel.get(levelZ), levelComponentCells);
                 componentFloorCellsByLevel.put(levelZ, levelFloorCells);
                 List<Door> levelDoors = clusterDoorsByLevel.getOrDefault(levelZ, List.of()).stream()
                         .filter(door -> door != null && door.touchesAnyCell(levelComponentCells))
@@ -1031,7 +912,7 @@ public final class RoomCluster {
                     null,
                     null,
                     originalCluster.mapId(),
-                    CellCoord.bestCenter(flattenCells(componentCellsByLevel)),
+                    GridPoint.bestCenter(flattenCells(componentCellsByLevel)),
                     componentStructure,
                     metadataRoomsForComponent(originalCluster.rooms(), componentStructure));
         }
@@ -1047,40 +928,40 @@ public final class RoomCluster {
                     .toList();
         }
 
-        private static Map<Integer, Set<CellCoord>> mutableClusterCellsByLevel(RoomCluster cluster) {
+        private static Map<Integer, Set<GridPoint>> mutableClusterCellsByLevel(RoomCluster cluster) {
             return mutableCellsByLevel(cluster == null ? Map.of() : copyStructureSurfaceCellsByLevel(cluster.structure()));
         }
 
-        private static Set<CellCoord> flattenCells(Map<Integer, Set<CellCoord>> cellsByLevel) {
-            LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
-            for (Set<CellCoord> cells : cellsByLevel.values()) {
+        private static Set<GridPoint> flattenCells(Map<Integer, Set<GridPoint>> cellsByLevel) {
+            LinkedHashSet<GridPoint> result = new LinkedHashSet<>();
+            for (Set<GridPoint> cells : cellsByLevel.values()) {
                 result.addAll(cells);
             }
             return result.isEmpty() ? Set.of() : Set.copyOf(result);
         }
 
-        private static Map<Integer, CellCoord> roomAnchorsByLevel(Room room) {
+        private static Map<Integer, GridPoint> roomAnchorsByLevel(Room room) {
             return room == null ? Map.of() : room.anchorsByLevel();
         }
 
-        private static Map<Integer, Set<CellCoord>> mutableCellsByLevel(Map<Integer, Set<CellCoord>> source) {
-            Map<Integer, Set<CellCoord>> result = new LinkedHashMap<>();
-            for (Map.Entry<Integer, Set<CellCoord>> entry : source.entrySet()) {
+        private static Map<Integer, Set<GridPoint>> mutableCellsByLevel(Map<Integer, Set<GridPoint>> source) {
+            Map<Integer, Set<GridPoint>> result = new LinkedHashMap<>();
+            for (Map.Entry<Integer, Set<GridPoint>> entry : source.entrySet()) {
                 result.put(entry.getKey(), new LinkedHashSet<>(entry.getValue()));
             }
             return result;
         }
 
-        private static Map<Integer, Set<CellCoord>> immutableCellsByLevel(Map<Integer, Set<CellCoord>> source) {
+        private static Map<Integer, Set<GridPoint>> immutableCellsByLevel(Map<Integer, Set<GridPoint>> source) {
             if (source == null || source.isEmpty()) {
                 return Map.of();
             }
-            Map<Integer, Set<CellCoord>> result = new LinkedHashMap<>();
+            Map<Integer, Set<GridPoint>> result = new LinkedHashMap<>();
             source.entrySet().stream()
                     .filter(entry -> entry != null && entry.getKey() != null)
                     .sorted(Map.Entry.comparingByKey())
                     .forEach(entry -> {
-                        Set<CellCoord> cells = normalizeCells(entry.getValue());
+                        Set<GridPoint> cells = normalizeCells(entry.getValue());
                         if (!cells.isEmpty()) {
                             result.put(entry.getKey(), cells);
                         }
@@ -1088,22 +969,22 @@ public final class RoomCluster {
             return result.isEmpty() ? Map.of() : Map.copyOf(result);
         }
 
-        private static Set<CellCoord> normalizeCells(Collection<CellCoord> input) {
-            return CellCoord.normalize(input);
+        private static Set<GridPoint> normalizeCells(Collection<GridPoint> input) {
+            return GridPoint.normalize(input);
         }
 
-        private static CellCoord anchorCell(Set<CellCoord> roomCells, CellCoord preferredAnchor) {
+        private static GridPoint anchorCell(Set<GridPoint> roomCells, GridPoint preferredAnchor) {
             return preferredAnchor != null && roomCells.contains(preferredAnchor)
                     ? preferredAnchor
-                    : CellCoord.bestCenter(roomCells);
+                    : GridPoint.bestCenter(roomCells);
         }
 
-        private static Set<CellCoord> intersectCells(Set<CellCoord> left, Set<CellCoord> right) {
+        private static Set<GridPoint> intersectCells(Set<GridPoint> left, Set<GridPoint> right) {
             if (left == null || left.isEmpty() || right == null || right.isEmpty()) {
                 return Set.of();
             }
-            LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
-            for (CellCoord cell : left) {
+            LinkedHashSet<GridPoint> result = new LinkedHashSet<>();
+            for (GridPoint cell : left) {
                 if (right.contains(cell)) {
                     result.add(cell);
                 }
@@ -1111,15 +992,15 @@ public final class RoomCluster {
             return result.isEmpty() ? Set.of() : Set.copyOf(result);
         }
 
-        private static boolean contains(Set<CellCoord> cells, CellCoord cell) {
+        private static boolean contains(Set<GridPoint> cells, GridPoint cell) {
             return cell != null && cells != null && cells.contains(cell);
         }
 
-        private static Map<Integer, Set<CellCoord>> immutableFloorCellsByLevel(Map<Integer, Set<CellCoord>> source) {
+        private static Map<Integer, Set<GridPoint>> immutableFloorCellsByLevel(Map<Integer, Set<GridPoint>> source) {
             if (source == null || source.isEmpty()) {
                 return Map.of();
             }
-            Map<Integer, Set<CellCoord>> result = new LinkedHashMap<>();
+            Map<Integer, Set<GridPoint>> result = new LinkedHashMap<>();
             source.entrySet().stream()
                     .filter(entry -> entry != null && entry.getKey() != null && entry.getValue() != null)
                     .sorted(Map.Entry.comparingByKey())
@@ -1129,8 +1010,8 @@ public final class RoomCluster {
     }
 
     public record BoundaryPath(
-            List<GridSegment2x> routeEdges,
-            Set<GridSegment2x> committedEdges
+            List<GridSegment> routeEdges,
+            Set<GridSegment> committedEdges
     ) {
         public BoundaryPath {
             routeEdges = routeEdges == null ? List.of() : List.copyOf(routeEdges);

@@ -19,6 +19,6 @@ This file covers `src/features/world/dungeonmap/structure/model/boundary/wall/`.
 
 ## Forbidden Drift
 
-- Do not rebuild wall-local edit behavior from raw `EdgeShape` operations in callers.
+- Do not rebuild wall-local edit behavior from raw `GridBoundary` operations in callers.
 - Do not introduce a second wall aggregate owner unless there is a concrete aggregate invariant that one `Wall` cannot enforce.
 - Do not move shared wall-kind interpretation out of `WallKind` and back into aggregate or renderer helpers.

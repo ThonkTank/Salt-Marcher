@@ -1,9 +1,11 @@
 package features.world.dungeonmap.shell.interaction;
 
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridSegment;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
+import features.world.dungeonmap.structure.model.Structure;
+import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.model.structures.stair.DungeonStair;
@@ -32,10 +34,10 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
     }
 
     private static List<DungeonHitDescriptor> roomDescriptors(DungeonLayout layout, DungeonHitProbe probe) {
-        Room room = layout.roomAtCell(probe.gridCell(), probe.levelZ());
-        Set<CellCoord> roomCells = room == null
+        Room room = roomAtCell(layout, probe.gridCell(), probe.levelZ());
+        Set<GridPoint> roomCells = room == null
                 ? Set.of()
-                : layout.roomStructure(room).surfaceAtLevel(probe.levelZ()).surface().cellCoords();
+                : roomStructure(layout, room).surfaceAtLevel(probe.levelZ()).surface().cellCoords();
         if (room == null || room.roomId() == null || roomCells.isEmpty()) {
             return List.of();
         }
@@ -53,8 +55,8 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
             descriptors.add(new DungeonHitDescriptor(
                     new DungeonSelectionRef.CorridorTileRef(
                             corridor.corridorId(),
-                            features.world.dungeonmap.model.geometry.CubePoint.at(probe.gridCell(), probe.levelZ()),
-                            features.world.dungeonmap.model.geometry.GridPoint2x.cell(probe.gridCell())),
+                            features.world.dungeonmap.geometry.GridPoint.at(probe.gridCell(), probe.levelZ()),
+                            features.world.dungeonmap.geometry.GridPoint.cell(probe.gridCell())),
                     List.of(new DungeonHitSurface.CellSurface(Set.of(probe.gridCell()), probe.levelZ()))));
             descriptors.add(new DungeonHitDescriptor(
                     new DungeonSelectionRef.CorridorRef(corridor.corridorId()),
@@ -85,7 +87,7 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
                 continue;
             }
             if (transition.localConnection().doorCarrier() != null) {
-                GridSegment2x anchorSegment2x = transition.localConnection().anchorSegment2x(layout);
+                GridSegment anchorSegment2x = transition.localConnection().anchorSegment2x(layout);
                 if (anchorSegment2x == null || !anchorSegment2x.touchingCells().contains(probe.gridCell())) {
                     continue;
                 }
@@ -96,7 +98,7 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
                                 transition.localConnection().levelZ()))));
                 continue;
             }
-            Set<CellCoord> occupiedCells = transition.localConnection().occupiedPositions(layout).stream()
+            Set<GridPoint> occupiedCells = transition.localConnection().occupiedPositions(layout).stream()
                     .filter(point -> point != null && point.z() == probe.levelZ())
                     .map(point -> point.projectedCell())
                     .filter(cell -> cell.equals(probe.gridCell()))
@@ -109,5 +111,18 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
                     List.of(new DungeonHitSurface.CellSurface(occupiedCells, probe.levelZ()))));
         }
         return List.copyOf(descriptors);
+    }
+
+    private static Room roomAtCell(DungeonLayout layout, GridPoint cell, int levelZ) {
+        RoomCluster cluster = layout == null ? null : layout.clusterAtCell(cell, levelZ);
+        return cluster == null ? null : cluster.structure().roomTopology().roomAt(cell, levelZ);
+    }
+
+    private static Structure roomStructure(DungeonLayout layout, Room room) {
+        if (layout == null || room == null) {
+            return Structure.empty();
+        }
+        RoomCluster cluster = layout.findCluster(room.clusterId());
+        return cluster == null ? Structure.empty() : cluster.structure().roomTopology().structureFor(room);
     }
 }

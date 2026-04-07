@@ -3,9 +3,9 @@ package features.world.dungeonmap.application.corridor;
 import database.DatabaseManager;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.GridPoint2x;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridSegment;
 import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
@@ -133,7 +133,7 @@ public final class DungeonCorridorApplicationService {
             DungeonTransactionRunner.inTransaction(conn, () -> {
                 DungeonLayout layout = requireLayout(conn, resolvedRequest.mapId());
                 Corridor corridor = requireCorridor(layout, resolvedRequest.corridorId());
-                GridSegment2x targetBoundarySegment2x = requiredExistingExteriorDoor(
+                GridSegment targetBoundarySegment2x = requiredExistingExteriorDoor(
                         layout,
                         corridor.levelZ(),
                         resolvedRequest.targetDoorRef()).anchorSegment2x();
@@ -292,7 +292,7 @@ public final class DungeonCorridorApplicationService {
             long mapId,
             long corridorId,
             DoorRef doorRef,
-            GridSegment2x boundarySegment2x
+            GridSegment boundarySegment2x
     ) {
     }
 
@@ -300,18 +300,18 @@ public final class DungeonCorridorApplicationService {
             long mapId,
             long corridorId,
             int levelZ,
-            CellCoord tileCell,
-            GridPoint2x targetPoint2x
+            GridPoint tileCell,
+            GridPoint targetPoint2x
     ) {
     }
 
-    public record MoveCorridorNodeRequest(long mapId, long corridorId, long nodeId, GridPoint2x point2x) {
+    public record MoveCorridorNodeRequest(long mapId, long corridorId, long nodeId, GridPoint point2x) {
     }
 
     public record MoveCorridorDoorRequest(
             long mapId,
             long corridorId,
-            GridSegment2x sourceBoundarySegment2x,
+            GridSegment sourceBoundarySegment2x,
             DoorRef targetDoorRef
     ) {
     }
@@ -322,6 +322,6 @@ public final class DungeonCorridorApplicationService {
     public record DeleteCorridorNodeRequest(long mapId, long corridorId, long nodeId) {
     }
 
-    public record DeleteCorridorDoorRequest(long mapId, long corridorId, GridSegment2x boundarySegment2x) {
+    public record DeleteCorridorDoorRequest(long mapId, long corridorId, GridSegment boundarySegment2x) {
     }
 }

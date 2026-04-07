@@ -3,11 +3,12 @@ package features.world.dungeonmap.application.room;
 import database.DatabaseManager;
 import features.world.dungeonmap.application.support.DungeonTransactionRunner;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridSegment;
 import features.world.dungeonmap.structure.model.Structure;
 import features.world.dungeonmap.structure.model.StructureMutation;
 import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
+import features.world.dungeonmap.structure.model.room.StructureRoomClusterEditor;
 import features.world.dungeonmap.structure.model.surface.StructureSurface;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
@@ -62,7 +63,7 @@ public final class DungeonRoomApplicationService {
         this.transitionRepository = Objects.requireNonNull(transitionRepository, "transitionRepository");
     }
 
-    public void paintCells(long mapId, int levelZ, Set<CellCoord> cells) throws SQLException {
+    public void paintCells(long mapId, int levelZ, Set<GridPoint> cells) throws SQLException {
         if (cells == null || cells.isEmpty()) {
             return;
         }
@@ -74,7 +75,7 @@ public final class DungeonRoomApplicationService {
         }
     }
 
-    public void deleteCells(long mapId, int levelZ, Set<CellCoord> cells) throws SQLException {
+    public void deleteCells(long mapId, int levelZ, Set<GridPoint> cells) throws SQLException {
         if (cells == null || cells.isEmpty()) {
             return;
         }
@@ -86,7 +87,7 @@ public final class DungeonRoomApplicationService {
         }
     }
 
-    public void addFloorCells(long mapId, int levelZ, Set<CellCoord> cells) throws SQLException {
+    public void addFloorCells(long mapId, int levelZ, Set<GridPoint> cells) throws SQLException {
         if (cells == null || cells.isEmpty()) {
             return;
         }
@@ -98,7 +99,7 @@ public final class DungeonRoomApplicationService {
         }
     }
 
-    public void deleteFloorCells(long mapId, int levelZ, Set<CellCoord> cells) throws SQLException {
+    public void deleteFloorCells(long mapId, int levelZ, Set<GridPoint> cells) throws SQLException {
         if (cells == null || cells.isEmpty()) {
             return;
         }
@@ -114,7 +115,7 @@ public final class DungeonRoomApplicationService {
             long mapId,
             long clusterId,
             int levelZ,
-            Collection<GridSegment2x> segments2x
+            Collection<GridSegment> segments2x
     ) throws SQLException {
         if (segments2x == null || segments2x.isEmpty()) {
             return;
@@ -131,7 +132,7 @@ public final class DungeonRoomApplicationService {
             long mapId,
             long clusterId,
             int levelZ,
-            Collection<GridSegment2x> segments2x
+            Collection<GridSegment> segments2x
     ) throws SQLException {
         if (segments2x == null || segments2x.isEmpty()) {
             return;
@@ -144,19 +145,19 @@ public final class DungeonRoomApplicationService {
         }
     }
 
-    public void createDoor(long mapId, long clusterId, int levelZ, Collection<GridSegment2x> segments2x) throws SQLException {
+    public void createDoor(long mapId, long clusterId, int levelZ, Collection<GridSegment> segments2x) throws SQLException {
         editDoor(mapId, clusterId, levelZ, segments2x, false);
     }
 
-    public void deleteDoor(long mapId, long clusterId, int levelZ, Collection<GridSegment2x> segments2x) throws SQLException {
+    public void deleteDoor(long mapId, long clusterId, int levelZ, Collection<GridSegment> segments2x) throws SQLException {
         editDoor(mapId, clusterId, levelZ, segments2x, true);
     }
 
-    public void createExteriorDoor(long mapId, long clusterId, int levelZ, Collection<GridSegment2x> segments2x) throws SQLException {
+    public void createExteriorDoor(long mapId, long clusterId, int levelZ, Collection<GridSegment> segments2x) throws SQLException {
         editExteriorDoor(mapId, clusterId, levelZ, segments2x, false);
     }
 
-    public void deleteExteriorDoor(long mapId, long clusterId, int levelZ, Collection<GridSegment2x> segments2x) throws SQLException {
+    public void deleteExteriorDoor(long mapId, long clusterId, int levelZ, Collection<GridSegment> segments2x) throws SQLException {
         editExteriorDoor(mapId, clusterId, levelZ, segments2x, true);
     }
 
@@ -187,7 +188,7 @@ public final class DungeonRoomApplicationService {
         }
     }
 
-    public void paintCells(Connection conn, long mapId, int levelZ, Set<CellCoord> cells) throws SQLException {
+    public void paintCells(Connection conn, long mapId, int levelZ, Set<GridPoint> cells) throws SQLException {
         DungeonLayout layout = requireLayout(conn, mapId);
         List<RoomCluster> overlappingClusters = overlappingClustersAtLevel(layout, cells, levelZ).stream()
                 .sorted(Comparator.comparing(cluster -> cluster.clusterId() == null ? Long.MAX_VALUE : cluster.clusterId()))
@@ -197,7 +198,11 @@ public final class DungeonRoomApplicationService {
             return;
         }
 
-        RoomCluster mergedCluster = overlappingClusters.getFirst().applyPaint(cells, overlappingClusters, levelZ);
+        RoomCluster mergedCluster = StructureRoomClusterEditor.applyPaint(
+                overlappingClusters.getFirst(),
+                cells,
+                overlappingClusters,
+                levelZ);
         if (mergedCluster == null) {
             return;
         }
@@ -205,10 +210,10 @@ public final class DungeonRoomApplicationService {
         persistClusterRewrite(conn, mapId, layout, overlappingClusters, List.of(mergedCluster));
     }
 
-    public void deleteCells(Connection conn, long mapId, int levelZ, Set<CellCoord> cells) throws SQLException {
+    public void deleteCells(Connection conn, long mapId, int levelZ, Set<GridPoint> cells) throws SQLException {
         DungeonLayout workingLayout = requireLayout(conn, mapId);
         Set<String> reservedNames = new LinkedHashSet<>();
-        for (Room room : workingLayout.rooms()) {
+        for (Room room : rooms(workingLayout)) {
             if (room != null && room.name() != null && !room.name().isBlank()) {
                 reservedNames.add(room.name());
             }
@@ -225,8 +230,8 @@ public final class DungeonRoomApplicationService {
                 continue;
             }
             DungeonLayout layoutSnapshot = workingLayout;
-            List<RoomCluster> finalClusters = assignGeneratedClusterRoomNames(
-                    cluster.applyDelete(cells, levelZ),
+            List<RoomCluster> finalClusters = StructureRoomClusterEditor.assignGeneratedClusterRoomNames(
+                    StructureRoomClusterEditor.applyDelete(cluster, cells, levelZ),
                     () -> nextRoomName(layoutSnapshot, reservedNames));
             if (finalClusters == null) {
                 continue;
@@ -240,7 +245,7 @@ public final class DungeonRoomApplicationService {
             Connection conn,
             long mapId,
             int levelZ,
-            Set<CellCoord> cells,
+            Set<GridPoint> cells,
             boolean deleteFloor
     ) throws SQLException {
         if (cells == null || cells.isEmpty()) {
@@ -252,20 +257,20 @@ public final class DungeonRoomApplicationService {
             return;
         }
 
-        java.util.Map<Long, Set<CellCoord>> requestedByClusterId = new java.util.LinkedHashMap<>();
+        java.util.Map<Long, Set<GridPoint>> requestedByClusterId = new java.util.LinkedHashMap<>();
         for (Room room : affectedRooms) {
             if (room == null || room.roomId() == null) {
                 continue;
             }
-            Structure roomStructure = workingLayout.roomStructure(room);
-            Set<CellCoord> requestedCells = intersect(
+            Structure roomStructure = roomStructure(workingLayout, room);
+            Set<GridPoint> requestedCells = intersect(
                     roomStructure.surfaceAtLevel(levelZ).surface().cellCoords(),
                     cells);
             if (requestedCells.isEmpty()) {
                 continue;
             }
             if (deleteFloor) {
-                Set<CellCoord> removedFloorCells = intersect(
+                Set<GridPoint> removedFloorCells = intersect(
                         roomStructure.surfaceAtLevel(levelZ).floor().cellCoords(),
                         requestedCells);
                 if (removedFloorCells.isEmpty()) {
@@ -281,10 +286,10 @@ public final class DungeonRoomApplicationService {
             if (cluster == null) {
                 continue;
             }
-            Set<CellCoord> requestedCells = requestedByClusterId.getOrDefault(clusterId, Set.of());
+            Set<GridPoint> requestedCells = requestedByClusterId.getOrDefault(clusterId, Set.of());
             StructureSurface structureSurface = cluster.structure().surfaceAtLevel(levelZ);
-            Set<CellCoord> currentFloorCells = new LinkedHashSet<>(structureSurface.floor().cellCoords());
-            Set<CellCoord> nextFloorCells = new LinkedHashSet<>(currentFloorCells);
+            Set<GridPoint> currentFloorCells = new LinkedHashSet<>(structureSurface.floor().cellCoords());
+            Set<GridPoint> nextFloorCells = new LinkedHashSet<>(currentFloorCells);
             boolean changed;
             if (deleteFloor) {
                 changed = nextFloorCells.removeAll(requestedCells);
@@ -303,7 +308,7 @@ public final class DungeonRoomApplicationService {
                             levelZ,
                             requestedCells,
                             deleteFloor ? StructureMutation.CellEditMode.REMOVE : StructureMutation.CellEditMode.ADD)),
-                    cluster.rooms());
+                    cluster.structure().roomTopology().rooms());
             persistClusterRewrite(conn, mapId, workingLayout, List.of(cluster), List.of(updatedCluster));
             workingLayout = requireLayout(conn, mapId);
         }
@@ -315,11 +320,11 @@ public final class DungeonRoomApplicationService {
                 conn,
                 mapId,
                 0,
-                Set.of(new CellCoord(0, 0)),
+                Set.of(new GridPoint(0, 0)),
                 "Raum 1");
     }
 
-    public void move(long mapId, long clusterId, CellCoord delta, int levelDelta) throws SQLException {
+    public void move(long mapId, long clusterId, GridPoint delta, int levelDelta) throws SQLException {
         boolean translate = delta != null && (delta.x() != 0 || delta.y() != 0);
         if (!translate && levelDelta == 0) {
             return;
@@ -346,7 +351,7 @@ public final class DungeonRoomApplicationService {
         }
     }
 
-    public void ensureTraversableCell(Connection conn, long mapId, CellCoord cell, int levelZ) throws SQLException {
+    public void ensureTraversableCell(Connection conn, long mapId, GridPoint cell, int levelZ) throws SQLException {
         if (cell == null) {
             return;
         }
@@ -354,7 +359,7 @@ public final class DungeonRoomApplicationService {
         if (layout.isTraversableCell(cell, levelZ)) {
             return;
         }
-        Room room = layout.roomAtCell(cell, levelZ);
+        Room room = roomAtCell(layout, cell, levelZ);
         if (room != null) {
             editFloorCells(conn, mapId, levelZ, Set.of(cell), false);
             return;
@@ -367,7 +372,7 @@ public final class DungeonRoomApplicationService {
             long mapId,
             long clusterId,
             int levelZ,
-            Collection<GridSegment2x> segments2x
+            Collection<GridSegment> segments2x
     ) throws SQLException {
         if (segments2x == null || segments2x.isEmpty()) {
             return;
@@ -390,7 +395,7 @@ public final class DungeonRoomApplicationService {
             long mapId,
             long clusterId,
             int levelZ,
-            Collection<GridSegment2x> segments2x
+            Collection<GridSegment> segments2x
     ) throws SQLException {
         if (segments2x == null || segments2x.isEmpty()) {
             return;
@@ -412,7 +417,7 @@ public final class DungeonRoomApplicationService {
             long mapId,
             long clusterId,
             int levelZ,
-            Collection<GridSegment2x> segments2x,
+            Collection<GridSegment> segments2x,
             boolean deleteDoor
     ) throws SQLException {
         if (segments2x == null || segments2x.isEmpty()) {
@@ -431,7 +436,7 @@ public final class DungeonRoomApplicationService {
             long mapId,
             long clusterId,
             int levelZ,
-            Collection<GridSegment2x> segments2x,
+            Collection<GridSegment> segments2x,
             boolean deleteDoor
     ) throws SQLException {
         DungeonLayout layout = requireLayout(conn, mapId);
@@ -439,7 +444,7 @@ public final class DungeonRoomApplicationService {
         if (cluster == null) {
             return;
         }
-        List<GridSegment2x> editableSegments = segments2x.stream()
+        List<GridSegment> editableSegments = segments2x.stream()
                 .filter(Objects::nonNull)
                 .filter(segment2x -> deleteDoor
                         ? cluster.canDeleteDoor(levelZ, segment2x)
@@ -459,7 +464,7 @@ public final class DungeonRoomApplicationService {
             long mapId,
             long clusterId,
             int levelZ,
-            Collection<GridSegment2x> segments2x,
+            Collection<GridSegment> segments2x,
             boolean deleteDoor
     ) throws SQLException {
         if (segments2x == null || segments2x.isEmpty()) {
@@ -478,7 +483,7 @@ public final class DungeonRoomApplicationService {
             long mapId,
             long clusterId,
             int levelZ,
-            Collection<GridSegment2x> segments2x,
+            Collection<GridSegment> segments2x,
             boolean deleteDoor
     ) throws SQLException {
         DungeonLayout layout = requireLayout(conn, mapId);
@@ -487,7 +492,7 @@ public final class DungeonRoomApplicationService {
         if (projectedCluster == null) {
             return;
         }
-        List<GridSegment2x> editableSegments = segments2x.stream()
+        List<GridSegment> editableSegments = segments2x.stream()
                 .filter(Objects::nonNull)
                 .filter(segment2x -> deleteDoor
                         ? projectedCluster.canDeleteExteriorDoor(levelZ, segment2x)
@@ -503,29 +508,29 @@ public final class DungeonRoomApplicationService {
         roomRepository.replaceClusters(conn, mapId, List.of(cluster), List.of(updatedCluster));
     }
 
-    private static List<RoomCluster> overlappingClustersAtLevel(DungeonLayout layout, Set<CellCoord> cells, int levelZ) {
+    private static List<RoomCluster> overlappingClustersAtLevel(DungeonLayout layout, Set<GridPoint> cells, int levelZ) {
         return layout.overlappingClusters(cells).stream()
-                .filter(cluster -> cluster != null && cluster.rooms().stream()
+                .filter(cluster -> cluster != null && cluster.structure().roomTopology().rooms().stream()
                         .anyMatch(room -> room != null
-                                && layout.roomLevels(room).contains(levelZ)))
+                                && cluster.structure().roomTopology().roomLevels(room).contains(levelZ)))
                 .toList();
     }
 
-    private static List<Room> overlappingRoomsAtLevel(DungeonLayout layout, Set<CellCoord> cells, int levelZ) {
+    private static List<Room> overlappingRoomsAtLevel(DungeonLayout layout, Set<GridPoint> cells, int levelZ) {
         if (layout == null || cells == null || cells.isEmpty()) {
             return List.of();
         }
-        return layout.rooms().stream()
+        return rooms(layout).stream()
                 .filter(room -> room != null
                         && room.roomId() != null
-                        && !intersect(layout.roomStructure(room).surfaceAtLevel(levelZ).surface().cellCoords(), cells).isEmpty())
+                        && !intersect(roomStructure(layout, room).surfaceAtLevel(levelZ).surface().cellCoords(), cells).isEmpty())
                 .sorted(Comparator.comparing(Room::roomId))
                 .toList();
     }
 
     private static String nextRoomName(DungeonLayout layout, Set<String> reservedNames) {
         Set<String> used = new LinkedHashSet<>(reservedNames);
-        for (Room room : layout.rooms()) {
+        for (Room room : rooms(layout)) {
             if (room != null && room.name() != null && !room.name().isBlank()) {
                 used.add(room.name());
             }
@@ -749,7 +754,7 @@ public final class DungeonRoomApplicationService {
                 return localConnection;
             }
             StairConnectionCarrier stairCarrier = localConnection.stairCarrier();
-            Room reboundRoom = layout.roomWithFloorAtCell(stairCarrier.anchorCell(), stairCarrier.anchorLevelZ());
+            Room reboundRoom = roomWithFloorAtCell(layout, stairCarrier.anchorCell(), stairCarrier.anchorLevelZ());
             if (reboundRoom == null) {
                 throw new IllegalArgumentException("Transition stair anchor no longer resolves to a room floor");
             }
@@ -802,7 +807,7 @@ public final class DungeonRoomApplicationService {
             if (cluster == null) {
                 continue;
             }
-            for (Room room : cluster.rooms()) {
+            for (Room room : cluster.structure().roomTopology().rooms()) {
                 if (room != null && room.roomId() != null) {
                     result.add(room.roomId());
                 }
@@ -811,12 +816,12 @@ public final class DungeonRoomApplicationService {
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
-    private static Set<CellCoord> intersect(Set<CellCoord> left, Set<CellCoord> right) {
+    private static Set<GridPoint> intersect(Set<GridPoint> left, Set<GridPoint> right) {
         if (left == null || left.isEmpty() || right == null || right.isEmpty()) {
             return Set.of();
         }
-        LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
-        for (CellCoord cell : left) {
+        LinkedHashSet<GridPoint> result = new LinkedHashSet<>();
+        for (GridPoint cell : left) {
             if (right.contains(cell)) {
                 result.add(cell);
             }
@@ -828,7 +833,7 @@ public final class DungeonRoomApplicationService {
             DungeonLayout layout,
             Room room,
             int levelZ,
-            Set<CellCoord> removedFloorCells
+            Set<GridPoint> removedFloorCells
     ) throws SQLException {
         if (layout == null || room == null || room.roomId() == null || removedFloorCells == null || removedFloorCells.isEmpty()) {
             return;
@@ -876,60 +881,39 @@ public final class DungeonRoomApplicationService {
         }
     }
 
-    private static List<RoomCluster> assignGeneratedClusterRoomNames(List<RoomCluster> clusters, Supplier<String> roomNameSupplier) {
-        if (clusters == null || roomNameSupplier == null) {
-            return clusters;
-        }
-        boolean changed = false;
-        List<RoomCluster> renamedClusters = new java.util.ArrayList<>(clusters.size());
-        for (RoomCluster cluster : clusters) {
-            if (cluster == null) {
-                renamedClusters.add(null);
-                continue;
-            }
-            List<Room> renamedRooms = assignGeneratedNamesToRooms(cluster.rooms(), roomNameSupplier);
-            if (renamedRooms.equals(cluster.rooms())) {
-                renamedClusters.add(cluster);
-                continue;
-            }
-            renamedClusters.add(new RoomCluster(
-                    cluster.clusterId(),
-                    cluster.structureObjectId(),
-                    cluster.mapId(),
-                    cluster.center(),
-                    cluster.structure(),
-                    renamedRooms));
-            changed = true;
-        }
-        return changed ? List.copyOf(renamedClusters) : clusters;
-    }
-
-    private static List<Room> assignGeneratedNamesToRooms(List<Room> rooms, Supplier<String> roomNameSupplier) {
-        if (rooms == null || rooms.isEmpty()) {
+    private static List<Room> rooms(DungeonLayout layout) {
+        if (layout == null) {
             return List.of();
         }
-        boolean changed = false;
-        List<Room> renamedRooms = new java.util.ArrayList<>(rooms.size());
-        for (Room room : rooms) {
-            if (room == null || room.roomId() != null || room.name() != null && !room.name().isBlank()) {
-                renamedRooms.add(room);
-                continue;
-            }
-            String generatedName = roomNameSupplier.get();
-            Room renamedRoom = room.withName(
-                    generatedName == null || generatedName.isBlank() ? "Raum neu" : generatedName.trim());
-            renamedRooms.add(renamedRoom);
-            changed = true;
+        return layout.clusters().stream()
+                .flatMap(cluster -> cluster.structure().roomTopology().rooms().stream())
+                .toList();
+    }
+
+    private static Structure roomStructure(DungeonLayout layout, Room room) {
+        if (layout == null || room == null) {
+            return Structure.empty();
         }
-        return changed ? List.copyOf(renamedRooms) : rooms;
+        RoomCluster cluster = layout.findCluster(room.clusterId());
+        return cluster == null ? Structure.empty() : cluster.structure().roomTopology().structureFor(room);
+    }
+
+    private static Room roomAtCell(DungeonLayout layout, GridPoint cell, int levelZ) {
+        RoomCluster cluster = layout == null ? null : layout.clusterAtCell(cell, levelZ);
+        return cluster == null ? null : cluster.structure().roomTopology().roomAt(cell, levelZ);
+    }
+
+    private static Room roomWithFloorAtCell(DungeonLayout layout, GridPoint cell, int levelZ) {
+        Room room = roomAtCell(layout, cell, levelZ);
+        return room != null && roomStructure(layout, room).surfaceAtLevel(levelZ).floor().contains(cell) ? room : null;
     }
 
     public record MoveDoorRequest(
             long mapId,
             long clusterId,
             int levelZ,
-            GridSegment2x sourceBoundarySegment2x,
-            GridSegment2x targetBoundarySegment2x
+            GridSegment sourceBoundarySegment2x,
+            GridSegment targetBoundarySegment2x
     ) {
     }
 }

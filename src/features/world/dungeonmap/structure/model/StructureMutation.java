@@ -1,7 +1,7 @@
 package features.world.dungeonmap.structure.model;
 
-import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridSegment;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -40,10 +40,10 @@ public sealed interface StructureMutation permits
 
     record SurfaceCellsEdit(
             int levelZ,
-            Set<CellCoord> cells,
+            Set<GridPoint> cells,
             CellEditMode mode,
             FloorSyncPolicy floorSyncPolicy,
-            CellCoord preferredAnchorCell
+            GridPoint preferredAnchorCell
     ) implements StructureMutation {
         public SurfaceCellsEdit {
             cells = normalizedCells(cells);
@@ -54,7 +54,7 @@ public sealed interface StructureMutation permits
 
     record FloorCellsEdit(
             int levelZ,
-            Set<CellCoord> cells,
+            Set<GridPoint> cells,
             CellEditMode mode
     ) implements StructureMutation {
         public FloorCellsEdit {
@@ -65,7 +65,7 @@ public sealed interface StructureMutation permits
 
     record WallPathEdit(
             int levelZ,
-            List<GridSegment2x> segments2x,
+            List<GridSegment> segments2x,
             BoundaryEditMode mode
     ) implements StructureMutation {
         public WallPathEdit {
@@ -76,7 +76,7 @@ public sealed interface StructureMutation permits
 
     record DoorSegmentsEdit(
             int levelZ,
-            List<GridSegment2x> segments2x,
+            List<GridSegment> segments2x,
             BoundaryEditMode mode
     ) implements StructureMutation {
         public DoorSegmentsEdit {
@@ -87,8 +87,8 @@ public sealed interface StructureMutation permits
 
     record DoorMove(
             int levelZ,
-            GridSegment2x sourceBoundarySegment2x,
-            GridSegment2x targetBoundarySegment2x
+            GridSegment sourceBoundarySegment2x,
+            GridSegment targetBoundarySegment2x
     ) implements StructureMutation {
         public DoorMove {
             Objects.requireNonNull(sourceBoundarySegment2x, "sourceBoundarySegment2x");
@@ -97,20 +97,20 @@ public sealed interface StructureMutation permits
     }
 
     record Translation(
-            CellCoord delta,
+            GridPoint delta,
             int levelDelta
     ) implements StructureMutation {
         public Translation {
-            delta = delta == null ? new CellCoord(0, 0) : delta;
+            delta = delta == null ? new GridPoint(0, 0) : delta;
         }
     }
 
-    private static Set<CellCoord> normalizedCells(Collection<CellCoord> cells) {
+    private static Set<GridPoint> normalizedCells(Collection<GridPoint> cells) {
         if (cells == null || cells.isEmpty()) {
             return Set.of();
         }
-        LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
-        for (CellCoord cell : cells) {
+        LinkedHashSet<GridPoint> result = new LinkedHashSet<>();
+        for (GridPoint cell : cells) {
             if (cell != null) {
                 result.add(cell);
             }
@@ -118,14 +118,14 @@ public sealed interface StructureMutation permits
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
-    private static List<GridSegment2x> normalizedSegments(Collection<GridSegment2x> segments2x) {
+    private static List<GridSegment> normalizedSegments(Collection<GridSegment> segments2x) {
         if (segments2x == null || segments2x.isEmpty()) {
             return List.of();
         }
         return segments2x.stream()
                 .filter(Objects::nonNull)
                 .distinct()
-                .sorted(GridSegment2x.ORDER)
+                .sorted(GridSegment.ORDER)
                 .toList();
     }
 }

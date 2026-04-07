@@ -1,10 +1,10 @@
 package features.world.dungeonmap.model.structures.connection;
 
-import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.TilePath;
-import features.world.dungeonmap.model.geometry.TileShapeSpec;
+import features.world.dungeonmap.geometry.CardinalDirection;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridPath;
+import features.world.dungeonmap.geometry.GridPathPatternSpec;
 import features.world.dungeonmap.model.structures.stair.Stair;
 
 import java.util.LinkedHashSet;
@@ -13,9 +13,9 @@ import java.util.Objects;
 import java.util.Set;
 
 public record StairConnectionCarrier(
-        CellCoord anchorCell,
+        GridPoint anchorCell,
         int anchorLevelZ,
-        TileShapeSpec shapeSpec,
+        GridPathPatternSpec shapeSpec,
         int minLevelZ,
         int maxLevelZ,
         Stair stair
@@ -24,8 +24,8 @@ public record StairConnectionCarrier(
     public StairConnectionCarrier {
         anchorCell = Objects.requireNonNull(anchorCell, "anchorCell");
         shapeSpec = shapeSpec == null
-                ? TileShapeSpec.defaultSpec()
-                : new TileShapeSpec(
+                ? GridPathPatternSpec.defaultSpec()
+                : new GridPathPatternSpec(
                         shapeSpec.kind(),
                         shapeSpec.direction() == null ? CardinalDirection.defaultDirection() : shapeSpec.direction(),
                         shapeSpec.parameter1(),
@@ -40,11 +40,11 @@ public record StairConnectionCarrier(
         return shapeSpec.direction();
     }
 
-    public List<CubePoint> path() {
+    public List<GridPoint> path() {
         return stair.path();
     }
 
-    public TilePath tilePath() {
+    public GridPath tilePath() {
         return stair.tilePath();
     }
 
@@ -52,7 +52,7 @@ public record StairConnectionCarrier(
         return stair.stopLevels();
     }
 
-    public Set<CubePoint> pathPositions() {
+    public Set<GridPoint> pathPositions() {
         return Set.copyOf(new LinkedHashSet<>(stair.occupiedPositions()));
     }
 }

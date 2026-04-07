@@ -1,8 +1,8 @@
 package features.world.dungeonmap.structure.repository;
 
-import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.GridPoint2x;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridSegment;
 import features.world.dungeonmap.structure.model.Structure;
 import features.world.dungeonmap.structure.model.boundary.StructureBoundary;
 import features.world.dungeonmap.structure.model.boundary.door.Door;
@@ -65,9 +65,9 @@ public final class DungeonStructureRepository {
             return Map.of();
         }
         Map<Long, WallKind> wallKindsById = wallKindRepository.loadWallKinds(conn);
-        Map<Long, Map<Integer, CellCoord>> anchorsByStructureId = new LinkedHashMap<>();
-        Map<Long, Map<Integer, Set<CellCoord>>> surfaceCellsByStructureId = new LinkedHashMap<>();
-        Map<Long, Map<Integer, Set<CellCoord>>> floorCellsByStructureId = new LinkedHashMap<>();
+        Map<Long, Map<Integer, GridPoint>> anchorsByStructureId = new LinkedHashMap<>();
+        Map<Long, Map<Integer, Set<GridPoint>>> surfaceCellsByStructureId = new LinkedHashMap<>();
+        Map<Long, Map<Integer, Set<GridPoint>>> floorCellsByStructureId = new LinkedHashMap<>();
         Map<Long, Map<Integer, List<Door>>> doorsByStructureId = loadDoorsByStructureId(conn, ids);
         Map<Long, Map<Integer, List<Wall>>> wallsByStructureId = loadWallsByStructureId(conn, ids, wallKindsById);
 
@@ -90,12 +90,12 @@ public final class DungeonStructureRepository {
                 floorCellsByStructureId);
 
         Map<Long, Structure> result = new LinkedHashMap<>();
-        for (Map.Entry<Long, Map<Integer, CellCoord>> structureEntry : anchorsByStructureId.entrySet()) {
+        for (Map.Entry<Long, Map<Integer, GridPoint>> structureEntry : anchorsByStructureId.entrySet()) {
             Long structureId = structureEntry.getKey();
             Map<Integer, Structure.LevelStructure.PersistenceSnapshot> snapshotLevels = new LinkedHashMap<>();
-            for (Map.Entry<Integer, CellCoord> levelEntry : structureEntry.getValue().entrySet()) {
+            for (Map.Entry<Integer, GridPoint> levelEntry : structureEntry.getValue().entrySet()) {
                 int levelZ = levelEntry.getKey();
-                Set<CellCoord> surfaceCells = surfaceCellsByStructureId
+                Set<GridPoint> surfaceCells = surfaceCellsByStructureId
                         .getOrDefault(structureId, Map.of())
                         .getOrDefault(levelZ, Set.of());
                 if (surfaceCells.isEmpty()) {
@@ -263,11 +263,11 @@ public final class DungeonStructureRepository {
             PreparedStatement insertCell,
             long structureObjectId,
             int levelZ,
-            Collection<CellCoord> cells
+            Collection<GridPoint> cells
     ) throws SQLException {
-        for (CellCoord cell : (cells == null ? List.<CellCoord>of() : cells).stream()
+        for (GridPoint cell : (cells == null ? List.<GridPoint>of() : cells).stream()
                 .filter(Objects::nonNull)
-                .sorted(CellCoord.ORDER)
+                .sorted(GridPoint.ORDER)
                 .toList()) {
             insertCell.setLong(1, structureObjectId);
             insertCell.setInt(2, levelZ);
@@ -288,7 +288,7 @@ public final class DungeonStructureRepository {
             if (wall == null || !wall.hasBoundarySegments() || wall.wallId() == null || wall.wallId() <= 0L) {
                 throw new IllegalArgumentException("Persisted walls require a stable positive wall id");
             }
-            GridSegment2x anchorSegment2x = wall.persistedAnchorSegment2x();
+            GridSegment anchorSegment2x = wall.persistedAnchorSegment2x();
             insertWall.setLong(1, structureObjectId);
             insertWall.setLong(2, wall.wallId());
             insertWall.setInt(3, levelZ);
@@ -298,7 +298,7 @@ public final class DungeonStructureRepository {
             insertWall.setInt(7, anchorSegment2x.end().x2());
             insertWall.setInt(8, anchorSegment2x.end().y2());
             insertWall.addBatch();
-            for (GridSegment2x segment2x : wall.orderedBoundarySegments()) {
+            for (GridSegment segment2x : wall.orderedBoundarySegments()) {
                 insertWallSegment.setLong(1, wall.wallId());
                 insertWallSegment.setInt(2, segment2x.start().x2());
                 insertWallSegment.setInt(3, segment2x.start().y2());
@@ -320,7 +320,7 @@ public final class DungeonStructureRepository {
             if (door == null || !door.hasBoundarySegments() || door.doorId() == null || door.doorId() <= 0L) {
                 throw new IllegalArgumentException("Persisted doors require a stable positive door id");
             }
-            GridSegment2x anchorSegment2x = door.persistedAnchorSegment2x();
+            GridSegment anchorSegment2x = door.persistedAnchorSegment2x();
             insertDoor.setLong(1, structureObjectId);
             insertDoor.setLong(2, door.doorId());
             insertDoor.setInt(3, levelZ);
@@ -330,7 +330,7 @@ public final class DungeonStructureRepository {
             insertDoor.setInt(7, anchorSegment2x.end().y2());
             insertDoor.setString(8, door.doorState().name());
             insertDoor.addBatch();
-            for (GridSegment2x segment2x : door.orderedBoundarySegments()) {
+            for (GridSegment segment2x : door.orderedBoundarySegments()) {
                 insertDoorSegment.setLong(1, door.doorId());
                 insertDoorSegment.setInt(2, segment2x.start().x2());
                 insertDoorSegment.setInt(3, segment2x.start().y2());
@@ -344,7 +344,7 @@ public final class DungeonStructureRepository {
     private void loadLevelAnchors(
             Connection conn,
             List<Long> ids,
-            Map<Long, Map<Integer, CellCoord>> anchorsByStructureId
+            Map<Long, Map<Integer, GridPoint>> anchorsByStructureId
     ) throws SQLException {
         String sql = "SELECT structure_object_id, level_z, anchor_x2, anchor_y2"
                 + " FROM dungeon_structure_levels WHERE structure_object_id IN %s ORDER BY structure_object_id, level_z";
@@ -368,7 +368,7 @@ public final class DungeonStructureRepository {
             Connection conn,
             List<Long> ids,
             String sqlTemplate,
-            Map<Long, Map<Integer, Set<CellCoord>>> cellsByStructureId
+            Map<Long, Map<Integer, Set<GridPoint>>> cellsByStructureId
     ) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(sqlTemplate.formatted(placeholders(ids.size())))) {
             bindIds(ps, ids);
@@ -402,9 +402,9 @@ public final class DungeonStructureRepository {
                     long structureObjectId = rs.getLong("structure_object_id");
                     int levelZ = rs.getInt("level_z");
                     long doorId = rs.getLong("door_id");
-                    GridSegment2x anchorSegment2x = new GridSegment2x(
-                            GridPoint2x.raw(rs.getInt("anchor_start_x2"), rs.getInt("anchor_start_y2")),
-                            GridPoint2x.raw(rs.getInt("anchor_end_x2"), rs.getInt("anchor_end_y2")));
+                    GridSegment anchorSegment2x = new GridSegment(
+                            GridPoint.raw(rs.getInt("anchor_start_x2"), rs.getInt("anchor_start_y2")),
+                            GridPoint.raw(rs.getInt("anchor_end_x2"), rs.getInt("anchor_end_y2")));
                     Door.DoorState doorState = Door.DoorState.valueOf(rs.getString("door_state"));
                     LinkedHashMap<Long, MutableDoor> doorsById = mutable
                             .computeIfAbsent(structureObjectId, ignored -> new LinkedHashMap<>())
@@ -412,9 +412,9 @@ public final class DungeonStructureRepository {
                     MutableDoor mutableDoor = doorsById.computeIfAbsent(
                             doorId,
                             ignored -> new MutableDoor(doorId, anchorSegment2x, doorState));
-                    mutableDoor.segments().add(new GridSegment2x(
-                            GridPoint2x.raw(rs.getInt("start_x2"), rs.getInt("start_y2")),
-                            GridPoint2x.raw(rs.getInt("end_x2"), rs.getInt("end_y2"))));
+                    mutableDoor.segments().add(new GridSegment(
+                            GridPoint.raw(rs.getInt("start_x2"), rs.getInt("start_y2")),
+                            GridPoint.raw(rs.getInt("end_x2"), rs.getInt("end_y2"))));
                 }
             }
         }
@@ -442,18 +442,18 @@ public final class DungeonStructureRepository {
                     int levelZ = rs.getInt("level_z");
                     long wallId = rs.getLong("wall_id");
                     WallKind wallKind = wallKindsById.getOrDefault(rs.getLong("wall_kind_id"), WallKind.solid());
-                    GridSegment2x anchorSegment2x = new GridSegment2x(
-                            GridPoint2x.raw(rs.getInt("anchor_start_x2"), rs.getInt("anchor_start_y2")),
-                            GridPoint2x.raw(rs.getInt("anchor_end_x2"), rs.getInt("anchor_end_y2")));
+                    GridSegment anchorSegment2x = new GridSegment(
+                            GridPoint.raw(rs.getInt("anchor_start_x2"), rs.getInt("anchor_start_y2")),
+                            GridPoint.raw(rs.getInt("anchor_end_x2"), rs.getInt("anchor_end_y2")));
                     LinkedHashMap<Long, MutableWall> wallsById = mutable
                             .computeIfAbsent(structureObjectId, ignored -> new LinkedHashMap<>())
                             .computeIfAbsent(levelZ, ignored -> new LinkedHashMap<>());
                     MutableWall mutableWall = wallsById.computeIfAbsent(
                             wallId,
                             ignored -> new MutableWall(wallId, anchorSegment2x, wallKind));
-                    mutableWall.segments().add(new GridSegment2x(
-                            GridPoint2x.raw(rs.getInt("start_x2"), rs.getInt("start_y2")),
-                            GridPoint2x.raw(rs.getInt("end_x2"), rs.getInt("end_y2"))));
+                    mutableWall.segments().add(new GridSegment(
+                            GridPoint.raw(rs.getInt("start_x2"), rs.getInt("start_y2")),
+                            GridPoint.raw(rs.getInt("end_x2"), rs.getInt("end_y2"))));
                 }
             }
         }
@@ -463,7 +463,7 @@ public final class DungeonStructureRepository {
             for (Map.Entry<Integer, LinkedHashMap<Long, MutableWall>> levelEntry : structureEntry.getValue().entrySet()) {
                 levels.put(levelEntry.getKey(), levelEntry.getValue().values().stream()
                         .map(MutableWall::toWall)
-                        .sorted(Comparator.comparing(Wall::anchorSegment2x, GridSegment2x.ORDER))
+                        .sorted(Comparator.comparing(Wall::anchorSegment2x, GridSegment.ORDER))
                         .toList());
             }
             result.put(structureEntry.getKey(), Map.copyOf(levels));
@@ -480,7 +480,7 @@ public final class DungeonStructureRepository {
             for (Map.Entry<Integer, LinkedHashMap<Long, MutableDoor>> levelEntry : ownerEntry.getValue().entrySet()) {
                 List<Door> doors = levelEntry.getValue().values().stream()
                         .map(MutableDoor::toDoor)
-                        .sorted(Comparator.comparing(Door::anchorSegment2x, GridSegment2x.ORDER))
+                        .sorted(Comparator.comparing(Door::anchorSegment2x, GridSegment.ORDER))
                         .toList();
                 levels.put(levelEntry.getKey(), doors);
             }
@@ -524,28 +524,28 @@ public final class DungeonStructureRepository {
                 .collect(Collectors.joining(",")) + ")";
     }
 
-    private static int persistedCellX2(CellCoord cell) {
-        CellCoord resolvedCell = cell == null ? new CellCoord(0, 0) : cell;
-        return GridPoint2x.cell(resolvedCell).x2();
+    private static int persistedCellX2(GridPoint cell) {
+        GridPoint resolvedCell = cell == null ? new GridPoint(0, 0) : cell;
+        return GridPoint.cell(resolvedCell).x2();
     }
 
-    private static int persistedCellY2(CellCoord cell) {
-        CellCoord resolvedCell = cell == null ? new CellCoord(0, 0) : cell;
-        return GridPoint2x.cell(resolvedCell).y2();
+    private static int persistedCellY2(GridPoint cell) {
+        GridPoint resolvedCell = cell == null ? new GridPoint(0, 0) : cell;
+        return GridPoint.cell(resolvedCell).y2();
     }
 
-    private static CellCoord requireStoredCellCenter(int persistedX2, int persistedY2, String label, long id, int levelZ) {
-        return GridPoint2x.raw(persistedX2, persistedY2).asCell().orElseThrow(() -> new IllegalArgumentException(
+    private static GridPoint requireStoredCellCenter(int persistedX2, int persistedY2, String label, long id, int levelZ) {
+        return GridPoint.raw(persistedX2, persistedY2).asCell().orElseThrow(() -> new IllegalArgumentException(
                 label + " must be a tile center for structure " + id + " at level " + levelZ));
     }
 
     private record MutableDoor(
             long doorId,
-            GridSegment2x anchorSegment2x,
+            GridSegment anchorSegment2x,
             Door.DoorState doorState,
-            LinkedHashSet<GridSegment2x> segments
+            LinkedHashSet<GridSegment> segments
     ) {
-        private MutableDoor(long doorId, GridSegment2x anchorSegment2x, Door.DoorState doorState) {
+        private MutableDoor(long doorId, GridSegment anchorSegment2x, Door.DoorState doorState) {
             this(doorId, anchorSegment2x, doorState, new LinkedHashSet<>());
         }
 
@@ -556,11 +556,11 @@ public final class DungeonStructureRepository {
 
     private record MutableWall(
             long wallId,
-            GridSegment2x anchorSegment2x,
+            GridSegment anchorSegment2x,
             WallKind wallKind,
-            LinkedHashSet<GridSegment2x> segments
+            LinkedHashSet<GridSegment> segments
     ) {
-        private MutableWall(long wallId, GridSegment2x anchorSegment2x, WallKind wallKind) {
+        private MutableWall(long wallId, GridSegment anchorSegment2x, WallKind wallKind) {
             this(wallId, anchorSegment2x, wallKind, new LinkedHashSet<>());
         }
 

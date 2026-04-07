@@ -1,12 +1,13 @@
 package features.world.dungeonmap.model.structures.corridor;
 
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.EdgeShape;
-import features.world.dungeonmap.model.geometry.GridPoint2x;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.geometry.CardinalDirection;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridBoundary;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridSegment;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
+import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.structure.model.Structure;
 import features.world.dungeonmap.structure.model.StructureSpecification;
 import features.world.dungeonmap.structure.model.boundary.StructureBoundary;
@@ -210,9 +211,9 @@ public final class Corridor {
         return connections;
     }
 
-    public Set<GridSegment2x> boundaryDoorSegments(DungeonLayout layout) {
+    public Set<GridSegment> boundaryDoorSegments(DungeonLayout layout) {
         StructureBoundary boundary = structure.boundaryAtLevel(levelZ);
-        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>(boundary.doorBoundaryEdges());
+        LinkedHashSet<GridSegment> result = new LinkedHashSet<>(boundary.doorBoundaryEdges());
         for (CorridorNode node : nodes) {
             if (node == null || !node.isDoorBound()) {
                 continue;
@@ -235,7 +236,7 @@ public final class Corridor {
         return resolvedAgainst(layout, nodes, segments, doors);
     }
 
-    public Corridor withoutDoor(DungeonLayout layout, GridSegment2x boundarySegment2x) {
+    public Corridor withoutDoor(DungeonLayout layout, GridSegment boundarySegment2x) {
         if (layout == null || boundarySegment2x == null) {
             return this;
         }
@@ -258,7 +259,7 @@ public final class Corridor {
         return changed ? resolvedAgainst(layout, nodes, segments, nextDoors) : this;
     }
 
-    public Corridor movedNode(DungeonLayout layout, Long nodeId, GridPoint2x point2x) {
+    public Corridor movedNode(DungeonLayout layout, Long nodeId, GridPoint point2x) {
         if (layout == null || nodeId == null || point2x == null) {
             return this;
         }
@@ -278,7 +279,7 @@ public final class Corridor {
         return changed ? resolvedAgainst(layout, updatedNodes, segments) : this;
     }
 
-    public Corridor movedDoor(DungeonLayout layout, GridSegment2x sourceBoundarySegment2x, CorridorNode targetRoomNode) {
+    public Corridor movedDoor(DungeonLayout layout, GridSegment sourceBoundarySegment2x, CorridorNode targetRoomNode) {
         if (layout == null || sourceBoundarySegment2x == null || targetRoomNode == null || !targetRoomNode.isDoorBound()) {
             return this;
         }
@@ -291,7 +292,7 @@ public final class Corridor {
         if (!Objects.equals(sourceDoor.roomId(), targetDoor.roomId())) {
             throw new IllegalArgumentException("Corridor door move must stay on the same room");
         }
-        GridSegment2x targetBoundarySegment2x = targetDoor.anchorSegment2x();
+        GridSegment targetBoundarySegment2x = targetDoor.anchorSegment2x();
         if (Objects.equals(sourceBoundarySegment2x, targetBoundarySegment2x)) {
             return this;
         }
@@ -312,11 +313,11 @@ public final class Corridor {
         return changed ? resolvedAgainst(layout, updatedNodes, segments) : this;
     }
 
-    public Corridor promotedTileNode(DungeonLayout layout, CellCoord tileCell) {
+    public Corridor promotedTileNode(DungeonLayout layout, GridPoint tileCell) {
         if (layout == null || tileCell == null) {
             return this;
         }
-        GridPoint2x tilePoint = GridPoint2x.cell(tileCell);
+        GridPoint tilePoint = GridPoint.cell(tileCell);
         CorridorNode existingNode = findFreeNodeAtPoint(tilePoint);
         if (existingNode != null) {
             return this;
@@ -344,28 +345,28 @@ public final class Corridor {
         return resolvedAgainst(layout, updatedNodes, updatedSegments);
     }
 
-    public Corridor promotedTileNodeAndMoved(DungeonLayout layout, CellCoord tileCell, GridPoint2x point2x) {
+    public Corridor promotedTileNodeAndMoved(DungeonLayout layout, GridPoint tileCell, GridPoint point2x) {
         if (layout == null || tileCell == null || point2x == null) {
             return this;
         }
         Corridor promoted = promotedTileNode(layout, tileCell);
-        CorridorNode promotedNode = promoted.findFreeNodeAtPoint(GridPoint2x.cell(tileCell));
+        CorridorNode promotedNode = promoted.findFreeNodeAtPoint(GridPoint.cell(tileCell));
         if (promotedNode == null || Objects.equals(promotedNode.point2x(), point2x)) {
             return promoted;
         }
         return promoted.movedNode(layout, promotedNode.nodeId(), point2x);
     }
 
-    public Corridor attachedRoomNodeAtTile(DungeonLayout layout, CorridorNode roomNode, CellCoord tileCell) {
+    public Corridor attachedRoomNodeAtTile(DungeonLayout layout, CorridorNode roomNode, GridPoint tileCell) {
         if (layout == null || roomNode == null || !roomNode.isDoorBound() || tileCell == null) {
             return this;
         }
-        GridSegment2x boundarySegment2x = requiredExteriorDoor(layout, levelZ, roomNode.doorRef()).anchorSegment2x();
+        GridSegment boundarySegment2x = requiredExteriorDoor(layout, levelZ, roomNode.doorRef()).anchorSegment2x();
         if (boundarySegment2x != null && findRoomBoundNodeAtBoundary(boundarySegment2x) != null) {
             return this;
         }
         Corridor promoted = promotedTileNode(layout, tileCell);
-        CorridorNode attachNode = promoted.findFreeNodeAtPoint(GridPoint2x.cell(tileCell));
+        CorridorNode attachNode = promoted.findFreeNodeAtPoint(GridPoint.cell(tileCell));
         if (attachNode == null) {
             throw new IllegalArgumentException("Corridor tile did not resolve to a fixed node");
         }
@@ -385,7 +386,7 @@ public final class Corridor {
     public Corridor attachedRoomNodeAtBoundary(
             DungeonLayout layout,
             CorridorNode roomNode,
-            GridSegment2x boundarySegment2x
+            GridSegment boundarySegment2x
     ) {
         if (layout == null || roomNode == null || !roomNode.isDoorBound() || boundarySegment2x == null) {
             return this;
@@ -418,7 +419,7 @@ public final class Corridor {
     public Corridor adjustedForMovedRooms(
             DungeonLayout layout,
             Set<Long> movedRoomIds,
-            CellCoord delta,
+            GridPoint delta,
             int levelDelta
     ) {
         if (layout == null || movedRoomIds == null || movedRoomIds.isEmpty()) {
@@ -510,7 +511,7 @@ public final class Corridor {
                 .orElse(null);
     }
 
-    public CorridorNode findFreeNodeAtPoint(GridPoint2x point2x) {
+    public CorridorNode findFreeNodeAtPoint(GridPoint point2x) {
         if (point2x == null) {
             return null;
         }
@@ -520,7 +521,7 @@ public final class Corridor {
                 .orElse(null);
     }
 
-    public CorridorNode findRoomBoundNodeAtBoundary(GridSegment2x boundarySegment2x) {
+    public CorridorNode findRoomBoundNodeAtBoundary(GridSegment boundarySegment2x) {
         if (boundarySegment2x == null) {
             return null;
         }
@@ -703,7 +704,7 @@ public final class Corridor {
                 .map(CorridorSegment::segmentId)
                 .filter(Objects::nonNull)
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
-        Set<CellCoord> componentCells = CorridorRouting.surfaceCellsForTraces(pathTraces.stream()
+        Set<GridPoint> componentCells = CorridorRouting.surfaceCellsForTraces(pathTraces.stream()
                 .filter(trace -> trace != null && componentSegmentIds.contains(trace.traceId()))
                 .toList());
         if (componentCells.isEmpty()) {
@@ -816,7 +817,7 @@ public final class Corridor {
         }
         result.sort(Comparator
                 .comparing((CorridorNode node) -> node.nodeId() == null ? Long.MAX_VALUE : node.nodeId())
-                .thenComparing(CorridorNode::point2x, GridPoint2x.ORDER));
+                .thenComparing(CorridorNode::point2x, GridPoint.ORDER));
         return List.copyOf(result);
     }
 
@@ -855,7 +856,7 @@ public final class Corridor {
             List<CorridorSegment> segments,
             Collection<Door> doors
     ) {
-        Set<CellCoord> blockedCells = blockedRoomCells(layout, levelZ);
+        Set<GridPoint> blockedCells = blockedRoomCells(layout, levelZ);
         List<CorridorRouting.RoutedNode> routedNodes = nodes.stream()
                 .map(node -> routedNode(layout, node, levelZ, blockedCells))
                 .toList();
@@ -898,7 +899,7 @@ public final class Corridor {
         if (node == null || !node.isDoorBound()) {
             return node;
         }
-        GridPoint2x anchorPoint = doorAnchorPoint(node, levelZ, layout);
+        GridPoint anchorPoint = doorAnchorPoint(node, levelZ, layout);
         return anchorPoint.equals(node.point2x())
                 ? node
                 : new CorridorNode(node.nodeId(), anchorPoint, node.doorRef());
@@ -914,16 +915,20 @@ public final class Corridor {
         return Map.copyOf(result);
     }
 
-    private static Set<CellCoord> blockedRoomCells(DungeonLayout layout, int levelZ) {
-        Set<CellCoord> blocked = new LinkedHashSet<>();
+    private static Set<GridPoint> blockedRoomCells(DungeonLayout layout, int levelZ) {
+        Set<GridPoint> blocked = new LinkedHashSet<>();
         if (layout == null) {
             return Set.of();
         }
-        for (var room : layout.rooms()) {
-            if (room == null) {
+        for (RoomCluster cluster : layout.clusters()) {
+            if (cluster == null) {
                 continue;
             }
-            blocked.addAll(layout.roomStructure(room).surfaceAtLevel(levelZ).surface().cellCoords());
+            for (var room : cluster.structure().roomTopology().rooms()) {
+                if (room != null) {
+                    blocked.addAll(cluster.structure().roomTopology().structureFor(room).surfaceAtLevel(levelZ).surface().cellCoords());
+                }
+            }
         }
         return Set.copyOf(blocked);
     }
@@ -932,7 +937,7 @@ public final class Corridor {
             DungeonLayout layout,
             CorridorNode node,
             int levelZ,
-            Set<CellCoord> blockedCells
+            Set<GridPoint> blockedCells
     ) {
         if (node == null || node.nodeId() == null) {
             throw new IllegalArgumentException("Corridor routed node requires a stable id");
@@ -944,18 +949,18 @@ public final class Corridor {
             DungeonLayout layout,
             CorridorNode node,
             int levelZ,
-            Set<CellCoord> blockedCells
+            Set<GridPoint> blockedCells
     ) {
         if (node == null) {
             return List.of();
         }
         if (node.isDoorBound()) {
             DungeonLayout.RoomBoundaryDescription boundary = requiredExteriorDoorBoundary(layout, levelZ, node.doorRef());
-            GridSegment2x boundarySegment2x = requiredExteriorDoor(layout, levelZ, node.doorRef()).anchorSegment2x();
-            CellCoord exteriorCell = boundary.roomCell().add(boundary.outwardDirection().delta());
+            GridSegment boundarySegment2x = requiredExteriorDoor(layout, levelZ, node.doorRef()).anchorSegment2x();
+            GridPoint exteriorCell = boundary.roomCell().add(boundary.outwardDirection().delta());
             return List.of(new CorridorRouting.AnchorAttachment(
                     exteriorCell,
-                    List.of(boundarySegment2x.midpoint(), GridPoint2x.cell(exteriorCell))));
+                    List.of(boundarySegment2x.midpoint(), GridPoint.cell(exteriorCell))));
         }
         return CorridorRouting.attachmentsForPoint(node.point2x(), blockedCells);
     }
@@ -987,8 +992,8 @@ public final class Corridor {
         return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
-    private static GridPoint2x doorAnchorPoint(CorridorNode node, int levelZ, DungeonLayout layout) {
-        GridSegment2x boundaryEdge = doorBoundaryEdge(node, levelZ, layout);
+    private static GridPoint doorAnchorPoint(CorridorNode node, int levelZ, DungeonLayout layout) {
+        GridSegment boundaryEdge = doorBoundaryEdge(node, levelZ, layout);
         return boundaryEdge == null ? null : boundaryEdge.midpoint();
     }
 
@@ -1021,7 +1026,7 @@ public final class Corridor {
         return new DoorRewriteBinding(reboundDoor.ref(), reboundDoor.anchorSegment2x().midpoint());
     }
 
-    private static GridSegment2x doorBoundaryEdge(CorridorNode node, int levelZ, DungeonLayout layout) {
+    private static GridSegment doorBoundaryEdge(CorridorNode node, int levelZ, DungeonLayout layout) {
         DungeonLayout.DoorDescription description = requiredExteriorDoor(layout, levelZ, node == null ? null : node.doorRef());
         return description.anchorSegment2x();
     }
@@ -1056,8 +1061,8 @@ public final class Corridor {
         return boundary;
     }
 
-    private static Set<GridSegment2x> doorSegments(Collection<Door> doors) {
-        LinkedHashSet<GridSegment2x> result = new LinkedHashSet<>();
+    private static Set<GridSegment> doorSegments(Collection<Door> doors) {
+        LinkedHashSet<GridSegment> result = new LinkedHashSet<>();
         for (Door door : doors == null ? List.<Door>of() : doors) {
             if (door != null) {
                 result.addAll(door.boundarySegments());
@@ -1097,7 +1102,7 @@ public final class Corridor {
 
     private record DoorRewriteBinding(
             DoorRef doorRef,
-            GridPoint2x anchorPoint
+            GridPoint anchorPoint
     ) {
     }
 }

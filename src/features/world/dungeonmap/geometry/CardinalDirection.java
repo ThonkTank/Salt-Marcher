@@ -1,16 +1,18 @@
-package features.world.dungeonmap.model.geometry;
+package features.world.dungeonmap.geometry;
+
+import java.util.Locale;
 
 public enum CardinalDirection {
-    NORTH(0, new CellCoord(0, -1), "Nord"),
-    EAST(1, new CellCoord(1, 0), "Ost"),
-    SOUTH(2, new CellCoord(0, 1), "Süd"),
-    WEST(3, new CellCoord(-1, 0), "West");
+    NORTH(0, new GridPoint(0, -1), "Nord"),
+    EAST(1, new GridPoint(1, 0), "Ost"),
+    SOUTH(2, new GridPoint(0, 1), "Süd"),
+    WEST(3, new GridPoint(-1, 0), "West");
 
     private final int code;
-    private final CellCoord delta;
+    private final GridPoint delta;
     private final String label;
 
-    CardinalDirection(int code, CellCoord delta, String label) {
+    CardinalDirection(int code, GridPoint delta, String label) {
         this.code = code;
         this.delta = delta;
         this.label = label;
@@ -20,7 +22,7 @@ public enum CardinalDirection {
         return code;
     }
 
-    public CellCoord delta() {
+    public GridPoint delta() {
         return delta;
     }
 
@@ -46,7 +48,7 @@ public enum CardinalDirection {
         };
     }
 
-    public String relativeLabel(CellCoord absoluteDirection) {
+    public String relativeLabel(GridPoint absoluteDirection) {
         CardinalDirection direction = fromDirection(absoluteDirection);
         if (direction == null) {
             return "Unklar";
@@ -72,7 +74,7 @@ public enum CardinalDirection {
             return defaultDirection();
         }
         try {
-            return CardinalDirection.valueOf(value.trim().toUpperCase(java.util.Locale.ROOT));
+            return CardinalDirection.valueOf(value.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException ignored) {
             return defaultDirection();
         }
@@ -87,7 +89,7 @@ public enum CardinalDirection {
         return defaultDirection();
     }
 
-    public static CardinalDirection fromDirection(CellCoord direction) {
+    public static CardinalDirection fromDirection(GridPoint direction) {
         if (direction == null) {
             return null;
         }
@@ -99,25 +101,7 @@ public enum CardinalDirection {
         return null;
     }
 
-    public static CardinalDirection fromTravel(CellCoord from, CellCoord to, CardinalDirection fallback) {
-        if (from == null || to == null) {
-            return fallback == null ? defaultDirection() : fallback;
-        }
-        int deltaX = to.x() - from.x();
-        int deltaY = to.y() - from.y();
-        if (deltaX == 0 && deltaY == 0) {
-            return fallback == null ? defaultDirection() : fallback;
-        }
-        if (Math.abs(deltaX) >= Math.abs(deltaY)) {
-            return deltaX >= 0 ? EAST : WEST;
-        }
-        return deltaY >= 0 ? SOUTH : NORTH;
-    }
-
-    public static CardinalDirection fromTravel(CubePoint from, CubePoint to, CardinalDirection fallback) {
-        if (from == null || to == null) {
-            return fallback == null ? defaultDirection() : fallback;
-        }
-        return fromTravel(from.projectedCell(), to.projectedCell(), fallback);
+    public static CardinalDirection fromTravel(GridPoint from, GridPoint to, CardinalDirection fallback) {
+        return GridPoint.fromTravel(from, to, fallback);
     }
 }

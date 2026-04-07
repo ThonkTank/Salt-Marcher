@@ -1,8 +1,8 @@
 package features.world.dungeonmap.shell.interaction;
 
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.GridPoint2x;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridSegment;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
 import features.world.dungeonmap.model.structures.corridor.CorridorNode;
@@ -48,7 +48,7 @@ public final class DungeonCorridorGraphHitSource implements DungeonHitSource {
             if (trace.traceId() == null || trace.path2x().isEmpty()) {
                 continue;
             }
-            Set<GridSegment2x> segments2x = Set.copyOf(trace.segments2x());
+            Set<GridSegment> segments2x = Set.copyOf(trace.segments2x());
             if (segments2x.isEmpty()) {
                 continue;
             }
@@ -62,7 +62,7 @@ public final class DungeonCorridorGraphHitSource implements DungeonHitSource {
         return List.copyOf(descriptors);
     }
 
-    private static GridPoint2x canonicalSegmentPoint(List<GridPoint2x> path2x) {
+    private static GridPoint canonicalSegmentPoint(List<GridPoint> path2x) {
         return path2x.get(path2x.size() / 2);
     }
 

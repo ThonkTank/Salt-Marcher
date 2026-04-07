@@ -7,9 +7,9 @@ import features.world.dungeonmap.application.stair.StairDraftResolver;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.GridPoint2x;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridSegment;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
@@ -179,7 +179,7 @@ public final class SelectionTool implements EditorTool {
             if (event == null || !event.isPrimaryButtonDown()) {
                 return false;
             }
-            CellCoord delta = event.gridCell().subtract(stairDragSession.pressCell());
+            GridPoint delta = event.gridCell().subtract(stairDragSession.pressCell());
             if (Objects.equals(delta, stairDragSession.currentDelta())) {
                 return true;
             }
@@ -213,8 +213,8 @@ public final class SelectionTool implements EditorTool {
             if (event == null || !event.isPrimaryButtonDown()) {
                 return false;
             }
-            GridPoint2x point2x = ctx == null || ctx.probe() == null
-                    ? GridPoint2x.cell(event.gridCell())
+            GridPoint point2x = ctx == null || ctx.probe() == null
+                    ? GridPoint.cell(event.gridCell())
                     : ctx.probe().probePoint2x();
             if (Objects.equals(point2x, corridorNodeDragSession.currentPoint())) {
                 return true;
@@ -227,8 +227,8 @@ public final class SelectionTool implements EditorTool {
             if (event == null || !event.isPrimaryButtonDown()) {
                 return false;
             }
-            GridPoint2x point2x = ctx == null || ctx.probe() == null
-                    ? GridPoint2x.cell(event.gridCell())
+            GridPoint point2x = ctx == null || ctx.probe() == null
+                    ? GridPoint.cell(event.gridCell())
                     : ctx.probe().probePoint2x();
             if (Objects.equals(point2x, corridorTileDragSession.currentPoint())) {
                 return true;
@@ -240,7 +240,7 @@ public final class SelectionTool implements EditorTool {
         if (dragSession == null || event == null || !event.isPrimaryButtonDown()) {
             return false;
         }
-        CellCoord delta = event.gridCell().subtract(dragSession.pressCell());
+        GridPoint delta = event.gridCell().subtract(dragSession.pressCell());
         if (Objects.equals(delta, dragSession.currentDelta())) {
             return true;
         }
@@ -316,7 +316,7 @@ public final class SelectionTool implements EditorTool {
         if (dragSession == null || event == null) {
             return false;
         }
-        CellCoord delta = event.gridCell().subtract(dragSession.pressCell());
+        GridPoint delta = event.gridCell().subtract(dragSession.pressCell());
         int levelDelta = dragSession.currentLevel() - dragSession.startLevel();
         Long mapId = dragSession.baseMap().mapId() > 0 ? dragSession.baseMap().mapId() : null;
         Long clusterId = dragSession.clusterId();
@@ -430,7 +430,7 @@ public final class SelectionTool implements EditorTool {
                 || ref instanceof DungeonSelectionRef.TransitionRef;
     }
 
-    private static DungeonSelectionRef corridorNodeRef(long corridorId, Long nodeId, GridPoint2x point2x) {
+    private static DungeonSelectionRef corridorNodeRef(long corridorId, Long nodeId, GridPoint point2x) {
         return new DungeonSelectionRef.CorridorNodeRef(corridorId, nodeId, point2x);
     }
 
@@ -628,7 +628,7 @@ public final class SelectionTool implements EditorTool {
         if (session == null) {
             return;
         }
-        CellCoord delta = session.currentDelta();
+        GridPoint delta = session.currentDelta();
         int levelDelta = session.currentLevel() - session.startLevel();
         Long mapId = session.baseMap().mapId() > 0 ? session.baseMap().mapId() : null;
         DungeonStairApplicationService.StairDraft movedDraft = movedStairDraft(session);
@@ -690,7 +690,7 @@ public final class SelectionTool implements EditorTool {
         if (doorRef == null) {
             return null;
         }
-        GridSegment2x anchorSegment2x = doorAnchorSegment(layout, doorRef);
+        GridSegment anchorSegment2x = doorAnchorSegment(layout, doorRef);
         if (anchorSegment2x == null) {
             return null;
         }
@@ -703,12 +703,12 @@ public final class SelectionTool implements EditorTool {
     private record ClusterDragSession(
             Long clusterId,
             DungeonLayout baseMap,
-            CellCoord pressCell,
-            CellCoord currentDelta,
+            GridPoint pressCell,
+            GridPoint currentDelta,
             int startLevel,
             int currentLevel
     ) {
-        private ClusterDragSession withCurrentDelta(CellCoord delta) {
+        private ClusterDragSession withCurrentDelta(GridPoint delta) {
             return new ClusterDragSession(clusterId, baseMap, pressCell, delta, startLevel, currentLevel);
         }
 
@@ -719,10 +719,10 @@ public final class SelectionTool implements EditorTool {
         private static ClusterDragSession start(
                 Long clusterId,
                 DungeonLayout baseMap,
-                CellCoord pressCell,
+                GridPoint pressCell,
                 int startLevel
         ) {
-                return new ClusterDragSession(clusterId, baseMap, pressCell, new CellCoord(0, 0), startLevel, startLevel);
+                return new ClusterDragSession(clusterId, baseMap, pressCell, new GridPoint(0, 0), startLevel, startLevel);
         }
     }
 
@@ -730,12 +730,12 @@ public final class SelectionTool implements EditorTool {
             long stairId,
             DungeonLayout baseMap,
             DungeonStairApplicationService.StairDraft baseDraft,
-            CellCoord pressCell,
-            CellCoord currentDelta,
+            GridPoint pressCell,
+            GridPoint currentDelta,
             int startLevel,
             int currentLevel
     ) {
-        private StairDragSession withCurrentDelta(CellCoord delta) {
+        private StairDragSession withCurrentDelta(GridPoint delta) {
             return new StairDragSession(stairId, baseMap, baseDraft, pressCell, delta, startLevel, currentLevel);
         }
 
@@ -747,7 +747,7 @@ public final class SelectionTool implements EditorTool {
                 long stairId,
                 DungeonLayout baseMap,
                 DungeonStairApplicationService.StairDraft baseDraft,
-                CellCoord pressCell,
+                GridPoint pressCell,
                 int startLevel
         ) {
             return new StairDragSession(
@@ -755,7 +755,7 @@ public final class SelectionTool implements EditorTool {
                     baseMap,
                     baseDraft,
                     pressCell,
-                    new CellCoord(0, 0),
+                    new GridPoint(0, 0),
                     startLevel,
                     startLevel);
         }
@@ -764,21 +764,21 @@ public final class SelectionTool implements EditorTool {
     private record CorridorNodeDragSession(
             long corridorId,
             Long nodeId,
-            GridPoint2x startPoint,
-            GridPoint2x currentPoint
+            GridPoint startPoint,
+            GridPoint currentPoint
     ) {
-        private CorridorNodeDragSession withCurrentPoint(GridPoint2x currentPoint) {
+        private CorridorNodeDragSession withCurrentPoint(GridPoint currentPoint) {
             return new CorridorNodeDragSession(corridorId, nodeId, startPoint, currentPoint);
         }
     }
 
     private record CorridorTileDragSession(
             long corridorId,
-            CellCoord tileCell,
-            GridPoint2x startPoint,
-            GridPoint2x currentPoint
+            GridPoint tileCell,
+            GridPoint startPoint,
+            GridPoint currentPoint
     ) {
-        private CorridorTileDragSession withCurrentPoint(GridPoint2x currentPoint) {
+        private CorridorTileDragSession withCurrentPoint(GridPoint currentPoint) {
             return new CorridorTileDragSession(corridorId, tileCell, startPoint, currentPoint);
         }
     }
@@ -788,7 +788,7 @@ public final class SelectionTool implements EditorTool {
             int levelZ,
             Long clusterId,
             Long corridorId,
-            GridSegment2x sourceBoundarySegment2x,
+            GridSegment sourceBoundarySegment2x,
             DungeonSelectionRef.RoomBoundaryRef targetBoundaryRef
     ) {
         private DoorDragSession withTargetBoundaryRef(DungeonSelectionRef.RoomBoundaryRef targetBoundaryRef) {
@@ -825,7 +825,7 @@ public final class SelectionTool implements EditorTool {
 
     }
 
-    private static GridSegment2x doorAnchorSegment(DungeonLayout layout, DungeonSelectionRef.DoorRef doorRef) {
+    private static GridSegment doorAnchorSegment(DungeonLayout layout, DungeonSelectionRef.DoorRef doorRef) {
         DungeonLayout resolvedLayout = layout;
         if (resolvedLayout == null || doorRef == null) {
             return null;

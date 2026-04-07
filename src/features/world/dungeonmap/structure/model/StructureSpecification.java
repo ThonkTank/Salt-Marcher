@@ -1,6 +1,6 @@
 package features.world.dungeonmap.structure.model;
 
-import features.world.dungeonmap.model.geometry.CellCoord;
+import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.structure.model.boundary.door.Door;
 import features.world.dungeonmap.structure.model.boundary.wall.Wall;
 
@@ -47,9 +47,9 @@ public record StructureSpecification(Map<Integer, LevelSpecification> levelsByZ)
     }
 
     public record LevelSpecification(
-            CellCoord anchorCell,
-            Set<CellCoord> surfaceCells,
-            Set<CellCoord> floorCells,
+            GridPoint anchorCell,
+            Set<GridPoint> surfaceCells,
+            Set<GridPoint> floorCells,
             List<Door> doors,
             List<Wall> walls
     ) {
@@ -61,9 +61,9 @@ public record StructureSpecification(Map<Integer, LevelSpecification> levelsByZ)
         }
 
         public static LevelSpecification of(
-                CellCoord anchorCell,
-                Collection<CellCoord> surfaceCells,
-                Collection<CellCoord> floorCells,
+                GridPoint anchorCell,
+                Collection<GridPoint> surfaceCells,
+                Collection<GridPoint> floorCells,
                 Collection<Door> doors,
                 Collection<Wall> walls
         ) {
@@ -79,12 +79,12 @@ public record StructureSpecification(Map<Integer, LevelSpecification> levelsByZ)
             return surfaceCells.isEmpty();
         }
 
-        private static Set<CellCoord> normalizedCells(Collection<CellCoord> cells) {
+        private static Set<GridPoint> normalizedCells(Collection<GridPoint> cells) {
             if (cells == null || cells.isEmpty()) {
                 return Set.of();
             }
-            LinkedHashSet<CellCoord> result = new LinkedHashSet<>();
-            for (CellCoord cell : cells) {
+            LinkedHashSet<GridPoint> result = new LinkedHashSet<>();
+            for (GridPoint cell : cells) {
                 if (cell != null) {
                     result.add(cell);
                 }

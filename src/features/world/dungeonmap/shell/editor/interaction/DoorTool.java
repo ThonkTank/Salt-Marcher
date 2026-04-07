@@ -4,7 +4,7 @@ import features.world.dungeonmap.application.room.DungeonRoomApplicationService;
 import features.world.dungeonmap.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeonmap.loading.DungeonMapLoadingService;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.geometry.GridSegment;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
 import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeonmap.model.structures.cluster.RoomCluster;
@@ -224,7 +224,7 @@ public final class DoorTool implements EditorTool {
             if (exteriorDoor == null) {
                 return false;
             }
-            Room room = layout.findRoom(exteriorDoor.roomId());
+            Room room = findRoom(layout, exteriorDoor.roomId());
             if (room == null) {
                 return false;
             }
@@ -243,7 +243,7 @@ public final class DoorTool implements EditorTool {
         return true;
     }
 
-    private void createLocalDoor(Long clusterId, int levelZ, GridSegment2x segment2x, GridSegment2x followUpSegment2x) {
+    private void createLocalDoor(Long clusterId, int levelZ, GridSegment segment2x, GridSegment followUpSegment2x) {
         Long mapId = mapState.activeMapId();
         if (mapId == null || clusterId == null || segment2x == null) {
             return;
@@ -267,7 +267,7 @@ public final class DoorTool implements EditorTool {
                 throwable -> UiErrorReporter.reportBackgroundFailure("DoorTool.createLocalDoor()", throwable));
     }
 
-    private void deleteLocalDoor(Long clusterId, int levelZ, GridSegment2x segment2x) {
+    private void deleteLocalDoor(Long clusterId, int levelZ, GridSegment segment2x) {
         Long mapId = mapState.activeMapId();
         if (mapId == null || clusterId == null || segment2x == null) {
             return;
@@ -282,7 +282,7 @@ public final class DoorTool implements EditorTool {
                 throwable -> UiErrorReporter.reportBackgroundFailure("DoorTool.deleteLocalDoor()", throwable));
     }
 
-    private void createExteriorDoor(Long clusterId, int levelZ, GridSegment2x segment2x, GridSegment2x followUpSegment2x) {
+    private void createExteriorDoor(Long clusterId, int levelZ, GridSegment segment2x, GridSegment followUpSegment2x) {
         Long mapId = mapState.activeMapId();
         if (mapId == null || clusterId == null || segment2x == null) {
             return;
@@ -306,7 +306,7 @@ public final class DoorTool implements EditorTool {
                 throwable -> UiErrorReporter.reportBackgroundFailure("DoorTool.createExteriorDoor()", throwable));
     }
 
-    private void deleteExteriorDoor(Long clusterId, int levelZ, GridSegment2x segment2x) {
+    private void deleteExteriorDoor(Long clusterId, int levelZ, GridSegment segment2x) {
         Long mapId = mapState.activeMapId();
         if (mapId == null || clusterId == null || segment2x == null) {
             return;
@@ -333,7 +333,7 @@ public final class DoorTool implements EditorTool {
     private void renderExteriorDoorPane(DungeonSelectionRef.DoorRef doorRef) {
         DungeonLayout layout = mapState.activeMap();
         DungeonLayout.DoorDescription description = layout.describeDoor(doorRef);
-        Room room = description == null ? null : layout.findRoom(description.roomId());
+        Room room = description == null ? null : findRoom(layout, description.roomId());
         summaryLabel.setText("Außentür");
         detailLabel.setText(room == null ? "Raum" : roomName(room.roomId()));
         metaLabel.setText(segmentText(description == null ? null : description.anchorSegment2x()));
@@ -402,13 +402,26 @@ public final class DoorTool implements EditorTool {
     }
 
     private String roomName(Long roomId) {
-        Room room = roomId == null ? null : mapState.activeMap().findRoom(roomId);
+        Room room = findRoom(mapState.activeMap(), roomId);
         return room == null || room.name() == null || room.name().isBlank()
                 ? "Raum " + roomId
                 : room.name();
     }
 
-    private static String segmentText(GridSegment2x segment2x) {
+    private static Room findRoom(DungeonLayout layout, Long roomId) {
+        if (layout == null || roomId == null) {
+            return null;
+        }
+        for (RoomCluster cluster : layout.clusters()) {
+            Room room = cluster == null ? null : cluster.structure().roomTopology().findRoom(roomId);
+            if (room != null) {
+                return room;
+            }
+        }
+        return null;
+    }
+
+    private static String segmentText(GridSegment segment2x) {
         if (segment2x == null) {
             return "";
         }

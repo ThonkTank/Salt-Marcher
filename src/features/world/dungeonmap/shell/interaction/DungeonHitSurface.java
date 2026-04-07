@@ -1,8 +1,8 @@
 package features.world.dungeonmap.shell.interaction;
 
-import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.GridPoint2x;
-import features.world.dungeonmap.model.geometry.GridSegment2x;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridSegment;
 import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
 
@@ -18,19 +18,19 @@ public sealed interface DungeonHitSurface permits DungeonHitSurface.CellSurface,
 
     int levelZ();
 
-    record CellSurface(Set<CellCoord> cells, int levelZ) implements DungeonHitSurface {
+    record CellSurface(Set<GridPoint> cells, int levelZ) implements DungeonHitSurface {
         public CellSurface {
             cells = normalizedMembers(cells);
         }
     }
 
-    record SegmentSurface(Set<GridSegment2x> segments2x, int levelZ) implements DungeonHitSurface {
+    record SegmentSurface(Set<GridSegment> segments2x, int levelZ) implements DungeonHitSurface {
         public SegmentSurface {
             segments2x = normalizedMembers(segments2x);
         }
     }
 
-    record PointSurface(Set<GridPoint2x> points2x, int levelZ) implements DungeonHitSurface {
+    record PointSurface(Set<GridPoint> points2x, int levelZ) implements DungeonHitSurface {
         public PointSurface {
             points2x = normalizedMembers(points2x);
         }

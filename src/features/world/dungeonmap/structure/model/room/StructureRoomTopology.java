@@ -1,7 +1,7 @@
 package features.world.dungeonmap.structure.model.room;
 
-import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.model.structures.connection.DungeonConnection;
 import features.world.dungeonmap.model.structures.room.Room;
 import features.world.dungeonmap.structure.model.Structure;
@@ -104,7 +104,7 @@ public final class StructureRoomTopology {
         return derive(mapId, clusterId, structure, rooms());
     }
 
-    public StructureRoomTopology translatedBy(CellCoord delta, int levelDelta, Structure movedStructure) {
+    public StructureRoomTopology translatedBy(GridPoint delta, int levelDelta, Structure movedStructure) {
         return derive(
                 mapId,
                 clusterId,
@@ -141,7 +141,7 @@ public final class StructureRoomTopology {
         return structureFor(roomId).primaryLevel();
     }
 
-    public List<Integer> roomRelevantLevels(Room room, CellCoord focusCell, int focusLevelZ) {
+    public List<Integer> roomRelevantLevels(Room room, GridPoint focusCell, int focusLevelZ) {
         Structure roomStructure = structureFor(room);
         if (focusCell != null && roomStructure.surfaceAtLevel(focusLevelZ).surface().contains(focusCell)) {
             return List.of(focusLevelZ);
@@ -163,15 +163,15 @@ public final class StructureRoomTopology {
         return projectionIndex.containsRoom(roomId);
     }
 
-    public Room roomAt(CellCoord cell, int levelZ) {
+    public Room roomAt(GridPoint cell, int levelZ) {
         return projectionIndex.roomAt(cell, levelZ);
     }
 
-    public Room roomAt(CubePoint point) {
+    public Room roomAt(GridPoint point) {
         return projectionIndex.roomAt(point);
     }
 
-    public Set<CubePoint> cubePoints() {
+    public Set<GridPoint> cubePoints() {
         return projectionIndex.cubePoints();
     }
 
@@ -197,7 +197,7 @@ public final class StructureRoomTopology {
         return graph.componentContaining(roomId);
     }
 
-    public Set<Long> componentContaining(CellCoord cell, int levelZ) {
+    public Set<Long> componentContaining(GridPoint cell, int levelZ) {
         Room room = roomAt(cell, levelZ);
         return room == null ? Set.of() : componentContaining(room.roomId());
     }

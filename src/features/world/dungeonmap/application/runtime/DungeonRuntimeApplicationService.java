@@ -6,9 +6,9 @@ import features.campaignstate.api.CampaignStateReadApi;
 import features.campaignstate.api.DungeonTilePosition;
 import features.world.dungeonmap.loading.DungeonMapLoadResolver;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.CardinalDirection;
-import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.geometry.CardinalDirection;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeonmap.model.structures.transition.DungeonTransition;
 import features.world.dungeonmap.model.structures.transition.DungeonTransitionDestination;
@@ -59,7 +59,7 @@ public final class DungeonRuntimeApplicationService {
 
     public DungeonRuntimeNavigationSnapshot resolveNavigation(
             DungeonLayout layout,
-            CellCoord preferredCell,
+            GridPoint preferredCell,
             int preferredLevelZ,
             CardinalDirection preferredHeading
     ) {
@@ -67,7 +67,7 @@ public final class DungeonRuntimeApplicationService {
             return DungeonRuntimeNavigationSnapshot.empty();
         }
         CardinalDirection resolvedHeading = normalizeHeading(preferredHeading);
-        CellCoord resolvedCell = nearestTraversableCell(layout, preferredCell, preferredLevelZ);
+        GridPoint resolvedCell = nearestTraversableCell(layout, preferredCell, preferredLevelZ);
         return resolvedCell == null
                 ? defaultNavigation(layout, resolvedHeading)
                 : navigationSnapshot(layout.mapId(), resolvedCell, preferredLevelZ, resolvedHeading);
@@ -76,13 +76,13 @@ public final class DungeonRuntimeApplicationService {
     public DungeonRuntimeNavigationSnapshot navigateToCell(
             DungeonLayout layout,
             DungeonRuntimeNavigationSnapshot currentNavigation,
-            CellCoord cell,
+            GridPoint cell,
             int levelZ
     ) throws SQLException {
         if (layout == null || layout.mapId() <= 0) {
             throw new SQLException("Kein aktiver Dungeon geladen");
         }
-        CellCoord resolvedCell = nearestTraversableCell(layout, cell, levelZ);
+        GridPoint resolvedCell = nearestTraversableCell(layout, cell, levelZ);
         if (resolvedCell == null) {
             throw new SQLException("Kein begehbares Dungeon-Feld gefunden");
         }
@@ -139,7 +139,7 @@ public final class DungeonRuntimeApplicationService {
             DungeonRuntimeAction.CellTarget target,
             DungeonRuntimeNavigationSnapshot currentNavigation
     ) throws SQLException {
-        CellCoord resolvedCell = nearestTraversableCell(layout, target.cell(), target.levelZ());
+        GridPoint resolvedCell = nearestTraversableCell(layout, target.cell(), target.levelZ());
         if (resolvedCell == null) {
             throw new SQLException("Ziel ist nicht begehbar");
         }
@@ -169,7 +169,7 @@ public final class DungeonRuntimeApplicationService {
         if (traversalTarget == null || traversalTarget.transitionId() != null) {
             throw new SQLException("Ziel hinter der Verbindung ist nicht begehbar");
         }
-        CellCoord resolvedCell = nearestTraversableCell(layout, traversalTarget.cell(), traversalTarget.levelZ());
+        GridPoint resolvedCell = nearestTraversableCell(layout, traversalTarget.cell(), traversalTarget.levelZ());
         if (resolvedCell == null) {
             throw new SQLException("Ziel hinter der Verbindung ist nicht begehbar");
         }
@@ -228,13 +228,13 @@ public final class DungeonRuntimeApplicationService {
             throw new SQLException("Ziel-Übergang konnte nicht aufgelöst werden");
         }
         DungeonTransition targetTransition = layout.findTransition(transitionId);
-        CubePoint entryPoint = targetTransition == null || targetTransition.localConnection() == null
+        GridPoint entryPoint = targetTransition == null || targetTransition.localConnection() == null
                 ? null
                 : targetTransition.localConnection().entryPoint(layout);
         if (targetTransition == null || entryPoint == null) {
             throw new SQLException("Ziel-Übergang ist nicht platziert");
         }
-        CellCoord resolvedCell = nearestTraversableCell(
+        GridPoint resolvedCell = nearestTraversableCell(
                 layout,
                 entryPoint.projectedCell(),
                 entryPoint.z());
@@ -260,13 +260,13 @@ public final class DungeonRuntimeApplicationService {
         if (layout == null || layout.mapId() <= 0) {
             return DungeonRuntimeNavigationSnapshot.empty();
         }
-        CubePoint fallback = layout.defaultRuntimePosition();
+        GridPoint fallback = layout.defaultRuntimePosition();
         return fallback == null
                 ? DungeonRuntimeNavigationSnapshot.empty()
                 : navigationSnapshot(layout.mapId(), fallback.projectedCell(), fallback.z(), heading);
     }
 
-    private CellCoord nearestTraversableCell(DungeonLayout layout, CellCoord preferredCell, int preferredLevelZ) {
+    private GridPoint nearestTraversableCell(DungeonLayout layout, GridPoint preferredCell, int preferredLevelZ) {
         if (layout == null || layout.mapId() <= 0 || preferredCell == null) {
             return null;
         }
@@ -275,7 +275,7 @@ public final class DungeonRuntimeApplicationService {
 
     private DungeonRuntimeNavigationSnapshot persistNavigation(
             long mapId,
-            CellCoord cell,
+            GridPoint cell,
             int levelZ,
             CardinalDirection heading
     ) throws SQLException {
@@ -300,11 +300,11 @@ public final class DungeonRuntimeApplicationService {
 
     // Only concrete stored tiles are valid runtime truth. Incomplete rows resolve via the layout fallback and the
     // repair path writes back the resolved tile, rather than keeping alternate location encodings alive.
-    private static CellCoord storedCell(DungeonTilePosition storedPosition) {
+    private static GridPoint storedCell(DungeonTilePosition storedPosition) {
         if (storedPosition == null || storedPosition.cellX() == null || storedPosition.cellY() == null) {
             return null;
         }
-        return new CellCoord(storedPosition.cellX(), storedPosition.cellY());
+        return new GridPoint(storedPosition.cellX(), storedPosition.cellY());
     }
 
     private static int storedLevel(DungeonTilePosition storedPosition) {
@@ -317,7 +317,7 @@ public final class DungeonRuntimeApplicationService {
 
     private static DungeonRuntimeNavigationSnapshot navigationSnapshot(
             long mapId,
-            CellCoord cell,
+            GridPoint cell,
             int levelZ,
             CardinalDirection heading
     ) {

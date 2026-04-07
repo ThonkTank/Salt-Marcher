@@ -3,8 +3,9 @@ package features.world.dungeonmap.application.transition;
 import features.world.dungeonmap.application.stair.DungeonStairApplicationService;
 import features.world.dungeonmap.application.stair.StairDraftResolver;
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.CubePoint;
+import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.model.interaction.DungeonSelectionRef;
+import features.world.dungeonmap.model.structures.cluster.RoomCluster;
 import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeonmap.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeonmap.model.structures.connection.ConnectionKind;
@@ -117,11 +118,11 @@ public final class TransitionConnectionBuilder {
     private static List<ConnectionEndpoint> stairEndpoints(
             DungeonLayout layout,
             Long transitionId,
-            features.world.dungeonmap.model.geometry.CellCoord anchorCell,
+            features.world.dungeonmap.geometry.GridPoint anchorCell,
             int anchorLevelZ
     ) {
         LinkedHashSet<ConnectionEndpoint> endpoints = new LinkedHashSet<>();
-        Room room = layout == null ? null : layout.roomWithFloorAtCell(anchorCell, anchorLevelZ);
+        Room room = roomWithFloorAtCell(layout, anchorCell, anchorLevelZ);
         if (room != null && room.roomId() != null) {
             endpoints.add(ConnectionEndpoint.room(room.roomId()));
         }
@@ -134,7 +135,7 @@ public final class TransitionConnectionBuilder {
             DungeonConnection candidate,
             Long ignoredTransitionId
     ) {
-        Set<CubePoint> occupiedPositions = candidate == null ? Set.of() : candidate.occupiedPositions(layout);
+        Set<GridPoint> occupiedPositions = candidate == null ? Set.of() : candidate.occupiedPositions(layout);
         if (layout == null || occupiedPositions.isEmpty()) {
             return;
         }
@@ -155,5 +156,17 @@ public final class TransitionConnectionBuilder {
             features.world.dungeonmap.model.structures.connection.Connection existingConnection
     ) {
         return existingConnection != null;
+    }
+
+    private static Room roomWithFloorAtCell(
+            DungeonLayout layout,
+            GridPoint cell,
+            int levelZ
+    ) {
+        RoomCluster cluster = layout == null ? null : layout.clusterAtCell(cell, levelZ);
+        Room room = cluster == null ? null : cluster.structure().roomTopology().roomAt(cell, levelZ);
+        return room != null && cluster.structure().roomTopology().structureFor(room).surfaceAtLevel(levelZ).floor().contains(cell)
+                ? room
+                : null;
     }
 }

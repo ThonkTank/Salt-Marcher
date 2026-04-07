@@ -1,8 +1,8 @@
 package features.world.dungeonmap.model.structures.stair;
 
-import features.world.dungeonmap.model.geometry.CellCoord;
-import features.world.dungeonmap.model.geometry.CubePoint;
-import features.world.dungeonmap.model.geometry.TilePath;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridPoint;
+import features.world.dungeonmap.geometry.GridPath;
 
 import java.util.Collections;
 import java.util.Comparator;
@@ -13,34 +13,34 @@ import java.util.Set;
 /**
  * Passive stair object over canonical ordered path topology.
  */
-public final class Stair extends TilePath {
+public final class Stair extends GridPath {
 
     private final Set<Integer> stopLevels;
     private final List<StairExit> exits;
 
-    public Stair(List<CubePoint> path, Set<Integer> stopLevels) {
+    public Stair(List<GridPoint> path, Set<Integer> stopLevels) {
         super(normalizePath(path));
         this.stopLevels = normalizeStopLevels(points(), stopLevels);
         this.exits = deriveExits(points(), this.stopLevels);
     }
 
-    public Stair(TilePath path, Set<Integer> stopLevels) {
+    public Stair(GridPath path, Set<Integer> stopLevels) {
         this(path == null ? List.of() : path.points(), stopLevels);
     }
 
-    public static Stair of(List<CubePoint> path, Set<Integer> stopLevels) {
+    public static Stair of(List<GridPoint> path, Set<Integer> stopLevels) {
         return new Stair(path, stopLevels);
     }
 
-    public static Stair of(TilePath path, Set<Integer> stopLevels) {
+    public static Stair of(GridPath path, Set<Integer> stopLevels) {
         return new Stair(path, stopLevels);
     }
 
-    public TilePath tilePath() {
+    public GridPath tilePath() {
         return this;
     }
 
-    public List<CubePoint> path() {
+    public List<GridPoint> path() {
         return points();
     }
 
@@ -56,7 +56,7 @@ public final class Stair extends TilePath {
         return levels();
     }
 
-    public Set<CubePoint> occupiedPositions() {
+    public Set<GridPoint> occupiedPositions() {
         return pointSet();
     }
 
@@ -66,8 +66,8 @@ public final class Stair extends TilePath {
                 .toList();
     }
 
-    public Stair movedBy(CellCoord delta, int levelDelta) {
-        CellCoord resolvedDelta = delta == null ? new CellCoord(0, 0) : delta;
+    public Stair movedBy(GridPoint delta, int levelDelta) {
+        GridPoint resolvedDelta = delta == null ? new GridPoint(0, 0) : delta;
         if ((resolvedDelta.x() == 0 && resolvedDelta.y() == 0) && levelDelta == 0) {
             return this;
         }
@@ -77,9 +77,9 @@ public final class Stair extends TilePath {
         return Stair.of(translatedBy(resolvedDelta, levelDelta), translatedStops);
     }
 
-    private static List<CubePoint> normalizePath(List<CubePoint> path) {
-        java.util.ArrayList<CubePoint> result = new java.util.ArrayList<>();
-        for (CubePoint node : path == null ? List.<CubePoint>of() : path) {
+    private static List<GridPoint> normalizePath(List<GridPoint> path) {
+        java.util.ArrayList<GridPoint> result = new java.util.ArrayList<>();
+        for (GridPoint node : path == null ? List.<GridPoint>of() : path) {
             if (node != null) {
                 result.add(node);
             }
@@ -88,8 +88,8 @@ public final class Stair extends TilePath {
             throw new IllegalArgumentException("Treppenpfad fehlt");
         }
         LinkedHashSet<Integer> seenLevels = new LinkedHashSet<>();
-        CubePoint previous = null;
-        for (CubePoint current : result) {
+        GridPoint previous = null;
+        for (GridPoint current : result) {
             if (!seenLevels.add(current.z())) {
                 throw new IllegalArgumentException("Treppenpfad darf jede Ebene nur einmal belegen");
             }
@@ -107,9 +107,9 @@ public final class Stair extends TilePath {
         return List.copyOf(result);
     }
 
-    private static Set<Integer> normalizeStopLevels(List<CubePoint> path, Set<Integer> stopLevels) {
+    private static Set<Integer> normalizeStopLevels(List<GridPoint> path, Set<Integer> stopLevels) {
         LinkedHashSet<Integer> reachableLevels = new LinkedHashSet<>();
-        for (CubePoint node : path) {
+        for (GridPoint node : path) {
             reachableLevels.add(node.z());
         }
         LinkedHashSet<Integer> normalizedStops = new LinkedHashSet<>();
@@ -128,18 +128,18 @@ public final class Stair extends TilePath {
     }
 
     private static List<StairExit> deriveExits(
-            List<CubePoint> path,
+            List<GridPoint> path,
             Set<Integer> stopLevels
     ) {
-        LinkedHashSet<CubePoint> exitPositions = new LinkedHashSet<>();
-        for (CubePoint node : path) {
+        LinkedHashSet<GridPoint> exitPositions = new LinkedHashSet<>();
+        for (GridPoint node : path) {
             if (stopLevels.contains(node.z())) {
                 exitPositions.add(node);
             }
         }
         return exitPositions.stream()
-                .sorted(Comparator.comparing(CubePoint::z)
-                        .thenComparing(CubePoint.POINT_ORDER))
+                .sorted(Comparator.comparing(GridPoint::z)
+                        .thenComparing(GridPoint.POINT_ORDER))
                 .map(position -> new StairExit(position, null))
                 .toList();
     }

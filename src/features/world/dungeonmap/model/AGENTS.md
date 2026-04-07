@@ -4,7 +4,7 @@ This file covers `src/features/world/dungeonmap/model/`.
 
 ## Purpose
 
-`model` owns dungeon layout, geometry, interaction refs, and aggregate-specific dungeon semantics.
+`model` owns dungeon layout, interaction refs, and aggregate-specific dungeon semantics. Shared grid algebra now lives in the sibling `geometry` slice and is consumed here as immutable value types.
 
 ## Canonical Types and APIs
 
@@ -16,7 +16,7 @@ This file covers `src/features/world/dungeonmap/model/`.
 ## Where New Code Goes
 
 - Put new dungeon semantics on the lowest stable model owner that enforces the invariant.
-- Put shared geometry behavior in `geometry/` only when it is owner-neutral and canonical.
+- Put shared geometry behavior in the sibling `geometry/` slice only when it is owner-neutral and canonical.
 - Let `RoomCluster` and `Corridor` consume surface truth only through `Structure.surfaceAtLevel(levelZ).surface()` or `.floor()`, and boundary truth only through `Structure.boundaryAtLevel(levelZ)`.
 - When room or corridor workflows need to create or mutate physical structure, translate that request into `StructureSpecification` or `StructureMutation` and let `Structure` own the result.
 - End traversability, runtime, and exit semantics on `floor()`. Use `surface()` only when the caller explicitly means owned area or projection footprint rather than walkable truth.

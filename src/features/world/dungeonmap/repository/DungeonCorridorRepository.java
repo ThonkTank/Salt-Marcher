@@ -1,7 +1,7 @@
 package features.world.dungeonmap.repository;
 
 import features.world.dungeonmap.model.DungeonLayout;
-import features.world.dungeonmap.model.geometry.GridPoint2x;
+import features.world.dungeonmap.geometry.GridPoint;
 import features.world.dungeonmap.structure.model.Structure;
 import features.world.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeonmap.model.structures.corridor.Corridor;
@@ -218,7 +218,7 @@ public final class DungeonCorridorRepository {
                     continue;
                 }
                 for (int index = 0; index < trace.path2x().size(); index++) {
-                    GridPoint2x point2x = trace.path2x().get(index);
+                    GridPoint point2x = trace.path2x().get(index);
                     insert.setLong(1, segment.segmentId());
                     insert.setInt(2, index);
                     insert.setInt(3, point2x.x2());
@@ -362,7 +362,7 @@ public final class DungeonCorridorRepository {
         }
         result.sort(Comparator
                 .comparing((CorridorNode node) -> node.nodeId() == null ? Long.MAX_VALUE : node.nodeId())
-                .thenComparing(CorridorNode::point2x, GridPoint2x.ORDER));
+                .thenComparing(CorridorNode::point2x, GridPoint.ORDER));
         return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
@@ -387,7 +387,7 @@ public final class DungeonCorridorRepository {
         Long doorId = nullableLong(row, "door_id");
         return new CorridorNode(
                 row.getLong("corridor_node_id"),
-                GridPoint2x.raw(row.getInt("grid_x2"), row.getInt("grid_y2")),
+                GridPoint.raw(row.getInt("grid_x2"), row.getInt("grid_y2")),
                 doorId == null ? null : new DoorRef(doorId));
     }
 
@@ -408,7 +408,7 @@ public final class DungeonCorridorRepository {
                 }
             }
         }
-        Map<Long, LinkedHashMap<Long, ArrayList<GridPoint2x>>> pointsByCorridorAndSegment = new LinkedHashMap<>();
+        Map<Long, LinkedHashMap<Long, ArrayList<GridPoint>>> pointsByCorridorAndSegment = new LinkedHashMap<>();
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT segment.corridor_id, point.corridor_segment_id, point.grid_x2, point.grid_y2"
                         + " FROM dungeon_corridor_path_points point"
@@ -421,14 +421,14 @@ public final class DungeonCorridorRepository {
                     pointsByCorridorAndSegment
                             .computeIfAbsent(rs.getLong("corridor_id"), ignored -> new LinkedHashMap<>())
                             .computeIfAbsent(rs.getLong("corridor_segment_id"), ignored -> new ArrayList<>())
-                            .add(GridPoint2x.raw(rs.getInt("grid_x2"), rs.getInt("grid_y2")));
+                            .add(GridPoint.raw(rs.getInt("grid_x2"), rs.getInt("grid_y2")));
                 }
             }
         }
         Map<Long, List<CorridorPathTrace>> result = new LinkedHashMap<>();
-        for (Map.Entry<Long, LinkedHashMap<Long, ArrayList<GridPoint2x>>> corridorEntry : pointsByCorridorAndSegment.entrySet()) {
+        for (Map.Entry<Long, LinkedHashMap<Long, ArrayList<GridPoint>>> corridorEntry : pointsByCorridorAndSegment.entrySet()) {
             List<CorridorPathTrace> traces = new ArrayList<>();
-            for (Map.Entry<Long, ArrayList<GridPoint2x>> segmentEntry : corridorEntry.getValue().entrySet()) {
+            for (Map.Entry<Long, ArrayList<GridPoint>> segmentEntry : corridorEntry.getValue().entrySet()) {
                 CorridorSegment segment = segmentsById.get(segmentEntry.getKey());
                 if (segment == null) {
                     throw new SQLException("Missing corridor segment " + segmentEntry.getKey() + " for persisted path trace");
