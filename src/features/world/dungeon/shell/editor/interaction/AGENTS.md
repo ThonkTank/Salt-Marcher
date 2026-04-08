@@ -19,6 +19,7 @@ This file covers `src/features/world/dungeon/shell/editor/interaction/`.
 - Put shared editor interaction policy here only when it is genuinely cross-tool.
 - Keep shared state narrow: selection, explicit hover intent, and previews needed by multiple tools.
 - Keep preview payloads carrier-based: `EditorPreview.PaintPreview` carries `GridArea`, `EditorPreview.BoundaryPreview` carries `GridSegmentPath`, and renderers unwrap raw cells or segments only at the leaf.
+- Keep tool-local support helpers package-private when only this package consumes them; crossing a package boundary is the threshold for a public shell helper seam.
 
 ## Forbidden Drift
 

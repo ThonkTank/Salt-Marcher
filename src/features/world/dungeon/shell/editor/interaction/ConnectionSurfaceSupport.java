@@ -3,7 +3,7 @@ package features.world.dungeon.shell.editor.interaction;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 
-public final class ConnectionSurfaceSupport {
+final class ConnectionSurfaceSupport {
 
     private ConnectionSurfaceSupport() {
         throw new AssertionError("No instances");

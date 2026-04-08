@@ -1,4 +1,4 @@
-package features.world.dungeon.shell.interaction;
+package features.world.dungeon.shell.runtime;
 
 import features.world.dungeon.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
@@ -7,9 +7,9 @@ import features.world.dungeon.model.structures.transition.DungeonTransition;
 
 import java.util.Objects;
 
-public final class DungeonPlacementValidator {
+final class DungeonPlacementValidator {
 
-    public sealed interface PlacementResult permits PlacementResult.Valid, PlacementResult.Invalid {
+    sealed interface PlacementResult permits PlacementResult.Valid, PlacementResult.Invalid {
 
         record Valid(GridPoint cell, int level) implements PlacementResult {
             public Valid {
@@ -25,7 +25,7 @@ public final class DungeonPlacementValidator {
         }
     }
 
-    public PlacementResult validateTraversable(
+    PlacementResult validateTraversable(
             DungeonMap layout,
             DungeonCanvasPointerEvent event,
             int level
@@ -36,7 +36,7 @@ public final class DungeonPlacementValidator {
         return validateTraversable(layout, event.gridCell(), level);
     }
 
-    public PlacementResult validateTraversable(
+    PlacementResult validateTraversable(
             DungeonMap layout,
             GridPoint cell,
             int level
@@ -50,7 +50,7 @@ public final class DungeonPlacementValidator {
         return new PlacementResult.Valid(cell, level);
     }
 
-    public PlacementResult validateTransitionPlacement(
+    PlacementResult validateTransitionPlacement(
             DungeonMap layout,
             GridPoint cell,
             int level,

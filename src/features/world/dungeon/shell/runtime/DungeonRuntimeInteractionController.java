@@ -11,7 +11,6 @@ import features.world.dungeon.shell.interaction.DungeonDragService;
 import features.world.dungeon.shell.interaction.DungeonHitCollector;
 import features.world.dungeon.shell.interaction.DungeonHitProbe;
 import features.world.dungeon.shell.interaction.DungeonHitSnapshot;
-import features.world.dungeon.shell.interaction.DungeonPlacementValidator;
 import features.world.dungeon.dungeonmap.state.DungeonMapState;
 import features.world.dungeon.state.DungeonRuntimeState;
 
