@@ -6,13 +6,13 @@ public record WorldTravelSurface(
         java.util.function.Consumer<DungeonTravelPresentation> showDungeonTravelAction
 ) {
 
-    record DungeonTravelAction(String label, Runnable action) {
+    public record DungeonTravelAction(String label, Runnable action) {
         public DungeonTravelAction {
             label = label == null || label.isBlank() ? "Aktion" : label.trim();
         }
     }
 
-    record DungeonTravelPresentation(
+    public record DungeonTravelPresentation(
             String mapName,
             String areaLabel,
             String cellLabel,
