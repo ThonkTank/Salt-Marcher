@@ -43,7 +43,7 @@ public final class NavigateTask {
                 input.mapId(),
                 input.cell(),
                 input.levelZ(),
-                features.world.dungeon.geometry.CardinalDirection.parse(input.heading()));
+                heading(input.heading()));
     }
 
     private static features.world.dungeon.application.runtime.DungeonRuntimeAction toRuntimeAction(
@@ -55,7 +55,7 @@ public final class NavigateTask {
                     new features.world.dungeon.application.runtime.DungeonRuntimeAction.CellTarget(
                             input.requireCellTarget(),
                             input.levelZ(),
-                            features.world.dungeon.geometry.CardinalDirection.parse(input.resolvedHeadingOverride())));
+                            heading(input.resolvedHeadingOverride())));
         }
         if (input.isDoorAction()) {
             return runtimeAction(
@@ -101,5 +101,9 @@ public final class NavigateTask {
             features.world.dungeon.dungeonmap.application.DungeonMapLoadResolver loadResolver
     ) {
         return new features.world.dungeon.application.runtime.DungeonRuntimeApplicationService(mapRepository, loadResolver);
+    }
+
+    private static features.world.dungeon.geometry.CardinalDirection heading(String name) {
+        return features.world.dungeon.geometry.CardinalDirection.parse(name);
     }
 }
