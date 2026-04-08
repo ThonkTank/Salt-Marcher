@@ -119,17 +119,13 @@ public final class FloorTool implements EditorTool {
         }
         loadingService.submitMutation(
                 () -> {
-                    if (finishedSession.deleteMode()) {
-                        roomApplicationService.deleteFloorCells(new DungeonClusterApplicationService.DeleteFloorCellsRequest(
-                                mapId,
-                                activeLevel,
-                                cells));
-                    } else {
-                        roomApplicationService.addFloorCells(new DungeonClusterApplicationService.AddFloorCellsRequest(
-                                mapId,
-                                activeLevel,
-                                cells));
-                    }
+                    roomApplicationService.editFloor(new DungeonClusterApplicationService.ClusterFloorEditRequest(
+                            mapId,
+                            activeLevel,
+                            cells,
+                            finishedSession.deleteMode()
+                                    ? DungeonClusterApplicationService.ClusterFloorEditMode.REMOVE
+                                    : DungeonClusterApplicationService.ClusterFloorEditMode.ADD));
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,

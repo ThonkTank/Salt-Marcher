@@ -213,19 +213,15 @@ public final class BoundaryTool implements EditorTool {
         }
         loadingService.submitMutation(
                 () -> {
-                    if (currentDraft.deleteMode()) {
-                        roomApplicationService.deleteWallPath(new DungeonClusterApplicationService.DeleteWallPathRequest(
-                                mapId,
-                                currentDraft.clusterId(),
-                                mapState.activeProjectionLevel(),
-                                path.boundary()));
-                    } else {
-                        roomApplicationService.createWallPath(new DungeonClusterApplicationService.CreateWallPathRequest(
-                                mapId,
-                                currentDraft.clusterId(),
-                                mapState.activeProjectionLevel(),
-                                path.boundary()));
-                    }
+                    roomApplicationService.editBoundary(new DungeonClusterApplicationService.ClusterBoundaryEditRequest(
+                            mapId,
+                            currentDraft.clusterId(),
+                            mapState.activeProjectionLevel(),
+                            path.boundary(),
+                            DungeonClusterApplicationService.ClusterBoundaryTarget.WALL,
+                            currentDraft.deleteMode()
+                                    ? DungeonClusterApplicationService.ClusterBoundaryEditMode.DELETE
+                                    : DungeonClusterApplicationService.ClusterBoundaryEditMode.CREATE));
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,

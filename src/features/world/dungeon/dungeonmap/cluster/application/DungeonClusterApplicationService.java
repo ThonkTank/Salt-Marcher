@@ -2,6 +2,10 @@ package features.world.dungeon.dungeonmap.cluster.application;
 
 import database.DatabaseManager;
 import features.world.dungeon.application.support.DungeonTransactionRunner;
+import features.world.dungeon.dungeonmap.api.AssertClusterFloorDeletionAllowedRequest;
+import features.world.dungeon.dungeonmap.api.ReconcileClusterRewriteRequest;
+import features.world.dungeon.dungeonmap.api.ValidateClusterRewriteRequest;
+import features.world.dungeon.dungeonmap.application.DungeonMapApplicationService;
 import features.world.dungeon.dungeonmap.cluster.model.ClusterDeleteRequest;
 import features.world.dungeon.dungeonmap.cluster.model.ClusterMutationRequest;
 import features.world.dungeon.dungeonmap.cluster.model.ClusterPaintRequest;
@@ -40,11 +44,12 @@ import java.util.function.Supplier;
 /**
  * Central cluster workflow owner for editor-visible cluster mutations.
  *
- * <p>Paint, delete, boundary edits, cluster moves, and traversability bootstrap all converge
- * here so tools and neighboring application flows do not keep parallel room workflow owners alive.
+ * <p>Public callers enter through a small set of workflow request families so tools and neighboring
+ * application flows do not mirror cluster rewrite plumbing or internal mutation details.
  */
 public final class DungeonClusterApplicationService {
 
+    private final DungeonMapApplicationService mapApplicationService;
     private final DungeonMapRepository mapRepository;
     private final DungeonClusterRepository clusterRepository;
     private final DungeonCorridorRepository corridorRepository;
@@ -52,12 +57,14 @@ public final class DungeonClusterApplicationService {
     private final DungeonTransitionRepository transitionRepository;
 
     public DungeonClusterApplicationService(
+            DungeonMapApplicationService mapApplicationService,
             DungeonMapRepository mapRepository,
             DungeonClusterRepository clusterRepository,
             DungeonCorridorRepository corridorRepository,
             DungeonRoomRepository roomRepository,
             DungeonTransitionRepository transitionRepository
     ) {
+        this.mapApplicationService = Objects.requireNonNull(mapApplicationService, "mapApplicationService");
         this.mapRepository = Objects.requireNonNull(mapRepository, "mapRepository");
         this.clusterRepository = Objects.requireNonNull(clusterRepository, "clusterRepository");
         this.corridorRepository = Objects.requireNonNull(corridorRepository, "corridorRepository");
@@ -65,10 +72,10 @@ public final class DungeonClusterApplicationService {
         this.transitionRepository = Objects.requireNonNull(transitionRepository, "transitionRepository");
     }
 
-    public void paintCells(PaintCellsRequest request) throws SQLException {
-        PaintCellsRequest resolvedRequest = Objects.requireNonNull(request, "request");
+    public void rewriteSurface(ClusterSurfaceRewriteRequest request) throws SQLException {
+        ClusterSurfaceRewriteRequest resolvedRequest = Objects.requireNonNull(request, "request");
         if (resolvedRequest.mapId() <= 0) {
-            throw new IllegalArgumentException("Cluster paint requires mapId");
+            throw new IllegalArgumentException("Cluster surface rewrite requires mapId");
         }
         GridArea resolvedCells = resolvedRequest.cells() == null ? GridArea.empty() : resolvedRequest.cells().onLevel(resolvedRequest.levelZ());
         if (resolvedCells.isEmpty()) {
@@ -76,16 +83,16 @@ public final class DungeonClusterApplicationService {
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                paintCells(conn, resolvedRequest.mapId(), resolvedRequest.levelZ(), resolvedCells);
+                rewriteSurface(conn, resolvedRequest.mapId(), resolvedRequest.levelZ(), resolvedCells, resolvedRequest.mode());
                 return null;
             });
         }
     }
 
-    public void deleteCells(DeleteCellsRequest request) throws SQLException {
-        DeleteCellsRequest resolvedRequest = Objects.requireNonNull(request, "request");
+    public void editFloor(ClusterFloorEditRequest request) throws SQLException {
+        ClusterFloorEditRequest resolvedRequest = Objects.requireNonNull(request, "request");
         if (resolvedRequest.mapId() <= 0) {
-            throw new IllegalArgumentException("Cluster delete requires mapId");
+            throw new IllegalArgumentException("Cluster floor edit requires mapId");
         }
         GridArea resolvedCells = resolvedRequest.cells() == null ? GridArea.empty() : resolvedRequest.cells().onLevel(resolvedRequest.levelZ());
         if (resolvedCells.isEmpty()) {
@@ -93,210 +100,18 @@ public final class DungeonClusterApplicationService {
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonTransactionRunner.inTransaction(conn, () -> {
-                deleteCells(conn, resolvedRequest.mapId(), resolvedRequest.levelZ(), resolvedCells);
-                return null;
-            });
-        }
-    }
-
-    public void addFloorCells(AddFloorCellsRequest request) throws SQLException {
-        AddFloorCellsRequest resolvedRequest = Objects.requireNonNull(request, "request");
-        if (resolvedRequest.mapId() <= 0) {
-            throw new IllegalArgumentException("Cluster floor add requires mapId");
-        }
-        GridArea resolvedCells = resolvedRequest.cells() == null ? GridArea.empty() : resolvedRequest.cells().onLevel(resolvedRequest.levelZ());
-        if (resolvedCells.isEmpty()) {
-            return;
-        }
-        try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonTransactionRunner.inTransaction(conn, () -> {
-                editFloorCells(conn, resolvedRequest.mapId(), resolvedRequest.levelZ(), resolvedCells, false);
-                return null;
-            });
-        }
-    }
-
-    public void deleteFloorCells(DeleteFloorCellsRequest request) throws SQLException {
-        DeleteFloorCellsRequest resolvedRequest = Objects.requireNonNull(request, "request");
-        if (resolvedRequest.mapId() <= 0) {
-            throw new IllegalArgumentException("Cluster floor delete requires mapId");
-        }
-        GridArea resolvedCells = resolvedRequest.cells() == null ? GridArea.empty() : resolvedRequest.cells().onLevel(resolvedRequest.levelZ());
-        if (resolvedCells.isEmpty()) {
-            return;
-        }
-        try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonTransactionRunner.inTransaction(conn, () -> {
-                editFloorCells(conn, resolvedRequest.mapId(), resolvedRequest.levelZ(), resolvedCells, true);
-                return null;
-            });
-        }
-    }
-
-    public void createWallPath(CreateWallPathRequest request) throws SQLException {
-        CreateWallPathRequest resolvedRequest = Objects.requireNonNull(request, "request");
-        if (resolvedRequest.mapId() <= 0 || resolvedRequest.clusterId() <= 0) {
-            throw new IllegalArgumentException("Wall creation requires mapId and clusterId");
-        }
-        GridBoundary resolvedSegments = resolvedRequest.segments() == null ? GridBoundary.empty() : resolvedRequest.segments();
-        if (resolvedSegments.isEmpty()) {
-            return;
-        }
-        try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonTransactionRunner.inTransaction(conn, () -> {
-                createWallPath(conn, resolvedRequest.mapId(), resolvedRequest.clusterId(), resolvedRequest.levelZ(), resolvedSegments);
-                return null;
-            });
-        }
-    }
-
-    public void deleteWallPath(DeleteWallPathRequest request) throws SQLException {
-        DeleteWallPathRequest resolvedRequest = Objects.requireNonNull(request, "request");
-        if (resolvedRequest.mapId() <= 0 || resolvedRequest.clusterId() <= 0) {
-            throw new IllegalArgumentException("Wall deletion requires mapId and clusterId");
-        }
-        GridBoundary resolvedSegments = resolvedRequest.segments() == null ? GridBoundary.empty() : resolvedRequest.segments();
-        if (resolvedSegments.isEmpty()) {
-            return;
-        }
-        try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonTransactionRunner.inTransaction(conn, () -> {
-                deleteWallPath(conn, resolvedRequest.mapId(), resolvedRequest.clusterId(), resolvedRequest.levelZ(), resolvedSegments);
-                return null;
-            });
-        }
-    }
-
-    public void createDoor(CreateDoorRequest request) throws SQLException {
-        CreateDoorRequest resolvedRequest = Objects.requireNonNull(request, "request");
-        editDoor(
-                resolvedRequest.mapId(),
-                resolvedRequest.clusterId(),
-                resolvedRequest.levelZ(),
-                resolvedRequest.segments(),
-                false,
-                ClusterMutationRequest.DoorScope.INTERIOR);
-    }
-
-    public void deleteDoor(DeleteDoorRequest request) throws SQLException {
-        DeleteDoorRequest resolvedRequest = Objects.requireNonNull(request, "request");
-        editDoor(
-                resolvedRequest.mapId(),
-                resolvedRequest.clusterId(),
-                resolvedRequest.levelZ(),
-                resolvedRequest.segments(),
-                true,
-                ClusterMutationRequest.DoorScope.INTERIOR);
-    }
-
-    public void createExteriorDoor(CreateExteriorDoorRequest request) throws SQLException {
-        CreateExteriorDoorRequest resolvedRequest = Objects.requireNonNull(request, "request");
-        editDoor(
-                resolvedRequest.mapId(),
-                resolvedRequest.clusterId(),
-                resolvedRequest.levelZ(),
-                resolvedRequest.segments(),
-                false,
-                ClusterMutationRequest.DoorScope.EXTERIOR);
-    }
-
-    public void deleteExteriorDoor(DeleteExteriorDoorRequest request) throws SQLException {
-        DeleteExteriorDoorRequest resolvedRequest = Objects.requireNonNull(request, "request");
-        editDoor(
-                resolvedRequest.mapId(),
-                resolvedRequest.clusterId(),
-                resolvedRequest.levelZ(),
-                resolvedRequest.segments(),
-                true,
-                ClusterMutationRequest.DoorScope.EXTERIOR);
-    }
-
-    public void moveDoor(MoveDoorRequest request) throws SQLException {
-        MoveDoorRequest resolvedRequest = Objects.requireNonNull(request, "request");
-        if (resolvedRequest.mapId() <= 0
-                || resolvedRequest.clusterId() <= 0
-                || resolvedRequest.sourceBoundarySegment() == null
-                || resolvedRequest.targetBoundarySegment() == null) {
-            throw new IllegalArgumentException("Local door move requires mapId, clusterId, source boundary, and target boundary");
-        }
-        try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonTransactionRunner.inTransaction(conn, () -> {
-                DungeonMap layout = requireLayout(conn, resolvedRequest.mapId());
-                Cluster cluster = layout.findCluster(resolvedRequest.clusterId());
-                if (cluster == null) {
-                    return null;
-                }
-                Cluster updatedCluster = cluster.mutated(new ClusterMutationRequest.DoorMove(
+                applyFloorEdit(
+                        conn,
+                        resolvedRequest.mapId(),
                         resolvedRequest.levelZ(),
-                        resolvedRequest.sourceBoundarySegment(),
-                        resolvedRequest.targetBoundarySegment()));
-                if (updatedCluster != cluster) {
-                    persistClusterRewrite(
-                            conn,
-                            resolvedRequest.mapId(),
-                            layout,
-                            ClusterRewriteRequest.of(List.of(cluster), List.of(updatedCluster)));
-                }
+                        resolvedCells,
+                        resolvedRequest.mode() == ClusterFloorEditMode.REMOVE);
                 return null;
             });
         }
     }
 
-    public void paintCells(Connection conn, long mapId, int levelZ, GridArea cells) throws SQLException {
-        DungeonMap layout = requireLayout(conn, mapId);
-        Set<GridPoint> requestedCells = cells.cells();
-        List<Cluster> overlappingClusters = overlappingClustersAtLevel(layout, requestedCells, levelZ).stream()
-                .sorted(Comparator.comparing(cluster -> cluster.clusterId() == null ? Long.MAX_VALUE : cluster.clusterId()))
-                .toList();
-        if (overlappingClusters.isEmpty()) {
-            createClusterWithRoom(conn, mapId, levelZ, cells, nextRoomName(layout, new LinkedHashSet<>()));
-            return;
-        }
-
-        ClusterRewriteRequest rewriteRequest = overlappingClusters.getFirst().rewritePaint(new ClusterPaintRequest(
-                cells,
-                overlappingClusters,
-                levelZ));
-        if (rewriteRequest == null || !rewriteRequest.hasChanges()) {
-            return;
-        }
-
-        persistClusterRewrite(conn, mapId, layout, rewriteRequest);
-    }
-
-    public void deleteCells(Connection conn, long mapId, int levelZ, GridArea cells) throws SQLException {
-        DungeonMap workingLayout = requireLayout(conn, mapId);
-        Set<String> reservedNames = new LinkedHashSet<>();
-        for (Room room : rooms(workingLayout)) {
-            if (room != null && room.name() != null && !room.name().isBlank()) {
-                reservedNames.add(room.name());
-            }
-        }
-
-        List<Long> affectedClusterIds = overlappingClustersAtLevel(workingLayout, cells.cells(), levelZ).stream()
-                .map(Cluster::clusterId)
-                .filter(Objects::nonNull)
-                .sorted()
-                .toList();
-        for (Long clusterId : affectedClusterIds) {
-            Cluster cluster = workingLayout.findCluster(clusterId);
-            if (cluster == null) {
-                continue;
-            }
-            DungeonMap layoutSnapshot = workingLayout;
-            ClusterRewriteRequest rewriteRequest = cluster.rewriteDelete(new ClusterDeleteRequest(
-                    cells,
-                    levelZ,
-                    () -> nextRoomName(layoutSnapshot, reservedNames)));
-            if (rewriteRequest == null || !rewriteRequest.hasChanges()) {
-                continue;
-            }
-            persistClusterRewrite(conn, mapId, workingLayout, rewriteRequest);
-            workingLayout = requireLayout(conn, mapId);
-        }
-    }
-
-    public void editFloorCells(
+    private void applyFloorEdit(
             Connection conn,
             long mapId,
             int levelZ,
@@ -333,7 +148,11 @@ public final class DungeonClusterApplicationService {
                     continue;
                 }
                 try {
-                    workingLayout.assertClusterFloorDeletionAllowed(room, levelZ, GridArea.of(removedFloorCells));
+                    mapApplicationService.assertClusterFloorDeletionAllowed(new AssertClusterFloorDeletionAllowedRequest(
+                            workingLayout,
+                            room,
+                            levelZ,
+                            GridArea.of(removedFloorCells)));
                 } catch (IllegalArgumentException exception) {
                     throw new SQLException(exception.getMessage(), exception);
                 }
@@ -368,9 +187,136 @@ public final class DungeonClusterApplicationService {
         }
     }
 
-    public void createDefaultRoom(Connection conn, long mapId) throws SQLException {
-        // Brand-new dungeons must bootstrap their first room without rehydrating an empty layout first.
-        createClusterWithRoom(conn, mapId, 0, GridPoint.cell(0, 0, 0).cellFootprint(), "Raum 1");
+    public void editBoundary(ClusterBoundaryEditRequest request) throws SQLException {
+        ClusterBoundaryEditRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        if (resolvedRequest.mapId() <= 0 || resolvedRequest.clusterId() <= 0) {
+            throw new IllegalArgumentException("Cluster boundary edit requires mapId and clusterId");
+        }
+        GridBoundary resolvedSegments = resolvedRequest.segments() == null ? GridBoundary.empty() : resolvedRequest.segments();
+        if (resolvedSegments.isEmpty()) {
+            return;
+        }
+        try (Connection conn = DatabaseManager.getConnection()) {
+            DungeonTransactionRunner.inTransaction(conn, () -> {
+                editBoundary(
+                        conn,
+                        resolvedRequest.mapId(),
+                        resolvedRequest.clusterId(),
+                        resolvedRequest.levelZ(),
+                        resolvedSegments,
+                        resolvedRequest.mode(),
+                        resolvedRequest.target());
+                return null;
+            });
+        }
+    }
+
+    public void moveDoor(ClusterDoorMoveRequest request) throws SQLException {
+        ClusterDoorMoveRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        if (resolvedRequest.mapId() <= 0
+                || resolvedRequest.clusterId() <= 0
+                || resolvedRequest.sourceBoundarySegment() == null
+                || resolvedRequest.targetBoundarySegment() == null) {
+            throw new IllegalArgumentException("Local door move requires mapId, clusterId, source boundary, and target boundary");
+        }
+        try (Connection conn = DatabaseManager.getConnection()) {
+            DungeonTransactionRunner.inTransaction(conn, () -> {
+                DungeonMap layout = requireLayout(conn, resolvedRequest.mapId());
+                Cluster cluster = layout.findCluster(resolvedRequest.clusterId());
+                if (cluster == null) {
+                    return null;
+                }
+                Cluster updatedCluster = cluster.mutated(new ClusterMutationRequest.DoorMove(
+                        resolvedRequest.levelZ(),
+                        resolvedRequest.sourceBoundarySegment(),
+                        resolvedRequest.targetBoundarySegment()));
+                if (updatedCluster != cluster) {
+                    persistClusterRewrite(
+                            conn,
+                            resolvedRequest.mapId(),
+                            layout,
+                            ClusterRewriteRequest.of(List.of(cluster), List.of(updatedCluster)));
+                }
+                return null;
+            });
+        }
+    }
+
+    private void rewriteSurface(
+            Connection conn,
+            long mapId,
+            int levelZ,
+            GridArea cells,
+            ClusterSurfaceRewriteMode mode
+    ) throws SQLException {
+        if (mode == ClusterSurfaceRewriteMode.DELETE) {
+            rewriteDeletedSurface(conn, mapId, levelZ, cells);
+            return;
+        }
+        DungeonMap layout = requireLayout(conn, mapId);
+        Set<GridPoint> requestedCells = cells.cells();
+        List<Cluster> overlappingClusters = overlappingClustersAtLevel(layout, requestedCells, levelZ).stream()
+                .sorted(Comparator.comparing(cluster -> cluster.clusterId() == null ? Long.MAX_VALUE : cluster.clusterId()))
+                .toList();
+        if (overlappingClusters.isEmpty()) {
+            createClusterWithRoom(conn, mapId, levelZ, cells, nextRoomName(layout, new LinkedHashSet<>()));
+            return;
+        }
+
+        ClusterRewriteRequest rewriteRequest = overlappingClusters.getFirst().rewritePaint(new ClusterPaintRequest(
+                cells,
+                overlappingClusters,
+                levelZ));
+        if (rewriteRequest == null || !rewriteRequest.hasChanges()) {
+            return;
+        }
+
+        persistClusterRewrite(conn, mapId, layout, rewriteRequest);
+    }
+
+    private void rewriteDeletedSurface(Connection conn, long mapId, int levelZ, GridArea cells) throws SQLException {
+        DungeonMap workingLayout = requireLayout(conn, mapId);
+        Set<String> reservedNames = new LinkedHashSet<>();
+        for (Room room : rooms(workingLayout)) {
+            if (room != null && room.name() != null && !room.name().isBlank()) {
+                reservedNames.add(room.name());
+            }
+        }
+
+        List<Long> affectedClusterIds = overlappingClustersAtLevel(workingLayout, cells.cells(), levelZ).stream()
+                .map(Cluster::clusterId)
+                .filter(Objects::nonNull)
+                .sorted()
+                .toList();
+        for (Long clusterId : affectedClusterIds) {
+            Cluster cluster = workingLayout.findCluster(clusterId);
+            if (cluster == null) {
+                continue;
+            }
+            DungeonMap layoutSnapshot = workingLayout;
+            ClusterRewriteRequest rewriteRequest = cluster.rewriteDelete(new ClusterDeleteRequest(
+                    cells,
+                    levelZ,
+                    () -> nextRoomName(layoutSnapshot, reservedNames)));
+            if (rewriteRequest == null || !rewriteRequest.hasChanges()) {
+                continue;
+            }
+            persistClusterRewrite(conn, mapId, workingLayout, rewriteRequest);
+            workingLayout = requireLayout(conn, mapId);
+        }
+    }
+
+    public void bootstrapDefaultCluster(Connection conn, ClusterBootstrapRequest request) throws SQLException {
+        ClusterBootstrapRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        if (resolvedRequest.mapId() <= 0) {
+            throw new IllegalArgumentException("Cluster bootstrap requires mapId");
+        }
+        createClusterWithRoom(
+                conn,
+                resolvedRequest.mapId(),
+                resolvedRequest.levelZ(),
+                resolvedRequest.cells(),
+                resolvedRequest.roomName());
     }
 
     private void createClusterWithRoom(
@@ -399,8 +345,8 @@ public final class DungeonClusterApplicationService {
                 new Room(null, mapId, persistedCluster.clusterId(), roomName, java.util.Map.of(levelZ, center), null)));
     }
 
-    public void move(MoveClusterRequest request) throws SQLException {
-        MoveClusterRequest resolvedRequest = Objects.requireNonNull(request, "request");
+    public void moveCluster(ClusterMoveRequest request) throws SQLException {
+        ClusterMoveRequest resolvedRequest = Objects.requireNonNull(request, "request");
         if (resolvedRequest.mapId() <= 0 || resolvedRequest.clusterId() <= 0) {
             throw new IllegalArgumentException("Cluster move requires mapId and clusterId");
         }
@@ -424,7 +370,7 @@ public final class DungeonClusterApplicationService {
         }
     }
 
-    public void ensureTraversableCell(Connection conn, long mapId, GridPoint cell, int levelZ) throws SQLException {
+    private void ensureTraversableCell(Connection conn, long mapId, GridPoint cell, int levelZ) throws SQLException {
         if (cell == null) {
             return;
         }
@@ -434,105 +380,51 @@ public final class DungeonClusterApplicationService {
         }
         Room room = roomAtCell(layout, cell, levelZ);
         if (room != null) {
-            editFloorCells(conn, mapId, levelZ, GridArea.of(Set.of(cell)), false);
+            applyFloorEdit(conn, mapId, levelZ, GridArea.of(Set.of(cell)), false);
             return;
         }
-        paintCells(conn, mapId, levelZ, GridArea.of(Set.of(cell)));
+        rewriteSurface(conn, mapId, levelZ, GridArea.of(Set.of(cell)), ClusterSurfaceRewriteMode.PAINT);
     }
 
-    public void createWallPath(
-            Connection conn,
-            long mapId,
-            long clusterId,
-            int levelZ,
-            GridBoundary segments
-    ) throws SQLException {
-        if (segments == null || segments.isEmpty()) {
-            return;
-        }
-        DungeonMap layout = requireLayout(conn, mapId);
-        Cluster cluster = layout.findCluster(clusterId);
-        if (cluster == null) {
-            return;
-        }
-        Cluster updatedCluster = cluster.mutated(new ClusterMutationRequest.WallPathEdit(
-                levelZ,
-                segments,
-                ClusterMutationRequest.BoundaryEditMode.CREATE));
-        if (updatedCluster == cluster) {
-            return;
-        }
-
-        persistClusterRewrite(conn, mapId, layout, ClusterRewriteRequest.of(List.of(cluster), List.of(updatedCluster)));
-    }
-
-    public void deleteWallPath(
-            Connection conn,
-            long mapId,
-            long clusterId,
-            int levelZ,
-            GridBoundary segments
-    ) throws SQLException {
-        if (segments == null || segments.isEmpty()) {
-            return;
-        }
-        DungeonMap layout = requireLayout(conn, mapId);
-        Cluster cluster = layout.findCluster(clusterId);
-        if (cluster == null) {
-            return;
-        }
-        Cluster updatedCluster = cluster.mutated(new ClusterMutationRequest.WallPathEdit(
-                levelZ,
-                segments,
-                ClusterMutationRequest.BoundaryEditMode.DELETE));
-        if (updatedCluster == cluster) {
-            return;
-        }
-
-        persistClusterRewrite(conn, mapId, layout, ClusterRewriteRequest.of(List.of(cluster), List.of(updatedCluster)));
-    }
-
-    private void editDoor(
-            long mapId,
-            long clusterId,
-            int levelZ,
-            GridBoundary segments,
-            boolean deleteDoor,
-            ClusterMutationRequest.DoorScope scope
-    ) throws SQLException {
-        if (mapId <= 0 || clusterId <= 0) {
-            throw new IllegalArgumentException("Door edit requires mapId and clusterId");
-        }
-        if (segments == null || segments.isEmpty()) {
-            return;
-        }
-        try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonTransactionRunner.inTransaction(conn, () -> {
-                editDoor(conn, mapId, clusterId, levelZ, segments, deleteDoor, scope);
-                return null;
-            });
-        }
-    }
-
-    private void editDoor(
+    private void editBoundary(
             Connection conn,
             long mapId,
             long clusterId,
             int levelZ,
             GridBoundary segments,
-            boolean deleteDoor,
-            ClusterMutationRequest.DoorScope scope
+            ClusterBoundaryEditMode mode,
+            ClusterBoundaryTarget target
     ) throws SQLException {
+        if (segments == null || segments.isEmpty()) {
+            return;
+        }
         DungeonMap layout = requireLayout(conn, mapId);
         Cluster cluster = layout.findCluster(clusterId);
         if (cluster == null) {
             return;
         }
-        Cluster updatedCluster = cluster.mutated(new ClusterMutationRequest.DoorSegmentsEdit(
-                levelZ,
-                segments,
-                deleteDoor ? ClusterMutationRequest.BoundaryEditMode.DELETE : ClusterMutationRequest.BoundaryEditMode.CREATE,
-                scope));
+        Cluster updatedCluster = switch (target) {
+            case WALL -> cluster.mutated(new ClusterMutationRequest.WallPathEdit(
+                    levelZ,
+                    segments,
+                    mode == ClusterBoundaryEditMode.DELETE
+                            ? ClusterMutationRequest.BoundaryEditMode.DELETE
+                            : ClusterMutationRequest.BoundaryEditMode.CREATE));
+            case INTERIOR_DOOR -> cluster.mutated(new ClusterMutationRequest.DoorSegmentsEdit(
+                    levelZ,
+                    segments,
+                    mode == ClusterBoundaryEditMode.DELETE
+                            ? ClusterMutationRequest.BoundaryEditMode.DELETE
+                            : ClusterMutationRequest.BoundaryEditMode.CREATE,
+                    ClusterMutationRequest.DoorScope.INTERIOR));
+            case EXTERIOR_DOOR -> cluster.mutated(new ClusterMutationRequest.DoorSegmentsEdit(
+                    levelZ,
+                    segments,
+                    mode == ClusterBoundaryEditMode.DELETE
+                            ? ClusterMutationRequest.BoundaryEditMode.DELETE
+                            : ClusterMutationRequest.BoundaryEditMode.CREATE,
+                    ClusterMutationRequest.DoorScope.EXTERIOR));
+        };
         if (updatedCluster == cluster) {
             return;
         }
@@ -601,13 +493,14 @@ public final class DungeonClusterApplicationService {
         if (conn == null || originalLayout == null || rewriteRequest == null || !rewriteRequest.hasChanges()) {
             return;
         }
-        originalLayout.validateClusterRewrite(rewriteRequest);
+        mapApplicationService.validateClusterRewrite(new ValidateClusterRewriteRequest(originalLayout, rewriteRequest));
         clusterRepository.replaceClusters(conn, mapId, rewriteRequest);
         if (!rewriteRequest.hasAffectedRooms()) {
             return;
         }
         DungeonMap persistedRoomLayout = loadRoomRewriteLayout(conn, originalLayout, mapId);
-        var rewriteEffects = originalLayout.reconcileClusterRewrite(persistedRoomLayout, rewriteRequest);
+        var rewriteEffects = mapApplicationService.reconcileClusterRewrite(
+                new ReconcileClusterRewriteRequest(originalLayout, persistedRoomLayout, rewriteRequest));
         for (Corridor reboundCorridor : rewriteEffects.reboundCorridors()) {
             if (reboundCorridor != null) {
                 corridorRepository.save(conn, reboundCorridor, persistedRoomLayout.mapId());
@@ -675,128 +568,98 @@ public final class DungeonClusterApplicationService {
         return cluster == null ? null : cluster.roomTopology().roomAt(cell, levelZ);
     }
 
-    public record PaintCellsRequest(
+    public record ClusterSurfaceRewriteRequest(
             long mapId,
             int levelZ,
-            GridArea cells
+            GridArea cells,
+            ClusterSurfaceRewriteMode mode
     ) {
-        public PaintCellsRequest {
+        public ClusterSurfaceRewriteRequest {
             cells = cells == null ? GridArea.empty() : cells.onLevel(levelZ);
+            mode = mode == null ? ClusterSurfaceRewriteMode.PAINT : mode;
         }
     }
 
-    public record DeleteCellsRequest(
+    public record ClusterFloorEditRequest(
             long mapId,
             int levelZ,
-            GridArea cells
+            GridArea cells,
+            ClusterFloorEditMode mode
     ) {
-        public DeleteCellsRequest {
+        public ClusterFloorEditRequest {
             cells = cells == null ? GridArea.empty() : cells.onLevel(levelZ);
+            mode = mode == null ? ClusterFloorEditMode.ADD : mode;
         }
     }
 
-    public record AddFloorCellsRequest(
-            long mapId,
-            int levelZ,
-            GridArea cells
-    ) {
-        public AddFloorCellsRequest {
-            cells = cells == null ? GridArea.empty() : cells.onLevel(levelZ);
-        }
-    }
-
-    public record DeleteFloorCellsRequest(
-            long mapId,
-            int levelZ,
-            GridArea cells
-    ) {
-        public DeleteFloorCellsRequest {
-            cells = cells == null ? GridArea.empty() : cells.onLevel(levelZ);
-        }
-    }
-
-    public record CreateWallPathRequest(
+    public record ClusterBoundaryEditRequest(
             long mapId,
             long clusterId,
             int levelZ,
-            GridBoundary segments
+            GridBoundary segments,
+            ClusterBoundaryTarget target,
+            ClusterBoundaryEditMode mode
     ) {
-        public CreateWallPathRequest {
+        public ClusterBoundaryEditRequest {
             segments = segments == null ? GridBoundary.empty() : segments;
+            target = target == null ? ClusterBoundaryTarget.WALL : target;
+            mode = mode == null ? ClusterBoundaryEditMode.CREATE : mode;
         }
     }
 
-    public record DeleteWallPathRequest(
-            long mapId,
-            long clusterId,
-            int levelZ,
-            GridBoundary segments
-    ) {
-        public DeleteWallPathRequest {
-            segments = segments == null ? GridBoundary.empty() : segments;
-        }
-    }
-
-    public record CreateDoorRequest(
-            long mapId,
-            long clusterId,
-            int levelZ,
-            GridBoundary segments
-    ) {
-        public CreateDoorRequest {
-            segments = segments == null ? GridBoundary.empty() : segments;
-        }
-    }
-
-    public record DeleteDoorRequest(
-            long mapId,
-            long clusterId,
-            int levelZ,
-            GridBoundary segments
-    ) {
-        public DeleteDoorRequest {
-            segments = segments == null ? GridBoundary.empty() : segments;
-        }
-    }
-
-    public record CreateExteriorDoorRequest(
-            long mapId,
-            long clusterId,
-            int levelZ,
-            GridBoundary segments
-    ) {
-        public CreateExteriorDoorRequest {
-            segments = segments == null ? GridBoundary.empty() : segments;
-        }
-    }
-
-    public record DeleteExteriorDoorRequest(
-            long mapId,
-            long clusterId,
-            int levelZ,
-            GridBoundary segments
-    ) {
-        public DeleteExteriorDoorRequest {
-            segments = segments == null ? GridBoundary.empty() : segments;
-        }
-    }
-
-    public record MoveClusterRequest(
+    public record ClusterMoveRequest(
             long mapId,
             long clusterId,
             GridTranslation translation
     ) {
-        public MoveClusterRequest {
+        public ClusterMoveRequest {
             translation = translation == null ? GridTranslation.none() : translation;
         }
     }
 
-    public record MoveDoorRequest(
+    public record ClusterDoorMoveRequest(
             long mapId,
             long clusterId,
             int levelZ,
             GridSegment sourceBoundarySegment,
             GridSegment targetBoundarySegment
     ) {
+    }
+
+    public record ClusterBootstrapRequest(
+            long mapId,
+            int levelZ,
+            GridArea cells,
+            String roomName
+    ) {
+        public ClusterBootstrapRequest(long mapId) {
+            this(mapId, 0, GridPoint.cell(0, 0, 0).cellFootprint(), "Raum 1");
+        }
+
+        public ClusterBootstrapRequest {
+            cells = cells == null ? GridArea.empty() : cells.onLevel(levelZ);
+            roomName = roomName == null || roomName.isBlank() ? "Raum 1" : roomName;
+        }
+    }
+
+    public enum ClusterSurfaceRewriteMode {
+        PAINT,
+        DELETE
+    }
+
+    public enum ClusterFloorEditMode {
+        ADD,
+        REMOVE
+    }
+
+    public enum ClusterBoundaryTarget {
+        WALL,
+        INTERIOR_DOOR,
+        EXTERIOR_DOOR
+    }
+
+    public enum ClusterBoundaryEditMode {
+        CREATE,
+        DELETE
     }
 }

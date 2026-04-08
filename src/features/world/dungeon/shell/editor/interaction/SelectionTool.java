@@ -7,13 +7,14 @@ import features.world.dungeon.dungeonmap.cluster.model.ClusterMutationRequest;
 import features.world.dungeon.application.stair.DungeonStairApplicationService;
 import features.world.dungeon.application.stair.StairDraftResolver;
 import features.world.dungeon.canvas.base.DungeonCanvasPointerEvent;
+import features.world.dungeon.dungeonmap.api.PreviewMovedClusterRequest;
+import features.world.dungeon.dungeonmap.api.PreviewMovedLocalDoorRequest;
 import features.world.dungeon.dungeonmap.api.PreviewReplacedStairRequest;
 import features.world.dungeon.dungeonmap.api.PreviewReplacedCorridorRequest;
 import features.world.dungeon.dungeonmap.api.ResolveCorridorRequest;
 import features.world.dungeon.dungeonmap.application.DungeonMapApplicationService;
 import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
 import features.world.dungeon.dungeonmap.api.DoorDescription;
-import features.world.dungeon.dungeonmap.model.ClusterMapMutationRequest;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
@@ -335,7 +336,7 @@ public final class SelectionTool implements EditorTool {
         if (mapId != null && clusterId != null && !translation.isZero()) {
             loadingService.submitMutation(
                     () -> {
-                        roomApplicationService.move(new DungeonClusterApplicationService.MoveClusterRequest(
+                        roomApplicationService.moveCluster(new DungeonClusterApplicationService.ClusterMoveRequest(
                                 mapId,
                                 clusterId,
                                 translation));
@@ -468,11 +469,11 @@ public final class SelectionTool implements EditorTool {
         if (dragSession == null) {
             return null;
         }
-        return dragSession.baseMap().withMutatedCluster(new ClusterMapMutationRequest(
+        return mapApplicationService.previewMovedCluster(new PreviewMovedClusterRequest(
+                dragSession.baseMap(),
                 dragSession.clusterId(),
-                new ClusterMutationRequest.Translation(
-                        dragSession.currentDelta()
-                                .combinedWith(GridTranslation.levels(dragSession.currentLevel() - dragSession.startLevel())))));
+                dragSession.currentDelta()
+                        .combinedWith(GridTranslation.levels(dragSession.currentLevel() - dragSession.startLevel()))));
     }
 
     private DungeonMap previewStairMap(StairDragSession session) {
@@ -559,13 +560,12 @@ public final class SelectionTool implements EditorTool {
         if (session == null || session.clusterId() == null || session.targetBoundaryRef() == null || session.baseMap() == null) {
             return null;
         }
-        return session.baseMap()
-                .withMutatedCluster(new ClusterMapMutationRequest(
+        return mapApplicationService.previewMovedLocalDoor(new PreviewMovedLocalDoorRequest(
+                        session.baseMap(),
                         session.clusterId(),
-                        new ClusterMutationRequest.DoorMove(
-                                session.levelZ(),
-                                session.sourceBoundarySegment2x(),
-                                session.targetBoundaryRef().boundarySegment())))
+                        session.levelZ(),
+                        session.sourceBoundarySegment2x(),
+                        session.targetBoundaryRef().boundarySegment()))
                 .projectedToLevel(session.levelZ());
     }
 
@@ -605,7 +605,7 @@ public final class SelectionTool implements EditorTool {
         }
         loadingService.submitMutation(
                 () -> {
-                    roomApplicationService.moveDoor(new DungeonClusterApplicationService.MoveDoorRequest(
+                    roomApplicationService.moveDoor(new DungeonClusterApplicationService.ClusterDoorMoveRequest(
                             mapId,
                             session.clusterId(),
                             session.levelZ(),

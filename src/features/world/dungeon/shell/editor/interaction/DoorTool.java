@@ -252,11 +252,13 @@ public final class DoorTool implements EditorTool {
         }
         loadingService.submitMutation(
                 () -> {
-                    roomApplicationService.createDoor(new DungeonClusterApplicationService.CreateDoorRequest(
+                    roomApplicationService.editBoundary(new DungeonClusterApplicationService.ClusterBoundaryEditRequest(
                             mapId,
                             clusterId,
                             levelZ,
-                            features.world.dungeon.geometry.GridBoundary.of(List.of(segment2x))));
+                            features.world.dungeon.geometry.GridBoundary.of(List.of(segment2x)),
+                            DungeonClusterApplicationService.ClusterBoundaryTarget.INTERIOR_DOOR,
+                            DungeonClusterApplicationService.ClusterBoundaryEditMode.CREATE));
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,
@@ -280,11 +282,13 @@ public final class DoorTool implements EditorTool {
         }
         loadingService.submitMutation(
                 () -> {
-                    roomApplicationService.deleteDoor(new DungeonClusterApplicationService.DeleteDoorRequest(
+                    roomApplicationService.editBoundary(new DungeonClusterApplicationService.ClusterBoundaryEditRequest(
                             mapId,
                             clusterId,
                             levelZ,
-                            features.world.dungeon.geometry.GridBoundary.of(List.of(segment2x))));
+                            features.world.dungeon.geometry.GridBoundary.of(List.of(segment2x)),
+                            DungeonClusterApplicationService.ClusterBoundaryTarget.INTERIOR_DOOR,
+                            DungeonClusterApplicationService.ClusterBoundaryEditMode.DELETE));
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,
@@ -299,11 +303,13 @@ public final class DoorTool implements EditorTool {
         }
         loadingService.submitMutation(
                 () -> {
-                    roomApplicationService.createExteriorDoor(new DungeonClusterApplicationService.CreateExteriorDoorRequest(
+                    roomApplicationService.editBoundary(new DungeonClusterApplicationService.ClusterBoundaryEditRequest(
                             mapId,
                             clusterId,
                             levelZ,
-                            features.world.dungeon.geometry.GridBoundary.of(List.of(segment2x))));
+                            features.world.dungeon.geometry.GridBoundary.of(List.of(segment2x)),
+                            DungeonClusterApplicationService.ClusterBoundaryTarget.EXTERIOR_DOOR,
+                            DungeonClusterApplicationService.ClusterBoundaryEditMode.CREATE));
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,
@@ -327,11 +333,13 @@ public final class DoorTool implements EditorTool {
         }
         loadingService.submitMutation(
                 () -> {
-                    roomApplicationService.deleteExteriorDoor(new DungeonClusterApplicationService.DeleteExteriorDoorRequest(
+                    roomApplicationService.editBoundary(new DungeonClusterApplicationService.ClusterBoundaryEditRequest(
                             mapId,
                             clusterId,
                             levelZ,
-                            features.world.dungeon.geometry.GridBoundary.of(List.of(segment2x))));
+                            features.world.dungeon.geometry.GridBoundary.of(List.of(segment2x)),
+                            DungeonClusterApplicationService.ClusterBoundaryTarget.EXTERIOR_DOOR,
+                            DungeonClusterApplicationService.ClusterBoundaryEditMode.DELETE));
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,

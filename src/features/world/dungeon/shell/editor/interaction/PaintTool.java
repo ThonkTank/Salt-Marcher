@@ -121,17 +121,13 @@ public final class PaintTool implements EditorTool {
         }
         loadingService.submitMutation(
                 () -> {
-                    if (finishedSession.deleteMode()) {
-                        roomApplicationService.deleteCells(new DungeonClusterApplicationService.DeleteCellsRequest(
-                                mapId,
-                                activeLevel,
-                                cells));
-                    } else {
-                        roomApplicationService.paintCells(new DungeonClusterApplicationService.PaintCellsRequest(
-                                mapId,
-                                activeLevel,
-                                cells));
-                    }
+                    roomApplicationService.rewriteSurface(new DungeonClusterApplicationService.ClusterSurfaceRewriteRequest(
+                            mapId,
+                            activeLevel,
+                            cells,
+                            finishedSession.deleteMode()
+                                    ? DungeonClusterApplicationService.ClusterSurfaceRewriteMode.DELETE
+                                    : DungeonClusterApplicationService.ClusterSurfaceRewriteMode.PAINT));
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,

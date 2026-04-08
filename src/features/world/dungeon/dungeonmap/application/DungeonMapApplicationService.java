@@ -1,45 +1,63 @@
 package features.world.dungeon.dungeonmap.application;
 
+import features.world.dungeon.dungeonmap.api.AssertClusterFloorDeletionAllowedRequest;
 import features.world.dungeon.dungeonmap.api.PreviewAddedCorridorRequest;
 import features.world.dungeon.dungeonmap.api.PreviewAddedStairRequest;
 import features.world.dungeon.dungeonmap.api.PreviewAddedTransitionRequest;
+import features.world.dungeon.dungeonmap.api.PreviewMovedClusterRequest;
+import features.world.dungeon.dungeonmap.api.PreviewMovedLocalDoorRequest;
 import features.world.dungeon.dungeonmap.api.PreviewRemovedCorridorRequest;
 import features.world.dungeon.dungeonmap.api.PreviewRemovedStairRequest;
 import features.world.dungeon.dungeonmap.api.PreviewRemovedTransitionRequest;
 import features.world.dungeon.dungeonmap.api.PreviewReplacedCorridorRequest;
 import features.world.dungeon.dungeonmap.api.PreviewReplacedStairRequest;
 import features.world.dungeon.dungeonmap.api.PreviewReplacedTransitionRequest;
+import features.world.dungeon.dungeonmap.api.ReconcileClusterRewriteRequest;
 import features.world.dungeon.dungeonmap.api.RehydrateCorridorRequest;
 import features.world.dungeon.dungeonmap.api.ResolveCorridorRequest;
+import features.world.dungeon.dungeonmap.api.ValidateClusterRewriteRequest;
 import features.world.dungeon.dungeonmap.api.DoorDescription;
 import features.world.dungeon.dungeonmap.api.RoomBoundaryDescription;
+import features.world.dungeon.dungeonmap.cluster.model.ClusterMutationRequest;
+import features.world.dungeon.dungeonmap.cluster.model.ClusterRewriteRequest;
 import features.world.dungeon.dungeonmap.cluster.model.Cluster;
 import features.world.dungeon.dungeonmap.corridor.model.Corridor;
 import features.world.dungeon.dungeonmap.corridor.model.CorridorInput;
 import features.world.dungeon.dungeonmap.corridor.model.CorridorResolutionInput;
+import features.world.dungeon.dungeonmap.corridor.model.CorridorReconcileInput;
+import features.world.dungeon.dungeonmap.model.ClusterRewriteEffects;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridPoint;
+import features.world.dungeon.geometry.GridSegment;
+import features.world.dungeon.geometry.GridTranslation;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.Door;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
+import features.world.dungeon.model.structures.connection.ConnectionEndpoint;
+import features.world.dungeon.model.structures.connection.DoorConnectionCarrier;
+import features.world.dungeon.model.structures.connection.DungeonConnection;
+import features.world.dungeon.model.structures.connection.StairConnectionCarrier;
 import features.world.dungeon.model.structures.room.Room;
 import features.world.dungeon.model.structures.stair.DungeonStair;
 import features.world.dungeon.model.structures.transition.DungeonTransition;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
- * Map-owned workflow seam for corridor resolution, rehydration, and preview snapshot composition.
+ * Map-owned workflow seam for corridor resolution plus cluster, stair, and transition preview composition.
  *
- * <p>Corridor aggregates still own their authored input and reconciliation behavior. This service owns only the
- * map-external facts required to build corridors and compose corridor, stair, or transition previews from one
- * authoritative loaded map snapshot.</p>
+ * <p>Cluster and corridor aggregates still own their authored requests and reconciliation behavior. This service owns
+ * only the map-external facts required to validate cluster rewrites, guard cross-owner anchors, and compose corridor,
+ * cluster, stair, or transition previews from one authoritative loaded map snapshot.</p>
  */
 public final class DungeonMapApplicationService {
 
@@ -185,6 +203,105 @@ public final class DungeonMapApplicationService {
                 : withTransitions(resolvedRequest.map(), updatedTransitions);
     }
 
+    public void validateClusterRewrite(ValidateClusterRewriteRequest request) {
+        ValidateClusterRewriteRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        ClusterRewriteRequest rewriteRequest = resolvedRequest.rewriteRequest();
+        if (!rewriteRequest.hasChanges()) {
+            return;
+        }
+        Set<Long> affectedRoomIds = rewriteRequest.affectedRoomIds();
+        if (affectedRoomIds.isEmpty()) {
+            return;
+        }
+        DungeonMap rewrittenMap = applyClusterRewrite(resolvedRequest.map(), rewriteRequest);
+        validateCorridorRewrite(resolvedRequest.map(), rewrittenMap, affectedRoomIds, rewriteRequest.translation());
+        validateTransitionRewrite(resolvedRequest.map(), rewrittenMap, affectedRoomIds);
+    }
+
+    public ClusterRewriteEffects reconcileClusterRewrite(ReconcileClusterRewriteRequest request) {
+        ReconcileClusterRewriteRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        ClusterRewriteRequest rewriteRequest = resolvedRequest.rewriteRequest();
+        if (!rewriteRequest.hasChanges()) {
+            return ClusterRewriteEffects.empty();
+        }
+        Set<Long> affectedRoomIds = rewriteRequest.affectedRoomIds();
+        if (affectedRoomIds.isEmpty()) {
+            return ClusterRewriteEffects.empty();
+        }
+        List<Corridor> reboundCorridors = reboundCorridors(
+                resolvedRequest.originalMap(),
+                resolvedRequest.persistedRoomMap(),
+                affectedRoomIds,
+                rewriteRequest.translation());
+        Map<Long, DungeonConnection> reboundTransitionConnections = reboundTransitionConnections(
+                resolvedRequest.originalMap(),
+                resolvedRequest.persistedRoomMap(),
+                affectedRoomIds);
+        return reboundCorridors.isEmpty() && reboundTransitionConnections.isEmpty()
+                ? ClusterRewriteEffects.empty()
+                : new ClusterRewriteEffects(reboundCorridors, reboundTransitionConnections);
+    }
+
+    public void assertClusterFloorDeletionAllowed(AssertClusterFloorDeletionAllowedRequest request) {
+        AssertClusterFloorDeletionAllowedRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        Room room = resolvedRequest.room();
+        GridArea removedFloorCells = resolvedRequest.removedFloorCells();
+        if (room == null || room.roomId() == null || removedFloorCells == null || removedFloorCells.isEmpty()) {
+            return;
+        }
+        DungeonMap layout = resolvedRequest.map();
+        int levelZ = resolvedRequest.levelZ();
+        for (Corridor corridor : layout.corridors()) {
+            if (corridor == null || corridor.levelZ() != levelZ) {
+                continue;
+            }
+            if (corridor.touchesRoomAnchorCells(room.roomId(), removedFloorCells)) {
+                throw new IllegalArgumentException("Boden unter einem Corridor-Anker kann nicht entfernt werden.");
+            }
+        }
+        for (DungeonTransition transition : layout.transitionsAtLevel(levelZ)) {
+            if (transition != null
+                    && transition.transitionId() != null
+                    && transition.localConnection() != null
+                    && transition.localConnection().cellFootprint(layout).cells().stream()
+                    .filter(point -> point != null && point.z() == levelZ)
+                    .anyMatch(removedFloorCells.cells()::contains)) {
+                throw new IllegalArgumentException("Boden unter einem platzierten Übergang kann nicht entfernt werden.");
+            }
+        }
+        for (DungeonStair stair : layout.stairsAtLevel(levelZ)) {
+            if (stair == null || stair.stairId() == null) {
+                continue;
+            }
+            boolean usesRemovedExit = stair.exitsAtLevel(levelZ).stream()
+                    .map(features.world.dungeon.model.structures.stair.StairExit::cell)
+                    .filter(Objects::nonNull)
+                    .anyMatch(removedFloorCells.cells()::contains);
+            if (usesRemovedExit) {
+                throw new IllegalArgumentException("Boden unter einem Treppenanschluss kann nicht entfernt werden.");
+            }
+        }
+    }
+
+    public DungeonMap previewMovedCluster(PreviewMovedClusterRequest request) {
+        PreviewMovedClusterRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        return previewMutatedCluster(
+                resolvedRequest.map(),
+                resolvedRequest.clusterId(),
+                new ClusterMutationRequest.Translation(resolvedRequest.translation()));
+    }
+
+    public DungeonMap previewMovedLocalDoor(PreviewMovedLocalDoorRequest request) {
+        PreviewMovedLocalDoorRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        return previewMutatedCluster(
+                resolvedRequest.map(),
+                resolvedRequest.clusterId(),
+                new ClusterMutationRequest.DoorMove(
+                        resolvedRequest.levelZ(),
+                        resolvedRequest.sourceBoundarySegment(),
+                        resolvedRequest.targetBoundarySegment()));
+    }
+
     private CorridorResolutionInput corridorResolutionInput(DungeonMap layout, int levelZ) {
         return new CorridorResolutionInput(
                 levelZ,
@@ -275,6 +392,371 @@ public final class DungeonMapApplicationService {
                 layout.stairs(),
                 updatedTransitions,
                 clusterLevelsById(layout));
+    }
+
+    private DungeonMap previewMutatedCluster(DungeonMap layout, Long clusterId, ClusterMutationRequest mutation) {
+        if (layout == null || clusterId == null || mutation == null) {
+            return layout;
+        }
+        Cluster cluster = layout.findCluster(clusterId);
+        if (cluster == null) {
+            return layout;
+        }
+        Cluster updatedCluster = cluster.mutated(mutation);
+        if (updatedCluster == cluster) {
+            return layout;
+        }
+        ClusterRewriteRequest rewriteRequest = ClusterRewriteRequest.of(
+                List.of(cluster),
+                List.of(updatedCluster),
+                rewriteTranslation(mutation));
+        DungeonMap rewrittenMap = applyClusterRewrite(layout, rewriteRequest);
+        ClusterRewriteEffects rewriteEffects = reconcileClusterRewrite(
+                new ReconcileClusterRewriteRequest(layout, rewrittenMap, rewriteRequest));
+        return applyClusterRewriteEffects(rewrittenMap, rewriteEffects);
+    }
+
+    private DungeonMap applyClusterRewrite(DungeonMap layout, ClusterRewriteRequest request) {
+        if (layout == null || request == null) {
+            return layout;
+        }
+        List<Cluster> resolvedOriginalClusters = normalizedClusters(request.originalClusters());
+        List<Cluster> resolvedFinalClusters = normalizedClusters(request.rewrittenClusters());
+        if (resolvedOriginalClusters.isEmpty() && resolvedFinalClusters.isEmpty()) {
+            return layout;
+        }
+
+        Set<Long> replacedClusterIds = resolvedOriginalClusters.stream()
+                .map(Cluster::clusterId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        Map<Long, Cluster> replacementsById = new LinkedHashMap<>();
+        ArrayList<Cluster> appendedClusters = new ArrayList<>();
+        for (Cluster cluster : resolvedFinalClusters) {
+            if (cluster == null) {
+                continue;
+            }
+            if (cluster.clusterId() == null) {
+                appendedClusters.add(cluster);
+            } else {
+                replacementsById.put(cluster.clusterId(), cluster);
+            }
+        }
+
+        ArrayList<Cluster> updatedClusters = new ArrayList<>(layout.clusters().size() + resolvedFinalClusters.size());
+        for (Cluster existing : layout.clusters()) {
+            if (existing == null || existing.clusterId() == null || !replacedClusterIds.contains(existing.clusterId())) {
+                updatedClusters.add(existing);
+                continue;
+            }
+            Cluster replacement = replacementsById.remove(existing.clusterId());
+            if (replacement != null) {
+                updatedClusters.add(replacement);
+            }
+        }
+        updatedClusters.addAll(replacementsById.values());
+        updatedClusters.addAll(appendedClusters);
+
+        LinkedHashMap<Long, Integer> updatedClusterLevels = new LinkedHashMap<>(clusterLevelsById(layout));
+        for (Long clusterId : replacedClusterIds) {
+            updatedClusterLevels.remove(clusterId);
+        }
+        for (Cluster cluster : resolvedFinalClusters) {
+            if (cluster != null && cluster.clusterId() != null) {
+                updatedClusterLevels.put(cluster.clusterId(), cluster.primaryLevel());
+            }
+        }
+        return new DungeonMap(
+                layout.mapId(),
+                layout.name(),
+                layout.corridors(),
+                updatedClusters,
+                layout.stairs(),
+                layout.transitions(),
+                updatedClusterLevels);
+    }
+
+    private DungeonMap applyClusterRewriteEffects(DungeonMap layout, ClusterRewriteEffects effects) {
+        if (layout == null || effects == null) {
+            return layout;
+        }
+        DungeonMap updatedMap = layout;
+        if (!effects.reboundCorridors().isEmpty()) {
+            LinkedHashMap<Long, Corridor> corridorUpdatesById = effects.reboundCorridors().stream()
+                    .filter(Objects::nonNull)
+                    .filter(corridor -> corridor.corridorId() != null)
+                    .collect(Collectors.toMap(
+                            Corridor::corridorId,
+                            corridor -> corridor,
+                            (left, right) -> right,
+                            LinkedHashMap::new));
+            if (!corridorUpdatesById.isEmpty()) {
+                List<Corridor> updatedCorridors = layout.corridors().stream()
+                        .map(corridor -> corridor == null || corridor.corridorId() == null
+                                ? corridor
+                                : corridorUpdatesById.getOrDefault(corridor.corridorId(), corridor))
+                        .toList();
+                updatedMap = withCorridors(updatedMap, updatedCorridors);
+            }
+        }
+        if (!effects.reboundTransitionConnectionsById().isEmpty()) {
+            Map<Long, DungeonConnection> transitionConnectionsById = effects.reboundTransitionConnectionsById();
+            List<DungeonTransition> updatedTransitions = updatedMap.transitions().stream()
+                    .map(transition -> transition == null || transition.transitionId() == null
+                            ? transition
+                            : transitionConnectionsById.containsKey(transition.transitionId())
+                            ? transition.withLocalConnection(transitionConnectionsById.get(transition.transitionId()))
+                            : transition)
+                    .toList();
+            updatedMap = withTransitions(updatedMap, updatedTransitions);
+        }
+        return updatedMap;
+    }
+
+    private void validateCorridorRewrite(
+            DungeonMap originalMap,
+            DungeonMap rewrittenMap,
+            Set<Long> affectedRoomIds,
+            GridTranslation translation
+    ) {
+        if (originalMap == null || rewrittenMap == null || affectedRoomIds == null || affectedRoomIds.isEmpty()) {
+            return;
+        }
+        for (Corridor corridor : originalMap.corridors()) {
+            if (corridor != null && touchesAffectedRooms(corridor, affectedRoomIds)) {
+                corridor.validateReconcile(corridorReconcileInput(originalMap, corridor, rewrittenMap, affectedRoomIds, translation));
+            }
+        }
+    }
+
+    private List<Corridor> reboundCorridors(
+            DungeonMap originalMap,
+            DungeonMap rewrittenMap,
+            Set<Long> affectedRoomIds,
+            GridTranslation translation
+    ) {
+        if (originalMap == null || rewrittenMap == null || affectedRoomIds == null || affectedRoomIds.isEmpty()) {
+            return List.of();
+        }
+        ArrayList<Corridor> reboundCorridors = new ArrayList<>();
+        for (Corridor corridor : originalMap.corridors()) {
+            if (corridor != null && touchesAffectedRooms(corridor, affectedRoomIds)) {
+                Corridor reboundCorridor = corridor.reconciled(
+                        corridorReconcileInput(originalMap, corridor, rewrittenMap, affectedRoomIds, translation));
+                if (reboundCorridor != corridor) {
+                    reboundCorridors.add(reboundCorridor);
+                }
+            }
+        }
+        return reboundCorridors.isEmpty() ? List.of() : List.copyOf(reboundCorridors);
+    }
+
+    private CorridorReconcileInput corridorReconcileInput(
+            DungeonMap originalMap,
+            Corridor corridor,
+            DungeonMap updatedMap,
+            Set<Long> affectedRoomIds,
+            GridTranslation translation
+    ) {
+        Corridor resolvedCorridor = Objects.requireNonNull(corridor, "corridor");
+        DungeonMap resolvedUpdatedMap = Objects.requireNonNull(updatedMap, "updatedMap");
+        int corridorLevel = resolvedCorridor.levelZ();
+        CorridorResolutionInput updatedResolution = corridorResolutionInput(resolvedUpdatedMap, corridorLevel);
+        return new CorridorReconcileInput(
+                affectedRoomIds,
+                exteriorDoorInputs(originalMap, corridorLevel),
+                exteriorDoorInputs(resolvedUpdatedMap, corridorLevel),
+                translation,
+                updatedResolution);
+    }
+
+    private boolean touchesAffectedRooms(Corridor corridor, Set<Long> affectedRoomIds) {
+        if (corridor == null || affectedRoomIds == null || affectedRoomIds.isEmpty()) {
+            return false;
+        }
+        return corridor.connectedRoomIds().stream().anyMatch(affectedRoomIds::contains);
+    }
+
+    private void validateTransitionRewrite(
+            DungeonMap originalMap,
+            DungeonMap rewrittenMap,
+            Set<Long> affectedRoomIds
+    ) {
+        if (originalMap == null || rewrittenMap == null || affectedRoomIds == null || affectedRoomIds.isEmpty()) {
+            return;
+        }
+        for (DungeonTransition transition : originalMap.transitions()) {
+            if (touchesAffectedRooms(transition, affectedRoomIds)) {
+                reboundTransitionLocalConnection(rewrittenMap, transition, affectedRoomIds, false);
+            }
+        }
+    }
+
+    private Map<Long, DungeonConnection> reboundTransitionConnections(
+            DungeonMap originalMap,
+            DungeonMap rewrittenMap,
+            Set<Long> affectedRoomIds
+    ) {
+        if (originalMap == null || rewrittenMap == null || affectedRoomIds == null || affectedRoomIds.isEmpty()) {
+            return Map.of();
+        }
+        LinkedHashMap<Long, DungeonConnection> reboundConnectionsById = new LinkedHashMap<>();
+        for (DungeonTransition transition : originalMap.transitions()) {
+            if (transition == null || transition.transitionId() == null || !touchesAffectedRooms(transition, affectedRoomIds)) {
+                continue;
+            }
+            DungeonConnection reboundConnection = reboundTransitionLocalConnection(
+                    rewrittenMap,
+                    transition,
+                    affectedRoomIds,
+                    true);
+            if (!Objects.equals(reboundConnection, transition.localConnection())) {
+                reboundConnectionsById.put(transition.transitionId(), reboundConnection);
+            }
+        }
+        return reboundConnectionsById.isEmpty() ? Map.of() : Map.copyOf(reboundConnectionsById);
+    }
+
+    private boolean touchesAffectedRooms(DungeonTransition transition, Set<Long> affectedRoomIds) {
+        if (transition == null
+                || transition.localConnection() == null
+                || affectedRoomIds == null
+                || affectedRoomIds.isEmpty()) {
+            return false;
+        }
+        return transition.localConnection().endpoints().stream()
+                .filter(Objects::nonNull)
+                .filter(endpoint -> endpoint.type() == features.world.dungeon.model.structures.connection.ConnectionEndpointType.ROOM)
+                .map(ConnectionEndpoint::id)
+                .filter(Objects::nonNull)
+                .anyMatch(affectedRoomIds::contains);
+    }
+
+    private DungeonConnection reboundTransitionLocalConnection(
+            DungeonMap rewrittenMap,
+            DungeonTransition transition,
+            Set<Long> affectedRoomIds,
+            boolean requirePersistedRoomId
+    ) {
+        if (rewrittenMap == null
+                || transition == null
+                || transition.localConnection() == null
+                || affectedRoomIds == null
+                || affectedRoomIds.isEmpty()) {
+            return transition == null ? null : transition.localConnection();
+        }
+        DungeonConnection localConnection = transition.localConnection();
+        if (localConnection.doorCarrier() != null) {
+            ConnectionEndpoint entryEndpoint = localConnection.entryEndpoint();
+            if (entryEndpoint == null
+                    || entryEndpoint.type() != features.world.dungeon.model.structures.connection.ConnectionEndpointType.ROOM
+                    || !affectedRoomIds.contains(entryEndpoint.id())) {
+                return localConnection;
+            }
+            Room reboundRoom = resolveTransitionDoorRoom(
+                    rewrittenMap,
+                    localConnection.levelZ(),
+                    localConnection.doorRef(),
+                    requirePersistedRoomId);
+            DoorDescription reboundDoor = rewrittenMap.describeDoor(localConnection.doorRef());
+            if (reboundDoor == null) {
+                throw new IllegalArgumentException("Transition door no longer resolves to a canonical door");
+            }
+            return new DungeonConnection(
+                    localConnection.kind(),
+                    localConnection.ownerId(),
+                    localConnection.mapId(),
+                    localConnection.levelZ(),
+                    new DoorConnectionCarrier(reboundDoor.ref()),
+                    List.of(ConnectionEndpoint.room(reboundRoom.roomId()), ConnectionEndpoint.transition(transition.transitionId())));
+        }
+        if (localConnection.stairCarrier() != null) {
+            ConnectionEndpoint entryEndpoint = localConnection.entryEndpoint();
+            if (entryEndpoint == null
+                    || entryEndpoint.type() != features.world.dungeon.model.structures.connection.ConnectionEndpointType.ROOM
+                    || !affectedRoomIds.contains(entryEndpoint.id())) {
+                return localConnection;
+            }
+            StairConnectionCarrier stairCarrier = localConnection.stairCarrier();
+            Room reboundRoom = roomWithFloorAtCell(rewrittenMap, stairCarrier.anchorCell(), stairCarrier.anchorLevelZ());
+            if (reboundRoom == null) {
+                throw new IllegalArgumentException("Transition stair anchor no longer resolves to a room floor");
+            }
+            if (requirePersistedRoomId && reboundRoom.roomId() == null) {
+                throw new IllegalArgumentException("Transition stair rebound requires a persisted room id");
+            }
+            return new DungeonConnection(
+                    localConnection.kind(),
+                    localConnection.ownerId(),
+                    localConnection.mapId(),
+                    localConnection.levelZ(),
+                    new StairConnectionCarrier(
+                            stairCarrier.anchorCell(),
+                            stairCarrier.anchorLevelZ(),
+                            stairCarrier.stair()),
+                    List.of(ConnectionEndpoint.room(reboundRoom.roomId()), ConnectionEndpoint.transition(transition.transitionId())));
+        }
+        return localConnection;
+    }
+
+    private Room resolveTransitionDoorRoom(
+            DungeonMap rewrittenMap,
+            int levelZ,
+            DoorRef doorRef,
+            boolean requirePersistedRoomId
+    ) {
+        if (rewrittenMap == null || doorRef == null) {
+            throw new IllegalArgumentException("Transition door rebound requires a canonical door");
+        }
+        DoorDescription reboundDoor = rewrittenMap.describeDoor(doorRef);
+        if (reboundDoor == null
+                || reboundDoor.levelZ() != levelZ
+                || reboundDoor.role() != features.world.dungeon.dungeonmap.api.DoorRole.ROOM_EXTERIOR) {
+            throw new IllegalArgumentException("Transition door no longer resolves to an exterior room boundary");
+        }
+        Room reboundRoom = reboundDoor.touchingRooms().isEmpty() ? null : reboundDoor.touchingRooms().getFirst();
+        if (reboundRoom == null) {
+            throw new IllegalArgumentException("Transition door no longer resolves to an exterior room boundary");
+        }
+        if (requirePersistedRoomId && reboundRoom.roomId() == null) {
+            throw new IllegalArgumentException("Transition door rebound requires a persisted room id");
+        }
+        return reboundRoom;
+    }
+
+    private Room roomWithFloorAtCell(DungeonMap layout, GridPoint cell, int levelZ) {
+        Cluster cluster = layout == null || cell == null ? null : layout.clusterAtCell(cell, levelZ);
+        Room room = cluster == null ? null : cluster.roomTopology().roomAt(cell, levelZ);
+        return room != null && cluster.roomTopology().structureFor(room).surfaceAtLevel(levelZ).floor().contains(cell)
+                ? room
+                : null;
+    }
+
+    private static GridTranslation rewriteTranslation(ClusterMutationRequest mutation) {
+        return mutation instanceof ClusterMutationRequest.Translation translation
+                ? translation.translation()
+                : GridTranslation.none();
+    }
+
+    private static List<Cluster> normalizedClusters(List<Cluster> clusters) {
+        if (clusters == null || clusters.isEmpty()) {
+            return List.of();
+        }
+        ArrayList<Cluster> result = new ArrayList<>();
+        Set<Long> seenClusterIds = new LinkedHashSet<>();
+        for (Cluster cluster : clusters) {
+            if (cluster == null) {
+                continue;
+            }
+            if (cluster.clusterId() == null) {
+                result.add(cluster);
+                continue;
+            }
+            if (seenClusterIds.add(cluster.clusterId())) {
+                result.add(cluster);
+            }
+        }
+        return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
     private Map<Long, Integer> clusterLevelsById(DungeonMap layout) {

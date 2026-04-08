@@ -68,6 +68,7 @@ public final class DungeonMapModule {
                 mapApplicationService);
         DungeonMapLoadResolver loadResolver = new DungeonMapLoadResolver(mapRepository);
         DungeonClusterApplicationService clusterApplicationService = new DungeonClusterApplicationService(
+                mapApplicationService,
                 mapRepository,
                 clusterRepository,
                 corridorRepository,

@@ -33,7 +33,9 @@ public final class DungeonMapCatalogService {
                     throw new SQLException("Dungeon map insert failed", exception);
                 }
                 try {
-                    clusterApplicationService.createDefaultRoom(conn, mapId);
+                    clusterApplicationService.bootstrapDefaultCluster(
+                            conn,
+                            new DungeonClusterApplicationService.ClusterBootstrapRequest(mapId));
                 } catch (SQLException | RuntimeException exception) {
                     throw new SQLException("Default room bootstrap failed for dungeon " + mapId, exception);
                 }
