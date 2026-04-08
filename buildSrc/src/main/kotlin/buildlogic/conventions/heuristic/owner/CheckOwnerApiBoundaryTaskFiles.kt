@@ -47,78 +47,10 @@ internal fun analyzeTaskFile(
     snapshot: OwnerConventionSnapshot,
     support: OwnerConventionSupport
 ): OwnerConventionAnalysis<OwnerConventionStaticApi> {
-    val context = sourceFile.context
-    val reasons = mutableListOf<String>()
-    val className = context.className.removeSuffix(".java")
-    val requestStem = support.requestStemForFile(context.className, "Task")
-    if (requestStem == null) {
-        reasons += "${context.path} :: task files must be named <Request>Task with a direct request stem"
-    } else if (requestStem !in snapshot.requestStemsByOwner[context.ownerPackage].orEmpty()) {
-        reasons += "${context.path} :: task files must match a real public request on ${context.ownerPackage}.${support.ownerObjectName(context.ownerPackage)}"
-    }
+    val shapeAnalysis = support.analyzeTaskShape(sourceFile, snapshot)
+    val reasons = shapeAnalysis.reasons.toMutableList()
     val primaryType = support.parsedPrimaryType(sourceFile)
-    if (primaryType == null) {
-        reasons += "${context.path} :: task files must declare a top-level type named $className"
-        return OwnerConventionAnalysis(
-            reasons = reasons,
-            model = null
-        )
-    }
-    if (sourceFile.parsedSource.topLevelTypes.size != 1) {
-        reasons += "${context.path} :: task files must contain exactly one top-level type"
-    }
-    if (primaryType.kind != OwnerConventionParsedJavaTypeKind.CLASS || Modifier.FINAL !in primaryType.modifiers) {
-        reasons += "${context.path} :: task files must declare a final class"
-    }
-    reasons += taskClassShapeReasons(context.path, primaryType)
-    val constructors = primaryType.constructors
-    if (constructors.none { Modifier.PRIVATE in it.modifiers } || constructors.any { Modifier.PUBLIC in it.modifiers }) {
-        reasons += "${context.path} :: task files must hide construction behind a private constructor"
-    }
-    context.typeImports.importedPackages.forEach { importedPackage ->
-        if (support.roleForDirectoryName(importedPackage.substringAfterLast('.')) != support.inputRole) {
-            reasons += "${context.path} -> $importedPackage :: task files may import only input packages from project code"
-        }
-    }
-    val publicStaticMethods = primaryType.methods.filter {
-        Modifier.PUBLIC in it.modifiers && Modifier.STATIC in it.modifiers
-    }
-    val publicInstanceMethods = primaryType.methods.filter {
-        Modifier.PUBLIC in it.modifiers && Modifier.STATIC !in it.modifiers
-    }
-    val instanceMethods = primaryType.methods.filter { Modifier.STATIC !in it.modifiers }
-    if (publicStaticMethods.size != 1) {
-        reasons += "${context.path} :: task files must expose exactly one public static method"
-    }
-    if (publicInstanceMethods.isNotEmpty()) {
-        reasons += "${context.path} :: task files must not expose public instance methods"
-    }
-    if (instanceMethods.isNotEmpty()) {
-        reasons += "${context.path} :: task files must stay static-only; all methods must be static"
-    }
-    publicStaticMethods.singleOrNull()?.let { method ->
-        if (method.parameters.size != 1) {
-            reasons += "${context.path} :: task files must model exactly one input parameter"
-        }
-        val parameterType = method.parameters.singleOrNull()?.let { parameter ->
-            support.declaredInputTypeName(parameter.tree.type, sourceFile.parsedSource, snapshot)
-        }
-        val returnType = support.declaredInputTypeName(method.tree.returnType, sourceFile.parsedSource, snapshot)
-        if (parameterType == null) {
-            reasons += "${context.path} :: task methods must begin with exactly one canonical input type parameter"
-        }
-        if (requestStem != null) {
-            val expectedInputType = "${context.ownerPackage}.${support.inputRole}.${requestStem}Input"
-            if (parameterType != expectedInputType) {
-                reasons += "${context.path} :: task methods must accept exactly ${requestStem}Input from the same owner"
-            }
-        }
-        if (returnType == null) {
-            reasons += "${context.path} :: task methods must end with exactly one canonical input return type"
-        } else if (!support.isOwnerReachable(context.ownerPackage, support.ownerPackageForTypeName(returnType))) {
-            reasons += "${context.path} :: task methods may return only same-owner or neighboring input types"
-        }
-    }
+        ?: return OwnerConventionAnalysis(reasons = reasons.distinct(), model = shapeAnalysis.model)
     primaryType.methods.forEach { method ->
         reasons += taskMethodBodyReasons(
             sourceFile = sourceFile,
@@ -134,7 +66,7 @@ internal fun analyzeTaskFile(
     )
 }
 
-private fun taskClassShapeReasons(
+internal fun taskClassShapeReasons(
     path: String,
     primaryType: OwnerConventionParsedJavaType
 ): List<String> {

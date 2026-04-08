@@ -27,46 +27,10 @@ internal fun analyzeInputFile(
     snapshot: OwnerConventionSnapshot,
     support: OwnerConventionSupport
 ): OwnerConventionAnalysis<OwnerConventionInputApi> {
-    val context = sourceFile.context
-    val reasons = mutableListOf<String>()
-    val className = context.className.removeSuffix(".java")
-    val requestStem = support.requestStemForFile(context.className, "Input")
-    if (requestStem == null) {
-        reasons += "${context.path} :: input files must be named <Request>Input with a direct request stem"
-    } else if (requestStem !in snapshot.requestStemsByOwner[context.ownerPackage].orEmpty()) {
-        reasons += "${context.path} :: input files must match a real public request on ${context.ownerPackage}.${support.ownerObjectName(context.ownerPackage)} that accepts exactly ${requestStem}Input"
-    }
-    val primaryType = support.parsedPrimaryType(sourceFile)
-    if (primaryType == null) {
-        reasons += "${context.path} :: input files must declare a top-level type named $className"
-        return OwnerConventionAnalysis(
-            reasons = reasons,
-            model = null
-        )
-    }
-    val validKind = primaryType.kind == OwnerConventionParsedJavaTypeKind.RECORD ||
-        primaryType.kind == OwnerConventionParsedJavaTypeKind.ENUM ||
-        (primaryType.kind == OwnerConventionParsedJavaTypeKind.INTERFACE && Modifier.SEALED in primaryType.modifiers)
-    if (!validKind) {
-        reasons += "${context.path} :: input files must declare a record, enum, or sealed interface"
-    }
-    if (sourceFile.parsedSource.topLevelTypes.size != 1) {
-        reasons += "${context.path} :: input files must contain exactly one top-level type"
-    }
-    reasons += inputMemberReasons(context.path, primaryType)
-    context.typeImports.importedPackages.forEach { importedPackage ->
-        if (support.roleForDirectoryName(importedPackage.substringAfterLast('.')) != support.inputRole) {
-            reasons += "${context.path} -> $importedPackage :: input files may import only other input packages from project code"
-        }
-    }
-    val canonicalApi = support.inputApiShape(sourceFile, snapshot)
-    return OwnerConventionAnalysis(
-        reasons = reasons.distinct(),
-        model = canonicalApi
-    )
+    return support.analyzeInputShape(sourceFile, snapshot)
 }
 
-private fun inputMemberReasons(
+internal fun inputMemberReasons(
     path: String,
     primaryType: OwnerConventionParsedJavaType
 ): List<String> {

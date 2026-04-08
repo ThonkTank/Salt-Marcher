@@ -53,76 +53,13 @@ internal fun analyzeOwnerFile(
     support: OwnerConventionSupport
 ): OwnerConventionAnalysis<OwnerConventionCanonicalOwnerCaller> {
     val context = sourceFile.context
-    val reasons = mutableListOf<String>()
-    val siblingJavaFiles = support.directChildren(context.file.parentFile)
-        .filter { child -> child.isFile && child.name.endsWith(".java") && child.name != "package-info.java" }
-    if (!context.className.endsWith("Object.java")) {
-        reasons += "${context.path} :: owner files must be named *Object"
-    }
-    if (support.normalizedToken(context.className.removeSuffix(".java").removeSuffix("Object")) != support.normalizedToken(context.dirName)) {
-        reasons += "${context.path} :: owner file name must match its directory name"
-    }
-    if (siblingJavaFiles.size != 1 || siblingJavaFiles.single().canonicalFile != context.file.canonicalFile) {
-        reasons += "${context.path} :: owner directories may contain exactly one Java file"
-    }
-    if (sourceFile.parsedSource.topLevelTypes.size != 1) {
-        reasons += "${context.path} :: owner directories must expose exactly one top-level type"
-    }
+    val shapeAnalysis = support.analyzeOwnerSurfaceShape(sourceFile, snapshot)
+    val reasons = shapeAnalysis.reasons.toMutableList()
     val primaryType = support.parsedPrimaryType(sourceFile)
-    if (primaryType == null) {
-        reasons += "${context.path} :: owner files must declare a public final class named ${context.className.removeSuffix(".java")}"
-        return OwnerConventionAnalysis(
-            reasons = reasons,
-            model = null
-        )
-    }
-    if (
-        primaryType.kind != OwnerConventionParsedJavaTypeKind.CLASS ||
-        Modifier.PUBLIC !in primaryType.modifiers ||
-        Modifier.FINAL !in primaryType.modifiers
-    ) {
-        reasons += "${context.path} :: owner files must declare a public final class named ${primaryType.name}"
-    }
-
-    val ownerObjectTypeName = "${context.ownerPackage}.${primaryType.name}"
-    validateOwnerDependencyTypes(
-        context = context,
-        snapshot = snapshot,
-        support = support,
-        sourceTypeName = ownerObjectTypeName,
-        projectTypeNames = primaryType.fields.flatMap { field ->
-            support.projectTypeNames(field.tree.type, sourceFile.parsedSource, snapshot)
-        }.toSet(),
-        reasonPrefix = "${context.path} :: owner fields"
-    ).forEach(reasons::add)
-    validateOwnerDependencyTypes(
-        context = context,
-        snapshot = snapshot,
-        support = support,
-        sourceTypeName = ownerObjectTypeName,
-        projectTypeNames = primaryType.constructors.flatMap { constructor ->
-            constructor.parameters.flatMap { parameter ->
-                support.projectTypeNames(parameter.tree.type, sourceFile.parsedSource, snapshot)
-            }
-        }.toSet(),
-        reasonPrefix = "${context.path} :: owner constructors"
-    ).forEach(reasons::add)
-
+        ?: return OwnerConventionAnalysis(reasons = reasons.distinct(), model = shapeAnalysis.model?.let {
+            OwnerConventionCanonicalOwnerCaller(it.typeName, it.ownerPackage, it.requestMethodNames)
+        })
     val publicMethods = primaryType.methods.filter { Modifier.PUBLIC in it.modifiers }
-    val publicMethodsByName = publicMethods.groupBy { it.name }
-    publicMethodsByName
-        .filterValues { methods -> methods.size > 1 }
-        .forEach { (methodName, _) ->
-            reasons += "${context.path} :: owner requests must not overload $methodName"
-        }
-    primaryType.methods
-        .filter { Modifier.PUBLIC !in it.modifiers }
-        .forEach { method ->
-            reasons += "${context.path} :: owner files must not declare helper methods like ${method.name}; only public request methods and constructors are allowed"
-        }
-    publicMethods.forEach { method ->
-        reasons += ownerRequestShapeReasons(sourceFile, method, snapshot, support)
-    }
     val fieldProjectTypes = primaryType.fields.mapNotNull { field ->
         val resolvedType = support.resolveProjectTypeName(field.tree.type, sourceFile.parsedSource, snapshot)
             ?: return@mapNotNull null
@@ -147,7 +84,7 @@ internal fun analyzeOwnerFile(
     )
 }
 
-private fun ownerRequestShapeReasons(
+internal fun ownerRequestShapeReasons(
     sourceFile: OwnerConventionSourceFile,
     method: OwnerConventionParsedJavaMethod,
     snapshot: OwnerConventionSnapshot,
@@ -168,7 +105,7 @@ private fun ownerRequestShapeReasons(
     }
     val expectedInputType = "${context.ownerPackage}.${support.inputRole}.${requestStem}Input"
     val parameterType = method.parameters.singleOrNull()?.let { parameter ->
-        support.declaredProjectTypeName(parameter.tree.type, sourceFile.parsedSource, snapshot)
+        support.declaredInputTypeName(parameter.tree.type, sourceFile.parsedSource, snapshot)
     }
     if (parameterType != expectedInputType) {
         reasons += "${context.path} :: owner requests must accept exactly ${expectedInputType.substringAfterLast('.')} (${method.name})"
@@ -179,7 +116,7 @@ private fun ownerRequestShapeReasons(
     return reasons
 }
 
-private fun validateOwnerDependencyTypes(
+internal fun validateOwnerDependencyTypes(
     context: OwnerConventionSourceContext,
     snapshot: OwnerConventionSnapshot,
     support: OwnerConventionSupport,
