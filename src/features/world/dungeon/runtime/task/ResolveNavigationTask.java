@@ -23,7 +23,7 @@ public final class ResolveNavigationTask {
                     layout,
                     input.preferredCell(),
                     input.preferredLevelZ(),
-                    features.world.dungeon.geometry.CardinalDirection.parse(input.preferredHeading()));
+                    heading(input.preferredHeading()));
             return toNavigationInput(snapshot);
         }
     }
@@ -45,5 +45,9 @@ public final class ResolveNavigationTask {
             features.world.dungeon.dungeonmap.application.DungeonMapLoadResolver loadResolver
     ) {
         return new features.world.dungeon.application.runtime.DungeonRuntimeApplicationService(mapRepository, loadResolver);
+    }
+
+    private static features.world.dungeon.geometry.CardinalDirection heading(String name) {
+        return features.world.dungeon.geometry.CardinalDirection.parse(name);
     }
 }
