@@ -1,7 +1,6 @@
 package features.world.dungeon.bootstrap;
 
 import features.world.api.input.TravelSurfaceInput;
-import features.world.dungeon.application.room.DungeonRoomApplicationService;
 import features.world.dungeon.application.runtime.DungeonRuntimeApplicationService;
 import features.world.dungeon.application.stair.DungeonStairApplicationService;
 import features.world.dungeon.application.transition.DungeonTransitionApplicationService;
@@ -16,6 +15,7 @@ import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
 import features.world.dungeon.dungeonmap.cluster.application.ApplicationObject;
 import features.world.dungeon.dungeonmap.corridor.CorridorObject;
 import features.world.dungeon.dungeonmap.corridor.application.DungeonCorridorApplicationService;
+import features.world.dungeon.room.RoomObject;
 import features.world.dungeon.shell.editor.interaction.input.EditorTool;
 import features.world.dungeon.shell.interaction.DungeonHitCollector;
 import features.world.dungeon.shell.runtime.surface.SurfaceObject;
@@ -73,7 +73,7 @@ public final class BootstrapObject {
                 mapRepository,
                 clusterRepository,
                 mapObject);
-        DungeonRoomApplicationService roomApplicationService = new DungeonRoomApplicationService(roomRepository);
+        RoomObject roomObject = new RoomObject();
         DungeonStairApplicationService stairApplicationService = new DungeonStairApplicationService(
                 mapRepository,
                 stairRepository);
@@ -104,7 +104,7 @@ public final class BootstrapObject {
                 new features.world.dungeon.shell.editor.state.RoomNarrationPane(
                         state,
                         loadingService,
-                        roomApplicationService,
+                        roomObject,
                         editorInteractionState);
         DungeonHitCollector hitCollector = new DungeonHitCollector();
         features.world.dungeon.shell.editor.interaction.state.StairTool stairTool =
