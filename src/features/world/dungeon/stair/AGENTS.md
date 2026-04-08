@@ -8,6 +8,7 @@
 
 - `StairObject` - public stair root seam - accepts typed stair workflow requests and delegates them to the current stair workflow owner.
 - `input/DeleteStairInput` - stair delete request - carries the active map id plus the target stair id.
+- `input/LoadEditorSpecInput` - stair editor-spec request family - carries the map and stair id and returns the authored editor spec in input form.
 - `StairPathPatternKind` - authored stair path shape choice for editor workflows.
 - `StairPathPatternSpec` - authored stair path parameters - validates and normalizes stair/transition path inputs before generation.
 - `StairPathGenerator` - stair-owned generation seam - turns a validated `StairPathPatternSpec` plus anchor/span inputs into a canonical `GridPath`.
