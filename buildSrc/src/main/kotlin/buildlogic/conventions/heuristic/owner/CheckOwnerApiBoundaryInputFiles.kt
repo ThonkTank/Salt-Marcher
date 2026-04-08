@@ -19,14 +19,14 @@ fun Project.registerCheckOwnerApiBoundaryInputFilesTask(
     failureSummary = "Touched input files must remain owner-local request carriers that match a real owner public request.",
     applicableRoles = setOf(support.inputRole)
 ) { sourceFile, snapshot ->
-    inputFileReasons(sourceFile, snapshot, support)
+    analyzeInputFile(sourceFile, snapshot, support).reasons
 }
 
-private fun inputFileReasons(
+internal fun analyzeInputFile(
     sourceFile: OwnerConventionSourceFile,
     snapshot: OwnerConventionSnapshot,
     support: OwnerConventionSupport
-): List<String> {
+): OwnerConventionAnalysis<OwnerConventionInputApi> {
     val context = sourceFile.context
     val reasons = mutableListOf<String>()
     val className = context.className.removeSuffix(".java")
@@ -39,7 +39,10 @@ private fun inputFileReasons(
     val primaryType = support.parsedPrimaryType(sourceFile)
     if (primaryType == null) {
         reasons += "${context.path} :: input files must declare a top-level type named $className"
-        return reasons
+        return OwnerConventionAnalysis(
+            reasons = reasons,
+            model = null
+        )
     }
     val validKind = primaryType.kind == OwnerConventionParsedJavaTypeKind.RECORD ||
         primaryType.kind == OwnerConventionParsedJavaTypeKind.ENUM ||
@@ -56,7 +59,18 @@ private fun inputFileReasons(
             reasons += "${context.path} -> $importedPackage :: input files may import only other input packages from project code"
         }
     }
-    return reasons
+    val canonicalApi = if (reasons.isEmpty()) {
+        OwnerConventionInputApi(
+            typeName = "${context.packageName}.${primaryType.name}",
+            ownerPackage = context.ownerPackage
+        )
+    } else {
+        null
+    }
+    return OwnerConventionAnalysis(
+        reasons = reasons.distinct(),
+        model = canonicalApi
+    )
 }
 
 private fun inputMemberReasons(

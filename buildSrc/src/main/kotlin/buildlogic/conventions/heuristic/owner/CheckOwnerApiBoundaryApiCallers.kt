@@ -123,11 +123,11 @@ private fun isCanonicalOwnerRequestCaller(
     if (caller.ownerPackage != ownerPackage || caller.role != support.ownerRole) {
         return false
     }
-    val canonicalOwnerTypeName = support.canonicalOwnerObjectTypeName(ownerPackage, snapshot) ?: return false
-    if (caller.typeName != canonicalOwnerTypeName) {
+    val canonicalOwnerCaller = support.canonicalOwnerCaller(ownerPackage, snapshot) ?: return false
+    if (caller.typeName != canonicalOwnerCaller.typeName) {
         return false
     }
-    return caller.methodName in support.ownerRequestMethodNames(ownerPackage, snapshot)
+    return caller.methodName in canonicalOwnerCaller.requestMethodNames
 }
 
 private fun formatCallerViolation(

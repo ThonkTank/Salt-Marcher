@@ -19,21 +19,24 @@ fun Project.registerCheckOwnerApiBoundaryStateFilesTask(
     failureSummary = "Touched state files must keep owner-local factory/transition boundaries and expose only owner state types.",
     applicableRoles = setOf(support.stateRole)
 ) { sourceFile, snapshot ->
-    stateFileReasons(sourceFile, snapshot, support)
+    analyzeStateFile(sourceFile, snapshot, support).reasons
 }
 
-private fun stateFileReasons(
+internal fun analyzeStateFile(
     sourceFile: OwnerConventionSourceFile,
     snapshot: OwnerConventionSnapshot,
     support: OwnerConventionSupport
-): List<String> {
+): OwnerConventionAnalysis<OwnerConventionStaticApi> {
     val context = sourceFile.context
     val reasons = mutableListOf<String>()
     val className = context.className.removeSuffix(".java")
     val primaryType = support.parsedPrimaryType(sourceFile)
     if (primaryType == null) {
         reasons += "${context.path} :: state files must declare a top-level type named $className"
-        return reasons
+        return OwnerConventionAnalysis(
+            reasons = reasons,
+            model = null
+        )
     }
     if (sourceFile.parsedSource.topLevelTypes.size != 1) {
         reasons += "${context.path} :: state files must contain exactly one top-level type"
@@ -90,7 +93,22 @@ private fun stateFileReasons(
         support = support,
         primaryType = primaryType
     )
-    return reasons
+    val canonicalApi = if (reasons.isEmpty()) {
+        OwnerConventionStaticApi(
+            typeName = "${context.packageName}.${primaryType.name}",
+            ownerPackage = context.ownerPackage,
+            publicStaticMethodNames = publicMethods
+                .filter { method -> Modifier.STATIC in method.modifiers }
+                .map(OwnerConventionParsedJavaMethod::name)
+                .toSet()
+        )
+    } else {
+        null
+    }
+    return OwnerConventionAnalysis(
+        reasons = reasons.distinct(),
+        model = canonicalApi
+    )
 }
 
 private fun stateBodyReasons(

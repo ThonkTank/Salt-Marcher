@@ -19,21 +19,24 @@ fun Project.registerCheckOwnerApiBoundaryRepositoryFilesTask(
     failureSummary = "Touched repository files must stay static state translators that depend only on their owner's state layer.",
     applicableRoles = setOf(support.repositoryRole)
 ) { sourceFile, snapshot ->
-    repositoryFileReasons(sourceFile, snapshot, support)
+    analyzeRepositoryFile(sourceFile, snapshot, support).reasons
 }
 
-private fun repositoryFileReasons(
+internal fun analyzeRepositoryFile(
     sourceFile: OwnerConventionSourceFile,
     snapshot: OwnerConventionSnapshot,
     support: OwnerConventionSupport
-): List<String> {
+): OwnerConventionAnalysis<OwnerConventionStaticApi> {
     val context = sourceFile.context
     val reasons = mutableListOf<String>()
     val className = context.className.removeSuffix(".java")
     val primaryType = support.parsedPrimaryType(sourceFile)
     if (primaryType == null) {
         reasons += "${context.path} :: repository files must declare a top-level type named $className"
-        return reasons
+        return OwnerConventionAnalysis(
+            reasons = reasons,
+            model = null
+        )
     }
     if (sourceFile.parsedSource.topLevelTypes.size != 1) {
         reasons += "${context.path} :: repository files must contain exactly one top-level type"
@@ -96,7 +99,22 @@ private fun repositoryFileReasons(
         support = support,
         primaryType = primaryType
     )
-    return reasons
+    val canonicalApi = if (reasons.isEmpty()) {
+        OwnerConventionStaticApi(
+            typeName = "${context.packageName}.${primaryType.name}",
+            ownerPackage = context.ownerPackage,
+            publicStaticMethodNames = publicMethods
+                .filter { method -> Modifier.STATIC in method.modifiers }
+                .map(OwnerConventionParsedJavaMethod::name)
+                .toSet()
+        )
+    } else {
+        null
+    }
+    return OwnerConventionAnalysis(
+        reasons = reasons.distinct(),
+        model = canonicalApi
+    )
 }
 
 private fun repositoryBodyReasons(

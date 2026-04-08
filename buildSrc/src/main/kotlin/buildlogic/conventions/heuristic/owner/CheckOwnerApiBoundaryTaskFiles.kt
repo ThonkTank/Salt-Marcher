@@ -26,7 +26,7 @@ fun Project.registerCheckOwnerApiBoundaryTaskFilesTask(
     failureSummary = "Touched task files must remain static input-to-input pipelines that align with a real owner public request.",
     applicableRoles = setOf(support.taskRole)
 ) { sourceFile, snapshot ->
-    taskFileReasons(sourceFile, snapshot, support)
+    analyzeTaskFile(sourceFile, snapshot, support).reasons
 }
 
 private data class TaskCallClassification(
@@ -34,11 +34,11 @@ private data class TaskCallClassification(
     val description: String
 )
 
-private fun taskFileReasons(
+internal fun analyzeTaskFile(
     sourceFile: OwnerConventionSourceFile,
     snapshot: OwnerConventionSnapshot,
     support: OwnerConventionSupport
-): List<String> {
+): OwnerConventionAnalysis<OwnerConventionStaticApi> {
     val context = sourceFile.context
     val reasons = mutableListOf<String>()
     val className = context.className.removeSuffix(".java")
@@ -51,7 +51,10 @@ private fun taskFileReasons(
     val primaryType = support.parsedPrimaryType(sourceFile)
     if (primaryType == null) {
         reasons += "${context.path} :: task files must declare a top-level type named $className"
-        return reasons
+        return OwnerConventionAnalysis(
+            reasons = reasons,
+            model = null
+        )
     }
     if (sourceFile.parsedSource.topLevelTypes.size != 1) {
         reasons += "${context.path} :: task files must contain exactly one top-level type"
@@ -119,7 +122,19 @@ private fun taskFileReasons(
             method = method
         )
     }
-    return reasons
+    val canonicalApi = if (reasons.isEmpty()) {
+        OwnerConventionStaticApi(
+            typeName = "${context.packageName}.${primaryType.name}",
+            ownerPackage = context.ownerPackage,
+            publicStaticMethodNames = setOf(publicStaticMethods.single().name)
+        )
+    } else {
+        null
+    }
+    return OwnerConventionAnalysis(
+        reasons = reasons.distinct(),
+        model = canonicalApi
+    )
 }
 
 private fun taskMethodBodyReasons(

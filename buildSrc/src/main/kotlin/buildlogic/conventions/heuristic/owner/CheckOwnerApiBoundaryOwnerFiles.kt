@@ -33,7 +33,7 @@ fun Project.registerCheckOwnerApiBoundaryOwnerFilesTask(
     failureSummary = "Touched owner files must remain single-file public *Object seams that expose only canonical owner request orchestration.",
     applicableRoles = setOf(support.ownerRole)
 ) { sourceFile, snapshot ->
-    ownerFileReasons(sourceFile, snapshot, support)
+    analyzeOwnerFile(sourceFile, snapshot, support).reasons
 }
 
 private data class OwnerMethodEnvironment(
@@ -47,11 +47,11 @@ private data class OwnerCallClassification(
     val description: String
 )
 
-private fun ownerFileReasons(
+internal fun analyzeOwnerFile(
     sourceFile: OwnerConventionSourceFile,
     snapshot: OwnerConventionSnapshot,
     support: OwnerConventionSupport
-): List<String> {
+): OwnerConventionAnalysis<OwnerConventionCanonicalOwnerCaller> {
     val context = sourceFile.context
     val reasons = mutableListOf<String>()
     val siblingJavaFiles = support.directChildren(context.file.parentFile)
@@ -71,7 +71,10 @@ private fun ownerFileReasons(
     val primaryType = support.parsedPrimaryType(sourceFile)
     if (primaryType == null) {
         reasons += "${context.path} :: owner files must declare a public final class named ${context.className.removeSuffix(".java")}"
-        return reasons
+        return OwnerConventionAnalysis(
+            reasons = reasons,
+            model = null
+        )
     }
     if (
         primaryType.kind != OwnerConventionParsedJavaTypeKind.CLASS ||
@@ -137,7 +140,19 @@ private fun ownerFileReasons(
                 fieldProjectTypes = fieldProjectTypes
             )
         }
-    return reasons.distinct()
+    val canonicalOwnerCaller = if (reasons.isEmpty()) {
+        OwnerConventionCanonicalOwnerCaller(
+            typeName = "${context.packageName}.${primaryType.name}",
+            ownerPackage = context.ownerPackage,
+            requestMethodNames = publicMethods.map(OwnerConventionParsedJavaMethod::name).toSet()
+        )
+    } else {
+        null
+    }
+    return OwnerConventionAnalysis(
+        reasons = reasons.distinct(),
+        model = canonicalOwnerCaller
+    )
 }
 
 private fun ownerRequestShapeReasons(
@@ -199,7 +214,7 @@ private fun validateOwnerDependencyTypes(
             !support.sameOwnerEdgeOrNeighbor(context.ownerPackage, targetOwnerPackage) ->
                 "$reasonPrefix may cross only one owner edge ($typeName from $sourceTypeName)"
 
-            typeRole == support.ownerRole && typeName == support.canonicalOwnerObjectTypeName(targetOwnerPackage, snapshot) ->
+            typeRole == support.ownerRole && typeName == support.ownerSurfaceTypeName(targetOwnerPackage, snapshot) ->
                 null
 
             typeRole == support.inputRole ->
@@ -754,9 +769,9 @@ private fun classifyOwnerInvocation(
             )
 
         receiverRole == support.ownerRole -> {
-            val allowedRequestMethods = support.ownerRequestMethodNames(receiverOwnerPackage, snapshot)
-            val canonicalOwnerTypeName = support.canonicalOwnerObjectTypeName(receiverOwnerPackage, snapshot)
-            if (receiverTypeName != canonicalOwnerTypeName) {
+            val allowedRequestMethods = support.ownerSurfaceRequestMethodNames(receiverOwnerPackage, snapshot)
+            val ownerSurfaceTypeName = support.ownerSurfaceTypeName(receiverOwnerPackage, snapshot)
+            if (receiverTypeName != ownerSurfaceTypeName) {
                 OwnerCallClassification(
                     allowed = false,
                     description = "owner requests may target only foreign <Owner>Object seams ($receiverTypeName)"

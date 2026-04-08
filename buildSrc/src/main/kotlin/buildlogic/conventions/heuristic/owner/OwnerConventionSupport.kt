@@ -4,6 +4,8 @@ import com.sun.source.tree.MethodInvocationTree
 import com.sun.source.tree.Tree
 import com.sun.source.util.TreePath
 import java.io.File
+import java.util.Collections
+import java.util.IdentityHashMap
 import javax.lang.model.element.ElementKind
 import javax.lang.model.element.Element
 import javax.lang.model.element.ExecutableElement
@@ -276,16 +278,20 @@ class OwnerConventionSupport(private val project: Project) {
         return topLevelTypeName(elementFor(tree, parsedSource, snapshot))
     }
 
-    internal fun ownerRequestMethodNames(ownerPackage: String, snapshot: OwnerConventionSnapshot): Set<String> {
-        return snapshot.catalog.ownerRequestMethodNamesByOwner[ownerPackage].orEmpty()
-    }
-
     internal fun ownerRequestTaskTypeName(ownerPackage: String, requestStem: String): String {
         return "$ownerPackage.$taskRole.${requestStem}Task"
     }
 
-    internal fun canonicalOwnerObjectTypeName(ownerPackage: String, snapshot: OwnerConventionSnapshot): String? {
-        return snapshot.catalog.ownerObjectTypeNamesByOwner[ownerPackage]
+    internal fun ownerSurfaceTypeName(ownerPackage: String, snapshot: OwnerConventionSnapshot): String? {
+        return snapshot.catalog.ownerSurfacesByOwner[ownerPackage]?.typeName
+    }
+
+    internal fun ownerSurfaceRequestMethodNames(ownerPackage: String, snapshot: OwnerConventionSnapshot): Set<String> {
+        return snapshot.catalog.ownerSurfacesByOwner[ownerPackage]?.requestMethodNames.orEmpty()
+    }
+
+    internal fun canonicalOwnerCaller(ownerPackage: String, snapshot: OwnerConventionSnapshot): OwnerConventionCanonicalOwnerCaller? {
+        return snapshot.catalog.canonicalOwnerCallersByOwner[ownerPackage]
     }
 
     internal fun taskApi(typeName: String, snapshot: OwnerConventionSnapshot): OwnerConventionStaticApi? {
@@ -319,29 +325,6 @@ class OwnerConventionSupport(private val project: Project) {
 
     internal fun parsedType(typeName: String, snapshot: OwnerConventionSnapshot): OwnerConventionParsedJavaType? {
         return snapshot.parsedTypesByName[typeName]
-    }
-
-    internal fun registerRepositoryWideCheck(
-        taskName: String,
-        taskDescription: String,
-        failureHeader: String,
-        failureSummary: String,
-        reasonCollector: (OwnerConventionSnapshot) -> List<String>
-    ): TaskProvider<Task> = project.tasks.register(taskName) {
-        group = "verification"
-        description = taskDescription
-
-        doLast {
-            val offenders = reasonCollector(snapshot()).sorted()
-            if (offenders.isNotEmpty()) {
-                val details = offenders.joinToString(separator = "\n") { offender -> " - $offender" }
-                throw GradleException(
-                    "$failureHeader\n" +
-                        "$failureSummary\n" +
-                        "Offending calls:\n$details"
-                )
-            }
-        }
     }
 
     private fun offenders(
@@ -408,7 +391,7 @@ class OwnerConventionSupport(private val project: Project) {
             touchedPaths = touchedPaths,
             knownPackages = knownPackages,
             knownTypeNames = knownTypeNames,
-            requestStemsByOwner = catalog.requestStemsByOwner,
+            requestStemsByOwner = catalog.ownerSurfacesByOwner.mapValues { (_, surface) -> surface.requestStems },
             parsedSourcesByPath = parsedSourcesByPath,
             parsedTypesByName = parsedTypesByName,
             catalog = catalog,
@@ -422,30 +405,41 @@ class OwnerConventionSupport(private val project: Project) {
     }
 
     private fun touchedSourceFiles(snapshot: OwnerConventionSnapshot): List<OwnerConventionSourceFile> {
-        return snapshot.touchedPaths.asSequence()
-            .mapNotNull { path ->
-                val parsedSource = snapshot.parsedSourcesByPath[path] ?: return@mapNotNull null
-                val packageName = parsedSource.packageName ?: packageNameFor(parsedSource.file.parentFile)
-                val roleDeduction = deduceRole(parsedSource.file.parentFile)
-                val typeImports = typeImportsFor(parsedSource.importDeclarations, snapshot.knownPackages)
-                OwnerConventionSourceFile(
-                    context = OwnerConventionSourceContext(
-                        path = path,
-                        file = parsedSource.file,
-                        packageName = packageName,
-                        dirName = parsedSource.file.parentFile.name,
-                        role = roleDeduction.role,
-                        ownerPackage = ownerPackageFor(packageName, roleDeduction.role),
-                        className = parsedSource.file.name,
-                        typeImports = typeImports
-                    ),
-                    sourceText = parsedSource.file.readText(),
-                    declaredPackage = parsedSource.packageName,
-                    placementIssues = roleDeduction.issues,
-                    parsedSource = parsedSource
-                )
-            }
+        return sourceFiles(snapshot)
+            .asSequence()
+            .filter { sourceFile -> sourceFile.context.path in snapshot.touchedPaths }
             .toList()
+    }
+
+    internal fun sourceFiles(snapshot: OwnerConventionSnapshot): List<OwnerConventionSourceFile> {
+        return snapshot.parsedSourcesByPath.values
+            .map { parsedSource -> sourceFileFor(parsedSource, snapshot) }
+            .sortedBy { sourceFile -> sourceFile.context.path }
+    }
+
+    private fun sourceFileFor(
+        parsedSource: OwnerConventionParsedJavaSource,
+        snapshot: OwnerConventionSnapshot
+    ): OwnerConventionSourceFile {
+        val packageName = parsedSource.packageName ?: packageNameFor(parsedSource.file.parentFile)
+        val roleDeduction = deduceRole(parsedSource.file.parentFile)
+        val typeImports = typeImportsFor(parsedSource.importDeclarations, snapshot.knownPackages)
+        return OwnerConventionSourceFile(
+            context = OwnerConventionSourceContext(
+                path = parsedSource.path,
+                file = parsedSource.file,
+                packageName = packageName,
+                dirName = parsedSource.file.parentFile.name,
+                role = roleDeduction.role,
+                ownerPackage = ownerPackageFor(packageName, roleDeduction.role),
+                className = parsedSource.file.name,
+                typeImports = typeImports
+            ),
+            sourceText = parsedSource.file.readText(),
+            declaredPackage = parsedSource.packageName,
+            placementIssues = roleDeduction.issues,
+            parsedSource = parsedSource
+        )
     }
 
     private fun touchedJavaPaths(): Set<String> {
@@ -640,33 +634,48 @@ class OwnerConventionSupport(private val project: Project) {
         knownTypeNames: Set<String>,
         projectTypes: MutableSet<String>
     ) {
-        when (typeMirror) {
-            null -> return
+        collectProjectTypeNames(
+            typeMirror = typeMirror,
+            knownTypeNames = knownTypeNames,
+            projectTypes = projectTypes,
+            visited = Collections.newSetFromMap(IdentityHashMap())
+        )
+    }
 
+    private fun collectProjectTypeNames(
+        typeMirror: TypeMirror?,
+        knownTypeNames: Set<String>,
+        projectTypes: MutableSet<String>,
+        visited: MutableSet<TypeMirror>
+    ) {
+        if (typeMirror == null || !visited.add(typeMirror)) {
+            return
+        }
+        when (typeMirror) {
             is DeclaredType -> {
                 addProjectTypeName(typeMirror.asElement(), knownTypeNames, projectTypes)
                 typeMirror.typeArguments.forEach { argument ->
-                    collectProjectTypeNames(argument, knownTypeNames, projectTypes)
+                    collectProjectTypeNames(argument, knownTypeNames, projectTypes, visited)
                 }
             }
 
-            is ArrayType -> collectProjectTypeNames(typeMirror.componentType, knownTypeNames, projectTypes)
+            is ArrayType -> collectProjectTypeNames(typeMirror.componentType, knownTypeNames, projectTypes, visited)
             is TypeVariable -> {
-                collectProjectTypeNames(typeMirror.upperBound, knownTypeNames, projectTypes)
-                collectProjectTypeNames(typeMirror.lowerBound, knownTypeNames, projectTypes)
+                collectProjectTypeNames(typeMirror.upperBound, knownTypeNames, projectTypes, visited)
+                collectProjectTypeNames(typeMirror.lowerBound, knownTypeNames, projectTypes, visited)
             }
 
             is WildcardType -> {
-                collectProjectTypeNames(typeMirror.extendsBound, knownTypeNames, projectTypes)
-                collectProjectTypeNames(typeMirror.superBound, knownTypeNames, projectTypes)
+                collectProjectTypeNames(typeMirror.extendsBound, knownTypeNames, projectTypes, visited)
+                collectProjectTypeNames(typeMirror.superBound, knownTypeNames, projectTypes, visited)
             }
 
             is IntersectionType -> typeMirror.bounds.forEach { bound ->
-                collectProjectTypeNames(bound, knownTypeNames, projectTypes)
+                collectProjectTypeNames(bound, knownTypeNames, projectTypes, visited)
             }
 
             is UnionType -> typeMirror.alternatives.forEach { alternative ->
-                collectProjectTypeNames(alternative, knownTypeNames, projectTypes)
+                collectProjectTypeNames(alternative, knownTypeNames, projectTypes, visited)
             }
         }
     }
@@ -675,33 +684,46 @@ class OwnerConventionSupport(private val project: Project) {
         typeMirror: TypeMirror?,
         typeNames: MutableSet<String>
     ) {
-        when (typeMirror) {
-            null -> return
+        collectTypeNames(
+            typeMirror = typeMirror,
+            typeNames = typeNames,
+            visited = Collections.newSetFromMap(IdentityHashMap())
+        )
+    }
 
+    private fun collectTypeNames(
+        typeMirror: TypeMirror?,
+        typeNames: MutableSet<String>,
+        visited: MutableSet<TypeMirror>
+    ) {
+        if (typeMirror == null || !visited.add(typeMirror)) {
+            return
+        }
+        when (typeMirror) {
             is DeclaredType -> {
                 addTypeName(typeMirror.asElement(), typeNames)
                 typeMirror.typeArguments.forEach { argument ->
-                    collectTypeNames(argument, typeNames)
+                    collectTypeNames(argument, typeNames, visited)
                 }
             }
 
-            is ArrayType -> collectTypeNames(typeMirror.componentType, typeNames)
+            is ArrayType -> collectTypeNames(typeMirror.componentType, typeNames, visited)
             is TypeVariable -> {
-                collectTypeNames(typeMirror.upperBound, typeNames)
-                collectTypeNames(typeMirror.lowerBound, typeNames)
+                collectTypeNames(typeMirror.upperBound, typeNames, visited)
+                collectTypeNames(typeMirror.lowerBound, typeNames, visited)
             }
 
             is WildcardType -> {
-                collectTypeNames(typeMirror.extendsBound, typeNames)
-                collectTypeNames(typeMirror.superBound, typeNames)
+                collectTypeNames(typeMirror.extendsBound, typeNames, visited)
+                collectTypeNames(typeMirror.superBound, typeNames, visited)
             }
 
             is IntersectionType -> typeMirror.bounds.forEach { bound ->
-                collectTypeNames(bound, typeNames)
+                collectTypeNames(bound, typeNames, visited)
             }
 
             is UnionType -> typeMirror.alternatives.forEach { alternative ->
-                collectTypeNames(alternative, typeNames)
+                collectTypeNames(alternative, typeNames, visited)
             }
         }
     }
