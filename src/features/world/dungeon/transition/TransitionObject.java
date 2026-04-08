@@ -51,27 +51,32 @@ public final class TransitionObject {
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             return mapRepository.loadMap(conn, mapId).placedTransitions().stream()
-                    .map(transition -> new LoadDungeonTargetsInput.TargetInput(
-                            transition.transitionId(),
-                            transition.mapId(),
-                            transition.label(),
-                            transition.description(),
-                            transition.levelZ(),
-                            transition.localConnection() != null && transition.localConnection().doorCarrier() != null
-                                    ? transition.localConnection().doorCarrier().doorRef().doorId()
-                                    : null,
-                            transition.localConnection() != null && transition.localConnection().stairCarrier() != null
-                                    ? transition.localConnection().stairCarrier().anchorCell().x2() / 2
-                                    : null,
-                            transition.localConnection() != null && transition.localConnection().stairCarrier() != null
-                                    ? transition.localConnection().stairCarrier().anchorCell().y2() / 2
-                                    : null,
-                            transition.localConnection() != null && transition.localConnection().stairCarrier() != null
-                                    ? transition.localConnection().stairCarrier().anchorCell().z()
-                                    : null,
-                            transition.localConnection() != null && transition.localConnection().stairCarrier() != null
-                                    ? transition.localConnection().stairCarrier().anchorLevelZ()
-                                    : null))
+                    .map(transition -> transition.localConnection() != null && transition.localConnection().doorCarrier() != null
+                            ? LoadDungeonTargetsInput.TargetInput.doorTarget(
+                                    transition.transitionId(),
+                                    transition.mapId(),
+                                    transition.label(),
+                                    transition.description(),
+                                    transition.levelZ(),
+                                    transition.localConnection().doorCarrier().doorRef().doorId())
+                            : LoadDungeonTargetsInput.TargetInput.stairTarget(
+                                    transition.transitionId(),
+                                    transition.mapId(),
+                                    transition.label(),
+                                    transition.description(),
+                                    transition.levelZ(),
+                                    transition.localConnection() != null && transition.localConnection().stairCarrier() != null
+                                            ? transition.localConnection().stairCarrier().anchorCell().x2() / 2
+                                            : null,
+                                    transition.localConnection() != null && transition.localConnection().stairCarrier() != null
+                                            ? transition.localConnection().stairCarrier().anchorCell().y2() / 2
+                                            : null,
+                                    transition.localConnection() != null && transition.localConnection().stairCarrier() != null
+                                            ? transition.localConnection().stairCarrier().anchorCell().z()
+                                            : null,
+                                    transition.localConnection() != null && transition.localConnection().stairCarrier() != null
+                                            ? transition.localConnection().stairCarrier().anchorLevelZ()
+                                            : null))
                     .toList();
         }
     }
