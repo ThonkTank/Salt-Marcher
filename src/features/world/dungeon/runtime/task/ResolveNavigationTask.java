@@ -17,7 +17,7 @@ public final class ResolveNavigationTask {
             features.world.dungeon.dungeonmap.application.DungeonMapLoadResolver loadResolver =
                     new features.world.dungeon.dungeonmap.application.DungeonMapLoadResolver(mapRepository);
             features.world.dungeon.application.runtime.DungeonRuntimeApplicationService runtimeApplicationService =
-                    new features.world.dungeon.application.runtime.DungeonRuntimeApplicationService(mapRepository, loadResolver);
+                    runtimeApplicationService(mapRepository, loadResolver);
             var layout = loadResolver.resolveRepairLayout(conn, input.preferredMapId());
             features.world.dungeon.application.runtime.DungeonRuntimeNavigationSnapshot snapshot = runtimeApplicationService.resolveNavigation(
                     layout,
@@ -38,5 +38,12 @@ public final class ResolveNavigationTask {
                         snapshot.cell(),
                         snapshot.levelZ(),
                         snapshot.heading() == null ? "" : snapshot.heading().name());
+    }
+
+    private static features.world.dungeon.application.runtime.DungeonRuntimeApplicationService runtimeApplicationService(
+            features.world.dungeon.dungeonmap.repository.DungeonMapRepository mapRepository,
+            features.world.dungeon.dungeonmap.application.DungeonMapLoadResolver loadResolver
+    ) {
+        return new features.world.dungeon.application.runtime.DungeonRuntimeApplicationService(mapRepository, loadResolver);
     }
 }
