@@ -73,7 +73,8 @@ public final class BootstrapObject {
                 stairRepository);
         DungeonTransitionApplicationService transitionApplicationService = new DungeonTransitionApplicationService(
                 mapRepository,
-                transitionRepository);
+                transitionRepository,
+                transitionObject);
         DungeonRuntimeApplicationService runtimeApplicationService = new DungeonRuntimeApplicationService(
                 mapRepository,
                 loadResolver);

@@ -14,6 +14,13 @@ import features.world.dungeon.model.structures.transition.DungeonTransitionDesti
 import features.world.dungeon.dungeonmap.repository.DungeonMapRepository;
 import features.world.dungeon.repository.DungeonTransitionRepository;
 import features.world.dungeon.stair.model.StairPlacementSpec;
+import features.world.dungeon.transition.TransitionObject;
+import features.world.dungeon.transition.input.CreateStairTransitionInput;
+import features.world.dungeon.transition.input.CreateTransitionInput;
+import features.world.dungeon.transition.input.DeleteTransitionInput;
+import features.world.dungeon.transition.input.LoadOverworldTargetsInput;
+import features.world.dungeon.transition.input.PlacePreparedStairTransitionInput;
+import features.world.dungeon.transition.input.PlacePreparedTransitionInput;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -30,13 +37,16 @@ public final class DungeonTransitionApplicationService {
 
     private final DungeonMapRepository mapRepository;
     private final DungeonTransitionRepository transitionRepository;
+    private final TransitionObject transitionObject;
 
     public DungeonTransitionApplicationService(
             DungeonMapRepository mapRepository,
-            DungeonTransitionRepository transitionRepository
+            DungeonTransitionRepository transitionRepository,
+            TransitionObject transitionObject
     ) {
         this.mapRepository = Objects.requireNonNull(mapRepository, "mapRepository");
         this.transitionRepository = Objects.requireNonNull(transitionRepository, "transitionRepository");
+        this.transitionObject = Objects.requireNonNull(transitionObject, "transitionObject");
     }
 
     public List<DungeonTransition> loadDungeonTargets(long mapId) throws SQLException {
@@ -49,21 +59,16 @@ public final class DungeonTransitionApplicationService {
     }
 
     public List<OverworldTransitionTargetSummary> loadOverworldTargets() throws SQLException {
-        return ReadObject.loadOverworldTransitionTargets();
+        return transitionObject.loadOverworldTargets(new LoadOverworldTargetsInput()).stream()
+                .map(target -> new OverworldTransitionTargetSummary(
+                        target.mapId(),
+                        target.tileId(),
+                        target.label()))
+                .toList();
     }
 
     public void delete(long transitionId) throws SQLException {
-        if (transitionId <= 0) {
-            return;
-        }
-        try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonTransactionRunner.inTransaction(conn, () -> {
-                DungeonTransition transition = requireTransition(conn, transitionId);
-                transitionRepository.clearLinksTo(conn, transitionId);
-                transitionRepository.delete(conn, transitionId);
-                return null;
-            });
-        }
+        transitionObject.deleteTransition(new DeleteTransitionInput(transitionId));
     }
 
     public void create(
@@ -74,7 +79,16 @@ public final class DungeonTransitionApplicationService {
             DungeonSelectionRef sourceRef,
             int levelZ
     ) throws SQLException {
-        createDoorTransition(mapId, description, destination, bidirectional, sourceRef, levelZ);
+        if (!(sourceRef instanceof DungeonSelectionRef.DoorRef doorRef)) {
+            throw new SQLException("Übergangs-Platzierung fehlt");
+        }
+        transitionObject.createTransition(new CreateTransitionInput(
+                mapId,
+                description,
+                toDestinationInput(destination),
+                bidirectional,
+                doorRef.doorId(),
+                levelZ));
     }
 
     public void createStair(
@@ -84,7 +98,12 @@ public final class DungeonTransitionApplicationService {
             boolean bidirectional,
             DungeonStairApplicationService.StairDraft stairDraft
     ) throws SQLException {
-        createStairTransition(mapId, description, destination, bidirectional, stairDraft);
+        transitionObject.createStairTransition(new CreateStairTransitionInput(
+                mapId,
+                description,
+                toDestinationInput(destination),
+                bidirectional,
+                toDraftInput(stairDraft)));
     }
 
     private void createDoorTransition(
@@ -178,42 +197,61 @@ public final class DungeonTransitionApplicationService {
     }
 
     public void placePrepared(long transitionId, DungeonSelectionRef sourceRef, int levelZ) throws SQLException {
-        if (transitionId <= 0) {
-            throw new SQLException("Kein vorbereiteter Übergang gewählt");
-        }
-        if (!(sourceRef instanceof DungeonSelectionRef.DoorRef)) {
+        if (!(sourceRef instanceof DungeonSelectionRef.DoorRef doorRef)) {
             throw new SQLException("Übergangs-Platzierung fehlt");
         }
-        try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonTransactionRunner.inTransaction(conn, () -> {
-                DungeonTransition transition = requireTransition(conn, transitionId);
-                DungeonMap layout = requireLayout(conn, transition.mapId());
-                DungeonConnection updatedLocalConnection = requireDoorConnection(layout, transition.mapId(), transitionId, sourceRef, levelZ);
-                transitionRepository.updateLocalConnection(conn, transitionId, updatedLocalConnection, null);
-                return null;
-            });
-        }
+        transitionObject.placePreparedTransition(new PlacePreparedTransitionInput(
+                transitionId,
+                doorRef.doorId(),
+                levelZ));
     }
 
     public void placePreparedStair(long transitionId, DungeonStairApplicationService.StairDraft stairDraft) throws SQLException {
-        if (transitionId <= 0) {
-            throw new SQLException("Kein vorbereiteter Übergang gewählt");
+        transitionObject.placePreparedStairTransition(new PlacePreparedStairTransitionInput(
+                transitionId,
+                toDraftInput(stairDraft)));
+    }
+
+    private static CreateTransitionInput.DestinationInput toDestinationInput(
+            DungeonTransitionDestination destination
+    ) {
+        if (destination instanceof DungeonTransitionDestination.OverworldTileDestination overworld) {
+            return new CreateTransitionInput.DestinationInput(
+                    overworld.typeKey(),
+                    overworld.mapId(),
+                    null,
+                    overworld.tileId());
         }
-        if (stairDraft == null) {
-            throw new SQLException("Treppen-Platzierung fehlt");
+        if (destination instanceof DungeonTransitionDestination.DungeonMapDestination dungeon) {
+            return new CreateTransitionInput.DestinationInput(
+                    dungeon.typeKey(),
+                    dungeon.mapId(),
+                    dungeon.transitionId(),
+                    0L);
         }
-        try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonTransactionRunner.inTransaction(conn, () -> {
-                DungeonTransition transition = requireTransition(conn, transitionId);
-                DungeonMap layout = requireLayout(conn, transition.mapId());
-                transitionRepository.updateLocalConnection(
-                        conn,
-                        transitionId,
-                        requireStairConnection(layout, transition.mapId(), transitionId, stairDraft, transitionId),
-                        toPlacementSpec(stairDraft));
-                return null;
-            });
+        return null;
+    }
+
+    private static PlacePreparedStairTransitionInput.DraftInput toDraftInput(
+            DungeonStairApplicationService.StairDraft draft
+    ) {
+        if (draft == null) {
+            return null;
         }
+        return new PlacePreparedStairTransitionInput.DraftInput(
+                draft.name(),
+                draft.anchorCell().x2() / 2,
+                draft.anchorCell().y2() / 2,
+                draft.anchorCell().z(),
+                draft.anchorLevelZ(),
+                new PlacePreparedStairTransitionInput.ShapeSpecInput(
+                        draft.shapeSpec().kind().name(),
+                        draft.shapeSpec().direction().name(),
+                        draft.shapeSpec().parameter1(),
+                        draft.shapeSpec().parameter2()),
+                draft.minLevelZ(),
+                draft.maxLevelZ(),
+                draft.stopLevels().stream().toList());
     }
 
     private DungeonConnection requireDoorConnection(
