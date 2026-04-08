@@ -29,6 +29,7 @@
 - `DungeonMapObject` — public loaded-map seam — resolves canonical room, corridor, stair, transition, door, connection, traversability, and read-projection lookups.
 - `model/DungeonMap` — current loaded-map implementation behind `DungeonMapObject`.
 - `repository/DungeonMapRepository` — map id plus connection — rehydrates one authoritative `DungeonMap` from persisted owner slices; clusters load from structure plus room metadata, corridors load from structure plus corridor input metadata.
+- `repository/DungeonMapRepository.persistClusterRoomRewriteAndReload(...)` — map-owned cluster commit tail — persists room metadata through `DungeonRoomRepository` after cluster-row persistence and then rebuilds the authoritative map snapshot from persisted owners.
 - `application/DungeonMapLoadResolver` — synchronous selection and repair policy — resolves which map should load or reload next.
 - `application/DungeonMapLoadingService` — async load and post-write reload seam — updates `DungeonMapState` from authoritative reloads.
 - `state/DungeonMapState` — shared map session state for active map, projection level, overlay settings, and loading flags.
