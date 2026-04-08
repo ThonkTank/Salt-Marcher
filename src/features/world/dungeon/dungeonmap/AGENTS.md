@@ -7,7 +7,7 @@
 ## Owner Atlas
 
 - `DungeonMapObject` — public root seam for loaded-map reads and map-owned workflows.
-- `api/` — exported read projections for foreign owners.
+- `api/` — existing legacy request/description vocabulary still consumed across dungeon features. It is not the default extension point for new touched Java files.
 - `input/` — public map-owned workflow request carriers for `DungeonMapObject`.
 - `application/` and `repository/` — map selection, load/reload orchestration, and rehydration.
 - `state/` — active map, projection level, overlay settings, and loading flags.
@@ -16,7 +16,7 @@
 ## Canonical Types and APIs
 
 - `DungeonMapObject` — public loaded-map seam for room, corridor, stair, transition, door, connection, traversability, and read-projection lookups.
-- `dungeonmap/api` — exported map-owned projections and grouped request families for preview, validation, and reconcile workflows consumed outside the root owner seam.
+- `dungeonmap/api` — legacy exported request and description carriers already used by preview, validation, reconcile, and interaction flows. Reuse existing carriers there when needed, but do not treat `api/` as a free-form place for new touched-code seams.
 - `input/PersistClusterRewriteReboundsInput` — map-owned rebound-tail request family — carries the authoritative pre-write map plus the persisted cluster ids for the canonical room-reload and cross-owner rebound tail.
 - `DungeonMapApplicationService` — map-owned cross-owner workflow seam for cluster/corridor/stair/transition preview composition plus cluster rewrite validation and reconciliation.
 - `DungeonMapLoadResolver` and `DungeonMapLoadingService` — canonical selection, load, reload, and post-write refresh seams.
@@ -26,7 +26,8 @@
 ## Where New Code Goes
 
 - Put public cross-owner map access on `DungeonMapObject`.
-- Put exported read projections in `api/` and root-owner workflow request carriers in `input/`.
+- Put root-owner workflow request carriers in `input/`.
+- Reuse existing `api/` carriers when a touched flow already depends on them, but prefer canonical owner/layer seams or new child owners over adding fresh `dungeonmap/api` Java files.
 - Put preview, validation, reconcile, and resolve orchestration on `DungeonMapApplicationService`, not on tools or on the `DungeonMap` implementation itself.
 - Put selection, fallback, and reload policy in `application/`; put authoritative rehydration in `repository/`; put active-map and overlay state in `state/`.
 - Keep shared traversal semantics under `connections/`, and keep structure-backed map objects under `structure/`, `cluster/`, and `corridor/`.
@@ -35,6 +36,7 @@
 ## Forbidden Drift
 
 - Loaded map ownership stays here. Other directories do not own the canonical map snapshot, load state, or reload policy.
+- Do not treat the presence of `dungeonmap/api` as permission to open a new package family beside the canonical owner/layer grammar.
 - Do not turn `connections/` into a second physical carrier owner for doors or stairs.
 - Do not turn `DungeonMapObject` or `DungeonMap` into a second physical topology owner when `structure`, `cluster`, `corridor`, `stair`, and `transition` already own their underlying truth.
 - Do not let repositories, tools, or owner-local workflows keep direct preview, resolve, or reconcile helpers on `DungeonMap` when those seams belong on `DungeonMapApplicationService`.

@@ -77,7 +77,13 @@ internal fun analyzeOwnerFile(
                 fieldProjectTypes = fieldProjectTypes
             )
         }
-    val canonicalOwnerCaller = support.ownerCallerShape(sourceFile, snapshot)
+    val canonicalOwnerCaller = shapeAnalysis.model?.let { ownerSurface ->
+        OwnerConventionCanonicalOwnerCaller(
+            typeName = ownerSurface.typeName,
+            ownerPackage = ownerSurface.ownerPackage,
+            requestMethodNames = ownerSurface.requestMethodNames
+        )
+    }
     return OwnerConventionAnalysis(
         reasons = reasons.distinct(),
         model = canonicalOwnerCaller

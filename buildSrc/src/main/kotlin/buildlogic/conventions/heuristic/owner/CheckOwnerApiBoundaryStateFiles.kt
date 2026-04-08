@@ -27,76 +27,19 @@ internal fun analyzeStateFile(
     snapshot: OwnerConventionSnapshot,
     support: OwnerConventionSupport
 ): OwnerConventionAnalysis<OwnerConventionStaticApi> {
-    val context = sourceFile.context
-    val reasons = mutableListOf<String>()
-    val className = context.className.removeSuffix(".java")
+    val shapeAnalysis = support.analyzeStateShape(sourceFile, snapshot)
+    val reasons = shapeAnalysis.reasons.toMutableList()
     val primaryType = support.parsedPrimaryType(sourceFile)
-    if (primaryType == null) {
-        reasons += "${context.path} :: state files must declare a top-level type named $className"
-        return OwnerConventionAnalysis(
-            reasons = reasons,
-            model = null
-        )
-    }
-    if (sourceFile.parsedSource.topLevelTypes.size != 1) {
-        reasons += "${context.path} :: state files must contain exactly one top-level type"
-    }
-    val validKind = primaryType.kind == OwnerConventionParsedJavaTypeKind.RECORD ||
-        primaryType.kind == OwnerConventionParsedJavaTypeKind.ENUM ||
-        (primaryType.kind == OwnerConventionParsedJavaTypeKind.CLASS && Modifier.FINAL in primaryType.modifiers)
-    if (!validKind) {
-        reasons += "${context.path} :: state files must declare a final class, record, or enum"
-    }
-    if (
-        primaryType.kind == OwnerConventionParsedJavaTypeKind.CLASS &&
-        primaryType.constructors.any { Modifier.PUBLIC in it.modifiers }
-    ) {
-        reasons += "${context.path} :: state classes must use factory or transition methods instead of public constructors"
-    }
-    context.typeImports.importedPackages.forEach { importedPackage ->
-        val importedRole = support.roleForDirectoryName(importedPackage.substringAfterLast('.'))
-        val allowed = support.sameOwner(context.ownerPackage, importedPackage) &&
-            importedRole in setOf(support.inputRole, support.stateRole)
-        if (!allowed) {
-            reasons += "${context.path} -> $importedPackage :: state files may import only own input and own state packages"
-        }
-    }
-    val publicMethods = primaryType.methods.filter { Modifier.PUBLIC in it.modifiers }
-    if (publicMethods.any { Modifier.STATIC !in it.modifiers }) {
-        reasons += "${context.path} :: state files must not expose public instance methods"
-    }
-    publicMethods
-        .filter { Modifier.STATIC in it.modifiers }
-        .forEach { method ->
-            val parameterPackages = method.parameters.flatMap { parameter ->
-                support.projectTypePackages(parameter.tree.type, sourceFile.parsedSource, snapshot)
-            }.distinct()
-            val returnPackages = support.projectTypePackages(method.tree.returnType, sourceFile.parsedSource, snapshot)
-            if (parameterPackages.any { projectPackage ->
-                    !support.sameOwner(context.ownerPackage, projectPackage) ||
-                        support.roleForDirectoryName(projectPackage.substringAfterLast('.')) !in setOf(support.inputRole, support.stateRole)
-                }
-            ) {
-                reasons += "${context.path} :: state factories may accept only own input and own state types"
-            }
-            if (returnPackages.any { projectPackage ->
-                    !support.sameOwner(context.ownerPackage, projectPackage) ||
-                        support.roleForDirectoryName(projectPackage.substringAfterLast('.')) != support.stateRole
-                }
-            ) {
-                reasons += "${context.path} :: state factories may return only own state types"
-            }
-        }
+        ?: return OwnerConventionAnalysis(reasons = reasons.distinct(), model = shapeAnalysis.model)
     reasons += stateBodyReasons(
         sourceFile = sourceFile,
         snapshot = snapshot,
         support = support,
         primaryType = primaryType
     )
-    val canonicalApi = support.stateApiShape(sourceFile, snapshot)
     return OwnerConventionAnalysis(
         reasons = reasons.distinct(),
-        model = canonicalApi
+        model = shapeAnalysis.model
     )
 }
 

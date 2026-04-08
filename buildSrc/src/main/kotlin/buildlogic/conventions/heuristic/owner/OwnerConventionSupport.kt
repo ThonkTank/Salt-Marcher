@@ -185,10 +185,6 @@ class OwnerConventionSupport(private val project: Project) {
         return ownerPackageFor(targetPackage, targetRole) == sourceOwnerPackage
     }
 
-    internal fun sameOwnerOrReachableNeighbor(sourceOwnerPackage: String, targetOwnerPackage: String): Boolean {
-        return sourceOwnerPackage == targetOwnerPackage || sameOwnerEdgeOrNeighbor(sourceOwnerPackage, targetOwnerPackage)
-    }
-
     internal fun sameOwnerEdgeOrNeighbor(sourceOwnerPackage: String, targetOwnerPackage: String): Boolean {
         if (sourceOwnerPackage == targetOwnerPackage) {
             return true

@@ -59,10 +59,9 @@ internal fun analyzeTaskFile(
             method = method
         )
     }
-    val canonicalApi = support.taskApiShape(sourceFile, snapshot)
     return OwnerConventionAnalysis(
         reasons = reasons.distinct(),
-        model = canonicalApi
+        model = shapeAnalysis.model
     )
 }
 
