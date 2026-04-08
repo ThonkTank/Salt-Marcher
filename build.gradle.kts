@@ -30,6 +30,9 @@ import buildlogic.conventions.heuristic.owner.registerCheckOwnerApiBoundaryTaskF
 import buildlogic.conventions.heuristic.registerCheckArchitectureHeuristicsTask
 import buildlogic.conventions.heuristic.registerCheckDungeonGeometryHeuristicTask
 import buildlogic.conventions.hygiene.registerCheckBuildHygieneTask
+import buildlogic.conventions.hygiene.registerCheckNoDeadCodeTask
+import buildlogic.conventions.hygiene.registerCheckNoDeadDeclarationsTask
+import buildlogic.conventions.hygiene.registerCheckNoDeadLocalCodeTask
 import buildlogic.conventions.hygiene.registerCheckNoCompiledArtifactsInSourceTask
 import buildlogic.conventions.policy.registerCheckLocalBuildPoliciesTask
 import buildlogic.conventions.policy.registerCheckUiAsyncSubmissionConventionTask
@@ -156,6 +159,12 @@ registerCrawlerItemsPipelineTask(importItems)
 registerCrawlerSpellsPipelineTask(importSpells)
 
 val checkNoCompiledArtifactsInSource = registerCheckNoCompiledArtifactsInSourceTask()
+val checkNoDeadDeclarations = registerCheckNoDeadDeclarationsTask()
+val checkNoDeadLocalCode = registerCheckNoDeadLocalCodeTask()
+val checkNoDeadCode = registerCheckNoDeadCodeTask(
+    checkNoDeadDeclarations = checkNoDeadDeclarations,
+    checkNoDeadLocalCode = checkNoDeadLocalCode
+)
 val checkUiAsyncSubmissionConvention = registerCheckUiAsyncSubmissionConventionTask()
 
 val ownerConventionSupport = OwnerConventionSupport(project)
@@ -179,7 +188,10 @@ val checkOwnerApiBoundaryConvention = registerCheckOwnerApiBoundaryConventionTas
 )
 
 val checkDungeonGeometryConvention = registerCheckDungeonGeometryHeuristicTask()
-val checkBuildHygiene = registerCheckBuildHygieneTask(checkNoCompiledArtifactsInSource)
+val checkBuildHygiene = registerCheckBuildHygieneTask(
+    checkNoCompiledArtifactsInSource = checkNoCompiledArtifactsInSource,
+    checkNoDeadCode = checkNoDeadCode
+)
 val checkLocalBuildPolicies = registerCheckLocalBuildPoliciesTask(checkUiAsyncSubmissionConvention)
 val checkArchitectureHeuristics = registerCheckArchitectureHeuristicsTask(
     checkOwnerApiBoundaryConvention = checkOwnerApiBoundaryConvention,

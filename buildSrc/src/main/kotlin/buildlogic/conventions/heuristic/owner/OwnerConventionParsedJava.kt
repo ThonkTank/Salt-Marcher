@@ -15,6 +15,8 @@ import java.nio.file.Path
 import javax.tools.DiagnosticCollector
 import javax.tools.JavaFileObject
 import javax.lang.model.element.Modifier
+import javax.lang.model.util.Elements
+import javax.lang.model.util.Types
 import javax.tools.ToolProvider
 import org.gradle.api.GradleException
 
@@ -67,7 +69,9 @@ internal data class OwnerConventionParsedJavaSource(
 )
 
 internal data class OwnerConventionSemanticModel(
-    val trees: Trees
+    val trees: Trees,
+    val elements: Elements,
+    val types: Types
 )
 
 internal data class OwnerConventionParsedJavaSources(
@@ -83,9 +87,16 @@ internal fun parseOwnerConventionJavaSources(
     if (files.isEmpty()) {
         return OwnerConventionParsedJavaSources(
             sourcesByPath = emptyMap(),
-            semanticModel = OwnerConventionSemanticModel(Trees.instance((ToolProvider.getSystemJavaCompiler()
-                ?: throw GradleException("JDK compiler is required for owner convention parsing."))
-                .getTask(null, null, null, emptyList(), null, emptyList<JavaFileObject>()) as JavacTask))
+            semanticModel = run {
+                val task = (ToolProvider.getSystemJavaCompiler()
+                    ?: throw GradleException("JDK compiler is required for owner convention parsing."))
+                    .getTask(null, null, null, emptyList(), null, emptyList<JavaFileObject>()) as JavacTask
+                OwnerConventionSemanticModel(
+                    trees = Trees.instance(task),
+                    elements = task.elements,
+                    types = task.types
+                )
+            }
         )
     }
     val compiler = ToolProvider.getSystemJavaCompiler()
@@ -134,7 +145,11 @@ internal fun parseOwnerConventionJavaSources(
                 )
             }
             .toMap(),
-            semanticModel = OwnerConventionSemanticModel(trees)
+            semanticModel = OwnerConventionSemanticModel(
+                trees = trees,
+                elements = task.elements,
+                types = task.types
+            )
         )
     } finally {
         fileManager.close()
