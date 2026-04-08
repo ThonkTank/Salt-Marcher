@@ -3,9 +3,11 @@ package features.world.dungeon.stair;
 import features.world.dungeon.application.stair.DungeonStairApplicationService;
 import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.geometry.GridPoint;
+import features.world.dungeon.geometry.GridTranslation;
 import features.world.dungeon.stair.input.CreateStairInput;
 import features.world.dungeon.stair.input.DeleteStairInput;
 import features.world.dungeon.stair.input.LoadEditorSpecInput;
+import features.world.dungeon.stair.input.MoveStairInput;
 import features.world.dungeon.stair.input.UpdateStairInput;
 import features.world.dungeon.stair.model.StairPathPatternKind;
 import features.world.dungeon.stair.model.StairPathPatternSpec;
@@ -53,6 +55,18 @@ public final class StairObject {
                         input.mapId(),
                         input.stairId(),
                         toDraft(input.draft())));
+    }
+
+    public void moveStair(MoveStairInput input) throws SQLException {
+        if (input == null) {
+            throw new IllegalArgumentException("input");
+        }
+        stairApplicationService.moveStair(
+                new DungeonStairApplicationService.MoveStairRequest(
+                        input.mapId(),
+                        input.stairId(),
+                        toDraft(input.draft()),
+                        toTranslation(input.translation())));
     }
 
     public LoadEditorSpecInput.EditorSpecInput loadEditorSpec(LoadEditorSpecInput input) throws SQLException {
@@ -105,5 +119,12 @@ public final class StairObject {
 
     private static Set<Integer> toStopLevels(java.util.List<Integer> levels) {
         return levels == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(levels));
+    }
+
+    private static GridTranslation toTranslation(MoveStairInput.TranslationInput input) {
+        if (input == null) {
+            return GridTranslation.none();
+        }
+        return GridTranslation.cells(input.dxCells(), input.dyCells(), input.dzLevels());
     }
 }
