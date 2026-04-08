@@ -7,6 +7,7 @@
 ## Canonical Types and APIs
 
 - `StairObject` - public stair root seam - accepts typed stair workflow requests and delegates them to the current stair workflow owner.
+- `input/CreateStairInput` - stair create request family - carries the authored stair draft in root-input form for new stair creation.
 - `input/DeleteStairInput` - stair delete request - carries the active map id plus the target stair id.
 - `input/LoadEditorSpecInput` - stair editor-spec request family - carries the map and stair id and returns the authored editor spec in input form.
 - `StairPathPatternKind` - authored stair path shape choice for editor workflows.
