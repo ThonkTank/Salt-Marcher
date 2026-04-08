@@ -20,9 +20,11 @@
 - `checkOwnerApiBoundaryConvention` — build-time owner-boundary gate for `*Object`, `input`, `task`, `repository`, `state`, and `*Bucket` rules.
 - `geometry` — public dungeon spatial seams use the canonical carriers from this slice instead of raw point or segment collections.
 - `dungeonmap/DungeonMapObject` — public loaded-map seam for cross-owner map reads and map-scoped workflows.
+- `room/RoomObject` — public room seam for room-owned narration writes.
 - `dungeonmap/structure/StructureObject` and `Structure` — shared physical topology seam for structure-backed map objects and their persisted topology.
 - `dungeonmap/connections/ConnectionsObject` — shared traversal semantics seam for door-, stair-, and corridor-linked movement.
-- `DungeonClusterApplicationService`, `DungeonCorridorApplicationService`, `DungeonStairApplicationService`, `DungeonTransitionApplicationService`, `DungeonRuntimeApplicationService`, `DungeonMapCatalogService` — owner workflow seams for cluster, corridor, stair, transition, runtime, and catalog behavior.
+- `catalog/CatalogObject` — public catalog seam for dungeon-map create, rename, and delete writes.
+- `DungeonClusterApplicationService`, `DungeonCorridorApplicationService`, `DungeonStairApplicationService`, `DungeonTransitionApplicationService`, `DungeonRuntimeApplicationService` — legacy workflow seams still backing cluster, corridor, stair, transition, and runtime behavior while their owner-local migrations continue.
 
 ## Where New Code Goes
 
