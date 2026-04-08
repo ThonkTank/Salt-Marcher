@@ -7,6 +7,7 @@ import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.stair.model.StairPathPatternKind;
 import features.world.dungeon.stair.model.StairPathPatternSpec;
+import features.world.dungeon.transition.input.CreateTransitionInput;
 import features.world.dungeon.transition.input.DeleteTransitionInput;
 import features.world.dungeon.transition.input.LoadDungeonTargetsInput;
 import features.world.dungeon.transition.input.LoadOverworldTargetsInput;
@@ -78,6 +79,63 @@ public final class TransitionObject {
                         summary.tileId(),
                         summary.label()))
                 .toList();
+    }
+
+    public void createTransition(CreateTransitionInput input) throws SQLException {
+        if (input == null) {
+            throw new IllegalArgumentException("input");
+        }
+        if (input.mapId() <= 0) {
+            throw new SQLException("Kein aktiver Dungeon geladen");
+        }
+        if (input.doorId() <= 0) {
+            throw new SQLException("Übergangs-Platzierung fehlt");
+        }
+        try (Connection conn = DatabaseManager.getConnection()) {
+            DungeonTransactionRunner.inTransaction(conn, () -> {
+                features.world.dungeon.dungeonmap.model.DungeonMap layout = mapRepository.loadMap(conn, input.mapId());
+                if (layout == null) {
+                    throw new SQLException("Dungeon " + input.mapId() + " konnte nicht geladen werden");
+                }
+                features.world.dungeon.model.structures.transition.DungeonTransitionDestination validatedDestination =
+                        requireDestination(conn, input.destination(), input.bidirectional());
+                long reservedTransitionId = transitionRepository.nextTransitionId(conn);
+                features.world.dungeon.dungeonmap.connections.input.DungeonConnection localConnection;
+                try {
+                    localConnection = TransitionConnectionBuilder.buildDoorConnection(
+                            layout,
+                            input.mapId(),
+                            reservedTransitionId,
+                            new features.world.dungeon.model.interaction.DungeonSelectionRef.DoorRef(input.doorId()),
+                            input.levelZ());
+                } catch (IllegalArgumentException ex) {
+                    throw new SQLException(ex.getMessage(), ex);
+                }
+                long insertedTransitionId = transitionRepository.insert(conn, new features.world.dungeon.model.structures.transition.DungeonTransition(
+                        reservedTransitionId,
+                        input.mapId(),
+                        input.description(),
+                        localConnection,
+                        validatedDestination,
+                        null,
+                        null));
+                if (input.bidirectional()
+                        && validatedDestination instanceof features.world.dungeon.model.structures.transition.DungeonTransitionDestination.DungeonMapDestination dungeonDestination) {
+                    long counterpartId = transitionRepository.insert(conn, new features.world.dungeon.model.structures.transition.DungeonTransition(
+                            null,
+                            dungeonDestination.mapId(),
+                            input.description(),
+                            null,
+                            new features.world.dungeon.model.structures.transition.DungeonTransitionDestination.DungeonMapDestination(
+                                    input.mapId(),
+                                    insertedTransitionId),
+                            insertedTransitionId,
+                            null));
+                    transitionRepository.linkPair(conn, insertedTransitionId, counterpartId);
+                }
+                return null;
+            });
+        }
     }
 
     public void deleteTransition(DeleteTransitionInput input) throws SQLException {
@@ -249,5 +307,48 @@ public final class TransitionObject {
                 draft.minLevelZ(),
                 draft.maxLevelZ(),
                 draft.stopLevels());
+    }
+
+    private features.world.dungeon.model.structures.transition.DungeonTransitionDestination requireDestination(
+            Connection conn,
+            CreateTransitionInput.DestinationInput input,
+            boolean bidirectional
+    ) throws SQLException {
+        if (input == null) {
+            throw new SQLException("Übergangsziel fehlt");
+        }
+        if ("OVERWORLD_TILE".equals(input.typeKey())) {
+            if (input.tileId() <= 0) {
+                throw new SQLException("Overworld-Zielfeld fehlt");
+            }
+            Long resolvedMapId = features.world.api.read.ReadObject.findOverworldMapIdForTile(input.tileId());
+            if (resolvedMapId == null || resolvedMapId <= 0) {
+                throw new SQLException("Overworld-Zielfeld existiert nicht");
+            }
+            return new features.world.dungeon.model.structures.transition.DungeonTransitionDestination.OverworldTileDestination(
+                    resolvedMapId,
+                    input.tileId());
+        }
+        if (!"DUNGEON_MAP".equals(input.typeKey())) {
+            throw new SQLException("Übergangsziel fehlt");
+        }
+        if (input.mapId() <= 0 || !transitionRepository.dungeonMapExists(conn, input.mapId())) {
+            throw new SQLException("Dungeon-Zielkarte existiert nicht");
+        }
+        if (!bidirectional) {
+            if (input.transitionId() == null) {
+                throw new SQLException("Ziel-Übergang wählen");
+            }
+            Long targetMapId = transitionRepository.findMapId(conn, input.transitionId());
+            if (targetMapId == null) {
+                throw new SQLException("Übergang existiert nicht");
+            }
+            if (targetMapId != input.mapId()) {
+                throw new SQLException("Ziel-Übergang gehört nicht zur gewählten Karte");
+            }
+        }
+        return new features.world.dungeon.model.structures.transition.DungeonTransitionDestination.DungeonMapDestination(
+                input.mapId(),
+                input.transitionId());
     }
 }
