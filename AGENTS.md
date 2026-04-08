@@ -123,6 +123,12 @@ Technical layers are subordinate tools inside an owner slice, not the primary ar
 - `repository` — persistence-only state reconstruction and state storage
 - `state` — the owner's canonical protected runtime/object state plus the only allowed state factory/transition APIs
 
+For touched Java files, these are build gates, not style preferences:
+- `input` files fail `checkOwnerApiBoundaryInputFiles` if they stop matching a real owner request, add methods or initializer blocks, import non-`input` project packages, or let request-local nested value types declare methods or further nested types.
+- Owner files fail `checkOwnerApiBoundaryOwnerFiles` if they add helper methods, overload request names, accept the wrong `<Request>Input`, or let request bodies do more than guard clauses, local bindings, allowed orchestration calls, returns, and throws.
+- `state` files fail `checkOwnerApiBoundaryStateFiles` if they import project packages outside same-owner `input`/`state`, expose public instance methods, or accept/return foreign project types on public static factory-transition APIs.
+- `repository` files fail `checkOwnerApiBoundaryRepositoryFiles` if they import project packages outside same-owner `state`, expose public instance methods, or publish persistence methods whose project-facing signature is not anchored on same-owner `state`.
+
 No other technical layer names are canonical. Directories such as `model`, `application`, `service`, `ui`, `api`, `bootstrap`, `internal`, or `support` do not define valid package precedent for new or touched architecture work.
 
 ### Public Owner APIs
