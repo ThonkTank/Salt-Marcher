@@ -453,7 +453,7 @@ public final class ApplicationObject {
             mapApplicationService.validateClusterRewrite(
                     new features.world.dungeon.dungeonmap.api.ValidateClusterRewriteRequest(originalLayout, rewriteRequest));
             List<Long> persistedClusterIds = clusterRepository.persistRewrite(conn, mapId, rewriteRequest);
-            mapObject.persistClusterRewriteRebounds(new PersistClusterRewriteReboundsInput(
+            mapObject.persistClusterRewriteRebounds(PersistClusterRewriteReboundsInput.clusterRewriteRebounds(
                     conn,
                     originalLayout,
                     rewriteRequest,

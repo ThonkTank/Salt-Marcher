@@ -38,13 +38,13 @@ public final class DungeonMapObject {
         if (input == null) {
             throw new IllegalArgumentException("input");
         }
+        if (input.isEmpty()) {
+            return;
+        }
         Connection conn = input.connection();
         features.world.dungeon.dungeonmap.model.DungeonMap originalMap = input.originalMap();
         features.world.dungeon.dungeonmap.cluster.model.ClusterRewriteRequest rewriteRequest = input.rewriteRequest();
         List<Long> persistedClusterIds = input.persistedClusterIds();
-        if (conn == null || originalMap == null || rewriteRequest == null || !rewriteRequest.hasAffectedRooms()) {
-            return;
-        }
         features.world.dungeon.dungeonmap.model.DungeonMap persistedRoomMap = mapRepository.persistClusterRoomRewriteAndReload(
                 conn,
                 originalMap.mapId(),
