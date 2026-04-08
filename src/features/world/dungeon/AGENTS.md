@@ -18,6 +18,7 @@
 ## Canonical Types and APIs
 
 - `checkOwnerApiBoundaryConvention` — build-time owner-boundary gate for `*Object`, `input`, `task`, `repository`, `state`, and `*Bucket` rules.
+- `DungeonObject` — public dungeon feature seam — composes the dungeon runtime and dungeon editor views for higher-level consumers.
 - `geometry` — public dungeon spatial seams use the canonical carriers from this slice instead of raw point or segment collections.
 - `dungeonmap/DungeonMapObject` — public loaded-map seam for cross-owner map reads and map-scoped workflows.
 - `room/RoomObject` — public room seam for room-owned narration writes.

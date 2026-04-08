@@ -610,17 +610,36 @@ private fun validateOwnerNewClassExpression(
 ): List<String> {
     val context = sourceFile.context
     val projectTypeName = support.resolveProjectTypeName(expression.identifier, sourceFile.parsedSource, snapshot)
-    if (bodyMode == OwnerBodyMode.PRIVATE_CONSUMER && projectTypeName != null) {
-        return listOf("${context.path} :: owner private consumer methods must not construct project workflow objects (${projectTypeName})")
-    }
     if (projectTypeName != null) {
         val projectPackage = projectTypeName.substringBeforeLast('.')
         val projectRole = support.roleForDirectoryName(projectPackage.substringAfterLast('.'))
         val targetOwnerPackage = support.ownerPackageFor(projectPackage, projectRole)
-        val allowedProjectType = projectRole == support.inputRole &&
-            support.isOwnerReachable(context.ownerPackage, targetOwnerPackage)
+        val allowedProjectType = when (bodyMode) {
+            OwnerBodyMode.REQUEST -> {
+                projectRole == support.inputRole &&
+                    support.isOwnerReachable(context.ownerPackage, targetOwnerPackage)
+            }
+
+            OwnerBodyMode.PRIVATE_CONSUMER -> {
+                val ownerSurface = snapshot.catalog.ownerSurfacesByOwner[targetOwnerPackage]
+                val directSubOwnerRoot = projectRole == support.ownerRole &&
+                    ownerSurface != null &&
+                    projectTypeName == ownerSurface.typeName &&
+                    support.isDirectSubOwner(context.ownerPackage, targetOwnerPackage)
+                val inputType = projectRole == support.inputRole &&
+                    support.isOwnerReachable(context.ownerPackage, targetOwnerPackage)
+                inputType || directSubOwnerRoot
+            }
+        }
         if (!allowedProjectType) {
-            return listOf("${context.path} :: owner requests may construct only own or neighboring foreign input types (${projectTypeName})")
+            val reason = when (bodyMode) {
+                OwnerBodyMode.REQUEST ->
+                    "owner requests may construct only own or neighboring foreign input types ($projectTypeName)"
+
+                OwnerBodyMode.PRIVATE_CONSUMER ->
+                    "owner private consumer methods may construct only canonical input types or direct sub-owner entrypoints ($projectTypeName)"
+            }
+            return listOf("${context.path} :: $reason")
         }
     }
     return expression.arguments.flatMap { argument ->

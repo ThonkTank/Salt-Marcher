@@ -196,6 +196,20 @@ class OwnerConventionSupport(private val project: Project) {
         return sourceParent == targetSegments || targetParent == sourceSegments || sourceParent == targetParent
     }
 
+    internal fun isDirectSubOwner(sourceOwnerPackage: String, targetOwnerPackage: String): Boolean {
+        if (!targetOwnerPackage.startsWith("$sourceOwnerPackage.")) {
+            return false
+        }
+        val trailingSegments = targetOwnerPackage.removePrefix("$sourceOwnerPackage.")
+            .split('.')
+            .filter(String::isNotBlank)
+        return when (trailingSegments.size) {
+            1 -> true
+            2 -> trailingSegments.first().endsWith("Bucket")
+            else -> false
+        }
+    }
+
     internal fun parsedPrimaryType(sourceFile: OwnerConventionSourceFile): OwnerConventionParsedJavaType? {
         val expectedName = sourceFile.context.className.removeSuffix(".java")
         return sourceFile.parsedSource.topLevelTypes.firstOrNull { type -> type.name == expectedName }
