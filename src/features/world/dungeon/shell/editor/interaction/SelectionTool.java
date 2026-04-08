@@ -7,6 +7,7 @@ import features.world.dungeon.dungeonmap.cluster.model.ClusterMutationRequest;
 import features.world.dungeon.application.stair.DungeonStairApplicationService;
 import features.world.dungeon.application.stair.StairDraftResolver;
 import features.world.dungeon.canvas.base.DungeonCanvasPointerEvent;
+import features.world.dungeon.dungeonmap.api.PreviewReplacedStairRequest;
 import features.world.dungeon.dungeonmap.api.PreviewReplacedCorridorRequest;
 import features.world.dungeon.dungeonmap.api.ResolveCorridorRequest;
 import features.world.dungeon.dungeonmap.application.DungeonMapApplicationService;
@@ -483,12 +484,13 @@ public final class SelectionTool implements EditorTool {
             return null;
         }
         try {
-            return session.baseMap()
-                    .withUpdatedStair(StairDraftResolver.resolvePreview(
+            return mapApplicationService.previewReplacedStair(new PreviewReplacedStairRequest(
                             session.baseMap(),
-                            session.stairId(),
-                            session.baseMap().mapId(),
-                            movedDraft))
+                            StairDraftResolver.resolvePreview(
+                                    session.baseMap(),
+                                    session.stairId(),
+                                    session.baseMap().mapId(),
+                                    movedDraft)))
                     .projectedToLevel(session.currentLevel());
         } catch (IllegalArgumentException ignored) {
             return null;

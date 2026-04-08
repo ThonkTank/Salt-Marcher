@@ -4,6 +4,9 @@ import features.world.dungeon.application.stair.DungeonStairApplicationService;
 import features.world.dungeon.application.stair.StairDraftResolver;
 import features.world.dungeon.application.stair.StairNameGenerator;
 import features.world.dungeon.canvas.base.DungeonCanvasPointerEvent;
+import features.world.dungeon.dungeonmap.api.PreviewAddedStairRequest;
+import features.world.dungeon.dungeonmap.api.PreviewReplacedStairRequest;
+import features.world.dungeon.dungeonmap.application.DungeonMapApplicationService;
 import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.CardinalDirection;
@@ -50,6 +53,7 @@ public final class StairTool implements EditorTool {
 
     private final DungeonMapState mapState;
     private final DungeonMapLoadingService loadingService;
+    private final DungeonMapApplicationService mapApplicationService;
     private final DungeonStairApplicationService stairApplicationService;
     private final EditorInteractionState state;
 
@@ -115,11 +119,13 @@ public final class StairTool implements EditorTool {
     public StairTool(
             DungeonMapState mapState,
             DungeonMapLoadingService loadingService,
+            DungeonMapApplicationService mapApplicationService,
             DungeonStairApplicationService stairApplicationService,
             EditorInteractionState state
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
+        this.mapApplicationService = Objects.requireNonNull(mapApplicationService, "mapApplicationService");
         this.stairApplicationService = Objects.requireNonNull(stairApplicationService, "stairApplicationService");
         this.state = Objects.requireNonNull(state, "state");
         initializeStatePane();
@@ -765,8 +771,8 @@ public final class StairTool implements EditorTool {
         lastResolvedStair = previewStair;
         DungeonMap layout = mapState.activeMap();
         DungeonMap previewLayout = stairDraftId == null
-                ? layout.withAddedStair(previewStair)
-                : layout.withUpdatedStair(previewStair);
+                ? mapApplicationService.previewAddedStair(new PreviewAddedStairRequest(layout, previewStair))
+                : mapApplicationService.previewReplacedStair(new PreviewReplacedStairRequest(layout, previewStair));
         state.showPreview(new EditorPreview.LayoutPreview(previewLayout));
     }
 

@@ -24,32 +24,33 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 /**
- * Cluster rewrite owner for structure-backed cluster edits.
+ * Internal cluster rewrite planner for structure-backed cluster edits.
  *
  * <p>These workflows produce explicit cluster rewrite plans, while the room semantics themselves live under the
  * structure-owned room subtree instead of on {@link Cluster}.</p>
  */
-public final class ClusterStructureEditor {
+final class ClusterStructureEditor {
 
     private ClusterStructureEditor() {
     }
 
-    public static ClusterRewritePlan applyPaint(
+    static ClusterRewritePlan applyPaint(
             Cluster cluster,
-            GridArea paintArea,
-            List<Cluster> overlappingClusters,
-            int paintLevel
+            ClusterPaintRequest request
     ) {
-        Set<GridPoint> paintCells = paintArea == null ? Set.of() : paintArea.cells();
+        ClusterPaintRequest resolvedRequest = request == null
+                ? new ClusterPaintRequest(GridArea.empty(), List.of(), 0)
+                : request;
+        Set<GridPoint> paintCells = resolvedRequest.paintArea().cells();
         if (cluster == null || paintCells.isEmpty()) {
             return null;
         }
-        List<Cluster> resolvedClusters = normalizedClusters(overlappingClusters);
+        List<Cluster> resolvedClusters = normalizedClusters(resolvedRequest.overlappingClusters());
         List<Room> touchedRooms = resolvedClusters.stream()
                 .flatMap(candidate -> rooms(candidate).stream()
                         .filter(room -> room != null
                                 && room.roomId() != null
-                                && overlapsAtLevel(candidate, room, paintCells, paintLevel)))
+                                && overlapsAtLevel(candidate, room, paintCells, resolvedRequest.paintLevel())))
                 .sorted(Comparator.comparing(room -> room.roomId() == null ? Long.MAX_VALUE : room.roomId()))
                 .toList();
         if (touchedRooms.isEmpty()) {
@@ -69,8 +70,8 @@ public final class ClusterStructureEditor {
             mergedMetadataRooms.addAll(rooms(overlappingCluster));
         }
         Map<Integer, Set<GridPoint>> previousClusterCellsByLevel = immutableCellsByLevel(mergedClusterCellsByLevel);
-        mergedClusterCellsByLevel.computeIfAbsent(paintLevel, ignored -> new LinkedHashSet<>()).addAll(paintCells);
-        mergedClusterFloorCellsByLevel.computeIfAbsent(paintLevel, ignored -> new LinkedHashSet<>()).addAll(paintCells);
+        mergedClusterCellsByLevel.computeIfAbsent(resolvedRequest.paintLevel(), ignored -> new LinkedHashSet<>()).addAll(paintCells);
+        mergedClusterFloorCellsByLevel.computeIfAbsent(resolvedRequest.paintLevel(), ignored -> new LinkedHashSet<>()).addAll(paintCells);
 
         Structure mergedStructure = buildClusterStructure(
                 mergedClusterCellsByLevel,
@@ -87,37 +88,38 @@ public final class ClusterStructureEditor {
         return ClusterRewritePlan.of(resolvedClusters, List.of(mergedCluster));
     }
 
-    public static ClusterRewritePlan applyDelete(
+    static ClusterRewritePlan applyDelete(
             Cluster cluster,
-            GridArea deletedArea,
-            int deleteLevel,
-            Supplier<String> roomNameSupplier
+            ClusterDeleteRequest request
     ) {
-        Set<GridPoint> deletedCells = deletedArea == null ? Set.of() : deletedArea.cells();
+        ClusterDeleteRequest resolvedRequest = request == null
+                ? new ClusterDeleteRequest(GridArea.empty(), 0, null)
+                : request;
+        Set<GridPoint> deletedCells = resolvedRequest.deletedArea().cells();
         if (cluster == null || deletedCells.isEmpty()) {
             return null;
         }
         Map<Integer, Set<GridPoint>> remainingCellsByLevel = mutableClusterCellsByLevel(cluster);
-        Set<GridPoint> remainingDeleteLevelCells = new LinkedHashSet<>(remainingCellsByLevel.getOrDefault(deleteLevel, Set.of()));
+        Set<GridPoint> remainingDeleteLevelCells = new LinkedHashSet<>(remainingCellsByLevel.getOrDefault(resolvedRequest.deleteLevel(), Set.of()));
         if (!remainingDeleteLevelCells.removeAll(deletedCells)) {
             return null;
         }
         if (remainingDeleteLevelCells.isEmpty()) {
-            remainingCellsByLevel.remove(deleteLevel);
+            remainingCellsByLevel.remove(resolvedRequest.deleteLevel());
         } else {
-            remainingCellsByLevel.put(deleteLevel, Set.copyOf(remainingDeleteLevelCells));
+            remainingCellsByLevel.put(resolvedRequest.deleteLevel(), Set.copyOf(remainingDeleteLevelCells));
         }
         if (remainingCellsByLevel.isEmpty()) {
             return ClusterRewritePlan.of(List.of(cluster), List.of());
         }
 
         Map<Integer, Set<GridPoint>> remainingFloorCellsByLevel = mutableCellsByLevel(copyStructureFloorCellsByLevel(cluster));
-        Set<GridPoint> remainingDeleteLevelFloorCells = new LinkedHashSet<>(remainingFloorCellsByLevel.getOrDefault(deleteLevel, Set.of()));
+        Set<GridPoint> remainingDeleteLevelFloorCells = new LinkedHashSet<>(remainingFloorCellsByLevel.getOrDefault(resolvedRequest.deleteLevel(), Set.of()));
         remainingDeleteLevelFloorCells.removeAll(deletedCells);
         if (remainingDeleteLevelFloorCells.isEmpty()) {
-            remainingFloorCellsByLevel.remove(deleteLevel);
+            remainingFloorCellsByLevel.remove(resolvedRequest.deleteLevel());
         } else {
-            remainingFloorCellsByLevel.put(deleteLevel, Set.copyOf(remainingDeleteLevelFloorCells));
+            remainingFloorCellsByLevel.put(resolvedRequest.deleteLevel(), Set.copyOf(remainingDeleteLevelFloorCells));
         }
 
         Structure rewrittenStructure = buildClusterStructure(
@@ -135,7 +137,7 @@ public final class ClusterStructureEditor {
         finalClusters.addAll(componentClusters.stream().skip(1).toList());
         return ClusterRewritePlan.of(
                 List.of(cluster),
-                assignGeneratedClusterRoomNames(finalClusters, roomNameSupplier));
+                assignGeneratedClusterRoomNames(finalClusters, resolvedRequest.roomNameSupplier()));
     }
 
     private static List<Room> assignGeneratedNamesToRooms(List<Room> rooms, Supplier<String> roomNameSupplier) {

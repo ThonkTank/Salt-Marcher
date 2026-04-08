@@ -8,14 +8,14 @@ import features.world.dungeon.geometry.GridTranslation;
 import java.util.Objects;
 
 /**
- * Canonical public cluster mutation vocabulary.
+ * Canonical public cluster mutation request vocabulary.
  */
-public sealed interface ClusterMutation permits
-        ClusterMutation.Translation,
-        ClusterMutation.FloorCellsEdit,
-        ClusterMutation.WallPathEdit,
-        ClusterMutation.DoorSegmentsEdit,
-        ClusterMutation.DoorMove {
+public sealed interface ClusterMutationRequest permits
+        ClusterMutationRequest.Translation,
+        ClusterMutationRequest.FloorCellsEdit,
+        ClusterMutationRequest.WallPathEdit,
+        ClusterMutationRequest.DoorSegmentsEdit,
+        ClusterMutationRequest.DoorMove {
 
     enum CellEditMode {
         ADD,
@@ -32,7 +32,7 @@ public sealed interface ClusterMutation permits
         EXTERIOR
     }
 
-    record Translation(GridTranslation translation) implements ClusterMutation {
+    record Translation(GridTranslation translation) implements ClusterMutationRequest {
         public Translation {
             translation = translation == null ? GridTranslation.none() : translation;
         }
@@ -42,7 +42,7 @@ public sealed interface ClusterMutation permits
             int levelZ,
             GridArea cells,
             CellEditMode mode
-    ) implements ClusterMutation {
+    ) implements ClusterMutationRequest {
         public FloorCellsEdit {
             cells = cells == null ? GridArea.empty() : cells.onLevel(levelZ);
             mode = Objects.requireNonNull(mode, "mode");
@@ -53,7 +53,7 @@ public sealed interface ClusterMutation permits
             int levelZ,
             GridBoundary segments,
             BoundaryEditMode mode
-    ) implements ClusterMutation {
+    ) implements ClusterMutationRequest {
         public WallPathEdit {
             segments = segments == null ? GridBoundary.empty() : segments;
             mode = Objects.requireNonNull(mode, "mode");
@@ -65,7 +65,7 @@ public sealed interface ClusterMutation permits
             GridBoundary segments,
             BoundaryEditMode mode,
             DoorScope scope
-    ) implements ClusterMutation {
+    ) implements ClusterMutationRequest {
         public DoorSegmentsEdit {
             segments = segments == null ? GridBoundary.empty() : segments;
             mode = Objects.requireNonNull(mode, "mode");
@@ -77,7 +77,7 @@ public sealed interface ClusterMutation permits
             int levelZ,
             GridSegment sourceBoundarySegment,
             GridSegment targetBoundarySegment
-    ) implements ClusterMutation {
+    ) implements ClusterMutationRequest {
         public DoorMove {
             Objects.requireNonNull(sourceBoundarySegment, "sourceBoundarySegment");
             Objects.requireNonNull(targetBoundarySegment, "targetBoundarySegment");

@@ -5,7 +5,6 @@ import features.world.dungeon.geometry.GridBoundary;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
 import features.world.dungeon.geometry.GridSegmentPath;
-import features.world.dungeon.geometry.GridTranslatable;
 import features.world.dungeon.geometry.GridTranslation;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.model.interaction.InteractiveLabelHandle;
@@ -32,7 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-public final class Cluster extends Structure implements GridTranslatable<Cluster> {
+public final class Cluster extends Structure {
 
     private final Long clusterId;
     private final Long structureObjectId;
@@ -115,20 +114,28 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
                 projectedTopology.rooms()));
     }
 
+    public ClusterRewritePlan rewritePaint(ClusterPaintRequest request) {
+        return ClusterStructureEditor.applyPaint(this, request);
+    }
+
+    public ClusterRewritePlan rewriteDelete(ClusterDeleteRequest request) {
+        return ClusterStructureEditor.applyDelete(this, request);
+    }
+
     /**
      * Public cluster mutations converge here so the same room-cluster rewrite is applied consistently regardless of
      * which editor workflow requested it.
      */
-    public Cluster mutated(ClusterMutation mutation) {
+    public Cluster mutated(ClusterMutationRequest mutation) {
         if (mutation == null) {
             return this;
         }
         return switch (mutation) {
-            case ClusterMutation.Translation edit -> translated(edit.translation());
-            case ClusterMutation.FloorCellsEdit edit -> mutatedFloorCells(edit);
-            case ClusterMutation.WallPathEdit edit -> mutatedWallPath(edit);
-            case ClusterMutation.DoorSegmentsEdit edit -> mutatedDoorSegments(edit);
-            case ClusterMutation.DoorMove edit -> movedDoor(edit);
+            case ClusterMutationRequest.Translation edit -> translated(edit.translation());
+            case ClusterMutationRequest.FloorCellsEdit edit -> mutatedFloorCells(edit);
+            case ClusterMutationRequest.WallPathEdit edit -> mutatedWallPath(edit);
+            case ClusterMutationRequest.DoorSegmentsEdit edit -> mutatedDoorSegments(edit);
+            case ClusterMutationRequest.DoorMove edit -> movedDoor(edit);
         };
     }
 
@@ -201,8 +208,7 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
         return false;
     }
 
-    @Override
-    public Cluster translated(GridTranslation translation) {
+    private Cluster translated(GridTranslation translation) {
         GridTranslation resolvedTranslation = translation == null ? GridTranslation.none() : translation;
         if (resolvedTranslation.isZero()) {
             return this;
@@ -309,7 +315,7 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
         return new ClusterBase(normalizedStructure, roomTopology);
     }
 
-    private Cluster mutatedFloorCells(ClusterMutation.FloorCellsEdit edit) {
+    private Cluster mutatedFloorCells(ClusterMutationRequest.FloorCellsEdit edit) {
         Structure updatedStructure = super.mutated(new StructureMutation.FloorCellsEdit(
                 edit.levelZ(),
                 edit.cells(),
@@ -320,7 +326,7 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
         return withStructure(updatedStructure);
     }
 
-    private Cluster mutatedWallPath(ClusterMutation.WallPathEdit edit) {
+    private Cluster mutatedWallPath(ClusterMutationRequest.WallPathEdit edit) {
         List<GridSegment> editableSegments = Topology.editableWallSegments(this, edit.levelZ(), edit.segments().segments());
         if (editableSegments.isEmpty()) {
             return this;
@@ -335,7 +341,7 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
         return withStructure(updatedStructure);
     }
 
-    private Cluster mutatedDoorSegments(ClusterMutation.DoorSegmentsEdit edit) {
+    private Cluster mutatedDoorSegments(ClusterMutationRequest.DoorSegmentsEdit edit) {
         List<GridSegment> editableSegments = Topology.editableDoorSegments(
                 this,
                 edit.levelZ(),
@@ -355,7 +361,7 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
         return withStructure(updatedStructure);
     }
 
-    private Cluster movedDoor(ClusterMutation.DoorMove edit) {
+    private Cluster movedDoor(ClusterMutationRequest.DoorMove edit) {
         if (Objects.equals(edit.sourceBoundarySegment(), edit.targetBoundarySegment())
                 || !canDeleteDoor(edit.levelZ(), edit.sourceBoundarySegment())
                 || !canCreateDoor(edit.levelZ(), edit.targetBoundarySegment())) {
@@ -411,13 +417,13 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
                 Cluster cluster,
                 int levelZ,
                 Collection<GridSegment> segments2x,
-                ClusterMutation.BoundaryEditMode mode,
-                ClusterMutation.DoorScope scope
+                ClusterMutationRequest.BoundaryEditMode mode,
+                ClusterMutationRequest.DoorScope scope
         ) {
             if (cluster == null || segments2x == null || segments2x.isEmpty()) {
                 return List.of();
             }
-            return mode == ClusterMutation.BoundaryEditMode.DELETE
+            return mode == ClusterMutationRequest.BoundaryEditMode.DELETE
                     ? deletedEditableSegments(cluster, levelZ, segments2x, scope)
                     : createdEditableSegments(cluster, levelZ, segments2x, scope);
         }
@@ -464,11 +470,11 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
                 Cluster cluster,
                 int levelZ,
                 Collection<GridSegment> segments2x,
-                ClusterMutation.DoorScope scope
+                ClusterMutationRequest.DoorScope scope
         ) {
             return (segments2x == null ? List.<GridSegment>of() : segments2x).stream()
                     .filter(Objects::nonNull)
-                    .filter(segment2x -> scope == ClusterMutation.DoorScope.EXTERIOR
+                    .filter(segment2x -> scope == ClusterMutationRequest.DoorScope.EXTERIOR
                             ? cluster.canCreateExteriorDoor(levelZ, segment2x)
                             : cluster.canCreateDoor(levelZ, segment2x))
                     .toList();
@@ -478,11 +484,11 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
                 Cluster cluster,
                 int levelZ,
                 Collection<GridSegment> segments2x,
-                ClusterMutation.DoorScope scope
+                ClusterMutationRequest.DoorScope scope
         ) {
             return (segments2x == null ? List.<GridSegment>of() : segments2x).stream()
                     .filter(Objects::nonNull)
-                    .filter(segment2x -> scope == ClusterMutation.DoorScope.EXTERIOR
+                    .filter(segment2x -> scope == ClusterMutationRequest.DoorScope.EXTERIOR
                             ? cluster.canDeleteExteriorDoor(levelZ, segment2x)
                             : cluster.canDeleteDoor(levelZ, segment2x))
                     .toList();

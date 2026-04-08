@@ -105,6 +105,7 @@ public final class DungeonMapModule {
         StairTool stairTool = new StairTool(
                 state,
                 loadingService,
+                mapApplicationService,
                 stairApplicationService,
                 editorInteractionState);
         List<EditorTool> editorTools = List.of(

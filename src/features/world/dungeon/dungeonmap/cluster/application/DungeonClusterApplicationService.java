@@ -2,9 +2,10 @@ package features.world.dungeon.dungeonmap.cluster.application;
 
 import database.DatabaseManager;
 import features.world.dungeon.application.support.DungeonTransactionRunner;
-import features.world.dungeon.dungeonmap.cluster.model.ClusterMutation;
+import features.world.dungeon.dungeonmap.cluster.model.ClusterDeleteRequest;
+import features.world.dungeon.dungeonmap.cluster.model.ClusterMutationRequest;
+import features.world.dungeon.dungeonmap.cluster.model.ClusterPaintRequest;
 import features.world.dungeon.dungeonmap.cluster.model.ClusterRewritePlan;
-import features.world.dungeon.dungeonmap.cluster.model.ClusterStructureEditor;
 import features.world.dungeon.dungeonmap.cluster.model.Cluster;
 import features.world.dungeon.dungeonmap.cluster.repository.DungeonClusterRepository;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
@@ -174,7 +175,7 @@ public final class DungeonClusterApplicationService {
                 resolvedRequest.levelZ(),
                 resolvedRequest.segments(),
                 false,
-                ClusterMutation.DoorScope.INTERIOR);
+                ClusterMutationRequest.DoorScope.INTERIOR);
     }
 
     public void deleteDoor(DeleteDoorRequest request) throws SQLException {
@@ -185,7 +186,7 @@ public final class DungeonClusterApplicationService {
                 resolvedRequest.levelZ(),
                 resolvedRequest.segments(),
                 true,
-                ClusterMutation.DoorScope.INTERIOR);
+                ClusterMutationRequest.DoorScope.INTERIOR);
     }
 
     public void createExteriorDoor(CreateExteriorDoorRequest request) throws SQLException {
@@ -196,7 +197,7 @@ public final class DungeonClusterApplicationService {
                 resolvedRequest.levelZ(),
                 resolvedRequest.segments(),
                 false,
-                ClusterMutation.DoorScope.EXTERIOR);
+                ClusterMutationRequest.DoorScope.EXTERIOR);
     }
 
     public void deleteExteriorDoor(DeleteExteriorDoorRequest request) throws SQLException {
@@ -207,7 +208,7 @@ public final class DungeonClusterApplicationService {
                 resolvedRequest.levelZ(),
                 resolvedRequest.segments(),
                 true,
-                ClusterMutation.DoorScope.EXTERIOR);
+                ClusterMutationRequest.DoorScope.EXTERIOR);
     }
 
     public void moveDoor(MoveDoorRequest request) throws SQLException {
@@ -225,7 +226,7 @@ public final class DungeonClusterApplicationService {
                 if (cluster == null) {
                     return null;
                 }
-                Cluster updatedCluster = cluster.mutated(new ClusterMutation.DoorMove(
+                Cluster updatedCluster = cluster.mutated(new ClusterMutationRequest.DoorMove(
                         resolvedRequest.levelZ(),
                         resolvedRequest.sourceBoundarySegment(),
                         resolvedRequest.targetBoundarySegment()));
@@ -252,11 +253,10 @@ public final class DungeonClusterApplicationService {
             return;
         }
 
-        ClusterRewritePlan rewritePlan = ClusterStructureEditor.applyPaint(
-                overlappingClusters.getFirst(),
+        ClusterRewritePlan rewritePlan = overlappingClusters.getFirst().rewritePaint(new ClusterPaintRequest(
                 cells,
                 overlappingClusters,
-                levelZ);
+                levelZ));
         if (rewritePlan == null || !rewritePlan.hasChanges()) {
             return;
         }
@@ -284,11 +284,10 @@ public final class DungeonClusterApplicationService {
                 continue;
             }
             DungeonMap layoutSnapshot = workingLayout;
-            ClusterRewritePlan rewritePlan = ClusterStructureEditor.applyDelete(
-                    cluster,
+            ClusterRewritePlan rewritePlan = cluster.rewriteDelete(new ClusterDeleteRequest(
                     cells,
                     levelZ,
-                    () -> nextRoomName(layoutSnapshot, reservedNames));
+                    () -> nextRoomName(layoutSnapshot, reservedNames)));
             if (rewritePlan == null || !rewritePlan.hasChanges()) {
                 continue;
             }
@@ -360,10 +359,10 @@ public final class DungeonClusterApplicationService {
             if (!changed) {
                 continue;
             }
-            Cluster updatedCluster = cluster.mutated(new ClusterMutation.FloorCellsEdit(
+            Cluster updatedCluster = cluster.mutated(new ClusterMutationRequest.FloorCellsEdit(
                     levelZ,
                     GridArea.of(clusterRequestedCells),
-                    deleteFloor ? ClusterMutation.CellEditMode.REMOVE : ClusterMutation.CellEditMode.ADD));
+                    deleteFloor ? ClusterMutationRequest.CellEditMode.REMOVE : ClusterMutationRequest.CellEditMode.ADD));
             persistClusterRewrite(conn, mapId, workingLayout, ClusterRewritePlan.of(List.of(cluster), List.of(updatedCluster)));
             workingLayout = requireLayout(conn, mapId);
         }
@@ -417,7 +416,7 @@ public final class DungeonClusterApplicationService {
                 Cluster cluster = requireCluster(layout, resolvedRequest.clusterId());
                 ClusterRewritePlan rewritePlan = ClusterRewritePlan.of(
                         List.of(cluster),
-                        List.of(cluster.translated(resolvedTranslation)),
+                        List.of(cluster.mutated(new ClusterMutationRequest.Translation(resolvedTranslation))),
                         resolvedTranslation);
                 persistClusterRewrite(conn, resolvedRequest.mapId(), layout, rewritePlan);
                 return null;
@@ -456,10 +455,10 @@ public final class DungeonClusterApplicationService {
         if (cluster == null) {
             return;
         }
-        Cluster updatedCluster = cluster.mutated(new ClusterMutation.WallPathEdit(
+        Cluster updatedCluster = cluster.mutated(new ClusterMutationRequest.WallPathEdit(
                 levelZ,
                 segments,
-                ClusterMutation.BoundaryEditMode.CREATE));
+                ClusterMutationRequest.BoundaryEditMode.CREATE));
         if (updatedCluster == cluster) {
             return;
         }
@@ -482,10 +481,10 @@ public final class DungeonClusterApplicationService {
         if (cluster == null) {
             return;
         }
-        Cluster updatedCluster = cluster.mutated(new ClusterMutation.WallPathEdit(
+        Cluster updatedCluster = cluster.mutated(new ClusterMutationRequest.WallPathEdit(
                 levelZ,
                 segments,
-                ClusterMutation.BoundaryEditMode.DELETE));
+                ClusterMutationRequest.BoundaryEditMode.DELETE));
         if (updatedCluster == cluster) {
             return;
         }
@@ -499,7 +498,7 @@ public final class DungeonClusterApplicationService {
             int levelZ,
             GridBoundary segments,
             boolean deleteDoor,
-            ClusterMutation.DoorScope scope
+            ClusterMutationRequest.DoorScope scope
     ) throws SQLException {
         if (mapId <= 0 || clusterId <= 0) {
             throw new IllegalArgumentException("Door edit requires mapId and clusterId");
@@ -522,17 +521,17 @@ public final class DungeonClusterApplicationService {
             int levelZ,
             GridBoundary segments,
             boolean deleteDoor,
-            ClusterMutation.DoorScope scope
+            ClusterMutationRequest.DoorScope scope
     ) throws SQLException {
         DungeonMap layout = requireLayout(conn, mapId);
         Cluster cluster = layout.findCluster(clusterId);
         if (cluster == null) {
             return;
         }
-        Cluster updatedCluster = cluster.mutated(new ClusterMutation.DoorSegmentsEdit(
+        Cluster updatedCluster = cluster.mutated(new ClusterMutationRequest.DoorSegmentsEdit(
                 levelZ,
                 segments,
-                deleteDoor ? ClusterMutation.BoundaryEditMode.DELETE : ClusterMutation.BoundaryEditMode.CREATE,
+                deleteDoor ? ClusterMutationRequest.BoundaryEditMode.DELETE : ClusterMutationRequest.BoundaryEditMode.CREATE,
                 scope));
         if (updatedCluster == cluster) {
             return;
@@ -611,7 +610,7 @@ public final class DungeonClusterApplicationService {
         var rewriteEffects = originalLayout.reconcileClusterRewrite(persistedRoomLayout, rewritePlan);
         for (Corridor reboundCorridor : rewriteEffects.reboundCorridors()) {
             if (reboundCorridor != null) {
-                corridorRepository.save(conn, reboundCorridor, persistedRoomLayout);
+                corridorRepository.save(conn, reboundCorridor, persistedRoomLayout.mapId());
             }
         }
         for (Map.Entry<Long, features.world.dungeon.model.structures.connection.DungeonConnection> entry

@@ -1,8 +1,11 @@
 package features.world.dungeon.dungeonmap.application;
 
 import features.world.dungeon.dungeonmap.api.PreviewAddedCorridorRequest;
+import features.world.dungeon.dungeonmap.api.PreviewAddedStairRequest;
 import features.world.dungeon.dungeonmap.api.PreviewRemovedCorridorRequest;
+import features.world.dungeon.dungeonmap.api.PreviewRemovedStairRequest;
 import features.world.dungeon.dungeonmap.api.PreviewReplacedCorridorRequest;
+import features.world.dungeon.dungeonmap.api.PreviewReplacedStairRequest;
 import features.world.dungeon.dungeonmap.api.RehydrateCorridorRequest;
 import features.world.dungeon.dungeonmap.api.ResolveCorridorRequest;
 import features.world.dungeon.dungeonmap.api.DoorDescription;
@@ -18,6 +21,7 @@ import features.world.dungeon.dungeonmap.structure.model.boundary.door.Door;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.model.structures.room.Room;
+import features.world.dungeon.model.structures.stair.DungeonStair;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -91,6 +95,48 @@ public final class DungeonMapApplicationService {
                 : withCorridors(resolvedRequest.map(), updatedCorridors);
     }
 
+    public DungeonMap previewAddedStair(PreviewAddedStairRequest request) {
+        PreviewAddedStairRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        ArrayList<DungeonStair> updatedStairs = new ArrayList<>(resolvedRequest.map().stairs());
+        updatedStairs.add(resolvedRequest.stair());
+        return withStairs(resolvedRequest.map(), updatedStairs);
+    }
+
+    public DungeonMap previewReplacedStair(PreviewReplacedStairRequest request) {
+        PreviewReplacedStairRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        DungeonStair stair = resolvedRequest.stair();
+        if (stair.stairId() == null) {
+            return resolvedRequest.map();
+        }
+        boolean replaced = false;
+        ArrayList<DungeonStair> updatedStairs = new ArrayList<>(resolvedRequest.map().stairs().size());
+        for (DungeonStair existing : resolvedRequest.map().stairs()) {
+            if (existing != null && Objects.equals(existing.stairId(), stair.stairId())) {
+                updatedStairs.add(stair);
+                replaced = true;
+            } else {
+                updatedStairs.add(existing);
+            }
+        }
+        if (!replaced) {
+            updatedStairs.add(stair);
+        }
+        return withStairs(resolvedRequest.map(), updatedStairs);
+    }
+
+    public DungeonMap previewRemovedStair(PreviewRemovedStairRequest request) {
+        PreviewRemovedStairRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        if (resolvedRequest.stairId() == null) {
+            return resolvedRequest.map();
+        }
+        List<DungeonStair> updatedStairs = resolvedRequest.map().stairs().stream()
+                .filter(stair -> stair == null || !Objects.equals(stair.stairId(), resolvedRequest.stairId()))
+                .toList();
+        return updatedStairs.size() == resolvedRequest.map().stairs().size()
+                ? resolvedRequest.map()
+                : withStairs(resolvedRequest.map(), updatedStairs);
+    }
+
     private CorridorResolutionInput corridorResolutionInput(DungeonMap layout, int levelZ) {
         return new CorridorResolutionInput(
                 levelZ,
@@ -157,6 +203,17 @@ public final class DungeonMapApplicationService {
                 updatedCorridors,
                 layout.clusters(),
                 layout.stairs(),
+                layout.transitions(),
+                clusterLevelsById(layout));
+    }
+
+    private DungeonMap withStairs(DungeonMap layout, List<DungeonStair> updatedStairs) {
+        return new DungeonMap(
+                layout.mapId(),
+                layout.name(),
+                layout.corridors(),
+                layout.clusters(),
+                updatedStairs,
                 layout.transitions(),
                 clusterLevelsById(layout));
     }

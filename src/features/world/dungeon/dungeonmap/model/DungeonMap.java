@@ -1135,45 +1135,6 @@ public final class DungeonMap {
         return reboundRoom;
     }
 
-    public DungeonMap withAddedStair(DungeonStair stair) {
-        if (stair == null) {
-            return this;
-        }
-        ArrayList<DungeonStair> updatedStairs = new ArrayList<>(stairs);
-        updatedStairs.add(stair);
-        return withStairs(updatedStairs);
-    }
-
-    public DungeonMap withUpdatedStair(DungeonStair stair) {
-        if (stair == null || stair.stairId() == null) {
-            return this;
-        }
-        boolean replaced = false;
-        ArrayList<DungeonStair> updatedStairs = new ArrayList<>(stairs.size());
-        for (DungeonStair existing : stairs) {
-            if (existing != null && Objects.equals(existing.stairId(), stair.stairId())) {
-                updatedStairs.add(stair);
-                replaced = true;
-            } else {
-                updatedStairs.add(existing);
-            }
-        }
-        if (!replaced) {
-            updatedStairs.add(stair);
-        }
-        return withStairs(updatedStairs);
-    }
-
-    public DungeonMap withRemovedStair(Long stairId) {
-        if (stairId == null) {
-            return this;
-        }
-        List<DungeonStair> updatedStairs = stairs.stream()
-                .filter(stair -> stair == null || !Objects.equals(stair.stairId(), stairId))
-                .toList();
-        return updatedStairs.size() == stairs.size() ? this : withStairs(updatedStairs);
-    }
-
     public DungeonMap withAddedTransition(DungeonTransition transition) {
         if (transition == null) {
             return this;
