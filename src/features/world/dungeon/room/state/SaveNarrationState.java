@@ -1,5 +1,6 @@
 package features.world.dungeon.room.state;
 
+import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.room.input.SaveNarrationInput;
 
 import java.util.ArrayList;
@@ -15,9 +16,6 @@ public record SaveNarrationState(
     public static SaveNarrationState saveNarration(SaveNarrationInput input) {
         if (input == null) {
             throw new IllegalArgumentException("input");
-        }
-        if (input.connection() == null) {
-            throw new IllegalArgumentException("connection");
         }
         if (input.roomId() <= 0) {
             throw new IllegalArgumentException("roomId");
@@ -52,7 +50,7 @@ public record SaveNarrationState(
     }
 
     private static String normalizedDirection(String direction) {
-        return direction == null ? "" : direction.trim();
+        return CardinalDirection.parse(direction).name();
     }
 
     private static String normalizedDescription(String description) {

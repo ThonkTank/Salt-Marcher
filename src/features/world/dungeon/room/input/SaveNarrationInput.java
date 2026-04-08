@@ -1,11 +1,9 @@
 package features.world.dungeon.room.input;
 
-import java.sql.Connection;
 import java.util.List;
 
 @SuppressWarnings("unused")
 public record SaveNarrationInput(
-        Connection connection,
         long roomId,
         String visualDescription,
         List<ExitNarrationInput> exitNarrations

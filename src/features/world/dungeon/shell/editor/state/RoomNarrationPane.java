@@ -1,6 +1,5 @@
 package features.world.dungeon.shell.editor.state;
 
-import features.world.dungeon.application.room.DungeonRoomApplicationService;
 import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
 import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.geometry.GridPoint;
@@ -9,9 +8,9 @@ import features.world.dungeon.dungeonmap.cluster.model.Cluster;
 import features.world.dungeon.dungeonmap.connections.input.ConnectionEndpoint;
 import features.world.dungeon.dungeonmap.connections.input.DoorExitCatalog;
 import features.world.dungeon.model.structures.room.Room;
-import features.world.dungeon.model.structures.room.RoomExitNarration;
-import features.world.dungeon.model.structures.room.RoomNarration;
 import features.world.dungeon.dungeonmap.state.DungeonMapState;
+import features.world.dungeon.room.RoomObject;
+import features.world.dungeon.room.input.SaveNarrationInput;
 import features.world.dungeon.state.EditorInteractionState;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -37,7 +36,7 @@ public final class RoomNarrationPane {
 
     private final DungeonMapState mapState;
     private final DungeonMapLoadingService loadingService;
-    private final DungeonRoomApplicationService roomApplicationService;
+    private final RoomObject roomObject;
     private final EditorInteractionState editorState;
     private final VBox narrationContent = new VBox(8);
     private final VBox narrationCard = editorCard("Raumbeschreibung", narrationContent);
@@ -47,12 +46,12 @@ public final class RoomNarrationPane {
     public RoomNarrationPane(
             DungeonMapState mapState,
             DungeonMapLoadingService loadingService,
-            DungeonRoomApplicationService roomApplicationService,
+            RoomObject roomObject,
             EditorInteractionState editorState
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
-        this.roomApplicationService = Objects.requireNonNull(roomApplicationService, "roomApplicationService");
+        this.roomObject = Objects.requireNonNull(roomObject, "roomObject");
         this.editorState = Objects.requireNonNull(editorState, "editorState");
     }
 
@@ -183,15 +182,21 @@ public final class RoomNarrationPane {
         if (card.roomId() <= 0) {
             return;
         }
-        ArrayList<RoomExitNarration> exitNarrations = new ArrayList<>();
+        List<SaveNarrationInput.ExitNarrationInput> exitNarrations = new ArrayList<>();
         for (int index = 0; index < card.exits().size(); index++) {
             RoomExitCard exit = card.exits().get(index);
-            exitNarrations.add(new RoomExitNarration(exit.levelZ(), exit.roomCell(), exit.direction(), exitAreas.get(index).getText()));
+            exitNarrations.add(new SaveNarrationInput.ExitNarrationInput(
+                    exit.levelZ(),
+                    roomCellX(exit.roomCell()),
+                    roomCellY(exit.roomCell()),
+                    roomCellZ(exit.roomCell()),
+                    directionName(exit.direction()),
+                    exitAreas.get(index).getText()));
         }
         setRoomNarrationSaveState(card.roomId(), true, "Speichert...");
         loadingService.submitMutation(
                 () -> {
-                    roomApplicationService.saveNarration(card.roomId(), new RoomNarration(visualArea.getText(), exitNarrations));
+                    roomObject.saveNarration(new SaveNarrationInput(card.roomId(), visualArea.getText(), exitNarrations));
                     return mapState.activeMapId();
                 },
                 updatedMapId -> updatedMapId,
@@ -219,6 +224,22 @@ public final class RoomNarrationPane {
         area.setWrapText(true);
         area.setPrefRowCount(3);
         return area;
+    }
+
+    private static int roomCellX(GridPoint roomCell) {
+        return roomCell == null ? 0 : roomCell.x2() / 2;
+    }
+
+    private static int roomCellY(GridPoint roomCell) {
+        return roomCell == null ? 0 : roomCell.y2() / 2;
+    }
+
+    private static int roomCellZ(GridPoint roomCell) {
+        return roomCell == null ? 0 : roomCell.z();
+    }
+
+    private static String directionName(CardinalDirection direction) {
+        return (direction == null ? CardinalDirection.defaultDirection() : direction).name();
     }
 
     private static VBox editorCard(String title, Node... content) {
