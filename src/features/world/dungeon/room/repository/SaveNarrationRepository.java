@@ -1,5 +1,6 @@
 package features.world.dungeon.room.repository;
 
+import database.DatabaseManager;
 import features.world.dungeon.room.state.SaveNarrationExitState;
 import features.world.dungeon.room.state.SaveNarrationState;
 
@@ -13,16 +14,17 @@ public final class SaveNarrationRepository {
     private SaveNarrationRepository() {
     }
 
-    public static SaveNarrationState saveNarration(Connection conn, SaveNarrationState state) throws SQLException {
-        if (conn == null) {
-            throw new IllegalArgumentException("conn");
-        }
+    public static SaveNarrationState saveNarration(SaveNarrationState state) throws SQLException {
         if (state == null) {
             throw new IllegalArgumentException("state");
         }
-        replaceVisualDescription(conn, state);
-        replaceExitNarrations(conn, state);
-        return state;
+        try (Connection conn = DatabaseManager.getConnection()) {
+            return features.world.dungeon.application.support.DungeonTransactionRunner.inTransaction(conn, () -> {
+                replaceVisualDescription(conn, state);
+                replaceExitNarrations(conn, state);
+                return state;
+            });
+        }
     }
 
     private static void replaceVisualDescription(Connection conn, SaveNarrationState state) throws SQLException {

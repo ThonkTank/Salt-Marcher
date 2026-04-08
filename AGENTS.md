@@ -216,8 +216,8 @@ The rules in this section are decision filters, not soft preferences. When multi
 - Treat documentation updates as part of done, not optional cleanup
 
 ### Repository & Owner Conventions
-- `<Owner>Object` is the only public owner entrypoint. It orchestrates requests, task pipelines, state transitions, and persistence, but it should not contain the owner's actual work logic
-- Repositories are pure `state <-> storage` translators. They persist owner `state` and reconstruct owner `state`; they do not own workflow logic
+- `<Owner>Object` is the only public owner entrypoint. It orchestrates requests, task pipelines, state transitions, and delegation to same-owner persistence seams, but it should not contain the owner's actual work logic
+- Repositories are static persistence boundaries. They persist owner `state`, reconstruct owner `state`, and may own the JDBC connection plus transaction scope needed to complete that persistence flow
 - Task files are static-only pipelines. They consume one project `input`, produce one project `input`, and must not touch repository or state directly
 - Owner `state` is protected runtime/object truth, not UI/session convenience state. State may change only through explicit factory/transition APIs in the same owner's `state` layer
 - Business validation must use domain/argument exceptions (`IllegalArgumentException` or a feature-specific edit exception), not `SQLException`

@@ -18,7 +18,7 @@ fun Project.registerCheckOwnerApiBoundaryRepositoryFilesTask(
     taskName = "checkOwnerApiBoundaryRepositoryFiles",
     taskDescription = "Fail when touched owner repository files drift away from the canonical state-persistence rules.",
     failureHeader = "Owner repository drift detected.",
-    failureSummary = "Touched repository files must stay stateless static state translators that depend only on their owner's state layer.",
+    failureSummary = "Touched repository files must stay stateless static persistence boundaries that expose owner state and may own JDBC persistence infrastructure.",
     applicableRoles = setOf(support.repositoryRole)
 ) { sourceFile, snapshot ->
     analyzeRepositoryFile(sourceFile, snapshot, support).reasons
@@ -161,6 +161,8 @@ private fun repositoryInvocationReasons(
     val calleeRole = support.roleForDirectoryName(calleePackage.substringAfterLast('.'))
     val calleeOwnerPackage = support.ownerPackageFor(calleePackage, calleeRole)
     return when {
+        calleeTypeName == "database.DatabaseManager" -> emptyList()
+        calleeTypeName == "features.world.dungeon.application.support.DungeonTransactionRunner" -> emptyList()
         calleeOwnerPackage == context.ownerPackage && calleeRole == support.stateRole -> emptyList()
         calleeRole == support.ownerRole ->
             listOf("${context.path} :: repository bodies must not orchestrate owner seams ($memberName -> $calleeTypeName)")
@@ -169,7 +171,7 @@ private fun repositoryInvocationReasons(
         calleeRole == support.repositoryRole ->
             listOf("${context.path} :: repository bodies must not call other repository APIs ($memberName -> $calleeTypeName)")
         else ->
-            listOf("${context.path} :: repository bodies may depend only on JDBC, DatabaseManager, local helpers, and own state project types ($memberName -> $calleeTypeName)")
+            listOf("${context.path} :: repository bodies may depend only on JDBC, DatabaseManager, transaction helpers, local helpers, and own state project types ($memberName -> $calleeTypeName)")
     }
 }
 

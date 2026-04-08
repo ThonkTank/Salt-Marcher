@@ -408,9 +408,10 @@ internal fun OwnerConventionSupport.analyzeRepositoryShape(
     }
     context.typeImports.importedPackages.forEach { importedPackage ->
         val importedRole = roleForDirectoryName(importedPackage.substringAfterLast('.'))
-        val allowed = sameOwner(context.ownerPackage, importedPackage) && importedRole == stateRole
+        val allowed = importedPackage == "database" ||
+            (sameOwner(context.ownerPackage, importedPackage) && importedRole == stateRole)
         if (!allowed) {
-            reasons += "${context.path} -> $importedPackage :: repository files may import only own state packages from project code"
+            reasons += "${context.path} -> $importedPackage :: repository files may import only own state packages plus database infrastructure from project code"
         }
     }
     val publicMethods = primaryType.methods.filter { Modifier.PUBLIC in it.modifiers }

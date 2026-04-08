@@ -6,11 +6,11 @@
 
 ## Canonical Types and APIs
 
-- `RoomObject` — public room root seam — accepts typed narration write requests and owns the JDBC connection plus transaction around same-owner `state` and `repository`.
+- `RoomObject` — public room root seam — accepts typed narration write requests and delegates room-owned normalization and persistence.
 - `input/SaveNarrationInput` — room-narration save request — carries the room id, the visual description, and the nested `SaveNarrationInput.ExitNarrationInput` value used only by this request shape.
 - `state/SaveNarrationState` — room-owned narration save state — normalizes the authored narration payload into the canonical room-owned save shape.
 - `state/SaveNarrationExitState` — room-owned normalized exit narration value derived from the nested request-local exit payload.
-- `repository/SaveNarrationRepository` — room-owned narration persistence seam — updates `dungeon_rooms.visual_description` and replaces `dungeon_room_exit_descriptions` rows from room-owned state.
+- `repository/SaveNarrationRepository` — room-owned narration persistence seam — owns the JDBC connection plus transaction and updates `dungeon_rooms.visual_description` and `dungeon_room_exit_descriptions` from room-owned state.
 
 ## Where New Code Goes
 
@@ -18,15 +18,15 @@
 - Keep room-request-local passive helper values nested inside `SaveNarrationInput` when they belong only to that single request shape.
 - Put cross-owner room write entrypoints on `RoomObject`.
 - Put room-owned request normalization and protected save truth in `state/` when a room write needs a canonical internal payload.
-- Put direct room-owned SQL persistence in `repository/`.
-- Keep internal room metadata workflow and persistence details behind the room owner seam.
+- Put direct room-owned SQL persistence, JDBC lifecycle, and transaction scope in `repository/`.
+- Keep room request delegation thin on `RoomObject`; repository owns the persistence flow once state is normalized.
 
 ## Build Hazards
 
 - Touching `input/SaveNarrationInput` will fail the build if it grows methods, initializer blocks, project imports outside `input`, or a second nesting level under `ExitNarrationInput`. A separate top-level pseudo-input for exit narration would also fail because it would not match a real `RoomObject` request.
-- Touching `RoomObject` will fail the build if it grows extra public methods, overloads `saveNarration`, or lets the request body drift beyond guards, local bindings, allowed orchestration calls, returns, and throws.
+- Touching `RoomObject` will fail the build if it grows extra public methods, overloads `saveNarration`, or lets the request body drift beyond guards, local bindings, same-owner orchestration calls, returns, and throws.
 - Touching `state/SaveNarrationState` or `state/SaveNarrationExitState` will fail the build if public APIs stop being static factory-transition seams, or if state starts importing room `repository` or foreign-owner project packages.
-- Touching `repository/SaveNarrationRepository` will fail the build if it imports room `input`, exposes public instance methods, or changes its public persistence seam so it no longer accepts or returns room `state`.
+- Touching `repository/SaveNarrationRepository` will fail the build if it imports room `input`, exposes public instance methods, or changes its public persistence seam so it no longer exposes room `state` while owning the JDBC persistence boundary.
 
 ## Forbidden Drift
 
