@@ -44,8 +44,7 @@ private data class OwnerMethodEnvironment(
 
 private data class OwnerCallClassification(
     val allowed: Boolean,
-    val description: String,
-    val countsAsMatchingTaskDispatch: Boolean = false
+    val description: String
 )
 
 private fun ownerFileReasons(
@@ -214,7 +213,10 @@ private fun validateOwnerDependencyTypes(
             !support.sameOwnerEdgeOrNeighbor(context.ownerPackage, targetOwnerPackage) ->
                 "$reasonPrefix may cross only one owner edge ($typeName from $sourceTypeName)"
 
-            typeRole == support.ownerRole || typeRole == support.inputRole ->
+            typeRole == support.ownerRole && typeName == support.canonicalOwnerObjectTypeName(targetOwnerPackage, snapshot) ->
+                null
+
+            typeRole == support.inputRole ->
                 null
 
             else ->
@@ -246,7 +248,6 @@ private fun ownerRequestBodyReasons(
         requestParameterName = parameter.name,
         requestParameterTypeName = requestParameterTypeName
     )
-    var matchingTaskDispatchCount = 0
     val reasons = mutableListOf<String>()
     body.statements.forEach { statement ->
         reasons += validateOwnerStatement(
@@ -258,21 +259,7 @@ private fun ownerRequestBodyReasons(
             fieldProjectTypes = fieldProjectTypes,
             environment = environment,
             requestStem = requestStem
-        ).also { statementReasons ->
-            matchingTaskDispatchCount += statementReasons.count { false }
-        }
-        matchingTaskDispatchCount += countMatchingTaskDispatches(
-            statement = statement,
-            sourceFile = sourceFile,
-            snapshot = snapshot,
-            support = support,
-            fieldProjectTypes = fieldProjectTypes,
-            environment = environment,
-            requestStem = requestStem
         )
-    }
-    if (matchingTaskDispatchCount == 0) {
-        reasons += "${context.path} :: owner request ${method.name} must delegate directly to ${requestStem}Task"
     }
     return reasons
 }
@@ -402,7 +389,7 @@ private fun validateOwnerIfStatement(
 ): List<String> {
     val context = sourceFile.context
     val reasons = mutableListOf<String>()
-    if (!isAllowedOwnerGuardCondition(statement.condition, environment)) {
+    if (!isAllowedOwnerGuardCondition(statement.condition, sourceFile, snapshot, support, environment)) {
         reasons += "${context.path} :: owner guard conditions must stay on direct pass-through values"
     }
     reasons += validateGuardBranch(
@@ -704,15 +691,20 @@ private fun classifyOwnerInvocation(
         environment = environment
     )
     if (receiverTypeName == null) {
-        return if (isAllowedPassThroughReference(methodSelect.expression, environment)) {
+        return if (isAllowedInputAccessorInvocation(methodSelect.expression, invocation, sourceFile, snapshot, support, environment)) {
             OwnerCallClassification(
-                allowed = invocation.arguments.isEmpty(),
-                description = "owner pass-through calls may use only zero-argument accessors"
+                allowed = true,
+                description = "input accessor call"
+            )
+        } else if (isAllowedUtilityInvocation(invocation, sourceFile, snapshot, support, environment)) {
+            OwnerCallClassification(
+                allowed = true,
+                description = "allowed utility call"
             )
         } else {
             OwnerCallClassification(
-                allowed = true,
-                description = "non-project utility call"
+                allowed = false,
+                description = "owner requests may call only explicit input accessors or allowed utility helpers"
             )
         }
     }
@@ -722,25 +714,54 @@ private fun classifyOwnerInvocation(
     return when {
         receiverOwnerPackage == context.ownerPackage && receiverRole == support.taskRole -> {
             val expectedTaskType = support.ownerRequestTaskTypeName(context.ownerPackage, requestStem)
+            val taskApi = support.taskApi(receiverTypeName, snapshot)
             if (receiverTypeName != expectedTaskType) {
                 OwnerCallClassification(
                     allowed = false,
                     description = "owner request $requestStem may delegate only to $expectedTaskType"
                 )
+            } else if (taskApi == null || methodName !in taskApi.publicStaticMethodNames) {
+                OwnerCallClassification(
+                    allowed = false,
+                    description = "owner requests may call only canonical task APIs on $expectedTaskType"
+                )
             } else {
                 OwnerCallClassification(
                     allowed = true,
-                    description = "matching owner task dispatch",
-                    countsAsMatchingTaskDispatch = true
+                    description = "matching owner task dispatch"
                 )
             }
         }
 
-        receiverOwnerPackage == context.ownerPackage && receiverRole in setOf(support.stateRole, support.repositoryRole) ->
-            OwnerCallClassification(
-                allowed = true,
-                description = "same-owner $receiverRole orchestration"
-            )
+        receiverOwnerPackage == context.ownerPackage && receiverRole == support.stateRole -> {
+            val stateApi = support.stateApi(receiverTypeName, snapshot)
+            if (stateApi == null || methodName !in stateApi.publicStaticMethodNames) {
+                OwnerCallClassification(
+                    allowed = false,
+                    description = "owner requests may call only canonical same-owner state APIs ($receiverTypeName.$methodName)"
+                )
+            } else {
+                OwnerCallClassification(
+                    allowed = true,
+                    description = "same-owner state orchestration"
+                )
+            }
+        }
+
+        receiverOwnerPackage == context.ownerPackage && receiverRole == support.repositoryRole -> {
+            val repositoryApi = support.repositoryApi(receiverTypeName, snapshot)
+            if (repositoryApi == null || methodName !in repositoryApi.publicStaticMethodNames) {
+                OwnerCallClassification(
+                    allowed = false,
+                    description = "owner requests may call only canonical same-owner repository APIs ($receiverTypeName.$methodName)"
+                )
+            } else {
+                OwnerCallClassification(
+                    allowed = true,
+                    description = "same-owner repository orchestration"
+                )
+            }
+        }
 
         receiverOwnerPackage == context.ownerPackage && receiverRole == support.inputRole ->
             OwnerCallClassification(
@@ -762,7 +783,13 @@ private fun classifyOwnerInvocation(
 
         receiverRole == support.ownerRole -> {
             val allowedRequestMethods = support.ownerRequestMethodNames(receiverOwnerPackage, snapshot)
-            if (methodName !in allowedRequestMethods) {
+            val canonicalOwnerTypeName = support.canonicalOwnerObjectTypeName(receiverOwnerPackage, snapshot)
+            if (receiverTypeName != canonicalOwnerTypeName) {
+                OwnerCallClassification(
+                    allowed = false,
+                    description = "owner requests may target only foreign <Owner>Object seams ($receiverTypeName)"
+                )
+            } else if (methodName !in allowedRequestMethods) {
                 OwnerCallClassification(
                     allowed = false,
                     description = "owner requests may call only foreign owner request methods ($receiverTypeName.$methodName)"
@@ -785,67 +812,6 @@ private fun classifyOwnerInvocation(
             allowed = false,
             description = "owner requests may reference only foreign owner entrypoints or foreign input values ($receiverTypeName)"
         )
-    }
-}
-
-private fun countMatchingTaskDispatches(
-    statement: StatementTree,
-    sourceFile: OwnerConventionSourceFile,
-    snapshot: OwnerConventionSnapshot,
-    support: OwnerConventionSupport,
-    fieldProjectTypes: Map<String, String>,
-    environment: OwnerMethodEnvironment,
-    requestStem: String
-): Int {
-    return when (statement) {
-        is ExpressionStatementTree -> {
-            val expression = statement.expression
-            if (expression is MethodInvocationTree) {
-                val classification = classifyOwnerInvocation(
-                    invocation = expression,
-                    sourceFile = sourceFile,
-                    snapshot = snapshot,
-                    support = support,
-                    primaryType = support.parsedPrimaryType(sourceFile) ?: return 0,
-                    fieldProjectTypes = fieldProjectTypes,
-                    environment = environment,
-                    requestStem = requestStem
-                )
-                if (classification.countsAsMatchingTaskDispatch) 1 else 0
-            } else {
-                0
-            }
-        }
-
-        is ReturnTree -> {
-            val expression = statement.expression
-            if (expression is MethodInvocationTree) {
-                val classification = classifyOwnerInvocation(
-                    invocation = expression,
-                    sourceFile = sourceFile,
-                    snapshot = snapshot,
-                    support = support,
-                    primaryType = support.parsedPrimaryType(sourceFile) ?: return 0,
-                    fieldProjectTypes = fieldProjectTypes,
-                    environment = environment,
-                    requestStem = requestStem
-                )
-                if (classification.countsAsMatchingTaskDispatch) 1 else 0
-            } else {
-                0
-            }
-        }
-
-        is BlockTree -> statement.statements.sumOf { nested ->
-            countMatchingTaskDispatches(nested, sourceFile, snapshot, support, fieldProjectTypes, environment, requestStem)
-        }
-
-        is IfTree -> countMatchingTaskDispatches(statement.thenStatement, sourceFile, snapshot, support, fieldProjectTypes, environment, requestStem) +
-            (statement.elseStatement?.let { elseStatement ->
-                countMatchingTaskDispatches(elseStatement, sourceFile, snapshot, support, fieldProjectTypes, environment, requestStem)
-            } ?: 0)
-
-        else -> 0
     }
 }
 
@@ -933,13 +899,6 @@ private fun isAllowedPassThroughReference(
         is MemberSelectTree -> isAllowedPassThroughReference(expression.expression, environment)
         is ParenthesizedTree -> isAllowedPassThroughReference(expression.expression, environment)
         is TypeCastTree -> isAllowedPassThroughReference(expression.expression, environment)
-        is MethodInvocationTree -> {
-            expression.arguments.isEmpty() && when (val methodSelect = expression.methodSelect) {
-                is MemberSelectTree -> isAllowedPassThroughReference(methodSelect.expression, environment)
-                else -> false
-            }
-        }
-
         else -> false
     }
 }
@@ -981,6 +940,21 @@ private fun isAllowedPassThroughValue(
             environment
         )
 
+        Tree.Kind.METHOD_INVOCATION -> isAllowedInputAccessorInvocation(
+            receiverExpression = null,
+            invocation = expression as MethodInvocationTree,
+            sourceFile = sourceFile,
+            snapshot = snapshot,
+            support = support,
+            environment = environment
+        ) || isAllowedUtilityInvocation(
+            invocation = expression,
+            sourceFile = sourceFile,
+            snapshot = snapshot,
+            support = support,
+            environment = environment
+        )
+
         Tree.Kind.NEW_CLASS -> {
             val newClass = expression as NewClassTree
             val typeName = support.resolveProjectTypeName(
@@ -1003,40 +977,119 @@ private fun isAllowedPassThroughValue(
             }
         }
 
-        Tree.Kind.METHOD_INVOCATION -> {
-            val invocation = expression as MethodInvocationTree
-            invocation.arguments.isEmpty() && when (val methodSelect = invocation.methodSelect) {
-                is MemberSelectTree -> isAllowedPassThroughReference(methodSelect.expression, environment)
-                else -> false
-            }
-        }
-
         else -> false
     }
 }
 
 private fun isAllowedOwnerGuardCondition(
     expression: ExpressionTree,
+    sourceFile: OwnerConventionSourceFile,
+    snapshot: OwnerConventionSnapshot,
+    support: OwnerConventionSupport,
     environment: OwnerMethodEnvironment
 ): Boolean {
     return when (expression) {
         is LiteralTree -> true
         is IdentifierTree -> true
         is MemberSelectTree -> isAllowedPassThroughReference(expression, environment)
-        is ParenthesizedTree -> isAllowedOwnerGuardCondition(expression.expression, environment)
-        is TypeCastTree -> isAllowedOwnerGuardCondition(expression.expression, environment)
-        is MethodInvocationTree -> expression.arguments.isEmpty() && when (val methodSelect = expression.methodSelect) {
-            is MemberSelectTree -> isAllowedPassThroughReference(methodSelect.expression, environment)
-            else -> false
-        }
+        is ParenthesizedTree -> isAllowedOwnerGuardCondition(expression.expression, sourceFile, snapshot, support, environment)
+        is TypeCastTree -> isAllowedOwnerGuardCondition(expression.expression, sourceFile, snapshot, support, environment)
+        is MethodInvocationTree -> isAllowedInputAccessorInvocation(
+            receiverExpression = null,
+            invocation = expression,
+            sourceFile = sourceFile,
+            snapshot = snapshot,
+            support = support,
+            environment = environment
+        ) || isAllowedUtilityGuardInvocation(expression, sourceFile, snapshot, support, environment)
 
-        is UnaryTree -> isAllowedOwnerGuardCondition(expression.expression, environment)
+        is UnaryTree -> isAllowedOwnerGuardCondition(expression.expression, sourceFile, snapshot, support, environment)
 
-        is BinaryTree -> isAllowedOwnerGuardCondition(expression.leftOperand, environment) &&
-            isAllowedOwnerGuardCondition(expression.rightOperand, environment)
+        is BinaryTree -> isAllowedOwnerGuardCondition(expression.leftOperand, sourceFile, snapshot, support, environment) &&
+            isAllowedOwnerGuardCondition(expression.rightOperand, sourceFile, snapshot, support, environment)
 
         is ConditionalExpressionTree -> false
 
+        else -> false
+    }
+}
+
+private fun isAllowedInputAccessorInvocation(
+    receiverExpression: ExpressionTree?,
+    invocation: MethodInvocationTree,
+    sourceFile: OwnerConventionSourceFile,
+    snapshot: OwnerConventionSnapshot,
+    support: OwnerConventionSupport,
+    environment: OwnerMethodEnvironment
+): Boolean {
+    if (invocation.arguments.isNotEmpty()) {
+        return false
+    }
+    val methodSelect = invocation.methodSelect as? MemberSelectTree ?: return false
+    val receiver = receiverExpression ?: methodSelect.expression
+    if (receiver !is IdentifierTree && receiver !is MemberSelectTree && receiver !is ParenthesizedTree && receiver !is TypeCastTree) {
+        return false
+    }
+    val receiverTypeName = projectTypeNameForExpression(
+        expression = receiver,
+        sourceFile = sourceFile,
+        snapshot = snapshot,
+        support = support,
+        fieldProjectTypes = emptyMap(),
+        environment = environment
+    ) ?: return false
+    val receiverPackage = receiverTypeName.substringBeforeLast('.')
+    val receiverRole = support.roleForDirectoryName(receiverPackage.substringAfterLast('.'))
+    return receiverRole == support.inputRole
+}
+
+private fun isAllowedUtilityInvocation(
+    invocation: MethodInvocationTree,
+    sourceFile: OwnerConventionSourceFile,
+    snapshot: OwnerConventionSnapshot,
+    support: OwnerConventionSupport,
+    environment: OwnerMethodEnvironment
+): Boolean {
+    val methodSelect = invocation.methodSelect as? MemberSelectTree ?: return false
+    val receiverText = methodSelect.expression.toString()
+    val methodName = methodSelect.identifier.toString()
+    val arguments = invocation.arguments
+    if (receiverText !in setOf("Objects", "java.util.Objects")) {
+        return false
+    }
+    return when (methodName) {
+        "requireNonNull" -> arguments.size in setOf(1, 2) && arguments.all { argument ->
+            isAllowedPassThroughValue(argument, sourceFile, snapshot, support, environment)
+        }
+        "equals" -> arguments.size == 2 && arguments.all { argument ->
+            isAllowedPassThroughValue(argument, sourceFile, snapshot, support, environment)
+        }
+        "isNull", "nonNull" -> arguments.size == 1 && arguments.all { argument ->
+            isAllowedPassThroughValue(argument, sourceFile, snapshot, support, environment)
+        }
+        else -> false
+    }
+}
+
+private fun isAllowedUtilityGuardInvocation(
+    invocation: MethodInvocationTree,
+    sourceFile: OwnerConventionSourceFile,
+    snapshot: OwnerConventionSnapshot,
+    support: OwnerConventionSupport,
+    environment: OwnerMethodEnvironment
+): Boolean {
+    val methodSelect = invocation.methodSelect as? MemberSelectTree ?: return false
+    val receiverText = methodSelect.expression.toString()
+    if (receiverText !in setOf("Objects", "java.util.Objects")) {
+        return false
+    }
+    return when (methodSelect.identifier.toString()) {
+        "isNull", "nonNull" -> invocation.arguments.size == 1 && invocation.arguments.all { argument ->
+            isAllowedPassThroughValue(argument, sourceFile, snapshot, support, environment)
+        }
+        "equals" -> invocation.arguments.size == 2 && invocation.arguments.all { argument ->
+            isAllowedPassThroughValue(argument, sourceFile, snapshot, support, environment)
+        }
         else -> false
     }
 }

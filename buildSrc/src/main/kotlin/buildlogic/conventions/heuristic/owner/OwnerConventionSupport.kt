@@ -29,7 +29,8 @@ internal data class OwnerConventionSnapshot(
     val knownTypeNames: Set<String>,
     val requestStemsByOwner: Map<String, Set<String>>,
     val parsedSourcesByPath: Map<String, OwnerConventionParsedJavaSource>,
-    val parsedTypesByName: Map<String, OwnerConventionParsedJavaType>
+    val parsedTypesByName: Map<String, OwnerConventionParsedJavaType>,
+    val catalog: OwnerConventionCatalog
 )
 
 internal data class OwnerConventionSourceFile(
@@ -316,13 +317,27 @@ class OwnerConventionSupport(private val project: Project) {
     }
 
     internal fun ownerRequestMethodNames(ownerPackage: String, snapshot: OwnerConventionSnapshot): Set<String> {
-        return snapshot.requestStemsByOwner[ownerPackage].orEmpty()
-            .map { stem -> stem.replaceFirstChar(Char::lowercase) }
-            .toSet()
+        return snapshot.catalog.ownerRequestMethodNamesByOwner[ownerPackage].orEmpty()
     }
 
     internal fun ownerRequestTaskTypeName(ownerPackage: String, requestStem: String): String {
         return "$ownerPackage.$taskRole.${requestStem}Task"
+    }
+
+    internal fun canonicalOwnerObjectTypeName(ownerPackage: String, snapshot: OwnerConventionSnapshot): String? {
+        return snapshot.catalog.ownerObjectTypeNamesByOwner[ownerPackage]
+    }
+
+    internal fun taskApi(typeName: String, snapshot: OwnerConventionSnapshot): OwnerConventionStaticApi? {
+        return snapshot.catalog.taskApisByTypeName[typeName]
+    }
+
+    internal fun stateApi(typeName: String, snapshot: OwnerConventionSnapshot): OwnerConventionStaticApi? {
+        return snapshot.catalog.stateApisByTypeName[typeName]
+    }
+
+    internal fun repositoryApi(typeName: String, snapshot: OwnerConventionSnapshot): OwnerConventionStaticApi? {
+        return snapshot.catalog.repositoryApisByTypeName[typeName]
     }
 
     internal fun parsedType(typeName: String, snapshot: OwnerConventionSnapshot): OwnerConventionParsedJavaType? {
@@ -354,7 +369,8 @@ class OwnerConventionSupport(private val project: Project) {
                 knownTypeNames = emptySet(),
                 requestStemsByOwner = emptyMap(),
                 parsedSourcesByPath = emptyMap(),
-                parsedTypesByName = emptyMap()
+                parsedTypesByName = emptyMap(),
+                catalog = OwnerConventionCatalog.EMPTY
             )
         }
         val allSourceFiles = project.fileTree("src") {
@@ -377,31 +393,19 @@ class OwnerConventionSupport(private val project: Project) {
                 parsedSource.topLevelTypes.map { type -> "$packageName.${type.name}" to type }
             }
             .toMap()
-        val requestStemsByOwner = parsedSourcesByPath.values
-            .mapNotNull { parsedSource ->
-                val packageName = parsedSource.packageName ?: return@mapNotNull null
-                val role = roleForDirectoryName(parsedSource.file.parentFile.name)
-                if (role != ownerRole || !parsedSource.file.name.endsWith("Object.java")) {
-                    return@mapNotNull null
-                }
-                val typeImports = parseTypeImports(parsedSource.importDeclarations, knownPackages)
-                val ownerPackage = ownerPackageFor(packageName, role)
-                val requestStems = parsedSource.topLevelTypes
-                    .flatMap(OwnerConventionParsedJavaType::methods)
-                    .filter { method -> isOwnerRequestShape(method, packageName, ownerPackage, typeImports, knownTypeNames) }
-                    .mapNotNull { method -> requestStemForMethod(method.name) }
-                    .toSet()
-                ownerPackage to requestStems
-            }
-            .groupBy({ (ownerPackage, _) -> ownerPackage }, { (_, stems) -> stems })
-            .mapValues { (_, stemSets) -> stemSets.flatten().toSet() }
+        val catalog = buildOwnerConventionCatalog(
+            parsedSourcesByPath = parsedSourcesByPath,
+            knownPackages = knownPackages,
+            knownTypeNames = knownTypeNames
+        )
         return OwnerConventionSnapshot(
             touchedPaths = touchedPaths,
             knownPackages = knownPackages,
             knownTypeNames = knownTypeNames,
-            requestStemsByOwner = requestStemsByOwner,
+            requestStemsByOwner = catalog.requestStemsByOwner,
             parsedSourcesByPath = parsedSourcesByPath,
-            parsedTypesByName = parsedTypesByName
+            parsedTypesByName = parsedTypesByName,
+            catalog = catalog
         )
     }
 
@@ -411,7 +415,7 @@ class OwnerConventionSupport(private val project: Project) {
                 val parsedSource = snapshot.parsedSourcesByPath[path] ?: return@mapNotNull null
                 val packageName = parsedSource.packageName ?: packageNameFor(parsedSource.file.parentFile)
                 val roleDeduction = deduceRole(parsedSource.file.parentFile)
-                val typeImports = parseTypeImports(parsedSource.importDeclarations, snapshot.knownPackages)
+                val typeImports = typeImportsFor(parsedSource.importDeclarations, snapshot.knownPackages)
                 OwnerConventionSourceFile(
                     context = OwnerConventionSourceContext(
                         path = path,
@@ -504,7 +508,7 @@ class OwnerConventionSupport(private val project: Project) {
         return srcRelativeSegments(file).joinToString(".")
     }
 
-    private fun parseTypeImports(importDeclarations: List<String>, knownPackages: Set<String>): OwnerConventionTypeImports {
+    internal fun typeImportsFor(importDeclarations: List<String>, knownPackages: Set<String>): OwnerConventionTypeImports {
         val explicitTypes = linkedMapOf<String, String>()
         val wildcardPackages = linkedSetOf<String>()
         val importedPackages = mutableListOf<String>()
@@ -538,29 +542,4 @@ class OwnerConventionSupport(private val project: Project) {
         return null
     }
 
-    private fun isOwnerRequestShape(
-        method: OwnerConventionParsedJavaMethod,
-        packageName: String,
-        ownerPackage: String,
-        typeImports: OwnerConventionTypeImports,
-        knownTypeNames: Set<String>
-    ): Boolean {
-        val requestStem = requestStemForMethod(method.name) ?: return false
-        if (!method.modifiers.contains(javax.lang.model.element.Modifier.PUBLIC)) {
-            return false
-        }
-        if (method.modifiers.contains(javax.lang.model.element.Modifier.STATIC)) {
-            return false
-        }
-        if (method.parameters.size != 1) {
-            return false
-        }
-        val expectedInputType = "$ownerPackage.$inputRole.${requestStem}Input"
-        val parameterTypes = projectTypeNames(method.parameters.single().typeRef, packageName, typeImports, knownTypeNames)
-        if (parameterTypes != setOf(expectedInputType)) {
-            return false
-        }
-        val returnPackages = projectTypePackages(method.returnTypeRef ?: "void", packageName, typeImports, knownTypeNames)
-        return returnPackages.all { projectPackage -> roleForDirectoryName(projectPackage.substringAfterLast('.')) == inputRole }
-    }
 }
