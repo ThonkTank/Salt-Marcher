@@ -85,19 +85,22 @@ class OwnerConventionSupport(private val project: Project) {
         }
     }
 
-    internal fun sourcePlacementReasons(sourceFile: OwnerConventionSourceFile): List<String> {
+    internal fun roleDispatchReasons(sourceFile: OwnerConventionSourceFile): List<String> {
         val reasons = mutableListOf<String>()
         val expectedPackage = packageNameFor(sourceFile.context.file.parentFile)
         if (sourceFile.declaredPackage != expectedPackage) {
             reasons += "${sourceFile.context.path} :: package must match the filesystem grammar exactly ($expectedPackage)"
         }
-        sourceFile.placementIssues.forEach { issue ->
-            reasons += "${sourceFile.context.path} :: $issue"
-        }
-        if (sourceFile.context.role == bucketRole) {
-            reasons += "${sourceFile.context.path} :: *Bucket directories must not contain Java files"
+        if (sourceFile.context.role == invalidRole) {
+            sourceFile.placementIssues.forEach { issue ->
+                reasons += "${sourceFile.context.path} :: $issue"
+            }
         }
         return reasons
+    }
+
+    internal fun bucketFileReasons(sourceFile: OwnerConventionSourceFile): List<String> {
+        return listOf("${sourceFile.context.path} :: *Bucket directories must not contain Java files")
     }
 
     internal fun ownerFileReasons(

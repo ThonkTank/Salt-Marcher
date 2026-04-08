@@ -5,7 +5,8 @@ import org.gradle.api.Task
 import org.gradle.api.tasks.TaskProvider
 
 fun Project.registerCheckOwnerApiBoundaryConventionTask(
-    checkOwnerApiBoundarySourcePlacement: TaskProvider<out Task>,
+    checkOwnerApiBoundaryRoleDispatch: TaskProvider<out Task>,
+    checkOwnerApiBoundaryBucketFiles: TaskProvider<out Task>,
     checkOwnerApiBoundaryOwnerFiles: TaskProvider<out Task>,
     checkOwnerApiBoundaryInputFiles: TaskProvider<out Task>,
     checkOwnerApiBoundaryTaskFiles: TaskProvider<out Task>,
@@ -13,8 +14,9 @@ fun Project.registerCheckOwnerApiBoundaryConventionTask(
     checkOwnerApiBoundaryRepositoryFiles: TaskProvider<out Task>
 ): TaskProvider<Task> = tasks.register("checkOwnerApiBoundaryConvention") {
     group = "verification"
-    description = "Run touched-file owner boundary heuristics for the canonical *Object/input/task/repository/state grammar."
-    dependsOn(checkOwnerApiBoundarySourcePlacement)
+    description = "Run touched-file owner boundary dispatch plus one validation task per canonical role."
+    dependsOn(checkOwnerApiBoundaryRoleDispatch)
+    dependsOn(checkOwnerApiBoundaryBucketFiles)
     dependsOn(checkOwnerApiBoundaryOwnerFiles)
     dependsOn(checkOwnerApiBoundaryInputFiles)
     dependsOn(checkOwnerApiBoundaryTaskFiles)
