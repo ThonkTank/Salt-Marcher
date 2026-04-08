@@ -6,7 +6,7 @@
 
 ## Canonical Types and APIs
 
-- `ItemCatalogService` — supported read boundary for item search, filters, and details.
+- `ItemCatalogService` — current public read facade for item search, filters, and details. Keep host access on this seam, but do not treat `api` or `service` naming as placement precedent for new owner-local code.
 - `ItemBrowserPane`, `ItemFilterPane`, `ItemViewerPane` — reusable item-owned UI building blocks.
 - `ItemBrowserPageLoader`, `ItemBrowserRowAction` — supported host extension points for paging and row actions.
 
@@ -14,7 +14,7 @@
 
 - Change item search, filter, and detail behavior in `features.items`.
 - Change host-specific row actions, selection rules, and exclusions in the consuming feature.
-- Keep concrete JavaFX catalog implementation behind the item-owned API seam.
+- Keep concrete JavaFX catalog implementation behind the item-owned public seam.
 
 ## Forbidden Drift
 

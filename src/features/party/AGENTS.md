@@ -6,13 +6,14 @@
 
 ## Canonical Types and APIs
 
-- `features.party.api` — public party boundary.
-- `PartyApi` — read seam for party state.
-- `PartyMutationApi` — mutation seam for party state.
+- `features.party.api` — current public party compatibility surface. Keep cross-feature access here, but do not treat `api/` as placement precedent for new owner-local code.
+- `PartyApi` — current read facade for party state.
+- `PartyMutationApi` — current mutation facade for party state.
 
 ## Where New Code Goes
 
 - Put party reads, writes, and party-owned UI here.
+- Do not use `api` or `service` naming here as the default placement for new touched architecture work.
 
 ## Forbidden Drift
 
