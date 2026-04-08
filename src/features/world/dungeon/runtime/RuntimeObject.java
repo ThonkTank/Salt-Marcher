@@ -183,9 +183,9 @@ public final class RuntimeObject {
             DungeonRuntimeNavigationSnapshot snapshot
     ) {
         if (snapshot == null || snapshot.isEmpty() || snapshot.cell() == null) {
-            return new NavigateInput.NavigationInput(null, null, 0, "");
+            return NavigateInput.NavigationInput.empty();
         }
-        return new NavigateInput.NavigationInput(
+        return NavigateInput.NavigationInput.navigation(
                 snapshot.mapId(),
                 snapshot.cell(),
                 snapshot.levelZ(),
