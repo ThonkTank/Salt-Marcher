@@ -16,10 +16,18 @@ public final class RepairNavigationTask {
     }
 
     private static features.world.dungeon.application.runtime.DungeonRuntimeApplicationService runtimeApplicationService() {
-        features.world.dungeon.dungeonmap.repository.DungeonMapRepository mapRepository =
-                new features.world.dungeon.dungeonmap.repository.DungeonMapRepository();
-        features.world.dungeon.dungeonmap.application.DungeonMapLoadResolver loadResolver =
-                new features.world.dungeon.dungeonmap.application.DungeonMapLoadResolver(mapRepository);
+        features.world.dungeon.dungeonmap.repository.DungeonMapRepository mapRepository = mapRepository();
+        features.world.dungeon.dungeonmap.application.DungeonMapLoadResolver loadResolver = loadResolver(mapRepository);
         return new features.world.dungeon.application.runtime.DungeonRuntimeApplicationService(mapRepository, loadResolver);
+    }
+
+    private static features.world.dungeon.dungeonmap.repository.DungeonMapRepository mapRepository() {
+        return new features.world.dungeon.dungeonmap.repository.DungeonMapRepository();
+    }
+
+    private static features.world.dungeon.dungeonmap.application.DungeonMapLoadResolver loadResolver(
+            features.world.dungeon.dungeonmap.repository.DungeonMapRepository mapRepository
+    ) {
+        return new features.world.dungeon.dungeonmap.application.DungeonMapLoadResolver(mapRepository);
     }
 }
