@@ -1,11 +1,11 @@
 package features.world.dungeon.room.state;
 
-import features.world.dungeon.room.input.SaveNarrationExitInput;
 import features.world.dungeon.room.input.SaveNarrationInput;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@SuppressWarnings("unused")
 public record SaveNarrationState(
         long roomId,
         String visualDescription,
@@ -27,7 +27,7 @@ public record SaveNarrationState(
 
     private static List<SaveNarrationExitState> exitNarrations(SaveNarrationInput input) {
         List<SaveNarrationExitState> result = new ArrayList<>();
-        for (SaveNarrationExitInput exit : normalizedExitNarrations(input.exitNarrations())) {
+        for (SaveNarrationInput.ExitNarrationInput exit : normalizedExitNarrations(input.exitNarrations())) {
             if (exit == null) {
                 continue;
             }
@@ -42,7 +42,9 @@ public record SaveNarrationState(
         return List.copyOf(result);
     }
 
-    private static List<SaveNarrationExitInput> normalizedExitNarrations(List<SaveNarrationExitInput> exitNarrations) {
+    private static List<SaveNarrationInput.ExitNarrationInput> normalizedExitNarrations(
+            List<SaveNarrationInput.ExitNarrationInput> exitNarrations
+    ) {
         return exitNarrations == null ? List.of() : List.copyOf(exitNarrations);
     }
 

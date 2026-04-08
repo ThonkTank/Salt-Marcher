@@ -56,6 +56,7 @@ internal data class OwnerConventionParsedJavaType(
     val fields: List<OwnerConventionParsedJavaField>,
     val constructors: List<OwnerConventionParsedJavaMethod>,
     val methods: List<OwnerConventionParsedJavaMethod>,
+    val nestedTypes: List<OwnerConventionParsedJavaType>,
     val tree: ClassTree
 )
 
@@ -160,6 +161,7 @@ private fun parseJavaType(classTree: ClassTree): OwnerConventionParsedJavaType {
     val fields = mutableListOf<OwnerConventionParsedJavaField>()
     val constructors = mutableListOf<OwnerConventionParsedJavaMethod>()
     val methods = mutableListOf<OwnerConventionParsedJavaMethod>()
+    val nestedTypes = mutableListOf<OwnerConventionParsedJavaType>()
     classTree.members.forEach { member ->
         when (member) {
             is VariableTree -> fields += OwnerConventionParsedJavaField(
@@ -190,6 +192,8 @@ private fun parseJavaType(classTree: ClassTree): OwnerConventionParsedJavaType {
                     methods += parsedMethod
                 }
             }
+
+            is ClassTree -> nestedTypes += parseJavaType(member)
         }
     }
     return OwnerConventionParsedJavaType(
@@ -205,6 +209,7 @@ private fun parseJavaType(classTree: ClassTree): OwnerConventionParsedJavaType {
         fields = fields,
         constructors = constructors,
         methods = methods,
+        nestedTypes = nestedTypes,
         tree = classTree
     )
 }

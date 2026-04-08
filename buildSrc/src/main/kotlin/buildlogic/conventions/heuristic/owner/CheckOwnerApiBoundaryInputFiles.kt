@@ -1,11 +1,9 @@
 package buildlogic.conventions.heuristic.owner
 
 import com.sun.source.tree.BlockTree
-import com.sun.source.tree.ClassTree
 import com.sun.source.tree.NewClassTree
 import com.sun.source.tree.Tree
 import com.sun.source.tree.VariableTree
-import javax.lang.model.element.Modifier
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.tasks.TaskProvider
@@ -34,37 +32,47 @@ internal fun inputMemberReasons(
     path: String,
     primaryType: OwnerConventionParsedJavaType
 ): List<String> {
-    val reasons = mutableListOf<String>()
-    val classTree = primaryType.tree
+    return inputValueTypeReasons(
+        path = path,
+        parsedType = primaryType,
+        allowNestedTypes = true,
+        locationLabel = "input files"
+    )
+}
 
-    if (primaryType.constructors.isNotEmpty()) {
-        reasons += "$path :: input files must not declare constructors"
-    }
-    if (primaryType.methods.isNotEmpty()) {
-        reasons += "$path :: input files must not declare methods"
+private fun inputValueTypeReasons(
+    path: String,
+    parsedType: OwnerConventionParsedJavaType,
+    allowNestedTypes: Boolean,
+    locationLabel: String
+): List<String> {
+    val reasons = mutableListOf<String>()
+    val classTree = parsedType.tree
+
+    if (parsedType.methods.isNotEmpty()) {
+        reasons += "$path :: $locationLabel must not declare methods"
     }
     if (classTree.members.any { member -> member is BlockTree }) {
-        reasons += "$path :: input files must not declare initializer blocks"
-    }
-    if (classTree.members.any { member -> member is ClassTree }) {
-        reasons += "$path :: input files must not declare nested types"
+        reasons += "$path :: $locationLabel must not declare initializer blocks"
     }
 
-    when (primaryType.kind) {
-        OwnerConventionParsedJavaTypeKind.RECORD -> {
-            if (primaryType.fields.isNotEmpty()) {
-                reasons += "$path :: record inputs may expose only record components"
-            }
-        }
+    when (parsedType.kind) {
+        OwnerConventionParsedJavaTypeKind.RECORD -> Unit
 
         OwnerConventionParsedJavaTypeKind.INTERFACE -> {
-            if (primaryType.fields.isNotEmpty()) {
+            if (parsedType.fields.isNotEmpty()) {
                 reasons += "$path :: sealed interface inputs must stay as tag carriers without fields"
+            }
+            if (parsedType.constructors.isNotEmpty()) {
+                reasons += "$path :: sealed interface inputs must not declare constructors"
             }
         }
 
         OwnerConventionParsedJavaTypeKind.ENUM -> {
-            val enumFields = primaryType.fields
+            if (parsedType.constructors.isNotEmpty()) {
+                reasons += "$path :: enum inputs must not declare constructors"
+            }
+            val enumFields = parsedType.fields
             val enumConstants = enumFields.filter(::isEnumConstant)
             val extraFields = enumFields.filterNot(::isEnumConstant)
             if (extraFields.isNotEmpty()) {
@@ -76,6 +84,20 @@ internal fun inputMemberReasons(
         }
 
         else -> Unit
+    }
+
+    if (!allowNestedTypes && parsedType.nestedTypes.isNotEmpty()) {
+        reasons += "$path :: request-local input value types must not declare nested types"
+    }
+    if (allowNestedTypes) {
+        parsedType.nestedTypes.forEach { nestedType ->
+            reasons += inputValueTypeReasons(
+                path = path,
+                parsedType = nestedType,
+                allowNestedTypes = false,
+                locationLabel = "request-local input value types"
+            )
+        }
     }
 
     return reasons
