@@ -56,11 +56,19 @@ public final class TransitionObject {
                             transition.mapId(),
                             transition.label(),
                             transition.description(),
+                            transition.levelZ(),
                             transition.localConnection() != null && transition.localConnection().doorCarrier() != null
-                                    ? "Tür"
-                                    : transition.localConnection() != null && transition.localConnection().stairCarrier() != null
-                                    ? "Treppe"
-                                    : "",
+                                    ? transition.localConnection().doorCarrier().doorRef().doorId()
+                                    : null,
+                            transition.localConnection() != null && transition.localConnection().stairCarrier() != null
+                                    ? transition.localConnection().stairCarrier().anchorCell().x2() / 2
+                                    : null,
+                            transition.localConnection() != null && transition.localConnection().stairCarrier() != null
+                                    ? transition.localConnection().stairCarrier().anchorCell().y2() / 2
+                                    : null,
+                            transition.localConnection() != null && transition.localConnection().stairCarrier() != null
+                                    ? transition.localConnection().stairCarrier().anchorCell().z()
+                                    : null,
                             transition.localConnection() != null && transition.localConnection().stairCarrier() != null
                                     ? transition.localConnection().stairCarrier().anchorLevelZ()
                                     : null))
