@@ -8,10 +8,16 @@ internal data class OwnerConventionStaticApi(
     val publicStaticMethodNames: Set<String>
 )
 
+internal data class OwnerConventionInputApi(
+    val typeName: String,
+    val ownerPackage: String
+)
+
 internal data class OwnerConventionCatalog(
     val ownerObjectTypeNamesByOwner: Map<String, String>,
     val ownerRequestMethodNamesByOwner: Map<String, Set<String>>,
     val requestStemsByOwner: Map<String, Set<String>>,
+    val inputApisByTypeName: Map<String, OwnerConventionInputApi>,
     val taskApisByTypeName: Map<String, OwnerConventionStaticApi>,
     val stateApisByTypeName: Map<String, OwnerConventionStaticApi>,
     val repositoryApisByTypeName: Map<String, OwnerConventionStaticApi>
@@ -21,6 +27,7 @@ internal data class OwnerConventionCatalog(
             ownerObjectTypeNamesByOwner = emptyMap(),
             ownerRequestMethodNamesByOwner = emptyMap(),
             requestStemsByOwner = emptyMap(),
+            inputApisByTypeName = emptyMap(),
             taskApisByTypeName = emptyMap(),
             stateApisByTypeName = emptyMap(),
             repositoryApisByTypeName = emptyMap()
@@ -77,6 +84,17 @@ internal fun OwnerConventionSupport.buildOwnerConventionCatalog(
         ownerObjectTypeNamesByOwner = ownerObjectTypeNamesByOwner,
         ownerRequestMethodNamesByOwner = ownerRequestMethodNamesByOwner,
         requestStemsByOwner = requestStemsByOwner,
+        inputApisByTypeName = buildInputApisByTypeName(
+            parsedSourcesByPath = parsedSourcesByPath,
+            role = inputRole
+        ) { parsedSource, ownerPackage, primaryType ->
+            canonicalInputApi(
+                parsedSource = parsedSource,
+                ownerPackage = ownerPackage,
+                primaryType = primaryType,
+                requestStemsByOwner = requestStemsByOwner
+            )
+        },
         taskApisByTypeName = buildStaticApisByTypeName(
             parsedSourcesByPath = parsedSourcesByPath,
             knownPackages = knownPackages,
@@ -120,6 +138,29 @@ internal fun OwnerConventionSupport.buildOwnerConventionCatalog(
     )
 }
 
+private fun OwnerConventionSupport.buildInputApisByTypeName(
+    parsedSourcesByPath: Map<String, OwnerConventionParsedJavaSource>,
+    role: String,
+    apiBuilder: (
+        parsedSource: OwnerConventionParsedJavaSource,
+        ownerPackage: String,
+        primaryType: OwnerConventionParsedJavaType
+    ) -> OwnerConventionInputApi?
+): Map<String, OwnerConventionInputApi> {
+    return parsedSourcesByPath.values
+        .mapNotNull { parsedSource ->
+            val packageName = parsedSource.packageName ?: return@mapNotNull null
+            if (roleForDirectoryName(parsedSource.file.parentFile.name) != role) {
+                return@mapNotNull null
+            }
+            val primaryType = parsedSource.topLevelTypes.firstOrNull { type -> type.name == parsedSource.file.nameWithoutExtension }
+                ?: return@mapNotNull null
+            val ownerPackage = ownerPackageFor(packageName, role)
+            apiBuilder(parsedSource, ownerPackage, primaryType)
+        }
+        .associateBy(OwnerConventionInputApi::typeName)
+}
+
 private fun OwnerConventionSupport.buildStaticApisByTypeName(
     parsedSourcesByPath: Map<String, OwnerConventionParsedJavaSource>,
     knownPackages: Set<String>,
@@ -146,6 +187,29 @@ private fun OwnerConventionSupport.buildStaticApisByTypeName(
             apiBuilder(parsedSource, packageName, ownerPackage, primaryType, typeImports)
         }
         .associateBy(OwnerConventionStaticApi::typeName)
+}
+
+private fun OwnerConventionSupport.canonicalInputApi(
+    parsedSource: OwnerConventionParsedJavaSource,
+    ownerPackage: String,
+    primaryType: OwnerConventionParsedJavaType,
+    requestStemsByOwner: Map<String, Set<String>>
+): OwnerConventionInputApi? {
+    val packageName = parsedSource.packageName ?: return null
+    val requestStem = requestStemForFile(parsedSource.file.name, "Input") ?: return null
+    if (parsedSource.topLevelTypes.size != 1 || requestStem !in requestStemsByOwner[ownerPackage].orEmpty()) {
+        return null
+    }
+    val validKind = primaryType.kind == OwnerConventionParsedJavaTypeKind.RECORD ||
+        primaryType.kind == OwnerConventionParsedJavaTypeKind.ENUM ||
+        (primaryType.kind == OwnerConventionParsedJavaTypeKind.INTERFACE && Modifier.SEALED in primaryType.modifiers)
+    if (!validKind) {
+        return null
+    }
+    return OwnerConventionInputApi(
+        typeName = "$packageName.${primaryType.name}",
+        ownerPackage = ownerPackage
+    )
 }
 
 private fun OwnerConventionSupport.canonicalTaskApi(

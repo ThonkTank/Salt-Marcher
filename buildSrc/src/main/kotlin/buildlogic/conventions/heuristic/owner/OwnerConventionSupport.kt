@@ -289,6 +289,10 @@ class OwnerConventionSupport(private val project: Project) {
         return snapshot.catalog.taskApisByTypeName[typeName]
     }
 
+    internal fun inputApi(typeName: String, snapshot: OwnerConventionSnapshot): OwnerConventionInputApi? {
+        return snapshot.catalog.inputApisByTypeName[typeName]
+    }
+
     internal fun stateApi(typeName: String, snapshot: OwnerConventionSnapshot): OwnerConventionStaticApi? {
         return snapshot.catalog.stateApisByTypeName[typeName]
     }
