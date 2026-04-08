@@ -230,8 +230,7 @@ public final class RuntimeObject {
     private static DungeonRuntimeAction toRuntimeAction(NavigateInput.ActionInput input) {
         if (input.isCellAction()) {
             return runtimeAction(
-                    input.label(),
-                    input.failureMessage(),
+                    input,
                     new DungeonRuntimeAction.CellTarget(
                             input.requireCellTarget(),
                             input.levelZ(),
@@ -239,16 +238,14 @@ public final class RuntimeObject {
         }
         if (input.isDoorAction()) {
             return runtimeAction(
-                    input.label(),
-                    input.failureMessage(),
+                    input,
                     new DungeonRuntimeAction.DoorTarget(
                             new features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef(
                                     input.requireDoorTarget())));
         }
         if (input.isTransitionAction()) {
             return runtimeAction(
-                    input.label(),
-                    input.failureMessage(),
+                    input,
                     new DungeonRuntimeAction.TransitionTarget(
                             input.requireTransitionTarget()));
         }
@@ -256,10 +253,9 @@ public final class RuntimeObject {
     }
 
     private static DungeonRuntimeAction runtimeAction(
-            String label,
-            String failureMessage,
+            NavigateInput.ActionInput input,
             Object target
     ) {
-        return new DungeonRuntimeAction(label, "", failureMessage, target);
+        return new DungeonRuntimeAction(input.label(), "", input.failureMessage(), target);
     }
 }
