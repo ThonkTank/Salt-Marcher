@@ -1,4 +1,4 @@
-package features.world.hexmap.ui.editor;
+package features.world.hexmap.ui.editor.surface;
 
 import features.world.hexmap.api.HexTileSummary;
 import features.world.hexmap.model.HexMap;
@@ -28,7 +28,7 @@ import java.util.function.Consumer;
  * Details werden im shell-owned DetailsPane gezeigt.
  * Zustandspanel: ToolSettingsPane (Gelaendepalette, spaetere Brush-Einstellungen).
  */
-public class MapEditorView implements AppView {
+public final class SurfaceObject implements AppView {
 
     private final MapEditorControls controls;
     private final MapEditorCanvas canvas;
@@ -44,7 +44,7 @@ public class MapEditorView implements AppView {
     private Long currentMapId;
     private boolean initialLoadDone = false;
 
-    public MapEditorView(DetailsNavigator detailsNavigator) {
+    public SurfaceObject(DetailsNavigator detailsNavigator) {
         this.detailsNavigator = detailsNavigator;
         controls = new MapEditorControls();
         canvas = new MapEditorCanvas();
@@ -94,7 +94,7 @@ public class MapEditorView implements AppView {
         dirtyTiles.clear();
 
         applicationService.flushTerrainChanges(batch, () -> { }, ex -> {
-            UiErrorReporter.reportBackgroundFailure("MapEditorView.flushDirtyTiles()", ex);
+            UiErrorReporter.reportBackgroundFailure("SurfaceObject.flushDirtyTiles()", ex);
             if (currentMapId != null) {
                 loadMapAsync(currentMapId);
             }
@@ -121,7 +121,7 @@ public class MapEditorView implements AppView {
         applicationService.updateMap(mapId, name, oldRadius, newRadius,
             () -> loadMapListAsync(maps -> controls.selectMap(mapId)),
             ex -> {
-                UiErrorReporter.reportBackgroundFailure("MapEditorView.editMap()", ex);
+                    UiErrorReporter.reportBackgroundFailure("SurfaceObject.editMap()", ex);
                 String msg = ex.getMessage() != null ? ex.getMessage() : "Unbekannter Fehler";
                 messageDropdown.show(controls, "Fehler beim Speichern", msg);
             });
@@ -144,7 +144,7 @@ public class MapEditorView implements AppView {
             applicationService.createMap(result.name(), result.radius(),
                 newMapId -> loadMapListAsync(maps -> controls.selectMap(newMapId)),
                 ex -> {
-                    UiErrorReporter.reportBackgroundFailure("MapEditorView.createMap()", ex);
+                    UiErrorReporter.reportBackgroundFailure("SurfaceObject.createMap()", ex);
                     messageDropdown.show(controls, "Karte konnte nicht erstellt werden", "Bitte Eingaben und Datenbankstatus prüfen.");
                 });
         });
@@ -155,7 +155,7 @@ public class MapEditorView implements AppView {
         applicationService.loadMapList(maps -> {
             controls.setMaps(maps);
             onLoaded.accept(maps);
-        }, ex -> UiErrorReporter.reportBackgroundFailure("MapEditorView.loadMapListAsync()", ex));
+        }, ex -> UiErrorReporter.reportBackgroundFailure("SurfaceObject.loadMapListAsync()", ex));
     }
 
     private void loadMapAsync(Long mapId) {
@@ -171,7 +171,7 @@ public class MapEditorView implements AppView {
                     if (requestSequence != loadSequence.get()) {
                         return;
                     }
-                    UiErrorReporter.reportBackgroundFailure("MapEditorView.loadMapAsync()", ex);
+                    UiErrorReporter.reportBackgroundFailure("SurfaceObject.loadMapAsync()", ex);
                 });
     }
 

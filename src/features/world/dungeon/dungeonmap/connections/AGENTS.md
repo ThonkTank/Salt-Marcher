@@ -1,4 +1,4 @@
-# AGENTS.md
+# Connections Owner
 
 ## Purpose
 

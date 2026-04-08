@@ -26,7 +26,9 @@ This file defines the repository-specific operating constraints for Claude Code 
 - `src/ui/` — JavaFX shell/bootstrap (`src/ui/bootstrap/`) plus shared UI-only components (`src/ui/components/`)
 - `resources/salt-marcher.css` — single CSS source of truth. `data/` for runtime data and backups
 
-**AGENTS.md placement convention:** the root `AGENTS.md` is for project-wide rules only. Feature-specific architecture, workflows, invariants, package roles, and editor/runtime behavior belong in the nearest local `AGENTS.md` under that feature subtree. If a rule stops being globally true and starts describing one feature, move it out of the root file. When both files exist, apply both, with the deeper local file governing the feature-specific details. Before changing files in a subtree, check whether that subtree defines a nearer `AGENTS.md`; if it does, treat that local file as required context, not optional reference. Before handoff, re-check the `AGENTS.md` files governing the edited paths and update them whenever the implementation changed the truths they describe.
+**AGENTS.md placement convention:** the root `AGENTS.md` is for project-wide rules only. Feature-specific architecture, workflows, invariants, package roles, and editor/runtime behavior belong in the nearest local `AGENTS.md` under that feature subtree. If a rule stops being globally true and starts describing one feature, move it out of the root file.
+
+**AGENTS.md load order and precedence:** AGENTS files are read from the repository root down to the edited directory. Parent files define the default contract for the whole subtree. Child files may narrow, extend, or document local exceptions, but they must not restate parent guidance unless the local wording adds a real subtree-specific constraint. If the same rule applies to multiple siblings, document it once in the nearest shared parent instead of duplicating it below. Before changing files in a subtree, read the full root-to-leaf AGENTS chain for that path. Before handoff, re-check the governing files for every edited path and update them whenever the implementation changed documented truths.
 
 **DB storage conventions:** Multi-value fields stored as delimited strings — `KEY:value,KEY:value,...` (e.g. `SavingThrows = "CON:10,INT:12"`, `Senses = "darkvision:60"`). Junction tables (`creature_biomes`, `creature_subtypes`, `item_tags`) for many-to-many. `campaign_state` is a singleton row (id=1). No name-column indexes anywhere (leading-wildcard `LIKE` can't use B-tree).
 
@@ -83,26 +85,7 @@ Left column is a VBox (Controls takes natural height, Main fills rest — not re
 - **InspectorPane** (shell-owned Details default): `showStatBlock(id)` toggles; `ensureStatBlock(id)` always shows; `showContent(title, node)` for arbitrary content; cancels pending async loads on new requests
 - **ScenePane**/**SceneHandle** (shell-owned State default) — tabbed bottom-right area. Views register persistent tabs via `SceneHandle`. Tab bar auto-hidden when only 1 tab. `SceneHandle.setContent(node)` swaps content
 
-### Feature-Local AGENTS Files
-
-- `src/features/campaignstate/AGENTS.md` — campaign-state ownership and public boundary rules
-- `src/features/creatures/AGENTS.md` — creatures platform ownership and reusable creature UI/API rules
-- `src/features/encounter/AGENTS.md` — encounter-specific workflow and runtime behavior
-- `src/features/encountertable/AGENTS.md` — encounter-table boundary and consumer-ownership rules
-- `src/features/items/AGENTS.md` — item ownership and reusable item-catalog UI boundary rules
-- `src/features/loottable/AGENTS.md` — loot-table ownership and item-catalog composition rules
-- `src/features/party/AGENTS.md` — party feature public-boundary rules
-- `src/features/partyanalysis/AGENTS.md` — party-analysis public-boundary rules
-- `src/features/world/AGENTS.md` — world feature boundary and subfeature ownership rules
-- `src/features/world/hexmap/AGENTS.md` — hex map and overworld-specific rules
-- `src/features/world/dungeon/AGENTS.md` — dungeon owner atlas and canonical dungeon seams
-- `src/features/world/dungeon/dungeonmap/AGENTS.md` — dungeon-map owner rules for loaded dungeon snapshots, load/reload workflows, and map session state
-- `src/features/world/dungeon/dungeonmap/cluster/AGENTS.md` — cluster owner rules for top-level room-cluster aggregates, workflows, and persistence
-- `src/features/world/dungeon/dungeonmap/corridor/AGENTS.md` — corridor owner rules for standalone corridor aggregates, workflows, and persistence
-- `src/features/world/dungeon/geometry/AGENTS.md` — canonical dungeon grid algebra and shared geometry rules
-- `src/features/world/dungeon/dungeonmap/structure/AGENTS.md` — shared structure-topology owner rules and persistence seams
-
-Non-feature local rules may also live under shared or tooling directories such as `src/shared/AGENTS.md` and `sync/AGENTS.md` when those directories need durable agent guidance.
+Non-feature local rules may also live under shared or tooling directories such as `src/shared/AGENTS.md` and `sync/AGENTS.md` when those directories need durable agent guidance. Discover governing AGENTS files by walking the directory path, not by relying on a curated index.
 
 ## Architecture Guidelines
 
@@ -166,6 +149,11 @@ No other technical layer names are canonical. Legacy directories such as `model`
 
 `Canonical Types and APIs` should document only the central seams an implementer should reuse. Use short entries of the form `Type or entrypoint - input summary - output or side effect`.
 
+Child AGENTS files are delta documents. They may assume parent context is already loaded, so they should document only:
+- the local public seams that are specific to that directory
+- the local invariants or hazards that are not already fully stated in a parent
+- any true local exception to the parent contract
+
 Do not use AGENTS files to:
 - restate obvious implementation details that the edited file already shows clearly
 - dump per-method control flow or table-by-table storage layout
@@ -174,6 +162,8 @@ Do not use AGENTS files to:
 - narrate a recent refactor just because it was recent
 - describe temporary ownership such as `still`, `for now`, `until X exists`, `future owner`, `new flow after refactor`, or `used to`
 - repeat parent-directory guidance in child files when the rule applies to siblings
+- keep a child file whose contents are fully implied by already-loaded parent AGENTS files
+- maintain curated AGENTS file indexes when structural discovery from the edited path is sufficient
 
 ### Agent Compliance Checklist
 
@@ -182,6 +172,7 @@ Before adding new code:
 2. Identify the owner slice before choosing a package.
 3. Inspect the documented canonical owner and entry points before introducing a new class, service, helper, or package.
 4. Extend the listed owner first. Create a new owner, public seam, or package family only when the current owners truly cannot absorb the change.
+5. When editing AGENTS files, move shared guidance to the highest directory that governs every affected path and remove lower-level duplication in the same pass.
 
 When adding a genuinely new owner or public seam:
 1. Update the governing `AGENTS.md` files in the same change.
@@ -204,11 +195,13 @@ The rules in this section are decision filters, not soft preferences. When multi
 - Remove or rewrite references to removed systems, rename history, and stale transition notes when they no longer affect current editing decisions
 - Keep transition notes only when they describe a live compatibility constraint or a current implementation hazard
 - If a rule applies to multiple sibling directories, document it once in the nearest shared parent instead of repeating it in each child file
+- Treat child AGENTS files as local deltas over already-loaded parents. Move shared guidance upward and delete lower duplicates in the same change.
 - Default local-file shape is `Purpose`, `Canonical Types and APIs`, `Where New Code Goes`, and `Forbidden Drift`. Add `Owner Atlas` only when the directory itself is the first real owner node for its subtree
 - During implementation, new or changed non-trivial code must document its intended behavior briefly at the owner seam that enforces it, so later contributors can understand the intent without reconstructing it from surrounding call sites
 - Prefer one concise intent comment on the stable owner over repeated narration on every branch or statement
 - Before handoff, inspect the root `AGENTS.md` and any nearer local `AGENTS.md` files governing the edited paths
 - Update those `AGENTS.md` files whenever the implementation changes documented truths, invariants, workflows, package roles, or UI behavior, and clean out stale statements that no longer describe current code or guidance
+- If a child AGENTS file no longer contains a unique local seam, invariant, or hazard after consolidation, delete it instead of leaving a placeholder copy of parent rules
 - Treat documentation updates as part of done, not optional cleanup
 
 ### Repository & Owner Conventions

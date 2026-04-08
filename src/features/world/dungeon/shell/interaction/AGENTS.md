@@ -1,4 +1,4 @@
-# AGENTS.md
+# Shell Interaction
 
 ## Purpose
 

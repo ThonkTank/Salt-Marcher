@@ -1,6 +1,6 @@
-# AGENTS.md
+# Dungeon Shell
 
-This file covers `src/features/world/dungeon/shell/`. For editor tools, also read `shell/editor/interaction/AGENTS.md`.
+For editor tools, also read `shell/editor/interaction/AGENTS.md`.
 
 ## Purpose
 

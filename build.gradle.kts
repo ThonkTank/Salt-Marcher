@@ -72,7 +72,7 @@ dependencies {
 }
 
 application {
-    mainClass = "ui.bootstrap.SaltMarcherApp"
+    mainClass = "ui.bootstrap.app.AppObject"
     applicationDefaultJvmArgs = listOf(preloaderJvmArg, "--enable-preview")
 }
 

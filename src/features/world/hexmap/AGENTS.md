@@ -6,7 +6,10 @@
 
 ## Canonical Types and APIs
 
-- `features.world.hexmap.api` — public world-owned boundary for hexmap reads, mutations, and shell wiring.
+- `HexmapObject` — hexmap feature root seam — composes the overworld session surface, the map editor surface, and the shared travel scene surface for the world boundary.
+- `ui/overworld/surface/SurfaceObject` — overworld session surface — drives the party-token travel view and delegates persistence to existing editor/runtime helpers.
+- `ui/travel/TravelObject` — shared travel scene surface — renders overworld and dungeon travel summaries for the shell-owned scene pane.
+- `features.world.hexmap.api.HexTileSummary` — stable read DTO for shell inspector hex-tile cards.
 - `HexGridPane` — shared renderer for read-only and editing workflows.
 - `HexMapService` — async map loading and overworld persistence workflow seam.
 - `CalendarService` — Forgotten Realms calendar parsing and day conversion seam.

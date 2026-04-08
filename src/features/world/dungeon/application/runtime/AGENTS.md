@@ -1,6 +1,4 @@
-# AGENTS.md
-
-This file covers `src/features/world/dungeon/application/runtime/`.
+# Runtime Owner
 
 ## Purpose
 

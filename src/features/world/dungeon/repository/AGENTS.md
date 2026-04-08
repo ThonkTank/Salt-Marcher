@@ -1,28 +1,23 @@
-# AGENTS.md
-
-This file covers `src/features/world/dungeon/repository/`.
+# Dungeon Root Repositories
 
 ## Purpose
 
-`repository` owns the remaining legacy owner-local dungeon persistence seams that still live directly beneath `dungeon/`. Map rehydration now lives in the sibling `dungeonmap/repository` slice.
+`repository` owns the dungeon-root repositories that still persist room, stair, transition, and shared SQL support outside the map-owned repository subtree.
 
 ## Canonical Types and APIs
 
-- `DungeonRoomRepository` — persists room metadata and room-to-cluster membership.
-- `dungeonmap/cluster/DungeonClusterRepository` — persists top-level cluster rows and cluster-owned structure references.
-- `DungeonStairRepository`, `DungeonTransitionRepository` — persist owner-local stair and transition metadata.
+- `DungeonRoomRepository` — room metadata and room-to-cluster membership persistence.
+- `DungeonStairRepository` and `DungeonTransitionRepository` — stair- and transition-owned metadata persistence.
+- `DungeonPersistenceDirections` and `DungeonStorageSupport` — shared SQL support for dungeon repositories.
 
 ## Where New Code Goes
 
-- Put SQL, row mapping, and schema ordering here.
-- Put loaded-map rehydration in `dungeonmap/repository/`, not back in this legacy root.
-- Route shared physical structure persistence through `dungeonmap/structure/repository` and the canonical `Structure` snapshot.
-- Mirror the runtime structure shape as closely as practical when persisting shared structure truth: map level-local anchors, surface rows, and floor rows directly through `StructureSurface.PersistenceSnapshot`, map level-local boundary rows into `StructureBoundary.PersistenceSnapshot`, and compose them through `Structure.LevelStructure.PersistenceSnapshot` instead of rebuilding a second flattened structure DTO.
-- Keep owner-local metadata in the owner repository rather than inventing shared helper mirrors.
+- Put owner-local SQL, row mapping, and schema ordering here when the owner still persists through the dungeon-root repository package.
+- Put loaded-map rehydration in `dungeonmap/repository/`.
+- Route shared physical structure persistence through `dungeonmap/structure/repository`.
 
 ## Forbidden Drift
 
-- Do not add runtime compatibility normalization for stale rows.
-- Do not move selection, fallback, or reload policy into repositories.
-- Do not move `DungeonMapRepository` back into this legacy root.
+- Do not move selection, fallback, load, or reload policy into repositories.
 - Do not duplicate canonical room, door, stair, or transition semantics in storage helper types.
+- Do not make this package the owner of the authoritative loaded-map snapshot.

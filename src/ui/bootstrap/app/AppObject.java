@@ -1,5 +1,13 @@
-package ui.bootstrap;
+package ui.bootstrap.app;
 
+import database.DatabaseManager;
+import features.creatures.api.CreatureCatalogService;
+import features.encounter.api.AdventuringDayToolbarModule;
+import features.encounter.api.EncounterModule;
+import features.party.api.PartyModule;
+import features.spells.api.SpellCatalogModule;
+import features.tables.api.TablesModule;
+import features.world.api.ApiObject;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.application.Preloader;
@@ -7,34 +15,22 @@ import javafx.concurrent.Task;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.stage.Stage;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import database.DatabaseManager;
-import features.creatures.api.CreatureCatalogService;
-import features.encounter.api.AdventuringDayToolbarModule;
-import features.party.api.PartyModule;
-import features.encounter.api.EncounterModule;
-import features.spells.api.SpellCatalogModule;
-import features.tables.api.TablesModule;
-import features.world.api.ApiObject;
 import ui.async.UiAsyncTasks;
 import ui.async.UiErrorReporter;
+import ui.bootstrap.SaltMarcherPreloader;
 import ui.shell.AppShell;
 import ui.shell.AppView;
 import ui.shell.ViewId;
 
-/**
- * Bootstrap class and cross-view wiring hub.
- * Constructs the AppShell and all views, then injects callbacks that cross view boundaries.
- * Internal feature wiring stays inside the modules/views.
- * Cross-view wiring (e.g. encounter feature callbacks updating shell panels) is done here
- * because the bootstrap is the only place that holds references to both ends.
- */
-public class SaltMarcherApp extends Application {
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-    private static final Logger LOGGER = Logger.getLogger(SaltMarcherApp.class.getName());
+/**
+ * Application entry owner for the shared shell bootstrap and feature registration.
+ */
+public final class AppObject extends Application {
+
+    private static final Logger LOGGER = Logger.getLogger(AppObject.class.getName());
     private static final String STARTUP_ERROR_TITLE = "Start fehlgeschlagen";
     private static final String STARTUP_ERROR_TEXT = "Salt Marcher konnte nicht gestartet werden.";
 
@@ -58,7 +54,6 @@ public class SaltMarcherApp extends Application {
         });
         startupTask.setOnFailed(event -> handleStartupFailure(startupTask.getException()));
         Thread startupThread = new Thread(startupTask, "sm-startup");
-        // The app must stay alive until the first stage is shown.
         startupThread.setDaemon(false);
         startupThread.start();
     }
@@ -100,7 +95,6 @@ public class SaltMarcherApp extends Application {
         spellCatalogModule.start(shell.getDetailsNavigator());
         AppView spellCatalogView = spellCatalogModule.view();
 
-        // Register session views first, then editors (sidebar separator auto-inserts between categories)
         shell.registerView(ViewId.ENCOUNTER, encounterView);
         shell.registerView(ViewId.OVERWORLD, overworldView);
         shell.registerView(ViewId.DUNGEON, dungeonView);
@@ -123,11 +117,9 @@ public class SaltMarcherApp extends Application {
         Platform.setImplicitExit(true);
         notifyPreloader(new SaltMarcherPreloader.AppReadyNotification());
 
-        // Filter data requires a DB query (creature types/biomes), so it is loaded asynchronously.
-        // The encounter/table views complete their own browser/filter wiring when the data arrives.
-        // All other encounter feature callbacks above are wired synchronously.
         Task<CreatureCatalogService.ServiceResult<CreatureCatalogService.FilterOptions>> filterTask = new Task<>() {
-            @Override protected CreatureCatalogService.ServiceResult<CreatureCatalogService.FilterOptions> call() {
+            @Override
+            protected CreatureCatalogService.ServiceResult<CreatureCatalogService.FilterOptions> call() {
                 return CreatureCatalogService.loadFilterOptions();
             }
         };
@@ -136,24 +128,24 @@ public class SaltMarcherApp extends Application {
                 result -> {
                     if (!result.isOk()) {
                         UiErrorReporter.reportBackgroundFailure(
-                                "SaltMarcherApp.start() loadFilterOptions failed",
+                                "AppObject.start() loadFilterOptions failed",
                                 new IllegalStateException("CreatureCatalogService status: " + result.status()));
                     }
                     CreatureCatalogService.FilterOptions filterData = result.value();
                     if (filterData == null) {
                         UiErrorReporter.reportBackgroundFailure(
-                                "SaltMarcherApp.start() loadFilterOptions returned null value",
+                                "AppObject.start() loadFilterOptions returned null value",
                                 null);
                         return;
                     }
                     encounterModule.setFilterData(filterData);
                     tablesModule.setCreatureFilterData(filterData);
                 },
-                throwable -> UiErrorReporter.reportBackgroundFailure("SaltMarcherApp.start()", throwable));
+                throwable -> UiErrorReporter.reportBackgroundFailure("AppObject.start()", throwable));
     }
 
     private void handleStartupFailure(Throwable throwable) {
-        UiErrorReporter.reportBackgroundFailure("SaltMarcherApp.start()", throwable);
+        UiErrorReporter.reportBackgroundFailure("AppObject.start()", throwable);
         notifyPreloader(new Preloader.StateChangeNotification(
                 Preloader.StateChangeNotification.Type.BEFORE_START));
 
@@ -167,7 +159,6 @@ public class SaltMarcherApp extends Application {
     }
 
     private static void logDatabaseState() {
-        // Startup diagnostic: show creature count so newcomers know if the DB is populated.
         CreatureCatalogService.ServiceResult<Integer> countResult = CreatureCatalogService.countAll();
         if (!countResult.isOk()) {
             LOGGER.log(Level.INFO, "Database check unavailable (DB access failed).");

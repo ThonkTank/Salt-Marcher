@@ -6,8 +6,8 @@
 
 ## Canonical Types and APIs
 
-- `features.world.api` — public world-owned boundary used by shell bootstrap.
-- `WorldModule` — world composition seam that exposes overworld and dungeon-facing surfaces.
+- `features.world.api.ApiObject` — public world-owned boundary used by shared bootstrap — composes overworld and dungeon-facing surfaces plus the shared travel scene.
+- `features.world.hexmap.HexmapObject` — hexmap feature root seam — returns the overworld/editor view pair and shared travel surface wiring consumed by the world boundary.
 - `features.campaignstate.api` — campaign-state seam consumed for persisted world-session position.
 
 ## Where New Code Goes

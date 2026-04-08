@@ -1,6 +1,4 @@
-# AGENTS.md
-
-This file covers `src/features/world/dungeon/dungeonmap/structure/model/boundary/door/`.
+# Door Subowner
 
 ## Purpose
 
