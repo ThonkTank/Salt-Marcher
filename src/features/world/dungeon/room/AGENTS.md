@@ -7,7 +7,8 @@
 ## Canonical Types and APIs
 
 - `RoomObject` — public room root seam — accepts typed narration write requests and orchestrates the room-owned save through same-owner `state` and `repository`.
-- `input/SaveNarrationInput` — room-narration save request — carries the room id, the visual description, and nested authored exit texts.
+- `input/SaveNarrationInput` — room-narration save request — carries the room id, the visual description, and the list of exit narration inputs.
+- `input/SaveNarrationExitInput` — room-exit narration request item — carries one authored exit text plus its persisted room-edge coordinates.
 - `state/SaveNarrationState` — room-owned narration save state — normalizes the authored narration payload into the canonical room-owned save shape.
 - `repository/SaveNarrationRepository` — room-owned narration persistence seam — updates `dungeon_rooms.visual_description` and replaces `dungeon_room_exit_descriptions` rows from room-owned state.
 
