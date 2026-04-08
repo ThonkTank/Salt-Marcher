@@ -15,7 +15,7 @@
 
 - Put new public catalog write requests under `input/`.
 - Put cross-owner catalog entrypoints on `CatalogObject`.
-- Keep legacy workflow and persistence collaborators internal to `catalog` until their own owner-local migration happens.
+- Keep workflow and persistence collaborators internal to `catalog`.
 
 ## Forbidden Drift
 

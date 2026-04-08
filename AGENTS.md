@@ -123,15 +123,13 @@ Technical layers are subordinate tools inside an owner slice, not the primary ar
 - `repository` — persistence-only state reconstruction and state storage
 - `state` — the owner's canonical protected runtime/object state plus the only allowed state factory/transition APIs
 
-No other technical layer names are canonical. Legacy directories such as `model`, `application`, `service`, `ui`, `api`, `bootstrap`, `internal`, or `support` may still exist in untouched code, but they are refactor targets, not precedent.
-
-When a legacy subtree still exists, the build-time owner-boundary checks are the enforceable grammar for touched Java files. Read local AGENTS notes about legacy packages as compatibility guidance for existing code, not as blanket permission to create new files outside the canonical owner/layer vocabulary.
+No other technical layer names are canonical. Directories such as `model`, `application`, `service`, `ui`, `api`, `bootstrap`, `internal`, or `support` do not define valid package precedent for new or touched architecture work.
 
 ### Public Owner APIs
 
 - Cross-owner imports must go through the target owner's root package and its single public `<Owner>Object` seam.
 - Owner boundaries are derived structurally. Under `src/`, every non-container directory is either an owner, one of the four allowed layers `input`, `task`, `repository`, `state`, or a direct-child `*Bucket` under an owner.
-- For touched Java files, `checkOwnerApiBoundaryConvention` is the final arbiter when documentation and legacy layout diverge.
+- For touched Java files, `checkOwnerApiBoundaryConvention` is the final arbiter when documentation and the current filesystem layout diverge.
 - `*Bucket` is the only organizational directory pattern. A directory that is not one of the four layers and does not end with `Bucket` is an owner by default.
 - `*Bucket` directories are transparent organization only: they may contain only `AGENTS.md` plus direct child owners or direct child layer directories, and they may not contain nested `*Bucket` directories.
 - Subowners must sit directly under their owner or inside one direct-child `*Bucket` of that owner. Layers are always flat and may not contain nested packages, subowners, or additional `*Bucket` directories.

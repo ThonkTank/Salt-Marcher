@@ -19,17 +19,16 @@
 - `task/DeleteTransitionTask` — transition delete orchestration seam — owns the current persisted delete workflow beneath the transition root seam.
 - `task/LoadDungeonTargetsTask` — transition dungeon-target load seam — projects placed dungeon transitions into transition-owned root-input form.
 - `task/LoadOverworldTargetsTask` — transition target-load seam — projects overworld transition targets into transition-owned root-input form.
-- `DungeonTransitionApplicationService` — legacy editor-facing shim — keeps existing callers stable while delegating transition-owned create, place, and delete writes onto `TransitionObject`.
 
 ## Where New Code Goes
 
 - Put new public cross-owner transition entrypoints on `TransitionObject`.
 - Put public transition workflow request carriers under `input/`.
-- Put migrated transition workflow orchestration under `task/` with one request-matched task per root request as seams are pulled forward.
+- Put transition workflow orchestration under `task/` with one request-matched task per root request.
 - Keep transition destination validation, paired-transition rules, and prepared-placement writes on the transition owner instead of spreading them into map, shell, or repository helpers.
 
 ## Forbidden Drift
 
 - Do not write transition rows directly from foreign owners once the root seam exists.
 - Do not move transition destination validation into shell tools or map-owned helpers.
-- Do not reintroduce migrated create, delete, or target-load logic back into `TransitionObject`; keep that orchestration on the matching transition task.
+- Do not reintroduce create, delete, or target-load logic back into `TransitionObject`; keep that orchestration on the matching transition task.

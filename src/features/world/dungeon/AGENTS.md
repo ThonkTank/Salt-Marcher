@@ -27,7 +27,6 @@
 - `dungeonmap/structure/StructureObject` and `Structure` — shared physical topology seam for structure-backed map objects and their persisted topology.
 - `dungeonmap/connections/ConnectionsObject` — shared traversal semantics seam for door-, stair-, and corridor-linked movement.
 - `catalog/CatalogObject` — public catalog seam for dungeon-map create, rename, and delete writes.
-- `DungeonClusterApplicationService`, `DungeonCorridorApplicationService`, `DungeonStairApplicationService`, `DungeonTransitionApplicationService`, `DungeonRuntimeApplicationService` — legacy workflow seams still backing cluster, corridor, stair, transition, and runtime behavior while their owner-local migrations continue.
 
 ## Where New Code Goes
 
@@ -35,7 +34,7 @@
 - Cross owner boundaries only through the target owner's root package and public `*Object` seam. Do not skip intermediate owners.
 - Keep shared physical topology on `dungeonmap/structure`, shared traversal semantics on `dungeonmap/connections`, and loaded-map/session ownership on `dungeonmap`.
 - Keep public dungeon geometry carrier-based. Shared spatial seams use the canonical `geometry` types rather than raw `Set/List/Collection<GridPoint|GridSegment>`.
-- Keep runtime-only meaning under `application/runtime`, editor gesture meaning under `shell/editor/interaction`, shell hit/highlight publication under `shell/interaction`, and display-only rendering under `canvas`.
+- Keep runtime-only meaning under the `runtime` owner, editor gesture meaning under `shell/editor/interaction`, shell hit/highlight publication under `shell/interaction`, and display-only rendering under `canvas`.
 - Route authoritative reloads through the owning workflow plus the owner's `repository` and `state` layers. Views and tools do not own the authoritative map snapshot.
 
 ## Forbidden Drift

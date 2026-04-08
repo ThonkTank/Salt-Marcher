@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`repository` owns the dungeon-root repositories that still persist room, stair, transition, and shared SQL support outside the map-owned repository subtree.
+`repository` owns the dungeon-root repositories for room, stair, transition, and shared SQL support outside the map-owned repository subtree.
 
 ## Canonical Types and APIs
 
@@ -12,7 +12,7 @@
 
 ## Where New Code Goes
 
-- Put owner-local SQL, row mapping, and schema ordering here when the owner still persists through the dungeon-root repository package.
+- Put dungeon-root SQL, row mapping, and schema ordering here when that persistence belongs to the dungeon-root repository package.
 - Put loaded-map rehydration in `dungeonmap/repository/`.
 - Route shared physical structure persistence through `dungeonmap/structure/repository`.
 

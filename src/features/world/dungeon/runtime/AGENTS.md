@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`runtime` owns dungeon runtime workflows such as runtime-state repair and, in later passes, runtime navigation entrypoints.
+`runtime` owns dungeon runtime workflows such as runtime-state repair and runtime navigation entrypoints.
 
 ## Canonical Types and APIs
 
@@ -20,10 +20,9 @@
 - Put public cross-owner runtime entrypoints on `RuntimeObject`.
 - Put public runtime workflow request carriers under `input/`.
 - Put runtime workflow orchestration under `task/` with one `<Request>Task` per public root request.
-- Keep broader navigation and description internals behind the runtime owner seam until their local migration is pulled forward.
+- Keep broader navigation and description internals behind the runtime owner seam.
 
 ## Forbidden Drift
 
-- Do not call runtime repair directly through legacy `application/runtime` from foreign owners once the root seam exists.
 - Do not expose shell-local runtime UI state as public runtime API.
 - Do not reintroduce workflow helpers or cross-owner wiring back into `RuntimeObject`; that belongs in the matching runtime task.
