@@ -24,7 +24,7 @@
 ## Build Hazards
 
 - Touching `input/SaveNarrationInput` will fail the build if it grows methods, initializer blocks, project imports outside `input`, or a second nesting level under `ExitNarrationInput`. A separate top-level pseudo-input for exit narration would also fail because it would not match a real `RoomObject` request.
-- Touching `RoomObject` will fail the build if it grows extra public methods, overloads `saveNarration`, or lets the request body drift beyond guards, local bindings, same-owner orchestration calls, returns, and throws.
+- Touching `RoomObject` will fail the build if it grows extra public methods, overloads `saveNarration`, or lets the request body drift beyond pass-through bindings, simple routing, canonical same-owner delegation, private terminal consumption, returns, and throws.
 - Touching `state/SaveNarrationState` or `state/SaveNarrationExitState` will fail the build if public APIs stop being static factory-transition seams, or if state starts importing room `repository` or foreign-owner project packages.
 - Touching `repository/SaveNarrationRepository` will fail the build if it imports room `input`, exposes public instance methods, or changes its public persistence seam so it no longer exposes room `state` while owning the JDBC persistence boundary.
 

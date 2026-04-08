@@ -37,8 +37,7 @@ fun Project.registerCheckOwnerApiBoundaryOwnerFilesTask(
 }
 
 private data class OwnerMethodEnvironment(
-    val requestParameterName: String,
-    val requestParameterTypeName: String,
+    val availableValueNames: MutableSet<String> = linkedSetOf(),
     val localProjectTypes: MutableMap<String, String> = linkedMapOf()
 )
 
@@ -181,8 +180,8 @@ private fun ownerRequestBodyReasons(
     val requestParameterTypeName = support.resolveProjectTypeName(parameter.tree.type, sourceFile.parsedSource, snapshot)
         ?: return listOf("${context.path} :: owner requests must use a resolvable project input type (${method.name})")
     val environment = OwnerMethodEnvironment(
-        requestParameterName = parameter.name,
-        requestParameterTypeName = requestParameterTypeName
+        availableValueNames = linkedSetOf(parameter.name),
+        localProjectTypes = linkedMapOf(parameter.name to requestParameterTypeName)
     )
     val reasons = mutableListOf<String>()
     body.statements.forEach { statement ->
@@ -259,6 +258,7 @@ private fun validateOwnerStatement(
             if (declaredTypeName != null) {
                 environment.localProjectTypes[variable.name.toString()] = declaredTypeName
             }
+            environment.availableValueNames += variable.name.toString()
             reasons
         }
 
@@ -466,13 +466,15 @@ private fun validateOwnerCallExpressionStatement(
         isAllowedPrivateConsumerInvocation(expression, primaryType, sourceFile, snapshot, support, environment)
     ) {
         return expression.arguments.flatMap { argument ->
-            validatePassThroughArgument(argument, sourceFile, snapshot, support, primaryType, fieldProjectTypes, environment, requestStem, bodyMode)
+            validateTerminalConsumerArgument(argument, sourceFile, snapshot, support, environment)
         }
     }
     if (bodyMode == OwnerBodyMode.PRIVATE_CONSUMER &&
         isAllowedPrivateConsumerTerminalInvocation(expression, sourceFile, snapshot, support, environment, fieldProjectTypes)
     ) {
-        return emptyList()
+        return expression.arguments.flatMap { argument ->
+            validateTerminalConsumerArgument(argument, sourceFile, snapshot, support, environment)
+        }
     }
     val classification = classifyOwnerInvocation(
         invocation = expression,
@@ -517,13 +519,18 @@ private fun validateOwnerValueExpression(
         Tree.Kind.FLOAT_LITERAL,
         Tree.Kind.DOUBLE_LITERAL -> emptyList()
 
-        Tree.Kind.IDENTIFIER -> emptyList()
+        Tree.Kind.IDENTIFIER ->
+            if (isAllowedPassThroughIdentifier((expression as IdentifierTree).name.toString(), environment)) {
+                emptyList()
+            } else {
+                listOf("${context.path} :: owner values must stay on already-available pass-through or final values")
+            }
 
         Tree.Kind.MEMBER_SELECT -> {
             if (isAllowedPassThroughReference(expression, environment)) {
                 emptyList()
             } else {
-                listOf("${context.path} :: owner values must stay on direct pass-through references")
+                listOf("${context.path} :: owner values must stay on already-available pass-through or final values")
             }
         }
 
@@ -603,6 +610,9 @@ private fun validateOwnerNewClassExpression(
 ): List<String> {
     val context = sourceFile.context
     val projectTypeName = support.resolveProjectTypeName(expression.identifier, sourceFile.parsedSource, snapshot)
+    if (bodyMode == OwnerBodyMode.PRIVATE_CONSUMER && projectTypeName != null) {
+        return listOf("${context.path} :: owner private consumer methods must not construct project workflow objects (${projectTypeName})")
+    }
     if (projectTypeName != null) {
         val projectPackage = projectTypeName.substringBeforeLast('.')
         val projectRole = support.roleForDirectoryName(projectPackage.substringAfterLast('.'))
@@ -666,7 +676,7 @@ private fun classifyOwnerInvocation(
     if (methodSelect !is MemberSelectTree) {
         return OwnerCallClassification(
             allowed = false,
-            description = "owner requests must use explicit receivers for orchestration calls"
+            description = "owner requests must use explicit receivers for delegated calls"
         )
     }
     val methodName = methodSelect.identifier.toString()
@@ -737,7 +747,7 @@ private fun classifyOwnerInvocation(
             } else {
                 OwnerCallClassification(
                     allowed = true,
-                    description = "same-owner state orchestration"
+                    description = "same-owner state delegation"
                 )
             }
         }
@@ -752,7 +762,7 @@ private fun classifyOwnerInvocation(
             } else {
                 OwnerCallClassification(
                     allowed = true,
-                    description = "same-owner repository orchestration"
+                    description = "same-owner repository delegation"
                 )
             }
         }
@@ -766,7 +776,7 @@ private fun classifyOwnerInvocation(
         receiverOwnerPackage == context.ownerPackage ->
             OwnerCallClassification(
                 allowed = false,
-                description = "owner requests may orchestrate only own task/state/repository collaborators"
+                description = "owner requests may reference only own task/state/repository collaborators"
             )
 
         !support.isOwnerReachable(context.ownerPackage, receiverOwnerPackage) ->
@@ -842,15 +852,11 @@ private fun projectTypeNameForExpression(
     fieldProjectTypes: Map<String, String>,
     environment: OwnerMethodEnvironment
 ): String? {
-    val context = sourceFile.context
     return when (expression) {
         is IdentifierTree -> {
             support.resolveProjectTypeName(expression, sourceFile.parsedSource, snapshot)
-                ?: when (expression.name.toString()) {
-                    environment.requestParameterName -> environment.requestParameterTypeName
-                    else -> environment.localProjectTypes[expression.name.toString()]
-                        ?: fieldProjectTypes[expression.name.toString()]
-                }
+                ?: environment.localProjectTypes[expression.name.toString()]
+                ?: fieldProjectTypes[expression.name.toString()]
         }
 
         is MemberSelectTree -> support.resolveProjectTypeName(expression, sourceFile.parsedSource, snapshot)
@@ -873,12 +879,19 @@ private fun isAllowedPassThroughReference(
     environment: OwnerMethodEnvironment
 ): Boolean {
     return when (expression) {
-        is IdentifierTree -> true
+        is IdentifierTree -> isAllowedPassThroughIdentifier(expression.name.toString(), environment)
         is MemberSelectTree -> isAllowedPassThroughReference(expression.expression, environment)
         is ParenthesizedTree -> isAllowedPassThroughReference(expression.expression, environment)
         is TypeCastTree -> isAllowedPassThroughReference(expression.expression, environment)
         else -> false
     }
+}
+
+private fun isAllowedPassThroughIdentifier(
+    identifier: String,
+    environment: OwnerMethodEnvironment
+): Boolean {
+    return identifier in environment.availableValueNames
 }
 
 private fun isAllowedPassThroughValue(
@@ -898,7 +911,7 @@ private fun isAllowedPassThroughValue(
         Tree.Kind.FLOAT_LITERAL,
         Tree.Kind.DOUBLE_LITERAL -> true
 
-        Tree.Kind.IDENTIFIER -> true
+        Tree.Kind.IDENTIFIER -> isAllowedPassThroughIdentifier((expression as IdentifierTree).name.toString(), environment)
 
         Tree.Kind.MEMBER_SELECT -> isAllowedPassThroughReference(expression, environment)
 
@@ -963,7 +976,7 @@ private fun isAllowedOwnerGuardCondition(
 ): Boolean {
     return when (expression) {
         is LiteralTree -> true
-        is IdentifierTree -> true
+        is IdentifierTree -> isAllowedPassThroughIdentifier(expression.name.toString(), environment)
         is MemberSelectTree -> isAllowedPassThroughReference(expression, environment)
         is ParenthesizedTree -> isAllowedOwnerGuardCondition(expression.expression, sourceFile, snapshot, support, environment)
         is TypeCastTree -> isAllowedOwnerGuardCondition(expression.expression, sourceFile, snapshot, support, environment)
@@ -1038,11 +1051,9 @@ private fun ownerPrivateConsumerBodyReasons(
     fieldProjectTypes: Map<String, String>
 ): List<String> {
     val body = method.body ?: return listOf("${sourceFile.context.path} :: owner private consumer methods must declare a body (${method.name})")
-    val environment = OwnerMethodEnvironment(
-        requestParameterName = "",
-        requestParameterTypeName = ""
-    )
+    val environment = OwnerMethodEnvironment()
     method.parameters.forEach { parameter ->
+        environment.availableValueNames += parameter.name
         support.resolveProjectTypeName(parameter.tree.type, sourceFile.parsedSource, snapshot)?.let { typeName ->
             environment.localProjectTypes[parameter.name] = typeName
         }
@@ -1096,9 +1107,7 @@ private fun isAllowedPrivateConsumerInvocation(
     if (Modifier.STATIC in consumerMethod.modifiers || consumerMethod.tree.returnType?.toString() != "void") {
         return false
     }
-    return invocation.arguments.all { argument ->
-        isAllowedPassThroughValue(argument, sourceFile, snapshot, support, environment)
-    }
+    return true
 }
 
 private fun isAllowedPrivateConsumerTerminalInvocation(
@@ -1110,10 +1119,9 @@ private fun isAllowedPrivateConsumerTerminalInvocation(
     fieldProjectTypes: Map<String, String>
 ): Boolean {
     val methodSelect = invocation.methodSelect as? MemberSelectTree ?: return false
-    if (isAllowedInputAccessorInvocation(methodSelect.expression, invocation, sourceFile, snapshot, support, environment)) {
-        return false
-    }
-    if (isAllowedUtilityInvocation(invocation, sourceFile, snapshot, support, environment)) {
+    if (isAllowedInputAccessorInvocation(methodSelect.expression, invocation, sourceFile, snapshot, support, environment) ||
+        isAllowedUtilityInvocation(invocation, sourceFile, snapshot, support, environment)
+    ) {
         return false
     }
     val receiverTypeName = projectTypeNameForExpression(
@@ -1124,11 +1132,72 @@ private fun isAllowedPrivateConsumerTerminalInvocation(
         fieldProjectTypes = fieldProjectTypes,
         environment = environment
     )
-    if (receiverTypeName != null) {
-        return false
+    return receiverTypeName == null
+}
+
+private fun validateTerminalConsumerArgument(
+    expression: ExpressionTree,
+    sourceFile: OwnerConventionSourceFile,
+    snapshot: OwnerConventionSnapshot,
+    support: OwnerConventionSupport,
+    environment: OwnerMethodEnvironment
+): List<String> {
+    return if (isAllowedTerminalConsumerValue(expression, sourceFile, snapshot, support, environment)) {
+        emptyList()
+    } else {
+        listOf("${sourceFile.context.path} :: owner private consumer arguments must stay on already-available pass-through or final values")
     }
-    return invocation.arguments.all { argument ->
-        isAllowedPassThroughValue(argument, sourceFile, snapshot, support, environment)
+}
+
+private fun isAllowedTerminalConsumerValue(
+    expression: ExpressionTree,
+    sourceFile: OwnerConventionSourceFile,
+    snapshot: OwnerConventionSnapshot,
+    support: OwnerConventionSupport,
+    environment: OwnerMethodEnvironment
+): Boolean {
+    return when (expression.kind) {
+        Tree.Kind.NULL_LITERAL,
+        Tree.Kind.BOOLEAN_LITERAL,
+        Tree.Kind.CHAR_LITERAL,
+        Tree.Kind.STRING_LITERAL,
+        Tree.Kind.INT_LITERAL,
+        Tree.Kind.LONG_LITERAL,
+        Tree.Kind.FLOAT_LITERAL,
+        Tree.Kind.DOUBLE_LITERAL -> true
+
+        Tree.Kind.IDENTIFIER -> isAllowedPassThroughIdentifier((expression as IdentifierTree).name.toString(), environment)
+
+        Tree.Kind.MEMBER_SELECT -> isAllowedPassThroughReference(expression, environment)
+
+        Tree.Kind.PARENTHESIZED -> isAllowedTerminalConsumerValue(
+            (expression as ParenthesizedTree).expression,
+            sourceFile,
+            snapshot,
+            support,
+            environment
+        )
+
+        Tree.Kind.TYPE_CAST -> isAllowedTerminalConsumerValue(
+            (expression as TypeCastTree).expression,
+            sourceFile,
+            snapshot,
+            support,
+            environment
+        )
+
+        Tree.Kind.METHOD_INVOCATION -> isAllowedInputAccessorInvocation(
+            receiverExpression = null,
+            invocation = expression as MethodInvocationTree,
+            sourceFile = sourceFile,
+            snapshot = snapshot,
+            support = support,
+            environment = environment
+        ) || isAllowedObjectsUtilityInvocation(expression) { argument ->
+            isAllowedTerminalConsumerValue(argument, sourceFile, snapshot, support, environment)
+        }
+
+        else -> false
     }
 }
 

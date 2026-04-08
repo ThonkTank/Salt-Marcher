@@ -105,7 +105,7 @@ Do not reverse that decision order. A capability does not belong in a package be
 - Give every capability one central owner.
 - Place each capability on the lowest common owner that is actually edited, described, or constrained by it.
 - Objects and types may gain capabilities through composition, inheritance, or references, but ownership of the capability stays with the central owner instead of being mirrored in consumers.
-- Central owner types should hold their own mutable state and behavior. Keep invariants and mutation behind explicit owner APIs instead of exposing writable internals.
+- The public `<Owner>Object` seam must stay stateless and workflowless. It may expose canonical requests, bind already-final values, make simple routing decisions, and hand final values to terminal consumers, but it must not hide workflow state, business logic, or complex intermediate processing.
 - Do not force every type into owner-style encapsulation. Immutable geometry types, DTOs, requests, projections, snapshots, render payloads, and similar value carriers may stay transparent values when they do not own invariants or workflow state.
 - New code must follow the target architecture immediately.
 - Touched code should move toward the target architecture at the nearest safe seam without widening scope.
@@ -144,7 +144,7 @@ No other technical layer names are canonical. Directories such as `model`, `appl
 
 ### Owner Types vs Value Types
 
-- Treat aggregates, workflow owners, and surface owners as owner types. They should expose narrow, intentional APIs, stay stateless with respect to hidden workflow state, and keep non-public consumption seams private.
+- Treat aggregates, workflow owners, and surface owners as owner types. They should expose narrow, intentional APIs, stay stateless with respect to hidden workflow state, and keep non-public consumption seams private. A surface owner may itself be a UI class when that class is the public owner seam; the rule constrains the seam behavior and dependencies, not the base class.
 - Treat immutable records and small transport shapes as value types. They may expose their data directly when they do not enforce invariants beyond construction.
 - When deciding between the two, ask whether callers should be able to freely combine and inspect the data, or whether all meaningful changes must pass through one owner that protects invariants.
 
