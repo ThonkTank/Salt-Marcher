@@ -81,7 +81,7 @@ public final class NavigateTask {
                         snapshot.mapId(),
                         snapshot.cell(),
                         snapshot.levelZ(),
-                        snapshot.heading() == null ? "" : snapshot.heading().name());
+                        headingName(snapshot));
     }
 
     private static features.world.dungeon.application.runtime.DungeonRuntimeApplicationService runtimeApplicationService(
@@ -93,6 +93,12 @@ public final class NavigateTask {
 
     private static features.world.dungeon.geometry.CardinalDirection heading(String name) {
         return features.world.dungeon.geometry.CardinalDirection.parse(name);
+    }
+
+    private static String headingName(
+            features.world.dungeon.application.runtime.DungeonRuntimeNavigationSnapshot snapshot
+    ) {
+        return snapshot.heading() == null ? "" : snapshot.heading().name();
     }
 
     private static features.world.dungeon.application.runtime.DungeonRuntimeAction.CellTarget cellTarget(
