@@ -1,5 +1,6 @@
 package features.world.dungeon.shell.editor.interaction;
 
+import features.world.dungeon.dungeonmap.api.RoomBoundaryDescription;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 
@@ -14,7 +15,7 @@ final class ConnectionSurfaceSupport {
             DungeonSelectionRef.RoomBoundaryRef ref,
             int levelZ
     ) {
-        DungeonMap.RoomBoundaryDescription boundary = layout == null ? null : layout.describeRoomBoundary(ref, levelZ);
+        RoomBoundaryDescription boundary = layout == null ? null : layout.describeRoomBoundary(ref, levelZ);
         return boundary != null && boundary.exterior();
     }
 

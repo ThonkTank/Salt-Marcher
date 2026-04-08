@@ -1266,7 +1266,7 @@ public final class TransitionTool implements EditorTool {
             DungeonSelectionRef.DoorRef doorRef,
             int levelZ
     ) {
-        DungeonMap.DoorDescription description = layout == null || doorRef == null
+        DoorDescription description = layout == null || doorRef == null
                 ? null
                 : layout.describeDoor(doorRef);
         return description != null

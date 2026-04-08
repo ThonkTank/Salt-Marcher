@@ -1,5 +1,11 @@
 package features.world.dungeon.dungeonmap.model;
 
+import features.world.dungeon.dungeonmap.api.CellStructure;
+import features.world.dungeon.dungeonmap.api.ConnectionSurfaceDescription;
+import features.world.dungeon.dungeonmap.api.CorridorBoundaryDescription;
+import features.world.dungeon.dungeonmap.api.DoorDescription;
+import features.world.dungeon.dungeonmap.api.DoorRole;
+import features.world.dungeon.dungeonmap.api.RoomBoundaryDescription;
 import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridBoundary;
@@ -48,132 +54,6 @@ import java.util.stream.Collectors;
  * `GridSegment`.
  */
 public final class DungeonMap {
-
-    public sealed interface CellStructure permits CellStructure.RoomStructure, CellStructure.CorridorStructure, CellStructure.StairStructure, CellStructure.TransitionStructure {
-        record RoomStructure(Long clusterId, Long roomId) implements CellStructure {
-        }
-
-        record CorridorStructure(Corridor corridor) implements CellStructure {
-        }
-
-        record StairStructure(DungeonStair stair) implements CellStructure {
-        }
-
-        record TransitionStructure(DungeonTransition transition) implements CellStructure {
-        }
-    }
-
-    public record RoomBoundaryDescription(
-            Long clusterId,
-            Room room,
-            GridPoint roomCell,
-            CardinalDirection outwardDirection,
-            boolean exterior
-    ) {
-        public RoomBoundaryDescription {
-            room = Objects.requireNonNull(room, "room");
-            roomCell = Objects.requireNonNull(roomCell, "roomCell");
-            outwardDirection = Objects.requireNonNull(outwardDirection, "outwardDirection");
-        }
-    }
-
-    public record CorridorBoundaryDescription(
-            Corridor corridor,
-            GridPoint corridorCell
-    ) {
-        public CorridorBoundaryDescription {
-            corridor = Objects.requireNonNull(corridor, "corridor");
-            corridorCell = Objects.requireNonNull(corridorCell, "corridorCell");
-        }
-    }
-
-    public record ConnectionSurfaceDescription(
-            ConnectionEndpoint endpoint,
-            GridPoint localCell,
-            CardinalDirection outwardDirection
-    ) {
-        public ConnectionSurfaceDescription {
-            endpoint = Objects.requireNonNull(endpoint, "endpoint");
-            localCell = Objects.requireNonNull(localCell, "localCell");
-            outwardDirection = Objects.requireNonNull(outwardDirection, "outwardDirection");
-        }
-    }
-
-    public enum DoorRole {
-        ROOM_LOCAL,
-        ROOM_EXTERIOR,
-        CORRIDOR_BOUNDARY
-    }
-
-    public record DoorDescription(
-            DoorRef ref,
-            Door door,
-            int levelZ,
-            DoorRole role,
-            Long clusterId,
-            Long corridorId,
-            List<Room> touchingRooms
-    ) {
-        public DoorDescription {
-            ref = Objects.requireNonNull(ref, "ref");
-            door = Objects.requireNonNull(door, "door");
-            role = Objects.requireNonNull(role, "role");
-            touchingRooms = touchingRooms == null ? List.of() : List.copyOf(touchingRooms);
-        }
-
-        public GridSegment anchorSegment() {
-            return door.anchorSegment();
-        }
-
-        public Long roomId() {
-            if (role != DoorRole.ROOM_EXTERIOR || touchingRooms.isEmpty()) {
-                return null;
-            }
-            Room room = touchingRooms.getFirst();
-            return room == null ? null : room.roomId();
-        }
-
-        public boolean isRoomLocal() {
-            return role == DoorRole.ROOM_LOCAL;
-        }
-
-        public boolean isRoomExterior() {
-            return role == DoorRole.ROOM_EXTERIOR;
-        }
-
-        public boolean isCorridorBoundary() {
-            return role == DoorRole.CORRIDOR_BOUNDARY;
-        }
-
-        public boolean supportsTransitionPlacement() {
-            return connectionEndpoint() != null;
-        }
-
-        public ConnectionEndpoint connectionEndpoint() {
-            if (isRoomExterior()) {
-                Long roomId = roomId();
-                return roomId == null ? null : ConnectionEndpoint.room(roomId);
-            }
-            if (isCorridorBoundary()) {
-                return corridorId == null ? null : ConnectionEndpoint.corridor(corridorId);
-            }
-            return null;
-        }
-
-        public DungeonSelectionRef ownerRef() {
-            return switch (role) {
-                case ROOM_LOCAL -> clusterId == null ? null : new DungeonSelectionRef.ClusterRef(clusterId);
-                case ROOM_EXTERIOR -> {
-                    Long roomId = roomId();
-                    if (roomId != null) {
-                        yield new DungeonSelectionRef.RoomRef(roomId);
-                    }
-                    yield clusterId == null ? null : new DungeonSelectionRef.ClusterRef(clusterId);
-                }
-                case CORRIDOR_BOUNDARY -> corridorId == null ? null : new DungeonSelectionRef.CorridorRef(corridorId);
-            };
-        }
-    }
 
     private static final DungeonMap EMPTY = new DungeonMap(0L, "Kein Dungeon", List.of(), List.of(), List.of(), List.of(), Map.of());
 

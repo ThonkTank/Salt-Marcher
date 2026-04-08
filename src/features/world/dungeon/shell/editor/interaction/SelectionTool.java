@@ -2,6 +2,7 @@ package features.world.dungeon.shell.editor.interaction;
 
 import features.world.dungeon.dungeonmap.corridor.application.DungeonCorridorApplicationService;
 import features.world.dungeon.dungeonmap.corridor.application.CorridorInputEditor;
+import features.world.dungeon.dungeonmap.api.DoorDescription;
 import features.world.dungeon.dungeonmap.cluster.application.DungeonClusterApplicationService;
 import features.world.dungeon.dungeonmap.cluster.model.ClusterMutation;
 import features.world.dungeon.dungeonmap.cluster.model.ClusterRewritePlan;
@@ -816,7 +817,7 @@ public final class SelectionTool implements EditorTool {
                 int levelZ,
                 DungeonSelectionRef.DoorRef sourceRef
         ) {
-            DungeonMap.DoorDescription description = baseMap == null || sourceRef == null
+            DoorDescription description = baseMap == null || sourceRef == null
                     ? null
                     : baseMap.describeDoor(sourceRef);
             if (description == null
@@ -840,7 +841,7 @@ public final class SelectionTool implements EditorTool {
         if (resolvedLayout == null || doorRef == null) {
             return null;
         }
-        DungeonMap.DoorDescription description = resolvedLayout.describeDoor(doorRef);
+        DoorDescription description = resolvedLayout.describeDoor(doorRef);
         return description == null ? null : description.anchorSegment();
     }
 }

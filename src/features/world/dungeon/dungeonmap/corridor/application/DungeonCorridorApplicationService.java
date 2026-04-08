@@ -64,7 +64,7 @@ public final class DungeonCorridorApplicationService {
                 DungeonMap layout = requireLayout(conn, resolvedRequest.mapId());
                 Corridor corridor = requireCorridor(layout, resolvedRequest.corridorId());
                 requiredExistingExteriorDoor(layout, corridor.levelZ(), resolvedRequest.doorRef());
-                DungeonMap.CorridorBoundaryDescription boundary = layout.describeCorridorBoundary(
+                CorridorBoundaryDescription boundary = layout.describeCorridorBoundary(
                         new DungeonSelectionRef.CorridorBoundaryRef(corridor.corridorId(), resolvedRequest.boundarySegment()),
                         corridor.levelZ());
                 if (boundary == null) {
@@ -135,7 +135,7 @@ public final class DungeonCorridorApplicationService {
             DungeonTransactionRunner.inTransaction(conn, () -> {
                 DungeonMap layout = requireLayout(conn, resolvedRequest.mapId());
                 Corridor corridor = requireCorridor(layout, resolvedRequest.corridorId());
-                DungeonMap.DoorDescription targetDoor = requiredExistingExteriorDoor(layout, corridor.levelZ(), resolvedRequest.targetDoorRef());
+                DoorDescription targetDoor = requiredExistingExteriorDoor(layout, corridor.levelZ(), resolvedRequest.targetDoorRef());
                 CorridorInput updatedInput = CorridorInputEditor.moveDoorAtBoundary(
                         corridor,
                         resolvedRequest.sourceBoundarySegment(),
@@ -240,7 +240,7 @@ public final class DungeonCorridorApplicationService {
         }
     }
 
-    private static DungeonMap.DoorDescription requiredExistingExteriorDoor(
+    private static DoorDescription requiredExistingExteriorDoor(
             DungeonMap layout,
             int levelZ,
             DoorRef doorRef
@@ -248,7 +248,7 @@ public final class DungeonCorridorApplicationService {
         if (layout == null || doorRef == null) {
             throw new IllegalArgumentException("Corridor endpoint requires an existing exterior door");
         }
-        DungeonMap.DoorDescription description = layout.describeDoor(doorRef);
+        DoorDescription description = layout.describeDoor(doorRef);
         if (description == null || description.levelZ() != levelZ || !description.isRoomExterior()) {
             throw new IllegalArgumentException("Korridore dürfen nur an vorhandene Außentüren andocken");
         }

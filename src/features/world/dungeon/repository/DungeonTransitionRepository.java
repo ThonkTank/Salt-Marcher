@@ -308,7 +308,7 @@ public final class DungeonTransitionRepository {
                 if (doorId == null) {
                     throw new SQLException("Transition door placement is missing its canonical door reference");
                 }
-                DungeonMap.DoorDescription description = layout == null ? null : layout.describeDoor(new DoorRef(doorId));
+                DoorDescription description = layout == null ? null : layout.describeDoor(new DoorRef(doorId));
                 if (description == null) {
                     throw new SQLException("Transition door placement references missing door " + doorId);
                 }

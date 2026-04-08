@@ -45,7 +45,7 @@ public final class TransitionConnectionBuilder {
             throw new IllegalArgumentException("Kein aktiver Dungeon geladen");
         }
         if (sourceRef instanceof DungeonSelectionRef.DoorRef doorRef) {
-            DungeonMap.DoorDescription description = layout.describeDoor(doorRef);
+            DoorDescription description = layout.describeDoor(doorRef);
             if (description == null || description.levelZ() != levelZ) {
                 throw new IllegalArgumentException("Tür-Übergänge benötigen eine vorhandene Tür");
             }

@@ -1,5 +1,6 @@
 package features.world.dungeon.shell.interaction;
 
+import features.world.dungeon.dungeonmap.api.DoorDescription;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridPoint;
@@ -198,7 +199,7 @@ public final class DungeonSelectionHighlightResolver {
         if (layout == null || doorRef == null) {
             return List.of();
         }
-        DungeonMap.DoorDescription description = layout.describeDoor(
+        DoorDescription description = layout.describeDoor(
                 new DoorRef(doorRef.doorId()));
         if (description == null || description.levelZ() != levelZ) {
             return List.of();

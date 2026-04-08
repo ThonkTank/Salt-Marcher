@@ -168,7 +168,7 @@ public final class CorridorTool implements EditorTool {
         }
         int levelZ = ctx == null || ctx.probe() == null ? mapState.activeProjectionLevel() : ctx.probe().levelZ();
         if (hit instanceof DungeonSelectionRef.DoorRef doorHit) {
-            DungeonMap.DoorDescription exteriorDoor = exteriorRoomDoor(layout, doorHit, levelZ);
+            DoorDescription exteriorDoor = exteriorRoomDoor(layout, doorHit, levelZ);
             if (exteriorDoor == null) {
                 if (hit instanceof DungeonSelectionRef.DoorRef || hit instanceof DungeonSelectionRef.CorridorRef) {
                     clearPendingEndpoint();
@@ -213,7 +213,7 @@ public final class CorridorTool implements EditorTool {
             return false;
         }
         if (hit instanceof DungeonSelectionRef.DoorRef doorHit) {
-            DungeonMap.DoorDescription description = corridorBoundaryDoor(layout, doorHit, mapState.activeProjectionLevel());
+            DoorDescription description = corridorBoundaryDoor(layout, doorHit, mapState.activeProjectionLevel());
             if (description == null) {
                 return false;
             }
@@ -477,23 +477,23 @@ public final class CorridorTool implements EditorTool {
         return hit == null ? null : new CorridorEndpoint(new DoorRef(hit.doorId()));
     }
 
-    private static DungeonMap.DoorDescription exteriorRoomDoor(
+    private static DoorDescription exteriorRoomDoor(
             DungeonMap layout,
             DungeonSelectionRef.DoorRef doorRef,
             int levelZ
     ) {
-        DungeonMap.DoorDescription description = layout == null || doorRef == null ? null : layout.describeDoor(doorRef);
+        DoorDescription description = layout == null || doorRef == null ? null : layout.describeDoor(doorRef);
         return description != null && description.levelZ() == levelZ && description.isRoomExterior()
                 ? description
                 : null;
     }
 
-    private static DungeonMap.DoorDescription corridorBoundaryDoor(
+    private static DoorDescription corridorBoundaryDoor(
             DungeonMap layout,
             DungeonSelectionRef.DoorRef doorRef,
             int levelZ
     ) {
-        DungeonMap.DoorDescription description = layout == null || doorRef == null ? null : layout.describeDoor(doorRef);
+        DoorDescription description = layout == null || doorRef == null ? null : layout.describeDoor(doorRef);
         return description != null && description.levelZ() == levelZ && description.isCorridorBoundary()
                 ? description
                 : null;
@@ -503,7 +503,7 @@ public final class CorridorTool implements EditorTool {
             DungeonMap layout,
             DungeonSelectionRef.DoorRef doorRef
     ) {
-        DungeonMap.DoorDescription description = layout == null || doorRef == null ? null : layout.describeDoor(doorRef);
+        DoorDescription description = layout == null || doorRef == null ? null : layout.describeDoor(doorRef);
         return description == null ? null : description.anchorSegment();
     }
 

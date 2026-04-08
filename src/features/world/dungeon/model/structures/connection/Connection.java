@@ -1,5 +1,6 @@
 package features.world.dungeon.model.structures.connection;
 
+import features.world.dungeon.dungeonmap.api.ConnectionSurfaceDescription;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.geometry.GridArea;
@@ -105,7 +106,7 @@ public interface Connection {
         if (layout == null || endpoint == null || anchorSegment == null) {
             return null;
         }
-        DungeonMap.ConnectionSurfaceDescription surface = layout.describeConnectionSurface(
+        ConnectionSurfaceDescription surface = layout.describeConnectionSurface(
                 endpoint,
                 anchorSegment,
                 levelZ());
@@ -118,7 +119,7 @@ public interface Connection {
         if (layout == null || endpoint == null || anchorSegment == null) {
             return null;
         }
-        DungeonMap.ConnectionSurfaceDescription surface = layout.describeConnectionSurface(
+        ConnectionSurfaceDescription surface = layout.describeConnectionSurface(
                 endpoint,
                 anchorSegment,
                 levelZ());
@@ -193,7 +194,7 @@ public interface Connection {
         if (layout == null || anchorSegment == null) {
             return null;
         }
-        DungeonMap.ConnectionSurfaceDescription surface = layout.describeConnectionSurface(
+        ConnectionSurfaceDescription surface = layout.describeConnectionSurface(
                 destinationEndpoint,
                 anchorSegment,
                 levelZ());

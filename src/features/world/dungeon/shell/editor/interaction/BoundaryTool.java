@@ -1,5 +1,6 @@
 package features.world.dungeon.shell.editor.interaction;
 
+import features.world.dungeon.dungeonmap.api.RoomBoundaryDescription;
 import features.world.dungeon.dungeonmap.cluster.application.DungeonClusterApplicationService;
 import features.world.dungeon.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
@@ -304,7 +305,7 @@ public final class BoundaryTool implements EditorTool {
         if (!(ref instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundaryRef)) {
             return null;
         }
-        DungeonMap.RoomBoundaryDescription description = layout.describeRoomBoundary(roomBoundaryRef, levelZ);
+        RoomBoundaryDescription description = layout.describeRoomBoundary(roomBoundaryRef, levelZ);
         return description == null ? null : description.clusterId();
     }
 
