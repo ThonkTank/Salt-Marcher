@@ -366,7 +366,8 @@ private fun classifyTaskInvocation(
     val receiverOwnerPackage = support.ownerPackageFor(receiverPackage, receiverRole)
     if (receiverTypeName in snapshot.knownTypeNames) {
         return when {
-            receiverRole == support.inputRole && invocation.arguments.isEmpty() ->
+            receiverRole == support.inputRole &&
+                support.isCanonicalInputAccessorInvocation(receiverTypeName, invocation, sourceFile.parsedSource, snapshot) ->
                 TaskCallClassification(
                     allowed = true,
                     description = "input accessor"
@@ -375,7 +376,7 @@ private fun classifyTaskInvocation(
             receiverRole == support.inputRole ->
                 TaskCallClassification(
                     allowed = false,
-                    description = "task input accessors must be zero-argument reads ($receiverTypeName.${methodSelect.identifier})"
+                    description = "task input accessors must be canonical input accessors ($receiverTypeName.${methodSelect.identifier})"
                 )
 
             receiverRole == support.taskRole ->
@@ -445,9 +446,12 @@ private fun isAllowedTaskInputAccessorInvocation(
     }
     val receiverTypeName = support.resolveProjectTypeName(methodSelect.expression, sourceFile.parsedSource, snapshot)
         ?: return false
-    val receiverPackage = receiverTypeName.substringBeforeLast('.')
-    val receiverRole = support.roleForDirectoryName(receiverPackage.substringAfterLast('.'))
-    return receiverRole == support.inputRole
+    return support.isCanonicalInputAccessorInvocation(
+        receiverTypeName = receiverTypeName,
+        invocation = invocation,
+        parsedSource = sourceFile.parsedSource,
+        snapshot = snapshot
+    )
 }
 
 private fun isAllowedTaskUtilityInvocation(invocation: MethodInvocationTree): Boolean {

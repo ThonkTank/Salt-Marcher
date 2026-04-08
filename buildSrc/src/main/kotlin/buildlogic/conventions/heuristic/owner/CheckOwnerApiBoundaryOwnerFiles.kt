@@ -19,10 +19,7 @@ import com.sun.source.tree.Tree
 import com.sun.source.tree.TypeCastTree
 import com.sun.source.tree.UnaryTree
 import com.sun.source.tree.VariableTree
-import javax.lang.model.element.ElementKind
-import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.Modifier
-import javax.lang.model.element.TypeElement
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.tasks.TaskProvider
@@ -1003,24 +1000,12 @@ private fun isCanonicalInputAccessorInvocation(
     snapshot: OwnerConventionSnapshot,
     support: OwnerConventionSupport
 ): Boolean {
-    if (support.inputApi(receiverTypeName, snapshot) == null || invocation.arguments.isNotEmpty()) {
-        return false
-    }
-    val methodElement = support.elementFor(invocation, sourceFile.parsedSource, snapshot) as? ExecutableElement ?: return false
-    return isCanonicalInputAccessorMethod(methodElement)
-}
-
-private fun isCanonicalInputAccessorMethod(methodElement: ExecutableElement): Boolean {
-    if (methodElement.parameters.isNotEmpty()) {
-        return false
-    }
-    val declaringType = methodElement.enclosingElement as? TypeElement ?: return false
-    if (declaringType.kind != ElementKind.RECORD) {
-        return false
-    }
-    return declaringType.recordComponents.any { component ->
-        component.simpleName.contentEquals(methodElement.simpleName)
-    }
+    return support.isCanonicalInputAccessorInvocation(
+        receiverTypeName = receiverTypeName,
+        invocation = invocation,
+        parsedSource = sourceFile.parsedSource,
+        snapshot = snapshot
+    )
 }
 
 private fun isAllowedUtilityInvocation(

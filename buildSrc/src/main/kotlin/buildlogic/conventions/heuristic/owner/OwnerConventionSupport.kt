@@ -1,9 +1,12 @@
 package buildlogic.conventions.heuristic.owner
 
+import com.sun.source.tree.MethodInvocationTree
 import com.sun.source.tree.Tree
 import com.sun.source.util.TreePath
 import java.io.File
+import javax.lang.model.element.ElementKind
 import javax.lang.model.element.Element
+import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.TypeElement
 import javax.lang.model.type.ArrayType
 import javax.lang.model.type.DeclaredType
@@ -301,6 +304,19 @@ class OwnerConventionSupport(private val project: Project) {
         return snapshot.catalog.repositoryApisByTypeName[typeName]
     }
 
+    internal fun isCanonicalInputAccessorInvocation(
+        receiverTypeName: String,
+        invocation: MethodInvocationTree,
+        parsedSource: OwnerConventionParsedJavaSource,
+        snapshot: OwnerConventionSnapshot
+    ): Boolean {
+        if (inputApi(receiverTypeName, snapshot) == null || invocation.arguments.isNotEmpty()) {
+            return false
+        }
+        val methodElement = elementFor(invocation, parsedSource, snapshot) as? ExecutableElement ?: return false
+        return isCanonicalInputAccessorMethod(methodElement)
+    }
+
     internal fun parsedType(typeName: String, snapshot: OwnerConventionSnapshot): OwnerConventionParsedJavaType? {
         return snapshot.parsedTypesByName[typeName]
     }
@@ -593,6 +609,19 @@ class OwnerConventionSupport(private val project: Project) {
 
     internal fun topLevelTypeName(element: Element?): String? {
         return topLevelTypeElement(element)?.qualifiedName?.toString()?.takeIf(String::isNotBlank)
+    }
+
+    private fun isCanonicalInputAccessorMethod(methodElement: ExecutableElement): Boolean {
+        if (methodElement.parameters.isNotEmpty()) {
+            return false
+        }
+        val declaringType = methodElement.enclosingElement as? TypeElement ?: return false
+        if (declaringType.kind != ElementKind.RECORD) {
+            return false
+        }
+        return declaringType.recordComponents.any { component ->
+            component.simpleName.contentEquals(methodElement.simpleName)
+        }
     }
 
     private fun addTypeName(

@@ -188,9 +188,11 @@ private fun stateInvocationReasons(
     val calleeOwnerPackage = support.ownerPackageFor(calleePackage, calleeRole)
     return when {
         calleeOwnerPackage == context.ownerPackage && calleeRole == support.stateRole -> emptyList()
-        calleeOwnerPackage == context.ownerPackage && calleeRole == support.inputRole && invocation.arguments.isEmpty() -> emptyList()
+        calleeOwnerPackage == context.ownerPackage &&
+            calleeRole == support.inputRole &&
+            support.isCanonicalInputAccessorInvocation(calleeTypeName, invocation, sourceFile.parsedSource, snapshot) -> emptyList()
         calleeOwnerPackage == context.ownerPackage && calleeRole == support.inputRole ->
-            listOf("${context.path} :: state bodies may read own input values only through zero-argument accessors ($memberName -> $calleeTypeName)")
+            listOf("${context.path} :: state bodies may read own input values only through canonical input accessors ($memberName -> $calleeTypeName)")
         calleeRole == support.repositoryRole ->
             listOf("${context.path} :: state bodies must not call repository APIs ($memberName -> $calleeTypeName)")
         calleeRole == support.ownerRole ->
