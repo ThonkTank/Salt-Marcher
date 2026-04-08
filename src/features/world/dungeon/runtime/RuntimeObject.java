@@ -157,9 +157,9 @@ public final class RuntimeObject {
             DungeonRuntimeNavigationSnapshot snapshot
     ) {
         if (snapshot == null || snapshot.isEmpty() || snapshot.cell() == null) {
-            return new ResolveNavigationInput.NavigationInput(null, null, 0, "");
+            return ResolveNavigationInput.NavigationInput.empty();
         }
-        return new ResolveNavigationInput.NavigationInput(
+        return ResolveNavigationInput.NavigationInput.navigation(
                 snapshot.mapId(),
                 snapshot.cell(),
                 snapshot.levelZ(),
