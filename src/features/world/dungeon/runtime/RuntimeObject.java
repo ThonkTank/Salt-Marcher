@@ -137,7 +137,7 @@ public final class RuntimeObject {
                 snapshot.mapId(),
                 snapshot.cell(),
                 snapshot.levelZ(),
-                snapshot.heading() == null ? "" : snapshot.heading().name());
+                headingName(snapshot));
     }
 
     private static LoadNavigationInput.NavigationInput toLoadNavigationInput(
@@ -150,7 +150,7 @@ public final class RuntimeObject {
                 snapshot.mapId(),
                 snapshot.cell(),
                 snapshot.levelZ(),
-                snapshot.heading() == null ? "" : snapshot.heading().name());
+                headingName(snapshot));
     }
 
     private static ResolveNavigationInput.NavigationInput toResolveNavigationInput(
@@ -163,7 +163,7 @@ public final class RuntimeObject {
                 snapshot.mapId(),
                 snapshot.cell(),
                 snapshot.levelZ(),
-                snapshot.heading() == null ? "" : snapshot.heading().name());
+                headingName(snapshot));
     }
 
     private static NavigateToCellInput.NavigationInput toNavigateToCellInput(
@@ -176,7 +176,7 @@ public final class RuntimeObject {
                 snapshot.mapId(),
                 snapshot.cell(),
                 snapshot.levelZ(),
-                snapshot.heading() == null ? "" : snapshot.heading().name());
+                headingName(snapshot));
     }
 
     private static NavigateInput.NavigationInput toNavigateInput(
@@ -189,7 +189,11 @@ public final class RuntimeObject {
                 snapshot.mapId(),
                 snapshot.cell(),
                 snapshot.levelZ(),
-                snapshot.heading() == null ? "" : snapshot.heading().name());
+                headingName(snapshot));
+    }
+
+    private static String headingName(DungeonRuntimeNavigationSnapshot snapshot) {
+        return snapshot.heading() == null ? "" : snapshot.heading().name();
     }
 
     private static DungeonRuntimeNavigationSnapshot toNavigationSnapshot(
