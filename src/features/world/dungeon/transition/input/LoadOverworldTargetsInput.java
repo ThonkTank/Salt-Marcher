@@ -9,5 +9,13 @@ public record LoadOverworldTargetsInput() {
         public TargetInput {
             label = label == null || label.isBlank() ? "Overworld-Ziel" : label.trim();
         }
+
+        public static TargetInput target(
+                long mapId,
+                long tileId,
+                String label
+        ) {
+            return new TargetInput(mapId, tileId, label);
+        }
     }
 }

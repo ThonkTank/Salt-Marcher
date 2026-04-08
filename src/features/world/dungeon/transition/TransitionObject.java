@@ -88,7 +88,7 @@ public final class TransitionObject {
             throw new IllegalArgumentException("input");
         }
         return features.world.api.read.ReadObject.loadOverworldTransitionTargets().stream()
-                .map(summary -> new LoadOverworldTargetsInput.TargetInput(
+                .map(summary -> LoadOverworldTargetsInput.TargetInput.target(
                         summary.mapId(),
                         summary.tileId(),
                         summary.label()))
