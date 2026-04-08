@@ -9,6 +9,7 @@
 - `ClusterObject` — public root owner seam for cluster-owned structures.
 - `Cluster`, `ClusterDefinitionRequest`, `ClusterMutationRequest`, `ClusterRewriteRequest` — canonical cluster-owned aggregate and write vocabulary.
 - `Cluster.rewritePaint(...)` and `Cluster.rewriteDelete(...)` — aggregate-owned rewrite entrypoints for paint and delete flows.
+- Cluster topology edits commit physical `Structure` first; room metadata is a cluster-internal automatic follow-up derived from the rewritten structure instead of a tool-owned source of truth.
 - `DungeonClusterApplicationService` — public cluster workflow seam for surface, floor, boundary, move, door-move, and bootstrap operations.
 - `DungeonMapApplicationService` — map-owned companion seam for cross-owner validation, reconciliation, floor-delete guards, and preview composition.
 - `DungeonClusterRepository` — canonical cluster persistence seam for rewrite persistence and rehydration.
@@ -17,6 +18,7 @@
 
 - Put public cross-owner cluster access on `ClusterObject` and keep cluster identity, structure-backed edits, and cluster-local invariants on `Cluster`.
 - Let persisted cluster writes converge on `DungeonClusterApplicationService` and reduce to `ClusterRewriteRequest` before persistence.
+- Let cluster rewrites remanage room metadata after topology changes; tools submit topology intent and do not hand-author room creation as a separate truth source.
 - Route map-scoped validation, rebound reconciliation, floor-delete guards, and editor previews through `DungeonMapApplicationService`.
 - Keep cluster persistence focused on cluster rows and cluster-owned structure references; keep room metadata in the room owner.
 

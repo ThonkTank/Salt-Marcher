@@ -79,6 +79,9 @@ class OwnerConventionSupport(private val project: Project) {
     private val srcRootPath = projectDir.resolve("src").toPath()
     private val reservedRequestStemSuffixes = setOf("Input", "Task", "Request", "State", "Repository", "Object", "Owner")
     private val layerRoles = setOf(inputRole, taskRole, repositoryRole, stateRole)
+    private val sharedSnapshot: OwnerConventionSnapshot by lazy {
+        buildSnapshot()
+    }
 
     internal fun registerCheck(
         taskName: String,
@@ -331,7 +334,7 @@ class OwnerConventionSupport(private val project: Project) {
         applicableRoles: Set<String>?,
         reasonCollector: (OwnerConventionSourceFile, OwnerConventionSnapshot) -> List<String>
     ): List<String> {
-        val snapshot = snapshot()
+        val snapshot = sharedSnapshot
         if (snapshot.touchedPaths.isEmpty()) {
             return emptyList()
         }
@@ -343,7 +346,7 @@ class OwnerConventionSupport(private val project: Project) {
             .toList()
     }
 
-    private fun snapshot(): OwnerConventionSnapshot {
+    private fun buildSnapshot(): OwnerConventionSnapshot {
         val touchedPaths = touchedJavaPaths()
         val allSourceFiles = project.fileTree("src") {
             include("**/*.java")
