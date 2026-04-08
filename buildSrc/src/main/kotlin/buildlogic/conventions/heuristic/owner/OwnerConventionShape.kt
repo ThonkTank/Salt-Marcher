@@ -141,9 +141,16 @@ internal fun OwnerConventionSupport.analyzeOwnerSurfaceShape(
             reasons += "${context.path} :: owner requests must not overload $methodName"
         }
     primaryType.methods
+        .filter { Modifier.PUBLIC !in it.modifiers && Modifier.PRIVATE in it.modifiers }
+        .groupBy { it.name }
+        .filterValues { methods -> methods.size > 1 }
+        .forEach { (methodName, _) ->
+            reasons += "${context.path} :: owner private consumer methods must not overload $methodName"
+        }
+    primaryType.methods
         .filter { Modifier.PUBLIC !in it.modifiers }
         .forEach { method ->
-            reasons += "${context.path} :: owner files must not declare helper methods like ${method.name}; only public request methods and constructors are allowed"
+            reasons += ownerPrivateConsumerShapeReasons(context.path, method)
         }
     publicMethods.forEach { method ->
         reasons += ownerRequestShapeReasons(sourceFile, method, snapshot, this)
@@ -167,6 +174,23 @@ internal fun OwnerConventionSupport.analyzeOwnerSurfaceShape(
         reasons = reasons.distinct(),
         model = model
     )
+}
+
+private fun ownerPrivateConsumerShapeReasons(
+    path: String,
+    method: OwnerConventionParsedJavaMethod
+): List<String> {
+    val reasons = mutableListOf<String>()
+    if (Modifier.PRIVATE !in method.modifiers) {
+        reasons += "$path :: owner helper methods must stay private terminal consumers (${method.name})"
+    }
+    if (Modifier.STATIC in method.modifiers) {
+        reasons += "$path :: owner private consumer methods must be instance methods (${method.name})"
+    }
+    if (method.tree.returnType?.toString() != "void") {
+        reasons += "$path :: owner private consumer methods must return void (${method.name})"
+    }
+    return reasons
 }
 
 internal fun OwnerConventionSupport.analyzeInputShape(

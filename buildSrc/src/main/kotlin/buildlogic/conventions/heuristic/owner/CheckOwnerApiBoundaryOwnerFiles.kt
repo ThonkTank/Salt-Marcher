@@ -30,7 +30,7 @@ fun Project.registerCheckOwnerApiBoundaryOwnerFilesTask(
     taskName = "checkOwnerApiBoundaryOwnerFiles",
     taskDescription = "Fail when touched owner entrypoint files drift away from the canonical *Object seam rules.",
     failureHeader = "Owner entrypoint drift detected.",
-    failureSummary = "Touched owner files must remain single-file public *Object seams that expose only canonical owner request orchestration.",
+    failureSummary = "Touched owner files must remain single-file public *Object seams that expose only canonical request pass-through, routing, and private terminal consumption.",
     applicableRoles = setOf(support.ownerRole)
 ) { sourceFile, snapshot ->
     analyzeOwnerFile(sourceFile, snapshot, support).reasons
@@ -46,6 +46,11 @@ private data class OwnerCallClassification(
     val allowed: Boolean,
     val description: String
 )
+
+private enum class OwnerBodyMode {
+    REQUEST,
+    PRIVATE_CONSUMER
+}
 
 internal fun analyzeOwnerFile(
     sourceFile: OwnerConventionSourceFile,
@@ -73,7 +78,19 @@ internal fun analyzeOwnerFile(
                 method = method,
                 fieldProjectTypes = fieldProjectTypes
             )
-    }
+        }
+    primaryType.methods
+        .filter { Modifier.PUBLIC !in it.modifiers && Modifier.PRIVATE in it.modifiers }
+        .forEach { method ->
+            reasons += ownerPrivateConsumerBodyReasons(
+                sourceFile = sourceFile,
+                snapshot = snapshot,
+                support = support,
+                primaryType = primaryType,
+                method = method,
+                fieldProjectTypes = fieldProjectTypes
+            )
+        }
     return OwnerConventionAnalysis(
         reasons = reasons.distinct(),
         model = shapeAnalysis.model
@@ -193,6 +210,30 @@ private fun validateOwnerStatement(
     environment: OwnerMethodEnvironment,
     requestStem: String
 ): List<String> {
+    return validateOwnerStatement(
+        statement = statement,
+        sourceFile = sourceFile,
+        snapshot = snapshot,
+        support = support,
+        primaryType = primaryType,
+        fieldProjectTypes = fieldProjectTypes,
+        environment = environment,
+        requestStem = requestStem,
+        bodyMode = OwnerBodyMode.REQUEST
+    )
+}
+
+private fun validateOwnerStatement(
+    statement: StatementTree,
+    sourceFile: OwnerConventionSourceFile,
+    snapshot: OwnerConventionSnapshot,
+    support: OwnerConventionSupport,
+    primaryType: OwnerConventionParsedJavaType,
+    fieldProjectTypes: Map<String, String>,
+    environment: OwnerMethodEnvironment,
+    requestStem: String?,
+    bodyMode: OwnerBodyMode
+): List<String> {
     val context = sourceFile.context
     return when (statement.kind) {
         Tree.Kind.VARIABLE -> {
@@ -207,7 +248,8 @@ private fun validateOwnerStatement(
                     primaryType = primaryType,
                     fieldProjectTypes = fieldProjectTypes,
                     environment = environment,
-                    requestStem = requestStem
+                    requestStem = requestStem,
+                    bodyMode = bodyMode
                 )
             }
             val declaredTypeName = support.resolveProjectTypeName(variable.type, sourceFile.parsedSource, snapshot)
@@ -230,7 +272,8 @@ private fun validateOwnerStatement(
                 primaryType = primaryType,
                 fieldProjectTypes = fieldProjectTypes,
                 environment = environment,
-                requestStem = requestStem
+                requestStem = requestStem,
+                bodyMode = bodyMode
             )
         }
 
@@ -238,6 +281,8 @@ private fun validateOwnerStatement(
             val returnTree = statement as ReturnTree
             if (returnTree.expression == null) {
                 emptyList()
+            } else if (bodyMode == OwnerBodyMode.PRIVATE_CONSUMER) {
+                listOf("${context.path} :: owner private consumer methods must not return values")
             } else {
                 validateOwnerValueExpression(
                     expression = returnTree.expression,
@@ -247,7 +292,8 @@ private fun validateOwnerStatement(
                     primaryType = primaryType,
                     fieldProjectTypes = fieldProjectTypes,
                     environment = environment,
-                    requestStem = requestStem
+                    requestStem = requestStem,
+                    bodyMode = bodyMode
                 )
             }
         }
@@ -260,7 +306,8 @@ private fun validateOwnerStatement(
             primaryType = primaryType,
             fieldProjectTypes = fieldProjectTypes,
             environment = environment,
-            requestStem = requestStem
+            requestStem = requestStem,
+            bodyMode = bodyMode
         )
 
         Tree.Kind.THROW -> validateOwnerThrowStatement(
@@ -271,7 +318,8 @@ private fun validateOwnerStatement(
             primaryType = primaryType,
             fieldProjectTypes = fieldProjectTypes,
             environment = environment,
-            requestStem = requestStem
+            requestStem = requestStem,
+            bodyMode = bodyMode
         )
 
         Tree.Kind.BLOCK -> (statement as BlockTree).statements.flatMap { nested ->
@@ -283,11 +331,12 @@ private fun validateOwnerStatement(
                 primaryType = primaryType,
                 fieldProjectTypes = fieldProjectTypes,
                 environment = environment,
-                requestStem = requestStem
+                requestStem = requestStem,
+                bodyMode = bodyMode
             )
         }
 
-        else -> listOf("${context.path} :: owner request bodies may contain only guard clauses, local bindings, orchestration calls, returns, and throws (${statement.kind})")
+        else -> listOf("${context.path} :: owner bodies may contain only pass-through bindings, simple routing, terminal consumption, returns, and throws (${statement.kind})")
     }
 }
 
@@ -299,7 +348,8 @@ private fun validateOwnerIfStatement(
     primaryType: OwnerConventionParsedJavaType,
     fieldProjectTypes: Map<String, String>,
     environment: OwnerMethodEnvironment,
-    requestStem: String
+    requestStem: String?,
+    bodyMode: OwnerBodyMode
 ): List<String> {
     val context = sourceFile.context
     val reasons = mutableListOf<String>()
@@ -314,7 +364,8 @@ private fun validateOwnerIfStatement(
         primaryType,
         fieldProjectTypes,
         environment,
-        requestStem
+        requestStem,
+        bodyMode
     )
     statement.elseStatement?.let { elseStatement ->
         reasons += validateGuardBranch(
@@ -325,7 +376,8 @@ private fun validateOwnerIfStatement(
             primaryType,
             fieldProjectTypes,
             environment,
-            requestStem
+            requestStem,
+            bodyMode
         )
     }
     return reasons
@@ -339,7 +391,8 @@ private fun validateGuardBranch(
     primaryType: OwnerConventionParsedJavaType,
     fieldProjectTypes: Map<String, String>,
     environment: OwnerMethodEnvironment,
-    requestStem: String
+    requestStem: String?,
+    bodyMode: OwnerBodyMode
 ): List<String> {
     return when (statement.kind) {
         Tree.Kind.BLOCK -> (statement as BlockTree).statements.flatMap { nested ->
@@ -351,12 +404,12 @@ private fun validateGuardBranch(
                 primaryType,
                 fieldProjectTypes,
                 environment,
-                requestStem
+                requestStem,
+                bodyMode
             )
         }
 
-        Tree.Kind.RETURN,
-        Tree.Kind.THROW -> validateOwnerStatement(
+        else -> validateOwnerStatement(
             statement,
             sourceFile,
             snapshot,
@@ -364,10 +417,9 @@ private fun validateGuardBranch(
             primaryType,
             fieldProjectTypes,
             environment,
-            requestStem
+            requestStem,
+            bodyMode
         )
-
-        else -> listOf("${sourceFile.context.path} :: owner conditionals may only guard with return or throw branches")
     }
 }
 
@@ -379,7 +431,8 @@ private fun validateOwnerThrowStatement(
     primaryType: OwnerConventionParsedJavaType,
     fieldProjectTypes: Map<String, String>,
     environment: OwnerMethodEnvironment,
-    requestStem: String
+    requestStem: String?,
+    bodyMode: OwnerBodyMode
 ): List<String> {
     return validateOwnerValueExpression(
         expression = statement.expression,
@@ -389,7 +442,8 @@ private fun validateOwnerThrowStatement(
         primaryType = primaryType,
         fieldProjectTypes = fieldProjectTypes,
         environment = environment,
-        requestStem = requestStem
+        requestStem = requestStem,
+        bodyMode = bodyMode
     )
 }
 
@@ -401,11 +455,24 @@ private fun validateOwnerCallExpressionStatement(
     primaryType: OwnerConventionParsedJavaType,
     fieldProjectTypes: Map<String, String>,
     environment: OwnerMethodEnvironment,
-    requestStem: String
+    requestStem: String?,
+    bodyMode: OwnerBodyMode
 ): List<String> {
     val context = sourceFile.context
     if (expression !is MethodInvocationTree) {
-        return listOf("${context.path} :: owner expression statements must be direct orchestration calls")
+        return listOf("${context.path} :: owner expression statements must be direct delegation or terminal consumer calls")
+    }
+    if (bodyMode == OwnerBodyMode.REQUEST &&
+        isAllowedPrivateConsumerInvocation(expression, primaryType, sourceFile, snapshot, support, environment)
+    ) {
+        return expression.arguments.flatMap { argument ->
+            validatePassThroughArgument(argument, sourceFile, snapshot, support, primaryType, fieldProjectTypes, environment, requestStem, bodyMode)
+        }
+    }
+    if (bodyMode == OwnerBodyMode.PRIVATE_CONSUMER &&
+        isAllowedPrivateConsumerTerminalInvocation(expression, sourceFile, snapshot, support, environment, fieldProjectTypes)
+    ) {
+        return emptyList()
     }
     val classification = classifyOwnerInvocation(
         invocation = expression,
@@ -420,8 +487,11 @@ private fun validateOwnerCallExpressionStatement(
     if (!classification.allowed) {
         return listOf("${context.path} :: ${classification.description}")
     }
+    if (bodyMode == OwnerBodyMode.PRIVATE_CONSUMER) {
+        return listOf("${context.path} :: owner private consumer methods must not delegate into canonical task/state/repository seams")
+    }
     return expression.arguments.flatMap { argument ->
-        validatePassThroughArgument(argument, sourceFile, snapshot, support, primaryType, fieldProjectTypes, environment, requestStem)
+        validatePassThroughArgument(argument, sourceFile, snapshot, support, primaryType, fieldProjectTypes, environment, requestStem, bodyMode)
     }
 }
 
@@ -433,7 +503,8 @@ private fun validateOwnerValueExpression(
     primaryType: OwnerConventionParsedJavaType,
     fieldProjectTypes: Map<String, String>,
     environment: OwnerMethodEnvironment,
-    requestStem: String
+    requestStem: String?,
+    bodyMode: OwnerBodyMode
 ): List<String> {
     val context = sourceFile.context
     return when (expression.kind) {
@@ -464,7 +535,8 @@ private fun validateOwnerValueExpression(
             primaryType,
             fieldProjectTypes,
             environment,
-            requestStem
+            requestStem,
+            bodyMode
         )
 
         Tree.Kind.TYPE_CAST -> validateOwnerValueExpression(
@@ -475,7 +547,8 @@ private fun validateOwnerValueExpression(
             primaryType,
             fieldProjectTypes,
             environment,
-            requestStem
+            requestStem,
+            bodyMode
         )
 
         Tree.Kind.NEW_CLASS -> validateOwnerNewClassExpression(
@@ -486,7 +559,8 @@ private fun validateOwnerValueExpression(
             primaryType,
             fieldProjectTypes,
             environment,
-            requestStem
+            requestStem,
+            bodyMode
         )
 
         Tree.Kind.METHOD_INVOCATION -> {
@@ -503,14 +577,16 @@ private fun validateOwnerValueExpression(
             )
             if (!classification.allowed) {
                 listOf("${context.path} :: ${classification.description}")
+            } else if (bodyMode == OwnerBodyMode.PRIVATE_CONSUMER) {
+                listOf("${context.path} :: owner private consumer methods must not return delegated workflow results")
             } else {
                 invocation.arguments.flatMap { argument ->
-                    validatePassThroughArgument(argument, sourceFile, snapshot, support, primaryType, fieldProjectTypes, environment, requestStem)
+                    validatePassThroughArgument(argument, sourceFile, snapshot, support, primaryType, fieldProjectTypes, environment, requestStem, bodyMode)
                 }
             }
         }
 
-        else -> listOf("${context.path} :: owner values must stay on pass-through references, input construction, or allowed orchestration results (${expression.kind})")
+        else -> listOf("${context.path} :: owner values must stay on pass-through references, input construction, or delegated final results (${expression.kind})")
     }
 }
 
@@ -522,7 +598,8 @@ private fun validateOwnerNewClassExpression(
     primaryType: OwnerConventionParsedJavaType,
     fieldProjectTypes: Map<String, String>,
     environment: OwnerMethodEnvironment,
-    requestStem: String
+    requestStem: String?,
+    bodyMode: OwnerBodyMode
 ): List<String> {
     val context = sourceFile.context
     val projectTypeName = support.resolveProjectTypeName(expression.identifier, sourceFile.parsedSource, snapshot)
@@ -537,7 +614,7 @@ private fun validateOwnerNewClassExpression(
         }
     }
     return expression.arguments.flatMap { argument ->
-        validatePassThroughArgument(argument, sourceFile, snapshot, support, primaryType, fieldProjectTypes, environment, requestStem)
+        validatePassThroughArgument(argument, sourceFile, snapshot, support, primaryType, fieldProjectTypes, environment, requestStem, bodyMode)
     }
 }
 
@@ -549,7 +626,8 @@ private fun validatePassThroughArgument(
     primaryType: OwnerConventionParsedJavaType,
     fieldProjectTypes: Map<String, String>,
     environment: OwnerMethodEnvironment,
-    requestStem: String
+    requestStem: String?,
+    bodyMode: OwnerBodyMode
 ): List<String> {
     if (isAllowedPassThroughValue(expression, sourceFile, snapshot, support, environment)) {
         return emptyList()
@@ -562,7 +640,8 @@ private fun validatePassThroughArgument(
         primaryType = primaryType,
         fieldProjectTypes = fieldProjectTypes,
         environment = environment,
-        requestStem = requestStem
+        requestStem = requestStem,
+        bodyMode = bodyMode
     )
 }
 
@@ -574,7 +653,7 @@ private fun classifyOwnerInvocation(
     primaryType: OwnerConventionParsedJavaType,
     fieldProjectTypes: Map<String, String>,
     environment: OwnerMethodEnvironment,
-    requestStem: String
+    requestStem: String?
 ): OwnerCallClassification {
     val context = sourceFile.context
     val methodSelect = invocation.methodSelect
@@ -622,6 +701,12 @@ private fun classifyOwnerInvocation(
     val receiverOwnerPackage = support.ownerPackageFor(receiverPackage, receiverRole)
     return when {
         receiverOwnerPackage == context.ownerPackage && receiverRole == support.taskRole -> {
+            if (requestStem == null) {
+                return OwnerCallClassification(
+                    allowed = false,
+                    description = "owner private consumer methods must not delegate into task seams"
+                )
+            }
             val expectedTaskType = support.ownerRequestTaskTypeName(context.ownerPackage, requestStem)
             val taskApi = snapshot.catalog.taskApisByTypeName[receiverTypeName]
             if (receiverTypeName != expectedTaskType) {
@@ -942,6 +1027,109 @@ private fun isCanonicalInputAccessorInvocation(
         parsedSource = sourceFile.parsedSource,
         snapshot = snapshot
     )
+}
+
+private fun ownerPrivateConsumerBodyReasons(
+    sourceFile: OwnerConventionSourceFile,
+    snapshot: OwnerConventionSnapshot,
+    support: OwnerConventionSupport,
+    primaryType: OwnerConventionParsedJavaType,
+    method: OwnerConventionParsedJavaMethod,
+    fieldProjectTypes: Map<String, String>
+): List<String> {
+    val body = method.body ?: return listOf("${sourceFile.context.path} :: owner private consumer methods must declare a body (${method.name})")
+    val environment = OwnerMethodEnvironment(
+        requestParameterName = "",
+        requestParameterTypeName = ""
+    )
+    method.parameters.forEach { parameter ->
+        support.resolveProjectTypeName(parameter.tree.type, sourceFile.parsedSource, snapshot)?.let { typeName ->
+            environment.localProjectTypes[parameter.name] = typeName
+        }
+    }
+    return body.statements.flatMap { statement ->
+        validateOwnerStatement(
+            statement = statement,
+            sourceFile = sourceFile,
+            snapshot = snapshot,
+            support = support,
+            primaryType = primaryType,
+            fieldProjectTypes = fieldProjectTypes,
+            environment = environment,
+            requestStem = null,
+            bodyMode = OwnerBodyMode.PRIVATE_CONSUMER
+        )
+    }
+}
+
+private fun isAllowedPrivateConsumerInvocation(
+    invocation: MethodInvocationTree,
+    primaryType: OwnerConventionParsedJavaType,
+    sourceFile: OwnerConventionSourceFile,
+    snapshot: OwnerConventionSnapshot,
+    support: OwnerConventionSupport,
+    environment: OwnerMethodEnvironment
+): Boolean {
+    val methodName = when (val methodSelect = invocation.methodSelect) {
+        is IdentifierTree -> methodSelect.name.toString()
+        is MemberSelectTree -> {
+            val receiverTypeName = projectTypeNameForExpression(
+                expression = methodSelect.expression,
+                sourceFile = sourceFile,
+                snapshot = snapshot,
+                support = support,
+                fieldProjectTypes = emptyMap(),
+                environment = environment
+            )
+            val currentTypeName = "${sourceFile.context.packageName}.${primaryType.name}"
+            if (receiverTypeName != currentTypeName) {
+                return false
+            }
+            methodSelect.identifier.toString()
+        }
+
+        else -> return false
+    }
+    val consumerMethod = primaryType.methods.singleOrNull { candidate ->
+        candidate.name == methodName && Modifier.PRIVATE in candidate.modifiers
+    } ?: return false
+    if (Modifier.STATIC in consumerMethod.modifiers || consumerMethod.tree.returnType?.toString() != "void") {
+        return false
+    }
+    return invocation.arguments.all { argument ->
+        isAllowedPassThroughValue(argument, sourceFile, snapshot, support, environment)
+    }
+}
+
+private fun isAllowedPrivateConsumerTerminalInvocation(
+    invocation: MethodInvocationTree,
+    sourceFile: OwnerConventionSourceFile,
+    snapshot: OwnerConventionSnapshot,
+    support: OwnerConventionSupport,
+    environment: OwnerMethodEnvironment,
+    fieldProjectTypes: Map<String, String>
+): Boolean {
+    val methodSelect = invocation.methodSelect as? MemberSelectTree ?: return false
+    if (isAllowedInputAccessorInvocation(methodSelect.expression, invocation, sourceFile, snapshot, support, environment)) {
+        return false
+    }
+    if (isAllowedUtilityInvocation(invocation, sourceFile, snapshot, support, environment)) {
+        return false
+    }
+    val receiverTypeName = projectTypeNameForExpression(
+        expression = methodSelect.expression,
+        sourceFile = sourceFile,
+        snapshot = snapshot,
+        support = support,
+        fieldProjectTypes = fieldProjectTypes,
+        environment = environment
+    )
+    if (receiverTypeName != null) {
+        return false
+    }
+    return invocation.arguments.all { argument ->
+        isAllowedPassThroughValue(argument, sourceFile, snapshot, support, environment)
+    }
 }
 
 private fun isAllowedUtilityInvocation(
