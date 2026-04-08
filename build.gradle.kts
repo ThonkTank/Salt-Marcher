@@ -777,6 +777,219 @@ val checkFeatureApiBoundaryConvention by tasks.registering {
     }
 }
 
+val checkOwnerApiBoundaryConvention by tasks.registering {
+    group = "verification"
+    description = "Fail when touched files bypass owner api packages, skip owner hierarchy edges, or place subowners beneath sanctioned owner-internal layers."
+
+    val projectRoot = layout.projectDirectory.asFile.toPath()
+    val projectDirFile = layout.projectDirectory.asFile
+    val importPattern = Regex("""^\s*import\s+(?:static\s+)?([a-zA-Z0-9_.*]+);""", RegexOption.MULTILINE)
+    val packagePattern = Regex("""^\s*package\s+([a-zA-Z0-9_.]+);""", RegexOption.MULTILINE)
+    val transparentLayers = setOf(
+        "model",
+        "application",
+        "tasks",
+        "types",
+        "repository",
+        "state",
+        "ui",
+        "api",
+        "bootstrap"
+    )
+
+    fun gitStdout(vararg args: String): String {
+        val process = ProcessBuilder(listOf("git", *args))
+            .directory(projectDirFile)
+            .redirectErrorStream(true)
+            .start()
+        val output = process.inputStream.bufferedReader().use { reader -> reader.readText() }
+        val exitCode = process.waitFor()
+        if (exitCode != 0) {
+            throw GradleException(
+                "Git command failed (${args.joinToString(" ")}).\n$output"
+            )
+        }
+        return output.trim()
+    }
+
+    fun gitLines(vararg args: String): List<String> {
+        return gitStdout(*args)
+            .lines()
+            .map(String::trim)
+            .filter(String::isNotBlank)
+    }
+
+    fun ownerPackagePrefix(packageName: String?): String? {
+        if (packageName.isNullOrBlank()) {
+            return null
+        }
+        val segments = packageName.split('.')
+        if (segments.size < 2 || segments[0] != "features") {
+            return null
+        }
+        val ownerSegments = mutableListOf(segments[0], segments[1])
+        var index = 2
+        while (index < segments.size && segments[index] !in transparentLayers) {
+            ownerSegments += segments[index]
+            index++
+        }
+        return ownerSegments.joinToString(".")
+    }
+
+    fun parentOwnerPackagePrefix(ownerPackagePrefix: String?): String? {
+        if (ownerPackagePrefix.isNullOrBlank()) {
+            return null
+        }
+        val segments = ownerPackagePrefix.split('.')
+        return if (segments.size <= 2) {
+            null
+        } else {
+            segments.dropLast(1).joinToString(".")
+        }
+    }
+
+    fun apiPackagePrefix(ownerPackagePrefix: String): String {
+        return "$ownerPackagePrefix.api"
+    }
+
+    fun importedPackageName(imported: String, knownPackages: Set<String>): String? {
+        val normalizedImport = imported.removeSuffix(".*")
+        if (!normalizedImport.startsWith("features.")) {
+            return null
+        }
+        var candidate = normalizedImport
+        while (true) {
+            if (candidate in knownPackages) {
+                return candidate
+            }
+            val lastDot = candidate.lastIndexOf('.')
+            if (lastDot < 0) {
+                return null
+            }
+            candidate = candidate.substring(0, lastDot)
+        }
+    }
+
+    fun nestedOwnerPlacementReason(packageName: String?): String? {
+        if (packageName.isNullOrBlank()) {
+            return null
+        }
+        val segments = packageName.split('.')
+        if (segments.size < 3 || segments[0] != "features") {
+            return null
+        }
+        val firstLayerIndex = (2 until segments.size).firstOrNull { segments[it] in transparentLayers } ?: return null
+        val laterLayerIndex = (firstLayerIndex + 1 until segments.size).firstOrNull { segments[it] in transparentLayers }
+            ?: return null
+        return "$packageName :: subowners must sit directly under their owner, not beneath ${segments[firstLayerIndex]}"
+    }
+
+    fun isNeighbor(sourceOwnerPackagePrefix: String?, targetOwnerPackagePrefix: String): Boolean {
+        if (sourceOwnerPackagePrefix == null) {
+            return parentOwnerPackagePrefix(targetOwnerPackagePrefix) == null
+        }
+        val sourceParent = parentOwnerPackagePrefix(sourceOwnerPackagePrefix)
+        val targetParent = parentOwnerPackagePrefix(targetOwnerPackagePrefix)
+        if (sourceParent == targetOwnerPackagePrefix) {
+            return true
+        }
+        if (targetParent == sourceOwnerPackagePrefix) {
+            return true
+        }
+        return sourceParent != null && sourceParent == targetParent
+    }
+
+    fun touchedJavaPaths(): Set<String> {
+        val mergeBase = gitStdout("merge-base", "HEAD", "origin/main")
+        val changed = linkedSetOf<String>()
+        listOf(
+            gitLines("diff", "--name-only", "--diff-filter=ACMR", "$mergeBase..HEAD", "--", "src"),
+            gitLines("diff", "--name-only", "--cached", "--diff-filter=ACMR", "--", "src"),
+            gitLines("diff", "--name-only", "--diff-filter=ACMR", "--", "src"),
+            gitLines("ls-files", "--others", "--exclude-standard", "--", "src")
+        ).forEach { lines ->
+            lines.asSequence()
+                .filter { line -> line.endsWith(".java") }
+                .forEach(changed::add)
+        }
+        return changed
+    }
+
+    doLast {
+        val touchedPaths = touchedJavaPaths()
+        if (touchedPaths.isEmpty()) {
+            return@doLast
+        }
+        val knownPackages = fileTree("src") {
+            include("**/*.java")
+        }.files
+            .mapNotNull { sourceFile ->
+                packagePattern.find(sourceFile.readText())?.groupValues?.get(1)
+            }
+            .toSet()
+
+        val offenders = fileTree("src") {
+            include("**/*.java")
+        }.files
+            .asSequence()
+            .map { sourceFile ->
+                val path = projectRoot.relativize(sourceFile.toPath()).toString().replace('\\', '/')
+                path to sourceFile
+            }
+            .filter { (path, _) -> path in touchedPaths }
+            .flatMap { (path, sourceFile) ->
+                val sourceText = sourceFile.readText()
+                val sourcePackage = packagePattern.find(sourceText)?.groupValues?.get(1)
+                val sourceOwner = ownerPackagePrefix(sourcePackage)
+                val packagePlacementOffender = nestedOwnerPlacementReason(sourcePackage)?.let { reason ->
+                    sequenceOf("$path :: $reason")
+                } ?: emptySequence()
+                val importOffenders = importPattern.findAll(sourceText)
+                    .map { match -> match.groupValues[1] }
+                    .mapNotNull { imported ->
+                        val importedPackage = importedPackageName(imported, knownPackages) ?: return@mapNotNull null
+                        val targetOwner = ownerPackagePrefix(importedPackage) ?: return@mapNotNull null
+                        if (sourceOwner == targetOwner) {
+                            return@mapNotNull null
+                        }
+                        val apiPrefix = apiPackagePrefix(targetOwner)
+                        val usesApiPackage = imported == apiPrefix || imported.startsWith("$apiPrefix.")
+                        val neighbor = isNeighbor(sourceOwner, targetOwner)
+                        if (usesApiPackage && neighbor) {
+                            return@mapNotNull null
+                        }
+                        val sourceLabel = sourceOwner ?: "<external>"
+                        val reason = buildString {
+                            if (!usesApiPackage) {
+                                append("foreign owner imports must go through ")
+                                append(apiPrefix)
+                            }
+                            if (!neighbor) {
+                                if (isNotEmpty()) {
+                                    append("; ")
+                                }
+                                append("imports may cross only one owner edge")
+                            }
+                        }
+                        "$path -> $imported :: $sourceLabel -> $targetOwner :: $reason"
+                    }
+                packagePlacementOffender + importOffenders
+            }
+            .sorted()
+            .toList()
+
+        if (offenders.isNotEmpty()) {
+            val details = offenders.joinToString(separator = "\n") { offender -> " - $offender" }
+            throw GradleException(
+                "Owner api boundary drift detected.\n" +
+                "Touched files may only import foreign owners through the target owner's api package,\n" +
+                "each import may cross at most one owner edge, and subowners must sit directly under their owner.\n" +
+                "Offending imports:\n$details"
+            )
+        }
+    }
+}
+
 val checkDungeonEditorArchitectureConvention by tasks.registering {
     group = "verification"
     description = "Fail when dungeonmap packages drift across forbidden architecture boundaries."
@@ -938,12 +1151,51 @@ val checkDungeonGeometryConvention by tasks.registering {
     }
 }
 
+val deleteEmptySourceDirectories by tasks.registering {
+    group = "build setup"
+    description = "Delete empty source directories left behind by refactors."
+
+    val projectRoot = layout.projectDirectory.asFile.toPath()
+    val sourceRoots = listOf("src", "resources")
+
+    doLast {
+        val deletedDirectories = sourceRoots.asSequence()
+            .map(layout.projectDirectory::dir)
+            .map { it.asFile }
+            .filter(File::exists)
+            .flatMap { root ->
+                root.walkBottomUp()
+                    .filter(File::isDirectory)
+                    .filter { directory -> directory != root }
+                    .filter { directory -> directory.listFiles()?.isEmpty() == true }
+                    .onEach(File::delete)
+                    .map { directory ->
+                        projectRoot.relativize(directory.toPath()).toString().replace('\\', '/')
+                    }
+            }
+            .sorted()
+            .toList()
+
+        if (deletedDirectories.isNotEmpty()) {
+            logger.lifecycle(
+                "Deleted empty source directories:\n{}",
+                deletedDirectories.joinToString(separator = "\n") { " - $it" }
+            )
+        }
+    }
+}
+
 tasks.named("check") {
     dependsOn(checkNoCompiledArtifactsInSource)
     dependsOn(checkNoStdStreamsInFeatureServicesAndRepositories)
     dependsOn(checkRepositorySqlExceptionConvention)
     dependsOn(checkUiAsyncSubmissionConvention)
     dependsOn(checkFeatureApiBoundaryConvention)
+    dependsOn(checkOwnerApiBoundaryConvention)
     dependsOn(checkDungeonEditorArchitectureConvention)
     dependsOn(checkDungeonGeometryConvention)
+}
+
+tasks.named("build") {
+    dependsOn(deleteEmptySourceDirectories)
 }

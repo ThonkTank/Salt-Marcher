@@ -18,14 +18,17 @@
 - `application/DungeonClusterApplicationService.ClusterMoveRequest`, `moveCluster(...)` — public cluster workflow seam for persisted cluster translation.
 - `application/DungeonClusterApplicationService.ClusterDoorMoveRequest`, `moveDoor(...)` — public cluster workflow seam for persisted local-door moves.
 - `application/DungeonClusterApplicationService.ClusterBootstrapRequest`, `bootstrapDefaultCluster(...)` — public cluster workflow seam for first-room bootstrap in a new map transaction.
-- `repository/DungeonClusterRepository` — cluster row and structure-reference persistence seam; persists only cluster metadata plus the referenced final structure while room metadata stays in the room owner.
+- `application/DungeonMapApplicationService` — map-owned companion seam for cluster workflows — validates rewrites against corridor and transition truth, guards cross-owner floor deletions, and composes cluster preview snapshots for editor drags.
+- `repository/DungeonClusterRepository.persistRewrite(...)` — canonical cluster persistence seam — realizes one `ClusterRewriteRequest` into persisted cluster rows and referenced structure state while room metadata stays in the room owner.
+- `repository/DungeonClusterRepository` — cluster rehydration seam — loads persisted cluster rows plus referenced structures for map assembly.
 
 ## Where New Code Goes
 
 - Put cluster identity, center, structure-backed boundary edits, and cluster-local move semantics on `Cluster`.
 - Put public paint/delete rewrite entrypoints on `Cluster` via `rewritePaint(...)` and `rewriteDelete(...)`.
 - Keep `ClusterStructureEditor` package-private inside `cluster/model` as an implementation detail behind those aggregate seams.
-- Let public cluster writes converge on the six `DungeonClusterApplicationService` workflow request families and reduce them to `ClusterMutationRequest` or `ClusterRewriteRequest` before persistence.
+- Let public cluster writes converge on the six `DungeonClusterApplicationService` workflow request families and reduce them to `ClusterRewriteRequest` before persistence; bootstrap uses the same rewrite payload as every other persisted cluster change.
+- Route map-scoped rewrite validation, rebound reconciliation, floor-deletion guards, and editor preview composition through `DungeonMapApplicationService` instead of calling cross-owner helpers on `DungeonMap` directly.
 - Keep cluster persistence focused on cluster rows and cluster-owned structure references; derive cluster center from the final structure on every construction path and keep room metadata in `DungeonRoomRepository`.
 
 ## Forbidden Drift
@@ -34,6 +37,8 @@
 - Do not mirror cluster persistence back into `DungeonRoomRepository` now that `DungeonClusterRepository` exists.
 - Do not let callers outside `cluster/model` depend on `ClusterStructureEditor`; paint/delete rewrites must enter through `Cluster`.
 - Do not add second cluster mutation seams beside `Cluster.mutated(...)`, `Cluster.rewritePaint(...)`, `Cluster.rewriteDelete(...)`, and the six public `DungeonClusterApplicationService` workflow families.
+- Do not add parallel repository write paths like ad-hoc create/save/move helpers; persisted cluster writes go only through `DungeonClusterRepository.persistRewrite(...)`.
 - Do not reintroduce public `Cluster.translated(...)`; translation stays cluster-owned only through `mutated(new ClusterMutationRequest.Translation(...))`.
 - Do not let tools or services become the primary source of editable wall or door eligibility; those boundary rules stay cluster-owned.
+- Do not let cluster workflows or tools call public cluster preview or cross-owner rewrite helpers on `DungeonMap`; those map-owned seams belong on `DungeonMapApplicationService`.
 - Do not persist cluster-local topology mirrors such as center coordinates once the final structure already determines them.

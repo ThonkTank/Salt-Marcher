@@ -47,6 +47,8 @@ End-to-end scripts: `./scripts/crawl.sh`, `./scripts/crawl-items.sh`.
 
 No test framework. No linter. The app database is SQLite at `${XDG_DATA_HOME:-~/.local/share}/salt-marcher/game.db` (auto-created on first run). Schema changes require deleting that DB and re-running `./scripts/crawl.sh` — there are no ALTER TABLE migrations. For ad-hoc DB inspection, prefer the vendored CLI at `./tools/sqlite3` or `./gradlew sqliteQuery --args='data/game.db .tables'`.
 
+`./gradlew build` also runs a post-build cleanup that deletes empty directories left behind under `src/` and `resources/`.
+
 **After code changes, do not stop at `./gradlew build` alone** when the desktop app is the manual test surface. Default to running `./gradlew build` and then `./gradlew installDesktopApp` before handoff unless the user explicitly says not to reinstall the desktop app. Notes about "nicht geprüfte Vorgänge" (unchecked operations) are expected and can be ignored.
 
 **First run:** database is empty after clone. Run `./scripts/crawl.sh` to populate monster data (requires `crawler.properties` — copy from `crawler.properties.example` and add a valid D&D Beyond session cookie). `./scripts/crawl-items.sh` does the same for items. Without data the app starts but shows no creatures.
@@ -131,6 +133,8 @@ Do not reverse that decision order. A capability does not belong in a package be
 Technical layers are subordinate tools inside an owner slice, not the primary architecture story:
 - `model` — canonical business and editor truth for that owner
 - `application` — workflows and use cases for that owner
+- `tasks` — owner-local transformation pipelines that turn explicit inputs into explicit outputs
+- `types` — owner-local static carrier and helper types that do not own mutable workflow state
 - `repository` — storage access for that owner
 - `state` — shared transient UI or workflow state for that owner
 - `ui` — presentation and interaction owned by that owner
@@ -138,6 +142,14 @@ Technical layers are subordinate tools inside an owner slice, not the primary ar
 - `bootstrap` — internal composition and wiring
 
 Use these layer names only when they clearly describe a local responsibility inside the already-chosen owner slice.
+
+### Public Owner APIs
+
+- Cross-owner imports must go through the target owner's `api` package. The positive pattern is `features.<owner>.api` for top-level features and `<owner>.api` for documented nested owners.
+- Owner boundaries are derived structurally. Under `features.<feature>`, every contiguous run of non-layer segments before the first transparent layer is the owner path.
+- Subowners must sit directly under their owner. Once a sanctioned owner-internal layer segment (`model`, `application`, `tasks`, `types`, `repository`, `state`, `ui`, `api`, `bootstrap`) appears, every later segment is layer-internal only, not another owner.
+- Each import may cross only one owner edge: parent, direct child, or sibling with the same parent. Do not skip over intermediate owners to reach a grandchild, niece, or cousin owner directly.
+- Code outside `src/features/` may import only top-level feature `api` packages; it must not reach into nested feature owners or technical layers.
 
 ### Owner Types vs Value Types
 

@@ -1,16 +1,11 @@
 package features.world.dungeon.dungeonmap.cluster.repository;
 
-import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.dungeonmap.structure.model.Structure;
-import features.world.dungeon.dungeonmap.structure.model.StructureSpecification;
 import features.world.dungeon.dungeonmap.cluster.model.Cluster;
 import features.world.dungeon.dungeonmap.cluster.model.ClusterDefinitionRequest;
 import features.world.dungeon.dungeonmap.cluster.model.ClusterRewriteRequest;
-import features.world.dungeon.model.structures.room.RoomExitNarration;
-import features.world.dungeon.model.structures.room.RoomNarration;
 import features.world.dungeon.model.structures.room.Room;
-import features.world.dungeon.repository.DungeonPersistenceDirections;
 import features.world.dungeon.dungeonmap.structure.repository.DungeonStructureRepository;
 
 import java.sql.Connection;
@@ -27,85 +22,7 @@ import java.util.Set;
 
 public final class DungeonClusterRepository {
 
-    public record PersistedCluster(
-            long clusterId,
-            long structureObjectId,
-            Structure structure
-    ) {
-    }
-
     private final DungeonStructureRepository structureRepository = new DungeonStructureRepository();
-
-    public PersistedCluster createCluster(Connection conn, long mapId, Structure structure) throws SQLException {
-        if (conn == null || structure == null) {
-            throw new IllegalArgumentException("conn und structure dürfen nicht null sein");
-        }
-        DungeonStructureRepository.PersistedStructure persistedStructure = structureRepository.save(conn, null, structure);
-        long clusterId = insertCluster(conn, mapId, persistedStructure.structureObjectId());
-        return new PersistedCluster(clusterId, persistedStructure.structureObjectId(), persistedStructure.structure());
-    }
-
-    public PersistedCluster saveCluster(Connection conn, Cluster cluster) throws SQLException {
-        if (conn == null || cluster == null || cluster.clusterId() == null) {
-            throw new IllegalArgumentException("Persisted cluster save requires conn and cluster id");
-        }
-        if (cluster.structureObjectId() == null || cluster.structureObjectId() <= 0L) {
-            throw new IllegalArgumentException("Persisted cluster requires a structure object id");
-        }
-        DungeonStructureRepository.PersistedStructure persistedStructure =
-                structureRepository.save(conn, cluster.structureObjectId(), cluster);
-        return new PersistedCluster(cluster.clusterId(), persistedStructure.structureObjectId(), persistedStructure.structure());
-    }
-
-    public void deleteCluster(Connection conn, Cluster cluster) throws SQLException {
-        if (conn == null || cluster == null || cluster.clusterId() == null) {
-            return;
-        }
-        deleteCluster(conn, cluster.clusterId());
-        structureRepository.delete(conn, cluster.structureObjectId());
-    }
-
-    public List<Room> loadRooms(Connection conn, long mapId) throws SQLException {
-        Map<Long, Map<Integer, GridPoint>> anchorsByRoomId = loadRoomAnchors(conn, mapId);
-        Map<Long, List<RoomExitNarration>> exitNarrationsByRoomId = loadGrouped(
-                conn,
-                "SELECT room_id, level_z, cell_x, cell_y, edge_direction, description"
-                        + " FROM dungeon_room_exit_descriptions"
-                        + " WHERE room_id IN (SELECT room_id FROM dungeon_rooms WHERE dungeon_map_id=?)"
-                        + " ORDER BY room_id, level_z, sort_order, cell_y, cell_x, edge_direction",
-                mapId,
-                rs -> rs.getLong("room_id"),
-                rs -> new RoomExitNarration(
-                        rs.getInt("level_z"),
-                        GridPoint.cell(rs.getInt("cell_x"), rs.getInt("cell_y"), 0),
-                        DungeonPersistenceDirections.fromPersistedEdgeDirection(rs.getString("edge_direction")),
-                        rs.getString("description")));
-        try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT room_id, dungeon_map_id, cluster_id, name, visual_description"
-                        + " FROM dungeon_rooms WHERE dungeon_map_id=? ORDER BY room_id")) {
-            ps.setLong(1, mapId);
-            try (ResultSet rs = ps.executeQuery()) {
-                List<Room> rooms = new ArrayList<>();
-                while (rs.next()) {
-                    long roomId = rs.getLong("room_id");
-                    Map<Integer, GridPoint> anchorsByLevel = anchorsByRoomId.get(roomId);
-                    if (anchorsByLevel == null || anchorsByLevel.isEmpty()) {
-                        throw new IllegalStateException("Raum " + roomId + " hat keine persistierten Level-Anker");
-                    }
-                    rooms.add(Room.metadata(
-                            roomId,
-                            rs.getLong("dungeon_map_id"),
-                            rs.getLong("cluster_id"),
-                            normalizedRoomName(roomId, rs.getString("name")),
-                            anchorsByLevel,
-                            new RoomNarration(
-                                    rs.getString("visual_description"),
-                                    exitNarrationsByRoomId.getOrDefault(roomId, List.of()))));
-                }
-                return rooms.isEmpty() ? List.of() : List.copyOf(rooms);
-            }
-        }
-    }
 
     public List<Cluster> loadClusters(Connection conn, long mapId, List<Room> rooms) throws SQLException {
         List<Cluster> clusters = new ArrayList<>();
@@ -156,40 +73,11 @@ public final class DungeonClusterRepository {
                 mapId);
     }
 
-    public void createClusterWithRoom(
-            Connection conn,
-            long mapId,
-            int levelZ,
-            GridArea area,
-            String roomName
-    ) throws SQLException {
-        GridArea resolvedArea = area == null ? GridArea.empty() : area.onLevel(levelZ);
-        if (resolvedArea.isEmpty()) {
-            return;
-        }
-        GridPoint center = resolvedArea.center();
-        Structure structure = Structure.fromSpecification(StructureSpecification.ofLevel(
-                levelZ,
-                new StructureSpecification.LevelSpecification(
-                        center,
-                        resolvedArea,
-                        resolvedArea,
-                        List.of(),
-                        List.of())));
-        DungeonStructureRepository.PersistedStructure persistedStructure = structureRepository.save(conn, null, structure);
-        long clusterId = insertCluster(conn, mapId, persistedStructure.structureObjectId());
-        insertRoom(
-                conn,
-                mapId,
-                clusterId,
-                roomName,
-                Map.of(levelZ, center));
-    }
-
     /**
-     * Realizes the room workflow's final cluster owners directly instead of replaying a second rewrite payload.
+     * Canonical cluster persistence seam: realize one final rewrite payload directly into persisted structure
+     * and room metadata state.
      */
-    public void replaceClusters(
+    public void persistRewrite(
             Connection conn,
             long mapId,
             ClusterRewriteRequest rewriteRequest
@@ -239,30 +127,6 @@ public final class DungeonClusterRepository {
             }
             deleteCluster(conn, cluster.clusterId());
             structureRepository.delete(conn, cluster.structureObjectId());
-        }
-    }
-
-    public void saveMovedCluster(Connection conn, Cluster cluster) throws SQLException {
-        if (cluster == null || cluster.clusterId() == null) {
-            return;
-        }
-        if (cluster.structureObjectId() == null || cluster.structureObjectId() <= 0L) {
-            throw new IllegalArgumentException("Persisted cluster requires a structure object id");
-        }
-        structureRepository.save(conn, cluster.structureObjectId(), cluster);
-        persistRooms(conn, cluster.mapId(), cluster.clusterId(), cluster.roomTopology().rooms());
-    }
-
-    public void saveRooms(Connection conn, long mapId, List<Room> rooms) throws SQLException {
-        if (conn == null || rooms == null || rooms.isEmpty()) {
-            return;
-        }
-        for (Room room : rooms) {
-            if (room == null || room.roomId() == null) {
-                continue;
-            }
-            reassignRoomCluster(conn, room.roomId(), room.clusterId());
-            updateRoom(conn, room.roomId(), room.name(), room.anchorsByLevel());
         }
     }
 
@@ -340,37 +204,6 @@ public final class DungeonClusterRepository {
             ps.executeUpdate();
         }
         replaceRoomAnchors(conn, roomId, resolvedAnchors);
-    }
-
-    public void replaceRoomNarration(Connection conn, long roomId, RoomNarration narration) throws SQLException {
-        RoomNarration resolvedNarration = narration == null ? RoomNarration.empty() : narration;
-        try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE dungeon_rooms SET visual_description=? WHERE room_id=?")) {
-            ps.setString(1, resolvedNarration.visualDescription());
-            ps.setLong(2, roomId);
-            ps.executeUpdate();
-        }
-        try (PreparedStatement delete = conn.prepareStatement(
-                "DELETE FROM dungeon_room_exit_descriptions WHERE room_id=?")) {
-            delete.setLong(1, roomId);
-            delete.executeUpdate();
-        }
-        try (PreparedStatement insert = conn.prepareStatement(
-                "INSERT INTO dungeon_room_exit_descriptions(room_id, level_z, cell_x, cell_y, edge_direction, description, sort_order)"
-                        + " VALUES(?,?,?,?,?,?,?)")) {
-            int sortOrder = 0;
-            for (RoomExitNarration exitNarration : resolvedNarration.exitNarrations()) {
-                insert.setLong(1, roomId);
-                insert.setInt(2, exitNarration.levelZ());
-                insert.setInt(3, exitNarration.roomCell().x2() / 2);
-                insert.setInt(4, exitNarration.roomCell().y2() / 2);
-                insert.setString(5, DungeonPersistenceDirections.toPersistedEdgeDirection(exitNarration.direction()));
-                insert.setString(6, exitNarration.description());
-                insert.setInt(7, sortOrder++);
-                insert.addBatch();
-            }
-            insert.executeBatch();
-        }
     }
 
     private void reassignRoomCluster(Connection conn, long roomId, long clusterId) throws SQLException {
@@ -465,33 +298,6 @@ public final class DungeonClusterRepository {
         return resolvedCell.y2();
     }
 
-    private static Map<Long, Map<Integer, GridPoint>> loadRoomAnchors(Connection conn, long mapId) throws SQLException {
-        Map<Long, Map<Integer, GridPoint>> anchorsByRoomId = new LinkedHashMap<>();
-        try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT room_id, level_z, anchor_x2, anchor_y2"
-                        + " FROM dungeon_room_levels"
-                        + " WHERE room_id IN (SELECT room_id FROM dungeon_rooms WHERE dungeon_map_id=?)"
-                        + " ORDER BY room_id, level_z")) {
-            ps.setLong(1, mapId);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    anchorsByRoomId.computeIfAbsent(rs.getLong("room_id"), ignored -> new LinkedHashMap<>())
-                            .put(rs.getInt("level_z"), requireStoredCellCenter(
-                                    rs.getInt("anchor_x2"),
-                                    rs.getInt("anchor_y2"),
-                                    "room anchor",
-                                    rs.getLong("room_id"),
-                                    rs.getInt("level_z")));
-                }
-            }
-        }
-        Map<Long, Map<Integer, GridPoint>> result = new LinkedHashMap<>();
-        for (Map.Entry<Long, Map<Integer, GridPoint>> entry : anchorsByRoomId.entrySet()) {
-            result.put(entry.getKey(), Map.copyOf(entry.getValue()));
-        }
-        return result.isEmpty() ? Map.of() : Map.copyOf(result);
-    }
-
     private static Map<Long, Integer> loadLevelMap(Connection conn, String sql, long mapId) throws SQLException {
         Map<Long, Integer> result = new LinkedHashMap<>();
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -505,14 +311,6 @@ public final class DungeonClusterRepository {
         return result.isEmpty() ? Map.of() : Map.copyOf(result);
     }
 
-    private static GridPoint requireStoredCellCenter(int persistedX2, int persistedY2, String label, long roomId, int levelZ) {
-        GridPoint point = GridPoint.lattice(persistedX2, persistedY2, 0);
-        if (point.kind() != GridPoint.Kind.CELL) {
-            throw new IllegalArgumentException(label + " must be a tile center for room " + roomId + " at level " + levelZ);
-        }
-        return point;
-    }
-
     private static Map<Long, List<Room>> roomsByClusterId(List<Room> rooms) {
         Map<Long, List<Room>> result = new LinkedHashMap<>();
         for (Room room : rooms == null ? List.<Room>of() : rooms) {
@@ -521,35 +319,6 @@ public final class DungeonClusterRepository {
             }
         }
         return result.isEmpty() ? Map.of() : Map.copyOf(result);
-    }
-
-    private static <K, V> Map<K, List<V>> loadGrouped(
-            Connection conn,
-            String sql,
-            long mapId,
-            ResultSetMapper<K> keyExtractor,
-            ResultSetMapper<V> valueExtractor
-    ) throws SQLException {
-        Map<K, List<V>> result = new LinkedHashMap<>();
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setLong(1, mapId);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    K key = keyExtractor.map(rs);
-                    V value = valueExtractor.map(rs);
-                    if (value != null) {
-                        result.computeIfAbsent(key, ignored -> new ArrayList<>()).add(value);
-                    } else {
-                        result.computeIfAbsent(key, ignored -> new ArrayList<>());
-                    }
-                }
-            }
-        }
-        return result.isEmpty() ? Map.of() : Map.copyOf(result);
-    }
-
-    private static String normalizedRoomName(long roomId, String name) {
-        return name == null || name.isBlank() ? "Raum " + roomId : name.trim();
     }
 
     private static List<Cluster> normalizedClusters(List<Cluster> clusters) {
@@ -586,11 +355,6 @@ public final class DungeonClusterRepository {
             }
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
-    }
-
-    @FunctionalInterface
-    private interface ResultSetMapper<T> {
-        T map(ResultSet rs) throws SQLException;
     }
 
 }

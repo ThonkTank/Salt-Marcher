@@ -11,24 +11,16 @@ import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridBoundary;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
-import features.world.dungeon.geometry.GridTranslation;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.dungeonmap.structure.model.Structure;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.Door;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeon.dungeonmap.cluster.model.Cluster;
-import features.world.dungeon.dungeonmap.cluster.model.ClusterMutationRequest;
-import features.world.dungeon.dungeonmap.cluster.model.ClusterRewriteRequest;
 import features.world.dungeon.model.structures.connection.Connection;
 import features.world.dungeon.model.structures.connection.ConnectionEndpoint;
-import features.world.dungeon.model.structures.connection.DoorConnectionCarrier;
 import features.world.dungeon.model.structures.connection.DoorExitCatalog;
 import features.world.dungeon.model.structures.connection.DoorExitDescriptor;
-import features.world.dungeon.model.structures.connection.DungeonConnection;
-import features.world.dungeon.model.structures.connection.StairConnectionCarrier;
 import features.world.dungeon.dungeonmap.corridor.model.Corridor;
-import features.world.dungeon.dungeonmap.corridor.model.CorridorReconcileInput;
-import features.world.dungeon.dungeonmap.corridor.model.CorridorResolutionInput;
 import features.world.dungeon.model.structures.room.Room;
 import features.world.dungeon.model.structures.stair.DungeonStair;
 import features.world.dungeon.model.structures.transition.DungeonTransition;
@@ -783,27 +775,6 @@ public final class DungeonMap {
     private static boolean corridorReachesLevel(Corridor corridor, int levelZ) {
         return corridor != null
                 && !corridor.surfaceAtLevel(levelZ).floor().cellFootprint().cells().isEmpty();
-    }
-
-    private static List<Cluster> normalizedClusters(List<Cluster> clusters) {
-        if (clusters == null || clusters.isEmpty()) {
-            return List.of();
-        }
-        ArrayList<Cluster> result = new ArrayList<>();
-        Set<Long> seenClusterIds = new LinkedHashSet<>();
-        for (Cluster cluster : clusters) {
-            if (cluster == null) {
-                continue;
-            }
-            if (cluster.clusterId() == null) {
-                result.add(cluster);
-                continue;
-            }
-            if (seenClusterIds.add(cluster.clusterId())) {
-                result.add(cluster);
-            }
-        }
-        return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
     private static List<DoorEntry> indexDoorEntries(List<Cluster> clusters, List<Corridor> corridors) {
