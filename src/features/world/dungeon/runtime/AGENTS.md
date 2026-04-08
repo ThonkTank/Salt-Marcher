@@ -8,6 +8,7 @@
 
 - `RuntimeObject` — public runtime root seam — accepts typed runtime workflow requests and delegates them to the current runtime workflow owner.
 - `input/LoadNavigationInput` — runtime-navigation request family — loads the persisted or fallback navigation snapshot for one dungeon map into root-input form.
+- `input/NavigateInput` — runtime action request family — executes one resolved runtime action target through the canonical runtime navigation workflow and returns the persisted snapshot in root-input form.
 - `input/NavigateToCellInput` — runtime navigation request family — moves runtime navigation to a requested traversable cell and returns the persisted snapshot in root-input form.
 - `input/RepairNavigationInput` — runtime-navigation repair request — carries the JDBC connection used to repair persisted runtime position after catalog mutations.
 - `input/ResolveNavigationInput` — runtime navigation-resolve request family — resolves a preferred runtime start point through the canonical runtime fallback policy into root-input form.

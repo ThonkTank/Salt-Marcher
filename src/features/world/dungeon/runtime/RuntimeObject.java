@@ -1,11 +1,13 @@
 package features.world.dungeon.runtime;
 
 import database.DatabaseManager;
+import features.world.dungeon.application.runtime.DungeonRuntimeAction;
 import features.world.dungeon.application.runtime.DungeonRuntimeApplicationService;
 import features.world.dungeon.application.runtime.DungeonRuntimeNavigationSnapshot;
 import features.world.dungeon.dungeonmap.application.DungeonMapLoadResolver;
 import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.runtime.input.LoadNavigationInput;
+import features.world.dungeon.runtime.input.NavigateInput;
 import features.world.dungeon.runtime.input.NavigateToCellInput;
 import features.world.dungeon.runtime.input.RepairNavigationInput;
 import features.world.dungeon.runtime.input.ResolveNavigationInput;
@@ -103,6 +105,28 @@ public final class RuntimeObject {
         }
     }
 
+    public NavigateInput.NavigationInput navigate(
+            NavigateInput input
+    ) throws SQLException {
+        if (input == null) {
+            throw new IllegalArgumentException("input");
+        }
+        if (input.mapId() <= 0) {
+            throw new SQLException("Kein aktiver Dungeon geladen");
+        }
+        if (input.action() == null) {
+            throw new SQLException("Keine Aktion verfügbar");
+        }
+        try (java.sql.Connection conn = DatabaseManager.getConnection()) {
+            var layout = loadResolver.resolveRepairLayout(conn, input.mapId());
+            DungeonRuntimeNavigationSnapshot snapshot = runtimeApplicationService.navigate(
+                    layout,
+                    toNavigationSnapshot(input.currentNavigation()),
+                    toRuntimeAction(input.action()));
+            return toNavigateInput(snapshot);
+        }
+    }
+
     private static ResolveRepairNavigationInput.NavigationInput toRepairNavigationInput(
             DungeonRuntimeNavigationSnapshot snapshot
     ) {
@@ -155,6 +179,19 @@ public final class RuntimeObject {
                 snapshot.heading() == null ? "" : snapshot.heading().name());
     }
 
+    private static NavigateInput.NavigationInput toNavigateInput(
+            DungeonRuntimeNavigationSnapshot snapshot
+    ) {
+        if (snapshot == null || snapshot.isEmpty() || snapshot.cell() == null) {
+            return new NavigateInput.NavigationInput(null, null, 0, "");
+        }
+        return new NavigateInput.NavigationInput(
+                snapshot.mapId(),
+                snapshot.cell(),
+                snapshot.levelZ(),
+                snapshot.heading() == null ? "" : snapshot.heading().name());
+    }
+
     private static DungeonRuntimeNavigationSnapshot toNavigationSnapshot(
             NavigateToCellInput.NavigationInput input
     ) {
@@ -166,5 +203,46 @@ public final class RuntimeObject {
                 input.cell(),
                 input.levelZ(),
                 CardinalDirection.parse(input.heading()));
+    }
+
+    private static DungeonRuntimeNavigationSnapshot toNavigationSnapshot(
+            NavigateInput.NavigationInput input
+    ) {
+        if (input == null || input.mapId() == null || input.cell() == null) {
+            return DungeonRuntimeNavigationSnapshot.empty();
+        }
+        return new DungeonRuntimeNavigationSnapshot(
+                input.mapId(),
+                input.cell(),
+                input.levelZ(),
+                CardinalDirection.parse(input.heading()));
+    }
+
+    private static DungeonRuntimeAction toRuntimeAction(NavigateInput.ActionInput input) {
+        String kind = input.kind().trim().toUpperCase(java.util.Locale.ROOT);
+        return switch (kind) {
+            case "CELL" -> new DungeonRuntimeAction(
+                    "Bewegen",
+                    "",
+                    "Bewegung konnte nicht ausgeführt werden",
+                    new DungeonRuntimeAction.CellTarget(
+                            Objects.requireNonNull(input.cell(), "action.cell"),
+                            input.levelZ(),
+                            CardinalDirection.parse(input.headingOverride())));
+            case "DOOR" -> new DungeonRuntimeAction(
+                    "Tür benutzen",
+                    "",
+                    "Verbindung konnte nicht benutzt werden",
+                    new DungeonRuntimeAction.DoorTarget(
+                            new features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef(
+                                    Objects.requireNonNull(input.doorId(), "action.doorId"))));
+            case "TRANSITION" -> new DungeonRuntimeAction(
+                    "Übergang benutzen",
+                    "",
+                    "Übergang konnte nicht benutzt werden",
+                    new DungeonRuntimeAction.TransitionTarget(
+                            Objects.requireNonNull(input.transitionId(), "action.transitionId")));
+            default -> throw new IllegalArgumentException("Unbekannte Runtime-Aktion: " + input.kind());
+        };
     }
 }
