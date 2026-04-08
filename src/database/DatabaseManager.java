@@ -1,7 +1,5 @@
 package database;
 
-import features.campaignstate.repository.CampaignStateSchemaSupport;
-import features.encounter.repository.EncounterSchemaSupport;
 import features.partyanalysis.model.AnalysisModelVersion;
 import features.world.dungeon.repository.DungeonStorageSupport;
 
@@ -323,7 +321,35 @@ public final class DatabaseManager {
                     + "radius     INTEGER"
                     + ")");
 
-            EncounterSchemaSupport.ensureCompatibility(conn);
+            stmt.execute("CREATE TABLE IF NOT EXISTS encounters ("
+                    + "encounter_id   INTEGER PRIMARY KEY AUTOINCREMENT,"
+                    + "name           TEXT NOT NULL,"
+                    + "difficulty     TEXT,"
+                    + "average_level  INTEGER NOT NULL DEFAULT 1,"
+                    + "party_size     INTEGER NOT NULL DEFAULT 1,"
+                    + "xp_budget      INTEGER NOT NULL DEFAULT 0,"
+                    + "shape_label    TEXT,"
+                    + "created_at     TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP"
+                    + ")");
+            stmt.execute("CREATE TABLE IF NOT EXISTS encounter_slots ("
+                    + "encounter_slot_id       INTEGER PRIMARY KEY AUTOINCREMENT,"
+                    + "encounter_id            INTEGER NOT NULL REFERENCES encounters(encounter_id) ON DELETE CASCADE,"
+                    + "display_order           INTEGER NOT NULL,"
+                    + "creature_id             INTEGER NOT NULL,"
+                    + "creature_name           TEXT NOT NULL,"
+                    + "creature_xp             INTEGER NOT NULL DEFAULT 0,"
+                    + "creature_hp             INTEGER NOT NULL DEFAULT 0,"
+                    + "hit_dice_count          INTEGER,"
+                    + "hit_dice_sides          INTEGER,"
+                    + "hit_dice_modifier       INTEGER,"
+                    + "creature_ac             INTEGER NOT NULL DEFAULT 0,"
+                    + "initiative_bonus        INTEGER NOT NULL DEFAULT 0,"
+                    + "cr_display              TEXT,"
+                    + "creature_type           TEXT,"
+                    + "count                   INTEGER NOT NULL DEFAULT 1,"
+                    + "weight_class            TEXT,"
+                    + "primary_function_role   TEXT"
+                    + ")");
 
             stmt.execute("CREATE TABLE IF NOT EXISTS factions ("
                     + "faction_id  INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -371,7 +397,21 @@ public final class DatabaseManager {
                     + "is_dark       INTEGER NOT NULL DEFAULT 0"
                     + ")");
 
-            CampaignStateSchemaSupport.ensureCompatibility(conn);
+            stmt.execute("CREATE TABLE IF NOT EXISTS campaign_state ("
+                    + "campaign_id         INTEGER PRIMARY KEY DEFAULT 1,"
+                    + "map_id              INTEGER REFERENCES hex_maps(map_id),"
+                    + "party_tile_id       INTEGER REFERENCES hex_tiles(tile_id),"
+                    + "calendar_id         INTEGER REFERENCES calendar_config(calendar_id),"
+                    + "current_epoch_day   INTEGER NOT NULL DEFAULT 0,"
+                    + "current_phase_id    INTEGER REFERENCES time_of_day_phases(phase_id),"
+                    + "current_weather     TEXT,"
+                    + "notes               TEXT,"
+                    + "dungeon_map_id      INTEGER REFERENCES dungeon_maps(dungeon_map_id) ON DELETE SET NULL,"
+                    + "dungeon_level_z     INTEGER,"
+                    + "dungeon_cell_x      INTEGER,"
+                    + "dungeon_cell_y      INTEGER,"
+                    + "dungeon_heading     TEXT"
+                    + ")");
 
             stmt.execute("CREATE TABLE IF NOT EXISTS tile_faction_influence ("
                     + "tile_id      INTEGER NOT NULL REFERENCES hex_tiles(tile_id) ON DELETE CASCADE,"
@@ -538,6 +578,10 @@ public final class DatabaseManager {
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_creature_aliases_slug_key ON creature_import_aliases(slug_key)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_hex_tiles_map ON hex_tiles(map_id)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_hex_tiles_faction ON hex_tiles(dominant_faction_id)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_encounter_slots_encounter ON encounter_slots(encounter_id)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_encounter_slots_order ON encounter_slots(encounter_id, display_order)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_encounters_created_at ON encounters(created_at)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_encounters_name ON encounters(name)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_world_locations_tile ON world_locations(tile_id)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_tile_influence_faction ON tile_faction_influence(faction_id)");
             stmt.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_tod_phases_order ON time_of_day_phases(display_order)");
@@ -559,7 +603,206 @@ public final class DatabaseManager {
             ensureLootTableCompatibility(conn);
             // Dungeon startup creates only the current schema. Older dungeon storage shapes are unsupported and must
             // be reset explicitly instead of being upgraded in-place at runtime.
-            DungeonStorageSupport.createSchema(stmt);
+            stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_maps ("
+                    + "dungeon_map_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                    + "name           TEXT NOT NULL"
+                    + ")");
+            stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_structure_objects ("
+                    + "structure_object_id INTEGER PRIMARY KEY AUTOINCREMENT"
+                    + ")");
+            stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_room_clusters ("
+                    + "cluster_id       INTEGER PRIMARY KEY AUTOINCREMENT,"
+                    + "dungeon_map_id   INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
+                    + "structure_object_id INTEGER NOT NULL UNIQUE REFERENCES dungeon_structure_objects(structure_object_id)"
+                    + ")");
+            stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_rooms ("
+                    + "room_id         INTEGER PRIMARY KEY AUTOINCREMENT,"
+                    + "dungeon_map_id  INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
+                    + "cluster_id      INTEGER NOT NULL REFERENCES dungeon_room_clusters(cluster_id) ON DELETE CASCADE,"
+                    + "name            TEXT NOT NULL,"
+                    + "visual_description TEXT,"
+                    + "component_x     INTEGER NOT NULL,"
+                    + "component_y     INTEGER NOT NULL,"
+                    + "level_z         INTEGER NOT NULL DEFAULT 0"
+                    + ")");
+            stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_corridors ("
+                    + "corridor_id      INTEGER PRIMARY KEY AUTOINCREMENT,"
+                    + "dungeon_map_id   INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
+                    + "structure_object_id INTEGER NOT NULL UNIQUE REFERENCES dungeon_structure_objects(structure_object_id),"
+                    + "level_z          INTEGER NOT NULL DEFAULT 0"
+                    + ")");
+            stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_structure_levels ("
+                    + "structure_object_id INTEGER NOT NULL REFERENCES dungeon_structure_objects(structure_object_id) ON DELETE CASCADE,"
+                    + "level_z            INTEGER NOT NULL,"
+                    + "anchor_x2          INTEGER NOT NULL,"
+                    + "anchor_y2          INTEGER NOT NULL,"
+                    + "PRIMARY KEY (structure_object_id, level_z)"
+                    + ")");
+            stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_structure_surface_cells ("
+                    + "structure_object_id INTEGER NOT NULL,"
+                    + "level_z            INTEGER NOT NULL,"
+                    + "cell_x2            INTEGER NOT NULL,"
+                    + "cell_y2            INTEGER NOT NULL,"
+                    + "PRIMARY KEY (structure_object_id, level_z, cell_x2, cell_y2),"
+                    + "FOREIGN KEY(structure_object_id, level_z) REFERENCES dungeon_structure_levels(structure_object_id, level_z) ON DELETE CASCADE"
+                    + ")");
+            stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_structure_floor_cells ("
+                    + "structure_object_id INTEGER NOT NULL,"
+                    + "level_z            INTEGER NOT NULL,"
+                    + "cell_x2            INTEGER NOT NULL,"
+                    + "cell_y2            INTEGER NOT NULL,"
+                    + "PRIMARY KEY (structure_object_id, level_z, cell_x2, cell_y2),"
+                    + "FOREIGN KEY(structure_object_id, level_z) REFERENCES dungeon_structure_levels(structure_object_id, level_z) ON DELETE CASCADE"
+                    + ")");
+            stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_wall_kinds ("
+                    + "wall_kind_id               INTEGER PRIMARY KEY,"
+                    + "wall_key                   TEXT NOT NULL UNIQUE,"
+                    + "name                       TEXT NOT NULL,"
+                    + "blocks_passage             INTEGER NOT NULL DEFAULT 1,"
+                    + "blocks_sight               INTEGER NOT NULL DEFAULT 1,"
+                    + "render_style               TEXT NOT NULL,"
+                    + "supports_door_attachments  INTEGER NOT NULL DEFAULT 1,"
+                    + "built_in                   INTEGER NOT NULL DEFAULT 0"
+                    + ")");
+            stmt.execute("INSERT OR IGNORE INTO dungeon_wall_kinds("
+                    + "wall_kind_id, wall_key, name, blocks_passage, blocks_sight, render_style, supports_door_attachments, built_in"
+                    + ") VALUES(1, 'solid', 'Massive Wand', 1, 1, 'SOLID', 1, 1)");
+            stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_structure_doors ("
+                    + "door_id             INTEGER PRIMARY KEY,"
+                    + "structure_object_id INTEGER NOT NULL REFERENCES dungeon_structure_objects(structure_object_id) ON DELETE CASCADE,"
+                    + "level_z             INTEGER NOT NULL,"
+                    + "anchor_start_x2     INTEGER NOT NULL,"
+                    + "anchor_start_y2     INTEGER NOT NULL,"
+                    + "anchor_end_x2       INTEGER NOT NULL,"
+                    + "anchor_end_y2       INTEGER NOT NULL,"
+                    + "door_state          TEXT NOT NULL,"
+                    + "CHECK(door_state IN ('OPEN','CLOSED'))"
+                    + ")");
+            stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_structure_door_segments ("
+                    + "door_id          INTEGER NOT NULL REFERENCES dungeon_structure_doors(door_id) ON DELETE CASCADE,"
+                    + "start_x2         INTEGER NOT NULL,"
+                    + "start_y2         INTEGER NOT NULL,"
+                    + "end_x2           INTEGER NOT NULL,"
+                    + "end_y2           INTEGER NOT NULL,"
+                    + "PRIMARY KEY (door_id, start_x2, start_y2, end_x2, end_y2)"
+                    + ")");
+            stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_corridor_input_nodes ("
+                    + "node_id               INTEGER PRIMARY KEY,"
+                    + "corridor_id           INTEGER NOT NULL REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE,"
+                    + "door_id               INTEGER REFERENCES dungeon_structure_doors(door_id),"
+                    + "point_x2              INTEGER,"
+                    + "point_y2              INTEGER,"
+                    + "CHECK((door_id IS NOT NULL AND point_x2 IS NULL AND point_y2 IS NULL)"
+                    + " OR (door_id IS NULL AND point_x2 IS NOT NULL AND point_y2 IS NOT NULL)),"
+                    + "UNIQUE(corridor_id, node_id)"
+                    + ")");
+            stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_corridor_input_segments ("
+                    + "segment_id            INTEGER PRIMARY KEY,"
+                    + "corridor_id           INTEGER NOT NULL REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE,"
+                    + "start_node_id         INTEGER NOT NULL,"
+                    + "end_node_id           INTEGER NOT NULL,"
+                    + "UNIQUE(corridor_id, segment_id),"
+                    + "FOREIGN KEY(corridor_id, start_node_id) REFERENCES dungeon_corridor_input_nodes(corridor_id, node_id) ON DELETE CASCADE,"
+                    + "FOREIGN KEY(corridor_id, end_node_id) REFERENCES dungeon_corridor_input_nodes(corridor_id, node_id) ON DELETE CASCADE"
+                    + ")");
+            stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_room_levels ("
+                    + "room_id          INTEGER NOT NULL REFERENCES dungeon_rooms(room_id) ON DELETE CASCADE,"
+                    + "level_z          INTEGER NOT NULL,"
+                    + "anchor_x2        INTEGER NOT NULL,"
+                    + "anchor_y2        INTEGER NOT NULL,"
+                    + "PRIMARY KEY (room_id, level_z)"
+                    + ")");
+            stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_structure_walls ("
+                    + "wall_id             INTEGER PRIMARY KEY,"
+                    + "structure_object_id INTEGER NOT NULL REFERENCES dungeon_structure_objects(structure_object_id) ON DELETE CASCADE,"
+                    + "level_z             INTEGER NOT NULL,"
+                    + "wall_kind_id        INTEGER NOT NULL REFERENCES dungeon_wall_kinds(wall_kind_id),"
+                    + "anchor_start_x2     INTEGER NOT NULL,"
+                    + "anchor_start_y2     INTEGER NOT NULL,"
+                    + "anchor_end_x2       INTEGER NOT NULL,"
+                    + "anchor_end_y2       INTEGER NOT NULL"
+                    + ")");
+            stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_structure_wall_segments ("
+                    + "wall_id          INTEGER NOT NULL REFERENCES dungeon_structure_walls(wall_id) ON DELETE CASCADE,"
+                    + "start_x2         INTEGER NOT NULL,"
+                    + "start_y2         INTEGER NOT NULL,"
+                    + "end_x2           INTEGER NOT NULL,"
+                    + "end_y2           INTEGER NOT NULL,"
+                    + "PRIMARY KEY (wall_id, start_x2, start_y2, end_x2, end_y2)"
+                    + ")");
+            stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_room_exit_descriptions ("
+                    + "room_id          INTEGER NOT NULL REFERENCES dungeon_rooms(room_id) ON DELETE CASCADE,"
+                    + "level_z          INTEGER NOT NULL DEFAULT 0,"
+                    + "cell_x           INTEGER NOT NULL,"
+                    + "cell_y           INTEGER NOT NULL,"
+                    + "edge_direction   TEXT NOT NULL,"
+                    + "description      TEXT,"
+                    + "sort_order       INTEGER NOT NULL DEFAULT 0,"
+                    + "PRIMARY KEY (room_id, level_z, cell_x, cell_y, edge_direction)"
+                    + ")");
+            stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_stairs ("
+                    + "stair_id         INTEGER PRIMARY KEY AUTOINCREMENT,"
+                    + "dungeon_map_id   INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
+                    + "name             TEXT,"
+                    + "anchor_cell_x    INTEGER NOT NULL,"
+                    + "anchor_cell_y    INTEGER NOT NULL,"
+                    + "anchor_level_z   INTEGER NOT NULL,"
+                    + "shape_kind       TEXT NOT NULL,"
+                    + "shape_direction_code INTEGER NOT NULL DEFAULT 0,"
+                    + "shape_param1     INTEGER NOT NULL DEFAULT 0,"
+                    + "shape_param2     INTEGER NOT NULL DEFAULT 0,"
+                    + "min_level_z      INTEGER NOT NULL,"
+                    + "max_level_z      INTEGER NOT NULL,"
+                    + "CHECK(shape_kind IN ('STACK','LINE','SQUARE','RECTANGLE','CIRCLE'))"
+                    + ")");
+            stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_stair_path_nodes ("
+                    + "stair_id         INTEGER NOT NULL REFERENCES dungeon_stairs(stair_id) ON DELETE CASCADE,"
+                    + "sort_order       INTEGER NOT NULL,"
+                    + "cell_x           INTEGER NOT NULL,"
+                    + "cell_y           INTEGER NOT NULL,"
+                    + "cell_z           INTEGER NOT NULL,"
+                    + "PRIMARY KEY (stair_id, sort_order)"
+                    + ")");
+            stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_stair_stop_levels ("
+                    + "stair_id         INTEGER NOT NULL REFERENCES dungeon_stairs(stair_id) ON DELETE CASCADE,"
+                    + "level_z          INTEGER NOT NULL,"
+                    + "PRIMARY KEY (stair_id, level_z)"
+                    + ")");
+            stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_transition_stair_path_nodes ("
+                    + "transition_id     INTEGER NOT NULL REFERENCES dungeon_transitions(transition_id) ON DELETE CASCADE,"
+                    + "sort_order        INTEGER NOT NULL,"
+                    + "cell_x            INTEGER NOT NULL,"
+                    + "cell_y            INTEGER NOT NULL,"
+                    + "cell_z            INTEGER NOT NULL,"
+                    + "PRIMARY KEY (transition_id, sort_order)"
+                    + ")");
+            stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_transition_stair_stop_levels ("
+                    + "transition_id     INTEGER NOT NULL REFERENCES dungeon_transitions(transition_id) ON DELETE CASCADE,"
+                    + "level_z           INTEGER NOT NULL,"
+                    + "PRIMARY KEY (transition_id, level_z)"
+                    + ")");
+            stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_transitions ("
+                    + "transition_id            INTEGER PRIMARY KEY AUTOINCREMENT,"
+                    + "dungeon_map_id           INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
+                    + "description              TEXT,"
+                    + "placement_type           TEXT,"
+                    + "door_id                  INTEGER REFERENCES dungeon_structure_doors(door_id),"
+                    + "stair_anchor_cell_x      INTEGER,"
+                    + "stair_anchor_cell_y      INTEGER,"
+                    + "stair_anchor_level_z     INTEGER,"
+                    + "stair_shape_kind         TEXT,"
+                    + "stair_shape_direction_code INTEGER,"
+                    + "stair_shape_param1       INTEGER,"
+                    + "stair_shape_param2       INTEGER,"
+                    + "stair_min_level_z        INTEGER,"
+                    + "stair_max_level_z        INTEGER,"
+                    + "destination_type         TEXT NOT NULL,"
+                    + "target_overworld_map_id  INTEGER REFERENCES hex_maps(map_id) ON DELETE SET NULL,"
+                    + "target_overworld_tile_id INTEGER REFERENCES hex_tiles(tile_id) ON DELETE SET NULL,"
+                    + "target_dungeon_map_id    INTEGER REFERENCES dungeon_maps(dungeon_map_id) ON DELETE SET NULL,"
+                    + "target_transition_id     INTEGER REFERENCES dungeon_transitions(transition_id) ON DELETE SET NULL,"
+                    + "linked_transition_id     INTEGER REFERENCES dungeon_transitions(transition_id) ON DELETE SET NULL"
+                    + ")");
             dropLegacyRoleColumns(conn);
 
             // Seed default time-of-day phases (German UI strings)

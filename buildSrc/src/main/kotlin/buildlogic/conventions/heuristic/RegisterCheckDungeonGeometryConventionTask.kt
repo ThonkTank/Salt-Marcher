@@ -5,10 +5,10 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.tasks.TaskProvider
 
-fun Project.registerCheckDungeonGeometryConventionTask(): TaskProvider<Task> =
-    tasks.register("checkDungeonGeometryConvention") {
+fun Project.registerCheckDungeonGeometryHeuristicTask(): TaskProvider<Task> =
+    tasks.register("checkDungeonGeometryHeuristic") {
         group = "verification"
-        description = "Heuristic guard for canonical dungeon geometry carriers on public/protected seams."
+        description = "Advisory heuristic for canonical dungeon geometry carriers on public/protected seams."
 
         val projectRoot = layout.projectDirectory.asFile.toPath()
         val allowedRawGeometryCarrierFiles = setOf(
@@ -63,8 +63,8 @@ fun Project.registerCheckDungeonGeometryConventionTask(): TaskProvider<Task> =
             if (offenders.isNotEmpty()) {
                 val details = offenders.joinToString(separator = "\n") { " - $it" }
                 throw GradleException(
-                    "Dungeon geometry convention drift detected.\n" +
-                        "Public and protected dungeon seams must use the canonical geometry carriers and names.\n" +
+                    "Dungeon geometry heuristic flagged potential drift.\n" +
+                        "This advisory scanner found public/protected dungeon seams that likely bypass the canonical geometry carriers or names.\n" +
                         "Offending signatures:\n$details"
                 )
             }
