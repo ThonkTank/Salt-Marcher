@@ -2,7 +2,9 @@ package features.world.dungeon.shell.editor.interaction.state;
 
 import features.world.dungeon.dungeonmap.corridor.application.DungeonCorridorApplicationService;
 import features.world.dungeon.dungeonmap.corridor.application.CorridorInputEditor;
-import features.world.dungeon.dungeonmap.cluster.application.state.DungeonClusterApplicationService;
+import features.world.dungeon.dungeonmap.cluster.application.ApplicationObject;
+import features.world.dungeon.dungeonmap.cluster.application.input.ClusterDoorMoveRequest;
+import features.world.dungeon.dungeonmap.cluster.application.input.ClusterMoveRequest;
 import features.world.dungeon.dungeonmap.cluster.model.ClusterMutationRequest;
 import features.world.dungeon.application.stair.DungeonStairApplicationService;
 import features.world.dungeon.application.stair.StairDraftResolver;
@@ -51,7 +53,7 @@ public final class SelectionTool implements EditorTool {
     private final DungeonMapState mapState;
     private final DungeonMapLoadingService loadingService;
     private final DungeonMapApplicationService mapApplicationService;
-    private final DungeonClusterApplicationService roomApplicationService;
+    private final ApplicationObject roomApplicationService;
     private final DungeonCorridorApplicationService corridorApplicationService;
     private final DungeonStairApplicationService stairApplicationService;
     private final EditorInteractionState state;
@@ -73,7 +75,7 @@ public final class SelectionTool implements EditorTool {
             DungeonMapState mapState,
             DungeonMapLoadingService loadingService,
             DungeonMapApplicationService mapApplicationService,
-            DungeonClusterApplicationService roomApplicationService,
+            ApplicationObject roomApplicationService,
             DungeonCorridorApplicationService corridorApplicationService,
             DungeonStairApplicationService stairApplicationService,
             RoomNarrationPane roomNarrationPane,
@@ -341,7 +343,7 @@ public final class SelectionTool implements EditorTool {
         if (mapId != null && clusterId != null && !translation.isZero()) {
             loadingService.submitMutation(
                     () -> {
-                        roomApplicationService.moveCluster(new DungeonClusterApplicationService.ClusterMoveRequest(
+                        roomApplicationService.moveCluster(new ClusterMoveRequest(
                                 mapId,
                                 clusterId,
                                 translation));
@@ -610,7 +612,7 @@ public final class SelectionTool implements EditorTool {
         }
         loadingService.submitMutation(
                 () -> {
-                    roomApplicationService.moveDoor(new DungeonClusterApplicationService.ClusterDoorMoveRequest(
+                    roomApplicationService.moveDoor(new ClusterDoorMoveRequest(
                             mapId,
                             session.clusterId(),
                             session.levelZ(),

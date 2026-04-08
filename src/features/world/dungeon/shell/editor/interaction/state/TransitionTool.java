@@ -18,7 +18,7 @@ import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.dungeonmap.cluster.model.Cluster;
 import features.world.dungeon.model.structures.room.Room;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
-import features.world.dungeon.dungeonmap.connections.DungeonConnection;
+import features.world.dungeon.dungeonmap.connections.input.DungeonConnection;
 import features.world.dungeon.model.structures.transition.DungeonTransition;
 import features.world.dungeon.model.structures.transition.DungeonTransitionDestination;
 import features.world.dungeon.stair.model.StairPathPatternKind;

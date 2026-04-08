@@ -2,7 +2,7 @@ package features.world.dungeon.dungeonmap.api;
 
 import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.geometry.GridPoint;
-import features.world.dungeon.dungeonmap.connections.ConnectionEndpoint;
+import features.world.dungeon.dungeonmap.connections.input.ConnectionEndpoint;
 
 import java.util.Objects;
 

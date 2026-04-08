@@ -7,7 +7,7 @@ import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.dungeonmap.cluster.model.Cluster;
 import features.world.dungeon.dungeonmap.corridor.model.Corridor;
-import features.world.dungeon.dungeonmap.connections.ConnectionEndpoint;
+import features.world.dungeon.dungeonmap.connections.input.ConnectionEndpoint;
 import features.world.dungeon.model.structures.room.Room;
 import features.world.dungeon.model.structures.stair.DungeonStair;
 import features.world.dungeon.model.structures.transition.DungeonTransition;

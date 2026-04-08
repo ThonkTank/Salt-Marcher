@@ -9,10 +9,10 @@ import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridBoundary;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
-import features.world.dungeon.dungeonmap.connections.ConnectionEndpoint;
-import features.world.dungeon.dungeonmap.connections.ConnectionKind;
-import features.world.dungeon.dungeonmap.connections.DoorConnectionCarrier;
-import features.world.dungeon.dungeonmap.connections.DungeonConnection;
+import features.world.dungeon.dungeonmap.connections.input.ConnectionEndpoint;
+import features.world.dungeon.dungeonmap.connections.input.ConnectionKind;
+import features.world.dungeon.dungeonmap.connections.input.DoorConnectionCarrier;
+import features.world.dungeon.dungeonmap.connections.input.DungeonConnection;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -206,7 +206,7 @@ public final class Corridor extends Structure {
                 .filter(Objects::nonNull)
                 .flatMap(connection -> connection.endpoints().stream())
                 .filter(Objects::nonNull)
-                .filter(endpoint -> endpoint.type() == features.world.dungeon.dungeonmap.connections.ConnectionEndpointType.ROOM)
+                .filter(endpoint -> endpoint.type() == features.world.dungeon.dungeonmap.connections.input.ConnectionEndpointType.ROOM)
                 .map(ConnectionEndpoint::id)
                 .filter(Objects::nonNull)
                 .distinct()

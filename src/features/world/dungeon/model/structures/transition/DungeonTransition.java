@@ -5,8 +5,8 @@ import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.model.interaction.InteractiveLabelHandle;
-import features.world.dungeon.dungeonmap.connections.DungeonConnection;
-import features.world.dungeon.dungeonmap.connections.StairConnectionCarrier;
+import features.world.dungeon.dungeonmap.connections.input.DungeonConnection;
+import features.world.dungeon.dungeonmap.connections.input.StairConnectionCarrier;
 import features.world.dungeon.stair.model.StairPlacementSpec;
 
 public record DungeonTransition(

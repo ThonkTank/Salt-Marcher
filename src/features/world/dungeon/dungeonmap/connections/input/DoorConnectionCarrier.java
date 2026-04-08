@@ -1,4 +1,4 @@
-package features.world.dungeon.dungeonmap.connections;
+package features.world.dungeon.dungeonmap.connections.input;
 
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
 

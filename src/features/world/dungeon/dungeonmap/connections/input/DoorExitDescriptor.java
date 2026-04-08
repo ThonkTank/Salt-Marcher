@@ -1,4 +1,4 @@
-package features.world.dungeon.dungeonmap.connections;
+package features.world.dungeon.dungeonmap.connections.input;
 
 import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.geometry.GridPoint;

@@ -1,6 +1,7 @@
 package features.world.dungeon.shell.editor.interaction.state;
 
-import features.world.dungeon.dungeonmap.cluster.application.state.DungeonClusterApplicationService;
+import features.world.dungeon.dungeonmap.cluster.application.ApplicationObject;
+import features.world.dungeon.dungeonmap.cluster.application.input.ClusterFloorEditRequest;
 import features.world.dungeon.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
@@ -39,7 +40,7 @@ public final class FloorTool implements EditorTool {
     private final DungeonMapState mapState;
     private final DungeonMapLoadingService loadingService;
     private final DungeonEditorSessionState sessionState;
-    private final DungeonClusterApplicationService roomApplicationService;
+    private final ApplicationObject roomApplicationService;
     private final EditorInteractionState state;
 
     private CellWindowDragSession dragSession;
@@ -48,7 +49,7 @@ public final class FloorTool implements EditorTool {
             DungeonMapState mapState,
             DungeonMapLoadingService loadingService,
             DungeonEditorSessionState sessionState,
-            DungeonClusterApplicationService roomApplicationService,
+            ApplicationObject roomApplicationService,
             EditorInteractionState state
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
@@ -125,13 +126,13 @@ public final class FloorTool implements EditorTool {
         }
         loadingService.submitMutation(
                 () -> {
-                    roomApplicationService.editFloor(new DungeonClusterApplicationService.ClusterFloorEditRequest(
+                    roomApplicationService.editFloor(new ClusterFloorEditRequest(
                             mapId,
                             activeLevel,
                             cells,
                             finishedSession.deleteMode()
-                                    ? DungeonClusterApplicationService.ClusterFloorEditMode.REMOVE
-                                    : DungeonClusterApplicationService.ClusterFloorEditMode.ADD));
+                                    ? ClusterFloorEditRequest.Mode.REMOVE
+                                    : ClusterFloorEditRequest.Mode.ADD));
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,

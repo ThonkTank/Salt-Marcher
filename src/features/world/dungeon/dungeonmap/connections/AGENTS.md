@@ -7,15 +7,16 @@
 ## Canonical Types and APIs
 
 - `ConnectionsObject` — public root owner seam for shared connection semantics.
-- `Connection`, `DungeonConnection` — canonical semantic connection value types — carry endpoints, traversal meaning, and context-resolved entry/exit behavior.
-- `ConnectionEndpoint`, `ConnectionEndpointType`, `ConnectionKind` — canonical endpoint and role vocabulary shared by cluster, corridor, runtime, and transition flows.
-- `ConnectionCarrier`, `DoorConnectionCarrier`, `StairConnectionCarrier` — physical-carrier descriptors used by semantic connections without re-homing door or stair ownership.
-- `ConnectionTraversalTarget` — resolved traversal destination carrier for runtime movement.
-- `DoorExitCatalog`, `DoorExitDescriptor` — shared exit-description helpers over connection lists.
+- `input/Connection`, `input/DungeonConnection` — canonical semantic connection value types — carry endpoints, traversal meaning, and context-resolved entry/exit behavior.
+- `input/ConnectionEndpoint`, `input/ConnectionEndpointType`, `input/ConnectionKind` — canonical endpoint and role vocabulary shared by cluster, corridor, runtime, and transition flows.
+- `input/ConnectionCarrier`, `input/DoorConnectionCarrier`, `input/StairConnectionCarrier` — physical-carrier descriptors used by semantic connections without re-homing door or stair ownership.
+- `input/ConnectionTraversalTarget` — resolved traversal destination carrier for runtime movement.
+- `input/DoorExitCatalog`, `input/DoorExitDescriptor` — shared exit-description helpers over connection lists.
 
 ## Where New Code Goes
 
 - Put shared connection semantics, endpoint vocabulary, traversal-target resolution, and exit-description helpers here.
+- Put cross-owner connection carriers in `input/` so other owners can consume them without reaching into non-public connection internals.
 - Keep physical carrier ownership on `structure/model/boundary/door` and the `stair` owner; this owner may reference those carriers but must not absorb their edit or persistence invariants.
 - Keep owner-specific connection derivation on the owning aggregate or workflow: room-local connections on `StructureRoomGraph`, corridor connections on `Corridor`, and transition-local connections on transition workflows.
 - Keep map-level indexing and lookup orchestration on `DungeonMap`; this owner defines the shared connection value family, not a second map snapshot.

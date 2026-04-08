@@ -11,7 +11,7 @@
 - `model/DungeonMap` — current loaded-map implementation behind the public root seam.
 - `application/` and `repository/` — authoritative map selection, load, reload, and rehydration seams.
 - `state/` — active-map, projection, overlay, and loading session state.
-- `connections/` — shared connection semantics owner for traversable links and their endpoint vocabulary.
+- `connections/` — shared connection semantics owner for traversable links and their endpoint vocabulary; shared public carriers live under `connections/input/`.
 - `structure/` — shared physical topology owner; `Structure` is the abstract base type for structure-backed map objects.
 - `cluster/` — room-cluster owner built on `Structure`.
 - `corridor/` — corridor owner built on `Structure`.
@@ -21,7 +21,7 @@
 - `api/CellStructure` — map cell occupant projection — distinguishes room, corridor, stair, and transition ownership for runtime and editor callers.
 - `api/RoomBoundaryDescription`, `api/CorridorBoundaryDescription`, `api/ConnectionSurfaceDescription` — public map read projections for room walls, corridor attach surfaces, and connection-local entry surfaces.
 - `api/DoorDescription`, `api/DoorRole` — public map read projection for placed doors and their stable role semantics.
-- `connections/ConnectionsObject`, `connections/Connection`, `connections/ConnectionEndpoint` — shared connection owner seam and canonical traversal vocabulary for room-local, corridor, and transition links.
+- `connections/ConnectionsObject`, `connections/input/Connection`, `connections/input/ConnectionEndpoint` — shared connection owner seam and canonical traversal vocabulary for room-local, corridor, and transition links.
 - `api/ResolveCorridorRequest`, `api/RehydrateCorridorRequest` — public map-owned corridor build requests — carry only loaded-map truth plus authored corridor input or persisted structure.
 - `api/ValidateClusterRewriteRequest`, `api/ReconcileClusterRewriteRequest`, `api/AssertClusterFloorDeletionAllowedRequest` — public map-owned cluster rewrite requests — validate cross-owner effects, reconcile rebound corridors and transition anchors, and guard floor deletions against corridor, stair, and transition occupancy.
 - `api/PreviewMovedClusterRequest`, `api/PreviewMovedLocalDoorRequest` — public map-owned cluster preview requests — compose temporary map snapshots for cluster translation and local-door drags without exposing raw cluster rewrites.

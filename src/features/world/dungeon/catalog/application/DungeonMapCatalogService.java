@@ -1,7 +1,6 @@
 package features.world.dungeon.catalog.application;
 
 import database.DatabaseManager;
-import features.world.dungeon.dungeonmap.cluster.application.state.DungeonClusterApplicationService;
 import features.world.dungeon.application.runtime.DungeonRuntimeApplicationService;
 import features.world.dungeon.application.support.DungeonTransactionRunner;
 import features.world.dungeon.catalog.persistence.DungeonMapCatalogRepository;
@@ -12,11 +11,11 @@ import java.util.Objects;
 
 public final class DungeonMapCatalogService {
 
-    private final DungeonClusterApplicationService clusterApplicationService;
+    private final features.world.dungeon.dungeonmap.cluster.application.ApplicationObject clusterApplicationService;
     private final DungeonRuntimeApplicationService runtimeApplicationService;
 
     public DungeonMapCatalogService(
-            DungeonClusterApplicationService clusterApplicationService,
+            features.world.dungeon.dungeonmap.cluster.application.ApplicationObject clusterApplicationService,
             DungeonRuntimeApplicationService runtimeApplicationService
     ) {
         this.clusterApplicationService = Objects.requireNonNull(clusterApplicationService, "clusterApplicationService");
@@ -35,7 +34,7 @@ public final class DungeonMapCatalogService {
                 try {
                     clusterApplicationService.bootstrapDefaultCluster(
                             conn,
-                            new DungeonClusterApplicationService.ClusterBootstrapRequest(mapId));
+                            new features.world.dungeon.dungeonmap.cluster.application.input.ClusterBootstrapRequest(mapId));
                 } catch (SQLException | RuntimeException exception) {
                     throw new SQLException("Default room bootstrap failed for dungeon " + mapId, exception);
                 }

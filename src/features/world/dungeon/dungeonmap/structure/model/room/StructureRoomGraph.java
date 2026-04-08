@@ -2,10 +2,10 @@ package features.world.dungeon.dungeonmap.structure.model.room;
 
 import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.geometry.GridPoint;
-import features.world.dungeon.dungeonmap.connections.ConnectionEndpoint;
-import features.world.dungeon.dungeonmap.connections.ConnectionKind;
-import features.world.dungeon.dungeonmap.connections.DoorConnectionCarrier;
-import features.world.dungeon.dungeonmap.connections.DungeonConnection;
+import features.world.dungeon.dungeonmap.connections.input.ConnectionEndpoint;
+import features.world.dungeon.dungeonmap.connections.input.ConnectionKind;
+import features.world.dungeon.dungeonmap.connections.input.DoorConnectionCarrier;
+import features.world.dungeon.dungeonmap.connections.input.DungeonConnection;
 import features.world.dungeon.model.structures.room.Room;
 import features.world.dungeon.dungeonmap.structure.model.Structure;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.Door;

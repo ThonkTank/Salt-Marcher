@@ -8,7 +8,7 @@
 
 - `geometry` — `GridObject`, `GridPoint`, `GridSegment`, `GridSegmentPath`, `GridArea`, `GridBoundary`, `GridPath`, `CardinalDirection`
 - `dungeonmap` — `DungeonMap`, `DungeonMapLoadResolver`, `DungeonMapLoadingService`, `DungeonMapRepository`, `DungeonMapState`, and the nested map-object owners `dungeonmap/structure`, `dungeonmap/cluster`, `dungeonmap/corridor`, and `dungeonmap/connections`
-- `dungeonmap/connections` — `ConnectionsObject`, `Connection`, `DungeonConnection`, `ConnectionEndpoint`, `ConnectionCarrier`, `ConnectionTraversalTarget`, `DoorExitCatalog`
+- `dungeonmap/connections` — `ConnectionsObject` plus the shared connection carriers under `dungeonmap/connections/input`
 - `dungeonmap/structure` — `Structure`, derived `Structure.roomTopology()`, the local `surface`, `boundary`, and `room` sub-owners plus boundary-local `door` and `wall` object sub-owners, `DungeonStructureRepository`, `DungeonWallKindRepository`
 - `room` — `Room`, `DungeonRoomApplicationService`, `DungeonRoomRepository`
 - `dungeonmap/cluster` — `Cluster`, `DungeonClusterApplicationService`, `DungeonClusterRepository`

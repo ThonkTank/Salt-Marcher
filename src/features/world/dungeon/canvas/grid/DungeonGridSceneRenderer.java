@@ -15,7 +15,7 @@ import features.world.dungeon.geometry.GridSegmentPath;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.model.interaction.InteractiveLabelHandle;
 import features.world.dungeon.dungeonmap.structure.model.Structure;
-import features.world.dungeon.dungeonmap.connections.StairConnectionCarrier;
+import features.world.dungeon.dungeonmap.connections.input.StairConnectionCarrier;
 import features.world.dungeon.dungeonmap.cluster.model.Cluster;
 import features.world.dungeon.dungeonmap.corridor.model.Corridor;
 import features.world.dungeon.dungeonmap.corridor.model.CorridorNode;

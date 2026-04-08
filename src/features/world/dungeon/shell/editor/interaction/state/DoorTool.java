@@ -1,6 +1,7 @@
 package features.world.dungeon.shell.editor.interaction.state;
 
-import features.world.dungeon.dungeonmap.cluster.application.state.DungeonClusterApplicationService;
+import features.world.dungeon.dungeonmap.cluster.application.ApplicationObject;
+import features.world.dungeon.dungeonmap.cluster.application.input.ClusterBoundaryEditRequest;
 import features.world.dungeon.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeon.dungeonmap.api.DoorDescription;
 import features.world.dungeon.dungeonmap.api.RoomBoundaryDescription;
@@ -10,8 +11,8 @@ import features.world.dungeon.geometry.GridSegment;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeon.dungeonmap.cluster.model.Cluster;
-import features.world.dungeon.dungeonmap.connections.Connection;
-import features.world.dungeon.dungeonmap.connections.ConnectionEndpoint;
+import features.world.dungeon.dungeonmap.connections.input.Connection;
+import features.world.dungeon.dungeonmap.connections.input.ConnectionEndpoint;
 import features.world.dungeon.model.structures.room.Room;
 import features.world.dungeon.shell.editor.state.EditorCards;
 import features.world.dungeon.shell.editor.interaction.input.EditorInteractionCapability;
@@ -43,7 +44,7 @@ public final class DoorTool implements EditorTool {
 
     private final DungeonMapState mapState;
     private final DungeonMapLoadingService loadingService;
-    private final DungeonClusterApplicationService roomApplicationService;
+    private final ApplicationObject roomApplicationService;
     private final EditorInteractionState state;
 
     private final Label summaryLabel = new Label();
@@ -57,7 +58,7 @@ public final class DoorTool implements EditorTool {
     public DoorTool(
             DungeonMapState mapState,
             DungeonMapLoadingService loadingService,
-            DungeonClusterApplicationService roomApplicationService,
+            ApplicationObject roomApplicationService,
             EditorInteractionState state
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
@@ -258,13 +259,13 @@ public final class DoorTool implements EditorTool {
         }
         loadingService.submitMutation(
                 () -> {
-                    roomApplicationService.editBoundary(new DungeonClusterApplicationService.ClusterBoundaryEditRequest(
+                    roomApplicationService.editBoundary(new ClusterBoundaryEditRequest(
                             mapId,
                             clusterId,
                             levelZ,
                             features.world.dungeon.geometry.GridBoundary.of(List.of(segment2x)),
-                            DungeonClusterApplicationService.ClusterBoundaryTarget.INTERIOR_DOOR,
-                            DungeonClusterApplicationService.ClusterBoundaryEditMode.CREATE));
+                            ClusterBoundaryEditRequest.Target.INTERIOR_DOOR,
+                            ClusterBoundaryEditRequest.Mode.CREATE));
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,
@@ -288,13 +289,13 @@ public final class DoorTool implements EditorTool {
         }
         loadingService.submitMutation(
                 () -> {
-                    roomApplicationService.editBoundary(new DungeonClusterApplicationService.ClusterBoundaryEditRequest(
+                    roomApplicationService.editBoundary(new ClusterBoundaryEditRequest(
                             mapId,
                             clusterId,
                             levelZ,
                             features.world.dungeon.geometry.GridBoundary.of(List.of(segment2x)),
-                            DungeonClusterApplicationService.ClusterBoundaryTarget.INTERIOR_DOOR,
-                            DungeonClusterApplicationService.ClusterBoundaryEditMode.DELETE));
+                            ClusterBoundaryEditRequest.Target.INTERIOR_DOOR,
+                            ClusterBoundaryEditRequest.Mode.DELETE));
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,
@@ -309,13 +310,13 @@ public final class DoorTool implements EditorTool {
         }
         loadingService.submitMutation(
                 () -> {
-                    roomApplicationService.editBoundary(new DungeonClusterApplicationService.ClusterBoundaryEditRequest(
+                    roomApplicationService.editBoundary(new ClusterBoundaryEditRequest(
                             mapId,
                             clusterId,
                             levelZ,
                             features.world.dungeon.geometry.GridBoundary.of(List.of(segment2x)),
-                            DungeonClusterApplicationService.ClusterBoundaryTarget.EXTERIOR_DOOR,
-                            DungeonClusterApplicationService.ClusterBoundaryEditMode.CREATE));
+                            ClusterBoundaryEditRequest.Target.EXTERIOR_DOOR,
+                            ClusterBoundaryEditRequest.Mode.CREATE));
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,
@@ -339,13 +340,13 @@ public final class DoorTool implements EditorTool {
         }
         loadingService.submitMutation(
                 () -> {
-                    roomApplicationService.editBoundary(new DungeonClusterApplicationService.ClusterBoundaryEditRequest(
+                    roomApplicationService.editBoundary(new ClusterBoundaryEditRequest(
                             mapId,
                             clusterId,
                             levelZ,
                             features.world.dungeon.geometry.GridBoundary.of(List.of(segment2x)),
-                            DungeonClusterApplicationService.ClusterBoundaryTarget.EXTERIOR_DOOR,
-                            DungeonClusterApplicationService.ClusterBoundaryEditMode.DELETE));
+                            ClusterBoundaryEditRequest.Target.EXTERIOR_DOOR,
+                            ClusterBoundaryEditRequest.Mode.DELETE));
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,
