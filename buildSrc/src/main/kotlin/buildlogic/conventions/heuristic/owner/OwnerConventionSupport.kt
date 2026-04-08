@@ -40,7 +40,8 @@ data class OwnerConventionSnapshot(
 data class OwnerConventionSourceFile(
     val context: OwnerConventionSourceContext,
     val sourceText: String,
-    val declaredPackage: String?
+    val declaredPackage: String?,
+    val placementIssues: List<String>
 )
 
 class OwnerConventionSupport(private val project: Project) {
@@ -50,6 +51,7 @@ class OwnerConventionSupport(private val project: Project) {
     val repositoryRole = "repository"
     val stateRole = "state"
     val bucketRole = "bucket"
+    val invalidRole = "invalid"
 
     private val projectDir = project.layout.projectDirectory.asFile
     private val projectRoot = projectDir.toPath()
@@ -57,6 +59,7 @@ class OwnerConventionSupport(private val project: Project) {
     private val explicitImportPattern = Regex("""^\s*import\s+([a-zA-Z0-9_.]+);""", RegexOption.MULTILINE)
     private val packagePattern = Regex("""^\s*package\s+([a-zA-Z0-9_.]+);""", RegexOption.MULTILINE)
     private val reservedRequestStemSuffixes = setOf("Input", "Task", "Request", "State", "Repository", "Object", "Owner")
+    private val layerRoles = setOf(inputRole, taskRole, repositoryRole, stateRole)
 
     internal fun registerCheck(
         taskName: String,
@@ -87,6 +90,9 @@ class OwnerConventionSupport(private val project: Project) {
         val expectedPackage = packageNameFor(sourceFile.context.file.parentFile)
         if (sourceFile.declaredPackage != expectedPackage) {
             reasons += "${sourceFile.context.path} :: package must match the filesystem grammar exactly ($expectedPackage)"
+        }
+        sourceFile.placementIssues.forEach { issue ->
+            reasons += "${sourceFile.context.path} :: $issue"
         }
         if (sourceFile.context.role == bucketRole) {
             reasons += "${sourceFile.context.path} :: *Bucket directories must not contain Java files"
@@ -428,20 +434,21 @@ class OwnerConventionSupport(private val project: Project) {
                 val sourceText = sourceFile.readText()
                 val declaredPackage = packagePattern.find(sourceText)?.groupValues?.get(1)
                 val packageName = declaredPackage ?: packageNameFor(sourceFile.parentFile)
-                val role = roleForDirectoryName(sourceFile.parentFile.name)
+                val roleDeduction = deduceRole(sourceFile.parentFile)
                 OwnerConventionSourceFile(
                     context = OwnerConventionSourceContext(
                         path = path,
                         file = sourceFile,
                         packageName = packageName,
                         dirName = sourceFile.parentFile.name,
-                        role = role,
-                        ownerPackage = ownerPackageFor(packageName, role),
+                        role = roleDeduction.role,
+                        ownerPackage = ownerPackageFor(packageName, roleDeduction.role),
                         className = sourceFile.name,
                         typeImports = parseTypeImports(sourceText, snapshot.knownPackages)
                     ),
                     sourceText = sourceText,
-                    declaredPackage = declaredPackage
+                    declaredPackage = declaredPackage,
+                    placementIssues = roleDeduction.issues
                 )
             }
             .toList()
@@ -533,6 +540,32 @@ class OwnerConventionSupport(private val project: Project) {
 
     private fun directChildren(dir: File): List<File> {
         return dir.listFiles()?.sortedBy(File::getName).orEmpty()
+    }
+
+    private fun deduceRole(dir: File): OwnerConventionRoleDeduction {
+        val segments = srcRelativeSegments(dir)
+        if (segments.isEmpty()) {
+            return OwnerConventionRoleDeduction(ownerRole, emptyList())
+        }
+        val issues = mutableListOf<String>()
+        val ancestorRoles = segments.dropLast(1).map(::roleForDirectoryName)
+        val bucketCount = segments.count { roleForDirectoryName(it) == bucketRole }
+
+        ancestorRoles.forEach { ancestorRole ->
+            if (ancestorRole in layerRoles) {
+                issues += "layer directories must stay flat and may not contain nested directories"
+            }
+        }
+        if (bucketCount > 1) {
+            issues += "*Bucket directories may not contain nested *Bucket directories"
+        }
+
+        val finalRole = roleForDirectoryName(segments.last())
+        return if (issues.isNotEmpty()) {
+            OwnerConventionRoleDeduction(invalidRole, issues.distinct())
+        } else {
+            OwnerConventionRoleDeduction(finalRole, emptyList())
+        }
     }
 
     private fun roleForDirectoryName(name: String): String {
@@ -725,3 +758,8 @@ class OwnerConventionSupport(private val project: Project) {
         return projectTypes
     }
 }
+
+data class OwnerConventionRoleDeduction(
+    val role: String,
+    val issues: List<String>
+)
