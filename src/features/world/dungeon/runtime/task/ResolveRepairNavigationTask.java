@@ -21,13 +21,19 @@ public final class ResolveRepairNavigationTask {
             var layout = loadResolver.resolveRepairLayout(conn, input.preferredMapId());
             features.world.dungeon.application.runtime.DungeonRuntimeNavigationSnapshot snapshot =
                     runtimeApplicationService.loadNavigation(layout);
-            return snapshot == null || snapshot.isEmpty() || snapshot.cell() == null
-                    ? features.world.dungeon.runtime.input.ResolveRepairNavigationInput.NavigationInput.empty()
-                    : features.world.dungeon.runtime.input.ResolveRepairNavigationInput.NavigationInput.navigation(
-                            snapshot.mapId(),
-                            snapshot.cell(),
-                            snapshot.levelZ(),
-                            snapshot.heading() == null ? "" : snapshot.heading().name());
+            return toNavigationInput(snapshot);
         }
+    }
+
+    private static features.world.dungeon.runtime.input.ResolveRepairNavigationInput.NavigationInput toNavigationInput(
+            features.world.dungeon.application.runtime.DungeonRuntimeNavigationSnapshot snapshot
+    ) {
+        return snapshot == null || snapshot.isEmpty() || snapshot.cell() == null
+                ? features.world.dungeon.runtime.input.ResolveRepairNavigationInput.NavigationInput.empty()
+                : features.world.dungeon.runtime.input.ResolveRepairNavigationInput.NavigationInput.navigation(
+                        snapshot.mapId(),
+                        snapshot.cell(),
+                        snapshot.levelZ(),
+                        snapshot.heading() == null ? "" : snapshot.heading().name());
     }
 }
