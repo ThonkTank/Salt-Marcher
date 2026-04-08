@@ -1,4 +1,4 @@
-package buildlogic.verification
+package buildlogic.conventions
 
 import org.gradle.api.Project
 import org.gradle.api.Task

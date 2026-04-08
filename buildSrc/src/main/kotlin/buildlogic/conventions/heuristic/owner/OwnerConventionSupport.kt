@@ -1,4 +1,4 @@
-package buildlogic.ownerconvention
+package buildlogic.conventions.heuristic.owner
 
 import java.io.File
 import org.gradle.api.GradleException

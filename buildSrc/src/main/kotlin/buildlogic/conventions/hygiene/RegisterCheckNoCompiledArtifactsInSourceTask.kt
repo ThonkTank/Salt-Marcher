@@ -1,4 +1,4 @@
-package buildlogic.verification
+package buildlogic.conventions.hygiene
 
 import java.nio.file.Files
 import java.nio.file.Path

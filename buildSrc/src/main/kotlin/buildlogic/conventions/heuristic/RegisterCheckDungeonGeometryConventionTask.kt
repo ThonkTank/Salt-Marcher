@@ -1,4 +1,4 @@
-package buildlogic.verification
+package buildlogic.conventions.heuristic
 
 import org.gradle.api.GradleException
 import org.gradle.api.Project

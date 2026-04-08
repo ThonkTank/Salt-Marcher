@@ -1,4 +1,4 @@
-package buildlogic.ownerconvention
+package buildlogic.conventions.heuristic.owner
 
 import org.gradle.api.Project
 import org.gradle.api.Task

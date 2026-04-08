@@ -1,4 +1,4 @@
-package buildlogic.verification
+package buildlogic.conventions.legacy
 
 import java.io.File
 import org.gradle.api.GradleException

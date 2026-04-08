@@ -7,7 +7,6 @@
 ## Canonical Types and APIs
 
 - `RuntimeObject` — public runtime root seam — accepts typed runtime workflow requests and delegates them to the current runtime workflow owner.
-- `input/NavigationInput` — canonical runtime navigation carrier — represents persisted or resolved runtime position across load, resolve, repair, and navigate root seams.
 - `input/LoadNavigationInput` — runtime-navigation request family — loads the persisted or fallback navigation snapshot for one dungeon map into root-input form.
 - `input/NavigateInput` — runtime action request family — executes one resolved runtime action target through the canonical runtime navigation workflow and returns the persisted snapshot in root-input form.
 - `input/NavigateToCellInput` — runtime navigation request family — moves runtime navigation to a requested traversable cell and returns the persisted snapshot in root-input form.
