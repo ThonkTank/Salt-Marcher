@@ -19,5 +19,16 @@ public record LoadDungeonTargetsInput(
             label = label == null || label.isBlank() ? "Übergang" : label.trim();
             description = description == null ? "" : description.trim();
         }
+
+        public boolean isDoorPlacement() {
+            return doorId != null && doorId > 0;
+        }
+
+        public boolean isStairPlacement() {
+            return anchorCellX != null
+                    && anchorCellY != null
+                    && anchorCellZ != null
+                    && anchorLevelZ != null;
+        }
     }
 }

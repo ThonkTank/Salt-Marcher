@@ -386,7 +386,7 @@ public final class TransitionObject {
         if (input == null) {
             throw new SQLException("Übergangsziel fehlt");
         }
-        if ("OVERWORLD_TILE".equals(input.typeKey())) {
+        if (input.isOverworldTile()) {
             if (input.tileId() <= 0) {
                 throw new SQLException("Overworld-Zielfeld fehlt");
             }
@@ -398,7 +398,7 @@ public final class TransitionObject {
                     resolvedMapId,
                     input.tileId());
         }
-        if (!"DUNGEON_MAP".equals(input.typeKey())) {
+        if (!input.isDungeonMap()) {
             throw new SQLException("Übergangsziel fehlt");
         }
         if (input.mapId() <= 0 || !transitionRepository.dungeonMapExists(conn, input.mapId())) {
