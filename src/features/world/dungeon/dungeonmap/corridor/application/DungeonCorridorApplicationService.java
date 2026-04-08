@@ -2,6 +2,8 @@ package features.world.dungeon.dungeonmap.corridor.application;
 
 import database.DatabaseManager;
 import features.world.dungeon.application.support.DungeonTransactionRunner;
+import features.world.dungeon.dungeonmap.api.CorridorBoundaryDescription;
+import features.world.dungeon.dungeonmap.api.DoorDescription;
 import features.world.dungeon.dungeonmap.corridor.model.Corridor;
 import features.world.dungeon.dungeonmap.corridor.model.CorridorInput;
 import features.world.dungeon.dungeonmap.model.DungeonMap;

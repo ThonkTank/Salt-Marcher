@@ -1,7 +1,7 @@
 package features.world.dungeon.application.runtime.description;
 
 import features.world.dungeon.application.runtime.DungeonRuntimeLocation;
-import features.world.dungeon.dungeonmap.model.DungeonMap;
+import features.world.dungeon.dungeonmap.api.CellStructure;
 
 /**
  * Runtime descriptions should read from the same direct owners that the rest of the feature uses.
@@ -19,16 +19,16 @@ public final class DungeonRuntimeDescriptionResolver {
         if (location == null) {
             return null;
         }
-        if (location.structure() instanceof DungeonMap.CellStructure.RoomStructure) {
+        if (location.structure() instanceof CellStructure.RoomStructure) {
             return RoomRuntimeDescriptionBuilder.build(location);
         }
-        if (location.structure() instanceof DungeonMap.CellStructure.CorridorStructure) {
+        if (location.structure() instanceof CellStructure.CorridorStructure) {
             return CorridorRuntimeDescriptionBuilder.build(location);
         }
-        if (location.structure() instanceof DungeonMap.CellStructure.StairStructure) {
+        if (location.structure() instanceof CellStructure.StairStructure) {
             return StairRuntimeDescriptionBuilder.build(location);
         }
-        if (location.structure() instanceof DungeonMap.CellStructure.TransitionStructure) {
+        if (location.structure() instanceof CellStructure.TransitionStructure) {
             return TransitionRuntimeDescriptionBuilder.build(location);
         }
         return null;

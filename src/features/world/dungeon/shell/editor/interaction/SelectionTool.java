@@ -2,7 +2,6 @@ package features.world.dungeon.shell.editor.interaction;
 
 import features.world.dungeon.dungeonmap.corridor.application.DungeonCorridorApplicationService;
 import features.world.dungeon.dungeonmap.corridor.application.CorridorInputEditor;
-import features.world.dungeon.dungeonmap.api.DoorDescription;
 import features.world.dungeon.dungeonmap.cluster.application.DungeonClusterApplicationService;
 import features.world.dungeon.dungeonmap.cluster.model.ClusterMutation;
 import features.world.dungeon.dungeonmap.cluster.model.ClusterRewritePlan;
@@ -10,6 +9,7 @@ import features.world.dungeon.application.stair.DungeonStairApplicationService;
 import features.world.dungeon.application.stair.StairDraftResolver;
 import features.world.dungeon.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
+import features.world.dungeon.dungeonmap.api.DoorDescription;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;

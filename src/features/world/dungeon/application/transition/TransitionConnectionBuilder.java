@@ -2,6 +2,7 @@ package features.world.dungeon.application.transition;
 
 import features.world.dungeon.application.stair.DungeonStairApplicationService;
 import features.world.dungeon.application.stair.StairDraftResolver;
+import features.world.dungeon.dungeonmap.api.DoorDescription;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridPoint;

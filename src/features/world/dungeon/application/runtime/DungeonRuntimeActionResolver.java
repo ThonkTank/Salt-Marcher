@@ -1,6 +1,7 @@
 package features.world.dungeon.application.runtime;
 
 import features.world.dungeon.application.runtime.description.DungeonRuntimeExit;
+import features.world.dungeon.dungeonmap.api.CellStructure;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.dungeonmap.cluster.model.Cluster;
@@ -45,10 +46,10 @@ public final class DungeonRuntimeActionResolver {
                 .filter(Objects::nonNull)
                 .forEach(actions::add);
         switch (location.structure()) {
-            case DungeonMap.CellStructure.RoomStructure ignored -> appendRoomActions(location, actions);
-            case DungeonMap.CellStructure.CorridorStructure ignored -> appendCorridorActions(location, actions);
-            case DungeonMap.CellStructure.StairStructure ignored -> appendStairActions(location, actions);
-            case DungeonMap.CellStructure.TransitionStructure ignored -> appendActiveTransitionAction(location, actions);
+            case CellStructure.RoomStructure ignored -> appendRoomActions(location, actions);
+            case CellStructure.CorridorStructure ignored -> appendCorridorActions(location, actions);
+            case CellStructure.StairStructure ignored -> appendStairActions(location, actions);
+            case CellStructure.TransitionStructure ignored -> appendActiveTransitionAction(location, actions);
         }
         return List.copyOf(actions);
     }

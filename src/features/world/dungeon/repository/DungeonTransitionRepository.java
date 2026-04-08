@@ -1,5 +1,6 @@
 package features.world.dungeon.repository;
 
+import features.world.dungeon.dungeonmap.api.DoorDescription;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.geometry.GridPoint;

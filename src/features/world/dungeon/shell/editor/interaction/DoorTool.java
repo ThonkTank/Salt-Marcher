@@ -2,6 +2,8 @@ package features.world.dungeon.shell.editor.interaction;
 
 import features.world.dungeon.dungeonmap.cluster.application.DungeonClusterApplicationService;
 import features.world.dungeon.canvas.base.DungeonCanvasPointerEvent;
+import features.world.dungeon.dungeonmap.api.DoorDescription;
+import features.world.dungeon.dungeonmap.api.RoomBoundaryDescription;
 import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.GridSegment;

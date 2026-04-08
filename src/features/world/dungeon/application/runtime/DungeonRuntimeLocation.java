@@ -1,5 +1,6 @@
 package features.world.dungeon.application.runtime;
 
+import features.world.dungeon.dungeonmap.api.CellStructure;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.geometry.GridPoint;
@@ -25,7 +26,7 @@ public record DungeonRuntimeLocation(
         GridPoint activeCell,
         int activeLevelZ,
         CardinalDirection heading,
-        DungeonMap.CellStructure structure,
+        CellStructure structure,
         DungeonSelectionRef ownerRef
 ) {
     public DungeonRuntimeLocation {
@@ -44,7 +45,7 @@ public record DungeonRuntimeLocation(
         if (layout == null || navigation == null || navigation.isEmpty() || navigation.cell() == null) {
             return null;
         }
-        DungeonMap.CellStructure structure = layout.structureAtCell(navigation.cell(), navigation.levelZ());
+        CellStructure structure = layout.structureAtCell(navigation.cell(), navigation.levelZ());
         DungeonSelectionRef ownerRef = ownerRef(structure);
         if (structure == null || ownerRef == null) {
             return null;
@@ -60,7 +61,7 @@ public record DungeonRuntimeLocation(
     }
 
     public Room room() {
-        if (!(structure instanceof DungeonMap.CellStructure.RoomStructure roomStructure)) {
+        if (!(structure instanceof CellStructure.RoomStructure roomStructure)) {
             return null;
         }
         Cluster cluster = roomStructure.clusterId() == null ? null : layout.findCluster(roomStructure.clusterId());
@@ -68,19 +69,19 @@ public record DungeonRuntimeLocation(
     }
 
     public Corridor corridor() {
-        return structure instanceof DungeonMap.CellStructure.CorridorStructure corridorStructure
+        return structure instanceof CellStructure.CorridorStructure corridorStructure
                 ? corridorStructure.corridor()
                 : null;
     }
 
     public DungeonStair stair() {
-        return structure instanceof DungeonMap.CellStructure.StairStructure stairStructure
+        return structure instanceof CellStructure.StairStructure stairStructure
                 ? stairStructure.stair()
                 : null;
     }
 
     public DungeonTransition transition() {
-        return structure instanceof DungeonMap.CellStructure.TransitionStructure transitionStructure
+        return structure instanceof CellStructure.TransitionStructure transitionStructure
                 ? transitionStructure.transition()
                 : null;
     }
@@ -98,20 +99,20 @@ public record DungeonRuntimeLocation(
         return null;
     }
 
-    private static DungeonSelectionRef ownerRef(DungeonMap.CellStructure structure) {
-        if (structure instanceof DungeonMap.CellStructure.RoomStructure roomStructure) {
+    private static DungeonSelectionRef ownerRef(CellStructure structure) {
+        if (structure instanceof CellStructure.RoomStructure roomStructure) {
             Long roomId = roomStructure.roomId();
             return roomId == null ? null : new DungeonSelectionRef.RoomRef(roomId);
         }
-        if (structure instanceof DungeonMap.CellStructure.CorridorStructure corridorStructure) {
+        if (structure instanceof CellStructure.CorridorStructure corridorStructure) {
             Long corridorId = corridorStructure.corridor() == null ? null : corridorStructure.corridor().corridorId();
             return corridorId == null ? null : new DungeonSelectionRef.CorridorRef(corridorId);
         }
-        if (structure instanceof DungeonMap.CellStructure.StairStructure stairStructure) {
+        if (structure instanceof CellStructure.StairStructure stairStructure) {
             Long stairId = stairStructure.stair() == null ? null : stairStructure.stair().stairId();
             return stairId == null ? null : new DungeonSelectionRef.StairRef(stairId);
         }
-        if (structure instanceof DungeonMap.CellStructure.TransitionStructure transitionStructure) {
+        if (structure instanceof CellStructure.TransitionStructure transitionStructure) {
             Long transitionId = transitionStructure.transition() == null ? null : transitionStructure.transition().transitionId();
             return transitionId == null ? null : new DungeonSelectionRef.TransitionRef(transitionId);
         }
