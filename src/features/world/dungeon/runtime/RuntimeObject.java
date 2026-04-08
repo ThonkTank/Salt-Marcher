@@ -229,32 +229,37 @@ public final class RuntimeObject {
 
     private static DungeonRuntimeAction toRuntimeAction(NavigateInput.ActionInput input) {
         if (input.isCellAction()) {
-            return new DungeonRuntimeAction(
-                    "Bewegen",
-                    "",
-                    "Bewegung konnte nicht ausgeführt werden",
+            return runtimeAction(
+                    input.label(),
+                    input.failureMessage(),
                     new DungeonRuntimeAction.CellTarget(
                             Objects.requireNonNull(input.cell(), "action.cell"),
                             input.levelZ(),
                             CardinalDirection.parse(input.headingOverride())));
         }
         if (input.isDoorAction()) {
-            return new DungeonRuntimeAction(
-                    "Tür benutzen",
-                    "",
-                    "Verbindung konnte nicht benutzt werden",
+            return runtimeAction(
+                    input.label(),
+                    input.failureMessage(),
                     new DungeonRuntimeAction.DoorTarget(
                             new features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef(
                                     Objects.requireNonNull(input.doorId(), "action.doorId"))));
         }
         if (input.isTransitionAction()) {
-            return new DungeonRuntimeAction(
-                    "Übergang benutzen",
-                    "",
-                    "Übergang konnte nicht benutzt werden",
+            return runtimeAction(
+                    input.label(),
+                    input.failureMessage(),
                     new DungeonRuntimeAction.TransitionTarget(
                             Objects.requireNonNull(input.transitionId(), "action.transitionId")));
         }
         throw new IllegalArgumentException("Unbekannte Runtime-Aktion: " + input.kind());
+    }
+
+    private static DungeonRuntimeAction runtimeAction(
+            String label,
+            String failureMessage,
+            Object target
+    ) {
+        return new DungeonRuntimeAction(label, "", failureMessage, target);
     }
 }

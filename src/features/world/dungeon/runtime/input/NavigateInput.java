@@ -73,5 +73,31 @@ public record NavigateInput(
         public boolean isTransitionAction() {
             return "TRANSITION".equalsIgnoreCase(kind);
         }
+
+        public String label() {
+            if (isCellAction()) {
+                return "Bewegen";
+            }
+            if (isDoorAction()) {
+                return "Tür benutzen";
+            }
+            if (isTransitionAction()) {
+                return "Übergang benutzen";
+            }
+            return "Aktion";
+        }
+
+        public String failureMessage() {
+            if (isCellAction()) {
+                return "Bewegung konnte nicht ausgeführt werden";
+            }
+            if (isDoorAction()) {
+                return "Verbindung konnte nicht benutzt werden";
+            }
+            if (isTransitionAction()) {
+                return "Übergang konnte nicht benutzt werden";
+            }
+            return "Aktion konnte nicht ausgeführt werden";
+        }
     }
 }
